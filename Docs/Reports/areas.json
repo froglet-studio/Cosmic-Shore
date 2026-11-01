@@ -432,7 +432,27 @@
         "flea",
         "dragonfly",
         "albatross",
-        "web-slinger"
+        "web-slinger",
+        "omega",
+        "omega crews",
+        "omega crew",
+        "warden",
+        "bulwark",
+        "tempest",
+        "supervessel",
+        "supervessels",
+        "combiner",
+        "combiner vessels",
+        "mega form",
+        "omega form",
+        "vessel ids",
+        "vessel id ledger",
+        "siphonophore",
+        "voltron",
+        "voltron vessel",
+        "the colony",
+        "zooids",
+        "tide run"
       ],
       "owner": "Yash",
       "people": [
@@ -444,21 +464,39 @@
         "the core four"
       ],
       "branch": "Ys-bleeding-edge",
-      "branchNote": "browser prototypes in the Vessel Studio; nothing in Unity yet",
-      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17); Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross. Round 2 runs one vessel per session; the Gibbon (now a web-slinger) is the only one done.",
+      "branchNote": "browser prototypes in the Vessel Studio; the Flea is in Unity on claude/flea-vessel; the three Unity Omega crews were removed on 2026-10-27; the Siphonophore (the Voltron vessel) is a page only",
+      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17; Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross), the Omega crews lab (2026-10-26, superseded) and the Siphonophore (2026-10-27): a Voltron vessel designed from the ground up, three zooids that light, open and net, and one colony that digests and rams, taking turns by design. The Flea (24) is cloned into Unity; the vessel id ledger lives in Docs/Studios/CONCEPT_FLEET.md section 0.",
       "paths": [
         "Docs/Studios/CONCEPT_FLEET.md",
         "Docs/Studios/VesselStudio/vessels",
         "Docs/Studios/VesselStudio/studio-kinds.js",
         "Docs/Studios/VesselStudio/studio-vessel.js",
-        ".claude/skills/vessel-studio/vessel_pages.py"
+        ".claude/skills/vessel-studio/vessel_pages.py",
+        "Docs/Studios/VesselStudio/omega.html",
+        "Docs/Studios/VesselStudio/omega-studio.js",
+        "Assets/_Prefabs/Spacevessels/Warden.prefab",
+        "Assets/_Prefabs/Spacevessels/Bulwark.prefab",
+        "Assets/_Prefabs/Spacevessels/Tempest.prefab",
+        "Assets/_Scripts/Controller/Vessel/FleaMath.cs",
+        "Assets/_Scripts/Controller/Vessel/FleaVesselTransformer.cs",
+        "Tools/Build/author_flea_assets.py",
+        "Assets/_Prefabs/Spacevessels/Flea.prefab",
+        "Tools/Build/studio_to_unity/clones.json",
+        "Docs/Studios/VesselStudio/siphonophore.html",
+        "Docs/Studios/VesselStudio/siphonophore-studio.js"
       ],
       "docs": [
-        "Docs/Studios/CONCEPT_FLEET.md"
+        "Docs/Studios/CONCEPT_FLEET.md",
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
       ],
       "artifacts": [
         {
           "name": "Vessel Studio (the concept fleet row)",
+          "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
+        },
+        {
+          "name": "Omega Crews lab (the studio's Omega Crews bay)",
           "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
         }
       ],
@@ -471,11 +509,12 @@
         "Vessel Studio / Albatross",
         "Vessel Studio / Dragonfly",
         "Vessel Studio / Marlin",
-        "Vessel / Tether"
+        "Vessel / Tether",
+        "Vessel Studio / Siphonophore"
       ],
       "test": [
-        "Open the Vessel Studio artifact, the concept fleet row.",
-        "Fly a vessel; record Keep / Drop on its Decisions tab."
+        "Open the Vessel Studio artifact: the Siphonophore bay (fly a zooid, hold LT with the others near to fuse, swap seats with left / right; the Scorecard's two controls must both DNF) or the concept fleet row; record Keep / Drop on the Decisions tab.",
+        "Unity, claude/flea-vessel: the Flea from the Toybox's Vessel Changer (FLEA.md section 6)."
       ]
     },
     "android-build": {
@@ -595,6 +634,116 @@
         "Nothing here is testable in the editor: the gate is off-machine (a Steamworks account).",
         "The one thing a person can do today: ./Tools/Build/build_windows.sh --version <x.y.z>, launch the player, sign in, reach Menu_Main, open and close the pause menu, read Player.log (QA-BUILD-WINDOWS-PLAYER).",
         "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
+      ]
+    },
+    "attribution": {
+      "title": "Attribution audit",
+      "aliases": [
+        "attribution",
+        "credit",
+        "stolen commits",
+        "who did what",
+        "attribution audit",
+        "took credit"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Caleb",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "summary": "Whether one person's work took credit for another's: re-authored commits, others' commits pushed under a new name, names swapped in docs, area owners and team roles. 2026-10-27: Yash's work took none.",
+      "paths": [
+        "Tools/Build/attribution_audit.py",
+        "Docs/Reports/ATTRIBUTION_AUDIT.md"
+      ],
+      "docs": [
+        "Docs/Reports/ATTRIBUTION_AUDIT.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Attribution Audit (the page to share)",
+          "url": "https://claude.ai/artifact/5Z7fdnLhs7kqAvFXw85TFP"
+        }
+      ],
+      "report": "Docs/Reports/ATTRIBUTION_AUDIT.md",
+      "taskAreas": [],
+      "test": [
+        "git fetch --unshallow origin (once), git fetch origin, then python3 Tools/Build/attribution_audit.py --person <name>."
+      ]
+    },
+    "meerkat": {
+      "title": "Meerkat",
+      "aliases": [
+        "meerkat",
+        "wormhole vessel",
+        "meerkat wormhole",
+        "soliton",
+        "omnicrystal network",
+        "network of wormholes",
+        "meerkat studio"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett"
+      ],
+      "audience": [
+        "Yash",
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "for testing; it goes to bleeding-edge once Yash has played it in the editor",
+      "summary": "The wormhole vessel: an oval wormhole sized by Garrett's surface area, slid with the left stick like the omnicrystal's network of wormholes, phased inside any tube, swallowing prisms and crystals at its way in and firing them out of the far mouth, with Garrett's four abilities (Soliton, Faster Ride, Sentinel Mode, Exit Portal). Designed in the Vessel Studio artifact first, cloned to Unity.",
+      "paths": [
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/Meerkat",
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/Meerkat",
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/Meerkat",
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+        "Assets/_Scripts/Controller/Vessel/Meerkat",
+        "Assets/_Scripts/UI/Controller/MeerkatHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/Meerkat",
+        "Assets/_SO_Assets/VesselActions/Meerkat",
+        "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+        "Assets/Resources/ElementalAbilityMaps/Meerkat.asset",
+        "Assets/_Graphics/Materials/Graphs/Meerkat",
+        "Docs/Studios/MEERKAT.md",
+        "Docs/Studios/VesselStudio/meerkat.html",
+        "Docs/Studios/OmnicrystalNetworkLab.html",
+        "Tools/Build/author_meerkat_assets.py",
+        "Tools/Build/studio_to_unity/meerkat.json",
+        "Tools/Build/meerkat_kit_harness"
+      ],
+      "docs": [
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+        "Docs/Studios/MEERKAT.md",
+        "Docs/Shaders/WATERY_GLASS.md",
+        "Docs/PRISM_MOTION.md"
+      ],
+      "artifacts": [
+        {
+          "name": "The Vessel Studio (the Meerkat page)",
+          "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
+        },
+        {
+          "name": "Tube Lens Lab (the water pipe)",
+          "url": "https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF"
+        }
+      ],
+      "report": "Docs/Reports/MEERKAT.md",
+      "taskAreas": [
+        "Meerkat"
+      ],
+      "test": [
+        "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
+        "Toybox (Lava Lamp), Vessel Changer: the Meerkat. Release LT and pull RT for a short, fat wormhole; inside, push the left stick (you bounce off the wall), hold RT (faster), and fly out of the far mouth.",
+        "Form a wormhole next to prisms: they are pulled in, stretched through, and fired out of the far mouth; none catches you inside, and you lose no petal in the tube.",
+        "Fly into an omni crystal: the network of wormholes opens round you, sized by your Mass; an AI Meerkat's opens when it takes one.",
+        "Burrow Run (the Meerkat's Time mini-game): the AI forms wormholes, slides them and threads its rings."
       ]
     }
   }

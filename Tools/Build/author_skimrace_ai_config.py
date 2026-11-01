@@ -225,7 +225,7 @@ REGATTA_LEARNED = {
     "LookaheadMin": 70.0,
     "LookaheadSeconds": 1.03,
     "MassGuardMargin": 1.379,
-    "PolicyVersion": "regatta-learned-20261025-3flights",
+    "PolicyVersion": "regatta-learned-20261026-3flights",
     "SkimHeight": -5.948,
     "StickGainPerDegree": 0.025,
     "TrackGuardMargin": 1.642,
@@ -240,7 +240,7 @@ POLICIES["SkimRaceAIConfig_Regatta"] = {
 
 # The lobby AI difficulty's deliberate mistakes (SkimRaceHandicap), ONE setting per difficulty for
 # every intensity: tuned once on intensity 2 with `run.sh handicap` (Docs/SKIM_RACE_AI.md section 10).
-# Hard is the unhandicapped pilot and has no row.
+# Legendary is the unhandicapped pilot and has no row (it was called Hard until 2026-10-26).
 DIFFICULTY = {
     "SkimRaceDifficulty": {
         # Easy: TUNED (2026-10-05) - run.sh handicap 2 40 120 ph.HcReaction=0.5 hi=0.25, 2 AI seats.
@@ -252,6 +252,13 @@ DIFFICULTY = {
         # fresh seeds seat median 95.9 s (p10 81.0, p90 124.4), 80/80 finished, 1.3 misjudged/race.
         "MediumReactionSeconds": 0.25,
         "MediumMistakeChance": 0.045,
+        # Hard: SET, NOT TUNED (2026-10-26) - between Medium and the unhandicapped pilot by its parameters:
+        # about half Medium's reaction and misjudge chance. The simulator could not tune it: on 2026-10-26 its
+        # unhandicapped I2 seat median was 130 s with 17/40 races unfinished (80 s, all finished, when the two
+        # rows above were tuned), so its times no longer match the editor. Re-tune with run.sh handicap once
+        # it does (Docs/SKIM_RACE_AI.md section 10).
+        "HardReactionSeconds": 0.12,
+        "HardMistakeChance": 0.02,
     },
 }
 

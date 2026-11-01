@@ -59,6 +59,26 @@ namespace CosmicShore.Gameplay
         public static uint Pack(bool alive, int tier, int from, int to, int domainSlot = 0, bool shielded = false) =>
             (alive ? 1u : 0u) | ((uint)(tier & 3) << 1) | ((uint)(from & 3) << 3) | ((uint)(to & 3) << 5)
             | ((uint)(domainSlot & 3) << 7) | (shielded ? 1u << 9 : 0u);
+
+        /// <summary>
+        /// The ELEMENTAL LAW on one member's body (ElementalArmour, Docs/ECOSYSTEM.md §65.7: "shift the shielding affect
+        /// from charge to mass ... the new charge affect will be to make all of its prisms danger prism"), for a population
+        /// drawn as data - a swarm, a builder colony, a substrate - whose prisms the platform's lifeform armour never
+        /// reaches. <paramref name="element"/> is the research index (0 Charge, 1 Mass, 2 Space, 3 Time).
+        /// <list type="bullet">
+        /// <item>CHARGE: every prism is a danger prism, always (tier 1), and it never shields.</item>
+        /// <item>MASS: armoured, always (shielded; the shield look, tier 2, while it shows no danger). A Mass member that
+        /// strikes shows danger and keeps its shield - the swarm's round 11d-2 rule (danger wins the LOOK).</item>
+        /// <item>SPACE and TIME: their behaviour's tier, unchanged.</item>
+        /// </list>
+        /// Call it before a strike's danger is applied. A director's SCRIPTED plan (Tandava) authors its own tiers and
+        /// does not pass through here.
+        /// </summary>
+        public static void ElementLaw(int element, ref int tier, ref bool shielded)
+        {
+            if (element == 0) { tier = 1; shielded = false; }
+            else if (element == 1) { shielded = true; if (tier != 1) tier = 2; }
+        }
     }
 
     /// <summary>The numbers a tick job needs to turn the core's state into the frame. Set once.</summary>
@@ -67,6 +87,7 @@ namespace CosmicShore.Gameplay
         public Vector3 Centre;                  // world position of the sim origin (the host cell's centre)
         public float UnitScale = 2f;            // world units per voxel
         public float PrismScale = 1f;
+        public float[] ElementBodyScale = { 1f, 1f, 1f, 1f };                  // per research element, on PrismScale
         public float HeartPrismGap = 0.6f;
         public float[] HeartWorldScale = { 2.298f, 1.737f, 2.298f, 1.737f };   // per research element
         public Vector3[] DefaultHalf = { Vector3.One, Vector3.One, Vector3.One, Vector3.One };
@@ -100,6 +121,13 @@ namespace CosmicShore.Gameplay
 
     public enum SwarmJobState { Idle = 0, Running = 1, Done = 2 }
 
+    /// <summary>A member arriving from another swarm (<see cref="SwarmTickJob.QueueGraft"/>), in the core's sim frame.</summary>
+    public struct SwarmGraft
+    {
+        public Vector3 Pos, Vel, Facing;
+        public int Element;
+    }
+
     /// <summary>
     /// One swarm's tick: apply the queued inputs, step the core, build the frame (Docs/SWARM_FAUNA.md §14).
     /// Pure C#: compiled and run by Tools/Build/swarm_core_harness (test R7).
@@ -122,6 +150,14 @@ namespace CosmicShore.Gameplay
         public int Steps = 1;
         readonly int[] _kills, _killsRun;
         int _killCount;
+        // Tandava: Severing's sever (TandavaSevering/TANDAVA_SEVERING.md §3.11): members leaving this core for another (released - nothing dies) and
+        // members arriving from another (grafted - nothing is born). A sort core only; any other core treats a release
+        // as a kill and ignores a graft.
+        readonly int[] _releases, _releasesRun;
+        int _releaseCount;
+        readonly List<SwarmGraft> _grafts = new(), _graftsRun = new();
+        readonly bool[] _grown;   // per slot: the member arriving here is grown - it does not bloom in
+        float _stomachKeep = 1f;  // the share of the stomach a sever leaves this swarm (the rest left with the piece)
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
         readonly object _inLock = new();
         int _requestPlan = -1;
@@ -213,6 +249,24 @@ namespace CosmicShore.Gameplay
             return wound > 0 && st >= WindupResetFrac * enter ? state : (byte)0;
         }
 
+        /// <summary>
+        /// A member's drawn TIER (0 plain, 1 danger, 2 shield) and its mass SHIELD, from its look's tier, its strike state
+        /// and the element law. A scripted plan (Tandava, <paramref name="planDanger"/>) is a designed body: Charge shield
+        /// or danger, any other element its armour. Every other swarm takes the element law
+        /// (<see cref="SwarmInstance.ElementLaw"/>: Mass armoured, Charge all danger; Docs/ECOSYSTEM.md §65.7) - a census
+        /// plan's Charge shield is the law it replaced. Then a strike's danger wins the LOOK and the mass keeps its shield
+        /// (round 11d-2, locked design). Pure and static so the harness asserts it.
+        /// </summary>
+        public static int MemberTier(int eff, int lookTier, bool planDanger, byte strike, out bool shielded)
+        {
+            int tier = 0;
+            if (eff == 0 ? lookTier == 2 || (lookTier == 1 && planDanger) : planDanger && lookTier == 2) tier = lookTier;
+            shielded = tier == 2;
+            if (!planDanger) SwarmInstance.ElementLaw(eff, ref tier, ref shielded);
+            if (strike == 2) tier = 1;
+            return tier;
+        }
+
         public static byte StrikeState(int eff, int slot, long tick, float st, byte state, SwarmTickSettings s)
         {
             if (!(st >= 0f)) st = 0f;
@@ -242,12 +296,15 @@ namespace CosmicShore.Gameplay
         }
 
         float _toWorldSpeed;
+        /// <summary>How long ago (ticks) a grafted member is said to have been born: past any bloom or proxy grace.</summary>
+        const float GrownAgeTicks = 10000f;
         static readonly WaitCallback s_run = RunOnWorker;
 
         public SwarmTickJob(ISwarmCore core, SwarmTickSettings settings, float tickHz)
         {
             Core = core; S = settings; _cap = core.Cap;
             _kills = new int[_cap]; _killsRun = new int[_cap];
+            _releases = new int[_cap]; _releasesRun = new int[_cap]; _grown = new bool[_cap];
             Instances = new SwarmInstance[_cap]; _bInst = new SwarmInstance[_cap];
             HeartIdx = new uint[2 * _cap]; _bHeart = new uint[2 * _cap];
             Engaged = new int[_cap]; _bEngaged = new int[_cap];
@@ -274,6 +331,41 @@ namespace CosmicShore.Gameplay
                 for (int q = 0; q < _killCount; q++) if (_kills[q] == i) return;
                 if (_killCount < _kills.Length) _kills[_killCount++] = i;
             }
+        }
+
+        /// <summary>Tandava: Severing's sever: member <paramref name="i"/> leaves this core for another swarm (main thread, any time;
+        /// the same thread rule as <see cref="QueueKill"/>, and the caller masks the slot the same way). Nothing dies: the
+        /// core counts no death and lays nothing to replace it (<see cref="SwarmSortCore.Release"/>).</summary>
+        public void QueueRelease(int i)
+        {
+            if (i < 0 || i >= _cap) return;
+            lock (_inLock)
+            {
+                for (int q = 0; q < _releaseCount; q++) if (_releases[q] == i) return;
+                if (_releaseCount < _releases.Length) _releases[_releaseCount++] = i;
+            }
+        }
+
+        /// <summary>Tandava: Severing's sever: a grown member arrives from another swarm at <paramref name="simPos"/> (sim units,
+        /// cell-centred - the core's own frame) and joins this core in the next tick that starts (<see cref="SwarmSortCore.Graft"/>).
+        /// It does not bloom in: it was alive a moment ago in the other swarm. Main thread, any time.</summary>
+        public void QueueGraft(Vector3 simPos, Vector3 simVel, Vector3 facing, int element)
+        {
+            lock (_inLock) _grafts.Add(new SwarmGraft { Pos = simPos, Vel = simVel, Facing = facing, Element = element });
+        }
+
+        /// <summary>Tandava: Severing's sever: the next tick keeps only <paramref name="keep"/> of every element in the stomach (the
+        /// rest crawled off in the severed piece). Main thread, any time; several scales multiply.</summary>
+        public void QueueStomachScale(float keep)
+        {
+            lock (_inLock) _stomachKeep *= Math.Clamp(keep, 0f, 1f);
+        }
+
+        /// <summary>Main thread, before <see cref="Prime"/> only: slot <paramref name="i"/> was grafted in grown (a severed
+        /// swarm's seed), so its first frame shows it whole instead of blooming it in.</summary>
+        public void MarkGrown(int i)
+        {
+            if (i >= 0 && i < _cap) _grown[i] = true;
         }
 
         /// <summary>Bank eaten volume (main thread, any time); paid into the core's stomach next tick.
@@ -376,8 +468,9 @@ namespace CosmicShore.Gameplay
         void Run()
         {
             // inputs first, on the thread that owns the core now
-            int kills, plan;
+            int kills, plan, releases;
             bool pose;
+            float keep;
             lock (_inLock)
             {
                 kills = _killCount;
@@ -386,6 +479,11 @@ namespace CosmicShore.Gameplay
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
                 plan = _requestPlan; _requestPlan = -1;
                 pose = _requestPose; _requestPose = false;
+                releases = _releaseCount;
+                Array.Copy(_releases, _releasesRun, releases);
+                _releaseCount = 0;
+                _graftsRun.Clear(); _graftsRun.AddRange(_grafts); _grafts.Clear();
+                keep = _stomachKeep; _stomachKeep = 1f;
             }
             if (Core is IScriptedSwarmCore scripted)
             {
@@ -397,6 +495,20 @@ namespace CosmicShore.Gameplay
                 }
             }
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
+            var sort = Core as SwarmSortCore;
+            for (int q = 0; q < releases; q++)
+            {
+                if (sort != null) sort.Release(_releasesRun[q]);
+                else Core.Kill(_releasesRun[q]);
+            }
+            if (sort != null)
+                for (int q = 0; q < _graftsRun.Count; q++)
+                {
+                    var g = _graftsRun[q];
+                    int slot = sort.Graft(g.Pos, g.Vel, g.Facing, g.Element);
+                    if (slot >= 0) _grown[slot] = true;
+                }
+            if (keep < 1f) for (int e = 0; e < 4; e++) Core.Stomach[e] *= keep;
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
             Core.SwimTarget = SwimTarget;
             _bEvents.Clear();
@@ -451,21 +563,21 @@ namespace CosmicShore.Gameplay
                 alive++;
                 var cur = c.Pos[i]; var face = c.Facing[i];
                 bool newborn = !_lastAlive[i];
-                if (newborn) { _lastPos[i] = cur; _lastFace[i] = face; _lastMolt[i] = 0f; _born[i] = tickNow; _strike[i] = 0; }
+                if (newborn)
+                {
+                    _lastPos[i] = cur; _lastFace[i] = face; _lastMolt[i] = 0f; _strike[i] = 0;
+                    // a member grafted in from another swarm (Tandava: Severing's sever) arrives grown: born long ago, no bloom
+                    _born[i] = _grown[i] ? tickNow - GrownAgeTicks : tickNow;
+                }
+                _grown[i] = false;
 
                 int eff = c.EffectiveElement(i);
                 var h = S.DefaultHalf[eff];
-                int tier = 0;
-                if (c.TryGetLook(i, eff, out var look, out int lt))
-                {
-                    h = look;
-                    // Charge: shield, or (a scripted plan) danger. Any other element: only a scripted plan's shield - armour.
-                    if (eff == 0 ? lt == 2 || (lt == 1 && S.PlanDanger) : S.PlanDanger && lt == 2) tier = lt;
-                }
+                int lookTier = 0;
+                if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; lookTier = lt; }
                 if (_strikeEff[i] != eff) { _strikeEff[i] = (sbyte)eff; _strike[i] = 0; }
                 _strike[i] = StrikeState(eff, i, _tick, c.Startle[i], _strike[i], S);
-                bool shielded = tier == 2;   // the mass stays shielded while a puff shows danger (round 11d-2)
-                if (_strike[i] == 2) tier = 1;   // danger wins over shield in the LOOK (locked design)
+                int tier = MemberTier(eff, lookTier, S.PlanDanger, _strike[i], out bool shielded);
 
                 // heart: the element before / after the molt midpoint, and the molt progress at both ends
                 float mc = c.Molt[i], mp = _lastMolt[i];
@@ -473,7 +585,7 @@ namespace CosmicShore.Gameplay
                 if (mc <= 0f && mp > 0f) { mc = 1f; }   // the molt finished this tick: Elem is already the new one
                 else if (mc <= 0f) mp = 0f;
 
-                var scale = new Vector3(h.Y * m, h.Z * m, h.X * m);
+                var scale = new Vector3(h.Y * m, h.Z * m, h.X * m) * S.ElementBodyScale[eff];
                 inst.PrevPos = S.Centre + _lastPos[i] * S.UnitScale;
                 inst.CurPos = S.Centre + cur * S.UnitScale;
                 inst.PrevFace = _lastFace[i]; inst.CurFace = face;

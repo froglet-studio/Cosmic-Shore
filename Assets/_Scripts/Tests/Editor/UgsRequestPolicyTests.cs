@@ -198,6 +198,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Classify_RelayJoinIntoADeadHost_IsGone()
+        {
+            // The four-player test of 2026-10-30: a frozen host's lobby outlived its Relay allocation, and every
+            // join into it threw this. The words that say so are on the INNER exception.
+            var relay404 = new SessionException("Failed to join allocation", SessionError.Unknown,
+                new Exception("Not Found: join code not found"));
+            Assert.AreEqual(UgsFailureClass.Gone, UgsRequestPolicy.Classify(relay404));
+            Assert.AreEqual(UgsFailureClass.Gone,
+                UgsRequestPolicy.Classify(new Exception("Received error message from Relay: allocation ID not found.")));
+            Assert.AreEqual(UgsFailureClass.Benign,
+                UgsRequestPolicy.Classify(new SessionException("Failed to join allocation", SessionError.Unknown, null)),
+                "without the inner words the catch-all stays the stale-index noise it usually is");
+        }
+
+        [Test]
         public void Classify_SdkNreInsideSessionException_IsTransient()
         {
             // PartySessionService's old IsTransientSessionException: the SDK's own NRE on a

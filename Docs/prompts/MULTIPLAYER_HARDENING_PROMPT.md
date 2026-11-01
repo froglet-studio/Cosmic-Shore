@@ -152,6 +152,13 @@ their symptoms. The Sessions SDK already opens a Wire subscription per lobby and
 `PlayerPropertiesChanged`, `PlayerJoined`, `PlayerLeft`, `SessionPropertiesChanged`, `Deleted`,
 `RemovedFromSession`, `StateChanged`. We subscribe to **two** and poll instead.
 
+**Progress:** all nine steps of the audit's port order landed 2026-10-26 (`Ys-bleeding-edge`), the presence push, the republish on a roster move and the two-strike eviction, the 20 s safety poll and the explicit leave on quit included; the MPPM retest is next.
+
+**August already built this** on the old `Ys-bleeding-edge` (saved as `Ys-rescue-2026-08-24`), with MPPM
+measurements: port its design in the order of `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2, and read §3 first (the
+void rate, the 2 free player-data slots, the SDK event order). `PlayerLeft` is `[Obsolete]` in SDK 2.3.3: use
+`PlayerLeaving` / `PlayerHasLeft`.
+
 Do it behind a **Strategy**: `IPresenceTransport` with a polling implementation and an
 event-driven one, both testable at L1. That makes it a swap, not a rewrite, and keeps a rollback.
 
@@ -175,6 +182,17 @@ Make the AI takeover **reversible** within the grace window.
 **Gate:** pull a client's network for 15 s mid-match → the vessel is handed back and the player
 never sees a menu. 60 s → AI becomes permanent and the roster is correct. Pre-match 20 s → the slot
 is kept.
+
+**Partly built (2026-10-29, `claude/new-session-76hnyc`, Docs/MENU_REDESIGN_B.md section 103.1):** the AI takeover is now
+REVERSIBLE through a rejoin, not yet through a silent grace reconnect.
+- The guest remembers the match (`MatchRejoin`).
+- After a drop or a restart, Home offers REJOIN.
+- The rejoin announces itself in the approval payload (`cosmicshore.rejoin.v1:<ugs id>`).
+- The host hands the AI-flown Player and vessel back (`ServerPlayerVesselInitializer.TryReclaimSeat`) instead of making a
+  second one.
+
+Still open for this block: the no-menu path (`PartyState.Reconnecting`, `ISession.ReconnectAsync`) and the
+pre-match slot.
 
 ---
 

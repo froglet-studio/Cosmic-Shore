@@ -106,14 +106,14 @@ namespace CosmicShore.Gameplay
         /// after LifeFormCrystal.EnsureElementalCrystal.
         ///
         /// This is also where a heart gets its SIZE: every lifeform heart in the game passes
-        /// through here, so sizing it from the owner's level here is what makes the size a
-        /// function of level alone rather than of whatever scale each species' prefab happened
-        /// to author (Docs/ECOSYSTEM.md §33). Later level changes re-apply the same curve.
+        /// through here, so this is what makes every heart the one elemental crystal size
+        /// (<see cref="ElementalCrystalSetSO.CrystalWorldScale"/>) rather than whatever scale
+        /// each species' prefab happened to author (Docs/ECOSYSTEM.md §40.2).
         /// </summary>
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
-            if (owner != null) LifeFormCrystal.ApplyHeartSize(this, owner.HeartWorldScale);
+            if (owner != null) LifeFormCrystal.ApplyHeartSize(this);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
@@ -189,7 +189,8 @@ namespace CosmicShore.Gameplay
         // Crystal COLOR signals WHO can collect it (element identity is shape, never color):
         //   • domain crystal (Jade/Ruby/Gold)  → that domain's crystal colors - only it collects
         //   • embedded lifeform heart          → blue-white neutral (BlueColors) - nobody collects
-        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects
+        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects;
+        //     each elemental in its own shade of that lime (EnvironmentColors.ElementalCrystalColors)
         // Applies to omni and all four elemental crystals. Colors come LIVE from the theme's
         // ColorSet, per-renderer via MaterialPropertyBlock - never renderer.material clones.
 
@@ -230,13 +231,20 @@ namespace CosmicShore.Gameplay
             bright = colors.EnvironmentColors.BrightCTA;
             dull = colors.EnvironmentColors.DarkCTA;
 
-            // The OMNI is the hero pickup and wears the CTA at full strength; the four
-            // elementals ride the same lime, dimmed, so the omni is the brightest crystal
-            // on screen. Brightness is the ONLY difference - a scalar cannot move the hue,
-            // so all five stay in one lime family by construction.
+            // The OMNI is the hero pickup and wears the CTA at full strength. Each of the four
+            // elementals wears its OWN lime (the Wrasse's four lasso shades, ElementalCrystalColors:
+            // distinct hue, saturation and value, all inside lime's boundary, so the Mass crystal
+            // no longer reads as the omni) at the CTA's brightness, then dimmed, so the omni stays
+            // the brightest crystal on screen.
             if (crystalProperties.IsElemental)
             {
-                float dim = colors.EnvironmentColors.ElementalCrystalDimming;
+                var env = colors.EnvironmentColors;
+                if (env.TryGetElementalCrystalColor(crystalProperties.Element, out var hue))
+                {
+                    bright = bright.WithHueOf(hue);
+                    dull = dull.WithHueOf(hue);
+                }
+                float dim = env.ElementalCrystalDimming;
                 bright = bright.ScaleRGB(dim);
                 dull = dull.ScaleRGB(dim);
             }
@@ -926,7 +934,10 @@ namespace CosmicShore.Gameplay
             ApplyColorSetTint();
         }
 
-        private static (string bright, string dull) FindColorPropertyNames(Material mat)
+        /// <summary>The (bright, dull) colour pair a crystal material is tinted through, or (null, null) for a material
+        /// that keeps its own colours. Shared with <see cref="CrystalHeartDraw"/>, which paints a population's hearts by
+        /// exactly this rule.</summary>
+        internal static (string bright, string dull) FindColorPropertyNames(Material mat)
         {
             if (mat.HasProperty("_BrightCrystalColor") && mat.HasProperty("_DullCrystalColor"))
                 return ("_BrightCrystalColor", "_DullCrystalColor");

@@ -147,11 +147,12 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     const e = funded(100000);
     for (let i = 1; i <= CATALOG.hangar.maxLevel; i++)
       assert.equal(apply(e, { action: "upgradeHangar", vessel: 3, element: 1 }, T, "production").ok, true);
-    assert.equal(e.hangar["3:1"], 10);
-    assert.equal(e.crystalBalance, 100000 - 100 * (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10));
+    const max = CATALOG.hangar.maxLevel, per = CATALOG.hangar.perLevel;
+    assert.equal(e.hangar["3:1"], max);
+    assert.equal(e.crystalBalance, 100000 - per * max * (max + 1) / 2);
     assert.equal(apply(e, { action: "upgradeHangar", vessel: 3, element: 1 }, T, "production").reason, "max_level");
     assert.equal(apply(e, { action: "upgradeHangar", vessel: -1, element: 1 }, T, "production").reason, "bad_slot");
-    assert.deepEqual(view(e, true).hangar, [{ vessel: 3, element: 1, level: 10 }]);
+    assert.deepEqual(view(e, true).hangar, [{ vessel: 3, element: 1, level: max }]);
   });
 
   await test("old unlocks come across once, capped by their value; starters and unknown names are skipped", () => {

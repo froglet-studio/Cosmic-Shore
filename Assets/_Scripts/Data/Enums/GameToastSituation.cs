@@ -201,6 +201,18 @@ namespace CosmicShore.Data
         TandavaHaloLit = 145,           // the halo lit and the drum started: {0} = HaloLitLine
         TandavaHaloBroken = 146,        // the first halo ring, and the last-but-one, broken: {0} = the line
         TandavaLunge = 147,             // the creature turned on a pilot (its first lunges): {0} = LungeLine
+        // Tandava: Severing (GameModes.TandavaSevering, Voyage 2) raises every Tandava toast above plus these five - the
+        // ids PR #1046 claimed for them on claude/tandava-severing, kept so that branch and this fork agree
+        TandavaSevered = 148,           // a cut parted the body and the piece crawled off: {0} = SeveredLine
+        TandavaRejoined = 149,          // the severed piece got home and grafted back on: {0} = RejoinedLine
+        TandavaSuccession = 150,        // the body was cut away and the piece took its form: {0} = SuccessionLine
+        TandavaLearned = 151,           // a wound taught it something (once per wound): {0} = that wound's Learned line
+        TandavaChimera = 152,           // on its way up it became the whale-jelly chimera: {0} = ChimeraLine
+
+        // Serpent Time, the dirty race (Docs/Studios/SERPENT_TIME.md). Posted to the LOCAL pilot only. 153-155 (rounds,
+        // no round, wall hit) were retired with the round economy and the wall cost on 2026-10-31: the mode never
+        // changes the vessel's kit. Do not reuse them.
+        SerpentTimeWallHint = 156,      // once, at the start: how the dirty race is played
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

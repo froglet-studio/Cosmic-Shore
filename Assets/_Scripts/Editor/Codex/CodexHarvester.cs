@@ -88,7 +88,7 @@ namespace CosmicShore.Editor.Codex
             if (!set)
             {
                 report.Warnings.Add(
-                    "No ElementalCrystalSetSO found - the four elemental ethirions were skipped. " +
+                    "No ElementalCrystalSetSO found - the four elemental Etherions were skipped. " +
                     "Expected Assets/Resources/ElementalCrystalSet.asset.");
             }
 
@@ -123,9 +123,10 @@ namespace CosmicShore.Editor.Codex
                         ? $"{speciesCount} species — one of the four, per lifeform"
                         : null);
                     Add(entry.Stats, "Reward", "Raises the collecting vessel's " + element +
-                                               " level, scaled by the crystal's world size");
+                                               " level by one petal");
                     Add(entry.Stats, "Model", MeshSummary(crystal.gameObject));
-                    Add(entry.Stats, "Heart size", HeartSizeBandLine(set));
+                    Add(entry.Stats, "Size", $"{ElementalCrystalSetSO.CrystalWorldScale:0.00} world scale - " +
+                                             "every elemental crystal, a lifeform's heart included");
 
                     entries.Add(entry);
                 }
@@ -150,7 +151,7 @@ namespace CosmicShore.Editor.Codex
             else
             {
                 report.Warnings.Add("No omni crystal prefab found (a Crystal carrying exactly an " +
-                                    "OmniCrystalImpactor). The Omni ethirion was skipped.");
+                                    "OmniCrystalImpactor). The Omni Etherion was skipped.");
             }
 
             return entries;
@@ -192,14 +193,13 @@ namespace CosmicShore.Editor.Codex
 
             var floraConfigs = LoadAll<FloraConfigurationSO>();
             var faunaConfigs = LoadAll<FaunaConfigurationSO>();
+            var roster = RosterNames();
 
-            foreach (var group in floraConfigs.Where(c => c.FloraPrefab)
-                                              .GroupBy(c => c.FloraPrefab.gameObject))
-                entries.Add(BuildFloraEntry(group.Key, group.ToList(), usage));
+            foreach (var group in GroupSpecies(floraConfigs.Where(c => c.FloraPrefab), c => c.FloraPrefab.gameObject, roster))
+                entries.Add(BuildFloraEntry(group.Prefab, group.Configs, usage, group.Name));
 
-            foreach (var group in faunaConfigs.Where(c => c.FaunaPrefab)
-                                              .GroupBy(c => c.FaunaPrefab.gameObject))
-                entries.Add(BuildFaunaEntry(group.Key, group.ToList(), usage));
+            foreach (var group in GroupSpecies(faunaConfigs.Where(c => c.FaunaPrefab), c => c.FaunaPrefab.gameObject, roster))
+                entries.Add(BuildFaunaEntry(group.Prefab, group.Configs, usage, group.Name));
 
             foreach (var c in floraConfigs.Where(c => !c.FloraPrefab))
                 report.Warnings.Add($"Flora config '{c.name}' has no prefab — no codex entry.");
@@ -210,10 +210,87 @@ namespace CosmicShore.Editor.Codex
             return entries;
         }
 
-        static CodexEntry BuildFloraEntry(GameObject prefab, List<FloraConfigurationSO> configs,
-            Dictionary<Object, List<string>> usage)
+        /// <summary>
+        /// The Toy Box's Spawn Matrix names every species a player can release and lists that species' configs
+        /// (Docs/MENU_REDESIGN_B.md section 98.3). Config -> the roster's name for its species.
+        /// </summary>
+        static Dictionary<Object, string> RosterNames()
         {
-            var entry = NewEntry(CodexKingdom.Flora, SpeciesName(configs.Select(c => c.name), prefab));
+            var names = new Dictionary<Object, string>();
+            foreach (var roster in LoadAll<SpawnMatrixToyDefinitionSO>())
+            {
+                foreach (var species in roster.Fauna ?? Array.Empty<SpawnMatrixToyDefinitionSO.FaunaSpecies>())
+                    Name(names, species?.Name, species?.ElementConfigs);
+                foreach (var species in roster.Flora ?? Array.Empty<SpawnMatrixToyDefinitionSO.FloraSpecies>())
+                    Name(names, species?.Name, species?.ElementConfigs);
+            }
+            return names;
+
+            static void Name(Dictionary<Object, string> names, string name, IEnumerable<Object> configs)
+            {
+                if (string.IsNullOrWhiteSpace(name) || configs == null) return;
+                foreach (var config in configs)
+                    if (config && !names.ContainsKey(config)) names[config] = name.Trim();
+            }
+        }
+
+        sealed class SpeciesGroup<T>
+        {
+            public GameObject Prefab;
+            public List<T> Configs;
+            public string Name;
+        }
+
+        /// <summary>
+        /// One codex species per Toy Box species, under the Toy Box's name: the Codex screen lists the roster and finds
+        /// each one's page by that name, so a page named after its config asset ("Substrate Harrier Fauna Config
+        /// Data") is a page nobody reaches (Shombith 2026-10-27, after a bake: "None of the fauna got their images").
+        /// It also splits species that share one prefab (the bench swarms are four Toy Box species on SwarmFauna).
+        /// A config the roster does not list joins the roster species that uses its prefab - the odd
+        /// WormColonyFaunaConfig stays with the Worm Colony - and otherwise groups by prefab, named by majority vote
+        /// as before.
+        /// </summary>
+        static List<SpeciesGroup<T>> GroupSpecies<T>(IEnumerable<T> configs, Func<T, GameObject> prefabOf,
+            Dictionary<Object, string> roster) where T : Object
+        {
+            var list = configs.ToList();
+            var byPrefab = new Dictionary<GameObject, HashSet<string>>();
+            foreach (var c in list)
+                if (roster.TryGetValue(c, out var name))
+                {
+                    var prefab = prefabOf(c);
+                    if (!byPrefab.TryGetValue(prefab, out var set)) byPrefab[prefab] = set = new HashSet<string>();
+                    set.Add(name);
+                }
+
+            var groups = new List<SpeciesGroup<T>>();
+            foreach (var group in list.GroupBy(c =>
+                     {
+                         if (roster.TryGetValue(c, out var name)) return "roster:" + name;
+                         return byPrefab.TryGetValue(prefabOf(c), out var names) && names.Count == 1
+                             ? "roster:" + names.First()
+                             : "prefab:" + AssetDatabase.GetAssetPath(prefabOf(c));
+                     }))
+            {
+                var members = group.ToList();
+                // The prefab most of the species' configs spawn.
+                var prefab = members.GroupBy(prefabOf).OrderByDescending(g => g.Count()).First().Key;
+                groups.Add(new SpeciesGroup<T>
+                {
+                    Prefab = prefab,
+                    Configs = members,
+                    Name = group.Key.StartsWith("roster:", StringComparison.Ordinal)
+                        ? group.Key.Substring("roster:".Length)
+                        : SpeciesName(members.Select(c => c.name), prefab),
+                });
+            }
+            return groups;
+        }
+
+        static CodexEntry BuildFloraEntry(GameObject prefab, List<FloraConfigurationSO> configs,
+            Dictionary<Object, List<string>> usage, string name)
+        {
+            var entry = NewEntry(CodexKingdom.Flora, name);
             entry.SourcePrefab = prefab;
             entry.DiscoveryKey = $"see.{Slug(entry.DisplayName)}";
 
@@ -249,8 +326,6 @@ namespace CosmicShore.Editor.Codex
                 Add(variant.Stats, "Children per birth", cfg.OffspringPerBirth > 1
                     ? cfg.OffspringPerBirth.ToString() : null);
                 Add(variant.Stats, "Reproduction cooldown", Seconds(cfg.ReproductionCooldownSeconds));
-                Add(variant.Stats, "Heart size",
-                    HeartSizeLine(cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f));
                 Add(variant.Stats, "Initial seeding", Count(cfg.InitialSpawnCount, "plant"));
                 if (cfg.Element == Element.Charge)
                     Add(variant.Stats, "Elemental law", "Charge armours its leaves — grazing one " +
@@ -265,9 +340,9 @@ namespace CosmicShore.Editor.Codex
         }
 
         static CodexEntry BuildFaunaEntry(GameObject prefab, List<FaunaConfigurationSO> configs,
-            Dictionary<Object, List<string>> usage)
+            Dictionary<Object, List<string>> usage, string name)
         {
-            var entry = NewEntry(CodexKingdom.Fauna, SpeciesName(configs.Select(c => c.name), prefab));
+            var entry = NewEntry(CodexKingdom.Fauna, name);
             entry.SourcePrefab = prefab;
             entry.DiscoveryKey = $"see.{Slug(entry.DisplayName)}";
 
@@ -302,8 +377,6 @@ namespace CosmicShore.Editor.Codex
                 Add(variant.Stats, "Children per birth", cfg.OffspringPerBirth > 1
                     ? cfg.OffspringPerBirth.ToString() : null);
                 Add(variant.Stats, "Reproduction cooldown", Seconds(cfg.ReproductionCooldownSeconds));
-                Add(variant.Stats, "Heart size",
-                    HeartSizeLine(cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f));
                 Add(variant.Stats, "Initial spawn", Count(cfg.InitialSpawnCount, "creature"));
                 if (cfg.BandOuterRadius > 0f)
                     Add(variant.Stats, "Roams", $"{cfg.BandInnerRadius:0}–{cfg.BandOuterRadius:0} " +
@@ -548,12 +621,20 @@ namespace CosmicShore.Editor.Codex
         {
             if (string.IsNullOrWhiteSpace(name)) return name;
             var s = name.Trim();
-            foreach (var element in new[] { " Charge", " Mass", " Space", " Time" })
-                if (s.EndsWith(element, StringComparison.Ordinal))
-                { s = s[..^element.Length]; break; }
-            foreach (var kingdom in new[] { " Flora", " Fauna" })
-                if (s.EndsWith(kingdom, StringComparison.Ordinal))
-                { s = s[..^kingdom.Length]; break; }
+            // Most configs are named "<Species> <Element> <Kingdom> Config Data".
+            foreach (var asset in new[] { " Config Data", " Config" })
+                if (s.EndsWith(asset, StringComparison.Ordinal))
+                { s = s[..^asset.Length]; break; }
+            // The element and the kingdom come in either order ("Tadpole Fauna Charge", "Leech Charge Fauna").
+            for (int pass = 0; pass < 2; pass++)
+            {
+                foreach (var element in new[] { " Charge", " Mass", " Space", " Time" })
+                    if (s.EndsWith(element, StringComparison.Ordinal))
+                    { s = s[..^element.Length]; break; }
+                foreach (var kingdom in new[] { " Flora", " Fauna" })
+                    if (s.EndsWith(kingdom, StringComparison.Ordinal))
+                    { s = s[..^kingdom.Length]; break; }
+            }
             return s.Trim();
         }
 
@@ -609,46 +690,6 @@ namespace CosmicShore.Editor.Codex
             value > 0 ? $"{value} {noun}{(value == 1 ? "" : "s")}" : null;
 
         static string Seconds(float value) => value > 0f ? $"{value:0.##} s" : null;
-
-        /// <summary>
-        /// One lifeform's authored heart size. A non-positive value is the "not authored"
-        /// sentinel, and it is worth SAYING so rather than hiding the row: it means that
-        /// species renders the platform default, which is a real (and usually unintended)
-        /// state a reader of the codex should be able to see. Docs/ECOSYSTEM.md 40.2.
-        /// </summary>
-        static string HeartSizeLine(float authored) => authored > 0f
-            ? $"{authored:0.00} world scale"
-            : $"{LifeFormCrystal.DefaultHeartWorldScale:0.00} world scale (platform default — " +
-              "this variant authors none)";
-
-        /// <summary>
-        /// The BAND every lifeform heart in the project spans, measured from the shipped assets
-        /// rather than restated, so this line cannot drift from what was authored. It also names
-        /// the ceiling, because the band's whole design property is that it stays under the world
-        /// scale at which the collect reward saturates - past that, two visibly different hearts
-        /// pay the same (Docs/ECOSYSTEM.md 40.2).
-        /// </summary>
-        static string HeartSizeBandLine(ElementalCrystalSetSO set)
-        {
-            float lo = float.MaxValue, hi = 0f;
-            foreach (var cfg in LoadAll<FaunaConfigurationSO>())
-                Consider(cfg && cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f);
-            foreach (var cfg in LoadAll<FloraConfigurationSO>())
-                Consider(cfg && cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f);
-
-            void Consider(float v)
-            {
-                if (v <= 0f) return;
-                if (v < lo) lo = v;
-                if (v > hi) hi = v;
-            }
-
-            if (hi <= 0f)
-                return set ? $"{set.DefaultHeartWorldScale:0.00} world scale (nothing authored)" : null;
-
-            return $"{lo:0.00}–{hi:0.00} world scale across the roster — sized to the lifeform " +
-                   $"that carries it, held under {ElementalCrystalSetSO.MaxSafeHeartWorldScale:0.0}";
-        }
 
         static string SummarizeInt(IEnumerable<int?> values)
         {

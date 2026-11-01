@@ -13,8 +13,10 @@ namespace CosmicShore.Utility
         [SerializeField] bool mouseTargetControls;
         [SerializeField] Key RotationToggleKey = Key.LeftBracket;
         bool isRotating = false;
-        public float speed = 10;
-        public Transform target;
+        [SerializeField] float speed = 10;
+        public float Speed => speed;
+        [SerializeField] Transform target;
+        public Transform Target => target;
         float followDistance = 10;
 
         void Update()

@@ -180,7 +180,7 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 | Explosion debris | `Prism.Damage` → `Explode` → `PrismExplosion` | `PrismEffectsManager.ProcessExplosions`: per-frame Burst job computing `pos = p₀ + t·v`, `amount = speed·t`, `opacity = 1 − t/dur` → per-frame `transform.position` + `SetExplosionParams`/MPB writes (`PrismEffectsManager.cs:242-331`). Every output is linear in t. | ❌ |
 | Implosion / consume | `Prism.Consume` → `Implode` → `PrismImplosion` | `ProcessImplosions`: per-frame progress `±t/dur` + per-frame moving-target `RefreshConvergence()` → `SetImplosionParams`/MPB | ❌ (progress) · ⚠ (moving target — see §1) |
 | Destruction state | `SetupDestruction` | One-shot: collider off, render off, spatial `MarkDestroyed`, volume zeroed | ✅ |
-| Restore | `Prism.Restore` | One-shot re-show (`SetRenderVisible(true)`) | ✅ by this law (⚠ it pops in — a continuity-law gap to fix WITH clock-material bloom, not with a CPU animation) |
+| Restore | `Prism.Restore` | One-shot re-show (`SetRenderVisible(true)`) plus, since 2026-10-29, `PrismScaleAnimator.RearmAfterRestore`: the animator `SetupDestruction` turned off is re-armed (a restored prism used to be unable to grow ever again, so the Urchin's restore-then-grow payoff never grew anything) and ONE clock grow stamp blooms it from zero to the size it died at | ✅ by this law; the pop-in gap is closed by the clock bloom (`PrismRestoreTests`) |
 
 ### 3.4 Shields (exotic geometry)
 

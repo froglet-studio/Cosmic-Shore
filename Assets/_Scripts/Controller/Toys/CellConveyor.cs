@@ -63,6 +63,9 @@ namespace CosmicShore.Gameplay
 
         readonly List<TraversalCell> _cells = new();
         readonly List<CellConfigDataSO> _bag = new();      // shuffle-bag of traversal configs
+        readonly List<int> _route = new();                 // a voyage's ordered worlds (indices), or empty
+        readonly List<CellConfigDataSO> _worlds = new();   // the route's index space, unshuffled
+        int _routeNext;
         readonly Plane[] _frustumPlanes = new Plane[6];
         Camera _cam;
 
@@ -122,6 +125,52 @@ namespace CosmicShore.Gameplay
         public event System.Action CellRetired;
 
         /// <summary>
+        /// Called for each traversal cell just before it initializes (its spawners start inside that), with the cell and
+        /// its position on the route (-1 off a route): where a route tunes its own worlds, such as an Ark escort raising a
+        /// cell's population past the corridor's cap or starting it hostile. Unset, every cell is the corridor's own.
+        /// </summary>
+        public System.Action<Cell, int> PrepareCell;
+
+        /// <summary>True while the corridor sails an ordered ROUTE (a voyage leg) instead of the shuffle-bag.</summary>
+        public bool HasRoute => _route.Count > 0;
+
+        /// <summary>True once every world on the route has been stood: the Ark is at (or bound for) the last.</summary>
+        public bool RouteExhausted => _route.Count > 0 && _routeNext >= _route.Count;
+
+        /// <summary>
+        /// Sail <paramref name="worlds"/> in order (indices into <see cref="TraversalWorlds"/>, modulo its count) instead
+        /// of the shuffle-bag: the voyage's leg (Docs/Voyages/SLICE.md §1.5). Once the last is stood, no further cell
+        /// stands, so <see cref="AdvancePastTarget"/> returns false at the last world and the run holds there until a
+        /// new route is set. Null or empty goes back to the bag. Safe before <see cref="Begin"/> and mid-voyage.
+        /// </summary>
+        public void SetRoute(IReadOnlyList<int> worlds)
+        {
+            _route.Clear();
+            _routeNext = 0;
+            if (worlds != null) _route.AddRange(worlds);
+        }
+
+        /// <summary>
+        /// The worlds a corridor may stand, in their authored order: <paramref name="authored"/> when it names any, else
+        /// <paramref name="template"/>'s own configs, without the environment-free ones (open water, which the corridor
+        /// already has between cells) and without the crystal-wormhole world (its poles would pull the Ark). The
+        /// shuffle-bag and a route both draw from this; a route's indices count into it.
+        /// </summary>
+        public static void TraversalWorlds(IReadOnlyList<CellConfigDataSO> authored, Cell template,
+            List<CellConfigDataSO> into)
+        {
+            into.Clear();
+            IReadOnlyList<CellConfigDataSO> source = authored is { Count: > 0 }
+                ? authored
+                : template ? template.AvailableConfigs : null;
+            if (source == null) return;
+            foreach (var config in source)
+                if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableCrystalWormhole
+                    && !into.Contains(config))
+                    into.Add(config);
+        }
+
+        /// <summary>
         /// Stand the FIRST traversal cell down the player's heading. Call inside the run's
         /// arena-build bracket: its environment lay joins the raised veil's hold and the veil
         /// releases when it is laid, created and grown. Only ONE cell stands behind the veil —
@@ -152,6 +201,7 @@ namespace CosmicShore.Gameplay
 
             _template = Cell.FindCellContaining(origin);
             if (!_template) _template = Cell.FindNearestActiveCell(origin);
+            _worlds.Clear();
             if (!_template || !_template.RuntimeData)
             {
                 CSDebug.LogWarning($"[Arkway] No scene cell to clone traversal cells from " +
@@ -307,6 +357,10 @@ namespace CosmicShore.Gameplay
             // ground the Ark has to cross. Collapsing the control zone (which this used to do)
             // made the whole cell legacy opposing-domain territory, which is what left the Ark
             // untouchable by any swarm wearing its own colour.
+
+            // A route's own tuning for this world (an Ark escort's per-cell threat), after the voyage's and before the
+            // spawner starts. -1 when the corridor sails the shuffle-bag.
+            PrepareCell?.Invoke(cell, _route.Count > 0 ? _routeNext - 1 : -1);
 
             if (!cell.InitializeSatellite(config))
             {
@@ -469,21 +523,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         CellConfigDataSO NextConfig()
         {
+            if (_route.Count > 0)
+            {
+                // A voyage leg: the next world in order, and nothing once the route is spent.
+                if (_routeNext >= _route.Count) return null;
+                if (_worlds.Count == 0)
+                {
+                    // An Ark escort names its worlds exactly, environment or not (a bare world's flora and fauna are
+                    // the whole of it); every other route keeps the traversal filter.
+                    if (_cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) _worlds.AddRange(_cfg.Cells);
+                    else TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                }
+                if (_worlds.Count == 0) return null;
+                int index = _route[_routeNext++] % _worlds.Count;
+                return _worlds[index < 0 ? index + _worlds.Count : index];
+            }
+
             if (_bag.Count == 0)
             {
-                var authored = _cfg?.Cells;
-                IReadOnlyList<CellConfigDataSO> source = authored is { Count: > 0 }
-                    ? authored
-                    : _template ? _template.AvailableConfigs : null;
-                if (source == null) return null;
-
                 // A crystal-wormhole world is skipped too: it lays nothing either, and its poles are
                 // live wells that would pull and push the Ark and every vessel in the corridor
                 // (Docs/CRYSTAL_WORMHOLE.md). An authored Cells list can still name it on purpose.
-                foreach (var config in source)
-                    if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableCrystalWormhole
-                        && !_bag.Contains(config))
-                        _bag.Add(config);
+                TraversalWorlds(_cfg?.Cells, _template, _bag);
 
                 // Fisher-Yates on the seeded stream, so a seeded voyage is reproducible.
                 for (int i = _bag.Count - 1; i > 0; i--)

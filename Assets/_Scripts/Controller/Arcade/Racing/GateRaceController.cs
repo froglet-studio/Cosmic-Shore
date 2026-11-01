@@ -79,6 +79,16 @@ namespace CosmicShore.Gameplay
                  "reported course is reproduced.")]
         [SerializeField] protected int courseSeed;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played for the LOCAL pilot each time they thread a gate. Shipped empty " +
+                 "(FMOD convention): leave empty for silence until a sound is authored. Every gate " +
+                 "race inherits this slot, so wire it per mode scene.")]
+        [SerializeField] FMODUnity.EventReference gateThreadedEvent;
+
+        [Tooltip("FMOD event played for the LOCAL pilot when they thread the LAST gate of the course " +
+                 "(replaces the gate sound on that crossing). Shipped empty; leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference courseFinishedEvent;
+
         [Tooltip("How long the server keeps re-trying a course build that could not run yet. " +
                  "A course built from PURE GEOMETRY (Switchback, Headlong) either works on the " +
                  "first frame or never, and spends this on nothing; a course built from SCENE " +
@@ -138,9 +148,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool aiCommitFromApproachPoint;
 
         [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
-                 "gate. The crystal is the Dolphin's only blast trigger, and the external target " +
-                 "provider below replaces AIPilot's own crystal seeking outright - so without this " +
-                 "an AI could never fire the mode's whole interference layer. 0 disables the detour.")]
+                 "gate - read ONLY by a mode whose race needs crystals (AIDetoursForCrystals). A racing " +
+                 "AI flies the course's waypoints and nothing else (Yash, 2026-10-26), so in every gate " +
+                 "race today this value is not used, whatever the scene says.")]
         [SerializeField, Min(0f)] float aiCrystalDetourSlack = 220f;
 
         [Tooltip("Seconds between an AI's scans of the live crystal registry. The chosen crystal " +
@@ -276,6 +286,7 @@ namespace CosmicShore.Gameplay
         {
             var request = new RaceCourseRequest(seed, Intensity, gateCount, inner, outer,
                                                 ResolveCourseConfig());
+            PrepareCourseSource(CourseSource);
             var course = CourseSource.Build(request, out string failure);
             if (course == null) CourseFailureDetail = failure;
             return course;
@@ -286,6 +297,36 @@ namespace CosmicShore.Gameplay
         /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
         /// the first build attempt. A mode whose course is pure geometry ignores it.
         /// </summary>
+        /// <summary>
+        /// Last word on the course source before each build, on the SERVER: a mode with a per-match knob the
+        /// source reads (Switchback's fun type) sets it here. Default: nothing.
+        /// </summary>
+        protected virtual void PrepareCourseSource(RaceCourseSource source) { }
+
+        /// <summary>
+        /// A small per-match integer the server broadcasts WITH the course, so every peer lays the same mode
+        /// geometry for it (Switchback: its <c>SwitchbackFunType</c>). The server answers from its own config; a
+        /// client reads <see cref="ReceivedCourseVariant"/>, set before <see cref="OnCourseRaised"/>. Default 0.
+        /// </summary>
+        protected virtual int CourseVariant => 0;
+
+        /// <summary>The variant the server sent with the course; -1 until a course arrives (and on the server).</summary>
+        protected int ReceivedCourseVariant { get; private set; } = -1;
+
+        /// <summary>The seed this match's course is generated from, drawn ONCE per match on the server. Default:
+        /// the authored seed, else <see cref="CourseSeedOverride.Forced"/>, else a fresh draw.</summary>
+        protected virtual int PickCourseSeed() => CourseSeedOverride.Pick(courseSeed);
+
+        /// <summary>The seed the current course was generated from (server), or 0.</summary>
+        protected int CourseSeedUsed => _pendingCourseSeed;
+
+        /// <summary>
+        /// A mode's OTHER way to thread the gate at <paramref name="raceIndex"/> (ring <paramref name="ringIndex"/>),
+        /// tested on the same owner-simulated hull segment as the ring itself: Switchback's shortcut rings. True
+        /// credits the gate exactly as threading it would. Default: none.
+        /// </summary>
+        protected virtual bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) => false;
+
         protected virtual CellConfigDataSO ResolveCourseConfig()
         {
             var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
@@ -314,11 +355,47 @@ namespace CosmicShore.Gameplay
         protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
 
         /// <summary>
-        /// The extra distance an AI flies for a crystal on the way to its next ring (<see cref="aiCrystalDetourSlack"/>).
-        /// 0 means an AI never steers at a crystal in this mode: it flies the course's rings and nothing else. A mode
-        /// whose crystals are not part of the race overrides it to 0 (Regatta).
+        /// <b>A racing AI flies the waypoints, not the crystals</b> (Yash, 2026-10-26: "while playing any racing game
+        /// mode, AI should not go for crystals. It should only focus on waypoints. If the crystals are the waypoints,
+        /// then go for crystals"). Every gate race used to let an AI swing up to 220 u off its line for any crystal near
+        /// its route (Regatta alone opted out, 2026-10-17); in Switchback the AI Dolphins took crystals instead of the
+        /// gates, losing the approach to the mouth each time. A mode whose race really needs a crystal (one that IS a
+        /// waypoint, or one the vessel cannot finish without) overrides this to true; none does today. In such a mode
+        /// <see cref="aiCrystalDetourSlack"/> bounds the detour.
         /// </summary>
-        protected virtual float AICrystalDetourSlack => aiCrystalDetourSlack;
+        protected virtual bool AIDetoursForCrystals => false;
+
+        /// <summary>
+        /// The extra distance an AI flies for a crystal on the way to its next ring: <see cref="aiCrystalDetourSlack"/> in
+        /// a mode that opts in (<see cref="AIDetoursForCrystals"/>), else 0 - the AI never steers at a crystal and flies
+        /// the course's rings and nothing else.
+        /// </summary>
+        protected virtual float AICrystalDetourSlack => AIDetoursForCrystals ? aiCrystalDetourSlack : 0f;
+
+        /// <summary>
+        /// The crystal detour budget for ONE pilot: <see cref="AICrystalDetourSlack"/> unless the mode says otherwise.
+        /// Serpent Time answers per pilot, because there a crystal is a sniper round and only a pilot short of rounds
+        /// should go out of its way for one.
+        /// </summary>
+        protected virtual float AICrystalDetourSlackFor(IPlayer pilot) => AICrystalDetourSlack;
+
+        /// <summary>
+        /// Did <paramref name="prev"/> to <paramref name="cur"/> thread course ring <paramref name="ringIndex"/>? The ring's
+        /// own mouth by default. A mode that stands several rings at one gate (Serpent Time's clusters, any one of which
+        /// counts) answers for all of them; detection, credit and the server's validation are unchanged.
+        /// </summary>
+        protected virtual bool ThreadsGate(int ringIndex, Vector3 prev, Vector3 cur) =>
+            _rings[ringIndex] && _rings[ringIndex].CrossedMouth(prev, cur);
+
+        /// <summary>
+        /// The ring an AI should fly for the gate it is on: <paramref name="gate"/> (the course's) by default. Asked every
+        /// time the AI's steering is, before anything reads the gate, so a mode with several rings at one gate picks the
+        /// one this pilot can get through (Serpent Time: the open ring of the cluster).
+        /// </summary>
+        protected virtual RaceGate ChooseAIGate(IPlayer pilot, int threaded, int ringIndex, RaceGate gate) => gate;
+
+        /// <summary>The LOCAL pilot's next course ring changed (-1 = none). For a mode that lights rings of its own.</summary>
+        protected virtual void OnLocalNextGateChanged(int previousRing, int nextRing) { }
 
         /// <summary>
         /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
@@ -393,6 +470,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// True when the point <see cref="TryOverrideAim"/> just returned is a LEAD POINT the pilot steers by rather than a
+        /// place to reach (<see cref="AIPilot.MarkAimAsPathLead"/>), so the orbit break-off leaves it alone. Asked only when
+        /// the override answered. Waystation's belly aim is one: a point off the nose that turns the hull, never reached.
+        /// </summary>
+        protected virtual bool OverrideAimIsLead(IPlayer pilot) => false;
+
+        /// <summary>
+        /// A direction the pilot should ROLL its belly onto while it steers at the point <see cref="TryOverrideAim"/> just
+        /// returned (<see cref="AIPilot.MarkBellyTarget"/>), or false to keep the bank the stick couples to the yaw. Asked
+        /// only when the override answered. Waystation's drop aim: hold the heading square to the next cluster and roll
+        /// the belly onto it.
+        /// </summary>
+        protected virtual bool OverrideBellyTarget(IPlayer pilot, out Vector3 worldDirection)
+        {
+            worldDirection = default;
+            return false;
+        }
+
+        /// <summary>
         /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
         /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
         /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
@@ -424,12 +520,16 @@ namespace CosmicShore.Gameplay
         // Course-build retry, server only. The seed is captured ONCE so a course is never a
         // function of how many frames the scene took to become answerable.
         int _pendingCourseSeed;
+
+        /// <summary>The seed this match's course was built from (0 until it is drawn), for the match replay.</summary>
+        public int CourseSeed => _pendingCourseSeed;
         bool _awaitingCourse;
         float _courseRetryDeadline;
         bool _finalResultsSent;
         bool _arenaBuildAnnounced;
         bool _warnedCourseMissing;
         int _litGate = -1;
+        int _litProgress = -1;
 
         // The race beats as toasts (halfway, lead change, home stretch, final lap). A local
         // poll over the replicated gate counts, run on every peer - see DomainRaceToasts.
@@ -564,7 +664,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void BeginCourseGeneration()
         {
-            _pendingCourseSeed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            _pendingCourseSeed = PickCourseSeed();
             _courseRetryDeadline = Time.time + CourseBuildTimeout;
             _awaitingCourse = true;
             TickCourseGeneration();
@@ -678,34 +778,39 @@ namespace CosmicShore.Gameplay
 
         void BroadcastCourse(IReadOnlyList<RaceGate> course, ClientRpcParams target)
         {
-            // Six floats per gate, interleaved into one array: the same primitive-array shape the
-            // final-score snapshots use, which is the serialization this project has proven.
-            var packed = new float[course.Count * 6];
+            // Seven floats per gate, interleaved into one array: the same primitive-array shape the
+            // final-score snapshots use, which is the serialization this project has proven. The seventh is the
+            // gate's OWN radius - Switchback's needle rings are smaller than the rest.
+            var packed = new float[course.Count * FloatsPerGate];
             for (int i = 0; i < course.Count; i++)
             {
-                int o = i * 6;
+                int o = i * FloatsPerGate;
                 packed[o + 0] = course[i].Position.x;
                 packed[o + 1] = course[i].Position.y;
                 packed[o + 2] = course[i].Position.z;
                 packed[o + 3] = course[i].Axis.x;
                 packed[o + 4] = course[i].Axis.y;
                 packed[o + 5] = course[i].Axis.z;
+                packed[o + 6] = course[i].Radius;
             }
-            SyncCourse_ClientRpc(packed, course[0].Radius, target);
+            SyncCourse_ClientRpc(packed, CourseVariant, target);
         }
 
+        const int FloatsPerGate = 7;
+
         [ClientRpc]
-        void SyncCourse_ClientRpc(float[] packed, float ringRadius, ClientRpcParams rpcParams = default)
+        void SyncCourse_ClientRpc(float[] packed, int variant, ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;   // the server laid its own copy before broadcasting
 
-            var course = new List<RaceGate>(packed.Length / 6);
-            for (int o = 0; o + 5 < packed.Length; o += 6)
+            var course = new List<RaceGate>(packed.Length / FloatsPerGate);
+            for (int o = 0; o + FloatsPerGate - 1 < packed.Length; o += FloatsPerGate)
                 course.Add(new RaceGate(
                     new Vector3(packed[o], packed[o + 1], packed[o + 2]),
                     new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
-                    ringRadius));
+                    packed[o + 6]));
 
+            ReceivedCourseVariant = variant;
             ApplyCourse(course);
         }
 
@@ -788,6 +893,7 @@ namespace CosmicShore.Gameplay
             _runs.Clear();
             _courseBuilt = false;
             _litGate = -1;
+            _litProgress = -1;
         }
 
         /// <summary>
@@ -832,6 +938,7 @@ namespace CosmicShore.Gameplay
             int next = gameData.LocalPlayer?.RoundStats != null
                 ? gameData.LocalPlayer.RoundStats.SwitchesThreaded
                 : -1;
+            PlayLocalThreadSound(next);
             if (next >= RaceLength) next = -1;   // finished: nothing to light
             if (next >= 0) next = RingIndexFor(next);
             if (next == _litGate) return;
@@ -842,7 +949,23 @@ namespace CosmicShore.Gameplay
             if (next >= 0 && _rings[next])
                 _rings[next].SetIsNextForLocalPilot(true);
 
+            OnLocalNextGateChanged(_litGate, next);
             _litGate = next;
+        }
+
+        /// <summary>
+        /// The local pilot's per-gate reward sound. Driven from the same live progress as the lit
+        /// ring, so it plays once per forward step and stays quiet on a rollback (progress going
+        /// DOWN) and on the first read after a course build (<c>_litProgress</c> = -1).
+        /// </summary>
+        void PlayLocalThreadSound(int progress)
+        {
+            int previous = _litProgress;
+            _litProgress = progress;
+            if (previous < 0 || progress <= previous) return;
+
+            var sound = progress >= RaceLength && !courseFinishedEvent.IsNull ? courseFinishedEvent : gateThreadedEvent;
+            if (!sound.IsNull) CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(sound);
         }
 
         /// <summary>
@@ -996,10 +1119,11 @@ namespace CosmicShore.Gameplay
                 int index = run.Optimistic;
                 if (index < 0 || index >= RaceLength) continue;   // finished the course
 
-                var ring = _rings[RingIndexFor(index)];
-                if (!ring) continue;
+                int ringNo = RingIndexFor(index);
+                if (!_rings[ringNo]) continue;
                 bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
-                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) continue;
+                if (!(hullThreads && ThreadsGate(ringNo, prev, cur)) && !(probeFlew && ThreadsGate(ringNo, probePrev, probeCur))
+                    && !(hullThreads && ThreadsAlternate(index, ringNo, prev, cur))) continue;
 
                 run.Optimistic = index + 1;
                 run.LastReportTime = Time.time;
@@ -1075,13 +1199,12 @@ namespace CosmicShore.Gameplay
         /// that drifts just past the plane without threading would otherwise see the sides swap
         /// and swing away - the same latch Dog Fight's break-off needed, for the same reason.</para>
         ///
-        /// <para><b>Plus an on-the-way crystal detour.</b> Installing an external target provider
-        /// replaces AIPilot's own crystal seeking outright - the trap The Bends records - and a
-        /// crystal is the Dolphin's ONLY blast trigger, so a racing AI would otherwise never fire
-        /// the mode's whole interference layer. The detour is bounded by a distance budget rather
-        /// than by a radius: a crystal is taken only when going through it costs less than
-        /// <see cref="aiCrystalDetourSlack"/> of extra flying, so it can never pull a pilot off
-        /// the course, and the test stops holding the instant the pilot is past it.</para>
+        /// <para><b>No crystals.</b> Installing an external target provider replaces AIPilot's own
+        /// crystal seeking outright, so a racing AI flies the course's waypoints and nothing else
+        /// (<see cref="AIDetoursForCrystals"/>, 2026-10-26). A mode whose race needs crystals opts in
+        /// to an on-the-way detour, bounded by a distance budget rather than a radius: a crystal is
+        /// taken only when going through it costs less than <see cref="aiCrystalDetourSlack"/> of
+        /// extra flying, and the test stops holding the instant the pilot is past it.</para>
         ///
         /// <para>Steering only: no ability, throttle or weapon is touched here, and the provider
         /// is per-pilot, so nothing leaks into another mode.</para>
@@ -1089,14 +1212,13 @@ namespace CosmicShore.Gameplay
         void ArmRacers()
         {
             Vector3 centre = ResolveCellCentre();
-            var handicapLevel = RaceHandicapLevel();
 
             // Every AI seat, plus a human's hull the AI is holding when the race starts (PilotControl, the
             // Third Eye's "AI flies" toggle): that hull races on the same steering as a seat.
             foreach (var p in gameData.Players)
             {
                 if (p == null || (!p.IsInitializedAsAI && !HeldByAutopilot(p))) continue;
-                ArmRacer(p, centre, handicapLevel);
+                ArmRacer(p, centre, RaceHandicapLevel(p));
             }
         }
 
@@ -1107,15 +1229,16 @@ namespace CosmicShore.Gameplay
         public bool ArmAIPilot(IPlayer player)
         {
             if (!IsServer || player == null) return false;
-            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel());
+            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel(player));
             return true;
         }
 
-        // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
-        // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
-        // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
-        SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
-            ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+        // The lobby's AI difficulty (every mode offers it, AIDifficultyRules.IsOfferedFor):
+        // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO). Per PILOT: each AI races
+        // at its own seat's level (picked with its pedestal selected), else the match's.
+        SkimRaceHandicapLevel RaceHandicapLevel(IPlayer pilot) => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+            ? SkimRaceDifficultySO.Load().For(gameData.AIDifficultyFor(pilot))
             : default;
 
         // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
@@ -1144,6 +1267,9 @@ namespace CosmicShore.Gameplay
             // Seeded per seat and per race, so each AI errs differently every race.
             var handicap = handicapLevel.IsNone ? null
                 : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
+            // The race's ring handicap IS this pilot's difficulty: drop the platform belief its spawn gave it
+            // (ConfigureAIPilotForMode installs one on every offered mode), or each mistake would be made twice.
+            pilot.SetTargetBelief(null);
 
             pilot.SetExternalTargetProvider(() =>
             {
@@ -1163,6 +1289,8 @@ namespace CosmicShore.Gameplay
                 // pilot latches on or launches off.
                 if (TryOverrideAim(captured, out Vector3 overridden))
                 {
+                    if (OverrideAimIsLead(captured)) pilot.MarkAimAsPathLead();
+                    if (OverrideBellyTarget(captured, out Vector3 belly)) pilot.MarkBellyTarget(belly);
                     pilot.ReportObjective(AIPilot.ObjectivePhase.Override, overridden);
                     return overridden;
                 }
@@ -1179,7 +1307,8 @@ namespace CosmicShore.Gameplay
                 // and loiter for the rest of the race. lockedIndex stays RAW on purpose -
                 // arriving at the same ring on the next lap IS a new leg.
                 int ringNo = RingIndexFor(index);
-                var gate = _course[ringNo];
+                // Which mouth of this gate the pilot flies for (a mode with several rings per gate picks one).
+                var gate = ChooseAIGate(captured, index, ringNo, _course[ringNo]);
                 Vector3 self = selfTf.position;
                 int lap = DiagnosticLap(index);
 
@@ -1234,16 +1363,15 @@ namespace CosmicShore.Gameplay
                         aiCommitDistance, AICommitFromApproachPoint);
                 }
 
-                // A crystal ON THE WAY, if there is one. Installing an external target
-                // provider replaces AIPilot's own crystal seeking outright (the trap Bends
-                // records), so without this an AI would never collect one, never fire the
-                // blast, and the mode's interference layer would be human-only.
-                if (AICrystalDetourSlack > 0f)
+                // A crystal ON THE WAY, only in a mode whose race needs crystals (AIDetoursForCrystals; none
+                // today): a racing AI flies the waypoints, never a crystal (Yash, 2026-10-26).
+                float detourSlack = AICrystalDetourSlackFor(captured);
+                if (detourSlack > 0f)
                 {
                     if (Time.time >= nextCrystalScan)
                     {
                         nextCrystalScan = Time.time + aiCrystalScanSeconds;
-                        detour = FindDetourCrystal(self, gate.Position, captured.Domain);
+                        detour = FindDetourCrystal(self, gate.Position, captured.Domain, detourSlack);
                     }
 
                     // Re-tested every frame, not latched: "on the way" is a cheap monotone
@@ -1253,7 +1381,7 @@ namespace CosmicShore.Gameplay
                     {
                         Vector3 c = detour.transform.position;
                         if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
-                            <= Vector3.Distance(self, gate.Position) + AICrystalDetourSlack)
+                            <= Vector3.Distance(self, gate.Position) + detourSlack)
                         {
                             pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, c, ringNo, lap);
                             return c;
@@ -1300,7 +1428,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The nearest crystal this pilot may collect that costs less than
-        /// <see cref="aiCrystalDetourSlack"/> of extra flying between here and the next gate.
+        /// <paramref name="slack"/> (<see cref="AICrystalDetourSlackFor"/>) of extra flying between here and the next gate.
         ///
         /// <para>Filtered to MANAGED crystals (<c>Crystal.CrystalManager</c> is set only by
         /// <c>CrystalManager.SpawnWithDomain</c>) for the reason RampageObjectiveProvider
@@ -1308,10 +1436,10 @@ namespace CosmicShore.Gameplay
         /// every crystal a Dolphin seeds, and steering at those would take the pilot off the
         /// course chasing whatever just died.</para>
         /// </summary>
-        Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain)
+        Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain, float slack)
         {
             var crystals = Crystal.Active;
-            float budget = Vector3.Distance(self, gate) + AICrystalDetourSlack;
+            float budget = Vector3.Distance(self, gate) + slack;
 
             Crystal best = null;
             float bestCost = float.MaxValue;

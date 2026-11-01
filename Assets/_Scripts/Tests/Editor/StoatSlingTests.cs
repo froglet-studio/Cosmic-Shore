@@ -388,5 +388,146 @@ namespace CosmicShore.Tests
             StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
+
+        // ------------------------------------------------------------------ the three modes and the warp gate (STOAT_DIPOLE.md §1f)
+
+        static StoatGateMath.Settings ShippedGate => new()
+        {
+            Ahead = 90f, LengthMin = 120f, LengthMax = 600f, Mouth = 5f, HoldMaxSeconds = 3f, CollapseSeconds = 0.8f,
+            AimConeDegrees = 25f, WarpShare = 1.5f, BoostSeconds = 2.5f, FunnelRadius = 30f, FunnelRate = 4f,
+        };
+
+        [Test]
+        public void ModeCycle_BStepsMassTimeGateAndBack()
+        {
+            Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.Next(StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(StoatModeExecutor.Mode.Gate, StoatModeExecutor.Next(StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Next(StoatModeExecutor.Mode.Gate));
+        }
+
+        [Test]
+        public void ModeCycle_PressesToCountsTheWayRound()
+        {
+            Assert.AreEqual(0, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(2, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Gate));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Gate, StoatModeExecutor.Mode.Mass));
+        }
+
+        [Test]
+        public void ModeCycle_OnlyTimeFliesTheOrbit()
+        {
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Mass));
+            Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Time));
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Gate));
+            Assert.AreEqual(0.5f, StoatModeExecutor.MassCardTarget(StoatModeExecutor.Mode.Gate));
+        }
+
+        [Test]
+        public void Gate_TheSqueezeStretchesIt_AndTheInverseFindsTheSqueeze()
+        {
+            Assert.AreEqual(120f, StoatGateMath.Length(0f, ShippedGate, 1.5f), 1e-4f);
+            Assert.AreEqual(600f, StoatGateMath.Length(1f, ShippedGate, 1.5f), 1e-3f);
+            float half = StoatGateMath.Length(0.5f, ShippedGate, 1.5f);
+            Assert.Less(half, 360f, "the squeeze curve: half a squeeze is less than half the stretch");
+            Assert.AreEqual(0.5f, StoatGateMath.SqueezeFor(half, ShippedGate, 1.5f), 1e-4f);
+        }
+
+        [Test]
+        public void Gate_AStraightEntryIntoALongGate_EarnsTheWholeWarp()
+        {
+            var sink = new Vector3(0f, 0f, 90f);
+            Assert.AreEqual(1f, StoatGateMath.Quality(Vector3.forward, sink, sink + Vector3.forward * 600f, ShippedGate), 1e-4f);
+            Assert.AreEqual(0.4f, StoatGateMath.Quality(Vector3.forward, sink, sink + Vector3.forward * 120f, ShippedGate), 1e-4f,
+                "the shortest gate, straight: 0.4");
+            var angled = Quaternion.Euler(0f, 12.5f, 0f) * Vector3.forward;
+            Assert.AreEqual(0.5f, StoatGateMath.Quality(angled, sink, sink + Vector3.forward * 600f, ShippedGate), 1e-3f,
+                "half the aim cone off the line: half the warp");
+            Assert.AreEqual(0f, StoatGateMath.Quality(Vector3.right, sink, sink + Vector3.forward * 600f, ShippedGate), 1e-6f);
+            float top = StoatGateMath.WarpTop(3f, 1.5f);
+            Assert.AreEqual(4f, top, 1e-5f);
+            Assert.AreEqual(4f, StoatGateMath.WarpTarget(1f, top), 1e-5f);
+            Assert.AreEqual(1f, StoatGateMath.WarpTarget(0f, top), 1e-5f);
+        }
+
+        [Test]
+        public void Gate_LetGo_FallsTogetherInTheCollapseTime()
+        {
+            Assert.AreEqual(375f, StoatGateMath.CollapseSpeed(300f, 0.8f), 1e-3f);
+            Assert.AreEqual(150f, StoatGateMath.CollapseSpeed(60f, 0.4f), 1e-3f);
+        }
+
+        [Test]
+        public void Gate_TheFunnel_DrawsTheOwnerOntoTheMouth_OnlyAheadAndNear()
+        {
+            var sink = new Vector3(10f, 0f, 20f);
+            var step = StoatGateMath.FunnelStep(Vector3.zero, Vector3.forward, sink, ShippedGate, 0.1f);
+            Assert.Greater(step.x, 0f, "toward the line into the mouth");
+            Assert.AreEqual(0f, step.z, 1e-6f, "sideways only: the hull's own flight carries it in");
+            Assert.AreEqual(Vector3.zero, StoatGateMath.FunnelStep(Vector3.zero, Vector3.forward, new Vector3(10f, 0f, -20f), ShippedGate, 0.1f),
+                "behind: nothing");
+            Assert.AreEqual(Vector3.zero, StoatGateMath.FunnelStep(Vector3.zero, Vector3.forward, new Vector3(10f, 0f, 200f), ShippedGate, 0.1f),
+                "out of reach: nothing");
+        }
+
+        [Test]
+        public void Gate_Autopilot_OpensAGateThatEndsShortOfItsTarget()
+        {
+            Assert.AreEqual(330f, StoatGateMath.AutopilotLength(500f, ShippedGate), 1e-4f);
+            Assert.AreEqual(120f, StoatGateMath.AutopilotLength(100f, ShippedGate), 1e-4f, "never shorter than the shortest gate");
+            Assert.AreEqual(600f, StoatGateMath.AutopilotLength(5000f, ShippedGate), 1e-4f);
+        }
+
+        [Test]
+        public void Hud_TheModeCardShowsAnIconPerMode()
+        {
+            var text = Read("Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab");
+            foreach (var (field, guid) in new[]
+                     {
+                         ("massModeIcon", "707ac0afea37451ef31b5be8eb09cdb2"),
+                         ("timeModeIcon", "fb6ff66c748d7560d236e89894823447"),
+                         ("gateModeIcon", "b49cdba89db0551eae62a4a8eeb5cb1a"),
+                     })
+            {
+                StringAssert.Contains($"  {field}: {{fileID: 21300000, guid: {guid}, type: 3}}\n", text, field);
+                Assert.IsTrue(File.Exists(AssetDatabasePathOf(guid)), $"{field}'s sprite is missing");
+            }
+        }
+
+        static string AssetDatabasePathOf(string guid)
+        {
+            foreach (var meta in Directory.GetFiles("Assets/_Graphics/Icons/AbilityIcons/Stoat", "*.png.meta"))
+                if (File.ReadAllText(meta).Contains($"guid: {guid}")) return meta.Substring(0, meta.Length - ".meta".Length);
+            return "";
+        }
+
+        [Test]
+        public void Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo()
+        {
+            // On a phone the Mass card is a button that raises its control's input (Button2Action, B); the prefab's touch
+            // overrides must route that input to the mode switch, or the three modes are pad-only.
+            var map = Read(Map);
+            StringAssert.Contains("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", map);
+            StringAssert.Contains("    Input: 7\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: Armoured Wake\n", map);
+            var prefab = Read(Prefab);
+            int touch = prefab.IndexOf("  _touchActionOverrides:\n", System.StringComparison.Ordinal);
+            int pad = prefab.IndexOf("  _gamepadActionOverrides:\n", System.StringComparison.Ordinal);
+            Assert.That(touch, Is.GreaterThan(0).And.LessThan(pad), "the Stoat has touch overrides");
+            StringAssert.Contains("  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n",
+                prefab.Substring(touch, pad - touch), "touch B is StoatModeAction");
+        }
+
+        [Test]
+        public void ModeAction_ShipsTheGatesNumbers()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset");
+            foreach (var row in new[] { "gateAhead: 90\n", "gateLengthMin: 120\n", "gateLengthMax: 600\n", "gateMouthRadius: 5\n",
+                         "gateHoldMaxSeconds: 3\n", "gateCollapseSeconds: 0.8\n", "gateAimConeDegrees: 25\n", "gateWarpShare: 1.5\n",
+                         "gateBoostSeconds: 2.5\n", "gateFunnelRadius: 30\n", "autopilotGateConeDegrees: 12\n" })
+                StringAssert.Contains("  " + row, text);
+            StringAssert.Contains("gateModeEvent:", text);
+            StringAssert.DoesNotContain("drive", text);
+            StringAssert.DoesNotContain("hybrid", text);
+        }
     }
 }

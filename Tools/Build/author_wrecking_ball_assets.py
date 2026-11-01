@@ -110,13 +110,14 @@ EXISTING["BlobSharkFauna"] = lib.existing_guid(
 # ── The race ─────────────────────────────────────────────────────────────────
 # Hostile prisms a domain must destroy. Rampage races to 2000 in a forest of 59-295 plants;
 # this court holds 35-59, so the target is lower or a match would end on bare walls. Kept in
-# sync with EndConditionOverridesSO.DefaultWreckingBallPrismTarget.
-PRISM_TARGET = 1500
+# sync with EndConditionOverridesSO.DefaultWreckingBallPrismTarget. 1500 until 2026-10-26: a solo
+# editor run had not reached it by 178 s, so 650 aims an experienced match near 90 s.
+PRISM_TARGET = 650
 
 # Comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): a quarter of
-# the race behind (375 prisms) buys 2.25 element levels. The assert below is the gate this
+# the race behind (~162 prisms) buys 2.275 element levels (0.006 bought 2.25 at the old 1500). The assert below is the gate this
 # family keeps re-learning.
-COMEBACK_RATE = 0.006
+COMEBACK_RATE = 0.014
 
 # ── The court, and the forest inside it ──────────────────────────────────────
 # ONE radius at every intensity (WreckingBallSettingsSO.courtRadiusByIntensity says why): the

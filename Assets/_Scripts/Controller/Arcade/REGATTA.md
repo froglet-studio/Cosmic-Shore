@@ -40,7 +40,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
 | **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 840 u/s (1200 before the 2026-09-25 retune) | none, **by design** — the hull ploughs prisms aside (`RhinoPloughPrismEffect`) and ramming costs no speed ("the bulldozer ignores mass", recorded in the Time row's description since 2026-10-16) |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
-| **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
+| **Serpent** | flies beside it | 4 charges × 6 s at 160 u/s, no clock regen (refills only while its wall eats its trail, 2026-10-31) | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
 | **Scarab** | flies beside it | 216 u/s ceiling, ×1.5 at Time 10 | none wired |
 | **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the pathfinder's WARP: the flight clock ×2.5 while its pair bends the path (Time → ×5); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
@@ -282,12 +282,13 @@ after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolp
 **No AI targets a crystal in Regatta (2026-10-17, Yash):** *"in Regatta no AI should target an omni crystal; only
 the waypoints of the track."*
 - **The rule:** every Regatta AI steers for the course's rings, and for its rail while it rides one.
-- **How:** `RegattaController.AICrystalDetourSlack` is 0 in code. Every other gate race still lets an AI swing up to
-  `aiCrystalDetourSlack` (220 u in the scenes) for a crystal on its way, and `MinigameRegatta.unity` serializes 220
-  too. The code value wins, so no scene edit can turn the detour back on.
+- **How:** since 2026-10-26 the rule is every gate race's (Yash: "while playing any racing game mode, AI should not go
+  for crystals"): `GateRaceController.AIDetoursForCrystals` is false in code, so `aiCrystalDetourSlack` (220 u in the
+  scenes) is read only by a mode that opts in, and none does. No scene edit can turn the detour back on. (2026-10-17 to
+  10-26 it was Regatta's own override, `RegattaController.AICrystalDetourSlack` = 0.)
 - **Why:** in Yash's editor flights, rival AIs came within 20 u of crystals whenever the recording could see one (the
   Manta, Dolphin, Sparrow and Serpent beside omni crystals; the Rhino beside others).
-- **Test:** `RegattaNoCrystalTargetTests`, with Headlong as the negative control.
+- **Test:** `RaceAIWaypointsOnlyTests` (was `RegattaNoCrystalTargetTests`), with an opted-in mode as the negative control.
 - **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
   no longer appears in Regatta.
 

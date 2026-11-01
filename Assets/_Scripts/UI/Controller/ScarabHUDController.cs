@@ -1,5 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -8,18 +10,24 @@ namespace CosmicShore.UI
     /// Binds the Scarab's live state to <see cref="ScarabHUDView"/> (design:
     /// R_VesselActions/SCARAB.md §12).
     ///
-    /// Two signals, both event-driven — no per-frame polling in this class:
-    /// - <c>ResourceSystem.OnResourceChanged</c> → ball energy (index 0, the SPACE row's Ball
-    ///   Forge), switch charges (index 1, the MASS row) and that row's COOLDOWN VEIL.
+    /// The Throttle card (Time row) is the one polled readout: trigger depth, speed / live top speed on the plate,
+    /// and the Snap Dash chevron, read in <c>Update</c> and written only on a change.
+    ///
+    /// Two signals, both event-driven:
+    /// - <c>ResourceSystem.OnResourceChanged</c> → switch charges (index 1, the MASS row) and that
+    ///   row's COOLDOWN VEIL. <c>OnElementLevelChange</c> → the Switch ball's scale (Mass) and the
+    ///   seeded ball's size on the SPACE row's Nucleus Seeding card (Space). The ball-energy meter
+    ///   (index 0) has no readout since the Space slot became Nucleus Seeding (2026-10-29).
     ///   Subscribed on the vessel's OWN
     ///   ResourceSystem, never reached for by type through the hierarchy — a HUD controller that
     ///   hunts another vessel's component compiles, returns null on every vessel that isn't
     ///   carrying it, and leaves a dead gauge with no error (the Squirrel polled a Sparrow-only
     ///   executor for its heat gauge for the component's entire life that way).
-    /// - <c>ScarabCavitationBlast.OnBlastReadyChanged</c> → the CHARGE row's ready/recharging
+    /// - <c>ScarabCavitationBlast.OnBlastReadyChanged</c> → the CHARGE row's (the Shove's) ready/recharging
     ///   readout, from a serialized reference on this vessel's prefab so a missing wire is
     ///   visible in the inspector. The edge carries the live cooldown length, so the optional
-    ///   sweep ring is one tween per use.
+    ///   sweep ring is one tween per use. Each edge (and the seed) also repaints the card's hull in the
+    ///   pilot's domain colour, so the Charge card needs no per-frame poll either.
     ///
     /// The right-stick DASH has no readout because it has no cooldown — it is always available
     /// (SCARAB.md §3.4). Only the blast that rides it is paced, and that is what the Charge row
@@ -52,8 +60,6 @@ namespace CosmicShore.UI
         [SerializeField] ScarabCavitationBlast cavitationBlast;
 
         [Header("Resource indices")]
-        [Tooltip("Meter that fills toward a ball (the Scarab authors index 0, 'Ball Energy').")]
-        [SerializeField] int energyResourceIndex = 0;
         [Tooltip("Meter that holds switch charges (index 1, 'Switch Charges').")]
         [SerializeField] int switchResourceIndex = 1;
         [Tooltip("Charges per full switch meter — must match PlaceSwitchActionSO." +
@@ -62,8 +68,18 @@ namespace CosmicShore.UI
                  "the depleting veil below carries the whole answer to \"can I plant one\".")]
         [SerializeField, Min(1)] int switchChargesPerFullMeter = 1;
 
+        [Tooltip("The Scarab's place-switch action (PlaceSwitchAction.asset): its switchScale is the live Mass " +
+                 "ring scale the Switch card's ball shrinks by. Unwired, the ball stays at its Mass 1 size.")]
+        [SerializeField] PlaceSwitchActionSO placeSwitch;
+
+        [Inject] GameDataSO _gameData;
+
+        ScarabVesselTransformer _transformer;
+        float _speedGauge = -1f;
+
         ResourceSystem _resources;
         ScarabCavitationBlast _boundBlast;
+        IVesselStatus _status;
 
         // The switch meter now RECHARGES continuously (PlaceSwitchActionExecutor), so
         // OnResourceChanged fires every frame it is filling. SetSwitchCharges starts a colour
@@ -84,22 +100,31 @@ namespace CosmicShore.UI
             if (vesselStatus == null) return;
             if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
 
+            _status = vesselStatus;
             _resources = vesselStatus.ResourceSystem;
             if (!cavitationBlast)
                 cavitationBlast = vesselStatus.ShipTransform
                     ? vesselStatus.ShipTransform.GetComponent<ScarabCavitationBlast>()
                     : GetComponent<ScarabCavitationBlast>();
             _boundBlast = cavitationBlast;
+            _transformer = vesselStatus.VesselTransformer as ScarabVesselTransformer;
+            view?.SetThrottleHullColor(ResolveDomainSignalColor());
 
             if (_resources)
             {
+                view?.SetSwitchRingColor(ResolveDomainSignalColor());
+                view?.SetSeedColor(ResolveDomainSignalColor());
                 _resources.OnResourceChanged += HandleResourceChanged;
+                _resources.OnElementLevelChange += HandleElementLevelChange;
                 SeedFromResources();
+                PushSwitchScale();
+                PushSeedScale();
             }
 
             if (_boundBlast)
             {
                 _boundBlast.OnBlastReadyChanged += HandleBlastReadyChanged;
+                view?.SetBlastHullColor(ResolveDomainSignalColor());
                 view?.SetBlastReady(_boundBlast.IsBlastReady, 0f);   // seed, don't wait for an edge
             }
         }
@@ -108,9 +133,6 @@ namespace CosmicShore.UI
         {
             if (_resources == null) return;
             var list = _resources.Resources;
-            if (IsValid(energyResourceIndex))
-                HandleResourceChanged(energyResourceIndex, list[energyResourceIndex].CurrentAmount,
-                                      list[energyResourceIndex].MaxAmount);
             if (IsValid(switchResourceIndex))
                 HandleResourceChanged(switchResourceIndex, list[switchResourceIndex].CurrentAmount,
                                       list[switchResourceIndex].MaxAmount);
@@ -124,15 +146,7 @@ namespace CosmicShore.UI
         {
             if (!view || max <= 0f) return;
 
-            if (index == energyResourceIndex)
-            {
-                float normalized = Mathf.Clamp01(current / max);
-                // FULL is the beat that matters: at or above it the next crystal forges a ball
-                // instead of topping up. Compared with a small epsilon because the meter lands on
-                // its ceiling through repeated float adds.
-                view.SetBallEnergy(normalized, normalized >= 1f - 0.0001f);
-            }
-            else if (index == switchResourceIndex)
+            if (index == switchResourceIndex)
             {
                 // Floor, not round: the count must never claim a charge the spend gate would
                 // refuse (PlaceSwitchActionExecutor tests against the cost with an epsilon).
@@ -149,21 +163,80 @@ namespace CosmicShore.UI
 
                 if (charges == _lastSwitchCharges) return;
                 _lastSwitchCharges = charges;
+                view.SetSwitchRingColor(ResolveDomainSignalColor());
                 view.SetSwitchCharges(charges);
             }
         }
 
+        void HandleElementLevelChange(Element element, int level)
+        {
+            if (element == Element.Mass) PushSwitchScale();
+            else if (element == Element.Space) PushSeedScale();
+        }
+
+        /// <summary>The Nucleus Seeding card's ball grows with Space - the size the seeder mints at
+        /// (ScarabBallForge.SizeScaleFor, read live at the level change).</summary>
+        void PushSeedScale()
+        {
+            if (!view || _status == null) return;
+            view.SetSeedScale(ScarabBallForge.SizeScaleFor(_status));
+        }
+
+        /// <summary>The Switch card's ball shrinks as Mass grows the ring (switchScale, read live at the
+        /// level change - the same value the executor sizes the ring with).</summary>
+        void PushSwitchScale()
+        {
+            if (!view || !placeSwitch || _status == null) return;
+            view.SetSwitchScale(placeSwitch.SwitchScale.EvaluateLive(_status));
+        }
+
+        /// <summary>The Throttle card follows continuous state (trigger depth, speed, the Snap Dash cooldown), so it is
+        /// polled, as the Rhino's speed card is; the view and the gauge write only on a change.</summary>
+        void Update()
+        {
+            if (!view || _transformer == null || _status == null) return;
+
+            view.SetThrottle(_transformer.Throttle01);
+            view.SetSnapDash(_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time), _transformer.SnapDashReady);
+
+            float top = _transformer.CurrentTopSpeed;
+            float speed01 = top > 0f ? Mathf.Clamp01(_status.Speed / top) : 0f;
+            if (Mathf.Approximately(speed01, _speedGauge) || !view.TryGetAbilityGauge(Element.Time, out var gauge)) return;
+            _speedGauge = speed01;
+            gauge.fillAmount = speed01;
+        }
+
         void HandleBlastReadyChanged(bool ready, float cooldownSeconds)
-            => view?.SetBlastReady(ready, cooldownSeconds);
+        {
+            if (!view) return;
+            view.SetBlastHullColor(ResolveDomainSignalColor());
+            view.SetBlastReady(ready, cooldownSeconds);
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the
+        /// Rhino's and the Dolphin's hull cards read it.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_status.Domain);
+        }
 
         void Unbind()
         {
             // A re-init must re-push the count, so forget what was last shown.
             _lastSwitchCharges = -1;
-            if (_resources) _resources.OnResourceChanged -= HandleResourceChanged;
+            if (_resources)
+            {
+                _resources.OnResourceChanged -= HandleResourceChanged;
+                _resources.OnElementLevelChange -= HandleElementLevelChange;
+            }
             if (_boundBlast) _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
             _resources = null;
             _boundBlast = null;
+            _transformer = null;
+            _speedGauge = -1f;
+            _status = null;
         }
 
         void OnDisable() => Unbind();

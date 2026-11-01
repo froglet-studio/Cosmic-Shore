@@ -11,14 +11,30 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class GobyDen
     {
-        /// <summary>The prisms a rest adds: one per <paramref name="unitsPerPrism"/> travelled since the last den, scaled by
-        /// the pair's Mass (<paramref name="massScale"/>), never past <paramref name="max"/> in one den.</summary>
-        public static int PrismsFor(float travelled, float unitsPerPrism, float massScale, int already, int max)
+        /// <summary>The prisms a rest adds: one per <paramref name="unitsPerPrism"/> of the Pistol's ENERGY (Garrett,
+        /// 2026-10-29: "the amount the pistol builds when reaching the den is based on energy collected"; it was the distance
+        /// travelled until then), scaled by the pair's Mass (<paramref name="massScale"/>), never past <paramref name="max"/>
+        /// in one den.</summary>
+        public static int PrismsFor(float energy, float unitsPerPrism, float massScale, int already, int max)
         {
-            if (travelled <= 0f || already >= max) return 0;
-            int n = Mathf.FloorToInt(travelled / Mathf.Max(1f, unitsPerPrism) * Mathf.Max(0f, massScale));
+            if (energy <= 0f || already >= max) return 0;
+            int n = Mathf.FloorToInt(energy / Mathf.Max(1e-3f, unitsPerPrism) * Mathf.Max(0f, massScale));
             return Mathf.Clamp(n, 0, max - already);
         }
+
+        /// <summary>The energy <paramref name="prisms"/> den prisms cost (what <see cref="PrismsFor"/> spent): the rest is
+        /// kept for the next den.</summary>
+        public static float EnergySpent(int prisms, float unitsPerPrism, float massScale) =>
+            prisms <= 0 ? 0f : prisms * Mathf.Max(1e-3f, unitsPerPrism) / Mathf.Max(1e-3f, massScale);
+
+        /// <summary>
+        /// The energy the <paramref name="nth"/> block skipped in one flight gives (0 the first): <paramref name="perBlock"/>
+        /// times (1 + <paramref name="flightBonus"/> n), so a flight over n blocks earns n (1 + bonus (n - 1) / 2) and a big
+        /// jump earns far more than as many small ones (Garrett, 2026-10-29: "this reward the player for making big jumps. the
+        /// more prisms are skipped the more energy the pistol should collect").
+        /// </summary>
+        public static float EnergyFor(int nth, float perBlock, float flightBonus) =>
+            Mathf.Max(0f, perBlock) * (1f + Mathf.Max(0f, flightBonus) * Mathf.Max(0, nth));
 
         /// <summary>
         /// The kind of a den's <paramref name="index"/>-th prism. A golden-ratio sequence spreads the shares evenly however

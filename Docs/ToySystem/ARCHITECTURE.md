@@ -413,6 +413,25 @@ prism-bodied mothership in the player's domain, the new fundamental's first body
 corridor at its own unhurried pace. It is the stepping stone toward faction missions: venturing
 into the hypersea with, and for, a mothership.
 
+**The Ark is a model** (Oct 2026: `ArkwaySettingsSO.arkModel` → `ArkReverseModel.asset`, an
+`ArkModelDefinitionSO`; `ArkwayRun` calls `Ark.UseModel` before `LayHullAsync`; `ArkModel` binds
+it). The hull prisms are laid one per socket of the model's rig table (`ArkReverse.rig.json`,
+written by the model's build beside the FBX): kind, pose and size from the socket, domain the
+Ark's, through the same `PrismTrailBuilder.LayBudgetedAsync` path. The model's Domain slot wears
+the domain's ship material, and its jets and wings play the model's own takes, blended by the
+Ark's turn rate and acceleration. Each bone shares one take's worth between the inputs that move
+it, the envelope the model's clearance gate proved. The hangar opens while a squadmate is in the
+hold's grab reach, and the lance slides out when the hold hands a payload over. The Wander
+emblem's miniature is the model's sockets (`ArkModel.SocketLays`). With `arkModel` empty, the Ark
+keeps the procedural spindle (`Ark.BuildHullLays`, `arkHullLength`). Record:
+`Docs/VesselModels/ArkReverse.md` § In the game.
+
+**The Ark's hull regrows at a fixed rate** (Oct 2026: `ArkwaySettingsSO.arkReactor` →
+`ArkReactor.asset`, `Ark.UseReactor`, `ArkReactor`). The omni crystal aboard powers it: every emptied
+hull slot (grazed, cracked or taken for a payload) regrows, one prism every 2 s, nearest the reactor
+first. The crystal is always one size. The mass-law fence is the fourth sign-off in
+`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
+
 **A traversal cell is an ORDINARY CELL** — a nucleus, a control zone, and a crystal at its core —
 and the fight is the shipped ecology, composed (full record: `Docs/ECOSYSTEM.md` §41). It keeps
 `NucleusIsControlZone` at its default `true`, so control is the NUCLEUS CLAIM (lay environment
@@ -430,7 +449,7 @@ across the open water — at `arkWakeScale` (6×6×12), far larger than a vessel
 so it reads as a ship's wake rather than another pilot's line. It is ordinary conserved mass in
 the Ark's domain, laid through `PrismTrailBuilder.LayOne` into its own `Trail`, on a STATIONARY
 root (the hull rides the Ark's transform; a wake that rode it too would just be a longer hull).
-It is also the honest answer to *why does nothing eat the Ark*: 150 hull prisms against a ~10,000
+It is also the honest answer to *why does nothing eat the Ark*: 150 hull prisms (108 on the model) against a ~10,000
 prism world are a rounding error to a swarm steering at `GetDensestRegionAnyDomain`, and the
 targeting grid counts PRISMS, not volume — so a bigger hull would not have helped. A wake is a
 dense LINE through the feeding ground that leads to the ship, and its freshest prism is always
@@ -1231,12 +1250,10 @@ sees it, so `ToySwitchVocabularyTests` reads the source and holds an allow-list 
 directions, so a row that stops being used has to be deleted rather than left describing the
 reservation while hiding it.
 
-**The encyclopedia's tool portraits are deliberately NOT repainted.** `ToolPortraitBuilder` draws
-a tool's emblem — core, satellites and switch ring — from one material in that entry's accent
-colour, because a codex portrait is a monochrome ICON identifying an entry in a gallery, not a
-render of the object. A blue hoop on all six would trade the gallery's per-tool identity for a
-consistency nobody is looking at from inside the codex. If that ever stops being the call, the
-change is a second material in `ToolPortraitBuilder.Build`, not a change here.
+**The encyclopedia's tool portraits are not switch art at all.** Since 2026-10-26 a tool's codex
+portrait (and so its Toy Box card) is a white 2D glyph that teaches what the toy does, drawn by
+`Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4); the baked emblem that used to carry
+the toy's accent (`ToolPortraitBuilder`) was retired with it, so nothing here repaints a portrait.
 
 **Neutral is Blue, not "untinted".** Every switch had been wearing its own toy's accent, which is
 how the Vessel Changer's stations came to be gold and the Lifeform bench's pale green — colours a
@@ -1891,10 +1908,13 @@ window in which a key like this is free to move, and it closes the moment one do
 
 ### The 2D art is the encyclopedia's
 
-`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ UI ▸ Codex** already bakes from
-each toy's own `ToyEmblem` grammar (`Docs/CODEX.md` §3.5). So the flat card is a picture of the
-thing the player flies at, re-baking an emblem re-skins the menu with nothing to re-wire, and no
-second icon set is authored.
+`ToyPortraitLibrary` resolves the portrait each toy's codex page points at, so the menu card and the
+codex page cannot show two pictures of one toy, and a redraw re-skins both with nothing to re-wire.
+Since 2026-10-26 that portrait is a white glyph that teaches what flying through the toy DOES,
+drawn by `Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4, sheet
+`Docs/Icons/sheets/toybox.png`). It replaced the baked `ToyEmblem` disc (core + satellites in the
+switch ring), which made all seven cards near-identical rings and told the player nothing; the
+codex baker now stands down on Tool pages so a re-bake cannot bring that back.
 
 Matched on the toy's own **definition asset** (`CodexEntry.SourceConfig`), never on a name — a toy
 has no prefab, and the config is what the harvester keyed the entry on. A display-name pass is the

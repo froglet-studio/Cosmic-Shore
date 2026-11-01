@@ -22,7 +22,8 @@ namespace CosmicShore.Core
         public override QuestVenue Venue => QuestVenue.Gameplay;
 
         [Tooltip("Safety timeout (seconds). If the transition never completes, advance anyway so the FTUE never hard-locks.")]
-        [Min(1f)] public float timeoutSeconds = 8f;
+        [SerializeField, Min(1f)] float timeoutSeconds = 8f;
+        public float TimeoutSeconds => timeoutSeconds;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

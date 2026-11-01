@@ -89,6 +89,7 @@ MonoBehaviour:
   autopilotMinHoldSeconds: 0.8
   autopilotMaxHoldSeconds: 15
   autopilotRelaySeconds: 0.25
+  autopilotMaxOrbitDegrees: 360
   openEvent:
     Guid:
       Data1: 0

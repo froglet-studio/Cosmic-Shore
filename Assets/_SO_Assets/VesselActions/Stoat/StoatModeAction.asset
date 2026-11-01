@@ -22,8 +22,24 @@ MonoBehaviour:
     Floor: 1
   blendSeconds: 0.8
   massUpgradeShieldsInMassMode: 1
+  gateAhead: 90
+  gateLengthMin: 120
+  gateLengthMax: 600
+  gateMouthRadius: 5
+  gateHoldMaxSeconds: 3
+  gateCollapseSeconds: 0.8
+  gateAimConeDegrees: 25
+  gateWarpShare: 1.5
+  gateBoostSeconds: 2.5
+  gateKeyRampSeconds: 0.5
+  gateFunnelRadius: 30
+  gateFunnelRate: 4
   autopilotTimeModeDegrees: 70
   autopilotModeIntervalSeconds: 3
+  autopilotGateDistance: 400
+  autopilotGateSwitchConeDegrees: 30
+  autopilotGateMinDistance: 300
+  autopilotGateConeDegrees: 12
   massModeEvent:
     Guid:
       Data1: 0
@@ -32,6 +48,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   timeModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  gateModeEvent:
     Guid:
       Data1: 0
       Data2: 0

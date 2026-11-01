@@ -7,10 +7,14 @@ namespace CosmicShore.Utility
     {
         public bool DisableAnimations = true;
         public GameObject Container;
-        public RenderTexture renderTextureSquare;
-        public RenderTexture renderTextureSquareLarge;
-        public RenderTexture renderTextureWide;
-        public RenderTexture renderTextureWideLarge;
+        [SerializeField] RenderTexture renderTextureSquare;
+        public RenderTexture RenderTextureSquare => renderTextureSquare;
+        [SerializeField] RenderTexture renderTextureSquareLarge;
+        public RenderTexture RenderTextureSquareLarge => renderTextureSquareLarge;
+        [SerializeField] RenderTexture renderTextureWide;
+        public RenderTexture RenderTextureWide => renderTextureWide;
+        [SerializeField] RenderTexture renderTextureWideLarge;
+        public RenderTexture RenderTextureWideLarge => renderTextureWideLarge;
         public Camera _camera;
         public float PressedScaleFactor = 1.25f;
         public Texture2D SquareAspectBorderTexture;

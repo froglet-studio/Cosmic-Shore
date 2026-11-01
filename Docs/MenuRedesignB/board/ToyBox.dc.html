@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toy Box</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+  <div style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; background: rgba(0, 1, 10, 0.5)"></div>
+  <header style="position: absolute; left: 40px; top: 108px; width: 1840px; height: 64px; display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span class="lab">Toy Box</span>
+      <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">Explore toys</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px"><button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">B</span></span>Back</span></button></div>
+  </header>
+  <section aria-label="Party" class="sl" style="position: absolute; left: 40px; top: 196px; width: 420px; height: 844px; background: #222645; padding: 1px; box-sizing: border-box; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 40ms both">
+    <div class="sl grid" style="position: relative; height: 100%; box-sizing: border-box; padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 14px"><span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><span class="lab" style="color: #E6E9FF">Party</span><span class="lab num">1 / 4</span></div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: -6px"><span style="width: 8px; height: 8px; background: #99FF80; transform: rotate(45deg); animation: csBlink 2.4s ease-in-out infinite"></span><span style="font-size: 15px; color: #747BAD">12 Players Online</span></div>
+      <div style="display: flex; flex-direction: column; gap: 8px"><div class="sls" style="background: #222645; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 120ms both"><div class="sls" style="display: flex; align-items: center; gap: 12px; height: 58px; box-sizing: border-box; background: #00041F; padding: 0 12px"><span class="oct" style="display: grid; place-items: center; width: 46px; height: 46px; flex: none; background: #00D4FF"><span class="oct" style="display: block; width: 40px; height: 40px; overflow: hidden; background: #222645"><img src="/_blob/860a8243b9a9a2911fdcfbe053e14241" alt="" style="width: 40px; height: 40px; object-fit: cover"></span></span><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 17px">Gradies</span><span class="lab" style="font-size: 12px; color: #E6E9FF">You / Host</span></span></div></div><div class="sls" style="background: #222645; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 160ms both"><div class="sls" style="display: flex; align-items: center; gap: 12px; height: 58px; box-sizing: border-box; background: rgba(0, 1, 10, 0.7); padding: 0 12px; color: #747BAD"><span class="oct" style="display: grid; place-items: center; width: 46px; height: 46px; background: #222645"><span class="oct" style="display: grid; place-items: center; width: 44px; height: 44px; background: #00010A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2v12M2 8h12"></path></svg></span></span><span style="font-size: 15px">Open slot - invite a friend below</span></div></div><div class="sls" style="background: #222645; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 200ms both"><div class="sls" style="display: flex; align-items: center; gap: 12px; height: 58px; box-sizing: border-box; background: rgba(0, 1, 10, 0.7); padding: 0 12px; color: #747BAD"><span class="oct" style="display: grid; place-items: center; width: 46px; height: 46px; background: #222645"><span class="oct" style="display: grid; place-items: center; width: 44px; height: 44px; background: #00010A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2v12M2 8h12"></path></svg></span></span><span style="font-size: 15px">Open slot - invite a friend below</span></div></div><div class="sls" style="background: #222645; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 240ms both"><div class="sls" style="display: flex; align-items: center; gap: 12px; height: 58px; box-sizing: border-box; background: rgba(0, 1, 10, 0.7); padding: 0 12px; color: #747BAD"><span class="oct" style="display: grid; place-items: center; width: 46px; height: 46px; background: #222645"><span class="oct" style="display: grid; place-items: center; width: 44px; height: 44px; background: #00010A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2v12M2 8h12"></path></svg></span></span><span style="font-size: 15px">Open slot - invite a friend below</span></div></div></div>
+      <div style="height: 1px; background: #222645; flex: none"></div>
+      <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Online</span><span class="lab">2</span></div>
+      <div style="display: flex; align-items: center; gap: 12px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 280ms both"><span class="oct" style="display: block; width: 40px; height: 40px; overflow: hidden; background: #222645"><img src="/_blob/6ee84524bd6daeaa9e67ab3f6c657cc2" alt="" style="width: 40px; height: 40px; object-fit: cover"></span><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><span style="font-size: 17px">Mothwing</span><span class="lab" style="font-size: 12px; color: #99FF80">Online</span></span><button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Invite</span></button></div>
+      <div style="display: flex; align-items: center; gap: 12px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 320ms both"><span class="oct" style="display: block; width: 40px; height: 40px; overflow: hidden; background: #222645"><img src="/_blob/b4b6f9f2a337cb3a010e12edc1fc0760" alt="" style="width: 40px; height: 40px; object-fit: cover"></span><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><span style="font-size: 17px">Kestrel</span><span class="lab" style="font-size: 12px; color: #FFAE00">In a match - Skim Race</span></span><button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Invite</span></button></div>
+    </div>
+  </section>
+
+  <section aria-label="Toys" style="position: absolute; left: 484px; top: 196px; width: 1406px; height: 844px">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 80ms both">
+      <div class="sl" style="background: {{dailyBorder}}; padding: 1px; animation: {{dailyAnim}}">
+        <div class="sl" style="display: flex; gap: 22px; height: 200px; box-sizing: border-box; background: #00041F; padding: 0 24px 0 0">
+          <span style="width: 200px; height: 200px; flex: none; overflow: hidden; background: #00010A"><img src="/_blob/5df35d699fd8c04565101801438f732a" alt="" style="width: 200px; height: 200px; object-fit: cover; animation: csPan 12s ease-in-out infinite alternate"></span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 22px 0">
+            <span class="lab" style="color: {{dailyTagColor}}">Today's activity</span>
+            <span style="font-size: 28px; line-height: 1.1">Starry Night</span>
+            <span style="font-size: 15px; color: #747BAD">Connect the Dots</span>
+            <span style="flex: 1"></span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 15px"><span class="lab" style="color: #E6E9FF">{{dailyLab}}</span><span class="num" style="font-size: 18px">{{dailyClock}}</span></span>
+              <sc-if value="{{dailyOpen}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" onClick="{{tryDaily}}" style="--bc: #99FF80; --bf: #12222B; --bt: #99FF80"><span style="position: relative; overflow: hidden; padding: 9px 16px; font-size: 14px">Try it  +10 <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2l7 6-7 10-7-10z"></path><path d="M3.6 8h12.8"></path></svg><span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></sc-if>
+              <sc-if value="{{dailyDone}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" disabled="disabled" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A; cursor: default"><span><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg>Done</span></button></sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sl" style="background: #222645; padding: 1px">
+        <div class="sl" style="display: flex; gap: 22px; height: 200px; box-sizing: border-box; background: #00041F; padding: 0 24px 0 0">
+          <span class="grid" style="display: grid; place-items: center; width: 200px; height: 200px; flex: none; color: #E6E9FF"><span style="display: flex; animation: {{shuffleSpin}}"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h4l10 10h4M3 17h4l10-10h4"></path><path d="M18 4l3 3-3 3M18 14l3 3-3 3"></path></svg></span></span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 22px 0">
+            <span class="lab">Shuffle</span>
+            <span style="font-size: 28px; line-height: 1.1">Shuffle the toy box</span>
+            <span style="font-size: 15px; color: {{shuffleColor}}">{{shuffleDetail}}</span>
+            <span style="flex: 1"></span>
+            <div style="display: flex; justify-content: flex-end">
+              <sc-if value="{{canShuffle}}" hint-placeholder-val="{{ true }}"><button class="btn" type="button" onClick="{{shuffle}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span style="position: relative; overflow: hidden; padding: 9px 18px; font-size: 14px">Shuffle<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></sc-if>
+              <sc-if value="{{shuffling}}" hint-placeholder-val="{{ false }}"><button class="btn" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #0B0F29; --bt: #5C5F70"><span>Shuffling...</span></button></sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin: 26px 5px 10px"><span class="lab" style="color: #E6E9FF">All toys</span><span class="lab">7</span></div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{toys}}" as="t" hint-placeholder-count="7">
+        <button class="card sl" type="button" aria-label="{{t.name}}" onClick="{{t.pick}}" style="display: block; width: 100%; background: #222645; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{t.d}}ms both">
+          <span class="sl" style="position: relative; display: flex; flex-direction: column; height: 274px; overflow: hidden; background: #00041F">
+            <span style="display: block; height: 3px; background: {{t.accent}}; opacity: {{t.alpha}}"></span>
+            <span class="grid" style="display: grid; place-items: center; height: 150px"><img src="{{t.art}}" alt="" style="height: 140px; width: 140px; object-fit: contain; opacity: {{t.alpha}}; animation: csFloat 3.6s ease-in-out {{t.fd}}ms infinite"></span>
+            <span style="display: flex; flex-direction: column; gap: 6px; padding: 12px 16px">
+              <span class="lab" style="font-size: 12px; color: {{t.groupColor}}">{{t.group}}</span>
+              <span style="font-size: 20px; color: {{t.nameColor}}">{{t.name}}</span>
+              <span style="font-size: 15px; line-height: 1.35; color: #747BAD; max-height: 40px; overflow: hidden">{{t.desc}}</span>
+            </span>
+            <sc-if value="{{t.off}}" hint-placeholder-val="{{ false }}"><span class="lab" style="position: absolute; right: 12px; top: 14px; color: #E6E9FF">Unavailable</span></sc-if>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const TOYS = [{"key": "paint", "name": "Connect the Dots", "group": "Creation", "accent": "#33E6FF", "art": "/_blob/860998acebc7a0176136953b669b2185", "desc": "Connect the dots to paint 3D masterpieces with your trail."}, {"key": "vessel", "name": "Vessel Changer", "group": "Pilot", "accent": "#FFD933", "art": "/_blob/e3021fea3ed132a9c31d1d339fc70cc9", "desc": "Fly through to swap your ship."}, {"key": "domain", "name": "Domain Changer", "group": "Pilot", "accent": "#D94DE6", "art": "/_blob/7c6cae013251a3d627c8c8f043d2f4bb", "desc": "Fly through to change your team colour."}, {"key": "wander", "name": "Wander", "group": "World", "accent": "#1E39FF", "art": "/_blob/46b6ec3d6fd2a32ef887fc0f5522fd49", "desc": "Leave the cell and go wandering - with an Ark, or without one."}, {"key": "spawn", "name": "Spawn Matrix", "group": "Creation", "accent": "#BFFFD9", "art": "/_blob/fcc11a46f5aa7d95ca55a153db5aef22", "desc": "The release bench. Fly through for the three kingdoms - Fauna, Flora, Vessels."}, {"key": "cell", "name": "Cell Selector", "group": "World", "accent": "#8CBFFF", "art": "/_blob/abe556c558151a94c49027df61f45aa0", "desc": "The freestyle world picker - and the freestyle reset."}, {"key": "charge", "name": "Element Charger", "group": "Pilot", "accent": "#E6F2FF", "art": "/_blob/7850440a6efe08dd09a6f63c7810dd29", "desc": "Fly through to charge your vessel's elements."}];
+const ROLL = ['Yggdra, Gold, Manta', 'Caldera, Jade, Rhino', 'Geode, Ruby, Dolphin', 'Zephyr, Gold, Urchin', 'Orrery, Jade, Scarab', 'Garland, Ruby, Serpent'];
+const pad = (n) => (n < 10 ? '0' : '') + n;
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ daily: 'open', result: '', off: [] }, props.start || {});
+    this.state = { daily: s.daily, result: s.result, shuffling: false, off: s.off, toast: '', left: 7 * 3600 + 12 * 60 + 41, roll: 0 };
+    this.timer = null; this.wait = null; this.rollT = null;
+    this.clock = setInterval(() => this.setState({ left: Math.max(0, this.state.left - 1) }), 1000);
+  }
+  componentWillUnmount() { [this.timer, this.wait].forEach((t) => t && clearTimeout(t)); [this.clock, this.rollT].forEach((t) => t && clearInterval(t)); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  renderVals() {
+    const st = this.state, open = st.daily === 'open';
+    return {
+      dailyBorder: open ? '#99FF80' : '#222645', dailyAnim: open ? 'csGlow 2.4s ease-in-out infinite' : 'none',
+      dailyLab: open ? 'Ends in' : 'New activity in', dailyClock: Math.floor(st.left / 3600) + 'h ' + pad(Math.floor(st.left % 3600 / 60)) + 'm ' + pad(st.left % 60) + 's',
+      dailyTagColor: open ? '#99FF80' : '#747BAD',
+      dailyStatus: open ? '7h 12m left' : 'New activity in 7h 12m', dailyOpen: open, dailyDone: !open,
+      tryDaily: () => this.say('Opens Connect the Dots with Starry Night picked. The 10 crystals pay when you start it.'),
+      shuffleDetail: st.shuffling ? ROLL[st.roll % ROLL.length] : (st.result || 'New world, new colours, new hull'),
+      shuffleSpin: st.shuffling ? 'csSpin 600ms linear infinite' : 'none',
+      shuffleColor: st.result ? '#E6E9FF' : '#747BAD',
+      canShuffle: !st.shuffling, shuffling: st.shuffling,
+      shuffle: () => {
+        this.setState({ shuffling: true, roll: 0 });
+        this.rollT = setInterval(() => this.setState({ roll: this.state.roll + 1 }), 110);
+        this.wait = setTimeout(() => { clearInterval(this.rollT); this.rollT = null; this.setState({ shuffling: false, result: 'Orrery, Ruby, Sparrow' }); this.say('The window closes and you fly out into the new world.'); }, 1400);
+      },
+      toys: TOYS.map((t, i) => {
+        const off = st.off.indexOf(t.key) >= 0;
+        return { d: 200 + Math.min(i, 8) * 40, fd: i * 380, name: t.name, group: t.group, desc: t.desc, art: t.art, accent: t.accent, off, alpha: off ? 0.35 : 1,
+                 groupColor: off ? '#5C5F70' : '#747BAD', nameColor: off ? '#5C5F70' : '#E6E9FF',
+                 pick: () => this.say(off ? t.name + ' is not standing right now.' : 'Opens ' + t.name + '.') };
+      }),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

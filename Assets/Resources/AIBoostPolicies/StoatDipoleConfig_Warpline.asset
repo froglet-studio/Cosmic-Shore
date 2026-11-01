@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84eb4c6b05a348e193602462d620198f, type: 3}
+  m_Name: StoatDipoleConfig_Warpline
+  m_EditorClassIdentifier: 
+  holdExponent: 1.5
+  holdRampSeconds: 1.5
+  keySqueeze: 0.5
+  aheadDistance: 250
+  sidewaysMax: 200
+  lengthwaysMax: 120
+  followRate: 6
+  poleGM: 50000
+  poleHorizon: 2.1
+  sinkSofteningHorizons: 14
+  poleSize:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 3
+    UseFloor: 1
+    Floor: 1
+  sourcePush: 1
+  sourceSofteningHorizons: 2
+  accelerationCap: 3000
+  annihilateSeconds: 0.3
+  sinkGrowSeconds: 0.9
+  sourceGrowSeconds: 1.1
+  dieSeconds: 0.7
+  sourceSizeX: 1
+  annihilationWaves: 0
+  throughZoneRadius: 135
+  throughDegrees: 200
+  turnCap: 12
+  grip: 0.5
+  gravitySpeedCeilingCruises: 4
+  gravityFadeSeconds: 2
+  domainTintAmount: 0
+  crystalStripShare: 1
+  faunaSwallowHorizons: 1.5
+  accretionPerPrism: 0.04
+  accretionMax: 1
+  pathLength: 1200
+  pathStep: 3
+  pathNoseOffset: 8
+  loopMargin: 8
+  minLoop: 60
+  warpDegrees: 3
+  boost:
+    Enabled: 1
+    Value: 2.5
+    Min: 2.5
+    Max: 5
+    element: 4
+    UseFloor: 1
+    Floor: 1
+  boostRise: 20
+  boostFadeSeconds: 0.6
+  dotPixels: 4
+  dotGap: 2.5
+  dotDepthMinScale: 0.75
+  dotDepthFade: 0.15
+  dotsInWorld: 1
+  worldDotSize: 0.7
+  worldDotSpacing: 3
+  worldDotMinPixels: 2.5
+  openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
+  warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
+  foresightLength: 500
+  foresightRange: 1500
+  foresightMaxRivals: 3
+  autopilotHold01: 1.0
+  autopilotMinDistance: 151.154
+  autopilotHoldSeconds: 4
+  autopilotIntervalSeconds: 1.67
+  autopilotWatchPath: 1
+  autopilotLetGoNear: 250
+  autopilotDrySeconds: 0.5
+  autopilotMinHoldSeconds: 1.258
+  autopilotMaxHoldSeconds: 2.111
+  autopilotRelaySeconds: 0.25
+  autopilotMaxOrbitDegrees: 82.655
+  openEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  annihilateEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  warpEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

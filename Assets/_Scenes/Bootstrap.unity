@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d50c8fe93514b6da4c03b2a947bff62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  waitBeforeLoading: 0.5
+  waitBeforeLoading: 0.1
   menuReturnSettleSeconds: 1.5
   _onClickToMainMenuButton: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e,
     type: 2}

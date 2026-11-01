@@ -25,7 +25,8 @@
 //   HostConnectionService for Phases 7-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
-//   Main-thread only.
+//   Main-thread only. The one exception is PresencePushChannel's event handlers, which the SDK may raise
+//   on any thread: they only set a flag (see that file).
 // ─────────────────────────────────────────────────────────────────────────────
 
 using System;
@@ -107,6 +108,20 @@ namespace CosmicShore.Gameplay
         private ISession _activeLobby;
         private bool     _leaving;
 
+        /// <summary>
+        /// The active lobby's push events (Block 5 step 5). Every change of <see cref="_activeLobby"/>
+        /// goes through <see cref="SetActiveLobby"/>, so the channel always listens to exactly the lobby
+        /// we hold: missing one of the six assignment sites would either leave a fresh lobby poll-only or
+        /// keep a lobby we left raising pushes.
+        /// </summary>
+        private readonly PresencePushChannel _push = new();
+
+        internal void SetActiveLobby(ISession next)
+        {
+            _activeLobby = next;
+            _push.Attach(next);
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Construction
         // ─────────────────────────────────────────────────────────────────────
@@ -140,6 +155,15 @@ namespace CosmicShore.Gameplay
         public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
 
         /// <inheritdoc/>
+        public bool ConsumeRosterDirty() => _push.ConsumeRosterDirty();
+
+        /// <inheritdoc/>
+        public bool ConsumeMembershipLost() => _push.ConsumeMembershipLost();
+
+        /// <inheritdoc/>
+        public void TakeDepartures(ISet<string> into) => _push.TakeDepartures(into);
+
+        /// <inheritdoc/>
         /// <remarks>
         /// Three-step algorithm:
         /// <list type="number">
@@ -168,7 +192,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party, "[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby");
             try
             {
-                _activeLobby = await TryQueryAndJoinAsync(maxPlayers);
+                SetActiveLobby(await TryQueryAndJoinAsync(maxPlayers));
 
                 if (_activeLobby == null)
                 {
@@ -269,13 +293,17 @@ namespace CosmicShore.Gameplay
                 // in the ugs[...] telemetry, held to the retry budget, and single-flight on the same
                 // "presence:join:{id}" key, so a converge and a JoinOrCreate racing to the canonical
                 // lobby send one join between them.
-                var joined = await _policy.ExecuteAsync($"presence:join:{canonicalId}",
-                    async () => await _multiplayerService.JoinSessionByIdAsync(
-                        canonicalId,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
+                // A membership left by an earlier Play makes this join "already a member" forever (Caleb's converge
+                // failed every ~22 s for nine minutes on 2026-10-30): StaleLobbyMembership clears it and joins again.
+                var joined = await StaleLobbyMembership.JoinAsync(_policy, canonicalId,
+                    () => _policy.ExecuteAsync($"presence:join:{canonicalId}",
+                        async () => await _multiplayerService.JoinSessionByIdAsync(
+                            canonicalId,
+                            new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread()),
+                    leaveOnFailure: false, tag: "PresenceLobbyService");
 
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
-                _activeLobby = joined;
+                SetActiveLobby(joined);
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
             }
             catch (Exception e)
@@ -296,6 +324,9 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby == null || _leaving) return;
             _leaving = true;
+            // Stop listening first: deleting a lobby we host raises its Deleted, and our own leave must
+            // not read as being thrown out (it would start a rejoin of the lobby we are leaving).
+            _push.Detach();
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] LeaveAsync - lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
             try
             {
@@ -311,7 +342,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _activeLobby = null;
+                SetActiveLobby(null);
                 _leaving     = false;
             }
         }
@@ -370,7 +401,7 @@ namespace CosmicShore.Gameplay
         public void ForceReset()
         {
             CSDebug.LogVerbose(CSLogChannel.Party, "[PresenceLobbyService] ForceReset - clearing active lobby reference for reconnect.");
-            _activeLobby = null;
+            SetActiveLobby(null);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -385,7 +416,7 @@ namespace CosmicShore.Gameplay
         /// Builds the standard player-property dictionary used when joining or
         /// creating UGS sessions (both presence lobby and party session).
         ///
-        /// All 8 properties are always present so no key is missing on the first
+        /// All 9 properties are always present so no key is missing on the first
         /// refresh; absent keys in UGS look the same as empty-value keys, which
         /// causes "invite_payloads not found" false negatives.
         /// </summary>
@@ -408,6 +439,9 @@ namespace CosmicShore.Gameplay
                 // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
                 // Seeded empty like every stateful key; the live overlay below fills it in.
                 { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                // "1" once the lava lamp is up (HostConnectionService.READY_KEY): a booting player is not listed
+                // online. Seeded empty; the live overlay below fills it in on a rejoin.
+                { HostConnectionService.READY_KEY, new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public) },
             };
 
             // State-preserving rejoin (Docs/PresenceSystem/BUGS.md B4): a lobby
@@ -466,10 +500,13 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    var joined = await _policy.ExecuteAsync($"presence:join:{session.Id}",
-                        async () => await _multiplayerService.JoinSessionByIdAsync(
-                            session.Id,
-                            new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
+                    // The previous Play's membership (Stop without a leave) is cleared and the join made again.
+                    var joined = await StaleLobbyMembership.JoinAsync(_policy, session.Id,
+                        () => _policy.ExecuteAsync($"presence:join:{session.Id}",
+                            async () => await _multiplayerService.JoinSessionByIdAsync(
+                                session.Id,
+                                new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread()),
+                        leaveOnFailure: false, tag: "PresenceLobbyService");
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
                     return joined;
                 }
@@ -509,8 +546,8 @@ namespace CosmicShore.Gameplay
                     }
                 };
 
-                _activeLobby = await _policy.ExecuteAsync("presence:create",
-                    async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+                SetActiveLobby(await _policy.ExecuteAsync("presence:create",
+                    async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread()));
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
             }
             catch (Exception e)
@@ -574,6 +611,7 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby == null) return;
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] DeleteOwnLobbyQuietly - releasing race-lost lobby {_activeLobby.Id}.");
+            _push.Detach();   // our own delete must not read as being thrown out (see LeaveAsync)
             try
             {
                 if (_activeLobby.IsHost)
@@ -587,7 +625,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _activeLobby = null;
+                SetActiveLobby(null);
             }
         }
 

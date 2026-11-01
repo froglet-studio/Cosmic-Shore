@@ -1,5 +1,9 @@
 # Tapestry (`GameModes.Tapestry = 60`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes. "Butterfly" below
+> means that airframe.
+
 The Butterfly's **MASS** game — a **timed** painting war. The Butterfly is the hull that makes the
 2D prismscape, and on it **Mass is the width of the wake**: Mass mode lays keys 5× the narrow line
 at Mass 0 and 20× at Mass 15. The score is the prism **volume a domain has standing when the clock
@@ -16,7 +20,7 @@ working pilots over), **Sirocco** (Space, destroying mass), and this (Mass, maki
 | Metric | `ScoringMetric.VolumeRemaining` (12) — **new**, see below |
 | Rule | `TapestryScoringRuleSO` — timed, highest wins, `IsObjectiveReached` never fires |
 | Turn monitor | `TapestryTimeTurnMonitor : NetworkTimeBasedTurnMonitor` |
-| Round length | `EndConditionOverridesSO.tapestryRoundSeconds` (**150**) |
+| Round length | `EndConditionOverridesSO.tapestryRoundSeconds` (**90**; 150 until 2026-10-26, `Docs/ARCADE_MATCH_LENGTH.md`) |
 | Comeback | rate **0.00002** per unit of volume — derived, see below |
 | Arena | the bare **Barren** cell (no environment, no flora, no fauna) |
 | Objective arrow | `BendsObjectiveProvider` — the nearest rival, whose freshest paint is behind them |
@@ -73,7 +77,7 @@ much volume the Butterfly paints. The generator reads the wake off the **shipped
 `BaseScale.x × XScaler / 2 × massModeWidth.Min × BaseScale.y × BaseScale.z` = **265 volume per key**,
 `topSpeed / initialWavelength` = **7.44 keys/s**, so **~1,974 volume/s** per painting pilot — and
 sizes the rate so a domain a quarter of a reference match behind (two pilots painting half of a
-150 s round, ~296k) buys ~1.5 element levels. A vessel retune moves the rate with it, or fails the
+90 s round, ~178k; 150 s and ~296k until 2026-10-26) buys ~1.5 element levels. A vessel retune moves the rate with it, or fails the
 assert.
 
 ## AI

@@ -101,6 +101,10 @@ edit("Networking/NetcodeSurface.cs", "NetworkPrefabOverrideLinks",
 edit("Networking/NetcodeSurface.cs", "public ulong GetConfig",
      "        public bool ForceSamePrefabs = true;\n",
      "        public ulong GetConfig(bool cache = true) => 0UL;\n")
+# Switchback's movers (2026-10-28) read Netcode's float server clock.
+edit("Networking/NetworkTime.cs", "TimeAsFloat",
+     "        public double Time { get; }\n",
+     "        public float TimeAsFloat => (float)Time;\n")
 
 extra = ROOT / "GapFillForEditModeTests.cs"
 blocks = []
@@ -126,6 +130,35 @@ if "copyTextureSupport" not in all_src:
     public static partial class SystemInfo
     {
         public static CosmicShore.Engine.Rendering.CopyTextureSupport copyTextureSupport => CosmicShore.Engine.Rendering.CopyTextureSupport.None;
+    }
+}""")
+# KitRectMask2D (2026-10-28) toggles TMP's static-scale flag and its rebuild registration.
+if "isTextObjectScaleStatic" not in all_src:
+    blocks.append("""namespace CosmicShore.Engine.UI
+{
+    public abstract partial class TMP_Text
+    {
+        public bool isTextObjectScaleStatic { get; set; }
+    }
+    public static class TMP_UpdateManager
+    {
+        public static void RegisterTextElementForRebuild(TMP_Text element) { }
+        public static void UnRegisterTextElementForRebuild(TMP_Text element) { }
+    }
+}""")
+# MeerkatSentinels (2026-10-28) bakes its ghost mesh with Mesh.CombineMeshes.
+if "struct CombineInstance" not in all_src:
+    blocks.append("""namespace CosmicShore.Engine
+{
+    public struct CombineInstance
+    {
+        public Mesh mesh { get; set; }
+        public int subMeshIndex { get; set; }
+        public Matrix4x4 transform { get; set; }
+    }
+    public partial class Mesh
+    {
+        public void CombineMeshes(CombineInstance[] combine, bool mergeSubMeshes = true, bool useMatrices = true, bool hasLightmapData = false) { }
     }
 }""")
 rendering = []

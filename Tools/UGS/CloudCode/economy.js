@@ -59,7 +59,6 @@ const CATALOG = {
   vessels: {
     "Angler": { cost: 100, starter: false },
     "Brittle Star": { cost: 100, starter: false },
-    "Butterfly": { cost: 100, starter: false },
     "Dolphin": { cost: 4000, starter: false },
     "Falcon": { cost: 4000, starter: false },
     "Goby": { cost: 0, starter: true },
@@ -67,6 +66,7 @@ const CATALOG = {
     "Honeyguide": { cost: 4000, starter: true },
     "Jacks": { cost: 4000, starter: true },
     "Manta": { cost: 4000, starter: false },
+    "Meerkat": { cost: 0, starter: true },
     "Orca": { cost: 4000, starter: true },
     "Rhino": { cost: 4000, starter: false },
     "Scarab": { cost: 100, starter: false },
@@ -78,10 +78,11 @@ const CATALOG = {
     "Stoat": { cost: 0, starter: true },
     "Termite": { cost: 4000, starter: false },
     "Thresher": { cost: 100, starter: false },
+    "Tiger Moth": { cost: 100, starter: true },
     "Urchin": { cost: 4000, starter: false },
     "Wrasse": { cost: 4000, starter: true },
   },
-  hangar: { perLevel: 100, maxLevel: 10 },
+  hangar: { perLevel: 100, maxLevel: 5 },
 };
 // </catalog>
 

@@ -381,6 +381,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
     (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
     them; reading either alone gives a confident wrong answer about which gate you are moving.
+    **When an L5 gates an outcome, find EVERY system that re-derives that outcome, and give them one
+    gate on the per-vessel state they all read.** Making the Rhino's super-shield pop the Space L5
+    (2026-10-26) first put the gate on the damage effect alone, and the review found
+    `ShieldSkimmerScaleDriver.UpdateBind` deciding "this blade can pop, so it is not bound" from
+    `IsEnergized` by itself, so an energized blade without the upgrade was refused the pop and then slid
+    through the prism with no drag. The ignition re-dispatch and the AI's "energize for hardened mass"
+    trigger had the same old condition. The fix was one bit on the sword
+    (`IRhinoSwordState.SuperShieldUpgradeActive`, authored on the sword's config) that all four read.
+    Grep the old CONDITION (`IsEnergized`), not just the effect you are gating.
 
 27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
     containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
@@ -924,6 +933,75 @@ applies to new abilities, new resources on the meter list, and anything that add
     sized for a THUMB (a touch-run crew) frames it from a reference phone (`JacksMath.ThumbViewSpan`), the same
     span on every device, keeping the gameplay length (the ring) independent of the view: a span the ring is derived
     from cannot be zoomed without changing the game.
+
+
+61. **A runtime COPY of a live vessel part (a second blade, a mirrored arm) is cloned under an INACTIVE holder and
+    stripped before it wakes.** The Rhino's surge ring (`RhinoSurgeSwordRing`, 2026-10-26) needed seven more swords that
+    cut exactly like the real one. A clone of the blade root carries everything that makes a blade a blade (mesh, both
+    trigger colliders, the kinematic body, `SkimmerImpactor` + `ImpactCollider` wired to the CLONE by Unity's internal
+    reference remap, its own `SkimmerSwingKinematics`) - and also the one-of-a-kind parts, whose serialized references
+    point OUTSIDE the clone and still reach the original: `RhinoSwordFXController.bladeTracers` names the fuselage's five
+    tracers, so a woken copy would re-seat and tint the pilot's own streaks. So: `Instantiate` under a holder whose
+    GameObject is INACTIVE (no Awake / OnEnable runs on the copy), `DestroyImmediate` the one-of-a-kind components, then
+    arm what is left (`Skimmer.Initialize(status)`, `HasExternalScaleDriver = true`, `SwordState` = the real sword's, so
+    every copy cuts through the same effect chain and reads the same energized state), and only then activate. Before
+    trusting the remap, list each copied component's serialized object references and sort them into "inside the clone"
+    (remapped) and "outside" (shared with the original). Pose every copy from the original's LIVE local pose in
+    LateUpdate, after the executor that writes it, and copy the body's MaterialPropertyBlock so the look follows too.
+62. **An ability that moves the camera writes a POINT-OF-USE multiplier on `CustomCameraController`, never
+    `_followOffset`** - the same rule `RearView`, `FollowHeightScale` and `SurroundFraming01` follow, for the same reason:
+    adaptive zoom and every settings re-apply write `_followOffset`, so the first of them to fire would silently undo the
+    ability. The Rhino has two (2026-10-26): `SurroundFraming01` (the surge: straight back and centred on the hull) and
+    `VesselDistanceScale` (the blade's Space length: the camera pulls back in proportion). Both reset in
+    `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
+    autopilot must never move this machine's camera), and the owner releases them on disable (`RhinoSwordCamera`). Keep
+    the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
+63. **To move an ability to another button, change the BINDING's owner, then measure who reads the old button.**
+    `cece/sweet-mendel-yoq3vo` (2026-10-27) moved the three RB abilities to Y. What it learned:
+    - **RB is `FlipAction` (InputEvents 3), and the name is legacy**: it fires whatever a hull binds there. RB also
+      writes `InputStatus.Throttle`, but a hull reads that only with `toggleManualThrottle`, which no shipped prefab
+      sets. Reading `GamepadInputStrategy` alone said "RB is boost and flip". The prefabs said "RB is three
+      abilities". Ask the consumers (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`, the maps'
+      `Input:`), never the producer.
+    - **A binding lives in two places**: the prefab's `_inputEventShipActions` and the `ElementalAbilityMapSO`'s
+      `Input` (which the HUD chip reads). A generator that authors the vessel owns both. Change its table, or the
+      next run puts the old button back. The Shrike's generator re-applies bindings on every run. The Brittle Star's
+      applies them only inside its one-shot clone, so after editing its table you also edit the prefab line, and its
+      `--check` confirms the two agree.
+    - **The executors find their controls by event** (`Enum.GetValues(typeof(InputEvents))`), so the AI follows a
+      rebind with no change. The control-chip tests name events, so update those.
+64. **A speed buff on a TETHERED vessel must carry the tether, or the tether takes the buff back.** The fleet's
+    `throttleMultiplier` scales only a frame's travel, never the momentum, so it reads like the clean way to say "N x
+    what the physics gives". It is not, for anything whose physics reads the hull's POSITION against a body it is tied
+    to. `cece/sweet-newton-78wr4o` (2026-10-30) gave the Thresher's aimed launch a x3 exit: the chain saw the hull run
+    ahead of the ball, stretched, and braked the physics to its 42 u/s floor in 0.25 s, so 3 s after the launch the
+    ship had gone 579 u against today's 532 (RT held), and 622 against 655 with RT released, which is worse than no
+    buff. Carry the whole rig by the extra travel after each move (ball, pivot and chain links with their previous
+    positions, so no link gains a velocity; `ThresherExecutor.CarryRig`), and sweep the carried stretch so the ball
+    still hits what it passes. The physics then stays today's frame for frame (1 272 u and 1 570 u). **Test the
+    untouched half**: assert the physics speed trace equals the unbuffed one, not only that the ship went further
+    (`ExitBuff_MultipliesTheExitAndLeavesThePhysicsAlone_BecauseTheRigIsCarried`).
+65. **Entering a mode that hands the sticks a new job must EASE their authority in, never latch them off.** A stick
+    already over when the job changes (the turn the pilot was flying, now an aim at 180 deg/s) jumps the new job at
+    full rate on its first frame. Ignoring the stick until it re-centres stops that and reads to the pilot as "the
+    controls disengaged ... I had to return it to home position and move the sticks again" (Garrett, 2026-10-30, on the
+    Thresher's snap aim). Ramp the authority from 0 to full over a short dial (`ThresherCameraFraming.AimStickAuthority`,
+    SmoothStep over `aimStickEaseSeconds` 0.3): a held stick starts working on the first frame and never stops.
+
+66. **A skimmer runs its vessel effects on ENTRY, so a contact meant to keep working while a rival STAYS needs the
+    standing-contact path, and a take priced in petals must price its silence and score in petals too.** The Tiger
+    Moth's shred (`cece/gallant-gauss-1lsqle`, 2026-10-31: one petal of one random element per Charge-scaled tick)
+    found that `SkimmerImpactor`'s stay handler runs no effects: Dustup had been designed around "one dusting per
+    pass" because of it. The shape that works: `SkimmerImpactor` keeps the hulls standing inside it (only while its
+    container holds an effect whose `RepeatsWhileInside` is true, so no other skimmer pays), the vessel's own component
+    calls `ReapplyVesselEffectsToOverlapping` every frame (the vessel twin of the Rhino's prism re-apply), and the
+    reporter's latch window paces it. The take implements `IPacedContactPetalTake`: its own window
+    (`SameVictimCooldownSeconds`), its worth in petals (`PetalsPerTake`, which `CombatHitDrain.TryAdmitPetals` silences
+    for), and `CanTakeFrom`, so a victim with nothing to take is not admitted. Score follows petals: one hit of the class
+    per `CombatHitDrain.PetalsFor(class)` petals (a Strike is 3.2: ten points to the petal, on four elements). Two
+    consequences to check before adopting it: a mode scored on that contact now scores on TIME in contact (re-tune its
+    target), and a one-element take must pick among the elements the victim HOLDS by their replicated level, or it
+    lands on an empty element while another still has petals.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

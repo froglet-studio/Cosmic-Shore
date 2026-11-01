@@ -26,9 +26,12 @@ namespace CosmicShore.Core
         public const string EpisodeProgress       = "EPISODE_PROGRESS";
         public const string PlayerSettings        = "PLAYER_SETTINGS";
         public const string Squad                 = "SQUAD_DATA";
+        /// <summary>PUBLIC player data: the squads a player made and the seats they hold in friends' (SquadDirectory).</summary>
+        public const string SquadsPublic          = "SQUADS_PUBLIC";
         public const string Loadout               = "LOADOUT_DATA";
         public const string QuestGraph            = "QUEST_GRAPH_PROGRESS";
         public const string DrillProgress         = "DRILL_PROGRESS";
+        public const string ReplayIndex           = "REPLAY_INDEX";
 
         // ── Analytics Events ──
         // Every event (and its parameters) must also be declared in the UGS

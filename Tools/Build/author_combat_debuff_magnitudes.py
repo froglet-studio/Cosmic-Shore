@@ -97,7 +97,13 @@ DRAINS = [
     # (asset path, verb, magnitude field, optional mirrored buff field, duration field, note)
     ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabCavitationDebuffByExplosionEffect.asset",
      "debuff", "debuffMagnitude", None, "debuffDuration",
-     "Dolphin crystal cone + Scarab cavitation plate (shared asset - The Bends / Undertow)"),
+     "Dolphin crystal cone (The Bends). The Scarab's shove left this shared asset on 2026-10-29 for "
+     "its own, below, because its bite is Charge-scaled and the cone's is not"),
+    ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabShoveDebuffByExplosionEffect.asset",
+     "debuff", "debuffMagnitude", None, "debuffDuration",
+     "Scarab shove plate (Undertow). Its bite is additionally scaled by the shover's CHARGE "
+     "(magnitudeAtFullCharge, x1 at rest -> x2.5 at L10, the joust's steal shape); this row prices "
+     "the x1 base."),
     ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset",
      "debuff", "debuffMagnitude", None, "debuffDuration",
      "Manta Kabloom bloom (Mass + Space only)"),
@@ -109,13 +115,14 @@ DRAINS = [
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Squirrel joust overtake (the ally BUFF mirrors the debuff). The STEAL is additionally "
      "scaled by the thief's CHARGE (stealScale, x1 at rest -> x2.5 at L10); this row prices the "
-     "x1 base, which is what the Rhino's sword always takes."),
+     "x1 base, which both hulls take at rest."),
     ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Rhino sword contact steal (same type, requireOvertake OFF - a blade connects on its own "
      "terms). Priced identically to the joust because they are the same VERB: Broadside prices a "
      "Strike once, and two hulls landing one must take the same petals or the price list is a "
-     "fiction."),
+     "fiction. Since 2026-10-26 its steal is CHARGE-scaled exactly like the joust's (x1 -> x2.5): "
+     "Charge is the Rhino's steal."),
 ]
 
 # Verbs that SCORE and still carry no drain path at all. Reported, never authored.

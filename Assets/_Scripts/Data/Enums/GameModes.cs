@@ -300,16 +300,16 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
         GrizzlyTime = 63,
 
-        // Slingshot (64): the Stoat-only circuit race - Redline's shape (a lapped gate circuit on
+        // Slingshot (64): the Stoat's TIME race (since 2026-10-27) - Redline's shape (a lapped gate circuit on
         // the shared HeadlongCircuit solver) cut for a 60 u/s hull whose only speed is the
         // attractor-repulsor wormhole pair it slings on its triggers: a corner asks where to lay
         // the attractor. See _Scripts/Controller/Arcade/SLINGSHOT.md.
         Slingshot = 64,
 
-        // Warpline (65): the Stoat's TIME race - Slingshot's shape (a lapped gate circuit on the
-        // shared HeadlongCircuit solver, the Stoat's cut) with five long legs a lap, flown on the
-        // round-15 field dipole: lay the poles so the pathfinder's line is warped and the hull
-        // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
+        // Warpline (65): the Meerkat's TIME race (the Stoat's until 2026-10-27) - Slingshot's shape
+        // (a lapped gate circuit on the shared HeadlongCircuit solver) with five long legs a lap,
+        // flown on the wormhole: bend the reticle, form the tunnel, ride it. See
+        // _Scripts/Controller/Arcade/WARPLINE.md.
         Warpline = 65,
 
         // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate
@@ -335,8 +335,46 @@ namespace CosmicShore.Data
         // See _Scripts/Controller/Arcade/TANDAVA.md.
         Tandava = 69,
 
+        // TandavaSevering (70): Voyage 2, a FORK of Tandava carrying the severing, wound memory and whale-jelly chimera
+        // work of PR #1046 (cut it in two and the piece crawls off as the Severed; it learns from its wounds; on its way
+        // up to the dance it tears between a whale and a jelly). Its own controller, scene, card and assets, so Tandava
+        // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
+        TandavaSevering = 70,
+
+        // BurrowRun (71): the Meerkat's TIME race - Warpline's shape (a lapped gate circuit on the shared HeadlongCircuit
+        // solver, Slingshot's cut) with eight rings a lap, two laps: the Vessel Studio's Meerkat race. The Meerkat digs its
+        // own way - bend the reticle with the right stick, RT dives you through the tunnel it forms, out the far end with
+        // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
+        BurrowRun = 71,
+
+        // ScarabRally (72): the Scarab's TIME race - Switchback's walk (an open chain of rings flown in order,
+        // hairpins only a drift makes, I3 walls and I4 danger prisms beside the line) cut for the Scarab: hold
+        // the throttle, drift the hairpins, juke into the mouths. No ball. Scarab Scramble is the Scarab's Mass
+        // card. 71 is BurrowRun's on Ys-bleeding-edge, 67 SerpentCharge's in flight. See
+        // _Scripts/Controller/Arcade/SCARABRALLY.md.
+        ScarabRally = 72,
+
+        // SerpentTime (73): the Serpent's TIME race - Thresher Time's shape (a lapped circuit on the shared
+        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 6 s burn that
+        // stacks, refilled only by the Serpent's wall eating its own trail. See _Scripts/Controller/Arcade/SERPENTTIME.md.
+        SerpentTime = 73,
+
+        // BrittleStarTime (74): the Brittle Star's TIME race - the same lapped circuit, where Speed Mode (x6
+        // cruise) is the race and the mouths ask when to drop back to Cruise to thread. See
+        // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
+        BrittleStarTime = 74,
+
+        // WaystationPrototype (76): the Tiger Moth's Time race REBUILT AS A PROTOTYPE beside Waystation (58), which stays
+        // as Garrett made it until he approves a replacement (Shombith, 2026-10-31). Waystation's clusters, with a DROP
+        // TOWER in every gap but the last: a staircase of short hops through floor plates, each ring just past its plate
+        // and a pipe beyond the next press point, so the skill is how long you hold (Flappy Bird's tap, on the Drop).
+        // Plates mix plain and danger prisms. The last gap stays the long drop that leaves the wormhole. 72-74 are ScarabRally,
+        // SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight. See
+        // _Scripts/Controller/Arcade/WaystationPrototype/WAYSTATION_PROTOTYPE.md and Docs/Studios/TIGER_MOTH_TIME.md.
+        WaystationPrototype = 76,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 64) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 70) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

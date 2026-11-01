@@ -53,6 +53,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Live elemental scale in world units — the resting size an external scale driver should grow from.</summary>
         public float LiveElementalScale => Scale.EvaluateLive(VesselStatus);
 
+        /// <summary>The elemental scale at element level 0, world units - the yardstick an external scale driver
+        /// measures growth against (the Rhino's camera pulls back by the blade's length over this).</summary>
+        public float RestElementalScale => Scale.EvaluateAtNormalizedLevel(0f);
+
         /// <summary>
         /// The live reach as a 0..1 fraction of THIS skimmer's own authored range - 0 at the
         /// resting size, 1 at integer element level 10. A HUD readout of "how far does my skimmer
@@ -196,7 +200,7 @@ namespace CosmicShore.Gameplay
             if (Time.time - _boosterTimer < cooldown) return;
             _boosterTimer = Time.time;
 
-            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance);
+            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance, shared: true);   // read here and dropped
             if (nextBlocks.Count == 0) return;
 
             // last element
@@ -211,7 +215,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        List<Prism> FindNextBlocks(Prism block, float distance = 100f)
+        /// <param name="shared">True for a caller that reads the result and drops it this frame: the trail's reused
+        /// buffer, no allocation. False (the marker path, which keeps its list for seconds) allocates.</param>
+        List<Prism> FindNextBlocks(Prism block, float distance = 100f, bool shared = false)
         {
             if (block == null || block.Trail == null)
                 return new List<Prism> { block };
@@ -221,10 +227,10 @@ namespace CosmicShore.Gameplay
             var backward = TrailFollowerDirection.Backward;
 
             // simple: prefer forward unless at start and direction negative; adjust if you track direction elsewhere
-            if (idx > 0)
-                return block.Trail.LookAhead(idx, 0, forward, distance);
-
-            return block.Trail.LookAhead(idx, 0, backward, distance);
+            var direction = idx > 0 ? forward : backward;
+            return shared
+                ? block.Trail.LookAheadShared(idx, 0, direction, distance)
+                : block.Trail.LookAhead(idx, 0, direction, distance);
         }
 
         public static float ComputeGaussian(float x, float b, float c)

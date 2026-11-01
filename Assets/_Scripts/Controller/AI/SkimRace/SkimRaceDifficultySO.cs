@@ -6,10 +6,12 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// How each lobby AI difficulty handicaps the Skim Race pilot (<see cref="SkimRaceHandicap"/>).
     /// ONE setting per difficulty for every intensity: the mistakes are tuned once, on intensity 2
-    /// (Easy about 120 s, Medium about 95 s, Hard the unhandicapped pilot), and every other track -
-    /// including one added later - gets the same mistakes, so its times scale with its length.
+    /// (Easy about 120 s, Medium about 95 s, Legendary the unhandicapped pilot, Hard between Medium and
+    /// Legendary), and every other track - including one added later - gets the same mistakes, so its
+    /// times scale with its length. The gate races (<see cref="GateRaceHandicap"/>) and the Arena's
+    /// platform autopilot (<see cref="AIPilotBelief"/>) read the same numbers.
     ///
-    /// <para>Hard has no fields on purpose: it is the shipped per-intensity policy with no handicap.
+    /// <para>Legendary has no fields on purpose: it is the shipped per-intensity policy with no handicap.
     /// Ships as <c>Resources/SkimRaceDifficulty.asset</c>, written by
     /// <c>Tools/Build/author_skimrace_ai_config.py</c> (its DIFFICULTY table; <c>--check</c> also
     /// holds the field defaults below equal to that table, so a missing asset flies the same
@@ -36,12 +38,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Chance per crystal that a Medium pilot misjudges the pass.")]
         [Range(0f, 1f)] public float MediumMistakeChance = 0.045f;
 
-        /// <summary>The handicap for <paramref name="difficulty"/>; none for Hard (and for any value
-        /// that is not a difficulty, which resolves to the default first).</summary>
+        [Header("Hard")]
+        [Tooltip("Seconds before a Hard pilot notices a new crystal. Legendary notices at once.")]
+        [Min(0f)] public float HardReactionSeconds = 0.12f;
+
+        [Tooltip("Chance per crystal that a Hard pilot misjudges the pass. Legendary never does.")]
+        [Range(0f, 1f)] public float HardMistakeChance = 0.02f;
+
+        /// <summary>The handicap for <paramref name="difficulty"/>; none for Legendary (and any value that is
+        /// not a difficulty resolves to the default first).</summary>
         public SkimRaceHandicapLevel For(AIDifficulty difficulty) => AIDifficultyRules.Resolve(difficulty) switch
         {
             AIDifficulty.Easy => new SkimRaceHandicapLevel(EasyReactionSeconds, EasyMistakeChance),
             AIDifficulty.Medium => new SkimRaceHandicapLevel(MediumReactionSeconds, MediumMistakeChance),
+            AIDifficulty.Hard => new SkimRaceHandicapLevel(HardReactionSeconds, HardMistakeChance),
             _ => default,
         };
 

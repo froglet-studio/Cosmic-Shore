@@ -4,10 +4,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Tuning for the Rhino energy sword (RHINO_ENERGY_SWORD.md): the scale mapping the
-    /// blade's resting length follows from stored energy, the energize ritual (the
-    /// supershield key, and its Live Wire level-5), the omni-crystal surge's burst, and every blade-look/juice knob
-    /// (heat ramp, energized white-hot, impact flashes, crackle, camera shake).
+    /// Tuning for the Rhino sword (RHINO_ENERGY_SWORD.md): the energize ritual (the supershield key,
+    /// with its Space level-5 gate, Shield Breaker), how the Space length eases and how far the camera follows it, the
+    /// omni-crystal surge's sword ring and camera, and every blade-look/juice knob (energized danger
+    /// red, impact flashes, crackle, camera shake). There is no energy (2026-10-26). The blade's
+    /// LENGTH range is Space's: Skimmer.Scale on Rhino.prefab (24 at rest, 40 at Space 10).
     /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
     /// <see cref="RhinoSwordFXController"/>.
@@ -17,21 +18,15 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Skimmer/ShieldSkimmerScaleConfigSO")]
     public sealed class ShieldSkimmerScaleConfigSO : ScriptableObject
     {
-        [Header("Scale Mapping (world units, blade length)")]
-        [Tooltip("Resting length fallback when no Skimmer provides a live elemental (Space) scale.")]
-        [SerializeField] private float baseScale = 30f;      // energy = 0
-        [Tooltip("Blade length at FULL energy.")]
-        [SerializeField] private float maxScale  = 120f;     // energy = 1
-
-        [Header("Length Smoothing (world units/sec)")]
-        [Tooltip("How fast the resting length grows toward the stored-energy target.")]
-        [SerializeField] private float prismGrowSpeed = 30f;
-        [Tooltip("How fast the resting length eases back down (crystal drain, debuffs).")]
-        [SerializeField] private float shrinkSpeed = 10f;
+        [Header("Length (Space alone) and the camera that follows it")]
+        [Tooltip("World units/sec the blade eases toward its Space length when the Space level changes.")]
+        [SerializeField, Min(0.01f)] private float spaceLengthEaseSpeed = 30f;
+        [Tooltip("How much of the blade's growth the local pilot's camera follows: 1 = it pulls back in " +
+                 "proportion (a blade 1.67x its resting length puts the camera 1.67x as far back, so the " +
+                 "blade reads the same size on screen); 0 = the camera never moves for it.")]
+        [SerializeField, Range(0f, 1f)] private float cameraFollowsBladeLength = 1f;
 
         [Header("Energize (hold the both-triggers chop stance — the supershield key)")]
-        [Tooltip("Fraction of max energy consumed each time the blade energizes.")]
-        [SerializeField, Range(0f, 1f)] private float energizeCostFraction = 0.1f;
         [Tooltip("Seconds the lower/chop stance must be held to energize.")]
         [SerializeField] private float energizeHoldSeconds = 1f;
         [Tooltip("PHONE ONLY: how many times FASTER the energize charge fills for a human flying on touch. " +
@@ -41,45 +36,41 @@ namespace CosmicShore.Gameplay
                  "(RhinoSwordNetworkRelay), so every peer ignites on the same edge.")]
         [SerializeField, Min(0.01f)] private float touchEnergizeRateMultiplier = 2f;
         [Tooltip("Seconds the blade stays energized AFTER leaving the stance. Holding the stance " +
-                 "from ignition keeps it lit; once let go the tail runs out whatever the fingers do - " +
-                 "unless Live Wire (below) is active.")]
+                 "from ignition keeps it lit; once let go the tail runs out whatever the fingers do.")]
         [SerializeField] private float energizedTailSeconds = 5f;
         [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
         [SerializeField] private float energizeCooldownSeconds = 5f;
 
-        [Tooltip("Element whose level-5 upgrade, LIVE WIRE, lets a return to the stance re-light the " +
-                 "energized tail - a blade kept lit for as long as the pilot keeps coming back to the " +
-                 "chop. Gated on the replicated unlock bit. None disables it.")]
-        [SerializeField] private Element liveWireUpgradeElement = Element.Charge;
+        [Tooltip("Element whose level-5 upgrade, SHIELD BREAKER, lets the sword destroy SUPER-SHIELDED " +
+                 "prisms at all (the Rhino: Space; Garrett, 2026-10-26). Without it the blade binds in " +
+                 "hardened mass, energized or not. Gated on the replicated unlock bit (IsUpgradeActive) - " +
+                 "whether a prism survives is an outcome every peer has to agree on. None = no upgrade " +
+                 "needed (the energize alone is the key, the pre-2026-10-26 behaviour).")]
+        [SerializeField] private Element superShieldUpgradeElement = Element.Space;
 
-        [Header("Crystal Burst (all three dimensions) - the omni-crystal SURGE's look")]
-        [Tooltip("Uniform size factor the blade bursts to on a FULL-energy surge, " +
-                 "applied to the authored X/Y/Z silhouette (not just length). Less energy scales " +
-                 "the factor down toward 1 (no burst).")]
-        [SerializeField] private float crystalBurstFactorAtFullEnergy = 4f;
-        [Tooltip("Seconds the burst holds at full size before easing back.")]
-        [SerializeField] private float crystalBurstHoldSeconds = 2.5f;
-        [Tooltip("Local-scale units/sec the blade grows into the burst shape.")]
-        [SerializeField] private float crystalBurstGrowSpeed = 600f;
-        [Tooltip("Local-scale units/sec the blade eases back from the burst to its resting size.")]
-        [SerializeField] private float crystalBurstReturnSpeed = 150f;
+        [Header("Omni-crystal Surge - the sword ring and camera")]
+        [Tooltip("Swords in the ring a surge raises round the hull, the pilot's own blade included " +
+                 "(8 = the blade plus 7 copies, 45 degrees apart round the nose axis). Every copy is posed " +
+                 "from the blade's live pose, so the triggers swing the whole ring.")]
+        [SerializeField, Range(2, 16)] private int surgeRingSwordCount = 8;
+        [Tooltip("Seconds the ring takes to fan out of the blade when the surge starts, and to fold back " +
+                 "into it when the surge ends.")]
+        [SerializeField, Min(0.01f)] private float surgeRingUnfurlSeconds = 0.35f;
+        [Tooltip("Camera distance multiplier while the surge holds (the local pilot only): the camera " +
+                 "pulls straight back by this and re-centres on the hull, so the whole ring is on screen.")]
+        [SerializeField, Min(1f)] private float surgeCameraDistanceScale = 2f;
+        [Tooltip("Seconds the camera takes to move into the surge framing, and back out of it.")]
+        [SerializeField, Min(0.01f)] private float surgeCameraBlendSeconds = 0.6f;
 
-        [Header("Blade Look — heat ramp")]
+        [Header("Blade Look — resting colour")]
         [Tooltip("Brightness multiplier always applied to the blade's colour. Bloom (threshold 0.2, clamp 0.5) " +
-                 "does the rest, so this compounds with fullEnergyBrightness FAST - past ~3 combined the " +
-                 "blade stops reading as a blade and becomes a white blob.")]
+                 "does the rest - past ~3 the blade stops reading as a blade and becomes a white blob.")]
         [SerializeField] private float visibilityMultiplier = 1.2f;
         [Tooltip("The blade's RESTING colour — deliberately NOT the pilot's domain colour: the sword " +
                  "friendly-fires, so a team-coloured blade would read as safe to allies. White-hot says " +
                  "'this cuts anything'. (Authored here, not read off FresnelMaterial, so the blade's " +
                  "meaning can never drift with a shared material's tint.)")]
         [ColorUsage(true, true)] [SerializeField] private Color restingBladeColor = Color.white;
-        [Tooltip("Colour the blade blends toward as stored energy fills. Keep it the SAME HUE as the " +
-                 "resting colour — energy is read as BRIGHTNESS (fullEnergyBrightness); HUE is reserved " +
-                 "for the energized state below, so the two signals can never be confused.")]
-        [ColorUsage(true, true)] [SerializeField] private Color fullEnergyColor = Color.white;
-        [Tooltip("Extra brightness multiplier at FULL energy (lerped from 1 at empty). Keep ≤4 — bloom clamps beyond that.")]
-        [SerializeField] private float fullEnergyBrightness = 1.8f;
 
         [Header("Blade Look — energized (the danger colour)")]
         [Tooltip("Blade colour while ENERGIZED — the shared DANGER colour (SO_ColorSet.Danger, the same " +
@@ -116,7 +107,7 @@ namespace CosmicShore.Gameplay
         [Header("Blade Look — impact flashes")]
         [Tooltip("Flash strength (0..1) when the sword destroys a normal prism.")]
         [SerializeField, Range(0f, 1f)] private float hitFlashAmount = 0.35f;
-        [Tooltip("Flash strength (0..1) when the sword pops a super-shielded prism or bursts on a crystal.")]
+        [Tooltip("Flash strength (0..1) when the sword pops a super-shielded prism or a surge starts.")]
         [SerializeField, Range(0f, 1f)] private float popFlashAmount = 1f;
         [Tooltip("Seconds a full-strength flash takes to decay back to the heat-ramp colour.")]
         [SerializeField] private float flashDecaySeconds = 0.35f;
@@ -127,7 +118,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Shake intensity when the sword pops a super-shielded prism.")]
         [SerializeField] private float popShakeIntensity = 1.2f;
         [SerializeField] private float popShakeDuration = 0.25f;
-        [Tooltip("Shake intensity of a FULL-energy crystal burst (lerped from 0 by the energy consumed).")]
+        [Tooltip("Shake intensity when a surge raises the sword ring.")]
         [SerializeField] private float burstShakeMaxIntensity = 2.5f;
         [SerializeField] private float burstShakeDuration = 0.4f;
 
@@ -160,19 +151,12 @@ namespace CosmicShore.Gameplay
 
         // --- Public API ---
 
-        public float BaseScale => baseScale;
-
-        public float MaxScale => Mathf.Max(baseScale, maxScale);
-
-        public float PrismGrowSpeed => prismGrowSpeed;
-        public float ShrinkSpeed    => shrinkSpeed;
-
-        public float CrystalBurstFactorAtFullEnergy => Mathf.Max(1f, crystalBurstFactorAtFullEnergy);
-        public float CrystalBurstHoldSeconds        => Mathf.Max(0f, crystalBurstHoldSeconds);
-        public float CrystalBurstGrowSpeed          => Mathf.Max(0.01f, crystalBurstGrowSpeed);
-        public float CrystalBurstReturnSpeed        => Mathf.Max(0.01f, crystalBurstReturnSpeed);
-
-        public float EnergizeCostFraction    => Mathf.Clamp01(energizeCostFraction);
+        public int   SurgeRingSwordCount      => Mathf.Clamp(surgeRingSwordCount, 2, 16);
+        public float SurgeRingUnfurlSeconds   => Mathf.Max(0.01f, surgeRingUnfurlSeconds);
+        public float SurgeCameraDistanceScale => Mathf.Max(1f, surgeCameraDistanceScale);
+        public float SurgeCameraBlendSeconds  => Mathf.Max(0.01f, surgeCameraBlendSeconds);
+        public float SpaceLengthEaseSpeed     => Mathf.Max(0.01f, spaceLengthEaseSpeed);
+        public float CameraFollowsBladeLength => Mathf.Clamp01(cameraFollowsBladeLength);
         public float EnergizeHoldSeconds     => Mathf.Max(0.01f, energizeHoldSeconds);
         public float TouchEnergizeRateMultiplier => Mathf.Max(0.01f, touchEnergizeRateMultiplier);
 
@@ -182,21 +166,18 @@ namespace CosmicShore.Gameplay
             touchPilot ? Mathf.Max(0.01f, EnergizeHoldSeconds / TouchEnergizeRateMultiplier) : EnergizeHoldSeconds;
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
-        public Element LiveWireUpgradeElement => liveWireUpgradeElement;
 
-        /// <summary>CHARGE level-5, Live Wire: is it active on this vessel? Through the replicated unlock
-        /// bit (IsUpgradeActive), never a raw level read.</summary>
-        public bool LiveWireActive(IVesselStatus status)
+        /// <summary>SPACE level-5, Shield Breaker: may this vessel's sword destroy super-shielded prisms?
+        /// Through the replicated unlock bit (IsUpgradeActive), never a raw level read.</summary>
+        public bool SuperShieldUpgradeActive(IVesselStatus status)
         {
-            if (liveWireUpgradeElement == Element.None) return false;
+            if (superShieldUpgradeElement == Element.None) return true;
             var abilities = status?.ElementalAbilityHandler;
-            return abilities && abilities.IsUpgradeActive(liveWireUpgradeElement);
+            return abilities && abilities.IsUpgradeActive(superShieldUpgradeElement);
         }
 
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;
-        public Color FullEnergyColor      => fullEnergyColor;
-        public float FullEnergyBrightness => Mathf.Max(1f, fullEnergyBrightness);
 
         public Color EnergizedColor         => energizedColor;
         public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);
@@ -234,8 +215,8 @@ namespace CosmicShore.Gameplay
         // the one class of hit they cannot answer with flying. It also mutated THIS asset, and
         // ONE asset drives every Rhino, so shooting one pilot shrank every Rhino's sword in the
         // match. What a weapon may take from another pilot is their elemental PETALS.
-        // The `_maxScaleMultiplier` runtime state went with it, so MaxScale is now the authored
-        // value (the reader-less legacy prismMaxScale cap was deleted 2026-10-16). Do not
-        // reintroduce a debuff here.
+        // The `_maxScaleMultiplier` runtime state went with it, and on 2026-10-26 the blade's length
+        // became Space's alone (no energy length, no surge burst). Do not reintroduce a debuff, or a
+        // second source of size, here.
     }
 }

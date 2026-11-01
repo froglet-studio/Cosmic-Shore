@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Laps of the ring set that make one race.</summary>
         public int Laps = DefaultLaps;
 
-        public const int DefaultLaps = 3;
+        public const int DefaultLaps = 2;
 
         public override GameModes Mode => GameModes.GrizzlyTime;
 

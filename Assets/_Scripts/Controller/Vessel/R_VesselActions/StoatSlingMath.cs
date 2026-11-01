@@ -134,6 +134,14 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
 
         /// <summary>
+        /// The orbit radius kept clear of the repulsor: at most <paramref name="share"/> of the distance between the poles
+        /// (0 = no limit). A circle wider than the pair reaches round the repulsor and swings the hull past its side - the
+        /// "pulled toward the white hole, I cannot get to the middle" of the 2026-10-27 playtest.
+        /// </summary>
+        public static float ClearOfRepulsor(float radius, float poleDistance, float share) =>
+            share > 0f ? Mathf.Min(radius, Mathf.Max(1f, share * Mathf.Max(0f, poleDistance))) : radius;
+
+        /// <summary>
         /// Where a Time-mode press lays its pair: the ATTRACTOR <paramref name="ahead"/> along the nose and
         /// <paramref name="side"/> to the pressed side, the repulsor mirrored on the other side (the studio's dipole sling,
         /// <c>dpAhead</c> / <c>dpSide</c>) — out in front of the hull, where the camera sees it.

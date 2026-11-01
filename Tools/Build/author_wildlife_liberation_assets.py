@@ -419,17 +419,20 @@ def fauna_asset_path(species, intensity):
 
 
 # The tadpole swarm keeps the authored Blob expression (small body, long tail prisms, 90s
-# starvation clock, forager). Everything else keeps its prefab as authored.
+# starvation clock, forager). Everything else keeps its prefab as authored. The body and its
+# body-relative lengths are x 3.55/1.737, matching the one heart size (Docs/ECOSYSTEM.md 64.4).
 TADPOLE_VARIANT = f"""  Variant:
     Enabled: 1
-    BaseBodyScale: 0.4
+    BaseBodyScale: 0.8175
     BodyPrismScale: {{x: 0.8, y: 0.8, z: 7}}
     BodyMaterial: {{fileID: 2100000, guid: {EXISTING['TadpoleBodyMat']}, type: 2}}
     StarvationSeconds: 90
     Forager: 1
-    CohesionRadius: 50
+    CohesionRadius: 102.2
     BehaviorUpdateRate: 1.5
-    TrailBlockInteractionRadius: 30
+    TrailBlockInteractionRadius: 61.31
+    SeparationRadius: 30.66
+    FeedingClusterRadius: 20.44
     GoalWeight: 3
     MinSpeed: 10
     MaxSpeed: 15

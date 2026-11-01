@@ -15,9 +15,11 @@
     --muted: #8e95bf;
     --jade: #13fff2;   /* the game's Jade; studio-domains.js sets it from the palette */
     --stoat: #c48bff;
+    --meerkat: #4fd8ff;
     --pistol: #ff8a3d;
     --brittle: #7fd7ff;
     --shrike: #ff8a5c;
+    --serpent: #9be15d;
     --ok: #4be38f;
     --warn: #ffb454;
     --off: #5d6488;
@@ -115,9 +117,18 @@
       <a class="bay" href="stoat.html" style="--accent: var(--stoat)">
         <canvas id="pvStoat" width="640" height="300" aria-hidden="true"></canvas>
         <div style="display:grid;gap:8px">
-          <div class="name"><b>Stoat</b><span class="chip" style="color:var(--stoat)">design studio · round 15</span></div>
-          <p>The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and the round-15 field trajectory (a predicted path that boosts you when it loops back on itself). Editor layout with tabs and pop-out windows; touch sticks on a phone.</p>
-          <div class="spec"><span>Sling</span><b>strength 0.5–12 by squeeze</b><span>Styles</span><b>Comet · Needle · Anchor · Maelstrom · Flare</b><span>Sim lab</span><b>AI pilot · scorecard · cameras</b><span>Status</span><b>round-4 sling in the game (Slingshot)</b></div>
+          <div class="name"><b>Stoat</b><span class="chip" style="color:var(--stoat)">design studio · round 30</span></div>
+          <p>The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and two modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it) and Time (the catch sling, timed at 90°). Its wormhole mode became the Meerkat (2026-10-27). Editor layout with tabs and pop-out windows; touch sticks on a phone.</p>
+          <div class="spec"><span>Sling</span><b>strength 0.5–12 by squeeze</b><span>Styles</span><b>Comet · Needle · Anchor · Maelstrom · Flare</b><span>Sim lab</span><b>AI pilot · scorecard · cameras</b><span>Status</span><b>Mass and Time in the game on B; the game still has the Gate too (Ys-bleeding-edge)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="meerkat.html" style="--accent: var(--meerkat)">
+        <canvas id="pvMeerkat" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Meerkat</b><span class="chip" style="color:var(--meerkat)">design studio · round 2</span></div>
+          <p>The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the formed tunnel as a bridge of spindles over glass and the space round it bent, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatWormholeConfig); AI rivals at Easy, Medium or Hard and a level scorecard.</p>
+          <div class="spec"><span>Ability</span><b>the wormhole, on one thumb</b><span>Tunnel</span><b>bends to 120° · 120–600 u</b><span>Ride</span><b>out at your entry speed</b><span>Status</span><b>design only: no Meerkat in the game yet</b></div>
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
@@ -145,6 +156,42 @@
           <div class="name"><b>Goby and Pistol</b><span class="chip" style="color:var(--pistol)">crew vessel · in the game</span></div>
           <p>A crew vessel: two seats, one hull, its card reads Goby and Pistol (SO_Vessel.CrewNames, as the Wrasse and Grouper). The Goby flies the 3D world on two thumbs, very fast, and lays the path; the Pistol plays a 2D side view unrolled from that path, rides its hills Tiny Wings style and blows things up. D-pad left or right swaps seats; the AI takes the empty one.</p>
           <div class="spec"><span>Goby</span><b>two thumbs · 160 u/s · primer · flares</b><span>Pistol</span><b>side view · dive · launch · vortex ring · ghost</b><span>Seats</span><b>D-pad left / right · AI in the empty seat</b><span>Status</span><b>in the Toybox Vessel Changer (not editor-verified)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="serpent.html" style="--accent: var(--serpent)">
+        <canvas id="pvSerpent" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Serpent</b><span class="chip" style="color:var(--serpent)">built vessel · round 1</span></div>
+          <p>The Serpent and its Time game, a dirty ring race: every gate holds several rings and any Serpent can plug one behind it with a seed wall (cloak just past it, or stop in it). Shoot the wall down with the scoped Sniper Shot, ram it, or take another ring; every round costs a crystal off the racing line. AI Serpents at Easy, Medium or Hard fly five play styles and play dirty too.</p>
+          <div class="spec"><span>Flight</span><b>50 u/s · pellets stack to 9×</b><span>Kit</span><b>Scope · Sniper Shot · Seed Wall · Cloak</b><span>Game</span><b>Serpent Time (a design)</b><span>Status</span><b>the race is lab-only; the Serpent ships</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="orca.html" style="--accent: #13fff2">
+        <canvas id="pvOrca" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Orca</b><span class="chip" style="color:#13fff2">4-seat vessel · round 9</span></div>
+          <p>Garrett&#x27;s 4-seat vessel, in the game as the Orca: a Helm (Time) and three Gunner seats, the sniper (Space), the fast gun (Mass) and the bomb (Charge), each with its own missiles. Take the seats you want; the AI flies the rest. Round 9 adds play styles to choose between while you test: the helm&#x27;s boost is the Tank, a Breath or the Tide; its shield is the Shield or a Dock; the missiles are flown by wire or are Seekers. Every default is the Orca as it ships.</p>
+          <div class="spec"><span>Seats</span><b>Helm · Sniper · Fast gun · Bomb</b><span>Play styles</span><b>Tank / Breath / Tide · Shield / Dock · Fly-by-wire / Seeker</b><span>Games</span><b>Ring Race · Breach · Anchorage · Broadside</b><span>Status</span><b>in the Toybox Vessel Changer as the Orca; the round 9 styles are lab-only</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="siphonophore.html" style="--accent: #9be7ff">
+        <canvas id="pvSiph" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Siphonophore</b><span class="chip" style="color:#9be7ff">voltron vessel &middot; round 2</span></div>
+          <p>One vessel that is three zooids and one colony, taking turns. Apart, the Bell lights the dark crystals, the Sting opens their husks and the Bract nets them into its hold; none of them can score. Fused, the colony digests the hold into the score and rams the walls open, and cannot light, open or catch; the hold empty, it splits itself. Designed from the ground up to alternate, never assembled from vessels that already have a loop.</p>
+          <div class="spec"><span>Apart</span><b>Bell lights &middot; Sting opens &middot; Bract nets (the hold)</b><span>Fused</span><b>Helm rams &middot; Lance opens walls &middot; Ward shields &middot; the hold digests into the score</b><span>The loop</span><b>light, open, net, fuse, digest, split: neither phase can do the other&rsquo;s work</b><span>Why</span><b>the Voltron principle (2026-10-27): designed to alternate, not assembled</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="omega.html" style="--accent: #ff5ea8">
+        <canvas id="pvOmega" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Omega Crews</b><span class="chip" style="color:#ff5ea8">combiner crews &middot; superseded</span></div>
+          <p>Three shipped vessels fly as themselves (their MEGA forms), then gather into one OMEGA form with three seats: Helm flies it, Arms wields the crew&rsquo;s weapon, Core keeps the shield and the finisher. Swap seats with the arena&rsquo;s gesture; the AI takes every seat you leave. The omega meter fills apart and drains combined, so you combine for the walls and split for the crystals. Three crews to compare: the Warden (Stoat, Thresher, Butterfly), the Bulwark (Rhino, Grizzly, Scarab), the Tempest (Squirrel, Sparrow, Manta).</p>
+          <div class="spec"><span>Mega forms</span><b>each member flies its own flight and one RT move</b><span>Omega form</span><b>Helm &middot; Arms (weapon) &middot; Core (shield, finisher) &middot; 3 seat</b><span>Meter</span><b>fills on crystals and skims, drains combined; empty = split</b><span>Why</span><b>Power Rangers SPD: zords, the Megazord, the finisher that ends the fight</b></div>
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
@@ -240,6 +287,33 @@
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
+      <a class="bay" href="moonjelly.html" style="--accent: #cfe8ff">
+        <canvas id="pvMoonjelly" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Moon Jelly</b><span class="chip" style="color:#cfe8ff">calm · level 1 · round 1</span></div>
+          <p>The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide.</p>
+          <div class="spec"><span>Level</span><b>1: one stick, one button</b><span>Mechanic</span><b>hold to breathe in, let go to pulse; slow and steady builds the calm</b><span>Calm / intense</span><b>drifting and breathing / the Moonrise</b><span>Made from</span><b>the Dolphin (charge, then release) + the Butterfly (slow, wide, quiet)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="seaturtle.html" style="--accent: #7fd6a8">
+        <canvas id="pvSeaturtle" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Sea Turtle</b><span class="chip" style="color:#7fd6a8">calm · level 1 · round 1</span></div>
+          <p>The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it.</p>
+          <div class="spec"><span>Level</span><b>1: one stick, one button</b><span>Mechanic</span><b>the course is a current; hold to tuck in and ride it, let go to turn</b><span>Calm / intense</span><b>gliding the tide / threading the Rapids</b><span>Made from</span><b>the Urchin (latch onto a trail and ride it) + the Squirrel (flow, no hard decisions)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="seahorse.html" style="--accent: #ffb36b">
+        <canvas id="pvSeahorse" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Seahorse</b><span class="chip" style="color:#ffb36b">calm · level 1 · round 1</span></div>
+          <p>The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden.</p>
+          <div class="spec"><span>Level</span><b>1: one stick, two buttons</b><span>Mechanic</span><b>hold on to a plant: it grows and calls your crystal in; let go to dart</b><span>Calm / intense</span><b>tending / a rival comes, puff and dart</b><span>Made from</span><b>the Angler (grows plants, leads creatures) + the Serpent (a seed that gathers blocks)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
       <!-- concept-bays:end -->
       <button type="button" class="bay add" id="newStudioCard" aria-haspopup="dialog">
         <span class="plus" aria-hidden="true">+</span>
@@ -251,7 +325,7 @@
       </button>
     </div>
     <div class="fleet" aria-label="Vessels without a studio yet">
-      <span>Manta</span><span>Dolphin</span><span>Rhino</span><span>Serpent</span><span>Sparrow</span><span>Urchin</span><span>Grizzly</span><span>Scarab</span><span>Butterfly</span><span>Termite</span>
+      <span>Manta</span><span>Dolphin</span><span>Rhino</span><span>Sparrow</span><span>Urchin</span><span>Grizzly</span><span>Scarab</span><span>Butterfly</span><span>Termite</span>
     </div>
     <p class="lede hint" style="margin-top:8px">No studio yet. Press a vessel, or <b>+ New studio</b>, to start one; each needs the vessel's own numbers read from its assets first.</p>
   </section>
@@ -280,9 +354,9 @@
         <p>Ask for a design idea, a new play-style type, or what a number does. The answer comes from Claude with the studio's numbers in hand.</p>
         <div class="row">
           <label for="askVessel" class="hint" style="color:var(--muted)">Vessel</label>
-          <select id="askVessel"><option>Squirrel</option><option>Stoat</option><option>Brittle Star</option><option>Shrike</option><option>Goby &amp; Pistol</option>
+          <select id="askVessel"><option>Squirrel</option><option>Stoat</option><option>Meerkat</option><option>Brittle Star</option><option>Shrike</option><option>Goby &amp; Pistol</option><option>Orca</option><option>Siphonophore</option><option>Omega Crews</option>
           <!-- concept-options:start -->
-          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option>
+          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option><option>Moon Jelly</option><option>Sea Turtle</option><option>Seahorse</option>
           <!-- concept-options:end -->
           </select>
         </div>
@@ -294,9 +368,9 @@
         <h3>Development requests</h3>
         <p>File a change for a studio or a vessel. A Claude Code session, or Amoebius's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
         <div class="row">
-          <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Brittle Star</option><option>Shrike</option><option>Goby &amp; Pistol</option>
+          <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Meerkat</option><option>Brittle Star</option><option>Shrike</option><option>Goby &amp; Pistol</option><option>Orca</option><option>Siphonophore</option><option>Omega Crews</option>
           <!-- concept-options:start -->
-          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option>
+          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option><option>Moon Jelly</option><option>Sea Turtle</option><option>Seahorse</option>
           <!-- concept-options:end -->
           <option>Studio hub</option><option>New vessel</option></select>
           <select id="reqKind" aria-label="Kind"><option>Change the studio</option><option>Try a design</option><option>Bug</option><option>New studio</option></select>
@@ -362,6 +436,52 @@
     g.fillStyle = '#c48bff'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
   });
 
+  preview('pvMeerkat', (g, w, h, t) => {   // the reticle bends, forms a tunnel, the dot rides it out and it collapses
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const ph = (t % 5) / 5, bend = Math.min(1, ph / 0.3) * 1.6, L = 260, x0 = w * 0.18, y0 = h * 0.72, n = 40, pts = [];
+    for (let i = 0; i <= n; i++) { const s = i / n, a = bend * s; pts.push([x0 + L * (bend > 0.01 ? Math.sin(a) / bend : s), y0 - L * (bend > 0.01 ? (1 - Math.cos(a)) / bend : 0)]); }
+    const formed = ph > 0.35, gone = ph > 0.85 ? (ph - 0.85) / 0.15 : 0;
+    for (const side of [-1, 1]) {
+      g.strokeStyle = formed ? 'rgba(157,255,46,' + (0.55 * (1 - gone)).toFixed(2) + ')' : '#4fd8ff'; g.lineWidth = formed ? 1.5 : 1; g.beginPath();
+      pts.forEach((p, i) => { const u = i / n, r = 6 + 16 * Math.abs(2 * u - 1), a = bend * u, x = p[0] - side * r * Math.sin(a), y = p[1] - side * r * Math.cos(a); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
+      g.stroke();
+    }
+    if (!formed) { g.strokeStyle = '#4fd8ff55'; for (let i = 0; i <= n; i += 5) { const p = pts[i]; g.beginPath(); g.arc(p[0], p[1], 6 + 16 * Math.abs(2 * i / n - 1), 0, Math.PI * 2); g.stroke(); } }
+    if (formed && ph < 0.8) { const k = Math.min(n, Math.floor((ph - 0.35) / 0.45 * n)), p = pts[k]; g.fillStyle = '#9dff2e'; g.beginPath(); g.arc(p[0], p[1], 5, 0, Math.PI * 2); g.fill(); }
+    if (gone > 0) { g.strokeStyle = 'rgba(255,255,255,' + (0.25 * (1 - gone)).toFixed(2) + ')'; g.beginPath(); g.arc(w / 2, h / 2, w * (0.35 + 0.3 * gone), 0, Math.PI * 2); g.stroke(); }
+  });
+  preview('pvSiph', (g, w, h, t) => {   // three zooids light, open and net a crystal, then fuse under the float and digest it
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const ph = (t % 8) / 8, fuse = ph > 0.55 ? Math.min(1, (ph - 0.55) / 0.2) : 0, e = fuse * fuse * (3 - 2 * fuse), cx = w * 0.5, cy = h * 0.46;
+    const apart = [[-170, -50], [150, -60], [-10, 80]], slots = [[0, -22], [12, 10], [-14, 8]], cols = ['#9be7ff', '#ff6fb0', '#a3ff8f'];
+    const crX = w * 0.5, crY = h * 0.4, lit = ph > 0.12, open = ph > 0.3, held = ph > 0.45;
+    if (!held) { g.fillStyle = lit ? '#ffffff' : '#3c4664'; g.beginPath(); g.moveTo(crX, crY - 12); g.lineTo(crX + 9, crY); g.lineTo(crX, crY + 12); g.lineTo(crX - 9, crY); g.closePath(); g.fill(); if (!open) { g.strokeStyle = lit ? '#d8e6ff' : '#6a7a9a'; g.lineWidth = 3; for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; g.beginPath(); g.arc(crX + Math.cos(a) * 24, crY + Math.sin(a) * 24, 4, 0, Math.PI * 2); g.stroke(); } } }
+    if (!lit) { g.strokeStyle = '#9be7ff33'; g.lineWidth = 2; g.beginPath(); g.arc(cx + apart[0][0] * 0.6, cy + apart[0][1], 70, 0, Math.PI * 2); g.stroke(); }
+    for (let i = 0; i < 3; i++) { const x = cx + apart[i][0] * (1 - e) + slots[i][0] * e, y = cy + apart[i][1] * (1 - e) + slots[i][1] * e; g.fillStyle = cols[i]; g.beginPath(); if (i === 0) { g.arc(x, y, 14, Math.PI, 0); g.closePath(); } else if (i === 1) { g.moveTo(x - 8, y - 8); g.lineTo(x + 18, y); g.lineTo(x - 8, y + 8); g.closePath(); } else { g.ellipse(x, y, 18, 9, 0, 0, Math.PI * 2); } g.fill(); }
+    if (e > 0) { g.fillStyle = '#dff4ff' + Math.round(e * 140).toString(16).padStart(2, '0'); g.beginPath(); g.arc(cx, cy - 40, 16, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#ffffff22'; g.fillRect(w * 0.3, h * 0.86, w * 0.4, 8); g.fillStyle = '#9be7ff'; g.fillRect(w * 0.3, h * 0.86, w * 0.4 * (held ? Math.max(0, 1 - Math.max(0, ph - 0.75) / 0.25) : 0), 8);
+    g.fillStyle = '#e9ecff'; g.font = '600 12px system-ui'; g.textAlign = 'center'; g.fillText(e > 0.5 ? 'THE COLONY DIGESTS' : held ? 'NETTED: FUSE' : open ? 'OPENED' : lit ? 'LIT' : 'DARK', cx, h * 0.8);
+  });
+  preview('pvOrca', (g, w, h, t) => {   // the 4-seat hull: three turrets on outriggers track a rival, a missile peels off and flies
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const cx = w * 0.42, cy = h * 0.5 + Math.sin(t * 0.8) * 8, rx = w * 0.84, ry = h * 0.3 + Math.sin(t * 0.6) * h * 0.12;
+    g.fillStyle = '#ff5e7a'; g.beginPath(); g.moveTo(rx + 12, ry); g.lineTo(rx - 9, ry - 8); g.lineTo(rx - 9, ry + 8); g.closePath(); g.fill();
+    g.strokeStyle = '#13fff2'; g.lineWidth = 4; g.beginPath(); g.moveTo(cx - 90, cy); g.lineTo(cx + 90, cy); g.moveTo(cx, cy); g.lineTo(cx, cy - 70); g.stroke();
+    g.fillStyle = '#0d4d4a'; g.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + Math.PI / 6; g.lineTo(cx + Math.cos(a) * 30, cy + Math.sin(a) * 30); } g.closePath(); g.fill(); g.strokeStyle = '#13fff2'; g.lineWidth = 2; g.stroke();
+    const cols = ['#9b8cff', '#ff7a59', '#ffd25a'], mounts = [[cx, cy - 70], [cx - 90, cy], [cx + 90, cy]];
+    mounts.forEach(([mx, my], i) => { const a = Math.atan2(ry - my, rx - mx); g.strokeStyle = cols[i]; g.lineWidth = 5; g.beginPath(); g.moveTo(mx, my); g.lineTo(mx + Math.cos(a) * 26, my + Math.sin(a) * 26); g.stroke(); g.fillStyle = cols[i]; g.beginPath(); g.arc(mx, my, 8, 0, Math.PI * 2); g.fill(); });
+    const ph = (t % 2.4) / 2.4, mx = cx + 90 + (rx - cx - 90) * ph, my = cy + (ry - cy) * ph - Math.sin(ph * Math.PI) * 60;
+    g.fillStyle = '#ffd25a'; g.beginPath(); g.arc(mx, my, 5, 0, Math.PI * 2); g.fill(); g.fillStyle = '#ffd25a55'; g.beginPath(); g.arc(mx, my, 10, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#e9ecff'; g.font = '600 12px system-ui'; g.textAlign = 'center'; g.fillText('HELM \u00b7 SNIPER \u00b7 FAST GUN \u00b7 BOMB', cx, h * 0.9);
+  });
+  preview('pvOmega', (g, w, h, t) => {   // three members close in and dock into the omega; the meter under them
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const ph = (t % 6) / 6, k = ph < 0.5 ? ph * 2 : 2 - ph * 2, e = k * k * (3 - 2 * k), cx = w * 0.5, cy = h * 0.46;
+    const slots = [[0, 0], [0, -34], [0, 30]], apart = [[-150, -40], [160, -70], [40, 90]], cols = ['#c48bff', '#7fe0ff', '#ffd0f0'];
+    for (let i = 0; i < 3; i++) { const x = cx + apart[i][0] * (1 - e) + slots[i][0] * e, y = cy + apart[i][1] * (1 - e) + slots[i][1] * e; g.fillStyle = cols[i]; g.beginPath(); g.moveTo(x + 22, y); g.lineTo(x - 12, y - 11); g.lineTo(x - 5, y); g.lineTo(x - 12, y + 11); g.closePath(); g.fill(); if (e > 0.85) { g.strokeStyle = '#ff5ea8'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 8, cy - 34); g.lineTo(cx - 8, cy + 30); g.stroke(); } }
+    g.fillStyle = '#ffffff22'; g.fillRect(w * 0.3, h * 0.86, w * 0.4, 8); g.fillStyle = '#ff5ea8'; g.fillRect(w * 0.3, h * 0.86, w * 0.4 * (1 - e * 0.7), 8);
+    g.fillStyle = '#e9ecff'; g.font = '600 12px system-ui'; g.textAlign = 'center'; g.fillText(e > 0.5 ? 'OMEGA FORM' : 'MEGA FORMS', cx, h * 0.8);
+  });
   preview('pvGoby', (g, w, h, t) => {   // the Pistol rides the hills the Goby lays, the Goby always just ahead
     g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
     const k = 0.026, sp = 160, y = (x) => h * 0.62 + Math.sin((x + t * sp) * k) * h * 0.14;
@@ -370,6 +490,22 @@
     const gx = w * 0.8, gy = y(w * 0.78); g.fillStyle = DOM('jade'); g.beginPath(); g.ellipse(gx, gy, 14, 7, 0, 0, Math.PI * 2); g.fill();
     const px = w * 0.34, ph = Math.max(0, Math.sin(t * 2.1)) * h * 0.18, py = y(px) - 12 - ph;
     g.fillStyle = '#ff8a3d'; g.beginPath(); g.arc(px, py, 12, 0, Math.PI * 2); g.fill(); g.fillStyle = '#7a2e08'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
+  });
+
+  preview('pvSerpent', (g, w, h, t) => {   // a gate of three rings; a wall grows across one, a round punches through it, a Serpent threads another
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const cyc = t % 5, rings = [[w * 0.62, h * 0.28], [w * 0.8, h * 0.62], [w * 0.5, h * 0.7]];
+    rings.forEach(([x, y], k) => { g.strokeStyle = k === 1 ? '#ffd23f' : '#5c6aa8'; g.lineWidth = 4; g.beginPath(); g.ellipse(x, y, 16, 34, 0, 0, Math.PI * 2); g.stroke(); });
+    const grow = Math.min(1, cyc / 1.6), shot = cyc > 2.2, [wx, wy] = rings[0];   // the wall on the top ring, bricks out from its seed
+    for (let r = -3; r <= 3; r++) for (let c = -1; c <= 1; c++) {
+      if (Math.hypot(r * 0.6, c) > grow * 3.2) continue; if (shot && Math.abs(r) <= 1 && c === 0) continue;
+      g.fillStyle = DOM('ruby'); g.fillRect(wx - 7 + c * 15, wy - 5 + r * 11, 13, 9);
+    }
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(wx, wy, 4, 0, Math.PI * 2); g.fill();
+    if (cyc > 2.2 && cyc < 2.6) { g.strokeStyle = '#ffd23f'; g.globalAlpha = 1 - (cyc - 2.2) / 0.4; g.lineWidth = 3; g.beginPath(); g.moveTo(0, h * 0.1); g.lineTo(w, h * 0.42); g.stroke(); g.globalAlpha = 1; }
+    const k = (cyc / 5), sx = w * (0.05 + k * 0.85), sy = h * 0.5 + Math.sin(k * 6) * h * 0.12;   // the Serpent, its body following
+    for (let i = 8; i >= 0; i--) { const kk = k - i * 0.012; g.fillStyle = i ? DOM('jade') + '99' : DOM('jade'); g.beginPath(); g.arc(w * (0.05 + kk * 0.85), h * 0.5 + Math.sin(kk * 6) * h * 0.12, i ? 7 - i * 0.5 : 9, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(w * 0.22, h * 0.18, 6, 0, Math.PI * 2); g.fill();   // a crystal off the line: a round
   });
 
   preview('pvBrittle', (g, w, h, t) => {   // the pentagon ring spinning round its cockpit, five streams, the Creation frame behind
@@ -428,14 +564,22 @@
   preview('pvEel', (g, w, h, t) => VesselStudioKinds.body.preview(g, w, h, t, '#b9ff5a', DOM));
   preview('pvOctopus', (g, w, h, t) => VesselStudioKinds.pulse.preview(g, w, h, t, '#d98bff', DOM));
   preview('pvGecko', (g, w, h, t) => VesselStudioKinds.surface.preview(g, w, h, t, '#ff9ec6', DOM));
+  preview('pvMoonjelly', (g, w, h, t) => VesselStudioKinds.breath.preview(g, w, h, t, '#cfe8ff', DOM));
+  preview('pvSeaturtle', (g, w, h, t) => VesselStudioKinds.tide.preview(g, w, h, t, '#7fd6a8', DOM));
+  preview('pvSeahorse', (g, w, h, t) => VesselStudioKinds.tend.preview(g, w, h, t, '#ffb36b', DOM));
   // concept-previews:end
   // ---- the studio agent ----
   const SPEC = {
     Squirrel: 'Squirrel (racer). Flight: speed = throttle x 60 u/s x boost (boost 1-5x, decays 0.3/s); pitch/yaw 120 deg/s, roll 130 deg/s. Drift on LT (analog): turn x1 -> x1.8, grip -> 0.25 (course lags nose). RT: Boost Ring = ring of 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s x Mass (1 -> 0.5, floor 0.35). Elements 0-10, L5 unlock at 5: Charge = Crystal Joust (overtake steals petals x1 -> x2.5; L5 Shepherd nourishes own lifeforms); Mass = Boost Ring cooldown (L5 Twin Rings); Space = Steal reach, skimmer 15 -> 30 (L5 Iron Grip steals shielded prisms keeping the shield); Time = Skimming energy +0.1/prism x1 -> x2 (L5 Live Wire: danger prisms x10). Studio types: Shipped, Thief, Speedster, Skimmer, Brawler, Maxed. Studio round 2 is an AI sim lab on the four Skim Race intensity courses (I1 flat octagon 3 laps 24 crystals, I2 tilted spline 3 laps 30, I3 long spline 2 laps 56, I4 3D course 2 laps 54); AI difficulty: Hard = the shipped pilot, Medium = 0.25 s reaction + 4.5% misjudged crystals, Easy = 0.5 s + 9.9% (SkimRaceHandicap).',
-    Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Part of each release kick is kept as lasting momentum (share 0.4, fades over 5 s, up to 1.5 x cruise), so a chain of slings stacks. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases).',
+    Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Part of each release kick is kept as lasting momentum (share 0.4, fades over 5 s, up to 1.5 x cruise), so a chain of slings stacks. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases). B (T on a keyboard) steps two modes: Mass (the field trajectory: the triggers lay the dipole, the predicted path turns lime and the flight clock warps x3 when the poles bend it) and Time (the catch sling: light pair ahead, caught as you pass, release at 90 deg round for the whole kick, the clock warped while held). Its studio wormhole mode (Gate) became the Meerkat on 2026-10-27; the game\'s Stoat still has round 18\'s straight warp gate on B until it is ported. The orbit is held where it catches you and its circle stays clear of the white hole (at most 0.8 x the pair\'s distance).',
+    Meerkat: 'Meerkat (the wormhole vessel, design stage, 2026-10-27; the Stoat\'s Gate mode made its own vessel, Docs/Studios/MEERKAT.md). One ability, flown on one thumb: the left stick flies at full throttle (cruise 60, pitch/yaw 120 deg/s, bank 0.12 x roll). The reticle rides 30 u ahead of the nose: the tunnel RT would form now; the right stick bends it any way up to 120 deg, the further the shorter (600 -> 120 u) and fatter (throat 3 -> 40 u), mouths 2 x the throat + 6 u; LT shortens a straighter one. RT forms it over 0.4 s (rippling out of its centre) and you ride it at your entry speed rising to 2.5 x at the throat, out with the speed you went in with. The reticle comes back 0.5 s after you are out and grows over 0.8 s. A ridden tunnel stays 10 s, collapses to its centre over 0.8 s, and its collapse ripples the outer screen only (strength 0.3 from 45% of the way to the corner, 1.2 s). Only its maker sees the grid, only while shaping; everyone sees the formed tunnel as a bridge of spindles (16 rings x 12, 6 ribs, 1.6 u thick, a shimmer) over glass, in its maker\'s domain colour, condensing as it forms and evaporating as it collapses, plus the tube bent (warp 0.8) and its mouths dented (0.6). Every key is a MeerkatWormholeConfig field. No Meerkat in the game yet; the game\'s Stoat still has round 18\'s Gate.',
     'Goby & Pistol': 'Goby & Pistol (duo vessel, design lab round 1; brief .claude/skills/duo-vessel/references/designs/goby-and-pistol.md). One squad slot, two craft, one human (the AI flies the other half), swap with D-pad left/right or 1/2 (the arena PilotSwap, 0.75 s). Goby: flies like the Serpent (cruise 50 u/s, pitch/yaw 80 deg/s, roll 20), ignores collision, straight boost = Rhino ramp at 220 u/s^2 to x4 (lab-only), speed x up to 1.8 when the Pistol is close (lab-only); primer (6 charges, 1.5 s each) primes blocks in a 34 u splash for 12 s; flares (2 charges, 10 s) fire one per hot block in 420 u; flora is hot by default; a detonated prime chains through primed blocks within 40 u and heats unprimed ones within 80 u. Pistol: lives in a 2D world unrolled from the Goby path (World up / Arc length / Goby up), rides a Catmull-Rom ground through every 4th trail block (alternately +-26 u), gravity 140 x3.2 diving, launch to an aimed point (2 charges, 4 s), snap explosion r 46 in plane / 70 off plane (6 s), ghost 2.5 s (8 s), body = a cylinder across its 45 u vision band, breaks every block but the trail (friendly fire on). Crystals restock both halves; the Pistol taking one also resets cooldowns and gives a free snap. Element mappings are NOT decided.',
+    Serpent: 'Serpent (VesselClassType.Serpent = 7; ships; ability map Assets/Resources/ElementalAbilityMaps/Serpent.asset; studio round 1 = its Time game, Serpent Time, a design: Docs/Studios/SERPENT_TIME.md). Flight (Serpent.prefab): speed = throttle x 50 u/s x boost, minimum 10; pitch/yaw 80 deg/s, roll 20; no drift. Time, Solid Fuel Pellets (A / Space): a press burns a quarter of the tank for 3 s (x1.6 at Time 10); burns overlap, each adds 2x cruise (1 pellet 3x, 4 pellets 9x); refill 0.07/s. Space, Scope (LT / Left Shift): an eyepiece at 22 deg full zoom (11 at Space 10, floor 8; Deep Focus at Space 5 x1.6). Charge, Sniper Shot (RT while scoped): hitscan 3000 u, 1.5 deg cone with a 6 u floor, through every hostile prism in it, never your own; super-shielded mass only with Pierce (Charge 5); strips a rival pilot one level of each element; recovery 12 s (5.4 at Charge 10). Mass, Seed Wall: stopping (B / T) seeds a shielded wall that grows while you stay stopped; the cloak (RT unscoped, 15 s) seeds a super-shielded one that grows until its seed breaks; bricks 6x3 (x2 at Mass 10) stolen from loose prisms within 40 u of its edge (x2 at Space 10); Lockdown (Mass 5) refills its holes on a crystal. Serpent Time (lab-only): gates of 2-3 rings everyone sees, thread any ring of each gate in order, 2 laps; loose debris round every gate feeds the walls; a round per crystal (1 at the start, 3 at most), crystals 150-350 u off the line; own walls let you through; a bare brick costs half your speed, a shielded one or a seed bounces you. AI styles: Dirty (5/5/5/5), Racer (Time 10), Bricklayer (Mass 10, Space 8), Marksman (Charge 10), Shipped.',
     Shrike: 'Shrike (VesselClassType.Shrike = 10; ships in Unity, contract R_VesselActions/SHRIKE.md; the game\'s controls were redesigned after this studio and are ahead of it: Docs/Studios/SHRIKE.md section 0). The studio models the Notion design "Class - Shrike". A one-touch flyer that "flies incredibly slowly to allow for better aim" (cruise 18 u/s, a proposal; the prefab flies 60) with the prefab\'s turn rates (pitch 60, yaw 40, bank 15 deg/s). Docking: it docks to any block it touches; one button undocks, or (flying) builds a nest: super-shielded blocks round the hull (12, 32 at Mass 10) that turn with it, a turret flora on top holding health blocks (4, +1 per 6 s, faster docked, +3 per crystal); docked, cooldowns run x1.6 (x2.5 on super-shielded blocks or a nest). Void Lance: a hitscan pin-point beam 2400 u long, radius 1.5 (5 at Charge 10), 1.2 s cooldown, breaks every block it passes even super-shielded. Void Sling: a tether shot (2400 u/s, 1600 u range) anchors on the first block (never crystals or vessels), then a 1 s straight boost there and the Shrike docks on arrival; cooldown 6 s (2.5 at Time 10); a crystal resets it. Targeting Array: hold to paint; enemies first, else the centre of mass near the aim (lock-on cone 5 deg, 14 at Space 10); each nest fires one homing missile per painted target (220 u/s, 140 deg/s turn, 18 u blast), one health block each, never the last. Trail: thin blocks, thick while slinging, spacing 8 u (4 at Mass 10). PvP is petals only (LOCKED): the design\'s slow, steering and trail-off on vessels are retired. Minigames: Thread the Needle (sling through six windows to their crystals; I2 panels, I3/I4 mass clusters) and Den Defense (survive asteroids and creatures). Every kit number is a lab-only proposal.',
     'Brittle Star': 'Brittle Star (ships as VesselClassType.BrittleStar = 16; the Falcon reintroduced; contract R_VesselActions/BRITTLE_STAR.md; redesigned 2026-10-16). The studio flies the Unity build by default (Vessel Config > Flight numbers; the older design sets stay for comparison). A one-touch flyer: one stick turns it at full throttle (cruise 45 u/s, pitch/yaw 80 deg/s, bank 30 deg/s, +0.1 x speed). A cockpit inside a pentagon support ring (radius 6) of five pods, each an engine at the back and a gun at the front. A / B / X / RB select Speed (cruise x6, x8 at Time 10; trail spacing follows the actual speed so output holds, and each prism stretches with it), Creation (x0.5, the slowest; a trail behind each ring corner in the base trail block 1.5 x 1.5 x 3), Space (five guns: RT analog sets the rate up to 90 rounds/s each, Sparrow rounds at 135 u/s for 4.5 s, range 387 u x1-2 with Space; stick in they meet 120 u ahead, out they splay 25 deg) or Charge (five cords: whips 120 u long with RT released that carry slow waves from every turn and ring flick, shortening to 80 u straight sabers as RT is pulled; they slice every prism they touch and strike rivals for petals); press the lit one again for Cruise. In Cruise, Speed and Creation RT fires the one turret the ring has turned to, no spread. Every round heats the guns (heat/s = pull x guns); overheated they stop until heat falls to 0.35, and in Space Mode the trail lays danger prisms; the Charge cords cool the guns. The right stick turns the ring in every mode. LT throws the ring only with a spare (one per crystal, two at most), and the mounted ring regrows in 0.5 s: a flat disk in its plane, as thick as the ring (0.22 u x Charge 1-4) and as wide as the cell nucleus (392 u), swept out over 0.7 s, destroying every prism it passes (any domain; super-shields refuse) and one scored petal hit per rival hull (PvP is petals only, LOCKED). Elements: Charge = Charge Mode (cord width and round size, disk thickness), Mass = Creation (corner blocks x1.8), Space = Space Mode (range x2), Time = Speed (x6 to x8); level-5 upgrades open. Numbers: the SHIPPED block, cloned into BrittleStarConfig.asset by studio_to_unity.py. Minigames: Demolition Derby (crystals through barricades, by time) and Fauna Frenzy (reach a target trail mass while creatures eat it).',
+    'Orca': 'Orca (Garrett\'s Crew of Four Lab, round 9, Docs/Studios/CREW_OF_FOUR_LAB.md; ships as VesselClassType.Orca = 20, crew Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md). One hull, four seats: the Helm (Time: flies it, boosts, raises the shield) and three gunners on outriggers, the Sniper (Space: a scoped slow gun that kills super-shielded prisms), the Fast gun (Mass: a rapid gun that pens lines of prisms, overheats) and the Bomb (Charge: one live bomb at a time). Each gunner seat has its own flown missiles (start, max and omni-crystal refills per seat). People take seats, the AI flies the rest. Four games: Ring Race, Breach, Anchorage, Broadside, each I1-I4. Round 9 play styles (lab-only, every default is the shipped round 7): boost Tank / Breath (hold to breathe in, release to surge; slow steady breaths build a calm chain) / Tide (currents through the arena; hold to tuck in and ride them); shield Shield / Dock (anchor to a block: missiles reload, the sniper cools faster, a garden grows; press again to dart off); missiles Fly-by-wire / Seeker (flies itself to what the turret aimed at).',
+    'Siphonophore': 'Siphonophore (a VOLTRON vessel designed from the ground up, design lab round 1, 2026-10-27; Docs/Studios/CONCEPT_FLEET.md section 11). Three zooids, none a complete vessel: the Bell (mobility; cruise 78, turn 130) carries the lantern that lights DARK crystals within 90 u and a pulse (x1.8 boost for 1 s, lantern x2, cool 3 s); the Sting (attack; cruise 60, turn 85) fires venom shots (range 160, every 0.25 s) that break one husk prism of a LIT crystal (6 round each) and smash mass; the Bract (defence; cruise 66, turn 100) casts a net (24 u) that carries a FREED crystal in its hold (3) and wards mass on LT. Nothing scores apart. Hold LT with every zooid within 120 u to FUSE (1.2 s dock): the colony (the zooids\' average flight x1.25 speed, x0.55 turn) DIGESTS the hold into the score, one crystal per 4 s, rams walls (Helm, RT pulse) and lances them (the Sting seat, range 140, every 0.3 s; a wall takes 3 hits), wards on LT (the Bract seat); it cannot light, open or catch, and splits itself when the hold is empty and no wall is ahead (Helm holds LT 0.5 s to split early). The Tide Run: every crystal dark in a husk, every third behind a wall only the colony opens. Elements (proposals): Charge venom per shot x1-3 (L5 Venom), Mass net radius x1-1.6 (L5 Trawl: +1 hold), Space lantern x1-1.8 (L5 Beacon), Time digest x1-0.5 (L5 Surge). Scorecard controls: never fuse and always fused must both DNF. Every number is lab-only.',
+    'Omega Crews': 'Omega Crews (combiner crew vessels, design lab round 1, Yash 2026-10-26; Docs/Studios/CONCEPT_FLEET.md section 10). Each crew is a mobility vessel, an attacker and a defender (Warden: Stoat, Sparrow, Rhino; Bulwark: Scarab, Grizzly, Butterfly; Tempest: Squirrel, Thresher, Manta; round 2, 2026-10-26). Three shipped vessels fly as themselves (MEGA forms) with one RT move each, then gather (hold LT, every member within 140 u) and dock in 1.6 s into one OMEGA form with three seats: Helm flies it (the members\' average flight x crew speed, turn x0.5-0.75), Arms aims a turret with the right stick and fires the crew\'s weapon (Warden: a 60 u ripple whip, a wall in 2 hits; Bulwark: a siege cannon, a full charge breaks a wall; Tempest: a pulsefire battery, a wall under fire 2.5 s), Core holds the shield on LT and fires the finisher on RT at 90% meter (a 180 u cone, everything in it, then the crew splits). Swap seats with D-pad / arrows / two-finger swipe; the AI takes every empty seat (input-only, Easy / Medium / Hard = late notice, misjudged crystal, late press). The omega meter: +0.22 per crystal, +0.004 per skim, -0.035/s combined, -0.06/s more with the shield; combine needs 0.3; empty = forced split. The Omega Run: three crystals lit at a time (apart collects faster), every third LOCKED inside a shielded wall only the omega weapon breaks. Crews: Warden = Stoat (dipole sling), Thresher (wrecking ball), Butterfly (fold gate); Bulwark = Rhino (plough), Grizzly (charged cannon), Scarab (cavitation dash); Tempest = Squirrel (skim boost), Sparrow (pulsefire), Manta (boost tunnel). Elements (proposals): Charge weapon power, Mass ward cost, Space finisher reach, Time combine speed. Every number is lab-only.',
     // concept-spec:start
     'Gibbon': 'Gibbon (concept, round 1; movement kind \'web\', a design: nothing ships). The web-slinger (Yash, 2026-10-18: like Spider-Man). No engine at all: the Gibbon sits still until it shoots a web. The sticks turn it to aim; LT shoots the left hand\'s web and RT the right\'s at whatever is near the crosshair (a prism of the course, mass, a rival\'s trail, a crystal). A web flies out, latches, and is an elastic bungee: hold the trigger and it pulls you in, springy and bouncing; latch off to the side and you swing round the anchor, faster as the web shortens. Let go and you fly on your momentum; shoot the next web before you lose it. Hand over hand, never a thruster. Elements: Charge = Snap (scales stiffness; L5 Slingshot); Mass = Momentum (scales topSpeed; L5 Wrecking Ball); Space = Reach (scales webRange; L5 Far Reach); Time = Pull (scales reelRate; L5 Winch). Styles: Balanced, Swinger, Zipper, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     'Flea': 'Flea (concept, round 1; movement kind \'ricochet\', a design: nothing ships). The ricochet. It crawls at 40 u/s on its own; speed comes from bouncing off mass. A hull contact reflects it instead of resetting it, and a press of RT inside the window round the contact is a perfect bounce: ×1.35 and a growing chain. Between bounces it coasts almost ballistically, so you aim the next bounce with the nose. Crouch with LT and release to hop when no mass is near. Elements: Charge = Spring (scales perfectGain; L5 Supercharge); Mass = Momentum (scales topSpeed; L5 Shatter); Space = Big Hop (scales hopMax; L5 Leap); Time = Wide Window (scales window; L5 Slow Motion). Styles: Balanced, Metronome, Cannonball, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
@@ -447,6 +591,9 @@
     'Eel': 'Eel (concept, round 1; movement kind \'body\', a design: nothing ships). The body. A head leading a train of segments that follow its exact path: the body IS its trail, shielded mass a rival\'s hull bounces off. Longer is slower (72 u/s at 8 segments, 45 at 30), and it grows on crystals and skims. LT coils: the turn doubles and the body bunches up behind you; let go and the tail whips straight, cutting any rival or neutral mass it sweeps. RT sheds five segments as standing prisms for a speed burst. Elements: Charge = Shed Burst (scales shedKick; L5 Molt); Mass = Girth (scales segScale; L5 Armoured Body); Space = Whip Reach (scales whipReach; L5 Long Lash); Time = Tight Coil (scales coilTurn; L5 Spring Coil). Styles: Balanced, Wall, Lash, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     'Octopus': 'Octopus (concept, round 1; movement kind \'pulse\', a design: nothing ships). The pulse jet. Hold LT to inhale: it slows, the mantle swells, the charge fills in 0.7 s. Release and it jets, up to 205 u/s, then fades toward a 20 u/s drift. The beat is yours: release at the same interval as your last two pulses and the chain grows, each pulse ×1.1 more, up to ×1.8. RT spends a pulse of charge on an ink cloud of danger prisms behind you. Charge-and-release movement with a rhythm layer you set yourself. Elements: Charge = Jet (scales jetMax; L5 Siphon Jet); Mass = Ink (scales inkCount; L5 Black Water); Space = Wide Beat (scales beatWindow; L5 Metronome); Time = Quick Breath (scales inhaleTime; L5 Gasp). Styles: Balanced, Drummer, Squid, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     'Gecko': 'Gecko (concept, round 1; movement kind \'surface\', a design: nothing ships). The runner. Hold LT near any mass and it sticks, then runs along the structure: the chain of prisms guides its course, its speed climbs to 130 u/s, the camera rolls onto the surface, and a rival\'s rail it runs becomes yours. Let go, or press RT, and it hops off with a ×1.4 kick and three seconds of carried momentum to the next surface. Wall-running, where every prismscape is a wall. Elements: Charge = Hop (scales hopKick; L5 Spring Legs); Mass = Claim (scales convertScale; L5 Overgrow); Space = Grip Reach (scales stickReach; L5 Long Toes); Time = Run Speed (scales runCap; L5 Sprint). Styles: Balanced, Sprinter, Claimer, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
+    'Moon Jelly': 'Moon Jelly (concept, round 1; movement kind \'breath\', a design: nothing ships). The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide. Elements: Charge = Moonrise (scales moonReach; L5 Full Moon); Mass = Push (scales pulseMax; L5 Tidal Pulse); Space = Glow (scales glow; L5 Lantern); Time = Glide (scales drag; L5 Still Water). Styles: Balanced, Lantern, Tidal, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
+    'Sea Turtle': 'Sea Turtle (concept, round 1; movement kind \'tide\', a design: nothing ships). The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it. Elements: Charge = Rapids Burst (scales burst; L5 Whitewater); Mass = Shell (scales shell; L5 Old Shell); Space = Tide Sense (scales tideR; L5 Moon Pull); Time = Tuck (scales tuck; L5 Streamline). Styles: Balanced, Voyager, Rapids Runner, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
+    'Seahorse': 'Seahorse (concept, round 1; movement kind \'tend\', a design: nothing ships). The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden. Elements: Charge = Puff (scales puffR; L5 Thorn Puff); Mass = Growth (scales callSpeed; L5 Bloom); Space = Garden Reach (scales callRange; L5 Meadow); Time = Dart (scales dart; L5 Flicker). Styles: Balanced, Gardener, Darter, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     // concept-spec:end
   };
   let sample = null, db = null, user = null, me = '';

@@ -14,10 +14,10 @@ section 45.4; the owner chose option A, "Orb", over the bond rail).
        |                            three party members on the inner ring, "N online" under it
        |                            (KitPresenceOrb); pressing it opens the drawer
        '- Window                    panel that slides in from the left and takes the whole left side
-          |                         under the top nav (460 wide, maximised 720; section 68): over a hub
+          |                         under the top nav (460 wide; section 68): over a hub
           |                         window it docks and the cards move right (FriendsDrawerDock); over a
           |                         game's configure or Settings it never opens. The lattice is behind it:
-          |                         the Space glyph and title, a minimise (slide back) and a maximise
+          |                         the people glyph and title, and a minimise (slide back) - no maximise
           '- PartyPanel             THE shared party panel (item 3's prefab, instanced - never copied),
                                     drawn as the party molecule since rev 6 (author_menu_arcade.py)
 
@@ -68,9 +68,8 @@ MODAL_WINDOWS_RT = "6818916199485298600"
 
 # §68 (Shombith, 2026-10-25): the window takes the whole left side, from under the top nav (DOCK_TOP) to the bottom,
 # flush with the screen edge, so its height follows the screen; over a hub window it docks and the cards move right
-# (FriendsDrawerDock, author_menu_arcade.drawer_dock). Only the widths are fixed.
+# (FriendsDrawerDock, author_menu_arcade.drawer_dock). Only the width is fixed (no maximise since 2026-10-26).
 NORMAL_W = 460
-MAXIMISED_W = 720
 DOCK_TOP, DOCK_BOTTOM = 84, 0
 INSET = 0
 BTN = 28
@@ -173,16 +172,12 @@ def window_node(parent):
     bord = w.child(N("Drawer/Window/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
     glyph = w.child(N("Drawer/Window/TitleGlyph", "TitleGlyph", TL(20, 16, 24, 24)))
-    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), H.element_glyph("Space"), preserve=True))
+    # The people glyph, never an element's (Shombith, 2026-10-26: "you used elemental icon for friends you should never
+    # do that"): element glyphs mean elements only.
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_people"), preserve=True))
     label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "NeutralLightest")
-    # Minimise (a bar): slides the window back to the handle.
-    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16 + BTN + 6, 14, BTN, BTN))
-    # Maximise / restore: one button, two glyphs the drawer swaps (a screen to grow, a chevron to shrink).
-    mx = HM.icon_button(w, "Drawer/Window/Maximise", "Maximise", "chrome_display", TR(16, 14, BTN, BTN))
-    next(c for c in mx.children if c.key == "Drawer/Window/Maximise/Glyph").add("cg", 225, H.canvas_group(True))
-    rs = mx.child(N("Drawer/Window/Maximise/Restore", "Restore", R(size=(14, 14))))
-    rs.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_arrow_down"), preserve=True)) \
-        .add("cg", 225, H.canvas_group(False))
+    # Minimise (a bar): slides the window back to the handle. No maximise (Shombith, 2026-10-26).
+    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16, 14, BTN, BTN))
     w.children.append(K.Instance("Drawer/Window/PartyPanel", "PartyPanel", PARTY_GUID, "PartyPanel",
                                  R((0, 0), (1, 1), (0, -28), (-40, -76)), ()))
     return w
@@ -273,11 +268,8 @@ def host_node():
              f"  handleGroup: {ref(ctx.c('Drawer/Orb', 'cg'))}\n  handleButton: {ref(ctx.c('Drawer/Orb', 'button'))}\n"
              f"  windowGroup: {ref(ctx.c('Drawer/Window', 'cg'))}\n  window: {ref(ctx.rt('Drawer/Window'))}\n"
              f"  minimiseButton: {ref(ctx.c('Drawer/Window/Minimise', 'button'))}\n"
-             f"  maximiseButton: {ref(ctx.c('Drawer/Window/Maximise', 'button'))}\n"
-             f"  restoreGlyph: {ref(ctx.c('Drawer/Window/Maximise/Restore', 'cg'))}\n"
-             f"  maximiseGlyph: {ref(ctx.c('Drawer/Window/Maximise/Glyph', 'cg'))}\n"
              "  screenSwitcher: {fileID: 0}\n"
-             f"  normalWidth: {NORMAL_W}\n  maximisedWidth: {MAXIMISED_W}\n  dockTop: {DOCK_TOP}\n  dockBottom: {DOCK_BOTTOM}\n"
+             f"  normalWidth: {NORMAL_W}\n  dockTop: {DOCK_TOP}\n  dockBottom: {DOCK_BOTTOM}\n"
              f"  openInset: {INSET}\n  moveSeconds: 0.22\n"))
     return host
 
@@ -327,7 +319,17 @@ def transform(text_):
     # retired for the orb) is removed rather than left orphaned under the Drawer.
     host_rt = str(p.ctx.rt("Host"))
     if p.sc.has(host_rt):
-        for fid in subtree_docs(p.sc, host_rt):
+        gone = subtree_docs(p.sc, host_rt)
+        # A RectTransform an older version parented under the drawer but its parent no longer lists (a retired focus
+        # ring under the retired maximise button) is not reached through m_Children: sweep by m_Father as well.
+        while True:
+            strays = {f for f in p.sc.order if f not in gone and p.sc.cls[f] == 224
+                      and (m := re.search(r"m_Father: \{fileID: (-?\d+)\}", p.sc.docs[f])) and m.group(1) in gone}
+            if not strays:
+                break
+            for r in strays:
+                gone |= subtree_docs(p.sc, r)
+        for fid in gone:
             p.sc.remove(fid)
     host = host_node()
     rt = p.emit(host, SAFE_AREA_RT, MODAL_WINDOWS_RT)
@@ -360,7 +362,7 @@ def validate(files):
         "the drawer must draw right after ModalWindows and the hub nav (over every window)"
     dr = sc.docs[str(ctx.c("Host", "drawer"))]
     for f, want in (("handleButton", ctx.c("Drawer/Orb", "button")), ("window", ctx.rt("Drawer/Window")),
-                    ("minimiseButton", ctx.c("Drawer/Window/Minimise", "button")), ("maximiseButton", ctx.c("Drawer/Window/Maximise", "button")),
+                    ("minimiseButton", ctx.c("Drawer/Window/Minimise", "button")),
                     ("windowGroup", ctx.c("Drawer/Window", "cg")), ("handleGroup", ctx.c("Drawer/Orb", "cg"))):
         assert f"  {f}: {{fileID: {want}}}" in dr, f"FriendsDrawer.{f} is not wired"
     validate_orb(sc, ctx)
@@ -395,7 +397,7 @@ def validate_dock(sc, ctx, hub):
                  f"m_SizeDelta: {K.v2(NORMAL_W, -(DOCK_TOP + DOCK_BOTTOM))}"):
         assert want in win, f"the drawer window does not take the whole left side ({want} missing)"
     dr = sc.docs[str(ctx.c("Host", "drawer"))]
-    for f, v in (("normalWidth", NORMAL_W), ("maximisedWidth", MAXIMISED_W), ("dockTop", DOCK_TOP), ("dockBottom", DOCK_BOTTOM)):
+    for f, v in (("normalWidth", NORMAL_W), ("dockTop", DOCK_TOP), ("dockBottom", DOCK_BOTTOM)):
         assert f"  {f}: {v}\n" in dr, f"FriendsDrawer.{f} is not {v}"
     for path, text_ in hub.items():
         dock = re.search(r"^--- !u!114 &-?\d+\nMonoBehaviour:\n((?:(?!--- ).*\n)*?  m_Script: \{fileID: 11500000, guid: %s, type: 3\}\n(?:(?!--- ).*\n)*)" % DOCK, text_, re.M)
@@ -444,6 +446,12 @@ def validate_orb(sc, ctx):
     angles, and the window wears the Space rim over the lattice. Rev 3's Handle is gone."""
     names = [sc.field(sc.go_of(r), "m_Name") for r in subtree_rts(sc, str(ctx.rt("Host")))]
     assert "Handle" not in names, "rev 3's Handle is still under the drawer (the orb replaced it)"
+    assert "Maximise" not in names, "the friends window has a maximise button again (Shombith, 2026-10-26: remove it)"
+    title = sc.docs[str(ctx.c("Drawer/Window/TitleGlyph", "img"))]
+    assert f"guid: {K.chrome_sprite('chrome_people')}" in title, "the friends title glyph is not the people glyph"
+    for element in ("Charge", "Mass", "Space", "Time"):
+        assert f"guid: {H.element_glyph(element)}" not in title, \
+            f"the friends title wears the {element} glyph (an element glyph means an element, never people)"
     orb_rt = sc.docs[str(ctx.rt("Drawer/Orb"))]
     assert _vec(orb_rt, "m_AnchoredPosition") == (AR.ORB_X, AR.ORB_Y) and _vec(orb_rt, "m_SizeDelta") == (ORB, ORB), \
         f"the orb moved off author_menu_arcade.ORB_* (the windows' gutter gate measures against those)"
@@ -508,6 +516,10 @@ def self_test(files):
         ("the window's element rim back", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.c("Drawer/Window/Border", "img"), "  m_Material: {fileID: 0}\n",
             f"  m_Material: {{fileID: 2100000, guid: {M.rim_material('Space')}, type: 2}}\n"))),
+        ("an element glyph on the friends title", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.c("Drawer/Window/TitleGlyph", "img"), K.chrome_sprite("chrome_people"), H.element_glyph("Space")))),
+        ("a maximise button back on the friends window", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.go("Drawer/Window/Minimise"), "  m_Name: Minimise\n", "  m_Name: Maximise\n"))),
         ("rev 3's handle left behind", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.go("Drawer/Orb"), "  m_Name: PresenceOrb\n", "  m_Name: Handle\n"))),
         ("the drawer ungated offline", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

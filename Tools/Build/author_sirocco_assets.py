@@ -46,7 +46,7 @@ G_ASSET = {
 EXISTING = dict(lib.SCRIPT_GUIDS)
 EXISTING.update(lib.CARD_ART)
 EXISTING.update(common.DONOR)
-EXISTING["Vessel_Butterfly"] = lib.VESSELS["Butterfly"]
+EXISTING["Vessel_Butterfly"] = lib.VESSELS["TigerMoth"]
 RAMPAGE_DIR = "Assets/_SO_Assets/Cell Configs/Rampage Cell"
 RAMPAGE = [lib.existing_guid(f"{RAMPAGE_DIR}/Rampage Cell Config {i}.asset") for i in range(1, 5)]
 for i, gd in enumerate(RAMPAGE, 1):
@@ -56,10 +56,10 @@ DUST_PRISM = "Assets/_SO_Assets/Effects/Skimmer Prism Effects/ButterflyScaleDust
 EXISTING["ButterflyScaleDustPrismEffect"] = lib.existing_guid(DUST_PRISM)
 
 # ── The race ─────────────────────────────────────────────────────────────────
-PRISM_TARGET = 600    # kept in sync with EndConditionOverridesSO.DefaultSiroccoPrismTarget
-# Comeback - a FUNCTION OF THE TARGET. A quarter behind (150 prisms) buys 1.5 element levels, and
+PRISM_TARGET = 400    # kept in sync with EndConditionOverridesSO.DefaultSiroccoPrismTarget (600 until 2026-10-26)
+# Comeback - a FUNCTION OF THE TARGET. A quarter behind (100 prisms) buys 1.5 element levels, and
 # on this mode an element level is the dust itself: Space is the swath, Charge the bite.
-COMEBACK_RATE = 0.01
+COMEBACK_RATE = 0.015
 SPAWN = common.spawn_block(500, 0, 0)   # Rampage's own ring - 500 outside its nucleus
 
 CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameSirocco.asset"
@@ -129,7 +129,7 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Sirocco.asset", G_ASSE
              lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Sirocco") + f"""  Mode: {MODE_ID}
   Notes: 'Reuses Rampage''s cactus forest outright - referenced, not forked, exactly as the mode
     does; intensity is the forest''s density. What the preview teaches is Dust mode over the
-    forest. Vessel pinned to Butterfly(13).'
+    forest. Vessel pinned to TigerMoth(29).'
   PreviewCell: {{fileID: 11400000, guid: {RAMPAGE[0]}, type: 2}}
   PreviewCellsByIntensity:
 {common.cell_list(RAMPAGE)}  StructurePrefab: {{fileID: 0}}

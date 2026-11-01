@@ -28,6 +28,11 @@ namespace CosmicShore.Gameplay
     /// (<see cref="StoatSlingExecutor.WarpsFlight"/>, the studio's catch warp, 2026-10-14), to
     /// <see cref="StoatSlingConfigSO.CatchWarpShare"/> of the field's boost, so the two modes fly at one pace.</para>
     ///
+    /// <para><b>Gate mode warps a jump</b> (2026-10-27, <c>STOAT_DIPOLE.md</c> §1f, <see cref="StoatGateMath"/>): the
+    /// warp gate is opened by <see cref="StoatSlingExecutor"/>; a jump through it earns a warp of the flight clock toward
+    /// <see cref="StoatGateMath.WarpTarget"/> for its boost seconds (<see cref="StoatSlingExecutor.GateWarps"/>), held here
+    /// as the clock's one writer. The line is the path ahead to aim the next gate along, lime while the warp is past half.</para>
+    ///
     /// <para><b>Time 5 — Foresight</b> (the replicated unlock bit): the nearest rivals' paths are drawn too, in their
     /// domain colours, each flown forward on the turn and speed it is holding right now (measured from its pose, no
     /// input needed). Presentation only, local pilot only.</para>
@@ -59,6 +64,9 @@ namespace CosmicShore.Gameplay
         float _boost = 1f;
         bool _wasWarped;
         bool _timeMode;
+        bool _gate;
+        float _lineWarmth;
+        float _gateWarp01;
         StoatModeExecutor _mode;
         readonly Vector3[] _ring = new Vector3[RingSegments];
         const int RingSegments = 96;
@@ -90,12 +98,15 @@ namespace CosmicShore.Gameplay
         public float BoostMultiplier => _boost;
         /// <summary>The boost the warp would give at the pilot's Time level right now (the HUD's Time card's full mark).</summary>
         public float BoostTarget => config ? Mathf.Max(1f, config.Boost.EvaluateLive(_status)) : 1f;
-        /// <summary>True while the poles warp the predicted path (the line is lime and the boost is on).</summary>
+        /// <summary>True while the poles warp the predicted path (the line is lime and the boost is on). Gate mode: while
+        /// a jump's warp is past half its top.</summary>
         public bool IsWarped => _path.Warped;
         /// <summary>The last prediction's verdict and length.</summary>
         public StoatDipoleMath.PathResult LastPath => _path;
         /// <summary>The last prediction's points (the first <see cref="StoatDipoleMath.PathResult.Count"/> are live).</summary>
         public Vector3[] Points => _points;
+        /// <summary>Gate mode: the warp now as a share of its top, 0..1 (the HUD's Time card).</summary>
+        public float GateWarp01 => _gate ? _gateWarp01 : 0f;
         /// <summary>How many rivals the Time-5 Foresight is drawing this frame.</summary>
         public int ForesightCount => _rivals.Count;
         /// <summary>True while an omni crystal's Overclock holds the boost at full.</summary>
@@ -144,6 +155,9 @@ namespace CosmicShore.Gameplay
             bool flying = transformer.IsActive && !_status.IsStationary && !_status.IsTranslationRestricted;
             // Time mode draws the catch's rings, never a path (and so never warps one).
             _timeMode = _mode && _mode.IsTimeMode;
+            var modeConfig = _mode ? _mode.Config : null;
+            _gate = _mode && _mode.IsGateMode && modeConfig;
+            if (!_gate) _gateWarp01 = 0f;
             if (flying && !_timeMode) using (s_predictMarker.Auto()) Predict(transformer, hull);
             else _path = default;
 
@@ -157,7 +171,24 @@ namespace CosmicShore.Gameplay
                 warped = _sling.WarpsFlight;
                 target = _sling.Config.CatchWarpTarget(target);
             }
-            _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+            if (_gate)
+            {
+                // A jump's warp, as good as the jump, for its boost seconds (the omni crystal's Overclock holds the top).
+                var gs = modeConfig.Gate();
+                float top = StoatGateMath.WarpTop(target, gs.WarpShare);
+                bool jumped = _sling && _sling.GateWarps;
+                float want = IsOverclocked ? top : jumped ? StoatGateMath.WarpTarget(_sling.GateQuality, top) : 1f;
+                _boost = flying ? StoatGateMath.StepWarp(_boost, want, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+                _gateWarp01 = top > 1.001f ? Mathf.Clamp01((_boost - 1f) / (top - 1f)) : 0f;
+                warped = _gateWarp01 >= 0.5f;
+                _path.Warped = flying && warped;
+                _lineWarmth = _gateWarp01;
+            }
+            else
+            {
+                _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+                _lineWarmth = _path.Warped ? 1f : 0f;
+            }
             transformer.FlightTimeScale = _boost;
 
             if (warped && !_wasWarped) PlayOneShot(config.WarpEvent);
@@ -223,9 +254,9 @@ namespace CosmicShore.Gameplay
                 _worldDots ??= new StoatPathfinderWorldDots();
                 if (!_worldDots.Begin(cam)) return;
                 if (_timeMode) AddRings(hull: _status.Transform);
-                else
-                    _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount,
-                        _path.Warped ? config.WarpedColor : config.OpenColor,
+                if (_gate) AddGateMouth(cam);
+                if (!_timeMode)
+                    _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount, PathColor(),
                         config.WorldDotSize, config.WorldDotSpacing, config.WorldDotMinPixels);
                 _worldDots.End();
                 return;
@@ -234,9 +265,28 @@ namespace CosmicShore.Gameplay
             if (!_dots) return;
             // The flat overlay (dotsInWorld off) draws the path only; Time mode's rings are world dots.
             if (_timeMode) { _dots.Hide(); return; }
-            var pathColor = _path.Warped ? config.WarpedColor : config.OpenColor;
+            var pathColor = PathColor();
             _dots.Show(cam, _points, _path.Count, _jumps, _path.JumpCount, _path.Warped ? _path.LoopIndex : -1, pathColor,
                 config.DotPixels, config.DotGap, _path.Warped, config.DotDepthMinScale, config.DotDepthFade);
+        }
+
+        /// <summary>The path's colour: lime while warped; in Gate mode eased from open toward lime with the jump's warp.</summary>
+        Color PathColor() => Color.Lerp(config.OpenColor, config.WarpedColor, _gate ? _lineWarmth : _path.Warped ? 1f : 0f);
+
+        /// <summary>Gate mode: a ring round the open gate's black hole, its mouth, facing the camera - where to fly in.</summary>
+        void AddGateMouth(Camera cam)
+        {
+            var gate = _sling ? _sling.Gate : null;
+            if (!cam || !_sling || !_sling.GateOpen || gate == null || !gate.Black) return;
+            AddPoleRing(cam, gate.Black.transform.position, gate.Black.HorizonRadius * 1.6f, config.WarpedColor);
+        }
+
+        void AddPoleRing(Camera cam, Vector3 centre, float radius, Color color)
+        {
+            var normal = cam.transform.position - centre;
+            if (normal.sqrMagnitude < 1e-6f) return;
+            int n = StoatSlingMath.Ring(centre, normal.normalized, radius, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, color, config.WorldDotSize, config.WorldDotSpacing * 0.5f, config.WorldDotMinPixels, closed: true);
         }
 
         /// <summary>
@@ -404,6 +454,7 @@ namespace CosmicShore.Gameplay
             ReleaseClock();
             _path = default;
             _wasWarped = false;
+            _lineWarmth = 0f;
             HideDots();
             ClearForesight();
         }

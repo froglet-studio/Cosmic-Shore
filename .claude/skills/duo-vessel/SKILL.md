@@ -61,7 +61,7 @@ defect):
 | **A seat's own abilities are its own controls, never spare D-pad directions** (Garrett, 2026-10-21). A hull ability is an input the hull binds (`CrewTriggerActionSO` for the triggers, `CrewButtonActionSO` for face buttons); on a phone each seat shows its own buttons round the right thumb while the person is in it (`TouchButtonView`, `TouchButtonLayout`), and a seat whose hull the AI flies presses itself directly (an `InputStatus` press is dropped under autopilot). | `OrcaHUDController`, `GobyPistolButtons` |
 | **A second person on another machine** (2026-10-23): the server holds each person's station (`Player.NetStation`). A crew that `HostsRiders` runs a rider's seat on the rider's machine (the Orca's gunners) or relays it to the hull's machine (`ICrewRelay`: the Ratel's board); the hull's machine leaves a seat a rider holds alone (`CrewStations.HeldByRemoteHuman`). Every crew takes a rider (2026-10-23): the Orca's gunners, the Wrasse and the Pistol run on the rider's machine, with what belongs to the hull relayed to the hull's machine (the Wrasse's banked boosts and steals; the Goby's perches and lock come back); the Ratel is relayed to the hull's machine. A seat with no person in it is always the AI's: an own hull parked while its person rides another runs as an AI crew (`CrewStations.IsParkedHere`), and an AI Goby flies the seat's own Goby and Pistol AIs, not the platform autopilot. | `CrewStations`, `Docs/CREW_STATIONS.md` |
 
-**Gates:** `python3 Tools/Build/check_crew_vessels.py` (and `--self-test`; in `/to-bleeding-edge`'s gates) holds every
+**Gates:** `python3 Tools/Build/check_crew_vessels.py` (and `--self-test`; in `/ship`'s gates, `.claude/skills/ship/gates.sh`) holds every
 hull that carries an `ICrewSeat` to the card, roster and container rules (its `SeatName` is one of the card's
 `CrewNames`), and every class that names a crew to having a seat. `CrewVesselTests` holds the same in the editor. Each hull's generator `--check` holds its own assets.
 
@@ -334,6 +334,21 @@ enum before taking a value.
   and crashed onto hump fronts, so none of its landings was ever the smooth slide its whole ride was built round. Leave a
   crest by curvature (v^2 times the curvature > g cos), step the ride at a fixed substep whatever the frame, and gate any
   landing reward on real airtime. Measure a sidescroller's ride headless at 30, 60 and 120 fps before tuning it.
+- **A ground the ride computes outlives the prisms it was laid as** (the Pistol, 2026-10-28: "if they fall they should
+  not hit phantom prisms"). The Pistol rode `PistolPlane`'s hill curve, and the Goby's trail blocks were only laid ON it,
+  so destroying them changed nothing: it rode on over air. When a seat's world is drawn from one thing and simulated
+  from another, tie the simulation to the thing (`PistolGround`: each block in its slot, read every frame) and
+  negative-control it with the defect planted (`goby_pistol_harness/run.sh --self-test`).
+- **A failure that leaves the world as it was can be repeated forever** (the Pistol, 2026-10-29: "there is an unfun state
+  where the best paths are no longer crossable"). Sending the Pistol back to its den after a fall left the gap exactly as
+  wide, so the richest paths became walls. Let each failure change the world toward success (the fall restores what it
+  touched, at least one block) and carry the player past it, and measure it headless with a rider that plays badly: a
+  deterministic sloppy rider stalled on the first version until every fall restored one block at least.
+- **A reward the seat's camera cannot see** (the Pistol, 2026-10-29: "i don't see prisms growing as I jump them"). Skipped
+  blocks grew OUT of the plane, which is the side camera's depth axis, so the reward was real and invisible from the seat
+  that earned it. Check every effect against the seat's view; when the change itself is edge-on, give it juice in the
+  plane (`GobyPistolDuo.AddJuice`). And a shield is 3x a prism's half-extents: lay any chain that may be shielded at a
+  spacing of 3x its length or its shields cross (`PistolGround.ShieldFlushLength`).
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.
 - **Counting the seat twice.** Team size, backfill and scoreboards that count `IVessel`s, rather

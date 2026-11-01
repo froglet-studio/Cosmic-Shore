@@ -191,6 +191,9 @@ MonoBehaviour:
   gaugeColor: {r: 0.59, g: 0.65, b: 0.76, a: 1}
   readyColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
   colorBlendRate: 15
+  massModeIcon: {fileID: 21300000, guid: 707ac0afea37451ef31b5be8eb09cdb2, type: 3}
+  timeModeIcon: {fileID: 21300000, guid: fb6ff66c748d7560d236e89894823447, type: 3}
+  gateModeIcon: {fileID: 21300000, guid: b49cdba89db0551eae62a4a8eeb5cb1a, type: 3}
 --- !u!224 &7475086108544464464 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156, type: 3}

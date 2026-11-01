@@ -296,13 +296,35 @@ namespace CosmicShore.ScriptableObjects
         [ColorUsage(true, true)] [SerializeField] public Color DarkCTA;
 
         [Tooltip("Scales the CTA pair for the four ELEMENTAL crystals so the omni reads as the hero " +
-                 "pickup. A pure scalar, deliberately: it cannot move the hue, so all five crystals " +
-                 "stay in one lime family by construction - which a second authored colour pair " +
-                 "could silently break. It also dims correctly whichever role each colour plays " +
+                 "pickup. A pure scalar: it changes brightness only. The hue each element wears comes " +
+                 "from ElementalCrystalColors. It also dims correctly whichever role each colour plays " +
                  "(TimeCrystalGraph swaps body and rim relative to the other graphs).")]
         [Range(0f, 1f)] [SerializeField] public float ElementalCrystalDimming = 0.45f;
 
+        [Tooltip("Each free ELEMENTAL crystal's lime, sRGB, in the HUD's order (Charge, Mass, Space, " +
+                 "Time; index = Element - 1). The Wrasse's four lasso shades: four distinct hues, " +
+                 "saturations and values inside lime's boundary against Jade, Ruby, Gold, Blue and " +
+                 "Fire, so the Mass crystal no longer wears the omni's lime (Garrett, 2026-10-27). A " +
+                 "tinted crystal takes this colour at the CTA pair's brightness (max channel), then " +
+                 "ElementalCrystalDimming; Mass, Space and Time wear it on their own materials. " +
+                 "WRITTEN by Tools/Build/kite_mote_colors.py, which derives them from the live " +
+                 "palette; --check fails if they drift. Alpha 0 = unauthored: that element wears the CTA.")]
+        [SerializeField] public Color[] ElementalCrystalColors = new Color[4];
+
         [ColorUsage(true, true)] [SerializeField] public Color Danger;
+
+        /// <summary>
+        /// The authored colour of an elemental crystal (<see cref="ElementalCrystalColors"/>), or false
+        /// when the element has none (not one of the four, or alpha 0).
+        /// </summary>
+        public bool TryGetElementalCrystalColor(Element element, out Color color)
+        {
+            int i = (int)element - 1;
+            color = ElementalCrystalColors != null && i >= 0 && i < ElementalCrystalColors.Length
+                ? ElementalCrystalColors[i]
+                : default;
+            return color.a > 0f;
+        }
     }
 
     public static class EnvironmentColorSetExtensions
@@ -312,5 +334,17 @@ namespace CosmicShore.ScriptableObjects
         /// crystal tint would quietly fade the mesh out instead of dimming it.
         /// </summary>
         public static Color ScaleRGB(this Color c, float k) => new(c.r * k, c.g * k, c.b * k, c.a);
+
+        /// <summary>
+        /// <paramref name="hue"/>'s colour at <paramref name="c"/>'s brightness: the hue's RGB scaled by
+        /// <paramref name="c"/>'s brightest channel, with <paramref name="c"/>'s alpha. A hue whose
+        /// brightest channel is 1 lands exactly on <paramref name="c"/>'s peak (so a bloom tuned on that
+        /// peak still holds), and a darker hue stays darker by the same ratio.
+        /// </summary>
+        public static Color WithHueOf(this Color c, Color hue)
+        {
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            return new Color(hue.r * peak, hue.g * peak, hue.b * peak, c.a);
+        }
     }
 }

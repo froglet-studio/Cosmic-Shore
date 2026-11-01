@@ -58,6 +58,9 @@
     {"key": "dpSweetDeg", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotDegrees"},
     {"key": "dpSweetHalf", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotHalfWidth"},
     {"key": "dpSweetFall", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotFalloff"},
-    {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"}
+    {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"},
+    {"key": "dpHoldAtCatch", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "holdAtCatch"},
+    {"key": "dpRadiusEase", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "orbitEaseRate"},
+    {"key": "dpWhiteClear", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "whiteClear"}
   ]
 }

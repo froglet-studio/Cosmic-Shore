@@ -4,7 +4,7 @@ namespace CosmicShore.Data
     // breaks scene-wired references and SOAP asset references silently.
     //
     // The state of the Sparrow's once-per-press strafing-roll charge, and WHY it last
-    // changed (BarrelRollController.OnRollChargeChanged -> SparrowHUDView.SetRollCharge).
+    // changed (BarrelRollController.OnRollChargeChanged; no HUD draws it since 2026-10-26 - the roll re-arms too fast to be worth a readout).
     //
     // A boost press arms a roll for a short window (rollArmWindowSeconds, 0.3 s) rather
     // than for the whole boost hold - the boost is indefinite, so an arm that lasted the

@@ -19,10 +19,16 @@ namespace CosmicShore.Gameplay
     /// rival vessels (then fauna) in its nose's cone.</item>
     /// <item><b>The Pistol</b> rides the ground from perch to perch on a FLAT plane through the dart, downhill whichever
     /// way it goes (<see cref="PistolPlane"/>), Tiny Wings style. At each perch it rests and builds a DEN of prisms and
-    /// shielded prisms (Mass 5: danger and super-shielded too), as many as the distance it travelled since its last den
-    /// and Mass make; it may ride back to an old den to add to it. Mass beside its plane is pulled into it (Space; Space
-    /// 5: shielded too). Its Snap fires a vortex ring; with the Goby locked on a rival that is on the Pistol's screen, the
-    /// ring homes on it and takes petals (Charge). Time is its jump's cooldown.</item>
+    /// shielded prisms (Mass 5: danger and super-shielded too), as many as its ENERGY and Mass make; it may ride back to an
+    /// old den to add to it. Energy comes from the blocks of its ground it flies over instead of riding, the nth block of a
+    /// flight more than the last, and each block flown over grows across the trail, is shielded once full, or is restored
+    /// if it was destroyed (Garrett, 2026-10-29). Mass beside its plane is pulled into it, and crystals too, which it
+    /// collects (Space; Space 5: shielded too); the path map weighs each island's two sides (one ridden ahead, the other
+    /// back) by the unshielded opposing mass on it. Its Snap fires a vortex ring; with the Goby locked on a rival that is on the Pistol's screen,
+    /// the ring homes on it and takes petals (Charge). Time is its jump's cooldown. Where a block of its ground was
+    /// destroyed the ground is a hole it must clear (<see cref="PistolGround"/>); one that falls in restores the gap's blocks
+    /// it got past, loses its energy, and comes out of a vortex-ring portal on the standing ground beyond the gap
+    /// (2026-10-29), so a gap shrinks with every pass.</item>
     /// </list>
     ///
     /// <para>One human flies one half and the seat's AI the other; the swap is the arena's gesture (D-pad left / right,
@@ -57,6 +63,11 @@ namespace CosmicShore.Gameplay
         readonly List<Den> _perches = new();                 // perch k: where the Goby sat, and the den the Pistol builds there
         readonly List<PlaneSegment> _segments = new();
         readonly List<PistolPlane.HillTrack> _tracks = new();   // each island's ground, built from its perches' seed (the same on every machine)
+        // which of each island's ground blocks still stand (a destroyed one is a hole the Pistol must clear), and the blocks
+        // themselves, where this machine laid them or found them (a rider's machine finds them as the Pistol nears)
+        readonly List<PistolGround> _grounds = new();
+        readonly List<Prism[]> _groundBlocks = new();
+        float _bindAt;
         readonly Trail _trail = new();
 
         // the Goby: its dart and its lock
@@ -81,15 +92,39 @@ namespace CosmicShore.Gameplay
         PistolBodyMath.State _p; PistolBodyMath.Settings _body; VortexRing.Settings _vs;
         PistolPlane.Frame _f; PistolAI _ai;
         int _seg = -1, _dir = 1, _at, _travelDir = 1;
-        bool _resting = true; float _restT, _waitT, _travelled; int _restQueue, _restSpawned;
+        bool _resting = true; float _restT, _waitT; int _restQueue, _restSpawned;
+        // the Pistol's ENERGY (Garrett, 2026-10-29): every block it flies over instead of riding gives some, the nth of one
+        // flight more (big jumps pay); a den is built from it, and a fall through a hole loses it all
+        float _energy; int _flightBlocks;
+        readonly List<int> _skipped = new();
+        readonly Dictionary<Crystal, float> _crystalTakenAt = new();
         bool _touchGhost, _touchSnap, _backPressed;
         float _dive;
+        // a fall into a gap in the trail (Garrett, 2026-10-29): two vortex-ring portals, where it fell in and where it comes
+        // out beyond the gap, for fallPopSeconds; the Pistol spins out of the second
+        float _popT = -1f; Vector3 _popOutAt, _popInAt;
+        VortexRing _popOut, _popIn;
+        // the juice of a rewarded block (Garrett, 2026-10-29: "there should be some good juice associated with growing,
+        // restoring, and shielding prisms"): lit faceted shards and a flash shrinking onto the block, for the Pistol's camera
+        enum Juice { Grow = 0, Shield = 1, Restore = 2 }
+        struct Burst { public Vector3 At, R, Up, M, Scale; public Quaternion Rot; public float Born; public Juice Kind; public uint Seed; }
+        readonly List<Burst> _bursts = new();
+        readonly List<Matrix4x4>[] _juicePieces = { new(), new(), new() };
+        Material[] _juiceMats;
+        readonly float[] _juiceSoundAt = new float[3];
+        uint _burstSeed;
+        Domains _juiceDomain;
+        const int MaxBursts = 128;
+        // the blocks flown over this flight, rewarded when it lands (Garrett, 2026-10-29: "lets get the juice on landing
+        // instead of as its happening"): released as a ripple running back from where it came down, juiceRippleSpeed u/s
+        struct Reward { public int Island, Slot; public float S, Due; }
+        readonly List<Reward> _flightRewards = new(), _dueRewards = new();
         // the choice at a perch (PistolPaths, Garrett 2026-10-25): every island's opposing prisms, kept one island at a time;
         // the map the person picks a den and a direction on; the cursor and how the dive confirms it
         readonly List<PathChoice> _options = new();
-        readonly List<int> _pathScore = new();
+        readonly List<float> _pathScore = new();
         readonly HashSet<Prism> _scoreSeen = new();
-        int _scoreCursor, _pathScoreMax; float _scoreAt;
+        int _scoreCursor; float _pathScoreMax, _scoreAt;
         bool _choosing, _diveWasDown; PathChoice _choice; float _chooseT; Vector2 _stickWas;
         MapPointer _mapPointer;
         float _mapRadius = 1f, _mapYaw, _mapPitch;   // the person's spin of the map, kept from perch to perch
@@ -153,13 +188,29 @@ namespace CosmicShore.Gameplay
         public int PerchCount => _perches.Count;
         public int DenPrisms { get { int n = 0; foreach (var d in _perches) n += d.Placed; return n; } }
         public bool PistolResting => _resting;
+        /// <summary>True for the moment the Pistol sinks into a gap in its trail, before it is set down beyond it.</summary>
+        public bool Falling => _p != null && _p.falling;
+        /// <summary>True while it comes out of the portal beyond a gap it fell into.</summary>
+        bool Popping => _popT >= 0f && _popT < Config.FallPopSeconds;
         public bool HasLock => _lockTarget;
         public bool DartReady => !_darting && _t >= _dartReadyAt;
         public bool HeadingBack => _travelDir < 0;
         /// <summary>True while the Pistol, at a perch, waits for its person to pick a den and a direction (the path map).</summary>
         public bool Choosing => _choosing;
         /// <summary>The opposing prisms the vortex ring could reach along island <paramref name="segment"/>, last counted.</summary>
-        public int PathScore(int segment) => segment >= 0 && segment < _pathScore.Count ? _pathScore[segment] : 0;
+        public float PathScore(int segment) => PathScore(segment, 1) + PathScore(segment, -1);
+        /// <summary>The opposing mass a vortex ring could destroy on one HALF of island <paramref name="segment"/> (the side
+        /// the Pistol plays riding it <paramref name="dir"/>, +1 ahead, -1 back; <see cref="PistolPaths.Half(int, int)"/>):
+        /// the summed volume of the unshielded prisms of other domains there, last counted.</summary>
+        public float PathScore(int segment, int dir)
+        {
+            int h = PistolPaths.Half(segment, dir);
+            return segment >= 0 && h < _pathScore.Count ? _pathScore[h] : 0f;
+        }
+        /// <summary>The Pistol's energy: what the blocks it flew over gave it, spent on its next den.</summary>
+        public float Energy => _energy;
+        /// <summary>The Pistol's energy as a share of the most it holds (its Mass card's gauge).</summary>
+        public float Energy01 => Config ? Mathf.Clamp01(_energy / Mathf.Max(1f, Config.EnergyMax)) : 0f;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
         public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
@@ -211,8 +262,13 @@ namespace CosmicShore.Gameplay
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
-            _perches.Clear(); _segments.Clear(); _tracks.Clear(); _rings.Clear(); _held.Clear();
-            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false; _mapYaw = _mapPitch = 0f; _mapPointer = default;
+            _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); _rings.Clear(); _held.Clear();
+            StopPops(); _bindAt = 0f; _flightRewards.Clear(); _dueRewards.Clear();
+            // a dead ground block goes back to its pool after its death effect (PrismRecycler): a gap is re-laid with new
+            // blocks (RestoreBlock), never brought back from the dead
+            _trail.RecycleDestroyedMembers = true;
+            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0f; _choosing = false; _mapYaw = 0f; _mapPitch = Config.MapStartTilt; _mapPointer = default;
+            _energy = 0f; _flightBlocks = 0; _crystalTakenAt.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
             _home = _gt.position; _aiHasDir = false; _aiIslandGoal = 0f; _perched = false; _perchT = 0f;
@@ -234,7 +290,7 @@ namespace CosmicShore.Gameplay
             _p = new PistolBodyMath.State { launch = Mathf.RoundToInt(_body.pLaunchCharges) };
             _f = WaitingFrame();
             PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
-            _seg = -1; _at = 0; _travelDir = 1; _resting = true; _restT = 0f; _restQueue = _restSpawned = 0; _travelled = 0f; _waitT = 0f;
+            _seg = -1; _at = 0; _travelDir = 1; _resting = true; _restT = 0f; _restQueue = _restSpawned = 0; _waitT = 0f;
             if (!_aiCrew) BuildView();   // an AI crew draws nothing: no person here watches it
         }
 
@@ -250,6 +306,7 @@ namespace CosmicShore.Gameplay
             _stoppedAutopilot = false;
             _buttons.Dispose();
             ReleaseAllRings();
+            StopPops();
             Pin(false); HoldPen(false);
             _render?.Dispose(); _render = null; _pip.Dispose();
             TwoDCameraSky.Unregister(_cam);
@@ -257,9 +314,11 @@ namespace CosmicShore.Gameplay
             if (_bodyGo) Destroy(_bodyGo);
             foreach (var o in new Object[] { _torus, _lockMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
             if (_heatMats != null) foreach (var m in _heatMats) if (m) Destroy(m);
+            if (_juiceMats != null) foreach (var m in _juiceMats) if (m) Destroy(m);
+            _juiceMats = null; _bursts.Clear(); _flightRewards.Clear(); _dueRewards.Clear();
             _heatMats = null; _choosing = false; _pathScore.Clear();
             _claw = _tail = null; _bodyIsModel = false; _bodyDomain = null;
-            _perches.Clear(); _segments.Clear(); _tracks.Clear(); ClearLock();
+            _perches.Clear(); _segments.Clear(); _tracks.Clear(); _grounds.Clear(); _groundBlocks.Clear(); ClearLock();
             _goby = null; _status = null; _gt = null; _cam = null; _view = null; _bodyGo = null; _camLive = false;
         }
 
@@ -435,7 +494,8 @@ namespace CosmicShore.Gameplay
                 var seg = new PlaneSegment(from, pos, (fromUp + up).normalized);
                 _segments.Add(seg);
                 _tracks.Add(TrackFor(seg, _segments.Count - 1));
-                LayGround(seg, _tracks[_tracks.Count - 1]);
+                AddGround(seg);
+                LayGround(seg, _tracks[_tracks.Count - 1], _segments.Count - 1);
                 from = pos; fromUp = up;
             }
             _perched = true; _perchT = 0f; _aiHasDir = false;
@@ -493,34 +553,245 @@ namespace CosmicShore.Gameplay
         /// <summary>An island's ground from its perches (<see cref="PistolPlane.IslandSeed"/>): the rider's machine builds the same.</summary>
         PistolPlane.HillTrack TrackFor(in PlaneSegment seg, int island) => PistolPlane.HillTrack.Build(seg.L, PistolPlane.IslandSeed(seg.A, seg.B), Config.HillSpec, island);
 
-        /// <summary>The island's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.</summary>
-        void LayGround(in PlaneSegment seg, PistolPlane.HillTrack track)
+        /// <summary>An island's ground blocks, all standing (<see cref="PistolGround"/>): one slot per <c>trailBlockGap</c>.</summary>
+        void AddGround(in PlaneSegment seg)
+        {
+            var ground = new PistolGround(seg.L, Mathf.Max(2f, Config.TrailBlockGap));
+            _grounds.Add(ground);
+            _groundBlocks.Add(new Prism[ground.Count]);
+        }
+
+        PistolGround GroundOf(int island) => island >= 0 && island < _grounds.Count ? _grounds[island] : null;
+
+        /// <summary>The island's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.
+        /// Each block is kept in its slot of the island's <see cref="PistolGround"/>: when it is destroyed the ground there is
+        /// a hole.</summary>
+        void LayGround(in PlaneSegment seg, PistolPlane.HillTrack track, int island)
+        {
+            if (seg.L < 1f) return;
+            float gap = Mathf.Max(2f, Config.TrailBlockGap);
+            var ground = GroundOf(island); var blocks = island >= 0 && island < _groundBlocks.Count ? _groundBlocks[island] : null;
+            for (float s = gap * 0.5f; s < seg.L; s += gap)
+            {
+                var prism = LayBlock(seg, track, s);
+                if (prism && ground != null && blocks != null) blocks[ground.SlotAt(s)] = prism;
+            }
+        }
+
+        /// <summary>One ground block at <paramref name="s"/> along the island's line, on its hills, the pair's own.</summary>
+        Prism LayBlock(in PlaneSegment seg, PistolPlane.HillTrack track, float s)
         {
             var prisms = _status.VesselPrismController;
             var channel = prisms ? prisms.PrismSpawnChannel : null;
-            if (!channel || seg.L < 1f) return;
-            float gap = Mathf.Max(2f, Config.TrailBlockGap);
+            if (!channel) return null;
             Vector3 scale = Config.TrailBlockScale;
-            for (float s = gap * 0.5f; s < seg.L; s += gap)
+            Vector3 pos = seg.Ground(s, track);
+            Vector3 along = seg.S + seg.N * track.Slope(s);
+            if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) return null;
+            var ret = channel.RaiseEvent(new PrismEventData
             {
-                Vector3 pos = seg.Ground(s, track);
-                Vector3 along = seg.S + seg.N * track.Slope(s);
-                if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) continue;
-                var ret = channel.RaiseEvent(new PrismEventData
+                ownDomain = _status.Domain, Rotation = rot, SpawnPosition = pos, Scale = scale, PrismType = prisms.SpawnPrismType,
+            });
+            if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return null;
+            prism.TargetScale = scale;
+            prism.ownerID = _status.PlayerName;
+            prism.ChangeTeam(_status.Domain);
+            _trail.Add(prism);
+            prism.prismProperties.Index = (ushort)Mathf.Min(_trail.TrailList.Count - 1, ushort.MaxValue);
+            prism.Initialize(_status.PlayerName);
+            prism.AdmitTargetScale(scale);
+            prism.TargetScale = scale;
+            prism.AssignTrail(_trail);   // AFTER Initialize: pool reuse clears trail membership
+            return prism;
+        }
+
+        /// <summary>
+        /// Which blocks of the island the Pistol rides still stand (Garrett, 2026-10-28: "when the goby's trail is destroyed
+        /// the shrimp should have to clear the destroyed section. if they fall they should not hit phantom prisms"). A block is
+        /// ground while it stands where the Goby laid it (a rival's steal leaves it standing, so it stays ground); a destroyed
+        /// (or carried off, or recycled) block is a hole until a new one is laid in its slot. A block this machine never laid or found is
+        /// ground: on a rider's machine the blocks are found as the Pistol nears them.
+        /// </summary>
+        void RefreshGround()
+        {
+            if (_seg < 0 || _seg >= _grounds.Count || _seg >= _groundBlocks.Count) return;
+            var ground = _grounds[_seg]; var blocks = _groundBlocks[_seg]; var seg = _segments[_seg]; var track = _tracks[_seg];
+            bool bind = _rider && _t >= _bindAt;
+            if (bind) _bindAt = _t + 0.25f;
+            float near = PistolPlane.LineS(_f, _p.x / Mathf.Max(1e-4f, _f.Cos)), tol = 0.5f * ground.Gap;
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                float s = ground.BlockS(i);
+                if (s >= seg.L) break;
+                if (ReferenceEquals(blocks[i], null))
                 {
-                    ownDomain = _status.Domain, Rotation = rot, SpawnPosition = pos, Scale = scale, PrismType = prisms.SpawnPrismType,
-                });
-                if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) continue;
-                prism.TargetScale = scale;
-                prism.ownerID = _status.PlayerName;
-                prism.ChangeTeam(_status.Domain);
-                _trail.Add(prism);
-                prism.prismProperties.Index = (ushort)Mathf.Min(_trail.TrailList.Count - 1, ushort.MaxValue);
-                prism.Initialize(_status.PlayerName);
-                prism.AdmitTargetScale(scale);
-                prism.TargetScale = scale;
-                prism.AssignTrail(_trail);   // AFTER Initialize: pool reuse clears trail membership
+                    if (!bind || Mathf.Abs(s - near) > GroundBindWindow) continue;
+                    blocks[i] = FindGroundBlock(seg.Ground(s, track), tol);
+                    if (ReferenceEquals(blocks[i], null)) continue;
+                }
+                ground.SetGone(i, !Stands(blocks[i], _seg, i));
             }
+        }
+
+        // how far along its island ahead of and behind the Pistol a rider's machine looks for the blocks it was not sent, u
+        const float GroundBindWindow = 90f;
+
+        /// <summary>The pair's own block laid at <paramref name="at"/> (a rider's machine was not sent the hull machine's).</summary>
+        Prism FindGroundBlock(Vector3 at, float r)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return null;
+            index.QuerySphere(at, r, _q2);
+            Prism best = null; float bestD = r * r;
+            foreach (var prism in _q2)
+            {
+                if (!prism || prism.destroyed || prism.ownerID != _status.PlayerName) continue;
+                float d = (prism.transform.position - at).sqrMagnitude;
+                if (d <= bestD) { bestD = d; best = prism; }
+            }
+            _q2.Clear();
+            return best;
+        }
+
+        /// <summary>
+        /// The blocks the Pistol flew over between frame-x <paramref name="fromX"/> and <paramref name="toX"/> instead of
+        /// riding them (Garrett, 2026-10-29: "every time prisms are not ridden because the pistol is off trail then grow those
+        /// prisms. if they are max size ... then shield them. if they are destroyed, restore them. this reward the player for
+        /// making big jumps. the more prisms are skipped the more energy the pistol should collect"): each gives energy, the
+        /// nth of the flight more than the last (<see cref="GobyDen.EnergyFor"/>) at once, and is rewarded
+        /// (<see cref="RewardBlock"/>) when the flight comes down (<see cref="ReleaseFlightRewards"/>).
+        /// </summary>
+        void SkipOver(float fromX, float toX)
+        {
+            var ground = GroundOf(_seg);
+            if (ground == null) return;
+            _skipped.Clear();
+            ground.BlocksBetween(PistolPlane.LineAt(_f, fromX), PistolPlane.LineAt(_f, toX), _skipped);
+            foreach (int slot in _skipped)
+            {
+                _energy = Mathf.Min(Config.EnergyMax, _energy + GobyDen.EnergyFor(_flightBlocks++, Config.EnergyPerSkippedBlock, Config.EnergyFlightBonus));
+                _flightRewards.Add(new Reward { Island = _seg, Slot = slot, S = ground.BlockS(slot) });
+            }
+            _skipped.Clear();
+        }
+
+        /// <summary>
+        /// The flight's rewards fall due as it comes down at <paramref name="atS"/> along the island's line (a landing, a fall
+        /// into a gap, a perch): a ripple running back from there toward the takeoff at <c>juiceRippleSpeed</c>, so the jump's
+        /// blocks grow, shield and come back one after another with their juice (Garrett, 2026-10-29: "lets get the juice on
+        /// landing instead of as its happening").
+        /// </summary>
+        void ReleaseFlightRewards(float atS)
+        {
+            float speed = Mathf.Max(1f, Config.JuiceRippleSpeed);
+            foreach (var r in _flightRewards)
+            {
+                var due = r;
+                due.Due = _t + Mathf.Abs(r.S - atS) / speed;
+                _dueRewards.Add(due);
+            }
+            _flightRewards.Clear();
+        }
+
+        void ApplyDueRewards()
+        {
+            for (int i = 0; i < _dueRewards.Count; i++)
+            {
+                if (_dueRewards[i].Due > _t) continue;
+                RewardBlock(_dueRewards[i].Island, _dueRewards[i].Slot);
+                _dueRewards.RemoveAt(i--);
+            }
+        }
+
+        /// <summary>A block the Pistol flew over: a destroyed one is restored (its hole is ground again); a standing one grows
+        /// OUT OF THE PLANE only, across the trail (its local x, <c>skipGrowStep</c> a skip up to <c>skipGrowMax</c>); one
+        /// already that wide is shielded. A block carried off its spot is not the island's any more and is left alone.</summary>
+        void RewardBlock(int island, int slot)
+        {
+            if (island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return;
+            var prism = _groundBlocks[island][slot];
+            if (ReferenceEquals(prism, null)) return;   // never laid or found here
+            if (!Stands(prism, island, slot)) { RestoreBlock(island, slot); return; }   // gone: a new block in its slot
+            var target = prism.TargetScale;
+            float max = Mathf.Max(Config.TrailBlockScale.x, Config.SkipGrowMax);
+            if (target.x < max - 1e-3f)
+            {
+                target.x = Mathf.Min(max, target.x + Config.SkipGrowStep);
+                prism.AdmitTargetScale(target);
+                prism.TargetScale = target;
+                AddJuice(prism, Juice.Grow, target);
+                return;
+            }
+            if (prism.prismProperties.IsShielded) return;
+            prism.ActivateShield();
+            AddJuice(prism, Juice.Shield, target);
+        }
+
+        /// <summary>
+        /// A rewarded block's juice: a burst for the Pistol's camera (<see cref="DrawJuice"/>) and its sound, the kind's own
+        /// FMOD field (empty: silent), at most one of a kind per <c>juiceSoundSpacing</c> (a long jump rewards a block every
+        /// few frames). Grown and shielded blocks throw their shards out; a restored one draws them in. Nothing for an AI
+        /// crew: no person here watches it.
+        /// </summary>
+        void AddJuice(Prism prism, Juice kind, Vector3 scale)
+        {
+            if (_aiCrew || !prism) return;
+            var tr = prism.transform;
+            if (_bursts.Count >= MaxBursts) _bursts.RemoveAt(0);
+            _bursts.Add(new Burst
+            {
+                At = tr.position, Rot = tr.rotation, Scale = scale, R = _f.R, Up = _f.Up, M = _f.M, Born = _t, Kind = kind,
+                Seed = unchecked(++_burstSeed * 2654435761u),
+            });
+            int k = (int)kind;
+            var sound = kind switch { Juice.Grow => Config.GrowEvent, Juice.Shield => Config.ShieldEvent, _ => Config.RestoreEvent };
+            if (_t < _juiceSoundAt[k]) return;
+            _juiceSoundAt[k] = _t + Config.JuiceSoundSpacing;
+            PlaySound(sound, tr.position);
+        }
+
+        static void PlaySound(FMODUnity.EventReference sound, Vector3 at)
+        {
+            if (sound.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(sound, at);
+        }
+
+        /// <summary>
+        /// Brings island <paramref name="island"/>'s block <paramref name="slot"/> back when it is gone, as a NEW block laid in
+        /// its slot (<see cref="LayBlock"/>). Never <c>Prism.Restore</c> (Garrett, 2026-10-29: "I did not see any restores"):
+        /// it refuses a DEVASTATED prism for good (collisions of moved prisms, the Rhino, the Thresher, the Shrike's lance and
+        /// black holes devastate), so such a gap never came back; and the dead block may already be back in its pool. (Until
+        /// 2026-10-29 a restored prism also could never grow again; <c>PrismScaleAnimator.RearmAfterRestore</c> fixed that
+        /// for every caller.) The dead block is the recycler's: the trail opts
+        /// in (<see cref="Trail.RecycleDestroyedMembers"/>), and this seat checks a block's trail and spot, not its identity.
+        /// False when the block stands, or on a rider's machine (the hull's machine owns the pair's trail).
+        /// </summary>
+        bool RestoreBlock(int island, int slot)
+        {
+            if (_rider || island < 0 || island >= _groundBlocks.Count || slot < 0 || slot >= _groundBlocks[island].Length) return false;
+            var blocks = _groundBlocks[island];
+            if (ReferenceEquals(blocks[slot], null)) return false;   // never laid here
+            var ground = _grounds[island];
+            if (Stands(blocks[slot], island, slot)) return false;
+            var fresh = LayBlock(_segments[island], _tracks[island], ground.BlockS(slot));
+            if (!fresh) return false;
+            blocks[slot] = fresh;
+            ground.SetGone(slot, false);
+            AddJuice(fresh, Juice.Restore, Config.TrailBlockScale);
+            return true;
+        }
+
+        /// <summary>Is <paramref name="prism"/> still island <paramref name="island"/>'s block <paramref name="slot"/>: alive,
+        /// in this trail (a recycled prism laid again by anyone is in another), where the Goby laid it? A rival's steal leaves
+        /// it standing. A rider's machine found its blocks in the world and checks only life and spot.</summary>
+        bool Stands(Prism prism, int island, int slot)
+        {
+            if (!prism || prism.destroyed || (!_rider && prism.Trail != _trail)) return false;
+            var ground = _grounds[island];
+            Vector3 at = _segments[island].Ground(ground.BlockS(slot), _tracks[island]);
+            float tol = 0.5f * ground.Gap;
+            return (prism.transform.position - at).sqrMagnitude <= tol * tol;
         }
 
         // ================================ the Goby: lock ================================
@@ -657,7 +928,7 @@ namespace CosmicShore.Gameplay
             index.QuerySphere(last, goal + radius, _q);
             _routePts.Clear();
             int stride = Mathf.Max(1, Mathf.CeilToInt(_q.Count / (float)RoutePointsMax));
-            for (int i = 0; i < _q.Count; i += stride) if (Opposing(_q[i])) _routePts.Add(_q[i].transform.position);
+            for (int i = 0; i < _q.Count; i += stride) if (Destroyable(_q[i])) _routePts.Add(_q[i].transform.position);
             _q.Clear();
             bool found = PistolPaths.BestHeading(last, goal, radius, _routePts, _home, Config.AiHomeRadius, _gt.forward,
                 lvl.Mis * 10f, _misjudgeSeed, out var heading, out _aiRouteCount);
@@ -702,23 +973,71 @@ namespace CosmicShore.Gameplay
         void StepPistol(float dt)
         {
             ScorePaths();
+            if (_popOut != null) { _popT += dt; if (_popT >= Config.FallPopSeconds) StopPops(); }
+            ApplyDueRewards();
             if (_resting) { Rest(dt); return; }
+            RefreshGround();
             var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
             _dive = inp.Dive;
             var ev = PistolBodyMath.Step(_p, _f, _t, dt, inp, _body);
-            _travelled += ev.Travelled;
+            if (ev.Flew && !_p.falling) SkipOver(ev.FlewFrom, ev.FlewTo);
+            if (ev.Landed || ev.FellIn) ReleaseFlightRewards(PistolPlane.LineAt(_f, _p.x));
+            if (_p.grounded) _flightBlocks = 0;
             if (ev.FireSnap) { FireRing(ev.SnapAim); _snapAt = _t; }
-            if (_p.x >= _f.EndX - Config.ArriveDistance) Arrive(_dir > 0 ? _seg + 1 : _seg);
+            if (ev.FellIn) FallThrough();
+            if (!_p.falling && _p.x >= _f.EndX - Config.ArriveDistance) Arrive(_dir > 0 ? _seg + 1 : _seg);
+        }
+
+        /// <summary>
+        /// The Pistol sank into a gap in its trail (Garrett, 2026-10-29: "there is an unfun state where the best paths are no
+        /// longer crossable. so lets have falling still restore the path up to what wasn't touched if the trail was still
+        /// there, but once crossing where the trail should be they teleport to the next section of undestroyed trail, leaving
+        /// the rest of the gap and loosing all energy. this way they can keep going and they restore some trail to try again on
+        /// the next pass. this also still rewards them for how far they make it before failing without taking the thrill out
+        /// of succeeding."): the gap's blocks it got past are restored (<see cref="PistolGround.AfterGap"/>), its energy is
+        /// gone, and it comes out of a vortex-ring portal on the next standing ground beyond the gap, riding on at the speed it
+        /// had; the rest of the gap stays for the next pass. A gap that runs to the perch sets it at the perch, where it
+        /// arrives with no energy, so the den grows nothing.
+        /// </summary>
+        void FallThrough()
+        {
+            var ground = GroundOf(_seg);
+            float s = PistolPlane.LineAt(_f, _p.x), land = s;
+            _skipped.Clear();
+            if (ground != null) land = ground.AfterGap(s, _dir, _skipped);
+            foreach (int slot in _skipped) RestoreBlock(_seg, slot);
+            _skipped.Clear();
+            _energy = 0f; _flightBlocks = 0;
+            float u = Mathf.Clamp(_dir > 0 ? land : _f.L - land, 0f, _f.L);
+            float speed = Mathf.Max(_body.pMinSpeed, Mathf.Abs(_p.vx));
+            if (_body.pMaxSpeed > 0f) speed = Mathf.Min(speed, _body.pMaxSpeed);
+            _popOutAt = _p.wpos;
+            PistolBodyMath.PlaceOnGround(_p, _f, PistolPlane.GroundPoint(_f, u).x, speed);
+            _popInAt = _p.wpos;
+            StopPops();
+            _popOut = new VortexRing(_popOutAt, _f.M, Config.FallPopSeconds);
+            _popIn = new VortexRing(_popInAt, _f.M, Config.FallPopSeconds);
+            _popT = 0f;
+            if (!_aiCrew) PlaySound(Config.FallThroughEvent, _popInAt);
+        }
+
+        void StopPops()
+        {
+            if (_popOut != null) VortexRingLens.Remove(_popOut);
+            if (_popIn != null) VortexRingLens.Remove(_popIn);
+            _popOut = _popIn = null; _popT = -1f;
         }
 
         /// <summary>The Pistol reaches perch <paramref name="perch"/>: it rests there and builds its den, as many prisms as
-        /// the distance it travelled since its last den and the pair's Mass make (GobyDen).</summary>
+        /// its energy and the pair's Mass make (GobyDen), and spends that energy; what the den could not take is kept.</summary>
         void Arrive(int perch)
         {
             _resting = true; _at = Mathf.Clamp(perch, 0, _perches.Count - 1); _restT = 0f; _waitT = 0f; _restSpawned = 0;
             var den = _perches[_at];
-            _restQueue = GobyDen.PrismsFor(_travelled, Config.DenUnitsPerPrism, Config.DenMassScale.EvaluateReplicated(_status), den.Placed, Config.DenMax);
-            _travelled = 0f;
+            if (_flightRewards.Count > 0) ReleaseFlightRewards(PistolPlane.LineAt(_f, _p.x));   // came down on the perch
+            float mass = Config.DenMassScale.EvaluateReplicated(_status);
+            _restQueue = GobyDen.PrismsFor(_energy, Config.EnergyPerDenPrism, mass, den.Placed, Config.DenMax);
+            _energy = Mathf.Max(0f, _energy - GobyDen.EnergySpent(_restQueue, Config.EnergyPerDenPrism, mass));
             _p.x = _f.EndX; _p.y = PistolPlane.Ground(_f, _p.x); _p.wpos = den.Pos; _p.grounded = true;
         }
 
@@ -751,22 +1070,22 @@ namespace CosmicShore.Gameplay
         void Ride(int seg, int dir)
         {
             _seg = seg; _dir = dir; _resting = false;
-            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, _tracks[seg]);
+            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, _tracks[seg], GroundOf(seg));
             // from a standstill: the Pistol rested at the perch, so it sets off at the ride's least speed and gathers it on
             // the way down, never carrying its arrival speed into the first hump and flying off the perch (Garrett,
             // 2026-10-22: "it should not launch from the perch each time")
             PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
+            RefreshGround();
         }
 
-        /// <summary>Sets off on <paramref name="c"/>: from another perch it TELEPORTS there first, which grows no den (only the
-        /// distance ridden does, counted from here: Garrett, 2026-10-25).</summary>
+        /// <summary>Sets off on <paramref name="c"/>: from another perch it TELEPORTS there first, which grows no den (Garrett,
+        /// 2026-10-25); its energy goes with it, for the den it next rides to.</summary>
         void SetOff(PathChoice c)
         {
             if (!PistolPaths.Ready(c, _segments.Count)) return;
             if (c.Perch != _at)
             {
                 _at = Mathf.Clamp(c.Perch, 0, _perches.Count - 1);
-                _travelled = 0f;
                 _p.wpos = _perches[_at].Pos;
                 _camLive = false;   // a cut, not a pan, to the den it jumped to
             }
@@ -896,8 +1215,9 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        /// <summary>The path a tap at <paramref name="screen"/> lands on (anywhere along its glowing bar, within
-        /// <c>mapPickPixels</c>), starting from the den at the end nearer the tap; the head's "ahead" by its pointer.</summary>
+        /// <summary>The path a tap at <paramref name="screen"/> lands on, within <c>mapPickPixels</c>: on a HALF PLANE's wing,
+        /// that half (the way it is ridden, from the den it sets off from); on the trail itself, from the den at the end nearer
+        /// the tap; the head's "ahead" by its pointer.</summary>
         bool PickNear(Vector2 screen, out PathChoice picked)
         {
             picked = _choice;
@@ -905,28 +1225,14 @@ namespace CosmicShore.Gameplay
             float reach = Config.MapPickPixels * Mathf.Max(1f, Screen.dpi / 160f), bestD = reach * reach;
             bool any = false;
             for (int k = 0; k < _segments.Count; k++)
-            {
-                var seg = _segments[k]; var track = _tracks[k];
-                const int n = 12;
-                Vector3 a = _cam.WorldToScreenPoint(seg.Ground(0f, track));
-                for (int i = 1; i <= n; i++)
+                for (int side = -1; side <= 1; side++)
                 {
-                    Vector3 b = _cam.WorldToScreenPoint(seg.Ground(seg.L * i / n, track));
-                    if (a.z > 0f && b.z > 0f)
-                    {
-                        Vector2 ab = (Vector2)(b - a);
-                        float t = ab.sqrMagnitude > 1e-4f ? Mathf.Clamp01(Vector2.Dot(screen - (Vector2)a, ab) / ab.sqrMagnitude) : 0f;
-                        float d = (screen - ((Vector2)a + ab * t)).sqrMagnitude;
-                        if (d < bestD)
-                        {
-                            bestD = d; any = true;
-                            float along = (i - 1 + t) / n;
-                            picked = along <= 0.5f ? new PathChoice(k, 1) : new PathChoice(k + 1, -1);
-                        }
-                    }
-                    a = b;
+                    float d = ScreenDistance2(screen, k, side, out float along);
+                    if (d >= bestD) continue;
+                    bestD = d; any = true;
+                    if (side == 0) picked = along <= 0.5f ? new PathChoice(k, 1) : new PathChoice(k + 1, -1);
+                    else picked = side > 0 ? new PathChoice(k, 1) : new PathChoice(k + 1, -1);
                 }
-            }
             foreach (var c in _options)
             {
                 if (PistolPaths.Ready(c, _segments.Count)) continue;
@@ -937,25 +1243,79 @@ namespace CosmicShore.Gameplay
             return any;
         }
 
+        /// <summary>Squared screen distance from <paramref name="screen"/> to island <paramref name="k"/>'s trail
+        /// (<paramref name="side"/> 0) or to the middle of its wing on the half ridden <paramref name="side"/> (+1 ahead, -1
+        /// back); <paramref name="along"/> 0..1 from A.</summary>
+        float ScreenDistance2(Vector2 screen, int k, int side, out float along)
+        {
+            along = 0f;
+            const int n = 12;
+            float best = float.MaxValue;
+            Vector3 a = _cam.WorldToScreenPoint(MapLinePoint(k, side, 0f));
+            for (int i = 1; i <= n; i++)
+            {
+                Vector3 b = _cam.WorldToScreenPoint(MapLinePoint(k, side, (float)i / n));
+                if (a.z > 0f && b.z > 0f)
+                {
+                    Vector2 ab = (Vector2)(b - a);
+                    float t = ab.sqrMagnitude > 1e-4f ? Mathf.Clamp01(Vector2.Dot(screen - (Vector2)a, ab) / ab.sqrMagnitude) : 0f;
+                    float d = (screen - ((Vector2)a + ab * t)).sqrMagnitude;
+                    if (d < best) { best = d; along = (i - 1 + t) / n; }
+                }
+                a = b;
+            }
+            return best;
+        }
+
+        /// <summary>A point <paramref name="u"/> (0..1 from A) along island <paramref name="k"/>'s trail (<paramref name="side"/>
+        /// 0), or along the middle of the wing of its half ridden <paramref name="side"/>.</summary>
+        Vector3 MapLinePoint(int k, int side, float u)
+        {
+            var seg = _segments[k];
+            Vector3 p = seg.Ground(seg.L * Mathf.Clamp01(u), _tracks[k]);
+            if (side == 0) return p;
+            return p + HalfSide(k, side) * (MapSpine + 0.5f * WingReach(HalfHeat(k, side)));
+        }
+
+        /// <summary>Which way out of island <paramref name="k"/>'s plane its half ridden <paramref name="dir"/> lies: the side
+        /// that ride's frame calls +z (<see cref="PistolPaths.Half(int, int)"/>).</summary>
+        Vector3 HalfSide(int k, int dir)
+        {
+            var f = PistolPlane.For(_segments[k], 1, Config.SlopeDegrees, null);
+            return dir > 0 ? f.M : -f.M;
+        }
+
+        /// <summary>A half plane's share of the most destroyable opposing mass any half holds, 0..1.</summary>
+        float HalfHeat(int k, int dir) => _pathScoreMax > 0f ? Mathf.Clamp01(PathScore(k, dir) / _pathScoreMax) : 0f;
+
+        /// <summary>How far a half's wing reaches out of the trail on the map, from a sliver (empty) to <c>mapWingReach</c>.</summary>
+        float WingReach(float heat) => _mapRadius * Config.MapWingReach * Mathf.Lerp(0.2f, 1f, heat);
+
+        /// <summary>The trail's own thickness on the map.</summary>
+        float MapSpine => _mapRadius * Config.MapPathThickness * Config.MapPathThinShare;
+
         /// <summary>Where an option is picked on the map: a little way along its island from its den (the head's "ahead",
         /// which waits for the next island, a little way along the Goby's nose).</summary>
         Vector3 OptionAnchor(PathChoice c)
         {
             if (!PistolPaths.Ready(c, _segments.Count))
                 return _perches[Mathf.Clamp(c.Perch, 0, _perches.Count - 1)].Pos + (_gt ? _gt.forward : Vector3.forward) * _mapRadius * 0.12f;
-            var seg = _segments[c.Segment];
-            float s = c.Dir > 0 ? seg.L * 0.18f : seg.L * 0.82f;
-            return seg.Ground(s, _tracks[c.Segment]);
+            return MapLinePoint(c.Segment, c.Dir, c.Dir > 0 ? 0.18f : 0.82f);
         }
 
-        /// <summary>One island's score at a time: the opposing prisms (not the pair's domain, never super-shielded or still
-        /// growing: what the vortex ring can catch) over it, within the undertow's reach of its plane and
-        /// <c>pathScoreBand</c> of its ground. Every frame while the map is open, every <c>pathScoreInterval</c> otherwise.</summary>
+        /// <summary>One island's two scores at a time, one per HALF PLANE (Garrett, 2026-10-29: the side the Pistol plays
+        /// riding it ahead, and the other side riding it back, <see cref="PistolPaths.Half(int, int)"/>): "how much unshielded
+        /// mass of opposing domains is available to be destroyed by vortex rings" on that side, the summed VOLUME of the
+        /// prisms <see cref="Destroyable"/> counts, within the undertow's reach of its plane and <c>pathScoreBand</c> of its
+        /// ground (mass in the plane counts on both). Only the score is by half: the other side is harder to reach, not out of
+        /// reach, and the rings and the undertow act on both. Every frame while the map is open, every
+        /// <c>pathScoreInterval</c> otherwise.</summary>
         void ScorePaths()
         {
-            while (_pathScore.Count < _segments.Count) _pathScore.Add(0);
-            if (_pathScore.Count > _segments.Count) _pathScore.RemoveRange(_segments.Count, _pathScore.Count - _segments.Count);
-            if (_segments.Count == 0) { _pathScoreMax = 0; return; }
+            int halves = _segments.Count * 2;
+            while (_pathScore.Count < halves) _pathScore.Add(0f);
+            if (_pathScore.Count > halves) _pathScore.RemoveRange(halves, _pathScore.Count - halves);
+            if (_segments.Count == 0) { _pathScoreMax = 0f; return; }
             if (!_choosing && _t < _scoreAt) return;
             _scoreAt = _t + Config.PathScoreInterval;
             var index = PrismSpatialIndex.Instance;
@@ -966,29 +1326,35 @@ namespace CosmicShore.Gameplay
             var f = PistolPlane.For(seg, 1, Config.SlopeDegrees, _tracks[k]);
             float reach = Mathf.Max(1f, Config.PullReach.EvaluateReplicated(_status)), band = Config.PathScoreBand;
             float step = Mathf.Max(reach, band) * 1.5f, r = Mathf.Sqrt(reach * reach + band * band + step * step * 0.25f);
-            int count = 0;
+            float ahead = 0f, back = 0f;
             _scoreSeen.Clear();
             for (float s = 0f; s <= seg.L + step * 0.5f; s += step)
             {
                 index.QuerySphere(seg.Ground(Mathf.Min(s, seg.L), _tracks[k]), r, _q2);
                 foreach (var prism in _q2)
                 {
-                    if (!_scoreSeen.Add(prism) || !Opposing(prism)) continue;
+                    if (!_scoreSeen.Add(prism) || !Destroyable(prism)) continue;
                     Vector3 fr = f.ToFrame(prism.transform.position);
-                    if (PistolPaths.InBand(fr, f.EndX, PistolPlane.Ground(f, Mathf.Clamp(fr.x, 0f, f.EndX)), reach, band)) count++;
+                    float ground = PistolPlane.Ground(f, Mathf.Clamp(fr.x, 0f, f.EndX)), mass = Mathf.Max(1e-3f, prism.Volume);
+                    // the back frame's +z is this frame's -z: the other side
+                    if (PistolPaths.InHalf(fr, f.EndX, ground, reach, band)) ahead += mass;
+                    if (PistolPaths.InHalf(new Vector3(fr.x, fr.y, -fr.z), f.EndX, ground, reach, band)) back += mass;
                 }
                 _q2.Clear();
             }
             _scoreSeen.Clear();
-            _pathScore[k] = count;
-            _pathScoreMax = 0;
-            foreach (int n in _pathScore) _pathScoreMax = Mathf.Max(_pathScoreMax, n);
+            _pathScore[PistolPaths.Half(k, 1)] = ahead;
+            _pathScore[PistolPaths.Half(k, -1)] = back;
+            _pathScoreMax = 0f;
+            foreach (float n in _pathScore) _pathScoreMax = Mathf.Max(_pathScoreMax, n);
         }
 
-        /// <summary>A prism the vortex ring could take that is not the pair's: another domain, breakable, not super-shielded,
-        /// not still growing (the ring's own capture rule, StepRings).</summary>
-        bool Opposing(Prism prism) => Breakable(prism) && !prism.IsGrowing && !prism.prismProperties.IsSuperShielded
-                                      && prism.Domain != _status.Domain;
+        /// <summary>A prism a vortex ring can DESTROY that is not the pair's (Garrett, 2026-10-29: "unshielded mass of opposing
+        /// domains"): another domain, breakable, not shielded or super-shielded (a ring's collapse only knocks a shield off),
+        /// not still growing. What the path map weighs and the Goby AI routes through; the rings themselves take whatever
+        /// they catch (StepRings).</summary>
+        bool Destroyable(Prism prism) => Breakable(prism) && !prism.IsGrowing && !prism.prismProperties.IsShielded
+                                         && !prism.prismProperties.IsSuperShielded && prism.Domain != _status.Domain;
 
         void LayDenPrism(Den den)
         {
@@ -1160,9 +1526,12 @@ namespace CosmicShore.Gameplay
         // ================================ the undertow, the body, the rings ================================
 
         /// <summary>Space: mass either side of the Pistol's plane is pulled into it - never danger, super-shielded, a
-        /// lifeform's body or the pair's own prisms; shielded ones only with the Space upgrade.</summary>
+        /// lifeform's body or the pair's own prisms; shielded ones only with the Space upgrade (Garrett, 2026-10-29: "the
+        /// vortex rings are free to affect whatever they will": the path map's score counts one side, nothing here does).
+        /// Crystals are drawn in too (<see cref="PullCrystals"/>).</summary>
         void Undertow(float dt)
         {
+            if (Falling) return;   // nothing is pulled into a plane the Pistol has fallen out of
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
             float reach = Mathf.Max(0f, Config.PullReach.EvaluateReplicated(_status)), window = Config.PullWindow;
@@ -1183,6 +1552,55 @@ namespace CosmicShore.Gameplay
                 moved++;
             }
             _q.Clear();
+            if (!_rider) PullCrystals(dt, reach, window);
+        }
+
+        /// <summary>
+        /// Crystals beside the Pistol's plane drift into it, either side, within the undertow's reach and window (Garrett,
+        /// 2026-10-29: "crystals are also attracted to the plane so pistol can collect them"), and one the Pistol's body
+        /// touches is the pair's: an elemental crystal through the hull's skimmer, the omni crystal through the hull where it
+        /// is decided (the Jacks' net's collect, <c>JacksNet.CollectByJacks</c>). The hull's machine only: a rider's machine
+        /// would take a crystal its hull's machine never saw taken.
+        /// </summary>
+        void PullCrystals(float dt, float reach, float window)
+        {
+            var active = Crystal.Active;
+            for (int i = active.Count - 1; i >= 0; i--)
+            {
+                if (i >= active.Count) continue;
+                var c = active[i];
+                if (!c || !c.isActiveAndEnabled || c.IsExploding || c.IsEmbedded || !c.CanBeCollected(_status.Domain)) continue;
+                var tr = c.transform;
+                Vector3 fr = _f.ToFrame(tr.position);
+                if (Mathf.Abs(fr.x - _p.x) > window || Mathf.Abs(fr.z) > reach) continue;
+                if (Mathf.Abs(fr.z) > 0.25f) tr.position -= _f.M * (Mathf.Sign(fr.z) * Mathf.Min(Mathf.Abs(fr.z), Config.CrystalPullSpeed * dt));
+                var size = tr.lossyScale;
+                float touch = Config.BodyR + Config.CrystalTouchPad + 0.5f * Mathf.Max(size.x, Mathf.Max(size.y, size.z));
+                float dx = fr.x - _p.x, dy = fr.y - _p.y;
+                if (Mathf.Abs(fr.z) <= touch && dx * dx + dy * dy <= touch * touch) CollectCrystal(c);
+            }
+        }
+
+        void CollectCrystal(Crystal c)
+        {
+            if (_crystalTakenAt.TryGetValue(c, out float at) && _t - at < 0.5f) return;
+            var impactor = c.GetComponentInChildren<CrystalImpactor>(true);
+            if (impactor is ElementalCrystalImpactor elemental && !elemental.HasBeenCollected)
+            {
+                var skimmerOwner = _status.NearFieldSkimmer;
+                var skimmer = skimmerOwner ? skimmerOwner.GetComponentInChildren<SkimmerImpactor>(true) : null;
+                if (!skimmer) return;
+                _crystalTakenAt[c] = _t;
+                elemental.CollectBy(skimmer);
+            }
+            else if (impactor is OmniCrystalImpactor omni && ElementalTransfer.IsDecidedHere(_status) && c.CrystalManager)
+            {
+                var hull = _gt ? _gt.GetComponentInChildren<VesselImpactor>(true) : null;
+                if (!hull) return;
+                _crystalTakenAt[c] = _t;
+                hull.AcceptImpacteeFromSweep(omni);
+                c.CrystalManager.ReportRingThreaded(c.Id, c.transform.position, hull);
+            }
         }
 
         bool Pullable(Prism prism, bool shieldedToo)
@@ -1199,7 +1617,8 @@ namespace CosmicShore.Gameplay
 
         void BodyHits()
         {
-            if (_resting || _t < _p.ghostUntil) return;
+            // sinking into a gap it touches nothing: no phantom hits
+            if (_resting || _t < _p.ghostUntil || Falling) return;
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
             index.QuerySphere(_p.wpos, Config.BodyR + Config.BodyHalfDepth + 6f, _q);
@@ -1379,11 +1798,16 @@ namespace CosmicShore.Gameplay
             }
             if (_perches.Count > count) _perches.RemoveRange(count, _perches.Count - count);
             // the darts between them; the one the Pistol rides keeps its frame
-            if (_segments.Count > count - 1) { _segments.RemoveRange(count - 1, _segments.Count - (count - 1)); _tracks.RemoveRange(count - 1, _tracks.Count - (count - 1)); }
+            if (_segments.Count > count - 1)
+            {
+                int keep = count - 1, drop = _segments.Count - keep;
+                _segments.RemoveRange(keep, drop); _tracks.RemoveRange(keep, drop); _grounds.RemoveRange(keep, drop); _groundBlocks.RemoveRange(keep, drop);
+            }
             for (int k = _segments.Count; k < count - 1; k++)
             {
                 _segments.Add(new PlaneSegment(_perches[k].Pos, _perches[k + 1].Pos, (_perches[k].Up + _perches[k + 1].Up).normalized));
                 _tracks.Add(TrackFor(_segments[k], k));
+                AddGround(_segments[k]);
             }
             if (_at >= _perches.Count) _at = _perches.Count - 1;
             if (_seg >= _segments.Count) { _seg = -1; _resting = true; }
@@ -1477,6 +1901,7 @@ namespace CosmicShore.Gameplay
             Vector3 wantPos = _f.ToWorld(_p.x, centre.y) - _f.M * D, wantWindow = _f.ToWorld(centre.x, centre.y);
             var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
             float k = Mathf.Clamp01(Time.deltaTime * 4f), kp = Mathf.Clamp01(Time.deltaTime * 6f);
+            if (Popping) kp = Mathf.Clamp01(Time.deltaTime * 12f);   // out of the portal beyond the gap: the view catches up quickly
             _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k) : wantRot;
             _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, kp) : wantPos;
             _camWindow = _camLive ? Vector3.Lerp(_camWindow, wantWindow, kp) : wantWindow;
@@ -1552,10 +1977,15 @@ namespace CosmicShore.Gameplay
         {
             if (!_bodyGo) return;
             float ghost = _t < _p.ghostUntil ? 0.6f : 1f;
+            // out of the portal beyond a gap it spins end over end, slowing to upright
+            bool tumbling = Popping;
+            float spin = tumbling ? Config.FallSpinDegrees * (1f - Mathf.SmoothStep(0f, 1f, _popT / Config.FallPopSeconds)) : 0f;
             if (!_bodyIsModel)
             {
                 float r = Config.BodyR;   // the capsule: its long axis on the frame's x
-                _bodyGo.transform.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(_f.M, _f.R));
+                var capsule = Quaternion.LookRotation(_f.M, _f.R);
+                if (tumbling) capsule = Quaternion.AngleAxis(spin, _f.M) * capsule;
+                _bodyGo.transform.SetPositionAndRotation(_p.wpos, capsule);
                 _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * ghost;
                 return;
             }
@@ -1567,7 +1997,9 @@ namespace CosmicShore.Gameplay
             if (d.sqrMagnitude < 1e-4f) d = new Vector2(_facing, 0f);
             Vector3 fwd = (_f.R * d.x + _f.Up * d.y).normalized;
             var root = _bodyGo.transform;
-            root.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(fwd, _f.Up));
+            var pose = Quaternion.LookRotation(fwd, _f.Up);
+            if (tumbling) pose = Quaternion.AngleAxis(spin, _f.M) * pose;
+            root.SetPositionAndRotation(_p.wpos, pose);
             root.localScale = Vector3.one * (_bodyScale * ghost);
 
             // the claw: shut on the Snap, held, then re-cocked (its hinge turns about the model's right axis)
@@ -1635,48 +2067,95 @@ namespace CosmicShore.Gameplay
             DrawMap();
         }
 
-        /// <summary>The paths as facts in the world, for the Pistol's camera only: a lit, faceted bar along each island's
-        /// ground, thicker and from the neutral blue toward the call-to-action lime as it holds more opposing prisms; the
-        /// highlighted path in white, with a pointer at its den along the way it rides.</summary>
+        /// <summary>
+        /// The paths as facts in the world, for the Pistol's camera only, by HALF PLANE (Garrett, 2026-10-29: "the pistol
+        /// should see the plane it should show one side of the trail when traveling one way and pass on the other side when
+        /// traveling the other direction. the two different half planes available should signal their mass separately in a
+        /// more 3d effect that obeys the no flat hypersea rule"): each island's trail is a thin lit spine, and each of its two
+        /// halves a terraced WING of lit, faceted blocks standing out of the trail on its own side, wider and in more tiers
+        /// (one to <see cref="WingTiers"/>) and from the neutral blue toward the call-to-action lime as that side holds more
+        /// opposing prisms. The picked half is white, with a pointer at its den along the way it rides.
+        /// </summary>
         void DrawMap()
         {
             EnsureMapAssets();
             foreach (var list in _heatPieces) list.Clear();
             _pickPieces.Clear();
-            float thick = _mapRadius * Config.MapPathThickness;
+            float spine = MapSpine;
             bool pickReady = PistolPaths.Ready(_choice, _segments.Count);
             for (int k = 0; k < _segments.Count; k++)
             {
-                float heat = _pathScoreMax > 0 ? (float)PathScore(k) / _pathScoreMax : 0f;
-                int level = Mathf.Clamp(Mathf.RoundToInt(heat * (_heatPieces.Length - 1)), 0, _heatPieces.Length - 1);
-                float w = thick * Mathf.Lerp(Config.MapPathThinShare, 1f, heat);
-                bool picked = pickReady && _choice.Segment == k;
-                AddPath(k, w, picked ? _pickPieces : _heatPieces[level], picked ? w * 1.35f : w);
+                AddPath(k, spine, _heatPieces[0], spine);
+                for (int dir = -1; dir <= 1; dir += 2)
+                {
+                    float heat = HalfHeat(k, dir);
+                    int level = Mathf.Clamp(Mathf.RoundToInt(heat * (_heatPieces.Length - 1)), 0, _heatPieces.Length - 1);
+                    bool picked = pickReady && PistolPaths.Half(_choice) == PistolPaths.Half(k, dir);
+                    AddWing(k, dir, heat, picked ? _pickPieces : _heatPieces[level]);
+                }
             }
             // the pointer: at the picked den, along the way it rides (the head's "ahead" waits for the Goby's next island)
+            float thick = _mapRadius * Config.MapPathThickness;
             Vector3 den = _perches[Mathf.Clamp(_choice.Perch, 0, _perches.Count - 1)].Pos, tip = OptionAnchor(_choice);
-            Vector3 dir = tip - den;
-            if (dir.sqrMagnitude > 1e-4f)
+            Vector3 dir2 = tip - den;
+            if (dir2.sqrMagnitude > 1e-4f)
             {
-                float len = Mathf.Min(dir.magnitude, _mapRadius * 0.1f), head = thick * 4f;
-                var rot = Quaternion.LookRotation(dir.normalized, _cam ? -_cam.transform.forward : Vector3.up);
-                _pickPieces.Add(Matrix4x4.TRS(den + dir.normalized * (len - head * 0.5f), rot, new Vector3(head, head * 0.4f, head)));
+                float len = Mathf.Min(dir2.magnitude, _mapRadius * 0.1f), head = thick * 4f;
+                var rot = Quaternion.LookRotation(dir2.normalized, _cam ? -_cam.transform.forward : Vector3.up);
+                _pickPieces.Add(Matrix4x4.TRS(den + dir2.normalized * (len - head * 0.5f), rot, new Vector3(head, head * 0.4f, head)));
                 _pickPieces.Add(Matrix4x4.TRS(den, Quaternion.identity, Vector3.one * thick * 3f));   // the den it sets off from
             }
             var rp = new RenderParams(_heatMats[0]) { camera = _cam, shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false };
             for (int i = 0; i < _heatPieces.Length; i++)
             {
-                if (_heatPieces[i].Count == 0) continue;
                 rp.material = _heatMats[i];
-                Graphics.RenderMeshInstanced(rp, _cube, 0, _heatPieces[i]);
+                DrawPieces(rp, _heatPieces[i]);
             }
-            if (_pickPieces.Count > 0)
+            rp.material = _pickMat;
+            DrawPieces(rp, _pickPieces);
+        }
+
+        // the most blocks one instanced draw takes
+        const int InstanceBatch = 1023;
+
+        void DrawPieces(RenderParams rp, List<Matrix4x4> pieces)
+        {
+            for (int start = 0; start < pieces.Count; start += InstanceBatch)
+                Graphics.RenderMeshInstanced(rp, _cube, 0, pieces, Mathf.Min(InstanceBatch, pieces.Count - start), start);
+        }
+
+        /// <summary>The most tiers a half's wing steps up in (its fullest).</summary>
+        const int WingTiers = 4;
+
+        /// <summary>One half's wing along island <paramref name="k"/>: per piece of the island, <c>1 + heat (tiers - 1)</c>
+        /// stacked slabs out of the trail on the half's side, each tier narrower and higher than the one below (a terrace
+        /// that rises toward the trail), so a heavier half is a wider, taller volume.</summary>
+        void AddWing(int k, int dir, float heat, List<Matrix4x4> into)
+        {
+            var seg = _segments[k]; var track = _tracks[k];
+            Vector3 side = HalfSide(k, dir);
+            float reach = WingReach(heat), spine = MapSpine, tierH = Mathf.Max(spine, reach * 0.22f);
+            int tiers = 1 + Mathf.RoundToInt(heat * (WingTiers - 1));
+            int pieces = Mathf.Clamp(Mathf.CeilToInt(seg.L / 80f), 4, 16);
+            Vector3 a = seg.Ground(0f, track);
+            for (int i = 1; i <= pieces; i++)
             {
-                rp.material = _pickMat;
-                Graphics.RenderMeshInstanced(rp, _cube, 0, _pickPieces);
+                Vector3 b = seg.Ground(seg.L * i / pieces, track), d = b - a;
+                if (d.sqrMagnitude > 1e-4f)
+                {
+                    var rot = Quaternion.LookRotation(d, side);   // local y out of the plane, z along the island
+                    for (int t = 0; t < tiers; t++)
+                    {
+                        float w = reach * (1f - t / (float)(tiers + 1));
+                        Vector3 centre = (a + b) * 0.5f + side * (spine + 0.5f * w) + seg.N * (tierH * (t + 0.5f));
+                        into.Add(Matrix4x4.TRS(centre, rot, new Vector3(tierH, w, d.magnitude * 0.92f)));
+                    }
+                }
+                a = b;
             }
         }
 
+        /// <summary>Island <paramref name="k"/>'s trail on the map: a thin lit bar along its ground.</summary>
         void AddPath(int k, float w, List<Matrix4x4> into, float drawW)
         {
             var seg = _segments[k]; var track = _tracks[k];
@@ -1696,7 +2175,7 @@ namespace CosmicShore.Gameplay
         void EnsureMapAssets()
         {
             if (_heatMats != null) return;
-            _cube = CubeMesh();
+            if (!_cube) _cube = CubeMesh();
             _heatMats = new Material[_heatPieces.Length];
             for (int i = 0; i < _heatMats.Length; i++)
             {
@@ -1716,12 +2195,99 @@ namespace CosmicShore.Gameplay
             return mesh;
         }
 
+        /// <summary>
+        /// The bursts of rewarded blocks, for the Pistol's camera: each block flashes (a lit shell
+        /// <c>juicePulseScale</c> its size shrinking onto it over the first 40 %) and throws <c>juiceShards</c> lit, faceted
+        /// shards in the Pistol's plane, spinning and shrinking as they fly <c>juiceReach</c> out; a restored block's shards
+        /// fly IN and land on it. Grown and restored in the pair's domain colour, lit; shielded in the call-to-action lime
+        /// (Garrett, 2026-10-29: "cyan = jade which is a domain color. use Lime for shield. a lit domain color for grow and
+        /// restore"); emissive so they bloom. The flight's blocks are rewarded when it lands, as a ripple back over the jump.
+        /// </summary>
+        void DrawJuice()
+        {
+            if (_bursts.Count == 0 || !_cam) return;
+            EnsureJuiceAssets();
+            foreach (var list in _juicePieces) list.Clear();
+            float life = Mathf.Max(0.05f, Config.JuiceSeconds), reach = Config.JuiceReach, size = Config.JuiceShardSize;
+            int shards = Config.JuiceShards;
+            for (int i = _bursts.Count - 1; i >= 0; i--)
+            {
+                var b = _bursts[i];
+                float age = _t - b.Born;
+                if (age >= life || age < 0f) { _bursts.RemoveAt(i); continue; }
+                float k = age / life, outE = 1f - (1f - k) * (1f - k);
+                var into = _juicePieces[(int)b.Kind];
+                if (k < 0.4f) into.Add(Matrix4x4.TRS(b.At, b.Rot, b.Scale * Mathf.Lerp(Config.JuicePulseScale, 1.02f, k / 0.4f)));
+                bool inward = b.Kind == Juice.Restore;
+                for (int j = 0; j < shards; j++)
+                {
+                    // spread over the upper half of the plane (the side the Pistol sees above its ground), a little jitter
+                    float a = Mathf.PI * ((j + 0.5f) / shards) + (Hash01(b.Seed, j) - 0.5f) * 0.6f;
+                    float far = reach * (0.6f + 0.4f * Hash01(b.Seed, j + 31));
+                    Vector3 dir = b.R * Mathf.Cos(a) + b.Up * Mathf.Sin(a);
+                    float d = inward ? far * (1f - outE) : far * outE;
+                    float sz = size * (inward ? Mathf.Lerp(0.5f, 1f, outE) * (k < 0.85f ? 1f : (1f - k) / 0.15f) : 1f - k);
+                    if (sz <= 1e-3f) continue;
+                    var rot = Quaternion.AngleAxis((inward ? -1f : 1f) * 720f * age + 57f * j, b.M) * Quaternion.LookRotation(dir, b.M);
+                    into.Add(Matrix4x4.TRS(b.At + dir * d, rot, Vector3.one * sz));
+                }
+            }
+            var rp = new RenderParams(_juiceMats[0]) { camera = _cam, shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false };
+            for (int i = 0; i < _juicePieces.Length; i++)
+            {
+                rp.material = _juiceMats[i];
+                DrawPieces(rp, _juicePieces[i]);
+            }
+        }
+
+        void EnsureJuiceAssets()
+        {
+            if (!_cube) _cube = CubeMesh();
+            if (_juiceMats == null)
+            {
+                _juiceMats = new Material[3];
+                for (int i = 0; i < 3; i++) _juiceMats[i] = Lit(Color.white, Color.white, 0.7f);
+                PaintJuice(_juiceMats[(int)Juice.Shield], Config.JuiceShieldColor);
+                _juiceDomain = (Domains)(-1);
+            }
+            // grown and restored mass is the PAIR's: lit in its domain's colour (the palette's one accessor for a light that
+            // wears its owner's domain), repainted when the pair changes domain; shielding is the call-to-action lime
+            var domain = _status != null ? _status.Domain : Domains.Blue;
+            if (domain == _juiceDomain) return;
+            _juiceDomain = domain;
+            var tint = PrismLit.DomainTint(domain);
+            PaintJuice(_juiceMats[(int)Juice.Grow], tint);
+            PaintJuice(_juiceMats[(int)Juice.Restore], tint);
+        }
+
+        static void PaintJuice(Material m, Color c)
+        {
+            m.color = c;
+            if (m.HasProperty(s_baseColor)) m.SetColor(s_baseColor, c);
+            if (m.HasProperty(s_emission)) m.SetColor(s_emission, c * 1.6f);
+        }
+
+        static float Hash01(uint seed, int i)
+        {
+            uint h = unchecked(seed ^ ((uint)i * 0x9E3779B1u));
+            h ^= h >> 15; h = unchecked(h * 0x2C1B3C6Du); h ^= h >> 12; h = unchecked(h * 0x297A2D39u); h ^= h >> 15;
+            return (h & 0xFFFFFF) / 16777216f;
+        }
+
         void Draw3D()
         {
+            DrawJuice();
             // each vortex ring bends the light behind it round its core: a subtle toroidal lens, the black holes' kin
             foreach (var run in _rings)
                 VortexRingLens.Set(run.Ring, run.Ring.C, run.Ring.N, _vs.pVortexR, _vs.pVortexR * VortexRing.Tube,
                     VortexRingLens.LifeFade(run.Ring.Age, run.Ring.Life), VortexRingLens.DefaultTint, _vs.pVortexSpin);
+            // the portals of a fall through a gap: where it went in and where it came out, facing the side view
+            if (_popOut != null)
+            {
+                float life = Config.FallPopSeconds, r = Config.FallRingRadius, fade = VortexRingLens.LifeFade(_popT, life - _popT, 0.08f, 0.3f);
+                VortexRingLens.Set(_popOut, _popOutAt, _f.M, r, r * VortexRing.Tube * 2f, fade, VortexRingLens.DefaultTint, _vs.pVortexSpin);
+                VortexRingLens.Set(_popIn, _popInAt, _f.M, r, r * VortexRing.Tube * 2f, fade, VortexRingLens.DefaultTint, -_vs.pVortexSpin);
+            }
             // the lock is a fact in the world, so it is drawn there: a lit ring round the locked target, facing the Goby
             if (_lockTarget)
             {

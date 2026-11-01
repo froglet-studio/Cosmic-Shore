@@ -24,7 +24,7 @@ import arcade_mode_lib as lib          # noqa: E402
 import waystation_course as course     # noqa: E402
 
 MODE_ID = 58
-RING_TARGET = 24
+RING_TARGET = 15   # 24 until 2026-10-26 (a 205 s editor finish); 15 aims an experienced run near 90 s
 g = lib.Generator(mode_id=MODE_ID, mode_name="Waystation")
 errors = []
 
@@ -37,7 +37,7 @@ EXISTING = {
     "SwitchbackController":   "232714002ed12bc27251e8ac09358ff0",
     "SwitchbackScoringRule":  "b67719b27d5ca31d65b90aec65674945",
     "SkimRaceCellConfig":     "52de45c2fab54ea0a35bc37a311d80e6",
-    "Butterfly":              lib.VESSELS["Butterfly"],
+    "Butterfly":              lib.VESSELS["TigerMoth"],
 }
 
 SCRIPTS = {
@@ -73,8 +73,9 @@ for i in (1, 2, 3, 4):
 
 # ── the comeback rate is a FUNCTION OF THE TARGET ───────────────────────────
 # bonusLevels = deficit x rate, so a rate that survives a re-target silently stops meaning
-# anything. Sized against Switchback's curve (target 20 at 0.5 buys 2.5 levels a quarter down).
-COMEBACK_RATE = 0.4
+# anything. Sized against Switchback's curve (2.5 levels a quarter down): 0.64 x 15/4 = 2.4, the
+# 2.4 that 0.4 bought on the old 24-ring course.
+COMEBACK_RATE = 0.64
 quarter = RING_TARGET * 0.25
 if quarter * COMEBACK_RATE < 1.0:
     errors.append(f"comeback rate {COMEBACK_RATE} buys only "
@@ -169,7 +170,7 @@ g.emit_asset(
       "  TrackSpawnablesByIntensity: []\n"
       "  PreviewFauna: {fileID: 0}\n"
       "  PreviewFaunaCount: 4\n"
-      f"  Vessel: {lib.VESSEL_CLASS_ID['Butterfly']}\n"
+      f"  Vessel: {lib.VESSEL_CLASS_ID['TigerMoth']}\n"
       "  ObjectiveText: Weave the cluster, then fold\n"
       "  ObjectiveMetric: 9\n"
       "  ObjectiveTarget: 0\n"
@@ -201,7 +202,7 @@ scene = re.sub(r"^  featuresPrefab: \{[^\n]*\}\n", "", scene, count=1, flags=re.
 # The four AI seats fly the Butterfly.
 old_ai = "".join(f"  - vesselClass: 2\n    PlayerName: AI {i}\n    AvatarId: {i}\n"
                  "    IsAI: 1\n    AllowSpawning: 1\n" for i in range(4))
-new_ai = "".join(f"  - vesselClass: {lib.VESSEL_CLASS_ID['Butterfly']}\n    PlayerName: AI {i}\n"
+new_ai = "".join(f"  - vesselClass: {lib.VESSEL_CLASS_ID['TigerMoth']}\n    PlayerName: AI {i}\n"
                  f"    AvatarId: {i}\n    IsAI: 1\n    AllowSpawning: 1\n" for i in range(4))
 scene = lib.replace_block(scene, old_ai, new_ai, "the four AI seats")
 
@@ -219,7 +220,13 @@ for probe, why in (
     if not course.re.search(probe, scene, course.re.M):
         errors.append(f"the donor scene no longer provides: {why}")
 
-for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"]):
+# The Tiger Moth's drop is TRAVEL at 900 u/s (R_VesselActions/TIGER_MOTH.md), 15 u a frame at 60 fps against the
+# donor's 400 u/s guard (18 u): a hitch would decline a ring the drop really crossed. 1000 keeps a respawn declined.
+scene = scene.replace("  maxPlausibleSpeed: 400\n", "  maxPlausibleSpeed: 1000\n", 1)
+
+# Switchback's feature-layer prefab: a donor-only asset, so a leak of its field fails here by name.
+SWITCHBACK_FEATURES_PREFAB = "29ec5eb8fa7cb3fd1d816c63b5b39687"
+for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"], SWITCHBACK_FEATURES_PREFAB):
     if stale in scene:
         errors.append(f"donor guid {stale} survived the clone")
 

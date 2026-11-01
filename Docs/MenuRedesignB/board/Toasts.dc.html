@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu toasts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: #00010A"></div>
+  <section aria-label="Toast stack" style="position: absolute; left: 0; top: 108px; width: 1920px; display: flex; flex-direction: column; gap: 10px">
+    <sc-for list="{{stack}}" as="t" hint-placeholder-count="3">
+      <div style="display: flex; justify-content: center">
+        <div class="sl" style="background: #434C89; padding: 1px; opacity: {{t.alpha}}; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) {{t.d}}ms both">
+          <div class="sl" style="position: relative; display: flex; align-items: center; gap: 14px; min-width: 360px; max-width: 720px; box-sizing: border-box; padding: 14px 22px 16px; background: #00041F">
+            <span style="position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: #00D4FF; transform-origin: left; animation: csDrain 5s linear {{t.d}}ms both"></span>
+            <span style="display: grid; place-items: center; width: 18px; flex: none">
+              <sc-if value="{{t.refuse}}" hint-placeholder-val="{{ true }}"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></sc-if>
+              <sc-if value="{{t.ok}}" hint-placeholder-val="{{ false }}"><span style="color: #99FF80; display: flex"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg></span></sc-if>
+              <sc-if value="{{t.error}}" hint-placeholder-val="{{ false }}"><span style="display: block; width: 10px; height: 10px; background: #FF4B3A; transform: rotate(45deg)"></span></sc-if>
+              <sc-if value="{{t.info}}" hint-placeholder-val="{{ false }}"><span style="color: #747BAD; display: flex"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2l7 6-7 10-7-10z"></path><path d="M3.6 8h12.8"></path></svg></span></sc-if>
+            </span>
+            <span style="font-size: 18px; line-height: 1.35">{{t.text}}</span>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+  <section aria-label="Fire a toast" style="position: absolute; left: 40px; top: 560px; width: 1840px">
+    <span class="lab" style="color: #E6E9FF">Every menu message (press one to raise it)</span>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px">
+      <sc-for list="{{samples}}" as="s" hint-placeholder-count="10"><span style="animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{s.d}}ms both"><button class="btn" type="button" onClick="{{s.fire}}" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span>{{s.text}}</span></button></span></sc-for>
+    </div>
+    <div style="display: flex; align-items: flex-end; gap: 4px; margin-top: 34px; width: 900px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 560ms both">
+      <span style="display: flex; flex-direction: column; gap: 6px; width: 60px"><span class="lab" style="font-size: 11px">In 0.25 s</span><span style="height: 8px; background: #434C89; transform-origin: left; animation: csGrowX 250ms linear 700ms both"></span></span>
+      <span style="display: flex; flex-direction: column; gap: 6px; flex: 1"><span class="lab" style="font-size: 11px">Hold 5 s (drag right to dismiss)</span><span style="height: 8px; background: #00D4FF; transform-origin: left; animation: csGrowX 5s linear 950ms both"></span></span>
+      <span style="display: flex; flex-direction: column; gap: 6px; width: 60px"><span class="lab" style="font-size: 11px">Out 0.2 s</span><span style="height: 8px; background: #434C89; transform-origin: left; animation: csGrowX 200ms linear 5950ms both"></span></span>
+    </div>
+    <p style="margin: 28px 0 0; font-size: 15px; line-height: 1.5; color: #747BAD; max-width: 1100px">Up to three show at once, newest on top; more wait in the queue. Each fades in over 0.25 s, holds 5 s and fades out over 0.2 s, on unscaled time. A drag to the right dismisses one. Toasts no longer block clicks under them.</p>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const SAMPLES = [["refuse", "Not open yet."], ["refuse", "Episodes arrive with the full release."], ["refuse", "Purchases open with the full release."], ["refuse", "That party can't be joined right now."], ["ok", "Friend request accepted!"], ["ok", "Skim Race Intensity 3 Unlocked!"], ["error", "Failed to join party."], ["error", "Connection service not ready. Try again shortly."], ["info", "Play Intensity 2 to unlock"], ["info", "Win a Joust match at Intensity 2"]];
+let SEQ = 0;
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ stack: [[0, 'Not open yet.'], [1, 'Friend request accepted!'], [2, 'Failed to join party.']] }, props.start || {});
+    const kinds = ['refuse', 'ok', 'error', 'info'];
+    this.state = { stack: s.stack.map((x) => ({ id: ++SEQ, kind: kinds[x[0]], text: x[1] })) };
+    this.timers = [];
+  }
+  componentWillUnmount() { this.timers.forEach((t) => clearTimeout(t)); }
+  fire(kind, text) {
+    const id = ++SEQ;
+    this.setState({ stack: [{ id, kind, text, fresh: true }].concat(this.state.stack).slice(0, 3) });
+    this.timers.push(setTimeout(() => this.setState({ stack: this.state.stack.filter((x) => x.id !== id) }), 5000));
+  }
+  renderVals() {
+    return {
+      stack: this.state.stack.map((t, i) => ({ d: t.fresh ? 0 : (2 - i) * 120, text: t.text, alpha: 1 - i * 0.12, refuse: t.kind === 'refuse', ok: t.kind === 'ok',
+                                               error: t.kind === 'error', info: t.kind === 'info' })),
+      samples: SAMPLES.map((s, i) => ({ d: 200 + Math.min(i, 8) * 40, text: s[1], fire: () => this.fire(s[0], s[1]) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

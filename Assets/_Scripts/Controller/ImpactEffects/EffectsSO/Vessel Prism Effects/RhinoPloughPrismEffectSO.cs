@@ -91,6 +91,11 @@ namespace CosmicShore.Gameplay
             Vector3 end = prismPos + right * shove;
             if (PrismMotion.TrySweep(prism, prismPos, end, out var struck, out var contact))
             {
+                if (PrismMotion.Bounces(prism, struck))
+                {
+                    Rebound(prism, prismPos, end, struck, contact, status);
+                    return;
+                }
                 // Prism motion's collision rule: it stops where it met the other prism, and both go.
                 Place(prism, contact);
                 PrismMotion.Annihilate(prism, struck, (end - prismPos) / slideSeconds, status.Domain, status.PlayerName,
@@ -99,6 +104,32 @@ namespace CosmicShore.Gameplay
             }
 
             Slide(prism, prismPos, end, slideSeconds);
+        }
+
+        /// <summary>
+        /// A shielded collision bounces (<see cref="PrismMotion.Bounces(Prism, Prism)"/>): the thrown prism meets the other
+        /// at <paramref name="contact"/> and the rest of the throw rebounds off it (<see cref="PrismBounce.Rebound"/>), and
+        /// neither is destroyed. A second prism in the way of the rebound stops it there, bouncing again, or both go if
+        /// neither of that pair is shielded.
+        /// </summary>
+        void Rebound(Prism prism, Vector3 from, Vector3 end, Prism struck, Vector3 contact, IVesselStatus status)
+        {
+            Vector3 step = end - from;
+            float t = step.sqrMagnitude > 1e-8f ? Vector3.Dot(contact - from, step) / step.sqrMagnitude : 1f;
+            Vector3 normal = PrismBounce.Normal(contact, struck.transform.position, step);
+            Vector3 rebound = PrismBounce.Rebound(contact, step, t, normal, PrismMotion.BounceRestitution);
+            if (PrismMotion.TrySweep(prism, contact, rebound, out var second, out var secondContact))
+            {
+                if (!PrismMotion.Bounces(prism, second))
+                {
+                    Place(prism, secondContact);
+                    PrismMotion.Annihilate(prism, second, (rebound - contact) / slideSeconds, status.Domain, status.PlayerName,
+                        PrismMotion.SingleMoverLevel());
+                    return;
+                }
+                rebound = secondContact;
+            }
+            Slide(prism, from, rebound, slideSeconds);
         }
 
         static void Place(Prism prism, Vector3 at)

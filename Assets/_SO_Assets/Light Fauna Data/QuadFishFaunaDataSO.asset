@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ff5921d2e247ff9716e66242269962, type: 3}
   m_Name: QuadFishFaunaDataSO
   m_EditorClassIdentifier: 
-  detectionRadius: 70
-  separationRadius: 30
-  consumeRadius: 40
+  detectionRadius: 82.14
+  separationRadius: 60.86
+  consumeRadius: 81.14
   behaviorUpdateRate: 2
   separationWeight: 8
   goalWeight: 1.5
   minSpeed: 16
   maxSpeed: 28
   rotationLerpSpeed: 6
+  feedingClusterRadius: 24.34
+  attackRange: 30.43

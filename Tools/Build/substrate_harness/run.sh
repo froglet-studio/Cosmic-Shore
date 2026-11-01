@@ -25,12 +25,14 @@ SUB="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 # the substrate publishes the swarm's instance contract (SwarmInstance, SwarmJobState) and reuses its index ledger (SwarmEntryLedger)
 CORE=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateCore.cs" "$SUB/SubstrateSiege.cs" "$SUB/SubstrateArms.cs" "$SUB/SubstrateArmsPolicy.cs" "$SUB/SubstrateTickJob.cs"
-      "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$SW/KernelMath.cs")
+      "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$SW/KernelMath.cs"
+      # SwarmTickJob runs the sort and grid cores too (the plan tick), so the core does not compile without them
+      "$SW/SwarmSortCore.cs" "$SW/SwarmGridCore.cs")
 # the kernel the game Burst-compiles stays inside what Burst compiles (Burst cannot run here: a textual gate, with a
 # negative control - the pre-11c managed step in ReferenceStep.cs must fail it)
 # round 11f-2 (group lod): the shared ecology LOD director and its rules (pure; CellEcologyLod.cs is Unity glue)
 EF="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ecology"
-LOD=("$SW/SwarmSortCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmEvoFateCore.cs")
+LOD=("$SW/SwarmEvoFateCore.cs")   # (the sort and grid cores are in CORE)
 for f in "$EF"/*.cs; do [[ "$(basename "$f")" == CellEcologyLod.cs ]] || LOD+=("$f"); done
 python3 "$HERE/check_burst_substrate.py" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateAgentJob.cs" "$HERE/ReferenceStep.cs" || exit 1
 # the kernel's maths: KernelMath's Unity branch (what Burst compiles) and its MathF branch (what runs here) agree

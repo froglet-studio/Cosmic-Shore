@@ -38,7 +38,7 @@ namespace CosmicShore.ScriptableObjects
         public const string ResourcePath = "EndConditionOverrides";
 
         /// <summary>Joust target used when <see cref="joustCount"/> is 0 (auto/default).</summary>
-        public const int DefaultJoustCount = 3;
+        public const int DefaultJoustCount = 2;
 
         /// <summary>Maelstrom / Maelstrom win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
         public const int DefaultMaelstromWinTarget = 6;
@@ -46,35 +46,44 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Nucleus Rush (Brood Rush) wave target used when <see cref="nucleusRushWaveTarget"/> is 0 (auto/default).</summary>
         public const int DefaultBroodRushWaveTarget = 3;
 
-        /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
+        /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default),
+        /// and when a rung of <see cref="rampagePrismTargetByIntensity"/> authors nothing.</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
         /// <summary>Cleave hostile-prism destruction target used when <see cref="cleavePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultCleavePrismTarget = 1500;
+        public const int DefaultCleavePrismTarget = 1000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
         public const int DefaultWildlifeKillTarget = 30;
 
-        /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultDogFightPointTarget = 90;
+        /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).
+        /// 90 until 2026-10-26, when no editor match had reached it inside 63-180 s.</summary>
+        public const int DefaultDogFightPointTarget = 40;
+
+        /// <summary>Grizzly Charge point target used when <see cref="grizzlyChargePointTarget"/> is 0. The
+        /// mode runs Dog Fight's monitor and price list (a Grizzly blast is a rocket's 20-point middle
+        /// tier), and shared Dog Fight's key until 2026-10-26: at 90 its editor matches already ended
+        /// near 90 s (median 93 s over seven), so it keeps 90 while Dog Fight's own target fell.</summary>
+        public const int DefaultGrizzlyChargePointTarget = 90;
 
         /// <summary>The Bends bend target used when <see cref="bendsPointTarget"/> is 0 (auto/default).</summary>
         public const int DefaultBendsPointTarget = 3;
         /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultScarabScrambleGoalTarget = 10;
+        public const int DefaultScarabScrambleGoalTarget = 3;
         /// <summary>Astro League mercy-rule goal limit used when <see cref="astroLeagueGoalLimit"/> is 0 (auto/default).</summary>
         public const int DefaultAstroLeagueGoalLimit = 5;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultHijackStealTarget = 750;
+        public const int DefaultHijackStealTarget = 500;
         /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultTollwayTollTarget = 4;
+        public const int DefaultTollwayTollTarget = 3;
 
         /// <summary>Wrecking Ball hostile-prism target used when <see cref="wreckingBallPrismTarget"/>
         /// is 0. Lower than Rampage's 2000 because the court forest is smaller than Rampage's
-        /// (35-59 plants against 59-295) and a match should end with forest still standing.</summary>
-        public const int DefaultWreckingBallPrismTarget = 1500;
+        /// (35-59 plants against 59-295) and a match should end with forest still standing. 1500 until
+        /// 2026-10-26, when a solo editor run had not reached it by 178 s.</summary>
+        public const int DefaultWreckingBallPrismTarget = 650;
 
         /// <summary>Undertow point target used when <see cref="undertowPointTarget"/> is 0. A bend
         /// (an opposing pilot caught in the plate) is 3 and a creature killed by it is 1
@@ -83,18 +92,19 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Dustup point target used when <see cref="dustupPointTarget"/> is 0. One
         /// DUSTING - an opposing Butterfly caught in your Scale Dust - is one point
-        /// (DustupScoringRuleSO), so 10 is ten clean passes over a rival.</summary>
-        public const int DefaultDustupPointTarget = 10;
+        /// (DustupScoringRuleSO), so 4 is four clean passes over a rival (10 until 2026-10-26, when an
+        /// editor match had not reached it by 211 s).</summary>
+        public const int DefaultDustupPointTarget = 4;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
         /// "most standing at the whistle" is the only honest end condition.</summary>
-        public const int DefaultTapestryRoundSeconds = 150;
+        public const int DefaultTapestryRoundSeconds = 90;
 
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
         /// cone takes hundreds at once.</summary>
-        public const int DefaultSiroccoPrismTarget = 600;
+        public const int DefaultSiroccoPrismTarget = 400;
 
         /// <summary>Broadside points PER PILOT used when <see cref="broadsidePointsPerPilot"/>
         /// is 0. The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round
@@ -133,14 +143,14 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
-        public const int DefaultSwitchbackGateTarget = 20;
+        public const int DefaultSwitchbackGateTarget = 26;
 
         /// <summary>Waystation course length used when <see cref="waystationRingTarget"/> is 0
         /// (auto/default) - how many switch rings a pilot must thread, which is also how many are
         /// LAID. The rings are dealt into CLUSTERS, so this is the total across every cluster and
         /// the course rounds it up to a whole number of them: what a pilot flies and what their
         /// goal row counts to are the same authority, asked twice.</summary>
-        public const int DefaultWaystationRingTarget = 24;
+        public const int DefaultWaystationRingTarget = 15;
 
         /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
         /// (auto/default) - how many stations are LAID: a polar START GATE plus a fourteen-station
@@ -172,23 +182,25 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultSkeinRingTarget = 24;
 
         /// <summary>Headlong RACE length used when <see cref="headlongGateTarget"/> is 0 - gate
-        /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
+        /// threadings, i.e. laps x rings. 40 = five laps of the shipped eight-gate circuit (three
+        /// until 2026-10-26: the ring count only spaces a fixed loop, so laps are the length lever).
         /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
         /// <c>HeadlongController</c> to size the circuit, so the two cannot drift.</summary>
-        public const int DefaultHeadlongGateTarget = 24;
+        public const int DefaultHeadlongGateTarget = 40;
 
         /// <summary>Redline RACE length used when <see cref="redlineGateTarget"/> is 0 - gate
-        /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
-        /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
-        /// <c>RedlineController</c> to size the circuit, so the two cannot drift.</summary>
-        public const int DefaultRedlineGateTarget = 24;
+        /// threadings, i.e. laps x rings. 40 = five laps of the shipped eight-gate circuit (three
+        /// until 2026-10-26). Read by <c>RaceGateTurnMonitor</c> (through the controller) for the
+        /// target and by <c>RedlineController</c> to size the circuit, so the two cannot drift.</summary>
+        public const int DefaultRedlineGateTarget = 40;
 
         /// <summary>Grizzly Time RACE length used when <see cref="grizzlyTimeGateTarget"/> is 0 -
-        /// gate threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate
-        /// circuit (28 = two laps of fourteen until the bomb launch was tripled, 2026-10-08).
+        /// gate threadings, i.e. laps x rings. 16 = two laps of the shipped eight-gate circuit
+        /// (24 = three laps until 2026-10-26; 28 = two laps of fourteen until the bomb launch was
+        /// tripled, 2026-10-08).
         /// Read by <c>GrizzlyTimeController</c> both to size the circuit and (through
         /// it) by the turn monitor for the finish line, so the two cannot drift.</summary>
-        public const int DefaultGrizzlyTimeGateTarget = 24;
+        public const int DefaultGrizzlyTimeGateTarget = 16;
 
         /// <summary>Slingshot RACE length used when <see cref="slingshotGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 16 = two laps of the shipped eight-gate circuit (the
@@ -205,12 +217,12 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultWarplineGateTarget = 10;
 
         /// <summary>Thresher Time RACE length used when <see cref="thresherTimeGateTarget"/> is 0 -
-        /// gate threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit
-        /// (Grizzly Time's lap count: the Thresher's full-sling circle, 229 u, is within 8% of the
+        /// gate threadings, i.e. laps x rings. 16 = two laps of the shipped eight-gate circuit, three
+        /// until 2026-10-26 (Grizzly Time's lap count: the Thresher's full-sling circle, 229 u, is within 8% of the
         /// Grizzly's full-launch one, so the race is cut on the same octagon).
         /// Read by <c>ThresherTimeController</c> both to size the circuit and (through it) by the
         /// turn monitor for the finish line, so the two cannot drift.</summary>
-        public const int DefaultThresherTimeGateTarget = 24;
+        public const int DefaultThresherTimeGateTarget = 16;
 
         /// <summary>Wrasse Run RACE length used when <see cref="wrasseRunGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 16 = two laps of an eight-ring circuit: a ring counts only when
@@ -218,6 +230,30 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>WrasseRunController</c> both to size the circuit and (through it) by the turn
         /// monitor for the finish line, so the two cannot drift.</summary>
         public const int DefaultWrasseRunGateTarget = 16;
+
+        /// <summary>Burrow Run RACE length used when <see cref="burrowRunGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 16 = two laps of an eight-ring circuit, the Vessel Studio's Meerkat race.
+        /// Read by <c>BurrowRunCourseSource</c> both to size the circuit and (through it) by the turn
+        /// monitor for the finish line, so the two cannot drift.</summary>
+        public const int DefaultBurrowRunGateTarget = 16;
+
+        /// <summary>Scarab Rally RACE length used when <see cref="scarabRallyGateTarget"/> is 0 - gate threadings - an OPEN chain flown once (Switchback's shape), so this is the number of rings laid. 24 ~ a 90 s experienced run at the Scarab's 216 u/s.
+        /// Read by <c>ScarabRallyController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultScarabRallyGateTarget = 24;
+
+        /// <summary>Serpent Time RACE length used when <see cref="serpentTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>SerpentTimeController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultSerpentTimeGateTarget = 16;
+
+        /// <summary>Brittle Star Time RACE length used when <see cref="brittleStarTimeGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
+        /// Read by <c>BrittleStarTimeController</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultBrittleStarTimeGateTarget = 16;
+        /// <summary>Waystation Prototype race length used when <see cref="waystationPrototypeClusterTarget"/> is 0 -
+        /// CLUSTERS, not rings: the race is that many of Waystation's clusters with a Drop Tower between each pair
+        /// but the last (Docs/Studios/TIGER_MOTH_TIME.md). Five clusters gives every intensity three towers and the
+        /// long wormhole drop as the finale. The ring count the race ends on is the course's own (towers vary with
+        /// the gaps), which <c>RaceGateTurnMonitor</c> takes from the laid course.</summary>
+        public const int DefaultWaystationPrototypeClusterTarget = 5;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -232,10 +268,10 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int hexRaceCrystalCount = 0;
 
         [Tooltip("Crystal Capture crystals to end the turn. 0 = auto-calc from track waypoints.")]
-        [Min(0)] public int crystalCaptureCrystalCount = 20;
+        [Min(0)] public int crystalCaptureCrystalCount = 14;
 
-        [Tooltip("Joust collisions to end the turn. 0 = default (3).")]
-        [Min(0)] public int joustCount = 3;
+        [Tooltip("Joust collisions to end the turn. 0 = default (2).")]
+        [Min(0)] public int joustCount = 2;
 
         [Tooltip("Maelstrom (Maelstrom) placement points a domain needs to win the whole shuffle " +
                  "(race to N). 0 = default (6).")]
@@ -246,14 +282,21 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTarget = 3;
 
         [Tooltip("Rampage: hostile prisms (another domain's mass) a domain must destroy to win " +
-                 "(race to N). 0 = default (2000).")]
+                 "(race to N). 0 = default (2000). The per-intensity list below overrides it.")]
         [Min(0)] public int rampagePrismTarget = 2000;
+
+        [Tooltip("Rampage: per-INTENSITY override of the target above - element 0 is intensity 1. " +
+                 "Empty, a 0 entry, or an intensity past the end falls back to the scalar. The " +
+                 "forest shrinks five-fold up the ladder (about 59,600 prisms at intensity 1 against " +
+                 "11,900 at 4) and the Dolphin's blast is gated by crystals that grow scarce, so one " +
+                 "number made a 4 several times longer than a 1.")]
+        public List<int> rampagePrismTargetByIntensity = new() { 2000, 1700, 1300, 1000 };
 
         [Tooltip("Cleave: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
                  "rival trails and fauna bodies all count; your own team's trail never does. The " +
                  "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
-                 "escalation ladder with it. 0 = default (2000).")]
-        [Min(0)] public int cleavePrismTarget = 1500;
+                 "escalation ladder with it. 0 = default (1000).")]
+        [Min(0)] public int cleavePrismTarget = 1000;
 
         [Tooltip("Cleave: per-INTENSITY override of the target above - element 0 is intensity 1. " +
                  "Empty, a 0 entry, or an intensity past the end falls back to the scalar. It " +
@@ -262,7 +305,7 @@ namespace CosmicShore.ScriptableObjects
                  "compact 720-radius objects you peel. Every rung is made of the same small " +
                  "prisms, so the counts are comparable and the target is what says how much of a " +
                  "place a match asks you to get through.")]
-        public List<int> cleavePrismTargetByIntensity = new() { 1200, 1200, 1500, 1500 };
+        public List<int> cleavePrismTargetByIntensity = new() { 950, 950, 1000, 1000 };
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
@@ -270,11 +313,16 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int wildlifeKillTarget = 30;
 
         [Tooltip("Dog Fight points a DOMAIN needs to win. Points come from landed gunnery: a " +
-                 "bullet hit scores 1 and a missile hit (direct strike or caught in the blast) " +
-                 "scores 50, so this target reads as 'either 120 bullets or 3 rockets, or any " +
-                 "mix'. Teammates pool - Dog Fight is a team race, not a free-for-all. " +
-                 "0 = default (120).")]
-        [Min(0)] public int dogFightPointTarget = 90;
+                 "bullet hit scores 1 and a rocket scores its best tier - shockwave 10, blast 20, " +
+                 "direct strike 30 - so this target reads as 'either 40 bullets or four rocket " +
+                 "shockwaves, or any mix'. Teammates pool - Dog Fight is a team race, not a " +
+                 "free-for-all. 0 = default (40).")]
+        [Min(0)] public int dogFightPointTarget = 40;
+
+        [Tooltip("Grizzly Charge points a DOMAIN needs to win - Dog Fight's price list, where a " +
+                 "Grizzly blast landed on a rival is a rocket's 20-point blast tier and a round is 1. " +
+                 "Its own key, so Dog Fight's target can move without it. 0 = default (90).")]
+        [Min(0)] public int grizzlyChargePointTarget = 90;
 
         [Tooltip("The Bends: BENDS a DOMAIN needs to win - opposing pilots caught in your " +
                  "Dolphin crystal blast, one point each. Race to 3, like Joust: three clean " +
@@ -283,9 +331,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int bendsPointTarget = 3;
         [Tooltip("Scarab Scramble goals a DOMAIN needs to win (race to N). A goal = one of your " +
                  "domain's forged balls threaded through any hoop; teammates pool. With abundant " +
-                 "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
-                 "0 = default (10).")]
-        [Min(0)] public int scarabScrambleGoalTarget = 10;
+                 "crystals and continuous play, 10 was meant as a 3-5 minute party match; editor " +
+                 "matches had not reached it after 148 s and 748 s, so 3. 0 = default (3).")]
+        [Min(0)] public int scarabScrambleGoalTarget = 3;
         [Tooltip("Astro League: goals a DOMAIN needs to end the match early (the mercy rule). " +
                  "The match is otherwise TIMED (AstroLeagueSettingsSO.matchDurationSeconds), with " +
                  "golden-goal overtime on a tie, so this caps a blowout rather than setting the " +
@@ -301,22 +349,22 @@ namespace CosmicShore.ScriptableObjects
                  "domain's colour or by landing a spike on it, so the number counts ownership " +
                  "flips, not destruction - the same prism can be stolen back and forth all " +
                  "match and pay both thieves. Sized against the intensity-1 yard (2,772 prisms, " +
-                 "~1,848 of them hostile to any one domain), so 750 leaves the yard far from " +
-                 "exhausted at the whistle. 0 = default (750).")]
-        [Min(0)] public int hijackStealTarget = 750;
+                 "~1,848 of them hostile to any one domain), so 500 leaves the yard far from " +
+                 "exhausted at the whistle. 0 = default (500).")]
+        [Min(0)] public int hijackStealTarget = 500;
 
         [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
                  "to finish and how many rings are laid. Compared against a domain's LEAD " +
                  "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
-                 "shorten it. 0 = default (20).")]
-        [Min(0)] public int switchbackGateTarget = 20;
+                 "shorten it. 0 = default (26).")]
+        [Min(0)] public int switchbackGateTarget = 26;
 
         [Tooltip("Waystation: rings in the course, which is both how many a pilot must thread " +
                  "to finish and how many are laid. They are dealt into CLUSTERS of " +
                  "RingsPerCluster (per intensity), and the course rounds UP to a whole number " +
                  "of clusters - a half-built cluster would end the race in the middle of one. " +
-                 "Compared against a domain's LEAD RUNNER, not a sum. 0 = default (24).")]
-        [Min(0)] public int waystationRingTarget = 24;
+                 "Compared against a domain's LEAD RUNNER, not a sum. 0 = default (15).")]
+        [Min(0)] public int waystationRingTarget = 15;
 
         [Tooltip("Breakwater: how many stations are LAID - a polar start gate plus a closed " +
                  "circuit of the rest. Each is 117-257 prisms of arena, so raising this raises " +
@@ -335,18 +383,18 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Headlong: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
-                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
-        [Min(0)] public int headlongGateTarget = 24;
+                 "and the size of the circuit. 40 = five laps of eight. 0 uses the default.")]
+        [Min(0)] public int headlongGateTarget = 40;
 
         [Tooltip("Redline: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
-                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
-        [Min(0)] public int redlineGateTarget = 24;
+                 "and the size of the circuit. 40 = five laps of eight. 0 uses the default.")]
+        [Min(0)] public int redlineGateTarget = 40;
 
         [Tooltip("Grizzly Time: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
-                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
-        [Min(0)] public int grizzlyTimeGateTarget = 24;
+                 "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
+        [Min(0)] public int grizzlyTimeGateTarget = 16;
 
         [Tooltip("Slingshot: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
@@ -360,13 +408,30 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Thresher Time: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
-                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
-        [Min(0)] public int thresherTimeGateTarget = 24;
+                 "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
+        [Min(0)] public int thresherTimeGateTarget = 16;
 
         [Tooltip("Wrasse Run: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
                  "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
         [Min(0)] public int wrasseRunGateTarget = 16;
+
+        [Tooltip("Burrow Run: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
+        [Min(0)] public int burrowRunGateTarget = 16;
+        [Tooltip("Scarab Rally: gate threadings - an OPEN chain flown once (Switchback's shape), so this is the number of rings laid. 24 ~ a 90 s experienced run at the Scarab's 216 u/s. 0 uses the default.")]
+        [Min(0)] public int scarabRallyGateTarget = 24;
+
+        [Tooltip("Serpent Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
+        [Min(0)] public int serpentTimeGateTarget = 16;
+
+        [Tooltip("Brittle Star Time: gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit. 0 uses the default.")]
+        [Min(0)] public int brittleStarTimeGateTarget = 16;
+
+        [Tooltip("Waystation Prototype: CLUSTERS in the race (Waystation's clusters, with a Drop Tower in every gap " +
+                 "but the last). The finish line is every ring the course lays, towers included. 0 uses the default.")]
+        [Min(0)] public int waystationPrototypeClusterTarget = 5;
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -378,13 +443,13 @@ namespace CosmicShore.ScriptableObjects
                  "threading a ring one of that domain's pilots planted, so the count is a " +
                  "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
                  "goal race: a ring must be planted, survive, and be threaded, which is " +
-                 "slower than shooting at a net and faster than tearing down a wreck.")]
-        [Min(0)] public int tollwayTollTarget = 8;
+                 "slower than shooting at a net and faster than tearing down a wreck. 0 = default (3).")]
+        [Min(0)] public int tollwayTollTarget = 3;
 
         [Tooltip("Wrecking Ball: hostile prisms (the court forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy between them to win (race to N) - with the ball OR the " +
-                 "cavitation plate; your own team's mass never counts. 0 = default (1500).")]
-        [Min(0)] public int wreckingBallPrismTarget = 1500;
+                 "cavitation plate; your own team's mass never counts. 0 = default (650).")]
+        [Min(0)] public int wreckingBallPrismTarget = 650;
 
         [Tooltip("Undertow: POINTS a DOMAIN needs to win (race to N). A bend - an opposing pilot " +
                  "caught in your cavitation plate - is 3 points and a creature the plate kills is " +
@@ -393,17 +458,17 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Dustup: POINTS a DOMAIN needs to win (race to N). One dusting - an opposing " +
                  "Butterfly passing through your Scale Dust - is one point, summed across the " +
-                 "domain's pilots. 0 = default (10).")]
-        [Min(0)] public int dustupPointTarget = 10;
+                 "domain's pilots. 0 = default (4).")]
+        [Min(0)] public int dustupPointTarget = 4;
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
-                 "prism volume STANDING when the clock runs out wins. 0 = default (150).")]
-        [Min(0)] public int tapestryRoundSeconds = 150;
+                 "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
+        [Min(0)] public int tapestryRoundSeconds = 90;
 
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
-                 "mass never counts. 0 = default (600).")]
-        [Min(0)] public int siroccoPrismTarget = 600;
+                 "mass never counts. 0 = default (400).")]
+        [Min(0)] public int siroccoPrismTarget = 400;
 
         [Tooltip("Broadside: points PER PILOT on a domain. The number a domain actually races " +
                  "to is this x (1 + 0.6 x (teamSize - 1)) - 100/160/220/280 for a 1/2/3/4 pilot " +
@@ -426,40 +491,47 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
-        [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
-        [Min(0)] public int joustCountBuild = 3;
+        [Min(0)] public int crystalCaptureCrystalCountBuild = 14;
+        [Min(0)] public int joustCountBuild = 2;
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
-        [Min(0)] public int cleavePrismTargetBuild = 1500;
-        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 1200, 1200, 1500, 1500 };
+        [HideInInspector] public List<int> rampagePrismTargetByIntensityBuild = new() { 2000, 1700, 1300, 1000 };
+        [Min(0)] public int cleavePrismTargetBuild = 1000;
+        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 950, 950, 1000, 1000 };
         [Min(0)] public int wildlifeKillTargetBuild = 30;
-        [Min(0)] public int dogFightPointTargetBuild = 90;
+        [Min(0)] public int dogFightPointTargetBuild = 40;
+        [Min(0)] public int grizzlyChargePointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
-        [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
+        [Min(0)] public int scarabScrambleGoalTargetBuild = 3;
         [Min(0)] public int astroLeagueGoalLimitBuild = 5;
         [Min(0)] public int salvoPrismTargetBuild = 700;
-        [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int switchbackGateTargetBuild = 26;
         [Min(0)] public int breakwaterStationTargetBuild = 15;
-        [Min(0)] public int waystationRingTargetBuild = 24;
+        [Min(0)] public int waystationRingTargetBuild = 15;
 
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
-        [Min(0)] public int headlongGateTargetBuild = 24;
-        [Min(0)] public int redlineGateTargetBuild = 24;
-        [Min(0)] public int grizzlyTimeGateTargetBuild = 24;
+        [Min(0)] public int headlongGateTargetBuild = 40;
+        [Min(0)] public int redlineGateTargetBuild = 40;
+        [Min(0)] public int grizzlyTimeGateTargetBuild = 16;
         [Min(0)] public int slingshotGateTargetBuild = 16;
         [Min(0)] public int warplineGateTargetBuild = 10;
-        [Min(0)] public int thresherTimeGateTargetBuild = 24;
+        [Min(0)] public int thresherTimeGateTargetBuild = 16;
         [Min(0)] public int wrasseRunGateTargetBuild = 16;
+        [Min(0)] public int burrowRunGateTargetBuild = 16;
+        [Min(0)] public int scarabRallyGateTargetBuild = 24;
+        [Min(0)] public int serpentTimeGateTargetBuild = 16;
+        [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
+        [Min(0)] public int waystationPrototypeClusterTargetBuild = 5;
         [Min(0)] public int regattaGateTargetBuild = 24;
-        [Min(0)] public int hijackStealTargetBuild = 750;
-        [Min(0)] public int tollwayTollTargetBuild = 8;
-        [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
+        [Min(0)] public int hijackStealTargetBuild = 500;
+        [Min(0)] public int tollwayTollTargetBuild = 3;
+        [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
-        [Min(0)] public int dustupPointTargetBuild = 10;
-        [Min(0)] public int tapestryRoundSecondsBuild = 150;
-        [Min(0)] public int siroccoPrismTargetBuild = 600;
+        [Min(0)] public int dustupPointTargetBuild = 4;
+        [Min(0)] public int tapestryRoundSecondsBuild = 90;
+        [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
         [FormerlySerializedAs("tandavaFlamesToBreakBuild")]
@@ -524,6 +596,23 @@ namespace CosmicShore.ScriptableObjects
             rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
+        /// Rampage target for a given INTENSITY (1-based), falling back to
+        /// <see cref="GetRampagePrismTarget()"/> when that rung authors nothing - Cleave's
+        /// fallback chain (<see cref="GetCleavePrismTarget(int)"/>), for the same reason. Read
+        /// SERVER-side by <c>RampagePrismTurnMonitor</c> and replicated, so a client receives the
+        /// number rather than deriving it from an intensity it may not have yet.
+        /// </summary>
+        public int GetRampagePrismTarget(int intensity)
+        {
+            if (rampagePrismTargetByIntensity == null || rampagePrismTargetByIntensity.Count == 0)
+                return GetRampagePrismTarget();
+
+            int i = Mathf.Clamp(intensity - 1, 0, rampagePrismTargetByIntensity.Count - 1);
+            int v = rampagePrismTargetByIntensity[i];
+            return v > 0 ? v : GetRampagePrismTarget();
+        }
+
+        /// <summary>
         /// Cleave target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultCleavePrismTarget"/>.
         /// </summary>
@@ -568,6 +657,14 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetDogFightPointTarget() =>
             dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
+
+        /// <summary>
+        /// Grizzly Charge point target: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultGrizzlyChargePointTarget"/>. Read by <c>DogFightPointTurnMonitor</c>
+        /// when the match is Grizzly Charge, which races on Dog Fight's monitor and price list.
+        /// </summary>
+        public int GetGrizzlyChargePointTarget() =>
+            grizzlyChargePointTarget > 0 ? grizzlyChargePointTarget : DefaultGrizzlyChargePointTarget;
 
         /// <summary>
         /// The Bends bend target ("first domain to N bends"): the configured value when
@@ -713,6 +810,37 @@ namespace CosmicShore.ScriptableObjects
         public int GetWrasseRunGateTarget() =>
             wrasseRunGateTarget > 0 ? wrasseRunGateTarget : DefaultWrasseRunGateTarget;
 
+        /// <summary>Scarab Rally race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultScarabRallyGateTarget"/>.</summary>
+        public int GetScarabRallyGateTarget() =>
+            scarabRallyGateTarget > 0 ? scarabRallyGateTarget : DefaultScarabRallyGateTarget;
+
+        /// <summary>Serpent Time race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultSerpentTimeGateTarget"/>.</summary>
+        public int GetSerpentTimeGateTarget() =>
+            serpentTimeGateTarget > 0 ? serpentTimeGateTarget : DefaultSerpentTimeGateTarget;
+
+        /// <summary>Brittle Star Time race length: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBrittleStarTimeGateTarget"/>.</summary>
+        public int GetBrittleStarTimeGateTarget() =>
+            brittleStarTimeGateTarget > 0 ? brittleStarTimeGateTarget : DefaultBrittleStarTimeGateTarget;
+
+        /// <summary>
+        /// Burrow Run race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultBurrowRunGateTarget"/>. Read by
+        /// <c>BurrowRunCourseSource.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetBurrowRunGateTarget() =>
+            burrowRunGateTarget > 0 ? burrowRunGateTarget : DefaultBurrowRunGateTarget;
+
+        /// <summary>
+        /// Waystation Prototype race length in CLUSTERS: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultWaystationPrototypeClusterTarget"/>. Read by
+        /// <c>WaystationPrototypeCourseSource</c>, which lays that many clusters and reports the rings it laid.
+        /// </summary>
+        public int GetWaystationPrototypeClusterTarget() =>
+            waystationPrototypeClusterTarget > 0 ? waystationPrototypeClusterTarget : DefaultWaystationPrototypeClusterTarget;
+
         /// <summary>
         /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRegattaGateTarget"/>. Read by
@@ -825,6 +953,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Scurry => crystalCaptureCrystalCount,
                 GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
                 GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
+                // Scalar only, as for Cleave below: the real answer is per-intensity
+                // (GetRampagePrismTarget(int)).
                 GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
                 // Scalar only: this reader answers "what does a match of this mode race to" for
                 // editor tooling, and Cleave's real answer is per-intensity (see
@@ -833,6 +963,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Cleave                   => cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget,
                 GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
+                GameModes.GrizzlyCharge             => GetGrizzlyChargePointTarget(),
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 // Mercy-rule cap on a TIMED match: the most goals a match can race to.
@@ -849,6 +980,12 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Warpline                  => GetWarplineGateTarget(),
                 GameModes.ThresherTime              => GetThresherTimeGateTarget(),
                 GameModes.WrasseRun                 => GetWrasseRunGateTarget(),
+                GameModes.BurrowRun                 => GetBurrowRunGateTarget(),
+                GameModes.ScarabRally               => GetScarabRallyGateTarget(),
+                GameModes.SerpentTime               => GetSerpentTimeGateTarget(),
+                GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
+                // GameModes.WaystationPrototype has no row: its finish line is the rings the course lays (towers vary
+                // with the gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -863,6 +1000,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
                 // A PERCENT of the final form's body, not a count: the readout shows the threshold.
                 GameModes.Tandava                   => GetTandavaBreakPercent(),
+                GameModes.TandavaSevering           => GetTandavaBreakPercent(),   // Tandava's fork: the same shatter
                 _                                   => 0,
             };
 
@@ -891,10 +1029,12 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget == maelstromWinTargetBuild &&
             nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
             rampagePrismTarget == rampagePrismTargetBuild &&
+            SameInts(rampagePrismTargetByIntensity, rampagePrismTargetByIntensityBuild) &&
             cleavePrismTarget == cleavePrismTargetBuild &&
             SameInts(cleavePrismTargetByIntensity, cleavePrismTargetByIntensityBuild) &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
+            grizzlyChargePointTarget == grizzlyChargePointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             astroLeagueGoalLimit == astroLeagueGoalLimitBuild &&
@@ -911,6 +1051,11 @@ namespace CosmicShore.ScriptableObjects
             warplineGateTarget == warplineGateTargetBuild &&
             thresherTimeGateTarget == thresherTimeGateTargetBuild &&
             wrasseRunGateTarget == wrasseRunGateTargetBuild &&
+            burrowRunGateTarget == burrowRunGateTargetBuild &&
+            scarabRallyGateTarget == scarabRallyGateTargetBuild &&
+            serpentTimeGateTarget == serpentTimeGateTargetBuild &&
+            brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
+            waystationPrototypeClusterTarget == waystationPrototypeClusterTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -932,10 +1077,12 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget = maelstromWinTargetBuild;
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
             rampagePrismTarget = rampagePrismTargetBuild;
+            rampagePrismTargetByIntensity = CopyInts(rampagePrismTargetByIntensityBuild);
             cleavePrismTarget = cleavePrismTargetBuild;
             cleavePrismTargetByIntensity = CopyInts(cleavePrismTargetByIntensityBuild);
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
+            grizzlyChargePointTarget = grizzlyChargePointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             astroLeagueGoalLimit = astroLeagueGoalLimitBuild;
@@ -952,6 +1099,11 @@ namespace CosmicShore.ScriptableObjects
             warplineGateTarget = warplineGateTargetBuild;
             thresherTimeGateTarget = thresherTimeGateTargetBuild;
             wrasseRunGateTarget = wrasseRunGateTargetBuild;
+            burrowRunGateTarget = burrowRunGateTargetBuild;
+            scarabRallyGateTarget = scarabRallyGateTargetBuild;
+            serpentTimeGateTarget = serpentTimeGateTargetBuild;
+            brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
+            waystationPrototypeClusterTarget = waystationPrototypeClusterTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -974,10 +1126,12 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTargetBuild = maelstromWinTarget;
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
             rampagePrismTargetBuild = rampagePrismTarget;
+            rampagePrismTargetByIntensityBuild = CopyInts(rampagePrismTargetByIntensity);
             cleavePrismTargetBuild = cleavePrismTarget;
             cleavePrismTargetByIntensityBuild = CopyInts(cleavePrismTargetByIntensity);
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
+            grizzlyChargePointTargetBuild = grizzlyChargePointTarget;
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             astroLeagueGoalLimitBuild = astroLeagueGoalLimit;
@@ -994,6 +1148,11 @@ namespace CosmicShore.ScriptableObjects
             warplineGateTargetBuild = warplineGateTarget;
             thresherTimeGateTargetBuild = thresherTimeGateTarget;
             wrasseRunGateTargetBuild = wrasseRunGateTarget;
+            burrowRunGateTargetBuild = burrowRunGateTarget;
+            scarabRallyGateTargetBuild = scarabRallyGateTarget;
+            serpentTimeGateTargetBuild = serpentTimeGateTarget;
+            brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
+            waystationPrototypeClusterTargetBuild = waystationPrototypeClusterTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
