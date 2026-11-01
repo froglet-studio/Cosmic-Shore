@@ -40,7 +40,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
 - [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
-- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
+- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `ai`, the one AI branch (Shombith, 2026-10-28; it replaced `Ys-bleeding-edge`): AI work builds on `ai` and reaches bleeding-edge by PR, and non-AI work goes on its own short-lived branch with a PR straight into bleeding-edge (no personal integration branch) — the branch workflow, the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
   Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
@@ -178,7 +178,7 @@ when a prompt is about vessel work. Studio domain colours come from the game's p
 "I don't wanna click any commands or anything. Never." Every race played in the editor is recorded and sent on its own
 (`HumanFlightRecorder`, `BugHuntAutoSend`), and the hourly **AI learning sweep** relearns the AIs from it
 (`Tools/Build/ai_learn.py --run`), judges whether they now race like the person, fixes what numbers cannot, and pushes
-to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
+to `ai`, the one AI branch. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
 to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
 first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
 `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.

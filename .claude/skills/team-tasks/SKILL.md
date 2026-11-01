@@ -84,7 +84,7 @@ python3 Tools/Build/team_tasks.py add --area "<area>" --kind test --task "<task>
 
 If the branch already has an open ticket, `add` appends a checklist line to it instead and says so (one ticket per
 branch); `step --line "<step>"` adds a single line. Tell the person the id (and issue number), and that it is
-nobody's until someone takes it. On a shared branch (bleeding-edge, Ys-bleeding-edge) each `add` files its own
+nobody's until someone takes it. On a shared branch (bleeding-edge, ai, Ys-bleeding-edge) each `add` files its own
 ticket.
 
 ## /team-tasks take | done | release | archive | revive | set

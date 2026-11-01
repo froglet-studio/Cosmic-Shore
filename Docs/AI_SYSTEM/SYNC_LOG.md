@@ -1,6 +1,6 @@
 # AI System — Sync Log
 
-One row per merge into or out of the AI home branch (newest first): `ai-system` until 2026-10-09, `Ys-bleeding-edge` since. The merge commit carries the detail; this is
+One row per merge into or out of the AI home branch (newest first): `ai-system` until 2026-10-09, `Ys-bleeding-edge` until 2026-10-28, `ai` from then on. The merge commit carries the detail; this is
 the index. Workflow: `BRANCH_WORKFLOW.md`.
 
 | Date | Direction | Sources (tip) | Conflicts | New AI brought in | Verified | Merge commit |

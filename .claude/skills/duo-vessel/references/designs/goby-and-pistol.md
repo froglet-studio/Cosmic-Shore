@@ -213,7 +213,7 @@ of a crew vessel"); its numbers are cloned from the lab (`studio_to_unity.py --v
 team task `T-20261018-8b32`. The decisions log below holds every round. **The lab** (§9):
 `Docs/Studios/VesselStudio/goby.html`. Garrett prototypes it first in its own private artifact,
 https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up (his call, 2026-10-14). It joins the one Vessel Studio artifact later,
-by a merge into `Ys-bleeding-edge`. Read that artifact's `decisions` collection at the start of each round.
+by a PR into `bleeding-edge`. Read that artifact's `decisions` collection at the start of each round.
 
 - The brief was given by Garrett on 2026-10-14 as "the Flier & Bird".
 - In round 2 (the same day) Garrett answered the open questions and asked for a symbiotic pair of
