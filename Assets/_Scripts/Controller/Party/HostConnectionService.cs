@@ -2191,6 +2191,65 @@ namespace CosmicShore.Gameplay
             p.Properties.TryGetValue(READY_KEY, out var ready) &&
             ready?.Value == "1";
 
+        /// <summary>Makes the next frame run a full server poll + converge (the overlay's "Poll now").</summary>
+        public void RequestDiagnosticRefresh() => _scheduler?.FireAfter(0f);
+
+        /// <summary>
+        /// A plain-text dump of the presence state for the multiplayer debug overlay
+        /// (<c>MultiplayerDebugOverlay</c>): lobby id and converge outcome, each lobby player's ready flag,
+        /// listing and absence strikes, pending departures, and the safety-poll timer. Read-only.
+        /// </summary>
+        public string BuildPresenceDiagnostics()
+        {
+            var sb  = new System.Text.StringBuilder(512);
+            var now = Time.realtimeSinceStartup;
+            var lobby = _lobbyService?.ActiveLobby;
+
+            sb.Append("Presence lobby: ").Append(lobby?.Id ?? "(none)");
+            if (lobby != null) sb.Append(lobby.IsHost ? "  [host]" : "  [member]").Append("  players=").Append(lobby.Players?.Count ?? 0);
+            sb.AppendLine();
+
+            if (_lobbyService is PresenceLobbyService pls && pls.LastConvergeStatus != null)
+                sb.Append("Converge: ").Append(pls.LastConvergeStatus)
+                  .Append("  lobbies visible=").Append(pls.LastConvergeVisibleLobbies)
+                  .Append("  ").Append((now - pls.LastConvergeAtRealtime).ToString("F0")).AppendLine("s ago");
+            else
+                sb.AppendLine("Converge: (not run yet)");
+
+            if (_scheduler != null)
+                sb.Append("Safety poll: ").Append(_scheduler.ElapsedSeconds.ToString("F1")).Append('/')
+                  .Append(_scheduler.CurrentIntervalSeconds.ToString("F1")).Append("s  last fired ")
+                  .Append(LastSafetyPollAtRealtime > 0 ? (now - LastSafetyPollAtRealtime).ToString("F0") + "s ago" : "never")
+                  .Append("  watchers=").Append(PresenceWatchDemand.Holders)
+                  .Append(_followUpPollPending ? "  (join follow-up pending)" : "").AppendLine();
+
+            if (lobby?.Players != null)
+            {
+                sb.AppendLine("Lobby players (ready / listed / strikes):");
+                foreach (var p in lobby.Players)
+                {
+                    string name = p.Properties != null && p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) ? dn?.Value : null;
+                    string ready = p.Properties != null && p.Properties.TryGetValue(READY_KEY, out var r) ? r?.Value ?? "-" : "-";
+                    sb.Append("  ").Append(name ?? "?").Append(" (").Append(Short(p.Id)).Append(")  ready=").Append(ready)
+                      .Append("  listed=").Append(ContainsOnlinePlayer(p.Id) ? "Y" : "N")
+                      .Append("  strikes=").Append(_onlineAbsences.StrikesFor(p.Id));
+                    if (p.Id == connectionData?.LocalPlayerId) sb.Append("  (me)");
+                    sb.AppendLine();
+                }
+            }
+
+            sb.Append("Online list: ").Append(connectionData?.OnlinePlayers?.Count ?? 0).Append(" rows");
+            if (connectionData?.OnlinePlayers != null)
+                foreach (var op in connectionData.OnlinePlayers)
+                    sb.Append("  ").Append(op.DisplayName).Append(" s=").Append(_onlineAbsences.StrikesFor(op.PlayerId));
+            sb.AppendLine();
+
+            sb.Append("Pending departures: ").Append(_onlineDepartures.Count == 0 ? "none" : string.Join(", ", _onlineDepartures)).AppendLine();
+            return sb.ToString();
+
+            static string Short(string id) => string.IsNullOrEmpty(id) || id.Length <= 6 ? id : id.Substring(0, 6);
+        }
+
         private bool ContainsOnlinePlayer(string playerId)
         {
             foreach (var p in connectionData.OnlinePlayers)

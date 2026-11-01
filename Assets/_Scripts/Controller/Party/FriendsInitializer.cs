@@ -33,6 +33,9 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private FriendsDataSO friendsData;
 
+        /// <summary>The friends list this initializer fills (read by the multiplayer debug overlay).</summary>
+        public FriendsDataSO FriendsData => friendsData;
+
         [Tooltip("Party/lobby data container. If assigned, presence is updated to 'In Party' " +
                  "when members join and back to 'In Menu' when the party empties.")]
         [SerializeField] private HostConnectionDataSO hostConnectionData;
