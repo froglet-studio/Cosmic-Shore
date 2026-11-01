@@ -29,7 +29,7 @@ generator left**, so the guard and Unity CI stay red on it alone. Amoebius is un
   name only the first failure.
 - **The guard's autofix has never run:** neither `ANTHROPIC_API_KEY` nor `CLAUDE_CODE_OAUTH_TOKEN` is set as a repo
   secret, so that job skips every time.
-- **No Unity compile has run anywhere since 2026-10-13:** `UNITY_RUNNER_LABEL` is unset, so the `unity` / `Unity compile`
+- **(Superseded 2026-11-01: the guard's compile now runs on hosted runners, §4 step 7.) No Unity compile has run anywhere since 2026-10-13:** `UNITY_RUNNER_LABEL` is unset, so the `unity` / `Unity compile`
   jobs are skipped. A green Unity CI would still not be a Unity compile.
 
 ## 2. Every workflow
@@ -139,8 +139,12 @@ from CI run 41336210737.
    card with its owner.
 6. **Amoebius:** add the 16 missing shims (or `#if` the platform sign-in files out of the port), then see whether the
    three engine tests still fail. Owner: Shombith (Amoebius).
-7. **Decide on the autofix credential** (`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`) and **the Unity runner**
-   (`UNITY_RUNNER_LABEL`). Both are repo settings only an admin can change.
+7. **Decide on the autofix credential** (`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`), a repo setting only an
+   admin can change. **The Unity runner is no longer needed for the guard** (2026-11-01, `claude/ci-hosted-unity-compile`):
+   its compile runs on GitHub-hosted runners in GameCI's Unity image. It needs a Unity licence in the `unity-ci`
+   environment (`UNITY_EMAIL`, `UNITY_PASSWORD`, `UNITY_SERIAL` or `UNITY_LICENSE`, `Docs/BUILD_AND_DELIVERY.md`
+   §10.1); until then it runs the reference compile. `UNITY_RUNNER_LABEL` now matters only to `unity-ci.yml` and
+   `build-branch-ci.yml`.
 
 ## 5. Re-measuring this report
 
