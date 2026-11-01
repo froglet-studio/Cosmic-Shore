@@ -21,8 +21,9 @@ is what decides which jobs that pilot brings; joining, captains and emissaries w
    in the squad drums up one job from the news the squad's port holds, so the three pilots you seat decide the three
    jobs you are offered; each job is a voyage card drawn over the **galaxy map** (the locations, the lanes, where you
    are, the job's course), with the way home as one more card when you are away.
-3. **Set sail.** The game enters freestyle and your squad deploys: you fly your seat's vessel, friends who joined fly
-   theirs, and every other seat is an AI wingmate flying its slot's vessel.
+3. **Set sail.** The voyage scene (`Voyage.unity`) loads with the job and your squad deploys at the harbour's berths:
+   you fly the vessel you were flying, friends who joined fly theirs, and every other seat is an AI wingmate flying its
+   slot's vessel. (Since 2026-11-01 voyages have their own scene; freestyle is not involved, see §5.)
 4. **(retired)** The in-world job board and the floating 3D chart were removed on 2026-10-28: Garrett could not tell
    the voyage from the Arkway with them in the world.
 5. **Sail the leg.** The Ark flies the lane's cells (the Arkway's corridor, drawn from the lane instead of a shuffle
@@ -32,11 +33,12 @@ is what decides which jobs that pilot brings; joining, captains and emissaries w
 7. **Resolve the job.** Deliver the dispatch, open the vaults, hold the core. The outcome writes **news** (dispatches) to
    ports, and the news is what the next board is made of. Jobs chain: a delivered sighting becomes a hunter's job, a
    hunt that leaves a wreck becomes a salvage rumour, a convoy schedule becomes a pirate's tip.
-8. **Choose the next voyage.** The banner sends you back to the Voyage window (leave freestyle); the squad is anchored
+8. **Choose the next voyage.** The banner sends you back to the Voyage window (leave the voyage); the squad is anchored
    at the job's destination with what it found still aboard and still at stake (`VoyageRules.Anchor`), and the window
    offers the jobs from there, grown from the news the outcome wrote. Docking at your harbour (the way home card)
    extracts: every artifact aboard joins your collection. An Ark that falls loses everything aboard (to the raider, or
-   spilled for anyone); leaving freestyle mid-leg gives the voyage up and loses what was found.
+   spilled for anyone); leaving the voyage mid-leg gives the voyage up and loses what was found. A voyage that ends on its
+   own (docked, the Ark lost) returns to the menu a few seconds later.
 
 Limitless repeatability comes from the chain, not from content volume: each outcome seeds new jobs at new ports,
 vaults restock, and the board is always the three seated pilots crossed with the news that has reached this port.
@@ -86,8 +88,14 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 
 ## 5. Choices made for the slice (reversible, say if any is wrong)
 
-- **It runs in freestyle, not a new mode scene.** Freestyle already has the party's network session, AI companions, the
-  Ark, payloads and pickups. A voyage `GameModes` id and its own scene (VOYAGES.md §7.4) come once the loop is proven.
+- **It has its own scene, not freestyle** (Garrett, 2026-11-01: "we do not need to connect the freestyle and voyage
+  modes ... this way we can keep freestyle feeling like a toybox simulation and the voyage feeling like it has high
+  stakes and a specific location at each start and stop"). `Voyage.unity` is built from Menu_Main's flight stack by
+  `VoyageSceneBuilder` (FrogletTools > Scenes > Build Voyage Scene) with the toybox, the freestyle toggle, the lava-lamp
+  flora, the app shell and the quest runner taken out; its cell boots the empty Barren world. The Voyage window's Set
+  sail is `VoyageLaunch.Begin`, which loads it through the ordinary game launch (`GameDataSO.InvokeGameLaunch`, so a
+  party follows the host); `VoyageScene` directs it: the pilot starts at a harbour berth, the request sails, and the end
+  of the voyage (or the HUD's exit) returns to the menu. Still no voyage `GameModes` id (VOYAGES.md §7.4).
 - **The board is the seated pilots' jobs**, one each, rather than the whole crew's: it makes the pilot card change the
   voyage. A recruited crew bigger than the squad comes with factions.
 - **Friends sail one course, each machine runs its own Ark and fauna** (the Arkway plan's Phase 4 shape). The
@@ -100,7 +108,7 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 - **Each seat's artifact rides in the Ark** from the moment it sails, so it is at stake with the finds: a raided or
   wrecked Ark takes it too. The player's collection keeps it (artifacts are free), the wreck carries a copy.
 - **Each job is a voyage of its own** (Garrett, 2026-10-28): one card per job in the Voyage window, set sail, do the
-  work, leave freestyle and pick the next. A job still open when the player leaves at the stop is done if its work is,
+  work, leave the voyage and pick the next. A job still open when the player leaves at the stop is done if its work is,
   left undone if not. Story lines and outcomes are the voyage banner.
 - **AI wingmates escort the Ark**: one that ranges past the leash is brought back to its flank, and they are taken back
   when the voyage ends. Taking the helm of another seat is not built yet.
@@ -108,8 +116,8 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 - **The Voyage window's third voyage is the job cards** (Garrett, 2026-10-28: "put it in as the third voyage", then "it
   is confusing that it is still in the toybox"): `VoyageJobsView` on the window's Voyages list stands one
   `VoyageJobCard` per job, copies of `MissionView.prefab`'s `Voyage3`, each with a `VoyageMapGraphic` in its art's
-  place. The runner is `VoyageHarbour`, which `Toy_Voyage.asset` stands in freestyle with the toybox but which is no
-  toy: no station, not in the Toy Box. Its words are the content's `hud` lines (`CardRoute`, `CardHomeRoute`,
+  place. The runner is `VoyageHarbour`, stood by `VoyageScene` in the voyage scene; the settings are
+  `Resources/Voyages/Voyage.asset` (`VoyageToyDefinitionSO`, no longer a toy definition and on no toybox list). Its words are the content's `hud` lines (`CardRoute`, `CardHomeRoute`,
   `CardUnderway`, `NoWork`, `ChooseNext`) and the map's colours are the spec's `toy` block.
 
 ## 6. Hand tests in the Unity editor
