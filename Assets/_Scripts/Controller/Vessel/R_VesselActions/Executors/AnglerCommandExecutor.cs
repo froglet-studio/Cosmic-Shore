@@ -159,6 +159,10 @@ namespace CosmicShore.Gameplay
         public FloraConfigurationSO NextFloraSeed => _floraSeeds.Count > 0 ? _floraSeeds[0] : null;
         /// <summary>True when the Time ability can dash: a school to dash toward, and no dash in flight.</summary>
         public bool DashReady => _tamed.Count > 0 && Time.time >= _dashUntil;
+        /// <summary>The group the next dash goes to (0 or 1); a group with nobody in it is passed over, as Dash does.</summary>
+        public int DashGroup => ResolveGroup(_dashGroup);
+        /// <summary>A dash is in flight (it ignores another press until it lands).</summary>
+        public bool Dashing => Time.time < _dashUntil;
         /// <summary>The furthest-along taming in the light right now, 0..1.</summary>
         public float StrongestTame01
         {
@@ -275,6 +279,27 @@ namespace CosmicShore.Gameplay
                 _dashGroup = 1 - group;
                 return;
             }
+        }
+
+        /// <summary>
+        /// Where the next <see cref="Dash"/> would carry the hull, without dashing: the same group choice (this group's turn,
+        /// else the other) and the same <see cref="AnglerCommandMath.DashPoint"/>. A READ for the autopilot
+        /// (<see cref="AnglerLeapfrogAIPolicySO"/>) to decide whether the dash is worth pressing. False with no school, or
+        /// with every group already round the hull.
+        /// </summary>
+        public bool TryGetDashPoint(out Vector3 point)
+        {
+            point = default;
+            if (_status == null || !config || !_status.Transform || _tamed.Count == 0) return false;
+            Vector3 from = _status.Transform.position;
+            for (int tries = 0; tries < 2; tries++)
+            {
+                int group = tries == 0 ? _dashGroup : 1 - _dashGroup;
+                if (!TryGroupCentroid(group, out Vector3 centroid)) continue;
+                point = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac);
+                if ((point - from).sqrMagnitude >= 1f) return true;
+            }
+            return false;
         }
 
         bool TryGroupCentroid(int group, out Vector3 centroid)

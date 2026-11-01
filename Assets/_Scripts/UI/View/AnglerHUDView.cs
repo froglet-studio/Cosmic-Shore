@@ -16,7 +16,7 @@ namespace CosmicShore.UI
     /// <item><b>Charge</b> - the share of the school hunting a locked vessel; READY while LT erases.</item>
     /// <item><b>Mass</b> - the furthest-along taming in the light; READY while the lure is out.</item>
     /// <item><b>Space</b> - the picked squad's share out on a painted order; READY while RT paints with something painted.</item>
-    /// <item><b>Time</b> - full when the dash is ready (a school to dash to, no dash in flight); READY then.</item>
+    /// <item><b>Time</b> - stays empty: the parts show the dash (SetDash), since a full lime plate drowned them.</item>
     /// </list>
     /// The gauges are named for their element; each keeps the serialized name it had in round 2 (FormerlySerializedAs),
     /// so the HUD prefab's wiring survives the rename. Colour here is a GAUGE channel; the upgrade lives on the lockup's
@@ -31,7 +31,7 @@ namespace CosmicShore.UI
         [SerializeField, FormerlySerializedAs("leashGauge")] Image massGauge;
         [Tooltip("Space card: Paint - the picked squad's share out on a painted order.")]
         [SerializeField, FormerlySerializedAs("lureGauge")] Image spaceGauge;
-        [Tooltip("Time card: Dash to the School - full when the dash is ready.")]
+        [Tooltip("Time card: Dash to the School - stays empty (the parts show the dash; a full lime plate drowned them).")]
         [SerializeField, FormerlySerializedAs("tameGauge")] Image timeGauge;
 
         [Header("Counts")]
@@ -85,6 +85,44 @@ namespace CosmicShore.UI
         [Tooltip("How long the creature wears the domain colour after one joins the school (s, unscaled).")]
         [SerializeField, Min(0f)] float lureJoinedSeconds = 1f;
 
+        [Header("Space card: Paint (icon_kit specs/angler.py, Garrett picked D 2026-10-31)")]
+        [Tooltip("Group A (Angler_PaintGroupA), above: white when the next paint sends it, else the domain colour, dimmed.")]
+        [SerializeField] Image paintGroupAIcon;
+        [Tooltip("Group B (Angler_PaintGroupB), below: white when the next paint sends it, else the domain colour, dimmed.")]
+        [SerializeField] Image paintGroupBIcon;
+        [Tooltip("The prism (Angler_PaintPrism): blue until something is painted, white (lit) after. Hidden at Space 5.")]
+        [SerializeField] Image paintPrismIcon;
+        [Tooltip("Space 5 Paint Shields: the cracked shield (Angler_PaintShell), the pilot's shielded colour.")]
+        [SerializeField] Image paintShellIcon;
+        [Tooltip("Space 5 Paint Shields: the painted prism inside the shield (Angler_PaintCore), white.")]
+        [SerializeField] Image paintCoreIcon;
+        [Tooltip("The waiting group's alpha (and its count's).")]
+        [SerializeField, Range(0f, 1f)] float paintWaitingAlpha = 0.6f;
+        [Tooltip("Font size of the two group counts on the Space card.")]
+        [SerializeField, Min(6f)] float groupCountFontSize = 18f;
+        [Tooltip("Where each group's count sits in the Space icon (normalized, from bottom-left): group A, then group B.")]
+        [SerializeField] Vector2[] groupCountAnchors = { new(0.406f, 0.734f), new(0.406f, 0.266f) };
+
+        [Header("Time card: Dash to the School (icon_kit specs/angler.py, Garrett picked H 2026-10-31)")]
+        [Tooltip("Group A (Angler_DashGroupA), above: white when the next dash goes to it, else the domain colour, dimmed.")]
+        [SerializeField] Image dashGroupAIcon;
+        [Tooltip("Group B (Angler_DashGroupB), below: white when the next dash goes to it, else the domain colour, dimmed.")]
+        [SerializeField] Image dashGroupBIcon;
+        [Tooltip("The hull 75% of the way to group A (Angler_DashHullA), domain colour; shown while A is next.")]
+        [SerializeField] Image dashHullAIcon;
+        [Tooltip("Where the hull was, dashing to A (Angler_DashGhostA), domain colour, dimmed; shown while A is next.")]
+        [SerializeField] Image dashGhostAIcon;
+        [Tooltip("The hull 75% of the way to group B (Angler_DashHullB), domain colour; shown while B is next.")]
+        [SerializeField] Image dashHullBIcon;
+        [Tooltip("Where the hull was, dashing to B (Angler_DashGhostB), domain colour, dimmed; shown while B is next.")]
+        [SerializeField] Image dashGhostBIcon;
+        [Tooltip("Alpha of the ghost (where the hull was) while the dash is ready.")]
+        [SerializeField, Range(0f, 1f)] float dashGhostAlpha = 0.6f;
+        [Tooltip("Alpha of the ghost while a dash is in flight.")]
+        [SerializeField, Range(0f, 1f)] float dashGhostFlightAlpha = 0.3f;
+        [Tooltip("Alpha of every Time part with no school (no dash).")]
+        [SerializeField, Range(0f, 1f)] float dashNoSchoolAlpha = 0.3f;
+
         /// <summary>Seat every readout at rest (nothing tamed, the light off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
@@ -99,6 +137,139 @@ namespace CosmicShore.UI
             _massUpgraded = false;
             _luring = true;
             SetLure(false);
+            _sendShown = -1;
+            _groupShown[0] = _groupShown[1] = -1;
+            _spaceUpgraded = false;
+            _painted = true;
+            SetPaintPrism(false);
+            _dashShown = -2;
+            SetDash(0, false, false);
+        }
+
+        // ---- the Time card: where the hull was and where the dash puts it, toward the group it goes to ----
+
+        int _dashShown = -2;
+        Color _dashDomain = Color.white;
+
+        /// <summary>The pilot's domain colour on the Time card (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetDashColor(Color domain)
+        {
+            if (domain.a > 0f && domain != _dashDomain) { _dashDomain = domain; _dashShown = -2; }
+        }
+
+        /// <summary>
+        /// Which group the next dash goes to (<c>AnglerCommandExecutor.DashGroup</c>), whether there is a school to dash to,
+        /// and whether a dash is in flight: that group is white and its hull/ghost pair shows; the other group waits in the
+        /// domain colour at <see cref="paintWaitingAlpha"/>; with no school everything dims to <see cref="dashNoSchoolAlpha"/>.
+        /// </summary>
+        public void SetDash(int nextGroup, bool hasSchool, bool dashing)
+        {
+            int key = nextGroup | (hasSchool ? 2 : 0) | (dashing ? 4 : 0);
+            if (key == _dashShown) return;
+            _dashShown = key;
+            Color Domain(float a) => new(_dashDomain.r, _dashDomain.g, _dashDomain.b, a);
+            Color next = hasSchool ? Color.white : Domain(dashNoSchoolAlpha);
+            Color waiting = Domain(hasSchool ? paintWaitingAlpha : dashNoSchoolAlpha);
+            Color hull = Domain(hasSchool ? 1f : dashNoSchoolAlpha);
+            Color ghost = Domain(!hasSchool ? dashNoSchoolAlpha * dashGhostAlpha : dashing ? dashGhostFlightAlpha : dashGhostAlpha);
+            if (dashGroupAIcon) dashGroupAIcon.color = nextGroup == 0 ? next : waiting;
+            if (dashGroupBIcon) dashGroupBIcon.color = nextGroup == 1 ? next : waiting;
+            Show(dashHullAIcon, nextGroup == 0, hull);
+            Show(dashGhostAIcon, nextGroup == 0, ghost);
+            Show(dashHullBIcon, nextGroup == 1, hull);
+            Show(dashGhostBIcon, nextGroup == 1, ghost);
+        }
+
+        static void Show(Image icon, bool on, Color c)
+        {
+            if (!icon) return;
+            icon.enabled = on;
+            icon.color = c;
+        }
+
+        // ---- the Space card: the two groups that take turns, and the prism they eat ----
+
+        readonly TextMeshProUGUI[] _groupCounts = new TextMeshProUGUI[2];
+        readonly int[] _groupShown = { -1, -1 };
+        int _sendShown = -1;
+        bool _spaceUpgraded, _painted;
+        Color _paintDomain = Color.white, _paintShielded = new(0f, 0f, 0f, 0f);
+
+        /// <summary>The pilot's domain and shielded colours on the Space card (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetPaintColors(Color domain, Color shielded)
+        {
+            if (domain.a > 0f && domain != _paintDomain) { _paintDomain = domain; _sendShown = -1; }
+            if (shielded.a > 0f) { _paintShielded = shielded; if (paintShellIcon) paintShellIcon.color = shielded; }
+        }
+
+        /// <summary>
+        /// Each group's size and which one the next paint sends (<c>AnglerCommandExecutor.SendGroup</c>, <c>GroupCount</c>):
+        /// that group and its count are white, the other the domain colour at <see cref="paintWaitingAlpha"/>.
+        /// </summary>
+        public void SetPaintGroups(int countA, int countB, int sendGroup)
+        {
+            if (!_groupCounts[0]) EnsureGroupCounts();
+            if (sendGroup != _sendShown)
+            {
+                _sendShown = sendGroup;
+                var waiting = new Color(_paintDomain.r, _paintDomain.g, _paintDomain.b, paintWaitingAlpha);
+                Paint(paintGroupAIcon, _groupCounts[0], sendGroup == 0 ? Color.white : waiting);
+                Paint(paintGroupBIcon, _groupCounts[1], sendGroup == 1 ? Color.white : waiting);
+            }
+            SetGroupCount(0, countA);
+            SetGroupCount(1, countB);
+        }
+
+        static void Paint(Image icon, TextMeshProUGUI count, Color c)
+        {
+            if (icon) icon.color = c;
+            if (count) count.color = c;
+        }
+
+        void SetGroupCount(int g, int n)
+        {
+            if (!_groupCounts[g] || n == _groupShown[g]) return;
+            _groupShown[g] = n;
+            _groupCounts[g].text = n.ToString();
+        }
+
+        /// <summary>Whether anything is painted (lit): the prism turns from blue to white. At Space 5 the shielded prism shows.</summary>
+        public void SetPaintPrism(bool painted)
+        {
+            if (painted == _painted) return;
+            _painted = painted;
+            if (paintPrismIcon)
+            {
+                paintPrismIcon.enabled = !_spaceUpgraded;
+                paintPrismIcon.color = painted ? Color.white : lureWildColor;
+            }
+            if (paintShellIcon) paintShellIcon.enabled = _spaceUpgraded;
+            if (paintCoreIcon)
+            {
+                paintCoreIcon.enabled = _spaceUpgraded;
+                paintCoreIcon.color = painted ? Color.white : lureWildColor;
+            }
+        }
+
+        /// <summary>The two counts, built at runtime beside the groups (the fauna count's pattern). Idempotent by name.</summary>
+        void EnsureGroupCounts()
+        {
+            Image spaceIcon = null;
+            for (int i = 0; i < abilityIcons.Count; i++)
+                if (abilityIcons[i].element == Element.Space) spaceIcon = abilityIcons[i].icon;
+            if (!spaceIcon) return;
+            for (int g = 0; g < 2; g++)
+            {
+                var text = MakeCount(spaceIcon.rectTransform, g == 0 ? "GroupACount" : "GroupBCount");
+                var rt = text.rectTransform;
+                var at = g < groupCountAnchors.Length ? groupCountAnchors[g] : new Vector2(0.5f, 0.5f);
+                rt.anchorMin = rt.anchorMax = rt.pivot = at;
+                text.alignment = TextAlignmentOptions.Center;
+                text.fontSize = groupCountFontSize;
+                _groupCounts[g] = text;
+            }
+            _sendShown = -1;
+            _groupShown[0] = _groupShown[1] = -1;
         }
 
         // ---- the Mass card: the esca lit, a creature drawn to it ----
@@ -264,7 +435,6 @@ namespace CosmicShore.UI
         public void SetCharge(float hunting01, bool erasing) => Push(chargeGauge, hunting01, erasing);
         public void SetMass(float tame01, bool luring) => Push(massGauge, tame01, luring);
         public void SetSpace(float ordered01, bool painting) => Push(spaceGauge, ordered01, painting);
-        public void SetTime(float ready01, bool ready) => Push(timeGauge, ready01, ready);
 
         void Push(Image gauge, float fill01, bool ready)
         {
@@ -281,6 +451,13 @@ namespace CosmicShore.UI
         public override void SetAbilityUpgraded(Element element, bool upgraded)
         {
             base.SetAbilityUpgraded(element, upgraded);
+            if (element == Element.Space)
+            {
+                _spaceUpgraded = upgraded;   // Paint Shields: the shielded prism and its cracking shield
+                bool p = _painted;
+                _painted = !p;
+                SetPaintPrism(p);
+            }
             if (element == Element.Mass)
             {
                 _massUpgraded = upgraded;   // Steal Fauna: the creature drawn in may be another Angler's

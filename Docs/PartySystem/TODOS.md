@@ -213,3 +213,14 @@ rosters' shipped values, so the three read the same today. The debt is the three
 > by the bug fix — and it is exactly what a shared component would force someone to decide
 > once.
 
+## Seen while shipping `claude/intelligent-turing-aw29so` (2026-10-31) - rows, not fixes
+
+- **Orphaned doc comment** in `HostConnectionService.cs` (`/// </summary>` then `/// <summary>` at about line 1507,
+  above `ResetPartyLayerAsync`'s doc; from `c440ad83ac`, 2026-10-26): the earlier method's doc block has no method of
+  its own. Measured with the ship skill's orphan-doc scan. Decide which block belongs to which member.
+- **The online rows draw name over status** (two lines, as the built rows did); the Rev 40 E board drew them on one
+  line. A look decision for the board's owner, not a defect.
+- **Mixed builds hide each other**: a build without B39's `ready` presence flag is never listed online by one with it.
+  Expected while the core four update together; matters once players do not all update at once (a protocol version in
+  the presence properties would make it a clear message instead of a silent absence).
+

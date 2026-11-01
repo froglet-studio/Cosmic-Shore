@@ -11,6 +11,11 @@
         0,
         -4
       ],
+      "galaxy": [
+        900,
+        2100,
+        30
+      ],
       "cell": 0,
       "blurb": "Home water for the Jade. Dock here and whatever is aboard is yours."
     },
@@ -23,6 +28,11 @@
         6,
         1,
         -4
+      ],
+      "galaxy": [
+        900,
+        2100,
+        30
       ],
       "cell": 1,
       "blurb": "Home water for the Ruby. Dock here and whatever is aboard is yours."
@@ -37,6 +47,11 @@
         -1,
         7
       ],
+      "galaxy": [
+        900,
+        2100,
+        30
+      ],
       "cell": 2,
       "blurb": "Home water for the Gold. Dock here and whatever is aboard is yours."
     },
@@ -49,6 +64,11 @@
         0,
         0
       ],
+      "galaxy": [
+        1300,
+        2360,
+        98
+      ],
       "cell": 3,
       "blurb": "A neutral port where every lane crosses. News arrives here first and leaves here fastest."
     },
@@ -60,6 +80,11 @@
         -5,
         2,
         3
+      ],
+      "galaxy": [
+        560,
+        1690,
+        -34
       ],
       "cell": 4,
       "vaults": 3,
@@ -78,6 +103,11 @@
         -2,
         5
       ],
+      "galaxy": [
+        1520,
+        1760,
+        -149
+      ],
       "cell": 5,
       "vaults": 2,
       "finds": [
@@ -95,6 +125,11 @@
         3,
         -7
       ],
+      "galaxy": [
+        430,
+        2360,
+        -112
+      ],
       "cell": 6,
       "hold": 60,
       "blurb": "A contested core. Whoever holds its nucleus decides whose colour the waves fight for."
@@ -107,6 +142,11 @@
         5,
         1,
         1
+      ],
+      "galaxy": [
+        1120,
+        1520,
+        145
       ],
       "cell": 7,
       "hold": 75,
@@ -504,7 +544,19 @@
     "ChooseNext": "LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE",
     "CardRoute": "{from} TO {to} - {pilot}",
     "CardHomeRoute": "{from} TO {to}",
-    "CardUnderway": "UNDER WAY TO {to}"
+    "CardUnderway": "UNDER WAY TO {to}",
+    "CardCourse": "{ly} LY THROUGH {sea} - LIGHT TAKES {years} YEARS",
+    "SeaSpray": "SPRAY",
+    "SeaFroth": "FROTH",
+    "SeaWater": "WATER",
+    "SeaThick": "THICK WATER",
+    "SeaReef": "REEF",
+    "CardOpen": "Open",
+    "CardClose": "Close",
+    "CardDetails": "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}",
+    "CardHomeDetails": "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}",
+    "CardSquadSeat": "{vessel} ({pilot})",
+    "CardSquadSeparator": ", "
   },
   "toy": {
     "id": "voyage",

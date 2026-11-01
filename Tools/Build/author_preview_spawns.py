@@ -72,6 +72,11 @@ SCENE_FOR_MODE = {
     68: 'MinigameWrasseRun',
     69: 'MinigameTandava',
     70: 'MinigameTandavaSevering',
+    72: 'MinigameScarabRally',
+    73: 'MinigameSerpentTime',
+    74: 'MinigameBrittleStarTime',
+    75: 'MinigameLanternRun',
+    77: 'MinigameSerpentGulag',
 }
 
 

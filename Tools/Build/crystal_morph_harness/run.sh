@@ -4,6 +4,8 @@
 #   Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs   (the Squirrel's panel census)
 #   Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs (an elemental crystal's faces
 #                                                                   landing on a vessel hull)
+#   Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs (Butterfly / Rhino / Manta:
+#                                                                   the crystal onto its spherical blast)
 # against the shipped CrystalMorphMeshBuilder, with UnityStub.cs standing in for UnityEngine
 # (plain-array Mesh, value-type maths). Needs a .NET 8 SDK (DOTNET_ROOT) and nuget for NUnit.
 # harness.csproj is FORCE-ADDED (`git add -f`): the repo gitignores *.csproj for Unity's own,

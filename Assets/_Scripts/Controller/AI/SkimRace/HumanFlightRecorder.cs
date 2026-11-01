@@ -112,7 +112,8 @@ namespace CosmicShore.Gameplay
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
             public float M0, M1, M2, M3;         // the hull's first four resource meters (CurrentAmount), -1 if absent
             public int TimeMode;                 // the Stoat's mode: 2 Drive (warp pair), 1 Time (catch sling), 0 Mass (field dipole), -1 another hull
-            public bool Held;                    // the AI held the hull (the You / AI toggle)
+            public bool Held;                    // the AI held the hull (the You / AI toggle, or the AI trainer)
+            public bool Trainer;                 // the AI trainer flew it (an AI Training run; Held is set too)
             public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
             public float Fov, Aspect;            // vertical field of view (degrees), width / height
             public int CamMode;                  // CameraSettingsSO.mode of the active player camera, -1 if none
@@ -164,6 +165,10 @@ namespace CosmicShore.Gameplay
         Quaternion _prevRot;
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
+        // The course family the race flew: Switchback is Blast Run only since 2026-10-29, and older flights (no field) flew
+        // the retired Classic ladder, so the learners keep them apart (learn_drives_from_flights.py SHIPPED_FAMILY).
+        // Empty in a mode without families. The JSON key stays "funType" so old and new flights read the same.
+        string _funType = "";
         bool _recording, _turnWasRunning;
         // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
         // game end, a frame or a ClientRpc after the turn stops), or after ResultWaitSeconds without one.
@@ -297,6 +302,7 @@ namespace CosmicShore.Gameplay
             _modeName = _gameData.GameMode.ToString();
             if (_gameData.SwitchTargetCount > 0) _target = _gameData.SwitchTargetCount;
             if (_gameData.SelectedIntensity != null && _gameData.SelectedIntensity.Value > 0) _intensity = _gameData.SelectedIntensity.Value;
+            _funType = _gameData.GameMode == GameModes.Switchback ? "BlastRun" : "";
         }
 
         void ListenToButtons()
@@ -402,6 +408,7 @@ namespace CosmicShore.Gameplay
                 // The AI holding this hull (the Third Eye's You / AI toggle) is not the human's flight: kept, marked,
                 // and skipped by every learner (situation_features.py, situation.js, learn_from_flights.py).
                 Held = PilotControl.IsHeldByAI(_player),
+                Trainer = PilotControl.IsHeldByTrainer(_player),
                 CamPos = camPos, CamFwd = camFwd, CamUp = camUp, Fov = fov, Aspect = aspect, CamMode = camMode, RearView = rearView,
                 CrystalStart = crystalStart, CrystalCount = (_crystals.Count - crystalStart) / 4,
             });
@@ -622,6 +629,7 @@ namespace CosmicShore.Gameplay
             _ringData.Clear();
             _ownRail = -1;
             _courseSeed = _courseIntensity = 0;
+            _funType = "";
             _railWhy = "";
             _havePrevRot = false;
             _prevSampleT = 0f;
@@ -734,8 +742,35 @@ namespace CosmicShore.Gameplay
         {
             _recording = false;
             _awaitingResult = false;
-            int byHand = 0;
-            for (int i = 0; i < _samples.Count; i++) if (!_samples[i].Held) byHand++;
+            // Once the AI trainer flew part of a match, the whole match is its: the turn runs on through the replay's fade
+            // after an episode ends (half a second of real time, seconds of game time at a run's time scale), with the
+            // trainer released and nobody else at the sticks. Those samples are marked held, never hand-flown.
+            int first = -1, last = -1;
+            for (int i = 0; i < _samples.Count; i++)
+                if (_samples[i].Trainer) { if (first < 0) first = i; last = i; }
+            if (first >= 0)
+                for (int i = 0; i < _samples.Count; i++)
+                {
+                    if (i >= first && i <= last) continue;
+                    var m = _samples[i];
+                    m.Held = true;
+                    m.Trainer = true;
+                    _samples[i] = m;
+                }
+            int byHand = 0, byTrainer = 0;
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                if (!_samples[i].Held) byHand++;
+                if (_samples[i].Trainer) byTrainer++;
+            }
+            if (byHand < 2 * SampleHz && byTrainer > 0)
+            {
+                // An AI Training match (the AI Training window, Froglet Compute): the trainer flew it, nobody's flight.
+                CSDebug.LogVerbose(CSLogChannel.AITraining,
+                    $"[HumanFlightRecorder] not stored ({why}): the AI trainer flew it ({byTrainer} of {_samples.Count} samples).");
+                ClearRace();
+                return;
+            }
             if (byHand < 2 * SampleHz)
             {
                 Debug.LogWarning($"[HumanFlightRecorder] AI training record not stored ({why}): only {byHand} hand-flown samples.");
@@ -782,12 +817,18 @@ namespace CosmicShore.Gameplay
             sb.Append("\"mode\":\"").Append(_modeName).Append("\",\"hull\":\"").Append(hull).Append("\",");
             sb.Append("\"source\":\"unity\",\"hullKey\":\"").Append(hull.ToLowerInvariant()).Append("\",");
             sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
+            // Who flew it, for every learner (learn_from_flights.not_a_person): "human", or "mixed" when the AI held the
+            // hull for part of it (those samples carry held = 1). A flight the AI flew alone is never stored (Finish).
+            bool anyHeld = false;
+            for (int i = 0; i < _samples.Count && !anyHeld; i++) anyHeld = _samples[i].Held;
+            sb.Append("\"pilot\":\"").Append(anyHeld ? "mixed" : "human").Append("\",");
             sb.Append("\"domain\":\"").Append(_domainName).Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"rivalDifficulty\":\"").Append(_gameData ? _gameData.RequestedAIDifficulty.ToString() : "").Append("\",");
             AppendRivalDifficulties(sb);
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
             sb.Append("\"courseSeed\":").Append(_courseSeed).Append(",\"courseIntensity\":").Append(_courseIntensity).Append(',');
+            if (_funType.Length > 0) sb.Append("\"funType\":\"").Append(_funType).Append("\",");
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
             sb.Append("\"ended\":\"").Append(why).Append("\",");
             sb.Append("\"raceTarget\":").Append(target).Append(",\"rings\":").Append(rings).Append(',');

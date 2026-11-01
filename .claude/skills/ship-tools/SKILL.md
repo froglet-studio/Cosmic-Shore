@@ -22,10 +22,10 @@ Two asymmetries make this specific failure likely rather than rare:
 So the confirmation has to be **asked for**, not inferred, and the commit has to be
 **scoped**, not `git add -A`.
 
-**§0.05 of `/ship` applies here in full: there is no compiler and no CI in this
-environment.** Nothing in this skill needs one — every check below is a git, `.meta` and
-GUID question — so do not run `/verify-unity`, do not stand a compiler up, do not gate the
-commit on any `Tools/Build/check_*.py` or on CI being green, and do not wait on checks after
+**§0.05 of `/ship` (the verify rule) applies to any C# in the commit.** Nothing else in this
+skill needs a compiler — every check below is a git, `.meta` and GUID question — so do not
+run `/verify-unity` (not required until that skill merges), do not stand up a syntax-only
+compiler, do not gate the commit on CI being green, and do not wait on checks after
 the push. The one compile in this document belongs to `FrogletToolShipPanel`, which runs in
 the HUMAN's editor, not here. This gate is why the setting is safe: it is exactly the check
 that does not depend on a build.

@@ -59,18 +59,21 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
 | **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, field pairs and the catch sling | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
-| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatWormholeExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
+| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |
 | Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
+| Scarab | **Scarab Rally** (new 2026-10-27; Scarab Scramble is now its Mass card) | ring race: throttle, drift, juke | none yet |
+| **Tiger Moth** | **Waystation** (the Drop Tower course since 2026-11-01) | Drop Tower race: short hops through plates, then one long drop | none yet on the towers. The belly-aim autopilot takes the clusters and the long drop; the hop autopilot (`WaystationController.TickHops`) takes the towers. No learner reads it yet |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
 | Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
-| Serpent | **none** | - | no Time minigame of its own yet: one has to be made or chosen |
+| Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
+| Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
 
 ## 3. Switchback first (Dolphin)
 
@@ -136,6 +139,8 @@ drift, the AI nose lag, the charge economy), two defects showed, and the Regatta
 **What changed:**
 - `SwitchbackController.AICommitFromApproachPoint` = true: the Regatta steering, which now carries the approach-point
   cap.
+- **2026-10-29:** Switchback is now Blast Run only; the Switchback boost policies below were learned on the Classic
+  ladder and stay until Blast Run races are recorded and the learner (which now ships `BlastRun` only) is re-run.
 - `DolphinAIBoostPolicy_Switchback` written from Yash's races (`LEARNED_DRIVES_Switchback.md`): discharge lined up
   within 27.4 deg (was 12), with 0.87 s of runway (2.5), at 0.82 charge (0.95).
 - Tests: `SwitchbackAISteeringTests`. Other gate races keep their scene switch (Headlong is the negative control).

@@ -71,6 +71,44 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 
 Each element's build wins its own column, as the element jobs intend.
 
+## The Time trail (proposal, 2026-11-01, `feature/starlings-time-game`)
+
+The pilot never steers, so a Starlings time game cannot be a race the player drives. The proposal: the mode lays each
+phase's objective at its own **station** on a course (a wall of enemy prisms at each Mass station, crystals at each
+Elemental one, the omnicrystal and the rivals near theirs), and the clock runs until the swarm has worked all 16
+stations, four laps of the cycle. Every leg still ends early on its goal or late on its timer, so each element shortens
+a different leg. The vessel is unchanged (the LOCKED rule): only the course belongs to the mode. Pick *Time trail* in
+the Game menu and a course; the Scorecard tab has **Run the time trail**; `__lab.runTrail({ course, seeds })` and
+`__lab.runCourses()` are the headless forms.
+
+### Round 1: one course (8 stations)
+
+On 30 seeds Charge first won 17, Space 9, Time 3 and Mass 1. Time was no longer the only answer, but Charge was the
+default: the Opposing vessels legs were the longest and only Charge shortens them.
+
+### Round 2: courses that vary per run (Garrett chose "vary courses per run", 2026-11-01)
+
+Each course changes only the environment (station spacing, wall size and shielding, rival count and speed), is shown
+before the run, and rewards a different element. *Any course* draws one per run. Also new: the element-first AI takes
+its favourite card from a hand (a random card hid what an element can do), the trail is 16 stations (with 8, the
+cards arrived too late to matter), and a **Reads the course** AI builds the element the course rewards.
+
+| Course | What it is | Mass first | Time first | Space first | Charge first | No cards |
+|---|---|---|---|---|---|---|
+| Long haul | stations alternate across the cell, no rivals | 215.4 | **196.8** | 209.3 | 216.5 | 216.9 |
+| Fortress | 130-prism walls, 60% shielded, rivals at 15 u/s | 149.2 | 140.8 | **108.1** | 125.2 | 152.7 |
+| Chase | rivals at 115 u/s | 152.8 | 126.6 | 150.1 | **106.4** | 155.3 |
+
+Seconds to finish (lower wins), 15 seeds each. On *Any course* (24 seeds): **Reads the course 141.7**, Charge first
+151.7, Random picks 152.0, Rotate 154.5, Space first 156.8, Time first 162.0, Mass first 172.6, no cards 176.4.
+Reading the course beats any fixed element by 10 s, so the draw element is a real choice made from the course.
+
+**Mass wins no course.** Its cards (Brood, Carapace, Big Family, Mound Builders, Snowball, Danger Drip) keep the swarm
+big and lay your prisms; nothing on a timed course rewards that, and a Crossfire course (rivals shooting four times as
+often) still went to Charge. This is a kit gap the time game exposes, not something a course can fix: Mass needs a
+card that ends a phase early (for example one that counts the prisms you lay toward a goal), and that is a vessel
+change for Garrett to decide.
+
 ## Found
 
 1. **Space first gets more than twice the hands (11.3 against about 5).** Space cards meet the Opposing mass goal early, so the cycle comes round faster and deals more hands. In this design, the element that ends phases early also earns cards fastest. That makes it the strongest pick for a player who wants more picks. Either the hand rate needs a cap, or the other phases need cards that end them early too.
@@ -95,4 +133,5 @@ Each element's build wins its own column, as the element jobs intend.
 
 ## Round log
 
+- **Time trail (2026-11-01, `feature/starlings-time-game`):** the Game menu's Time trail, stations drawn on the stage, `runTrail` and its scorecard; round 2 adds the Long haul, Fortress and Chase courses, the favourite-card AI and the Reads-the-course AI (above).
 - **Round 1 (2026-10-20, `claude/project-thread-pkoq70`):** the first build covers the passive 3D swarm, the joystick view, the four-phase cycle, hands of 4 with level stacking, the protected minimum, 24 wired cards, I1 to I4, a six-build scorecard and the decision log.

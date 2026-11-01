@@ -151,6 +151,12 @@ for that board changed ("make D brighter") and say so in the doc.
   meant to open at 1.25 s shows half open. Either put the timing in keyframe percentages on one shared loop (the
   `phased()` scrubber in Rev 33's kit), or compare options at rest.
 
+- **The canvas holds at most 40 pages** (2026-10-31, Rev 40): `check` fails "41 pages; the canvas allows 40" once the
+  board is full. A follow-up round on the SAME subject goes on the earlier round's page: keep its boards' `page`, set
+  them below that page's last row (rows 1260 apart), rename the page "Rev N-M - ...", drop the new page from `pages`
+  and point `launch.page` at the kept one; the doc section names the page it landed on. A round on a NEW subject when
+  the board is full is a decision for the board's owner (retire or merge old pages), not something to work around.
+  Also: `plan --board X="X Name: ..."` titles boards "Rev N X - X Name"; drop the repeated letter from the description.
 - **Rounds collide** (T13): Rev 28 was free at noon and gone by the time the boards were drawn. Plan late, publish once,
   re-read the index right before, keep the other session's pages and boards (send the index with only your keys added).
 - **Section numbers collide** (T14) and C# docstrings cite them; renumbering is a sweep, so take the number at commit.

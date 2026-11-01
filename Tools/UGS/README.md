@@ -19,6 +19,38 @@ or write to the backend goes through Shombith first.
 | (no file) | Faction messages in the Port: Unity Vivox text channels, switched on in the dashboard, below | T8 |
 | `AccessControl/moderation-policy.json` | Lets players send reports to UGS Moderation (the Report button on the profile popup) | T8 |
 | (no file) | Steam sign-in is a dashboard identity provider plus `Assets/Resources/SteamConfig.asset`, below | T1 |
+| `CloudCode/trust.js` | Phase B: each account's trust record (private custom data `fp-<player id>`), its pool (shore, Undertow, quitters), the notice and the appeal, and the review queue (`fairplay-review`) | phase B, R13, R15 |
+| `CloudCode/trust.test.cjs` | `node Tools/UGS/CloudCode/trust.test.cjs` | phase B |
+| `Commerce/entitlements.js` | Paid content, kept apart from fair play (R14): episode tokens and owned episodes in the protected key `PLAYER_ENTITLEMENTS`. A token is created only from an order its storefront confirmed, counted from the script's own `STORE` table, once per order | T3 |
+| `Commerce/entitlements.test.cjs` | `node Tools/UGS/Commerce/entitlements.test.cjs` | T3 |
+| (no file) | Game Center sign-in on iOS is a dashboard identity provider plus `Assets/Resources/MobileSignInConfig.asset`, below | T1 |
+| `deploy.sh` | Runs every script's tests and the price check, then uploads all five scripts to one environment | all |
+
+## Deploying the scripts
+
+The scripts in this folder do nothing until they are uploaded to UGS: the game calls them by name (`economy`,
+`weekly-score`, `match-report`, `trust`, `entitlements`), and until they exist on Unity's servers those calls fail. Each
+switch in the game stays off until its script is deployed, so **deploy first, then turn switches on**. Deploying is safe
+at any time: nothing calls a script while its switch is off.
+
+"development" and "production" are the two UGS environments on Unity's servers, not git branches. Scripts are
+deployed from **bleeding-edge**, development first.
+
+**With the button (no terminal):**
+1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New; project roles
+   Unity Environments Admin, Cloud Code Script Publisher and Cloud Code Editor; then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
+   `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
+2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
+   It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
+3. Dashboard > Cloud Code > Scripts, development environment: the five are there.
+4. After the editor checks pass with a switch on, run it again with `production`.
+
+**From a terminal instead:** `npm install -g ugs`, `ugs login` with the same key, then
+`bash Tools/UGS/deploy.sh development` from the repository root.
+
+`deploy.sh` never applies the access policies (`AccessControl/*.json`): `project-policy.json` blocks direct leaderboard
+posts, which breaks every build that still posts directly. Apply it only once a build with `ServerScoreGate` on is out
+(below). Redeploy after any change to a script, its `RULES`, or a vessel price.
 
 ## Switching on the server-owned wallet
 
@@ -26,7 +58,8 @@ The game ships with it **off** (`ServerEconomyGate.Enabled = false` in
 `Assets/_Scripts/System/CloudData/ServerEconomy.cs`). While it is off, nothing calls Cloud Code and the wallet
 works exactly as before. Turn it on in this order, development environment first:
 
-1. **Run the tests:** `node Tools/UGS/CloudCode/economy.test.cjs` prints `11 passed`.
+1. **Run the tests:** `node Tools/UGS/CloudCode/economy.test.cjs` prints `16 passed`, and
+   `python3 Tools/Build/author_economy_catalog.py --check` prints OK.
 2. **Install and sign in to the UGS CLI** (needs dashboard access to project
    `3030fd69-28ab-433f-b4bd-22b9b93c5118`):
    ```
@@ -65,12 +98,16 @@ old direct write open.
 Off in the game (`MatchReportGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerMatchReports.cs`; while
 off, `MatchReporter` is never attached).
 
-1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `21 passed`.
+1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `24 passed`.
 2. `ugs deploy Tools/UGS/CloudCode/match-report.js` (development first).
 3. Set `MatchReportGate.Enabled = true` in a test build and run the "Match reports" editor checks in
    `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Read a player's `FAIRPLAY_CONDUCT` and a host's `FAIRPLAY_SIGNALS` in the
    dashboard (Cloud Save > Player data > protected).
 4. Production: deploy, then ship the build with the gate on.
+
+Host observations (T5/T6, phase B): the host's own `end` may carry `observed` (speed, jumps, steering about its
+guests); each is filed on the guest as a `host_observed` signal naming the host. `trust.js` counts them only once two
+different hosts reported the same account. Steering is never filed on a minor.
 
 Minors (R13): each `start` carries the birth year the age screen recorded, kept in the protected key `FAIRPLAY_AGE`
 (only ever moved younger). A player not surely 18, or of unknown age, gets no quit record, and every signal about them
@@ -95,6 +132,44 @@ Report and Block are live in the game (no gate): they appear on the player profi
    (the research found Moderation reports need a player allow statement; confirm on first use).
 3. Name the person who reviews the queue (the owner decision in `Docs/AntiCheat/README.md` §8).
 
+## Switching on the trust record, the Undertow and the notice (phase B)
+
+Off in the game (`FairPlayTrustGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerTrust.cs`). It needs
+match reports on first (they write the signals it reads).
+
+1. `node Tools/UGS/CloudCode/trust.test.cjs` prints `18 passed`.
+2. `ugs deploy Tools/UGS/CloudCode/trust.js` (development first). Redeploy `match-report.js` and `weekly-score.js` too
+   (both read the trust record now).
+3. **Twin boards:** for each weekly board (`weekly_challenge` and every regional `weekly_challenge_*`), create
+   `<id>_undertow` in the dashboard with the same sort order and reset schedule. An Undertow account's times go there.
+4. Set `FairPlayTrustGate.Enabled = true` in a test build and run the "Fair play phase B" editor checks in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+5. Production: deploy, create the twin boards, ship the build with the gate on.
+
+**Tuning:** `trust.js` `RULES` (signal weights, `watchAt` 100, `undertowAt` 300, the 30-day decay, the quit rule,
+three matches before the notice). Change them there and redeploy; every account is re-evaluated at its next sign-in.
+
+## Reviewing fair-play accounts (phase B)
+
+Nothing restricts ranked or public play without a person (GDPR Art. 22; `Docs/AntiCheat/README.md` §4.6).
+
+1. **The queue:** dashboard > Cloud Save > Custom data > **private** > `fairplay-review`, key `queue`. Each entry names
+   an account the system moved on its own (`undertow`, or `review` for a minor or unknown age) or one with an open
+   appeal, and where its record is.
+2. **The record:** private custom data `fp-<player id>`, key `trust`: the stage, the reasons with their evidence (the
+   match, the scores each side reported, the hours or durations), the appeal text if any.
+3. **Decide** by adding a `review` field to that record and saving:
+   - `{"decision": "clear", "by": "<you>", "note": "..."}`: a false positive. Every signal so far is set aside, the
+     account returns to the shore, an open appeal is upheld.
+   - `{"decision": "uphold", "by": "<you>"}`: the measure stands and an open appeal is refused.
+   - `{"decision": "restrict", "until": "2026-12-01", "by": "<you>", "note": "..."}`: ranked and public play locked
+     until the date (the Undertow pool and the twin boards); the player is told at once. Paid content is never touched.
+4. The account's next sign-in applies the decision once (`review.appliedAt` is stamped) and removes it from the queue.
+
+**Who reviews: Shombith** (decided 2026-10-26, `Docs/AntiCheat/README.md` §8). A routine: open the queue once a day
+while the gate is on; decide each entry; answer every open appeal within a week (the Code of Conduct promises a person
+looks at it).
+
 ## Switching on Steam sign-in (T1)
 
 Off in the game: `Assets/Resources/SteamConfig.asset` ships `appId: 0` and `signInWithSteam: 0`, so the Steam API never
@@ -111,8 +186,63 @@ starts and every player signs in anonymously. Code: `Assets/_Scripts/System/Stea
 What it does: a launch with no cached session (a first launch or a reinstall) signs in with Steam, so the player lands on
 the account tied to their Steam id. A launch with a cached anonymous session resumes it and links Steam to it. If that
 Steam id already belongs to another account, the session stays put and a warning is logged (no progress is moved).
-Every failure falls back to an anonymous sign-in. Not done: Apple (iOS) and Google (Android) sign-in, which need the
-Sign in with Apple and Play Games plugins.
+Every failure falls back to an anonymous sign-in. iOS is Game Center and Android is Google Play Games, below.
+
+## Switching on Game Center sign-in (T1, iOS)
+
+Off in the game: `Assets/Resources/MobileSignInConfig.asset` ships `signInWithGameCenter: 0`. Code:
+`Assets/_Scripts/System/PlatformSignIn/` and the native half `Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm` (no
+package: it calls Apple's GameKit directly). Game Center signs in silently, like Steam: Apple asks the player once, in
+the iOS Settings app, and the game never shows Game Center's sign-in screen.
+
+1. **Apple developer site:** enable Game Center on the App ID `com.FrogletGames.CosmicShore`, and Game Center in App
+   Store Connect for the app.
+2. **UGS dashboard:** Player Authentication > Identity providers > add **Apple Game Center** with the bundle id
+   `com.FrogletGames.CosmicShore` (development environment first).
+3. **The game:** tick `signInWithGameCenter` in `MobileSignInConfig`. The iOS build then adds the Game Center capability
+   to the Xcode project itself (`GameCenterCapability`, only while the box is ticked). Run the "Game Center sign-in"
+   checks in `Docs/UNITY_VERIFICATION_CHECKLIST.md` on a device signed in to Game Center.
+4. **Production:** add the provider to production too, then ship the build with the config on.
+
+Same rules as Steam: no cached session signs in WITH Game Center; a cached anonymous session is kept and Game Center is
+linked to it; a Game Center account already tied to another UGS account is left alone; every failure is anonymous.
+
+## Switching on Google Play Games sign-in (T1, Android)
+
+Off in the game: `MobileSignInConfig` ships `signInWithPlayGames: 0` with both ids empty. Code:
+`Assets/_Scripts/System/PlatformSignIn/PlayGames*.cs` and the Android library
+`Assets/Plugins/Android/PlayGamesSignIn.androidlib` (a Java bridge plus one dependency, Google's
+`play-services-games-v2` 22.1.0). The library's own start-up provider is removed from the manifest, so Play Games
+starts only when the switch is on. It uses Play Games' automatic sign-in only and never shows a sign-in screen.
+
+1. **Google Play Console:** the app > Grow users > Play Games Services > Setup and management > Configuration. Create
+   the Play Games Services project. Add credentials:
+   - an **Android** credential for `com.FrogletGames.CosmicShore` with the app's signing-key SHA-1 (Play Console >
+     App integrity; add the upload key's SHA-1 too for test builds);
+   - a **Game server** credential: it makes an OAuth **web client** in Google Cloud. Note its client ID and secret.
+   Copy the Play Games **project ID** (digits) from the Configuration page.
+2. **UGS dashboard**, development environment: Player Authentication > Identity providers > Add > **Google Play Games**
+   with that web client ID and secret.
+3. **The game:** in `MobileSignInConfig`, fill `playGamesProjectId` and `playGamesWebClientId`, tick
+   `signInWithPlayGames`. The Android build then writes the project ID into the app's manifest (`PlayGamesAppId`).
+4. Build to an Android phone signed in to Play Games (a tester account on the Play Games Services testers list while
+   the project is unpublished) and run the "Play Games sign-in" checks in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+5. **Production:** publish the Play Games Services project, add the provider to production, ship with the config on.
+
+## Switching on server-owned episode tokens (T3)
+
+Off in the game (`ServerEntitlementGate.Enabled = false` in `Assets/_Scripts/System/Monetization/ServerEntitlements.cs`).
+Nothing sells episodes or tokens yet, so this is the store the storefront will write to, built ahead of it.
+
+1. `node Tools/UGS/Commerce/entitlements.test.cjs` prints `7 passed`; deploy with `deploy.sh`.
+2. Set `ServerEntitlementGate.Enabled = true` in a test build and run the "Server-owned episode tokens" checks.
+3. **A storefront:** the DLC-vs-tokens decision (`Docs/Legal/DLC_VS_TOKENS_QUESTIONNAIRE.md`) picks it. It joins
+   `entitlements.js` as one `PROVIDERS` entry whose `verify()` asks that store's server (Steam: ISteamMicroTxn or DLC
+   ownership with the publisher key; Apple: the App Store Server API; Google: the Play Developer API). Until then every
+   real storefront answers `provider_not_configured`, and the editor's fake one works only outside production.
+4. Keep `STORE` (tokens per episode, bundle sizes) in step with `SO_EpisodeTokenConfig` until that asset exists.
+
+No client-held tokens move across: no storefront has ever sold one, so all of them came from the editor's fake provider.
 
 No Access Control policy is needed for the wallet: players can never write a protected Cloud Save key, so the
 game's old client-written copy in `PLAYER_PROFILE` is only a display cache the server ignores.
@@ -125,8 +255,13 @@ game's old client-written copy in `PLAYER_PROFILE` is only a display cache the s
 - **Not yet:**
   - **Earn amounts are capped, not proven.** The server cannot see a match result until every player reports
     it (Threat Board T4), so a cheater can still claim the top placement reward every match, within the caps.
-  - **Vessel and hangar unlock records** stay in client-written keys. The crystals for them are spent on the
-    server, but an edited save could still show something as unlocked without paying.
+  - ~~Vessel and hangar unlock records~~ **moved to the server 2026-10-26**: `unlockVessel` and `upgradeHangar` charge
+    the catalog price and record the unlock in the same protected write, and the game replaces its own copies with the
+    server's list (`VesselUnlockSystem.ApplyServerOwnership`). An account's old unlocks come across once, capped at
+    20,000 crystals of value (`migrateUnlocks`). Prices: run `python3 Tools/Build/author_economy_catalog.py` after
+    changing a vessel's `UnlockCost`, a starter flag or the Hangar's `crystalsPerLevel`, then redeploy `economy.js`
+    (`--check` in the bleeding-edge guard fails until you do). Editor debug unlocks (the Froglet Toolbox) are undone
+    while the server wallet is on.
   - **Episode tokens** are unchanged. They are bought with real money and need each store's receipt check,
     which waits on the DLC-vs-tokens decision (`Docs/Legal/DLC_VS_TOKENS_QUESTIONNAIRE.md`).
   - **Offline changes:** if the server cannot be reached, the local change stands until the next server answer,

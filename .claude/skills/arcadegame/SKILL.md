@@ -192,6 +192,121 @@ flying still heads for its next target (the studio's idle takeover, `/vessel-stu
 human seat with no input simply flies straight, so a mode that can leave a seat unattended needs an AI
 backfill, not a drifting hull).
 
+Serpent Time (2026-10-27, `claude/dazzling-ride-dpyvkx`, `SERPENTTIME.md`) taught three more:
+- **Mode-laid prism mass is laid on EVERY peer from a seed the course gives.** A Seed Wall assembles from each
+  peer's own prisms, so debris laid on the server alone would not exist where the wall is built. Seed each gate
+  from its index and broadcast position (`SerpentTimeController.DebrisSeed`). Lay the first cohort with
+  `PrismTrailBuilder.LayOne(..., watchForReveal: true)` behind the connecting panel. Anything regrown mid-race takes
+  `watchForReveal: false` and `CompletesAsLiveRibbon = true`, or the arena-ready gate can never all-clear. Then
+  MEASURE the shell against the other gates on the real circuits: uncapped, a 120 u debris band reached into a
+  neighbour's rings on I2 and I3.
+- **A field of the mode's OWN controller enters a committed scene through the generator**, not by hand:
+  `hull_time_race.author(new_field_lines=...)` appends it to the authored controller block with a one-shot migration
+  that stands down once applied. Watch `--check` name the scene before the write.
+- **Standing several rings at one gate keeps the course's ring**, hidden (`RaceGateRing.SetVisualHidden`): the
+  objective arrow, the race toasts and the AI's commit all read it. The mode answers `ThreadsGate` and
+  `ChooseAIGate` (`GateRaceController`), and the cluster's centre lies OUTSIDE every ring of a 3-ring cluster, so an
+  AI left on the course's ring never threads.
+- `check_generated_assets.py` reports the Input System's default UI actions (guid `ca9f5fa9…`) on every arena scene
+  cloned this session: a package ASSET, which its "not judged" rule (package SCRIPTS only) does not cover. The shipped
+  Thresher Time and Headlong scenes carry the same 11 references.
+
+Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
+- **A start line behind gate 0 for a SEEDED course** (`IPlayerSpawnLine` is asked during the spawn chain, before the
+  course exists): override `PickCourseSeed` to latch ONE seed for whichever asks first, and in `TryBuildSpawnPoses`
+  build the course with `CourseSource.Build` from that seed, the same `ResolveShell` and `AuthoredGateTarget`. Decline
+  (return false) when the cell cannot answer yet, rather than guess a shell the real build would not use. Release the
+  latch when the course is raised. `SerpentTimeController.TryBuildSpawnPoses`.
+- **Show the course with the cell, not a drawn track**: `SnowChanger.SetFlow(IFlow)` points the cytoplasm's shards
+  along whatever a mode answers per shard (Serpentine: the nearest leg of the lap, leaning toward the line), and
+  null restores the crystal law. A cell with no crystal never built its shards; `SetFlow` builds them.
+- **An obstacle a hit can CLEAR is a shape the MODE lays, with a core.** A plant felled through its heart worked (a
+  joust leaves a plant's plates standing, so the mode had to damage them itself) but read as "boring flora" and cost a
+  plant's spindles and growth; Serpentine replaced it the same day with `SerpentineGate`: closed-form prisms after
+  Breakwater's stations (plain shell, danger weave with exits carved for the hull, a plain core), laid on every peer from
+  the course. The mode watches the core's prisms (`Holds`: alive and still its owner id) and, when one goes, damages the
+  rest (devastating, core outward, a capped number a frame) and regrows it later. Exits carved by TRIMMING each bar at
+  the exit's edge, not dropping whole chords, keep the weave closed right up to the hole; a geometry test samples the
+  mouth for any hull-sized hole outside the exits.
+- **A colon in card copy breaks the WHOLE card, silently, and it happened twice to one mode.** The generator writes
+  `Description:` as a plain YAML scalar, so `rises:` at a line end (or `fuel: tap`) starts a new key: Unity keeps the
+  fields above it and drops everything after - the card shows its name with white art, no controls, and the mode does
+  not load (its `SceneName` is gone). `hull_time_race.plain_scalar_errors` and `yaml_parse_errors` now fail `--check` on
+  it; write ' - ' instead of a colon. Any other generator writing free text into YAML has the same exposure.
+- **A mode that wants fewer creatures gets its OWN copy of the cell**, generated from the shared one each run
+  (`hull_time_race.author(extra_assets=...)`, Serpentine's `_own_cell_assets`): a cell config and spawn profile are
+  shared by ~10 modes, so editing them in place re-tunes every one.
+
+Waystation Prototype (the Tiger Moth's Drop Tower race, 2026-10-31, `claude/adoring-babbage-4jjppj`; folded into
+Waystation on 2026-11-01, `WAYSTATION.md` "The Drop Tower") taught three, plus how a prototype is folded back in:
+- **A prototype BESIDE a shipped mode reuses it without editing it**: a new `GameModes` id whose controller
+  INHERITS the original's, a course source that CALLS the original generator and post-processes its gates, a scene
+  cloned from the original's committed scene through `lib.committed_scene`. Where the original's AI must stand down
+  on the prototype's new pieces, raise its serialized threshold in the prototype's scene (Waystation's
+  `aiFoldMinDistance` 420 -> 700) and prove every new link is under it in the offline model, rather than adding a
+  seam to the original's file.
+- **An apostrophe in a single-quoted scalar breaks the asset exactly like the colon above, and `--check` cannot
+  see it**: `lib.toast` and a hand-written `Notes: '...'` wrap text in `'...'` without doubling `'`, so "The tower's
+  rings" ended the scalar. Double them (`text.replace("'", "''")`) and parse every authored `.asset`
+  in the generator; `check_generated_assets.py` (run by `/ship`'s gates) is what caught it (`REFACTOR_BACKLOG` S93).
+- **A per-peer mode structure is a pure function of the BROADCAST course**: clients receive gate positions, not the
+  seed (`GateRaceController.BroadcastCourse`), so walls, plates or debris derived on every peer must be computed from
+  the gates alone. Tag what a peer must tell apart in a field the broadcast already carries (the prototype's tower
+  rings use a radius no cluster ring uses) instead of widening the RPC.
+
+Serpent Gulag (the Serpent's sniper duel, 2026-10-31, `claude/funny-fermat-9m75dr`, `SERPENTGULAG.md`) taught four:
+- **A mode's own environment generator is cheap to PROVE before Unity**: write a Python twin of its counts and
+  volumes in the generator (PhaseThresholds need them anyway), then run the shipped C# through
+  `audit_prism_clipping.py <Spawnable> -v --json` and compare. Serpent Gulag's twin matched the C# prism for prism and
+  volume to the unit on all three rungs, and the audit's 0-clipping verdict is the "no prism interpenetrates" law
+  checked. Build a hollow shape flush by NESTING its faces (front/back full size, sides between them, caps between
+  the sides) rather than overlapping corners. Read only serialized fields, never the intensity, or the bake refuses.
+- **The .NET SDK is one `apt-get install -y dotnet-sdk-8.0` away, at `/usr/lib/dotnet`**, and the bake, clip-audit and
+  card-art harnesses default to `~/.dotnet`: export `DOTNET_ROOT=/usr/lib/dotnet` or they fail with "no csc.dll".
+  `unity_refcompile` then compiles the whole project against real Unity references in ~10 min cold.
+- **Check the weapon's real rules before designing cover.** The Sniper Shot pierces everything and breaks
+  super-shields (`pierceCount` 0), so a nest is concealment, not armour; a cover design that assumed the round stops
+  at the first prism would have been wrong. Read the ability's executor, not its doc.
+- **An AI's SKILL is the seat's AI difficulty, never the intensity** (`AIDifficulty.cs`: intensity is the map, difficulty the
+  opponent; read each seat's own level with `GameDataSO.AIDifficultyFor(player)`). Serpent Gulag first keyed its ladders on
+  the intensity, borrowed from a sibling that does; the generator now fails if the marksman reads `SelectedIntensity`. A
+  STYLE can differ by level too: Legendary plays aggressively (shorter range, briefer holds) while Easy-Hard are patient.
+- **A ranged AI that steers AT its rival reads as rushing**, however well it shoots. Give it a POST (a range from the rival,
+  behind cover) and the vessel's own defensive verb at the post (the Serpent's stop, which grows its wall), and make it
+  retreat, not fight, when a rival closes in.
+- **The bake and card harnesses read primitive fields only**: a `Vector2` serialized field on a spawnable makes
+  `bake_prism_layouts.py` refuse ("does not read rubbleRadii"). Two floats cost nothing; extending the shared reader is a
+  tooling change (Shombith's).
+- **A new mode beside a collaborator's unmerged one of the same idea gets its own id and touches nothing of theirs**
+  (Garrett's Serpent Charge, 67, in flight since 2026-10-16): borrow the SHAPE of their design (the AI ladder) and
+  credit it, never their class names, which would collide when both land.
+
+- **Folding a prototype back in** (2026-11-01, Waystation Prototype -> Waystation): move the pure file (`git mv`
+  keeps its guid), merge the subclass into the original controller rather than keeping two, have the ORIGINAL's
+  generator author the prototype's words and fields, and make that generator RETIRE the prototype every run (its
+  files on `Generator.stale`, its guids stripped from every registry, its id out of `ProgressionConfig`) so nothing
+  can re-add them once the prototype's own generator is deleted. Retire the enum id and keep it reserved; rename a
+  target whose MEANING changed (`waystationRingTarget` 15 rings -> `waystationClusterTarget` 5 clusters) instead of
+  reusing the old name.
+
+Lantern Run (the Angler's Time race, 2026-11-01, `claude/intelligent-lovelace-ynskrg`, `LANTERNRUN.md`) taught four:
+- **Hang anything a mode places relative to a ring on the ring's AXIS, not on the chord from the previous ring.**
+  `HeadlongCircuit` presents a ring up to ~76 degrees off that chord (`MaxPresentDegrees`), so a "near cluster before
+  the ring, far cluster past it" pair laid on the chord drew a line that crossed the ring's plane up to FOUR mouths off
+  centre at I4 (400 seeds); on `RaceGate.Axis` it threads the mouth by construction. Assert it per leg with a plane
+  crossing (`LanternRunCourse.CrossesPlaneAt`), not by eye.
+- **A pure course test runs in about a second outside Unity**: compile `card_art_harness/UnityShim.cs`,
+  `HeadlongCircuit.cs`, `RaceCourseGeometry.cs`, the course and its `*CourseTests.cs` with csc against a ten-line NUnit
+  stand-in (`[Test]`, the `Assert` members the test uses, a reflection `Main`). Negative-control it by compiling a
+  mutated copy of the course (one constant changed) in place of the real one.
+- **Renaming a hull_time_race mode before it lands is a regenerate, not a sweep**: every guid is derived from the
+  member name, so `git rm` the generated assets, reverse the first commit's registry hunks
+  (`git diff <c>~1 <c> -- <registries> | git apply -R`), `git mv` the sources, rename the tokens, and re-run the
+  generator and `/cardart`. Hand-renaming the assets would keep the old name's guids under the new name.
+- **No `dotnet-sdk-8.0` apt package in some containers**: the tarball from `builds.dotnet.microsoft.com` (e.g.
+  `dotnet/Sdk/8.0.404/dotnet-sdk-8.0.404-linux-x64.tar.gz`) unpacked into `~/.dotnet` is what `unity_refcompile`, the
+  card harness and the course runner look for by default.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```
@@ -241,8 +356,21 @@ saw when opening Wrecking Ball). The gate names the exact using to add; it only 
   Documentation Index row; and any platform rule the mode changed, where that rule lives.
 - `Docs/SCENES.md` (two tables + the turn-monitor table), `GAME_TOASTS.md` (situations + config
   rows), the hull's `R_VesselActions/<HULL>.md` if the mode touched the vessel.
+- **A race (Time-genre) mode is a training ground.** Its hull's AI learns it from people's races where they
+  play, and from self-play where they do not (`/compute`). The second needs an OFFLINE race model of the
+  mode: a pure course generator (ported and parity-gated like `Tools/Compute/evaluators/course_port.py`)
+  and the hull's drive sim. Without one, the mode shows up in `/compute-scout`'s coverage lens as a cell
+  nothing can teach; say in `<MODE>.md` whether it has one.
 
 ## 6. What a mode must NEVER do
+
+- **Change the vessel (LOCKED, Shombith, 2026-10-31).** "The vessel kit as designed always stays the same, we just make
+  the game mode interesting." A mode never rations an ability (rounds bought with crystals), vetoes a press, adds a
+  contact effect (a wall that costs speed), rescales an ability or edits a vessel file (`R_VesselActions/**`,
+  `R_VesselActionHandler`, `Assemblers/**`, a vessel prefab or action SO) for its own sake. Its levers are the track, the
+  environment (prisms, debris, flora, hazards), the course ladder and its AI's choices. Serpent Time's round economy and
+  wall cost were built and retired for this (`SERPENTTIME.md`). A kit change is a vessel change: it goes to the vessel's
+  owner, never through a mode.
 
 - Build a parallel arena/spawner/culler the Cell already owns; add decay, timers or caps to mass.
 - Score from a stat nothing counts, or count a stat in a way only one mode can see (`StatsManager`

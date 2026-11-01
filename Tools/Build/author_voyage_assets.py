@@ -40,12 +40,15 @@ TOY_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs"
 TOY = "Assets/_SO_Assets/Toys/Toy_Voyage.asset"
 TOYBOX = "Assets/Resources/Toybox.asset"
 ARKWAY_SETTINGS_META = "Assets/_SO_Assets/Toys/Wander_WithArk.asset.meta"
+ARK_ESCORT_META = "Assets/_SO_Assets/Toys/ArkEscort.asset.meta"
 ENUMS_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
 DOMAINS_CS = "Assets/_Scripts/Data/Enums/Domains.cs"
 ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
 LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "HoldProgress", "Done",
                 "Failed", "Stowed", "Extracted", "ArkLost", "NoWork", "Following",
-                "ChooseNext", "CardRoute", "CardHomeRoute", "CardUnderway"]
+                "ChooseNext", "CardRoute", "CardHomeRoute", "CardUnderway", "CardCourse",
+                "SeaSpray", "SeaFroth", "SeaWater", "SeaThick", "SeaReef", "CardOpen", "CardClose", "CardDetails",
+                "CardHomeDetails", "CardSquadSeat", "CardSquadSeparator"]
 
 
 def guid_for(name):
@@ -91,6 +94,15 @@ def validate(spec):
         text(l["id"], l.get("blurb", ""))
         if len(l.get("chart", [])) != 3:
             errors.append(f"{l['id']}: chart needs three numbers")
+        # The real HyperSea (Docs/Voyages/VOYAGE_BOARD.md): light years from the galactic centre, Sol at (0, 26000).
+        g = l.get("galaxy")
+        if g is not None:
+            if len(g) != 3 or not all(isinstance(v, (int, float)) for v in g):
+                errors.append(f"{l['id']}: galaxy needs three numbers (x, y, z in light years)")
+            elif abs(g[2]) > 500:
+                errors.append(f"{l['id']}: galaxy z {g[2]} is outside the disk (500 ly either side of the midplane)")
+            elif (g[0] ** 2 + g[1] ** 2) ** 0.5 < 80:
+                errors.append(f"{l['id']}: galaxy position is inside the Heart's closed well")
         if l["experience"] == "VaultField":
             if l.get("vaults", 0) < 1 or not l.get("finds"):
                 errors.append(f"{l['id']}: a vault field needs vaults and finds")
@@ -202,6 +214,13 @@ def ystr(s):
     return out
 
 
+def galaxy(l):
+    g = l.get("galaxy")
+    if g is None:
+        return "      Charted: 0\n      GalaxyX: 0\n      GalaxyY: 0\n      GalaxyZ: 0\n"
+    return f"      Charted: 1\n      GalaxyX: {fnum(g[0])}\n      GalaxyY: {fnum(g[1])}\n      GalaxyZ: {fnum(g[2])}\n"
+
+
 def emit(spec, cell_pool_block):
     exp = enum_values(ENUMS_CS, "VoyageExperience")
     fac = enum_values(ENUMS_CS, "FactionType")
@@ -224,6 +243,7 @@ def emit(spec, cell_pool_block):
         o += (f"    - Id: {ystr(l['id'])}\n      Name: {ystr(l['name'])}\n      Blurb: {ystr(l.get('blurb', ''))}\n"
               f"      Experience: {exp[l['experience']]}\n      Home: {domains[l.get('home', 'Blue')]}\n"
               f"      ChartX: {fnum(x)}\n      ChartY: {fnum(y)}\n      ChartZ: {fnum(z)}\n"
+              f"{galaxy(l)}"
               f"      Cell: {l['cell']}\n      Vaults: {l.get('vaults', 0)}\n"
               f"      Finds:{strings('      ', l.get('finds', []))}"
               f"      HoldSeconds: {fnum(l.get('hold', 60))}\n")
@@ -293,6 +313,9 @@ def emit_toy(spec):
             f"  accentColor: {color(t['accent'])}\n"
             f"  withArk: {{fileID: 11400000, guid: {meta_guid(ARKWAY_SETTINGS_META)}, type: 2}}\n"
             f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
+    # The Ark escort (ArkEscort.asset, its own hand-tuned SO) is wired here too: emitting the toy without it unwired it.
+    if os.path.exists(os.path.join(ROOT, ARK_ESCORT_META)):
+        out += f"  arkEscort: {{fileID: 11400000, guid: {meta_guid(ARK_ESCORT_META)}, type: 2}}\n"
     out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
     out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
@@ -356,6 +379,10 @@ def self_test():
         "no way home": lambda s: s["jobs"].pop(0),
         "text the font cannot draw": lambda s: s["jobs"][1].update(title="carry → home"),
         "seed news at a vault field": lambda s: s["seeds"].append({"port": "loc.lantern", "tag": "Aid", "about": "loc.verdigris", "line": "x"}),
+        "a galaxy position with two numbers": lambda s: s["locations"][3].update(galaxy=[1300, 2360]),
+        "a galaxy position above the disk": lambda s: s["locations"][3].update(galaxy=[1300, 2360, 900]),
+        "a galaxy position in the Heart": lambda s: s["locations"][3].update(galaxy=[10, 20, 0]),
+        "a missing sea name": lambda s: s["hud"].pop("SeaReef"),
     }
     for what, fn in plants.items():
         s = copy.deepcopy(spec)

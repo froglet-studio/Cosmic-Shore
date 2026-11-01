@@ -59,6 +59,7 @@ namespace CosmicShore.Gameplay
             _lastMade = _lastRetired = -1;
             _turnScaled = false;
             ResetTriggers();
+            ResetMassHive();
         }
 
         void EndPilotSide()
@@ -66,6 +67,8 @@ namespace CosmicShore.Gameplay
             if (_boosting && _status != null) _status.IsBoosting = false;
             _boosting = false;
             EndTriggers();
+            DestroyPreviews();
+            DestroyMassHive();
             EndZip(false);
             RestoreTurn();
         }
@@ -75,7 +78,8 @@ namespace CosmicShore.Gameplay
             StepPassives(dt);
             StepBoost(dt);
             bool riding = StepZip(dt);
-            StepTriggers(dt, riding);   // the triggers are read on the rail too (a held Peck keeps firing; a press waits)
+            StepTriggers(dt, riding);   // the triggers are read on the rail too (a pull previews; a release ends the ride)
+            StepMassHive(dt);
             if (riding) return;   // on the rail: no contacts until it lands
             StepWatt();
             Contacts(dt);
@@ -314,13 +318,13 @@ namespace CosmicShore.Gameplay
             var key = pat.effect;
             int lv = 0;
             var upgrade = _cfg.UpgradeFor(key);
-            if (upgrade != null)   // a trigger upgrade: it takes RT or LT over for activeSeconds (lab round 6)
+            if (upgrade != null)   // a trigger upgrade: it banks usesPerCard uses on RT or LT (lab round 8)
             {
-                int level = GrantUpgrade(key, upgrade, pat.name);
-                if (depth == 0) SetMadeLine(pat, level > 1 ? Roman(level) : "");
+                int uses = Bank(key, upgrade, pat.name);
+                if (depth == 0) SetMadeLine(pat, "");
                 if (depth == 0)
-                    Toast(TemplateText.Fill(_cfg.UpgradeToastTemplate, "name", pat.name, "level", level > 1 ? Roman(level) : "",
-                                            "trigger", _cfg.TriggerName(upgrade.trigger), "text", pat.effectText));
+                    Toast(TemplateText.Fill(_cfg.UpgradeToastTemplate, "name", pat.name, "trigger", _cfg.TriggerName(upgrade.trigger),
+                                            "uses", uses.ToString(), "text", pat.effectText));
                 return;
             }
             if (IsTimed(key))
@@ -498,29 +502,40 @@ namespace CosmicShore.Gameplay
                 }
                 case HoneyguideEffect.Monte:
                 {
-                    if (!indexed) return false;
-                    var from = pos;
-                    int hops = 0;
-                    for (int k = 0; k < _cfg.MonteHops; k++)
-                    {
-                        index.QuerySphere(from, reach, _query);
-                        float best = -1f;
-                        var next = from;
-                        foreach (var p in _query)
-                        {
-                            if (!p || p.destroyed || IsOwn(p)) continue;
-                            float d = Ahead(p.transform.position, from, fwd, reach, cone);
-                            if (d > best) { best = d; next = p.transform.position; }
-                        }
-                        if (best <= 0f) break;
-                        from = next;
-                        hops++;
-                    }
-                    at = from;
-                    return hops > 0;
+                    if (MonteHopList(reach, _hops) == 0) return false;
+                    at = _hops[^1];
+                    return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>Monte Cannon's hops into `into` (cleared first): each to the farthest prism ahead within `reach` of the
+        /// last (the lab's monteHops). Returns how many.</summary>
+        int MonteHopList(float reach, List<Vector3> into)
+        {
+            into.Clear();
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return 0;
+            var t = _vessel.Transform;
+            Vector3 from = t.position, fwd = t.forward;
+            float cone = Mathf.Cos(_cfg.JumpCone * Mathf.Deg2Rad);
+            for (int k = 0; k < _cfg.MonteHops; k++)
+            {
+                index.QuerySphere(from, reach, _query);
+                float best = -1f;
+                var next = from;
+                foreach (var p in _query)
+                {
+                    if (!p || p.destroyed || IsOwn(p)) continue;
+                    float d = Ahead(p.transform.position, from, fwd, reach, cone);
+                    if (d > best) { best = d; next = p.transform.position; }
+                }
+                if (best <= 0f) break;
+                from = next;
+                into.Add(from);
+            }
+            return into.Count;
         }
 
         // the distance to `p` when it lies ahead of `from` within the cone and between jumpMinDistance and maxD, else -1

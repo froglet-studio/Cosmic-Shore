@@ -4955,3 +4955,253 @@ game".
   - re-initialising a vessel that is already initialised is new;
   - the game-scene guards for a client that joins from the menu mid-match are untested;
   - a host can never rejoin.
+
+## 104. Rev 38 mockups: Computer artifact, the Compute console as an application (2026-10-29, awaiting board approval)
+
+**Asked** (Shombith): "The artifact and the UI is noisy make it look like an application." The references he picked:
+"Go with Tailscale and Linear, plus Optuna for searches." He also asked to "Show me the mockup while you do it" and to
+"Create another page called computer artifact". This is not a game screen: it is the team's Froglet Compute console
+(`Tools/Compute/console/index.html`, `Docs/Compute/README.md`), published as its own artifact. It sits on this board
+because every UI is drawn and approved here first.
+
+**On the canvas:** page "Rev 38 - Computer artifact"; copies in `Docs/MenuRedesignB/board/R38*.dc.html`.
+- `R38Home`: four counts, Needs you, Recent activity with a kind tag on every row, and a small computers list.
+- `R38Computers` (interactive): the machine list in the shape of Tailscale's Machines page.
+  - Filter tabs with counts; one row per computer: status dot and how long since it was last heard from, OS,
+    hardware, Unity, remote start, last run.
+  - A row menu holds Send a run, Start now, Stop and Copy name.
+- `R38Runs`: a legend for the three kinds, Running, and a Finished table.
+- `R38Searches`: Optuna's study view.
+  - A list of searches on the left.
+  - The picked search on the right: its optimization history (best score after each try, today's AI as a dashed
+    line), the settings found against today's, and race time per intensity.
+  - Approve and Decline sit in the panel header.
+- `R38NewRun`: the New run dialog as a form (vessel, mode, plays in, intensity, matches, where, when) over the
+  Computers page.
+- `R38Notes`: the brief and the rules.
+
+**The kit:** an app kit, not the menu's.
+- Inter, a neutral dark ground, the game's Jade cyan as the only accent.
+- Status as a dot and a word.
+- No idle motion and no glow.
+- Every number is from the console snapshot of 2026-10-29.
+
+**Differs from the build:** the published console (Rev 38's predecessor) has:
+- a website-style top nav with gradient headings;
+- cards with a button on every card, and explanatory paragraphs.
+
+The build replaces those with a sidebar shell, tables and row menus, and the Optuna panel.
+
+Pain points read from BOINC Manager and Folding@home users carry into the build:
+- **Stopping:** keep "finish this run, then stop" apart from "stop now". Never stop work from a dismiss.
+- **Freshness:** every row says how fresh its data is, and "can't reach it" is kept apart from "not working".
+- **One list:** every computer sits in one dense list.
+## 106. Rev 39 mockups: the friends tray, a calmer party and rows that never overlap (2026-10-31; superseded by the Rev 40 pick, section 107)
+
+**Asked (Shombith, 2026-10-31, after the four-player test of 30 Oct):** "Change the UI of friends just the look and the
+center of the branch like animation, also the invite and other buttons overlap ... keep the feature where it extends as
+a tray into game cards."
+
+**On the canvas:** page "Rev 39 - Friends tray: a calmer party, rows that never overlap" (copies in
+`Docs/MenuRedesignB/board/R39*.dc.html`). Each option board is the Arcade window with the friends tray open, and has
+TRAY OPEN / TRAY CLOSED states so the cards can be seen moving with the tray (the one motion the round keeps).
+- **A, Seat row (recommended):** the four seats in one row (octagon avatar in its domain ring, name, role, an open seat
+  with Invite); each online row has ONE action slot, 128 wide, whose verb the row's state picks (Invite, Join, Spectate,
+  Cancel). The closed handle is a 236 x 64 tab: the people glyph, four seat pips in domain colour, "5 online".
+- **B, Roster list:** the party as four stacked lines (a thin domain bar, the host's crown, the host-only remove); online
+  rows have two fixed 104 slots, the second used only where a second verb exists (a pilot in another party: Invite and
+  Join). The closed handle is a vertical tab on the left edge.
+- **C, Squad tiles:** the party as a 2 x 2 grid of tiles; online pilots as compact cards with a full-width action foot.
+  The closed handle is a 100 x 100 tile of the four seats.
+- **Compare:** the three party pieces side by side, one online row in its four states for each option at the tray's
+  width, and today's row with INVITE running over SPECTATE.
+- **Why A:** one verb per row is the only layout that cannot overlap at any label length, and the row's state already
+  decides the verb; one row of seats reads at a glance. B keeps two verbs at the cost of the name's width; C shows four
+  online pilots before scrolling, not five.
+
+**Differs from the build:** the party molecule (the leader in the centre, three seats bonded at 155 / 25 / 270 degrees
+with flowing Bond dashes, section 45.4) and the orb's turning orbit go; no idle motion is left. Every row's buttons get
+fixed slots, so a button never takes its width from its label (the section 81 fix sized one slot; the two-button case
+still overflows). The tray's docking (section 68, `FriendsDrawerDock`) stays as built. After a pick:
+`author_menu_friends_drawer.py` (seats, the handle in place of the orb, slot widths, a no-overlap gate per row state),
+`ArcadeLobbyList` / `KitPartySlot` layout only, `OnlineInfoEntry` / `KitOnlineRow` slot choice; no change to invite,
+join, spectate, cancel or seating logic.
+
+## 107. Rev 40 mockups: three more friends trays, on the sea lines (2026-10-31; Shombith picked E, with the current orb)
+
+**Asked (Shombith, 2026-10-31, on Rev 39):** "Good mockups send me a few more use the sea lines bg".
+
+**On the canvas:** on the Rev 39 page (renamed "Rev 39-40 - Friends tray ..."; the canvas holds at most 40 pages and
+was full), the row under Rev 39 (copies `Docs/MenuRedesignB/board/R40*.dc.html`). Rev 39's brief and content are
+unchanged; every board is drawn over the sea lines (Rev 33's three drifting wave layers) instead of the photo backdrop.
+- **D, Pilot rail:** the tray never fully closes. Closed, a 72-wide rail on the left edge shows the four seats in their
+  domain rings and the online count; open, a 440 tray with each seat as a line carrying its hull.
+- **E, Grouped by verb:** online pilots sit under what can be done with them (Join their party, In the menu, In a
+  match, You invited), so each group's buttons share one column and one word; the party is one card (overlapping seats,
+  names, Invite, Leave).
+- **F, Tabs:** Party and Online share the tray one at a time; the party as four large seat cards (avatar, name, role,
+  hull), Online as Rev 39 A's list. The board's PARTY TAB / ONLINE TAB / TRAY CLOSED states switch them.
+- **Recommendation across both rounds:** Rev 39 A's tray with D's rail as its closed state.
+
+**Differs from the build:** as section 106; D replaces the orb with the rail, E adds authored group headers to the
+ONLINE list, F adds a tab strip.
+
+**Picked (Shombith, 2026-10-31):** "I dont like this part [D's rail] current friends icon is okay, we can keep it rest
+we can go with E". So: **E's open tray** (the party as one card with overlapping seats, names, Invite and Leave; the
+online pilots grouped by what can be done with them, one verb column per group) and **the built orb stays as the closed
+handle** (section 45.4), unchanged. Rev 39's options and D's rail and F are not built.
+
+### 107.1 Built (2026-10-31, awaiting in-editor approval)
+
+- **The party card** (`PartyPanel`, `author_menu_arcade.build_panel`): the molecule and its bonds are gone. Under "Your
+  party n / 4" and the online line, one framed card: the four `PartySlot`s in a row at `seat_x(i)` (62 px seats, each
+  14 over the one before, so later seats draw on top and the host's kick sits on a seat's top-left), the names line
+  (`ArcadeLobbyList.partyNamesText`, seat order, ", " between), the summary (`partySummaryText`, "{host} - {seats}":
+  "You host" / "{name} hosts", "1 seat open" / "{count} seats open" / "Party full"), then INVITE (focus into the list,
+  hidden when full) and LEAVE PARTY (hidden while solo). Every word is an authored field. The board's middle dot is
+  " - ": the generators keep prefab text ASCII.
+- **A seat** (`PartySlot`): the avatar in its domain ring, no name or role under it (the card's names line carries
+  them; the seat keeps its name in a hidden text, which the profile card reads). The open seat is an outlined octagon
+  with a +, a tile with no border at rest.
+- **The rows** (`PartyOnlineRow`): one fixed 120 x 32 slot at the right holds Invite, Join and Cancel, one at a time
+  (`KitOnlineRow.oneVerbPerRow`), each button 120 wide whatever its word. `FriendsListPanel.oneVerbPerRow` picks the
+  verb by status (in the menu Invite, in a party Join, in a match Spectate, invited Cancel). Name over status, as the
+  build's rows were, not the board's one line.
+- **The groups**: JOIN THEIR PARTY, IN THE MENU, IN A MATCH, YOU INVITED, each a header over its own list, shown only
+  while it has rows (`KitListCounter`); `FriendsListPanel.onlineGroups` parents each row and moves it when its state
+  changes; the empty line shows while all four are empty (`onlineEmptyLine`).
+- **Unchanged:** the orb and the drawer (`author_menu_friends_drawer.py --check` OK), the docking.
+- **The profile card, fixed the same day** (Shombith's screenshot: one unreadable button, "there is no join button"):
+  REPORT and BLOCK (and the three report reasons) were runtime copies of INVITE, and a copy keeps the original's place,
+  so INVITE, REPORT and BLOCK drew as one button. The card is now 336 tall with JOIN / INVITE on one row and REPORT /
+  BLOCK under them, all authored slots 172 wide (`author_menu_friends_drawer.CARD_ACTIONS`; the reasons take the same
+  slots, `FriendProfilePopup.reasonGroups`); the drawer generator fails if two actions shown together overlap. JOIN was
+  missing because the one-verb rows hid Join for a pilot alone in the menu: the row still says INVITE, but its state
+  keeps Join, so their card offers JOIN and INVITE.
+- **Gates:** `author_menu_arcade.py --self-test` (check_card: seats in a row, no bonds, authored words, one-verb rows in
+  one shared slot with the fitter off, the four groups wired in order; 8 new planted defects); `author_ui_lattice.py
+  --self-test` (its two bond plants retargeted); `PartyTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 108. A mode's preview: FULL SCREEN extends as a tray (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31):** "during the preview of each game mode when we press fullscreen it goes actual full
+screen rather the play area should extend as a tray and the other parts of the UI (right side) should get hidden".
+Built straight from the words (no board round): the same tray as the friends drawer's, applied to the preview.
+
+- **What changes** (`ConfigureView` and `ConfigureArenaView`, `author_menu_configure.py`): FULL SCREEN (while flying)
+  no longer grows the preview to the whole window and fades everything. The preview's right edge slides out 700 units
+  (x 1160 to 1860 at 1920 x 1080, the settings column's right edge) over `fadeSeconds`, and only the right side fades:
+  the controls panel, the settings card, the status line and START (`ConfigureCinema.extendAsTray`, `trayExtend`,
+  `rightSide`). The header, the briefing under the preview and the fly row stay. The objective bar rides the preview's
+  right edge (`followTray`). Pressing it again, or handing the stick back, slides the tray home.
+- **No stretched picture.** A live preview texture cannot be swapped mid-session, so the preview renders a texture as
+  wide as the open tray from the start (`ModePreviewWindow.textureWidthScale`, 1800 / 1100) and shows the centre that
+  fits its frame (`RawImage.uvRect`, `VisibleWidth`). The framed view is the same picture as before; the tray reveals
+  more arena at the sides. Cost: the preview renders 1.64x as many pixels while the window is open (the measured
+  height is unchanged, capped at 720).
+- **Unchanged:** the Maelstrom window (no flying, no FULL SCREEN); every other `ModePreviewWindow` (scale 1).
+- **Gates:** `author_menu_configure.py` checks the tray wiring, the texture scale and that the tray ends at the column's
+  edge; three new planted defects (FULL SCREEN back to the whole window, a frame-sized texture, START left on screen).
+  `PreviewTrayTests`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 109. The party molecule back, and it grows from the host (2026-10-31, awaiting in-editor approval)
+
+**Asked (Shombith, 2026-10-31, after E shipped):** "we liked the old plasma kind design for the lobby with connected tree but
+it locked it for 4 players only do something where it is expandable with the host and its there, also decrease the tone of
+the blue a little bit on the bg". Built straight from the words; E's online rows, groups and profile card stay.
+
+- **The molecule is back** in E's party card (`PartyPanel`, `author_menu_arcade.build_panel`): the host in the centre, the
+  members bonded to it with the flowing bonds (`Bond_Party.mat`), each seat the avatar in its domain ring over the name
+  and role (the Rev 6 `PartySlot`, §45.4). Under it: "You host - 1 seat open", then INVITE and LEAVE PARTY.
+- **It grows** (`ArcadeLobbyList.expandingMolecule`, `LayoutMolecule`): the ring shows the seated members plus ONE open
+  socket while a seat is free, spread evenly round the host (`MoleculeAngle`: one seat straight below; two left and
+  right; three the old triangle), and re-lays every time the party changes; the other slots and their bonds hide. The
+  ring is computed from the slots the panel has (`RingSeats`), not from three fixed angles, so a bigger panel grows
+  further; the party itself stays 4 (`Docs/MULTIPLAYER_START_HERE.md` §2). The prefab is authored at the full party
+  (`MOL_ANGLES` = the computed three-seat ring), and the gate checks the runtime numbers match the generator's.
+- **The background's blue is lower**: the drawer window's SurfaceDark wash over its black is 0.45 (was 0.6,
+  `author_menu_friends_drawer.WINDOW_TINT`); the pilot record keeps 0.6.
+- **Fixed on the way:** E's party card read `CARD_H`, which the arcade game card redefines lower in the same generator, so
+  it came out 296 tall instead of its own height; the card's constants are now `PCARD_*`.
+- **Gates:** `author_menu_arcade.py --self-test` 36/36 (check_molecule: bonds start at the host and end at their seats,
+  each with KitRimMesh; the growing fields; plants "the molecule locked again", the old bond plants);
+  `author_menu_friends_drawer.py`, `author_ui_lattice.py` and the other Menu_Main generators `--check` OK;
+  `PartyTrayTests` (ring size and angles). Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+## 110. Rev 41 mockups: the Compute console, a run you can see start (2026-10-31, built; awaiting board approval)
+
+**Asked (Shombith, 2026-10-31, on the live console at the VM):** "Half of the run does not make sense, can you please
+create some mockups of how they look and also the buttons dont work, registering a PC does not work that well there is
+no live bar". Measured on the live console before drawing: two runs sent to dragonsweapon at 22:48 were taken by its
+agent and stopped 44 s later, and in those 44 s the page showed nothing (a run reports only after its first match, and
+a Unity run spends its first minute opening Unity); the VM read "Working" over "Nothing is running"; New run opened on
+"This computer" (a line to paste), the wrong default on the live console; the `ai` branch sat 105 commits behind
+because nothing ran its sync.
+
+**On the canvas:** the Rev 38 page (`rev38`, the console's page; the canvas holds 40 pages and all 40 are taken, so the
+round sits under Rev 38's boards at y 3600). Copies: `Docs/MenuRedesignB/board/R41*.dc.html`. A states round of one
+design, the same kit as Rev 38 (Inter, the dark ground, Jade cyan as the one accent):
+- **R41Runs**: the line after Send ("Sent to dragonsweapon. It shows below as Starting within a minute…"), the run as
+  **Starting** with the sliding bar (the one motion on the page; off under reduced motion) beside a working run with
+  its real bar, a Sent run that says why it waits ("dragonsweapon is on another run: this one starts after it"), the
+  Finished table.
+- **R41NewRun**: Where lists the computers first with their status and "starts at once" / "starts when free", the best
+  one picked (free, else in use with a start allowed, else the team queue), "This computer · paste a line" last; the
+  button reads "Start on dragonsweapon now · Thresher in Thresher Time".
+- **R41Computers**: **Starting** as a status of its own (the agent took a run, nothing has reported yet) with the run
+  and "Unity is opening" under it; Working always names what runs; the row menu's Stop names the run and asks first.
+- **R41Notes**: what was wrong, measured, and what each fix changes.
+
+**Built in the same push** (`Tools/Compute/`): the agent posts a heartbeat with `phase: starting` and the unit the
+moment it takes a sent run (`Beacon.starting`); `machine_status` returns `starting` for a working heartbeat with no
+run; the worker posts the same before a command session; `console.runs` carries the phase; the page shows Starting
+(bar, status word, fleet counts, the empty-state line), the waiting reason (`waitReason`), the default place
+(`bestPlace`, until the person picks one), the button text, the notice after a send, a confirm before Stop, and a run
+shown as Running is not listed again under Sent runs. The hub syncs the `ai` branch every hour with its token
+(`Hub.sync_ai`; `Docs/Compute/README.md` section 15) and the AI branch page says when it last did. Gates:
+`compute.py self-test` (the agent's new case), the page in Chromium at 1360 and 390 px with a hub stub: Send closes the
+sheet, Runs shows the notice and the Starting box, Stop asks and shows Stopping.
+
+**Differs from the build:** nothing; the boards are the built page with the console's data of 2026-10-31. Waits on
+Shombith's look at the live console once the VM has pulled.
+
+**Follow-up, built from the words, no board round (Shombith, 2026-11-01, on R41NewRun's sheet):** "we should have the
+option to select all intensities and also to make just one match available too. Also latest like serpentine and
+other game modes are not here already ... show the game for another pc as well ... so the game collects performance
+data using the bug reporting tool", and the sheet showed Now and At a time both lit. Built: the seven steps numbered
+the same for every run (1 Vessel, 2 Game mode, 3 Intensity, 4 How many matches, 5 Show the game, 6 Where, 7 When);
+Intensity is a set with an "All 4" chip (one run per level, in order); matches go down to 1 with a number field
+beside the slider; Show the game is a step for every Where, and a watched run records the game's diagnostics and
+sends them with its console errors through the bug ledger (`Docs/Compute/README.md` section 16); When lights one
+chip, and At a time shows what follows the time (when free, or at once); Serpentine, Scarab Rally and Brittle Star
+Time are on the vessel x mode grid (the trainer's catalog, the regenerated chart). R41NewRun stays the record of the
+Where fix; the sheet's later shape is the built page.
+
+## 111. Rev 42 mockups: the Compute console, three looks for the Silver Screen (2026-11-01; Shombith picked A, built)
+
+**Asked (Shombith, 2026-11-01):** "I feel the console app can look better", after the Silver Screen theme (his site's
+look) and the film stills behind each view (section 110's follow-up).
+
+**On the canvas:** the Rev 38 page (`rev38`, the console's page; the canvas holds 40 pages and all are taken, so the
+round sits under Rev 41 at y 6120). Copies: `Docs/MenuRedesignB/board/R42*.dc.html`. An options round, the Home page
+whole in each, the same data (the live console's of 2026-11-01), the stills as canvas assets:
+- **R42A · Marquee (recommended):** each view opens on a full-width still with the title set in it, as a film poster;
+  the stat tiles overlap the still's bottom edge; the lists follow unchanged. Recommended because it gives the pages
+  the cinema the theme promises without touching a row: a stylesheet change and one hero block per view.
+- **R42B · Poster cards:** no hero; every card wears its still as a 96 px band with its title set over it; the tiles
+  become posters with the number set large. More picture per screen; every card then needs a still that fits.
+- **R42C · Ledger:** the light edition, paper grey and ink, the stills as thin bands, denser rows; the light theme the
+  page already has, made deliberate.
+- **R42Compare:** the Home page's top in A, B and C side by side at the same scale. **R42Notes:** what each changes.
+
+**Differs from the build:** A changes the top of each view (a hero with the still and the title); B the cards' headers
+and the tiles; C the ground, the type colour and the row density. The sidebar, the top bar, the lists, the type and
+the one accent stay in all three.
+
+**Picked (Shombith, 2026-11-01): "Go with A."** Built the same hour in `Tools/Compute/console/index.html`: every view
+opens on a `.hero` (300 px, its still at 0.55 through a grayscale filter, a fade into the ground, the title at 88 px
+Bebas with a one-line mono subtitle from the data: computers live and runs going, runs running and waiting, searches
+ready, the fleet), and the view's first block overlaps the still's bottom edge by 96 px; 200 px and 52 px on a phone.
+The faded backdrop of section 110's follow-up is gone (the hero replaced it); the Vessel AIs card bands stay. Checked
+in Chromium at 1360 and 390 px: no script errors, no sideways scroll.

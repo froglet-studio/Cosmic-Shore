@@ -16,9 +16,39 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-29 from canvas version `1793256082-4802`: Rev 3 to Rev 37, 317 boards on 38 pages. The canvas's launch page is `rev37`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-01 from canvas version `1793567971-556c`: Rev 3 to Rev 39, 341 boards on 40 pages. The canvas's launch page is `rev38`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 39-40 - Friends tray: a calmer party, rows that never overlap  (page `rev39`)
+
+- [`R39Compare.dc.html`](R39Compare.dc.html) - Rev 39 - compare: the party piece of A, B and C side by side, and one online row in its four states (Invite, Join, Spectate, Invited - cancel) at the tray's width
+- [`R39A.dc.html`](R39A.dc.html) - Rev 39 A - Seat row: the four seats in one row, no bonds; one action per online row in a fixed slot (recommended) - interactive
+- [`R39B.dc.html`](R39B.dc.html) - Rev 39 B - Roster list: the party as four stacked seat lines; online rows with two fixed action slots - interactive
+- [`R39C.dc.html`](R39C.dc.html) - Rev 39 C - Squad tiles: the party as a 2x2 tile grid; online pilots as compact cards - interactive
+- [`R39Notes.dc.html`](R39Notes.dc.html) - Rev 39 - notes: what changes against the built drawer, why A, what the build touches
+- [`R40D.dc.html`](R40D.dc.html) - Rev 40 D - Pilot rail: closed, a 72-wide rail keeps the four seats on screen; open, a 440 tray - interactive
+- [`R40E.dc.html`](R40E.dc.html) - Rev 40 E - Grouped by verb: online pilots under what you can do with them; the party as one card - interactive
+- [`R40F.dc.html`](R40F.dc.html) - Rev 40 F - Tabs: Party and Online share the tray, one at a time, at full size - interactive
+- [`R40Notes.dc.html`](R40Notes.dc.html) - Rev 40 - notes: what each adds against Rev 39, the pick across both rounds
+
+### Rev 38 - Computer artifact  (page `rev38`)
+
+- [`R38Home.dc.html`](R38Home.dc.html) - Rev 38 Home - Home: what is running and what needs you
+- [`R38Computers.dc.html`](R38Computers.dc.html) - Rev 38 Computers - Computers: the machine list (Tailscale-style), filters and a row menu - interactive
+- [`R38Runs.dc.html`](R38Runs.dc.html) - Rev 38 Runs - Runs: running, sent, finished, each tagged by kind
+- [`R38Searches.dc.html`](R38Searches.dc.html) - Rev 38 Searches - Searches: list and an Optuna-style detail panel
+- [`R38NewRun.dc.html`](R38NewRun.dc.html) - Rev 38 NewRun - New run: vessel, mode, where, when
+- [`R38Notes.dc.html`](R38Notes.dc.html) - Rev 38 - Notes: what changes and why
+- [`R41Runs.dc.html`](R41Runs.dc.html) - Rev 41 Runs - Runs: a sent run shows at once as Starting, with a live bar and why a waiting run waits
+- [`R41NewRun.dc.html`](R41NewRun.dc.html) - Rev 41 NewRun - New run: Where defaults to the best live PC and the button says what happens
+- [`R41Computers.dc.html`](R41Computers.dc.html) - Rev 41 Computers - Computers: Starting is a status, never Working with nothing running
+- [`R41Notes.dc.html`](R41Notes.dc.html) - Rev 41 - notes: what was wrong on the live console and what each fix changes
+- [`R42Compare.dc.html`](R42Compare.dc.html) - Rev 42 - the Home page's top (the four tiles and the Needs you list) in A, B and C side by side
+- [`R42A.dc.html`](R42A.dc.html) - Rev 42 A - Marquee: each view opens on a full-width film still with the title set in it, the lists below (recommended)
+- [`R42B.dc.html`](R42B.dc.html) - Rev 42 B - Poster cards: every card wears its own still as a header band, bolder poster type
+- [`R42C.dc.html`](R42C.dc.html) - Rev 42 C - Ledger: the light edition, paper grey, stills as thin bands, dense rows
+- [`R42Notes.dc.html`](R42Notes.dc.html) - Rev 42 - notes: what each look changes against the built page, and what stays
 
 ### Rev 37 - Connection: lost, reconnecting, back online, rejoin  (page `rev37`)
 

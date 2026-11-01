@@ -268,8 +268,14 @@ namespace CosmicShore.Gameplay
             // starts; the policy retries it. Non-retryable errors propagate to the caller
             // (HostConnectionService.AcceptInviteAsync), which logs and rethrows so
             // PartyInviteController fails fast. See Docs/PartySystem/ARCHITECTURE.md (Q5).
-            var session = await _policy.ExecuteAsync($"party:join:{sessionId}",
-                async () => await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread());
+            // Through StaleLobbyMembership: a failed join (most often a Relay allocation that died with a frozen
+            // host, "join code not found") left us listed in the lobby, and every later join into it was refused
+            // "already a member" (the four-player test of 2026-10-30). Now a failure removes us, and a stale
+            // membership is cleared and the join made once more.
+            var session = await StaleLobbyMembership.JoinAsync(_policy, sessionId,
+                () => _policy.ExecuteAsync($"party:join:{sessionId}",
+                    async () => await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread()),
+                leaveOnFailure: true, tag: "PartySessionService");
             if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
             ActiveSession = session;
             Attach(ActiveSession);
@@ -387,7 +393,7 @@ namespace CosmicShore.Gameplay
             // The party size, which is also the session's seat count (B25) - see PresenceLobbyService.
             int partyMax   = _connectionData.MaxPartySlots;
 
-            return new Dictionary<string, PlayerProperty>
+            var props = new Dictionary<string, PlayerProperty>
             {
                 // Written on EVERY join (empty for a member) so a stale "1" can never survive a
                 // re-join of the same identity as a member.
@@ -400,6 +406,13 @@ namespace CosmicShore.Gameplay
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
+
+            // Fair play (phase B): this account's pool pass, shown only to this party, so its host can check the
+            // account belongs in its pool (HostConnectionService.CheckJoinedMemberPoolAsync). Absent while the gate is off.
+            if (CosmicShore.Core.FairPlayTrustGate.Enabled && !string.IsNullOrEmpty(CosmicShore.Core.FairPlayTrust.Pass))
+                props[CosmicShore.Core.FairPlayTrust.PassPropertyKey] =
+                    new PlayerProperty(CosmicShore.Core.FairPlayTrust.Pass, VisibilityPropertyOptions.Member);
+            return props;
         }
     }
 }

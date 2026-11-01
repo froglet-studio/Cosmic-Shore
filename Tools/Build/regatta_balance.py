@@ -285,8 +285,14 @@ def serpent_model(c, level):
     cruise = v["ts"] + v["ms"]
     boosted = v["ts"] * c["serpent_boost"] * mul + v["ms"]
     duration = c["serpent_duration"] * mul
-    per_charge = c["serpent_cost"] / c["serpent_regen"]
-    duty = min(1.0, duration / per_charge)             # sustained, ignoring the 4-charge opening bank
+    # Sustained, ignoring the 4-pellet opening bank. Since 2026-10-31 the tank has no clock refill
+    # (resourceGainRate 0): a pellet comes back only while the Serpent's wall eats its own trail,
+    # which a racing line never does, so a sustained race runs at cruise.
+    if c["serpent_regen"] > 0:
+        per_charge = c["serpent_cost"] / c["serpent_regen"]
+        duty = min(1.0, duration / per_charge)
+    else:
+        duty = 0.0
     top = duty * boosted + (1 - duty) * cruise
     turn = min(v["pitch"], v["yaw"])
     return dict(top=top, corner=lambda r: corner_speed_simple(r, v["rts"], turn, top),
@@ -393,6 +399,13 @@ def lap_time(hull, model, course):
 
 # ── the solve ────────────────────────────────────────────────────────────────
 
+# Hulls no element can make boost on a racing line, so they neither set the pace the others are tuned to nor count
+# in the spread gate (author_regatta_assets.py). The Serpent since 2026-10-31 (b941eb90): its pellets refill only
+# while its wall eats its own trail, so it races at cruise whatever Regatta authors, and a mode never changes the
+# vessel (CLAUDE.md, LOCKED); they start at the top Time rung. author_regatta_assets.py fails the day a listed hull boosts on a racing line again.
+CRUISE_ONLY = ("Serpent",)
+
+
 def solve(constants=None, course_data=None, laps=LAPS):
     """Per intensity: {hull: (level, lapTime)} plus the fleet's spread. Deterministic."""
     c = constants or read_constants()
@@ -408,8 +421,14 @@ def solve(constants=None, course_data=None, laps=LAPS):
 
         chosen = {h: 0 for h in HULLS}
         for _ in range(12):
-            target = math.exp(sum(math.log(table[h][chosen[h]]) for h in HULLS) / len(HULLS))
+            paced = [h for h in HULLS if h not in CRUISE_ONLY]
+            target = math.exp(sum(math.log(table[h][chosen[h]]) for h in paced) / len(paced))
             for h in TUNABLE:
+                if h in CRUISE_ONLY:
+                    # Every rung races the same in the model, so give the most help there is: Time
+                    # still lengthens the burns of the opening pellet bank, which the model ignores.
+                    chosen[h] = MAX_LEVEL
+                    continue
                 # Closest to the target in log time; on a tie the level nearest REST wins, so a
                 # hull whose lever is inert at some rung is not handed a pointless handicap.
                 chosen[h] = min(table[h], key=lambda lv: (round(abs(math.log(table[h][lv]) - math.log(target)), 4), abs(lv)))

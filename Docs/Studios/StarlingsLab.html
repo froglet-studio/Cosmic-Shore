@@ -99,10 +99,13 @@
     <span class="meta" id="meta"></span>
     <span id="diff"></span>
     <span class="spacer"></span>
+    <label class="meta" for="game">Game</label>
+    <select id="game"><option value="sandbox">Sandbox</option><option value="trail">Time trail</option></select>
+    <select id="course" title="Time trail course" hidden><option value="random">Any course</option><option value="long">Long haul</option><option value="walls">Fortress</option><option value="rivals">Chase</option><option value="mixed">Mixed</option></select>
     <label class="meta" for="intensity">Intensity</label>
     <select id="intensity"><option value="1">I1</option><option value="2" selected>I2</option><option value="3">I3</option><option value="4">I4</option></select>
     <label class="meta" for="picker">Cards</label>
-    <select id="picker"><option value="you">You pick</option><option value="random">AI: random</option><option value="Mass">AI: Mass first</option><option value="Time">AI: Time first</option><option value="Space">AI: Space first</option><option value="Charge">AI: Charge first</option></select>
+    <select id="picker"><option value="you">You pick</option><option value="random">AI: random</option><option value="Mass">AI: Mass first</option><option value="Time">AI: Time first</option><option value="Space">AI: Space first</option><option value="Charge">AI: Charge first</option><option value="rotate">AI: rotate elements</option><option value="course">AI: reads the course</option></select>
     <span class="meta" id="platform"></span>
     <button class="btn" id="speed">×1</button>
     <button class="btn" id="pause">Pause</button>
@@ -182,6 +185,14 @@
     Charge: ['charge-lasers', 'charge-emp', 'charge-tesla-coil', 'charge-short-circuit', 'charge-sting', 'charge-chain-lightning'],
   };
   const CARD = {}; for (const c of CARDS.cards) CARD[c.id] = c;
+  // The AI's favourites when it builds one element (lab, 2026-11-01): what a player who chose that element would take
+  // first. Before this the AI took a random card of the element, which hid what an element can do on a course.
+  const FAVOURITE = {
+    Mass: ['mass-brood', 'mass-carapace', 'mass-big-family', 'mass-mound-builders', 'mass-snowball', 'mass-danger-drip'],
+    Time: ['time-skip-ahead', 'time-dragonfly', 'time-quickening', 'time-hurry-up', 'time-agility', 'time-blink-step'],
+    Space: ['space-hole-punch', 'space-shield-eaters', 'space-wide-bite', 'space-black-hole', 'space-split', 'space-annex'],
+    Charge: ['charge-sting', 'charge-lasers', 'charge-emp', 'charge-short-circuit', 'charge-chain-lightning', 'charge-tesla-coil'],
+  };
   for (const el of ELS) for (const id of IMPL[el]) if (!CARD[id]) throw new Error('Starlings Lab: card ' + id + ' is not in cards.json');
   function sv(id, i, L) {           // stat i of card id at level L, by the card's own formula (same rule as the deck page)
     const s = CARD[id].stats[i];
@@ -204,7 +215,38 @@
   };
   const R = 900;            // lab: the cell's radius (u)
   const CLUSTER = 30;       // lab: enemy prisms per cluster
-  let W = null, seed = 7, intensity = 2, picker = 'you';
+  let W = null, seed = 7, intensity = 2, picker = 'you', game = 'sandbox';
+
+  // ================= the Time trail (lab proposal, 2026-11-01) =================
+  // The Starlings' time game. The vessel is unchanged (a mode never changes the vessel): the MODE lays its four phase
+  // objectives along a course of STATIONS, one per phase, and the clock runs until the swarm has worked TRAIL_N of
+  // them. Each phase still ends early on its own goal or late on its timer, so every element shortens a different leg:
+  // Time the travel and the timers, Space the prism wall, Charge the rival, Mass the swarm that survives the run.
+  const TRAIL_N = 16;                        // four full cycles: Omni, Elemental, Vessel, Mass, four times
+  // COURSES (Garrett 2026-11-01: "vary courses per run"). Each course weights a different leg, so the right draw
+  // element changes with the course, and the course is shown before the run. Only the environment changes: where the
+  // stations are, how big and shielded the walls are, how fast and how often the rivals fly and shoot.
+  //   zigzag: stations alternate across the cell (long travel), else a rising spiral (~500 u between stations)
+  //   wall: enemy prisms per Mass wall, shielded: that wall's shielded share, rivalSpeed: u/s, fire: x the shot rate
+  const COURSES = {
+    mixed:  { name: 'Mixed', hint: 'every leg about even', best: 'Charge', zigzag: false, wall: CLUSTER + 10, shielded: null, rivalSpeed: 90, fire: 1 },
+    long:   { name: 'Long haul', hint: 'stations far apart, no rivals', best: 'Time', zigzag: true, wall: 60, shielded: 0, rivalSpeed: 30, fire: 1, rivals: 0 },
+    walls:  { name: 'Fortress', hint: 'big shielded walls, slow rivals', best: 'Space', zigzag: false, wall: 130, shielded: 0.6, rivalSpeed: 15, fire: 1 },
+    rivals: { name: 'Chase', hint: 'fast rivals', best: 'Charge', zigzag: false, wall: 32, shielded: 0, rivalSpeed: 115, fire: 1 },
+  };
+  const COURSE_KEYS = ['long', 'walls', 'rivals'];   // what 'Any course' draws from, one per run by its seed
+  let course = 'mixed', courseSel = 'random';
+  const CO = () => COURSES[course];
+  function stationPos(j) {
+    if (CO().zigzag) { const a = j * 2.6, z = (j / (TRAIL_N - 1) - 0.5) * R * 1.1; return [Math.cos(a) * R * 0.8, Math.sin(a) * R * 0.8, z]; }
+    const a = j * 0.95, z = (j / (TRAIL_N - 1) - 0.5) * R * 0.9;
+    return [Math.cos(a) * R * 0.6, Math.sin(a) * R * 0.6, z];
+  }
+  function nextStation(key) {                // the next station (from the one being worked) that holds this phase
+    for (let j = W.done; j < TRAIL_N; j++) if (PHASES[j % 4].key === key) return j;
+    return TRAIL_N - 1;
+  }
+  const nearStation = (j, r) => { const c = stationPos(j), o = inBall(W.rnd, r); return [c[0] + o[0], c[1] + o[1], c[2] + o[2]]; };
 
   const v3 = (x, y, z) => [x, y, z];
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -218,12 +260,23 @@
   function reset(s) {
     if (s != null) seed = s >>> 0;
     const rnd = mulberry32(seed), I = INT[intensity];
-    W = { t: 0, rnd, members: [], prisms: [], crystals: [], omni: null, omniRespawn: 0, rivals: [], fauna: [], held: {}, hand: null, hands: 0,
+    W = { t: 0, rnd, members: [], prisms: [], crystals: [], omni: null, omniRespawn: 0, rivals: [], fauna: [], held: {}, hand: null, handEl: null, drawEl: null, hands: 0,
       phase: 0, phaseT: 0, phaseCount: { omni: 0, elem: 0, vessel: 0, mass: 0 }, early: { omni: 0, elem: 0, vessel: 0, mass: 0 },
       elemTimes: [], gotY: 0, removedX: 0, debuffed: false, cd: {}, form: null, formT: 0, stats: { removed: 0, stolen: 0, laid: 0, petals: 0, kos: 0, debuffs: 0, fauna: 0, crystals: 0, omnis: 0, lost: 0 },
       events: [], nextId: 1, splitT: 0, blackHoleUsed: false };
-    const n = Math.round(P.startSize);
-    for (let i = 0; i < n; i++) addMember(inBall(rnd, 60));
+    if (game === 'trail') course = courseSel === 'random' ? COURSE_KEYS[seed % COURSE_KEYS.length] : courseSel;
+    W.done = 0; W.finishT = null; W.legT = { omni: 0, elem: 0, vessel: 0, mass: 0 };
+    const n = Math.round(P.startSize), home = game === 'trail' ? stationPos(-1) : [0, 0, 0];
+    for (let i = 0; i < n; i++) { const o = inBall(rnd, 60); addMember([home[0] + o[0], home[1] + o[1], home[2] + o[2]]); }
+    if (game === 'trail') {   // the course: a prism wall at each Mass station, crystals at the next Elemental one
+      const co = CO(), sh = co.shielded == null ? I.shielded : co.shielded;
+      for (let j = 3; j < TRAIL_N; j += 4) for (let i = 0; i < co.wall; i++) W.prisms.push({ p: nearStation(j, 60 + co.wall * 0.6), team: 'E', shield: rnd() < sh ? 1 : 0, danger: false, alive: true, bites: 0 });
+      for (let i = 0; i < Math.round(P.goalY) + 3; i++) W.crystals.push({ p: nearStation(nextStation('elem'), 120), el: ELS[i % 4], alive: true });
+      spawnOmni();
+      for (let i = 0; i < (co.rivals == null ? I.rivals : co.rivals); i++) W.rivals.push(newRival());
+      for (let i = 0; i < I.fauna; i++) W.fauna.push({ p: inBall(rnd, R * 0.8), v: [0, 0, 0], alive: true, eatT: 0, respawn: 0 });
+      return;
+    }
     for (let c = 0; c < I.clusters; c++) {
       const at = inBall(rnd, R * 0.75);
       for (let i = 0; i < CLUSTER; i++) { const p = inBall(rnd, 70); W.prisms.push({ p: [at[0] + p[0], at[1] + p[1], at[2] + p[2]], team: 'E', shield: rnd() < I.shielded ? 1 : 0, danger: false, alive: true, bites: 0 }); }
@@ -234,8 +287,9 @@
     for (let i = 0; i < I.fauna; i++) W.fauna.push({ p: inBall(rnd, R * 0.8), v: [0, 0, 0], alive: true, eatT: 0, respawn: 0 });
   }
   function addMember(p) { W.members.push({ id: W.nextId++, p: p.slice(), v: [W.rnd() - 0.5, W.rnd() - 0.5, W.rnd() - 0.5].map((x) => x * 40), shells: 0, shellT: 0, alive: true, sw: 0, laserT: W.rnd() }); }
-  function spawnOmni() { W.omni = { p: inBall(W.rnd, R * 0.8) }; }
-  function newRival() { return { p: inBall(W.rnd, R * 0.7), v: [0, 0, 0], way: inBall(W.rnd, R * 0.8), petals: 12, crystals: 3, silenced: 0, slowT: 0, slow: 0, fireT: W.rnd() * 2, layT: 0, nip: 0, stingN: 0, scT: 0, ko: 0 }; }
+  function spawnOmni() { W.omni = { p: game === 'trail' ? nearStation(nextStation('omni'), 10) : inBall(W.rnd, R * 0.8) }; }
+  function rivalWay() { return game === 'trail' ? nearStation(nextStation('vessel'), 150) : inBall(W.rnd, R * 0.8); }
+  function newRival() { return { p: game === 'trail' ? rivalWay() : inBall(W.rnd, R * 0.7), v: [0, 0, 0], way: rivalWay(), petals: 12, crystals: 3, silenced: 0, slowT: 0, slow: 0, fireT: W.rnd() * 2, layT: 0, nip: 0, stingN: 0, scT: 0, ko: 0 }; }
   const alive = () => W.members.filter((m) => m.alive);
   function capNow() { return Math.round(P.cap) + (has('mass-big-family') ? sv('mass-big-family', 0, lv('mass-big-family')) - 40 : 0); }
   function minNow() { return Math.round(P.minSize) + (has('mass-big-family') ? sv('mass-big-family', 1, lv('mass-big-family')) - 6 : 0); }
@@ -255,7 +309,9 @@
     if (k === 'omni') return W.omni ? W.omni.p : at;
     if (k === 'elem') { const c = nearest(W.crystals, at, (c) => c.alive); return c ? c.p : at; }
     if (k === 'vessel') { const r = nearest(W.rivals, at, (r) => !r.ko); return r ? r.p : at; }
-    const q = W.massTarget && W.massTarget.alive ? W.massTarget : (W.massTarget = nearest(enemyPrisms(), at));
+    const wall = game === 'trail' ? stationPos(nextStation('mass')) : null;
+    const q = W.massTarget && W.massTarget.alive ? W.massTarget
+      : (W.massTarget = wall ? nearest(enemyPrisms(), wall, (q) => d2(q.p, wall) < 200 * 200) || nearest(enemyPrisms(), at) : nearest(enemyPrisms(), at));
     return q ? q.p : at;
   }
 
@@ -284,31 +340,53 @@
 
   function cooldown(key, every, dt) { W.cd[key] = (W.cd[key] == null ? every : W.cd[key]) - dt; if (W.cd[key] <= 0) { W.cd[key] += every; return true; } return false; }
 
+  // Garrett, 2026-11-01: after a pick you choose the element the next hand is drawn from, or it keeps the old one (the
+  // first pick sets it to the picked card's element). With a draw element set, a hand is up to HAND_EL different cards
+  // of that element instead of one of each.
+  const HAND_EL = 5;
   function dealHand() {
     W.hands++;
-    const hand = ELS.map((el) => { const ids = IMPL[el]; const id = ids[Math.floor(W.rnd() * ids.length)]; return { id, el, level: Math.round(P['lv' + el]) }; });
-    W.hand = hand;
+    let hand;
+    if (!W.drawEl) hand = ELS.map((el) => { const ids = IMPL[el]; const id = ids[Math.floor(W.rnd() * ids.length)]; return { id, el, level: Math.round(P['lv' + el]) }; });
+    else {
+      const ids = IMPL[W.drawEl].slice(), n = Math.min(HAND_EL, ids.length); hand = [];
+      for (let i = 0; i < n; i++) { const j = i + Math.floor(W.rnd() * (ids.length - i)); [ids[i], ids[j]] = [ids[j], ids[i]]; hand.push({ id: ids[i], el: W.drawEl, level: Math.round(P['lv' + W.drawEl]) }); }
+    }
+    W.hand = hand; W.handEl = W.drawEl;
     if (picker !== 'you') autoPick();
   }
   function pick(i) {
     if (!W.hand || !W.hand[i]) return;
     const c = W.hand[i]; W.held[c.id] = Math.min(15, (W.held[c.id] || 0) + c.level);
     W.events.push({ t: W.t, kind: 'pick', id: c.id, level: W.held[c.id] });
-    W.hand = null;
+    if (!W.drawEl) W.drawEl = c.el;
+    W.hand = null; W.handEl = null;
   }
   function autoPick() {
-    if (picker === 'none') { W.hand = null; return; }
+    if (picker === 'none') { W.hand = null; W.handEl = null; return; }
+    const pk = picker === 'course' ? CO().best : picker;   // 'reads the course': builds the element the course rewards
     let i = 0;
-    if (ELS.includes(picker)) i = ELS.indexOf(picker);
-    else i = Math.floor(W.rnd() * 4);
+    if (ELS.includes(pk) && !W.handEl) i = ELS.indexOf(pk);
+    else if (ELS.includes(pk)) {   // an element-first player takes the card they want most from the hand
+      const want = FAVOURITE[pk]; i = 0;
+      for (let k = 1; k < W.hand.length; k++) if (want.indexOf(W.hand[k].id) < want.indexOf(W.hand[i].id)) i = k;
+    }
+    else i = Math.floor(W.rnd() * W.hand.length);
     pick(i);
+    W.drawEl = ELS.includes(pk) ? pk : picker === 'rotate' ? ELS[(ELS.indexOf(W.drawEl) + 1) % 4] : ELS[Math.floor(W.rnd() * 4)];
   }
   function endPhase(early) {
     const ph = PHASES[W.phase];
     W.phaseCount[ph.key]++; if (early) W.early[ph.key]++;
     if (ph.key === 'elem') W.elemTimes.push(W.phaseT);
     if (ph.key === 'omni') dealHand();
+    if (game === 'trail' && W.finishT == null) W.legT[ph.key] += W.phaseT;
     W.phase = (W.phase + 1) % 4; W.phaseT = 0; W.gotY = 0; W.removedX = 0; W.debuffed = false;
+    if (game === 'trail' && W.finishT == null) {
+      W.done++; W.massTarget = null;
+      if (W.done >= TRAIL_N) { W.finishT = W.t; W.events.push({ t: W.t, kind: 'finish' }); }
+      else { for (const c of W.crystals) if (c.alive && !c.dropped && PHASES[W.phase].key === 'elem') c.p = nearStation(nextStation('elem'), 120); if (W.omni && ph.key === 'omni') W.omni = null; }
+    }
     if (PHASES[W.phase].key === 'mass') W.blackHoleUsed = false;
   }
   function phaseLen(i) { const cut = has('time-hurry-up') ? sv('time-hurry-up', 0, lv('time-hurry-up')) / 100 : 0; return P[PHASES[i].t] * (1 - cut); }
@@ -445,15 +523,15 @@
     for (const r of W.rivals) {
       if (r.ko) { r.ko -= dt; if (r.ko <= 0) Object.assign(r, newRival()); continue; }
       r.silenced = Math.max(0, r.silenced - dt); r.slowT = Math.max(0, r.slowT - dt);
-      if (d2(r.p, r.way) < 60 * 60) r.way = inBall(rnd, R * 0.8);
-      const to = sub(r.way, r.p), l = len(to) || 1, sp = 90 * (r.slowT > 0 ? 0.6 : 1);   // lab: rivals cruise 90 u/s, slower than the starlings
+      if (d2(r.p, r.way) < 60 * 60 || (game === 'trail' && W.t % 2 < dt)) r.way = rivalWay();
+      const to = sub(r.way, r.p), l = len(to) || 1, sp = (game === 'trail' ? CO().rivalSpeed : 90) * (r.slowT > 0 ? 0.6 : 1);   // lab: rivals cruise 90 u/s, slower than the starlings
       r.v = to.map((x) => x / l * sp); for (let a = 0; a < 3; a++) r.p[a] += r.v[a] * dt;
       r.layT += dt; if (r.layT > 1.5) { r.layT = 0; W.prisms.push({ p: r.p.slice(), team: 'E', shield: 0, danger: false, alive: true, bites: 0 }); }
       for (const c of W.crystals) if (c.alive && d2(c.p, r.p) < 20 * 20) { c.alive = false; c.respawn = 6; r.crystals++; }
       near(r.p, 14, (q) => { if (q.team === 'Y' && q.danger) { q.alive = false; r.slowT = 2; hurtRival(r, 1, 'danger prism'); } });
       r.fireT -= dt;
       if (r.fireT <= 0 && r.silenced <= 0) {
-        r.fireT = I.fire;
+        r.fireT = I.fire / (game === 'trail' ? CO().fire : 1);
         const tgt = nearest(ms, r.p, (m) => d2(m.p, r.p) < 220 * 220);
         if (tgt) {
           W.events.push({ t: W.t, kind: 'shot', a: r.p.slice(), b: tgt.p.slice() });
@@ -474,7 +552,7 @@
     }
 
     // ---- respawns and tidy ----
-    for (const c of W.crystals) if (!c.alive && !c.dropped) { c.respawn -= dt; if (c.respawn <= 0) { c.alive = true; c.p = inBall(rnd, R * 0.85); } }
+    for (const c of W.crystals) if (!c.alive && !c.dropped) { c.respawn -= dt; if (c.respawn <= 0) { c.alive = true; c.p = game === 'trail' ? nearStation(nextStation('elem'), 120) : inBall(rnd, R * 0.85); } }
     W.crystals = W.crystals.filter((c) => c.alive || !c.dropped);
     if (!W.omni) { W.omniRespawn -= dt; if (W.omniRespawn <= 0) spawnOmni(); }
     if (W.t % 5 < dt) { W.prisms = W.prisms.filter((q) => q.alive); W.members = W.members.filter((m) => m.alive); }
@@ -492,6 +570,7 @@
     const elemT = W.elemTimes.length ? W.elemTimes.reduce((a, b) => a + b, 0) / W.elemTimes.length : phaseLen(1);
     return {
       t: +W.t.toFixed(1),
+      trail: W.finishT != null ? +W.finishT.toFixed(1) : null, stations: W.done,
       timeRace: +elemT.toFixed(1),                                   // Time: seconds the Elemental crystals phase took (lower wins)
       spaceRemoved: W.stats.removed,                                 // Space: enemy prisms destroyed or stolen
       massStanding: yours.length + yours.filter((q) => q.shield).length,   // Mass: your prisms standing (a shielded one counts twice)
@@ -509,7 +588,40 @@
     { name: 'Time first', picker: 'Time' },
     { name: 'Space first', picker: 'Space' },
     { name: 'Charge first', picker: 'Charge' },
+    { name: 'Rotate elements', picker: 'rotate' },
+    { name: 'Reads the course', picker: 'course' },
   ];
+  // The Time trail's scorecard: seconds to work all TRAIL_N stations, per build (lower wins), and how many legs ended
+  // early on their goal. A build that never finishes in `seconds` reports the cap.
+  function runTrail(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3, 4, 5], seconds = opts.seconds || 800, dt = 0.1, level = opts.level || 5;
+    const savedSeed = seed, savedPicker = picker, savedGame = game, savedCourse = courseSel, rows = [];
+    if (opts.course) courseSel = opts.course;
+    const savedLv = ELS.map((el) => P['lv' + el]); ELS.forEach((el) => { P['lv' + el] = level; });
+    game = 'trail';
+    for (const va of VARIANTS) {
+      picker = va.picker; let tot = 0, best = Infinity, worst = 0, early = 0, hands = 0; const leg = { omni: 0, elem: 0, vessel: 0, mass: 0 };
+      for (const s of seeds) {
+        reset(s);
+        for (let i = 0; i < seconds / dt && W.finishT == null; i++) simStep(dt);
+        const ft = W.finishT == null ? seconds : W.finishT;
+        tot += ft; best = Math.min(best, ft); worst = Math.max(worst, ft); hands += W.hands; for (const q in leg) leg[q] += W.legT[q];
+        early += W.early.omni + W.early.elem + W.early.vessel + W.early.mass;
+      }
+      const k = seeds.length;
+      rows.push({ variant: va.name, trail: +(tot / k).toFixed(1), best: +best.toFixed(1), worst: +worst.toFixed(1), early: +(early / k).toFixed(1), hands: +(hands / k).toFixed(1), legs: Object.fromEntries(Object.entries(leg).map(([q, v]) => [q, +(v / k).toFixed(1)])) });
+    }
+    ELS.forEach((el, i) => { P['lv' + el] = savedLv[i]; });
+    picker = savedPicker; game = savedGame; courseSel = savedCourse; reset(savedSeed);
+    return rows;
+  }
+  // every course, each build: which element-first build wins each course (lower trail time)
+  function runCourses(opts) {
+    opts = opts || {}; const out = [];
+    for (const k of Object.keys(COURSES)) { const rows = runTrail(Object.assign({}, opts, { course: k })), el = rows.filter((r) => / first$/.test(r.variant)).sort((a, b) => a.trail - b.trail); out.push({ course: k, name: COURSES[k].name, winner: el[0].variant, rows }); }
+    return out;
+  }
   function runBatch(opts) {
     opts = opts || {};
     const seeds = opts.seeds || [1, 2, 3], seconds = opts.seconds || 300, dt = 0.1, level = opts.level || 5, savedSeed = seed, savedPicker = picker, rows = [];
@@ -551,6 +663,12 @@
     const fade = (z) => Math.max(0.12, 1 - Math.abs(z) / (P.slab * 2.2)) * (Math.abs(z) < P.slab ? 1 : 0.55);
     // the cell wall
     const cc = proj([0, 0, 0]); ctx.strokeStyle = 'rgba(120,180,220,.25)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(cc[0], cc[1], R * sc, 0, 7); ctx.stroke();
+    if (game === 'trail') {
+      const st = []; for (let j = 0; j < TRAIL_N; j++) st.push(proj(stationPos(j)));
+      ctx.setLineDash([4 * dpr, 6 * dpr]); ctx.strokeStyle = 'rgba(230,220,160,.35)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); st.forEach((q, j) => (j ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke(); ctx.setLineDash([]);
+      st.forEach((q, j) => { const cur = j === W.done; ctx.globalAlpha = j < W.done ? 0.3 : fade(q[2]); ctx.strokeStyle = cur ? '#ffe28a' : 'rgba(230,220,160,.7)'; ctx.lineWidth = (cur ? 3 : 1.5) * dpr; ctx.beginPath(); ctx.arc(q[0], q[1], (cur ? 16 : 10) * dpr, 0, 7); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.font = (11 * dpr) + 'px system-ui'; ctx.fillText(String(j + 1) + ' ' + PHASES[j % 4].key, q[0] + 14 * dpr, q[1] - 10 * dpr); });
+      ctx.globalAlpha = 1;
+    }
     // prisms
     for (const q of W.prisms) {
       if (!q.alive) continue; const s = proj(q.p), a = fade(s[2]); if (a < 0.13) continue;
@@ -612,17 +730,33 @@
       d.lastChild.style.width = on ? (100 * Math.min(1, W.phaseT / L)) + '%' : '0';
     });
     const s = score(), held = Object.keys(W.held).length;
-    $('hudText').textContent = 'Starlings ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
+    $('hudText').textContent = (game === 'trail' ? 'Time trail, ' + CO().name + ' (' + CO().hint + '): station ' + Math.min(TRAIL_N, W.done + 1) + ' / ' + TRAIL_N + '  ·  ' + (W.finishT != null ? 'FINISHED in ' + W.finishT.toFixed(1) + ' s' : W.t.toFixed(1) + ' s') + '  ·  ' : '') + 'Starlings ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
     drawHand();
   }
   let handShown = null;
   function drawHand() {
     const box = $('hand');
-    if (!W.hand) { box.hidden = true; handShown = null; return; }
-    if (handShown === W.hand) return;
-    handShown = W.hand; box.hidden = false;
+    const key = W.hand || (picker === 'you' ? 'next:' + (W.drawEl || '') : null);
+    if (!key) { box.hidden = true; handShown = null; return; }
+    if (handShown === key) return;
+    handShown = key; box.hidden = false;
     box.querySelectorAll('button').forEach((b) => b.remove());
-    $('handNote').textContent = 'New hand. Pick one; the swarm keeps going while you read.';
+    if (!W.hand) {
+      // no hand up: choose the element the next hand is drawn from, or keep the old one
+      $('handNote').textContent = 'Next hand: ' + (W.drawEl ? HAND_EL + ' ' + W.drawEl + ' cards' : 'one of each') + '. Pick an element, or keep it.';
+      ELS.forEach((el) => {
+        const b = document.createElement('button');
+        b.style.setProperty('--c', elColor(el));
+        b.innerHTML = '<b></b><small></small>';
+        b.querySelector('b').textContent = el + (W.drawEl === el ? ' (next draw)' : '');
+        b.querySelector('small').textContent = 'Draw the next hand from ' + el + ' cards.';
+        b.onclick = () => { W.drawEl = el; drawHand(); };
+        box.appendChild(b);
+      });
+      return;
+    }
+    $('handNote').textContent = W.handEl ? 'New hand: ' + W.hand.length + ' ' + W.handEl + ' cards. Pick one; the swarm keeps going while you read.'
+                                         : 'New hand. Pick one; the swarm keeps going while you read.';
     W.hand.forEach((c, i) => {
       const card = CARD[c.id], b = document.createElement('button'), cur = W.held[c.id] || 0;
       b.style.setProperty('--c', elColor(c.el));
@@ -754,7 +888,13 @@
   const COLS = [['timeRace', 'Time: crystal race (s, lower wins)', -1], ['spaceRemoved', 'Space: enemy prisms removed', 1], ['massStanding', 'Mass: your prisms standing', 1], ['chargeScore', 'Charge: petals + KOs + fauna', 1], ['hands', 'Hands', 0], ['members', 'Starlings at end', 0]];
   function scorecardPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<p><button class="btn primary" id="runBatch">Run the scorecard</button> <span class="hint">headless, seeds 1–3, 300 s each at the current intensity, with every element\'s upgrade level at 5 so a few picks show; the AI picks cards by the rule in each row. Each "X first" build should win its own element\'s column.</span></p><div style="overflow-x:auto"><table id="scoreTable"></table></div>';
+    box.innerHTML = '<p><button class="btn" id="runTrail">Run the time trail</button> <span class="hint">headless, seeds 1–5 on any course (a seed picks Long haul, Fortress or Chase), every element at level 5; seconds to work all 16 stations (lower wins) and seconds spent on each kind of leg, summed over the four laps.</span></p><table id="trailTable"></table>' +
+      '<p><button class="btn primary" id="runBatch">Run the scorecard</button> <span class="hint">headless, seeds 1–3, 300 s each at the current intensity, with every element\'s upgrade level at 5 so a few picks show; the AI picks cards by the rule in each row. Each "X first" build should win its own element\'s column.</span></p><div style="overflow-x:auto"><table id="scoreTable"></table></div>';
+    box.querySelector('#runTrail').onclick = () => {
+      const rows = runTrail(), t = box.querySelector('#trailTable'), best = Math.min(...rows.map((r) => r.trail));
+      t.innerHTML = '<tr><th>Build</th><th>Trail (s)</th><th>Best</th><th>Worst</th><th>Omni legs</th><th>Elemental legs</th><th>Vessel legs</th><th>Mass legs</th><th>Hands</th></tr>';
+      for (const r of rows) { const tr = document.createElement('tr'); for (const v of [r.variant, r.trail, r.best, r.worst, r.legs.omni, r.legs.elem, r.legs.vessel, r.legs.mass, r.hands]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } if (r.trail === best) tr.children[1].className = 'best'; t.appendChild(tr); }
+    };
     box.querySelector('#runBatch').onclick = () => {
       const rows = runBatch(), t = box.querySelector('#scoreTable');
       t.innerHTML = '<tr><th>Build</th>' + COLS.map((c) => '<th>' + c[1] + '</th>').join('') + '</tr>';
@@ -769,8 +909,9 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
-      '<p><b>How to play.</b> You do not steer the starlings. Drag anywhere on the stage to turn your view (it works like a joystick and stops when you let go; arrow keys work too). The swarm works four objectives in turn on timers; each phase ends early when its goal is met. When the Omnicrystal phase ends, crystal or not, you get four cards, one per element. Pick one; the swarm keeps going while you read. A card you already hold adds its level, up to 15.</p>' +
+      '<p><b>How to play.</b> You do not steer the starlings. Drag anywhere on the stage to turn your view (it works like a joystick and stops when you let go; arrow keys work too). The swarm works four objectives in turn on timers; each phase ends early when its goal is met. When the Omnicrystal phase ends, crystal or not (or you collect an omnicrystal in another phase), you get a hand. The first hand is four cards, one per element. After you pick, choose the element of the next hand with the buttons under the stage, or keep the one you have (your first pick sets it); every later hand is five different cards of that element. Pick one; the swarm keeps going while you read. A card you already hold adds its level, up to 15.</p>' +
       '<p class="hint"><b>What this lab does NOT model.</b> The view is a 2D canvas projection with a depth fade, a stand-in for the Wrasse\'s 2.5D look. Rivals are scripted wanderers that lay prisms, take crystals and shoot starlings; they are not players and they do not use abilities. Fauna only graze your prisms. A prism is a point with no volume. Only 24 of the 80 cards are wired, and their side effects are simplified. Every number is a proposal: nothing of this vessel exists in the game yet. No networking, no frame-time measurement on a phone GPU, no collider budget.</p>';
+    box.insertAdjacentHTML('beforeend', '<p><b>Time trail (proposal, 2026-11-01).</b> Pick <i>Time trail</i> in the game menu, then a course (or <i>Any course</i>, which draws one per run). The course lays each phase\'s objective at its own station (numbered rings joined by a dotted line): a wall of enemy prisms at each Mass station, crystals at each Elemental one, the omnicrystal and the rivals near theirs. The clock runs until the swarm has worked all 16 stations, four laps of the cycle. Every leg still ends early on its goal or late on its timer, so each element shortens a different leg. Courses weight different legs: <b>Long haul</b> (stations far apart, no rivals: Time), <b>Fortress</b> (big shielded walls, slow rivals: Space), <b>Chase</b> (fast rivals: Charge). The course is shown before the run, so the draw element is read from it. The vessel is unchanged; only the course is the mode\'s.</p>');
     box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · cards ' + LAB.cards + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
     return box;
   }
@@ -783,6 +924,8 @@
   $('restart').onclick = () => { reset(seed + 1); refreshHeld(); };
   $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); refreshHeld(); };
   $('intensity').onchange = (e) => { intensity = +e.target.value; reset(); refreshHeld(); };
+  $('game').onchange = (e) => { game = e.target.value; $('course').hidden = game !== 'trail'; reset(); };
+  $('course').onchange = (e) => { courseSel = e.target.value; reset(); };
   $('picker').onchange = (e) => { picker = e.target.value; if (W.hand && picker !== 'you') { autoPick(); refreshHeld(); } };
 
   function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
@@ -808,9 +951,9 @@
     LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, CARDS, IMPL,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || 1 / 30; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
-    reset, score, runBatch, setParam, record, pick, turnView,
+    reset, score, runBatch, runTrail, runCourses, setCourse(c) { courseSel = c; reset(); }, give(id, level) { W.held[id] = level; }, setParam, setGame(g) { game = g; reset(); }, record, pick, turnView,
     setIntensity(i) { intensity = i; reset(); }, setPicker(p) { picker = p; },
-    state: () => ({ t: W.t, seed, intensity, picker, phase: PHASES[W.phase].key, phaseT: W.phaseT, members: alive().length, hand: W.hand && W.hand.map((c) => c.id), held: Object.assign({}, W.held), form: W.form }),
+    state: () => ({ t: W.t, seed, intensity, picker, phase: PHASES[W.phase].key, phaseT: W.phaseT, members: alive().length, hand: W.hand && W.hand.map((c) => c.id), drawEl: W.drawEl, held: Object.assign({}, W.held), form: W.form }),
   };
 })();
 </script>

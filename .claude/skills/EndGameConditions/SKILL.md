@@ -200,8 +200,8 @@ build restore.
 | Build-time auto-restore | `Assets/_Scripts/Editor/EndConditionBuildRestore.cs` |
 | Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`; its local-only base was folded in on 2026-10-25) |
 | Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkJoustCollisionTurnMonitor.cs` (`StartMonitor`; its local-only base was folded in on 2026-10-25) |
-| Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/MaelstromController.cs` (`StartMaelstromInternal` → `ResolveWinTarget`) |
-| Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/MaelstromDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
+| Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromController.cs` (`StartMaelstromInternal` → `ResolveWinTarget`) |
+| Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/Maelstrom/MaelstromDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
 | Gate races resolve it here | `Assets/_Scripts/Controller/Arcade/Racing/RaceGateTurnMonitor.cs` (`StartMonitor` → `GateRaceController.AuthoredGateTarget`) |
 | Skein / Headlong keys read here | `Skein/SkeinController.cs`, `Headlong/HeadlongController.cs` (`AuthoredGateTarget`, `BuildCourse`) |
 | Network sync (the same two files) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |

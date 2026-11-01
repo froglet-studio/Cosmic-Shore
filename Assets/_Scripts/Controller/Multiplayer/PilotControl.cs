@@ -1,5 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CosmicShore.Utility;
+using CosmicShore.Utility.AITraining;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -36,11 +37,23 @@ namespace CosmicShore.Gameplay
         /// <summary>True when this machine may move pilots: the server (the editor as host, or solo).</summary>
         public static bool CanControl => NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
 
-        /// <summary>Is <paramref name="human"/>'s hull being flown by the AI right now?</summary>
+        /// <summary>
+        /// Is <paramref name="human"/>'s hull being flown by the AI right now? The AI trainer counts: it switches the
+        /// hull's AIPilot off and writes the sticks itself, so without it a trainer match read as a person's flight
+        /// (HumanFlightRecorder stored seven of Froglet Compute's first run as hand-flown, 2026-10-28).
+        /// </summary>
         public static bool IsHeldByAI(Player human) =>
             human && human.Vessel is Component hull && hull &&
             ((hull.TryGetComponent(out SkimRacePilot skim) && skim.FlyingForHuman) ||
-             (hull.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled));
+             (hull.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled) ||
+             IsHeldByTrainer(human));
+
+        /// <summary>Is the AI trainer (<see cref="TrainingPilot"/>, an AI Training run) flying this hull's episode?</summary>
+        public static bool IsHeldByTrainer(Player human) =>
+            human && human.Vessel is Component hull && hull &&
+            hull.TryGetComponent(out TrainingPilot trainer) && trainer.isActiveAndEnabled && trainer.EpisodeActive;
+
+        const string TrainerRefusal = "a trained AI pilot (TrainingPilot) is flying this hull: its sticks would fight yours";
 
         /// <summary>
         /// Let the AI fly <paramref name="human"/>'s hull (<paramref name="aiFlies"/> true), or give it back to them.
@@ -48,6 +61,8 @@ namespace CosmicShore.Gameplay
         public static bool TrySetAIFlies(Player human, bool aiFlies, GameDataSO gameData, out string refusal)
         {
             if (!TryCheckHuman(human, out refusal)) return false;
+            // Handing the hull to the AIPilot would start it writing the sticks against the trainer, every frame.
+            if (IsHeldByTrainer(human)) { refusal = TrainerRefusal; return false; }
             var hull = human.Vessel;
             if (hull is not Component c || !c.TryGetComponent(out AIPilot pilot))
             {
@@ -97,6 +112,7 @@ namespace CosmicShore.Gameplay
             if (!target || target == human)               { refusal = "pick another pilot's hull"; return false; }
             if (!target.NetIsAI.Value)                    { refusal = $"{target.Name}'s hull is flown by a human"; return false; }
             if (target.Vessel is not Object t || !t)      { refusal = $"{target.Name} has no hull"; return false; }
+            if (IsHeldByTrainer(human) || IsHeldByTrainer(target)) { refusal = TrainerRefusal; return false; }
 
             // If the AI was holding the hull being left, the player's input was paused for it. The swap turns the AI
             // on for that hull again, under its new pilot; the player's own sticks must be live for the new one.

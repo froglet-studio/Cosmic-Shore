@@ -209,6 +209,19 @@ namespace CosmicShore.Data
         TandavaLearned = 151,           // a wound taught it something (once per wound): {0} = that wound's Learned line
         TandavaChimera = 152,           // on its way up it became the whale-jelly chimera: {0} = ChimeraLine
 
+        // Serpent Time, the dirty race (Docs/Studios/SERPENT_TIME.md). Posted to the LOCAL pilot only. 153-155 (rounds,
+        // no round, wall hit) were retired with the round economy and the wall cost on 2026-10-31: the mode never
+        // changes the vessel's kit. Do not reuse them.
+        SerpentTimeWallHint = 156,      // once, at the start: how the dirty race is played
+
+        // Serpent Gulag, the sniper duel (_Scripts/Controller/Arcade/SERPENTGULAG.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a snipe is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
+        SerpentGulagScopeHint = 157,    // once, at the start: hold LT to scope, RT to fire; the field reloads you
+
+        // LanternRun, the Angler's Time race (_Scripts/Controller/Arcade/LANTERNRUN.md). Its race beats are the shared
+        // 129-132 (DomainRaceToasts). Posted to the LOCAL pilot only.
+        LanternRunPaintHint = 158,    // once, at the start: paint the two clusters, throw both groups, dash after them
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

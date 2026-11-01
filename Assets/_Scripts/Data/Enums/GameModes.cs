@@ -260,6 +260,9 @@ namespace CosmicShore.Data
         // it on the right LINE is worth more than threading it fast. First DOMAIN whose LEAD
         // RUNNER threads the last ring wins, on ScoringMetric.SwitchesThreaded - the gate-race
         // platform, reused whole. See _Scripts/Controller/Arcade/WAYSTATION.md.
+        // Since 2026-11-01 Waystation is the Tiger Moth's Drop Tower race: the clusters with a staircase of short hops
+        // through plain and danger floor plates in every gap but the last (Docs/Studios/TIGER_MOTH_TIME.md). It was
+        // built as WaystationPrototype (76) beside this mode and folded in; 76 is retired and stays reserved.
         Waystation = 58,
 
         // Dustup (59): the Butterfly's CHARGE game - a dust duel. The Butterfly carries no gun;
@@ -347,8 +350,39 @@ namespace CosmicShore.Data
         // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
         BurrowRun = 71,
 
+        // ScarabRally (72): the Scarab's TIME race - Switchback's walk (an open chain of rings flown in order,
+        // hairpins only a drift makes, I3 walls and I4 danger prisms beside the line) cut for the Scarab: hold
+        // the throttle, drift the hairpins, juke into the mouths. No ball. Scarab Scramble is the Scarab's Mass
+        // card. 71 is BurrowRun's on Ys-bleeding-edge, 67 SerpentCharge's in flight. See
+        // _Scripts/Controller/Arcade/SCARABRALLY.md.
+        ScarabRally = 72,
+
+        // SerpentTime (73): the Serpent's TIME race - Thresher Time's shape (a lapped circuit on the shared
+        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 6 s burn that
+        // stacks, refilled only by the Serpent's wall eating its own trail. See _Scripts/Controller/Arcade/SERPENTTIME.md.
+        SerpentTime = 73,
+
+        // BrittleStarTime (74): the Brittle Star's TIME race - the same lapped circuit, where Speed Mode (x6
+        // cruise) is the race and the mouths ask when to drop back to Cruise to thread. See
+        // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
+        BrittleStarTime = 74,
+
+        // LanternRun (75): the Angler's TIME race - a lapped circuit (the shared HeadlongCircuit solver) where every leg
+        // carries TWO regrowing prism MASS clusters on the ring's axis, one for each of the Angler's two groups: paint the
+        // near cluster and throw one group, paint the far one (past the ring) and throw the other, then dash to each in
+        // turn - you paint your path and zoom along it. See _Scripts/Controller/Arcade/LANTERNRUN.md.
+        LanternRun = 75,
+
+        // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
+        // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
+        // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
+        // Sniper Shot that strips a rival pilot) is one point; first DOMAIN to the target wins. Beside Garrett's
+        // in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x), which it does not touch. 75 is LanternRun's
+        // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
+        SerpentGulag = 77,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 66) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
