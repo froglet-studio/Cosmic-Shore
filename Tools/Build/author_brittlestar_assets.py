@@ -195,7 +195,8 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": hashlib.md5(b"CosmicShore/Britt
              "586d56db81bb568c940094830cd59abb": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_DestructionMode.png").hexdigest(),
              "669089ec7ad29ed295eccc53d8615225": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_SpeedMode.png").hexdigest()}
 # The cards the icon kit has recut into parts (the Stoat sprite they replaced -> a view field one of the parts wires).
-KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "chargeStarIcon"}   # Charge: the five cords (2026-11-01)
+KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "chargeStarIcon",    # Charge: the five cords (2026-11-01)
+             "783faf75777a15c5b2241cfc3e2691d3": "massStarIcon"}      # Mass: the corner trails, the tunnel (2026-11-01)
 # Script guids that must not survive the clone (every Stoat-specific component).
 STOAT_SCRIPTS = ("f8734be12714484eb93134990801178a",   # StoatAnimation
                  "1c6aec6ea8ef44f1bef4884679d33d0a",   # StoatHullBuilder

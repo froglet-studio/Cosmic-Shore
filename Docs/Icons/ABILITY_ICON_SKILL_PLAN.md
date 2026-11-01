@@ -327,7 +327,10 @@ saber"): the hull NOSE-ON (yaw 90, pitch -90, a pentagon point up) in the domain
 turrets; RT's pull crossfades them to five straight sabers (`BrittleStarHUDView.SetCords` from
 `BrittleStarExecutor.CordsOut01` / `CordPull01`); the whips dim to 0.25 while the mode is off. Replaces the Ring Detonation
 icon (BRITTLE_STAR.md F12). The CTA lime came off all four Brittle Star plates (LESSONS 75); only overheat keeps the hot
-colour. Next: Mass (Creation), Space (Space Mode), Time (Speed) and the omni card.
+colour. **Mass (Creation) DONE 2026-11-01** (Garrett picked A of A/B/C, "the tunnel"): the star seen from behind in the
+domain colour, each corner's line of prisms (squares with a negative-space X) coming at you; dim with the mode off, and
+crossfading to fat blocks as Mass widens them x1 -> x2 (`BrittleStarHUDView.SetCreationTrails` from
+`BrittleStarExecutor.Creation01` / `BlockGirth01`). Next: Space (Space Mode), Time (Speed) and the omni card.
 
 | Round | What | Why first |
 |---|---|---|

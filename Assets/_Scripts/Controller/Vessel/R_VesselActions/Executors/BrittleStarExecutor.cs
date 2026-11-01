@@ -178,6 +178,9 @@ namespace CosmicShore.Gameplay
         public bool Aiming => _aiming;
         /// <summary>Eased 0..1: how far Charge Mode's five cords are grown out of their muzzles.</summary>
         public float CordsOut01 => _cordsOut01;
+
+        /// <summary>How far Mass has widened the blocks, 0 at x1 to 1 at x2 (the Mass card's fat-block crossfade).</summary>
+        public float BlockGirth01 => config ? Mathf.InverseLerp(1f, 2f, BlockGirth()) : 0f;
         public BrittleStarConfigSO Config => config;
 
         // ------------------------------------------------------------------ lifecycle

@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Brittle Star Charge card: whips to sabers on RT, and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+### 🔴 Brittle Star Charge and Mass cards: whips to sabers on RT, the Creation tunnel, and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
 `chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
@@ -76,6 +76,10 @@ No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `c
 - [ ] Fly the Brittle Star: the Charge card is the hull nose-on in your domain colour with five dim whips; Y (Charge Mode)
       brings the whips to full white; pulling RT crossfades them to five straight sabers, releasing brings the whips back.
 - [ ] No card turns lime when its mode is on; the Space plate still goes hot while overheated.
+- [ ] Mass card: the star seen from behind (domain) with five lines of prisms coming at you, dim until B (Creation)
+      turns them white; as Mass levels up the blocks fatten (crossfade to `BrittleStar_MassTrailsFat`).
+      New: `massTrailsIcon`, `massTrailsFatIcon`, `massStarIcon`, `trailsOffAlpha`, `SetCreationTrails`,
+      `BrittleStarExecutor.BlockGirth01`.
 
 
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED

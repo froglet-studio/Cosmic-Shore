@@ -44,6 +44,7 @@ namespace CosmicShore.UI
             if (!_isLocalPilotHud || !view || !star) return;
             view.SetCharge(star.SpareRings / (float)Mathf.Max(1, star.MaxSpareRings), star.Charge01 >= 1f);
             view.SetCreation(star.Creation01);
+            view.SetCreationTrails(star.Creation01, star.BlockGirth01, ResolveDomainSignalColor());
             view.SetSpace(star.Heat01, star.Destruction01 >= 1f, star.Overheated);
             view.SetSpeed(star.Speed01);
             view.SetCords(star.CordsOut01, star.CordPull01, ResolveDomainSignalColor());

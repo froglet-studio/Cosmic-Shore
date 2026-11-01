@@ -275,3 +275,31 @@ CARDS += [
          title="C  the rake: the star (domain) flying up, a line of prisms (white) falling straight back from each corner",
          parts=dict(star=C_STAR2, trail=c_trails, fat=lambda: c_trails(1.4)), states=_mass_states(), lockup_state=0),
 ]
+
+
+# ---- Mass in the game: A, the tunnel (Garrett picked A, 2026-11-01: "A is good") ------------------------------------------
+# Three parts in the Mass slot's container, shown by BrittleStarHUDView.SetCreationTrails: the star (domain) always; the
+# five lines of prisms (white, dim with the mode off), crossfading to the fat ones as Mass widens the blocks (x1 -> x2).
+MASS_PARTS = [("MassTrails", "BrittleStar_MassTrails", "massTrailsIcon", a_trails,
+               "each corner's line of prisms coming at you (white; dim with Creation off; fades as Mass widens the blocks)"),
+              ("MassTrailsFat", "BrittleStar_MassTrailsFat", "massTrailsFatIcon", lambda: a_trails(1.45),
+               "the same lines, the blocks fattened by Mass (white; comes in as Mass widens them)"),
+              ("MassStar", "BrittleStar_MassStar", "massStarIcon", A_STAR, "the Brittle Star seen from behind (domain)")]
+ICONS += [dict(name=i, element="Mass", act="Creation Mode: " + act, draw=draw, subdir="Parts", family=False,
+               exempt={"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+                       "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part",
+                       "specks": "a part"})
+          for _n, i, _f, draw, act in MASS_PARTS]
+for c in CARDS:
+    if c["name"] == "mass_a":
+        CARDS.append(dict(c, name="mass", group=None,
+                          title="Creation Mode (Mass, picked A): seen from behind, the star (domain) and each corner's line "
+                                "of prisms (white) coming at you; Mass fattens the blocks; the plate is the mode's switch"))
+        break
+CARDS[:] = [c for c in CARDS if c.get("group") != "mass"]   # the losers' sheets go once the owner picks
+LOCKUP["Mass"] = dict(parts=dict(star=A_STAR, trail=a_trails), state=[("trail", "white"), ("star", "domain")], gauge=1.0)
+MASS_ICON = "7700000000000001115"       # the Mass slot's icon Image (was BrittleStar_CreationMode)
+REBIND += [
+    dict(file=VARIANT, pair=dict(container=MASS_ICON, view=VIEW, after="chargeStarIcon",
+                                 children=[(n, i, f) for n, i, f, _d, _a in MASS_PARTS])),
+]

@@ -42,6 +42,16 @@ namespace CosmicShore.UI
         [Tooltip("Alpha of the cords while Charge Mode is off.")]
         [SerializeField, Range(0f, 1f)] float cordsOffAlpha = 0.25f;
 
+        [Header("Mass card: the corner trails (icon_kit specs/brittlestar.py, Garrett picked A 2026-11-01)")]
+        [Tooltip("Each corner's line of prisms coming at you (BrittleStar_MassTrails), white: fades out as Mass widens the blocks.")]
+        [SerializeField] Image massTrailsIcon;
+        [Tooltip("The same lines with Mass's fat blocks (BrittleStar_MassTrailsFat), white: fades in as Mass widens them.")]
+        [SerializeField] Image massTrailsFatIcon;
+        [Tooltip("The Brittle Star seen from behind (BrittleStar_MassStar), the domain colour.")]
+        [SerializeField] Image massStarIcon;
+        [Tooltip("Alpha of the trails while Creation Mode is off.")]
+        [SerializeField, Range(0f, 1f)] float trailsOffAlpha = 0.25f;
+
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
@@ -58,6 +68,7 @@ namespace CosmicShore.UI
             Seat(destructionGauge, 0f);
             Seat(speedGauge, 0f);
             SetCords(0f, 0f, new Color(0f, 0f, 0f, 0f));
+            SetCreationTrails(0f, 0f, new Color(0f, 0f, 0f, 0f));
         }
 
         void Seat(Image gauge, float fill)
@@ -87,6 +98,20 @@ namespace CosmicShore.UI
             if (chargeWhipsIcon) chargeWhipsIcon.color = new Color(1f, 1f, 1f, cords * (1f - pull));
             if (chargeSabersIcon) chargeSabersIcon.color = new Color(1f, 1f, 1f, cords * pull);
             if (chargeStarIcon) chargeStarIcon.color = _domain;
+        }
+
+        /// <summary>
+        /// The Mass card's corner trails: white while Creation Mode is on (<paramref name="on01"/>, its eased switch), dim
+        /// with it off; crossfading to the fat blocks as Mass widens them (<paramref name="girth01"/>,
+        /// <c>BrittleStarExecutor.BlockGirth01</c>). The star wears <paramref name="domain"/> (alpha 0 = keep the last).
+        /// </summary>
+        public void SetCreationTrails(float on01, float girth01, Color domain)
+        {
+            if (domain.a > 0f) _domain = domain;
+            float trails = Mathf.Lerp(trailsOffAlpha, 1f, Mathf.Clamp01(on01)), fat = Mathf.Clamp01(girth01);
+            if (massTrailsIcon) massTrailsIcon.color = new Color(1f, 1f, 1f, trails * (1f - fat));
+            if (massTrailsFatIcon) massTrailsFatIcon.color = new Color(1f, 1f, 1f, trails * fat);
+            if (massStarIcon) massStarIcon.color = _domain;
         }
 
         Color _domain = Color.white;

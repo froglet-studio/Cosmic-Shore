@@ -345,7 +345,8 @@ switch. The controller polls this vessel's own executor (a serialized reference,
 The view keeps its serialized field names (`ringGauge` is the Charge card, `destructionGauge` the Space card) so the
 variant's wiring holds. The Charge card is Charge Mode's own icon (F12, done 2026-11-01): the hull nose-on in the domain
 colour with a whip out of each turret, crossfading to five straight sabers as RT pulls (`BrittleStarHUDView.SetCords`
-from `CordsOut01` / `CordPull01`), the whips dim while the mode is off.
+from `CordsOut01` / `CordPull01`), the whips dim while the mode is off. The Mass card is the star seen from behind with each corner's
+line of prisms coming at you, dim with Creation off, the blocks fattening with Mass (`SetCreationTrails`).
 
 ## 5. The elemental map and level 5 (`Resources/ElementalAbilityMaps/BrittleStar.asset`)
 
