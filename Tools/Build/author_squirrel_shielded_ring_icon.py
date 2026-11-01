@@ -160,6 +160,26 @@ def box_sdf(px, py, prism):
     return outside + inside
 
 
+# The diamond is drawn as TWO CLOSE TRIANGLES: cut in half along its long axis, the halves apart by this fraction of
+# the long half-diagonal (Garrett, 2026-11-01: never the rhombus for a prism - the Time petal owns that shape - "cut the
+# rhombus in half when you can so it is two close triangles"; the icon kit's motifs.prism uses the same 0.16).
+HALVES_GAP = 0.16
+
+
+def halves_sdf(px, py, prism):
+    """The shield's diamond with a slab cut out along its long axis (negative inside): two close triangles."""
+    (cx, cy), (ux, uy), (vx, vy), hu, hv = prism
+    rt2 = math.sqrt(2.0)
+    tx, ty = (ux - vx) / rt2, (uy - vy) / rt2          # the prism's tangential axis
+    rx, ry = (ux + vx) / rt2, (uy + vy) / rt2          # its radial axis
+    reach_t, reach_r = hu * rt2, hv * rt2              # the diamond's half-diagonals along them
+    dx, dy = px - cx, py - cy
+    # the cut runs along the LONG half-diagonal, so the slab's distance is measured across it
+    across = abs(dx * tx + dy * ty) if reach_r >= reach_t else abs(dx * rx + dy * ry)
+    half_gap = 0.5 * HALVES_GAP * max(reach_t, reach_r)
+    return max(box_sdf(px, py, prism), half_gap - across)
+
+
 def min_separation(prisms):
     """Smallest gap between any two figures - proves the ring reads as N distinct prisms."""
     best = float("inf")
@@ -200,7 +220,7 @@ def render(prisms_geom, size=SIZE):
         wy = (half_px - (y + 0.5)) * inv           # +y world is UP; image rows run downward
         for x in range(size):
             wx = ((x + 0.5) - half_px) * inv
-            d = min(box_sdf(wx, wy, p) for p in prisms_geom)
+            d = min(halves_sdf(wx, wy, p) for p in prisms_geom)
             a = 0.5 - d * scale
             if a <= 0.0:
                 continue

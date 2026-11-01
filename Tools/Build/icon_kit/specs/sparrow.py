@@ -91,7 +91,7 @@ def turret_stance_rounds():
 
 
 def turret_stance_rounds_shielded():
-    """The rounds at Mass 5: octahedrons - a shielded prism reads as a diamond (the Squirrel's drift trail)."""
+    """The rounds at Mass 5: octahedrons - a shielded prism is two close triangles (never the rhombus, Garrett 2026-11-01)."""
     m = empty()
     for y in TS_POD_Y:
         for cx, _b, s_ in TS_ROUND:
@@ -296,7 +296,7 @@ ICONS = [
     dict(name="Sparrow_TurretStanceRounds", element="Mass", act="Turret Stance: the rounds part, bare prisms (ghost while flying, solid in the stance)", draw=turret_stance_rounds, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds", "specks": "seam slivers", "gap": "seams", "thin": "seams", "at40": "the seams close at 40 px, the blocks stay"}),
     dict(name="Sparrow_TurretStanceRoundsShielded", element="Mass", act="Turret Stance: the rounds part at Mass 5 (octahedrons, the shielded colour)", draw=turret_stance_rounds_shielded, subdir="Parts", family=False,
-         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds"}),
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds, each two halves", "thin": "a shielded prism is two close triangles (never the rhombus, Garrett 2026-11-01): the halves are slim", "gap": "the cut between the halves is the shape"}),
     dict(name="Sparrow_BayRocket", element="Charge", act="Skyburst Rockets: one rocket, the part the view clones into the bay and fills", draw=bay_rocket, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "the real rocket: body and tail fin", "gap": "the real mesh"}),
     dict(name="Sparrow_Cannons", element="Space", act="Pulsefire Cannons: the cold spray, one stream (composite; the HUD lays the rounds out live)", draw=cannons,
