@@ -73,7 +73,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 `SpreadWingsActionExecutor` (`IsDustMode`, new `DustField`), `ButterflyDustField.LastBiteTime` (new) and
 `WormholeMouth.LastTollTime` (new). No Unity and no .NET: not compiled.
 
-- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon`, three `drop*Icon` and four `mass*Icon`, seven `dustReach*Icon` and two more `scaleDustMotes*Icon` fields
+- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon`, three `drop*Icon` and four `mass*Icon`, five `dustReach*Icon` and two more `scaleDustMotes*Icon` fields
   wired, and `omniAbilitySprite` set to `TigerMoth_Bloom`.
 - [ ] Time: the moth in your colour, streaks dim; hold LT: streaks full; while the veil sweeps every part dims. No
   wormhole before Charge 5.
@@ -84,9 +84,10 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - [ ] Mass: the moth from above over three wide keys, plate full; RT into Dust mode: the plate empties and the keys'
   ends fade to the bare keys; back to Mass mode they return. At Mass 5 (Gilded Wake) the keys turn your shielded colour
   in Mass mode.
-- [ ] Mass keys are square with a square cut; at Mass 5 their outer ends turn pointed, the inner edge stays square.
-- [ ] Space: the moth over long dust, a shielded prism and a grey broken one; at Space 5 a white super-shielded star
-  appears. Dims in Mass mode.
+- [ ] Mass keys are square with a square cut; at Mass 5 their outer ends reach further and taper to a point, the inner
+  edge stays square.
+- [ ] Space: the moth over a long rain of round motes in three colours; at Space 5 a super-shielded star in your colour
+  appears at the bottom of the rain. Dims in Mass mode.
 - [ ] The dust in play (Dust mode capsule and the omni-crystal bloom) shows three colours of your domain: danger,
   plain and shielded motes; the Charge and Space cards' motes match.
 - [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no

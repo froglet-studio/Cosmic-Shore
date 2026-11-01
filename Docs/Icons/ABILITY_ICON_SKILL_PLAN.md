@@ -348,10 +348,14 @@ straight cut, and Gilded Wake swaps in ends pointed on the outside (`TigerMoth_M
 three colours ("make a dust made of danger color, team domain color, team shielded domain color. use this in the icon
 and for the actual dust on the ability and omnicrystal dust effects"): the Charge and Space cards' motes are three parts
 (danger, domain, shielded), and the game's capsule and bloom motes take the same three
-(`ButterflyDustField.ResolveMotePalette`). The **Space card, Dust Reach**: A (the dust on mass): the moth high, its dust
-long below it, your prism in it shielded, a rival's broken and grey; Space 5 Diamond Dust brings in a super-shielded
-prism (the Rhino's flat stella octangula, white), "only with the upgrade". The omni card stays one white sprite. Next:
-the Brittle Star.
+(`ButterflyDustField.ResolveMotePalette`). The **Space card, Dust Reach**: first drawn as A (the dust on mass, with a
+tended prism and a broken rival one); "too busy", so it is the moth and its rain of three-colour motes, and at Space 5
+Diamond Dust a bigger super-shielded prism (the Rhino's flat stella octangula) in the domain colour at the bottom of the
+rain. Gilded Wake's keys go wider and taper sooner. The same round set a FLEET rule: no rhombus for a prism or a mote
+("that shape is owned by the time petal"): prisms are two close triangles (`motifs.prism_halves`) or a square with a
+negative-space X (`motifs.prism_square_x`), motes are little circles. Cards already shipped with the rhombus (Angler,
+Manta, Rhino, Scarab, Sparrow, Squirrel) are a later recut. The omni card stays one white sprite. Next: the Brittle
+Star.
 
 | Round | What | Why first |
 |---|---|---|

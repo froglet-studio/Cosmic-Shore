@@ -486,3 +486,13 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
 72. **Mass reads square; its upgrade sharpens the outside.** The Tiger Moth's keys: rectangles with a straight cut
     ("more square edges. including the cut out"); Gilded Wake points their OUTER ends ("octahedrons on the outside but
     keep them square edge on the interior"). An upgrade drawn as a swapped part, not a tint alone.
+
+73. **No rhombus for a prism or a mote: the Time petal owns that shape.** "you need to stop using the rhombuses for
+    shielded prisms, that shape is owned by the time petal, which is confusing. prisms are mass so cut the rhombus in half
+    when you can so it is two close triangles. you can also put a negative space x on square prisms ... for the motes make
+    them little circles or ellipses". Use `motifs.prism_halves` or `motifs.prism_square_x`, and round motes. Before
+    drawing any small mark, check it against the petal shapes on the plate above the card.
+74. **When a card is "too busy", cut to the one thing the dial changes plus the upgrade.** The Tiger Moth's Space card
+    lost its tended prism and its broken rival prism for "just the multicolor motes and ... a bigger domain color
+    supershielded prism at the bottom of the rain". And an upgrade that changes a shape can change its proportions too:
+    Gilded Wake's keys "go wider and start the taper sooner".

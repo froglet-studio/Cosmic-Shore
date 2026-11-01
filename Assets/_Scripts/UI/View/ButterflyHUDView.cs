@@ -99,12 +99,8 @@ namespace CosmicShore.UI
         [SerializeField] Image dustReachMotesDomainIcon;
         [Tooltip("The dust's shielded third (TigerMoth_DustReachMotes).")]
         [SerializeField] Image dustReachMotesIcon;
-        [Tooltip("A rival prism the dust broke (TigerMoth_DustReachRival), grey.")]
-        [SerializeField] Image dustReachRivalIcon;
-        [Tooltip("Your prism the dust tended (TigerMoth_DustReachOwn), the shielded colour.")]
-        [SerializeField] Image dustReachOwnIcon;
-        [Tooltip("Space 5 Diamond Dust: a super-shielded prism (TigerMoth_DustReachDiamond), white. Hidden before " +
-                 "the upgrade.")]
+        [Tooltip("Space 5 Diamond Dust: a super-shielded prism at the bottom of the rain (TigerMoth_DustReachDiamond), " +
+                 "the domain colour. Hidden before the upgrade.")]
         [SerializeField] Image dustReachDiamondIcon;
         [Tooltip("The Tiger Moth, wings shut (TigerMoth_DustReachMoth), the domain colour.")]
         [SerializeField] Image dustReachMothIcon;
@@ -230,9 +226,9 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Dust Reach on the Space card: the moth over its long dust (danger, domain and shielded motes), your prism in
-        /// it shielded, a rival's broken and grey; all dim in Mass mode. At Space 5 Diamond Dust
-        /// (<paramref name="diamondDust"/>) a super-shielded prism comes in, white.
+        /// Dust Reach on the Space card: the moth over its long rain of dust (danger, domain and shielded motes); all dim
+        /// in Mass mode. At Space 5 Diamond Dust (<paramref name="diamondDust"/>) a super-shielded prism comes in at the
+        /// bottom of the rain, in the domain colour.
         /// </summary>
         public void SetDustReach(bool dustOn, bool diamondDust)
         {
@@ -243,12 +239,10 @@ namespace CosmicShore.UI
             if (dustReachMotesDangerIcon) dustReachMotesDangerIcon.color = A(_danger, a);
             if (dustReachMotesDomainIcon) dustReachMotesDomainIcon.color = A(_domain, a);
             if (dustReachMotesIcon) dustReachMotesIcon.color = A(_shielded, a);
-            if (dustReachRivalIcon) dustReachRivalIcon.color = A(rivalIdleColor, a);
-            if (dustReachOwnIcon) dustReachOwnIcon.color = A(_shielded, a);
             if (dustReachDiamondIcon)
             {
                 dustReachDiamondIcon.enabled = diamondDust;
-                dustReachDiamondIcon.color = A(Color.white, a);
+                dustReachDiamondIcon.color = A(_domain, a);
             }
             if (dustReachMothIcon) dustReachMothIcon.color = A(_domain, a);
         }
