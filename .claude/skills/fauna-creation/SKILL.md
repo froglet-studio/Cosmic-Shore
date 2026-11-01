@@ -136,13 +136,21 @@ python3 Tools/Build/fauna_kit/preview.py <species> --out <png>  # four views; LO
   a limb that carries three (the bee's spine) cannot take more without added-object surgery. The builder writes plain
   spindle GameObjects (a `Spindle` + a `Braid` child on the shipped mesh) and nests only the prisms
   (`DynamicHealthBlock` / `DangerBlock`, the worm tail's way), sized by `m_LocalScale` (what `SeatAuthoredSize` admits).
-- **Scale a braid UNIFORMLY.** `Fauna.ErodeSpindle` measures a skin with one scale (its x column), and the braid's
-  proportion is its look; a z-only stretch would mis-seat every prism on Space.
+- **(Superseded the same day) "Scale a braid uniformly".** The first build scaled braids uniformly because
+  `Fauna.ErodeSpindle` judged a prism's nearest host with one axis's scale (its x column). That measurement is now made
+  in the world, and the body skin is the one that spans furthest when several share one mesh (the spine), so a braid is
+  stretched along its length like every shipped spindle (below).
 - **One hook, not five call sites.** A species with a carried up needs every rotation its class writes to ask it:
   `Boid.SteeringUpFor` (world +y by default) is the one place, and `BeeFauna` overrides it with
   `CelestialFrame.CarryUp`. `LightFauna`, `WormFauna` and the drawn populations still need the same hook.
 - **The heart-seat gate does not see a spindle body.** `verify_fauna_heart_seat.py` walks model-instance bodies; a body
   built from a spec is held by `celestial.py` L1 (box clearance) and L8 (shield clearance) instead.
+- **A braid is stretched along its length, never scaled up evenly** (the bee's first build, 2026-11-01). Scaling the
+  braid uniformly to reach a long limb made every limb a fat, tangled ribbon (the vanes ~4 u across). "A wire is judged by
+  its thickness, never by its length" (SPINDLE_LOD.md): the shipped Branch is (1, 1, 6.2) and the tadpole's braid
+  (1.5, 1.5, 5), and the Space tadpole erodes such a braid. `build.py` keeps the spec's `girth` across (default 1) and
+  stretches z. Render the BUILT prefab (`render_prefab.py`) and look: the spec preview drew idealised braids and could
+  not show it.
 
 ## 6. Open decisions (ask; do not default)
 

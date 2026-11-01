@@ -7,9 +7,11 @@ A spec (Tools/Build/fauna_kit/specs/<species>.py) in, Unity prefab YAML document
   from its tip back to its root (the braid trails along its own -z), parented to its PARENT spindle (or to the creature's
   root): the spindle tree is the transform tree, so every limb keeps a path to the Etherion and an ordered wither can read
   it. Its skin is a child `Braid` GameObject drawing the shipped braid mesh (`bonita.fbx` `BezierCurve.001`, the mesh every
-  living spindle draws, Docs/SPINDLE_LOD.md section 1) with the shared `SpindleMaterial`, scaled UNIFORMLY so the braid spans
-  the spec's from -> to exactly (front of the mesh at the root, tip at the end). Uniform, because the Space erosion
-  (`Fauna.ErodeSpindle`) measures a skin's distances with one scale, and a braid's proportion is part of its look.
+  living spindle draws, Docs/SPINDLE_LOD.md section 1) with the shared `SpindleMaterial`, stretched ALONG ITS LENGTH ONLY
+  so the braid spans the spec's from -> to exactly (front of the mesh at the root, tip at the end), at the spec's `girth`
+  across (default 1: the shipped Branch's). "A wire is judged by its thickness, never by its length" (SPINDLE_LOD.md): the
+  shipped Branch (1, 1, 6.2) and TadpoleSpindle (1.5, 1.5, 5) stretch the same way, and the Space tadpole erodes such a
+  braid. A uniform scale (the first build) made every long limb a fat ribbon.
 * every PRISM is a nested instance of `DynamicHealthBlock.prefab` (health) or `DangerBlock.prefab` (danger), a DIRECT child
   of its spindle's GameObject (so `HealthPrism.Initialize` finds its limb and it sways with it), at the spec's centre, its
   local z along the spec's axis, its local y RADIAL (celestial.oriented: n copies round the axis are exact copies), its
@@ -178,7 +180,8 @@ def prism_world(p):
 
 
 def braid_scale(s):
-    return C.norm(C.sub(s["to"], s["from"])) / BRAID_SPAN
+    """(across, along): the braid keeps the spec's girth across and is stretched along its length to span the limb."""
+    return float(s.get("girth", 1.0)), C.norm(C.sub(s["to"], s["from"])) / BRAID_SPAN
 
 
 def local_pose(parent_pose, world_pose):
@@ -214,7 +217,7 @@ def build_body(spec, root_tr, ids=None, root_pose=((0.0, 0.0, 0.0), (0.0, 0.0, 0
         children = [P["braid_tr"]] + [parts[c["name"]]["tr"] for c in spec["spindles"] if c.get("parent") == n] + \
                    [parts[p["name"]]["tr"] for p in spec["prisms"] if p["spindle"] == n]
         father = parts[parent]["tr"] if parent else root_tr
-        sc = braid_scale(s)
+        g, sc = braid_scale(s)
         docs.append(
             f"--- !u!1 &{P['go']}\nGameObject:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  serializedVersion: 6\n  m_Component:\n"
@@ -240,7 +243,7 @@ def build_body(spec, root_tr, ids=None, root_pose=((0.0, 0.0, 0.0), (0.0, 0.0, 0
             f"--- !u!4 &{P['braid_tr']}\nTransform:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {P['braid_go']}}}\n"
             f"  serializedVersion: 2\n  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}\n"
-            f"  m_LocalPosition: {vec([0, 0, -BRAID_FRONT * sc])}\n  m_LocalScale: {vec([sc, sc, sc])}\n"
+            f"  m_LocalPosition: {vec([0, 0, -BRAID_FRONT * sc])}\n  m_LocalScale: {vec([g, g, sc])}\n"
             f"  m_ConstrainProportionsScale: 0\n  m_Children: []\n  m_Father: {{fileID: {P['tr']}}}\n"
             f"  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}\n"
             f"--- !u!33 &{P['braid_mf']}\nMeshFilter:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"

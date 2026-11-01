@@ -53,7 +53,7 @@ def braid_mesh():
 
 
 def braid_locals(prefab):
-    """Each spindle name -> its Braid child's (local position, uniform scale), read from the prefab."""
+    """Each spindle name -> its Braid child's (local position, local scale), read from the prefab."""
     docs = {m.group(2): d for d in re.split(r"(?m)^(?=--- !u!)", prefab) for m in [re.match(r"--- !u!(\d+) &(-?\d+)", d)] if m}
     out = {}
     for fid, d in docs.items():
@@ -64,7 +64,7 @@ def braid_locals(prefab):
             go = re.search(r"  m_GameObject: \{fileID: (-?\d+)\}", docs[father]).group(1)
             name = re.search(r"  m_Name: (\S+)\n", docs[go]).group(1)
             pos = [float(v) for v in re.search(r"m_LocalPosition: \{x: (\S+), y: (\S+), z: (\S+)\}", t).groups()]
-            sc = float(re.search(r"m_LocalScale: \{x: (\S+),", t).group(1))
+            sc = [float(v) for v in re.search(r"m_LocalScale: \{x: (\S+), y: (\S+), z: (\S+)\}", t).groups()]
             out[name] = (pos, sc)
     return out
 
@@ -80,7 +80,7 @@ def scene(spec, prefab):
         pos, rot = world[s["name"]]
         lp, sc = braids[s["name"]]
         for a, b, c in tris:
-            pts = [C.add(pos, B.qrot(rot, C.add(lp, C.mul(verts[i], sc)))) for i in (a, b, c)]
+            pts = [C.add(pos, B.qrot(rot, C.add(lp, [verts[i][0] * sc[0], verts[i][1] * sc[1], verts[i][2] * sc[2]]))) for i in (a, b, c)]
             faces.append((pts, BRAID))
     for p in spec["prisms"]:
         at, rot = world[p["name"]]
