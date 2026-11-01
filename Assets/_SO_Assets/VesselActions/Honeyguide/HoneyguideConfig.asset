@@ -281,7 +281,7 @@ MonoBehaviour:
   monteHops: 3
   aiTriggerThink: 0.3
   aiPreviewSeconds: 0.17
-  previewMaterial: {fileID: 0}
+  previewMaterial: {fileID: 2100000, guid: 4fcd7db6f5d04653a0b8401a011f6386, type: 2}
   previewWidth: 0.6
   previewColour: {r: 0.36, g: 0.72, b: 1, a: 0.85}
   previewRingSegments: 40

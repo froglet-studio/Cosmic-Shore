@@ -1,5 +1,7 @@
 # Party System — Manual Test Procedures
 
+> Also run [../PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md](../PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md). Its §5 covers RTT and the poor-connection badge, ship transform tuning, the `HitReportGuard` limits, and mid-match rejoin (AI takeover → `seatReclaimed`).
+
 MPPM (Multiplayer Play Mode) scenarios used as the regression gate for
 every party-side commit. All tests run in Unity Editor with 3-4 virtual
 players.

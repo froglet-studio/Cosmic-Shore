@@ -2,8 +2,12 @@
 # Compiles and RUNS the shipped crystal-morph geometry suites headlessly:
 #   Assets/_Scripts/Tests/Editor/CrystalMorphMeshBuilderTests.cs   (the Scarab's hull mapping)
 #   Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs   (the Squirrel's panel census)
+#   Assets/_Scripts/Tests/Editor/DolphinCrystalMorphGeometryTests.cs (the Dolphin's crystal onto its
+#                                                                   blast cone, cast around the crystal)
 #   Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs (an elemental crystal's faces
 #                                                                   landing on a vessel hull)
+#   Assets/_Scripts/Tests/Editor/ShrikeCrystalMorphGeometryTests.cs (the Shrike: the crystal folding into
+#                                                                   its nest flora's bud, CrystalMorphRecast)
 #   Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs (Butterfly / Rhino / Manta:
 #                                                                   the crystal onto its spherical blast)
 # against the shipped CrystalMorphMeshBuilder, with UnityStub.cs standing in for UnityEngine

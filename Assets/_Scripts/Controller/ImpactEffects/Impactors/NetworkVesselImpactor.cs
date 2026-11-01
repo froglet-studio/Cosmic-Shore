@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(VesselImpactor))]
-    public class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay, ISilenceRelay
+    public partial class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay, ISilenceRelay
     {
         [SerializeField] VesselImpactor vesselImpactor;
 

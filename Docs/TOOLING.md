@@ -415,6 +415,29 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 
 ---
 
+## Environmental fundamentals
+
+**FrogletTools ▸ Environment ▸ Environmental Fundamentals** (`EnvironmentalFundamentalsWindow`, Ecology lane) is where the
+world's own building blocks are tuned: things any vessel, spawner or scene can use and none of them owns. Today that is the
+**Soliton Tunnel** (2026-10-29): a jelly-lens tube with an additive spindle bridge, tinted by its maker's domain colour,
+ridden as a slip-and-slide (radial gravity to the inner wall, the odd bounce, a small RT push, a slingshot exit on the
+rider's own velocity, no stick steering). A single tunnel or a **Soliton Network** of them.
+
+- The window lists every `SolitonTunnelConfigSO` in the project (`Assets/_SO_Assets/Environment/SolitonTunnel/`:
+  `SolitonTunnel.asset` for single tunnels, `SolitonNetwork.asset` for networks) and draws each one's own inspector inline:
+  Look (comfort, lens, ride view), Spindle Bridge, Domain Tint, Shape (single tunnel / network), Life, and Slide (wall
+  gravity, bounce, friction, RT thrust on/off and strength, min / max speed, exit multiplier).
+- **Play mode works**: tunnels read their config live, so an edit shows on the next frame; each card counts the live
+  tunnels, networks and scene placers on that config. Unity keeps the in-memory edit when play stops - but do not Ctrl+S
+  during play (`PlayModeSOProtector` restores `_SO_Assets` files saved during play). Stop, then *Save Assets*.
+- Who uses a config: the Meerkat (`MeerkatSolitonConfigSO.TunnelConfig` / `.NetworkConfig`: RT forms a tunnel, an omni
+  crystal grows a network) and any `SolitonTunnelPlacer` (a scene component that places a tunnel or network with no maker,
+  optionally re-placing it at random). Code: `Assets/_Scripts/Controller/Environment/SolitonTunnel/`.
+- It edits existing assets only (no create / delete / move), so it records nothing on the ledger and draws no ship panel.
+  A new config: `Assets ▸ Create ▸ ScriptableObjects ▸ Environment ▸ Soliton Tunnel Config`.
+
+---
+
 ## Tool index
 
 | Lane | Tool | What it is for |
@@ -440,7 +463,8 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | UI | **Codex** | The in-game encyclopedia, authored in one place across all three kingdoms — **Ethirions** (every crystal), **Ecology** (every lifeform) and **Tools** (every freestyle toy, grouped by the fundamental it changes: Pilot / World / Creation). *Scan & Merge* re-reads the project, *Bake* renders each entry's hero image, and the right-hand panel edits any entry by hand. Keeper (idempotent — the codex needs re-scanning every time a crystal, species or toy is added; **do not retire it**). Its load-bearing property is that **Scan & Merge is always safe to run**: a field-ownership contract makes harvested facts the tool's and all prose the writer's, and an entry whose source asset vanished is reported as an orphan and never auto-deleted. WRITER: records the codex asset and every PNG on the ledger; ships via Pending Tool Changes. See `Docs/CODEX.md`. |
 | UI | **Wire Offline Menu Surfaces** (+ *Regenerate Icons*) | Wires Menu_Main's offline surfaces: the online/offline lamp, its `ConfirmQuestionBar`, and an `OfflineUIGate` per online-only panel. Keeper (idempotent, re-runnable whenever a panel is added). Works on the OPEN scene, never the YAML, so unsaved authoring is adopted rather than clobbered; finds panels by COMPONENT TYPE (they sit in prefab instances whose object names differ from their script names) and creates only what is missing. Screens dim in place, sub-panels hide — a screen the nav bar can reach must never be hidden. Generates the accept/cancel icons and never overwrites an existing file; the *Regenerate Icons* entry forces a re-render. WRITER: records to the ledger, ships via Pending Tool Changes. See `Docs/OFFLINE_MODE.md` §7–§11. |
 | Vessels | **Vessel Studio** | Opens on the studio HOME: the web hub's heading and one card per `Docs/Studios/VesselStudio/studios.json` studio with the hub's own looping preview (`StudioPreviews.cs`); a card opens that studio built from the checkout and served by Amoebius (the artifact's own build, Sync/Ask/Decisions working; /vessel-studio D34). Its last card is **+ New studio**, which opens the Vessel Studio artifact in claude.ai, where the + panel sends a new-studio request straight to a Claude Code session (D36). READER: no tuning UI of its own. The artifact is the one source of truth; its numbers reach the vessel's assets through `/artifact-to-unity` (`Tools/Build/studio_to_unity.py`, `--check` for drift). `author_stoat_assets.py` seeds those assets once and no longer asserts their numbers. See `Docs/Studios/VESSEL_STUDIO_PLAN.md` §2. |
-| AI | **Third Eye** | Watch Play mode from a second camera in its own window while you play in the Game view: pick any pilot (you, a rival, an AI), then Chase, Follow or Free (fly or orbit), the Vessel Studio's three cameras. *AI thinking* draws each AI's aim (a line to the point it steers for, coloured by state) and a ring on the crystal it is after; the bottom strip reads the watched AI's state, recoveries and difficulty mistakes. Its own hidden camera (never the gameplay rig), look adopted through `OffscreenCameraSetup`, posed in `beginCameraRendering` so it never lags; keeps rendering while paused. Reader only - writes `UserSettings/ThirdEyeSettings.asset`, never assets, so no ship panel. See `.claude/skills/vessel-ai/SKILL.md` §4. |
+| AI | **AI Diagnose panel** (code name Third Eye; in game since 2026-11-01) | Not a FrogletTools window: an in-game panel in editor and development builds. **F2 is the only hotkey** (open/close). Buttons take/release the MAIN camera (no second render) in Chase / Follow / Free fly / Orbit, step and frame pilots, toggle AI thinking, trails, labels and mode gizmos; a command field + Send runs DiagnosticsHUD commands (`aidiag ...`, `help`). Free fly is Lavalamp's `FreeFlyCamera`. Closing the panel (F2, scene unload, quit, Play stop) restores the default camera and turns every overlay off; only slider tuning is saved. See `.claude/skills/vessel-ai/SKILL.md` §4.1. |
+| Ecology | **Environmental Fundamentals** (Environment ▸) | Every `SolitonTunnelConfigSO` edited inline - look, spindle bridge, domain tint, shape, network, life and the slip-and-slide ride - in edit and play mode, with live tunnel / network / placer counts while playing. Edits existing assets only, no ship panel. See [Environmental fundamentals](#environmental-fundamentals). |
 | Utilities | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
 | Utilities | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 | Diagnostics | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. Shares the Diagnostics window with the Bug Ledger; a crash report can be filed into the ledger with one button. |
@@ -467,7 +491,8 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | AI Training window | `Assets/_Scripts/Utility/AITraining/Editor/TrainingEditorWindow.cs` |
 | GameCanvas Unifier (window / engine) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifierWindow.cs`, `GameCanvasUnifier.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
-| Third Eye (window / camera math / pilot read-out / settings) | `Assets/_Scripts/Editor/AI/ThirdEyeWindow.cs`, `ThirdEyeRig.cs`, `ThirdEyePilots.cs`, `ThirdEyeSettings.cs`; tests `Assets/_Scripts/Tests/Editor/ThirdEyeRigTests.cs` |
+| Environmental Fundamentals window | `Assets/_Scripts/Editor/Environment/EnvironmentalFundamentalsWindow.cs` (edits `Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelConfigSO.cs` assets) |
+| AI Diagnose panel / Third Eye (in-game tool / HUD / Game-view lines + overlay registry / camera math / pilot read-out / settings) | `Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEye.cs`, `ThirdEyeHud.cs`, `ThirdEyeLines.cs`, `ThirdEyeRig.cs`, `ThirdEyePilots.cs`, `ThirdEyeSettings.cs`, shared flight `Controller/Camera/FreeFlyCamera.cs`; tests `Assets/_Scripts/Tests/Editor/ThirdEyeRigTests.cs` |
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Kit config SO | `Assets/_Scripts/ScriptableObjects/GameModePrefabKitSO.cs` |

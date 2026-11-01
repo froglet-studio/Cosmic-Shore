@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>What the mode does NOT add:</b> no new ability, no cell, no scoring metric and no circuit generator -
     /// Slingshot's shape and Slingshot's cut (<see cref="SlingshotCourse"/>) with fewer, longer legs. The AI forms its
-    /// tunnels through the replicated press path (<c>MeerkatWormholeExecutor.Autopilot</c>).</para>
+    /// tunnels through the replicated press path (<c>MeerkatSolitonExecutor.Autopilot</c>).</para>
     /// </summary>
     public class WarplineController : GateRaceController
     {
