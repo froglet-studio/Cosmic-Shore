@@ -114,7 +114,7 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
+            var go = ToyFactory.CreateToyRoot(Id, parent, placement);
             var toy = go.AddComponent<SpawnMatrixToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);

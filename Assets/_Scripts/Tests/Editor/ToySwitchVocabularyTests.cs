@@ -31,8 +31,6 @@ namespace CosmicShore.Tests
         // deliberate act the reservation exists to make deliberate.
         static readonly Dictionary<string, string> SanctionedDomainSwitches = new()
         {
-            ["DomainChangerToySet.cs"] =
-                "the Domain Changer's slots - threading one calls RequestSetDomain_ServerRpc",
             ["PaintingRunner.cs"] =
                 "the painting's stroke-start gates - crossing one sets the stroke's domain",
             ["ScarabSwitch.cs"] =
@@ -46,7 +44,7 @@ namespace CosmicShore.Tests
         {
             "ToySwitchSignal.cs",           // the enum's own declaration
             "ToyFactory.cs",                // the resolver that implements the vocabulary
-            "Toy.cs",                       // the base that carries a signal to the builder
+            "ToyStation.cs",                // the base that carries a signal to the builder
             "ToySwitchVocabularyTests.cs",  // this file
         };
 

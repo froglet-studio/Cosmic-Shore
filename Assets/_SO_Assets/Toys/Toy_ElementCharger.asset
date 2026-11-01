@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.ElementChargerToyDefinitionSO
   id: element_charger
   displayName: Element Charger
-  description: Fly through to charge your vessel's elements.
+  description: Charge your vessel's elements.
   unlockedByDefault: 1
   placementAngleDegrees: 150
   accentColor: {r: 0.9, g: 0.95, b: 1, a: 1}

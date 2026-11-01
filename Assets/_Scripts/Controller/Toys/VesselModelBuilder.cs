@@ -33,23 +33,13 @@ namespace CosmicShore.Gameplay
             return built;
         }
 
-        /// <summary>As above, painted with a material the caller owns (see the ToyModelBuilder overload).</summary>
-        public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial, out GameObject model)
-        {
-            bool built = ToyModelBuilder.TryBuild(prefabRoot, targetRadius, sharedMaterial, out model, IsHull);
-            if (built && model) model.name = "VesselModel";
-            return built;
-        }
-
         /// <summary>
         /// A mini hull wearing the ship's OWN materials — the actual model, not a silhouette of it.
         ///
         /// <para>The flat preview fill existed because a vessel's real materials are dark unlit
         /// theme shaders that read as a black blob with nothing to say which team they belong to.
-        /// The vessel vision band answers both halves of that now (Docs/VESSEL_VISION.md): a
-        /// station wears its domain in a flat cel silhouette while you are choosing at range, and
-        /// resolves into the real hull as you close on it. So the fill can go, and a station can
-        /// show the ship.</para>
+        /// The vessel vision band answers both halves of that now (Docs/VESSEL_VISION.md), so a
+        /// preview can show the ship.</para>
         ///
         /// <para><paramref name="domainMaterial"/> replaces the prefab's authored DOMAIN-role
         /// slots, resolved from the prefab's own <see cref="VesselCustomization"/> exactly the way
@@ -67,11 +57,7 @@ namespace CosmicShore.Gameplay
                 prefabRoot, targetRadius, sharedMaterial: null, out model, IsHull,
                 (node, source, authored) => ResolveMaterials(authored, custom, domainMaterial));
 
-            if (built && model)
-            {
-                model.name = "VesselModel";
-                model.AddComponent<ToyLiveHull>();
-            }
+            if (built && model) model.name = "VesselModel";
             return built;
         }
 

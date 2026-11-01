@@ -22,8 +22,8 @@ namespace CosmicShore.Editor
     ///      <c>MenuCrystalClickHandler</c>, else a new root) and points it at the toybox.
     ///
     /// Idempotent - safe to re-run (re-runs also fill newly-added unset content fields and append
-    /// missing gallery paintings). The painting toy spawns one <see cref="PaintingToy"/> station
-    /// per painting, each driving a multi-stroke <see cref="PaintingRunner"/>.
+    /// missing gallery paintings). The painting toy lists every painting in the Toy Box, each
+    /// driving a multi-stroke <see cref="PaintingRunner"/>.
     /// See Docs/ToySystem/ARCHITECTURE.md.
     /// </summary>
     public static class ToyboxSetupTool
@@ -45,10 +45,10 @@ namespace CosmicShore.Editor
                 new Color(0.20f, 0.90f, 1.00f), 0f);
             AssignPaintings(painting, gallery); // always - migrates pre-gallery Toy_Painting assets too
             var vessel = LoadOrCreateToy<VesselChangerToyDefinitionSO>(
-                "Toy_VesselChanger", "vessel_changer", "Vessel Changer", "Fly through to swap your ship.",
+                "Toy_VesselChanger", "vessel_changer", "Vessel Changer", "Swap your ship.",
                 new Color(1.00f, 0.85f, 0.20f), 120f);
             var domain = LoadOrCreateToy<DomainChangerToyDefinitionSO>(
-                "Toy_DomainChanger", "domain_changer", "Domain Changer", "Fly through to change your team colour.",
+                "Toy_DomainChanger", "domain_changer", "Domain Changer", "Change your team colour.",
                 new Color(0.85f, 0.30f, 0.90f), 240f);
             // Wander: one toy, two choices. Each choice's tunables live on its own settings asset
             // (the Wanderway belt WITHOUT an Ark, the Arkway voyage WITH one); the toy only names
@@ -64,13 +64,13 @@ namespace CosmicShore.Editor
             // CellConfigs rotation, which is the single source of truth for this scene's cell.
             var cellSelector = LoadOrCreateToy<CellSelectorToyDefinitionSO>(
                 "Toy_CellSelector", "cell_selector", "Cell Selector",
-                "Fly through to pick the world you fly in - or reset it.",
+                "Pick the world you fly in - or reset it.",
                 new Color(0.55f, 0.75f, 1.00f), 300f);
             // 150: between the vessel changer (120) and the hand-authored Spawn Matrix (180),
             // so the three toys that change YOUR vessel sit together on the ring.
             var elementCharger = LoadOrCreateToy<ElementChargerToyDefinitionSO>(
                 "Toy_ElementCharger", "element_charger", "Element Charger",
-                "Fly through to charge your vessel's elements.",
+                "Charge your vessel's elements.",
                 new Color(0.90f, 0.95f, 1.00f), 150f);
 
             var toybox = LoadOrCreateToybox();

@@ -57,6 +57,17 @@ namespace CosmicShore.Gameplay
             return Math.Clamp(e.strokesCompleted, 0, totalStrokes);
         }
 
+        /// <summary>
+        /// True when the stored progress is a finished canvas (the stroke count it was recorded
+        /// against is not checked: a changed painting reads 0 on <see cref="GetStrokesCompleted"/>).
+        /// </summary>
+        public static bool IsFinished(string paintingId)
+        {
+            if (string.IsNullOrEmpty(paintingId)) return false;
+            return Data.paintings.TryGetValue(paintingId, out var e) && e != null
+                   && e.totalStrokes > 0 && e.strokesCompleted >= e.totalStrokes;
+        }
+
         public static int GetTimesCompleted(string paintingId)
         {
             if (string.IsNullOrEmpty(paintingId)) return 0;

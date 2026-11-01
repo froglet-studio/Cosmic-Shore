@@ -5,12 +5,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The arrow that points at the toy (or the thing a toy made) you asked to be taken to — the platform's own
-    /// <see cref="ObjectiveIndicator"/>, borrowed for as long as the trip lasts.
+    /// The arrow that points at the thing a toy made (a creature the Spawn Matrix released) you
+    /// asked to be taken to — the platform's own <see cref="ObjectiveIndicator"/>, borrowed for as
+    /// long as the trip lasts.
     ///
-    /// <para>The Toy Box's Navigate drops the player just outside the toy's ring facing it, so the
-    /// arrow is usually invisible at the moment it is raised: the indicator hides itself whenever
-    /// its target is on screen. It earns its place on the frames AFTER that — the player turns,
+    /// <para>The Toy Box's Navigate drops the player just outside it facing it, so the arrow is
+    /// usually invisible at the moment it is raised: the indicator hides itself whenever its
+    /// target is on screen. It earns its place on the frames AFTER that — the player turns,
     /// drifts, gets distracted by the cell — and it retires itself the moment they arrive, so it is
     /// a hand-off aid rather than a permanent HUD element.</para>
     ///
@@ -21,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class ToyNavigationBeacon
     {
-        /// <summary>Arrived once the vessel is inside this many ring radii of the toy.</summary>
+        /// <summary>Arrived once the vessel is inside this many radii of the target.</summary>
         const float ArrivedRingFactor = 3.5f;
 
         /// <summary>
@@ -46,18 +47,9 @@ namespace CosmicShore.Gameplay
         static Driver s_driver;
 
         /// <summary>
-        /// Point the arrow at <paramref name="toy"/> until the player reaches it, leaves freestyle,
-        /// or the trip times out. Safe to call with nulls — it simply does not raise the arrow.
-        /// </summary>
-        public static void PointAt(Toy toy, IPlayer player, MenuCrystalClickHandler freestyle)
-        {
-            if (!toy) { Clear(); return; }
-            PointAt(toy.transform, toy.SwitchRingRadius, toy.DisplayName, player, freestyle);
-        }
-
-        /// <summary>
-        /// Point the arrow at any <paramref name="target"/> - the thing a toy MADE rather than the
-        /// toy (a creature the Spawn Matrix released), arrived at within
+        /// Point the arrow at <paramref name="target"/> - the thing a toy MADE (a creature the Spawn
+        /// Matrix released) - until the player reaches it, leaves freestyle, or the trip times out,
+        /// arrived at within
         /// <see cref="ArrivedRingFactor"/> × <paramref name="radius"/>.
         /// </summary>
         public static void PointAt(Transform target, float radius, string label, IPlayer player,

@@ -115,7 +115,7 @@ namespace CosmicShore.Gameplay
             float checkpointSpacing = Mathf.Max(90f, 0.085f * localBounds.size.magnitude);
 
             // PaintingDefinitionSO.Strokes is already filtered to drawable strokes - using it
-            // verbatim keeps this count identical to the one PaintingToy and the progress store see.
+            // verbatim keeps this count identical to the one the gallery and the progress store see.
             var source = painting.Strokes;
             _strokes = new StrokeInfo[source.Count];
             for (int i = 0; i < source.Count; i++)
@@ -893,7 +893,7 @@ namespace CosmicShore.Gameplay
         void OnTriggerEnter(Collider other)
         {
             // Same local-vessel resolution the toy gates use - one rule, one implementation.
-            if (Toy.TryGetLocalVessel(other, out _)) Tripped = true;
+            if (ToyStation.TryGetLocalVessel(other, out _)) Tripped = true;
         }
     }
 }

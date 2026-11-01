@@ -7,9 +7,10 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns and places the player's unlocked freestyle <see cref="Toy"/>s near the cell
-    /// membrane in Menu_Main, spaced far apart. Toys are world-space stations the local vessel
-    /// flies into; they have no score and no end condition.
+    /// Builds the player's unlocked freestyle <see cref="Toy"/>s in Menu_Main: the live objects
+    /// behind the app shell's Toy Box. A toy has no world body - nothing is flown into to pick it
+    /// (2026-11-01) - but each is still anchored near the cell membrane, where its play (a
+    /// painting's monument, a release) is laid. Toys have no score and no end condition.
     ///
     /// Runs entirely at runtime and self-wires: drop this on any menu GameObject and it
     /// resolves a <see cref="ToyboxSO"/> (serialized → <c>Resources/Toybox</c> → a synthesised
@@ -38,24 +39,9 @@ namespace CosmicShore.Gameplay
         float fallbackRadius = 300f;
 
         [Header("Toy size")]
-        [SerializeField, Tooltip("Body (visible sphere) radius for each toy, world units.")]
+        [SerializeField, Tooltip("Reference size for each toy, world units: what its Toy Box previews " +
+                                 "and its play (a painting's monument spacing) are scaled from. Nothing is drawn at it.")]
         float toyBodyRadius = 22f;
-
-        [SerializeField, Tooltip("Trigger radius - how close the vessel must get to activate, world units.")]
-        float toyTriggerRadius = 42f;
-
-        [Header("Pole switches (today's activity + shuffle)")]
-        [SerializeField, Tooltip("Place the two Toy Box top buttons as big switches at the cell's poles - " +
-                                 "today's activity above the ring, shuffle below it. They are not toys " +
-                                 "(they press other toys), so they sit off the equator the toys share.")]
-        bool placePoleSwitches = true;
-
-        [SerializeField, Min(1f), Tooltip("Body radius of a pole switch, world units. Larger than a toy's, " +
-                                          "as the arcade's two top buttons are larger than its cards.")]
-        float poleBodyRadius = 55f;
-
-        [SerializeField, Min(1f), Tooltip("Trigger (and switch-ring) radius of a pole switch, world units.")]
-        float poleTriggerRadius = 105f;
 
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
@@ -139,12 +125,6 @@ namespace CosmicShore.Gameplay
                 _root.SetParent(transform, false);
             }
 
-            // Toy-root emblems build nothing on this frame (it is already the menu's most expensive
-            // one) - they queue with this pump, which fills one slot per frame. Added before the
-            // spawn loop so every toy finds it with a 2-level GetComponentInParent, never a search.
-            if (!_root.TryGetComponent(out ToyEmblemStreamer _))
-                _root.gameObject.AddComponent<ToyEmblemStreamer>();
-
             var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
             var context = new ToyContext
             {
@@ -172,20 +152,9 @@ namespace CosmicShore.Gameplay
 
                 float rad = angleDeg * Mathf.Deg2Rad;
                 var dir = new Vector3(Mathf.Sin(rad), 0f, Mathf.Cos(rad));
-                var placement = new ToyPlacement(center + dir * radius, center, toyBodyRadius, toyTriggerRadius);
+                var placement = new ToyPlacement(center + dir * radius, center, toyBodyRadius, 0f);
 
                 def.Spawn(_root, placement, context);
-            }
-
-            // After the toys, so both switches find a populated shell registry on their first read.
-            if (placePoleSwitches)
-            {
-                ToyboxPoleSwitch.Build(ToyboxPoleSwitch.PoleRole.DailyActivity, _root,
-                    new ToyPlacement(center + Vector3.up * radius, center, poleBodyRadius, poleTriggerRadius),
-                    context);
-                ToyboxPoleSwitch.Build(ToyboxPoleSwitch.PoleRole.Shuffle, _root,
-                    new ToyPlacement(center - Vector3.up * radius, center, poleBodyRadius, poleTriggerRadius),
-                    context);
             }
         }
 
@@ -237,12 +206,12 @@ namespace CosmicShore.Gameplay
                 "painting", "Fly by Numbers", "Paint monuments with your trail.", new Color(0.20f, 0.90f, 1.00f)));
 
             box.AddToy(MakeDefault<VesselChangerToyDefinitionSO>(
-                "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
+                "vessel_changer", "Vessel Changer", "Swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
-                "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
+                "domain_changer", "Domain Changer", "Change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
             // Needs no content wiring: its four crystals are read off the ElementalCrystalSet.
             box.AddToy(MakeDefault<ElementChargerToyDefinitionSO>(
-                "element_charger", "Element Charger", "Fly through to charge your vessel's elements.",
+                "element_charger", "Element Charger", "Charge your vessel's elements.",
                 new Color(0.90f, 0.95f, 1.00f)));
             // Wander: one toy, two choices - with an Ark (the Arkway voyage) or without one (the
             // Wanderway belt). Both need a prism prefab the code-built fallback can't supply: the
@@ -255,7 +224,7 @@ namespace CosmicShore.Gameplay
             // Needs no content wiring: with no cells authored it reads the containing Cell's
             // own CellConfigs rotation.
             box.AddToy(MakeDefault<CellSelectorToyDefinitionSO>(
-                "cell_selector", "Cell Selector", "Fly through to pick the world you fly in - or reset it.",
+                "cell_selector", "Cell Selector", "Pick the world you fly in - or reset it.",
                 new Color(0.55f, 0.75f, 1.00f)));
             return box;
         }

@@ -6,19 +6,19 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Builds the runtime pieces of a <see cref="Toy"/>: a trigger-collider root, a tinted sphere
-    /// body or a mini vessel model. No text - a toy is read by its ring and icon. Visuals are procedural so toys work
-    /// with zero prefab authoring.
+    /// Builds the runtime pieces of toys and their play: a toy's bodiless logic root
+    /// (<see cref="CreateToyRoot"/>), a fly-through <see cref="ToyStation"/>'s trigger root, ring
+    /// and hub, and the procedural models the Toy Box previews show. Visuals are procedural so
+    /// they work with zero prefab authoring.
     ///
-    /// Continuity-of-existence law: pieces are created at full size here; the <see cref="Toy"/> base
-    /// scales the root from zero (bloom-in) on <see cref="Toy.Initialize"/>.
+    /// Continuity-of-existence law: pieces are created at full size here; the
+    /// <see cref="ToyStation"/> base scales the root from zero (bloom-in) on initialize.
     /// </summary>
     public static class ToyFactory
     {
         /// <summary>
-        /// Composite: bare root + sphere body. Used by single toys (e.g. painting). There is no
-        /// label: a freestyle toy carries NO text - its switch ring and its icon say what it does,
-        /// and the Toy Box menu is where a player learns its name.
+        /// Composite: bare root + sphere body, for a <see cref="ToyStation"/> (a wander's way home).
+        /// There is no label: a station carries NO text - its switch ring and its hub say what it does.
         /// </summary>
         public static GameObject CreateRoot(string toyName, Transform parent, ToyPlacement placement, Color accent)
         {
@@ -26,8 +26,23 @@ namespace CosmicShore.Gameplay
             var body = new GameObject("Body");
             body.transform.SetParent(root.transform, false);
             AddSphereBody(body.transform, placement.BodyRadius, accent);
-            // The switch ring itself is drawn by Toy.Initialize off the trigger collider (one
-            // implementation, every toy).
+            // The switch ring itself is drawn by ToyStation.Initialize off the trigger collider (one
+            // implementation, every station).
+            return root;
+        }
+
+        /// <summary>
+        /// A toy's logic object: positioned at its anchor and facing the cell centre, with NO body,
+        /// collider or ring - toys are chosen in the app shell's Toy Box, never flown into.
+        /// </summary>
+        public static GameObject CreateToyRoot(string toyName, Transform parent, ToyPlacement placement)
+        {
+            var root = new GameObject($"Toy_{toyName}");
+            root.transform.SetParent(parent, false);
+            root.transform.position = placement.Position;
+            Vector3 toTarget = placement.LookTarget - placement.Position;
+            if (toTarget.sqrMagnitude > 1e-4f)
+                root.transform.rotation = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
             return root;
         }
 
@@ -267,35 +282,18 @@ namespace CosmicShore.Gameplay
         // ── The SWITCH ───────────────────────────────────────────────────────
         //
         // A ring you thread is the platform's one word for "this activates something" - the
-        // Scarab's placed switches, Astro League's goals, the painting's stroke gates, and (since
-        // this pass) every freestyle toy and every choice a toy unfolds into. What makes it
+        // Scarab's placed switches, Astro League's goals, the painting's stroke gates, a wander's
+        // way home. What makes it
         // teachable rather than decorative is a single rule:
         //
         //     THE RING IS THE TRIGGER VOLUME, DRAWN AT ITS OWN RADIUS.
         //
         // so a ring can never advertise a volume the collider does not have, and "fly through the
-        // ring" is a promise the code keeps. `Toy` therefore draws its own from its own collider
-        // rather than each toy's builder remembering to - see Toy.ConfigureSwitchRing for the two
-        // explicit opt-outs (resize, waive).
+        // ring" is a promise the code keeps. `ToyStation` therefore draws its own from its own
+        // collider rather than each builder remembering to - see ToyStation.ConfigureSwitchRing.
 
         /// <summary>Ring tube radius as a fraction of ring radius (<see cref="RingMesh"/>: r/R = 0.04/0.5).</summary>
         public const float RingTubeFraction = 0.08f;
-
-        /// <summary>
-        /// Widest a switch ring may be, as a fraction of the spacing between it and its
-        /// neighbour. A station's TRIGGER can legitimately overrun half that gap (the vessel
-        /// changer's does, and the domain changer's slots do on a small placement circle), but
-        /// rings that interpenetrate read as noise instead of as a row of switches. Threading a
-        /// ring smaller than its trigger still always fires it, so clamping never breaks the
-        /// promise above.
-        ///
-        /// <para>Its callers are <see cref="StationRingRadius"/> for a matrix and
-        /// <c>SwapToySetCoordinator.SlotRingRadius</c> for a flip-set, whose "spacing" is the
-        /// chord between adjacent slots. (The lifeform variant station used to be the third tight
-        /// case at level 5; lifeform levels are retired — Docs/ECOSYSTEM.md §40 — so every variant
-        /// station is now the plain station radius and no longer exercises the clamp.)</para>
-        /// </summary>
-        public const float MaxRingSpacingFraction = 0.45f;
 
         // ── What a switch's SHADER says ──────────────────────────────────────
         //
@@ -499,10 +497,6 @@ namespace CosmicShore.Gameplay
             s_wireRingMaterials[key] = mat;
             return mat;
         }
-
-        /// <summary>Switch ring radius for a matrix station, clamped by <see cref="MaxRingSpacingFraction"/>.</summary>
-        public static float StationRingRadius(float triggerRadius, float stationSpacing)
-            => Mathf.Min(triggerRadius, Mathf.Max(1f, stationSpacing) * MaxRingSpacingFraction);
 
         /// <summary>
         /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring and

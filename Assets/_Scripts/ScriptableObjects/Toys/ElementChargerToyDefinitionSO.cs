@@ -5,10 +5,9 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The <b>Element Charger</b> - <b>one toy that opens into the four elements</b>. Fly the
-    /// station and a row of four element crystals blooms out ahead, charge → mass → space → time
-    /// left to right as you approach (the same order as the HUD's flowers and ability row); fly a
-    /// crystal and your vessel's level in that element rises by <see cref="LevelsPerPass"/>.
+    /// The <b>Element Charger</b> - <b>the four elements</b>, in the Toy Box, charge → mass →
+    /// space → time (the same order as the HUD's flowers and ability row); charge one and your
+    /// vessel's level in that element rises by <see cref="LevelsPerPass"/>.
     ///
     /// <para>The grant is exactly what collecting an elemental crystal does - a raise of the
     /// vessel's persistent BASE level in whole petals (<see cref="ResourceSystem.GrantPetals"/>) - so every
@@ -25,25 +24,13 @@ namespace CosmicShore.ScriptableObjects
     public class ElementChargerToyDefinitionSO : ToyDefinitionSO
     {
         [Header("Grant")]
-        [SerializeField, Range(1, 20), Tooltip("Integer element levels one pass through a crystal adds. " +
+        [SerializeField, Range(1, 20), Tooltip("Integer element levels one charge adds. " +
                                                "5 is one pass from rest to the level-5 ability upgrade, and " +
                                                "two to the sustained ceiling (10). Anything past 10 is " +
                                                "overcharge and drains back to 10, exactly as a crystal's does.")]
         int levelsPerPass = 5;
 
-        [Header("Layout")]
-        [SerializeField, Min(10f), Tooltip("Spacing between crystals in the row.")]
-        float stationSpacing = 60f;
-
-        [SerializeField, Min(0.5f), Tooltip("How far out the row blooms, in multiples of Station Spacing, " +
-                                            "measured from the toy along the outward radial (away from the " +
-                                            "cell centre). You fly AT the toy and keep going, so this is the " +
-                                            "gap you cross before the choices.")]
-        float matrixDistanceFactor = 3f;
-
         public int LevelsPerPass => Mathf.Max(1, levelsPerPass);
-        public float StationSpacing => stationSpacing;
-        public float MatrixDistanceFactor => matrixDistanceFactor;
 
         /// <summary>Your vessel's elements. It changes what YOUR hull can do - the world, your domain
         /// and your hull are exactly where you left them.</summary>
@@ -51,7 +38,7 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
+            var go = ToyFactory.CreateToyRoot(Id, parent, placement);
             var toy = go.AddComponent<ElementChargerToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);
