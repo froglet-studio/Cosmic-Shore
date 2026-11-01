@@ -74,41 +74,40 @@ Each element's build wins its own column, as the element jobs intend.
 ## The Time trail (proposal, 2026-11-01, `feature/starlings-time-game`)
 
 The pilot never steers, so a Starlings time game cannot be a race the player drives. The proposal: the mode lays each
-phase's objective at its own **station** on a course (a wall of CLUSTER+10 enemy prisms at each Mass station, Y+3
-crystals at each Elemental one, the omnicrystal and the rivals near theirs), and the clock runs until the swarm has
-worked all 8 stations, two laps of the cycle. Every leg still ends early on its goal or late on its timer, so each
-element shortens a different leg. The vessel is unchanged (the LOCKED rule): only the course belongs to the mode.
-Pick *Time trail* in the Game menu; the Scorecard tab has **Run the time trail**; `__lab.runTrail({ seeds })` is the
-headless form.
+phase's objective at its own **station** on a course (a wall of enemy prisms at each Mass station, crystals at each
+Elemental one, the omnicrystal and the rivals near theirs), and the clock runs until the swarm has worked all 16
+stations, four laps of the cycle. Every leg still ends early on its goal or late on its timer, so each element shortens
+a different leg. The vessel is unchanged (the LOCKED rule): only the course belongs to the mode. Pick *Time trail* in
+the Game menu and a course; the Scorecard tab has **Run the time trail**; `__lab.runTrail({ course, seeds })` and
+`__lab.runCourses()` are the headless forms.
 
-Measured on 30 courses (seeds 11-40), every element at level 5, AI picks a card and then the draw element by the row's
-rule. Lower wins. Legs are seconds spent on that kind of station, summed over both laps.
+### Round 1: one course (8 stations)
 
-| Build | Trail (s) | Omni | Elemental | Vessel | Mass | Hands | Wins (of 30) |
-|---|---|---|---|---|---|---|---|
-| No cards | 88.9 | 6.9 | 11.9 | 35.8 | 34.2 | 4.7 | |
-| Random picks | 78.4 | 7.3 | 11.6 | 29.9 | 29.6 | 4.2 | |
-| Mass first | 86.3 | 7.1 | 12.2 | 33.8 | 33.2 | 4.4 | 1 |
-| Time first | 81.3 | 7.2 | 11.1 | 30.4 | 32.6 | 4.5 | 3 |
-| Space first | 81.0 | 7.7 | 12.1 | 39.4 | **21.8** | 5.6 | 9 |
-| Charge first | **65.9** | 7.1 | 11.9 | **18.5** | 28.3 | 3.6 | 17 |
-| Rotate elements | 75.1 | 7.6 | 11.4 | 28.9 | 27.3 | 4.5 | |
+On 30 seeds Charge first won 17, Space 9, Time 3 and Mass 1. Time was no longer the only answer, but Charge was the
+default: the Opposing vessels legs were the longest and only Charge shortens them.
 
-What it shows:
+### Round 2: courses that vary per run (Garrett chose "vary courses per run", 2026-11-01)
 
-1. **Time is no longer the only answer.** Time first wins 3 courses of 30. With element hands, the draw element is a
-   real choice, which was the point of PR #1677.
-2. **Charge is the new default.** The Opposing vessels legs are the longest (36 s of 89 with no cards) and only Charge
-   shortens them, halving them to 18.5 s. Space halves nothing but takes 12 s off the Mass legs. These two are the
-   real contest.
-3. **Mass and Time have no leg of their own.** Mass makes nothing shorter (survival is not timed), and the Elemental
-   and Omni legs are already short (12 s and 7 s over both laps), so Time's Hurry Up has little to cut.
-4. Mixing pays: Rotate elements (75 s) beats every single-element build except Charge.
+Each course changes only the environment (station spacing, wall size and shielding, rival count and speed), is shown
+before the run, and rewards a different element. *Any course* draws one per run. Also new: the element-first AI takes
+its favourite card from a hand (a random card hid what an element can do), the trail is 16 stations (with 8, the
+cards arrived too late to matter), and a **Reads the course** AI builds the element the course rewards.
 
-Levers that stay within the rule (track, environment, AI, never the kit): longer travel between stations (Time's
-speed cards pay), a hazard leg that costs birds and a bird count needed to finish (Mass pays), fewer or slower rivals
-at Vessel stations (Charge's edge shrinks), and courses that vary which legs are long so the right build changes per
-course.
+| Course | What it is | Mass first | Time first | Space first | Charge first | No cards |
+|---|---|---|---|---|---|---|
+| Long haul | stations alternate across the cell, no rivals | 215.4 | **196.8** | 209.3 | 216.5 | 216.9 |
+| Fortress | 130-prism walls, 60% shielded, rivals at 15 u/s | 149.2 | 140.8 | **108.1** | 125.2 | 152.7 |
+| Chase | rivals at 115 u/s | 152.8 | 126.6 | 150.1 | **106.4** | 155.3 |
+
+Seconds to finish (lower wins), 15 seeds each. On *Any course* (24 seeds): **Reads the course 141.7**, Charge first
+151.7, Random picks 152.0, Rotate 154.5, Space first 156.8, Time first 162.0, Mass first 172.6, no cards 176.4.
+Reading the course beats any fixed element by 10 s, so the draw element is a real choice made from the course.
+
+**Mass wins no course.** Its cards (Brood, Carapace, Big Family, Mound Builders, Snowball, Danger Drip) keep the swarm
+big and lay your prisms; nothing on a timed course rewards that, and a Crossfire course (rivals shooting four times as
+often) still went to Charge. This is a kit gap the time game exposes, not something a course can fix: Mass needs a
+card that ends a phase early (for example one that counts the prisms you lay toward a goal), and that is a vessel
+change for Garrett to decide.
 
 ## Found
 
@@ -134,5 +133,5 @@ course.
 
 ## Round log
 
-- **Time trail (2026-11-01, `feature/starlings-time-game`):** the Game menu's Time trail, stations drawn on the stage, `runTrail` and its scorecard; measured on 30 courses (above).
+- **Time trail (2026-11-01, `feature/starlings-time-game`):** the Game menu's Time trail, stations drawn on the stage, `runTrail` and its scorecard; round 2 adds the Long haul, Fortress and Chase courses, the favourite-card AI and the Reads-the-course AI (above).
 - **Round 1 (2026-10-20, `claude/project-thread-pkoq70`):** the first build covers the passive 3D swarm, the joystick view, the four-phase cycle, hands of 4 with level stacking, the protected minimum, 24 wired cards, I1 to I4, a six-build scorecard and the decision log.
