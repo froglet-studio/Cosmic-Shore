@@ -206,3 +206,27 @@ What each one is:
 - **What is left** is the shell, which is greener, more opaque and more jagged in Unity, and the debris's
   sub-pixel detail. The worst frames now sit near rmse 0.021, against 0.042 before the start frame was fixed.
 
+### The flight take (2026-11-01)
+
+The second take, `flight`: four Manta hulls (Jade, Ruby, Blue, Gold) fly closed-form paths of the frame index
+through each other's prism trails, laid every two frames through `PrismTrailBuilder.LayOne`, and the camera chases
+the Jade hull from take frame 0 (`Assets/_Scripts/Utility/Parity/RenderParityFlight.cs`; the scene
+`Assets/_Scenes/Game_TestDesign/RenderParityFlight.unity`, written by `author_render_parity_scene.py`). It is the
+footage highlight reels are cut from. Unity records it with `FrogletTools > Amoebius > Render Parity: Record Flight
+Take`; the golden (`goldens/render/flight/`, MSAA 1, no post: `take.json` carries `"post": "off"`) is on branch
+`claude/parity-flight-golden`, its lossless PNGs on Gbox. Scores on Gbox, lossless, post off:
+
+| Change | flight loss | rmse | ssim | control loss |
+|---|---|---|---|---|
+| first score | 0.0373 | 0.0283 | 0.982 | 0.0199 |
+| FBX submeshes ordered by the polygons' first use of each material, as Unity does | **0.0265** | 0.0207 | 0.988 | 0.0198 |
+
+- **Submesh order.** Unity orders a model's submeshes by the order its polygons first use each material, not by
+  material index. The Manta's polygons use `BASE` first, so Unity's submesh 0 is the body and the prefab's slot 0
+  material (GreenAccent) paints it cyan; Amoebius sorted by index and painted it BlueBase grey, the take's two worst
+  tiles (0.081, now under 0.008). Most of the fleet's FBXs use a material other than 0 first, so this repaints
+  most hulls in Amoebius (`FbxModelImporter`, held by `ModelPrefabTests`).
+- **What is left** is spread evenly (worst tiles 0.0077-0.0084): one-pixel differences along the trails' edges at
+  MSAA 1, where the far ends of the trails are under a pixel wide. The worst frames, 141-145, are where the big
+  orange trail sweeps through.
+
