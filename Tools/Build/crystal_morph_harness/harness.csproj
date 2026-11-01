@@ -2,7 +2,8 @@
   <!-- Compiles the SHIPPED CrystalMorphMeshBuilder + IcosphereMeshGenerator and BOTH shipped
        edit-mode suites (hull + panel census) against UnityStub.cs, and runs them with NUnitLite.
        Also the elemental crystal's hull fusion geometry (CrystalHullFusionGeometry + its suite), and the
-       spherical-blast morph geometry (SphereBlastMorphGeometry + its suite: Butterfly, Rhino, Manta).
+       spherical-blast morph geometry (SphereBlastMorphGeometry + its suite: Butterfly, Rhino, Manta), and the
+       fauna-birth heart pick (FaunaHeartMorphGeometry + its suite: Angler, Jacks).
        Nothing under Assets/ is copied or edited: the files are included by path. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -27,6 +28,8 @@
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/ShrikeCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/SphereBlastMorphGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/FaunaHeartMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/FaunaBirthCrystalMorphGeometryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.14.0" />

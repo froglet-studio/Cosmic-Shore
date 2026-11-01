@@ -340,7 +340,9 @@ namespace CosmicShore.Gameplay
             if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return false;
             if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
-            if (!f || !f.TryLeash(this)) return false;
+            if (!f) return false;
+            CrystalFaunaBirth.Announce(_status, f);   // the omni crystal folds into its heart (FAUNA_BIRTH_CRYSTAL_MORPH.md)
+            if (!f.TryLeash(this)) return false;
             var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
             _members[f] = m;
             JoinSchool(m);

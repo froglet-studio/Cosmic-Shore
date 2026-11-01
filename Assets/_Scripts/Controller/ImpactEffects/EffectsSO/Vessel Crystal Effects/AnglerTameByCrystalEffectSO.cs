@@ -32,7 +32,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
             Vector3 at = data.Origin.Valid ? data.Origin.Pose.position : vesselImpactor.transform.position;
-            angler.OmniMorph(at);      // the crystal becomes a creature
+            // The crystal becomes a creature. When none is born (the school is full, or a replicated species is born on
+            // the ecology's peer), the omni retirement fades the crystal quietly (FAUNA_BIRTH_CRYSTAL_MORPH.md).
+            if (!angler.OmniMorph(at))
+                CrystalFaunaBirth.Decline(vesselImpactor.Vessel?.VesselStatus,
+                                          "the Angler's school is full or this peer does not simulate the ecology");
             angler.AddFloraSeed(at);   // ...and leaves a plant's seed, planted on the next lure release
         }
     }
