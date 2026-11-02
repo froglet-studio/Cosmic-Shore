@@ -28,6 +28,8 @@
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/ShrikeCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/SphereBlastMorphGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/HiveCombMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/HoneyguideCrystalMorphGeometryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.14.0" />
