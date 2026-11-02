@@ -3,7 +3,7 @@
 **2026-10-28: `ai`, the AI's own branch.** `origin/ai` is `bleeding-edge` plus AI work, owned by no person
 (Shombith, who leads Froglet Compute). Froglet Compute's AI jobs read it, and `Tools/Compute/ai_branch.py sync --push`
 keeps it current: it merges `bleeding-edge` in and replays only the AI paths that changed here on
-`Ys-bleeding-edge`. Nothing below changes yet: Yash's sessions and the hourly sweep still work here, and the sync
+`Ys-bleeding-edge`. Nothing below changes yet: Yash's sessions and the daily sweep still work here, and the sync
 carries their AI work across. Moving the sweep and AI sessions to `ai` is the next step, Yash's to agree.
 `Docs/Compute/README.md` section 7.1.
 
