@@ -16,7 +16,7 @@ MonoBehaviour:
   - vessel: 6
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    tiltRollOnOneThumb: 1
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0

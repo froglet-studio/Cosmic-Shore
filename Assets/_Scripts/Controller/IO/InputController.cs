@@ -291,7 +291,8 @@ namespace CosmicShore.Gameplay
                     MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.GamepadOwnsInput);
                 return gamepadStrategy;
             }
-            if (SystemInfo.deviceType == DeviceType.Handheld)
+            // EditorTouchOverride: Unity Remote / menu toggle flies by touch in the Editor (always false in builds).
+            if (SystemInfo.deviceType == DeviceType.Handheld || EditorTouchOverride.IsForced)
                 return touchStrategy;
             if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)
                 return dualMouseStrategy;

@@ -147,7 +147,7 @@ namespace CosmicShore.Gameplay
         {
             // Application.isMobilePlatform also covers a phone's BROWSER (WebGL reports a desktop
             // device type there).
-            if ((SystemInfo.deviceType == DeviceType.Handheld || Application.isMobilePlatform) && Gamepad.current == null)
+            if ((SystemInfo.deviceType == DeviceType.Handheld || Application.isMobilePlatform || EditorTouchOverride.IsForced) && Gamepad.current == null)
                 return InputDeviceFamily.Touch;
             if (Gamepad.current != null)
                 return InputDeviceFamily.Gamepad;

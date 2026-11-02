@@ -322,6 +322,12 @@ overrides: the same entries, the same actions on every peer.
 the Time-mode orbit tightening over 3 s and slinging on release, the Hold tap, the mode switch from the Mass card,
 and the lava lamp's AI Stoat using its pairs on a phone and letting go when you take the hull.
 
+**Prototype, 2026-11-02 (Yash; NEEDS GARRETT'S SIGN-OFF; branch `touch/stoat-squirrel-proto`): keep a thumb down to orbit.**
+The profile is now ThumbLifts (lift defer 0.12 s). Lifting the RIGHT thumb raises `LeftStickAction`, the left pair, while the left
+thumb flies the orbit; lifting the LEFT thumb raises `RightStickAction`. Holding tightens the orbit over `holdRampSeconds`, and putting the thumb back
+slings. Hold is the one extra disc, and the Mass (Mode) card is display-only (orbit-only kit). The bindings above are unchanged, so touch still
+equals the pad. TODO: a haptic "now" at the 90 degree window. No allowed `HapticController` feel fits; it needs the "adding a feel" clause.
+
 ## 5. Proof (all offline — no `/verify-unity` in the session that built this)
 
 - `Tools/Build/author_stoat_assets.py --check` OK; `--self-test`: XXHash32 against the reference
