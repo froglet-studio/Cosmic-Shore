@@ -1615,6 +1615,72 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
 
 ---
+### 🔴 Holes on mobile: no warped space, the Meerkat recipe, the Charge ripple shows (`stoat/annihilation-waves`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+`Docs/BLACK_HOLE.md` §5.4, `R_VesselActions/STOAT_DIPOLE.md` §1c. Yash: "make sure we are not warping space … mobile
+friendly … the same [as the Meerkat] with these black / white hole pair". New `BlackHoleConfig.look` = **Mobile** (default):
+every hole / wave / ripple is one camera-facing annulus drawn by `BlackHoleGlow.shader` (one UniversalForward pass, no
+copy, no depth or opaque texture, no textures, `target 3.0`); the lens, both lens passes, the prism / hull tides, the GW
+prism squeeze and `gwShake` are off. `StudioLens` restores the 2026-10-28 look below (its steps 2 and 4 apply only
+there). Physics unchanged. No editor in this session. Headless proof: `verify_black_hole_glow.py --require-real` (pixels on
+the CPU, the ripple vs `BlackHoleWaves.Strain` 2e-6, bloom bound, DXC D3D11 / Vulkan / Metal / GLES3 + ESSL 300 validation,
+negative controls, cost), `verify_black_hole_lens.py`, `verify_prism_gravity_warp.py`, `verify_vortex_ring_lens.py`,
+`verify_stoat_ripple.py`, `unity_refcompile` player-dev + editor (only the known FMOD / DOTween / services errors).
+`BlackHoleGlowTests` is new, not run.
+
+1. **On a phone (Android, mid-range; and an iPhone if available), Development Build + Profiler / GPU frame time.**
+   Fly the Stoat, lay pairs, let go repeatedly, with two AIs laying theirs. Frame time steady at the target; no spike
+   on a let-go. A/B the same flight with `look` = StudioLens: Mobile should be clearly cheaper (no `BlackHoleLens` copy).
+2. **Nothing warps.** Behind a hole, prisms and stars are NOT bent; prisms near a hole or crossed by a wave do not
+   stretch; the Stoat's / Angler's hull does not stretch near a hole; the view never stretches as a wave passes.
+3. **The look.** Black hole: a dark core with a thin warm ring and a faint dark halo. White hole: a bright soft core,
+   sky faintly through it. No hard disc edge, no flicker. Flying into a core it fades out smoothly; no clipping pop.
+4. **Let go.** A faint, local ripple (crests a touch lighter, troughs a touch darker) gone within ~220 u; NO flash, no
+   white bloom; the **Charge ripple is now visible** as a thin soft ring in the domain colour expanding to its reach.
+5. **Frame Debugger.** No `BlackHoleLens` / `BlackHoleWaveLight` passes, no depth copy because of holes; the glows are
+   in the transparent queue as `CosmicShore/BlackHoleGlow`.
+6. **Others unaffected.** Goby's vortex ring lens and the Meerkat's wormhole lens still bend (they share `CameraSupport`);
+   crystal pairs and Thresher / Angler smooth wells draw a faint ring instead of a bend.
+7. **Feel check.** Subtle, clean, refreshing? Tune `mobileHaloGlow` / `mobileWaveGlow` / `mobileWaveShade` / `mobileWaveReach`.
+
+| Knob | Where | Ships |
+|---|---|---|
+| Look | `BlackHoleConfig` `look` | 0 (Mobile) |
+| Mobile glows | `BlackHoleConfig` `mobileHaloGlow`, `mobileWaveGlow`, `mobileWaveShade`, `mobileWaveReach` | 0.06, 0.12, 0.06, 220 |
+| Ripple ring | `StoatRippleConfig` `rimGlow`, `bandWidth` | 0.15, 0.08 |
+
+### 🔴 Stoat annihilation waves back: the wiggle and the light shell, with no flash (`stoat/annihilation-waves`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+`Docs/BLACK_HOLE.md` §5.2, `R_VesselActions/STOAT_DIPOLE.md` §1c. Root cause of the 2026-10-14 "far too big and bright"
+flash: the studio adds a light shell's glow and screen wash to its final picture in display values (no bloom, no
+tonemapping); Unity added them before post-processing as HDR light, and the gameplay bloom (threshold 0.2, intensity 2.5)
+blew them into a white flash. The waves' light is now `BlackHoleLens.shader` pass 1 (`BlackHoleWaveLight`), drawn by a
+second `BlackHoleLensPass` at `AfterRenderingPostProcessing` and added in sRGB; pass 0 keeps the bend, the squeeze and
+the holes' own light. `StoatDipoleConfig.annihilationWaves` is ON again; the creation wave has its own switch,
+`birthWave`, OFF. Every studio wave value unchanged. No editor in this session. Headless proof:
+`verify_black_hole_lens.py --require-real` (1b: both passes vs the studio's GLSL, worst 1.2e-7; 5c negative control;
+B1 glslang + B2 DXC on D3D11 / Vulkan / Metal, both passes), `verify_prism_gravity_warp.py`, `studio_to_unity.py --vessel
+stoat --check`, `author_stoat_assets.py --check`, `unity_refcompile` player-dev. `BlackHoleTests` was edited, not run.
+
+1. **Mass mode, press a trigger.** NO shell converges on the new pair, nothing washes the screen, nothing blooms white.
+2. **Let go.** Where the poles meet: the Charge ripple's strike, plus a fast faint wiggle of the scene moving out
+   (the gravitational wave: crests a touch brighter, troughs a touch darker; prisms it crosses stretch and squeeze) and a
+   thin pale shell growing outward; as it passes you, a short gentle wash (at most ~0.3 in display value, NOT a
+   white-out) and a brief stretch / squeeze of the whole view (`gwShake`). Gone within a few seconds.
+3. **Press again while a pair is live.** The old pair collapses (0.3 s) and its waves leave near the new pair just
+   after it appears: this is the OLD pair's annihilation, not a birth flash. Report if it reads as a flash at creation.
+4. **Frame Debugger.** With a wave alive: `BlackHoleLens` after the transparents AND `BlackHoleWaveLight` after
+   post-processing; with no wave alive, no `BlackHoleWaveLight`. A hole with no wave: unchanged from before.
+5. **`birthWave` on (StoatDipoleConfig).** The studio's converging shell plays at a fresh pair, faint, no flash.
+6. **Known, fixed 2026-10-29 in the Mobile look (above):** the Charge ripple's PICTURE (`StoatRipple`, `LightMode = BlackHoleLens`) has not been
+   drawn since `BlackHoleLensPass` stopped drawing renderers (2026-10-10, one full-screen draw); its strike still works.
+
+| Knob | Where | Ships |
+|---|---|---|
+| Death waves (GW + outgoing shell) | `StoatDipoleConfig` `annihilationWaves` | 1 |
+| Birth wave (converging shell) | `StoatDipoleConfig` `birthWave` | 0 |
+| Wave look | `BlackHoleConfig` `gwAmp`, `gwSpeed`, `gwPeriod`, `gwRingdown`, `gwPrism`, `gwShake`, `gwGlow`, `whInFrom`, `whOutSpeed`, `whOutFade`, `shellBend` | 12, 120, 0.35, 1, 0.6, 1, 1, 700, 450, 1.6, 6 |
+| Poles sink | `StoatDipoleConfig` `dieSeconds` | 0.7 |
 
 ### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
 

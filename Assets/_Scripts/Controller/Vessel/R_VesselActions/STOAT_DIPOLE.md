@@ -298,6 +298,34 @@ birth, and the meeting draws this ripple alone, toned down: `bend` 0.025 → **0
 `rimGlow` 1.6 → **0.15**, `bandWidth` 0.12 → **0.08** (`author_stoat_assets.py` owns `StoatRippleConfig.asset`). Its
 REACH (what it strips and kills) is unchanged.
 
+**The death waves are back, the birth wave stays off (2026-10-28).** Root cause of the "far too big and bright" flash:
+the studio (three r128) adds a light shell's glow (0.35 × its envelope) and its screen wash (≤ 0.3) to its FINAL picture
+in display values — an 8-bit target, no bloom, no tonemapping. Unity added them in `BlackHoleLensPass`, BEFORE
+post-processing, as linear HDR light; the gameplay profile's bloom (threshold 0.2, intensity 2.5) then blew them into a
+screen-filling white flash. The waves' light is now its own shader pass (`BlackHoleWaveLight`, pass 1 of
+`BlackHoleLens.shader`), drawn at `AfterRenderingPostProcessing` and added in sRGB: the two passes sum to the studio's
+composite (`Tools/Shaders/verify_black_hole_lens.py`, 1b). Every studio wave value is unchanged (`gwAmp` 12, `gwSpeed`
+120, `gwPeriod` 0.35, `gwRingdown` 1, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1, `whInFrom` 700, `whOutSpeed` 450,
+`whOutFade` 1.6, `shellBend` 6, `dieS` 0.7). `annihilationWaves` is **on**: a meeting throws the gravitational wave
+(with its camera shake) and the outgoing shell, alongside the Charge ripple (kept: the ripple is the gameplay strike and
+the waves are the studio's look; they do not duplicate). The CREATION wave (`Kind.In`) has its own switch,
+`StoatDipoleConfigSO.birthWave`, **off** (the studio always fires it and has no switch, so `stoat.json` maps nothing).
+Note: a fresh press over a live pair annihilates the old pair (0.3 s collapse), so its death waves leave near the new
+pair just after it appears — the old pair's annihilation, not a birth flash. Stated limit: a hole's own ring glow and
+core are still drawn before post-processing, so they still bloom.
+
+**The Mobile look — the ripple finally shows, nothing warps (2026-10-29).** Yash: *"make sure we are not warping space
+… make the shaders mobile friendly … the same [as the Meerkat] with these black / white hole pair."* The sphere above
+was never drawn: its only pass is `LightMode = BlackHoleLens`, and no renderer list draws that LightMode (the lens pass
+draws its own full-screen material, not the ripple's). With `BlackHoleConfig.look` = `Mobile` (the default,
+`Docs/BLACK_HOLE.md` §5.4) the ripple draws its front as a thin soft light ring in the owner domain's colour
+(`BlackHoleGlow.DrawRing`: brightness `rimGlow` 0.15, half width ½ · front · `bandWidth` 0.08, at least 0.5 u, faded by
+the ripple's own strength), once a frame, with no copy and no depth texture. `bend` and `chromaticSplit` are kept for
+the Studio lens look and unused by Mobile (their tooltips say so). The pair itself is a dark core with a thin photon
+ring (black) and a bright soft core (white); the annihilation throws a faint local ripple (the gravitational wave's
+own waveform, gone by `mobileWaveReach` 220 u) instead of bending the view; the hull no longer stretches near a hole,
+and `gwShake` stretches nothing. The REACH, the strip and the kill are unchanged.
+
 ## 1d. The HUD — four cards, four gauges
 
 `StoatHUDVariant.prefab` (a true variant of `VesselHUDPrefab`, copied once from the Thresher's: authored petal bars, a
@@ -871,7 +899,7 @@ a negative control); the real-URP DXC compile was not available. **Not opened in
 | D10 | debt this branch widened | **The Stoat's sim-authority test lives on another vessel's executor.** Every Stoat executor asks `MantaStingActionExecutor.IsSimAuthority(status)` whether it is the simulating machine — a general rule (the owner; the host for an AI) homed on the Manta's sting. This branch added a fourth caller (`StoatModeExecutor`). Shape: a helper on the wrong class (`/refactor` §3). Move it to a vessel-level home (`IVesselStatus` / a static `VesselAuthority`) and repoint every caller. | `grep -rln "MantaStingActionExecutor.IsSimAuthority" Assets/_Scripts --include=*.cs` → 4 files, all four Stoat executors (the Manta's own uses are unqualified) |
 | D11 | walked past | **`check_enum_member_references.py` is red on bleeding-edge**, not on this branch: `GameCanvasUnifier.cs(920): 'Placement' has no member 'Capture'`, the enum it resolved being `CrystalFlipWaveBenchmarkWindow.cs`'s — likely two same-named enums rather than a missing member. Confirmed identical on `390c2467` (exit 1) before any Stoat change. | `python3 Tools/Build/check_enum_member_references.py; echo $?` → 1 on base and branch |
 | D12 | walked past, FIXED here | `Tools/Build/peer_press_harness` could not compile on bleeding-edge: its `UnityEngine` stub had no `Vector4`, which the Stoat port's `NetStoatDipoleSink/Source` added to `R_VesselActionHandler`. One stub line; the harness now runs (1050 + 1050 presses, 0 divergences). | `python3 Tools/Build/peer_press_harness/run.py --self-test` → was COMPILE FAILED, now passes |
-| D13 | debt this branch created | **`BlackHoleWaves` has no caller by default.** Its only producer (`StoatDipoleExecutor`) now spawns it behind `StoatDipoleConfig.annihilationWaves`, OFF (2026-10-14), so the wave pipeline (`BlackHoleWaves`, the lens shader's wave loop, `PrismGravityWarp.hlsl`'s strain, ~11 `BlackHoleConfig` wave fields) runs for nobody, and `studio_to_unity/stoat.json` still clones the studio's wave keys into it. Decide: keep as an opt-in look (and say so on the studio page), or retire the pipeline with its studio rows. | `grep -rn "BlackHoleWaves.Spawn" Assets --include=*.cs` → 3 sites, all inside `if (config.AnnihilationWaves)` |
+| D13 | resolved 2026-10-28 (`stoat/annihilation-waves`): the death waves are on again, their light after post-processing; the birth wave is behind `birthWave`, off | **`BlackHoleWaves` had no caller by default.** Its only producer (`StoatDipoleExecutor`) now spawns it behind `StoatDipoleConfig.annihilationWaves`, OFF (2026-10-14), so the wave pipeline (`BlackHoleWaves`, the lens shader's wave loop, `PrismGravityWarp.hlsl`'s strain, ~11 `BlackHoleConfig` wave fields) runs for nobody, and `studio_to_unity/stoat.json` still clones the studio's wave keys into it. Decide: keep as an opt-in look (and say so on the studio page), or retire the pipeline with its studio rows. | `grep -rn "BlackHoleWaves.Spawn" Assets --include=*.cs` → 3 sites, all inside `if (config.AnnihilationWaves)` |
 | D14 | walked past | **`Tools/Shaders/verify_stoat_ripple.py` FAILS on bleeding-edge** under glslang 15.1 (`lens_vert.hlsl:9: 'declaration' : Expected`, both stages, before any change here); its negative control still "fires", so the harness reports FAIL while looking like it runs. The lens verifier's URP mock likely needs updating for this glslang. | `git stash; python3 Tools/Shaders/verify_stoat_ripple.py` → FAIL on `b645b9d3` |
 | D15 | report (port) | **Amoebius's shim lacks** `Graphics.RenderMesh`, `Mesh.Clear(bool)`, `Mesh.SetColors(Color[], int, int)`, `Mesh.SetIndices(int[], int, int, …)`, `RenderParams.camera` and `Vector3.RotateTowards`; this branch wrote around them (vessel skill rule 51). A port-branch row, not a game change. | `dotnet build Port/src/CosmicShore.Live` on the first cut of this branch → 6 errors, all of these |
 | D16 | report | **`STOAT.md` §1–§2 describe the round-4 orbit**, which no longer ships (Time mode is the catch-sling, §1b). The banner says so; the sections stay as the orbit's record. Fold them into a short history paragraph when the catch-sling settles in play. | `STOAT.md` banner, 2026-10-14 |

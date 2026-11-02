@@ -634,7 +634,8 @@ def dipole_config_asset() -> str:
             "  sourceGrowSeconds: 1.1\n"
             "  dieSeconds: 0.7\n"
             "  sourceSizeX: 1\n"
-            "  annihilationWaves: 0\n"   # the birth/death light: too big and bright, fired at creation (the user, 2026-10-14)
+            "  annihilationWaves: 1\n"   # the death light + wiggle, its light now after post-processing (2026-10-28)
+            "  birthWave: 0\n"   # the birth light at a pair's CREATION: read as a flash at the wrong moment (the user, 2026-10-14)
             "  throughZoneRadius: 135\n"
             "  throughDegrees: 200\n"
             "  turnCap: 12\n"

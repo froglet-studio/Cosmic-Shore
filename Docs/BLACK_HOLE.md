@@ -439,8 +439,8 @@ The Vessel Studio's pairs are born and die with waves, and Unity now draws them,
 
 | Wave | When | What you see | Parameters (the studio's 'life' rows, `BlackHoleConfig` unless noted) |
 |---|---|---|---|
-| **In** — the white hole's light converging onto its spot | a pair is laid (`StoatDipoleExecutor.Spawn`) | a thin bright shell shrinking from far away onto the pair, bending the view across its front | `whInFrom` 700 u; its duration is the white hole's birth, `whInS` (= `StoatDipoleConfig.sourceGrowSeconds` 1.1 s); `shellBend` 6 |
-| **Gravitational** — the burst the pair's mass leaves as | the pair annihilates (`Close(annihilate: true)`) | a ripple moving out at `gwSpeed`, ringing (`gwPeriod`) and dying away (`gwRingdown`), weaker as 1/r (flat inside 60 u), loudest sideways to the line the holes met on and silent along it; crests a little brighter, troughs a little darker (`gwGlow`); the whole view stretches one way and squeezes the other as it passes YOU (`gwShake`); every prism it crosses stretches along its own x and squeezes along its own y (`gwPrism`, `PrismGravityWarp.hlsl`) | `gwAmp` 12, `gwSpeed` 120, `gwPeriod` 0.35, `gwRingdown` 1.0, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1; its mass is the pair's strength / 6 in 0.3–2 |
+| **In** — the white hole's light converging onto its spot | a pair is laid (`StoatDipoleExecutor.Spawn`), only with `StoatDipoleConfig.birthWave` on (ships OFF: a wave at creation read as a flash in play; the studio always fires it) | a thin bright shell shrinking from far away onto the pair, bending the view across its front | `whInFrom` 700 u; its duration is the white hole's birth, `whInS` (= `StoatDipoleConfig.sourceGrowSeconds` 1.1 s); `shellBend` 6 |
+| **Gravitational** — the burst the pair's mass leaves as | the pair annihilates (`Close(annihilate: true)`), with `StoatDipoleConfig.annihilationWaves` on (ships ON) | a ripple moving out at `gwSpeed`, ringing (`gwPeriod`) and dying away (`gwRingdown`), weaker as 1/r (flat inside 60 u), loudest sideways to the line the holes met on and silent along it; crests a little brighter, troughs a little darker (`gwGlow`); the whole view stretches one way and squeezes the other as it passes YOU (`gwShake`); every prism it crosses stretches along its own x and squeezes along its own y (`gwPrism`, `PrismGravityWarp.hlsl`) | `gwAmp` 12, `gwSpeed` 120, `gwPeriod` 0.35, `gwRingdown` 1.0, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1; its mass is the pair's strength / 6 in 0.3–2 |
 | **Out** — the white hole's light leaving | the pair annihilates | a bright shell growing from the white hole, and a soft wash of light as it passes you | `whOutSpeed` 450, `whOutFade` 1.6, `shellBend` 6 |
 
 Both poles also **sink to a point over `dieS`** (`StoatDipoleConfig.dieSeconds` 0.7 s) along the studio's curve,
@@ -452,9 +452,17 @@ Both poles also **sink to a point over `dieS`** (`StoatDipoleConfig.dieSeconds` 
 **How it draws.** `BlackHoleWaves` keeps the live waves (dropped when the studio's `waveAlive` says they are over: an In
 shell after `whInS`, an Out shell after 6 × `whOutFade`, the gravitational wave after 4000 u / `gwSpeed` + 8 ringdowns)
 and lays the newest four on screen per camera (`ScreenWaves`). The lens pass (`BlackHoleLensPass`) keeps running while
-any wave is alive, even after every hole is gone. `BlackHoleWarp.Flush` publishes the newest four gravitational waves to
+any wave is alive, even after every hole is gone. **Where the light goes on (2026-10-28).** The studio adds a shell's
+glow (0.35 × its envelope), a gravitational wave's crest glow and a shell's wash to its FINAL picture in display values
+(an 8-bit target, no bloom, no tonemapping). Added in the lens pass, before post-processing, they were linear HDR light
+that the gameplay bloom (threshold 0.2, intensity 2.5) blew into a white flash. So the lens pass (shader pass 0) keeps
+the bend, a wave's squeeze and the holes' own light, and a second `BlackHoleLensPass`, at `AfterRenderingPostProcessing`
+while a wave is alive, draws shader pass 1 (`BlackHoleWaveLight`): the waves' light added in sRGB to a copy of the
+post-processed picture (skipping a hole's shadow, which the studio draws last). The two sum to the studio's composite.
+Stated limit: a hole's ring glow and core still bloom. `BlackHoleWarp.Flush` publishes the newest four gravitational waves to
 the prism shader. Proof: `verify_black_hole_lens.py` 1b (45,000 pixels of random waves with holes, the view stretched and
-a shell's wash, against the studio's GLSL: 1.2e-7) and 5b (a negative control), C2 (`BlackHoleWaves.cs` compiled against
+a shell's wash, against the studio's GLSL, through both passes: 1.2e-7), 5b and 5c (negative controls; 5c drops the
+wave-light pass's wash), C2 (`BlackHoleWaves.cs` compiled against
 stubs vs the page's `setWaveUniforms` run in node, with its own negative control); `verify_prism_gravity_warp.py` 16 (the
 strain is the page's `gwStrainAt`, the prism stretch is 1 ± gh along its own axes; a flipped-axis control fails it).
 
@@ -514,6 +522,80 @@ and the shader bank against the C#.
 Seen edge-on, the ring's near and far halves overlap on screen and read their mean depth, so an opaque thing between
 the two halves counts as in front. The shader is compiled here by glslang against the black hole lens's per-file URP
 mock (the script's tier C); the real URP ShaderLibrary compiles it only when Unity imports it.
+
+## 5.4 The Mobile look — no warped space, the Meerkat recipe (`BlackHoleGlow` + `BlackHoleGlow.shader`, 2026-10-29)
+
+Yash, 2026-10-29: *"make sure we are not warping space, we need to make the shaders mobile friendly, check out our
+meerkat ability shader, we have optimized it to support mobiles, I want to do the same with these black / white hole
+pair, It should be mobile frames performant and also a subtle clean refreshing user experience."*
+
+**The switch.** `BlackHoleConfig.look` (`HoleLook`): **`Mobile` (0, the default and what ships)** or `StudioLens` (1, the
+full §5–§5.2 look, kept for A/B and the studio). `BlackHoleConfigSO.SpaceWarp` is true only for `StudioLens`, and it gates
+everything that warps: the lens (`BlackHole.EnsureVisual` never creates a `BlackHoleLens`, so no hole acquires the
+depth texture), both `BlackHoleLensPass` passes (no scene copy, no full-screen lens, no wave-light pass), the prism tide
+and the GW prism squeeze (`BlackHoleWarp.Flush` publishes an empty bank), the hull tide (`BlackHoleWarp.VesselLogStretch`
+is 1 — the Stoat's and Angler's hulls no longer stretch), and `gwShake` (nothing stretches the view). **Physics is
+untouched**: the pull, the horizon, the pair's drift and annihilation, the ripple's strike are the same in both looks.
+
+**The Meerkat recipe** (`MeerkatWaterTube.shader`, `Docs/Shaders/WATERY_GLASS.md`, perf commit `69ebc5b7c`), applied
+here point for point:
+
+| Meerkat water tube | Hole glow |
+|---|---|
+| one `UniversalForward` pass, one `Graphics.RenderMesh` per mesh, a pooled `MaterialPropertyBlock` | the same: one camera-facing annulus per hole / wave / ripple (`BlackHoleGlow.Annulus`, 48 segments, 96 triangles, built once), `RenderMesh` with a pooled MPB and `ShadowCastingMode.Off` |
+| no grab pass, no opaque or depth texture, no textures at all | the same — the shader includes only `Core.hlsl` and samples nothing |
+| `ZWrite Off`, `ZTest LEqual`, alpha blend, `#pragma target 3.0`, `half` maths, ~30 ALU | `ZWrite Off`, `ZTest LEqual`, premultiplied `Blend One OneMinusSrcAlpha` (dark AND light in one pass), `target 3.0`, `half` colour out |
+| a near-camera smoothstep fade, discard | a core fades as the camera flies into it, a ring only at its centre; every disc fades to exactly 0 at its rim |
+| a static look switch gates the full-screen lens (`MeerkatTubeLook.Mode`) | `BlackHoleConfig.look` |
+| skins built once, caps cut (prism cap 256 → 48, suck radius 90 → 40, omni 7 → 3), `ProfilerMarker`s | mesh built once, waves capped at `BlackHoleWaves.MaxDrawn` 4 and faded out by `mobileWaveReach`, draws inside the registry's existing lens marker |
+
+**What you see** (`_Mode` in the shader):
+
+| Mode | Thing | Look |
+|---|---|---|
+| 0 | black hole | an opaque dark core of the shadow's size and a thin warm photon ring (`photonRingGlow`, `photonRingWidth`) at the studio's ring radius; a soft dark halo (`mobileHaloGlow` 0.06) out to 1.64 + 3·width shadows |
+| 1 | white hole | a bright soft core (`whiteCoreSize` × the shadow, `whiteCoreBrightness`), half transparent so the sky glows through it |
+| 1 | smooth well (Thresher / Angler) | a faint ring at its radius, no bend |
+| 2 | light shell (In / Out) and the Stoat's charge ripple | a thin soft light ring |
+| 3 | gravitational wave | a faint local ripple: per pixel the SAME waveform as `BlackHoleWaves.Strain` (front, ringdown, 1/r flat inside 60 u, sin² about the axis the holes met on), crests a little lighter (`mobileWaveGlow` 0.12 × `gwGlow`), troughs a little darker (`mobileWaveShade` 0.06), gone by `mobileWaveReach` 220 u |
+
+Every glow stays under the gameplay bloom's threshold (0.2; the brightest wave crest is 0.165), so nothing flashes.
+The photon ring (≈ 0.6) blooms a little, as it does in the studio.
+
+**Studio parameters the Mobile look does not use** — kept in the config, not deleted, each tooltip prefixed
+"[Studio lens only …]": `warpEnabled`, `lensStrength`, `lensRadiusMultiplier`, `lensFadeStart`, `whiteLensStrength`,
+`whiteCoreSkyMix`, `shellBend`, `gwAmp`, `gwPrism`, `gwShake`; and the Stoat ripple's `bend` and `chromaticSplit`
+(`StoatRippleConfigSO`, prefixed likewise). Everything else (sizes, ring, core, `gwSpeed`, `gwPeriod`, `gwRingdown`,
+`gwGlow`, the shells' timings) drives both looks.
+
+**The Charge ripple now renders.** In the studio look it was a sphere with a `LightMode = BlackHoleLens` pass — a pass
+no renderer list ever draws, so it never showed. In the Mobile look `StoatRipple` draws its front as a mode-2 ring
+(`BlackHoleGlow.DrawRing`, `rimGlow` 0.15, half width ½·front·`bandWidth`), once a frame, and never acquires the depth
+texture.
+
+**Cost** (DXIL static instructions over all branches, `verify_black_hole_glow.py` C):
+
+| | Per pixel | Texture reads | Pixels it runs on | Extra |
+|---|---|---|---|---|
+| Studio `BlackHoleLensFrag` | 422 (loops over ≤ 8 wells, ≤ 4 waves) | 2 | every pixel of the screen while a hole or wave lives | a full-screen scene copy each frame, the depth texture on (a depth copy / prepass — expensive on tile GPUs), prism + hull vertex warps |
+| Studio `BlackHoleWaveLightFrag` | 313 | 2 | every pixel while a wave lives | a second copy, after post |
+| **Mobile `BlackHoleGlowFrag`** | **182** | **0** | only the hole's / wave's own disc or band | none: no copy, no depth, no warp |
+
+On a 1080 × 2400 phone with a pair a few hundred units away (each disc a few % of the screen) that is roughly
+2.6 M px × (422 + 313) + two full-screen copies before, against ≈ 0.1–0.3 M px × 182 after — one to two orders of
+magnitude less fragment work and no bandwidth for copies; flying into a core, it fades out before it fills the screen.
+
+**Proof.** `python3 Tools/Shaders/verify_black_hole_glow.py --require-real`: the static recipe (one pass, no texture, the
+wiring and gates in the C#), the fragment run on the CPU (clang++): every disc 0 at its rim, the black core opaque, the
+white core lit; the ripple against `BlackHoleWaves.Strain` cut from the C# (worst 2e-6 over 200 000 samples); the bloom
+bound; two negative controls; glslang against the mock; DXC against the real URP library for D3D11, Vulkan, Metal and
+GLES3 (DXC → SPIR-V → spirv-cross ESSL 300 → glslangValidator), with a control; the cost table above.
+`BlackHoleGlowTests` (EditMode) hold the default look, the material and shader shipping together and compiling, the
+recipe, the waves' reach and bloom bound, and the studio parameters still in the asset.
+
+**Stated limits.** The disc is camera-facing, so a hole seen at a grazing angle near the screen edge is drawn round
+(as a sphere would be). Nothing bends behind a hole in the Mobile look — that is the point. Switch `look` to
+`StudioLens` to see the old look.
 
 ## 6. Tools, keys, console and the test scene — retired (2026-10-10)
 
