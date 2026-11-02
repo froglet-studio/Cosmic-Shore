@@ -77,6 +77,73 @@ namespace CosmicShore.Tests
             MatchRejoin.Remember(string.Empty, GameModes.SkimRace);
             Assert.IsFalse(MatchRejoin.TryLoad(out _));
         }
+
+        // ── B47 round 2: a REJOIN that did not land keeps the match on offer ──
+
+        [Test]
+        public void Attempt_Landed_WhenTheClaimReRememberedTheMatch()
+        {
+            Assert.AreEqual(MatchRejoin.AttemptOutcome.Landed, MatchRejoin.ClassifyAttempt(true, 200, 100, null));
+            Assert.AreEqual(MatchRejoin.AttemptOutcome.Landed, MatchRejoin.ClassifyAttempt(true, 100, 100, null));
+        }
+
+        [Test]
+        public void Attempt_Refused_OnlyByTheHostsRejoinRefusal()
+        {
+            Assert.AreEqual(MatchRejoin.AttemptOutcome.Refused,
+                MatchRejoin.ClassifyAttempt(true, 50, 100, MatchRejoin.RefusalReasonPrefix + " the match has no seat to give back"));
+            Assert.AreEqual(MatchRejoin.AttemptOutcome.Failed, MatchRejoin.ClassifyAttempt(true, 50, 100, "Host disconnected"));
+            Assert.AreEqual(MatchRejoin.AttemptOutcome.Failed, MatchRejoin.ClassifyAttempt(true, 50, 100, null),
+                "a link that dropped during the hand-back: the seat may still be held");
+            Assert.AreEqual(MatchRejoin.AttemptOutcome.Failed, MatchRejoin.ClassifyAttempt(false, 0, 100, ""));
+        }
+
+        [Test]
+        public void FailedAttempt_KeepsTheRecord_MarkedDropped_UntilTheLimit()
+        {
+            MatchRejoin.Remember("sess-1", GameModes.Random);
+            for (int i = 1; i < MatchRejoin.MaxFailedAttempts; i++)
+            {
+                MatchRejoin.RecordAttemptOutcome(MatchRejoin.AttemptOutcome.Failed);
+                Assert.IsTrue(MatchRejoin.TryLoad(out var r), $"still offered after {i} failed attempt(s)");
+                Assert.AreEqual(i, r.failedAttempts);
+                Assert.IsTrue(r.Dropped, "the window says \"You dropped out\" and offers REJOIN");
+                Assert.AreEqual("sess-1", r.sessionId);
+            }
+            MatchRejoin.RecordAttemptOutcome(MatchRejoin.AttemptOutcome.Failed);
+            Assert.IsFalse(MatchRejoin.TryLoad(out _), "the last allowed attempt failed: no longer offered");
+        }
+
+        [Test]
+        public void RefusedAttempt_ForgetsTheMatch()
+        {
+            MatchRejoin.Remember("sess-1", GameModes.Random);
+            MatchRejoin.RecordAttemptOutcome(MatchRejoin.AttemptOutcome.Refused);
+            Assert.IsFalse(MatchRejoin.TryLoad(out _));
+        }
+
+        [Test]
+        public void LandedAttempt_LeavesTheFreshRecord_AndRememberResetsTheCount()
+        {
+            MatchRejoin.Remember("sess-1", GameModes.Random);
+            MatchRejoin.RecordAttemptOutcome(MatchRejoin.AttemptOutcome.Failed);
+            MatchRejoin.Remember("sess-1", GameModes.Random);   // the claim re-remembers on a seat handed back
+            MatchRejoin.RecordAttemptOutcome(MatchRejoin.AttemptOutcome.Landed);
+            Assert.IsTrue(MatchRejoin.TryLoad(out var r));
+            Assert.AreEqual(0, r.failedAttempts);
+            Assert.IsFalse(r.Dropped);
+        }
+
+        [Test]
+        public void WithFailedAttempt_IsPure()
+        {
+            var r = new MatchRejoin.Record { sessionId = "s", failedAttempts = 1 };
+            var now = new DateTime(2026, 11, 2, 12, 0, 0, DateTimeKind.Utc);
+            var after = MatchRejoin.WithFailedAttempt(r, now);
+            Assert.AreEqual(2, after.failedAttempts);
+            Assert.AreEqual(now.Ticks, after.droppedAtUtcTicks);
+            Assert.AreEqual(1, r.failedAttempts, "the struct passed in is not changed");
+        }
     }
 }
 #endif

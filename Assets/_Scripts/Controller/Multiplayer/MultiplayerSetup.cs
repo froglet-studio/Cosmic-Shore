@@ -530,7 +530,7 @@ namespace CosmicShore.Gameplay
                 {
                     NetSessionRecorder.Mark("rejoinRefused", request.ClientNetworkId.ToString());
                     response.Approved = false;
-                    response.Reason   = "rejoin: the match has no seat to give back";
+                    response.Reason   = MatchRejoin.RefusalReasonPrefix + " the match has no seat to give back";
                     return;
                 }
                 rejoin = true;

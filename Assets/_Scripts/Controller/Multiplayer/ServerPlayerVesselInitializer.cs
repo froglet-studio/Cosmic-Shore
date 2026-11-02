@@ -872,12 +872,21 @@ namespace CosmicShore.Gameplay
 
         void ConvertPlayerToAI(Player player, ulong departedClientId)
         {
-            if (player.NetIsAI.Value) return;   // already an AI - nothing to adopt
-
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
-                $"[ServerVesselInit] Client {departedClientId} left mid-match - handing " +
-                $"'{player.NetName.Value}' to the AI so the ship stays in the arena and the score keeps counting.");
-            NetSessionRecorder.Mark("leaverToAI", player.NetName.Value.ToString());
+            // Already an AI seat: nothing to ANNOUNCE, but the seat is still REPAIRED below. It used to return here,
+            // so a seat that was mid-hand-back when its pilot dropped again (B47 round 2, 2026-11-02) could be left
+            // owned by a client that no longer existed, with no autopilot running: a ship nobody flies.
+            bool alreadyAI = player.NetIsAI.Value;
+            if (!alreadyAI)
+            {
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                    $"[ServerVesselInit] Client {departedClientId} left mid-match - handing " +
+                    $"'{player.NetName.Value}' to the AI so the ship stays in the arena and the score keeps counting.");
+                NetSessionRecorder.Mark("leaverToAI", player.NetName.Value.ToString());
+            }
+            else
+            {
+                NetSessionRecorder.Mark("leaverToAI", player.NetName.Value + " (already AI-held; seat repaired)");
+            }
 
             // Ownership: Netcode reassigns to the server under DontDestroyWithOwner, but say it
             // explicitly rather than depending on that - an object still owned by a client that no
@@ -900,8 +909,12 @@ namespace CosmicShore.Gameplay
                 vc.NetworkObject.OwnerClientId != NetworkManager.ServerClientId)
                 vc.NetworkObject.ChangeOwnership(NetworkManager.ServerClientId);
 
+            if (alreadyAI && vessel.VesselStatus.AutoPilotEnabled)
+                return;   // an AI seat with its autopilot running: whole
+
             ConfigureDepartedPilotAI(vessel);
             vessel.ToggleAIPilot(true);
+            if (alreadyAI) return;   // it was announced when it first went to the AI
 
             // Say it out loud. A ship that keeps flying under new management is LESS confusing than
             // one that vanishes, but only if everyone is told - otherwise a pilot who suddenly flies
@@ -925,6 +938,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void TryReclaimSeat(ulong clientId)
         {
+            // A rejoiner that dropped again before its seat came back (the hand-back waits ~9 s for its connect or its
+            // roster request) must not be handed the seat: ownership would go to a client that no longer exists, and
+            // the disconnect handler that would have given the seat back to the AI has already run (B47 round 2).
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.ConnectedClients.ContainsKey(clientId))
+            {
+                MatchRejoin.ServerUnregister(clientId);
+                return;
+            }
             if (!MatchRejoin.ServerTake(clientId, out var ugsPlayerId)) return;
 
             var player = MatchRejoin.FindReclaimableSeat(gameData.Players, ugsPlayerId);

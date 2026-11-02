@@ -33,6 +33,14 @@ namespace CosmicShore.Gameplay
         /// <summary>A record older than this is never offered (a match is minutes long).</summary>
         public static readonly TimeSpan MaxAge = TimeSpan.FromMinutes(30);
 
+        /// <summary>
+        /// REJOIN presses that did not land before the match stops being offered. A failed attempt used to forget the
+        /// match at once, so a rejoiner whose link dropped again during the hand-back (B47 round 2, 2026-11-02) had no
+        /// REJOIN left although the host still held the seat. A host that refuses (the match has no seat) is forgotten
+        /// at once: <see cref="RecordAttemptOutcome"/>.
+        /// </summary>
+        public const int MaxFailedAttempts = 3;
+
         /// <summary>The match this machine last played as a guest and has not finished or left.</summary>
         [Serializable]
         public struct Record
@@ -42,6 +50,8 @@ namespace CosmicShore.Gameplay
             public long savedAtUtcTicks;
             /// <summary>Set when the link broke (the bounce), so the window can say "You dropped out".</summary>
             public long droppedAtUtcTicks;
+            /// <summary>REJOIN presses since the match was last remembered that did not get the seat back.</summary>
+            public int failedAttempts;
 
             public GameModes Mode => (GameModes)mode;
             public DateTime SavedAtUtc => new(savedAtUtcTicks, DateTimeKind.Utc);
@@ -64,6 +74,55 @@ namespace CosmicShore.Gameplay
             if (!TryLoad(out var r)) return;
             r.droppedAtUtcTicks = DateTime.UtcNow.Ticks;
             Save(r);
+        }
+
+        /// <summary>What a REJOIN press came to (<see cref="RecordAttemptOutcome"/>).</summary>
+        public enum AttemptOutcome
+        {
+            /// <summary>The seat came back; the claim re-remembered the match.</summary>
+            Landed = 0,
+            /// <summary>The host said there is no seat (approval refused) or the pre-flight found the match gone.</summary>
+            Refused = 1,
+            /// <summary>Anything else: the link dropped again, a timeout, a bounce. The seat may still be held.</summary>
+            Failed = 2,
+        }
+
+        /// <summary>The approval refusal a host gives a rejoin with no seat (MultiplayerSetup), matched on the client.</summary>
+        public const string RefusalReasonPrefix = "rejoin:";
+
+        /// <summary>
+        /// After a REJOIN press: keep offering the match unless it landed (nothing to do), was refused (forget it), or
+        /// has failed <see cref="MaxFailedAttempts"/> times (forget it). A failed attempt keeps the record, marked
+        /// dropped, so the window offers REJOIN again.
+        /// </summary>
+        public static void RecordAttemptOutcome(AttemptOutcome outcome)
+        {
+            if (outcome == AttemptOutcome.Landed) return;
+            if (outcome == AttemptOutcome.Refused || !TryLoad(out var r)) { Forget(); return; }
+            r = WithFailedAttempt(r, DateTime.UtcNow);
+            if (r.failedAttempts >= MaxFailedAttempts) { Forget(); return; }
+            Save(r);
+        }
+
+        /// <summary>Pure: <paramref name="r"/> after one more failed attempt (counted and marked dropped).</summary>
+        public static Record WithFailedAttempt(Record r, DateTime nowUtc)
+        {
+            r.failedAttempts++;
+            r.droppedAtUtcTicks = nowUtc.Ticks;
+            return r;
+        }
+
+        /// <summary>
+        /// Pure: what a REJOIN press came to, from whether the claim re-remembered the match since the press
+        /// (<paramref name="recordSavedAtTicks"/> at or after <paramref name="startedTicks"/>) and the host's
+        /// disconnect reason, if any.
+        /// </summary>
+        public static AttemptOutcome ClassifyAttempt(bool haveRecord, long recordSavedAtTicks, long startedTicks, string disconnectReason)
+        {
+            if (haveRecord && recordSavedAtTicks >= startedTicks) return AttemptOutcome.Landed;
+            if (!string.IsNullOrEmpty(disconnectReason) && disconnectReason.StartsWith(RefusalReasonPrefix, StringComparison.Ordinal))
+                return AttemptOutcome.Refused;
+            return AttemptOutcome.Failed;
         }
 
         /// <summary>The match ended, or the player left it on purpose: nothing to rejoin.</summary>

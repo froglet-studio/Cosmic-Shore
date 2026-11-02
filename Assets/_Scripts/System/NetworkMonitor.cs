@@ -22,6 +22,14 @@ namespace CosmicShore.Core
         CancellationTokenSource _cts;
         readonly Func<bool> _isReachable;
 
+        /// <summary>
+        /// Raised with the new state on every transition, in the same place as <c>OnNetworkLost</c> /
+        /// <c>OnNetworkFound</c>. For tests: Soap's <c>ScriptableEvent.Raise</c> returns early while
+        /// <c>!Application.isPlaying</c>, so an edit-mode test cannot see those (the RaceRankToastDriverTests
+        /// precedent, DT-003; offline case 4 failed this way in the editor, 2026-11-02).
+        /// </summary>
+        internal event Action<bool> Transitioned;
+
         /// <param name="isReachable">The reachability probe. Defaults to
         /// <c>Application.internetReachability</c>; a test passes its own to drive
         /// <see cref="Poll"/> through a network loss.</param>
@@ -91,6 +99,7 @@ namespace CosmicShore.Core
                 _networkMonitorData.IsOnline = false;
                 _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
                 _networkMonitorData.OnNetworkLost?.Raise();
+                Transitioned?.Invoke(false);
                 CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Online -> Offline (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
             }
             else if (reachable && !_connected)
@@ -99,6 +108,7 @@ namespace CosmicShore.Core
                 _networkMonitorData.IsOnline = true;
                 _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
                 _networkMonitorData.OnNetworkFound?.Raise();
+                Transitioned?.Invoke(true);
                 CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Offline -> Online (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
             }
         }

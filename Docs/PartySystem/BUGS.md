@@ -56,7 +56,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B44 | `NullReferenceException` in `PartyMemberService.SyncFromSession` 0.1 s after a join starts (belac x2, 2026-10-30) | Fixed 2026-10-31: the refresh reads the session after its await and stops when a transition has let it go | 🟡 |
 | B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 | B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
-| B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time | 🟡 |
+| B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time **Retest 2026-11-02** (`fix/android-startup-logs` 5698447fb8, Yash's PC): round 1 PASS; round 2 clean PASS (`leaverToAI` → `clientApproved rejoin` → `seatReclaimed` in 9.4 s, 0 double-init, 0 ANE); round 2 FAILED once - the rejoiner dropped again during the hand-back: the seat vanished, no `leaverToAI`, REJOIN did nothing, `MatchRejoin.TryLoad` false. Fixed from the code (`claude/mp-plan-p0`, section below), not reproduced. Rounds with 3 and 4 players not tested | 🟡 |
 | B48 | A re-invite does nothing: a re-click on a pending invite (inside its 60 s, `OUTGOING_INVITE_TIMEOUT_SECONDS`) only refreshed the local timeout with no network write, and a re-published line read as a duplicate to the invitee (same host, same session). The phone's first two invites failed this way (multiplayer test, 2026-11-02) | Fixed 2026-11-02 (`claude/mp-plan-p0`, section below): each send carries a serial (an optional 6th field), a re-click after 5 s goes out again, and the invitee surfaces a new serial from the same host as a new invite. Not editor-verified | 🟡 |
 | B49 | After every outgoing invite expires the host stays `Inviting` for good and never returns to `InParty` (reproduced, multiplayer test, 2026-11-02) | Fixed 2026-11-02 (`claude/mp-plan-p0`): clearing the last outgoing invite (timeout, cancel, the invitee leaving presence, or a failed send) returns `Inviting` to `InParty`; the state machine always allowed it, nothing took it. Not editor-verified | 🟡 |
 
@@ -2503,6 +2503,35 @@ Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Threshe
   the boot-order decision (host after the menu is up).
 - **The Amoebius edit-mode suite no longer builds**: code merged since 29 Oct (Third Eye HUD, Game Center and Play
   Games sign-in, Fulmen, the multiplayer debug overlay) uses 102 engine APIs the port lacks. Not filled in this sweep.
+
+### B47 round 2 (2026-11-02, remote fix session, `claude/mp-plan-p0`): the rejoiner that drops again during the hand-back
+
+Reported by the local testing session; its logs were not on any bugledger branch when this was written, so this is
+read from the code, not from the run. **Not reproduced.**
+
+**What the code does in that window.** Approval (`clientApproved rejoin`) and the hand-back (`seatReclaimed`) are ~9 s
+apart: `TryReclaimSeat` runs on the client's connect callback or its roster request. A client that drops inside that
+window:
+- **Client:** `RejoinMatchAsync`'s `finally` saw a record older than the attempt and **forgot the match**. That alone
+  explains "REJOIN did nothing" and `TryLoad` false afterwards, whether or not the host still held the seat.
+- **Host:** if the drop is handled first, the seat is still the AI's, nothing records the client as a human, so there
+  is no `leaverToAI` (correct). But `TryReclaimSeat` never checked that the client was still connected: a roster
+  request already in flight hands the seat to a client id that no longer exists - ownership goes to nobody, the
+  disconnect handler has already run, and nothing simulates the ship. That fits "the seat vanished". Separately,
+  `ConvertPlayerToAI` returned at once for a seat already flagged AI, so it could never repair such a seat.
+
+**Fixes.**
+- `TryReclaimSeat` hands a seat only to a client that is still in `ConnectedClients`; otherwise it drops the pending
+  rejoin and the seat stays the AI's.
+- `ConvertPlayerToAI` no longer returns early for an AI seat: it still takes the Player and the vessel back to the
+  server and starts the autopilot if it is off (marked `leaverToAI <name> (already AI-held; seat repaired)`); the
+  announcement still happens only the first time.
+- `MatchRejoin.RecordAttemptOutcome`: a REJOIN that did not land keeps the record, marked dropped, so the window offers
+  REJOIN again; a host refusal (`rejoin: the match has no seat`, now one constant on both sides) forgets it at once,
+  and so does a third failed attempt (`MaxFailedAttempts`).
+
+Tests: `MatchRejoinTests` (attempt classification, keep-until-limit, refusal, reset on a landed claim). The two host
+changes need a NetworkManager and two clients: checklist.
 
 ### B48-B49 fixed (2026-11-02, remote fix session, `claude/mp-plan-p0`): re-invites and the stuck Inviting state
 

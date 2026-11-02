@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B47 round 2: a rejoiner that drops again during the hand-back keeps its seat and its REJOIN; offline case 4 test fixed (`claude/mp-plan-p0`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `TryReclaimSeat` only hands the seat to a client still connected; `ConvertPlayerToAI` repairs an
+AI-flagged seat (server ownership, autopilot on) instead of returning; a REJOIN that did not land keeps the match on
+offer (up to 3 attempts; a host refusal forgets it). `OfflineSessionTests.Case4_NetworkLostMidSession_RaisesTheNoticeEventOnce`
+could never pass in edit mode (Soap's `Raise` returns early while not playing): it now counts
+`NetworkMonitor.Transitioned`, raised beside the SOAP event. Details: `Docs/PartySystem/BUGS.md` B47 round 2.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs, 0 errors in project code; ship gates all
+OK. Not run anywhere.
+
+**Test:**
+1. EditMode: `MatchRejoinTests` and `OfflineSessionTests` all pass (Case 4 included); the multiplayer set still passes.
+2. MPPM or built players, 3 players, Skim Race: drop P2 (stop its Play or cut its network) → host shows `leaverToAI`.
+   Press REJOIN on P2, and drop P2 again **within ~5 s of pressing it** (before `seatReclaimed`). Expected on the host:
+   P2's ship keeps flying under the AI (does not vanish or freeze); either no `leaverToAI`, or
+   `leaverToAI <name> (already AI-held; seat repaired)`. Expected on P2: Home offers REJOIN again.
+3. Press REJOIN again on P2 and let it land. Expected: `seatReclaimed`, P2 flies its own ship (B47 round 1 checks).
+4. Fail REJOIN three times in a row (drop it each time). Expected: after the third, REJOIN is no longer offered.
+5. End the match, then press REJOIN on a stale offer. Expected: refused at approval, and the offer is gone.
+6. Rounds with 3 and 4 players (not yet tested): repeat B47 round 1 and 2 with 4 players.
+
 ### 🔴 B48-B49: re-invites go out again and reach the invitee; the host leaves Inviting when its last invite clears (`claude/mp-plan-p0`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an invite line carries a send serial (optional 6th field); a re-click on a pending invite after 5 s

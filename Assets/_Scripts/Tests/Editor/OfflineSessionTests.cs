@@ -150,11 +150,13 @@ namespace CosmicShore.Tests
             var variable = Track(ScriptableObject.CreateInstance<NetworkMonitorDataVariable>());
             var data = new NetworkMonitorData { OnNetworkLost = lost, OnNetworkFound = found };
             variable.Value = data;
+            // Counted through NetworkMonitor.Transitioned, raised beside OnNetworkLost: Soap's Raise early-returns
+            // while !Application.isPlaying, so lost.OnRaised never fires in edit mode and this test could not pass
+            // (it failed in the editor, 2026-11-02; the RaceRankToastDriverTests precedent, DT-003).
             int lostCount = 0;
-            lost.OnRaised += () => lostCount++;
-
             bool reachable = true;
             var monitor = new NetworkMonitor(variable, () => reachable);
+            monitor.Transitioned += online => { if (!online) lostCount++; };
             monitor.Poll();
             Assert.AreEqual(0, lostCount, "no transition, no event");
 

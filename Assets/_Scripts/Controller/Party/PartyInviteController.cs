@@ -402,10 +402,16 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
+                // Read before the payload is cleared: a host that refused says why in the disconnect reason.
+                string reason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null;
                 MatchRejoin.ClearApprovalPayload();
-                // A seat handed back re-remembers the match (ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync); a
-                // record still older than this attempt means the rejoin did not land, so it is not offered again.
-                if (!MatchRejoin.TryLoad(out var after) || after.savedAtUtcTicks < startedTicks) MatchRejoin.Forget();
+                // A seat handed back re-remembers the match (ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync). One
+                // that did not land is offered again unless the host refused it or it has failed MaxFailedAttempts times:
+                // it used to be forgotten at once, so a link that dropped again during the hand-back left no REJOIN
+                // although the host still held the seat (B47 round 2, 2026-11-02).
+                bool have = MatchRejoin.TryLoad(out var after);
+                MatchRejoin.RecordAttemptOutcome(
+                    MatchRejoin.ClassifyAttempt(have, have ? after.savedAtUtcTicks : 0, startedTicks, reason));
             }
         }
 
