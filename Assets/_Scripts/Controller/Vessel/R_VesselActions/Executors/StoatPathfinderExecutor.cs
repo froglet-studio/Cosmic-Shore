@@ -152,7 +152,8 @@ namespace CosmicShore.Gameplay
             if (!cam) return;
             _worldDots ??= new StoatPathfinderWorldDots();
             if (!_worldDots.Begin(cam)) return;
-            AddRings(hull);
+            if (_sling && _sling.UsesSkim) AddSkimRings(cam, hull);
+            else AddRings(hull);
             _worldDots.End();
         }
 
@@ -181,6 +182,51 @@ namespace CosmicShore.Gameplay
             orbit.a *= caught ? 1f : sc.OrbitRingAlpha;
             n = StoatSlingMath.Ring(centre, normal, _sling.OrbitRadius, RingSegments, _ring);
             _worldDots.Add(_ring, n, null, 0, orbit, sc.RingDotSize, sc.RingDotSpacing, config.WorldDotMinPixels, closed: true);
+        }
+
+        /// <summary>
+        /// Time mode's Skim Sling (STOAT_DIPOLE.md §1q), world dots only - no screen-space warp. The TIDEPOOL: a faint ring
+        /// at its radius facing the camera (the capture sphere's outline), until the hull is captured. The SKIMLINE: the
+        /// Skimshell's equator round the spin axis, its dots SCROLLING with the spin (faster = harder squeeze), brightening
+        /// once you ride and lime while a release would pay the whole gain. A graze shell (let go of uncaught) draws its
+        /// Skimline faint and no Tidepool (it captures nothing). Each SKIP throws a RIPPLE: a ring in the Skimline's plane
+        /// growing out from R and fading (the one cheap world-dot ring, no particles).
+        /// </summary>
+        void AddSkimRings(Camera cam, Transform hull)
+        {
+            var sc = _sling ? _sling.Config : null;
+            var skim = sc ? sc.Skim : null;
+            if (!skim || !cam || !hull) return;
+            int n;
+            float age = _sling.SkipFxAge;
+            if (age >= 0f && age < skim.SkipRippleSeconds)
+            {
+                var ripple = _sling.SkipFxPerfect ? config.WarpedColor : config.OpenColor;
+                ripple.a *= StoatSkimMath.RippleAlpha(age, skim.SkipRippleSeconds);
+                n = StoatSkimMath.Ring(_sling.SkipFxCentre, _sling.SkipFxAxis,
+                    StoatSkimMath.RippleRadius(_sling.SkipFxRadius, skim.SkipRippleGrowth, age), 0f, RingSegments, _ring);
+                _worldDots.Add(_ring, n, null, 0, ripple, skim.RingDotSize * 1.3f, skim.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+            }
+            if (!_sling.HasPair) return;
+            var centre = _sling.SkimCentre;
+            bool riding = _sling.IsOrbiting;
+            bool graze = _sling.IsGrazeShell;
+            if (!riding && !graze)
+            {
+                var facing = cam.transform.position - centre;
+                if (facing.sqrMagnitude > 1e-6f)
+                {
+                    var pool = config.OpenColor;
+                    pool.a *= skim.TidepoolAlpha;
+                    n = StoatSkimMath.Ring(centre, facing.normalized, _sling.DetectionRadius, 0f, RingSegments, _ring);
+                    _worldDots.Add(_ring, n, null, 0, pool, skim.RingDotSize, skim.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+                }
+            }
+            float timing = _sling.Timing01;
+            var line = Color.Lerp(config.OpenColor, config.WarpedColor, timing >= 0.999f ? 1f : 0.35f * timing);
+            line.a *= riding ? 1f : graze ? 0.5f * skim.SkimlineAlpha : skim.SkimlineAlpha;
+            n = StoatSkimMath.Ring(centre, _sling.SkimAxis, _sling.OrbitRadius, _sling.SpinPhaseDegrees, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, line, skim.RingDotSize, skim.RingDotSpacing, config.WorldDotMinPixels, closed: true);
         }
 
         // ------------------------------------------------------------------ Time 5: Foresight
