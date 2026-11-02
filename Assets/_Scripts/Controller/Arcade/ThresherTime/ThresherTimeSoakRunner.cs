@@ -20,8 +20,11 @@ namespace CosmicShore.Gameplay
     /// rings threaded, finish time, plants, armed launches, and how fast and how far off its next ring each launch left.
     /// <see cref="Settings.Aimed"/> off (an A/B's "before") switches the Thresher Time variant's <c>aimedLaunch</c> off for
     /// the run and puts it back. The Switchback soak's shape (<see cref="SwitchbackSoakRunner"/>): menu → configure →
-    /// launch → Ready → wait → Play Again. It never writes a vessel, prism, score, course or timer. Started by the editor's
-    /// ThresherTimeSoakLauncher (<c>-executeMethod CosmicShore.Editor.ThresherTimeSoakLauncher.Run</c>).
+    /// launch → Ready → wait → Play Again, then back to the menu for the next of <see cref="Settings.Intensities"/>.
+    /// <see cref="Settings.Watch"/> (a Unity with a window) opens the AI Diagnose panel on every race with the AI's
+    /// thinking, labels and trails on and the camera chasing an AI Thresher. It never writes a vessel, prism, score,
+    /// course or timer. Started by the editor's ThresherTimeSoakLauncher
+    /// (<c>-executeMethod CosmicShore.Editor.ThresherTimeSoakLauncher.Run</c>).
     /// </summary>
     public class ThresherTimeSoakRunner : MonoBehaviour
     {
@@ -29,7 +32,7 @@ namespace CosmicShore.Gameplay
         public class Settings
         {
             public int Races = 2;
-            public int Intensity = 1;
+            public int[] Intensities = { 1 };
             public int TotalPlayers = 3;
             public bool Aimed = true;
             public int FirstSeed = 7001;
@@ -38,6 +41,7 @@ namespace CosmicShore.Gameplay
             public int TargetFrameRate = 60;
             public string OutputFile = "";
             public string Tag = "";
+            public bool Watch;
         }
 
         const string VariantPath = "AIBoostPolicies/ThresherAIBoostPolicy_ThresherTime";
@@ -62,7 +66,7 @@ namespace CosmicShore.Gameplay
         readonly List<Pilot> _pilots = new();
         bool _skippedName, _racing;
         float _raceStart;
-        int _raceNo;
+        int _raceNo, _intensity;
         ThresherSlingAIPolicySO _variant;
         FieldInfo _aimedField;
         bool _aimedWas, _aimedSet;
@@ -131,7 +135,7 @@ namespace CosmicShore.Gameplay
                 sb.Append('{')
                   .Append("\"tag\":\"").Append(_s.Tag).Append("\",")
                   .Append("\"aimed\":").Append(_s.Aimed ? "true" : "false").Append(',')
-                  .Append("\"intensity\":").Append(_s.Intensity).Append(',')
+                  .Append("\"intensity\":").Append(_intensity).Append(',')
                   .Append("\"race\":").Append(_raceNo).Append(',')
                   .Append("\"seed\":").Append(_s.FirstSeed + _raceNo).Append(',')
                   .Append("\"status\":\"").Append(status).Append("\",")
@@ -190,14 +194,37 @@ namespace CosmicShore.Gameplay
                 yield return new WaitForSecondsRealtime(0.25f);
             }
             if (Time.unscaledTime >= deadline) { Finish(false, "menu never gave a local pilot"); yield break; }
-            yield return new WaitForSecondsRealtime(1.5f);
 
+            bool ok = true;
+            var intensities = _s.Intensities is { Length: > 0 } ? _s.Intensities : new[] { 1 };
+            for (int k = 0; k < intensities.Length && ok; k++)
+            {
+                if (k > 0)
+                {
+                    // Back to the menu for the next intensity, the way the pause menu's Main Menu button goes.
+                    var loader = FindAnyObjectByType<CosmicShore.Core.SceneLoader>();
+                    if (loader) loader.ReturnToMainMenu();
+                    deadline = Time.unscaledTime + 120f;
+                    while (Time.unscaledTime < deadline && !(IsMenu() && _gameData.LocalPlayer?.Vessel != null))
+                        yield return new WaitForSecondsRealtime(0.25f);
+                    if (Time.unscaledTime >= deadline) { ok = false; CSDebug.LogError("[ThresherTimeSoak] the menu never came back"); break; }
+                }
+                yield return new WaitForSecondsRealtime(1.5f);
+                _intensity = Mathf.Clamp(intensities[k], 1, 4);
+                yield return RunIntensity(result => ok = result);
+            }
+            Finish(ok, "done");
+        }
+
+        IEnumerator RunIntensity(Action<bool> done)
+        {
             Configure();
             CourseSeedOverride.Forced = _s.FirstSeed;
             _gameData.InvokeGameLaunch();
-            CSDebug.Log($"[ThresherTimeSoak] launched I{_s.Intensity} aimed={_s.Aimed} x{_s.Races} -> {_s.OutputFile}");
+            CSDebug.Log($"[ThresherTimeSoak] launched I{_intensity} aimed={_s.Aimed} x{_s.Races} -> {_s.OutputFile}");
 
             bool ok = true;
+            float deadline;
             for (_raceNo = 0; _raceNo < _s.Races; _raceNo++)
             {
                 _race = null;
@@ -236,6 +263,7 @@ namespace CosmicShore.Gameplay
                 Time.timeScale = _s.TimeScale;
                 _raceStart = Time.time;
                 _racing = true;
+                if (_s.Watch) StartCoroutine(OpenAIDiagnose());
 
                 float start = Time.unscaledTime;
                 while (_gameData.IsTurnRunning && Time.unscaledTime - start < _s.TimeoutSeconds / Mathf.Max(0.1f, _s.TimeScale))
@@ -255,7 +283,31 @@ namespace CosmicShore.Gameplay
                 deadline = Time.unscaledTime + 120f;
                 while (controller != null && Time.unscaledTime < deadline) yield return new WaitForSecondsRealtime(0.25f);
             }
-            Finish(ok, "done");
+            done(ok);
+        }
+
+        /// <summary>A watched run: the AI Diagnose panel (F2) open on the race, the AI's thinking, labels and trails on,
+        /// the camera chasing an AI Thresher. The panel closes itself when the race scene unloads, so every race opens it.</summary>
+        IEnumerator OpenAIDiagnose()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            var eye = ThirdEye.Instance;
+            if (!eye) yield break;
+            eye.SetPanel(true);
+            var s = eye.Settings;
+            s.ShowThinking = s.ShowLabels = s.ShowTrails = true;
+            eye.SetMode(ThirdEyeCameraMode.Chase);
+            eye.SetDriving(true);
+            float until = Time.unscaledTime + 3f;
+            while (Time.unscaledTime < until)
+            {
+                foreach (var p in eye.Pilots)
+                    if (p.Alive && !p.IsLocalHuman && p.Player && p.Player.IsInitializedAsAI) { eye.Watch(p); yield break; }
+                yield return new WaitForSecondsRealtime(0.25f);
+            }
+#else
+            yield break;
+#endif
         }
 
         void BindPilots()
@@ -313,7 +365,7 @@ namespace CosmicShore.Gameplay
             else CSDebug.LogError("[ThresherTimeSoak] no Thresher Time arcade card");
             _gameData.IsTraining = false;
             if (_gameData.selectedVesselClass != null) _gameData.selectedVesselClass.Value = VesselClassType.Thresher;
-            if (_gameData.SelectedIntensity != null) _gameData.SelectedIntensity.Value = Mathf.Clamp(_s.Intensity, 1, 4);
+            if (_gameData.SelectedIntensity != null) _gameData.SelectedIntensity.Value = _intensity;
             _gameData.ConfigurePlayerCounts(Mathf.Max(1, _s.TotalPlayers), 1);
             _gameData.RequestedDomainCount = Mathf.Clamp(_s.TotalPlayers, 1, 3);
             _gameData.RequestedAIDifficulties.Clear();

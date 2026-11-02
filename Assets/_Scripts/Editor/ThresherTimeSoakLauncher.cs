@@ -12,9 +12,11 @@ namespace CosmicShore.Editor
     /// aimed launch"):
     /// <code>Unity -batchmode -nographics -projectPath . -executeMethod CosmicShore.Editor.ThresherTimeSoakLauncher.Run
     ///   -ttSoak "1:3" -ttSoakAimed 1 -ttSoakOut Logs/tt_soak.jsonl -ttSoakTag aimed -ttSoakTimeScale 2 -ttSoakQuit</code>
-    /// <c>-ttSoak "intensity:races"</c>, <c>-ttSoakAimed 0</c> races with the aimed launch off (the A/B's "before"),
-    /// <c>-ttSoakSeed</c> the first course seed (each race the next). It opens Bootstrap and enters Play;
-    /// <see cref="ThresherTimeSoakRunner"/> does the rest. The SwitchbackSoakLauncher's shape.
+    /// <c>-ttSoak "intensities:races"</c> (<c>"1,2,3,4:1"</c> plays one race at each intensity in one session),
+    /// <c>-ttSoakAimed 0</c> races with the aimed launch off (the A/B's "before"), <c>-ttSoakSeed</c> the first course
+    /// seed (each race the next). Without <c>-batchmode</c> the races play in the Game view and the AI Diagnose panel opens
+    /// on each one, to watch the AIs. It opens Bootstrap and enters Play; <see cref="ThresherTimeSoakRunner"/> does the
+    /// rest. The SwitchbackSoakLauncher's shape.
     /// </summary>
     [InitializeOnLoad]
     public static class ThresherTimeSoakLauncher
@@ -57,7 +59,7 @@ namespace CosmicShore.Editor
             var parts = Arg("-ttSoak", "1:2").Split(':');
             var s = new ThresherTimeSoakRunner.Settings
             {
-                Intensity = int.Parse(parts[0], CultureInfo.InvariantCulture),
+                Intensities = Array.ConvertAll(parts[0].Split(','), x => int.Parse(x, CultureInfo.InvariantCulture)),
                 Races = int.Parse(parts.Length > 1 ? parts[1] : "2", CultureInfo.InvariantCulture),
                 Aimed = Arg("-ttSoakAimed", "1") != "0",
                 FirstSeed = int.Parse(Arg("-ttSoakSeed", "7001"), CultureInfo.InvariantCulture),
@@ -65,6 +67,7 @@ namespace CosmicShore.Editor
                 Tag = Arg("-ttSoakTag", ""),
                 TimeScale = float.Parse(Arg("-ttSoakTimeScale", "1"), CultureInfo.InvariantCulture),
                 TargetFrameRate = int.Parse(Arg("-ttSoakFps", "60"), CultureInfo.InvariantCulture),
+                Watch = !Application.isBatchMode,
             };
             ThresherTimeSoakRunner.Launch(s);
         }

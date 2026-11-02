@@ -87,7 +87,9 @@ input-only gate (now covering `Controller/AI/Boost`), Mathf-params and console-l
 **Raced headless (2026-11-02, `ThresherTimeSoakRunner`, batch mode, I1, seeds 7001 / 7002, 2 races each way):** aimed
 on, an AI Thresher won in 77.0 s and 115.7 s, each AI launching 17-26 times at a median 2,410-3,760 u/s and 4.1-9.6° off
 its next ring; aimed off, the AI Threshers threaded 1-4 of 16 rings and a cruise-only seat won in 142-160 s
-(`THRESHERTIME.md` §4 "Measured in the real game"). Not raced: I2-I4. Also found: a hull a person hands to the AI flies
+(`THRESHERTIME.md` §4 "Measured in the real game"). I2-I4 with the aim on, the same day (headless I2 x2, and one race
+per intensity watched in a Unity window with the AI Diagnose panel): an AI Thresher won every race, I2 97.8-148.2 s, I3
+100.6 s, I4 110.8 s, launching 1.5-9.6° off its ring. Not raced: the aim off at I2-I4. Also found: a hull a person hands to the AI flies
 cruise-only in Thresher Time (the policy's `requireAIPlayer`).
 
 **Verify in editor:**

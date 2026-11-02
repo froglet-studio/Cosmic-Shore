@@ -175,8 +175,22 @@ human who slings will beat it.
 
   With the aim on, each AI launched 17-26 times a race at a median 2,410-3,760 u/s, the median launch 4.1-9.6° off its
   next ring and 71-82% of launches within 15° of it. With it off, the learned plant rule (a ring 6.7° off, every 2.9 s)
-  makes the AI plant at nearly every chance and orbit instead of race: worse than never slinging. Not raced: I2-I4, the
-  variant as it was before 2026-11-02 (its 62.8° cone), more seeds. Each race is one sample; the winner is the AI, not a
+  makes the AI plant at nearly every chance and orbit instead of race: worse than never slinging.
+
+  Every intensity, aimed launch on (2026-11-02; headless 2 races on seeds 7001 / 7002, and one watched race per
+  intensity in a Unity window with the AI Diagnose panel up, seed 7001). An AI Thresher won every race:
+
+  | Intensity | Headless winner | Watched winner | Launches a race, median speed, median off the ring | Cruise-only seat |
+  |---|---|---|---|---|
+  | I1 | 77.0 / 115.7 s | 78.7 s | 17-26, 2,410-4,069 u/s, 4.1-9.6° | 7-15 / 16 rings |
+  | I2 | 110.9 / 97.8 s | 148.2 s | 20-32, 1,790-4,098 u/s, 5.9-8.6° | 10-12 / 16 |
+  | I3 | - | 100.6 s | 21-23, 4,165-4,258 u/s, 1.5-2.7° | 6 / 16 |
+  | I4 | - | 110.8 s | 23-24, 3,794-3,815 u/s, 3.6-4.8° | 6 / 16 |
+
+  People's races for scale (other courses, `LEARNED_DRIVES_ThresherTime.md`): Garrett won I1 in 64.6 s and I2 in
+  106.1 s; Shombith won I4 in 120.1 s. The watched I2 race ran 37 s slower than the headless one on the same course
+  (rendering and a second editor open on the PC: the AI and the chain step per frame); one race is one sample. Not raced:
+  the aimed launch off at I2-I4, the variant as it was before 2026-11-02 (its 62.8° cone), more seeds. Each race is one sample; the winner is the AI, not a
   person. To run it: `Unity -batchmode -nographics -projectPath . -executeMethod
   CosmicShore.Editor.ThresherTimeSoakLauncher.Run -ttSoak "1:2" -ttSoakAimed 1 -ttSoakOut Logs/tt_soak.jsonl -ttSoakTag
   aimed -ttSoakQuit` (`-ttSoakAimed 0` for the plain let-go, `-ttSoakSeed` the first course seed); one JSON line per
