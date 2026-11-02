@@ -5,7 +5,10 @@ description: Guide the three-stage Regatta balance plan (Garrett 2026-10-26; Yas
 
 # /regatta-balance: three searches to a level Regatta
 
-The plan, its numbers and its status log: `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md` (read it first, every time). The
+The plan, its numbers and its status log: `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md` (read it first, every time). It is the
+Time element's three steps of the one AI plan, `Docs/AI_SYSTEM/AI_PLAN.md` (LOCKED, Garrett 2026-11-02): stage 1 is one
+universal genome per vessel scored on I1-I4 together and grown from every genome that exists, no drive is trained
+inside Regatta, and stage 2 searches the course with the promoted Time genomes held fixed. The
 compute side: `/compute` (run, board, promote) and `/compute-job` (a new model or job). The AI rules: `/vessel-ai`
 (input-only, difficulty edits belief, the testing ladder). The Regatta mode: `Assets/_Scripts/Controller/Arcade/REGATTA.md`.
 The person who follows the plan is **Yash**; Garrett set it. A session guides: it says where the plan stands, does the

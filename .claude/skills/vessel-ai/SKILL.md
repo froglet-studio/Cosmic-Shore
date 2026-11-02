@@ -11,6 +11,7 @@ instead of copying them:
 
 | Read | For |
 |---|---|
+| `Docs/AI_SYSTEM/AI_PLAN.md` | **First, before any AI training or tuning: the ONE plan (LOCKED, Garrett 2026-11-02).** One universal AI per vessel per element, trained on the element's arcade game and scored on I1-I4 together; the arena balanced against those fixed AIs; the squad's element and pilot choose and bias the AI in voyages. Name the step your work serves (`Plan step: <id>` in the commit); work that serves none goes to Garrett first |
 | `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md` | **The current plan**: the Regatta six, the hull-drive pattern every new racing AI follows (§2), measuring in Amoebius (§4), the order |
 | `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
 | `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |

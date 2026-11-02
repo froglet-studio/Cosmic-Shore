@@ -43,13 +43,21 @@ Write each as a `proposed` job (`compute.py new <id> --evaluator <module-to-buil
 it answers and why a search fits, whose `promote` names the owner, and whose `value` you can defend. Never `ready`
 until the evaluator exists and a short run improved on the baseline (`/compute-job` section 6).
 
+## 2.5 The AI plan decides what an AI search is for (LOCKED, Garrett 2026-11-02)
+
+Every AI opportunity serves a step of `Docs/AI_SYSTEM/AI_PLAN.md` (`ai_plan.json`). Read the steps first, and look for:
+- the live step's gaps: a vessel with no universal Time genome yet (section 5's table) is the top build;
+- a job off the plan: `top --why` says "off the AI plan". Propose retiring it, or bring it onto a step with its owner.
+
+An AI idea that fits no step is written down for Garrett, never queued.
+
 ## 3. Rank honestly
 
 `value` (0-10) is what a converged answer is worth to the game, not how interesting the search is:
 
 | Value | When |
 |---|---|
-| 9-10 | it unblocks a plan someone is following now (a Regatta stage), or fixes an AI that cannot finish |
+| 9-10 | it unblocks the AI plan's live step (`AI_PLAN.md`; today `time-arcade`) or a Regatta stage, or fixes an AI that cannot finish |
 | 7-8 | a cell people will play and nobody has trained; diversity the game visibly lacks (a thin element's bodies) |
 | 5-6 | checking a person-learned or hand-set number; a lab's dials |
 | 2-4 | a curiosity, a geometry fit, an idea without an owner yet |

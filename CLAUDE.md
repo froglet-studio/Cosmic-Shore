@@ -40,7 +40,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
 - [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
-- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
+- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session. **The one AI plan every AI effort serves is [`Docs/AI_SYSTEM/AI_PLAN.md`](Docs/AI_SYSTEM/AI_PLAN.md)** (LOCKED, Garrett 2026-11-02).
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/Compute/README.md`](Docs/Compute/README.md): **Froglet Compute, the team's idle hardware searching for the game** (Garrett, 2026-10-26): a queue of learning searches (AI drives per vessel x Time game x intensity, the Regatta course and elemental balance plan, swarm bioforms, NCA creature trainings) every collaborator's computer works through when idle (`compute.py install`: set and forget, any OS; never touches the checkout; publishes only to `compute/<user>/<host>`), one merged board, and a scout that finds what to search next. A result is a proposal: its area's owner promotes it. Skills: `/compute`, `/compute-job`, `/compute-scout`, `/regatta-balance` (`Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`), `/bioform-forge`.
   Sections: Start; What it does on your computer; The pieces; A job; How the search is shared; An evaluator; The queue refs; Promotion; The scout sweep; Its sibling in Unity; What this is not; Verification status; The Compute Console; Manual runs; The live console and the always-on VM; Runs in the real game (the Unity trainer, and what a run records with the game's own tools); The mothership (every computer live, runs sent to one); The app (Froglet Compute on your own computer); Follow-ups
@@ -184,6 +184,23 @@ to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test
 to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
 first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
 `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
+
+## AI training serves one plan (LOCKED rule, Garrett, 2026-11-02)
+
+**Read [`Docs/AI_SYSTEM/AI_PLAN.md`](Docs/AI_SYSTEM/AI_PLAN.md) before any AI training, tuning or learner work.** In
+a voyage, a squad seat's AI is chosen by its cards:
+- the **vessel and element** choose the genome (one universal AI per vessel per element, trained on that element's
+  arcade game and scored on I1-I4 together);
+- the **pilot** biases its choices toward what its callsign sees;
+- the artifact comes later.
+
+The ladder is the element's arcade intensities, then its arena game balanced against those FIXED AIs, then voyages.
+**Every AI effort names the plan step it serves** (`Docs/AI_SYSTEM/ai_plan.json`):
+- a compute job off the plan is never run, and `compute.py validate` fails on it;
+- a commit that trains or tunes an AI says `Plan step: <id>`;
+- work that serves no step is a proposal to Garrett first.
+
+A new round grows from every genome that exists. No AI is trained inside an arena game.
 
 ## A game mode never changes the vessel (LOCKED rule, Shombith, 2026-10-31)
 
