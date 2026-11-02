@@ -66,7 +66,7 @@ def installer(name, url, key, flags):
     if name == "setup.py":
         with open(os.path.join(HERE, "setup.py"), encoding="utf-8") as fh:
             return fh.read(), "text/x-python", "froglet-compute-setup.py"
-    if name in ("gargantua-banner.png", "froglet.png"):          # the setup window's art (the black hole, the logo)
+    if name in ("setup-banner.png", "cosmicshore.png"):          # the setup window's art (the card art, the wordmark)
         with open(os.path.join(HERE, "console", "stills", name), "rb") as fh:
             return fh.read(), "image/png", name
     if name == "windows.bat":

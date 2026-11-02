@@ -67,10 +67,10 @@ def is_checkout(path):
     return os.path.isdir(os.path.join(path, ".git")) and os.path.isdir(os.path.join(path, "Assets", "_Scripts"))
 
 
-THEME = {"bg": "#05060a", "panel": "#0f1118", "field": "#161a24", "line": "#262b38", "text": "#f1eee6",
-         "dim": "#8a8f9c", "accent": "#f0a44a", "ok": "#9fd3a8", "bad": "#e39a9a"}
-# "Dark Gargantua" (Shombith, 2026-11-02): near-black ground, the accretion disk's amber as the one accent, NASA's
-# black hole visualization (Goddard / Jeremy Schnittman, public domain) behind the title, the Froglet logo on it.
+THEME = {"bg": "#050505", "panel": "#0C0C0C", "field": "#161616", "line": "#222222", "text": "#ECECEC",
+         "dim": "#7F7F7F", "accent": "#00D4FF", "ok": "#4CC38A", "bad": "#F2665A"}
+# The console's dark theme on tkinter (Shombith, 2026-11-02: "the website theme with movie poster text"): the
+# console's tokens, Impact for Bebas Neue, Consolas for Space Mono, Cosmic Shore's own card art behind the title.
 
 ART_DIR = os.path.join(os.path.dirname(APP), "art")
 
@@ -80,7 +80,7 @@ def fetch_art(hub, key):
     already is kept. Never fatal: without them the window is plain."""
     import urllib.request
     out = {}
-    for name in ("gargantua-banner.png", "froglet.png"):
+    for name in ("setup-banner.png", "cosmicshore.png"):
         path = os.path.join(ART_DIR, name)
         if not os.path.isfile(path) and hub and key:
             try:
@@ -96,8 +96,8 @@ def fetch_art(hub, key):
 
 
 def theme(root, tk, ttk):
-    """Dark Gargantua on tkinter: near-black ground, warm white text, a marquee title (Impact stands in for Bebas
-    Neue, Consolas for Space Mono), the accretion disk's amber as the one accent. Shombith, 2026-11-02."""
+    """The console's dark theme on tkinter: black ground, the console's text and cyan accent, a marquee title (Impact
+    stands in for Bebas Neue, Consolas for Space Mono). Shombith, 2026-11-02."""
     T = THEME
     root.configure(bg=T["bg"])
     st = ttk.Style(root)
@@ -124,7 +124,7 @@ def theme(root, tk, ttk):
     st.configure("TButton", background=T["panel"], foreground=T["text"], bordercolor=T["line"], padding=(14, 6), font=body)
     st.map("TButton", background=[("active", T["line"]), ("disabled", T["panel"])], foreground=[("disabled", T["dim"])])
     st.configure("Accent.TButton", background=T["accent"], foreground=T["bg"], font=(body[0], body[1], "bold"))
-    st.map("Accent.TButton", background=[("active", "#f3ead0"), ("disabled", T["line"])], foreground=[("disabled", T["dim"])])
+    st.map("Accent.TButton", background=[("active", "#5fe3ff"), ("disabled", T["line"])], foreground=[("disabled", T["dim"])])
     st.configure("Horizontal.TProgressbar", troughcolor=T["field"], background=T["accent"], bordercolor=T["bg"], lightcolor=T["accent"], darkcolor=T["accent"], thickness=6)
 
 
@@ -135,7 +135,7 @@ def installed_app():
 
 
 def gui(argv):
-    """The installer window in the console's Silver Screen look: the folder (Browse; the current one when it is a
+    """The installer window in the console's look: the folder (Browse; the current one when it is a
     checkout, never searched for), when the computer may work, Install with a progress bar and a log, Uninstall when
     it is installed (the tray keeps Quit only: Shombith, 2026-11-02), then the tray. No terminal: the .bat and .sh
     the console serves start this (Shombith, 2026-11-01: "why can't there be a good looking installer")."""
@@ -153,24 +153,24 @@ def gui(argv):
     art = fetch_art(hub, key)
     have = installed_app()
     outer = ttk.Frame(root); outer.grid()
-    # The banner: NASA's black hole behind the Froglet logo and the title (a Canvas draws text over an image).
+    # The banner: Cosmic Shore's card art behind the wordmark and a movie-poster title (a Canvas draws over an image).
     W, H = 860, 300
     banner = tk.Canvas(outer, width=W, height=H, bg="#000000", highlightthickness=0, bd=0)
     banner.grid(column=0, row=0, sticky="ew")
     keep = []
-    if art.get("gargantua-banner.png"):
+    if art.get("setup-banner.png"):
         try:
-            img = tk.PhotoImage(file=art["gargantua-banner.png"]); keep.append(img)
+            img = tk.PhotoImage(file=art["setup-banner.png"]); keep.append(img)
             banner.create_image(0, 0, image=img, anchor="nw")
         except Exception:
             pass
-    if art.get("froglet.png"):
+    if art.get("cosmicshore.png"):
         try:
-            logo = tk.PhotoImage(file=art["froglet.png"]).subsample(2, 2); keep.append(logo)       # 360x179 -> 180x90
-            banner.create_image(26, 22, image=logo, anchor="nw")
+            logo = tk.PhotoImage(file=art["cosmicshore.png"]); keep.append(logo)
+            banner.create_image(W - 26, 22, image=logo, anchor="ne")
         except Exception:
             pass
-    banner.create_text(28, H - 62, text="FROGLET COMPUTE", anchor="sw", fill=T["text"], font=("Impact", 40) if os.name == "nt" else ("Helvetica", 36, "bold"))
+    banner.create_text(28, H - 62, text="FROGLET COMPUTE", anchor="sw", fill=T["text"], font=("Impact", 44) if os.name == "nt" else ("Helvetica", 36, "bold"))
     banner.create_text(30, H - 30, anchor="sw", fill=T["accent"], font=("Consolas", 10) if os.name == "nt" else ("Menlo", 10),
                        text=("INSTALLED ON THIS COMPUTER  ·  " if have else "") + "THIS COMPUTER TRAINS THE TEAM'S AI WHILE YOU ARE AWAY")
     banner.image_refs = keep

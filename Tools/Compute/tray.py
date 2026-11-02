@@ -429,7 +429,7 @@ def run_tray(configure=False):
 
 
 def _theme(root, tk, ttk):
-    """Dark Gargantua, shared with the setup window (setup.py sits beside this file in the app copy)."""
+    """The console's dark theme, shared with the setup window (setup.py sits beside this file in the app copy)."""
     try:
         import setup
         setup.theme(root, tk, ttk)
