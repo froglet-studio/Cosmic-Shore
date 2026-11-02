@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
             Vector3 at = t.position - t.forward * spawnBehind;
             var cell = Cell.FindNearestActiveCell(at);
             if (!cell) return;
-            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
             var born = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, fauna.FaunaPrefab, at, status.Domain, at, fauna);
             // The omni crystal folds into the newborn's heart when the vessel wears that retirement
             // (R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md); nothing listens otherwise.

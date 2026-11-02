@@ -1,5 +1,15 @@
 # Slingshot (`GameModes.Slingshot = 64`)
 
+> **Flown on the orbit alone since 2026-11-02** (Yash; `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). The notes below about the field dipole and the B switch
+> are history: the hull starts in Time mode and stays there. **How it flies:** press LT or RT and a pair is laid ahead on that
+> side, and holding it warps your flight (×2.7 at rest, the hull's only speed: 60 u/s without one). Fly past it and it catches you;
+> release a quarter-turn round, when the orbit ring is lime, for the whole kick. A fresh press slings you out of the last orbit, so
+> chained presses keep the warp up.
+>
+> **The AI** presses to turn and, on a leg with its ring at least 280 u away, for the warp alone (`aiWarpMinDistance`): 56-62 s a
+> race in the model, I1-I4 (`Tools/Build/stoat_orbit_sim.py`; 2 laps at cruise is about 140 s). No orbit-only race has been flown
+> yet, so that number and the feel are what the first races test. The sweep relearns the sling rows from them.
+
 > **The Stoat's TIME race since 2026-10-27** (Yash: "Stoat will use Slingshot and Meerkat will use Warpline"). Warpline,
 > its time race until then, now flies the Meerkat (`WARPLINE.md`). The AI Stoats train here (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`):
 > `SlingshotController.AICommitFromApproachPoint` is on (the scene's 180 u approach point sat outside its 160 u commit,

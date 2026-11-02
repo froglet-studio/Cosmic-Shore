@@ -1016,8 +1016,10 @@ namespace CosmicShore.Gameplay
             if (input != null) input.LeftTriggerAnalog = held ? 1f : 0f;
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("AI.Pilot.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (!AutoPilotEnabled)
                 return;
 

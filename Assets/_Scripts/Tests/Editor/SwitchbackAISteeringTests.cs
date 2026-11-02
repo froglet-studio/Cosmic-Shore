@@ -96,6 +96,56 @@ namespace CosmicShore.Tests
                 "Slingshot's Stoat sling variant is missing");
         }
 
+        static T Field<T>(object o, string name)
+        {
+            var f = o.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(f, $"{o.GetType().Name}.{name} is gone");
+            return (T)f.GetValue(o);
+        }
+
+        [Test]
+        public void Switchback_BlastAI_Defaults_AreSteps1And2()
+        {
+            // SWITCHBACK.md "Step 1" / "Step 2" (2026-11-02, switchback_sim_harness): dodge only Danger prisms and nothing in
+            // the last 200 u to the ring; strike the key straight, the drift aiming the blast, with no setup leg behind it.
+            var go = new GameObject("SwitchbackAISteeringTests_BlastAIDefaults");
+            try
+            {
+                var c = go.AddComponent<SwitchbackController>();
+                Assert.IsTrue(Field<bool>(c, "aiDodgeDangerOnly"));
+                Assert.AreEqual(200f, Field<float>(c, "aiNoDodgeNearRing"));
+                Assert.IsFalse(Field<bool>(c, "aiStrikeSetupLeg"), "the setup leg cost about what the blast saved");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Switchback_AINoseLag_TableByIntensityAndDifficulty()
+        {
+            // SWITCHBACK.md "Lag by difficulty" (2026-11-02, Yash's bands): each level 10 s apart at every intensity, I4
+            // Easy 130-150 s, Medium 120-140, Hard 110-130, Legendary 100-120. A faster level always follows faster.
+            var go = new GameObject("SwitchbackAISteeringTests_NoseLag");
+            try
+            {
+                var table = Field<SwitchbackNoseFollow[]>(go.AddComponent<SwitchbackController>(), "aiNoseFollowByIntensity");
+                Assert.AreEqual(4, table.Length, "one row per intensity");
+                var i4 = table[3];
+                CollectionAssert.AreEqual(new[] { 1.8f, 2.2f, 3.5f, 6f }, new[] { i4.easy, i4.medium, i4.hard, i4.legendary });
+                for (int intensity = 1; intensity <= 4; intensity++)
+                for (int level = 1; level <= 4; level++)
+                {
+                    float rate = SwitchbackController.NoseFollowFor(table, intensity, level);
+                    Assert.Greater(rate, VesselTransformer.RotationFollowRate, $"I{intensity} level {level}: faster than the fleet lag");
+                    if (level > 1)
+                        Assert.GreaterOrEqual(rate, SwitchbackController.NoseFollowFor(table, intensity, level - 1),
+                            $"I{intensity}: level {level} follows at least as fast as the level below");
+                }
+                Assert.Less(SwitchbackController.NoseFollowFor(table, 0, 1), 0f, "an unknown intensity keeps the fleet lag");
+                Assert.Less(SwitchbackController.NoseFollowFor(table, 4, 5), 0f, "an unknown level keeps the fleet lag");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
         [Test]
         public void OtherGateRaces_KeepTheirSceneSwitch()
         {

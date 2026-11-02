@@ -25,6 +25,10 @@ namespace CosmicShore.Gameplay
     /// an orbit is let go without its kick — so a pair is never stranded under a trigger that now means something
     /// else. A trigger still held after the switch does nothing until it is pressed again.</para>
     ///
+    /// <para><b>Orbit only</b> (2026-11-02, <see cref="StoatModeActionSO.OrbitOnly"/>): every copy starts in Time mode and
+    /// stays there, a B press switches nothing and the autopilot never switches, so Mass and Gate mode are parked with
+    /// their code intact (<c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>).</para>
+    ///
     /// <para><b>One writer per frame.</b> The thickness is pushed onto
     /// <see cref="VesselPrismController.ThicknessMultiplier"/> every frame from one eased float, and the Mass-5 shield
     /// onto <see cref="VesselPrismController.ForceShielded"/>; both are handed back at 1 / false on disable.</para>
@@ -37,6 +41,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The mode one B press steps to: Mass → Time → Gate → Mass.</summary>
         public static Mode Next(Mode mode) => (Mode)(((int)mode + 1) % ModeCount);
+
+        /// <summary>The mode a hull starts in: Time for the orbit-only kit, Mass otherwise.</summary>
+        public static Mode StartMode(bool orbitOnly) => orbitOnly ? Mode.Time : Mode.Mass;
 
         /// <summary>How many B presses step <paramref name="from"/> to <paramref name="to"/> (0 when they match).</summary>
         public static int PressesTo(Mode from, Mode to) => (((int)to - (int)from) % ModeCount + ModeCount) % ModeCount;
@@ -83,21 +90,34 @@ namespace CosmicShore.Gameplay
         /// <summary>Eased 1 in Mass mode, 0.5 in Gate, 0 in Time mode — the HUD's Mass card (a switch moving, never a meter).</summary>
         public float MassMode01 => _massBlend;
         public StoatModeActionSO Config => config;
+        /// <summary>True while the kit is the orbit slingshot alone (<see cref="StoatModeActionSO.OrbitOnly"/>).</summary>
+        public bool OrbitOnly => config && config.OrbitOnly;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
             _aiConfig = null;
             _boundInput = null;
-            _mode = Mode.Mass;
+            ResetMode();
             _aiLastSwitch = float.NegativeInfinity;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatModeExecutor has no StoatModeAction — B switches nothing and the trail " +
                                  "stays thin. Wire Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset on the prefab.");
         }
 
-        /// <summary>B: step to the next mode (Mass → Time → Gate → Mass). Runs on every peer (the press is replicated).</summary>
-        public void Toggle() => SetMode(Next(_mode), cue: true);
+        void ResetMode()
+        {
+            _mode = StartMode(OrbitOnly);
+            _massBlend = MassCardTarget(_mode);
+        }
+
+        /// <summary>B: step to the next mode (Mass → Time → Gate → Mass), or nothing on the orbit-only kit. Runs on every peer
+        /// (the press is replicated).</summary>
+        public void Toggle()
+        {
+            if (OrbitOnly) return;
+            SetMode(Next(_mode), cue: true);
+        }
 
         void SetMode(Mode mode, bool cue)
         {
@@ -134,7 +154,7 @@ namespace CosmicShore.Gameplay
             prisms.ThicknessMultiplier = _thickness;
             prisms.ForceShielded = _mode == Mode.Mass && config.ShieldsInMassMode(_status);
 
-            if (_status.AutoPilotEnabled && MantaStingActionExecutor.IsSimAuthority(_status)) Autopilot();
+            if (!OrbitOnly && _status.AutoPilotEnabled && MantaStingActionExecutor.IsSimAuthority(_status)) Autopilot();
         }
 
         /// <summary>
@@ -212,9 +232,8 @@ namespace CosmicShore.Gameplay
         // Unconditional and idempotent: a despawned or pooled vessel must not keep a thick or armoured trail.
         void OnDisable()
         {
-            _mode = Mode.Mass;
+            ResetMode();
             _thickness = 1f;
-            _massBlend = 1f;
             _boundInput = null;
             var prisms = _status?.VesselPrismController;
             if (prisms)

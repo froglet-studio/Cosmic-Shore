@@ -178,7 +178,7 @@ when a prompt is about vessel work. Studio domain colours come from the game's p
 ## AI learning is automatic (LOCKED rule, Yash, 2026-10-26)
 
 "I don't wanna click any commands or anything. Never." Every race played in the editor is recorded and sent on its own
-(`HumanFlightRecorder`, `BugHuntAutoSend`), and the hourly **AI learning sweep** relearns the AIs from it
+(`HumanFlightRecorder`, `BugHuntAutoSend`), and the daily **AI learning sweep** relearns the AIs from it
 (`Tools/Build/ai_learn.py --run`), judges whether they now race like the person, fixes what numbers cannot, and pushes
 to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
 to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
@@ -232,6 +232,7 @@ troubleshooting: `Docs/unity-cli-setup.md`. The CLI is experimental and changes 
 or from another machine.
 
 - **The verify rule (Shombith's decision, 2026-10-29): every C# commit passes `Tools/Build/unity_refcompile` (`bash Tools/Build/unity_refcompile/run.sh`) plus whatever `/ship` already gates on (`bash .claude/skills/ship/gates.sh`). When a Unity editor is open, also run the `unity` CLI. If neither ran, say so in the commit/PR and add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.** Never claim a verification that didn't run. `/verify-unity` is not required until that skill merges.
+- **Headless real-editor check: `bash Tools/Build/verify_unity.sh --project <full worktree> [--commit <sha>]`** compiles with the real Unity editor in batchmode and runs the EditMode tests; it prints compile errors as `file:line` and exits non-zero (1 compile, 2 tests, 3 setup, 4 no verdict). This is the runnable `/verify-unity` until that skill merges. It needs a full (non-sparse, imported) checkout, refuses when another Unity has the project open, and restores the previous HEAD after `--commit`. `--no-tests` compiles only; `--filter` narrows the tests.
 - **`[CliCommand]` wrappers** are the editor methods exposed to the CLI's `unity command` surface —
   the sanctioned way to give the CLI a repo-specific operation. They are editor tooling: they live
   under an `Editor/` folder (Assembly-CSharp-Editor), never in runtime code.

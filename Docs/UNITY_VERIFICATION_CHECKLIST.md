@@ -65,6 +65,136 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the
+launch view (both triggers full on a fast enough spin) `ThresherSlingAIPolicySO` hands `ThresherExecutor.AimAutopilotLaunch`
+its ring; the executor lays the orbit plane onto it at the pilot's `aimPitchRate` and the let-go, after 1.54 s with the aim
+within 3°, arms the pilot's launch (×4.8 boost, the ×2 exit buff). `ThresherAIBoostPolicy_ThresherTime`: `aimedLaunch` 1,
+`aimedHoldSeconds` 1.54 (learned), `releaseConeDegrees` 62.8 → 15 (the 62.8 was learned from his arms). The base policy keeps
+the aimed launch off. `THRESHERTIME.md` §4 "The aimed launch". Affects: Garrett's Thresher (an additive aim seam in
+`ThresherExecutor`; no human path changed).
+
+**Verified without the editor:** Unity 6000.3.17f1 batch-mode EditMode run (a real compile, no errors) of
+`ThresherSlingAIPolicyTests`, `ThresherChainSolverTests` (incl. `AutopilotAim_*` with a negative control),
+`ThresherAnalogTriggerTests`, `ThresherTimeCourseTests`: 125 of 126 pass. The one failure is not this change's:
+`ThresherAnalogTriggerTests.PitchAim_IsTurnAimsPitch_AndLaysTheAimOntoAnOffPlaneLine` (2026-10-30) asserts an angle under
+0.01° and reads 0.0198°, the float floor of `Vector3.Angle` near zero; nothing it calls was changed. Also
+`learn_drives_from_flights.py --self-test` (the aimed-launch detector, three negative controls) and `--check`; the
+input-only gate (now covering `Controller/AI/Boost`), Mathf-params and console-logging gates. NOT run: `unity_refcompile`
+(it cannot run on Windows), a player build.
+
+**Raced headless (2026-11-02, `ThresherTimeSoakRunner`, batch mode, I1, seeds 7001 / 7002, 2 races each way):** aimed
+on, an AI Thresher won in 77.0 s and 115.7 s, each AI launching 17-26 times at a median 2,410-3,760 u/s and 4.1-9.6° off
+its next ring; aimed off, the AI Threshers threaded 1-4 of 16 rings and a cruise-only seat won in 142-160 s
+(`THRESHERTIME.md` §4 "Measured in the real game"). I2-I4 with the aim on, the same day (headless I2 x2, and one race
+per intensity watched in a Unity window with the AI Diagnose panel): an AI Thresher won every race, I2 97.8-148.2 s, I3
+100.6 s, I4 110.8 s, launching 1.5-9.6° off its ring. Not raced: the aim off at I2-I4. Also found: a hull a person hands to the AI flies
+cruise-only in Thresher Time (the policy's `requireAIPlayer`).
+
+**Verify in editor:**
+1. Thresher Time I1, two AI Thresher rivals, F2 (AI Diagnose), watch one: it plants with the ring ahead, its status reads
+   "planted: aiming the launch", the orbit tilts toward the ring, and it leaves along the ring much faster than cruise
+   (hundreds to thousands of u/s), not along the circle's tangent.
+2. The same at I2 and I4. Note any launch that leaves well off the ring, and any race an AI fails to finish.
+3. Race them yourself at I1: the AI's finish time against yours (Garrett won I1 in 64.6 s against Legendary rivals).
+4. Fly the Thresher yourself: your crosshair launch is unchanged (aim, release, the boost, the exit).
+
+### 🔴 Switchback AI: the nose lag by intensity and difficulty, set to Yash's time bands (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselTransformer.AINoseFollowPerSecond` (default -1 = the fleet lag; every mode but Switchback leaves
+it unset), `GateRaceController.OnRacerArmed`, and `SwitchbackController.aiNoseFollowByIntensity` (a row per intensity of
+Easy/Medium/Hard/Legendary rates) written to each AI racer when it is armed. Offline I4 medians: 140 / 129 / 120 / 112 s,
+inside Yash's bands 130-150 / 120-140 / 110-130 / 100-120 (`SWITCHBACK.md` "Lag by difficulty").
+
+**Verified without the editor:** reference compile (editor, player-dev); gates; `switchback_sim_harness` selftest and
+eval (48 courses a cell). NOT run: the tests or a race in Unity.
+
+**Verify in editor:**
+1. EditMode: `NoseFollowDialTests` and `SwitchbackAISteeringTests` pass (incl. the two new tests).
+2. Re-run the Switchback soak (`SwitchbackSoakRunner`) at I4 with each difficulty: the medians should step about 10 s
+   apart. If they are all ~1.6x the model's (as in the step 1 soak), the rows need scaling for the real game: report the
+   times and the session retunes them.
+3. Watch a Legendary Dolphin in the AI Diagnose panel (F2, Chase): the nose snaps to its aim with no jitter. Fly another
+   mode (Skim Race) with AI: its AIs fly as before (the lag is unchanged there).
+
+### 🔴 Switchback AI step 3: the planner's plain-hit cost 0.6 -> 0.25 s (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackBlastPlanner.HitPenalty` 0.25 (the measured cost of a plain prism hit). Offline it changes
+no race time measurably (`SWITCHBACK.md` "Step 3").
+
+**Verified without the editor:** reference compile (editor, player-dev); gates; `switchback_sim_harness` selftest and
+eval. NOT run: `SwitchbackBlastPlannerTests` in Unity.
+
+**Verify in editor:**
+1. Run `SwitchbackBlastPlannerTests` (EditMode): all 24 pass (the difficulty ladder and "Legendary never suboptimal"
+   use the cost model).
+
+### 🔴 Switchback AI step 2: the strike without a setup leg (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackBlastAI.GateBlastAim` no longer flies a setup leg behind the key by default
+(`SwitchbackController.aiStrikeSetupLeg`, off): the AI flies straight at the key and the drift look swings the nose onto
+the obstacle to aim the blast.
+
+**Verified without the editor:** reference compile (editor, player-dev); console-logging, using-directive and
+conditional-compilation gates; `switchback_sim_harness` selftest and eval (I3 Legendary 189 -> 156 s, now faster than
+not blasting; I4 Legendary 205 -> 175 s; `SWITCHBACK.md` "Step 2"). NOT run: the tests in Unity, the real soak.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): `Switchback_BlastAI_Defaults_AreSteps1And2` passes.
+2. The soak (`SwitchbackSoakRunner`, I3 and I4 at D3/D4), against the step 1 soak in `soak_results.md`: winner times
+   fall at I3 D4, and the `[Switchback AI] ... plan=Blast` lines show `blasted standing N->M` more often than
+   `missed-key`. A/B on one build by ticking `aiStrikeSetupLeg`.
+3. Switchback I3 with AI Dolphins (AI Diagnose panel, "AI plan" overlay): a blasting AI flies at its key without
+   swinging out behind it, and its nose turns onto the door as it reaches the key.
+
+### 🔴 Wide-radius prism queries run as one Burst pass - Fulmen's burn freeze (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `PrismSpatialIndex.QuerySphere` / `QuerySegment` take `LinearCapsuleScanJob` (Burst, `.Run()`, marker
+`PrismSpatialIndex.LinearScan`) when their bucket box is bigger than the index; same prisms, same order. Test:
+`PrismSpatialIndexTests.WideAndTightQueries_MatchBruteForce_OnBothPaths`. No Unity editor and no Amoebius build in the
+session (the engine cannot build the game today), so neither the test nor the game has run; refcompile player + editor OK.
+
+1. Run the EditMode tests `PrismSpatialIndexTests`, `PrismSweptQueryTests`, `PrismConeQueryTests`. **Pass:** all green.
+2. Fire a Fulmen strike into dense enemy mass in the menu (Release) and send the capture. **Pass:** no frame with `Fulmen.Burn`
+   above a few ms (was 126-162 ms on 10-30); the bolts still burn the same prisms within the 200 u radius.
+3. Fly Skim Race with AI seats and a Sparrow in any mode. **Pass:** AI dodges mass and rounds hit prisms as before.
+
+### 🔴 Switchback AI step 1: dodge only Danger prisms, none in the last 200 u to the ring (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackPrismAvoidance.Dodges`, used by `SwitchbackBlastAI`'s sense and emergency sweep;
+`SwitchbackController.aiDodgeDangerOnly` (on) and `aiNoDodgeNearRing` (200 u). The AI flies straight through plain
+prisms and never dodges in the final stretch to a ring.
+
+**Verified without the editor:** reference compile (editor, player-dev); console-logging, using-directive and
+conditional-compilation gates; `switchback_sim_harness` selftest and eval (24 courses x I1-I4 x 4 levels: every cell
+finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1"). NOT run:
+`SwitchbackPrismAvoidanceTests` in Unity, the real soak.
+
+**Verify in editor:**
+1. Run `SwitchbackPrismAvoidanceTests` (EditMode): all pass, `Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing` included.
+2. The soak (`SwitchbackSoakRunner`, I1-I4 x D1-D4): AI race times fall against `soak_results.md`, Legendary is no
+   slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
+3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
+   only for red Danger blocks, and never swerve in the last stretch before a ring.
+### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
+(`SwitchbackController.NoteHits`) and soak runner (`SwitchbackSoakRunner`) called it unguarded, so every release player
+build failed (CS0103 at `SwitchbackController.cs:197`, `SwitchbackSoakRunner.cs:168`; from `95631f4129`). Both calls are
+now inside the same guard (`Docs/CONDITIONAL_COMPILATION.md` Pattern 1). In a release build the hit counter counts a pilot
+as AI only by `IsInitializedAsAI` (no hull can be handed to the AI there), and the soak runner logs that it cannot hand
+the host seat over. Editor and development builds behave exactly as before.
+
+**Verified without the editor:** `unity_refcompile` player (was failing), player-dev, editor and webgl configs: 0 errors
+in project code. `check_conditional_compilation.py` OK; ship gates all OK.
+
+**Test (editor):**
+1. Play a Switchback race; toggle your hull to AI with the Third Eye's You / AI switch partway. Expected: the race summary
+   log and AI Diagnose hit readout count your seat as AI after the toggle, as before.
+2. Run the Switchback soak (`SwitchbackSoakLauncher`). Expected: every seat AI, no "host seat not handed to the AI" error.
+3. Make a release (non-development) player build of any platform. Expected: it compiles past the scripts step.
+
 ### 🔴 Brittle Star, Sparrow, Stoat, Orca and Wrasse omni-crystal morph: the crystal folds into the vessel (`claude/hull-fusion-omni-morph`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 A PLACEHOLDER target for the hulls whose omni ability puts nothing in the world: one retirement
@@ -76,6 +206,7 @@ dissolves it there. Record: `R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md`. He
 - [ ] Each of the five: no husk spray; the crystal wraps the hull and sinks into it while flying (it rides the hull).
 - [ ] Each hull's omni ability still happens (spare ring, ward, Fulmen charge, magazine, board motes).
 - [ ] Decide per hull whether this reads right or the hull should get a target of its own.
+
 ### 🔴 Tiger Moth Time, Charge, Mass, Space and omni cards, and the three-colour dust (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** kit parts under the Time icon (`TigerMoth_Drop*`) and the Charge icon (`TigerMoth_ScaleDust*`) in
@@ -19535,6 +19666,14 @@ screenshot of the real window exists yet; the only images made were mockups draw
 A local session with Unity open should capture: an Arcade card (Scurry) with three AI, no AI selected, then AI 1 and
 AI 2 each selected with different levels; and an Arena card (Regatta) with an AI selected (the vessel strip follows it).
 
+**Status (2026-11-02):** still unverified; nothing above was confirmed and nothing failed. A local session tried to capture
+those screenshots on `Ys-bleeding-edge` at `a873da1100` (with local prefab edits in the tree), but took no screenshot: its
+one Play mode was ended, apparently by another session's test run on the shared editor. Yash called the
+capture off, because this will be covered in the wider testing under way. Two things for the next session: `unity` CLI
+1.0.0-beta.13 refuses any command with arguments against `com.unity.pipeline` 0.5.0-exp.1 (it wants 0.6.0-exp.1), so
+clicking the modal needs a temporary editor script; and `unity recompile` reported `up_to_date` while an ILPP
+out-of-memory failure stood, so read the console as well.
+
 ## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameWarpline.asset` + `ModePreview_Warpline.asset` (Vessels / preview: the Meerkat; `author_warpline_assets.py`),
@@ -20593,3 +20732,32 @@ Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
    every leg off the line, near ball every second leg, tight rings). **Pass:** as described.
 8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
    follow-up 7).
+
+## 🟡 Switchback fauna path corridor + prism budget (2026-11-02, NOT RUN IN EDITOR)
+Refcompile (player) error set identical to base; perf_hunt gates OK; EditMode tests (`FaunaCorridorTests`) NOT run — headless project busy.
+- [ ] Switchback I1–I4: no fauna born / steering within 220 u of the gate path; fauna elsewhere unchanged.
+- [ ] Set `faunaCorridorRadiusByIntensity` to 0 → fauna behave exactly as before.
+- [ ] Herbivores don't graze prisms inside the corridor; LightFauna schools spawn outside it.
+- [ ] Corridor cleared after leaving the match (other modes in the same cell unaffected).
+- [ ] Profiler: `Fauna.Corridor.PushOut`, `Switchback.Features.Spawn` present; `Fauna.BodySync` lower near the path.
+- [ ] Run `FaunaCorridorTests`. See Docs/perf/SWITCHBACK_PRISM_BUDGET.md.
+
+## 🟡 Stoat orbit only: the field trajectory parked, the AI presses for the warp (2026-11-02, Yash, NOT PLAYED IN EDITOR)
+Affects: Garrett's Stoat kit (not yet asked), `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. Model only so far: `Tools/Build/stoat_orbit_sim.py`.
+Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; EditMode `StoatSling|StoatDipole` 64/64 pass (the B-chip test's expected text updated for `padLabel`). Wider filter: Rhino's `HangarAbilityKindsTests` (Energize has no stage move) and Manta's `RegattaDriveTuningTests.MantaRegattaTuning_*` fail, outside this change. `unity_refcompile` cannot run on Windows (fetch.py read-only delete, fcntl, WinError 206). Not played.
+- [ ] Arcade > Slingshot at I1: the hull starts in Time mode (the Time icon on the Mass card), with no predicted line of dots ahead at any time.
+- [ ] B (T on a keyboard) does nothing, and LT / RT never lay the field dipole. On a phone, the Mass card does nothing.
+- [ ] Press and hold: the pair is laid ahead on that side, the two rings show, and the hull visibly speeds up (60 -> about 160 u/s).
+- [ ] Fly past it: it catches you. Release when the orbit ring is lime: the whole kick. A fresh press out of an orbit keeps the warp up.
+- [ ] The AI rivals at I1-I4: they keep pace on the straights (about 150 u/s), finish, and do not wobble off line at each press. The model says 56-62 s a race and at most half a missed ring. Compare with what you see.
+- [ ] Annihilations: an AI pressing about once a second throws a Charge ripple each time. Watch the frame rate and whether rivals are stripped too often.
+- [ ] Hangar: the Stoat reads Catch Orbit, Timed Slingshot, Ripple and Orbit Mode, and each plays a fitting move.
+- [ ] Regatta: pick a Stoat on an AI chip (the host can pick any seat). It finishes all four intensities among the Dolphin and Squirrel.
+- [ ] Restore test: set `orbitOnly` off on `StoatModeAction.asset`: B steps Mass -> Time -> Gate and the field trajectory flies as before. Set it back.
+
+## 🔴 Serpent wall sweep: cheap tests before component lookups (2026-11-02, NOT COMPILED, NOT RUN IN EDITOR)
+`SerpentWallAssembler.Sweep` now runs the wall-plane test before `IsRecruitable`, and `IsRecruitable` reads the prism's own fields before `GetComponentInParent<Ark>()` (only while `Ark.Live` has one) and `TryGetComponent<SerpentWallAssembler>()`. Same answers, cheaper order. Not compiled: `unity_refcompile` needs Linux (`fcntl`) and this was a Windows session with no WSL; no editor turn. `/ship` gates: the failing ones are asset generators that do not read this file.
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Serpent Time: seed walls near trails; they still steal loose prisms, skip creatures, seeds, super-shielded armour and other walls' seeds, and take opponents' shielded prisms only with the Space upgrade.
+- [ ] Voyage (an Ark present): a wall seeded beside the Ark does not strip its hull.
+- [ ] Profiler, Serpent Time with walls up: `SerpentWall.Sweep` well under the 4.1 ms a frame `SerpentWallAssembler.Update` took on 2026-10-29 (Andrew's capture).

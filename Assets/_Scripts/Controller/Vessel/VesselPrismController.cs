@@ -407,9 +407,11 @@ namespace CosmicShore.Gameplay
             return Mathf.Clamp(halfGap, -limit, limit);
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmCreateBlock = new("Vessel.Prism.CreateBlock");
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
         void CreateBlock(float halfGap, Trail trail)
         {
+            using var __pm = s_pmCreateBlock.Auto();
             if (!_onPrismSpawnedEventChannel)
             {
                 CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");

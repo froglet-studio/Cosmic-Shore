@@ -637,7 +637,9 @@ namespace CosmicShore.Gameplay
             // look-ahead away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
             var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
                                                        (ai.ObjectivePosition - hull.position).magnitude);
-            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft))
+            // To turn, or for the warp alone on a long leg: a pair caught with the target near the nose is let go at once above.
+            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft)
+                && !StoatSlingMath.WantsWarp(local, AIConfig.AiWarpMinDistance))
                 return;
             var side = attractorLeft ? Side.Left : Side.Right;
             if (!ResolveBoundInput(side, handler, out var ie)) return;

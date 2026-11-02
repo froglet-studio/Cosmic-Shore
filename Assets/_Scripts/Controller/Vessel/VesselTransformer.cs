@@ -320,7 +320,8 @@ public class VesselTransformer : MonoBehaviour
         public static float RotationFollowRate => LERP_AMOUNT;
 
         /// <summary>This hull's nose follow rate per second, as <see cref="NoseFollowFraction"/>
-        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull; for this
+        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull (or the AI skill's own
+        /// <see cref="AINoseFollowPerSecond"/> when a mode sets one); for this
         /// machine's human pilot, their device's rate (<see cref="PilotNoseFollowPerSecond"/>: the pad
         /// 1.5, touch 9), or <see cref="float.PositiveInfinity"/> (the nose IS the command) on a device
         /// with no lag. For a predictor of this hull's path (the Stoat's foresight).</summary>
@@ -328,7 +329,9 @@ public class VesselTransformer : MonoBehaviour
         {
             get
             {
-                if (!IsLocalHumanPilot) return LERP_AMOUNT;
+                if (!IsLocalHumanPilot)
+                    return AINoseFollowPerSecond < 0f ? LERP_AMOUNT
+                         : AINoseFollowPerSecond > 0f ? AINoseFollowPerSecond : float.PositiveInfinity;
                 float rate = PilotNoseFollowPerSecond;
                 return rate > 0f ? rate : float.PositiveInfinity;
             }
@@ -413,8 +416,10 @@ public class VesselTransformer : MonoBehaviour
         public bool HoldsSpeedWhileDrifting => holdSpeedWhileDrifting;
 
         // ----------------------------- Update Loop -----------------------------
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Vessel.Transformer.Update");
         protected virtual void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (!isActive || VesselStatus == null || VesselStatus.IsStationary)
                 return;
 
@@ -623,11 +628,24 @@ public class VesselTransformer : MonoBehaviour
         protected float NoseFollowFraction(Quaternion target, float dt)
         {
             float fleet = LERP_AMOUNT * dt;
-            if (!IsLocalHumanPilot) return fleet;
+            if (!IsLocalHumanPilot)
+            {
+                // An AI pilot's skill may set its own rate (AINoseFollowPerSecond); unset, the fleet lag.
+                if (AINoseFollowPerSecond < 0f) return fleet;
+                if (AINoseFollowPerSecond > 0f) return Mathf.Min(1f, AINoseFollowPerSecond * dt);
+                return NoLagFraction(target, dt, fleet);
+            }
 
             float pilotRate = PilotNoseFollowPerSecond;
             if (pilotRate > 0f) return 1f - Mathf.Exp(-pilotRate * dt);
 
+            return NoLagFraction(target, dt, fleet);
+        }
+
+        /// <summary>No lag: the nose IS the command, except that a leftover gap is closed no faster than
+        /// <see cref="NoseCatchUpTurnRateMultiple"/> times the hull's combined max turn rate, so it never snaps.</summary>
+        float NoLagFraction(Quaternion target, float dt, float fleet)
+        {
             float t = 1f;
             float gap = Quaternion.Angle(transform.rotation, target);
             if (gap > 1e-3f)
@@ -635,6 +653,14 @@ public class VesselTransformer : MonoBehaviour
 
             return Mathf.Max(t, fleet);
         }
+
+        /// <summary>
+        /// An AI pilot's nose follow rate per second, set by a mode's AI skill (Switchback's difficulty ladder,
+        /// <c>SwitchbackController.aiNoseFollowByIntensity</c>): below 0, the fleet lag (<c>LERP_AMOUNT</c>, every mode that
+        /// sets nothing); 0, no lag, as a human on a keyboard; above 0, that rate. Ignored while this machine's human flies
+        /// the hull. Server-side state: an AI hull's flight runs where its AI runs, and peers see the replicated pose.
+        /// </summary>
+        public float AINoseFollowPerSecond { get; set; } = -1f;
 
         /// <summary>
         /// The local human pilot's nose follow rate per second for the device they fly with, or 0 for

@@ -53,8 +53,10 @@ namespace CosmicShore.Gameplay
                 cellData.OnPhaseChanged.OnRaised -= HandleCellPhaseChanged;
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.LightManager.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // Poll fallback: covers two scenarios where OnPhaseChanged won't reach us -
             // (1) the SOAP event asset isn't wired into CellRuntimeDataSO so Raise NREs
             // before the listener gets called, and (2) the manager started after the
@@ -112,6 +114,9 @@ namespace CosmicShore.Gameplay
                 randomOffset.y = 0f;
 
                 Vector3 spawnPosition = transform.position + randomOffset;
+                // A school member is born outside a race path corridor too (Switchback); no-op elsewhere.
+                if (cell && cell.FaunaPathCorridor.IsActive)
+                    spawnPosition = cell.FaunaPathCorridor.PushOut(spawnPosition, transform.position);
 
                 LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
                 fauna.domain = spawnDomain;

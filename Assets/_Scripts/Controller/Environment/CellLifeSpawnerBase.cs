@@ -530,7 +530,7 @@ namespace CosmicShore.Gameplay
             // the pen leaking. Applied here, at the one spawn call both spawners share, for the
             // same reason banded placement lives here (see the warning above). No-op for every
             // biome that authors no pen.
-            if (host.FaunaExclusionRadius > 0f || host.FaunaContainmentRadius > 0f)
+            if (host.HasFaunaPen)
             {
                 // No explicit position means "the cell centre", which is the one point a closed
                 // inner pen definitely forbids - so resolve it here rather than letting the

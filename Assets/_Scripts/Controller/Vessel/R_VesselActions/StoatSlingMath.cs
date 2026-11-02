@@ -67,6 +67,14 @@ namespace CosmicShore.Gameplay
             return offNose >= minTurnDegrees;
         }
 
+        /// <summary>
+        /// Whether an autopilot presses for the warp alone: its ring at least <paramref name="warpDistance"/> away, at any
+        /// bearing (0 = never). A held pair is the orbit-only Stoat's only speed, and <see cref="TryAutopilotSide"/> never
+        /// fires with the target dead ahead, so without this a lined-up AI crawls down a straight at cruise.
+        /// </summary>
+        public static bool WantsWarp(Vector3 targetLocal, float warpDistance) =>
+            warpDistance > 0f && targetLocal.magnitude >= warpDistance;
+
         // ------------------------------------------------------------------ the orbit (drift pair)
 
         /// <summary>

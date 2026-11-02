@@ -6,6 +6,8 @@ The round-15 Stoat, ported from the Stoat Flight Studio's field trajectory
 Squirrel it was cloned from left on the prefab (§1a–§1e, §4). **Time mode** (2026-10-14) is the studio's
 round-6 dipole sling: a light pole laid ahead that CATCHES you onto an orbit, drawn as two rings (§1b).
 
+> **2026-11-02 - ORBIT ONLY (Yash).** The shipped Stoat flies Time mode alone (`STOAT_DIPOLE.md` §1b): `StoatModeActionSO.orbitOnly` starts every copy in Time mode and B switches nothing. Mass mode (the field dipole and its predicted path) and Gate mode are parked with their code intact; what they were, what that costs and how to bring them back: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are now named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Orbit Mode (Mass, parked). Everything below about Mass and Gate mode is the parked kit's record.
+
 **Quick read — the four abilities.**
 
 | Element | Ability | Input | What Space / Time / Charge / Mass scales | Level 5 |
@@ -216,7 +218,11 @@ dives you into the hole when aimed straight at it.
 **The autopilot** presses the trigger on its target's side (target ≥ 30° off the nose, ≥ 120 u away, every 3 s), flies
 toward its target past the pole and is caught; once caught it lets go when the target is within `aiReleaseConeDegrees`
 (20°) of the nose, or within 60° inside the timing window; a pair that has not caught it in `aiCatchGiveUpSeconds` (4 s)
-is let go. Both edges through the replicated press.
+is let go. Both edges through the replicated press. **Since 2026-11-02** a held pair is the hull's only speed, so it also
+presses for the warp alone while its ring is at least `aiWarpMinDistance` (280 u) away, at any bearing
+(`StoatSlingMath.WantsWarp`), and a pair that catches it with the target near the nose is let go at once. The turn press cannot
+fire dead ahead, so without this a lined-up AI sat at cruise (`Tools/Build/stoat_orbit_sim.py`: 70-82 s a Slingshot race before,
+56-62 s after, a model).
 
 **Where it runs.** The press and release replicate: every peer lays its own copy of the pair at the replicated pose and
 lets it go on the release. The catch and the orbit fly on the simulating machine; the rings are the local pilot's.

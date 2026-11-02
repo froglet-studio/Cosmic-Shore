@@ -124,6 +124,8 @@ namespace CosmicShore.Gameplay
             s_last.Clear();
             s_last.AddRange(_rows.Values);
             LastSummary = Format(s_last, time, $"I{intensity} seed {seed}");
+            LastSummary += " | " + SwitchbackAIClock.Report();
+            SwitchbackAIClock.Reset();
             CSDebug.Log("[Switchback AI] race summary " + LastSummary);
             RaceEnded?.Invoke(s_last, time);
         }

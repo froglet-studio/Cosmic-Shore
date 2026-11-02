@@ -19,6 +19,10 @@ namespace CosmicShore.Gameplay
     /// (<see cref="VesselTransformer.FlightTimeScale"/>), so the path stays the path and only arrives
     /// sooner. Time is rate: the boost is <see cref="StoatDipoleConfigSO.Boost"/>, read live.
     ///
+    /// <para><b>Orbit only since 2026-11-02</b> (<see cref="StoatModeActionSO.OrbitOnly"/>): Time mode is the shipped hull's
+    /// only mode, so the line and its warp above are parked and this draws the rings and writes the catch's warp
+    /// (<c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>).</para>
+    ///
     /// <para><b>In Time mode there is no path</b> (2026-10-14: "instead of showing your path it shows a detection radius
     /// and an orbital radius"). While a Time-mode pair is laid (<see cref="StoatSlingExecutor"/>) two rings are drawn round
     /// its attractor, in the plane of the hull's pass: the DETECTION radius (faint — where it can catch you) and the ORBIT
