@@ -1,0 +1,35 @@
+{
+ "agent": true,
+ "caps": {
+  "bash": true,
+  "caps_version": 2,
+  "cores": 16,
+  "cuda": true,
+  "dotnet8": true,
+  "node": false,
+  "numpy": true,
+  "os": "windows",
+  "python": "3.10.8",
+  "python3": true,
+  "torch": true,
+  "unity": true
+ },
+ "current": {},
+ "host": "gbox",
+ "idle_seconds": 0.0,
+ "remote_start": false,
+ "specs": {
+  "cores": 16,
+  "disk_free_gb": 88.4,
+  "os": "windows",
+  "os_name": "Windows 10",
+  "python": "3.10.8",
+  "ram_free_gb": 11.8,
+  "ram_gb": 31.9,
+  "unity": true,
+  "unity_open": true
+ },
+ "status": "in use",
+ "updated": 1793590390,
+ "user": "gradies"
+}
