@@ -92,22 +92,23 @@ input-only gate (now covering `Controller/AI/Boost`), Mathf-params and console-l
 3. Race them yourself at I1: the AI's finish time against yours (Garrett won I1 in 64.6 s against Legendary rivals).
 4. Fly the Thresher yourself: your crosshair launch is unchanged (aim, release, the boost, the exit).
 
-### 🔴 Switchback AI: the nose lag by difficulty, 1.5 / 2 / 3 / 0 per second (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+### 🔴 Switchback AI: the nose lag by intensity and difficulty, set to Yash's time bands (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `VesselTransformer.AINoseFollowPerSecond` (default -1 = the fleet lag; every mode but Switchback leaves
-it unset), `GateRaceController.OnRacerArmed`, and `SwitchbackController.aiNoseFollowByLevel` {1.5, 2, 3, 0} written to each
-AI racer when it is armed. Offline, I4 medians go from 172 / 169 / 169 / 172 s to 172 / 133 / 125 / 100 s
-(`SWITCHBACK.md` "Lag by difficulty").
+it unset), `GateRaceController.OnRacerArmed`, and `SwitchbackController.aiNoseFollowByIntensity` (a row per intensity of
+Easy/Medium/Hard/Legendary rates) written to each AI racer when it is armed. Offline I4 medians: 140 / 129 / 120 / 112 s,
+inside Yash's bands 130-150 / 120-140 / 110-130 / 100-120 (`SWITCHBACK.md` "Lag by difficulty").
 
 **Verified without the editor:** reference compile (editor, player-dev); gates; `switchback_sim_harness` selftest and
-eval. NOT run: the tests or a race in Unity.
+eval (48 courses a cell). NOT run: the tests or a race in Unity.
 
 **Verify in editor:**
 1. EditMode: `NoseFollowDialTests` and `SwitchbackAISteeringTests` pass (incl. the two new tests).
-2. Re-run the Switchback soak (`SwitchbackSoakRunner`) at I1 and I4 with Easy and Legendary AIs: Legendary finishes
-   clearly faster than Easy (model: about 2x at I1), with no new wall or ring misses at the I4 hairpins.
-3. Watch a Legendary Dolphin in the AI Diagnose panel (F2, Chase): the nose snaps to its aim with no visible lag and the
-   hull does not jitter. Fly another mode (Skim Race) with AI: its AIs fly as before (the lag is unchanged there).
+2. Re-run the Switchback soak (`SwitchbackSoakRunner`) at I4 with each difficulty: the medians should step about 10 s
+   apart. If they are all ~1.6x the model's (as in the step 1 soak), the rows need scaling for the real game: report the
+   times and the session retunes them.
+3. Watch a Legendary Dolphin in the AI Diagnose panel (F2, Chase): the nose snaps to its aim with no jitter. Fly another
+   mode (Skim Race) with AI: its AIs fly as before (the lag is unchanged there).
 
 ### 🔴 Switchback AI step 3: the planner's plain-hit cost 0.6 -> 0.25 s (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 

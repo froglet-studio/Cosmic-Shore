@@ -927,7 +927,7 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 | `aiDodgeDangerOnly` | on | Dodge only Danger prisms; plain ones are flown through (Step 1) |
 | `aiNoDodgeNearRing` | 200 | u from the ring inside which nothing is dodged (Step 1); 0 = dodge up to the ring |
 | `aiStrikeSetupLeg` | off | Before a blast, fly to a point behind the key onto the fire line (the old strike, Step 2) |
-| `aiNoseFollowByLevel` | 1.5, 2, 3, 0 | The AI nose's follow rate per second, Easy to Legendary: 1.5 = the fleet lag, 0 = none ("Lag by difficulty") |
+| `aiNoseFollowByIntensity` | I1 1.9/2.2/3/5, I2 2/2.4/3/5, I3 2.1/2.2/2.8/6, I4 1.8/2.2/3.5/6 | The AI nose's follow rate per second, per intensity, Easy/Medium/Hard/Legendary: 1.5 = the fleet lag, 0 = none ("Lag by difficulty") |
 
 ## Offline: the Blast Run simulator (2026-11-01)
 
@@ -1112,34 +1112,50 @@ also changes every AI in every mode, and `SkimRacePilot` was trained against the
 steering-lag rule, `VesselTransformer` (`who_works_where.py`). The simulator's `noseLag=0`, `carve=...`, `cmdSteer=1`
 and `cmdLead=...` reproduce every row.
 
-### Lag by difficulty (2026-11-02): option 2 of step 4, shipped
+### Lag by difficulty (2026-11-02): option 2 of step 4, shipped, then set to Yash's time bands
 
-Yash: "go with option 2, lag by difficulty". Switchback's AI nose now follows its command at a rate set per difficulty,
-`SwitchbackController.aiNoseFollowByLevel` = **1.5, 2, 3, 0** per second (Easy, Medium, Hard, Legendary). Easy flies the
-same lag every AI has everywhere else; Legendary has none, as a human pilot. Drift carving stays off.
+Yash: "go with option 2, lag by difficulty". Switchback's AI nose follows its command at a rate set per intensity and
+difficulty, `SwitchbackController.aiNoseFollowByIntensity` (rates per second; 1.5 = the fleet lag every AI has elsewhere,
+higher = faster, 0 = none):
+
+| | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 | 1.9 | 2.2 | 3 | 5 |
+| I2 | 2 | 2.4 | 3 | 5 |
+| I3 | 2.1 | 2.2 | 2.8 | 6 |
+| I4 | 1.8 | 2.2 | 3.5 | 6 |
+
+**The bands (Yash, 2026-11-02):** "difference should be 20 seconds max ... I4, easy 150 - 130, medium 140 - 120, hard
+130 - 110, legendary 120 - 100. Other intensities should also be grouped in similar differences." So each level sits
+about 10 s from the next, in a 20 s band, at every intensity. The first ladder (1.5 / 2 / 3 / 0 for every intensity)
+spread I4 from 172 s to 100 s and was replaced the same day.
+
+Why the nose rate is the lever: at the SAME rate the four levels finish within a few seconds of each other (at I4,
+3/s gives 118 / 119 / 125 / 124 s), so the lag, not the rest of the skill, sets the time. One ladder for every intensity
+could not hold the bands (1.8 / 2.2 / 3 / 5 fits I4 but spreads I3 from 149 s to 103 s), hence a row per intensity.
+
+Median seconds offline (48 courses a cell; slowest 10 % in brackets) and the bands they sit in:
+
+| | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 (bands 80-100 / 70-90 / 60-80 / 50-70) | 88 (102) | 82 (101) | 69 (83) | 61 (72) |
+| I2 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (143) | 117 (131) | 109 (118) | 99 (105) |
+| I3 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (148) | 120 (136) | 111 (125) | 101 (109) |
+| I4 (Yash's bands 130-150 / 120-140 / 110-130 / 100-120) | 140 (149) | 129 (138) | 120 (127) | 112 (119) |
+
+The I1-I3 bands are this doc's reading of "similar differences" (10 s steps, 20 s wide); retune a row with
+`noseFollowI<n>=e,m,h,l` in the simulator. All 768 races finished. **These are simulator seconds:** in the step 1 soak
+real races ran about 1.6x the model's times, so the soak decides whether the rows need scaling for the real game.
 
 How it reaches the hull, without changing the vessel:
 - `VesselTransformer.AINoseFollowPerSecond` (new, default -1): unset = the fleet lag (`LERP_AMOUNT` 1.5/s), exactly as
   before for every AI in every mode; a positive rate; 0 = no lag (the human's catch-up-capped follow). Only AI hulls read
   it. A local human pilot is unchanged.
 - `GateRaceController.OnRacerArmed` (new, empty) runs for every racer it arms; Switchback overrides it and writes the
-  pilot's level from `AIDifficultyFor`. The AI flies on the server only, so the rate is set there.
+  pilot's rate from the selected intensity and `AIDifficultyFor`. The AI flies on the server only, so the rate is set there.
 - Every other mode never sets it, so `SkimRacePilot` and the other trained autopilots keep the lag they were trained
   against. This is the AI's skill (how well it steers), not a vessel change: the hull's turn rate, drift and abilities
   are the same for every pilot.
-
-Median seconds offline, 24 courses a cell (steps 1-3 shipped), Easy / Medium / Hard / Legendary:
-
-| | I1 | I2 | I3 | I4 |
-|---|---|---|---|---|
-| Before (every level on the fleet lag) | 103 / 99 / 98 / 94 | 165 / 161 / 167 / 161 | 175 / 162 / 162 / 156 | 172 / 169 / 169 / 172 |
-| Lag by difficulty (shipped) | 103 / 86 / 71 / 51 | 165 / 128 / 112 / 86 | 175 / 129 / 108 / 92 | 172 / 133 / 125 / 100 |
-
-Before, the levels barely differed (the lag, not the skill, set the time); now each level is clearly faster than the one
-below at every intensity. Other ladders measured: 1.5, 3, 6, 0 bunches Medium and Hard together (I4 119 / 115); 1.5, 2,
-4, 0 is close to the shipped one (Hard I4 118). `noseFollow=e,m,h,l` in the simulator reproduces any of them;
-`noseFollow=1.5,1.5,1.5,1.5` is the "before" row. Real races ran about 1.6x the model's times in the step 1 soak, so
-expect about 160 / 130 / 115 / 80 s at I1 in the editor; the soak is the check.
 
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 
