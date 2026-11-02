@@ -230,3 +230,22 @@ Take`; the golden (`goldens/render/flight/`, MSAA 1, no post: `take.json` carrie
   MSAA 1, where the far ends of the trails are under a pixel wide. The worst frames, 141-145, are where the big
   orange trail sweeps through.
 
+### The blast shell (2026-11-02)
+
+The RippleGraph shell displaces each vertex by legacy SimpleNoise of its object-space position (scale 500), so it
+only matches Unity on Unity's own vertices hashed by Unity's own GPU arithmetic. Measured in Unity on D3D11 /
+RTX 3080 (2593 lattice points, 515 vertices) and scored in the cloud against the lossless control golden:
+
+| Change | control loss |
+|---|---|
+| before (icosphere, `fract(sin(dot(i, (12.9898, 78.233))) * 43758.5453)`) | 0.0199 |
+| Unity's own primitive sphere (515 verts, a normalized cube; `gen_unity_sphere.py`, `--check`) | 0.0214 |
+| plus the GPU's dot as `fma(y, 78.233, x * 12.9898)` and a 2pi range reduction | 0.0182 |
+| plus that reduction's product `x * 1/2pi` rounded toward zero | **0.0166** |
+
+- The sphere alone scores worse because the noise is chaotic: new vertices with the wrong hash are no closer.
+  With the round-toward-zero reduction every measured hash is within 0.05 of the GPU's (91% within 0.01); the old
+  `dot` and `sin` got 43% of them wholly wrong. What is left is the GPU's sine approximation itself (about 1e-7,
+  times 43758), which is not worth emulating bit for bit.
+- Flight is unchanged (0.0267 in the cloud, 0.0265 on Gbox): it has no blast shell.
+
