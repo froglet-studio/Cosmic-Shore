@@ -481,13 +481,16 @@ def validate(files):
 # Tools/Build/author_voyage_window.py owns its layout and validates it, so this generator stands down on that one file
 # once the new layout is on disk (re-emitting it would bring back the two columns and drop VoyageJobsView). The cards,
 # the quest card and the Menu_Main patch stay this script's.
-VOYAGE_WINDOW_MARKER = "m_Name: VoyageModals\n"
+# Its second layout (the four tabs, 2026-11-02) renames the modals' root to VoyagePages: either marker stands this down.
+VOYAGE_WINDOW_MARKERS = ("m_Name: VoyageModals\n", "m_Name: VoyagePages\n")
 
 
 def stood_down(path):
     full = os.path.join(REPO, path)
-    return path == prefab_path("MissionView") and os.path.exists(full) \
-        and VOYAGE_WINDOW_MARKER in open(full, encoding="utf-8").read()
+    if path != prefab_path("MissionView") or not os.path.exists(full):
+        return False
+    text = open(full, encoding="utf-8").read()
+    return any(m in text for m in VOYAGE_WINDOW_MARKERS)
 
 
 def drift(files):

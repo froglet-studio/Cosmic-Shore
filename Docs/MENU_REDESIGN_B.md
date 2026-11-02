@@ -28,7 +28,7 @@ section here. The build that follows a pick is verified against the picked board
 |---|---|---|---|
 | Menu Redesign | `menu-redesign` | The master tab: items 0-12 and every round from Rev 3 to Rev 40, each old page a titled section (newest first) | Shombith, 2026-11-02 (section 112) |
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
-| Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118) | Shombith, 2026-11-02 (section 112) |
+| Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118; built in section 119) | Shombith, 2026-11-02 (section 112) |
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 
 Work goes one item at a time, with three approval gates per item:
@@ -5553,7 +5553,7 @@ for them), and are marked as proposed copy for Garrett.
 
 Affects: Garrett's Voyage window and HyperSea map. Nothing is built yet.
 
-## 118. Rev 49 mockups: the picked I card, four more inviting looks - just the card (2026-11-02, awaiting a pick)
+## 118. Rev 49 mockups: the picked I card, four more inviting looks - just the card (2026-11-02; Shombith picked C, built in section 119)
 
 **Asked (Shombith, 2026-11-02):** "Lets go I, but make the card background more inviting its a lot of texts and etc,
 give me mockups of just the cards maybe 4."
@@ -5615,3 +5615,56 @@ shows **one beat at a time** (canvas version `1793656709-4581`):
 - The four beats are the news, the place, who brought it and the water.
 - D-pad left / right, or the dots under the beat, step through them. The title is a single small line at the top.
 - The buttons are unchanged: Set sail and Voyage.
+
+## 119. Built: the Voyage window with Rev 49 C, the route poster (2026-11-02, NOT RUN IN EDITOR)
+
+**Asked (Shombith, 2026-11-02):** "Lets go with C and implement it in the real game."
+
+**What is built.** Rev 49 C (section 118) is the open card, inside the Rev 46 window (section 117): small cards that
+slide open. The window has the four tabs of Rev 44 (section 116).
+- **The window** (`Tools/Build/author_voyage_window.py`, its second layout, marker `VoyagePages`, rewrites
+  `MissionView.prefab`):
+  - four tabs, VOYAGES | SAGA | QUESTS | EPISODES, with LB / RB labels. Voyages opens first, and Episodes carries a
+    lock, its page reading "Coming soon" over Episode 2.
+  - The HyperSea map fills a 1000-wide left column over its edge view (180 high). The voyage cards stand two across
+    on the right.
+  - The old Saga / Episodes modals and their dims are gone. Their content became the Saga and Quests pages.
+- **The tabs** (`VoyageWindowTabs`, new): one page shows at a time, and the picked tab carries its mark. LB / RB step
+  and stop at either end (`Step`). While the window is open it claims the bumpers (`HubShoulders`, new), so
+  `ScreenSwitcher` does not also slide the hub.
+- **The open voyage** (`VoyageOpenCard`, new, built at runtime by `VoyageJobsView` in the card column). It slides in over
+  the cards (0.32 s) when a card or its place on the map is pressed. It has three levels:
+  - **The voyage:** the chips (course, found by), the kicker, the title and three numbers (course, sail, intensity).
+    The route row shows only the two ends, lit, with "n cells - n min" between them. Then come the squad formation
+    (hull silhouettes) and its presets beside it from `SquadBook` (pressing one makes it the active squad and saves).
+    Its buttons are Configure the squad, Set sail, Ark crew and Story. The pager (< VOYAGE n OF m >) goes round the
+    voyages.
+  - **Ark crew:** three seats (Leader, Rogue One, Rogue Two), each with four setting buttons: vessel, pilot, element
+    and artifact. A press cycles that setting.
+    - Edits follow the Ark's own rules: only your own seat in a squad you joined, plus `KeepCardsOwn` and
+      `FillPilots`.
+    - Save squad saves the change.
+  - **Story:** one beat at a time (the news, the place, who brought it, the water), with dots and < > to step. A beat
+    with no sentence is left out.
+- **The ground** (`VoyageRoutePoster`, new): the map's own painted water, framed on the course at the card's shape
+  (`VoyageCardRules.Frame`), with the course lit over it and its two ends marked (the Ark amber, the destination
+  lime). It reuses the map's texture (`VoyageMapGraphic.TrySeaView`), because the map's atlas is shared and a second
+  live map would fight it.
+- **Every word is authored:** 56 new `VoyageLines` fields (`Card*`, `Story*`, `Element*`), set through
+  `Docs/Voyages/voyage_slice.json` and `author_voyage_assets.py`.
+
+**Different from the boards:**
+- D-pad left / right does not step the story's beats or the voyages. The EventSystem already moves the selection with
+  the D-pad, so the < > buttons are selectable instead.
+- "Who brought it" names the pilot only; faction display names are not authored yet.
+- The Ark escort's card still opens in place, with its difficulty stepper.
+
+**Verified here** (no Unity editor ran):
+- `unity_refcompile` player and editor, and `/ship` `gates.sh`: ALL OK.
+- `author_voyage_window.py --check` and `--self-test` (seven negative controls).
+- `author_voyage_assets.py --check` and `--self-test`; `author_menu_mission.py --check` and `--self-test`.
+- `check_console_logging.py` and `check_conditional_compilation.py`.
+- `VoyageCardRulesTests` (5) ran outside Unity against a small `Mathf` / `Vector2` stand-in, with a negative control:
+  an unclamped tab step fails `Tabs_StopAtEitherEnd`.
+
+The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

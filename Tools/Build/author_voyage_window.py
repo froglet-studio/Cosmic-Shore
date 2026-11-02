@@ -27,6 +27,18 @@ untouched:
 
 author_menu_mission.py, which first wrote this prefab, stands down on MissionView once this layout is on disk.
 
+THE SECOND LAYOUT (Shombith, 2026-11-02, Docs/MENU_REDESIGN_B.md section 119; the picked boards Rev 44 I, Rev 46 and
+Rev 49 C): "Episode, saga are separate things and so is quest tracker. So 4 tabs and Voyage opens up first", the map
+on the left, the voyage cards small on the right, sliding open:
+
+    LB  VOYAGES  SAGA  QUESTS  [lock] EPISODES  RB      Body/Top: four tabs (VoyageWindowTabs on Body)
+    HyperSea map | voyage cards, two across           Voyages/MapColumn (the map and edge view) | Voyages/Scroll
+    edge view    | (the open voyage slides over them, VoyageOpenCard, built at runtime)
+    VoyagePages/SagaPage, QuestsPage (Episodes with its quests, no Episode 1 eyebrow), EpisodesPage (Episode 2, locked)
+
+rewrite2() turns the first layout into this one in place (everything keeps its fileID; the two Dims and
+VoyageWindowModals go). It too stands down once its marker (VoyagePages) is on disk.
+
 STANDING DOWN: the rewrite runs only while the old two-column layout is on disk; afterwards this script validates the
 layout (--check) and its negative controls (--self-test).
 
@@ -43,7 +55,8 @@ import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 PREFAB = "Assets/_Prefabs/UI Elements/Main Menu Screens/Mission/MissionView.prefab"
-MARKER = "VoyageModals"          # the modals' root: its presence means the layout is on disk
+MARKER = "VoyageModals"          # the first layout's modals root (renamed by the second layout)
+MARKER2 = "VoyagePages"          # the second layout's pages root: its presence means the four tabs are on disk
 
 GUID = dict(
     image="fe87c0e1cc204ed48ad3b37840f39efc",
@@ -54,7 +67,12 @@ GUID = dict(
     voyage="e342e7be076713ca896cf8f292b45077",
     pusher="1d953354217c86ae8eaec252ad2308e3",
 )
-MODALS_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/VoyageWindowModals.cs.meta")
+MODALS_GUID = "8b13cf3793f3450c836b72f39775c5a2"   # VoyageWindowModals, the first layout's (retired by the second)
+TABS_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/VoyageWindowTabs.cs.meta")
+TABS = ("Voyages", "Saga", "Quests", "Episodes")
+MAP_W, COL_GAP, EDGE_H, EDGE_GAP, KEY_W, TAB_GAP = 1000, 20, 180, 12, 48, 16
+LIGHT = "{r: 0.9019608, g: 0.9137255, b: 1, a: 1}"
+IDLE = "{r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}"
 
 TOP_H, TOP_GAP, BUTTON_GAP = 72, 20, 20
 GRID_COLS, CELL_H, CELL_GAP = 3, 176, 20
@@ -316,7 +334,11 @@ def node(p, name, parent_go, comps=(), active=True, index=None):
 
 
 def script_guid():
-    return re.search(r"^guid: (\w+)$", open(MODALS_SCRIPT, encoding="utf-8").read(), re.M).group(1)
+    return re.search(r"^guid: (\w+)$", open(TABS_SCRIPT, encoding="utf-8").read(), re.M).group(1)
+
+
+def tmp_of(p, go):
+    return next(c for c in p.comps(go) if "m_text:" in p.by[c].body)
 
 
 # ── The rewrite ────────────────────────────────────────────────────────────────
@@ -405,9 +427,9 @@ def rewrite(p):
     p.reparent(episodes, ep_panel)
     p.place(episodes, (0, 1), (0, 1), (0, 0), (EPISODES_W, EPISODES_H), (0, 1))
 
-    # The behaviour that opens them.
+    # The behaviour that opens them (VoyageWindowModals; rewrite2 swaps it for the four tabs).
     mid = p.new_id()
-    p.add("114", mid, mono_head(body, script_guid())
+    p.add("114", mid, mono_head(body, MODALS_GUID)
           + f"  sagaButton: {{fileID: {buttons['SagaButton']}}}\n"
           f"  episodesButton: {{fileID: {buttons['EpisodesButton']}}}\n"
           f"  sagaModal: {{fileID: {made['SagaModal'][0]}}}\n"
@@ -416,6 +438,114 @@ def rewrite(p):
           f"  episodesClose: {{fileID: {made['EpisodesModal'][1]}}}\n", after=p.rt(body))
     bd = p.by[body]
     bd.body = bd.body.replace("  m_Layer: 5\n", f"  - component: {{fileID: {mid}}}\n  m_Layer: 5\n", 1)
+
+
+def rewrite2(p):
+    """The first layout (Saga | Episodes over modals) into the four tabs, the map column and the cards column."""
+    root = p.go_of(p.root())
+    body = p.find("MissionView/Body")
+    top = p.find("MissionView/Body/Top")
+    voyages = p.find("MissionView/Body/Voyages")
+    saga_b = p.find("MissionView/Body/Top/SagaButton")
+    ep_b = p.find("MissionView/Body/Top/EpisodesButton")
+
+    # Four tabs: Voyages and Quests are copies of the Saga button; the old two are renamed.
+    voy_b = p.clone(saga_b, top, "VoyagesTab")
+    quest_b = p.clone(saga_b, top, "QuestsTab")
+    p.set(saga_b, "m_Name", "SagaTab")
+    p.set(ep_b, "m_Name", "EpisodesTab")
+    tabs = {"Voyages": voy_b, "Saga": saga_b, "Quests": quest_b, "Episodes": ep_b}
+    label_from = p.child(saga_b, "Label")
+    keys = {}
+    for key in ("LB", "RB"):
+        k = p.clone(label_from, top, key)
+        t = tmp_of(p, k)
+        p.set(t, "m_text", key)
+        p.set(t, "m_fontSize", "16")
+        keys[key] = k
+    top_rt = p.rt(top)
+    p.set_children(top_rt, [p.rt(keys["LB"])] + [p.rt(tabs[n]) for n in TABS] + [p.rt(keys["RB"])])
+    width = 1760 - 2 * (KEY_W + 12)
+    tab_w = (width - 3 * TAB_GAP) / 4
+    p.place(keys["LB"], (0, 0), (0, 1), (0, 0), (KEY_W, 0), (0, 0.5))
+    p.place(keys["RB"], (1, 0), (1, 1), (0, 0), (KEY_W, 0), (1, 0.5))
+    lock_from = p.find("MissionView/VoyageModals/EpisodesModal/Panel/Episodes/Episode2/Lock")
+    marks = {}
+    for i, name in enumerate(TABS):
+        tab = tabs[name]
+        p.place(tab, (0, 0), (0, 1), (KEY_W + 12 + i * (tab_w + TAB_GAP), 0), (tab_w, 0), (0, 0.5))
+        lab = p.child(tab, "Label")
+        t = tmp_of(p, lab)
+        p.set(t, "m_text", name)
+        p.set(t, "m_fontColor", LIGHT if name == "Voyages" else IDLE)
+        mark, _ = node(p, "Mark", tab, comps=(("222", canvas_renderer), ("114", lambda go: image(go, LIGHT))),
+                       active=(name == "Voyages"))
+        p.place(mark, (0, 0), (1, 0), (0, 0), (-48, 3), (0.5, 0))
+        marks[name] = mark
+        if name == "Episodes":
+            lock = p.clone(lock_from, tab, "Lock")
+            p.place(lock, (0.5, 0.5), (0.5, 0.5), (-70, 0), (14, 16), (0.5, 0.5))
+
+    # The modals become pages under the tabs, without their dims.
+    pages = p.find(f"MissionView/{MARKER}")
+    p.set(pages, "m_Name", MARKER2)
+    brt = p.by[p.rt(body)].body
+    get = lambda k: re.search(r"^  " + k + r": \{x: (-?[\d.]+), y: (-?[\d.]+)\}$", brt, re.M).groups()
+    bx, by = (float(v) for v in get("m_AnchoredPosition"))
+    sx, sy = (float(v) for v in get("m_SizeDelta"))
+    shift = TOP_H + TOP_GAP
+    p.place(pages, (0, 0), (1, 1), (bx, by - shift / 2), (sx, sy - shift), (0.5, 0.5))
+    saga = p.find(f"MissionView/{MARKER2}/SagaModal")
+    quests = p.find(f"MissionView/{MARKER2}/EpisodesModal")
+    p.set(saga, "m_Name", "SagaPage")
+    p.set(quests, "m_Name", "QuestsPage")
+    for page in (saga, quests):
+        p.delete(p.child(page, "Dim"))
+    episodes = p.find(f"MissionView/{MARKER2}/QuestsPage/Panel/Episodes")
+    p.set(tmp_of(p, p.child(episodes, "Head")), "m_text", "Quests")
+    p.active(p.find(f"MissionView/{MARKER2}/QuestsPage/Panel/Episodes/Episode1/Eyebrow"), False)
+
+    # Episodes, locked: the Episode 2 bar and "Coming soon".
+    ep_page, _ = node(p, "EpisodesPage", pages, active=False)
+    ep_panel, _ = node(p, "Panel", ep_page)
+    p.place(ep_panel, (0.5, 0.5), (0.5, 0.5), (0, 0), (EPISODES_W, 200), (0.5, 0.5))
+    bar = p.child(episodes, "Episode2")
+    p.reparent(bar, ep_panel)
+    p.place(bar, (0, 1), (1, 1), (0, -32), (0, 64), (0.5, 0.5))
+    soon = p.clone(p.child(episodes, "Head"), ep_panel, "Soon")
+    st = tmp_of(p, soon)
+    p.set(st, "m_text", "Coming soon")
+    p.set(st, "m_fontSize", "28")
+    p.set(st, "m_HorizontalAlignment", "2")
+    p.place(soon, (0, 1), (1, 1), (0, -112), (0, 40), (0.5, 0.5))
+
+    # Voyages: the map column on the left, the cards on the right.
+    scroll = p.child(voyages, "Scroll")
+    column, _ = node(p, "MapColumn", voyages, index=p.children(p.rt(voyages)).index(p.rt(scroll)))
+    p.place(column, (0, 0), (0, 1), (0, 0), (MAP_W, 0), (0, 0.5))
+    p.place(scroll, (0, 0), (1, 1), ((MAP_W + COL_GAP) / 2, 0), (-(MAP_W + COL_GAP), 0), (0.5, 0.5))
+    jobs = p.comp(voyages, GUID["jobs"])
+    jd = p.by[jobs]
+    jd.body = re.sub(r"  mapHeight: .*\n", "  mapHeight: 360\n", jd.body)
+    jd.body += (f"  edgeHeight: {EDGE_H}\n  columns: 2\n  mapColumn: {{fileID: {p.rt(column)}}}\n"
+                f"  cardColumn: {{fileID: {p.rt(scroll)}}}\n  edgeGap: {EDGE_GAP}\n")
+
+    # VoyageWindowModals goes; VoyageWindowTabs shows one page at a time.
+    old = p.comp(body, MODALS_GUID)
+    if old:
+        p.by[body].body = p.by[body].body.replace(f"  - component: {{fileID: {old}}}\n", "")
+        p.remove(old)
+    pages_of = {"Voyages": voyages, "Saga": saga, "Quests": quests, "Episodes": ep_page}
+    entries = "".join(
+        f"  - button: {{fileID: {p.comp(tabs[n], GUID['button'])}}}\n"
+        f"    label: {{fileID: {tmp_of(p, p.child(tabs[n], 'Label'))}}}\n"
+        f"    mark: {{fileID: {marks[n]}}}\n"
+        f"    page: {{fileID: {pages_of[n]}}}\n" for n in TABS)
+    tid = p.new_id()
+    p.add("114", tid, mono_head(body, script_guid()) + "  tabs:\n" + entries
+          + f"  selectedColor: {LIGHT}\n  idleColor: {IDLE}\n  shoulderInput: 1\n", after=p.rt(body))
+    bd = p.by[body]
+    bd.body = bd.body.replace("  m_Layer: 5\n", f"  - component: {{fileID: {tid}}}\n  m_Layer: 5\n", 1)
 
 
 # ── Validation ─────────────────────────────────────────────────────────────────
@@ -436,38 +566,54 @@ def validate(text):
 
     body = p.find("MissionView/Body")
     assert not p.comp(body, GUID["hlg"]), "Body still lays two columns (its HorizontalLayoutGroup is back)"
-    for key, text_ in (("SagaButton", "Saga"), ("EpisodesButton", "Episodes")):
-        b = p.find(f"MissionView/Body/Top/{key}")
-        assert p.comp(b, GUID["button"]), f"{key} is not a button"
-        assert f"m_text: {text_}\n" in "".join(p.by[c].body for c in p.comps(p.child(b, "Label"))), f"{key} does not read {text_}"
+    assert not p.comp(body, MODALS_GUID), "VoyageWindowModals is back (the window has four tabs now)"
+    top_names = [p.name(p.go_of(c)) for c in p.children(p.rt(p.find("MissionView/Body/Top")))]
+    assert top_names == ["LB"] + [f"{n}Tab" for n in TABS] + ["RB"], f"the top row is not LB, the four tabs, RB: {top_names}"
+    for n in TABS:
+        tab = p.find(f"MissionView/Body/Top/{n}Tab")
+        assert p.comp(tab, GUID["button"]), f"{n} is not a button"
+        assert f"  m_text: {n}\n" in p.by[tmp_of(p, p.child(tab, 'Label'))].body, f"the {n} tab does not read {n}"
+        assert p.child(tab, "Mark"), f"the {n} tab has no mark"
+    assert p.has("MissionView/Body/Top/EpisodesTab/Lock"), "Episodes is not shown locked"
+    tabs = p.comp(body, script_guid())
+    assert tabs, "Body carries no VoyageWindowTabs"
+    tb = p.by[tabs].body
+    entries = re.findall(r"  - button: \{fileID: (-?\d+)\}\n    label: \{fileID: (-?\d+)\}\n    mark: \{fileID: (-?\d+)\}\n    page: \{fileID: (-?\d+)\}\n", tb)
+    assert len(entries) == 4 and all("0" not in e for e in entries), "VoyageWindowTabs does not hold four wired tabs"
+    pages = [p.name(e[3]) for e in entries]
+    assert pages == ["Voyages", "SagaPage", "QuestsPage", "EpisodesPage"], f"the tabs show the wrong pages: {pages}"
+    for name in ("SagaPage", "QuestsPage", "EpisodesPage"):
+        page = p.find(f"MissionView/{MARKER2}/{name}")
+        assert "  m_IsActive: 0\n" in p.by[page].body, f"{name} opens with the window (Voyages opens first)"
+        assert not p.child(page, "Dim"), f"{name} still has a modal's dim"
+    for k in ("Featured", "Voyage2"):
+        assert p.has(f"MissionView/{MARKER2}/SagaPage/Panel/{k}"), f"the Saga page does not hold {k}"
+    assert p.comp(p.find(f"MissionView/{MARKER2}/SagaPage/Panel/Featured"), GUID["voyage"]), "Tandava's card lost its VoyageView"
+    assert p.has(f"MissionView/{MARKER2}/QuestsPage/Panel/Episodes/Episode1/Quests"), "the quest tracker left the Quests page"
+    assert not p.has(f"MissionView/{MARKER2}/QuestsPage/Panel/Episodes/Episode2"), "Episode 2 is still among the quests"
+    assert p.has(f"MissionView/{MARKER2}/EpisodesPage/Panel/Episode2"), "the Episodes page does not hold Episode 2"
+    eyebrow = p.find(f"MissionView/{MARKER2}/QuestsPage/Panel/Episodes/Episode1/Eyebrow")
+    assert "  m_IsActive: 0\n" in p.by[eyebrow].body, "the quest tracker is still called Episode 1"
+
     content = "MissionView/Body/Voyages/Scroll/Viewport/Content"
     g = p.find(content + "/Grid")
     assert p.comp(g, GUID["grid"]), "the voyage cards are not in a grid"
     assert p.child(g, "Voyage3"), "VoyageJobsView's card is not in the grid"
-    jobs = p.comp(p.find("MissionView/Body/Voyages"), GUID["jobs"])
-    tmpl = Prefab.field(p.by[jobs].body, "template")
+    voyages = p.find("MissionView/Body/Voyages")
+    jobs = p.comp(voyages, GUID["jobs"])
+    jb = p.by[jobs].body
+    tmpl = Prefab.field(jb, "template")
     assert tmpl in p.comps(p.child(g, "Voyage3")), "VoyageJobsView's template is not the grid's card"
+    column = p.find("MissionView/Body/Voyages/MapColumn")
+    assert Prefab.field(jb, "mapColumn") == p.rt(column), "VoyageJobsView does not stand the map in the map column"
+    assert Prefab.field(jb, "cardColumn") == p.rt(p.find("MissionView/Body/Voyages/Scroll")), \
+        "VoyageJobsView does not slide the open voyage over the cards' column"
+    assert re.search(r"^  columns: 2$", jb, re.M), "the voyage cards are not two across"
     assert not p.child(p.find(content), "Featured") and not p.child(p.find(content), "Voyage2"), \
         "the saga voyages are back among the job cards"
-    for key, kids in (("SagaModal", ("Featured", "Voyage2")), ("EpisodesModal", ("Episodes",))):
-        m = p.find(f"MissionView/{MARKER}/{key}")
-        assert "  m_IsActive: 0\n" in p.by[m].body, f"{key} opens with the window (it starts closed)"
-        dim = p.find(f"MissionView/{MARKER}/{key}/Dim")
-        assert p.comp(dim, GUID["button"]), f"{key}: a press outside its panel does not close it"
-        for k in kids:
-            assert p.has(f"MissionView/{MARKER}/{key}/Panel/{k}"), f"{key} does not hold {k}"
-    assert p.has(f"MissionView/{MARKER}/EpisodesModal/Panel/Episodes/Episode1/Quests"), "Episode 1's quests left the window"
-    feat = p.find(f"MissionView/{MARKER}/SagaModal/Panel/Featured")
-    assert p.comp(feat, GUID["voyage"]), "Tandava's card lost its VoyageView"
-    guid = script_guid()
-    mod = p.comp(body, guid)
-    assert mod, "Body carries no VoyageWindowModals"
-    for f in ("sagaButton", "episodesButton", "sagaModal", "episodesModal", "sagaClose", "episodesClose"):
-        v = Prefab.field(p.by[mod].body, f)
-        assert v and v != "0", f"VoyageWindowModals.{f} is not wired"
     root_rt = p.rt(p.go_of(p.root()))
     order = [p.name(p.go_of(c)) for c in p.children(root_rt) if not p.by[c].stripped]
-    assert order.index(MARKER) < order.index("Header"), "the modals cover the header (Back must stay on top)"
+    assert order.index(MARKER2) < order.index("Header"), "the pages cover the header (Back must stay on top)"
     return p
 
 
@@ -482,11 +628,13 @@ def self_test(text):
         return False
     first = lambda old, new: (lambda t: t.replace(old, new, 1))
     cases = [
-        ("Saga renamed", first("m_text: Saga\n", "m_text: Story\n")),
+        ("Quests renamed", lambda t: t.replace("m_text: Quests\n", "m_text: Missions\n")),
         ("the grid gone", first(f"guid: {GUID['grid']}", "guid: " + "5" * 32)),
-        ("a modal open at start", lambda t: re.sub(r"(m_Name: SagaModal\n(?:.*\n){4}  m_IsActive: )0", r"\g<1>1", t, count=1)),
-        ("an unwired modal", lambda t: re.sub(r"(  sagaClose: \{fileID: )-?\d+", r"\g<1>0", t, count=1)),
-        ("a dangling reference", lambda t: re.sub(r"(  episodesModal: \{fileID: )-?\d+", r"\g<1>12345", t, count=1)),
+        ("a page open at start", lambda t: re.sub(r"(m_Name: SagaPage\n(?:.*\n){4}  m_IsActive: )0", r"\g<1>1", t, count=1)),
+        ("an unwired tab", lambda t: re.sub(r"(  - button: \{fileID: )-?\d+", r"\g<1>0", t, count=1)),
+        ("a dangling reference", lambda t: re.sub(r"(    page: \{fileID: )-?\d+", r"\g<1>12345", t, count=1)),
+        ("three cards across", first("  columns: 2\n", "  columns: 3\n")),
+        ("the modals' behaviour back", first(f"guid: {script_guid()}", f"guid: {MODALS_GUID}")),
     ]
     ok = all(expect(label, m) for label, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
@@ -500,21 +648,26 @@ def main():
     args = ap.parse_args()
     path = os.path.join(REPO, PREFAB)
     text = open(path, encoding="utf-8").read()
-    laid = f"m_Name: {MARKER}\n" in text
-    if not laid:
+    first_laid = f"m_Name: {MARKER}\n" in text or f"m_Name: {MARKER2}\n" in text
+    second_laid = f"m_Name: {MARKER2}\n" in text
+    if not second_laid:
         if args.check or args.self_test:
-            print(f"FAIL: {PREFAB} is still the two-column window; run without --check to lay it out")
+            print(f"FAIL: {PREFAB} is not the four-tab window yet; run without --check to lay it out")
             return 1
-        random.seed(20261101)
         p = Prefab(text)
-        rewrite(p)
+        if not first_laid:
+            random.seed(20261101)
+            rewrite(p)
+            p = Prefab(p.text())
+        random.seed(20261102)
+        rewrite2(p)
         text = p.text()
         validate(text)
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)
         print(f"wrote {PREFAB}")
     validate(text)
-    print("OK: the Voyage window is laid out as sketched (Saga | Episodes, map, edge view, the voyage grid)")
+    print("OK: the Voyage window is laid out as picked (four tabs, the HyperSea map left, the voyage cards right)")
     if args.self_test:
         return 0 if self_test(text) else 1
     return 0

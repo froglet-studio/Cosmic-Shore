@@ -20850,3 +20850,19 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
    (below Space 5) a Sparrow round still stops on the first prism it meets.
 4. **No new console errors.** A `[ProjectileSweepBatch] build failed` error means the batch fell back to per-round
    queries (correct, but the speed-up is lost): send it.
+
+## 🔴 Voyage window: four tabs, the HyperSea map left, the open voyage card (Rev 49 C) (2026-11-02, Shombith, NOT RUN IN EDITOR)
+`VoyageWindowTabs`, `HubShoulders`, `VoyageOpenCard`, `VoyageRoutePoster`, `VoyageCardRules` (new), `VoyageJobsView`, `MissionView.prefab` (by `author_voyage_window.py`), `VoyageLines` (+ `VoyageContent.asset`); `VoyageWindowModals` retired. Record: `Docs/MENU_REDESIGN_B.md` section 119. Ran here: `unity_refcompile` player and editor, `gates.sh` ALL OK, the generators' `--check` / `--self-test`, and `VoyageCardRulesTests` outside Unity. No Unity editor ran, so nothing below was seen.
+- [ ] The project compiles in the editor; `VoyageCardRulesTests` pass.
+- [ ] Menu_Main > Voyage: the window opens on VOYAGES; the tabs read VOYAGES | SAGA | QUESTS | EPISODES, Episodes locked and "Coming soon".
+- [ ] LB / RB step the tabs and stop at Voyages and Episodes; while the window is open they do not slide the hub; after it closes they slide the hub again.
+- [ ] Saga shows Tandava and its Severing; Quests shows Episode 1's quests (the quest tracker); nothing of the old modals or their dims remains.
+- [ ] The HyperSea map fills the left column, opaque, with the edge view under it; pan / zoom / place taps still work.
+- [ ] The voyage cards stand two across on the right; pressing one, or its place on the map, slides the open voyage in over them; Back slides it out.
+- [ ] The open voyage's ground is the course on the map's water (amber Ark end, lime destination), and it follows the map as it is panned.
+- [ ] The pager (< >) goes round the voyages; the map frames each voyage's course.
+- [ ] The squad presets beside the formation switch the active squad (and it is still active after reopening the menu); Configure the squad opens Ark crew.
+- [ ] Ark crew: each seat's vessel / pilot / element / artifact cycle on press; in a joined squad only your own seat changes; Save squad keeps it (reopen to check).
+- [ ] Story: one beat at a time, the dots and < > step them, an empty beat is skipped.
+- [ ] Set sail from the open voyage sails that voyage, as the small card's did.
+- [ ] Gamepad: every control on the open card is reachable with the D-pad and A.

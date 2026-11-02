@@ -68,6 +68,9 @@ namespace CosmicShore.UI
         /// <summary>The text the window's map copies for its place names.</summary>
         public TMP_Text LabelTemplate => eyebrowText ? eyebrowText : titleText;
 
+        /// <summary>The card's Set sail, which the open voyage copies for its own big buttons (<see cref="VoyageOpenCard"/>).</summary>
+        public Button SetSailButton => setSailButton;
+
         /// <summary>
         /// Draw the card. <paramref name="onToggle"/> opens or closes it (null: no OPEN chip, the card stays as
         /// <paramref name="open"/> says). A null <paramref name="onSetSail"/> leaves Set sail dark. Empty texts show
