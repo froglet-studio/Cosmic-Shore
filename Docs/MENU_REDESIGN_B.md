@@ -5384,3 +5384,19 @@ is called hypersea map, that should be called it in the UI as well." / "Confirme
   tier keeps its own name.
 - The edge view stays the course profile at every tier. In Garrett's build it follows the map's scale; drawing that
   is a follow-up if the explorer is picked.
+
+### 114.3 Edit on the Rev 43 and Rev 44 boards: a quieter voyage pager and card (2026-11-02)
+
+**Asked (Shombith, on R44 G with two screenshots, the pager and the card):** "I don't like these parts."
+Edited in place (canvas version `1793651196-2586`), in the shared pieces of `r43_voyage_window.py`, so all ten
+options changed:
+- **The pager** is now a tab strip: the four place names in full, the open one underlined in the route colour, and
+  D-pad keycaps at its ends. The chips, the minutes / intensity / callsign line under each name and the
+  "D-pad, click or swipe" hint are gone, so nothing is cut off.
+- **Who found it** is one line ("Found by Oriel Vance, CITADEL - Hunter"), not a monogram badge.
+- **The numbers** are no longer a bordered six-cell grid. Course, sail and intensity are shown large; pays, finds and
+  odds are one line.
+- **The waypoints** start at "Tumult" (it was cut off as "Tumult Rim harbo...").
+- **Your Ark** rows are larger: the domain sits under the name and the three hulls are 80 x 30.
+- **G's** cards behind the open one are two, closer and fainter (were three). A and G got the course-mix bar back
+  into the space this freed.

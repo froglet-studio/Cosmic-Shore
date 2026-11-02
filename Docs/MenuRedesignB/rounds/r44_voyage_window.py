@@ -106,8 +106,8 @@ def tabrow(style, active):
 
 def frame(style, x, y, w, h, inner, label="Voyage card", pad="26px 28px", gap=16):
     if style == "G":   # a card held in a hand: the other voyages' cards stand behind it
-        behind = "".join(f'<div class="sl" style="position:absolute;left:{x + 18 * (3 - k)}px;top:{y - 12 * (3 - k)}px;width:{w}px;height:{h}px;'
-                         f'background:{GLASS};box-shadow:inset 0 0 0 1px {NEUT_D}"></div>' for k in range(3) if k < 3)
+        behind = "".join(f'<div class="sl" style="position:absolute;left:{x + 12 * (2 - k)}px;top:{y - 10 * (2 - k)}px;width:{w}px;height:{h}px;'
+                         f'background:rgba(6,10,38,.55);box-shadow:inset 0 0 0 1px rgba(34,38,69,.8)"></div>' for k in range(2))
         return (behind + f'<section aria-label="{label}" class="sl" style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;box-sizing:border-box;'
                 f'padding:{pad};background:#080C2E;box-shadow:inset 0 0 0 1px #2B3266;display:flex;flex-direction:column;gap:{gap}px">{inner}</section>')
     if style == "H":   # a logbook page: ruled, a margin rule, square corners
@@ -146,7 +146,7 @@ def screen_G(level):
     body = [nav(), tabrow("G", "Voyages"), left_map(1060, glow=level == 1)]
     x, y, w, h = 1180, 196, 660, 844
     if level == 1:
-        inner = (f'{voyage_pager()}{crew_chip()}{head_block(28, False)}{stats_row(3)}{route_glow(compact=True)}{preset_rows(dense=True)}'
+        inner = (f'{voyage_pager()}{crew_chip()}{head_block(28, False)}{stats_row(3)}{sea_bar()}{route_glow(compact=True)}{preset_rows(dense=True)}'
                  f'<div style="flex:1"></div>{actions(1)}')
     elif level == 2:
         inner = (f'{crew_back(2)}{crew_head()}{preset_tabs()}<div style="display:flex;gap:10px">'

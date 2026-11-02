@@ -299,6 +299,7 @@ def route_glow(compact=False, vertical=False):
     items = []
     for i, (name, tag) in enumerate(pts):
         end = i in (0, n - 1)
+        name = "Tumult" if i == 0 else name
         node = _node(i, n, 13 if end else 9, end_lit=(i == 0))
         ring = (f'<span class="wpr" style="left:50%;top:6px;width:22px;height:22px;margin:-11px 0 0 -11px"></span>') if i == n - 1 else ""
         items.append(f'<div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;min-width:0">{ring}'
@@ -458,21 +459,22 @@ PAGER = [("1", "Tollmoor", "27 min - I1", "VOLT"), ("2", "Lantern Reach", "29 mi
 
 
 def voyage_pager(sel="2"):
-    """How you move between the voyages your crew found: the four as chips, D-pad left / right (or a click, or a
-    swipe on the card) steps through them; the map follows the open one."""
-    chips = "".join(
-        f'<button class="pick sls" type="button" aria-pressed="{"true" if n == sel else "false"}" style="position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;'
-        f'padding:7px 10px;background:{"#0E1646" if n == sel else "rgba(8,12,40,.6)"};box-shadow:inset 0 0 0 1px {LIGHT if n == sel else NEUT_D}">'
-        + (f'<span class="abs" style="left:10px;right:10px;bottom:0;height:2px;background:{ROUTE}"></span>' if n == sel else "")
-        + f'<span style="display:flex;align-items:baseline;gap:6px"><span class="num" style="font-size:13px;color:{LIGHT if n == sel else INACT}">{n}</span>'
-        f'<span class="ell" style="font-size:14px;color:{LIGHT if n == sel else SUB}">{place}</span></span>'
-        f'<span class="cap ell" style="font-size:10px;color:{NEUT_L}">{meta} - {cs}</span></button>'
+    """How you move between the voyages your crew found: a quiet tab strip of the four, D-pad left / right at its ends
+    (or a click, or a swipe on the card); the open one is underlined in the route colour and the map follows it.
+    Edited 2026-11-02 after Shombith's "I don't like these parts": no boxes, no repeated meta, nothing cut off."""
+    key = lambda svg, lab: (f'<button class="pick" type="button" aria-label="{lab}" style="display:grid;place-items:center">'
+                            f'<span class="kc" style="height:26px;min-width:26px">{svg}</span></button>')
+    tabs = "".join(
+        f'<button class="pick" type="button" aria-pressed="{"true" if n == sel else "false"}" style="position:relative;display:flex;align-items:baseline;gap:6px;'
+        f'white-space:nowrap;padding:6px 0">'
+        f'<span class="num" style="font-size:12px;color:{LIGHT if n == sel else INACT}">{n}</span>'
+        f'<span style="font-size:15px;color:{LIGHT if n == sel else NEUT_L}">{place}</span>'
+        + (f'<span class="abs" style="left:0;right:0;bottom:-7px;height:2px;background:{ROUTE}"></span>' if n == sel else "")
+        + '</button>'
         for n, place, meta, cs in PAGER)
-    key = lambda svg, lab: f'<button class="pick" type="button" aria-label="{lab}" style="display:grid;place-items:center"><span class="kc" style="height:40px;min-width:30px">{svg}</span></button>'
-    return (f'<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
-            f'<span class="lab" style="font-size:11px">Voyages your crew found</span>'
-            f'<span class="cap" style="font-size:10px;color:{NEUT_L}">D-pad, click or swipe - the map follows</span></div>'
-            f'<div style="display:flex;align-items:center;gap:6px">{key(DPAD_L, "Previous voyage")}{chips}{key(DPAD_R, "Next voyage")}</div></div>')
+    return (f'<div style="display:flex;align-items:center;gap:12px;padding-bottom:8px;border-bottom:1px solid {NEUT_D}">'
+            f'{key(DPAD_L, "Previous voyage")}<div style="flex:1;display:flex;justify-content:space-between;gap:12px">{tabs}</div>'
+            f'{key(DPAD_R, "Next voyage")}</div>')
 
 
 # ------------------------------------------------------------------------------------------------ voyage card pieces
@@ -485,16 +487,18 @@ def head_block(size=34, kicker=True):
 
 
 def crew_chip():
-    return (f'<div style="display:flex;align-items:center;gap:12px"><span class="sls" style="width:44px;height:44px;display:grid;place-items:center;'
-            f'background:#0E1646;box-shadow:inset 0 0 0 1px {NEUT};font-family:\'Chakra Petch\';font-weight:700;font-size:13px;letter-spacing:.1em">CI</span>'
-            f'<span style="display:flex;flex-direction:column;gap:2px"><span class="lab" style="font-size:11px">Your crew found it</span>'
-            f'<span style="font-size:16px">{V["crew"]} <span class="cap" style="font-size:13px;color:{NEUT_L}">{V["callsign"]} - {V["faction"]}</span></span></span></div>')
+    """Who handed you the voyage, as one line (it was a monogram badge)."""
+    return (f'<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="lab" style="font-size:11px">Found by</span>'
+            f'<span style="font-size:16px">{V["crew"]}</span><span class="cap" style="font-size:12px;color:{NEUT_L}">{V["callsign"]} - {V["faction"]}</span></div>')
 
 
 def stats_row(cols=6):
-    return (f'<div style="display:grid;grid-template-columns:repeat({cols}, minmax(0, 1fr));gap:1px;background:{NEUT_D};box-shadow:0 0 0 1px {NEUT_D}">'
-            + "".join(f'<div style="background:#080C28;padding:10px 12px;display:flex;flex-direction:column;gap:4px"><span class="lab" style="font-size:10px">{k}</span>'
-                      f'<span class="num" style="font-size:20px">{v}</span></div>' for k, v in STATS) + '</div>')
+    """The voyage's numbers without a grid of boxes: the three that decide it large, the rest as one line."""
+    big = "".join(f'<div style="display:flex;flex-direction:column;gap:2px"><span class="num" style="font-size:26px;line-height:1">{v}</span>'
+                  f'<span class="lab" style="font-size:10px">{k}</span></div>' for k, v in STATS[:3])
+    small = " - ".join(f"{k} {v}" for k, v in STATS[3:])
+    return (f'<div style="display:flex;align-items:flex-end;gap:{30 if cols > 3 else 22}px;flex-wrap:wrap">{big}'
+            f'<span class="cap num" style="font-size:12px;color:{SUB};padding-bottom:2px">{small}</span></div>')
 
 
 def sea_bar():
@@ -531,17 +535,19 @@ def waypoints(vertical=False, compact=False):
 
 
 def preset_rows(dense=False, show_config=True):
+    """Your Ark: the Arks you configured, each with its three hulls large enough to read, the picked one marked by one
+    thin line in its domain colour; Configure under them."""
     rows = []
     for name, dom, line, hulls, on in PRESETS:
         c, cl = DOM[dom]
-        thumbs = "".join(f'<img src="{HULL[h]}" alt="{h}" style="width:{64 if dense else 78}px;height:{26 if dense else 30}px;object-fit:contain">' for h in hulls)
+        thumbs = "".join(f'<img src="{HULL[h]}" alt="{h}" style="width:{80 if dense else 92}px;height:{30 if dense else 34}px;object-fit:contain">' for h in hulls)
         rows.append(f'<button class="pick sls" type="button" aria-pressed="{"true" if on else "false"}" style="position:relative;display:flex;align-items:center;gap:14px;'
-                    f'padding:{8 if dense else 10}px 14px {8 if dense else 10}px 18px;background:{"#0E1646" if on else "#080C28"};box-shadow:inset 0 0 0 1px {c if on else NEUT_D}">'
+                    f'padding:{8 if dense else 10}px 14px {8 if dense else 10}px 18px;background:{"rgba(14,22,70,.9)" if on else "rgba(8,12,40,.6)"};box-shadow:inset 0 0 0 1px {c if on else NEUT_D}">'
                     + (f'<span class="abs" style="left:0;top:10px;bottom:10px;width:3px;background:{c}"></span>' if on else "")
-                    + f'<span style="display:flex;flex-direction:column;gap:3px;min-width:150px"><span style="font-size:17px">{name}</span>'
-                    f'<span style="font-size:12px;color:{SUB}">{line}</span></span><span style="display:flex;gap:4px;flex:1">{thumbs}</span>'
-                    f'<span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;transform:rotate(45deg);background:{c}"></span>'
-                    f'<span class="cap" style="font-size:12px;color:{cl}">{dom}</span></span></button>')
+                    + f'<span style="display:flex;flex-direction:column;gap:3px;min-width:140px"><span style="font-size:17px">{name}</span>'
+                    f'<span style="display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;transform:rotate(45deg);background:{c}"></span>'
+                    f'<span class="cap" style="font-size:11px;color:{cl}">{dom}</span><span style="font-size:12px;color:{SUB}">{line}</span></span></span>'
+                    f'<span style="flex:1"></span><span style="display:flex;gap:6px">{thumbs}</span></button>')
     cfg = (f'<button class="btn gho sls" type="button" style="height:40px;width:100%">{kc("X")}<span>Configure</span></button>') if show_config else ""
     return (f'<div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
             f'<span class="lab" style="font-size:11px;color:{LIGHT}">Your Ark</span><span class="lab" style="font-size:11px">Choose one, or configure</span></div>'
@@ -649,7 +655,7 @@ def screen_A(level):
     x = x0 + 56 * len(spines)
     w = w0 - 56 * len(spines)
     if level == 1:
-        inner = (f'{voyage_pager()}{head_block(30)}{crew_chip()}{stats_row(6)}{route_glow()}'
+        inner = (f'{voyage_pager()}{head_block(30)}{crew_chip()}{stats_row(6)}{sea_bar()}{route_glow()}'
                  f'{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
     elif level == 2:
         inner = (f'{level_crumbs(2)}{crew_head()}{preset_tabs()}<div style="display:flex;gap:10px">'
