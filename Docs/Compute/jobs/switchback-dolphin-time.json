@@ -1,0 +1,116 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "switchback-dolphin-time",
+ "kind": "search",
+ "status": "ready",
+ "title": "The Dolphin's universal Time AI: one Switchback drive for I1-I4, grown from all four genomes",
+ "goal": "The Dolphin's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE Switchback (Blast Run) charge drive that races all four intensities well, instead of a file per intensity. Its first generation is the four drives the game ships (the mode-wide DolphinAIBoostPolicy_Switchback and the I1, I2 and I4 files the AI learning sweep learned from Yash's races) and mutations of each; the loss is the four intensities' scores together (mean + 0.5 x the worst), raced on the Blast Run simulator at every difficulty level (one drive serves them all; each level flies its own nose-lag row). Measured 2026-11-02, 4 courses an intensity x 4 levels: mode-wide 1.744, I1 file 1.759, I2 file 1.744 (it is the mode-wide drive), I4 file 1.550 (the best all-rounder), what the game flies today (each intensity's own file, I3 the mode-wide) 1.574. A first local search raced at Hard only reached 1.277 there and won on 8 fresh courses at Hard and Legendary, but lost I4 at Easy, which is why every level is raced. The winner is the Dolphin Regatta is searched against (step time-arena-course).",
+ "asked_by": "Yash 2026-11-02, the AI owner: \"Do the recommended ones\" - keep learning from people, the learned files seed one search per vessel; build the Dolphin's Switchback search first. Garrett's plan (AI_PLAN.md rules 2 and 3) sets its shape.",
+ "area_owner": "Yash (vessel AI, the Switchback AI and its simulator)",
+ "plan": "regatta-balance",
+ "stage": 1,
+ "plan_step": "time-arcade",
+ "ref": "origin/ai",
+ "requires": [
+  "python3",
+  "dotnet8"
+ ],
+ "paths": [],
+ "evaluator": {
+  "module": "switchback_fit",
+  "timeout": 900,
+  "args": {
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "levels": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "seeds": 3,
+   "seedbase": 7000,
+   "max_seconds": 420,
+   "policy": "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset",
+   "genomes": [
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset",
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I1.asset",
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I2.asset",
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I4.asset"
+   ],
+   "stay_near_shipped": 0.01
+  }
+ },
+ "space": [
+  {
+   "name": "genome",
+   "type": "choice",
+   "choices": [
+    "DolphinAIBoostPolicy_Switchback",
+    "DolphinAIBoostPolicy_Switchback_I1",
+    "DolphinAIBoostPolicy_Switchback_I2",
+    "DolphinAIBoostPolicy_Switchback_I4"
+   ],
+   "init": "DolphinAIBoostPolicy_Switchback"
+  },
+  {
+   "name": "alignDegrees",
+   "lo": 0.0,
+   "hi": 90.0,
+   "init": 35.308
+  },
+  {
+   "name": "engageRunwaySeconds",
+   "lo": 0.0,
+   "hi": 4.0,
+   "init": 1.422
+  },
+  {
+   "name": "spendAtCharge01",
+   "lo": 0.05,
+   "hi": 1.0,
+   "init": 0.835
+  },
+  {
+   "name": "peakMarginUnits",
+   "lo": 0.0,
+   "hi": 30.0,
+   "init": 3.0
+  },
+  {
+   "name": "minDischargeSeconds",
+   "lo": 0.0,
+   "hi": 2.0,
+   "init": 0.2
+  },
+  {
+   "name": "minPulseGainUnits",
+   "lo": 0.0,
+   "hi": 120.0,
+   "init": 30.0
+  },
+  {
+   "name": "maxHoldOffSeconds",
+   "lo": 0.5,
+   "hi": 8.0,
+   "init": 4.0
+  }
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "convergence": {
+  "min_evals": 800,
+  "window_evals": 600,
+  "min_improvement": 0.002
+ },
+ "after": [],
+ "value": 8,
+ "promote": "A PROPOSAL for the AI owner (Yash), any of the core four approving: race the team's best against each shipped genome on 12 FRESH courses per intensity (seedbase 99000) at every difficulty level; keep it only if it finishes as many as the best of them on every intensity and its composite is lower. Then it becomes the mode-wide DolphinAIBoostPolicy_Switchback, written with the learner's writer (Tools/Build/learn_drives_from_flights.py's asset writer), never by hand. The per-intensity files stay until it beats each one on its own intensity; retiring them is Yash's call (AI_PLAN.md decision 1), and the sweep keeps learning them from people as the next round's seeds. The editor check goes in Docs/UNITY_VERIFICATION_CHECKLIST.md (the Switchback soak at I1-I4).",
+ "updated": "2026-11-02"
+}
