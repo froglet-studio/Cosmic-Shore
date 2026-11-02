@@ -65,6 +65,18 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+
+### 🔴 Stoat completion: gap scaling, Accretion on the orbit, warp × kick cap, HUD (`stoat/complete`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** Space widens the catch pair's gap with the orbit (`orbitReach`, clear cap 72 → ~101 u); Space 5
+Accretion steals prisms into the held pair's attractor, +4% ripple reach each to +40%; warp × kick capped at 3× cruise
+(`warpKickCapCruise`); the HUD's Charge/Space gauges read the orbit, the Space card shows the orbit icon; omni label Fulmen.
+- [ ] With Space 5, orbit through rival prisms: they come out of the repulsor in your colour; the Space gauge fills; the ripple is wider.
+- [ ] The light pair actually draws prisms in (its pull is weak — if almost nothing falls in, Accretion needs a capture reach).
+- [ ] Time 10 sweet-spot launch: no speed spike past ~3× cruise; a release under 30° gives no kick and no momentum.
+- [ ] Space 10: the orbit is wider and never touches the repulsor.
+- [ ] The Mass card keeps its icon (no mode swap); the Space card shows the orbit icon.
+
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the

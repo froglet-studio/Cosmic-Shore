@@ -493,6 +493,41 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShippedConfig_CarriesAccretionAndTheWarpKickCap()
+        {
+            string cfg = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            StringAssert.Contains("  accretionPerPrism: 0.04\n", cfg);
+            StringAssert.Contains("  accretionMax: 0.4\n", cfg);
+            StringAssert.Contains("  warpKickCapCruise: 3\n", cfg);
+            var config = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try
+            {
+                Assert.AreEqual(0.04f, config.AccretionPerPrism, 1e-6f);
+                Assert.AreEqual(0.4f, config.AccretionMax, 1e-6f);
+                Assert.AreEqual(3f, config.WarpKickCapCruise, 1e-6f);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void Map_OmniIsFulmen_AndTheHudSpaceCardIsTheOrbit()
+        {
+            string map = Read(Map);
+            StringAssert.Contains("  omniAbilityLabel: Fulmen\n", map);
+            StringAssert.DoesNotContain("a launch's kick", map, "an apostrophe in a single-quoted YAML string must be doubled");
+            string hud = Read("Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab");
+            StringAssert.DoesNotContain("guid: 586d56db81bb568c940094830cd59abb", hud, "the Space card no longer shows the field dipole");
+        }
+
+        [Test]
+        public void Flick_NeedsTheStickToComeFromRest_Fast()
+        {
+            Assert.IsTrue(StoatSlingMath.IsFlick(0.8f, 0.15f, 0.8f, 0.15f), "exactly at the thresholds is a flick");
+            Assert.IsFalse(StoatSlingMath.IsFlick(0.79f, 0.05f, 0.8f, 0.15f), "a hair short of the throw");
+            Assert.IsFalse(StoatSlingMath.IsFlick(1f, 0.16f, 0.8f, 0.15f), "a hair too slow");
+        }
+
+        [Test]
         public void WarpTimesKick_NeverPastThreeTimesCruise()
         {
             Assert.AreEqual(50f, StoatSlingMath.WarpCappedKick(50f, 1f, 60f, 3f), 1e-4f, "unwarped and under: all of it");

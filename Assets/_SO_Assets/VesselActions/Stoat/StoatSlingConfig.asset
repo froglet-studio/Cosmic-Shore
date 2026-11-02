@@ -53,10 +53,13 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 1
   massUpgradeShieldsLaunchTrail: 1
+  accretionPerPrism: 0.04
+  accretionMax: 0.4
   pressWarpShare: 0.5
   minSweepDegrees: 30
   momentumSeconds: 6
   speedCapShare: 1.6
+  warpKickCapCruise: 3
   poleHorizon: 1.6
   poleGM: 20000
   ringDotSpacing: 5
