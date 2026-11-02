@@ -69,7 +69,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Tiger Moth** | **Waystation** (the Drop Tower course since 2026-11-01) | Drop Tower race: short hops through plates, then one long drop | none yet on the towers. The belly-aim autopilot takes the clusters and the long drop; the hop autopilot (`WaystationController.TickHops`) takes the towers. No learner reads it yet |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
-| Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
+| **Thresher** | **Thresher Time** | gate race, the sling | **Next after the Stoat (Yash, 2026-11-02, §12).** 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3), learned into `ThresherAIBoostPolicy_ThresherTime` (2026-11-01). The AI slings only the sharp corners and races at cruise elsewhere |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
 | Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
 | Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
@@ -445,6 +445,7 @@ it); set the planner's hit costs from the measured ones; then drift-spam, from Y
 |---|---|---|
 | The Dolphin in **Switchback** (Blast Run): an AI that drifts into the key crystal with the nose on the obstacle, blasts it and drift-spams to the ring, so the race is hard to win | **Yash** plays it at every intensity; the AI sessions build from his races | §9; `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md` |
 | The **Stoat** in **Slingshot** and the **Meerkat** in **Warpline**: the kit, the race and the AI | Claude sessions with Yash | §7, §8; `Docs/Studios/STOAT_PLAY_STYLES.md`, `Docs/Studios/MEERKAT.md` |
+| The **Thresher** in **Thresher Time**: an AI that slings well at I1-I4 | after the Stoat, Claude sessions with Yash | §12; `Assets/_Scripts/Controller/Arcade/THRESHERTIME.md` |
 | The other vessels' Time minigames | later, one vessel at a time, in the §2 order | §2 |
 | The arena games (Regatta and the rest) | after the Time minigames | §4; `REGATTA_AI_ROADMAP.md` (on hold) |
 
@@ -467,7 +468,8 @@ it); set the planner's hit costs from the measured ones; then drift-spam, from Y
 | Sparrow | 35 / 135 | Breakwater 12 (9) | 74-90 at Time 10 (competent-pilot model) | The most proven remaining game | The slowest modelled hull on the card; no drive model |
 
 Dolphin 54-72 s and Squirrel 48.5-59.5 s are the marks to race (`REGATTA_BALANCE_PLAN.md`). So the Stoat is the one hull that
-can already meet them at the card's Time level; **the Manta comes next**, and it is the choice if raw speed is what is wanted.
+can already meet them at the card's Time level. The Manta came next until §12 put the Thresher there; it is still the choice
+if raw speed is what is wanted.
 
 **What changed for the AI.** A held pair is now the hull's only speed, so the AI also presses for the warp alone on a long leg
 (`aiWarpMinDistance`): 56-62 s a Slingshot race in the model against 70-82 s without it (`stoat_orbit_sim.py`; the table is in
@@ -475,3 +477,38 @@ the parked doc). Every number here but the editor races is a model.
 
 **Next, in order.** Yash plays Slingshot at each intensity: the sweep relearns the sling rows on its own (`AUTO_LEARNING.md`).
 Then the Stoat's `drive_fit` model joins stage 1 of `REGATTA_BALANCE_PLAN.md`, and Regatta takes the trained numbers (§4).
+
+## 12. After the Stoat: the Thresher, in Thresher Time (Yash, 2026-11-02)
+
+> "I need another vessel to race, I think garrett will like the vessel that has a ball attached to a rope, and moves using
+> the tension of rope and momentum of ball [...] Thresher's time game need to be made first before regatta, thats the rule,
+> make AIs good in their vessel's respective time game, then we will design regatta based on those AI skills and game
+> modes." (Yash, 2026-11-02)
+
+**Decision: the Thresher is the vessel after the Stoat, and it trains in Thresher Time, not Regatta.** The Stoat stays first
+(Slingshot, §11). The Thresher is **not** added to Regatta's card now: its AI gets good in its own Time game at I1-I4 first,
+and Regatta is designed afterwards from what the trained AIs can do (§1 step 6, §4). Yash's picks to race Regatta are the
+Squirrel, the Dolphin, the Stoat and the Thresher. The Sparrow was weighed for that seat and lost it: it is the slowest
+modelled hull (74-90 s against the field's 48-72 s, §11), and its skill is shooting a way clear, which a plain race does not
+ask. It stays on Regatta's card.
+
+**Why the Thresher.** It is Garrett's vessel: he merged every Thresher change and flew the last on 2026-10-30, so it has the
+team's acceptance the Stoat is still waiting for. And its race asks a skill: plant the ball, swing, release on the line
+(`THRESHERTIME.md` §2: a sling pays as a corner, not on a straight).
+
+**Where its AI stands (2026-11-02).**
+- People's races: 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3). The sweep wrote
+  `ThresherAIBoostPolicy_ThresherTime` from them on 2026-11-01 (`LEARNED_DRIVES_ThresherTime.md`).
+- The AI slings only the sharp corners (`ThresherSlingAIPolicySO`: a ring at least 70° off and 120 u away) and races at
+  cruise everywhere else; the ×4.8 aimed launch is a human's only. `THRESHERTIME.md` §4 calls the AI field "a cruise-pace
+  field, not a slinging one", which a human who slings beats.
+- No offline model of Thresher Time, so no compute job.
+
+**For later.** The Thresher and the Stoat race the same verb (orbit, then release for a kick), so two of the four share it.
+Garrett's yes comes before it goes on Regatta's card: it is his vessel, and a mode takes a kit as it is (CLAUDE.md, "A game
+mode never changes the vessel"). Its ball threads rings as the hull does (`THRESHER.md`, Garrett), which Regatta has to
+measure when it is designed.
+
+**Next, in order, once the Stoat's Slingshot is done.** (1) Yash plays Thresher Time at I1-I4 (I3 has no race yet); the
+sweep relearns from it on its own. (2) The AI makes slinging pay at every intensity (§6), measured against Yash's races.
+(3) A Thresher Time model joins stage 1 of `REGATTA_BALANCE_PLAN.md`. (4) Then Regatta is designed from the four trained hulls.
