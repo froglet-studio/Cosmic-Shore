@@ -20761,3 +20761,14 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] Serpent Time: seed walls near trails; they still steal loose prisms, skip creatures, seeds, super-shielded armour and other walls' seeds, and take opponents' shielded prisms only with the Space upgrade.
 - [ ] Voyage (an Ark present): a wall seeded beside the Ark does not strip its hull.
 - [ ] Profiler, Serpent Time with walls up: `SerpentWall.Sweep` well under the 4.1 ms a frame `SerpentWallAssembler.Update` took on 2026-10-29 (Andrew's capture).
+
+## 🔴 Galaxy map deep zoom: the board's stars, clusters, landmarks, tiers and cards in the Voyage window (2026-11-02, Garrett, NOT RUN IN EDITOR)
+`VoyageMapGraphic` + `VoyageMapSky` + `HyperSeaSky` (Docs/Voyages/VOYAGE_BOARD.md §4b). Verified: `unity_refcompile` player and editor configs show only the 21 errors `origin/bleeding-edge` already has (FactionChat / PlayerReports, packages the gate cannot fetch), none in changed files; the model reproduces the board's `sky_golden.js` star for star in a .NET harness, and `HyperSeaSkyTests` 6/6 passed there (a broken tile seed fails `ModelTiles_MatchThePage`). Not run in Unity, not played.
+- [ ] The project compiles in the editor; `HyperSeaSkyTests` and `HyperSeaTests` pass.
+- [ ] Voyage window: the map loads with no hitch you can feel (the 4.7 MB sky table is read 6,000 lines a frame).
+- [ ] The ladder on the map's left (GALAXY ... SYSTEM, then SOL, TUMULT): the tier on show is lit; each press dives there; SOL and TUMULT fly from wherever you are down to a 12 ly view.
+- [ ] Zoom by wheel or pinch from the whole galaxy to 4 ly: about a thousand stars at every zoom, never empty, never a wall; from Neighbourhood down the readout names the slice's height.
+- [ ] Near Sol the named stars (Sirius, Vega, Deneb ...) and clusters (Hyades, Pleiades as a landmark, Jewel Box) are labelled; near Tumult the bright stars carry invented names in amber.
+- [ ] Tap a star, a cluster or a landmark: a card opens bottom-right with what it is, its line, its source tag and its distances from Sol, Tumult and the squad; a tap on open water closes it. Tapping a voyage's place still opens that voyage.
+- [ ] The edge view under the map shows the stars at their heights.
+- [ ] Frame rate while dragging at the Region and Galaxy tiers on a phone (new tiles are made 3 a frame; a Galaxy-tier tile is the costliest).
