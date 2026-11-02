@@ -13,7 +13,9 @@
 # Environment (set by the workflow from the `unity-ci` GitHub Environment's secrets):
 #   UNITY_EMAIL, UNITY_PASSWORD   the CI Unity account
 #   UNITY_SERIAL                  the seat's serial (Pro/Plus), or the one the workflow read out
-#                                 of a Personal Unity_lic.ulf (UNITY_LICENSE); never printed
+#                                 of a Personal Unity_lic.ulf (UNITY_LICENSE); never printed.
+#                                 EMPTY = login mode: activate by signing in with the account
+#                                 alone, which picks up its own (Personal) licence.
 # Activation mirrors GameCI's own activate.sh / return_license.sh (game-ci/unity-test-runner
 # v4.3.1): a throwaway blank project, retries with backoff, -returnlicense on exit.
 #
@@ -26,7 +28,7 @@ RESULTS="$PROJECT/editmode-results.xml"
 CODE="$PROJECT/unity-exit-code.txt"
 rm -f "$LOG" "$RESULTS" "$CODE"
 
-for v in UNITY_EMAIL UNITY_PASSWORD UNITY_SERIAL; do
+for v in UNITY_EMAIL UNITY_PASSWORD; do
   if [ -z "${!v:-}" ]; then
     echo "::error::$v is empty inside the container; the workflow should have chosen the reference compile."
     echo 1 > "$CODE"
@@ -40,6 +42,14 @@ BLANK=/tmp/BlankProject
 mkdir -p "$BLANK/Assets" "$BLANK/Packages"
 echo '{ "dependencies": {} }' > "$BLANK/Packages/manifest.json"
 
+if [ -n "${UNITY_SERIAL:-}" ]; then
+  how=serial
+  ACTIVATE=(-serial "$UNITY_SERIAL" -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD")
+else
+  how=login
+  ACTIVATE=(-username "$UNITY_EMAIL" -password "$UNITY_PASSWORD")
+fi
+
 activated=false
 return_license() {
   if [ "$activated" = true ]; then
@@ -47,7 +57,8 @@ return_license() {
     unity-editor -batchmode -nographics -quit -logFile /dev/stdout \
       -returnlicense -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" \
       -projectPath "$BLANK" > /tmp/return-license.log 2>&1 \
-      || echo "::warning::Returning the Unity licence failed; the seat may stay taken until Unity frees it. See the Unity ID dashboard."
+      || { [ "$how" = login ] && echo "Returning the licence did not succeed (login mode; a Personal licence has no seat to free)." \
+           || echo "::warning::Returning the Unity licence failed; the seat may stay taken until Unity frees it. See the Unity ID dashboard."; }
     activated=false
   fi
 }
@@ -56,22 +67,25 @@ trap 'echo "Interrupted."; exit 130' INT TERM
 
 delay=15
 for attempt in 1 2 3 4; do
-  echo "Activating the Unity licence (attempt $attempt)."
+  echo "Activating the Unity licence ($how, attempt $attempt)."
   # Activation output goes to a file, not the job log: it names the account.
   unity-editor -batchmode -nographics -quit -logFile /tmp/activate.log \
-    -serial "$UNITY_SERIAL" -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" \
-    -projectPath "$BLANK" > /dev/null 2>&1
+    "${ACTIVATE[@]}" -projectPath "$BLANK" > /dev/null 2>&1
   if [ $? -eq 0 ]; then activated=true; break; fi
   grep -iE 'licen[cs]e|activation|error' /tmp/activate.log | grep -viE 'password|serial' | tail -15 || true
   echo "::warning::Unity licence activation failed (attempt $attempt); retrying in ${delay}s."
   sleep "$delay"; delay=$((delay * 2))
 done
 if [ "$activated" != true ]; then
-  echo "::error::Unity licence activation failed after 4 attempts. Check UNITY_EMAIL / UNITY_PASSWORD / UNITY_SERIAL (or UNITY_LICENSE) in the unity-ci environment, and that the seat is not already in use."
+  if [ "$how" = login ]; then
+    echo "::error::Unity licence activation by sign-in (email and password only) failed after 4 attempts. Check UNITY_EMAIL / UNITY_PASSWORD in the unity-ci environment, that the account has two-factor sign-in turned off, and that it holds an active licence (Personal or a seat). Adding UNITY_SERIAL switches to serial activation."
+  else
+    echo "::error::Unity licence activation ($how) failed after 4 attempts. Check UNITY_EMAIL / UNITY_PASSWORD / UNITY_SERIAL (or UNITY_LICENSE) in the unity-ci environment, and that the seat is not already in use. Removing UNITY_SERIAL and UNITY_LICENSE tries sign-in activation instead."
+  fi
   echo 1 > "$CODE"
   exit 1
 fi
-echo "Licence activated."
+echo "Licence activated ($how)."
 
 # Edit-mode tests force a full compile of runtime, editor and test assemblies. -runTests must
 # NOT be combined with -quit.

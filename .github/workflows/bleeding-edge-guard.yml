@@ -336,12 +336,21 @@ jobs:
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         run: |
-          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ] && { [ -n "$UNITY_SERIAL" ] || [ -n "$UNITY_LICENSE" ]; }; then
+          # Three ways to license, chosen by which secrets exist:
+          #   serial  UNITY_SERIAL (Pro/Plus seat), activated and returned each run
+          #   ulf     UNITY_LICENSE (a Personal Unity_lic.ulf): its serial, activated online
+          #   login   only UNITY_EMAIL + UNITY_PASSWORD: the account's own licence, activated
+          #           by signing in (GameCI's current advice for Personal seats)
+          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
+            if   [ -n "$UNITY_SERIAL" ];  then how=serial
+            elif [ -n "$UNITY_LICENSE" ]; then how=ulf
+            else how=login; fi
             echo "mode=unity" >> "$GITHUB_OUTPUT"
-            echo "Compiler: Unity $UNITY_VERSION (licence found in the unity-ci environment)."
+            echo "activation=$how" >> "$GITHUB_OUTPUT"
+            echo "Compiler: Unity $UNITY_VERSION (licence in the unity-ci environment; activation: $how)."
           else
             echo "mode=refcompile" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Not a Unity compile::No Unity licence in the unity-ci environment (UNITY_EMAIL + UNITY_PASSWORD + UNITY_SERIAL or UNITY_LICENSE), so this run uses the reference compile (Tools/Build/unity_refcompile). It catches C# errors in project code; it does not import assets, compile editor assemblies or run tests. Docs/BUILD_AND_DELIVERY.md section 10.1."
+            echo "::warning title=Not a Unity compile::No Unity licence in the unity-ci environment (UNITY_EMAIL + UNITY_PASSWORD, optionally UNITY_SERIAL or UNITY_LICENSE), so this run uses the reference compile (Tools/Build/unity_refcompile). It catches C# errors in project code; it does not import assets, compile editor assemblies or run tests. Docs/BUILD_AND_DELIVERY.md section 10.1."
           fi
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -394,7 +403,7 @@ jobs:
             unity-library-${{ env.UNITY_VERSION }}-
 
       - name: Read the serial from a Personal licence file
-        if: steps.mode.outputs.mode == 'unity'
+        if: steps.mode.outputs.mode == 'unity' && steps.mode.outputs.activation != 'login'
         id: serial
         env:
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
@@ -424,7 +433,8 @@ jobs:
         run: |
           set -uo pipefail
           # The serial reaches the container through the environment, never argv.
-          UNITY_SERIAL="$(cat "$RUNNER_TEMP/unity-serial")"; export UNITY_SERIAL
+          # Empty in login mode: the container then activates by signing in only.
+          UNITY_SERIAL="$(cat "$RUNNER_TEMP/unity-serial" 2>/dev/null || true)"; export UNITY_SERIAL
           rm -f "$RUNNER_TEMP/unity-serial"
           docker run --rm \
             --workdir /github/workspace \

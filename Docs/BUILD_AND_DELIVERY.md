@@ -407,8 +407,10 @@ completely unverified, and the first thing to notice was a human running a Windo
 No self-hosted runner. The job runs on a fresh GitHub-hosted VM, which is discarded afterwards.
 
 1. **It chooses the compiler** from the secrets in the `unity-ci` GitHub Environment:
-   - **`unity`** when `UNITY_EMAIL`, `UNITY_PASSWORD` and either `UNITY_SERIAL` or `UNITY_LICENSE`
-     are set. It pulls `unityci/editor:ubuntu-6000.3.17f1-base-3.2.2`, **pinned by digest** in
+   - **`unity`** when `UNITY_EMAIL` and `UNITY_PASSWORD` are set. It activates by **serial** when
+     `UNITY_SERIAL` is set, by the serial inside a Personal `Unity_lic.ulf` when `UNITY_LICENSE` is set,
+     and otherwise by **sign-in alone** (email and password: the account's own licence, GameCI's
+     current advice for Personal seats). The job log names the method (`activation: login`). It pulls `unityci/editor:ubuntu-6000.3.17f1-base-3.2.2`, **pinned by digest** in
      the workflow's `UNITY_IMAGE`, frees runner disk, restores `Library/` from the Actions cache, and
      runs `Tools/CI/unity_compile_in_container.sh` in the container. That script activates the
      licence the GameCI way (a throwaway blank project, four tries with backoff), runs the edit-mode
@@ -447,15 +449,17 @@ project, so it is slow; the job's timeout is 180 minutes. Later runs restore `Li
 1. **Deployment branches and tags → Selected branches and tags**: add `bleeding-edge` and
    `development`. After this, a run on any other branch (a scratch-branch dispatch included) is
    refused at the environment and cannot read the licence.
-2. **Environment secrets**, one of these two sets, for a **Unity ID made for CI** (not a person's
-   account; activation cannot answer a two-factor prompt headless):
+2. **Environment secrets** for a **Unity ID made for CI** (not a person's account; activation cannot
+   answer a two-factor prompt headless). `UNITY_EMAIL` and `UNITY_PASSWORD` alone are enough for a
+   Personal licence (sign-in activation); add `UNITY_SERIAL` for a Pro/Plus seat. `UNITY_LICENSE` is
+   kept for the older `.ulf` route, which Unity may no longer accept for Personal seats:
 
 | Secret | When | Value |
 |---|---|---|
 | `UNITY_EMAIL` | always | the CI Unity ID's email |
 | `UNITY_PASSWORD` | always | its password |
-| `UNITY_SERIAL` | Pro / Plus seat | the seat's serial key (Unity ID → Subscriptions). Each run activates it and returns it |
-| `UNITY_LICENSE` | Personal, instead of `UNITY_SERIAL` | the full contents of `Unity_lic.ulf` from a machine where that Unity ID activated a Personal licence (Windows `C:\ProgramData\Unity\Unity_lic.ulf`, macOS `/Library/Application Support/Unity/Unity_lic.ulf`, Linux `~/.local/share/unity3d/Unity/Unity_lic.ulf`) |
+| `UNITY_SERIAL` | Pro / Plus seat (optional otherwise) | the seat's serial key (Unity ID → Subscriptions). Each run activates it and returns it |
+| `UNITY_LICENSE` | optional, Personal `.ulf` route; used only when `UNITY_SERIAL` is not set | the full contents of `Unity_lic.ulf` from a machine where that Unity ID activated a Personal licence (Windows `C:\ProgramData\Unity\Unity_lic.ulf`, macOS `/Library/Application Support/Unity/Unity_lic.ulf`, Linux `~/.local/share/unity3d/Unity/Unity_lic.ulf`) |
 
 Nothing else is needed: `UNITY_PATH` and `UNITY_RUNNER_LABEL` no longer affect this workflow.
 `UNITY_TESTS_BLOCKING` (a repository variable) works as before. **It is set to `false` today** (read from run 642), so once Unity runs, a red edit-mode test is a warning and only a compile break fails the job. Remove it once the suite is green.
@@ -464,7 +468,11 @@ Nothing else is needed: `UNITY_PATH` and `UNITY_RUNNER_LABEL` no longer affect t
 
 **Actions → Bleeding-edge guard → Run workflow** on `bleeding-edge`, then open the **Unity compile** job:
 
-- *Choose the compiler* prints `Compiler: Unity 6000.3.17f1`: the real compile is live.
+- *Choose the compiler* prints `Compiler: Unity 6000.3.17f1 (... activation: login|serial|ulf)`
+  and *Compile with Unity* prints `Licence activated (...)`: the real compile is live.
+- *Compile with Unity* ends with `Unity licence activation ... failed after 4 attempts`: the
+  account, its two-factor setting, or the licence it holds is the problem; the error names which
+  method to try next.
 - It prints the **Not a Unity compile** warning: the environment's secrets are missing or misnamed.
 - The job is refused with a deployment-branch message: you ran it on a branch the environment does
   not allow, which is the rule working.
