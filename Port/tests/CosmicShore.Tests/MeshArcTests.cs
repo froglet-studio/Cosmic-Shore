@@ -199,9 +199,10 @@ public class MeshComponentTests : IDisposable
 
         var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         var sphereMesh = sphere.GetComponent<MeshFilter>().sharedMesh;
-        Assert.True(sphereMesh.vertexCount > 0);
+        Assert.Equal(515, sphereMesh.vertexCount);             // Unity's own primitive sphere, vertex for vertex
+        Assert.Equal(768 * 3, sphereMesh.triangles.Length);
         foreach (var v in sphereMesh.vertices)
-            Assert.Equal(0.5f, v.magnitude, 3);                // radius 0.5, every vertex on the sphere
+            Assert.Equal(0.5f, v.magnitude, 0.002f);           // radius 0.5; Unity's own vertices sit up to 0.0015 off it
         Assert.Equal(0.5f, sphere.GetComponent<SphereCollider>().radius);
 
         var capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);

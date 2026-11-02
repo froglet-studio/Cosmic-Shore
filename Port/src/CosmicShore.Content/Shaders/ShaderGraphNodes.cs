@@ -880,7 +880,23 @@ vec2 sg_hashTchou22(vec2 i) {
   v.y ^= 1103515245u; v.x += v.y; v.x *= v.y; v.x ^= v.x >> 5u; v.x *= 0x27d4eb2du; v.y ^= (v.x << 3u);
   return vec2(v >> 8u) * (1.0 / float(0x00ffffff));
 }
-float sg_hashLegacySine21(vec2 i) { return fract(sin(dot(i, vec2(12.9898, 78.233))) * 43758.5453); }
+// fp32 fused multiply-add, emulated (GLSL 3.30 has no fma): Dekker's exact product, then one more rounding.
+vec2 sg_split(float a) { float c = 4097.0 * a; float h = c - (c - a); return vec2(h, a - h); }
+float sg_fma(float a, float b, float c) {
+  float p = a * b; vec2 as = sg_split(a), bs = sg_split(b);
+  float e = ((as.x * bs.x - p) + as.x * bs.y + as.y * bs.x) + as.y * bs.y;
+  float s = p + c; float bv = s - p; float se = (p - (s - bv)) + (c - bv);
+  return s + (se + e);
+}
+// fp32 product rounded toward zero: the rounding the GPU's sine range reduction uses (measured, D3D11 RTX 3080).
+float sg_mulRz(float a, float b) {
+  float p = a * b; vec2 as = sg_split(a), bs = sg_split(b);
+  float e = ((as.x * bs.x - p) + as.x * bs.y + as.y * bs.x) + as.y * bs.y;
+  return (e * p < 0.0) ? uintBitsToFloat(floatBitsToUint(p) - 1u) : p;
+}
+// Unity's legacy sine hash as the GPU computes it: x = fma(y, 78.233, x * 12.9898), then sin reduced through
+// fract(x * 1/2pi) with the product rounded toward zero. Matches 2593 measured lattice hashes exactly.
+float sg_hashLegacySine21(vec2 i) { float a = sg_fma(i.y, 78.233, i.x * 12.9898); return fract(sin(6.28318548 * fract(sg_mulRz(a, 0.159154937))) * 43758.5453); }
 vec2 sg_hashLegacySine22(vec2 i) { return fract(sin(vec2(i.x * 15.27 + i.y * 99.41, i.x * 47.63 + i.y * 89.98))); }
 float sg_hashLegacyMod21(vec2 i) {
   i = i - 289.0 * trunc(i / 289.0);
