@@ -27,7 +27,13 @@ Report files: `git show origin/bugledger/<user>:BugLedger/shared/reports/<user>/
 **redlog** session has the full context around a ledger signature.
 
 **Nothing sent?** Fix from what the person gave you (screenshot / pasted Console text), then tell
-them in one line: after the next play test, do nothing: after the next play test the editor sends it to Claude by itself.
+them in one line: they do nothing, and after the next play test the editor sends it to Claude by itself.
+
+**Already-known errors may never arrive.** The editor sends after a play test that logged a NEW red error, so a run whose
+errors are already open issues on that person's branch can stay unsent (2026-11-01: Shombith's 03:46 Relay trio, the
+branch's last send 03:12). Do not wait for it: find the same signature on the other `bugledger/*` branches (`collect`,
+then the issue's `branches`) and in the other machines' multiplayer logs (`net_logs.py collect`, newest first), which
+usually carry the full context of the same failure.
 
 Kinds: `E-…` captured error (validated by play runs) · `T-…` editor-tool finding (closed only by a
 clean re-run of that tool — tell the person which) · `C-…` hand-filed (no signature).
@@ -99,6 +105,12 @@ Copies already validating that commit are left alone (a rewrite would zero their
 plain `mark-fixed` just to reach one more tester. Skip it when the open copy has `regressions` > 0 — that machine
 saw the error AFTER taking the fix. Leave `ignored` issues alone (`mark-fixed` refuses without `--force`); never delete issue
 files — closing is the editor's job, after validation.
+
+**Do not `mark-fixed` a signature that several causes share when you fixed one of them.** Package-level lines such as
+`Transport failure! Relay allocation needs to be recreated` or `Host is shutting down due to network transport failure`
+fire for every Relay drop (a boot freeze, a match freeze, a Cell swap, a network fault: B36/B45), so validating one fix
+reopens with `regressions` > 0 the next time another cause fires, and reads as "your fix did not hold". Leave those open,
+say why in the hand-back, and record the fix in the bug's own doc instead (2026-11-01, the B36 boot reorder).
 
 ## 4. "Is it fixed?" — answer from their branch
 
