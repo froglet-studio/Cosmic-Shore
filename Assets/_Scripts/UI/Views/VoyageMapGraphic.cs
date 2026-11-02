@@ -126,6 +126,30 @@ namespace CosmicShore.UI
         public VoyageMapSky Sky => _chart != null ? _sky : null;
         VoyageMapSky SkyOf => _sky ??= new VoyageMapSky(this);
 
+        /// <summary>
+        /// The water this map last painted, for another view to show the same sea (the open voyage card's ground,
+        /// <see cref="VoyageRoutePoster"/>): the texture, the uv rectangle holding the water, and the map points at that
+        /// rectangle's lower-left and upper-right corners (<see cref="MapPoint"/>'s space). False before the first paint
+        /// or on an uncharted map. Read only: it changes nothing on this map.
+        /// </summary>
+        public bool TrySeaView(out Texture texture, out Rect uv, out Vector2 lo, out Vector2 hi)
+        {
+            texture = null;
+            uv = default;
+            lo = _paintLo;
+            hi = _paintHi;
+            if (!_painted || _chart == null || !s_Atlas) return false;
+            texture = s_Atlas;
+            uv = new Rect(0f, 0f, (float)SeaTexWidth / s_Atlas.width, (float)_seaTexHeight / s_Atlas.height);
+            return true;
+        }
+
+        /// <summary>The uv of a white texel in the painted texture, for lines drawn over the water with it.</summary>
+        public Vector2 WhiteUv => _white;
+
+        /// <summary>A course point (light years on the board, <see cref="VoyageChart.Voyage.Points"/>) as a map point.</summary>
+        public static Vector2 MapPoint((double x, double y) p) => Galaxy(p);
+
         static Texture2D s_Atlas;
         static string s_AtlasKey;
         Vector2 _white;

@@ -40,6 +40,17 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Redline";
 
+        /// <summary>
+        /// The AI Mantas fly the Regatta steering (commit from the approach point, through the ring's centre, break off
+        /// and re-attack after a missed mouth), as ten other gate races do. On the old steering they lined up on a
+        /// point 320 u past the mouth on its AXIS and circled after a miss: offline
+        /// (<c>Tools/Build/manta_redline_sim.py</c>, which ports this AI line for line) they finished 4 of 12 races
+        /// over I1-I4 and none at I3 or I4, where the mouths are 72 and 44 u; on this steering they finish 12 of 12
+        /// (2026-11-03, REDLINE.md section 5). The AI's throttle stays the skill throttle: a floor of 1 measured
+        /// faster at I1 and lost races at I4.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
         protected override RaceCourseSource CreateCourseSource() =>
             new RedlineCourseSource { Laps = laps };
     }

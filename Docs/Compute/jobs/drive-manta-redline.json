@@ -48,6 +48,7 @@
   "python3",
   "numpy"
  ],
+ "retired_reason": "raced Regatta's point-mass model (full throttle, Regatta's steering, no nose lag), about 3x faster than the editor's AI Mantas; replaced by redline-manta-time (the Redline simulator, the composite over I1-I4)",
  "schema": "froglet-compute/job/1",
  "space": [
   {
@@ -64,8 +65,8 @@
   }
  ],
  "stage": 1,
- "status": "ready",
+ "status": "retired",
  "title": "Manta AI drive for Redline, I1-I4 (self-play)",
- "updated": "2026-10-28",
+ "updated": "2026-11-03",
  "value": 9
 }

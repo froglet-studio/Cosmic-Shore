@@ -163,6 +163,29 @@ one it must overshoot (unflown — see §9). The pure shape is
 `Tests/Editor/MantaAutopilotDriveTests.cs`. The AI approach numbers in the scene (commit 420 /
 lead 480 / through 320) are sized to the 237 u circle rather than inherited from Switchback's Dolphin.
 
+### 5.1 Measured offline, and the Regatta steering (2026-11-03)
+
+Redline is the Manta's own Time game, where its AI trains (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` section 13).
+`Tools/Build/manta_redline_sim.py` races the AI Manta the way this scene flies it, ported line for line: the
+course (`course_port.py`), the gate aim, `AIPilot`'s stick, skill throttle and orbit break-off, the Soar triggers of
+§5, and the hull's turn law with the AI nose lag (1.5/s). On Regatta's own I1 course it laps in 28 s; the editor's Hard
+AI Mantas lapped it in 23-28 s. The older `manta_drive_sim.py` (Regatta's model: full throttle, no nose lag) is about
+3x faster than either.
+
+| 3 courses an intensity, shipped bands 0.35 / 0.75 | I1 | I2 | I3 | I4 | finished |
+|---|---:|---:|---:|---:|---:|
+| the old steering (before 2026-11-03) | 82 s | 389 s (1 of 3) | - | - | 4 / 12 |
+| **the Regatta steering (`RedlineController.AICommitFromApproachPoint`)** | 111 s | 114 s | 113 s | 326 s | **12 / 12** |
+| the same with full throttle (`AIThrottleFloor` 1) | 99 s | 112 s | 124 s | 279 s (1 of 3) | 10 / 12 |
+| the Regatta steering with no AI nose lag (a what-if: the nose IS the command) | 66 s | 63 s | 55 s | 64 s | 12 / 12 |
+
+On the old steering the AI lined up on a point 320 u past the mouth on its axis and circled after every miss, and no
+pair of Soar bands got it through I3 or I4 (the 44 u mouth). So Redline now flies the Regatta steering, as ten other
+gate races do (`RedlineAISteeringTests`). Its throttle stays the skill throttle (`intensity x 0.25` lerps the
+Manta's 0.2-0.9, so 37.5% at I1): a floor of 1 is faster at I1 and loses races at I4. **The nose lag is the biggest
+lever left**: with none the AI is 1.7x faster at I1 and 5x at I4. Whether an AI's nose rate is part of its genome or a difficulty setting
+is `AI_PLAN.md` decision 7 (Yash). The Soar bands are searched by the compute job `redline-manta-time`.
+
 ## 6. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
@@ -174,6 +197,7 @@ lead 480 / through 320) are sized to the 237 u circle rather than inherited from
 | corner profile (turn angles) | same, per intensity | see §1 — with `AngularSpread`, **this is the design** |
 | absolute safety floor / mouth / present cap | same, per intensity | 178–90 u; 110–88–72–**44**; 50–80 |
 | AI commit / lead / through | scene → `GateRaceController` | 420 / 480 / 320 |
+| AI steering | `RedlineController.AICommitFromApproachPoint` (code) | the Regatta steering (§5.1) |
 | detection clamp | scene → `maxPlausibleSpeed` | **1400** (a Time-10 Manta's 30 fps step is 31 u; the inherited 400 rejected it within a unit) |
 | autopilot boost band | `MantaAnalogTurnBoostExecutor.aiBoostStickBand` (code default; not stored on `Manta.prefab` until it is next saved) | 0.35 |
 | autopilot Yastri band | `MantaAnalogTurnBoostExecutor.aiYastriStickBand` (code default; the prefab has no entry until it is next saved) | 0.75 |
@@ -234,6 +258,8 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
   `aiYastriStickBand` (1 disables it).
 - **Level 4's third corner is a knife-edge by design** (§4). If play-test wants three
   unambiguous hairpins, the lever is a NINTH gate per lap (27-gate race), not the profile.
+- **The Regatta steering (§5.1) is measured offline only.** The editor check is in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`: AI Mantas finish Redline at I1-I4 and re-attack a missed mouth.
 - **The AI's Yastri pivot is unflown.** It is keyed on a saturated yaw stick, and AIPilot's
   stick (a clamp of heading-angle-in-degrees × cross product) can saturate well short of a
   hairpin, so if play-test shows the bot pivoting on corners it could Soar through (or weaving

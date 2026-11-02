@@ -488,10 +488,16 @@ namespace CosmicShore.Gameplay
             using (s_pullMarker.Auto()) BlackHoleVesselPull.Tick(_holes, config, dt);
             using (s_wavesMarker.Auto()) BlackHoleWaves.Tick(config);
             using (s_warpMarker.Auto()) BlackHoleWarp.Flush(_warpHoles, config);
-            // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
+            // Studio lens look only: the lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
             // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
             // holes itself (BlackHoleLens.ScreenWells).
-            using (s_lensMarker.Auto()) BlackHoleLens.CameraSupport.Maintain();
+            using (s_lensMarker.Auto())
+            {
+                BlackHoleLens.CameraSupport.Maintain();
+                // The Mobile look (the default): one small forward mesh per hole and per wave, no full-screen pass.
+                BlackHoleGlow.DrawHoles(_warpHoles, config);
+                BlackHoleGlow.DrawWaves(config);
+            }
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {
