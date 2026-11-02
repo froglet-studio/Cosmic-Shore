@@ -25,17 +25,24 @@
 
 ## Plugins
 
-| Plugin | Publisher | Install id | Skills that matter here | Status 2026-10-08 |
+| Plugin | Publisher | Install id | Skills that matter here | Status 2026-11-02 |
 |---|---|---|---|---|
-| **unity-perf** | Anthropic Directory, community tier (author "gqy"), v1.1.0 | `plugin_017a77bCxxukLBBYTKt4yMgf` | `unity-performance` (optimization), `csharp-zero-gc` (zero-GC engineering plans), `code-standards` (standards and review) | Available, not enabled. The performance restart below runs on it |
-| **Unity** | Unity Technologies, official (Knowledge Work catalog), 0.1.6-beta | `plugin_014AH5hoCLbfMtN3eRfR7BYD` | `unity-cli`, `physics-3d-collision`, `optimize-text-mesh-pro`, `urp-postprocessing`, `validate-urp-render-graph-renderer-feature`, `ui-ugui`, `unity-package-management`, `optimize-audio` | Available, not enabled |
+| **unity-perf** | Anthropic Directory, community tier (author "gqy"), v1.1.0 | `plugin_017a77bCxxukLBBYTKt4yMgf` | `unity-performance` (optimization), `csharp-zero-gc` (zero-GC engineering plans), `code-standards` (standards and review) | Enabled on Yash's account, seen in a local session. Other accounts: check. The performance restart below runs on it |
+| **Unity** | Unity Technologies, official (Knowledge Work catalog), 0.1.6-beta when added | `plugin_014AH5hoCLbfMtN3eRfR7BYD` | `unity-cli`, `physics-3d-collision`, `optimize-text-mesh-pro`, `urp-postprocessing`, `validate-urp-render-graph-renderer-feature`, `ui-ugui`, `unity-package-management`, `optimize-audio` | Enabled on Yash's account, seen in a local session. Other accounts: check |
+
+Plugin skills are called by their full names, for example `/unity-perf:unity-performance` and
+`/unity:unity-cli`. The repo's own skills under `.claude/skills/` load only when a session starts inside the
+Cosmic-Shore folder, not in a parent folder such as `B:\FrogletGames`. A paste-in start for a local session
+is at `Docs/prompts/LOCAL_UNITY_SKILLS_SESSION_PROMPT.md`.
 
 What the Unity plugin's skills are worth here:
 
 - **`unity-cli`** goes with the verify rule (`CLAUDE.md` § "Unity CLI verification": every C# commit passes
   `unity_refcompile` plus the `/ship` gates, and the `unity` CLI when an editor is open). It drives an OPEN Unity Editor, so it works in a local Claude Code session on the
   machine that runs Unity, never in a cloud container (no editor there). Cloud sessions still file their C#
-  changes in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  changes in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Local sessions share one open Editor, so they take turns
+  on Play mode, test runs and recompiles, first come, first served, and never interrupt a running test
+  (Yash, 2026-11-02).
 - **`physics-3d-collision`**: prism colliders, the collider-LOD budget and trigger costs
   (`Docs/SPATIAL_INDEX.md`; read the `/ecology` skill's collider-budget gate first).
 - **`optimize-text-mesh-pro`**, **`ui-ugui`**: the HUD and menus. `UGUI.Rendering.UpdateBatches` is 0.6 ms a
@@ -79,7 +86,9 @@ where a Release `diag` / `prof` measures the gain (`Docs/PERFORMANCE_OPTIMIZATIO
   prints how many allocations 30 KB implies; size the target before fixing anything.
 
 **Handoff:** `Docs/prompts/PERFORMANCE_PLUGIN_RESTART_PROMPT.md` (2026-10-08: still not enabled when the
-session that planned this ended, so the restart moved to a new session).
+session that planned this ended, so the restart moved to a new session). 2026-11-02: unity-perf is now
+enabled on Yash's account. `Docs/PERFORMANCE_OPTIMIZATION.md` and the commit log hold no record of the restart
+having run, and the starting numbers below it date from 2026-10-08, so take fresh ones first.
 
 **Order:**
 
