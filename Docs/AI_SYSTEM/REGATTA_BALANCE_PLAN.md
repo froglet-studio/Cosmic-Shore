@@ -1,5 +1,10 @@
 # The Regatta balance plan: three searches, one level field
 
+**The Time steps of [`AI_PLAN.md`](AI_PLAN.md)** (stage 1 = `time-arcade`, 2 = `time-arena-course`, 3 =
+`time-arena-elements`). Since 2026-11-02: stage 1 is one universal genome per vessel scored on I1-I4 together and grown
+from every genome that exists; no drive is trained inside Regatta (the three `drive-*-regatta` searches are retired);
+stage 2 races the promoted Time genomes fixed.
+
 **Set by Garrett, 2026-10-26. Yash follows it; Claude sessions guide it (`/regatta-balance`).** Garrett's words:
 
 > "Later we are going to want to learn the course for regatta that minimizes the disparity between the fastest and the

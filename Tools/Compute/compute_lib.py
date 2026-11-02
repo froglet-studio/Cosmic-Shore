@@ -387,6 +387,65 @@ def validate_job(j):
     return _job_problems(j)
 
 
+# ── the AI plan: every AI search serves one of its steps (Docs/AI_SYSTEM/AI_PLAN.md, LOCKED, Garrett 2026-11-02) ──
+
+AI_PLAN = "Docs/AI_SYSTEM/ai_plan.json"
+
+
+def load_ai_plan(local=False, refs=None, cwd=None):
+    """The plan's machine-readable steps: the working tree's copy when `local` (validate, the self-test), else the
+    first queue ref that carries it (bleeding-edge first, as the worker reads jobs). None when no ref has it yet:
+    then nothing is held to it."""
+    if local:
+        return read_json(os.path.join(cwd or REPO, AI_PLAN))
+    for ref in refs or QUEUE_REFS:
+        out = git_ok("show", f"{ref}:{AI_PLAN}", cwd=cwd)
+        if out:
+            try:
+                return json.loads(out)
+            except ValueError:
+                continue
+    return None
+
+
+def plan_step(j, plan):
+    """The AI plan step this job serves: its `plan_step`, or the step whose `jobs` match its (plan, stage). None for a
+    job of a declared non-AI plan, or one that serves no step."""
+    if not plan:
+        return None
+    steps = {s["id"]: s for s in plan.get("steps", [])}
+    if j.get("plan_step") in steps:
+        return j["plan_step"]
+    for s in plan.get("steps", []):
+        for m in s.get("jobs", []):
+            if m.get("plan") == j.get("plan") and ("stage" not in m or m["stage"] == j.get("stage")):
+                return s["id"]
+    return None
+
+
+def plan_problem(j, plan):
+    """Why `j` is off the AI plan, or None. Every job names its `plan`: one of the AI plan's own (it must then serve a
+    step), or a plan the AI plan lists as not AI work (`other_plans`). A job naming any other plan, or none, is off
+    the plan until someone adds it there with its owner - which is the point: no AI search starts outside the plan."""
+    if not plan or j.get("status") == "retired":
+        return None
+    if j.get("id") in (plan.get("retired_jobs") or {}):
+        return "retired from the plan: " + plan["retired_jobs"][j["id"]]
+    name = j.get("plan")
+    if not name:
+        return "names no plan (every job serves a step of Docs/AI_SYSTEM/AI_PLAN.md, or a plan its other_plans list)"
+    if name in (plan.get("other_plans") or {}):
+        return None
+    if name not in (plan.get("ai_plans") or []):
+        return (f"plan {name!r} is neither an AI plan nor a declared other plan (Docs/AI_SYSTEM/ai_plan.json: "
+                f"ai_plans {plan.get('ai_plans')}, other_plans {sorted(plan.get('other_plans') or {})})")
+    if j.get("plan_step") and j["plan_step"] not in {s["id"] for s in plan.get("steps", [])}:
+        return f"plan_step {j['plan_step']!r} is not a step of the AI plan"
+    if not plan_step(j, plan):
+        return f"serves no step of the AI plan (plan {name}, stage {j.get('stage')}; name one with plan_step)"
+    return None
+
+
 def app_ref():
     """The ref this computer's Froglet Compute itself was installed from (config.json "ref", written by the setup),
     as origin/<ref>, or None. The worker already runs Tools/Compute from it, so a command job filed on that same ref

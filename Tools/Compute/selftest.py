@@ -699,8 +699,22 @@ def run(quick=False):
         print(f"evaluator {name}: " + ("ok" if not f else "FAILED " + "; ".join(f)))
         failures += f
     jobs = L.load_jobs(local=True)
+    plan = L.load_ai_plan(local=True)
+    if not plan:
+        failures.append(f"job plan: {L.AI_PLAN} is missing or unreadable")
+    else:   # the gate can fail: a job with no plan, an unknown plan, a made-up step, a retired job all stop
+        probe = {"id": "probe", "status": "ready"}
+        for bad_job in (probe, dict(probe, plan="squirrel-tuning"), dict(probe, plan="voyage-ai", plan_step="nope"),
+                        dict(probe, plan="regatta-balance", stage=9), dict(probe, plan="regatta-balance", stage=1, id=next(iter(plan.get("retired_jobs") or {"x": 0})))):
+            if not L.plan_problem(bad_job, plan):
+                failures.append(f"job plan: an off-plan job passed the gate: {bad_job}")
+        if L.plan_problem(dict(probe, plan="regatta-balance", stage=1), plan) or L.plan_problem(dict(probe, plan="bioforms"), plan):
+            failures.append("job plan: an on-plan job was stopped")
     for jid, j in sorted(jobs.items()):
         p = L.validate_job(j)
+        off = L.plan_problem(j, plan)
+        if off:
+            p.append("off the AI plan: " + off)
         if j.get("kind") == "search" and not p:
             try:
                 importlib.import_module("evaluators." + j["evaluator"]["module"])

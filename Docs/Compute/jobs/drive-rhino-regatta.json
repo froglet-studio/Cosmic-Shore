@@ -136,8 +136,9 @@
   }
  ],
  "stage": 1,
- "status": "ready",
+ "status": "retired",
+ "retired_reason": "trains a drive IN Regatta; the plan trains each vessel in its own Time game and races Regatta against those fixed AIs (AI_PLAN.md rule 4)",
  "title": "Rhino AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
- "updated": "2026-10-28",
+ "updated": "2026-11-02",
  "value": 7
 }
