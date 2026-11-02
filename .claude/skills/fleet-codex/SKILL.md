@@ -54,7 +54,7 @@ Do this after any vessel change lands, when asked, and in the daily scheduled ru
    If `Tools/Build/fleet_codex.py` is not on bleeding-edge yet, run the copy in your own checkout against it
    instead and say so; the page's stamp names the branch and commit it read either way. `$SCRATCH` is your scratchpad
    directory (Artifact publishes only accept files under the working directory or the scratchpad).
-2. **Generate** (about 90 s; the images make most of it):
+2. **Generate** (about 2.5 min; rendering the icon kit's cards makes most of it, and it needs numpy and Pillow: without numpy the kit cards fall back to the HUD sprites and the run says so on stderr):
    ```bash
    python3 "$SCRATCH/be/Tools/Build/fleet_codex.py" --out "$SCRATCH/codex" --files-json
    cp "$SCRATCH/be/Docs/FleetCodex/index.html" "$SCRATCH/codex-index.html"
