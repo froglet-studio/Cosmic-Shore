@@ -204,7 +204,10 @@ def tabrow(style, active):
 # ------------------------------------------------------------------------------------------------ map and edge
 
 def mapview(x, y, w, hm, he, pos="50% 40%", gap=12, ladder=True, list_strip=False, glow=False):
-    """The galaxy map (opaque, the Voyage Board's own render) with the edge view under it at the same width."""
+    """The HyperSea map (opaque, the Voyage Board's own render) with the edge view under it at the same width.
+    At level 1 (glow) it is the interactive HyperSea map explorer instead."""
+    if glow:
+        return map_explorer(x, y, w, hm, he, pos, gap)
     tiers = ["Galaxy", "Arm", "Sector", "Region", "Neighbourhood"]
     lad = ""
     if ladder:
@@ -225,9 +228,9 @@ def mapview(x, y, w, hm, he, pos="50% 40%", gap=12, ladder=True, list_strip=Fals
                            f'<span class="cap ell" style="max-width:150px;font-size:11px;color:{LIGHT if n == "2" else NEUT_L}">{e(t)}</span></button>'
                            for n, t, *_ in OTHERS) + '</div>')
     cap = "" if list_strip else (f'<div class="abs" style="left:14px;top:14px;padding:8px 12px;background:rgba(0,1,10,.82);display:flex;flex-direction:column;gap:3px">'
-                                 f'<span class="lab" style="font-size:10px">Galaxy map</span><span style="font-size:15px">Tumult to Lantern Reach</span></div>')
+                                 f'<span class="lab" style="font-size:10px">HyperSea map</span><span style="font-size:15px">Tumult to Lantern Reach</span></div>')
     return (f'<figure style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{hm}px;margin:0;overflow:hidden;background:{BLACK};box-shadow:inset 0 0 0 1px {NEUT_D}">'
-            f'<img src="{MAP}" alt="Galaxy map at the Neighbourhood tier: the course from Tumult to Lantern Reach across the 20 ly cells" '
+            f'<img src="{MAP}" alt="HyperSea map at the Region tier: the course from Tumult to Lantern Reach across the 20 ly cells" '
             f'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{pos}">{cap}{strip}{lad}{key}{map_glow(w, hm, pos) if glow else ""}</figure>'
             f'<figure style="position:absolute;left:{x}px;top:{y + hm + gap}px;width:{w}px;height:{he}px;margin:0;overflow:hidden;background:{BLACK};box-shadow:inset 0 0 0 1px {NEUT_D}">'
             f'<img src="{EDGE}" alt="Edge-on view at true scale: the course from Tumult, 30 ly above the midplane, down the core lane to Lantern Reach, 34 ly below" '
@@ -334,6 +337,118 @@ def map_glow(w, h, pos):
         if i == n - 1:
             out.append(f'<span class="wpr" style="left:{x - 16:.0f}px;top:{y - 16:.0f}px;width:32px;height:32px"></span>')
     return "".join(out)
+
+
+# ------------------------------------------------------------------------------------------------ the HyperSea map, zoomable (edit, 2026-11-02)
+# Shombith: "Garrett built the new zoomed in and zoomed out feature of the HyperSea map. It is almost like a google map.
+# Take that pull in and propose the new mockup along with that. Just re-edit the old mockups." / "This is called the
+# HyperSea map; that should be called it in the UI as well." Garrett's build (a1922d78, #1717): seven tiers from the
+# whole galaxy to one star system (VoyageLines.MapTier*), the SOL and TUMULT dives, the readout, a card for a tapped
+# star / cluster / landmark / cell. Each tier below is the Voyage Board itself rendered at that tier.
+
+MAP_TIERS = [  # (tier, what - the authored MapTier*What line, scale bar as the board draws it, render, position, minimap box %)
+    ("Galaxy", "arms, bulge, the halo's globular clusters", "10,000 ly", "/_blob/7559d7b030c6e949f7cde2d25ce5d9e7", "50% 50%", None),
+    ("Arm", "giant nurseries, the brightest supergiants", "1,000 ly", "/_blob/fced8d3ce00c8f4c54ce4f49f52448c0", "50% 50%", 22),
+    ("Sector", "star clusters and the brightest stars", "200 ly", "/_blob/6138a0a6b01214f86b8a8496fe0140ba", "50% 45%", 6),
+    ("Region", "clusters, clouds and the stars you see by eye", "50 ly", MAP, None, 2.6),
+    ("Neighbourhood", "a slab of nearby stars around one height", "20 ly", "/_blob/aa78b73bc805bdf9f8bc992bd5f12d74", "50% 50%", 1.4),
+    ("Cell", "one 20 ly cell and the stars inside it", "2 ly", "/_blob/a67a28db2832830827c20435ff87b2c6", "50% 50%", 1.4),
+    ("System", "single star systems a few ly apart", "1 ly", "/_blob/2756a1ad4aee8ba111763fec387e64df", "50% 50%", 1.4),
+]
+TUMULT_IN_GALAXY = (50.6, 49.8)   # where Tumult sits in the Galaxy render, % of its width / height
+
+MAP_LOGIC = """const TIERS = %s;
+const TUMULT = %s;
+class Component extends DCLogic {
+constructor(p){ super(p); this.state = { t: 3 }; }
+go(t) { this.setState({ t: Math.max(0, Math.min(TIERS.length - 1, t)) }); }
+renderVals() {
+const t = this.state.t, T = TIERS[t], box = T[5];
+const layers = TIERS.map((x, i) => ({ src: x[3], alt: 'HyperSea map, ' + x[0] + ' tier', pos: x[4], op: i === t ? 1 : 0, sc: i < t ? 1.8 : (i > t ? 0.55 : 1) }));
+const ladder = TIERS.map((x, i) => ({ name: x[0], on: i === t, off: i !== t, pick: () => this.go(i) })).reverse();
+const mmBox = box ? 'left:' + (TUMULT[0] - box / 2) + '%%;top:' + (TUMULT[1] - box * 0.8) + '%%;width:' + box + '%%;height:' + (box * 1.6) + '%%' : 'display:none';
+return { mx: {
+  layers, ladder, tier: T[0].toUpperCase(), what: T[1], scale: T[2],
+  course: t === 3, inspect: t >= 4, sector: t === 2, mm: t > 0, mmBox,
+  zoomIn: () => this.go(t + 1), zoomOut: () => this.go(t - 1),
+  diveArk: () => this.go(6), diveCourse: () => this.go(3), diveAll: () => this.go(2)
+} };
+}
+}"""
+
+
+def map_logic(pos):
+    import json as _json
+    tiers = [[a, b, c, d, (e or pos), f] for a, b, c, d, e, f in MAP_TIERS]
+    return MAP_LOGIC % (_json.dumps(tiers), _json.dumps(list(TUMULT_IN_GALAXY)))
+
+
+EMPTY_LOGIC = "class Component extends DCLogic {\nrenderVals() {\nreturn {};\n}\n}"
+
+
+def with_map(page, pos):
+    """A level-1 board: the explorer's logic in place of the empty one."""
+    assert EMPTY_LOGIC in page
+    return page.replace(EMPTY_LOGIC, map_logic(pos), 1)
+
+
+def map_explorer(x, y, w, hm, he, pos, gap=12):
+    """The HyperSea map as Garrett built it, zoomable: seven tiers from the galaxy to one star system."""
+    plate = "background:rgba(0,1,10,.84)"
+    btn = (f'display:grid;place-items:center;width:44px;height:44px;{plate};box-shadow:inset 0 0 0 1px {NEUT};color:{LIGHT};'
+           f'font-family:\'Chakra Petch\';font-size:24px')
+    ladder = ('<sc-for list="{{mx.ladder}}" as="l" hint-placeholder-count="7">'
+              f'<button class="pick" type="button" onClick="{{{{l.pick}}}}" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;height:24px">'
+              f'<sc-if value="{{{{l.on}}}}" hint-placeholder-val="{{{{ false }}}}"><span class="cap" style="font-size:11px;padding:3px 8px;{plate};color:{LIGHT};box-shadow:inset 0 0 0 1px {LIGHT}">{{{{l.name}}}}</span>'
+              f'<span style="width:14px;height:2px;background:{LIGHT}"></span></sc-if>'
+              f'<sc-if value="{{{{l.off}}}}" hint-placeholder-val="{{{{ true }}}}"><span class="cap" style="font-size:10px;color:{NEUT_L};text-shadow:0 0 4px #00010A">{{{{l.name}}}}</span>'
+              f'<span style="width:8px;height:2px;background:{NEUT}"></span></sc-if></button></sc-for>')
+    zoom = (f'<div class="abs" style="right:14px;top:14px;display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
+            f'<button class="pick sls" type="button" aria-label="Zoom in" onClick="{{{{mx.zoomIn}}}}" style="{btn}">+</button>'
+            f'<div style="display:flex;flex-direction:column;gap:2px;padding:4px 0">{ladder}</div>'
+            f'<button class="pick sls" type="button" aria-label="Zoom out" onClick="{{{{mx.zoomOut}}}}" style="{btn}">-</button></div>')
+    readout = (f'<div class="abs" style="left:14px;top:14px;padding:9px 12px;{plate};display:flex;flex-direction:column;gap:4px;max-width:420px">'
+               f'<span class="lab" style="font-size:10px">HyperSea map</span>'
+               f'<span style="font-size:17px"><span class="cap" style="font-size:15px">{{{{mx.tier}}}}</span>: {{{{mx.what}}}}</span>'
+               f'<span style="display:flex;align-items:center;gap:8px"><span style="width:90px;height:4px;box-shadow:inset 0 -1px 0 {LIGHT},inset 1px 0 0 {LIGHT},inset -1px 0 0 {LIGHT}"></span>'
+               f'<span class="cap num" style="font-size:11px;color:{SUB}">{{{{mx.scale}}}}</span></span></div>')
+    dives = (f'<div class="abs" style="left:14px;top:110px;display:flex;gap:6px">'
+             + "".join(f'<button class="pick sls" type="button" onClick="{{{{mx.{h}}}}}" style="padding:6px 10px;{plate};box-shadow:inset 0 0 0 1px {NEUT}">'
+                       f'<span class="cap" style="font-size:11px;color:{c}">{t}</span></button>'
+                       for h, t, c in (("diveArk", "Your Ark", ARK_AMBER), ("diveCourse", "This course", ROUTE), ("diveAll", "All voyages", LIGHT)))
+             + '</div>')
+    mini = ('<sc-if value="{{mx.mm}}" hint-placeholder-val="{{ true }}">'
+            f'<div class="abs" style="right:14px;bottom:14px;width:190px;height:118px;overflow:hidden;{plate};box-shadow:inset 0 0 0 1px {NEUT}">'
+            f'<img src="{MAP_TIERS[0][3]}" alt="Where you are looking, in the galaxy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85">'
+            f'<span class="abs" style="{{{{mx.mmBox}}}};box-shadow:0 0 0 1.5px {LIGHT}"></span></div></sc-if>')
+    hint = (f'<div class="abs" style="left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:6px 10px;{plate}">'
+            f'{kc("R3")}<span class="cap" style="font-size:11px;color:#C9CDEA">Explore</span><span style="width:6px"></span>'
+            f'{kc("RS")}<span class="cap" style="font-size:11px;color:{SUB}">Pan</span>{kc("LT")}{kc("RT")}<span class="cap" style="font-size:11px;color:{SUB}">Zoom</span>'
+            f'{kc("A")}<span class="cap" style="font-size:11px;color:{SUB}">Inspect</span></div>')
+    layers = ('<sc-for list="{{mx.layers}}" as="m" hint-placeholder-count="7">'
+              '<img src="{{m.src}}" alt="{{m.alt}}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{{m.pos}};'
+              'opacity:{{m.op}};transform:scale({{m.sc}});transition:opacity .32s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1)"></sc-for>')
+    course = f'<sc-if value="{{{{mx.course}}}}" hint-placeholder-val="{{{{ true }}}}">{map_glow(w, hm, pos)}</sc-if>'
+    card = ('<sc-if value="{{mx.inspect}}" hint-placeholder-val="{{ false }}">'
+            f'<div class="abs sls" style="left:{w // 2 + 30}px;top:{hm // 2 - 70}px;width:330px;padding:14px 16px;background:rgba(6,10,38,.94);box-shadow:inset 0 0 0 1px {NEUT};'
+            f'display:flex;flex-direction:column;gap:6px"><span class="lab" style="font-size:10px">Harbour</span><span style="font-size:20px">Tumult</span>'
+            f'<span style="font-size:13px;line-height:1.45;color:#C9CDEA">Home. Celadon, Carmine and Aurum harbours ride the Rim of a lens-shaped world that spins once an hour. '
+            f'<span style="color:{NEUT_L}">[A]</span></span><span class="cap" style="font-size:10px;color:{ARK_AMBER}">30 ly above the midplane - Your Ark is here</span></div></sc-if>')
+    sector = ('<sc-if value="{{mx.sector}}" hint-placeholder-val="{{ false }}">'
+              f'<div class="abs sls" style="left:14px;top:156px;padding:8px 12px;{plate};box-shadow:inset 0 0 0 1px {NEUT}">'
+              f'<span class="cap" style="font-size:11px;color:#C9CDEA">All four voyages from Tumult - tap a pin to open its card</span></div></sc-if>')
+    key = ('<div class="abs" style="left:14px;bottom:14px;padding:8px 10px;background:rgba(0,1,10,.82);display:flex;flex-direction:column;gap:5px">'
+           '<span class="lab" style="font-size:10px">Sea</span><div style="display:flex;gap:2px">'
+           + "".join(f'<span style="width:32px;height:6px;background:{c}"></span>' for _, c in SEA)
+           + '</div><div style="display:flex;gap:2px">'
+           + "".join(f'<span class="cap" style="width:32px;font-size:8px;color:{SUB}">{n}</span>' for n, _ in SEA) + '</div></div>')
+    return (f'<figure style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{hm}px;margin:0;overflow:hidden;background:{BLACK};box-shadow:inset 0 0 0 1px {NEUT_D}">'
+            f'{layers}{course}{readout}{dives}{sector}{card}{zoom}{key}{hint}{mini}</figure>'
+            f'<figure style="position:absolute;left:{x}px;top:{y + hm + gap}px;width:{w}px;height:{he}px;margin:0;overflow:hidden;background:{BLACK};box-shadow:inset 0 0 0 1px {NEUT_D}">'
+            f'<img src="{EDGE}" alt="Edge-on view at true scale: the course from Tumult, 30 ly above the midplane, down the core lane to Lantern Reach, 34 ly below" '
+            f'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{pos.split()[0]} 60%">'
+            f'<span class="abs cap" style="left:12px;top:8px;font-size:11px;padding:3px 8px;background:rgba(0,1,10,.82);color:{SUB}">'
+            f'Edge on, true scale - disk 1,000 ly - Lantern Reach 34 ly below</span></figure>')
 
 
 DPAD_L = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.5 1.5L3 5l3.5 3.5"></path></svg>'
@@ -685,6 +800,7 @@ def screen_F(level):
     return "\n".join(body)
 
 
+MAP_POS = {"A": "38% 45%", "B": "45% 45%", "C": "40% 45%", "D": "40% 45%", "E": "40% 45%", "F": "40% 45%"}
 SCREENS = {"A": screen_A, "B": screen_B, "C": screen_C, "D": screen_D, "E": screen_E, "F": screen_F}
 
 
@@ -940,7 +1056,7 @@ def main():
     for k in OPTS:
         for lv, key in ((1, "Voyage"), (2, "Crew"), (3, "Story")):
             page = board(f"Rev {REV} {k} - {OPTS[k][0]} - level {lv}", SCREENS[k](lv))
-            files[f"R{REV}{k}{key}.dc.html"] = with_glow(page) if lv == 1 else page
+            files[f"R{REV}{k}{key}.dc.html"] = with_map(with_glow(page), MAP_POS[k]) if lv == 1 else page
         files[f"R{REV}{k}Saga.dc.html"] = board(f"Rev {REV} {k} - {OPTS[k][0]} - Saga", screen_tabs(k, "Saga"))
         files[f"R{REV}{k}Episodes.dc.html"] = board(f"Rev {REV} {k} - {OPTS[k][0]} - Episodes", screen_tabs(k, "Episodes"))
     files[f"R{REV}Notes.dc.html"] = board(f"Rev {REV} - notes", notes())

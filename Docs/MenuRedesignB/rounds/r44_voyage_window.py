@@ -29,7 +29,7 @@ _spec.loader.exec_module(r43)
 from r43 import (CTA, INACT, LIGHT, LOCK, NEUT, NEUT_D, NEUT_L, PILOT_ART, QUESTS, QUEST_ART, SEATS, SUB, TANDAVA,  # noqa: E402
                  V, VDARK, HULL, PRESETS, DOM, OTHERS, e, kc, nav, mapview, head_block, crew_chip, stats_row, sea_bar,
                  waypoints, preset_rows, actions, setting, seat_card, seat_row, crew_head, preset_tabs, story_blocks,
-                 story_head, level_crumbs, route_glow, voyage_pager, with_glow)
+                 story_head, level_crumbs, route_glow, voyage_pager, with_glow, with_map)
 
 # The approved sea lines (R40E): the ground gradient, the glow and three slow layers of lines, masked top and bottom.
 _src = (HERE.parent / "board" / "R40E.dc.html").read_text(encoding="utf-8")
@@ -424,7 +424,7 @@ def main():
             else:
                 body = {"Saga": screen_saga, "Quests": screen_quests, "Episodes": screen_episodes}[key](k)
             page = board(f"Rev {REV} {k} - {OPTS[k][0]} - {key}", body)
-            files[f"R{REV}{k}{key}.dc.html"] = with_glow(page) if key == "Voyage" else page
+            files[f"R{REV}{k}{key}.dc.html"] = with_map(with_glow(page), "40% 45%" if k == "J" else "38% 45%") if key == "Voyage" else page
     files[f"R{REV}Notes.dc.html"] = board(f"Rev {REV} - notes", notes())
     for n, s in files.items():
         (ROOT / n).write_text(s, encoding="utf-8")

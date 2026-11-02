@@ -19,7 +19,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-02 from canvas version `1793649920-b902` of **Froglet Design Board**: Rev 3 to Rev 44, 399 boards on 3 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-02 from canvas version `1793650687-b174` of **Froglet Design Board**: Rev 3 to Rev 45, 402 boards on 4 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -539,25 +539,25 @@ Copied on 2026-11-02 from canvas version `1793649920-b902` of **Froglet Design B
 
 - [`R44Compare.dc.html`](R44Compare.dc.html) - Rev 44 - the four options and their tab rows side by side
 - [`R44Notes.dc.html`](R44Notes.dc.html) - Rev 44 - notes: what changed from Rev 43, the recommendation
-- [`R44GVoyage.dc.html`](R44GVoyage.dc.html) - Rev 44 GVoyage - Crew's hand, level 1, the voyage card - each voyage a card your crew hands you, levels 2 and 3 its back
+- [`R44GVoyage.dc.html`](R44GVoyage.dc.html) - Rev 44 GVoyage - Crew's hand, level 1, the voyage card - each voyage a card your crew hands you, levels 2 and 3 its back - interactive (zoom the HyperSea map)
 - [`R44GCrew.dc.html`](R44GCrew.dc.html) - Rev 44 GCrew - Crew's hand, level 2, Ark crew (the 12 settings)
 - [`R44GStory.dc.html`](R44GStory.dc.html) - Rev 44 GStory - Crew's hand, level 3, the story (optional)
 - [`R44GSaga.dc.html`](R44GSaga.dc.html) - Rev 44 GSaga - Crew's hand, the Saga tab
 - [`R44GQuests.dc.html`](R44GQuests.dc.html) - Rev 44 GQuests - Crew's hand, the Quests tab (the quest tracker)
 - [`R44GEpisodes.dc.html`](R44GEpisodes.dc.html) - Rev 44 GEpisodes - Crew's hand, the Episodes tab, locked: coming soon
-- [`R44HVoyage.dc.html`](R44HVoyage.dc.html) - Rev 44 HVoyage - Logbook, level 1, the voyage card - the voyage a page of the Ark's log, levels 2 and 3 the next pages
+- [`R44HVoyage.dc.html`](R44HVoyage.dc.html) - Rev 44 HVoyage - Logbook, level 1, the voyage card - the voyage a page of the Ark's log, levels 2 and 3 the next pages - interactive (zoom the HyperSea map)
 - [`R44HCrew.dc.html`](R44HCrew.dc.html) - Rev 44 HCrew - Logbook, level 2, Ark crew (the 12 settings)
 - [`R44HStory.dc.html`](R44HStory.dc.html) - Rev 44 HStory - Logbook, level 3, the story (optional)
 - [`R44HSaga.dc.html`](R44HSaga.dc.html) - Rev 44 HSaga - Logbook, the Saga tab
 - [`R44HQuests.dc.html`](R44HQuests.dc.html) - Rev 44 HQuests - Logbook, the Quests tab (the quest tracker)
 - [`R44HEpisodes.dc.html`](R44HEpisodes.dc.html) - Rev 44 HEpisodes - Logbook, the Episodes tab, locked: coming soon
-- [`R44IVoyage.dc.html`](R44IVoyage.dc.html) - Rev 44 IVoyage - Formation, level 1, the voyage card - your Ark's three hulls lead the card, Ark crew opens the formation (recommended)
+- [`R44IVoyage.dc.html`](R44IVoyage.dc.html) - Rev 44 IVoyage - Formation, level 1, the voyage card - your Ark's three hulls lead the card, Ark crew opens the formation (recommended) - interactive (zoom the HyperSea map)
 - [`R44ICrew.dc.html`](R44ICrew.dc.html) - Rev 44 ICrew - Formation, level 2, Ark crew (the 12 settings)
 - [`R44IStory.dc.html`](R44IStory.dc.html) - Rev 44 IStory - Formation, level 3, the story (optional)
 - [`R44ISaga.dc.html`](R44ISaga.dc.html) - Rev 44 ISaga - Formation, the Saga tab
 - [`R44IQuests.dc.html`](R44IQuests.dc.html) - Rev 44 IQuests - Formation, the Quests tab (the quest tracker)
 - [`R44IEpisodes.dc.html`](R44IEpisodes.dc.html) - Rev 44 IEpisodes - Formation, the Episodes tab, locked: coming soon
-- [`R44JVoyage.dc.html`](R44JVoyage.dc.html) - Rev 44 JVoyage - On the sea, level 1, the voyage card - no card box, the levels are columns standing on the sea lines
+- [`R44JVoyage.dc.html`](R44JVoyage.dc.html) - Rev 44 JVoyage - On the sea, level 1, the voyage card - no card box, the levels are columns standing on the sea lines - interactive (zoom the HyperSea map)
 - [`R44JCrew.dc.html`](R44JCrew.dc.html) - Rev 44 JCrew - On the sea, level 2, Ark crew (the 12 settings)
 - [`R44JStory.dc.html`](R44JStory.dc.html) - Rev 44 JStory - On the sea, level 3, the story (optional)
 - [`R44JSaga.dc.html`](R44JSaga.dc.html) - Rev 44 JSaga - On the sea, the Saga tab
@@ -568,35 +568,43 @@ Copied on 2026-11-02 from canvas version `1793649920-b902` of **Froglet Design B
 
 - [`R43Compare.dc.html`](R43Compare.dc.html) - Rev 43 - where the voyage card goes at each level, all six side by side
 - [`R43Notes.dc.html`](R43Notes.dc.html) - Rev 43 - notes: what was asked, what all six share, the recommendation, what differs from the build
-- [`R43AVoyage.dc.html`](R43AVoyage.dc.html) - Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from the right, deeper levels slide over it and leave a spine (recommended)
+- [`R43AVoyage.dc.html`](R43AVoyage.dc.html) - Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from the right, deeper levels slide over it and leave a spine (recommended) - interactive (zoom the HyperSea map)
 - [`R43ACrew.dc.html`](R43ACrew.dc.html) - Rev 43 ACrew - Drawer, level 2, Ark crew (the 12 settings, presets)
 - [`R43AStory.dc.html`](R43AStory.dc.html) - Rev 43 AStory - Drawer, level 3, the story (optional)
 - [`R43ASaga.dc.html`](R43ASaga.dc.html) - Rev 43 ASaga - Drawer, Saga tab on LB / RB (content unchanged)
 - [`R43AEpisodes.dc.html`](R43AEpisodes.dc.html) - Rev 43 AEpisodes - Drawer, Episodes tab on LB / RB (content unchanged)
-- [`R43BVoyage.dc.html`](R43BVoyage.dc.html) - Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, a narrow card that widens over the map at levels 2 and 3
+- [`R43BVoyage.dc.html`](R43BVoyage.dc.html) - Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, a narrow card that widens over the map at levels 2 and 3 - interactive (zoom the HyperSea map)
 - [`R43BCrew.dc.html`](R43BCrew.dc.html) - Rev 43 BCrew - Tray, level 2, Ark crew (the 12 settings, presets)
 - [`R43BStory.dc.html`](R43BStory.dc.html) - Rev 43 BStory - Tray, level 3, the story (optional)
 - [`R43BSaga.dc.html`](R43BSaga.dc.html) - Rev 43 BSaga - Tray, Saga tab on LB / RB (content unchanged)
 - [`R43BEpisodes.dc.html`](R43BEpisodes.dc.html) - Rev 43 BEpisodes - Tray, Episodes tab on LB / RB (content unchanged)
-- [`R43CVoyage.dc.html`](R43CVoyage.dc.html) - Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / Ark crew / Story as tabs on its top
+- [`R43CVoyage.dc.html`](R43CVoyage.dc.html) - Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / Ark crew / Story as tabs on its top - interactive (zoom the HyperSea map)
 - [`R43CCrew.dc.html`](R43CCrew.dc.html) - Rev 43 CCrew - Level tabs, level 2, Ark crew (the 12 settings, presets)
 - [`R43CStory.dc.html`](R43CStory.dc.html) - Rev 43 CStory - Level tabs, level 3, the story (optional)
 - [`R43CSaga.dc.html`](R43CSaga.dc.html) - Rev 43 CSaga - Level tabs, Saga tab on LB / RB (content unchanged)
 - [`R43CEpisodes.dc.html`](R43CEpisodes.dc.html) - Rev 43 CEpisodes - Level tabs, Episodes tab on LB / RB (content unchanged)
-- [`R43DVoyage.dc.html`](R43DVoyage.dc.html) - Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 rise from the bottom across the width
+- [`R43DVoyage.dc.html`](R43DVoyage.dc.html) - Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 rise from the bottom across the width - interactive (zoom the HyperSea map)
 - [`R43DCrew.dc.html`](R43DCrew.dc.html) - Rev 43 DCrew - Rising sheet, level 2, Ark crew (the 12 settings, presets)
 - [`R43DStory.dc.html`](R43DStory.dc.html) - Rev 43 DStory - Rising sheet, level 3, the story (optional)
 - [`R43DSaga.dc.html`](R43DSaga.dc.html) - Rev 43 DSaga - Rising sheet, Saga tab on LB / RB (content unchanged)
 - [`R43DEpisodes.dc.html`](R43DEpisodes.dc.html) - Rev 43 DEpisodes - Rising sheet, Episodes tab on LB / RB (content unchanged)
-- [`R43EVoyage.dc.html`](R43EVoyage.dc.html) - Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as numbered steps down one card
+- [`R43EVoyage.dc.html`](R43EVoyage.dc.html) - Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as numbered steps down one card - interactive (zoom the HyperSea map)
 - [`R43ECrew.dc.html`](R43ECrew.dc.html) - Rev 43 ECrew - Dossier, level 2, Ark crew (the 12 settings, presets)
 - [`R43EStory.dc.html`](R43EStory.dc.html) - Rev 43 EStory - Dossier, level 3, the story (optional)
 - [`R43ESaga.dc.html`](R43ESaga.dc.html) - Rev 43 ESaga - Dossier, Saga tab on LB / RB (content unchanged)
 - [`R43EEpisodes.dc.html`](R43EEpisodes.dc.html) - Rev 43 EEpisodes - Dossier, Episodes tab on LB / RB (content unchanged)
-- [`R43FVoyage.dc.html`](R43FVoyage.dc.html) - Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide in between the map and the voyage card
+- [`R43FVoyage.dc.html`](R43FVoyage.dc.html) - Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide in between the map and the voyage card - interactive (zoom the HyperSea map)
 - [`R43FCrew.dc.html`](R43FCrew.dc.html) - Rev 43 FCrew - Two cards, level 2, Ark crew (the 12 settings, presets)
 - [`R43FStory.dc.html`](R43FStory.dc.html) - Rev 43 FStory - Two cards, level 3, the story (optional)
 - [`R43FSaga.dc.html`](R43FSaga.dc.html) - Rev 43 FSaga - Two cards, Saga tab on LB / RB (content unchanged)
 - [`R43FEpisodes.dc.html`](R43FEpisodes.dc.html) - Rev 43 FEpisodes - Two cards, Episodes tab on LB / RB (content unchanged)
+
+### Tab: Fleet Codex  (`fleet-codex`)
+
+#### Fleet Codex
+
+- `R45A.dc.html` (not copied yet) - Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as device tabs (recommended) - interactive
+- `R45B.dc.html` (not copied yet) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Controls table - interactive
+- `R45Notes.dc.html` (not copied yet) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
 
 <!-- design_board.py readme: end -->

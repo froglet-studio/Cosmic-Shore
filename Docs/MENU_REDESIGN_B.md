@@ -5358,3 +5358,29 @@ between actual voyage cards? Please show that edit on the old mockups." So the e
   D-pad up / down for the same reason.
 - This lifts the quiet rule's "no idle motion" for the route only, because it was asked for; nothing else on the
   boards moves except the sea lines.
+
+### 114.2 Edit on the Rev 43 and Rev 44 boards: the HyperSea map zooms, as Garrett built it (2026-11-02)
+
+**Asked (Shombith):** "Garrett built the new zoomed in and zoomed out feature of the hypersea map. It is almost like a
+google map. So take that pull in and propose me the new mockup along with that. Just re edit the old mockups." / "This
+is called hypersea map, that should be called it in the UI as well." / "Confirmed with Garrett, name it HyperSea map."
+
+- **Taken in:** `bleeding-edge` merged into this branch, bringing Garrett's deep zoom (a1922d78) and readable names
+  and 20 ly cells (froglet-studio/Cosmic-Shore#1717): seven tiers (`VoyageLines.MapTier*`), the dives, the readout, and
+  a card for a tapped star, cluster, landmark or cell.
+- **Edited in place** (canvas version `1793650687-b174`): the ten level-1 Voyage boards are now **interactive**
+  (`is_interactive`). Their map is the **HyperSea map explorer**:
+  - **+ and -** and a zoom ladder (Galaxy, Arm, Sector, Region, Neighbourhood, Cell, System) step through the tiers.
+    Each tier is the Voyage Board rendered at that tier (uploaded renders), and the change is a 0.32 s zoom-like
+    crossfade: the outer view grows away as you go in.
+  - The **readout** uses Garrett's authored lines: `{tier}: {what}`, plus the scale bar as the board draws it.
+  - **Dive chips:** Your Ark (to System at Tumult), This course (Region, the lit route), All voyages (Sector, where
+    all four voyages are pinned, so it doubles as a way to pick one).
+  - A **galaxy inset** in the corner shows where you are looking.
+  - At Neighbourhood and deeper, Tumult's **tap card** (MapInspect, the board's own words) is shown.
+  - The pad hint reads: R3 Explore, RS Pan, LT / RT Zoom, A Inspect. **A proposal:** once R3 has given the map
+    focus, the triggers zoom instead of switching menu screens, and B gives the focus back.
+- **Named the HyperSea map** in the UI, on every board that shows it (the Crew and Story boards too). The **Galaxy**
+  tier keeps its own name.
+- The edge view stays the course profile at every tier. In Garrett's build it follows the map's scale; drawing that
+  is a follow-up if the explorer is picked.
