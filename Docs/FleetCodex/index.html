@@ -215,7 +215,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tb .lbl{font-family:var(--mono);font-size:9.5px;color:var(--muted);text-align:center;line-height:12px}
 .notes{margin:10px 0 0;padding-left:16px;color:var(--muted);font-size:12px;line-height:17px}
 /* plays in, detail, docs */
-.play{display:flex;flex-direction:column;gap:10px}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}.col>.tile{flex:none}
+.play{display:flex;flex-direction:column;gap:8px}
+.game.row{min-height:64px}.game.row .copy{padding:8px 12px}.game.row .copy .hd{font-size:calc(21px * var(--dscale))}
+.game.extra{display:none}.play.all .game.extra{display:flex}
+.moregames{all:unset;cursor:pointer;align-self:flex-start;font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--edge);border-radius:14px;color:var(--ink)}
+.moregames:hover{border-color:var(--accent)}.moregames:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .game{position:relative;border-radius:calc(var(--radius) * .7);overflow:hidden;min-height:150px;display:flex;align-items:flex-end;background:var(--raise)}
 .game img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--still);opacity:.5;transition:transform .6s}
 .game:hover img{transform:scale(1.04)}
@@ -547,12 +552,14 @@ footer code{font-family:var(--mono);font-size:11.5px}
   }
   function playsTile(v){
     if(!v.cards.length) return '<span class="mo">PLAYS IN</span><p class="empty">No game card seats this vessel yet.</p>';
+    var more = v.cards.length > SHOW_GAMES ? v.cards.length - SHOW_GAMES : 0;
     return '<span class="mo">PLAYS IN &middot; ' + v.cards.length + ' GAME' + (v.cards.length > 1 ? 'S' : '') + '</span>' + v.cards.map(function(c, i){
-      return '<div class="game"' + (i ? ' style="min-height:96px"' : '') + '>' + img(c.art, "") + '<div class="copy"><span class="mo">' + esc((c.rosters || []).map(function(r){ return r.replace("Games", ""); }).join(" ") || "on no roster") +
+      return '<div class="game' + (i ? ' row' : '') + (i >= SHOW_GAMES ? ' extra' : '') + '">' + img(c.art, "") + '<div class="copy"><span class="mo">' + esc((c.rosters || []).map(function(r){ return r.replace("Games", ""); }).join(" ") || "on no roster") +
         (c.intensity ? ' &middot; I' + c.intensity[0] + '&ndash;I' + c.intensity[1] : '') + (c.hullsOnCard > 1 ? ' &middot; ' + c.hullsOnCard + ' hulls' : ' &middot; this hull only') + '</span><span class="hd">' + esc(c.name) + '</span>' +
         (i === 0 && c.description ? '<p>' + esc(c.description) + '</p>' : '') + '</div></div>';
-    }).join("");
+    }).join("") + (more ? '<button class="moregames" type="button" aria-expanded="false" data-more>Show all ' + v.cards.length + ' games</button>' : '');
   }
+  var SHOW_GAMES = 6;
   function docsTile(v){
     return '<span class="mo">DOCS</span>' + (v.docs.length ? '<ul class="list">' + v.docs.slice(0, 6).map(function(d){ return '<li><a href="' + esc(d.url) + '">' + esc(file(d.path)) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">No doc found by name.</p>') +
       '<span class="mo" style="display:block;margin-top:14px">RECENT CHANGES</span>' + (v.changes.length ? '<ul class="list">' + v.changes.slice(0, 5).map(function(c){ return '<li><span class="dt">' + esc(c.date) + '</span><a href="' + commit(c.sha) + '">' + esc(c.subject) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">None in the history read.</p>');
@@ -571,13 +578,16 @@ footer code{font-family:var(--mono);font-size:11.5px}
         (f ? '<div class="stats"><span><span class="n num">' + num(f.cruise) + '</span> <span class="mo">u/s cruise</span></span><span><span class="n num">' + num(f.pitch) + '/' + num(f.yaw) + '</span> <span class="mo">pitch / yaw</span></span><span><span class="n num">' + s.upgradesWired + '/4</span> <span class="mo">level 5 wired</span></span><span><span class="n num">' + v.cards.length + '</span> <span class="mo">games</span></span></div>' : '') +
         '</div></section>' +
       kitTile(v) +
-      '<section class="tile pad span9" aria-label="Controls">' + controlsTile(v, sel) + '</section>' +
-      '<section class="tile pad span3 play" aria-label="Games">' + playsTile(v) + '</section>' +
-      '<section class="tile pad span9 detail" aria-label="Ability detail">' + detailTile(v, sel) + '</section>' +
-      '<section class="tile pad span3" aria-label="Docs and changes">' + docsTile(v) + '</section>' +
+      '<div class="col span9"><section class="tile pad" aria-label="Controls">' + controlsTile(v, sel) + '</section>' +
+      '<section class="tile pad detail" aria-label="Ability detail">' + detailTile(v, sel) + '</section></div>' +
+      '<div class="col span3"><section class="tile pad play" aria-label="Games">' + playsTile(v) + '</section>' +
+      '<section class="tile pad" aria-label="Docs and changes">' + docsTile(v) + '</section></div>' +
       '</div>';
     if(keepScroll) Array.prototype.forEach.call(app.querySelectorAll(".ab,.seat"), function(el){ el.style.animation = "none"; });
     fitNames();
+    Array.prototype.forEach.call(app.querySelectorAll("[data-more]"), function(b){ b.addEventListener("click", function(){
+      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open);
+      b.parentNode.classList.toggle("all", open); b.textContent = open ? "Show fewer" : "Show all " + v.cards.length + " games"; }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-pick]"), function(b){ b.addEventListener("click", function(){ pick = b.dataset.pick; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = app.querySelector('[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-flip]"), function(b){ b.addEventListener("click", function(){
       var k = b.dataset.flip, card = b.closest(".ab"), on = !flipped[v.key + k];
@@ -639,7 +649,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     D.vessels.forEach(function(v){ if(v.controls) v.controls.rows.forEach(function(r){ if(r.padArt && !PADMAP[r.pad]) PADMAP[r.pad] = r.padArt; }); });
     document.getElementById("logo").src = d.ui.omni || "";
     document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a> &middot; ' + esc(d.commitDate);
-    document.getElementById("foot").innerHTML = 'Nothing here is typed by hand but the crew seats (<code>Docs/FleetCodex/seats.json</code>, each row citing its crew doc). <code>Tools/Build/fleet_codex.py</code> reads the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles, the game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. The icons are the game&rsquo;s own: each ability&rsquo;s HUD card, the HUD&rsquo;s level-5 bloom, the Codex&rsquo;s element shapes, the controller glyphs and the phone&rsquo;s touch icons. Where a HUD draws an icon only at runtime, its element&rsquo;s shape stands in. The skill: <code>/fleet-codex</code>.';
+    document.getElementById("foot").innerHTML = 'Only two tables here are typed by hand, each entry citing the doc or code it was read from: what each ability does (<code>Docs/FleetCodex/abilities.json</code>) and the crew seats (<code>Docs/FleetCodex/seats.json</code>). <code>Tools/Build/fleet_codex.py</code> reads the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles, the game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. The icons are the game&rsquo;s own: each ability&rsquo;s HUD card and its level-5 state from the icon kit or the HUD, the Codex&rsquo;s element shapes, the controller glyphs and the phone&rsquo;s touch icons. Where a HUD draws an icon only at runtime, its element&rsquo;s shape stands in. The skill: <code>/fleet-codex</code>.';
     route();
   }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
   window.addEventListener("hashchange", function(){ pick = null; route(); window.scrollTo(0, 0); });
