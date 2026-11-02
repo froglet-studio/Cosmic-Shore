@@ -20796,3 +20796,21 @@ Unity editor ran, so nothing below was seen.
   opens the cell's card and outlines the hexagon in white; tapping the same cell again closes it; a star tap still
   opens the star.
 - [ ] The edge view's caption under the map still fits its strip.
+
+## 🔴 Held-gun cost (Sparrow full-auto, Brittle Star turrets) and the Sparrow round's visibility (2026-11-02, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/festive-ptolemy-gsap7o`. Verified offline only: `unity_refcompile` player + editor 0 errors,
+`ProjectileFireCostTests` written (not run: no Unity here), console-logging and conditional-compilation gates clean.
+
+1. **Profile a held trigger.** Fly the Sparrow, hold full-auto 10 s; then the Brittle Star in Space (Destruction)
+   mode with all five guns. In the Profiler, `LOD.Sweep` / `LOD.Drain` should no longer grow with the trigger
+   (swept rounds are not collider-LOD foci any more), and `RuntimeManager.Update` should stay flat (the
+   per-round `ProjectileLaunch` one-shot is burst-throttled to 4 per 0.1 s).
+2. **Haptics with a pad.** Hold the Sparrow's guns with a gamepad: the spray buzz still climbs with the cone.
+   `Haptics.MotorWrite` shows at most one sample per frame. For an A/B, turn Haptics off in Settings and
+   compare the frame time; with no pad (phone) haptics cost nothing.
+3. **The Sparrow round is visible.** It is now drawn 1.65 u wide (its hit width, `_Spread` 0.45 on
+   `SparrowProjectileMaterial`) and brighter. Check it reads from the chase camera and that the Brittle
+   Star's rounds (same prefab) do not look too heavy.
+4. **Rounds still hit.** The round's Rigidbody is now kinematic: bullets still damage prisms, score on
+   pilots, and set off mines/crystals as before.

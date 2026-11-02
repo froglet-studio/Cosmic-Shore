@@ -447,12 +447,26 @@ namespace CosmicShore.Gameplay
             // Proximity collider-LOD: a projectile in flight is a focus, so the prism
             // colliders along its path (including distant structures it was fired at)
             // are awake by the time it arrives. Unregistered on pool return.
-            PrismColliderLodManager.RegisterFocus(transform);
+            //
+            // ONLY a round that meets prisms through PhysX needs that. A SWEPT round reads
+            // prisms out of PrismSpatialIndex (SweepPrismsAlong) and its trigger's prism case is
+            // suppressed (ProjectileImpactor), so a prism collider near it does nothing for it -
+            // while every focus is paid for by the LOD manager PER PRISM (the cull drain's
+            // re-validation, NotifyPrismActivated and the Burst classification all loop the
+            // foci). The Sparrow's full-auto keeps ~60 rounds in the air and the Brittle Star's
+            // five guns up to ~2000 (its pool prewarms 1400), which turned the focus list - meant
+            // for the handful of vessels - into the largest term of the LOD cost the moment
+            // either gun was held.
+            if (NeedsPrismColliders) PrismColliderLodManager.RegisterFocus(transform);
         }
+
+        /// <summary>True when this round meets prisms through their PhysX colliders and so must
+        /// keep the collider-LOD bubble awake around itself (see OnEnable).</summary>
+        bool NeedsPrismColliders => !sweptPrismDetection;
 
         private void OnDisable()
         {
-            PrismColliderLodManager.UnregisterFocus(transform);
+            if (NeedsPrismColliders) PrismColliderLodManager.UnregisterFocus(transform);
 
             // A pooled round is reissued to a different pilot at a different MASS level, so it
             // must not carry the last flight's shell back out with it. LaunchProjectile decides
