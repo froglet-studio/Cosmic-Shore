@@ -33,11 +33,11 @@ COMMIT, LEAD, THROUGH = 160.0, 180.0, 120.0     # MinigameSlingshot.unity aiComm
 LEAD_SHARE, LEAD_INSIDE_SHARE = 0.4, 0.8        # GateRaceController.ApproachLeadShareOfLeg, the approach-point cap
 LAPS = 2                                        # EndConditionOverridesSO.slingshotGateTarget 16 = 2 x 8
 # StoatSlingConfig.asset
-CATCH_AHEAD, CATCH_SIDE, CATCH_REACH, CATCH_DEGREES = 150.0, 45.0, 1.5, 50.0
-WIDE, TIGHT, HOLD_EXP, WHITE_CLEAR = 150.0, 40.0, 1.5, 0.8
+CATCH_AHEAD, CATCH_SIDE, CATCH_REACH, CATCH_DEGREES = 150.0, 45.0, 2.0, 40.0
+WIDE, TIGHT, HOLD_EXP, WHITE_CLEAR = 150.0, 55.0, 1.5, 0.8
 FOLLOW_RATE, EASE_RATE, RADIAL_RATE, SETTLE_RATE, MAX_ORBIT = 3.0, 0.8, 5.0, 3.0, 360.0
-BOOST_MIN, BOOST_MAX, BOOST_SECONDS, MISS_SHARE = 0.25, 0.9, 1.5, 0.2
-SWEET, SWEET_HALF, SWEET_FALL = 90.0, 15.0, 30.0
+BOOST_MIN, BOOST_MAX, BOOST_SECONDS, MISS_SHARE = 0.25, 0.9, 1.5, 0.35
+SWEET, SWEET_HALF, SWEET_FALL = 90.0, 30.0, 40.0
 CATCH_WARP_SHARE = 1.15
 # StoatDipoleConfig.asset: the boost at Time 0 (x2.5) and its rise and fade
 BOOST_TOP, BOOST_RISE, BOOST_FADE = 2.5, 20.0, 0.6
@@ -61,6 +61,9 @@ EARNED = dict(press_share=0.5, min_sweep=30.0, momentum_s=6.0, cap=1.6, aim_cone
 EARNED_ROW = dict(ORBIT_ROW, **EARNED)
 # What ships (--grid-earned chose it): no warp-only presses, and the AI holds for the window (aiHoldForWindowDegrees 120).
 SHIPPED_ROW = dict(EARNED_ROW, warp_dist=0.0, window_ai=120.0)
+# The easier sling (Yash, 2026-11-03: "the slingshot mechanic is little hard"; the constants above carry its catch and
+# window): drawn in to 0.75 of the circle at 1 /s, so the orbit turns slower and the window lasts 2-3x as long.
+SHIPPED_ROW = dict(SHIPPED_ROW, inner=0.75, pull=1.0)
 # Regatta (MinigameRegatta.unity's approach numbers, three laps of RegattaCourse): the race line and the rails are not
 # modelled, so this is the gate steering only. Time 10 is the level regatta_balance.py gives the Stoat on the card.
 REGATTA_STEER = {"commit": 420.0, "lead": 480.0, "through": 320.0}
@@ -411,7 +414,7 @@ def grid_earned(seeds=4):
 def self_test():
     bad = []
     # the geometry: the circle stays clear of the repulsor, a press catches a straight pass at every squeeze
-    if abs(orbit_radius(1.0) - 40.0) > 1e-6 or abs(orbit_radius(0.0) - 72.0) > 1e-6: bad.append(f"radius {orbit_radius(1.0)}, {orbit_radius(0.0)}")
+    if abs(orbit_radius(1.0) - 55.0) > 1e-6 or abs(orbit_radius(0.0) - 72.0) > 1e-6: bad.append(f"radius {orbit_radius(1.0)}, {orbit_radius(0.0)}")
     if abs(WARP_TOP - 2.725) > 1e-6: bad.append(f"warp top {WARP_TOP}")
     if abs(sweet_spot(90) - 1) > 1e-9 or sweet_spot(0) > 1e-9 or sweet_spot(180) > 1e-9: bad.append("sweet spot")
     # the course port against SLINGSHOT.md section 2's harness numbers: eight gates, the mouths, a lap near 3700 u

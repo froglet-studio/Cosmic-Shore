@@ -18,12 +18,12 @@ MonoBehaviour:
   skim: {fileID: 0}
   catchAhead: 150
   catchSide: 45
-  catchReach: 1.5
-  catchDegrees: 50
+  catchReach: 2
+  catchDegrees: 40
   settleRate: 3
   maxOrbitDegrees: 360
   orbitRadiusWide: 150
-  orbitRadiusTight: 40
+  orbitRadiusTight: 55
   orbitReach:
     Enabled: 1
     Value: 1
@@ -37,8 +37,8 @@ MonoBehaviour:
   holdAtCatch: 1
   orbitEaseRate: 0.8
   whiteClear: 0.8
-  innerOrbitShare: 0.6
-  innerPullRate: 1.5
+  innerOrbitShare: 0.75
+  innerPullRate: 1
   orbitSpeedBonus: 0.15
   launchConeDegrees: 60
   aimMinStick: 0.3
@@ -71,9 +71,9 @@ MonoBehaviour:
   slingBoostMax: 0.9
   slingBoostSeconds: 1.5
   sweetSpotDegrees: 90
-  sweetSpotHalfWidth: 15
-  sweetSpotFalloff: 30
-  missKickShare: 0.2
+  sweetSpotHalfWidth: 30
+  sweetSpotFalloff: 40
+  missKickShare: 0.35
   sweetSpotEvent:
     Guid:
       Data1: 0
