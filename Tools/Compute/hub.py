@@ -81,9 +81,10 @@ def installer(name, url, key, flags):
             'for /f "delims=" %%p in (\'where python\') do (set "PY=%%p" & goto :found)',
             ":found",
             '"%PY%" "%SETUP%" --gui-check || (echo. & echo The setup window cannot open on this PC (the reason is above). & pause & exit /b 1)',
-            'set "PYW=%PY:python.exe=pythonw.exe%"',
             "echo Opening the setup window...",
-            f'if exist "%PYW%" (start "" "%PYW%" "%SETUP%" --gui {opts}) else (start "" "%PY%" "%SETUP%" --gui {opts})',
+            # Under the console python, not pythonw: the window hides this console once it is up, and an error
+            # before that is printed here and the .bat stays open on it.
+            f'"%PY%" "%SETUP%" --gui {opts} || (echo. & echo The setup window could not open; the reason is above. & pause & exit /b 1)',
             "exit /b 0", ""])
         return text, "application/x-bat", "froglet-compute-setup.bat"
     if name == "windows-plain.bat":

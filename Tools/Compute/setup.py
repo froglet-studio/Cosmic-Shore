@@ -145,6 +145,25 @@ def gui(argv):
                 write(f"{type(e).__name__}: {e}"); root.after(0, lambda: install_btn.config(state="normal"))
         threading.Thread(target=work, daemon=True).start()
     install_btn.config(command=run)
+    root.update()
+    os.makedirs(os.path.dirname(SETUP_LOG), exist_ok=True)
+    root.lift(); root.attributes("-topmost", True); root.after(300, lambda: root.attributes("-topmost", False))
+    try:
+        with open(SETUP_LOG, "a", encoding="utf-8") as fh:
+            fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + f"the setup window opened (python {sys.version.split()[0]}, {sys.executable})\n")
+    except OSError:
+        pass
+    if os.name == "nt":
+        # The .bat runs this under the console python, so a failure before this line is printed there and the .bat
+        # pauses on it (pythonw swallowed it: Shombith, 2026-11-02, "checking PC... window closed"). From here the
+        # console is hidden; the window is what the person sees.
+        try:
+            import ctypes
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if hwnd:
+                ctypes.windll.user32.ShowWindow(hwnd, 0)
+        except Exception:
+            pass
     root.mainloop()
     return 0
 
@@ -197,14 +216,13 @@ def alert(text):
             fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + text.rstrip() + "\n")
     except OSError:
         pass
+    sys.stderr.write(text + "\n")          # the console, when there is one (the .bat pauses on it)
     if os.name == "nt":
         try:
             import ctypes
             ctypes.windll.user32.MessageBoxW(0, text + "\n\nThis is also in " + SETUP_LOG, "Froglet Compute Setup", 0x10)
-            return
         except Exception:
             pass
-    sys.stderr.write(text + "\n")
 
 
 def gui_check():

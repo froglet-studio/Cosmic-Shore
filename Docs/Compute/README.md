@@ -369,7 +369,9 @@ Cosmic-Shore folder** (never searched for, Shombith 2026-11-01; the current fold
 picks when the computer may work and whether a sent run may start at once, installs with a log, and ends in the tray.
 The paste line still works. **A failure is never silent** (Shombith, 2026-11-02: "something opens and closes"): the `.bat`
 runs `setup.py --gui-check` in its console first (Python, git, a working tkinter) and stays open with the reason; the
-window itself reports any error in a message box and in `~/.froglet-compute/setup.log`. **One tray per computer** (`tray.lock`: the installer's and the login entry's second tray
+window then runs under the console python (never `pythonw`, which swallowed its errors) and hides that console once
+it is up, so an error before that is printed and the `.bat` pauses on it; a later error is a message box; both and the
+window's opening go to `~/.froglet-compute/setup.log`. **One tray per computer** (`tray.lock`: the installer's and the login entry's second tray
 leaves at once) and **Uninstall stops everything**: `compute.py uninstall` stops every agent (the launcher, a
 checkout's `compute.py run`, the handover copy) and every tray, removes the task and login entries, and the tray quits.
 A `.exe` instead of the `.bat`: not yet (it has to be built on Windows and, unsigned, SmartScreen warns on it; see §19).
