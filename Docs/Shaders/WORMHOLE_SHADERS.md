@@ -37,11 +37,11 @@ Paths below are relative to the repository root. The two folders used most often
 
 | # | Look | Shader | Driver (C#) | Material (`Assets/Resources/`) | Status |
 |---|---|---|---|---|---|
-| 14 | **THE look**: the clear jelly hollow, trunk and root (§1 + §11 simplified) | `Graphs/MeerkatWormholeLens.shader` (no keywords) | `RVA/MeerkatWormholeLensPass.cs`, `RVA/MeerkatWormholeLook.cs` | `MeerkatWormholeLens.mat` | **Ships**, always on |
+| 14 | **THE look**: the clear jelly hollow, trunk and root (§1 + §11 simplified) | `Graphs/SolitonTunnel.shader` (no keywords) | `RVA/SolitonTunnelLensPass.cs`, `RVA/SolitonTunnelLook.cs` | `SolitonTunnel.mat` | **Ships**, always on |
 | 1 + 11 | The contour-field lens, its tinted outer layer, YASH'S / GARRETT'S presets | the same shader at 0c8c5218c | `MeerkatWormholeHQ.cs` at 0c8c5218c | the same | **Replaced** by §14 (§13) |
-| 2 (reticle) | The reticle: your aiming spindles | `Graphs/MeerkatWormholeAdditive.shader` | `RVA/MeerkatWormholeView.cs` (`DrawReticle`, `BridgeFrame`, `Spindle`) | `MeerkatWormholeAdditive.mat` | **Ships** |
-| 2 | YASH'S LOOK: the spindle bridge on formed tunnels, and its glass skin | `MeerkatWormholeAdditive.shader`, `MeerkatWormholeGlass.shader` | `MeerkatWormholeView.DrawBridge` | `MeerkatWormholeGlass.mat` | **Removed** (§12) |
-| 3 | The warp tube, the mouth dents, the collapse ripple | `MeerkatWormholeWarp.shader` + the lens's wells/ripple code | `MeerkatWormholeLensPass` warp pass, `MeerkatWormholeView.AddWarpTube` | `MeerkatWormholeWarp.mat` | **Removed** (§12) |
+| 2 (reticle) | The reticle: your aiming spindles | `Graphs/SolitonTunnelAdditive.shader` | `RVA/SolitonTunnelView.cs` (`DrawReticle`, `BridgeFrame`, `Spindle`) | `SolitonTunnelAdditive.mat` | **Ships** |
+| 2 | YASH'S LOOK: the spindle bridge on formed tunnels, and its glass skin | `SolitonTunnelAdditive.shader`, `MeerkatWormholeGlass.shader` | `SolitonTunnelView.DrawBridge` | `MeerkatWormholeGlass.mat` | **Removed** (§12) |
+| 3 | The warp tube, the mouth dents, the collapse ripple | `MeerkatWormholeWarp.shader` + the lens's wells/ripple code | `SolitonTunnelLensPass` warp pass, `SolitonTunnelView.AddWarpTube` | `MeerkatWormholeWarp.mat` | **Removed** (§12) |
 | 4 | The calm inner wall (the "blue tube") | `MeerkatTubeWall.shader` | `MeerkatTubeWallView.cs` | `MeerkatTubeWall.mat` | **Removed** (§12) |
 | 5a | The cheap mobile water pipe | `MeerkatWaterTube.shader` | `MeerkatWaterTubeView.cs` | `MeerkatWaterTube.mat` | **Removed** (§12) |
 | 5b | The watery-glass "aquarium" tube (PR #1620) | `MeerkatWaterTube.shader` at cdc1837a6 | `MeerkatWaterTubeView.cs` at cdc1837a6 | `MeerkatWaterTube.mat`, `MeerkatWaterTubeNetwork.mat` | Reverted earlier (c2d3d6be1); §5b |
@@ -51,7 +51,7 @@ Paths below are relative to the repository root. The two folders used most often
 | 9 | Sibling lenses: black hole, vortex ring | `Graphs/BlackHoleLens.shader` and `.hlsl`, `Graphs/VortexRingLens.shader` and `.hlsl` | `BlackHoleLensPass.cs`, `VortexRingLensPass.cs` | `BlackHoleLens.mat`, `VortexRingLens.mat` | Ship, untouched |
 
 **There are no switches any more.** The `formedLook` field, the YASH'S LOOK / GARRETT'S LOOK Inspector buttons
-(`MeerkatWormholeConfigSOEditor.cs`), the `MeerkatTubeLook` test switch, its `_MW_HQ` keyword and the lab's look buttons
+(`MeerkatSolitonConfigSOEditor.cs`), the `MeerkatTubeLook` test switch, its `_MW_HQ` keyword and the lab's look buttons
 were removed with the looks they chose between. Before removal the switches were:
 
 | `MeerkatTubeLook.Mode` (removed) | Lens (§1) | Calm wall (§4) | Water tube (§5a) |
@@ -89,7 +89,7 @@ of warping ... performant"*. Garrett, from the Tube Lens Lab: *"lets the lensing
 | Commit | What |
 |---|---|
 | d2380c883 | Garrett's **Tube Lens Lab** (`Docs/Studios/StoatTubeLensLab.html`, https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF). The GLSL `tube`, `prof`, `ribF`, `fieldDir`, `trace` is the source the shader ports. |
-| a959070e2, 587a7eb39 | Garrett's before/after: the contour field ported into `MeerkatWormholeLens.shader`, behind `formedLook` ContourField |
+| a959070e2, 587a7eb39 | Garrett's before/after: the contour field ported into `SolitonTunnel.shader`, behind `formedLook` ContourField |
 | 746797834 | Round 8: Yash's tuned look ships |
 | **53b34e076** | **Round 11, the clear water pipe, the numbers Yash chose** (rendered against round 10 in the lab first) |
 | 6a78dfa7a | Round 22: the tube bends round its middle (one oval arc); the shader measures it from 25 centreline points joined by circle arcs, within 0.07 u |
@@ -101,7 +101,7 @@ of warping ... performant"*. Garrett, from the Tube Lens Lab: *"lets the lensing
 
 ### 1.3 The numbers (Yash's choice, as shipped)
 
-From `MeerkatWormholeConfig.asset`, which now equals the code defaults. The `fieldGlass` value is the artifact's
+From `MeerkatSolitonConfig.asset`, which now equals the code defaults. The `fieldGlass` value is the artifact's
 round-11 number lowered by Yash in Unity. The last three columns compare it with Garrett's lab pick, Yash's round-8 tune
 and round 10.
 
@@ -136,16 +136,16 @@ The Round 10 column is round 8's numbers with Garrett's strength. Cells left bla
 
 ### 1.4 The procedure (how it draws)
 
-**Plumbing (`MeerkatWormholeLensPass.cs`, URP RenderGraph):**
+**Plumbing (`SolitonTunnelLensPass.cs`, URP RenderGraph):**
 1. On `RenderPipelineManager.beginCameraRendering` it enqueues itself on every base game camera (and the Scene view)
    while `MeerkatTubeLook.LensOn` and something is live: a tunnel, a ripple or a network. Event:
    `AfterRenderingTransparents`, with `requiresIntermediateTexture`. A scene with nothing live pays nothing.
 2. While live, it holds the camera depth texture on through `BlackHoleLens.CameraSupport`.
 3. **Pass "Meerkat tube warp".** It clears a half-resolution RGBA16F target, `_MeerkatWarpTex`, and draws
-   `MeerkatWormholeView.WarpMesh` into it (§3). The mesh is empty while `warpStrength` is 0.
+   `SolitonTunnelView.WarpMesh` into it (§3). The mesh is empty while `warpStrength` is 0.
 4. **Pass "Meerkat scene copy".** A Blitter copy of the camera colour into `_MeerkatSceneColor`, single sample, bilinear,
    clamped.
-5. **Pass "Meerkat wormhole lens".** One `DrawProcedural` full-screen triangle with `MeerkatWormholeLens.shader`
+5. **Pass "Meerkat wormhole lens".** One `DrawProcedural` full-screen triangle with `SolitonTunnel.shader`
    (`ZTest Always`, `ZWrite Off`, `Blend Off`), writing to the camera colour. The uniforms come from a
    MaterialPropertyBlock:
    - `_MWWellC[8]`, `_MWWellP[8]`: the mouth dents (§3)
@@ -223,7 +223,7 @@ on mobile it is not, which is why §5 was tried.
    (466eb497f).
 2. In the config: `formedLook` ContourField, the §1.3 numbers, `tubeInner` 0, `trunkVisibility` 0, `rootBarkVisibility`
    0, warp/dent/ripple 0. `MeerkatTubeLook.Mode` Original (the default) or LensOnly.
-3. Make sure `Assets/Resources/MeerkatWormholeLens.mat` (shader guid `33370c7c15ca4b54b2d25421e8cd65f9`) exists.
+3. Make sure `Assets/Resources/SolitonTunnel.mat` (shader guid `33370c7c15ca4b54b2d25421e8cd65f9`) exists.
    `Resolve()` warns once if it is missing. (Before 2026-10-29 the pass also needed `MeerkatWormholeWarp.mat`, §12.)
 4. To port it elsewhere, copy the lab's GLSL from `Docs/Studios/StoatTubeLensLab.html`. The HLSL is a line-for-line
    port; the traps are listed in `WATERY_GLASS.md` §3.
@@ -260,17 +260,17 @@ Since round 9, **your reticle is always this wireframe** (`DrawReticle` → `Bri
 
 ### 2.3 The procedure
 
-1. `MeerkatWormholeView.DrawOncePerFrame()` is called from every Meerkat's LateUpdate and runs once a frame. For each
+1. `SolitonTunnelView.DrawOncePerFrame()` is called from every Meerkat's LateUpdate and runs once a frame. For each
    live tunnel with `formedLook` Bridge (and each network channel, round 26), it calls `DrawBridge` → `BridgeFrame`.
 2. `BridgeFrame` walks the tube (`Tube.Conic` for a tunnel, `Tube.Channel` for a channel). For each ring × spindle it
    appends a **six-sided bipyramid** (`Spindle`: 2 tips plus 6 side vertices, facing the camera) to one shared triangle
    list.
-   - Vertex colour = domain colour × brightness × `MeerkatWormholeMath.BridgeGlow(u, shimmer, t)` × the near fade.
+   - Vertex colour = domain colour × brightness × `SolitonTunnelShapeMath.BridgeGlow(u, shimmer, t)` × the near fade.
    - The brightness is pre-multiplied.
 3. The glass skin, if `bridgeGlass` > 0, is appended to a second mesh: positions, normals, colour, with rgb the in → out
    shade and a = brightness × glass.
 4. Both meshes are uploaded once a frame and drawn with `Graphics.RenderMesh` at identity:
-   - **`MeerkatWormholeAdditive.shader`**: `Blend One One`, `ZWrite Off`, `ZTest LEqual`, `Cull Off`. The fragment returns
+   - **`SolitonTunnelAdditive.shader`**: `Blend One One`, `ZWrite Off`, `ZTest LEqual`, `Cull Off`. The fragment returns
      the vertex colour.
    - **`MeerkatWormholeGlass.shader`**: the same states. The fragment returns `rgb·a·(0.05 + 0.55·rim³)`, with
      `rim = 1 − |n·v|`.
@@ -291,7 +291,7 @@ spindles draw.
 All three are drawn by the same lens pass and shader as §1. They ship at 0, so the pass never draws them.
 
 - **The warp tube** (`warpStrength`, 0; round 4 set it to 0):
-  - `MeerkatWormholeView.AddWarpTube` builds every live tube's wall as a mesh, `WarpMesh`:
+  - `SolitonTunnelView.AddWarpTube` builds every live tube's wall as a mesh, `WarpMesh`:
     - positions and normals
     - uv.x = `cos(π·u)·fade` (bend in at the way in, out at the way out)
     - uv.y = `0.05·warpStrength`
@@ -523,21 +523,21 @@ holds the shared glslang URP mock.
    `Tools/Shaders/verify_black_hole_lens.py`. On the box it lives at `/home/box/tools/bin/glslangValidator`.
 2. **C# compile:** `Tools/Build/unity_refcompile/run.sh` should print `RESULT: OK - no errors in project code`. Four
    Cinemachine "unverified missing-type" lines are environmental.
-3. **In Unity:** open `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` and press Play. Its IMGUI panel rides a
-   tunnel or the network, measures the look for 4 s with the camera held (CPU ms, plus GPU ms when Frame Timing Stats is
-   on), and puts the look on live sliders ("Tune the look", §14.6).
+3. **In Unity:** the Lavalamp lab is gone (§15). Fly the Meerkat in the Toybox (RT forms a tunnel, an omnicrystal grows a
+   network), or drop a `SolitonTunnelPlacer` into any scene, and tune the look live in **FrogletTools > Environment >
+   Environmental Fundamentals** (it edits the SolitonTunnelConfigSO assets in Play mode).
 
 ---
 
 ## 11. The PC look: one shader, YASH'S and GARRETT'S presets, the networked holes (`_MW_HQ`; replaced by §14)
 
 > Replaced on 2026-10-29 by §14: the presets, tint, absorption and dispersion are gone (§13, restore `0c8c5218c`). The
-> rim, glint, glow, network shimmer and pulses live on as `MeerkatWormholeLook` fields.
+> rim, glint, glow, network shimmer and pulses live on as `SolitonTunnelLook` fields.
 
 Yash, 2026-10-29: *"Make the shader good for a good quality PC. Keep the final one shader ... a nice subtle wormhole and
 its networked holes."*
 
-**One shader.** `MeerkatWormholeLens.shader` gets a local keyword, `_MW_HQ`. Without it, the pass is byte for byte the
+**One shader.** `SolitonTunnel.shader` gets a local keyword, `_MW_HQ`. Without it, the pass is byte for byte the
 §1 lens: `MeerkatTubeLook` Original is the A/B fallback.
 
 With it, **the same march runs on the same numbers** (§1.3, the artifact's water pipe, glass 0.139), and three things are
@@ -602,7 +602,7 @@ pixel does two more scene reads (dispersion), and a pixel the layer covers no lo
 **Since 2026-10-29 this IS the shipped look**, with no keyword: the `_MW_HQ` guards were removed and the layer always
 runs. GARRETT'S column is baked as `MeerkatWormholeHQ.Shipped` (`MeerkatWormholeHQ.Current` returns the lab's live
 tuning while "Tune the look" is on, otherwise `Shipped`). The field runs on every formed tunnel and channel
-(`MeerkatWormholeConfigSO.ContourFieldBends`). YASH'S column and the keyword version (with the §1 fallback) are kept
+(`MeerkatSolitonConfigSO.ContourFieldBends`). YASH'S column and the keyword version (with the §1 fallback) are kept
 in git: §12.
 
 ---
@@ -612,9 +612,9 @@ in git: §12.
 Yash, 2026-10-29: *"just keep one high quality look, the one there is now, then document other shaders, so we can
 recreate later if needed, delete the shaders."*
 
-**Kept:** THE look (§1 + §11: `MeerkatWormholeLens.shader`, now with no keyword, plus `MeerkatWormholeHQ.Shipped` =
-GARRETT'S preset), the reticle (`MeerkatWormholeAdditive.shader`/`.mat`), `Wormhole.shader` (§8), the sibling lenses
-(§9), and `MeerkatWormholeMath` (pure maths, tested, including `RippleAmplitude`, `RippleFront` and `DentNear`).
+**Kept:** THE look (§1 + §11: `SolitonTunnel.shader`, now with no keyword, plus `MeerkatWormholeHQ.Shipped` =
+GARRETT'S preset), the reticle (`SolitonTunnelAdditive.shader`/`.mat`), `Wormhole.shader` (§8), the sibling lenses
+(§9), and `SolitonTunnelShapeMath` (pure maths, tested, including `RippleAmplitude`, `RippleFront` and `DentNear`).
 
 **Why GARRETT'S preset was baked:** the shipped config had `formedLook` ContourField (GARRETT'S LOOK), and the branch
 default was `MeerkatTubeLook` HighQuality. So what was on screen was the HQ lens with GARRETT'S layer numbers and no
@@ -658,7 +658,7 @@ Shaders are in `Assets/_Graphics/Materials/Graphs/`, materials in `Assets/Resour
 | `MeerkatTreeView.cs` | 7310ed076cb644b2a49fbfc082d9b583 | 303 | 2a11a2e3 | §6, §7 | Draws the tree, the bark, the root inside; `PrepareSkins`, `Release` |
 | `MeerkatTreeMesh.cs` | b66fc30aeef847d2b8647f17275373f1 | 311 | a98b8211 | §4, §6 | Builds the trunk, branches, bore, `BuildTubeWall`; `TreeSettings` |
 | `MeerkatTubeLook.cs` | 5bcb6ea9c7974347b879c010fa8c565f | 73 | e8b16732 | §0, §11 | The look switch (`Mode`, `FormedOverride`, `FieldOn`, `LensOn`, `HighQuality`, `OldWallOn`, `WaterOn`) |
-| `Assets/_Scripts/Editor/Studios/MeerkatWormholeConfigSOEditor.cs` | 2a9f1883fc8c4393ab24d06107519b98 | 68 | 454a2286 | §0 | The YASH'S LOOK / GARRETT'S LOOK Inspector buttons, `LookName` |
+| `Assets/_Scripts/Editor/Studios/MeerkatSolitonConfigSOEditor.cs` | 2a9f1883fc8c4393ab24d06107519b98 | 68 | 454a2286 | §0 | The YASH'S LOOK / GARRETT'S LOOK Inspector buttons, `LookName` |
 
 **GUID check before deleting:** each shader GUID was referenced only by its own (also deleted) `.mat`. No scene, prefab,
 asset or ProjectSettings file referenced any of the material or script GUIDs, and none named them. **No other object in
@@ -668,19 +668,19 @@ the game lost a shader.**
 
 | File | What was removed |
 |---|---|
-| `Graphs/MeerkatWormholeLens.shader` | `#pragma multi_compile_local _ _MW_HQ` and every `#if defined(_MW_HQ)` guard (the layer is now unconditional); `MEERKAT_LENS_MAX_WELLS`, `_MWWellC[8]`, `_MWWellP[8]` and the mouth-dent loop (§3); `_MWRipple` and the ripple term (§3); `TEXTURE2D(_MeerkatWarpTex)` and its sample (§3). `_MWView` is now (aspect, unused, unused, tubes); it was (aspect, warp on, wells, tubes). The fragment discards when no tube is bound, then returns `MWHighQuality(p, MWContour(p, sceneZ), aspect)`. |
-| `RVA/MeerkatWormholeLensPass.cs` | The "Meerkat tube warp" render pass and `WarpData`; `WarpMaterialPath`, `MaxWells` and the warp/well/ripple shader IDs; `ScreenWells`, `RippleFor`; `HighQualityKeyword`, `s_lensHQ` (the runtime lens clone with the keyword on), `s_warp`, `s_nearLook`. The `MeerkatTubeLook.LensOn` / `FieldOn` checks became `cfg.ContourFieldBends`; the `ChannelWrapped` skip went. `AnythingLive` no longer counts ripples. |
-| `RVA/MeerkatWormholeView.cs` | `GlassMaterialPath`; the glass and warp meshes and `WarpMesh`; `TunnelWrapped`, `ChannelWrapped`; `DrawBridge`, `Fill`, `AddWarpTube`, `Grid`; the per-tunnel and per-channel loops in `DrawOncePerFrame` that drew the bridge and the warp; the calls `MeerkatTreeView.Draw()`, `MeerkatTubeWallView.Draw()`, `MeerkatWaterTubeView.Draw()`. `BridgeFrame` lost its glass arguments; `Upload` lost normals and uv. Only the reticle draws now. |
+| `Graphs/SolitonTunnel.shader` | `#pragma multi_compile_local _ _MW_HQ` and every `#if defined(_MW_HQ)` guard (the layer is now unconditional); `MEERKAT_LENS_MAX_WELLS`, `_MWWellC[8]`, `_MWWellP[8]` and the mouth-dent loop (§3); `_MWRipple` and the ripple term (§3); `TEXTURE2D(_MeerkatWarpTex)` and its sample (§3). `_MWView` is now (aspect, unused, unused, tubes); it was (aspect, warp on, wells, tubes). The fragment discards when no tube is bound, then returns `MWHighQuality(p, MWContour(p, sceneZ), aspect)`. |
+| `RVA/SolitonTunnelLensPass.cs` | The "Meerkat tube warp" render pass and `WarpData`; `WarpMaterialPath`, `MaxWells` and the warp/well/ripple shader IDs; `ScreenWells`, `RippleFor`; `HighQualityKeyword`, `s_lensHQ` (the runtime lens clone with the keyword on), `s_warp`, `s_nearLook`. The `MeerkatTubeLook.LensOn` / `FieldOn` checks became `cfg.ContourFieldBends`; the `ChannelWrapped` skip went. `AnythingLive` no longer counts ripples. |
+| `RVA/SolitonTunnelView.cs` | `GlassMaterialPath`; the glass and warp meshes and `WarpMesh`; `TunnelWrapped`, `ChannelWrapped`; `DrawBridge`, `Fill`, `AddWarpTube`, `Grid`; the per-tunnel and per-channel loops in `DrawOncePerFrame` that drew the bridge and the warp; the calls `MeerkatTreeView.Draw()`, `MeerkatTubeWallView.Draw()`, `MeerkatWaterTubeView.Draw()`. `BridgeFrame` lost its glass arguments; `Upload` lost normals and uv. Only the reticle draws now. |
 | `RVA/MeerkatWormholeHQ.cs` | `YashPreset`, `GarrettPreset`, `For(MeerkatFormedLook)`. Replaced by `Shipped` (= GARRETT'S) and `Current`. |
-| `RVA/Data Containers/MeerkatWormholeConfigSO.cs` | `enum MeerkatFormedLook { Bridge, ContourField }`, the `formedLook` field (it was not in the artifact mapping), `FormedLook`, `ContourFieldOn`, `Tree()`. The other fields (`warpStrength`, `bridgeGlass`, `trunk*`, `root*`, `tubeInner`, ...) **were kept**, because `Tools/Build/studio_to_unity/meerkat.json` maps them to the artifact and the drift check needs them. Several of them now drive nothing (the tree group's header says so). |
-| `RVA/MeerkatRootNetwork.cs` | `internal Mesh[] Skins`, `internal Mesh[] Walls`; `MeerkatTreeView.PrepareSkins(net, cfg)` in `Grow`; `MeerkatTreeView.Release` / `MeerkatTubeWallView.Release` in `Remove`. |
-| `RVA/Executors/MeerkatWormholeExecutor.cs` | `MeerkatTreeView.PrepareSkins(net, config)` in `StepRootNetworks`. |
+| `RVA/Data Containers/MeerkatSolitonConfigSO.cs` | `enum MeerkatFormedLook { Bridge, ContourField }`, the `formedLook` field (it was not in the artifact mapping), `FormedLook`, `ContourFieldOn`, `Tree()`. The other fields (`warpStrength`, `bridgeGlass`, `trunk*`, `root*`, `tubeInner`, ...) **were kept**, because `Tools/Build/studio_to_unity/meerkat.json` maps them to the artifact and the drift check needs them. Several of them now drive nothing (the tree group's header says so). |
+| `RVA/SolitonNetwork.cs` | `internal Mesh[] Skins`, `internal Mesh[] Walls`; `MeerkatTreeView.PrepareSkins(net, cfg)` in `Grow`; `MeerkatTreeView.Release` / `MeerkatTubeWallView.Release` in `Remove`. |
+| `RVA/Executors/MeerkatSolitonExecutor.cs` | `MeerkatTreeView.PrepareSkins(net, config)` in `StepRootNetworks`. |
 | `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.cs` / `.unity` | `startMode`; the seven look buttons (`s_modes`, `s_modeNames`); "Bench every look" (now "Measure", one look); the Formed look row (Config's / YASH'S / GARRETT'S); "Tune the water pipe". "Tune the look" stays and starts from `Shipped`. |
 | `Assets/_Scripts/Tests/Editor/VesselStudioWindowTests.cs` | `MeerkatLook_NamesYashsAndGarrettsLooks` |
 
 ### 12.4 The numbers at removal
 
-**The config asset** (`Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset`, unchanged by the removal
+**The config asset** (`Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset`, unchanged by the removal
 except `formedLook`):
 
 | Group | Values |
@@ -716,7 +716,7 @@ except `formedLook`):
 
 - **YASH'S LOOK, the bridge (§2):**
   - Files: `MeerkatWormholeGlass.shader`, `MeerkatWormholeGlass.mat` (+ `.meta`).
-  - In `MeerkatWormholeView`: restore `GlassMaterialPath`, the glass mesh lists, `DrawBridge`, `Fill`, the glass
+  - In `SolitonTunnelView`: restore `GlassMaterialPath`, the glass mesh lists, `DrawBridge`, `Fill`, the glass
     arguments of `BridgeFrame`, and the tunnel/channel loop in `DrawOncePerFrame` that calls `DrawBridge`. Copy them
     from the file at 435ce058c.
   - Add a switch back (the `formedLook` field and enum in the config, or a bool) so formed tunnels draw the bridge.
@@ -731,8 +731,8 @@ except `formedLook`):
   - Then set `warpStrength` / `dentStrength` / `rippleStrength` above 0.
 - **The calm inner wall (§4):**
   - Files: `MeerkatTubeWall.shader`/`.mat`, `MeerkatTubeWallView.cs`, `MeerkatTreeMesh.cs` (for `BuildTubeWall`).
-  - In `MeerkatRootNetwork`: `internal Mesh[] Walls;` and `MeerkatTubeWallView.Release(this);` in `Remove`.
-  - Call `MeerkatTubeWallView.Draw();` from `MeerkatWormholeView.DrawOncePerFrame`.
+  - In `SolitonNetwork`: `internal Mesh[] Walls;` and `MeerkatTubeWallView.Release(this);` in `Remove`.
+  - Call `MeerkatTubeWallView.Draw();` from `SolitonTunnelView.DrawOncePerFrame`.
   - The view reads `MeerkatTubeLook.OldWallOn`: remove that check, or bring back `MeerkatTubeLook.cs`.
   - Set `tubeInner` 0.1.
 - **The cheap water pipe (§5a):**
@@ -744,7 +744,7 @@ except `formedLook`):
 - **The tree, bark and roots inside (§6, §7):**
   - Files: `MeerkatTree.shader`/`.mat`, `MeerkatRootInside.shader`/`.mat`, `MeerkatTreeView.cs`, `MeerkatTreeMesh.cs`.
   - Config: `Tree()`.
-  - `MeerkatRootNetwork`: `internal Mesh[] Skins;`, `MeerkatTreeView.PrepareSkins(net, cfg);` in `Grow`, and
+  - `SolitonNetwork`: `internal Mesh[] Skins;`, `MeerkatTreeView.PrepareSkins(net, cfg);` in `Grow`, and
     `MeerkatTreeView.Release(this);` in `Remove`.
   - Executor `StepRootNetworks`: `MeerkatTreeView.PrepareSkins(net, config);` when `Step` returns true.
   - View: `MeerkatTreeView.Draw();` in `DrawOncePerFrame`, plus `TunnelWrapped` / `ChannelWrapped`. A wrapped tube
@@ -752,7 +752,7 @@ except `formedLook`):
   - Set `trunkVisibility` / `rootBarkVisibility` above 0.
 - **The A/B switch and the `_MW_HQ` keyword (§11):**
   - Files: `MeerkatTubeLook.cs`, and the 435ce058c lens shader, lens pass, `MeerkatWormholeHQ.cs` and lab.
-  - Optionally `MeerkatWormholeConfigSOEditor.cs`, which needs `formedLook`.
+  - Optionally `MeerkatSolitonConfigSOEditor.cs`, which needs `formedLook`.
 
 Check each one with §10: glslang on the lens, `Tools/Build/unity_refcompile/run.sh` (and `--config editor`), then the
 Lavalamp lab in Unity.
@@ -771,19 +771,19 @@ exactly as described above. To bring anything below back, take that commit's ver
 
 | Removed | Was | Where it lived at 0c8c5218c |
 |---|---|---|
-| The contour field's 16 knobs: `fieldStrength`, `fieldPitch`, `fieldDrag`, `fieldTwist`, `fieldGlass`, `fieldGlassIndex`, `fieldGrazing`, `fieldFlow`, `fieldInner`, `fieldOuter`, `fieldProfile`, `fieldRibs`, `fieldRibSharpness`, `fieldRibTravel`, `fieldRibRings`, `fieldRibLines`, plus the `ContourFieldBends` gate and its enums | §1's lens | `MeerkatWormholeConfigSO.cs`, the config asset, `_MWField0..3` in the shader |
-| The layer presets: `MeerkatWormholeHQ` (`Shipped`, `YashPreset`, `GarrettPreset`, `Tuning`), i.e. YASH'S LOOK and GARRETT'S LOOK | §11 | `RVA/MeerkatWormholeHQ.cs` (now renamed `MeerkatWormholeLook.cs`), `_MWHQ0..3` |
+| The contour field's 16 knobs: `fieldStrength`, `fieldPitch`, `fieldDrag`, `fieldTwist`, `fieldGlass`, `fieldGlassIndex`, `fieldGrazing`, `fieldFlow`, `fieldInner`, `fieldOuter`, `fieldProfile`, `fieldRibs`, `fieldRibSharpness`, `fieldRibTravel`, `fieldRibRings`, `fieldRibLines`, plus the `ContourFieldBends` gate and its enums | §1's lens | `MeerkatSolitonConfigSO.cs`, the config asset, `_MWField0..3` in the shader |
+| The layer presets: `MeerkatWormholeHQ` (`Shipped`, `YashPreset`, `GarrettPreset`, `Tuning`), i.e. YASH'S LOOK and GARRETT'S LOOK | §11 | `RVA/MeerkatWormholeHQ.cs` (now renamed `SolitonTunnelLook.cs`), `_MWHQ0..3` |
 | The water tint and absorption (`Tint`, `Absorb`), the dispersion (`Dispersion`, `NetDispersion`: 3 scene reads), the iridescence scale | §11 | shader `MWShade` |
 | The moving ribs (`fieldRibs*`), the flow (`fieldFlow`), the profile switch (`fieldProfile`: now always the smooth quintic) | §1 | shader `MWContour` |
 | The numeric wall-glass gradient (4 extra tube evaluations per step) | §1 | shader; now analytic (`MWProfD`) |
 | Studio keys with no Unity user left: `warpStrength`, `dentStrength`, `ripple*`, `bridgeVisibility`, `bridgeGlass`, `bridgeWhite`, every `trunk*` and `branch*` (the tree), `rootBarkVisibility`, `rootGlass`, `rootRim`, `rootGrain`, `rootOpacity`, `tubeInner`, `rootLamp`, `rootFog` | §2-§7 (already deleted in §12) | the config + asset; now listed as `RETIRED` in `Tools/Build/author_meerkat_assets.py` and cut from `Tools/Build/studio_to_unity/meerkat.json` (108 → 72 rows) |
-| The executor's dead collapse-ripple bookkeeping | §3 | `RVA/Executors/MeerkatWormholeExecutor.cs` |
+| The executor's dead collapse-ripple bookkeeping | §3 | `RVA/Executors/MeerkatSolitonExecutor.cs` |
 
-`MeerkatWormholeMath` (`RippleAmplitude`, `RippleFront`, `DentNear`) is kept: it is pure, tested maths.
+`SolitonTunnelShapeMath` (`RippleAmplitude`, `RippleFront`, `DentNear`) is kept: it is pure, tested maths.
 
-**How to bring the old look back exactly:** check out `0c8c5218c`'s `MeerkatWormholeLens.shader`,
-`MeerkatWormholeLensPass.cs`, `MeerkatWormholeHQ.cs` (+ `.meta`), `MeerkatWormholeConfigSO.cs`, the config asset,
-`LavalampWormholeLab.cs`, `meerkat.json` and `author_meerkat_assets.py`, and delete `MeerkatWormholeLook.cs`. Then do §10.
+**How to bring the old look back exactly:** check out `0c8c5218c`'s `SolitonTunnel.shader`,
+`SolitonTunnelLensPass.cs`, `MeerkatWormholeHQ.cs` (+ `.meta`), `MeerkatSolitonConfigSO.cs`, the config asset,
+`LavalampWormholeLab.cs`, `meerkat.json` and `author_meerkat_assets.py`, and delete `SolitonTunnelLook.cs`. Then do §10.
 
 ---
 
@@ -794,9 +794,9 @@ be for the root. The trunk and the root of the wormhole tree will be same look, 
 / root look."*
 
 **Trunk = a formed tunnel** (`_MWTubeShape.y` 0). **Root = a channel of an omnicrystal's network** (`.y` 1). Both are
-drawn by the same full-screen pass (`MeerkatWormholeLensPass`, AfterRenderingTransparents) and the same shader
-(`Graphs/MeerkatWormholeLens.shader`, no keywords), from the same struct (`MeerkatWormholeLook`, in
-`RVA/MeerkatWormholeLook.cs`). Each kind has its own copy on `MeerkatWormholeConfigSO`.
+drawn by the same full-screen pass (`SolitonTunnelLensPass`, AfterRenderingTransparents) and the same shader
+(`Graphs/SolitonTunnel.shader`, no keywords), from the same struct (`SolitonTunnelLook`, in
+`RVA/SolitonTunnelLook.cs`). Each kind has its own copy on `MeerkatSolitonConfigSO`.
 
 ### 14.1 What you see
 
@@ -812,17 +812,17 @@ drawn by the same full-screen pass (`MeerkatWormholeLensPass`, AfterRenderingTra
   out to *Steady centre*, is held still, so where you are heading never swims. You feel the wall bending round you at
   the edges of the view: you are inside the wormhole, not underwater.
 
-### 14.2 The Inspector groups (`MeerkatWormholeConfig.asset`)
+### 14.2 The Inspector groups (`MeerkatSolitonConfig.asset`)
 
 | Header | Fields |
 |---|---|
-| **Comfort** | `comfort` (`MeerkatWormholeComfort`): over both kinds |
-| **Trunk Look** | `trunkLook` (`MeerkatWormholeLook`) |
+| **Comfort** | `comfort` (`SolitonTunnelComfort`): over both kinds |
+| **Trunk Look** | `trunkLook` (`SolitonTunnelLook`) |
 | **Trunk Shape** | `reticleAhead`, `bendMaxDegrees`, `shaftMin/Max`, `bendRadius`, `oval*`, `throatDiameter`, `mouthDiameter`, `keyRampSeconds`, `formSeconds`, `staySeconds`, `collapseSeconds` |
-| **Trunk Ride** | `trunkRide` (`MeerkatWormholeRideView`), `rideExitMultiplier`, `rideSpeedTunnelScale` |
-| **Root Look** | `rootLook` (`MeerkatWormholeLook`) |
+| **Trunk Ride** | `trunkRide` (`SolitonTunnelRideView`), `rideExitMultiplier`, `rideSpeedTunnelScale` |
+| **Root Look** | `rootLook` (`SolitonTunnelLook`) |
 | **Root Shape** | `omniOn`, `omniCount`, `network`, `labyrinth*`, `rootTip`, `rootGnarl`, `labyrinthFormSeconds` |
-| **Root Ride** | `rootRide` (`MeerkatWormholeRideView`), `rootCruise`, `rootThrust`, `rootMove`, `rootDrag`, `rootMaxSpeed`, `rootBounce`, `rootGravity` (a tunnel's slide uses this flight too) |
+| **Root Ride** | `rootRide` (`SolitonTunnelRideView`), `rootCruise`, `rootThrust`, `rootMove`, `rootDrag`, `rootMaxSpeed`, `rootBounce`, `rootGravity` (a tunnel's slide uses this flight too) |
 | **Kit · Space / Time / Charge / Mass / Audio** | Garrett's soliton kit, unchanged (headers renamed from "Garrett's kit ·") |
 | **Miscellaneous · audio** | form, collapse, roots events |
 | **Miscellaneous · the reticle** | `reticle*`, `reticleDelaySeconds`, `reticleGrowSeconds`, `bridgeRings`, `bridgeSpindlesPerRing`, `bridgeRibs`, `bridgeSpindleThickness`, `bridgeShimmer` (the aiming wireframe) |
@@ -833,7 +833,7 @@ touches them.
 
 ### 14.3 Every look field
 
-`MeerkatWormholeLook` (Trunk Look / Root Look):
+`SolitonTunnelLook` (Trunk Look / Root Look):
 
 | Field | Range | Trunk | Root | What it does |
 |---|---|---|---|---|
@@ -853,7 +853,7 @@ touches them.
 | PulseCount | 1-8 | 3 | 3 | Pulses along the visible length |
 | PulseSpeed | 0-2 /s | 0.6 | 0.6 | Pulse speed (capped by Comfort) |
 
-`MeerkatWormholeRideView` (Trunk Ride / Root Ride), defaults the same for both:
+`SolitonTunnelRideView` (Trunk Ride / Root Ride), defaults the same for both:
 
 | Field | Range | Default | What it does |
 |---|---|---|---|
@@ -861,7 +861,7 @@ touches them.
 | InsideWobble | 0-1 | 0.5 | Breath × this while inside |
 | SteadyCentre | 0-0.5 | 0.2 | Radius (× screen height) of the still middle of the screen while inside |
 
-`MeerkatWormholeComfort` (one for both kinds):
+`SolitonTunnelComfort` (one for both kinds):
 
 | Field | Range | Default | What it does |
 |---|---|---|---|
@@ -880,9 +880,9 @@ touches them.
 - **Speeds are capped in C#, not the shader.** Phases advance once a frame on the CPU, so changing a speed never makes
   the pattern jump.
 
-### 14.5 How it draws (`MeerkatWormholeLens.shader`)
+### 14.5 How it draws (`SolitonTunnel.shader`)
 
-1. **CPU (`MeerkatWormholeLensPass.ContourTubesFor`):** the 4 nearest visible tubes (`MeerkatWormholeLook.Visible`),
+1. **CPU (`SolitonTunnelLensPass.ContourTubesFor`):** the 4 nearest visible tubes (`SolitonTunnelLook.Visible`),
    25 path points each. Per tube `_MWTubeShape` = (length, kind, eyeInside, throat). Per kind 5 `float4` in
    `_MWLook[10]` (trunk 0-4, root 5-9):
    - +0 (bend rad, lens, wallIn, wallOut)
@@ -918,3 +918,67 @@ Open `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` and press Play. 
 - "Reset to config".
 
 The asset is never written in Play mode.
+
+---
+
+## 15. Soliton Tunnels (2026-10-29): the renames, and what was removed
+
+Yash, 2026-10-29: the Meerkat's wormhole is now a **Soliton Tunnel**, an environmental fundamental any vessel or scene
+can use (`Assets/_Scripts/Controller/Environment/SolitonTunnel/`, its config `SolitonTunnelConfigSO`, the assets in
+`Assets/_SO_Assets/Environment/SolitonTunnel/`). The look is §14's clear jelly lens plus the additive spindle bridge, with
+a configurable domain tint (`SolitonTunnelConfigSO` > Look: Domain Tint, sent to the lens as `_MWTubeTint`). The
+Butterfly / crystal `Wormhole.shader` (§8) and its materials are untouched.
+
+**Renamed (git mv, same .meta guid, so every material, prefab and scene reference survives):**
+
+| Before (at 2d1e8726c) | Now |
+|---|---|
+| `Assets/_Graphics/Materials/Graphs/MeerkatWormholeLens.shader` | `Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader` (`CosmicShore/SolitonTunnel`) |
+| `Assets/_Graphics/Materials/Graphs/MeerkatWormholeAdditive.shader` | `Assets/_Graphics/Materials/Graphs/SolitonTunnelAdditive.shader` (`CosmicShore/SolitonTunnelAdditive`) |
+| `Assets/Resources/MeerkatWormholeLens.mat` | `Assets/Resources/SolitonTunnel.mat` |
+| `Assets/Resources/MeerkatWormholeAdditive.mat` | `Assets/Resources/SolitonTunnelAdditive.mat` |
+| `MeerkatWormholeLensPass.cs`, `MeerkatWormholeLook.cs`, `MeerkatWormholeView.cs` | `SolitonTunnelLensPass.cs`, `SolitonTunnelLook.cs`, `SolitonTunnelView.cs` |
+| `MeerkatWormholeMath.cs`, `MeerkatRootMath.cs` | `SolitonTunnelShapeMath.cs`, `SolitonTunnelMath.cs` |
+
+**Removed in this round (each restorable from 2d1e8726c, the commit before it):**
+
+| Removed | What it was | Restore |
+|---|---|---|
+| `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` (+ .meta) | the Lavalamp lab scene (§10, §11) | `git checkout 2d1e8726c -- Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity.meta` |
+| `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.cs` (+ .meta) | its IMGUI panel: look buttons, live sliders, the 4 s measurement | `git checkout 2d1e8726c -- Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.cs Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.cs.meta` |
+| `Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.Lab.cs` (+ .meta) | the executor's lab hooks (ride a tunnel / the network on demand) | `git checkout 2d1e8726c -- "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.Lab.cs" "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.Lab.cs.meta"` |
+| `Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatRootNetwork.cs` | the Meerkat's root network; replaced by `SolitonNetwork.cs`, which keeps its .meta guid | `git checkout 2d1e8726c -- Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatRootNetwork.cs` |
+| the root / trunk look and the root flight (`rootCruise`, `rootThrust`, `rootMove`, `rootDrag`, `rootGravity`, the left stick in the tube, the nose lock) | the old ride | in `MeerkatWormholeConfigSO.cs` / `MeerkatRootMath.cs` at 2d1e8726c: `git show 2d1e8726c:Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatRootMath.cs` |
+
+A restored lab file names the old types (`MeerkatWormhole*`, `MeerkatRoot*`); rename them to the Soliton ones, or
+restore the matching old scripts too. The earlier removals are §12 (2ad588211) and §13 (0c8c5218c).
+
+
+## 16. THE look now: a plain wormhole (from 2026-11-01)
+
+Yash: "I want the wormhole effect back, that looks realistic, remove trunk and bark, root related shader parts, its gonna be
+plain worm hole with wider mouth looking cool from outside and inside, bending and warping of space time."
+
+Reference: the contour lens of 53b34e076 / 435ce058c (wall bend + glass) and 435ce058c's mouth wells (`ScreenWells`), here
+reworked as a point-mass lens. Still one full-screen pass (`SolitonTunnel.shader`, `SolitonTunnelLensPass`), no
+allocations, no new textures.
+
+| Part | What it does | Fields (`SolitonTunnelLook`, per config) |
+|---|---|---|
+| Wall bend | the contour lens on the tube's wall, breathing slowly | `Bend`, `Lens`, `WallInside`, `WallOutside`, `Wobble*`, `Rim*`, `Glint`, `Glow` |
+| Mouth lens (outside) | each live mouth bends the scene like a gravitational lens: the image at angle θ shows the scene at θ − θE²/θ, so the world round the mouth curls into an Einstein ring and, straight in, turns over and magnifies; fades out by 3 θE | `MouthLens` (strength), `MouthFlare` (θE = the mouth's angular radius × this: the visible, flared size) |
+| Einstein ring | a thin bright ring at θE in the tube's tint | `EinsteinRing` |
+| Throat shadow | a hint of darkness in the core so the mouth reads as a hole | `MouthShadow` |
+| Throat stretch (inside) | riding: the view stretches out from where you are heading, streaming toward the way out (log-polar waves), slightly twisted; the steady centre still holds | `InsideStretch`, `InsideFlow` (capped by Comfort `MaxFlowSpeed`), `InsideSwirl` |
+
+The physical mouth is wider too: `mouthDiameter` 35.6 → 44, `networkMouthDiameter` 13.9 → 18 (these drive the ride as well).
+Network channels lens only at their true openings (`MouthIn` / `MouthOut`), not at junctions. Up to 8 mouths (both ends of
+the 4 banked tubes).
+
+Removed (restore from this section's commit's parent): the network ("root") shimmer and pulses (`Shimmer`, `Pulse`,
+`PulseCount`, `PulseSpeed`, Comfort `MaxPulseSpeed` → now `MaxFlowSpeed`), and the spindle bridge over formed tubes
+(`bridgeOn`, `bridgeBrightness`, `bridgeWhite`, `bridgeMaxChannels`, `SolitonTunnelView.DrawBridges`). The reticle keeps its
+frame (`bridgeRings`, `bridgeSpindlesPerRing`, `bridgeRibs`, `bridgeSpindleThickness`, `bridgeShimmer`).
+
+Tuning: too much swirl round a mouth → lower `MouthLens`; mouth looks small → raise `MouthFlare`; queasy inside → lower
+`InsideStretch` / `InsideFlow` or Comfort `DistortionIntensity`.

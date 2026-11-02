@@ -2801,20 +2801,7 @@ namespace CosmicShore.Gameplay
             int trailSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
                 $"Cell swap: {pooledRetiring.Count} pooled trail prisms return to their pool");
 
-            // Pooled prisms go back to their pool (destroying one corrupts the pool's
-            // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
-            // baked into their localScale on the way out. Clear the GPU stamp first —
-            // ClearPrismStamps on the next Initialize also covers it, but a prism that sits
-            // in the pool with a live suction Duration would replay on the next pull.
-            for (int i = 0; i < pooledRetiring.Count; i++)
-            {
-                var block = pooledRetiring[i];
-                if (!block) continue;
-                block.ClearSuctionClockStamp();
-                block.transform.SetParent(null, false);
-                block.ReturnToPool();
-            }
-            pooledRetiring.Clear();
+            yield return ReturnRetiredTrailToPool(pooledRetiring);
             LoadInsights.End(trailSpan);
 
             int releaseSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
@@ -2904,6 +2891,45 @@ namespace CosmicShore.Gameplay
         /// waiting to see the new world. The root is already suctioned to a point, so nothing
         /// is visible while it drains.
         /// </summary>
+        /// <summary>
+        /// Send the retired loose trail back to its pool, newest first, in 12 ms slices.
+        ///
+        /// WHY (B36, Docs/PartySystem/BUGS.md): one Menu_Main swap returned 76,115 pooled prisms
+        /// in a single 24.2 s frame (Garrett's 29 Oct Load Time Insights capture), long enough
+        /// for Relay to drop a hosting player. The prisms are the retiring root's children in
+        /// list order, and detaching a transform shifts every later sibling, so detaching from
+        /// the front costs the square of the count; from the back each detach is constant. The
+        /// slice caps what is left. The world has already suctioned out of sight, so the prisms
+        /// still waiting under the root for a later frame are not seen.
+        /// </summary>
+        IEnumerator ReturnRetiredTrailToPool(List<Prism> pooledRetiring)
+        {
+            const double ReturnSliceMs = 12.0;
+            double msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            long sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
+
+            // Pooled prisms go back to their pool (destroying one corrupts the pool's
+            // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
+            // baked into their localScale on the way out. Clear the GPU stamp first —
+            // ClearPrismStamps on the next Initialize also covers it, but a prism that sits
+            // in the pool with a live suction Duration would replay on the next pull.
+            for (int i = pooledRetiring.Count - 1; i >= 0; i--)
+            {
+                var block = pooledRetiring[i];
+                if (!block) continue;
+                block.ClearSuctionClockStamp();
+                block.transform.SetParent(null, false);
+                block.ReturnToPool();
+
+                if (i > 0 && (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= ReturnSliceMs)
+                {
+                    yield return null;
+                    sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                }
+            }
+            pooledRetiring.Clear();
+        }
+
         IEnumerator ReleaseRetiredWorld(GameObject retiring)
         {
             if (!retiring) yield break;
@@ -3001,8 +3027,11 @@ namespace CosmicShore.Gameplay
                 // Snapshot before re-parenting: nothing in SetParent should touch the
                 // dictionary, but iterating a live collection while moving its keys around
                 // the scene is not a bet worth taking.
+                // Newest first: a trail container holds its prisms in lay order, and detaching
+                // from the back of a parent is constant where detaching from the front shifts
+                // every later sibling (B36: tens of thousands of trail prisms in one frame).
                 var tracked = new List<Prism>(trackedBlocks.Keys);
-                for (int i = 0; i < tracked.Count; i++)
+                for (int i = tracked.Count - 1; i >= 0; i--)
                 {
                     var block = tracked[i];
                     if (!block || block.OnReturnToPool == null) continue;

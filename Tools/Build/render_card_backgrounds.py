@@ -88,7 +88,6 @@ SOURCES = [
     "Assets/_Scripts/Data/Enums/Domains.cs",
     "Assets/_Scripts/Data/Enums/PrismKind.cs",
     "Assets/_Scripts/Data/Enums/PrismscapeDimension.cs",
-    "Assets/_Scripts/Data/Enums/SwitchbackFunType.cs",
     f"{_SP}/SpawnPoint.cs",
     f"{_SP}/SpawnTrailData.cs",
     f"{_SP}/FloraPlantingSite.cs",

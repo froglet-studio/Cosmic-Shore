@@ -303,6 +303,7 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
   `foresightRange` (1500 u), `foresightLength` (500 u) long, in their domain colours: each flown forward on the turn
   and speed it is holding NOW — its rotation's change since last frame, in its own axes — through the same
   `StoatDipoleMath.PredictPath`. Rivals rescanned once a second. Local pilot only; presentation only.
+- **Retired as the omni-crystal ability 2026-10-29:** Yash made Fulmen (`Controller/Environment/Fulmen/README.md`) the Stoat's omni-crystal ability; Overclock was taken out of `StoatImpactorDataContainer` (code and asset kept). Note `Tools/Build/author_stoat_assets.py` still writes Overclock into the container if re-run.
 - **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
 
@@ -594,7 +595,7 @@ only one ability of the wormhole."* The studio's Gate mode (§1g-§1n) left the 
 
 | What | Where it is now |
 |---|---|
-| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatWormholeConfig` fields |
+| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatSolitonConfig` fields |
 | B / T on the Stoat | Mass -> Time -> Mass (round 18-27 stepped through Gate too) |
 | The Stoat's `gt*` / `gate*` keys, their sliders, tips and game names | Removed from the Stoat page |
 | `studio_to_unity/stoat.json`'s 14 round-18 gate rows (`StoatModeAction` gate* fields) | Removed: the page no longer has those keys. The game's Stoat still has round 18's straight warp gate on B, unlinked from the studio until `/artifact-to-unity` ports the Meerkat and takes the gate off the Stoat |

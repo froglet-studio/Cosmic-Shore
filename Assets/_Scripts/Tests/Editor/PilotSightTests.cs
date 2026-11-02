@@ -92,7 +92,7 @@ namespace CosmicShore.Tests
         {
             var marks = new PilotSightMarks();
             var state = new PilotSightPrismState();
-            if (MeerkatWormholeExecutor.Live.Count > 0) Assert.Ignore("a tunnel is live in this editor session");
+            if (SolitonTunnel.Live.Count > 0) Assert.Ignore("a tunnel is live in this editor session");
             PilotSightProviders.For(PilotVision.Flume).Gather(default, ref state, marks);
             Assert.AreEqual(0, marks.Count);
             Assert.AreEqual(0f, state.Sight, "FLUME writes no prism state");

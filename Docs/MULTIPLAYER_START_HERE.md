@@ -63,6 +63,8 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
+| Netcode concepts, verdicts and status (authority, tick, RTT, interpolation, transform tuning, score guard, rejoin) and the index of every multiplayer doc | `Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md`, `Docs/Multiplayer/README.md` |
+| Hand bug-hunt checklist and the debug overlay (Ctrl+Shift+M) | `Docs/PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` |
 | Party and lobby work on other branches (August's push design, Garrett's part J): what to take, what was deleted | `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` |
 | Who sits where: every person's seat and hull (`Player.NetStation`), the one swap ring (seats, then the domain's hulls), riders on another person's crew vessel, the crew relay RPCs | `Docs/CREW_STATIONS.md`, `Assets/_Scripts/Controller/Multiplayer/CrewStations.cs` |
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
@@ -130,7 +132,7 @@ last result, on 2026-10-14 just before #1089, was 8/14, stopped by the blocker b
 | 3 | Test level: the five-process party scenarios | Landed (14/14 on Amoebius) |
 | 4 | Offline mode, seven cases | Landed (L1 tests); needs a player build pass |
 | 5 | **Push instead of poll — a launch blocker** (week one is 10-40 concurrent players) | **All 9 steps landed 2026-10-26** on `Ys-bleeding-edge`, ported from August's `Ys-rescue-2026-08-24`: voided reads are counted (`voided N` in `net_logs.py show`), a voided read no longer skips our publish, a background rejoin keeps a live party roster, the party session's own join/leave/property events drive a roster sync at once (`party pushes N`), and the presence lobby's do too, with no read (`presence pushes N`); a pushed removal or delete rejoins at once, and our party size goes out the frame the party changes; a player missing from one read is no longer removed (two absent server reads, or the service saying they left); and the poll is now one 20 s safety poll under the pushes (about 0.1 lobby reads/s, was 0.83); and quitting leaves both lobbies at once (backgrounding leaves the presence lobby and rejoins on resume), so peers drop the row in about a second instead of ~30 s. Next: the owner's MPPM retest of the nine steps (checklist); order in `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 |
-| 6 | Reconnection grace | Not started |
+| 6 | Reconnection grace | Party-level grace not started. **Mid-match rejoin already works:** AI takeover on drop, then seat reclaim by UGS id (`MatchRejoin`, `ServerPlayerVesselInitializer.TryReclaimSeat`). See `Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md` §2.11 |
 
 Open bugs that matter: **B29 Count case** (a party that just shrank reads as full; Block 5 cures
 it). The B29 Session case ("defect 5") is fixed but unverified in Unity.

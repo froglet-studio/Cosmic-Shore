@@ -59,7 +59,7 @@ MonoBehaviour:
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 1
     ConnectionData: 
-    EnableTimeResync: 0
+    EnableTimeResync: 1
     TimeResyncInterval: 30
     EnsureNetworkVariableLengthSafety: 0
     EnableSceneManagement: 1

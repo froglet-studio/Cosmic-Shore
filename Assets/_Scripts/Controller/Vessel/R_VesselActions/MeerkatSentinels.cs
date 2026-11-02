@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
         sealed class Sentinel
         {
             public int Id;
-            public MeerkatWormholeExecutor.Tunnel Tube;
+            public SolitonTunnel Tube;
             public Vector3 Position;
             public float Owed, IdleUntil;
             public GameObject Ghost;
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
         public int Count => _live.Count;
 
         /// <summary>A sentinel stands at <paramref name="t"/>'s way in; the oldest retires while the pool is used up.</summary>
-        public void Place(MeerkatSolitonKit kit, MeerkatWormholeExecutor.Tunnel t, int poolSize)
+        public void Place(MeerkatSolitonKit kit, SolitonTunnel t, int poolSize)
         {
             _retired.Clear();
             int id = ++_nextId;
@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
             if (t != null)
             {
                 t.Held = false;
-                if (collapse && !t.Dying) MeerkatWormholeMath.CollapseNow(ref t.W);
+                if (collapse && !t.Dying) SolitonTunnelShapeMath.CollapseNow(ref t.W);
             }
             if (s.Ghost) Object.Destroy(s.Ghost);
             if (kit) kit.OnSentinelLost(s.Position);
@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
                 if (s.Tube != null)
                 {
                     s.Tube.Held = false;
-                    if (collapse && !s.Tube.Dying) MeerkatWormholeMath.CollapseNow(ref s.Tube.W);
+                    if (collapse && !s.Tube.Dying) SolitonTunnelShapeMath.CollapseNow(ref s.Tube.W);
                 }
                 if (s.Ghost) Object.Destroy(s.Ghost);
             }
@@ -111,18 +111,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The page's <c>kitSentinelsSweep</c>: a sentinel whose soliton is gone or collapsing goes with it.</summary>
         public void Sweep(MeerkatSolitonKit kit)
         {
-            var live = MeerkatWormholeExecutor.Live;
+            var live = SolitonTunnel.Live;
             for (int i = _live.Count - 1; i >= 0; i--)
             {
                 var s = _live[i];
                 var t = s.Tube;
-                bool gone = t == null || t.Dying || t.W.Phase is MeerkatWormholeMath.Phase.Collapse or MeerkatWormholeMath.Phase.Gone
+                bool gone = t == null || t.Dying || t.W.Phase is SolitonTunnelShapeMath.Phase.Collapse or SolitonTunnelShapeMath.Phase.Gone
                             || !Contains(live, t);
                 if (gone) Remove(kit, s, collapse: false);
             }
         }
 
-        static bool Contains(IReadOnlyList<MeerkatWormholeExecutor.Tunnel> list, MeerkatWormholeExecutor.Tunnel t)
+        static bool Contains(IReadOnlyList<SolitonTunnel> list, SolitonTunnel t)
         {
             for (int i = 0; i < list.Count; i++) if (list[i] == t) return true;
             return false;

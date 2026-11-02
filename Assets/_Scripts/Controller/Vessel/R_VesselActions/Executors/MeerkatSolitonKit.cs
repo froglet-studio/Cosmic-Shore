@@ -12,10 +12,10 @@ namespace CosmicShore.Gameplay
     /// The Meerkat's four abilities beyond the bare wormhole: <b>Garrett's kit</b> (Garrett's design, approved by Yash
     /// 2026-10-28; <c>R_VesselActions/MEERKAT.md</c> §10), ported from the Vessel Studio's Meerkat page, Kit "Garrett's kit"
     /// (<c>Docs/Studios/VesselStudio/meerkat.html</c>; the arithmetic is <see cref="MeerkatSolitonMath"/>). The wormhole IS the
-    /// soliton: a standing tunnel anyone may ride (any Meerkat: <c>MeerkatWormholeExecutor.TryRideAnySoliton</c>).
+    /// soliton: a standing tunnel anyone may ride (any Meerkat: <c>MeerkatSolitonExecutor.TryRideAnySoliton</c>).
     /// <list type="bullet">
     /// <item><b>Space, the soliton</b> (RT, the wormhole's own press): its surface area (round 23's <c>areaL0</c> /
-    /// <c>areaL10</c>, <see cref="MeerkatWormholeMath.SurfaceAreaThroat"/>) and its swallow and fire (<see cref="MeerkatSwallow"/>)
+    /// <c>areaL10</c>, <see cref="SolitonTunnelShapeMath.SurfaceAreaThroat"/>) and its swallow and fire (<see cref="MeerkatSwallow"/>)
     /// are the artifact's round-23 port, not this kit's. The kit adds <b>L5 Steal</b> (<see cref="Stamp"/> sets the bit,
     /// <c>MeerkatSwallow.Swallow</c> steals): what it swallows becomes the Meerkat's domain the moment its run starts.</item>
     /// <item><b>Time, passive</b>: the ride through EVERY soliton (its own or anyone's) rushes faster, the throat's multiplier
@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Where it runs.</b> The owner (the simulating machine, <see cref="MantaStingActionExecutor.IsSimAuthority"/>)
     /// decides each soliton's kit when it forms it (<see cref="Stamp"/>: a sentinel or not, the L5 bits, the portal's size)
-    /// and publishes it with the tunnel (<see cref="MeerkatWormholeNetworkRelay"/>, protocol 23). Every peer then lays the same
+    /// and publishes it with the tunnel (<see cref="MeerkatSolitonNetworkRelay"/>, protocol 23). Every peer then lays the same
     /// portal, stands the same sentinels and steals the same swallowed prisms from the same tunnels, on its own prisms (prisms
     /// are per-peer, as every mover of the prism-motion fundamental is: <c>Docs/PRISM_MOTION.md</c> §4). A zap's petals are
     /// decided on the Meerkat's owner and settled on the victim's (<see cref="ElementalTransfer.ApplyAllAuthoritative"/>),
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Config")]
         [Tooltip("The Meerkat's config (the same asset as the wormhole's): the kit's numbers are its Kit sections.")]
-        [SerializeField] MeerkatWormholeConfigSO config;
+        [SerializeField] MeerkatSolitonConfigSO config;
 
         [Tooltip("The game data the players (the rivals a sentinel zaps) are read from.")]
         [SerializeField] GameDataSO gameData;
@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
         public const byte KitSentinel = 1, KitSixSentinels = 2, KitDangerPortal = 4, KitSteal = 8;
 
         IVesselStatus _status;
-        MeerkatWormholeExecutor _wormhole;
+        MeerkatSolitonExecutor _wormhole;
         readonly MeerkatSentinels _sentinels = new();
         readonly MeerkatExitPortal _portal = new();
         readonly List<ShipActionSO> _bindScratch = new();
@@ -61,10 +61,10 @@ namespace CosmicShore.Gameplay
         float _aiPressAt = -10f;
         float _firedSoundAt = -10f, _zapSoundAt = -10f;
 
-        public MeerkatWormholeConfigSO Config => config;
+        public MeerkatSolitonConfigSO Config => config;
         public GameDataSO GameData => gameData;
         public IVesselStatus Status => _status;
-        public MeerkatWormholeExecutor Wormhole => _wormhole;
+        public MeerkatSolitonExecutor Wormhole => _wormhole;
 
         /// <summary>Charge: while true, each new soliton leaves a sentinel (Y toggles it).</summary>
         public bool SentinelMode { get; private set; }
@@ -92,18 +92,18 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
-            _wormhole = GetComponent<MeerkatWormholeExecutor>();
+            _wormhole = GetComponent<MeerkatSolitonExecutor>();
             SentinelMode = false;
             _sentinelInput = null;
             _aiPressAt = -10f;
             _sentinels.Clear(this, false);
             _portal.Clear();
             if (config == null)
-                CSDebug.LogError($"[Meerkat] {name}: MeerkatSolitonKit has no MeerkatWormholeConfig - the kit does nothing. " +
-                                 "Wire Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset on the prefab.");
+                CSDebug.LogError($"[Meerkat] {name}: MeerkatSolitonKit has no MeerkatSolitonConfig - the kit does nothing. " +
+                                 "Wire Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset on the prefab.");
         }
 
-        // ------------------------------------------------------------------ hooks MeerkatWormholeExecutor calls
+        // ------------------------------------------------------------------ hooks MeerkatSolitonExecutor calls
 
         /// <summary>Time: the ride's throat multiplier with the rush (every soliton, its own or anyone's).</summary>
         public float RideMid(float rideMidMultiplier) =>
@@ -117,7 +117,7 @@ namespace CosmicShore.Gameplay
         /// The owner, as it forms <paramref name="t"/>: what this soliton carries (a sentinel or not, the L5 bits, the
         /// portal's size), so every peer does the same with it.
         /// </summary>
-        public void Stamp(MeerkatWormholeExecutor.Tunnel t)
+        public void Stamp(SolitonTunnel t)
         {
             if (!config || t == null) return;
             byte kit = 0;
@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Every peer, once a soliton has formed (the owner's own, or its published copy): Mass sets down its exit
         /// portal; a sentinel stands at its way in if its owner had Sentinel mode on (the page's <c>kitSolitonMade</c>).</summary>
-        public void OnFormed(MeerkatWormholeExecutor.Tunnel t)
+        public void OnFormed(SolitonTunnel t)
         {
             if (!config || t == null) return;
             if (_portal.Lay(this, t)) PlayAt(config.PortalEvent, t.At(t.L, out _));
