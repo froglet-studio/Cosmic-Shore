@@ -1,0 +1,17 @@
+# Fleet Codex
+
+The artifact: https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8. One page for every vessel: its four abilities and
+their buttons, what each element scales (with the authored numbers), the level-5 upgrades and whether each is really
+wired, flight numbers, the game cards that seat it, its docs and its recent changes. Asked for by Shombith,
+2026-11-02: "an artifact which shows all these details for all vessels and is updated when new updates are added or
+abilities are changed".
+
+- `index.html`: the page. It fetches `fleet.json` from beside it. `#fleet` is the matrix, `#<VesselKey>` one vessel.
+- `Tools/Build/fleet_codex.py`: writes `build/fleet.json` and `build/img/<Key>.webp` from the shipped assets and git.
+  A reader; `build/` is git-ignored.
+- `/fleet-codex` (`.claude/skills/fleet-codex/SKILL.md`): how to refresh and republish, where every fact comes from,
+  and how to add a field.
+- A daily scheduled task republishes it from bleeding-edge when the content hash changed.
+
+Nothing on the page is typed by hand, so it cannot drift from the game. When it is wrong, the asset it read is wrong
+(or the reader is), and that is where the fix goes.
