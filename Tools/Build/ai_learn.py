@@ -61,7 +61,7 @@ def load_flights():
     """[{path, mode, hull, intensity, finished, seconds, race, date, text}] for every flight on every origin branch."""
     git("fetch", "-q", "origin", "+refs/heads/bugledger/*:refs/remotes/origin/bugledger/*")
     out = []
-    for path, text in lf.flights_on_branches():
+    for path, text in lf.flights_on_branches(include_not_a_person=True):
         try:
             d = json.loads(text)
         except ValueError:
@@ -69,7 +69,8 @@ def load_flights():
         out.append(dict(path=path, mode=d.get("mode") or "Unknown", hull=d.get("hull") or "Unknown",
                         intensity=d.get("intensity"), finished=bool(d.get("finished")),
                         seconds=d.get("raceSeconds") or 0.0, race=bool(d.get("ringList")),
-                        date=d.get("date") or "", result=d.get("result"), text=text))
+                        date=d.get("date") or "", result=d.get("result"), text=text,
+                        not_a_person=lf.not_a_person(path, text)))
     return out
 
 
@@ -109,7 +110,10 @@ def save_seen(paths, waiting):
 
 
 def waiting_reason(f):
-    """Why no learner reads this flight now (the mode is on hold, or no learner covers its hull), or None when one does."""
+    """Why no learner reads this flight now (nobody flew it - the AI trainer did -, the mode is on hold, or no learner
+    covers its hull), or None when one does."""
+    if f.get("not_a_person"):
+        return "not a person's flight: " + f["not_a_person"]
     if HOLD.get(f["mode"]):
         return "hold: " + HOLD[f["mode"]]
     if f["hull"] == "Squirrel" and f["mode"] in SKIM_LINE_MODES:
@@ -157,7 +161,7 @@ def plan(flights, seen, waiting=None):
 
 def pace(flights, mode):
     """The person's finished races and the AI rivals' (regatta_rival_report) in this mode, as report lines."""
-    mine = [f for f in flights if f["mode"] == mode]
+    mine = [f for f in flights if f["mode"] == mode and not f.get("not_a_person")]   # the person's races only
     by = collections.defaultdict(list)
     for f in mine:
         by[(f["hull"], f["intensity"])].append(f)
@@ -252,7 +256,9 @@ def main():
     flights = load_flights()
     seen, waiting = load_seen()
     new, modes = plan(flights, seen, waiting)
-    print(f"ai_learn: {len(flights)} flight(s) on the branches, {len(new)} new.")
+    people = sum(1 for f in flights if not f.get("not_a_person"))
+    print(f"ai_learn: {people} flight(s) people flew on the branches"
+          + (f" (and {len(flights) - people} no person flew)" if people < len(flights) else "") + f", {len(new)} new.")
     for mode in sorted(modes):
         m = modes[mode]
         print(f"  {mode}: " + ", ".join(f"{h} {n}" for h, n in sorted(m["hulls"].items()))
@@ -323,6 +329,16 @@ def self_test():
         bad.append("a mode on HOLD must be reported as held")
     if any("Bloomrush" in p for p in held_learned) or not any("Bloomrush" in p for p in held_waiting):
         bad.append("a flight in a mode on hold waits, it is not learned")
+    # A flight the AI trainer flew waits with its reason in a mode a learner covers, and is never learned (2026-10-29);
+    # negative control: the same flight flown by a person is learned.
+    trainer = dict(path="a/flight_Switchback_Dolphin_9.json", mode="Switchback", hull="Dolphin", race=True,
+                   not_a_person="the AI trainer flew it")
+    for who, f, want_learned in (("trainer", trainer, False), ("person", dict(trainer, not_a_person=None), True)):
+        t_learned, t_waiting = settle(plan([f], set())[0], set())
+        if (f["path"] in t_learned) != want_learned:
+            bad.append(f"a Switchback flight flown by the {who} must {'be' if want_learned else 'never be'} learned")
+        if not want_learned and not str(t_waiting.get(f["path"], "")).startswith("not a person's flight"):
+            bad.append(f"the trainer's flight waits with its reason, got {t_waiting.get(f['path'])!r}")
     new, modes = plan(fl, {"a/flight_Switchback_Dolphin_1.json"})
     if len(new) != 10: bad.append(f"new {len(new)} (the seen flight and the Unknown hull are not new)")
     if modes["Switchback"]["hulls"]["Dolphin"] != 1 or modes["Switchback"]["learners"] != ["drives"]:

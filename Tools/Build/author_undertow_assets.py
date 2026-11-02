@@ -80,8 +80,10 @@ for i in range(1, 5):
 # the plate's container and what it already carries (edited in place, never minted)
 CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
                   "ScarabCavitationExplosionImpactorDataContainer.asset")
+# The Scarab's own shove debuff since the 2026-10-29 recut (e846e71e8, Garrett): its bite is Charge-scaled, so it left
+# the shared ScarabCavitationDebuffByExplosionEffect (now the Dolphin cone's) for an asset of its own.
 EXISTING["ScarabCavitationDebuffEffect"] = lib.existing_guid(
-    "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabCavitationDebuffByExplosionEffect.asset")
+    "Assets/_SO_Assets/Effects/Vessel Explosion Effects/ScarabShoveDebuffByExplosionEffect.asset")
 EXISTING["ScarabBallForgeEffect"] = lib.existing_guid(
     "Assets/_SO_Assets/Effects/Explosion Crystal Effects/ScarabBallForgeByExplosionEffect.asset")
 # the SOAP channel a landed vessel-vs-vessel hit travels on

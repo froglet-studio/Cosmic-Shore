@@ -25,30 +25,32 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 fast path that can silently drop a tool's output is the exact failure this protocol
 exists to prevent.
 
-## 0.05 There is no compiler and no CI here — do not spend the branch's time on them
+## 0.05 The verify rule — what gates a C# commit (and what not to spend the branch's time on)
 
-**This environment has no Unity Editor, no `unity` CLI, no `dotnet`, and no CI to watch.**
-That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep`,
-`/ship-tools`) and it is not a degraded state to work around:
+**The verify rule (Shombith's decision, 2026-10-29): every C# commit passes `Tools/Build/unity_refcompile` (`bash Tools/Build/unity_refcompile/run.sh`) plus whatever `/ship` already gates on (`bash .claude/skills/ship/gates.sh`). When a Unity editor is open, also run the `unity` CLI. If neither ran, say so in the commit/PR and add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.** Never claim a verification that didn't run. `/verify-unity` is not required until that skill merges.
 
-- **Do not run `/verify-unity`, and do not try to stand a compiler up.** Installing an SDK
-  to Roslyn-parse the diff buys a SYNTAX check and nothing more — every `MonoBehaviour` and
-  `ScriptableObject` base type lives in the `Assembly-CSharp` monolith, so class bodies never
-  bind and the whole class of errors that actually bites (a member that does not exist, a
-  drifted override signature, an argument mismatch, overload resolution) is invisible to it.
-  A gate that cannot resolve a type cannot see errors ABOUT that type.
-- **Do not treat any build gate as a ship requirement.** `check_conditional_compilation.py`,
-  `check_enum_member_references.py`, `check_switch_label_collisions.py`,
-  `check_using_directives.py`, a generator's `--check`, "CI is green" — none of them gate a
-  GO here. Run one only when it is the cheapest way to answer a question you actually have
-  about your own change; never as a checklist item, never as evidence, and never as a reason
-  to sit on finished work.
-- **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
-  human wants CI watched, they will ask. The one CI action a ship command takes is to FIRE
-  it, once, at the end (§5.5) — `claude/**` branches trigger nothing on their own.
-- **Say so plainly instead.** The verification line in the PR body and the ship report reads
-  "not compiled — no editor or compiler in this environment", followed by what a human must
-  do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+This is the same rule, in the same words, as `CLAUDE.md` § "Unity CLI verification"; if the two
+ever differ, fix both. It holds in every mode (`/ship`, `/ship-quick`, `/ship-deep`, `/ship-tools`).
+What it means in practice:
+
+- **`gates.sh` runs `unity_refcompile` for you when `~/.dotnet/dotnet` exists, and prints `SKIP`
+  when it does not.** A `SKIP` means refcompile did NOT run — it is not a pass. First run needs
+  network and about ten minutes; how to run it and its false positives: `/asset-surgery` §4.
+- **Most sessions here have no Unity Editor**, so the `unity` CLI step usually does not apply. When
+  neither refcompile nor the CLI ran, the verification line in the PR body and ship report reads
+  "not compiled — <why>", followed by what a human must do at the editor, and the change gets a
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` entry. An honest "unverified" beats a manufactured green.
+- **Do not stand up a syntax-only compiler instead.** Installing an SDK to Roslyn-parse the diff
+  buys a SYNTAX check and nothing more — every `MonoBehaviour` and `ScriptableObject` base type
+  lives in the `Assembly-CSharp` monolith, so class bodies never bind and the errors that actually
+  bite (a missing member, a drifted override signature, an argument mismatch, overload resolution)
+  are invisible to it. `unity_refcompile` is the tool that binds them.
+- **The individual `check_*.py` scripts are not extra gates beyond `gates.sh`.** Run one by hand
+  only when it is the cheapest way to answer a question about your own change.
+- **Do not wait on, poll, or report CI.** `unity-ci.yml` has had no Unity runner since
+  2026-10-13 (its `unity` job is skipped), so a green check there is not a compile. Do not subscribe
+  to a PR to watch checks. The one CI action a ship command takes is to FIRE it, once, at the end
+  (§5.5) — `claude/**` branches trigger nothing on their own.
 - **These gates do not share a command line, and a wrong flag exits 2 — which reads as a
   FAILURE.** `check_enum_member_references.py`, `check_switch_label_collisions.py`,
   `check_using_directives.py` and `check_elemental_floats.py` take `--check`;
@@ -65,19 +67,21 @@ script did — so a gate printing `FAIL` in the very output you are reading come
 0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
 produced by the measurement rather than by the gate, and it is worse than the original
 because you have the failure text on screen and a number telling you to ignore it. Run the
-script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. **A command substitution in the SAME
+`echo` resets it too:** `check; echo "$gen @ $(git rev-parse --short HEAD): exit $?"` prints `git`'s status, so an A/B
+of a red generator against its merge's parent read "exit 0" on BOTH sides, twice in one session
+(`claude/ci-runs-failing-i6u77f`, 2026-11-01). Capture first: `check; rc=$?; echo "... exit $rc"`. Do this on the
 negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).
 
-**One tool changes the premise above, though not the policy: `Tools/Build/unity_refcompile`
-(2026-10).** It binds the whole of `Assembly-CSharp`, method bodies included, against real Unity 6
-reference assemblies and every package at its locked source — not the syntax-only Roslyn pass this
-section warns about — and `check_generated_assets.py` then audits changed YAML assets against the
-schema it wrote. It is still not a ship gate and still optional; but when a session has network and
-ten minutes, a green run of it (negative-controlled) IS evidence, and the verification line may say
-"compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
-of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
+**What `Tools/Build/unity_refcompile` buys (2026-10).** It binds the whole of `Assembly-CSharp`,
+method bodies included, against real Unity 6 reference assemblies and every package at its locked
+source — not the syntax-only Roslyn pass warned about above — and `check_generated_assets.py` then
+audits changed YAML assets against the schema it wrote. A green run of it (negative-controlled) IS
+evidence: the verification line may say "compiled against Unity reference assemblies
+(`unity_refcompile`), not opened in the editor" instead of "not compiled". How to run it, and its
+false positives: `/asset-surgery` §4.
 
 **Amoebius is not part of a ship.** A ship never builds, tests or patches Amoebius (Shombith, 2026-10-31). The
 engine is brought up to date with the game every three weeks by the scheduled **Amoebius update** task (a fresh cloud
@@ -960,6 +964,26 @@ node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
 
 **Report**: labs touched, the verifier verdict per lab, the CATALOG rows changed, the LEARNINGS
 ids added and anything promoted, or an explicit "lab touched, nothing new learned: <why>".
+
+## 3.57 Compute capture (any branch that touched a search or a model — feeds `/compute`)
+
+The team's idle machines search whatever is queued in `Docs/Compute/jobs/` (`Docs/Compute/README.md`). A branch
+feeds that queue, or breaks it, in three ways; check each:
+
+```sh
+git diff --name-only <merge-base>..HEAD | grep -E '^(Tools/Compute/|Docs/Compute/jobs/)'      # the system itself
+git diff --name-only <merge-base>..HEAD | grep -E '^Tools/Build/[^/]*(_sim|_balance|_budget)\.py$'   # a model a job imports
+git diff <merge-base>..HEAD -- 'Tools/Build/*.py' | grep -cE '^\+.*(--sweep|itertools\.product\()'   # a new hand-rolled search
+```
+
+- **The system or a job file changed**: `python3 Tools/Compute/compute.py self-test` and `validate` are green
+  before the PR; a changed loss bumped its evaluator's `VERSION`.
+- **A model a job imports changed** (`race_models.py` names them): its jobs start a new epoch by themselves (the
+  inputs hash); say so in the PR, because the board's numbers reset for those jobs.
+- **A new hand-rolled search**: one line in the PR ("a candidate compute job: <script>"); `/compute-scout`'s
+  `sweeps` lens will list it. Converting it is a `/compute-job`, never part of this branch unless it asked.
+
+**Report**: the three answers, or "no compute surface touched".
 
 ## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
 

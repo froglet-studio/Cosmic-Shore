@@ -1,5 +1,12 @@
 # AI System — Branch Workflow (AI work lives on `Ys-bleeding-edge`)
 
+**2026-10-28: `ai`, the AI's own branch.** `origin/ai` is `bleeding-edge` plus AI work, owned by no person
+(Shombith, who leads Froglet Compute). Froglet Compute's AI jobs read it, and `Tools/Compute/ai_branch.py sync --push`
+keeps it current: it merges `bleeding-edge` in and replays only the AI paths that changed here on
+`Ys-bleeding-edge`. Nothing below changes yet: Yash's sessions and the hourly sweep still work here, and the sync
+carries their AI work across. Moving the sweep and AI sessions to `ai` is the next step, Yash's to agree.
+`Docs/Compute/README.md` section 7.1.
+
 **2026-10-09: the `ai-system` branch is retired.** Its work (the Skim Race AI retunes, the perf
 diagnostics, these docs) was merged into `claude/peaceful-rubin-hhw49n` and from there into
 `Ys-bleeding-edge`, and the branch was deleted. Every AI session now works on **`Ys-bleeding-edge`**

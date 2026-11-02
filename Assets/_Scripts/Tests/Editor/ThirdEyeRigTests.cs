@@ -1,12 +1,12 @@
 #if UNITY_EDITOR
-using CosmicShore.Editor.AI;
+using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
 
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// <see cref="ThirdEyeRig"/> - the Third Eye window's camera math. These pin the properties a
+    /// <see cref="ThirdEyeRig"/> - the in-game Third Eye's camera math. These pin the properties a
     /// playtest would notice: the Chase camera sits behind and above the hull in the hull's own frame
     /// and catches up without lag at speed, Follow stays world-up, a segment half behind the camera is
     /// clipped rather than drawn backwards, and an off-screen pilot's marker lands on the edge you

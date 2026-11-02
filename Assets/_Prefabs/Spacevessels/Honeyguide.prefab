@@ -1099,7 +1099,7 @@ MonoBehaviour:
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
-  UseUnreliableDeltas: 0
+  UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -1112,9 +1112,9 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
@@ -1351,10 +1351,7 @@ MonoBehaviour:
   orbitSweepDegrees: 360
   orbitProgressFraction: 0.9
   orbitTargetJumpFraction: 1.6
-  abilities:
-  - Ability: {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
-    Duration: 2
-    Cooldown: 10
+  abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 5466809915974853214}
   boostPolicy: {fileID: 11400000, guid: 193cc98fcde34143a71e79c5ccdaa1f4, type: 2}
@@ -1431,9 +1428,6 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: 2d9f5e3a7c4f4a8b8c1d3e4f5a6b7c8d, type: 2}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
@@ -1483,7 +1477,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselImpactorDataContainerSO: {fileID: 11400000, guid: bd2b4a654fb302e47a23cf303280df2d,
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: b2bc4391e7b140e481bb8923269a8a24,
     type: 2}
   networkVesselImpactor: {fileID: 2035987173373189047}
 --- !u!114 &223934081028988333

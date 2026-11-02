@@ -42,6 +42,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
 - [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
+- [`Docs/Compute/README.md`](Docs/Compute/README.md): **Froglet Compute, the team's idle hardware searching for the game** (Garrett, 2026-10-26): a queue of learning searches (AI drives per vessel x Time game x intensity, the Regatta course and elemental balance plan, swarm bioforms, NCA creature trainings) every collaborator's computer works through when idle (`compute.py install`: set and forget, any OS; never touches the checkout; publishes only to `compute/<user>/<host>`), one merged board, and a scout that finds what to search next. A result is a proposal: its area's owner promotes it. Skills: `/compute`, `/compute-job`, `/compute-scout`, `/regatta-balance` (`Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`), `/bioform-forge`.
+  Sections: Start; What it does on your computer; The pieces; A job; How the search is shared; An evaluator; The queue refs; Promotion; The scout sweep; Its sibling in Unity; What this is not; Verification status; The Compute Console; Manual runs; The live console and the always-on VM; Runs in the real game (the Unity trainer, and what a run records with the game's own tools); The mothership (every computer live, runs sent to one); The app (Froglet Compute on your own computer); Follow-ups
 - [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
   Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
 - [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph (Shombith leads activation; Caleb heads FTUE with him; no one else is on it), dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them.
@@ -197,7 +199,7 @@ a mode. `/arcadegame` §6.
 ### Test Infrastructure
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
-- **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
+- **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 373 C# files (2026-11-01, `find Assets/_Scripts/Tests/Editor -name '*.cs' | wc -l`; 397 under any `Tests/` folder in `Assets/_Scripts`) covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
 - **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
@@ -205,9 +207,22 @@ a mode. `/arcadegame` §6.
 
 ### Build & CI
 
-No automated CI/CD pipeline is currently configured. Builds are manual. Build profiles live in `Assets/Settings/Build Profiles/`.
+Workflows in `.github/workflows/` (2026-10-29):
 
-### Unity CLI verification — `/verify-unity` gates every C# commit (LOCKED rule)
+- `unity-ci.yml` (Unity CI): compile / mono / il2cpp / static tiers. **No Unity runner has been attached since 2026-10-13**, so the `unity` job is skipped while `UNITY_RUNNER_LABEL` is unset; only the static tier does real work. A green run here is not a Unity compile.
+- `amoebius-parity-ci.yml` (Amoebius parity CI): on every bleeding-edge push, compiles the port, runs the engine tests and smoke-runs scenes.
+- `bleeding-edge-guard.yml` (Bleeding-edge guard): verifies every commit landing on `bleeding-edge` / `development` and attempts a repair.
+- `build-branch-ci.yml` (Build branch CI): verifies `build/android` and `build/windows`.
+- `ios-testflight.yml` (iOS TestFlight): Xcode sign + upload, no Unity step.
+- `perf-daily.yml` (perf-daily): daily perf gates plus Amoebius allocations.
+- `sync-build-branches.yml` (Promote test build): every third Wednesday, `development` → build branches.
+- `tag-internal-build.yml` (Tag internal build): Friday tag of `bleeding-edge`.
+- `team-tasks.yml` (team-tasks): the ticket sweep.
+- `toybox-publish.yml` (Publish browser Toybox): manual, publishes WebGL to R2.
+
+Player builds themselves are still made by hand from the build profiles in `Assets/Settings/Build Profiles/`.
+
+### Unity CLI verification — the verify rule gates every C# commit (LOCKED rule)
 
 The repo carries **`com.unity.pipeline`** (`0.5.0-exp.1`, experimental) so a session can drive the
 **open** Unity Editor from the terminal via the standalone `unity` binary — real compiles, Play
@@ -216,11 +231,7 @@ troubleshooting: `Docs/unity-cli-setup.md`. The CLI is experimental and changes 
 --help` for the installed version is authoritative** — never assume a command or flag from memory
 or from another machine.
 
-- **The rule: any C# change must pass `/verify-unity` before it is committed.** A green edit-mode
-  suite or a clean mental compile does not substitute for the Editor actually compiling and loading
-  the change. If the CLI genuinely isn't available in the session (no editor open, no `unity`
-  binary), say so explicitly in the commit/PR and file the change in
-  `Docs/UNITY_VERIFICATION_CHECKLIST.md` as before — never claim a verification that didn't run.
+- **The verify rule (Shombith's decision, 2026-10-29): every C# commit passes `Tools/Build/unity_refcompile` (`bash Tools/Build/unity_refcompile/run.sh`) plus whatever `/ship` already gates on (`bash .claude/skills/ship/gates.sh`). When a Unity editor is open, also run the `unity` CLI. If neither ran, say so in the commit/PR and add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.** Never claim a verification that didn't run. `/verify-unity` is not required until that skill merges.
 - **`[CliCommand]` wrappers** are the editor methods exposed to the CLI's `unity command` surface —
   the sanctioned way to give the CLI a repo-specific operation. They are editor tooling: they live
   under an `Editor/` folder (Assembly-CSharp-Editor), never in runtime code.
@@ -329,7 +340,7 @@ A session that changed how something LOOKS or MOVES shows it when it can, instea
 a still by default, a short clip (60 s max, 15 fps, 1280x720) for motion or order of events, made in Amoebius in a cloud
 session or with Playwright for an artifact. The session reads at most 3-4 frames of its own clip (about 1.5k tokens
 each), sends the file with `SendUserFile`, never commits it, and says in the same message what only the Unity editor
-can judge (the final look, feel, audio). A clip never replaces `/verify-unity` or the checklist's hand test.
+can judge (the final look, feel, audio). A clip never replaces the verify rule (§ Unity CLI verification) or the checklist's hand test.
 
 ## Code Style
 

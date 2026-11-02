@@ -63,7 +63,7 @@ public interface IScreen
 
 #### Reusable UI Components
 
-- **`ProfileDisplayWidget`** (`Assets/_Scripts/UI/Elements/ProfileDisplayWidget.cs`) — Displays player name + avatar. Uses `[Inject] PlayerDataService` and subscribes to `OnProfileChanged`. Drop onto any menu screen that needs profile display — replaces inline profile display logic. (retired 2026-10-25: on no scene or asset, `Docs/Reports/DEAD_CODE_M8.md`)
+- **`ProfileDisplayWidget`** — RETIRED 2026-10-25 (on no scene or asset, deleted with the M8 dead-code pass, `Docs/Reports/DEAD_CODE_M8.md`). It displayed player name + avatar from `[Inject] PlayerDataService` / `OnProfileChanged`; do not look for it under `Assets/_Scripts/UI/Elements/`.
 - **`NavLink` / `NavGroup`** (`Assets/_Scripts/UI/Elements/`) — Tab navigation within a screen. `NavGroup` discovers child `NavLink` components and manages selection state with crossfade animations.
 - **`ModalWindowManager`** (`Assets/_Scripts/UI/Modals/ModalWindowManager.cs`) — Base class for modal windows. Caches `ScreenSwitcher` reference at startup. Handles open/close animations, audio, and modal stack integration.
 
@@ -242,6 +242,8 @@ Fly a free camera through the lava lamp while the AI keeps flying the vessel (Ya
 this vessel's ability, I just need a god mode, with which I can fly smoothly in the environment without the vessel, and
 have an eye on everything while the Vessel is flown by AI"). This replaces the wormhole lab as the way to watch a hull's
 ability; the lab scene was left in place, but nothing needs it any more.
+
+**Shared flight (2026-11-01):** the flight model and its defaults now live in `Controller/Camera/FreeFlyCamera.cs` (a serializable class, field `flight` on `MenuGodModeCamera`). Switchback's AI Diagnose Free fly uses the same class, so both fly identically. Menu_Main serialized no flight values, so nothing was lost.
 
 | Input | Keyboard / mouse | Gamepad |
 |---|---|---|

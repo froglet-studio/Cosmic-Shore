@@ -303,16 +303,16 @@ _meerkat = read_or_empty("Assets/_Prefabs/Spacevessels/Meerkat.prefab")
 if not re.search(r"m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: \{fileID: 11500000, "
                  r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _meerkat):
     errors.append("Meerkat.prefab's AIPilot is not enabled - an AI Meerkat cannot race")
-_wh = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.cs")
+_wh = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs")
 if "PerformShipControllerActionsReplicated" not in _wh:
-    errors.append("MeerkatWormholeExecutor's autopilot does not go through the replicated press path")
-_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset")
+    errors.append("MeerkatSolitonExecutor's autopilot does not go through the replicated press path")
+_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset")
 if not re.search(r"^  aiWormhole: 1$", _cfg, re.M):
-    errors.append("MeerkatWormholeConfig.aiWormhole is off or missing - an AI Meerkat forms no tunnel")
-_meta = read_or_empty("Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeFormAction.asset.meta")
+    errors.append("MeerkatSolitonConfig.aiWormhole is off or missing - an AI Meerkat forms no tunnel")
+_meta = read_or_empty("Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonFormAction.asset.meta")
 _mg = re.search(r"^guid: ([0-9a-f]{32})", _meta, re.M)
 if not _mg or _mg.group(1) not in _meerkat:
-    errors.append("Meerkat.prefab does not bind MeerkatWormholeFormAction - run author_meerkat_assets.py")
+    errors.append("Meerkat.prefab does not bind MeerkatSolitonFormAction - run author_meerkat_assets.py")
 if not os.path.exists(os.path.join(ROOT, "Assets/_SO_Assets/Classes/SO_Class_Meerkat.asset")):
     errors.append("SO_Class_Meerkat.asset is missing - run author_meerkat_assets.py")
 

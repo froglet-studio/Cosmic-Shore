@@ -22,6 +22,10 @@ MonoBehaviour:
       ChartX: -6
       ChartY: 0
       ChartZ: -4
+      Charted: 1
+      GalaxyX: 900
+      GalaxyY: 2100
+      GalaxyZ: 30
       Cell: 0
       Vaults: 0
       Finds: []
@@ -34,6 +38,10 @@ MonoBehaviour:
       ChartX: 6
       ChartY: 1
       ChartZ: -4
+      Charted: 1
+      GalaxyX: 900
+      GalaxyY: 2100
+      GalaxyZ: 30
       Cell: 1
       Vaults: 0
       Finds: []
@@ -46,6 +54,10 @@ MonoBehaviour:
       ChartX: 0
       ChartY: -1
       ChartZ: 7
+      Charted: 1
+      GalaxyX: 900
+      GalaxyY: 2100
+      GalaxyZ: 30
       Cell: 2
       Vaults: 0
       Finds: []
@@ -58,6 +70,10 @@ MonoBehaviour:
       ChartX: 0
       ChartY: 0
       ChartZ: 0
+      Charted: 1
+      GalaxyX: 1300
+      GalaxyY: 2360
+      GalaxyZ: 98
       Cell: 3
       Vaults: 0
       Finds: []
@@ -70,6 +86,10 @@ MonoBehaviour:
       ChartX: -5
       ChartY: 2
       ChartZ: 3
+      Charted: 1
+      GalaxyX: 560
+      GalaxyY: 1690
+      GalaxyZ: -34
       Cell: 4
       Vaults: 3
       Finds:
@@ -84,6 +104,10 @@ MonoBehaviour:
       ChartX: 4
       ChartY: -2
       ChartZ: 5
+      Charted: 1
+      GalaxyX: 1520
+      GalaxyY: 1760
+      GalaxyZ: -149
       Cell: 5
       Vaults: 2
       Finds:
@@ -98,6 +122,10 @@ MonoBehaviour:
       ChartX: -1
       ChartY: 3
       ChartZ: -7
+      Charted: 1
+      GalaxyX: 430
+      GalaxyY: 2360
+      GalaxyZ: -112
       Cell: 6
       Vaults: 0
       Finds: []
@@ -110,6 +138,10 @@ MonoBehaviour:
       ChartX: 5
       ChartY: 1
       ChartZ: 1
+      Charted: 1
+      GalaxyX: 1120
+      GalaxyY: 1520
+      GalaxyZ: 145
       Cell: 7
       Vaults: 0
       Finds: []
@@ -392,3 +424,20 @@ MonoBehaviour:
     CardRoute: '{from} TO {to} - {pilot}'
     CardHomeRoute: '{from} TO {to}'
     CardUnderway: 'UNDER WAY TO {to}'
+    CardCourse: '{ly} LY THROUGH {sea} - LIGHT TAKES {years} YEARS'
+    SeaSpray: SPRAY
+    SeaFroth: FROTH
+    SeaWater: WATER
+    SeaThick: THICK WATER
+    SeaReef: REEF
+    CardOpen: Open
+    CardClose: Close
+    CardDetails: '{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}'
+    CardHomeDetails: '{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}'
+    CardSquadSeat: '{vessel} ({pilot})'
+    CardSquadSeparator: ', '
+    MapPlace: '{name} - {blurb}'
+    EdgeCaption: 'EDGE ON, TRUE SCALE - DISK 1,000 LY - {place} {height}'
+    EdgeAbove: '{ly} LY ABOVE THE MIDPLANE'
+    EdgeBelow: '{ly} LY BELOW THE MIDPLANE'
+    EdgeMidplane: ON THE MIDPLANE

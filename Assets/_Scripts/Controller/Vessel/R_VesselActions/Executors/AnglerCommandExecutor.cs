@@ -281,6 +281,27 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Where the next <see cref="Dash"/> would carry the hull, without dashing: the same group choice (this group's turn,
+        /// else the other) and the same <see cref="AnglerCommandMath.DashPoint"/>. A READ for the autopilot
+        /// (<see cref="AnglerLeapfrogAIPolicySO"/>) to decide whether the dash is worth pressing. False with no school, or
+        /// with every group already round the hull.
+        /// </summary>
+        public bool TryGetDashPoint(out Vector3 point)
+        {
+            point = default;
+            if (_status == null || !config || !_status.Transform || _tamed.Count == 0) return false;
+            Vector3 from = _status.Transform.position;
+            for (int tries = 0; tries < 2; tries++)
+            {
+                int group = tries == 0 ? _dashGroup : 1 - _dashGroup;
+                if (!TryGroupCentroid(group, out Vector3 centroid)) continue;
+                point = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac);
+                if ((point - from).sqrMagnitude >= 1f) return true;
+            }
+            return false;
+        }
+
         bool TryGroupCentroid(int group, out Vector3 centroid)
         {
             centroid = Vector3.zero;
@@ -319,7 +340,9 @@ namespace CosmicShore.Gameplay
             if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return false;
             if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
-            if (!f || !f.TryLeash(this)) return false;
+            if (!f) return false;
+            CrystalFaunaBirth.Announce(_status, f);   // the omni crystal folds into its heart (FAUNA_BIRTH_CRYSTAL_MORPH.md)
+            if (!f.TryLeash(this)) return false;
             var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
             _members[f] = m;
             JoinSchool(m);

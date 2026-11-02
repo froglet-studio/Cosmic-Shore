@@ -322,6 +322,40 @@ hull was and the hull where the dash puts it, 75% of the way, turned to it. Six 
 `AnglerCommandExecutor.DashGroup` / `Dashing`. The plate stays empty (a full lime plate drowned the white parts). The
 same change wires the Mass and Space parts, whose view fields the rebind had silently dropped (LESSONS 65). The Angler
 is done; next Butterfly, then Brittle Star.
+**Brittle Star Charge (Charge Mode) DONE 2026-11-01** (`claude/brittlestar-icons`, Garrett picked C of A/B/C, "whip to
+saber"): the hull NOSE-ON (yaw 90, pitch -90, a pentagon point up) in the domain colour, a whip out of each of the five
+turrets; RT's pull crossfades them to five straight sabers (`BrittleStarHUDView.SetCords` from
+`BrittleStarExecutor.CordsOut01` / `CordPull01`); the whips dim to 0.25 while the mode is off. Replaces the Ring Detonation
+icon (BRITTLE_STAR.md F12). The CTA lime came off all four Brittle Star plates (LESSONS 75); only overheat keeps the hot
+colour. **Mass (Creation) DONE 2026-11-01** (Garrett picked A of A/B/C, "the tunnel"): the star seen from behind in the
+domain colour, each corner's line of prisms (squares with a negative-space X) coming at you; dim with the mode off, and
+crossfading to fat blocks as Mass widens them x1 -> x2 (`BrittleStarHUDView.SetCreationTrails` from
+`BrittleStarExecutor.Creation01` / `BlockGirth01`). **Space (Space Mode) DONE 2026-11-01** (picked A, "the fan"): the
+star flying right, a round (a disc with a short streak, never a rhombus) out of each turret, meeting ahead with the aim
+stick centred and splayed as it is pushed, further out as Space doubles the range; dim with the mode off or overheated,
+the plate the heat (`SetGuns` from `Destruction01` / `Splay01` / `Range01` / `Overheated`). **Time (Speed) DONE
+2026-11-01** (picked A, "the stretch"): the star flying right, its gapped cruise blocks (dim, mode off) stretched into one
+joined line of long square-X prisms, longer at Time's x8 (`SetSpeedTrail` from `Speed01` / `SpeedBoost01`). **Omni
+DONE 2026-11-01** (picked C, "the stock": "I like that c can display the resource amount held"): the star over its two
+spare-ring slots, a held spare a solid pentagon and an empty slot an outline, so the one-colour card still counts; three
+sprites (`Core/BrittleStar_OmniStock0..2`) swapped by `BrittleStarHUDView.SetSpareRings` through the new
+`VesselHUDView.SetOmniAbilitySprite`. The Brittle Star is done; next the rhombus recut of the shipped hulls.
+**The Honeyguide** (2026-11-01, round 1, not yet reviewed by Garrett; `cece/jolly-lovelace-t8y3a1`): Garrett, "so we will
+need an icon for each ability that can take over". Seventeen white sprites for the trigger redesign (Honeyguide Lab round
+8): the four element cards (Slip on Time, Peck on Space RT, Flit on Charge LT, Hive on Mass) in
+`AbilityIcons/Honeyguide/`, and the thirteen abilities a Ratel card banks onto a trigger in `Honeyguide/Upgrades/`
+(`specs/honeyguide.py`). The hull is its real mesh (view A, plan). Sheets: `Docs/Icons/sheets/honeyguide.png` (the
+cards), `honeyguide_contact.png` (128 and 40 together), `honeyguide_rt_space.png` and `honeyguide_lt_charge.png` (each
+trigger card with its base and three banked uppers as the current icon). Nothing is bound yet: the Unity port of the
+trigger redesign binds them and adds the card's tick queue (one tick per banked use, each in its ability's shade of the
+HUD blue), which the kit's `card.py` does not draw yet.
+
+**Rhombus recut DONE 2026-11-01** (`claude/prism-recut`; Garrett: "you need to stop using the rhombuses for shielded
+prisms, that shape is owned by the time petal"): `motifs.prism` / `prism_lit` are two close triangles now, and every
+card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yastri, Scarab Cavitation Blast,
+Sparrow's shielded stance rounds, Squirrel's drift trail and Sharp Drift), plus the Serpent's shielded bricks (Wall
+Shield omni card) and the Squirrel's shielded-ring card (`author_squirrel_shielded_ring_icon.py`). No C# changed. The
+Rhino's super-shielded prism stays the stella octangula (its own shape, not a rhombus).
 
 **The Tiger Moth** (round 4, 2026-10-31; `specs/tigermoth.py`). The vessel the round-4 list calls the Butterfly is the
 Tiger Moth now (the Butterfly retired 2026-10-29, `TIGER_MOTH.md`; a Butterfly may return as its own hull one day). It

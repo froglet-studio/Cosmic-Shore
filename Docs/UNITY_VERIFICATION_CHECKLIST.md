@@ -93,6 +93,272 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no
   longer locked.
 
+### 🔴 Angler and Jacks omni-crystal morph: the crystal folds into the newborn creature's heart (`claude/fauna-birth-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`FaunaBirthCrystalMorphByCrystal.asset`) wired into the Angler container and, through
+`author_jacks_assets.py`, the Jacks container replaces the husk spray: the cage folds into the heart crystal of the
+creature the pickup is born as, and rides it while the body blooms. Record: `R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `FaunaBirthCrystalMorphGeometryTests` green.
+- [ ] Angler: no husk spray; the crystal folds into the new creature's heart where it was collected, and the creature joins the school.
+- [ ] Jacks: the crystal flies about 30 u back into the heart of the worm segment nearest it.
+- [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
+- [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
+- [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
+### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
+`omniCrystalRetirement`), hooks on `AOEConicExplosion` (`Initialized`, `SetMorphStandIn`, `TryGetConeLocalToWorldAt`,
+`TryGetConeColours`), and a `sourceCentre` overload of `CrystalMorphMeshBuilder`'s hull cast. Record:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_MORPH.md`.
+
+**Verified without the editor:** `crystal_morph_harness` 54/54 (negative-controlled); `unity_refcompile` player and editor
+0 errors in changed files (a planted error caught).
+
+**Test:** `DOLPHIN_CRYSTAL_MORPH.md` §7 — fly a Dolphin through an omni crystal: no husk spray, the cage bursts onto a cone
+down the nose and the cone takes over (~0.44 s); prisms ahead still break from the first frame; Squirrel and Scarab morphs
+unchanged; other hulls still spray; MPPM plays it on both peers.
+
+### 🔴 B47: a rejoin hands the reclaimed hull to the rejoiner with ChangePlayer, not a second Initialize (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync` no longer calls `Initialize` on the reclaimed
+vessel (the roster has always initialised it first, so the guard refused it and skipped input, camera and HUD). The new
+`ClaimReclaimedPair` does nothing if the pair was already set up as this machine's own; otherwise it stops a local
+autopilot, calls `VesselController.ChangePlayer` (the pilot-swap path), `AdoptCurrentMotion`, repaints, raises the pair
+event and snaps the camera. The claim also waits for the vessel's ownership. `MultiplayerHUD` logs one warning per pilot
+that is in the roster with no name (the unexplained half of B47). `VesselController` is not changed. Details:
+`Docs/PartySystem/BUGS.md` B47.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs, 0 errors in project code;
+`check_console_logging.py` 0 problems. Not run anywhere; no new edit-mode test (the claim is a NetworkBehaviour coroutine
+on live Netcode state).
+
+**Test (MPPM, three players: main editor hosts, Player 2 and Player 3 join; Serpent Time or Skim Race):**
+1. Host a party, both virtual players join, start the match, and wait until all three are flying.
+2. Drop Player 2: stop Player 2's Play (or cut its network for about 10 s with the Network Simulator). Expected on the
+   host: `leaverToAI` in the net log and the "pilot handed to AI" toast; Player 2's ship keeps flying under the AI.
+3. Start Player 2 again; it lands on Home with REJOIN selected. Press REJOIN. Expected on the host: `clientApproved <n>
+   rejoin`, then `seatReclaimed <name>`.
+4. On Player 2, expected: **no** `Double initialization not allowed!` in its console; **no** `[SerpentScope] The scope
+   window is NOT being drawn` warning (Serpent); the camera follows its old ship; the sticks fly it at once; abilities fire
+   and the ability row lights; the HUD shows; same domain and same score; no second ship; the AI no longer flies it.
+5. On the host and Player 3, expected: Player 2's seat keeps its name on the domain bar and scoreboard, and no
+   `ArgumentNullException` (B46). If any console shows `[MultiplayerHUD] Pilot <id> is in the roster with no name`, copy
+   that line into the test report: it names the pilot the missing-name half of B47 is about.
+6. Repeat steps 2-4 two more times (the order in which ownership and the roster arrive varies run to run). Expected: the
+   same result every time.
+7. Regression: in the menu's freestyle, swap vessels with the Vessel Changer, and in an arena match do a D-pad pilot
+   swap. Expected: both still work, with no `Double initialization` error.
+
+### 🔴 UgsRequestPolicyTests: the B34 test's fake SDK frame pinned against inlining (`claude/mp-rejoin-b47`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `[MethodImpl(MethodImplOptions.NoInlining)]` on the test's fake `LobbyChannel.UnsubscribeAsync` in
+`Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`. `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` is
+unchanged: it still needs both "LobbyChannel" and "UnsubscribeAsync" in the stack trace.
+
+**Why:** `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame` failed in the editor (Unity 6000.3.17f1; 163 of 164
+multiplayer edit-mode tests passed). The likely cause, consistent with the evidence but not proven: Mono inlined the
+one-line thrower into `LobbyChannel.Throw`, so the trace named only `LobbyChannel.Throw`. The sibling test that matches
+on the class name alone (`LobbyPatcher`) passed, which fits that reading.
+
+**Verified without the editor:** `unity_refcompile --config editor` compiled the file with 0 errors. Not run anywhere.
+
+**Test (editor):**
+1. Window > General > Test Runner > EditMode, run `UgsRequestPolicyTests`. Expected: all pass, including
+   `LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame`.
+2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
+3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
+   and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
+### 🔴 Honeyguide omni-crystal morph: the crystal breaks into the hive comb (`claude/honeyguide-hive-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`HoneyguideCrystalMorphByCrystal.asset` in `HoneyguideImpactorDataContainer` replaces the husk spray: the crystal's 64
+panels land on the eight cells at the heart of the comb the pickup lays. Record: `R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `HoneyguideCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the crystal flies back about 40 u and breaks into the middle of the comb; the rest of the comb blooms as before.
+- [ ] The eight heart cells' spikes sprouting at the hand-off reads acceptably (if not, see the doc's §2).
+- [ ] The hive works as before: super shields, chains, debuff immunity, the reward.
+- [ ] An omni crystal taken while a hive is open: no second hive, the crystal fades with no warning.
+- [ ] During a pick of three: the hive opens when the pick ends; if that is over 1.5 s, the crystal fades with a warning.
+
+### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`ShrikeCrystalMorphByCrystal.asset` (wired by `author_shrike_assets.py`) replaces the husk spray: the cage lands on the
+bud of the nest flora the pickup grows. Record: `R_VesselActions/SHRIKE_CRYSTAL_MORPH.md`. Headless harness and
+`unity_refcompile` ran; no editor.
+
+- [ ] Compiles; `ShrikeCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the cage rises onto the bud; the flora then grows missiles as before.
+- [ ] The stem appearing at the hand-off does not pop (if it does, see the doc's follow-up).
+- [ ] Elemental crystals and the Mass detach still grow their flora, with no morph.
+- [ ] MPPM two clients: the morph plays on both.
+
+### 🔴 Butterfly, Rhino and Manta omni-crystal morph: the crystal becomes the spherical blast (`claude/sphere-blast-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`SphereBlastCrystalMorphByCrystal.asset`) wired into the Butterfly, Rhino and Manta containers replaces
+the husk spray: the crystal's cage lands on the plain `AOEExplosion` sphere each hull's omni effect already fires, and
+the sphere takes over. Record: `R_VesselActions/SPHERE_BLAST_CRYSTAL_MORPH.md`. Headless harness and `unity_refcompile` ran;
+no editor.
+
+- [ ] Compiles; `SphereBlastCrystalMorphGeometryTests` green.
+- [ ] Butterfly: no husk spray; the cage bursts onto the bloom sphere; total ≈ 0.44 s.
+- [ ] Rhino: the cage folds onto the small slow blast behind the hull, which keeps swelling; the Surge still fires.
+- [ ] Manta: the cage lands on the Kabloom self-blast; planted bombs and the flower are unchanged.
+- [ ] Prisms inside the blast break from the first frame (the blast is unchanged, only its first 0.37 s is drawn by the morph).
+- [ ] Every other hull unchanged (Squirrel ring, Scarab forge still morph; Sparrow and Goby still spray).
+- [ ] MPPM two clients: the morph plays on both.
+
+### 🔴 Fair play T1: Google Play Games sign-in on Android (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:** `PlayGamesSignIn` (mirrors `GameCenterSignIn`), `PlayGamesPlatform` (C#, calls the Java bridge),
+`Assets/Plugins/Android/PlayGamesSignIn.androidlib` (the bridge, its `build.gradle` with the one dependency
+`com.google.android.gms:play-services-games-v2:22.1.0`, and a manifest that removes the library's start-up provider), and
+`PlayGamesAppId` (an Android build step that writes the Play Games project ID into the manifest while the switch is on).
+`PlatformSignIn` now also picks Play Games on Android. `MobileSignInConfig` ships with the switch off and both ids empty.
+
+**Verified without the editor:** the Java bridge compiled against the real `play-services-games-v2` 22.1.0 and
+`play-services-tasks` 18.2.0 classes (a wrong API call planted in it was caught). `unity_refcompile` player and editor 0
+errors; the Android-only C# compiled with its guard forced on, and a planted error there was caught. The device-read gate
+lists the three Java-bridge calls as reviewed exceptions (4 findings without them). **Not checked anywhere:** a Gradle
+build of the `.androidlib` (Unity's Android build), and `PlayGamesAppId` (needs the Android module).
+
+**Test (Android):**
+1. With the switch OFF, make an Android build: it builds, launches and signs in anonymously as before. In the built APK
+   (Android Studio > Analyze APK, or `apkanalyzer manifest print`), `PlayGamesInitProvider` is absent and there is no
+   `com.google.android.gms.games.APP_ID` meta-data.
+2. Set up the Play Console project and the UGS provider (Tools/UGS/README.md), fill both ids, tick the switch, build to a
+   phone signed in to Play Games as a tester: first launch signs in with no screen; the UGS player shows a Google Play
+   Games identity.
+3. Clear the app's data and launch again: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Play Games identity and keeps its
+   progress.
+5. A phone not signed in to Play Games: the game signs in anonymously, no error dialog.
+
+### 🔴 Fair play T1 and T3: Game Center sign-in on iOS, server-owned episode tokens (`claude/vigilant-archimedes-euoz8z`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Game Center (T1):** `PlatformSignIn` picks Steam on PC or Game Center on iOS for `AuthenticationServiceFacade`
+  (the facade now asks only it). `GameCenterSignIn` mirrors `SteamSignIn`; `GameCenterPlatform` + the native
+  `Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm` get Apple's identity-verification signature without showing any
+  screen. `GameCenterCapability` (an iOS post-build step) adds the Game Center capability only while
+  `MobileSignInConfig.signInWithGameCenter` is ticked. Ships off.
+- **Episode tokens (T3):** `Tools/UGS/Commerce/entitlements.js` owns tokens and owned episodes (protected
+  `PLAYER_ENTITLEMENTS`); `ServerEntitlements` + `EpisodeTokenService.GrantTokensAsync` / `UnlockEpisodeAsync` /
+  `RefreshFromServer` (called from `PlayerDataService` at sign-in). `ServerEntitlementGate` ships off.
+
+**Verified without the editor:** entitlements tests 7 passed, three planted faults caught (replayed order credited
+twice, the client's token count trusted, the fake provider in production). `unity_refcompile` player and editor 0
+errors; the iOS-only code compiled with its guard forced on, and a planted error there was caught. Both fair-play gates
+clean (the new folders are registered: PlatformSignIn as fair play, Commerce as paid content, and the one `DllImport`
+as a reviewed exception). **Not compiled anywhere:** the `.mm` file (needs Xcode) and `GameCenterCapability`
+(needs the iOS build module).
+
+**Test (Game Center, an iOS device signed in to Game Center, the UGS Apple Game Center provider added):**
+1. An iOS build with `signInWithGameCenter` ticked: Xcode's Signing & Capabilities shows Game Center.
+2. A fresh install signs in with no screen; the dashboard's player shows an Apple Game Center identity.
+3. Delete and reinstall: the same UGS player id comes back.
+4. An install with an existing anonymous account: after sign-in, the account gains the Game Center identity and keeps
+   its progress.
+5. Sign out of Game Center in Settings and launch: the game signs in anonymously, no error dialog.
+
+**Test (tokens, `entitlements.js` deployed to development, `ServerEntitlementGate.Enabled = true` in a test build, the
+editor's fake provider on in an `EpisodeTokenConfig`):**
+1. Buy a token through the fake provider: the balance rises by the server's bundle size and the dashboard's
+   `PLAYER_ENTITLEMENTS` lists the order.
+2. Spend it on an episode: owned, balance 0; spending again on the same episode spends nothing.
+3. Edit `PLAYER_PROFILE.Economy.EpisodeTokenBalance` in the dashboard to 50, sign in again: the balance shows the
+   server's number.
+
+### 🔴 Fair play T3: vessel and Hangar unlocks bought and recorded on the server (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `economy.js` sells vessels (`unlockVessel`) and Hangar levels (`upgradeHangar`) at the prices authored
+in Unity (its CATALOG block, written by `Tools/Build/author_economy_catalog.py`, `--check` in the bleeding-edge guard)
+and records them in the protected wallet in the same write; `migrateUnlocks` brings an account's old unlocks across
+once, capped at 20,000 crystals of value. Client: `PlayerDataService.TryBuyVessel` / `TryBuyHangarLevel` (used by
+`VesselUnlockSystem.TryPurchaseVessel` and `HangarUpgradesPage`) spend locally at once and ask the server; the
+server's answer replaces the local vessels and Hangar levels (`VesselUnlockSystem.ApplyServerOwnership`), after the
+one-time migration. **Gated off** with the wallet (`ServerEconomyGate`): with it off, buying works exactly as before.
+Affects Shombith's backend (`UGSDataService.VesselList` getter) and the Hangar page (one call).
+
+**Verified without the editor:** economy tests 16 passed (5 new); planted faults caught (a vessel price changed in its
+asset fails `--check` naming the line; dropping "already owned" fails a test). `unity_refcompile` player and editor 0
+errors, a planted error caught; Amoebius 0 errors.
+
+**Test in the editor (economy.js redeployed to development, `ServerEconomyGate.Enabled = true` in a test build):**
+1. A fresh account: the first sign-in sends `migrateUnlocks` with nothing; starters stay unlocked.
+2. Buy a 100-crystal vessel in the Hangar: crystals drop at once, the vessel unlocks, and the dashboard's
+   `PLAYER_ECONOMY` shows it in `vessels` with a `vessel:<Name>` spend.
+3. Buy two Hangar levels: 100 then 200 crystals; `PLAYER_ECONOMY.hangar` shows `"<vessel>:<element>": 2`.
+4. Edit `HANGAR_DATA` in the dashboard to unlock a 4000-crystal vessel by hand, sign in again: it is locked again.
+5. An account with unlocks from before (gate off, then on): its first sign-in keeps them (up to the cap).
+
+### 🔴 Fair play phase B: the trust record, the Undertow, the shadow board, the notice and appeal (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/UGS/CloudCode/trust.js` (the trust record and ladder; Tools/UGS/README.md "Switching on the trust
+record"). Client: `FairPlayTrust` (`ServerTrust.cs`, gate `FairPlayTrustGate.Enabled = false`) asks `status` at sign-in,
+before the presence lobby join (`HostConnectionService.EnsureInitializedAsync`); `PresenceLobbyService` finds and
+creates its lobby under `PRESENCE_LOBBY` + the suffix (empty on the shore); `WeeklyChallengeLeaderboardService` splices
+the account's own row from `<board>_undertow` into the public page (`WeeklyChallengeRanking.SpliceOwnRow`);
+`FairPlayNoticeOverlay` (built at runtime like the privacy overlay; words in `Resources/FairPlayNoticeConfig.asset`)
+shows the notice and sends an appeal. **Gated off**: with the shipped gate nothing changes. Affects the party layer
+(Shombith's UGS; Yash's hardening) and the weekly board (Yash's leaderboards): one call each, a no-op while off.
+
+**Verified without the editor:** Cloud Code tests trust 14, match-report 22, weekly-score 7 passed; planted faults
+caught (a minor sent to the Undertow, the stage leaking to the client, the shadow board bypassed). `unity_refcompile`
+player, editor and webgl: 0 errors in project code; planted errors in the overlay and the splice caught.
+`FairPlayPhaseBTests` compile. Amoebius `dotnet build Port/src/CosmicShore.Live`: 0 errors. Nothing run in Play mode.
+
+**Test in the editor (with match reports and trust.js deployed to development, gate on, two MPPM players):**
+1. `FairPlayPhaseBTests` pass.
+2. A clean account: Party logs show the presence lobby query and create under `PRESENCE_LOBBY` exactly as before.
+3. Move a test account to the Undertow (dashboard: add three `host_result_mismatch` signals to its `FAIRPLAY_SIGNALS`
+   with `at` = now in ms, birth year 1990 in `FAIRPLAY_AGE`) and sign in: it joins `PRESENCE_LOBBY_u1`, sees only other
+   Undertow accounts in presence, its parties fill with AI; the clean account does not see it.
+4. Play three matches with it: on the next sign-in the notice appears (title, body naming rule 1, "automated checks",
+   the paid-content line); OK closes it; Appeal with a few words shows "Your appeal is with our team" and the record
+   in `fp-<id>` shows `appeal.state: open`; the account appears in the `fairplay-review` queue.
+5. Its weekly time: posted to `weekly_challenge_undertow`; its own leaderboard panel still shows its row at its rank;
+   the clean account's panel does not.
+6. Reviewer: add `review: {decision: "clear"}` to its record; next sign-in it is back in `PRESENCE_LOBBY`, no notice,
+   out of the queue. `restrict` with an `until` date: the notice shows at once with the date.
+7. Pad: A/B work on the notice; Esc closes it unless the appeal text box is focused.
+8. Pool pass (added 2026-10-26): with a shore host and a test client forced into the Undertow, make the Undertow client
+   join the shore host's party anyway (edit its lobby suffix to empty in the debugger): the host's Party log shows
+   `pool check: OtherPool - removing` and the guest leaves the party; the guest's `FAIRPLAY_SIGNALS` gains `pool_bypass`.
+   A normal shore guest shows `pool check: SamePool` and stays.
+9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
+   boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
+   (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
+`chargeStarIcon`, `cordsOffAlpha` and `SetCords(cordsOut01, pull01, domain)`; `readyColor` is gone; the controller injects
+`GameDataSO` for the domain colour; `BrittleStarExecutor.CordPull01` is new.
+
+**Verify in editor**
+- [ ] It compiles; `BrittleStarHUDVariant.prefab` shows the three Charge parts wired on the view, no missing references.
+- [ ] Fly the Brittle Star: the Charge card is the hull nose-on in your domain colour with five dim whips; Y (Charge Mode)
+      brings the whips to full white; pulling RT crossfades them to five straight sabers, releasing brings the whips back.
+- [ ] No card turns lime when its mode is on; the Space plate still goes hot while overheated.
+- [ ] Mass card: the star seen from behind (domain) with five lines of prisms coming at you, dim until B (Creation)
+      turns them white; as Mass levels up the blocks fatten (crossfade to `BrittleStar_MassTrailsFat`).
+      New: `massTrailsIcon`, `massTrailsFatIcon`, `massStarIcon`, `trailsOffAlpha`, `SetCreationTrails`,
+      `BrittleStarExecutor.BlockGirth01`.
+- [ ] Space card: the star flying right with five rounds; with the aim stick centred they meet ahead, pushed they splay;
+      dim until X (Space Mode); overheated they dim and the plate goes hot; at high Space the splayed rounds sit further
+      out. New: `spaceRoundsIcon`, `spaceRoundsMeetIcon`, `spaceRoundsFarIcon`, `spaceStarIcon`, `SetGuns`,
+      `BrittleStarExecutor.Splay01` / `Range01`.
+- [ ] Time card: dim gapped blocks behind the star; A (Speed Mode) stretches them into one joined line, longer at high
+      Time. New: `timeTrailCruiseIcon`, `timeTrailFastIcon`, `timeTrailFasterIcon`, `timeStarIcon`, `SetSpeedTrail`,
+      `BrittleStarExecutor.SpeedBoost01`.
+- [ ] Omni card: the star over two empty ring slots at the start; each crystal fills one (solid), a throw (LT) empties
+      one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
+      `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
+
+
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.
@@ -192,6 +458,116 @@ Space rebinds had silently dropped (#1650, #1652). No Unity and no .NET: not com
 - [ ] The Time plate stays empty throughout.
 - [ ] Mass and Space cards now tint (re-run their #1650 / #1652 lines above).
 
+
+### 🔴 The AI trainer covers every multiplayer card: 22 more scenarios, gate races seek the next ring (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `TrainingModeCatalog` +22 rows (13 gate races, Broadside, Dustup, Undertow, Sirocco, Wrecking Ball,
+Bloomrush, Hijack, Tapestry, Tollway); `FitnessProfileSO.MetricRecipes` (each mode's own ScoringMetric through
+`ScoringMetrics.Read`, three new kinds `SwitchesThreaded` 20, `PrismsStolen` 21, `VolumeRemaining` 22, plus the time
+penalty); `TargetSensor.TargetMode.NextGate` (4) reads `GateRaceController.TryGetNextRing`; 22 scenario/profile pairs
+written by `Tools/Build/author_training_scenarios.py` (`--check`). The twelve existing scenarios are unchanged.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith).
+
+**Verified without the editor:** `unity_refcompile` (editor and player configs, see the commit); the generator's
+self-test (a fresh pair passes; a drifted TargetMode, a missing profile and a recipe without a row each fail);
+`author_training_scenarios.py --check` over all 34 rows.
+
+**Test in the editor:**
+1. `AITrainingCoreTests`: `Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor` (now 34 rows),
+   `MetricRecipes_OnePerMode_EachInTheCatalog_AndNoScoreRow`, `TargetSensor_NextGate_NoRace_HasNoTarget` pass.
+2. FrogletTools > AI > AI Training: the Mode list shows the new cards. Pick **Headlong · Rhino · I4**, Target
+   episodes 6, Learn: the AIs fly toward the next ring (not crystals), the gate count climbs, fitness is positive
+   after a match. Repeat with **Regatta** (arena: hull Manta) and **Broadside** (combat points move).
+3. **Wrasse Run** (a crew hull): note whether the trainer drives the pilot seat at all.
+4. The first real run (Switchback, Dolphin, I2, 32 matches through Froglet Compute) scored 0 gates on every AI: a pilot
+   new to the match kept the default "closest crystal" target because the runner sets `TargetMode` after
+   `BindVessel` built the sensors. `TrainingPilot.BeginEpisode` now applies it (test
+   `Pilot_TargetModeSetAfterBind_AppliesAtBeginEpisode`). Re-run Switchback with "Show the game": the Dolphins should
+   head for the rings.
+
+### 🔴 Froglet Compute runs the AI trainer in a Unity with no window (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/Compute/unity/FrogletComputeTraining.cs`, an editor batch entry that is NOT part of the game:
+`Tools/Compute/unity_run.py` copies it into Froglet Compute's own copy of the project (`~/.froglet-compute/unity/`,
+never the person's checkout) and starts `Unity -batchmode -executeMethod
+CosmicShore.Utility.AITraining.Editor.FrogletComputeTraining.Run`. It does what the AI Training window's Learn button
+does (control asset, AutoStartOnPlay, Play from Bootstrap) with the overnight batch flags on, writes `status.json` /
+`result.json` / `genome.json`, and quits at the target, the deadline or a stop file. No file under `Assets/` changes.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith) - it drives their trainer unchanged.
+
+**Verified without the editor:** `unity_refcompile --config editor`: the file compiles against the real Unity
+references with 0 errors (it was the one gated file); a planted wrong method name in it failed the same run.
+`check_conditional_compilation.py`: OK. `compute.py self-test` "unity runs": a fake Unity following the same contract
+- a queued unit done and published, resume from a saved session, Ctrl-C stops cleanly, a compile error stops the run,
+an automatic run waits while the person's Unity is open, a missing Unity is reported; a planted skip of the copy step
+fails it.
+
+**Test on a PC with Unity 6000.3.17f1 (Unity Hub):**
+1. `python Tools/Compute/compute.py unity --find` names the editor.
+2. From the console's New run, pick Squirrel > Skim Race (purple), I4, 10 matches, This computer; paste the line.
+   The first run imports the project into `~/.froglet-compute/unity/Cosmic-Shore` (an hour or more, once).
+3. `~/.froglet-compute/runs/unity-train~<id>/<unit>/status.json` moves through "loading the match" to "training" and
+   `episodes_total` climbs; `unity.log` there shows `[FrogletCompute]` lines and the trainer's own.
+4. It ends with `result.json` (`ok: true`) and `genome.json`; Runs on the console shows the request done.
+5. Your own project is unchanged (`git status` clean) and your open Unity was never disturbed.
+If Play never reaches a match (sign-in, the menu), the run stops after 15 minutes with exit 3 and the reason in
+`result.json`: send `unity.log`.
+
+**Added 2026-10-29: the game's own recorders and the Third Eye** (`Docs/Compute/README.md` section 16). Compiled with
+`unity_refcompile --config editor` (0 errors; a planted error in the file failed the same run). Not run in the editor.
+- [ ] After a run: `<out>/replays` holds at most two replay pairs (`.cstheater` + `.replay.json`, each with a
+      `.compute.json`), `replays/best` holds the match where the best fitness rose, and `recordings.json` lists them
+      with `replays_setup: "on"`.
+- [ ] `Documents/CosmicShore Diagnostics/Flights` gains no new `flight_*.json` during the run (list it before and
+      after); `<out>/ai-flights` holds `aiflight_*.json` instead.
+- [ ] MY REPLAYS on another device does not list the training matches (the run's ReplayConfig lists none in Cloud Save).
+- [ ] Show the game: the Third Eye opens on the match once Play reaches it; `recordings.json` says `third_eye: "open..."`.
+- [ ] Copy a `replays/best` pair into the project's `Recordings` folder: MY REPLAYS > WATCH plays it, Y or Tab gives
+      the free camera.
+- [ ] Next run: the copy's `TheaterConfig.asset` is back to its tracked value and the untracked `ReplayConfig.asset` is gone.
+- [ ] (2026-10-29) An AI Training run (the window's Learn, or Compute): the Console shows no "AI training record not
+      stored" warning per match and Documents' Flights gains nothing; a race you fly yourself is still stored, with
+      `"pilot":"human"` in its header (`"mixed"` after a You / AI toggle).
+- [ ] Third Eye during an AI Training run: the trainer's hull draws a lime aim line to its target ("AI trainer:
+      Seeking Waypoint" in the readout), the You / AI toggle on it says "the AI trainer is flying this hull".
+- [ ] A watched Compute run writes `<out>/stills/still_*.png` about every minute and a `best_*.png` when the best
+      fitness rises: the picture is the Third Eye's view with the trails and aim lines drawn in, the right way up.
+- [ ] `ThirdEyeStillTests` pass (Test Runner, edit mode).
+- [ ] (2026-11-01) New run > Thresher > Thresher Time > All 4 > 1 match > Show the game > dragonsweapon > Now, sent
+  from the live console: Runs shows four runs one after another (I1 first), each of one match; Unity opens with its
+  window on dragonsweapon for each.
+- [ ] (2026-11-01) During a watched run, about 20 s into the match and every 5 minutes: the DiagnosticsHUD's status
+  line says it is recording (`diag froglet-compute-<scenario> 60`), and `Documents/CosmicShore Diagnostics` gains a
+  `diag_<scene>_froglet-compute-<scenario>_<stamp>.json` and `.txt` a minute later; `status.json`'s `diagnostics`
+  field holds the HUD's answer.
+- [ ] (2026-11-01) When a watched run ends: Unity stays open up to three minutes while the bug ledger sends, then
+  quits; `<out>/bugledger.json` says `Sent` (or `NothingNew`) and names `bugledger/<user>`; that branch's
+  `BugLedger/shared/reports/<user>/perf/` holds the diag reports. A headless run writes no `bugledger.json`.
+- [ ] (2026-11-01, the people's seed) A Unity run of a pair you have raced at least twice in the editor (Squirrel in
+  Skim Race): `<out>/seed.json` exists, `status.json`'s `seed` reads "N gene(s) from the people's races: ..." and
+  `unity.log` shows the first population's genomes carrying those values (the AI Training window's population
+  view: throttle.base and boost.min_charge equal the seed's, not the registry defaults 0.65 / 0.5). A second run of
+  the same unit (a resume) says "not applied: resuming this scenario's own population".
+- [ ] (2026-11-01, the tray) After the installer runs on a Windows PC: a Froglet Compute icon is in the tray (or a small
+  window when pystray could not be installed), the schedule window opened by itself, and Save re-registers the agent
+  (the Computers page shows the PC again within a minute). Pause: the console shows the PC as Paused and a sent run
+  waits; Resume: it starts. Uninstall: the tray and the agent are gone from the Startup folder and the processes list.
+- [ ] (2026-11-01, the right hulls) A Compute run of Serpent in Serpentine straight after a Dolphin in Switchback run:
+  every seat in the match is a Serpent (the Third Eye's Pilots list), none a Dolphin or Sparrow; the host seat's hull
+  is the Serpent too. `TrainingAutoLauncher` now syncs the mode's card before launching (the allowed-hull list the
+  spawner clamps to used to be the previous run's).
+- [ ] (2026-11-01, where people fly) `PeopleLineTests` pass (Test Runner, edit mode). A Unity run of a pair with
+  people's races: `status.json`'s `people_line` reads "N points from M race(s)" and the AI Training window's fitness
+  breakdown shows a PeopleLine row (a negative number, small against the gates); a pair nobody raced shows 0 there.
+- [ ] (2026-11-01, Update AI) On the console's Vessel AIs page press Update AI for a vessel, say yes as one of the core
+  four: `origin/ai` gains a `chore(ai): <Vessel>'s AI from Froglet Compute` commit touching only
+  `Assets/_SO_Assets/AI Training/Archive.asset`; pull `ai` into a checkout: Unity imports the asset without a warning,
+  the Archive's inspector lists the new entry with its Notes, and a normal match of that mode on an AI seat with
+  `TrainingControl.DeployArchiveInNormalPlay` on installs a TrainingPilot (the Third Eye reads "AI trainer" on it).
+- [ ] (2026-11-01) New run lists Serpent > Serpentine, Scarab > Scarab Rally and BrittleStar > Brittle Star Time as
+  purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
+  `best_fitness` finite after the match). **These three scenarios were authored from the catalog
+  (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -683,6 +1059,17 @@ an island with no hole rides exactly as before) and `GobyPistolTrailHoleTests`.
 
 ---
 
+### 🔴 Omni-crystal abilities: the Soliton Network on the Meerkat, Fulmen on the Stoat (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** the Meerkat has its own `MeerkatImpactorDataContainer`; it no longer shares the Stoat's, so it stops
+firing Fulmen and Overclock. Its omni crystal grows the Soliton Network, as before. The Stoat's container no longer
+has Overclock, so Fulmen is its omni-crystal ability.
+
+- [ ] The Meerkat prefab's VesselImpactor shows `MeerkatImpactorDataContainer`; the Stoat's still shows `StoatImpactorDataContainer`.
+- [ ] Lava lamp, Meerkat (Vessel Changer): collect an omni crystal. A Soliton Network grows. No lightning bolt, no Overclock.
+- [ ] Lava lamp, Stoat: collect an omni crystal. A Fulmen bolt fires from the cell centre, burns prisms and chains through nearby omni crystals. No Overclock.
+- [ ] The Meerkat's Switch and Navigate toys still work, and its prism behaviour (skimming, trail hits) is unchanged.
+
 ### 🔴 Rejoin a running match (Rev 37, section 103.1) (`claude/new-session-76hnyc`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor). Not opened in the editor. Needs two clients (MPPM: a host and one guest in a party), a mode with a turn (Skim Race).
@@ -801,6 +1188,136 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
+center." `HiveCore.cs` (new, engine-free), `HoneyguideCrew.Hive.cs` (new), `HoneyguideOmniCrystalEffectSO` +
+`HoneyguideImpactorDataContainer` (the prefab's VesselImpactor now points at it), `HoneyguideDynamoView` (the comb, the
+strip, Leave, the crystal glow, the centred bars), `HoneyguideConfigSO` + asset (the hive's numbers, words, five empty FMOD
+slots), `DynamoCore.SpinNow` / `ReadState(out end)`. `/verify-unity` was unavailable (no Editor, no `unity` binary). Green:
+the headless reference compile, player and editor (0 errors in project code); `Tools/Build/hive_lab/parity.cjs` and
+`dynamo_lab/parity.cjs` PASS; `HiveCoreTests`' bodies run against the core with .NET (8/8); `author_honeyguide_assets.py
+--check` / `--self-test`; console-logging and conditional-compilation checks.
+
+1. Run `HiveCoreTests` (all 9; the config test needs the Editor) and `HoneyguideTests`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. The strip over the board names the nearest
+   omnicrystal's distance; the diamond slides along it as the AI flies closer.
+3. When the hull takes the omnicrystal: the board's edge flashes amber, the comb replaces the Dynamo, the bar across the
+   top is amber and shrinks from both sides; a comb of super-shielded prisms stands about 40 u behind where the crystal
+   was. Look for: the comb clear of the hull, its cells in the board's colours.
+4. Drag 3 touching cells of one other colour and let go: their prisms break in the world. Drag back over the last cell:
+   it drops out. Drag into a red danger cell: the chain breaks, a sting toast, the thumb waits a second. A white-ringed
+   (shielded) cell needs two chains.
+5. Clear both colours (or wait 15 s, or tap Leave): the toast names the rewards; the reward prisms appear on the Dynamo
+   beside its largest crystal, which lights; the battery gains the charges; a fresh spin starts. What is left of the comb
+   is ordinary mass (shields and danger where they were).
+6. While in hive mode, let a rival hit the hull: no petals lost, no silence.
+7. Fly instead (the AI Ratel plays): the small board shows the comb and the AI clears it (Hard: no stings).
+8. A phone held portrait: the comb's cells, the Leave button and the strip are thumb-sized and nothing overlaps.
+9. Two machines (a rider on the Ratel): the rider's drags reach the hull's machine and both see the same comb.
+10. Bees: when hive mode ends, a bee hive appears 12 u behind the comb in our domain; within a few seconds its first bees
+    hatch and patrol the comb, and an opposing creature that comes near is stung (see the Bees entry for what to look for).
+
+**First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
+Medium hive skill (a proposal between the lab's rookie and skilled).
+### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
+then apply those learnings to the bee". `BeeFauna.prefab`'s body is built from `Tools/Build/fauna_kit/specs/bee.py` by
+`Tools/Build/fauna_kit/build.py` (the `/fauna-creation` skill): five braid spindles (Spine, Vane0-2, Sting), seven prisms
+(Rib0-2, VanePlate0-2, the Stinger, a 0.5 x 0.5 x 6 `DangerBlock`), the root identity and scale 1; `BeeVaneDriver`
+replaces `BeeWingDriver`; `Boid.SteeringUpFor` (world +y for every other boid) and `BeeFauna`'s carried up
+(`CelestialFrame`); Mass body scale 3.82, Space 6.2942 + `ErodeSpindle`. `Bee.fbx` and `bee_model/build_bee.py` are
+retired, so round 2's steps 1-3 below are superseded. `/verify-unity` unavailable (no Editor). Green: reference compile
+player and editor (0 errors in project code); `celestial.py bee` and `--self-test`; `author_bee_assets.py --check` and
+`--self-test` (7/7, the prefab read back against the spec); `CelestialFrameTests` under .NET 8 (5/5); heart collection,
+spindle sway, spawn roster, console logging and the C# gates. An offline render of the built prefab (`fauna_kit/
+render_prefab.py`) reads three-fold with the needle trailing.
+
+1. Open `BeeFauna.prefab`: the heart crystal at the origin; behind it a braided spine with three vanes sweeping back at
+   120 degrees, each carrying a plate; three rib prisms round the spine; a short braid at the tail carrying a long red
+   needle. Nothing ahead of the heart, no part on one side only. The braids' splayed ends: check which end of the
+   `BezierCurve.001` mesh is its tip (the builder assumes the mesh trails along its -z from its origin with a 0.55 stub
+   ahead, as the tadpole's does) and that no braid pokes through the heart.
+2. Play (Hesperides, or the Spawn Matrix Bee row): the vanes beat as a wave round the spine; a bee turning straight up or
+   down does not flip or snap level (it keeps whatever roll it had); a swarm reads as busy, not as insects.
+3. The four elements side by side (Spawn Matrix): Charge all red; a Mass bee about 3.8x the size with every plate and rib
+   shielded and its heart's swing clear of every shield; a Space bee 1.65x the Mass bee, its braids thinned where thickest,
+   the stinger unchanged; Time as Charge's size.
+4. `Fauna.ErodeSpindle` picks the skin with the most vertices as the body: all five braids tie, so check the Space bee
+   erodes along the Spine (not a vane) and the plates and ribs refit to their limbs.
+5. A bee is hunted and eaten by a predator (round 2's step 4) and its seven prisms leave as a skeleton when it starves.
+
+### 🔴 Bees round 2: a real bee model; predators eat bees; three-domain pollination and comb (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+Garrett: "2. yes. 3 they should pollinate all three and build a structure made from all three. 4. ... be sure to add them
+to the variuous list ... 5. make a real bee model with /fauna". `Bee.fbx` (`Tools/Build/bee_model/build_bee.py`), the
+prefab's `BeeModel` spindle, `BeeWingDriver` (four model wings + two vein prisms), `FaunaDiets.IsPrey`, `BeeMath.HoneyLedger`,
+`LifeForm.NewBlockDomain`, the Spawn Matrix's Bee row, the Codex's bee lines (`Docs/ECOSYSTEM.md` §66). `/verify-unity`
+unavailable (no Editor). Green: reference compile player and editor (0 errors in project code); `author_bee_assets.py
+--check` and `--self-test` (6/6); the bee and prey test bodies under .NET 8 (11/11); the fauna, ecology and C# gates.
+
+1. Unity imports `Assets/_Models/Fauna/Bee.fbx` at 1:1 with the head toward +z and no Animator; its `BeeBody` slot shows
+   `SpindleMaterial` and `BeeWing` the membrane material (the remap is by name in the .meta).
+2. Open `BeeFauna.prefab`: the model sits behind the heart crystal (the heart is the face, the eyes flank it), the abdomen
+   prism is inside the abdomen, the two vein prisms lie along the forewings' leading edges and tilt UP like the wings.
+3. Play: the four wings and the veins beat together; bees read as bees at gameplay distance (the stripes are grooves in
+   the domain colour - judge whether a yellow/black slot is wanted).
+4. Release a predator near a hive (Spawn Matrix): it hunts bees and eats them.
+5. Watch a hive grow past its seed: comb cells appear in the domains of the creatures its bees stung (a Jade hive grows
+   Ruby and Gold cells), and bees land on flowers of every domain.
+6. Spawn Matrix: the **Bee** row releases a lone bee that pollinates where it is; Codex > Scan & Merge lists the bee and
+   the hive with their behaviour lines.
+
+### 🔴 Bees: the pollinator fauna and its hive, a flora slot (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+Garrett: "proper bees ... a fauna that acts more like a flora ... take the slot of a productive flora". New:
+`FaunaDiet.Pollinator`, `BeeFauna` (a Boid that never eats), `BeeHiveFlora` (the hive, a Flora listed in
+SupportedFloras), `BeeWingDriver`, `BeeMath`; assets by `Tools/Build/author_bee_assets.py` (`--check`, `--self-test`
+4/4): `BeeFauna.prefab`, `BeeHive.prefab`, eight Lifeforms configs, the Hesperides hive config (listed by
+`Tools/ecosim/gen_hesperides_assets.py`), the network prefab entry, the Spawn Matrix "Bee Hive" row. Record:
+`Docs/ECOSYSTEM.md` §66. `/verify-unity` was unavailable (no Editor). Green: the headless reference compile, player and
+editor configs (0 errors in project code); `BeeMathTests` (7) run against `BeeMath.cs` under .NET 8;
+`author_flora_armour.py`, `author_lifeform_heart_collection.py`, `verify_fauna_heart_seat.py`,
+`author_spawn_matrix_roster.py` `--check`.
+
+1. Run the edit-mode tests `BeeMathTests` and `EcologyEnumIntegrityTests`.
+2. Let Unity import: `BeeFauna.prefab` must open with three body prisms (BeeAbdomen, BeeWingL, BeeWingR), the wings'
+   tadpole skin hidden, `BeeWingDriver` on the root; `BeeHive.prefab` with its four bee configs wired. If the
+   NetworkObject regenerates its `GlobalObjectIdHash` on import, re-save and note it.
+3. Cell Selector → **Hesperides**. Two hives grow a comb of hex tubes round their heart; within about a spawn period,
+   three bees hatch near each and fly to the flowers. Watch a visited plant: it grows faster for ~10 s.
+4. Release a herbivore (Spawn Matrix, Tadpole) of another domain near a hive: the bees fly at it, sting prisms off it,
+   fly home; the hive lays a new comb cell once the store holds 34.6 (one cell's volume).
+5. Spawn Matrix → **Bee Hive** (flora row), each element: the bees wear the element (Mass shielded, Charge danger).
+6. Shoot a bee: it dies, drops its heart. Kill a hive: its bees keep pollinating where they are.
+7. Perf: Hesperides with 4 hives and 32 bees: no allocation spike from the bees' 0.4 s think.
+
+### 🔴 Honeyguide and Ratel round 7: AP bank 6, the Ratel picks one of three abilities (`cece/jolly-lovelace-t8y3a1`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+Garrett: "lets have the ap cap go to 6. lets do the 3 ability pick as well." `DynamoCore` (the pick input, the Offer event,
+`AIPickOrder`, the reveal's offers in `WriteState` / `ReadState` and the digest), `HoneyguideConfigSO` (`apBank` 6,
+`abilityChoices` 3, `pickSeconds` 10, `pickAbilityTitle`), `HoneyguideDynamoView` (three tappable cards over the dimmed
+board, the time left under them), `HoneyguideCrew` (the Offer event). `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless reference compile, player and editor configs (0 errors in project code); `Tools/Build/dynamo_lab/parity.cjs` PASS (lab = C#, 13 planted controls caught);
+`author_honeyguide_assets.py --check` and `--self-test`; the new `HoneyguideTests` bodies run against the core with .NET 8
+(the tests themselves, which load the asset, need the Editor).
+
+1. Run the edit-mode tests: `HoneyguideTests.Config_CarriesRound7_ApBankSix_AndAPickOfThree`,
+   `Ratel_IsOfferedThreeAbilities_TheClockWaitsForItsPick_AndItGetsTheOneItPicked`, `Ratel_WhoDoesNotPickInTime_GetsTheFirstOffer`,
+   `TheAIRatel_PicksByItsOrder`, `TheBank_KeepsUnspentAP_UpToSix`, and the existing `RatelBoard_CopiedToAnotherMachine_...`.
+2. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Let a spin pass without moving: the AP row shows 6
+   pips lit. Let another pass: still 6.
+3. Make a fourth pattern: the board dims, a heading reads "Pick the Ratel's next ability" and three cards name an ability
+   and what it does; a line under them runs down over 10 s. The spin bar does not move. Tap one: the toast names it, it
+   is the ability under the AP row, and the new ports are shown.
+4. Make a fourth pattern again and do not tap: after 10 s the top card's ability is taken.
+5. On a phone held portrait: the three cards fit inside the board and each is big enough for a thumb.
+6. Fly the Honeyguide (the AI plays the Ratel): every fourth pattern, the small board shows the three names briefly and
+   the AI takes one within about half a second.
+7. Two machines (a rider on the Ratel): the rider sees the offers, its tap reaches the hull's machine, and both boards
+   show the ability taken.
+
 ### 🔴 God mode in the lava lamp: a free inspection camera on F2 / L3 (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuGodModeCamera` on Menu_Main's Game object. F2 (or L3) swaps the lava-lamp camera for a free-fly
@@ -820,43 +1337,83 @@ camera while the AI keeps flying the vessel; F2 again glides back. Controls in D
 - [ ] F2 in freestyle or mid-blend does nothing.
 - [ ] Untick `godModeEnabled`: F2 does nothing.
 
-### 🔴 Switchback BLAST RUN: blocked gates in closed-form worlds, key-crystal blasts, sweepers, snap jaws, hunter packs (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+### 🔴 Switchback AI: sees ANY prism (rival/own trails, blocks), dodges or blasts it; per-AI lanes (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+- [ ] Switchback Blast Run, 3+ AI Dolphins: AIs no longer fly single-file down one line; filter log `[Switchback AI] prism`.
+- [ ] Each AI's rings are threaded off-centre but inside the mouth (open gates only); blocked gates still thread the eye / blast.
+- [ ] Following a rival: `action=Avoid` lines appear and the AI swerves off the trail; trail hits clearly fewer than before.
+- [ ] Hard/Legendary: occasionally `action=Blast` - flies into a crystal ahead with the nose on the trail mass, which is cleared.
+- [ ] Easy: never `action=Blast`; reacts later (shorter sense range).
+- [ ] Profiler at 100 fps target with 6 AIs at I4: `OverlapCapsuleNonAlloc` cost negligible, no GC alloc per frame from SwitchbackBlastAI.
 
-**What landed:** a sixth Switchback fun type, `BlastRun` (picker label BLAST RUN). Classic course; blocked gates get a
-key crystal on the leg in, a Breakwater door round an 18 u eye and a closed-form world (I1 Garden, I2 Maze, I3
-Membrane, I4 Menger cage). Invaders: I2 sweepers, I3 + snap-trap jaws, I4 + double door and server-driven hunter packs
-(`NetworkList<BlastRunPackState>`). Key crystals blast 1.25 x (code hook in `VesselExplosionByCrystalEffectSO`; the
-shared Dolphin explosion asset is untouched). Details: `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Blast Run".
-Classic and the other fun types are unchanged. Headless: `SwitchbackBlastRunTests`, the harness, both refcompiles,
-`audit_prism_clipping.py` (Blast Run posed at 45_501-45_504: flush).
+### 🔴 Switchback is Blast Run only: the other fun types and the FUN picker removed (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** Yash: "Keep Blast Run, remove all other intensity types." Every Switchback match at I1-I4 (Arcade,
+weekly challenge, tutorial quest funnel, guests, replays) flies Blast Run. Removed: CLASSIC / LEVEL SHAPES / LIVE
+FEATURES / PAR & MEDALS / COMBINED and their code (`SwitchbackFunType`, `SwitchbackLiveFeatures`, `SwitchbackPar`,
+Plan 1 course fields, the I3 skim walls / I4 danger prisms, `SwitchbackFunTypeTests`, `SwitchbackFeaturesTests`), the
+`FUN:` button, and `GateRaceController`'s `PrepareCourseSource` / `CourseVariant` / `ThreadsAlternate` hooks
+(`SyncCourse_ClientRpc` no longer carries a variant). Kept: the Classic course ladder (bit-identical, Blast Run sits on
+it), `SEED: RANDOM / FIXED` (`ArcadeGameConfigureModal.SwitchbackSeedPicker.cs`; fixed seeds still 45_501-45_504),
+the course sync, key crystals and clock-driven movers. Stale PlayerPrefs `Switchback.FunType` and
+`Switchback.PB.<type>.I<n>` are deleted when the panel loads. Switchback AIs now always detour for crystals.
+Flights record `"funType":"BlastRun"`; `learn_drives_from_flights.py` learns Switchback from Blast Run flights only.
 
 **Verify in editor:**
-1. Run `SwitchbackBlastRunTests` and `SwitchbackFunTypeTests` (EditMode): all pass. Also `RaceAIWaypointsOnlyTests`
-   (a Classic Switchback still never detours for crystals).
-2. Arcade -> Switchback -> card: `FUN: BLAST RUN`, `SEED: FIXED`, I1, launch. Console (verbose ArcadeMatch):
-   `[Switchback] Fun type BlastRun intensity 1: ... BLAST RUN 6 blocked gates, 0 hunter packs, 2072 prisms.`
-   Expect 6 / 9 / 16 / 12 blocked gates and 2072 / 2235 / 2669 / 1464 prisms at I1-I4 (seeds 45_501-45_504) on the
-   shipped shell; a different shell changes the counts but not the pass/fail of the steps below.
-3. Each blocked gate: a crystal on the line before it; take it - the blast clears a path through the world AND the door
-   (a hole at least the eye's width), and the ring is reachable. If the blast stops short of the door, raise
-   `KeyCoreMultiplier` (1.25) or lower `KeyLeadMax` (400 u).
+1. EditMode: `SwitchbackBlastRunTests`, `SwitchbackCourseTests`, `RaceAIWaypointsOnlyTests`,
+   `SwitchbackAISteeringTests` all pass; no compile errors about `SwitchbackFunType`.
+2. Arcade -> Switchback card (host): above the intensity row only `SEED: RANDOM` (no `FUN:` button). Toggle to FIXED,
+   close and reopen: kept. Launch I1-I4: 6 / 9 / 17 / 12 blocked gates, 1173 / 1998 / 2988 / 3349 prisms
+   (verbose: `[Switchback] BLAST RUN intensity N: ...`).
+3. Finish: `[Switchback] RUN blastRun intensity=.. seed=.. time=.. gates=.. prismsDestroyed=.. stations=.. keys=.. movers=..`;
+   no PAR / medal / NEW BEST toasts.
+4. Weekly challenge Switchback and the tutorial quest's Switchback step: no seed button, and the match is Blast Run
+   (doors, key crystals) on a random seed.
+5. 2 peers: the guest flies the host's course with the same doors/fields; movers in phase.
+6. A machine that had picked LEVEL SHAPES etc. before: launches Blast Run, no errors; `Switchback.FunType` is gone
+   from PlayerPrefs.
+7. Prefab: `SwitchbackController.featuresPrefab` still assigned (no `[Switchback] No features prefab assigned` error).
+
+### 🔴 Switchback BLAST RUN: blocked gates behind 3D block fields with clock-driven sliders/rotors, key-crystal blasts (`Ys-bleeding-edge`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed:** a sixth Switchback fun type, `BlastRun` (picker label BLAST RUN). Classic course; blocked gates get a
+key crystal on the leg in, a Breakwater door round an 18 u eye and a 3D block field of cubes, cuboids (pillars, slabs,
+panels, beams) and voxel spheres, big and small, round a clear bore. Moving sections: I2 sliders, I3 + rotors, I4 +
+opposed slider pairs and a double door - all posed from `NetworkManager.ServerTime`, no per-prism network state. The
+earlier worlds (Garden/Maze/Membrane/Menger), sweepers, snap jaws and hunter packs were REMOVED (Yash: "remove flora and
+faunas for now", easy to sync, 100 fps). Key crystals blast 1.25 x (code hook in `VesselExplosionByCrystalEffectSO`;
+the shared Dolphin explosion asset is untouched). Details: `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`,
+"Blast Run". Classic and the other fun types are unchanged. Headless: `SwitchbackBlastRunTests`, the harness, both
+refcompiles, `audit_prism_clipping.py` (Blast Run posed at 45_501-45_504: flush). Performance budgets are reasoned,
+NOT measured.
+
+**Verify in editor:**
+(2026-10-29 later: Switchback is now Blast Run only - see the entry above; there is no FUN button and no Classic.)
+1. Run `SwitchbackBlastRunTests` (EditMode): all pass. Also `RaceAIWaypointsOnlyTests`.
+2. Arcade -> Switchback -> card: `SEED: FIXED`, I1, launch. Console (verbose ArcadeMatch):
+   `[Switchback] BLAST RUN intensity 1: 20 gates, 6 blocked gates, 0 movers, 1173 prisms.`
+   Expect 6 / 9 / 17 / 12 blocked gates, 0 / 10 / 20 / 28 movers and 1173 / 1998 / 2988 / 3349 prisms at I1-I4
+   (seeds 45_501-45_504) on the shipped shell; a different shell changes the counts but not the pass/fail below.
+3. Each blocked gate: a field of mixed blocks on the leg in, with a clear tube down the leg line to the door's eye.
+   Take the key - the blast clears a path through the field AND the door, and the ring is reachable. If the blast
+   stops short of the door, raise `KeyCoreMultiplier` (1.25) or lower `KeyLeadMax` (400 u).
 4. No error `[Switchback] BLAST RUN: no CrystalManager in the scene` - if it appears, no keys were laid.
-5. I2: sweepers cross the line before each key. I3: the jaws snap shut (4 u gap) and open every 2.4 s; timing a pass
-   through is possible. Blast a jaw: its prisms stop moving and nothing errors.
-6. I4: up to 3 dens; a pack moves toward the leading Dolphin when it is within 400 u of its den, never further than
-   260 u from it, and goes home. Blast a member: `HUNTER DOWN (n/total)` toast and
-   `[Switchback] BLAST RUN hunter down: pack p member m.`; the same on a client in a 2-peer session (positions
-   replicate, client prisms follow smoothly).
-7. Finish: the RUN line ends ` blastRun stations=.. keys=.. huntersDown=x/y`.
-8. AI Dolphins in Blast Run take the keys (crystal detour on); in Classic they still ignore crystals.
-9. Performance at I3 (the most prisms, ~2.7k + the cell): frame time comparable to Breakwater I3.
+5. I2: 2 x 2 cube sliders sweep across the leg smoothly (4 s period). I3: rotors (hub + 4 danger arms) spin about the
+   leg at 90 deg/s, never entering the clear tube. I4: opposed slider pairs close and open. Blast a mover: its
+   surviving prisms keep moving, the blasted ones are gone, nothing errors.
+6. 2-peer session: the host's and the client's movers are in the same pose at the same moment (compare a rotor's arm
+   angle in screenshots); a late joiner sees them in phase at once.
+7. Finish: the RUN line ends ` stations=.. keys=.. movers=..`.
+8. AI Dolphins take the keys (crystal detour on).
+9. **Performance (target 100 fps):** Profiler at I4 seed 45_504 (most prisms, 3349; 400 colliders in the densest
+   200 u; 124 moving prisms) - frame time <= 10 ms on the target machine, `TickMovers` well under 0.5 ms. If not,
+   lower `TotalCap` / `ColliderCap` / `MovingPrismCap` in `SwitchbackBlastRun` (tests follow the constants).
 
-**First-pass tuning (expect a pass):** `StationSpacing` 280 u; `WorldCap` {280, 180, 100, 60}; `TotalCap`
-{4600, 4000, 3500, 3000}; key lead 0.62 x leg in 230-400 u; key core 1.25 x; jaws 26 -> 4 u, 2.4 s; hunters 45 u/s,
-leash 260 u, sense 400 u, 3 x 7-prism members, down at <= 2 prisms left. I4 worlds are thin (0-40 prisms a station).
+**First-pass tuning (expect a pass):** `BoreRadius` {30, 26, 22, 18}; `Fill` {0.30, 0.40, 0.50, 0.60}; `CellsHalf`
+{3, 3, 4, 4}; `CellsDeep` {5, 6, 7, 8}; `SlidePeriod` 4 / 3.2 / 2.6 s; `SpinDegreesPerSecond` 90 / 135; budgets as in
+SWITCHBACK.md; `StationSpacing` 280 u; key lead 0.62 x leg in 230-400 u; key core 1.25 x.
 
-**Known minimal:** hunter kills are not scored (log + toast only); hunters pass through static prisms; reverse-threading
-a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors.
+**Known minimal:** reverse-threading a blocked ring at I1-I3 is not prevented; the AI does not aim blasts at doors;
+frame time not measured.
 
 ---
 
@@ -904,13 +1461,13 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **What landed** (the artifact's round 26, cloned; `R_VesselActions/MEERKAT.md` §7a):
 - The tree, the network's bark and its old inside wall ship off (`trunkVisibility`, `rootBarkVisibility`, `rootOpacity` 0).
 - Every channel of the omnicrystal's network draws as a wormhole does: the contour field's water pipe (`MWChannel` in
-  `MeerkatWormholeLens.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
+  `SolitonTunnel.shader`), the bridge in YASH'S LOOK, the warp tube, and the calm inner wall every tube now has
   (`MeerkatTubeWallView`, `MeerkatTubeWall.shader`, `tubeInner`).
 - The network's size comes from Mass, not the last wormhole: `networkReach` (an `ElementalFloat` on Mass, 0.5 → 1 × the
-  cell's radius), centred toward the cell's centre, its forks laid for transport (`MeerkatRootMath.BuildNetwork`).
+  cell's radius), centred toward the cell's centre, its forks laid for transport (`SolitonTunnelMath.BuildNetwork`).
 
 **Verified without the editor:** reference compile, player-dev and editor: 0 errors in project code. Both changed shaders
-compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `MeerkatRootMathTests` 12/12 under
+compile (glslang, HLSL front end, vertex and fragment, URP mock; a planted typo fails). `SolitonTunnelMathTests` 12/12 under
 dotnet (4 new, from the page's own `labLayout` / `netPlace`). `studio_to_unity --check`: 0 Meerkat drift (Yash's own Unity edits, ce548fc092: `bendRadius` 10, `throatDiameter`
 20, `mouthDiameter` 40, are now the artifact's shipped values).
 `author_meerkat_assets --check` / `--self-test` pass. The console-logging, conditional-compilation, using-directive and
@@ -928,7 +1485,7 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
    debug) and take another omnicrystal: it fills the cell, its openings out at the race shell (Burrow Run: about 1,080 u from
    the cell's centre), and you can cross the cell through it.
 5. YASH'S LOOK on the config's Inspector: every tube of the network shows the spindle bridge too; GARRETT'S LOOK takes it away.
-6. Profile a race with a full-Mass network up (`prof`): "MeerkatTubeWallView.Draw", "MeerkatWormholeView.Draw" and the
+6. Profile a race with a full-Mass network up (`prof`): "MeerkatTubeWallView.Draw", "SolitonTunnelView.Draw" and the
    "Meerkat wormhole lens" pass (four nearest tubes, 256 march steps each).
 7. Two players on this build: one takes an omnicrystal; the other sees the same network (the relay's size float now carries
    the reach share; a peer on an older build would read it as a trunk size).
@@ -953,10 +1510,11 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 - The artifact's kit races finish.
 
 **Verify in editor:**
-1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. Its roots grow round you at once and you are inside them.
-   Watch an AI Meerkat take one: its roots grow too.
-2. Form a tunnel whose mouth is next to prisms and ride it. The prisms pulled in behind you never catch you, and your
-   hull loses no petal and breaks nothing inside the tunnel.
+1. Lava Lamp, the Meerkat: fly into the cell's omni crystal. A Soliton Network grows round you at once and you are
+   inside it. Watch an AI Meerkat take one: its network grows too. (Updated 2026-11-01: the "roots" are the Soliton
+   Network since 2026-10-29.)
+2. Form a tunnel whose mouth is next to prisms and ride it (the slip-and-slide: you need not steer). The prisms
+   pulled in behind you never catch you, and your hull loses no petal and breaks nothing inside the tunnel.
 3. Form a tunnel straight through a wall of prisms: you pass through it untouched, and the wall stays standing.
 4. Out of the far mouth you are solid again: hit a prism and it breaks as usual.
 5. Burrow Run: a ring threaded while inside a tunnel still counts.
@@ -1082,7 +1640,7 @@ Meerkat (with `MeerkatSentinels`, `MeerkatExitPortal`, `MeerkatSolitonMath`; the
 (`TunnelState.Kit`, `PortalSize`). `/verify-unity` was not available in this session (no Editor): nothing here has been
 compiled or run by Unity itself.
 
-**Verified without the editor:** 6/6 `MeerkatSolitonMathTests` (after the merge with round 23; its area goldens are in `MeerkatWormholeMathTests`) on the page's own numbers (dotnet, Unity stubs;
+**Verified without the editor:** 6/6 `MeerkatSolitonMathTests` (after the merge with round 23; its area goldens are in `SolitonTunnelShapeMathTests`) on the page's own numbers (dotnet, Unity stubs;
 `Tools/Build/meerkat_kit_harness/run.sh --self-test`, 3 negative controls fire). Reference compile player-dev and editor:
 0 errors in project code. `element_ability_table.py Meerkat`: 4/4 · 4/4 · 4/4. `author_meerkat_assets.py --check` /
 `--self-test`, `studio_to_unity.py --check` (Meerkat 0 drift), console-logging, conditional-compilation, using-directive,
@@ -1090,7 +1648,7 @@ elemental-float, network-prefab-hash and abstract-member gates green.
 
 **Verify in editor** (the Toybox's Vessel Changer → Meerkat, unless said; HUD console `elements` or crystals to raise a level):
 1. **Compile and load.** No console error on entering play mode or on swapping to the Meerkat. The ShipActions object
-   carries `MeerkatSolitonKit` with `MeerkatWormholeConfig` and Runtime GameData wired.
+   carries `MeerkatSolitonKit` with `MeerkatSolitonConfig` and Runtime GameData wired.
 2. **Space, the soliton's size and swallow** are round 23's: run the next entry ("The Meerkat's soliton: Garrett's surface
    area, and prisms sucked through it"). Since the merge with round 23 the kit adds only the L5 Steal and the fired sound
    to them.
@@ -1129,10 +1687,28 @@ soliton; sentinels zapping sentinels; the Meerkat's own icons; the sound (five e
 
 ---
 
-### 🔴 The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### ⚪ SUPERSEDED — The Meerkat's tunnel is slid like the roots (`claude/adoring-cerf-m94x1o`, 2026-10-28)
+
+> **Superseded 2026-10-29 by Soliton Tunnels** (`a8c7d6b073`, `R_VesselActions/MEERKAT.md`, `Docs/Shaders/WORMHOLE_SHADERS.md`
+> §15). The ride below (left stick, `rootCruise` / `rootThrust` / `rootMaxSpeed`) no longer exists, so do not test it. The
+> tunnel and the network are now a **slip-and-slide** (`SolitonTunnelRider`): radial gravity presses you to the inner
+> wall and you slide along it with an occasional bounce; there is no left stick and no nose lock; RT gives a small push;
+> you leave at the speed you carry × `exitMultiplier` (the slingshot). Its numbers are per tube in `SolitonTunnelConfigSO`
+> (Ride: Slip and Slide: `wallGravity`, `bounce`, `wallFriction`, `thrustOn`, `thrust`, `minSpeed`, `exitMultiplier`).
+> What still holds from this entry: one flight for a tunnel and the network (a tunnel is a network of one,
+> `SolitonTunnelMath.Single` / `ITubePath`), and the AI's tunnel plans ride at the slide's speed.
+>
+> **Verify in editor instead:**
+> 1. Toybox, Meerkat: RT a short, fat tunnel. Inside, the hull drops onto the inner wall and slides along it, bouncing a
+>    little; the left stick does nothing. Hold RT: a small push along the tube. It never stalls (`minSpeed`).
+> 2. Out of the far mouth: you leave along the way you were going, a little faster (`exitMultiplier`), and the reticle
+>    comes back.
+> 3. Burrow Run: the AI forms tunnels, slides them and threads its rings.
+
+(The original entry, kept as history:)
 
 **What landed:** the automatic ride is gone. The main tunnel is now a network of one channel flown by the roots' own
-flight (`MeerkatRootMath.Step` through `ITubePath`, `MeerkatWormholeExecutor.StepRide`):
+flight (`SolitonTunnelMath.Step` through `ITubePath`, `MeerkatSolitonExecutor.StepRide`):
 - you cruise along it at `rootCruise`;
 - RT pushes you faster up to `rootMaxSpeed`;
 - the left stick moves you round the tube, and the wall bounces you;
@@ -1158,13 +1734,13 @@ The AI holds RT and keeps to the middle. `rideEntryMultiplier` and `rideMidMulti
 ### 🔴 The Meerkat's soliton: Garrett's surface area, and prisms sucked through it (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the tunnel's throat follows Garrett's surface area, set by the hull's Space level, so a longer tunnel is
-thinner (`MeerkatWormholeMath.SurfaceAreaThroat`). `MeerkatSwallow` (run by `MeerkatWormholeExecutor`) pulls the prisms and
+thinner (`SolitonTunnelShapeMath.SurfaceAreaThroat`). `MeerkatSwallow` (run by `MeerkatSolitonExecutor`) pulls the prisms and
 crystals within `suckRadius` 90 u of a standing tunnel's way in, carries them through stretched (up to 3 × at the middle)
 and twisted half a turn, and fires them out of the way out at `fireSpeed` 120, gliding to rest. Pulled and fired prisms are
 moving prisms (`Docs/PRISM_MOTION.md`). `MEERKAT.md` §8.
 
 **Verified without the editor:**
-- 58/58 `MeerkatWormholeMathTests` + `MeerkatRootMathTests` (dotnet, Unity stubs), with 11 new goldens from the page's own
+- 58/58 `SolitonTunnelShapeMathTests` + `SolitonTunnelMathTests` (dotnet, Unity stubs), with 11 new goldens from the page's own
   `kitThroat` and `pullVel`.
 - Reference compile clean, player and editor.
 - `studio_to_unity --check`: 104 mapped, 0 drift.
@@ -1237,12 +1813,12 @@ acceleration for a full speed take 20 u/s², response 0.35 s, amplitude 1 (cappe
 
 ### 🔴 The Meerkat's tunnel bends round its middle, as one oval arc (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** `MeerkatWormholeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it
+**What landed:** `SolitonTunnelShapeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it
 gets longer (`ovalShortest` 0.2 → `ovalLongest` 1.1, the middle at most `ovalMaxSharpness` 8 × as sharp as the ends). The
 reticle, bridge, tree, warp tube, ride, AI plan and the contour-field lens (`MWTube`: 25 points with circle arcs between
 them) all follow it.
 
-**Verified without the editor:** 48/48 `MeerkatWormholeMathTests` against the page's own numbers (dotnet, Unity stubs).
+**Verified without the editor:** 48/48 `SolitonTunnelShapeMathTests` against the page's own numbers (dotnet, Unity stubs).
 The lens shader compiles (glslang), and its nearest-point search is within 0.07 u of the exact arc (Python mirror against
 brute force, 400 random tubes). Reference compile clean.
 
@@ -1256,20 +1832,29 @@ brute force, 400 random tubes). Reference compile clean.
 
 ---
 
-### 🔴 The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+### ⚪ SUPERSEDED — The Meerkat's tree and the Omnicrystal's roots, flown on the left stick (`claude/adoring-cerf-m94x1o`, 2026-10-28)
+
+> **Superseded, do not test.** The tree went off in round 26 (2026-10-28), and its files were deleted on 2026-10-29
+> (`2ad5882115`: `MeerkatTreeMesh`, `MeerkatTreeView`, `MeerkatTree.shader`, `MeerkatRootInside.shader`; restore:
+> `Docs/Shaders/WORMHOLE_SHADERS.md` §12). The roots are now the **Soliton Network** with the slip-and-slide ride
+> (no left stick), and the look is the plain wormhole of `WORMHOLE_SHADERS.md` §16 (2026-11-01). The network's own hand
+> tests are the entries "The Meerkat's network of wormholes" and "Omni-crystal abilities: the Soliton Network on the
+> Meerkat".
+
+(The original entry, kept as history:)
 
 **What landed:**
 - The tree round every formed tunnel: trunk, bore, cut faces and branches (`MeerkatTreeMesh`, `MeerkatTreeView`,
   `MeerkatTree.shader`). The contour-field water pipe is unchanged.
 - Omnicrystals (`MeerkatOmnicrystalField`) in Burrow Run between the rings, and in the Toybox ahead of your Meerkat.
-  Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`MeerkatRootMath`,
-  `MeerkatRootNetwork`).
+  Taking one grows the roots at once from the hull, sized by the last tunnel's shaft (`SolitonTunnelMath`,
+  `SolitonNetwork`).
 - Inside the roots: cruise on, the left stick moves you round the root, RT faster, the walls bounce you, the camera on
   the root's centreline, the inside a soft warm tube lit by your lamp (`MeerkatRootInside.shader`). The AI holds
-  RT and steers across. Roots replicate through `MeerkatWormholeNetworkRelay.n_roots` (protocol 22).
+  RT and steers across. Roots replicate through `MeerkatSolitonNetworkRelay.n_roots` (protocol 22).
 
 **Verified without the editor:**
-- `MeerkatRootMathTests` and `MeerkatWormholeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
+- `SolitonTunnelMathTests` and `SolitonTunnelShapeMathTests`: 40/40 pass in dotnet with Unity stubs, against the page's own
   numbers (rng, four layouts, the built roots, a 500-step flight with forks and bounces).
 - Reference compile, player and editor: 0 errors in project code. Both new shaders compile (glslang, HLSL front end,
   vertex and fragment). `studio_to_unity` 91 mapped, 0 drift; `author_meerkat_assets --check` and `--self-test` pass.
@@ -1293,7 +1878,7 @@ brute force, 400 random tubes). Reference compile clean.
 ### 🔴 The Meerkat's round 11: a water-pipe tunnel and a reticle lit from its far end (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:**
-- `MeerkatWormholeConfig`'s contour field retuned as a clear pipe: strength 6, pitch 0, drag 0.5, glass 1 at 0.05,
+- `MeerkatSolitonConfig`'s contour field retuned as a clear pipe: strength 6, pitch 0, drag 0.5, glass 1 at 0.05,
   grazing 0.9, flow Even, outer 0.15, ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
 - `reticleNearLight` 0.25 (artifact, then cloned): the reticle wireframe is dim at its way in and full at its far end.
 
@@ -1335,14 +1920,14 @@ brute force, 400 random tubes). Reference compile clean.
 2. Pull RT with the stick bent: no lurch at RT. Through the shaft and the bend the view stays inside the tube with the
    hull centred. Coming out, there is no sideways jump.
 3. The mouths are wider than the throat (26 u against 8 u). Change `mouthDiameter` or `throatDiameter` on
-   `MeerkatWormholeConfig`: the next reticle and tunnel take it.
+   `MeerkatSolitonConfig`: the next reticle and tunnel take it.
 4. The Stoat's camera is unchanged.
 
 ---
 
 ### 🔴 The Meerkat's round 9: one geometry, the reticle is its wireframe (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** the reticle draws through the bridge's own geometry (`MeerkatWormholeView.BridgeFrame`, the `bridge*`
+**What landed:** the reticle draws through the bridge's own geometry (`SolitonTunnelView.BridgeFrame`, the `bridge*`
 rings, spindles, ribs, thickness and shimmer), bare (no glass, no path), at `reticleIdleAlpha` and in the domain colour
 toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` (was a fixed 0.45). Retired keys (generator
 removes them from the asset): `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
@@ -1354,7 +1939,7 @@ shaped reticle and the formed tunnel with the same 931 spindles. `studio_to_unit
 **Verify in editor:**
 1. Meerkat in the lava lamp: the reticle is a thin wireframe in your domain colour, with no glass and no lime line.
    Push the right stick: it brightens.
-2. In `MeerkatWormholeConfig`, change `bridgeRings` or `bridgeSpindleThickness` in Play mode: the reticle changes at
+2. In `MeerkatSolitonConfig`, change `bridgeRings` or `bridgeSpindleThickness` in Play mode: the reticle changes at
    once. With YASH'S LOOK, the formed bridge matches it ring for ring.
 3. `reticleWhite` 0 is your domain colour, 1 is white; `bridgeWhite` does the same for the formed bridge.
 
@@ -1362,9 +1947,9 @@ shaped reticle and the formed tunnel with the same 931 spindles. `studio_to_unit
 
 ### 🔴 The Meerkat's round 8: Yash's tuned look ships, and the ride camera stays inside the tunnel (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
-**What landed:** Yash's `MeerkatWormholeConfig` values (d8e0aa006e) are the artifact's SHIPPED values now, so a clone
+**What landed:** Yash's `MeerkatSolitonConfig` values (d8e0aa006e) are the artifact's SHIPPED values now, so a clone
 keeps them (`studio_to_unity --check` 48 mapped, 0 drift). New `rideCameraBack` 18, `rideCameraLookAhead` 40 and
-`rideCameraBlendSeconds` 0.25 drive `MeerkatWormholeExecutor.StepRideCamera`: while riding, the local pilot's camera is a
+`rideCameraBlendSeconds` 0.25 drive `MeerkatSolitonExecutor.StepRideCamera`: while riding, the local pilot's camera is a
 `CustomCameraController.Spectate` vantage on the tube's centreline, with no height offset.
 
 **Verified without the editor:** reference compile, player and editor, 0 errors in project code. The page, headless:
@@ -1385,27 +1970,27 @@ once eased in, its camera stayed within 0.23 u of the centreline on every frame 
 **What landed** (Yash: "two options so that I can swap between my look versus his look"; "if I choose my vessel, I will
 get its configuration ... at least the inspector panel"):
 - Garrett's before/after (the entry below) merged in, and his contour-field lens ported to round 7's tunnel: a straight
-  shaft along +z, then one bend round (R, 0, S). `MeerkatWormholeLens.shader`'s `MWTube` takes the nearer of the shaft
+  shaft along +z, then one bend round (R, 0, S). `SolitonTunnel.shader`'s `MWTube` takes the nearer of the shaft
   and the bend; `_MWTubeShape` is now (shaft, bend radius, theta, throat) and `_MWTubeWin.w` the mouth.
-- `MeerkatWormholeConfigSOEditor`: **YASH'S LOOK** (spindle reticle, spindle bridge) and **GARRETT'S LOOK** (bridge
+- `MeerkatSolitonConfigSOEditor`: **YASH'S LOOK** (spindle reticle, spindle bridge) and **GARRETT'S LOOK** (bridge
   reticle, contour field) on top of the config's own Inspector. They set `reticleLook` and `formedLook` only.
 - `VesselConfigsWindow`: each card on the Vessel Studio home has **CONFIGS**, which lists that vessel's config assets
   (its studio map's assets, its prefab, its own action and config assets, its element map). **INSPECT** opens each in
   Unity's own Inspector. Not a tuner (/vessel-studio D41).
 
 **Verified without the editor:** reference compile, player and editor (the five changed editor files gated), 0 errors
-in project code. `MeerkatWormholeMathTests` 32/32 under dotnet, including the frame test now on the round-7 shape. The
+in project code. `SolitonTunnelShapeMathTests` 32/32 under dotnet, including the frame test now on the round-7 shape. The
 lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a planted error fails it). The ported
 `MWTube` matches a brute-force distance to the shaft-and-bend centreline on 300 random points (error 0.0). `parity_gate.py` ok.
 
 **Verify in editor:**
-1. EditMode `VesselStudioWindowTests` (three new cases) and `MeerkatWormholeMathTests` pass. No shader errors on
-   `MeerkatWormholeLens`.
+1. EditMode `VesselStudioWindowTests` (three new cases) and `SolitonTunnelShapeMathTests` pass. No shader errors on
+   `SolitonTunnel`.
 2. FrogletTools ▸ Vessels ▸ Vessel Studio: each card has **CONFIGS** at the right of its chip row; clicking it does not
-   open the studio. On the Meerkat card it lists `MeerkatWormholeConfig` (45 artifact keys) first, then `Meerkat`
+   open the studio. On the Meerkat card it lists `MeerkatSolitonConfig` (45 artifact keys) first, then `Meerkat`
    (the prefab), the two Meerkat actions and the element map. **INSPECT** opens a floating Inspector; **INSPECT ALL**
    opens one per asset. A concept studio (Gibbon) says it has no vessel in Unity yet.
-3. Play the Meerkat in the lava lamp with `MeerkatWormholeConfig` open. **YASH'S LOOK**: a cyan spindle reticle with a
+3. Play the Meerkat in the lava lamp with `MeerkatSolitonConfig` open. **YASH'S LOOK**: a cyan spindle reticle with a
    lime path, and RT forms a spindle bridge. **GARRETT'S LOOK**: the reticle is a bridge in your domain colour, and RT
    forms bent space only. Each swap shows at once.
 4. Garrett's look on a sharp tunnel (LT squeezed, right stick fully over): the bent shell follows the straight shaft
@@ -1477,13 +2062,13 @@ one. Reference compile (player-dev and editor): see the commit.
 ### 🔴 The Meerkat's before and after: the bridge reticle and the contour-field tunnel (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett's pick from the Tube Lens Lab, `R_VesselActions/MEERKAT.md` §2.1):
-- `MeerkatWormholeConfig`: `reticleLook` (Bridge), `formedLook` (ContourField) and 16 `field*` numbers.
-- `MeerkatWormholeView`: the reticle drawn as the bridge; no bridge on a formed tunnel.
-- `MeerkatWormholeLensPass` and `MeerkatWormholeLens.shader`: the contour-field ray march, in the existing lens draw.
-- `MeerkatWormholeMath.TubeWorldToLocal`, with a new test.
+- `MeerkatSolitonConfig`: `reticleLook` (Bridge), `formedLook` (ContourField) and 16 `field*` numbers.
+- `SolitonTunnelView`: the reticle drawn as the bridge; no bridge on a formed tunnel.
+- `SolitonTunnelLensPass` and `SolitonTunnel.shader`: the contour-field ray march, in the existing lens draw.
+- `SolitonTunnelShapeMath.TubeWorldToLocal`, with a new test.
 
 **Verified without the editor:**
-- `MeerkatWormholeLens.shader`, both stages, compiled with glslang in HLSL mode against the black-hole lens's URP mock.
+- `SolitonTunnel.shader`, both stages, compiled with glslang in HLSL mode against the black-hole lens's URP mock.
   The unmodified shader is the control, and a planted error fails it.
 - The contour field's arithmetic is the lab's GLSL. The lab was rendered headless (SwiftShader) and reviewed by Garrett.
 - `author_meerkat_assets.py --check` OK.
@@ -1491,7 +2076,7 @@ one. Reference compile (player-dev and editor): see the commit.
 **NOT run:** the game in the Editor; the shader under Unity's own compiler; the new test in Unity's runner; frame cost.
 
 **Verify in editor:**
-1. EditMode `MeerkatWormholeMathTests` passes (28 + 3 cases). No shader errors on `MeerkatWormholeLens` in the Console.
+1. EditMode `SolitonTunnelShapeMathTests` passes (28 + 3 cases). No shader errors on `SolitonTunnel` in the Console.
 2. Lava lamp, pick the **Meerkat**: the reticle on the nose is a spindle bridge in your domain colour over faint glass,
    not cyan wire. The right stick bends it and LT shortens it, as before.
 3. Pull **RT**: no spindles or glass appear. The tunnel shows as bent space only: the world seen through its wall is
@@ -1550,7 +2135,7 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 
 **Verified without the editor:**
 - Reference compile: player and editor configs, 0 errors in project code.
-- `MeerkatWormholeMathTests` (27 cases), run with dotnet against Unity-equivalent stubs: all pass. Their numbers come
+- `SolitonTunnelShapeMathTests` (27 cases), run with dotnet against Unity-equivalent stubs: all pass. Their numbers come
   from running the page's own functions in node.
 - Generators: `author_meerkat_assets.py --self-test` and `--check` OK; `author_burrowrun_assets.py --check` OK.
 - `studio_to_unity.py --vessel meerkat --check`: 36 mapped, 0 drift.
@@ -1559,11 +2144,11 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 
 **NOT run:**
 - The game in the Editor.
-- `MeerkatWormholeMathTests` in Unity's runner.
+- `SolitonTunnelShapeMathTests` in Unity's runner.
 - `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`.
 
 **Verify in editor:**
-1. Run EditMode tests `MeerkatWormholeMathTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests` and
+1. Run EditMode tests `SolitonTunnelShapeMathTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests` and
    `CrystalHullFusionConfigTests`: all pass. Then open `Meerkat.prefab` and `MinigameBurrowRun.unity`: no missing
    scripts.
 2. **Lava lamp:**
@@ -1582,7 +2167,7 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
    - The tunnel stays 10 s and collapses to its centre (no screen ripple: lensing is off by default).
 4. Lensing ships OFF (round 4): no bent space, no mouth dents, no edge ripple. Raise `warpStrength` / `dentStrength` /
    `rippleStrength` on the config in play mode to see each; a vessel in front of a mouth is not bent.
-5. Open `Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset` in play mode. Moving `bridgeVisibility`
+5. Open `Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset` in play mode. Moving `bridgeVisibility`
    to 0 hides the bridge, and the other looks change live.
 6. **AI:** put the Meerkat on autopilot (or race Burrow Run against AI Meerkats). It forms tunnels toward its rings:
    it holds its line for 0.3 s, then dives.
@@ -1819,7 +2404,7 @@ removed (now the base rule). `RegattaNoCrystalTargetTests` became `RaceAIWaypoin
 
 **Verify in editor:**
 1. Run `RaceAIWaypointsOnlyTests` (EditMode): both pass.
-2. Play Switchback with AI Dolphins and watch one in FrogletTools > AI > Third Eye: its phase is only Approach / Through
+2. Play Switchback with AI Dolphins and watch one in the AI Diagnose panel (F2): its phase is only Approach / Through
    ring N (never "Crystal on the way"), and it flies past crystals beside its line.
 3. The same in Breakwater (AI Sparrows) and Headlong.
 
@@ -5334,7 +5919,7 @@ As a guest: an opponent chip shows the (i) and hover name but is not tappable fo
 on the Arcade's Skim Race card, and Medium is lit. The vessel carousel sits under it: hull icon, arrows and SELECT
 VESSEL all inside its frame, nothing touching ADD AI. (2) Press Easy, then Hard. The row lights the
 pick, and the pad's left/right steps it. As a guest the row is greyed and shows the host's pick. (3) Launch Astro
-League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's state flickers amber/ruby and it
+League on Easy with the Third Eye open (the AI Diagnose panel (F2)). The AI's state flickers amber/ruby and it
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
@@ -5959,7 +6544,7 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
 
 **Verify in editor:**
 1. Run `RegattaNoCrystalTargetTests` in the Test Runner (edit mode): both tests pass.
-2. Start Regatta, solo, with a Rhino and other hulls on AI seats. Open FrogletTools ▸ AI ▸ Third Eye. No AI readout
+2. Start Regatta, solo, with a Rhino and other hulls on AI seats. Open the AI Diagnose panel (F2). No AI readout
    ever says "Crystal on the way"; each AI's aim line goes to its ring, or along its rail.
 3. Fly beside an omni crystal near the racing line: no AI bends off its line toward it.
 
@@ -6034,7 +6619,7 @@ and columns; `learn_from_flights.py --self-test` skips `held` rows (negative con
 
 ### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
-**What landed:** FrogletTools ▸ AI ▸ Third Eye has a **Pilots** panel: each pilot's row has **You | AI**. Your own hull:
+**What landed:** the AI Diagnose panel (F2) has a **Pilots** panel: each pilot's row has **You | AI**. Your own hull:
 **AI** lets the AI fly it (your input pauses; in a gate race it gets the race steering, `GateRaceController.ArmAIPilot`),
 **You** takes it back. An AI's hull, either team: **You** takes it over and the AI flies the hull you left
 (`PilotControl.TryTakeOver`, the arena pilot swap's exchange without its same-team / AI-teammate rule). Host or solo only.
@@ -6043,7 +6628,7 @@ AI is already holding at the start. `Player.ExecutePilotSwapServer` is the arena
 **Verified without the editor:** `unity_refcompile` (see the commit), the AI-state, logging, using, conditional-compilation
 gates. Nothing has been played.
 **Verify in editor:**
-1. Regatta, solo, Hard, five hulls seated. Open FrogletTools ▸ AI ▸ Third Eye; the Pilots panel lists six rows.
+1. Regatta, solo, Hard, five hulls seated. Open the AI Diagnose panel (F2); the Pilots panel lists six rows.
 2. On your row press **AI**. Your hull keeps racing: it threads the rings (readout *Approach* / *Through*), your sticks do
    nothing. Press **You**: control comes back, nothing held (no stuck drift or boost).
 3. On a rival AI's row (another domain) press **You**. The gameplay camera and your sticks move to that hull; your old
@@ -6089,7 +6674,7 @@ the session that wrote it. Proved offline: player-dev and editor `unity_refcompi
 
 **Verify in editor:**
 1. Arcade ▸ Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin, then launch.
-2. Open FrogletTools ▸ AI ▸ Third Eye and turn on Trails. Step through each AI with Tab: its trail should pass through every ring.
+2. Open the AI Diagnose panel (F2) and turn on Trails. Step through each AI with Tab: its trail should pass through every ring.
 3. The readout should read Approach ring N, then Through ring N, with the lap climbing. A cyan ring marks the ring it is after.
 4. **Rhino:** the readout shows "ramping on the straight" on long legs. Speed climbs well past 100 u/s, then it lets go before each ring and still threads it.
 5. **Urchin:** "Heading for its own rail", then "Riding the rail" on its OWN colour at about 300 u/s. It should not crawl at 20 u/s on a rival lane.
@@ -6113,7 +6698,7 @@ the changed files beyond the unfetchable Reflex and Unity.Services.Multiplayer p
 1. Arcade ▸ Regatta, solo, 6 seats over 3 domains. Every AI chip, both teams, steps when you tap it
    (auto → Manta → Dolphin → Rhino → Urchin → Squirrel → …). An opponent chip on auto shows the Squirrel.
 2. Seat Squirrel, Manta, Rhino, Urchin, Dolphin; launch at intensity 1, Hard. Each AI spawns in the hull
-   its chip showed (FrogletTools ▸ AI ▸ Third Eye to watch any of them).
+   its chip showed (the AI Diagnose panel (F2) to watch any of them).
 3. Note per hull: finished 3 laps or not, place, rings missed, where it got stuck.
 4. With a guest: the guest can still tap only their own team's ally chips.
 
@@ -7767,7 +8352,7 @@ the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead)
 still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
 ### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
 
-**What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **FrogletTools > AI > Third Eye**
+**What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **the AI Diagnose panel (F2)**
 (`Assets/_Scripts/Editor/AI/ThirdEye*.cs`). A hidden camera of its own renders into the window while you play
 in the Game view. Pick any pilot, then Chase / Follow / Free (Fly or Orbit), the Vessel Studio's cameras.
 *AI thinking* draws each AI's aim (Skim Race pilot: green racing, amber not noticed, red misjudged, violet
@@ -7781,7 +8366,7 @@ Logging, conditional-compilation and using-directive gates pass. `/verify-unity`
 
 **Verify in editor:**
 1. The project compiles; Test Runner > EditMode: `ThirdEyeRigTests` (10) pass.
-2. Open **FrogletTools > AI > Third Eye** and dock it beside the Game view. Out of Play mode it says so.
+2. Open **the AI Diagnose panel (F2)** and dock it beside the Game view. Out of Play mode it says so.
 3. Arcade ▸ Skim Race, I2, Medium, 1 AI. Play the race yourself in the Game view. Expect the Third Eye to show
    the match from behind YOUR hull (Chase) with the look of the game (bloom, tonemapping, same sky), and the
    Game view to be unaffected (same frame rate feel, same camera).
@@ -15669,7 +16254,7 @@ the dipole, and the path-watching autopilot held its poles while the hull circle
 (`StoatDipoleConfigSO.autopilotMaxOrbitDegrees` = 360) and waits the 2 s interval before the next pair.
 `STOAT_DIPOLE.md` §1. `SweptAround`/`OrbitCapReached` compiled and their tests run under Roslyn; the
 executor edit was checked by reading only.
-1. Watch an AI Stoat in the Third Eye (FrogletTools > AI > Third Eye). When it falls into orbit round its
+1. Watch an AI Stoat in the Third Eye (the AI Diagnose panel (F2)). When it falls into orbit round its
    own black hole it must come out after at most one lap.
 2. It must still dive THROUGH the sink to the source (a wormhole pass is not counted as orbiting).
 3. Race times should not get worse than the studio's (Hard 49-59 s); if they do, raise the cap to 540.
@@ -18915,6 +19500,12 @@ gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `Arcade
    and press Easy: every AI reads "Easy AI". Launch with AI 1 Easy, AI 2 Legendary: AI 2 flies visibly cleaner.
 6. Same Arcade card as a guest: the pedestals show each AI's level and cannot be pressed for it.
 
+**Status (2026-11-01):** still unverified. Checked on `Ys-bleeding-edge` at `4f875bd14c`: the code is intact (nothing in the
+725 commits since `9f6db7cc49` touched the difficulty paths); the refcompile and `gates.sh` passed at push time. No
+screenshot of the real window exists yet; the only images made were mockups drawn on the Rev 20 G / Rev 25 B boards.
+A local session with Unity open should capture: an Arcade card (Scurry) with three AI, no AI selected, then AI 1 and
+AI 2 each selected with different levels; and an Arena card (Regatta) with an AI selected (the vessel strip follows it).
+
 ## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameWarpline.asset` + `ModePreview_Warpline.asset` (Vessels / preview: the Meerkat; `author_warpline_assets.py`),
@@ -19378,15 +19969,88 @@ compile has no errors in the changed files (player and editor).
     VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
     is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
 
+## 🔴 2026-11-01 — The Voyage Board in the game: the job cards draw the real Milky Way's sea and the course round the reefs (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md`. **Files:** `Data/Voyages/HyperSea.cs` (the board's sea model, ported line for
+line), `Data/Voyages/VoyageChart.cs` (the content's places and a job's course), `VoyageContent.cs` (`Charted`,
+`GalaxyX/Y/Z`), `VoyageContentSO.cs` (`CardCourse` and the five sea names), `UI/Views/VoyageMapGraphic.cs`,
+`VoyageJobCard.cs`, `VoyageJobsView.cs`, `Tests/Editor/HyperSeaTests.cs`; `VoyageContent.asset` from
+`author_voyage_assets.py` (which now also keeps `Toy_Voyage.asset`'s Ark escort wired). Affects: Garrett's voyage slice.
+Not compiled: the session had no Unity editor and no .NET SDK, so nothing here has been through a compiler.
+
+1. Open the project. **Pass:** no compile errors.
+2. Run `HyperSeaTests` and `VoyageRulesTests`. **Pass:** green (every `HyperSeaTests` number is the board's own output).
+3. Menu_Main, open the Voyage window. **Pass:** each job card's map is the sea around Tumult, blue-violet water with
+   orange reef patches; the slice's places sit on it with their names (one name, Celadon/Carmine/Aurum, where the
+   three harbours share Tumult); the job's course is a green line stepping cell by cell round the reefs, not a straight
+   lane; a small round galaxy sits in the top-right corner with a white dot (Sol) and a gold one (this water); under
+   the map a line such as "1,500 LY THROUGH WATER - LIGHT TAKES 1,500 YEARS".
+4. Edit `CardCourse` in `VoyageContent.asset` to empty. **Pass:** the line under the map disappears, nothing else changes.
+5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
+   window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
+6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
+
+## 🔴 2026-11-01 — The Voyage window as Garrett sketched it: Saga | Episodes, a galaxy explorer, the voyage grid (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md` §3 (Garrett's sketch). **Files:** `MissionView.prefab` re-laid in place by the
+new `Tools/Build/author_voyage_window.py` (`--check`, `--self-test`; `author_menu_mission.py` now stands down on that one
+file), new `UI/Views/VoyageWindowModals.cs`, new `UI/Views/VoyageEdgeGraphic.cs`, `VoyageMapGraphic.cs` (drag, pinch,
+wheel, tap), `VoyageJobsView.cs` (grid, edge view, tap a place), `VoyageJobCard.cs` (`Overlay`), `VoyageChart.cs`
+(`Heights`), `VoyageContentSO.cs` (`MapPlace`, `EdgeCaption`, `EdgeAbove`, `EdgeBelow`, `EdgeMidplane`) and
+`VoyageContent.asset` from `author_voyage_assets.py`. Affects: Shombith's Rev 17 J Voyage window (the Episodes column now
+opens from EPISODES, unchanged inside); Garrett's voyages. Not compiled: no Unity editor and no .NET SDK in the session.
+
+1. Open the project. **Pass:** no compile errors; MissionView.prefab opens with no missing-script or broken-reference
+   warnings.
+2. Menu_Main, open the Voyage window. **Pass:** two wide buttons at the top, SAGA and EPISODES; under them the galaxy map
+   (the sea around Tumult, places named, the galaxy corner), a thin edge-on strip under it (the disk at true scale, a
+   depth gauge on its left, a caption naming where the squad is and its height), then the voyage cards three across.
+3. Press SAGA. **Pass:** a modal with Tandava and Severing side by side over a dimmed window; SET SAIL on Tandava works as
+   before. Press outside the cards. **Pass:** it closes. Press EPISODES. **Pass:** Episode 1 with its five quests and
+   Episode 2's locked bar; claiming a quest works as before. Press EPISODES again. **Pass:** it closes.
+4. Drag the map. **Pass:** it pans, the place names follow, the sea fills in as you go; the edge strip pans with it.
+   Mouse wheel or pinch over the map. **Pass:** it zooms about the pointer, and the edge strip zooms with it.
+5. Tap a place a voyage sails to. **Pass:** that voyage's card opens over the others and the map frames its course. Tap
+   a place no voyage sails to. **Pass:** its name and line show under the map.
+6. Press a closed card (or its OPEN chip). **Pass:** it expands over the other cards to its brief (squad, intensity, pay,
+   who brought it) with SET SAIL; the map frames its course and the edge strip draws the course climbing or diving
+   between the places' heights. Press Close. **Pass:** back to the grid; the map shows every place.
+7. The Ark escort card. **Pass:** closed in the grid like the others; open, its difficulty stepper either side of SET
+   SAIL.
+8. Set sail on a job, finish it, come back. **Pass:** the one card under way stands open over the grid while it is out.
+
+## 🔴 2026-11-01 — The Voyage window: one galaxy map, job cards that open to their brief (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md` §3. **Files:** `UI/Views/VoyageJobsView.cs`, `VoyageJobCard.cs`,
+`VoyageMapGraphic.cs`, `VoyageContentSO.cs` (`CardOpen`, `CardClose`, `CardDetails`, `CardHomeDetails`, `CardSquadSeat`,
+`CardSquadSeparator`), `VoyageContent.asset` from `author_voyage_assets.py`, two lines on `MissionView.prefab`'s
+`VoyageJobsView` (`vessels`, `mapHeight`). Affects: Garrett's voyage slice; `MissionView.prefab` (generated by
+`author_menu_mission.py`, which already reported drift before this change). Not compiled: no Unity editor and no .NET
+SDK in the session.
+
+1. Open the project. **Pass:** no compile errors.
+2. Menu_Main, open the Voyage window, scroll to the jobs. **Pass:** after Tandava and Severing, ONE galaxy map (the sea
+   around Tumult, the places named, the galaxy corner), then one closed card per job: OPEN chip, route and pilot, title,
+   course line. No card shows a picture.
+3. Press OPEN on a card. **Pass:** the card grows to its brief (the job, the destination's line, SQUAD with your three
+   hulls and pilots, INTENSITY I1-I4, PAYS n CRYSTALS, who brought it) with SET SAIL; the chip reads Close; the map
+   above zooms to that job's course, a green line stepping round the reefs, and its course line shows under the map.
+4. Press OPEN on another card. **Pass:** the first closes, the second opens, the map moves to the new course. Press
+   Close. **Pass:** the card closes and the map shows every place again.
+5. Press anywhere on a closed card (not the chip). **Pass:** it opens too.
+6. Press SET SAIL on an open card. **Pass:** into freestyle and the voyage sails, as before.
+7. The way home card (away from home). **Pass:** its brief has no pay line.
+8. The Ark escort card. **Pass:** always open, its difficulty stepper either side of SET SAIL, as before.
+
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 
 **Files:** `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` + `LavalampWormholeLab.cs` (the lab, runtime
 bootstrap, IMGUI, not in the build settings), `MeerkatTubeLook.cs` (the static look switch, default **Original**),
 `MeerkatWaterTubeView.cs` + `Assets/_Graphics/Materials/Graphs/MeerkatWaterTube.shader` +
 `Assets/Resources/MeerkatWaterTube.mat` (the new pipe: alpha, near-white, fresnel rim, flow bands, caustic shimmer,
-twist, near-camera and live-window fades, no grab pass), `MeerkatWormholeExecutor.Lab.cs` (hull-less lab hooks on a
-partial executor), one-line gates in `MeerkatWormholeLensPass.AnythingLive`, `MeerkatTubeWallView.Draw` and
-`MeerkatWormholeView.DrawOncePerFrame`. No Unity in the session: the C# was only syntax-checked (Roslyn, C# 9, no Unity
+twist, near-camera and live-window fades, no grab pass), `MeerkatSolitonExecutor.Lab.cs` (hull-less lab hooks on a
+partial executor), one-line gates in `SolitonTunnelLensPass.AnythingLive`, `MeerkatTubeWallView.Draw` and
+`SolitonTunnelView.DrawOncePerFrame`. No Unity in the session: the C# was only syntax-checked (Roslyn, C# 9, no Unity
 references); the shader was never compiled.
 
 1. Open the project. **Pass:** no compile errors; `MeerkatWaterTube.shader` imports with no errors or warnings.
@@ -19422,7 +20086,10 @@ the menu still uses the hull picked for it. No Unity in the session.
 5. Vessel Changer toy -> Squirrel, then back to Meerkat. **Pass:** both swaps work.
 6. A party guest joining the host's menu. **Pass:** the guest's own hull is unchanged (the field drives the host only).
 
-## Switchback fun types: CLASSIC / LEVEL SHAPES / PAR & MEDALS / LIVE FEATURES / COMBINED (2026-10-28) - NOT EDITOR-VERIFIED
+## Switchback fun types: CLASSIC / LEVEL SHAPES / PAR & MEDALS / LIVE FEATURES / COMBINED (2026-10-28) - SUPERSEDED
+
+**Superseded 2026-10-29:** these fun types and the FUN picker were removed; Switchback is Blast Run only (see the
+"Switchback is Blast Run only" entry at the top). Skip the steps below.
 
 Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Fun types". Watch the console for
 `[Switchback] RUN ...` after every finish.
@@ -19451,31 +20118,31 @@ Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.
 lens, its outer layer and the networked holes ship as the only look (GARRETT'S preset baked as
 `MeerkatWormholeHQ.Shipped`). Deleted: `MeerkatWormholeGlass`, `MeerkatWormholeWarp`, `MeerkatTubeWall`,
 `MeerkatWaterTube`, `MeerkatTree` and `MeerkatRootInside` (each shader + material), `MeerkatTubeWallView`,
-`MeerkatWaterTubeView`, `MeerkatTreeView`, `MeerkatTreeMesh`, `MeerkatTubeLook`, `MeerkatWormholeConfigSOEditor`. The
+`MeerkatWaterTubeView`, `MeerkatTreeView`, `MeerkatTreeMesh`, `MeerkatTubeLook`, `MeerkatSolitonConfigSOEditor`. The
 offline C# reference compile and glslang pass; no Unity in the session.
 
 1. Open the project. **Pass:** no compile errors, no missing-script or missing-shader warnings, and
-   `MeerkatWormholeLens.shader` imports cleanly.
+   `SolitonTunnel.shader` imports cleanly.
 2. Open `LavalampWormholeLab.unity` and press Play. **Pass:** the tunnels and the network show the same look as before
    (bent space, a faint outer layer and rim; the network channels have faint iridescence and pulses); no look buttons;
    "Measure" gives one line; "Tune the look" moves the layer live.
 3. Ride a tunnel and the network. **Pass:** the bend and the layer are as before; a vessel in front of a tube is not bent.
 4. Play the Meerkat in freestyle: form tunnels, grow an omnicrystal network, ride both. **Pass:** the reticle spindles
    still draw; no errors in the console.
-5. Select `MeerkatWormholeConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
+5. Select `MeerkatSolitonConfig.asset`. **Pass:** the Inspector shows the plain default inspector (no YASH'S / GARRETT'S
    buttons, no Formed Look field).
 
 ## Meerkat wormhole: the calm jelly look, trunk and root, comfort settings (2026-10-29) - NOT EDITOR-VERIFIED
 
 Branch `feat/wormhole-pc-unified`, PR #1624. See `Docs/Shaders/WORMHOLE_SHADERS.md` §13 and §14. There is no water, tint
-or dispersion. The trunk (tunnel) and root (network channel) share `MeerkatWormholeLook`, each with its own numbers.
-`MeerkatWormholeHQ.cs` was renamed `MeerkatWormholeLook.cs` (same `.meta` GUID). The contour-field fields and the dead
+or dispersion. The trunk (tunnel) and root (network channel) share `SolitonTunnelLook`, each with its own numbers.
+`MeerkatWormholeHQ.cs` was renamed `SolitonTunnelLook.cs` (same `.meta` GUID). The contour-field fields and the dead
 studio keys were removed from the config. glslang (vert + frag) and the offline C# reference compile (player + editor)
 pass; no Unity in the session.
 
-1. Open the project. **Pass:** no compile errors, `MeerkatWormholeLens.shader` imports cleanly, and there are no
+1. Open the project. **Pass:** no compile errors, `SolitonTunnel.shader` imports cleanly, and there are no
    missing-script warnings.
-2. Select `MeerkatWormholeConfig.asset`. **Pass:** the headers read Comfort, Trunk Look, Trunk Shape, Trunk Ride, Root
+2. Select `MeerkatSolitonConfig.asset`. **Pass:** the headers read Comfort, Trunk Look, Trunk Shape, Trunk Ride, Root
    Look, Root Shape, Root Ride, Kit, then Miscellaneous. Trunk Look shows Bend 3, Lens 0.139, Wobble 0.2. Root Look has
    Shimmer 0.5 and Pulse 0.12. Comfort is 1 / 0.25 / 1. There are no `field*` fields and no unknown-field warnings.
 3. Open `LavalampWormholeLab.unity` and press Play, then watch a tunnel from outside. **Pass:** the world behind bends
@@ -19684,3 +20351,216 @@ No Unity editor in the cloud session, so `/verify-unity` did not run. What did r
    (towers, hold edges, regrowth, the long drop and wormhole, the AI, two players), on Waystation's card.
 6. **Old saves.** A player whose last selected mode was 76 opens the Arcade. **Pass:** no error. They land on a
    default card.
+
+## Soliton Tunnels: the Meerkat's wormhole as an environmental fundamental, the slip-and-slide (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/Environment/SolitonTunnel/` (SolitonTunnelConfigSO, SolitonTunnel, SolitonNetwork,
+SolitonTunnelRider, SolitonTunnelPlacer, the lens pass / view / look / math), `Assets/_SO_Assets/Environment/SolitonTunnel/`
+(SolitonTunnel.asset, SolitonNetwork.asset), `MeerkatSolitonConfig.asset` (was MeerkatWormholeConfig, same guid),
+`Assets/_Scripts/Editor/Environment/EnvironmentalFundamentalsWindow.cs`, `SolitonTunnel.shader` (domain tint). Removed: the
+Lavalamp lab (restore: `Docs/Shaders/WORMHOLE_SHADERS.md` §15).
+
+1. Open the project. **Pass:** no compile errors; `SolitonTunnel.shader` and `SolitonTunnelAdditive.shader` import cleanly;
+   no missing-script or unknown-field warnings on Meerkat.prefab or MeerkatSolitonConfig.asset.
+2. Select `MeerkatSolitonConfig.asset`. **Pass:** Tunnel Config = SolitonTunnel, Network Config = SolitonNetwork; the kit
+   numbers and `menuAutopilotNetworks` / `networkEvent` kept their values (FormerlySerializedAs).
+3. FrogletTools > Environment > Environmental Fundamentals. **Pass:** both configs listed and editable inline, also in Play
+   mode (edits show live; `_SO_Assets` files are restored after Play by PlayModeSOProtector, so keep values by editing
+   out of Play).
+4. Toybox, Meerkat, press RT. **Pass:** one tunnel forms: jelly lens plus the spindle bridge, tinted by your domain
+   (Look: Domain Tint: off / override / strength all change it).
+5. Fly in. **Pass:** you are pulled onto the inner wall and slide along it, bouncing now and then; your nose is free; the
+   left stick does nothing to the slide; RT gives a small push (switch `thrustOn` off: none). You exit at the speed you
+   carried (fast in = fast out) - check the TrackedExitSpeed cap does not flatten it.
+6. Pick up an omnicrystal. **Pass:** a Soliton Network grows; ride it the same way; the AI rides by holding RT.
+7. Garrett's kit: Space swallow pulls and fires prisms, Time rush, Mass exit portal, Charge sentinels (Y). **Pass:** all as
+   before, in both a tunnel and a network.
+8. Drop a `SolitonTunnelPlacer` in an empty scene (config SolitonTunnel or SolitonNetwork, count 3). **Pass:** tunnels
+   appear without a maker, any vessel can ride them, and they respawn when not permanent.
+9. Butterfly / crystal wormholes (`Wormhole.shader`). **Pass:** unchanged.
+
+## Cell swap: the retired trail goes back to its pool newest first, in 12 ms slices (B36, 2026-10-29) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/Environment/Cell.cs` (`ReturnRetiredTrailToPool`, `RetireWorldIntoSuctionRoot`).
+Garrett's 29 Oct swap to Barren froze one frame for 24.2 s returning 76,115 pooled trail prisms, while hosting over
+Relay (`Docs/PartySystem/BUGS.md` B36, 2026-10-29). `/verify-unity` did not run: no editor in the session. Reference
+compile (player and editor) and the gates pass; the Amoebius edit-mode suite has no new failure from this change.
+
+1. Menu_Main, freestyle: fly a long trail (or several vessels' worth; the more prisms the better, 20,000+ shows it),
+   then use the Cell Selector toy to swap to any cell. **Pass:** the world suctions away and the new one streams in
+   with no long freeze; the swap's Load Time Insights report shows the "pooled trail prisms return to their pool"
+   span spread over several frames, with no frame over about 0.5 s inside it.
+2. Fly again after the swap. **Pass:** new trail lays normally (the prisms came back to the pool and are reused), no
+   errors, and no prism from the old world is left floating where it was.
+3. Swap to the same cell twice in a row (the reset). **Pass:** both complete; the second swap is not refused.
+
+
+## Flight recordings name the Switchback fun type (2026-10-29) - NOT EDITOR-VERIFIED
+
+**Updated 2026-10-29:** Switchback is Blast Run only, so every Switchback flight records `"funType":"BlastRun"`, and the
+learner now ships Blast Run (an untagged flight is the retired Classic ladder). Steps 1-2 below: expect `"BlastRun"`.
+
+**Files:** `Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs` (`_funType`, the `"funType"` field),
+`Tools/Build/learn_drives_from_flights.py` (`SHIPPED_FAMILY`, `on_shipped_family`). The AI learning sweep learns the
+Dolphin's Switchback drive from Baseline races only, because every fun type is its own world. A Blast Run race (block
+fields) had been learned into the I2 drive because the flight did not say which fun type it was. `/verify-unity` did
+not run: no editor in the session. The reference compile passes, and so does `learn_drives_from_flights.py
+--self-test`, with a negative control.
+
+1. Fly Switchback at any intensity with the fun type on Baseline, and finish or stop the race. **Pass:** the new
+   `flight_Switchback_*.json` has `"funType":"Baseline"` after `courseIntensity`, and the console shows no error.
+2. Pick Blast Run on the launch panel and fly again. **Pass:** that flight has `"funType":"BlastRun"`.
+3. Fly any other mode (Regatta, Skim Race). **Pass:** its flight has no `funType` field, and everything else is as before.
+
+## Switchback Blast Run: the AI blasts like a player, by difficulty (2026-10-29) - NOT EDITOR-VERIFIED
+
+**What changed.** At each blocked gate, an AI Dolphin now chooses Direct, Thread (the eye) or Blast (take the key, nose
+on the door, fly the cleared lane). Its difficulty sets how well it chooses and aims (SWITCHBACK.md "AI: the blast
+planner"). It is server-only. The **`aiBlastPlanner`** toggle on SwitchbackController (on by default) falls back to the
+old crystal detour.
+
+**Setup.** Turn on verbose ArcadeMatch logging and filter the console on `[Switchback AI]`. Select the
+SwitchbackController in the hierarchy to see the gizmos.
+
+1. Fly Switchback at intensity 3 with 2-3 AI opponents at **Easy**.
+   - **Pass:** almost every blocked gate logs `plan=Thread`, and the AIs thread the eyes. If an Easy AI ever blasts, it
+     is rare.
+2. Repeat at **Medium**.
+   - **Pass:** some gates log `plan=Blast ... result=planned`, mostly when the AI is already near the key. They are
+     followed by `result=blasted standing A->B` with B well below A, and the AI flies through the hole.
+3. Repeat at **Hard**.
+   - **Pass:** blasts are frequent.
+   - **Pass:** where a key is off the AI's line, the log shows `why=key-far` or `why=key-blocked` and it threads.
+4. Repeat at **Legendary**.
+   - **Pass:** most blocked gates are blasted, with `aimErr` under 1.2.
+   - **Pass:** the gizmo's yellow fire line runs through the door, and the cleared hole is lined up with the ring.
+   - Note: the cyan gape axis is planned only; roll is not flown.
+5. Race a human against a Hard AI, and take the AI's key just before it does.
+   - **Pass:** the log shows `why=key-gone` / `result=rival-took-key threaded`, and the AI threads instead of
+     circling the empty key.
+6. Fly intensity 4, which has sliders and rotors.
+   - **Pass:** AIs do not stall at gates.
+   - **Pass:** the frame rate holds at 100 fps with 4 AIs. In the profiler, `SwitchbackController` and
+     `SwitchbackBlastRunRuntime` show no GC allocation per frame; a scan every 0.5 s during the first 30 s is expected.
+7. Untick `aiBlastPlanner` and fly once more.
+   - **Pass:** there are no `[Switchback AI]` lines, and the AIs detour for keys as before.
+
+
+### 🔴 Third Eye moved into the game scene (`Ys-bleeding-edge`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+> **Superseded hotkeys (later 2026-11-01):** F3, F4, C, V, Tab, `[` `]` and F are gone. F2 is the only hotkey and opens
+> the AI Diagnose panel; camera, pilot and overlay steps are panel buttons or `aidiag` commands. See the AI Diagnose
+> entries below and `/vessel-ai` §4.1.
+
+**What landed:** the FrogletTools ▸ AI ▸ Third Eye window (a second camera and RenderTexture) is gone. The Third Eye
+now drives the MAIN camera in the Game view, in the editor and development builds only
+(`Assets/_Scripts/Controller/Camera/ThirdEye/`). Refcompile player + editor OK, `ThirdEyeRigTests` unchanged.
+
+1. Play Arcade ▸ Switchback with AI Dolphins. Nothing Third-Eye shows on screen, and the profiler shows no `ThirdEyeHud.OnGUI`.
+2. **F2**: the camera leaves your hull in Free fly. Hold RMB and move the mouse to look; with RMB held, WASD / E / Q fly
+   and Shift is fast; the wheel changes speed. **F2** again: the gameplay camera snaps back behind your hull with the right FOV.
+3. F2, then **C** cycles Chase → Follow → Free, **V** switches Fly ↔ Orbit, **Tab** / `]` / `[` change the pilot, **F** frames it.
+4. **F3** opens the panel. Pilots: set your hull to **AI**; it flies itself; then **You** on an AI Dolphin; you fly it.
+5. **F4** (or Overlays in the panel): aim lines and target rings, trails and labels show in the Game view. Turn on
+   *AI plan (Switchback)* and *AI sense (Switchback)*: the same lines as the scene gizmos now draw in the Game view.
+6. Die or finish while the Third Eye is on (death / end camera): no errors; F2 still works on the new camera.
+7. Pause the editor while driving: you can still fly round the frozen frame.
+8. In the main menu, the god-mode camera keeps F2 for itself (the Third Eye ignores it there).
+9. A release (non-development) player build compiles and has no Third Eye.
+
+**Dropped:** the window's Resolution and clip settings (there's no RenderTexture now), and drag-look in Chase / Follow (use RMB).
+
+## 2026-11-01 — AI Diagnose panel (F2 only) + Lavalamp free fly in Switchback
+
+**What landed:** every Third Eye hotkey but F2 is gone. F2 opens/closes the "AI Diagnose" panel; it has camera buttons
+(Take/Release, Chase, Follow, Free fly, Orbit, Prev/Next/Frame, Fly speed), overlay toggles, Pilots You/AI, and a
+command field + Send (Enter sends) wired to DiagnosticsHUD (`aidiag ...`, `help`). Free fly is now the shared
+`FreeFlyCamera` class that the Menu_Main god-mode camera (Lavalamp) uses, with identical defaults.
+
+1. Switchback (dev build or editor): F2 opens the panel, cursor free; F2 again closes it and the cursor state returns.
+2. Take camera → Free fly: RMB look, WASD/E/Q/Space/Ctrl/Shift/Alt/wheel feel the same as Lavalamp god mode; your hull does not move.
+3. Release camera: gameplay camera back, hull controllable (unless handed to the AI).
+4. Click the command field and type `wasd`: hull doesn't steer. Send `aidiag thinking on`, `aidiag next`, `help`, `timescale 0.5`: replies shown.
+5. Menu_Main: F2 still toggles god mode, flight unchanged.
+6. Release build: no panel, no `aidiag` command.
+
+## 2026-11-01 — AI Diagnose: default cameras untouched, diagnose views only while the panel is open
+
+**Evidence:** the Third Eye / AI Diagnose commits (8b8ac6762, e203498f9) touch no gameplay or menu camera file
+(CustomCameraController, CameraManager, MainMenuCameraController, CameraFeelConfig, Menu_Main.unity are unchanged by
+them); the FreeFlyCamera refactor only moved god-mode flight code. **What landed:** closing the panel (F2, `aidiag
+panel off`, scene unload, quit, editor Play stop) releases the camera (gameplay driver + FOV restored) and turns all
+overlays off. Camera mode and overlay toggles are no longer saved; statics reset on SubsystemRegistration. Any
+`aidiag` camera/overlay command opens the panel first.
+
+1. Start Switchback and Menu_Main: default chase / lava-lamp follow camera, no panel, no overlays (even if they were on last run).
+2. F2 → Free fly → F2: chase camera back exactly (FOV too), overlays gone.
+3. Panel open with Orbit + trails, end the match / go to menu: panel closed, default camera.
+4. Panel open, stop Play, press Play: panel closed, default camera, overlays off.
+
+## Honeyguide round 8: banked triggers, pull to preview, Mass hive (2026-11-01) - NOT EDITOR-VERIFIED, NOT COMPILED
+
+**Files:** `HoneyguideCrew.Triggers.cs` (rewritten), `HoneyguideCrew.Preview.cs` and `HoneyguideCrew.MassHive.cs` (new),
+`HoneyguideCrew.Pilot.cs`, `.Zip.cs`, `.Hive.cs`, `HoneyguideDynamoView.cs`, `HoneyguideConfigSO.cs`, `HoneyguideConfig.asset`,
+`HoneyguidePeckAction.asset` (firingRate 10), `Honeyguide.prefab` (no boost), `ElementalAbilityMaps/Honeyguide.asset`,
+`TouchControlProfiles.asset` (RT glyph on Space). The session had no Editor and no .NET SDK, so the C# was not compiled:
+compile first. Design: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` "The triggers (lab round 8)".
+
+1. Compile. **Pass:** no errors in the Honeyguide files; EditMode `HoneyguideTests` pass.
+2. Toybox Vessel Changer -> Honeyguide and Ratel. Hold RT. **Pass:** a blue aim line 45 u ahead; let go: three quick shots.
+3. Hold LT. **Pass:** a dart line and ring 18 u ahead; let go: the hull darts; a rival or creature in the ring is struck.
+4. Make an upgrade card on the Ratel (or let its AI). **Pass:** a toast "... on RT x3"; the chip shows the card's name and
+   three dots; three releases spend them, then Peck/Flit return. Making it again before they are spent adds three.
+5. Hold RT and LT together, let go. **Pass:** nothing fires (cancel). On a phone: lift both thumbs, touch down.
+6. With the Lasso banked and nothing ahead: the pull draws nothing; the release toasts "No target" and keeps the use.
+7. Wait 45 s in freestyle. **Pass:** a turning hexagonal frame appears far off in the cell; flying through it opens hive mode.
+8. Button2 does nothing on the Honeyguide (no boost button); an AI Honeyguide still flies and uses its triggers.
+
+## Match HUD: no exception when a seat has no name yet (B46, 2026-11-01) - NOT EDITOR-VERIFIED
+
+**File:** `Assets/_Scripts/UI/MiniGameHUD.cs` (`ResolveAIAvatarSprite`). `/verify-unity` did not run (no editor in the
+session); reference compile (player and editor) and the gates pass.
+
+1. Three machines in one party start a time trial (Serpent or Thresher). One client stops its network for ~10 s (or
+   unfocuses until it bounces), then presses REJOIN. **Pass:** the other clients' consoles show no
+   `ArgumentNullException ... Parameter name: key` from `MiniGameHUD.ResolveAIAvatarSprite`; the domain panels still
+   draw every teammate's icon.
+2. Note whether the rejoiner logs `Double initialization not allowed!` (B47) and whether its name shows on the others.
+
+
+## Lantern Run (75): the Angler's Time race - two mass clusters a leg, paint, throw, dash (`claude/intelligent-lovelace-ynskrg`, 2026-11-01) - NOT EDITOR-VERIFIED
+
+A new mode. Authored in a cloud session with no
+Unity editor, so the `unity` CLI did not run. What did run:
+- `LanternRunCourseTests`: 8 of 8 pass outside the editor (the card harness's UnityShim and a small NUnit stand-in),
+  400 seeds x 4 intensities.
+- `author_lantern_run_assets.py --check` passes, with a watched negative control (a changed card field is named).
+- The `/arcadegame` §4 gates pass. `author_card_backgrounds --strict` fails only on the orphaned `Tandava.png`, and
+  `render_card_backgrounds.py --check` (all cards) stops on `BurrowRun: no recipe`; bleeding-edge fails both the same way.
+- `unity_refcompile`, player and editor configs: RESULT OK, no errors in project code.
+- `/ship` gates (`gates.sh`): all pass except `author_angler_assets.py --check` (4 HUD icon findings), which fails the
+  same way on a clean bleeding-edge.
+
+Also on this branch: `Fauna.LeashOwnsSpeed` (the throw keeps
+150 u/s) and `AnglerLeapfrogAIPolicySO` on `Angler.prefab` (the Angler's AI).
+
+Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
+
+1. **Compile.** Open the project. **Pass:** no errors in `LanternRunCourse.cs`, `LanternRunCourseSource.cs`,
+   `LanternRunController.cs`, `AnglerLeapfrogAIPolicySO.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
+   `EndConditionOverridesSO.cs`, `EndConditionOverridesWindow.cs` or `MiniGameHUD.cs`.
+2. **Edit-mode tests.** Run `LanternRunCourseTests`, `EnumIntegrityTests` (71 members, `LanternRun` = 75) and
+   `RaceCourseSourceTests`. **Pass:** all green.
+3. **Open and save the scene.** Open `MinigameLanternRun.unity` and save it (it is a text clone of Thresher Time's).
+   Commit it, then re-run `python3 Tools/Build/author_lantern_run_assets.py --check`. **Pass:** OK. The controller shows
+   Cluster Prefab = SpawnablePrism and Nucleus Margin = 30.
+4. **Fly it at I1.** Arcade grid, LanternRun, I1, with 1-2 Angler AIs.
+   - **Pass:** every leg has a ball of blue prisms before its ring and one past it, both on the ring's line.
+   - Hold RT on the near ball, let go; hold RT through the ring on the far ball, let go; press B twice.
+     **Pass:** a throw flies at about 150 u/s (not ~30), the second dash carries you through the ring and the ring counts.
+5. **Regrowth.** Watch a ball your school ate. **Pass:** it grows back one prism about every second (I1).
+6. **AI.** **Pass:** the AI Anglers throw and dash, and finish; they do not just cruise at 40 u/s.
+7. **Ladder.** Repeat at I2 (the two balls sit to opposite sides of the line), I3 (only the far ball) and I4 (far ball
+   every leg off the line, near ball every second leg, tight rings). **Pass:** as described.
+8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
+   follow-up 7).

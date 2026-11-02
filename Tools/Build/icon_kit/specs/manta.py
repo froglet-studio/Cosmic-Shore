@@ -60,7 +60,8 @@ def soar():
 
 ICONS = [
     dict(name="Manta_Sting", element="Charge", act="Sting", draw=sting),
-    dict(name="Manta_Yastri", element="Mass", act="Yastri", draw=yastri),
+    dict(name="Manta_Yastri", element="Mass", act="Yastri", draw=yastri,
+         exempt={"components": "the band and its two prisms, each two close triangles (never the rhombus, Garrett 2026-11-01)"}),
     dict(name="Manta_Kabloom", element="Space", act="Kabloom", draw=kabloom),
     dict(name="Manta_Soar", element="Time", act="Soar", draw=soar),
 ]

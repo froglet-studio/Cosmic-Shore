@@ -119,8 +119,8 @@ is not in their checkout; no play-run lines at all means the ledger's play-mode 
 
 ## 5. Verification
 
-- C# changes: `/verify-unity`; with no editor, a *Verification status* section in the commit saying
-  so. Compile against stubs with Roslyn anyway (`/asset-surgery` §4).
+- C# changes: the verify rule (`CLAUDE.md` § "Unity CLI verification": `unity_refcompile` + `/ship` gates, the `unity` CLI when an editor is open); if neither ran, a *Verification status* section in the commit saying
+  so. How to run `unity_refcompile`: `/asset-surgery` §4.
 - The gates you touched, and `python3 Tools/Build/bug_ledger.py --self-test` if you touched the script.
 
 ## 6. The daily sweep (scheduled task, once a day)

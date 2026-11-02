@@ -83,5 +83,37 @@ namespace CosmicShore.ScriptableObjects
         public string CardHomeRoute = "{from} TO {to}";
         [Tooltip("The Voyage window's card for the job under way.")]
         public string CardUnderway = "UNDER WAY TO {to}";
+        [Tooltip("A voyage card's course line on the galaxy map: {ly} light years sailed (and light takes as many years: " +
+                 "{years}), {minutes} at a minute a cell, {sea} the thickest water crossed, {intensity} the course's I1-I4.")]
+        public string CardCourse = "{ly} LY THROUGH {sea} - LIGHT TAKES {years} YEARS";
+        [Tooltip("The sea's names, thinnest to thickest, for {sea}.")]
+        public string SeaSpray = "SPRAY";
+        public string SeaFroth = "FROTH";
+        public string SeaWater = "WATER";
+        public string SeaThick = "THICK WATER";
+        public string SeaReef = "REEF";
+        [Tooltip("A voyage card's chip that opens it to its brief, and closes it again.")]
+        public string CardOpen = "Open";
+        public string CardClose = "Close";
+        [Tooltip("An open voyage card's brief. Tokens: {summary} the job, {to} and {place} the destination and its line, " +
+                 "{squad} the seats, {intensity} the course's I1-I4, {reward} the crystals it pays, {pilot} and {story} " +
+                 "who brought it. <br> breaks a line.")]
+        [TextArea] public string CardDetails =
+            "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}";
+        [Tooltip("The way home's brief (the same tokens; it pays nothing itself).")]
+        [TextArea] public string CardHomeDetails = "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}";
+        [Tooltip("One seat of the squad in a brief's {squad}: {vessel} its hull, {pilot} its pilot.")]
+        public string CardSquadSeat = "{vessel} ({pilot})";
+        [Tooltip("What stands between two seats in {squad}.")]
+        public string CardSquadSeparator = ", ";
+        [Tooltip("Under the galaxy map when the player taps a place no job sails to: {name} the place, {blurb} its line.")]
+        public string MapPlace = "{name} - {blurb}";
+        [Tooltip("The caption on the map's edge view (the disk seen edge-on at true scale): {place} the place it is " +
+                 "centred on, {height} that place's height (one of the three lines below).")]
+        public string EdgeCaption = "EDGE ON, TRUE SCALE - DISK 1,000 LY - {place} {height}";
+        [Tooltip("{height} above, below and on the midplane; {ly} the light years.")]
+        public string EdgeAbove = "{ly} LY ABOVE THE MIDPLANE";
+        public string EdgeBelow = "{ly} LY BELOW THE MIDPLANE";
+        public string EdgeMidplane = "ON THE MIDPLANE";
     }
 }

@@ -10,7 +10,8 @@ namespace CosmicShore.Gameplay
     /// crystal BECOMES: adopt the spent crystal's own renderers, stamp the morph once, carry the
     /// colour pair across, hand the surface to the real object, dissolve. A vessel's runner
     /// supplies only the target — the Scarab's ball (<see cref="ScarabCrystalMorph"/>), the
-    /// Squirrel's eight shielded ring prisms (<see cref="SquirrelCrystalMorph"/>).
+    /// Squirrel's eight shielded ring prisms (<see cref="SquirrelCrystalMorph"/>), the Dolphin's
+    /// Echo Obliteration cone (<see cref="DolphinCrystalMorph"/>).
     ///
     /// ── What the omni crystal is made of, and which part moves ───────────────────────────────
     /// The omni crystal is ONE body plus overlays (Docs/PALETTE.md §2.10): slot 0 is the whole

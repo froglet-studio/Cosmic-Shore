@@ -55,6 +55,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The abilities a random draw picks from (<see cref="DynamoAbility"/> values), or null for all of them (the
         /// lab's <c>abilities</c>).</summary>
         public int[] Abilities;
+        /// <summary>Round 7 (Garrett 2026-10-29): how many abilities each draw OFFERS; the Ratel picks one (<see
+        /// cref="DynamoInputKind.Pick"/>). 1 or less is the old random draw.</summary>
+        public int AbilityChoices;
+        /// <summary>Seconds the Ratel has to pick before the first offer is taken; 0 or less waits for the pick.</summary>
+        public double PickSeconds;
         /// <summary>-1 draws the first port pattern at random.</summary>
         public int FirstPortSet = -1;
         /// <summary>Every port pattern as (cell index, colour) pairs; <see cref="DynamoCore.BuildPortSets"/> makes them.</summary>
@@ -70,6 +75,8 @@ namespace CosmicShore.Gameplay
         Refuel = 1,
         Activate = 2,
         Remove = 3,
+        /// <summary>Round 7: take offer <see cref="DynamoInput.Slot"/> of the abilities the reveal offers.</summary>
+        Pick = 4,
     }
 
     /// <summary>One Engineer input. A human's tap and the AI's choice are the same value. <see cref="Colour"/> on a Refuel
@@ -84,6 +91,7 @@ namespace CosmicShore.Gameplay
         public static DynamoInput Refuel(int cell, int colour = 0) => new() { Kind = DynamoInputKind.Refuel, Cell = cell, Colour = colour };
         public static DynamoInput Activate(int slot) => new() { Kind = DynamoInputKind.Activate, Slot = slot };
         public static DynamoInput Remove(int cell) => new() { Kind = DynamoInputKind.Remove, Cell = cell };
+        public static DynamoInput Pick(int offer) => new() { Kind = DynamoInputKind.Pick, Slot = offer };
     }
 
     public enum DynamoEventKind
@@ -102,6 +110,8 @@ namespace CosmicShore.Gameplay
         Effect = 11,
         Tick = 12,
         Remove = 13,
+        /// <summary>Round 7: the draw offers <see cref="DynamoEvent.Offers"/>; the Shuffle event follows the pick.</summary>
+        Offer = 14,
     }
 
     public struct DynamoEvent
@@ -110,6 +120,8 @@ namespace CosmicShore.Gameplay
         public int Slot, Pid, Old, Cell, From, To, Colour, Count, Use, PortSet, Ap;
         public DynamoAbility Ability;
         public DynamoBoardEffect Effect;
+        /// <summary>The abilities an <see cref="DynamoEventKind.Offer"/> offers, in offer order.</summary>
+        public DynamoAbility[] Offers;
     }
 
     /// <summary>A point for the slip's pure math (double, as the lab is).</summary>
@@ -147,6 +159,11 @@ namespace CosmicShore.Gameplay
     /// the battery); patterns match in any of the six rotations; a made pattern sends one of its real prisms, drawn at
     /// random, to the battery; a pattern made for the third time is replaced by a random one; every 4 patterns the Ratel
     /// draws a new ability and a new port pattern, revealed one after the other while the spin clock stands still.</para>
+    ///
+    /// <para>Round 7 (Garrett 2026-10-29: "lets have the ap cap go to 6. lets do the 3 ability pick as well"): with
+    /// <see cref="DynamoSettings.AbilityChoices"/> above 1 the draw OFFERS that many abilities and the Ratel picks one; the
+    /// clock stays stopped while it chooses, and after <see cref="DynamoSettings.PickSeconds"/> the first offer is taken.
+    /// The AI picks by <see cref="AIPickOrder"/>.</para>
     /// </summary>
     public sealed class DynamoCore
     {
@@ -269,6 +286,8 @@ namespace CosmicShore.Gameplay
         {
             var outSets = new List<int[][]>();
             var seen = new HashSet<string>();
+            var keyBuf = new System.Text.StringBuilder(64);
+            string[] keys = null;
             foreach (var e in engines)
                 for (int k = 0; k < 6; k++)
                     foreach (var pm in Perms)
@@ -280,12 +299,24 @@ namespace CosmicShore.Gameplay
                             for (int j = 0; j < k; j++) c = Rot60(c);
                             ports[p] = new[] { c, pm[e[p][1] - 1] };
                         }
-                        var keys = ports.Select(p => p[0] + ":" + p[1]).ToArray();
+                        if (keys == null || keys.Length != ports.Length) keys = new string[ports.Length];
+                        for (int p = 0; p < ports.Length; p++) keys[p] = PortKey(ports[p][0], ports[p][1]);
                         Array.Sort(keys, string.CompareOrdinal);
-                        string key = string.Join(",", keys);
+                        keyBuf.Clear();
+                        for (int p = 0; p < keys.Length; p++) { if (p > 0) keyBuf.Append(','); keyBuf.Append(keys[p]); }
+                        string key = keyBuf.ToString();
                         if (!seen.Contains(key) && SymmetricPorts(ports)) { seen.Add(key); outSets.Add(ports); }
                     }
             return outSets;
+        }
+
+        // "cell:colour" for the port-set dedupe key; cached so board generation doesn't re-format the same few hundred pairs.
+        static readonly Dictionary<int, string> s_portKeys = new();
+        static string PortKey(int cell, int colour)
+        {
+            int id = cell * 8 + colour;
+            if (!s_portKeys.TryGetValue(id, out var k)) s_portKeys[id] = k = cell + ":" + colour;
+            return k;
         }
 
         // ------------------------------------------------------------------ state
@@ -295,6 +326,8 @@ namespace CosmicShore.Gameplay
         {
             public int Stage, PortSet;
             public double T;
+            /// <summary>Round 7: the abilities on offer while the Ratel picks (stage 1), or null.</summary>
+            public DynamoAbility[] Offers;
         }
 
         public int[] Cells = new int[CellCount];
@@ -383,6 +416,49 @@ namespace CosmicShore.Gameplay
             return k;
         }
 
+        // Round 7: up to n distinct abilities from the pool, never the one held (unless it is all the pool has), in draw order.
+        DynamoAbility[] DrawOffers(int[] pool, int n)
+        {
+            var from = new List<int>();
+            foreach (int a in pool) if (a != (int)Ability) from.Add(a);
+            if (from.Count == 0) from.AddRange(pool);
+            var offers = new List<DynamoAbility>();
+            while (offers.Count < n && from.Count > 0)
+            {
+                int k = (int)Math.Floor(NextRandom() * from.Count);
+                offers.Add((DynamoAbility)from[k]);
+                from.RemoveAt(k);
+            }
+            return offers.ToArray();
+        }
+
+        /// <summary>The AI's pick (a proposal): the first of these an offer holds. Overclock and Refund add AP, Free Fire saves
+        /// it; Mirror and Swap made no measurable difference in the lab's round 2; Printer is retired from the shipped draw.
+        /// The lab's <c>AI_PICK_ORDER</c>.</summary>
+        public static readonly DynamoAbility[] AIPickOrder =
+        {
+            DynamoAbility.Overclock, DynamoAbility.Refund, DynamoAbility.FreeFire, DynamoAbility.LongReach, DynamoAbility.Capacitor,
+            DynamoAbility.WildCore, DynamoAbility.Swap, DynamoAbility.Mirror, DynamoAbility.Printer,
+        };
+
+        public static int AIPick(DynamoAbility[] offers)
+        {
+            int best = 0;
+            for (int k = 1; k < offers.Length; k++)
+                if (Array.IndexOf(AIPickOrder, offers[k]) < Array.IndexOf(AIPickOrder, offers[best])) best = k;
+            return best;
+        }
+
+        // Take offer k: the new ability (and its Printer prism), announced as the old draw was; the reveal goes on to the ports.
+        void TakeOffer(int k)
+        {
+            var rv = RevealState;
+            Ability = rv.Offers[k];
+            rv.Offers = null;
+            if (Ability == DynamoAbility.Printer && Free.Count < 1) GrantFree(1);
+            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Shuffle, Ability = Ability, PortSet = rv.PortSet });
+        }
+
         // a random pattern not already in a slot
         int DrawPattern(DynamoSettings s)
         {
@@ -411,7 +487,12 @@ namespace CosmicShore.Gameplay
         public int BatteryCap(DynamoSettings s) => s.BatteryCap + (Ability == DynamoAbility.Capacitor ? 2 : 0);
 
         /// <summary>The ports one spin from now (the Ratel's warning rings).</summary>
-        public int[][] NextPorts() => Ports.Select(p => new[] { Rot60(p[0]), p[1] }).ToArray();
+        public int[][] NextPorts()
+        {
+            var next = new int[Ports.Length][];
+            for (int k = 0; k < next.Length; k++) next[k] = new[] { Rot60(Ports[k][0]), Ports[k][1] };
+            return next;
+        }
 
         /// <summary>The cells of the first placement of pattern <paramref name="pid"/> the board shows, or null. A placement
         /// needs at least one real prism (it goes to the battery). Order: rotations, then mirror images (the Mirror ability),
@@ -501,6 +582,13 @@ namespace CosmicShore.Gameplay
         /// <summary>One seat input. True when it was legal and applied; an illegal input changes nothing.</summary>
         public bool Apply(DynamoSettings s, DynamoInput inp)
         {
+            if (inp.Kind == DynamoInputKind.Pick)   // round 7: the Ratel picks one of the offered abilities; then the new ports
+            {
+                if (RevealState?.Offers == null || inp.Slot < 0 || inp.Slot >= RevealState.Offers.Length) return false;
+                TakeOffer(inp.Slot);
+                RevealStep(s);
+                return true;
+            }
             if (RevealState != null) return false;   // the clock is stopped while the new ability and ports are shown
             switch (inp.Kind)
             {
@@ -565,16 +653,27 @@ namespace CosmicShore.Gameplay
                     }
                     if (s.PatternsPerShuffle > 0 && Made % s.PatternsPerShuffle == 0)   // a new ability, then a new port pattern
                     {
-                        if (s.FixedAbility < 0)
+                        bool pick = s.FixedAbility < 0 && s.AbilityChoices > 1;
+                        DynamoAbility[] offers = null;
+                        if (pick) offers = DrawOffers(Pool(s), s.AbilityChoices);
+                        else if (s.FixedAbility < 0)
                         {
                             var pool = Pool(s);
                             Ability = (DynamoAbility)pool[PickOther(pool.Length, Array.IndexOf(pool, (int)Ability))];
                         }
-                        if (Ability == DynamoAbility.Printer && Free.Count < 1) GrantFree(1);
+                        if (!pick && Ability == DynamoAbility.Printer && Free.Count < 1) GrantFree(1);
                         int next = s.PortSets.Count > 1 ? PickOther(s.PortSets.Count, PortSet) : PortSet;
-                        Events.Add(new DynamoEvent { Kind = DynamoEventKind.Shuffle, Ability = Ability, PortSet = next });
-                        RevealState = new Reveal { Stage = 1, T = s.RevealAbility, PortSet = next };
-                        if (!(s.RevealAbility > 0)) RevealStep(s);
+                        if (pick)   // round 7: the clock stays stopped until the Ratel picks (or PickSeconds runs out)
+                        {
+                            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Offer, Offers = (DynamoAbility[])offers.Clone(), PortSet = next });
+                            RevealState = new Reveal { Stage = 1, T = s.PickSeconds, PortSet = next, Offers = offers };
+                        }
+                        else
+                        {
+                            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Shuffle, Ability = Ability, PortSet = next });
+                            RevealState = new Reveal { Stage = 1, T = s.RevealAbility, PortSet = next };
+                            if (!(s.RevealAbility > 0)) RevealStep(s);
+                        }
                     }
                     return true;
                 }
@@ -635,7 +734,8 @@ namespace CosmicShore.Gameplay
                     for (int k = 0; k < arg; k++)
                     {
                         var empty = EmptyCells();
-                        var e = empty.Where(i => PortAt(i) == 0).ToList();
+                        var e = new List<int>(empty.Count);
+                        foreach (int i in empty) if (PortAt(i) == 0) e.Add(i);
                         var pool = e.Count > 0 ? e : empty;
                         if (pool.Count == 0) break;
                         int cell = pool[(int)Math.Floor(NextRandom() * pool.Count)];
@@ -663,6 +763,10 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>Spin now, as the clock would (the lab's <c>tick</c>): the hive mode's "the ratel ends their current
+        /// timer" (Garrett 2026-10-31) completes the spin at once.</summary>
+        public void SpinNow(DynamoSettings s) => Tick(s);
+
         // The spin: the port pattern turns 60 degrees clockwise as one piece; the prisms stay where they are.
         void Tick(DynamoSettings s)
         {
@@ -682,6 +786,7 @@ namespace CosmicShore.Gameplay
             var rv = RevealState;
             if (rv.Stage == 1)
             {
+                if (rv.Offers != null) TakeOffer(0);   // round 7: the pick ran out of time
                 SetPorts(s, rv.PortSet);
                 Events.Add(new DynamoEvent { Kind = DynamoEventKind.Ports, PortSet = rv.PortSet });
                 rv.Stage = 2;
@@ -699,6 +804,7 @@ namespace CosmicShore.Gameplay
         {
             if (RevealState != null)
             {
+                if (RevealState.Offers != null && !(s.PickSeconds > 0)) return;   // round 7: no time limit on the pick
                 RevealState.T -= dt;
                 while (RevealState != null && RevealState.T <= 0) RevealStep(s);
                 return;
@@ -732,15 +838,25 @@ namespace CosmicShore.Gameplay
             into.Add(Slots.Length); into.AddRange(Slots);
             into.Add(Uses.Length); into.AddRange(Uses);
             into.Add(RevealState != null ? 1 : 0);
-            if (RevealState != null) { into.Add(RevealState.Stage); into.Add(RevealState.PortSet); AddDouble(into, RevealState.T); }
+            if (RevealState != null)
+            {
+                into.Add(RevealState.Stage); into.Add(RevealState.PortSet); AddDouble(into, RevealState.T);
+                into.Add(RevealState.Offers?.Length ?? -1);
+                if (RevealState.Offers != null) foreach (var a in RevealState.Offers) into.Add((int)a);
+            }
             into.Add((int)Ability);
             into.Add(Rng);
         }
 
         /// <summary>Overwrite this board with a state <see cref="WriteState"/> wrote. False (and the board untouched past
         /// the point it failed) when the data is not one: a copy from another build.</summary>
-        public bool ReadState(int[] d)
+        public bool ReadState(int[] d) => ReadState(d, out _);
+
+        /// <summary><see cref="ReadState(int[])"/>, also giving the index just past the board's ints (the hive mode's state
+        /// follows them in the same message).</summary>
+        public bool ReadState(int[] d, out int end)
         {
+            end = 0;
             int i = 0;
             bool Has(int n) => d != null && i + n <= d.Length;
             if (!Has(1) || d[i] != Cells.Length || !Has(1 + Cells.Length)) return false;
@@ -765,11 +881,17 @@ namespace CosmicShore.Gameplay
                 if (!Has(4)) return false;
                 RevealState ??= new Reveal();
                 RevealState.Stage = d[i++]; RevealState.PortSet = d[i++]; RevealState.T = ReadDouble(d, ref i);
+                if (!Has(1)) return false;
+                int offers = d[i++];
+                if (offers > DynamoCore.AbilityCount || !Has(Math.Max(0, offers))) return false;
+                RevealState.Offers = offers < 0 ? null : new DynamoAbility[offers];
+                for (int k = 0; k < offers; k++) RevealState.Offers[k] = (DynamoAbility)d[i++];
             }
             else RevealState = null;
             if (!Has(2)) return false;
             Ability = (DynamoAbility)d[i++];
             Rng = d[i++];
+            end = i;
             return true;
         }
 
@@ -808,7 +930,13 @@ namespace CosmicShore.Gameplay
             sb.Append('|').Append(Ap).Append('+').Append(BonusAp).Append('|');
             foreach (int b in Battery) sb.Append(b);
             sb.Append('|').Append(string.Join(",", Slots)).Append('/').Append(string.Join(",", Uses)).Append('|');
-            sb.Append(RevealState != null ? RevealState.Stage + ":" + RevealState.PortSet : "-").Append('|');
+            if (RevealState == null) sb.Append('-');
+            else
+            {
+                sb.Append(RevealState.Stage).Append(':').Append(RevealState.PortSet);
+                if (RevealState.Offers != null) sb.Append(':').Append(string.Join(",", RevealState.Offers.Select(a => AbilityKeys[(int)a])));
+            }
+            sb.Append('|');
             foreach (int c in Free) sb.Append(c);
             sb.Append('|').Append(AbilityKeys[(int)Ability]).Append('|');
             sb.Append(Ticks).Append('|').Append(Made).Append('|').Append(Wasted).Append('|').Append(unchecked((uint)Rng));
@@ -977,7 +1105,7 @@ namespace CosmicShore.Gameplay
         /// building.</summary>
         public DynamoInput? AIPlan(DynamoSettings s, DynamoAISkill prm, Func<double> rnd, AIMemo memo)
         {
-            if (RevealState != null) return null;
+            if (RevealState != null) return RevealState.Offers != null ? DynamoInput.Pick(AIPick(RevealState.Offers)) : null;
             bool free = Ability == DynamoAbility.FreeFire;
             if (Ap + BonusAp < 1 && Free.Count < 1 && !free) return null;
             if (free || Ap + BonusAp >= 1)

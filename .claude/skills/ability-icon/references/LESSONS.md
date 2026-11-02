@@ -496,3 +496,35 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     lost its tended prism and its broken rival prism for "just the multicolor motes and ... a bigger domain color
     supershielded prism at the bottom of the rain". And an upgrade that changes a shape can change its proportions too:
     Gilded Wake's keys "go wider and start the taper sooner".
+
+75. **The CTA lime is never a card's "on" colour; the lit parts already say it.** The Brittle Star's four plates turned
+    lime while each mode was on, and on the Charge card the lime plate under white whips was "too much" (Garrett,
+    2026-11-01). The plate keeps its resting gauge colour whatever the mode does; only a warning state (overheat's hot
+    colour) changes it. Say "on" with the parts: the whips white at full alpha, dim (0.25) with the mode off. When an
+    ability has an analog input (RT's pull), give the two ends their own parts and let the view crossfade them on the
+    input (whips out, sabers in), so the card moves with the trigger instead of flipping.
+76. **An omni card can count, by shape.** The omni card is one sprite tinted one colour, so a resource the crystal
+    adds (the Brittle Star's spare rings, 0-2) is drawn as slots: a solid shape per unit held, an outline per empty slot,
+    one sprite per amount, swapped at runtime (`VesselHUDView.SetOmniAbilitySprite`). Garrett picked this over a
+    picture of the gift (2026-11-01: "I like that c can display the resource amount held"): offer a counting option
+    whenever the crystal fills a stock.
+
+## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
+
+78. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
+    ability that can take over" - the Honeyguide's RT and LT each show whichever banked ability is current, so the
+    thirteen upgrades are drawn as one family with the base icons (`Upgrades/` subfolder, still under the 24 px
+    distinct gate, which holds them apart). Two things the first draft got wrong at 40 px: a loop with a straight tether
+    reads as a MAGNIFYING GLASS (the lasso's rope must curve and leave the loop tangentially), and an even-spiked ring
+    reads as a GEAR (vary the spike lengths and put the act's subject, here the hull, in the hole). Several hulls'
+    real meshes in one icon fragment into many components at small boxes; a ghost copy at 0.6 with `close_px` 2 keeps
+    each hull one piece. Not reviewed by the owner yet.
+
+
+77. **A prism is never a rhombus; the fix lives in the motif, not in each card.** The Time petal owns the rhombus, so a
+    shielded prism drawn as a diamond read as Time (Garrett, 2026-11-01). `motifs.prism` (and `prism_lit`) now draw two
+    close triangles, the diamond cut along its long axis with a gap of 0.16 of the half-diagonal, so every hull that
+    called it was recut by re-running `author.py` (Angler, Manta, Scarab, Sparrow, Squirrel); hand-drawn rhombi (the
+    Serpent's shielded bricks, `author_squirrel_shielded_ring_icon.py`) were cut the same way. Small halves fail `thin`
+    and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
+    negative-space X).

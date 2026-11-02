@@ -32,8 +32,8 @@
 
 What the Unity plugin's skills are worth here:
 
-- **`unity-cli`** goes with the `/verify-unity` rule (`CLAUDE.md`: every C# change passes the Unity CLI
-  before it is committed). It drives an OPEN Unity Editor, so it works in a local Claude Code session on the
+- **`unity-cli`** goes with the verify rule (`CLAUDE.md` § "Unity CLI verification": every C# commit passes
+  `unity_refcompile` plus the `/ship` gates, and the `unity` CLI when an editor is open). It drives an OPEN Unity Editor, so it works in a local Claude Code session on the
   machine that runs Unity, never in a cloud container (no editor there). Cloud sessions still file their C#
   changes in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - **`physics-3d-collision`**: prism colliders, the collider-LOD budget and trigger costs

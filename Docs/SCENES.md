@@ -88,6 +88,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameScarabRally** | `_Scenes/Multiplayer Scenes/` | `ScarabRally (72)` | `ScarabRallyController` |
 | **MinigameSerpentTime** | `_Scenes/Multiplayer Scenes/` | `SerpentTime (73)` | `SerpentTimeController` |
 | **MinigameBrittleStarTime** | `_Scenes/Multiplayer Scenes/` | `BrittleStarTime (74)` | `BrittleStarTimeController` |
+| **MinigameLanternRun** | `_Scenes/Multiplayer Scenes/` | `Lantern Run (75)` | `LanternRunController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
@@ -309,7 +310,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 42 | `Bends` | MP | MinigameBends | `BendsController` ("The Bends" — Dolphin debuff duel, see `BENDS.md`) |
 | 43 | `ScarabScramble` | MP | MinigameScarabScramble | `ScarabScrambleController` (Scarab hoop-court party game — see `SCARABSCRAMBLE.md`) |
 | 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
-| 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race — see `SWITCHBACK.md`) |
+| 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race, Blast Run only since 2026-10-29 — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
 | 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
 | 54 | `WreckingBall` | MP | MinigameWreckingBall | `WreckingBallController` ("Wrecking Ball" — Scarab demolition race, see `WRECKING_BALL.md`) |
@@ -328,6 +329,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 72 | `ScarabRally` | MP | MinigameScarabRally | `ScarabRallyController` (see `SCARABRALLY.md`) |
 | 73 | `SerpentTime` | MP | MinigameSerpentTime | `SerpentTimeController` (see `SERPENTTIME.md`) |
 | 74 | `BrittleStarTime` | MP | MinigameBrittleStarTime | `BrittleStarTimeController` (see `BRITTLESTARTIME.md`) |
+| 75 | `LanternRun` | MP | MinigameLanternRun | `LanternRunController` (the Angler's Time race - two regrowing prism mass clusters a leg, one per group; paint, throw, dash through the ring. See `LANTERNRUN.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (the Tiger Moth's Time race — clusters you weave, a Drop Tower of short hops through plain/danger plates in every gap but the last, one long drop to finish. See `WAYSTATION.md`; 76 was its prototype, retired and reserved) |

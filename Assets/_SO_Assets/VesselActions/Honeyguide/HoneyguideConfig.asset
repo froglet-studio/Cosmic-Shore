@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tickSeconds: 15
   apPerTick: 3
-  apBank: 3
+  apBank: 6
+  abilityChoices: 3
+  pickSeconds: 10
   bonusApCap: 2
   batteryCap: 3
   revealAbility: 3.5
@@ -28,6 +30,37 @@ MonoBehaviour:
   rotatable: 1
   retiredAbilities:
   - 2
+  hiveMode: 1
+  hiveCompletesSpin: 1
+  raidSeconds: 15
+  minChain: 3
+  snakeMin: 3
+  snakeMax: 5
+  hiveOtherShare: 0.45
+  hiveHoles: 2
+  hiveCross: 0.35
+  hiveDangerMin: 2
+  hiveArmour: 0.15
+  stingSeconds: 1
+  rewardDynamo: 2
+  rewardBattery: 1
+  crystalGlowSeconds: 1.6
+  hiveCellSpacing: 2.5
+  hiveOffset: 40
+  leftBeeHive: {fileID: 11400000, guid: ecbd6d53cbd0ad77e60b2ab91b9310b1, type: 2}
+  leftBeeHiveBehind: 12
+  hiveSkills:
+  - cell: 0.5
+    solver: 0
+    sloppy: 0.15
+  - cell: 0.35
+    solver: 0
+    sloppy: 0.05
+  - cell: 0.22
+    solver: 1
+    sloppy: 0
+  stripRangeU: 1600
+  hiveDangerColour: {r: 0.85, g: 0.12, b: 0.08, a: 1}
   minSlipTrailLength: 6
   slipReach: 400
   exitOffset: 8
@@ -74,26 +107,18 @@ MonoBehaviour:
   flitDistance: 18
   flitSeconds: 0.15
   flitCooldown: 2
-  activeSeconds: 20
-  activeLevelGain: 0.25
+  peckBurst: 3
+  peckCooldown: 1
+  flitStrikeRadius: 8
+  strikeRadius: 12
+  strikeCooldown: 0.5
+  usesPerCard: 3
+  postFireCooldown: 0.25
   upgrades:
-  - effect: 8
-    trigger: 0
-    use: 0
-    cooldown: 1
-    reach: 90
-    sfx:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
   - effect: 21
     trigger: 0
-    use: 0
-    cooldown: 2.5
     reach: 120
+    preview: 0
     sfx:
       Guid:
         Data1: 0
@@ -103,21 +128,8 @@ MonoBehaviour:
       Path: 
   - effect: 31
     trigger: 0
-    use: 0
-    cooldown: 1.2
     reach: 22
-    sfx:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
-  - effect: 16
-    trigger: 0
-    use: 0
-    cooldown: 9
-    reach: 50
+    preview: 1
     sfx:
       Guid:
         Data1: 0
@@ -127,9 +139,8 @@ MonoBehaviour:
       Path: 
   - effect: 20
     trigger: 0
-    use: 1
-    cooldown: 0
     reach: 55
+    preview: 2
     sfx:
       Guid:
         Data1: 0
@@ -139,9 +150,8 @@ MonoBehaviour:
       Path: 
   - effect: 6
     trigger: 0
-    use: 2
-    cooldown: 0.8
     reach: 40
+    preview: 3
     sfx:
       Guid:
         Data1: 0
@@ -149,11 +159,10 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
-  - effect: 13
-    trigger: 1
-    use: 0
-    cooldown: 1.8
+  - effect: 16
+    trigger: 0
     reach: 50
+    preview: 3
     sfx:
       Guid:
         Data1: 0
@@ -162,10 +171,31 @@ MonoBehaviour:
         Data4: 0
       Path: 
   - effect: 7
-    trigger: 1
-    use: 0
-    cooldown: 0.4
+    trigger: 0
     reach: 20
+    preview: 4
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 13
+    trigger: 0
+    reach: 50
+    preview: 0
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 8
+    trigger: 1
+    reach: 90
+    preview: 5
     sfx:
       Guid:
         Data1: 0
@@ -175,9 +205,8 @@ MonoBehaviour:
       Path: 
   - effect: 38
     trigger: 1
-    use: 0
-    cooldown: 3
     reach: 60
+    preview: 6
     sfx:
       Guid:
         Data1: 0
@@ -187,9 +216,8 @@ MonoBehaviour:
       Path: 
   - effect: 34
     trigger: 1
-    use: 0
-    cooldown: 2.5
     reach: 30
+    preview: 6
     sfx:
       Guid:
         Data1: 0
@@ -199,9 +227,8 @@ MonoBehaviour:
       Path: 
   - effect: 35
     trigger: 1
-    use: 0
-    cooldown: 4
     reach: 300
+    preview: 6
     sfx:
       Guid:
         Data1: 0
@@ -211,9 +238,8 @@ MonoBehaviour:
       Path: 
   - effect: 30
     trigger: 1
-    use: 0
-    cooldown: 3
     reach: 60
+    preview: 6
     sfx:
       Guid:
         Data1: 0
@@ -223,9 +249,8 @@ MonoBehaviour:
       Path: 
   - effect: 39
     trigger: 1
-    use: 0
-    cooldown: 4
     reach: 40
+    preview: 7
     sfx:
       Guid:
         Data1: 0
@@ -236,7 +261,6 @@ MonoBehaviour:
   lassoCone: 30
   lassoReelSpeed: 220
   lassoReelSeconds: 1.2
-  lassoBurst: 10
   lanceWidth: 4
   lanceLaneStart: 25
   grenadeThrow: 55
@@ -244,18 +268,30 @@ MonoBehaviour:
   droneSeconds: 8
   droneZapsPerSecond: 3
   harmonizerCone: 20
-  harmonizerPerSecond: 8
-  fugacityMinRadius: 12
-  fugacityFullCharge: 1.2
+  harmonizerMaxTurned: 12
   fugacityBoostEach: 0.05
   fugacityBoostCap: 1.5
   eyeletSeconds: 0.25
   thrusterSeconds: 0.12
+  thrusterThrusts: 3
+  thrusterGap: 0.4
   jumpCone: 35
   jumpMinDistance: 8
   portalsEmptyRadius: 12
   monteHops: 3
   aiTriggerThink: 0.3
+  aiPreviewSeconds: 0.17
+  previewMaterial: {fileID: 2100000, guid: 4fcd7db6f5d04653a0b8401a011f6386, type: 2}
+  previewWidth: 0.6
+  previewColour: {r: 0.36, g: 0.72, b: 1, a: 0.85}
+  previewRingSegments: 40
+  massHive: 1
+  massHiveSeconds: 45
+  massHiveLevelGain: 0.1
+  hiveMinDistance: 150
+  hiveReach: 25
+  hiveMarkerSize: 12
+  hiveMarkerColour: {r: 1, g: 0.82, b: 0.48, a: 0.9}
   engineerLevel: 2
   engineerSkills:
   - think: 1.6
@@ -307,10 +343,23 @@ MonoBehaviour:
   dynamoLineColour: {r: 0.66, g: 1, b: 0.18, a: 1}
   revealAbilityTemplate: 'New ability: {name}'
   revealPortsLine: 'New injection ports'
+  pickAbilityTitle: 'Pick the Ratel''s next ability'
+  hiveTitle: 'Hive: drag 3 or more of one colour'
+  hiveLeaveLabel: 'Leave'
+  hiveEnterToast: 'The omnicrystal became a hive: hive mode'
+  hiveColourDoneTemplate: '{colour} complete: +{prisms} prisms, +{charges} charge'
+  hiveBothDoneTemplate: 'Both done: {colour} too'
+  hiveStungToast: 'Stung: the chain broke'
+  hiveEarnedTemplate: 'Earned: {colours}'
+  hiveEndTemplate: 'Hive mode over: {rewards}'
+  hiveRewardsTemplate: '{colours} rewards land on the crystal'
+  hiveNoRewardsLine: 'no colour completed'
+  stripOmniTemplate: 'Omnicrystal {distance} u'
+  stripNoTargetLine: 'No omnicrystal in sight'
   madeToastTemplate: '{name} {level}: {text}'
   abilityToastTemplate: 'The Ratel''s new ability, {name}: {text}'
   cardDetailTemplate: "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close"
-  upgradeToastTemplate: '{name} {level} on {trigger}: {text}'
+  upgradeToastTemplate: '{name} on {trigger} x{uses}: {text}'
   triggerNames:
   - RT
   - LT
@@ -318,8 +367,9 @@ MonoBehaviour:
   - Peck
   - Flit
   triggerChipTemplate: '{trigger} {power}'
-  upgradePowerTemplate: '{name} {level} {seconds}s'
-  noJumpTarget: 'No jump target'
+  upgradePowerTemplate: '{name} {ticks}'
+  tickGlyph: '•'
+  noJumpTarget: 'No target'
   patterns:
   - name: 'Juggernaut Plow'
     family: 1
@@ -355,19 +405,19 @@ MonoBehaviour:
     family: 1
     shape: S2,0 M3,0 M1,1 C0,2 M0,3
     effect: 6
-    effectText: 'Hold RT to charge, let go to discharge: every hostile prism within 12 to 40 u (by charge) shatters, and each gives 0.05 s of boost (up to 1.5 s).'
+    effectText: 'RT, Space. Pull: the 40 u ring round you. Release: every hostile prism inside shatters; 0.05 s of boost for each (up to 1.5 s).'
     parked: 0
   - name: 'Thruster Swarm'
     family: 1
     shape: C2,0 M3,0 M1,1 S0,2
     effect: 7
-    effectText: 'LT: a quick 20 u thrust, again every 0.4 s, shattering what it crosses.'
+    effectText: 'RT, Space, mobility. Pull: three 20 u thrusts ahead. Release: three thrusts 0.4 s apart, shattering every hostile prism the hull crosses.'
     parked: 0
   - name: 'Hard Light Lasso'
     family: 1
     shape: S1,0 M2,0 M0,1 C1,1
     effect: 8
-    effectText: 'RT: a rope of light hooks the nearest hostile prism ahead (90 u, 30 degrees) and reels you to it at speed. It and every hostile prism within 10 u shatter when you arrive.'
+    effectText: 'LT, Charge. Pull: the rope finds the nearest rival vessel or creature ahead (90 u, 30 degrees). Release: reel in and strike it, and everything within 12 u, on arrival.'
     parked: 0
   - name: 'Big Red Button'
     family: 1
@@ -397,7 +447,7 @@ MonoBehaviour:
     family: 1
     shape: M2,0 M0,1 S1,1 C0,2 M1,2
     effect: 13
-    effectText: 'LT: jet 50 u ahead in a quarter of a second, shattering every hostile prism on the way.'
+    effectText: 'RT, Space, mobility. Pull: the 50 u line. Release: jet along it in a quarter of a second, shattering every hostile prism on the way.'
     parked: 0
   - name: 'Reality Detangler'
     family: 2
@@ -415,7 +465,7 @@ MonoBehaviour:
     family: 2
     shape: C2,0 C0,1 M1,1 S0,2 C1,2
     effect: 16
-    effectText: 'RT: launch a drone that circles you for 8 s and zaps the nearest hostile prism within 50 u three times a second.'
+    effectText: 'RT, Space. Pull: the drone''s 50 u ring. Release: a drone circles you for 8 s and zaps the nearest hostile prism three times a second.'
     parked: 0
   - name: 'Zero Point Amplifier'
     family: 2
@@ -439,13 +489,13 @@ MonoBehaviour:
     family: 2
     shape: M2,0 C1,1 S0,2 C0,3
     effect: 20
-    effectText: 'Hold RT: a beam turns hostile prisms in a narrow cone up to 55 u ahead to your newest charge''s domain, 8 a second: new slip lanes.'
+    effectText: 'RT, Space. Pull: a 20 degree cone 55 u ahead. Release: up to 12 hostile prisms in it turn to your domain (opposing volume becomes yours).'
     parked: 0
   - name: 'Genesis Lance'
     family: 2
     shape: C2,0 C0,1 S1,1 M0,2 C1,2
     effect: 21
-    effectText: 'RT: throw a lance 120 u straight ahead. It shatters every hostile prism on its line and leaves a trail of your newest charge''s domain along it: fly on and slip.'
+    effectText: 'RT, Space. Pull: the line 120 u ahead. Release: a lance shatters every hostile prism on it and lays a trail of your newest charge''s domain along it to slip on.'
     parked: 0
   - name: 'Universal Translator'
     family: 2
@@ -499,13 +549,13 @@ MonoBehaviour:
     family: 3
     shape: C2,0 S1,1 M0,2 S0,3
     effect: 30
-    effectText: 'LT: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.'
+    effectText: 'LT, Charge, mobility. Pull: the nearest prism ahead within 60 u. Release: swap places with it (it becomes a charge of its domain) and strike everything within 12 u.'
     parked: 0
   - name: 'Little Bang Grenade'
     family: 3
     shape: M2,0 S1,1 C0,2 S0,3
     effect: 31
-    effectText: 'RT: lob a grenade 55 u ahead. It bursts 0.6 s later and shatters every hostile prism within 22 u.'
+    effectText: 'RT, Space. Pull: the landing ring 55 u ahead. Release: a grenade lands there and bursts 0.6 s later, shattering every hostile prism within 22 u.'
     parked: 0
   - name: 'Vorticity Module'
     family: 3
@@ -523,13 +573,13 @@ MonoBehaviour:
     family: 3
     shape: S2,0 S0,1 C1,1 M0,2 S1,2
     effect: 34
-    effectText: 'LT: teleport 30 u ahead; land in empty space and you go 30 u again.'
+    effectText: 'LT, Charge, mobility. Pull: the landing 30 u ahead (60 u when it is empty space). Release: teleport there and strike everything within 12 u.'
     parked: 0
   - name: 'Rosen Bridge'
     family: 3
     shape: C3,0 S2,1 S0,2 M1,2 S1,3
     effect: 35
-    effectText: 'LT: teleport to the farthest prism of your newest charge''s domain within 300 u and 35 degrees of your nose.'
+    effectText: 'LT, Charge, mobility. Pull: the farthest prism of your newest charge''s domain within 300 u and 35 degrees. Release: teleport to it and strike everything within 12 u.'
     parked: 0
   - name: 'Frame Dragger'
     family: 3
@@ -547,13 +597,13 @@ MonoBehaviour:
     family: 3
     shape: S2,0 S0,1 M1,1 C0,2
     effect: 38
-    effectText: 'LT: blink 60 u ahead.'
+    effectText: 'LT, Charge, mobility. Pull: the landing 60 u ahead and its strike ring. Release: blink there and strike every rival vessel and creature within 12 u.'
     parked: 0
   - name: 'Monte Cannon'
     family: 3
     shape: S3,0 C2,1 M1,2 S0,3
     effect: 39
-    effectText: 'LT: three hops, each to the farthest prism ahead within 40 u.'
+    effectText: 'LT, Charge, mobility. Pull: three hops, each to the farthest prism ahead within 40 u. Release: hop, striking everything within 12 u at every landing.'
     parked: 0
   engines:
   - label: '2020-22 player board'
@@ -663,6 +713,41 @@ MonoBehaviour:
       Data4: 0
     Path: 
   revealSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveEnterSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveChainSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveStingSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveColourSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hiveLeaveSfx:
     Guid:
       Data1: 0
       Data2: 0

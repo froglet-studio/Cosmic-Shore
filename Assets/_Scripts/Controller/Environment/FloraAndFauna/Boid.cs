@@ -279,6 +279,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The up a turn toward <paramref name="forward"/> keeps. A boid rights itself to the world's +y; a celestial
+        /// species with no sense of up (the /fauna-creation skill, law L6) overrides this with an up it carries
+        /// (<see cref="CelestialFrame"/>, <see cref="BeeFauna"/>). Every rotation this class writes asks it.</summary>
+        protected virtual Vector3 SteeringUpFor(Vector3 forward) => Vector3.up;
+
         void CalculateBehavior()
         {
             if (isAttached)
@@ -290,7 +295,7 @@ namespace CosmicShore.Gameplay
                     desiredDirection = transform.forward;
                 currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
 
-                if (SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+                if (SafeLookRotation.TryGet(currentVelocity, SteeringUpFor(currentVelocity), out var rotation, this))
                     desiredRotation = rotation;
                 else
                     desiredRotation = transform.rotation;
@@ -489,9 +494,12 @@ namespace CosmicShore.Gameplay
                     speedMult = Mathf.Clamp(arrivalMult, 1f, Mathf.Max(1f, huntSpeedMultiplier));
                 }
             }
+            // A THROW (the leash asks for more than this boid's own top speed): the leash owns the motion (ANGLER.md
+            // follow-up 11, the same guard as LightFauna's).
+            if (LeashOwnsSpeed(maxSpeed * speedMult)) return;
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed * speedMult, maxSpeed * speedMult);
 
-            desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
+            desiredRotation = SafeLookRotation.TryGet(currentVelocity, SteeringUpFor(currentVelocity), out var desiredRot, this) ? desiredRot : transform.rotation;
         }
 
         /// <summary>
@@ -859,7 +867,7 @@ namespace CosmicShore.Gameplay
             heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
             current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * 2.5f));
             currentVelocity = heading * current;
-            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, SteeringUpFor(currentVelocity), out var rotation, this))
                 desiredRotation = rotation;
             return turn;
         }
@@ -868,7 +876,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsSimAuthority || !float.IsFinite(velocity.x) || !float.IsFinite(velocity.y) || !float.IsFinite(velocity.z)) return;
             currentVelocity = velocity;
-            if (velocity.sqrMagnitude > 1e-6f && SafeLookRotation.TryGet(velocity, out var rotation, this))
+            if (velocity.sqrMagnitude > 1e-6f && SafeLookRotation.TryGet(velocity, SteeringUpFor(velocity), out var rotation, this))
                 desiredRotation = rotation;
         }
 
@@ -885,7 +893,7 @@ namespace CosmicShore.Gameplay
 
         void FaceFeedFocus()
         {
-            if (SafeLookRotation.TryGet(_feedFocusPoint - transform.position, out var rotation, this))
+            if (SafeLookRotation.TryGet(_feedFocusPoint - transform.position, SteeringUpFor(_feedFocusPoint - transform.position), out var rotation, this))
                 desiredRotation = rotation;
         }
 

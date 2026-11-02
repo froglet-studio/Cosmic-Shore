@@ -46,7 +46,7 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
 ```
 
 - **Validity first.** A capture taken in Debug code optimization, with Deep Profile, under a frame cap, with Burst
-  off, with managed job time, or with a second camera enabled (the Third Eye window) is NOT a number. The reader says
+  off, with managed job time, or with a second camera enabled (the old Third Eye window; since 2026-11-01 the Third Eye drives the main camera, so only its overlays cost) is NOT a number. The reader says
   so in its first section; the sweep refuses to compare it. Ask for a clean one (the team task template is in
   `Docs/TEAM_TASKS.md`, area Performance) rather than reading a tainted one.
 - **An Amoebius allocation is the game's only when the engine API does not copy.** Before filing a game task from the
@@ -124,8 +124,8 @@ where they disagree (`Docs/claude/PLUGINS_AND_CONNECTORS.md`). Before writing co
   Noise is ±5-10 %; a smaller claimed win needs repeats.
 - Amoebius: `perf_hunt.py amoebius --no-build` before and after; allocations repeat to ~1 %, so a KB/frame win there
   is real on day one. Milliseconds there only order things.
-- The gates: `perf_hunt.py gates` green; `unity_refcompile --config player-dev` for the C#; `/verify-unity` when the
-  CLI exists, else say so and file the check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+- The gates: `perf_hunt.py gates` green; `unity_refcompile --config player-dev` for the C#; the `unity` CLI when an
+  editor is open (`CLAUDE.md` verify rule); if neither ran, say so and file the check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - Write the delta into `Docs/PERFORMANCE_OPTIMIZATION.md` §2 (the dated row: what, the before/after numbers, the
   protocol, the commit). A number without its protocol is not a result.
 

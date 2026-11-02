@@ -1,0 +1,176 @@
+{
+ "after": [
+  "drive-rhino-headlong",
+  "drive-manta-redline",
+  "drive-rhino-regatta",
+  "drive-manta-regatta",
+  "drive-dolphin-regatta"
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.15
+ },
+ "area_owner": "Yash (Regatta AI and course)",
+ "asked_by": "Garrett 2026-10-26 (the Regatta balance plan; Yash follows it)",
+ "blocked_reason": "stage 2 starts once stage 1 is promoted and the roster's drives are the trained ones (/regatta-balance)",
+ "convergence": {
+  "min_evals": 3000,
+  "min_improvement": 0.002,
+  "window_evals": 2000
+ },
+ "evaluator": {
+  "args": {
+   "intensity": 4,
+   "limit": 400,
+   "roster": {
+    "Dolphin": {
+     "model": "dolphin_drive"
+    },
+    "Manta": {
+     "asset": "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset",
+     "model": "manta_drive"
+    },
+    "Rhino": {
+     "asset": "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset",
+     "model": "rhino_drive"
+    },
+    "Squirrel": {
+     "model": "balance"
+    },
+    "Urchin": {
+     "drive": {
+      "speed": 300
+     },
+     "model": "rail"
+    }
+   }
+  },
+  "module": "regatta_course",
+  "timeout": 600
+ },
+ "goal": "Stage 2 of the Regatta balance plan: the course on which the fastest and slowest trained AIs of different vessels finish closest together, keeping the intensity's character and the race's length.",
+ "id": "regatta-course-i4",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/",
+  "Assets/Resources/AIBoostPolicies/",
+  "Assets/Resources/RaceLines/",
+  "Assets/_Prefabs/Spacevessels/",
+  "Assets/_SO_Assets/",
+  "Assets/Resources/",
+  "Assets/_Scripts/Controller/Arcade/Regatta/",
+  "Assets/_Scripts/Controller/Arcade/Headlong/"
+ ],
+ "plan": "regatta-balance",
+ "promote": "A PROPOSAL for Yash (Regatta's course and AI): the best settings become RegattaCourse.ForIntensity's row for this intensity (and its seed); then regatta_course_harness/run.sh and export_course.sh regenerate the measurements, author_regatta_assets.py --check, and the Regatta AIs are re-raced in the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md).",
+ "ref": "origin/ai",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 233.0,
+   "init": 150.0,
+   "lo": 75.0,
+   "name": "corner0"
+  },
+  {
+   "hi": 194.0,
+   "init": 124.0,
+   "lo": 62.0,
+   "name": "corner1"
+  },
+  {
+   "hi": 137.0,
+   "init": 86.0,
+   "lo": 43.0,
+   "name": "corner2"
+  },
+  {
+   "hi": 8.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "corner3"
+  },
+  {
+   "hi": 8.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "corner4"
+  },
+  {
+   "hi": 8.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "corner5"
+  },
+  {
+   "hi": 8.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "corner6"
+  },
+  {
+   "hi": 8.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "corner7"
+  },
+  {
+   "hi": 72,
+   "init": 54.0,
+   "lo": 44,
+   "name": "RingRadius"
+  },
+  {
+   "hi": 160.0,
+   "init": 100.0,
+   "lo": 80.0,
+   "name": "CornerFloorRadius"
+  },
+  {
+   "hi": 6.0,
+   "init": 4.8,
+   "lo": 0.5,
+   "name": "AngularSpread"
+  },
+  {
+   "hi": 400.0,
+   "init": 280.0,
+   "lo": 60.0,
+   "name": "LateralPerturbation"
+  },
+  {
+   "hi": 50.0,
+   "init": 44.0,
+   "lo": 0.0,
+   "name": "AxisJitterDegrees"
+  },
+  {
+   "hi": 85.0,
+   "init": 80.0,
+   "lo": 40.0,
+   "name": "MaxPresentDegrees"
+  },
+  {
+   "hi": 0.6,
+   "init": 0.42,
+   "lo": 0.2,
+   "name": "RadialSwing"
+  },
+  {
+   "hi": 4095,
+   "init": 0,
+   "lo": 0,
+   "name": "seed",
+   "type": "int"
+  }
+ ],
+ "stage": 2,
+ "status": "blocked",
+ "title": "The Regatta I4 circuit that levels the field",
+ "updated": "2026-10-28",
+ "value": 9
+}
