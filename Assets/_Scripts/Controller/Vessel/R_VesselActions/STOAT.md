@@ -345,7 +345,11 @@ and the lava lamp's AI Stoat using its pairs on a phone and letting go when you 
 
 ## 6. Design status — what is approved and what is not
 
-**All four abilities and all four level-5s are designed and shipped** (2026-10-13): Space = Field Dipole (L5
+**Today's kit (the orbit alone, 2026-11-02):** Space = Catch Orbit (orbit radius AND the pair's gap ×1 → ×1.4;
+L5 Accretion — stolen prisms +4% ripple reach each, to +40%), Time = Timed Slingshot (warp; L5 Foresight; the warped
+kick capped at 3× cruise), Charge = Ripple (L5 Siphon), Mass = Heavy Launch (kick ×1 → ×2.5; L5 Armoured Wake), omni =
+Fulmen. Awaiting Garrett's sign-off: the orbit-only cut, Heavy Launch, Accretion on the orbit, Fulmen.
+The original 2026-10-13 kit: Space = Field Dipole (L5
 Accretion), Time = Pathfinder / Time Mode (L5 Foresight), Charge = Ripple (L5 Siphon), Mass = Mass / Time Mode (L5
 Armoured Wake). The decisions and their wording are in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` ▸ Stoat; the
 mechanics in `STOAT_DIPOLE.md` §1a–§1e and §5.

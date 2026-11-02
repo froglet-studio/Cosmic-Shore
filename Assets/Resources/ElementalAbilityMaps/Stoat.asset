@@ -30,9 +30,9 @@ MonoBehaviour:
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Accretion
-    UpgradeDescription: 'Parked with the field dipole: no effect while the Stoat flies the orbit alone. With the
-      dipole back, what its sink swallows is yours and grows both poles
-      (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md).'
+    UpgradeDescription: 'While you orbit, rival prisms that fall into your attractor are STOLEN
+      (yours), and each one adds 4% to the reach of the ripple that pair throws, up to +40%
+      (StoatSlingConfigSO.accretionPerPrism / accretionMax).'
   - Element: 4
     AbilityLabel: Timed Slingshot
     AbilityDescription: 'Passive speed. While a pair is held your flight clock warps and you fly faster: x2.7 at
@@ -79,7 +79,7 @@ MonoBehaviour:
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Armoured Wake
-    UpgradeDescription: 'The prisms you lay while a launch's kick lasts (1.5 s) arrive SHIELDED. Gated on
+    UpgradeDescription: 'The prisms you lay while a launch''s kick lasts (1.5 s) arrive SHIELDED. Gated on
       IsUpgradeActive(Mass), replicated: every peer runs the replicated release, so every peer
       lays the same tier (StoatSlingConfigSO.massUpgradeShieldsLaunchTrail).'
-  omniAbilityLabel: Overclock
+  omniAbilityLabel: Fulmen

@@ -329,7 +329,11 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
 
 ## 1e. Space 5 Accretion, Time 5 Foresight, the omni crystal
 
-- **Accretion (Space 5, with Theft fused in — rule 28).** Prisms the sink takes are STOLEN (unchanged: out of the
+- **Accretion on the orbit (2026-11-02, `StoatSlingExecutor`).** With the dipole parked, Space 5 acts on the Catch
+  Orbit: while the hull orbits, the attractor's `PrismCapture` is `Steal` in the owner's domain (every peer), so a
+  rival prism that falls in comes out of the repulsor yours; every capture since the pair was laid adds
+  `accretionPerPrism` (4%) to that pair's ripple reach, to `accretionMax` (+40%) — `StoatSlingConfigSO`.
+- **(Parked with the dipole) Accretion (Space 5, with Theft fused in — rule 28).** Prisms the sink takes are STOLEN (unchanged: out of the
   source in your domain) and every one grows BOTH poles `accretionPerPrism` (4%) of their size, to `accretionMax` (×2),
   until the pair annihilates. Counted off the sink's new `BlackHole.CapturedCount` (the gravity field counts every
   capture: vanish, consume, throat transit), on the authority; peers see the grown size as the published horizon.
@@ -338,7 +342,7 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
   and speed it is holding NOW — its rotation's change since last frame, in its own axes — through the same
   `StoatDipoleMath.PredictPath`. Rivals rescanned once a second. Local pilot only; presentation only.
 - **Retired as the omni-crystal ability 2026-10-29:** Yash made Fulmen (`Controller/Environment/Fulmen/README.md`) the Stoat's omni-crystal ability; Overclock was taken out of `StoatImpactorDataContainer` (code and asset kept). Note `Tools/Build/author_stoat_assets.py` still writes Overclock into the container if re-run.
-- **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
+- **Overclock (PARKED — the omni crystal, proposal O1).** Not in any container; the asset and script stay because the generators reference their guid. `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
 
 ## 1f. Gate mode — the warp gate (2026-10-27)
