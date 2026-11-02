@@ -49,16 +49,24 @@ closed to every Ark (proposed).
   berths, and its `measure`. Pure C#, no engine type.
 - **`VoyageChart`** (`VoyageChart.cs`): the voyage content's charted locations (each a 3-cell berth) and a job's route
   sailed on the real sea, leg by leg along the lanes `VoyageRules.Route` picks; legs are cached.
-- **The Voyage window** (Garrett, 2026-11-01: "the map should be visible ... and the voyage cards below that. drilling
-  into a card expands its information and causes the map to focus on that path, but the map remains. on the voyage
-  card players confirm their squad mission difficulty etc."): ONE galaxy map (`VoyageMapGraphic`, stood by
-  `VoyageJobsView` just before the job cards) with the sea around the places, painted from the density field, a corner
-  with the whole galaxy, Sol and where this water is. Each job card is closed by default: route and pilot, title and
-  the course line `CardCourse` (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`), e.g. "1,500 LY THROUGH WATER -
-  LIGHT TAKES 1,500 YEARS". OPEN (or a press anywhere on the card) expands it to its brief (`CardDetails`, or
-  `CardHomeDetails` for the way home: the mission, the place, the squad's seats, the intensity, the pay, who brought
-  it) with Set sail, and the map frames that job's course cell by cell. One card is open at a time; closing it gives
-  the map back every place. Uncharted content draws the old flat chart.
+- **The Voyage window**, as Garrett sketched it (2026-11-01: "clicking on a voyage expands it over the others. And the
+  voyages are ... arranged in a matrix like the different arcade games. Then the episodes and saga are top level above
+  the fold modals that contain their own content"; "the map divides them as a fun interactive galaxy explorer deciding
+  where you want your voyages to take you"). Laid out by `Tools/Build/author_voyage_window.py`:
+  - **SAGA | EPISODES** at the top (`VoyageWindowModals`): SAGA opens Tandava and its Severing, EPISODES opens Episode 1's
+    quests and Episode 2, each in a modal over the window; a press outside it closes it.
+  - **The galaxy map** (`VoyageMapGraphic`, stood by `VoyageJobsView` before the cards): the sea around the places,
+    painted from the density field, the galaxy in a corner with Sol and where you are looking. It is an explorer: drag
+    to pan, pinch or wheel to zoom (120 to 20,000 ly across), tap a place to open the voyage that sails there, or, if
+    none does, to read its line (`MapPlace`).
+  - **The edge view** under it (`VoyageEdgeGraphic`): the disk edge-on at the map's own scale both ways, as the board's
+    side view (true 1,000 ly thickness, a depth gauge, the places and the course at their heights, `EdgeCaption`).
+  - **The voyage cards**, three across in a grid: closed, route and pilot, title and the course line `CardCourse`
+    (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`). OPEN (or a press on the card) expands it over the others
+    to its brief (`CardDetails`, or `CardHomeDetails` for the way home: the mission, the place, the squad's seats, the
+    intensity, the pay, who brought it) with Set sail, and the map frames that job's course. One is open at a time;
+    closing it gives the map back every place. The Ark escort's card opens the same way to its difficulty stepper.
+  Uncharted content draws the old flat chart, with no edge view.
 - The lanes' `cells` still set how long a leg sails in the Arkway; the card shows the real distance (§5 decision 8).
 
 ## 4. Keeping the board and the game the same

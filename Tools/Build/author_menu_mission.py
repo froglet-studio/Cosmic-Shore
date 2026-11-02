@@ -29,6 +29,9 @@ ArcadeExploreView.
         off and the panel's OfflineUIGate gates the party panel. The hub entry stays Unavailable, and the
         mission data, Arcade.LaunchMission and the mission scenes are untouched.
 
+MissionView.prefab's layout is now Tools/Build/author_voyage_window.py's (Garrett's 2026-11-01 sketch): this script stands
+down on that file once the new layout is on disk (see stood_down).
+
 STANDING DOWN: the migration runs only while the old objects exist; the documents this script owns are
 re-emitted and validated on every run, --check included.
 
@@ -474,9 +477,23 @@ def validate(files):
     assert "  m_Enabled: 0\n" in sc.docs[PANEL["img"]], "the mission panel's gradient is still on"
 
 
+# Garrett's 2026-11-01 sketch re-laid MissionView in place (Saga | Episodes modals, the galaxy map, the voyage grid):
+# Tools/Build/author_voyage_window.py owns its layout and validates it, so this generator stands down on that one file
+# once the new layout is on disk (re-emitting it would bring back the two columns and drop VoyageJobsView). The cards,
+# the quest card and the Menu_Main patch stay this script's.
+VOYAGE_WINDOW_MARKER = "m_Name: VoyageModals\n"
+
+
+def stood_down(path):
+    full = os.path.join(REPO, path)
+    return path == prefab_path("MissionView") and os.path.exists(full) \
+        and VOYAGE_WINDOW_MARKER in open(full, encoding="utf-8").read()
+
+
 def drift(files):
     return [p for p, t in files.items()
-            if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t] \
+            if not stood_down(p) and (not os.path.exists(os.path.join(REPO, p))
+                                      or open(os.path.join(REPO, p), encoding="utf-8").read() != t)] \
         + [p for p in RETIRED if os.path.exists(os.path.join(REPO, p))]
 
 
