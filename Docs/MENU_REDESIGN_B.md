@@ -5443,3 +5443,18 @@ for them), and are marked as proposed copy for Garrett.
 - A pin on `VoyageMapGraphic` opens the same card.
 
 Affects: Garrett's Voyage window and HyperSea map. Nothing is built yet.
+
+### 114.4 R44 I (Formation): the squad presets beside the formation, and they switch it (2026-11-02)
+
+Shombith's comments on R44IVoyage:
+- "Text should read configure the squad".
+- "Add the squad presets over here. Do not use domain colors."
+
+Both were applied on the page, as a preset row at the bottom of the card. Then: "move the presets beside the ark
+preview and we can switch them."
+
+Built in `r44_voyage_window.py` (`squad_beside`, `formation_live`, `with_arks`) and published (canvas version
+`1793655575-253a`):
+- At level 1 the formation and the squad presets now stand side by side, with no domain colours.
+- Picking Skim Wing or Breakers, or D-pad up / down, swaps the formation's three hulls and the squad's name.
+- "Configure the squad" sits under the presets.

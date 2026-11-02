@@ -229,13 +229,74 @@ def ark_switch():
             f'<span class="cap" style="font-size:12px;color:{cl}">{dom}</span></span></div>{down}</div>')
 
 
+# Shombith's comments on R44IVoyage (2026-11-02): "Text should read configure the squad", "Add the squad presets over
+# here. Do not use domain colors.", then "move the presets beside the ark preview and we can switch them". So at level 1
+# the formation and the squad presets stand side by side, and picking a preset (or D-pad up / down) swaps the formation.
+
+ARKS = [{"name": p[0], "line": p[2].split(" - ")[0], "hulls": [HULL[h] for h in p[3]], "alts": p[3]} for p in PRESETS]
+
+
+def formation_live(scale=0.78):
+    """The formation drawn from the picked squad (the board's logic fills the holes)."""
+    pos = [(170, 10, 1.0), (30, 70, .82), (310, 70, .82)]
+    out = []
+    for k, (px, py, s) in enumerate(pos):
+        ww, hh = int(260 * s * scale), int(92 * s * scale)
+        out.append(f'<div class="abs" style="left:{int(px * scale)}px;top:{int(py * scale)}px;width:{ww}px;height:{hh}px">'
+                   f'<img src="{{{{ak.h{k}}}}}" alt="{{{{ak.a{k}}}}}" style="width:{ww}px;height:{hh}px;object-fit:contain;transition:opacity .2s"></div>')
+    return f'<div style="position:relative;width:{int(580 * scale)}px;height:{int(190 * scale)}px">{"".join(out)}</div>'
+
+
+def squad_beside():
+    up = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5L5 3l3.5 3.5"></path></svg>'
+    down = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 3.5L5 7l3.5-3.5"></path></svg>'
+    left = (f'<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">'
+            f'<div style="display:flex;flex-direction:column;gap:2px"><span class="lab" style="font-size:11px">Your squad - {{{{ak.idx}}}} of {{{{ak.count}}}}</span>'
+            f'<span style="font-size:24px">{{{{ak.name}}}}</span></div>{formation_live()}</div>')
+    rows = ('<sc-for list="{{ak.list}}" as="q" hint-placeholder-count="2">'
+            '<button class="pick sls" type="button" onClick="{{q.pick}}" aria-pressed="{{q.pressed}}" '
+            'style="display:flex;flex-direction:column;gap:5px;padding:8px 12px;background:{{q.fill}};box-shadow:inset 0 0 0 1px {{q.edge}}">'
+            '<span style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-size:15px">{{q.name}}</span>'
+            f'<span style="font-size:11px;color:{SUB}">{{{{q.line}}}}</span></span>'
+            '<span style="display:flex;gap:4px"><img src="{{q.h0}}" alt="" style="width:56px;height:20px;object-fit:contain">'
+            '<img src="{{q.h1}}" alt="" style="width:56px;height:20px;object-fit:contain"><img src="{{q.h2}}" alt="" style="width:56px;height:20px;object-fit:contain"></span>'
+            '</button></sc-for>')
+    right = (f'<div style="width:248px;flex:none;display:flex;flex-direction:column;gap:8px">'
+             f'<div style="display:flex;justify-content:space-between;align-items:center"><span class="lab" style="font-size:11px;color:{LIGHT}">Squad presets</span>'
+             f'<span style="display:flex;gap:4px"><button class="pick" type="button" aria-label="Previous squad" onClick="{{{{ak.prev}}}}"><span class="kc">{up}</span></button>'
+             f'<button class="pick" type="button" aria-label="Next squad" onClick="{{{{ak.next}}}}"><span class="kc">{down}</span></button></span></div>'
+             f'{rows}<button class="btn gho sls" type="button" style="height:38px;font-size:12px;letter-spacing:.1em;gap:8px">{kc("X")}<span>Configure the squad</span></button></div>')
+    return f'<div style="display:flex;gap:18px;align-items:stretch">{left}{right}</div>'
+
+
+ARK_LOGIC_HEAD = "const ARKS = %s;\n"
+ARK_VALS = ("const AK = ARKS[this.state.ark || 0];\n"
+            "const ak = { name: AK.name, idx: (this.state.ark || 0) + 1, count: ARKS.length,\n"
+            "  h0: AK.hulls[0], h1: AK.hulls[1], h2: AK.hulls[2], a0: AK.alts[0], a1: AK.alts[1], a2: AK.alts[2],\n"
+            "  prev: () => this.setState({ ark: ((this.state.ark || 0) + ARKS.length - 1) % ARKS.length }),\n"
+            "  next: () => this.setState({ ark: ((this.state.ark || 0) + 1) % ARKS.length }),\n"
+            "  list: ARKS.map((a, k) => ({ name: a.name, line: a.line, h0: a.hulls[0], h1: a.hulls[1], h2: a.hulls[2],\n"
+            "    pressed: k === (this.state.ark || 0) ? 'true' : 'false', fill: k === (this.state.ark || 0) ? 'rgba(14,22,70,.9)' : 'rgba(8,12,40,.6)',\n"
+            "    edge: k === (this.state.ark || 0) ? '#E6E9FF' : '#434C89', pick: () => this.setState({ ark: k }) })) };\n")
+
+
+def with_arks(page):
+    """I's level 1: the squad presets switch the formation."""
+    import json as _json
+    a = "class Component extends DCLogic {"
+    assert page.count(a) == 1 and "return { mx: {" in page
+    page = page.replace(a, ARK_LOGIC_HEAD % _json.dumps(ARKS) + a, 1)
+    page = page.replace("return { mx: {", ARK_VALS + "return { ak, mx: {", 1)
+    return page
+
+
 def screen_I(level):
     """I - Formation: the Ark you sail with is the hero of the card - its three hulls in formation - and the voyage sits
     under it. Ark crew opens the formation into its three seats; Story takes the formation's place."""
     body = [nav(), tabrow("I", "Voyages"), left_map(1060, glow=level == 1)]
     x, w = 1120, 760
     if level == 1:
-        inner = (f'{voyage_pager()}{ark_switch()}{formation(.82)}<div style="display:flex;gap:10px"><button class="btn gho sls" type="button" style="flex:1;height:40px">{kc("X")}<span>Configure the Ark</span></button></div>'
+        inner = (f'{voyage_pager()}{squad_beside()}'
                  f'<div class="rule"></div>{head_block(26)}{stats_row(6)}{route_glow(compact=True)}<div style="flex:1"></div>'
                  f'<div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:1.6">{kc("A")}<span>Set sail</span></button>'
                  f'<button class="btn gho sl" type="button" style="flex:1">{kc("Y")}<span>Story</span></button></div>')
@@ -424,7 +485,8 @@ def main():
             else:
                 body = {"Saga": screen_saga, "Quests": screen_quests, "Episodes": screen_episodes}[key](k)
             page = board(f"Rev {REV} {k} - {OPTS[k][0]} - {key}", body)
-            files[f"R{REV}{k}{key}.dc.html"] = with_map(with_glow(page), "40% 45%" if k == "J" else "38% 45%") if key == "Voyage" else page
+            page = with_map(with_glow(page), "40% 45%" if k == "J" else "38% 45%") if key == "Voyage" else page
+            files[f"R{REV}{k}{key}.dc.html"] = with_arks(page) if (k, key) == ("I", "Voyage") else page
     files[f"R{REV}Notes.dc.html"] = board(f"Rev {REV} - notes", notes())
     for n, s in files.items():
         (ROOT / n).write_text(s, encoding="utf-8")
