@@ -45,7 +45,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
-| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile. Measured since: the boot's menu load (10-20 s frames on three machines; boot-order fix waits on the boot owner) and a menu Cell swap (24.2 s returning 76,115 trail prisms; fixed 2026-10-29) | 🟠 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile. Measured since: the boot's menu load (10-20 s frames on three machines; boot-order fix waits on the boot owner) and a menu Cell swap (24.2 s returning 76,115 trail prisms; fixed 2026-10-29) Confirmed again 2026-11-02 (send queue full x14, Baselib failures, the phone's `NetworkManagerStartFailed`); still waits on the boot-order call (Shombith) and the freezes' profiles | 🟠 |
 | B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
 | B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 | B39 | The ONLINE list shows a player who has only pressed Play: they sit in the presence lobby 7-24 s before their menu is up (the four-player test of 2026-10-30), and an invite or join sent then goes nowhere | Fixed 2026-10-31: a player publishes `ready` the first time their lava lamp is shown (`LavaLampPresence`), and only players with it are listed. Needs a two-machine retest | 🟡 |
@@ -2427,6 +2427,27 @@ same slice `ReleaseRetiredWorld` uses since `911c8c2b78`, and `RetireWorldIntoSu
 so their trail containers are also emptied from the back. The 14 s gathering frame is one move by design and is not
 sliced; the next long swap's report (under "Loads" in `net_logs.py show`, or `bugledger/<user>/load/`) says how much
 of it the order change took off.
+
+**Confirmed again, and what is left (2026-11-02, plan item 4, remote fix session).** The local testing session on Yash's
+PC (`fix/android-startup-logs` 5698447fb8) saw the host log Baselib send failures, Friends timeouts and 14 `send queue
+full` errors, and the phone fail to join with `NetworkManagerStartFailed` after the host had approved it twice. That
+run's logs were not on any bugledger branch on 2026-11-02, so none of it is timed here. Read from the package source:
+- `send queue full` is `TransportError.NetworkSendQueueFull` from `BeginSend` (NGO 2.13.3 `UnityTransport.cs`
+  ~line 1003; the text is UTP's own hint to raise "Max Packet Queue Size"). NGO logs it and returns; the messages stay
+  in the batched queue and go out on the next update, so nothing is lost. It is the backlog a long frame leaves
+  behind, a symptom, not the drop. `m_MaxPacketQueueSize` is already 512 on `NetworkManager.prefab`; raising it would
+  quiet the line and change nothing else. Not changed.
+- Relay's ~10 s idle cut is on the Relay server and cannot be configured from the client; the transport pings only from
+  the main thread (cause 1 above). No transport or heartbeat setting keeps a frozen host alive.
+- The phone's `NetworkManagerStartFailed` is classified `Conflict` by `UgsRequestPolicy`, the second approval is the
+  join's own retry. Both approvals landing and the start still failing fits a host whose Relay link was degraded at the
+  time (the same freezes), not a join bug; not proven without the timestamps.
+
+**So the two levers are unchanged, and neither is a multiplayer-layer change:** (1) start the Relay host only after the
+menu is up (the boot order, `AuthenticationSceneController.LoadMainMenuNetworkedAsync`: Shombith's area, his call), and
+(2) shorten the frames that freeze, each named by its Load Time Insights report (`/perf-hunt`). Next step: when the
+round-2 logs are pushed, `net_logs.py show <n>` lines each `relayDrop` up with its `stall` and its load report; a drop
+with "no freeze in the last 30 s" would be a network fault and reopen this.
 
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 
