@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Honeyguide playtest fixes: omnicrystal opens hive mode, the strip, the pick of three (`cece/honeyguide-playtest-fixes`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett's playtest, 2026-11-02): `HoneyguideCrew.Hive.cs` also opens hive mode from
+`OmniCrystalImpactor.CollectedByVessel` (the crystal's own pickup signal, the Meerkat's path), beside the impactor
+container's `HoneyguideOmniCrystalEffect`; `HoneyguideDynamoView.cs` draws the strip's Honeyguide flying right to a crystal
+fixed at the right end of a centred track, and centres the pick-of-three cards; `pickSeconds` 10 -> 20 (C#, asset, lab).
+
+**Not run:** no Unity editor and no .NET SDK in the session, so `unity_refcompile` stopped before compiling; the
+generator `--check`/`--self-test`, console-logging and conditional-compilation gates pass.
+
+**Test** (Toybox Vessel Changer -> Honeyguide and Ratel, take the Ratel seat):
+1. Compile. **Pass:** no errors; EditMode `HoneyguideTests` pass.
+2. Watch the strip above the board while the AI flies at an omnicrystal. **Pass:** the Honeyguide's disc moves right
+   toward the white diamond at the right end of a track near the middle; the distance text is not covered.
+3. Let the AI collect it. **Pass:** the board becomes the hive's comb within a moment (after a pick of three, if one was
+   open), the "hive" toast shows, the strip shows the hex. Also as the pilot seat: the small board turns into the comb.
+4. Make 4 patterns. **Pass:** the three ability cards sit centred between the card row and the spin bar; 20 s to pick.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's

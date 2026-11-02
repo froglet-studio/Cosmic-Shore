@@ -74,10 +74,13 @@ namespace CosmicShore.Gameplay
             GlowLanded.Clear();
             GlowNext.Clear();
             StripDistance = -1f;
+            OmniCrystalImpactor.CollectedByVessel -= OnGameOmniCrystal;
+            if (!_rider) OmniCrystalImpactor.CollectedByVessel += OnGameOmniCrystal;
         }
 
         void UnbindHive()
         {
+            OmniCrystalImpactor.CollectedByVessel -= OnGameOmniCrystal;
             if (_hive != null && !_rider) ReleaseComb();
             SetImmune(false);
             _hive = null;
@@ -91,6 +94,18 @@ namespace CosmicShore.Gameplay
             if (_hive != null) return;   // one hive at a time: an omnicrystal taken in hive mode opens none
             _omniPending++;
             _omniAt = at;
+        }
+
+        // The game's own omni crystal, collected by this hull (Garrett, 2026-11-02 playtest: "when the omnicrystal was
+        // collected the hive minigame never activated"). The crystal raises this wherever the hull's half of a pickup runs -
+        // on the machine that resolves the collect, and on the pilot's own machine when it replays it - including the pickups
+        // that never reach the hull's effect list (a ring threaded, a crystal the server credited for a remote pilot), the
+        // path the Meerkat's Soliton Network listens on for the same reason. Both paths may fire for one pickup; the pending
+        // count opens one hive.
+        void OnGameOmniCrystal(IVesselStatus collector, Vector3 at)
+        {
+            if (_status == null || !ReferenceEquals(collector, _status)) return;
+            OnOmniCrystal(at);
         }
 
         // The hull's machine, every frame after the Ratel's input: the hive's clock and its end; an omnicrystal opens it.
