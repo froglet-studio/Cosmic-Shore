@@ -28,7 +28,7 @@ section here. The build that follows a pick is verified against the picked board
 |---|---|---|---|
 | Menu Redesign | `menu-redesign` | The master tab: items 0-12 and every round from Rev 3 to Rev 40, each old page a titled section (newest first) | Shombith, 2026-11-02 (section 112) |
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
-| Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, section 113) | Shombith, 2026-11-02 (section 112) |
+| Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113-114) | Shombith, 2026-11-02 (section 112) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5243,7 +5243,7 @@ the next round goes on a new page called Menu Redesign C.
   so the name is asked in the session, not by a prompt inside the canvas.
 - Doc references to a round's "page" now mean its section on the Menu Redesign tab (same title).
 
-## 113. Rev 43 mockups: the Voyage window - the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (2026-11-02, awaiting a pick)
+## 113. Rev 43 mockups: the Voyage window - the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (2026-11-02; not liked, followed by Rev 44, section 114)
 
 **Asked (Shombith, 2026-11-02):** "design the new voyage page after taking in garrett's new PR ... take inspiration from
 the arena preview slide in slide out ... On the left we can show the whole map preview and the edge on view below ...
@@ -5290,6 +5290,10 @@ three seats x vessel, pilot, element, artifact with a preset switcher and Save a
 it, the place, the news and the water. Saga (Tandava, the Severing) and Episodes (Episode 1's five quests, Episode 2
 locked) keep their content.
 
+**Correction (Shombith, 2026-11-02):** "Episode 1 is not the Hypersea." Episodes, the Saga and the quest tracker are
+three separate things. Rev 43's Episodes boards show the quest tracker under an Episode 1 heading; that is wrong.
+Rev 44 (section 114) has four tabs instead.
+
 **Differs from the build:** Saga | Voyages | Episodes become the window's tabs on LB / RB (today SAGA and EPISODES are
 buttons opening modals); the map and edge view take the left side, opaque; the three-across grid becomes the voyage
 list (a strip on the map or a list in the card); the open card gains the preset (an Ark), a level for the 12 settings
@@ -5298,3 +5302,37 @@ shows that are not authored lines yet (waypoints, odds, the cell-by-cell mix, th
 `VoyageLines` through `voyage_slice.json`, Garrett's file.
 
 Affects: Garrett's Voyage window (`author_voyage_window.py`, `VoyageJobsView`, `VoyageWindowModals`) once a pick is built.
+
+## 114. Rev 44 mockups: the Voyage window, four more - four tabs on the sea lines (2026-11-02, awaiting a pick)
+
+**Asked (Shombith, 2026-11-02, after Rev 43):** "I made a mistake episode 1 is not the hypersea. Episode saga are
+seperate things and so is quest tracker. SO 4 tabs and Voyage opens up first obviously with episodes coming soon or
+locked. And also I didn't much like the mockup ideas we should add sea lines in the background maybe create more
+mockups like 4 more."
+
+**On the canvas:** tab **Menu Redesign C**, round "Rev 44 - Voyage window, four more ..." under Rev 43 (version
+`1793649383-746d`). Copies `Docs/MenuRedesignB/board/R44*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r44_voyage_window.py` (it reuses Rev 43's pieces and takes the sea lines from R40E). One row
+per option, six screens each: **Voyage** (level 1), **Crew** (level 2), **Story** (level 3), **Saga**, **Quests**,
+**Episodes**; Compare and notes on the first row.
+
+- **The window's four tabs, on LB / RB:** **Voyages** (opens first), **Saga** (Tandava, then the Severing),
+  **Quests** (the quest tracker: Scurry, Hex Race, Joust, Maelstrom, Vessel Hangar, 0 of 5) and **Episodes**
+  (locked, "Coming soon").
+- **The sea lines** (the approved R40E layer) run behind every board. The map and the edge view stay opaque on the
+  left; the cards sit on glass so the lines show at their edges.
+- **G - Crew's hand:** each voyage is a card a crew member hands you, the open one in front and the others standing
+  behind it (LT / RT through them); Ark crew and Story are the back of the same card, turned over with Y.
+- **H - Logbook:** the voyage is a ruled page of the Ark's log with its numbers as a ledger; Ark crew is the next page
+  (a crew manifest: three seats x vessel, pilot, element, artifact), Story the page after.
+- **I - Formation (recommended):** your Ark leads the card, its three hulls in formation, LT / RT through your Arks and
+  Configure one press away; the voyage sits under it. Ark crew grows the formation into its three seats with their
+  settings. Recommended because the preset becomes the thing you see, and level 2 reads as the Ark opening up rather
+  than a new form.
+- **J - On the sea:** no card box at all; the levels are columns standing on the sea lines, and a deeper level pushes
+  the voyage into a slim column beside it.
+- Saga and Quests share one frame in every option (the art large where the map sits, the list in the option's card);
+  Episodes is one locked panel. Their contents are unchanged.
+
+**Differs from the build:** as section 113, plus a fourth tab: the quest tracker leaves the Episodes modal for its own
+Quests tab, and Episodes becomes a locked tab until episodes ship.
