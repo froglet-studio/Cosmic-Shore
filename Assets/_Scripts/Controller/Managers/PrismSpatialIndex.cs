@@ -574,6 +574,55 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// <see cref="PrismSpatialIndex.SegmentsOccupied"/>'s kernel: per capsule, QuerySegment's bucket walk and test
+    /// (the same AABB, bucket size, flag test and <see cref="PrismSpatialIndex.DistanceToSegmentSq"/>), stopping at
+    /// the first live entry inside. A capsule whose bucket walk QuerySegment would refuse (more buckets than slots,
+    /// its linear path) is answered 1 - unknown, so the caller asks QuerySegment itself.
+    /// </summary>
+    [BurstCompile]
+    public struct SegmentOccupancyJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<PrismSpatialData> Spatial;
+        [ReadOnly] public NativeParallelMultiHashMap<int3, int> Buckets;
+        [ReadOnly] public NativeArray<float3> A;
+        [ReadOnly] public NativeArray<float3> AB;
+        [ReadOnly] public NativeArray<float> Radius;
+        public int HighWaterMark;
+        [WriteOnly] public NativeArray<byte> Occupied;
+
+        public void Execute(int i)
+        {
+            float3 a = A[i];
+            float3 ab = AB[i];
+            float r = Radius[i];
+            float rSq = r * r;
+            float abLenSq = math.lengthsq(ab);
+            float3 b = a + ab;
+
+            int3 min = (int3)math.floor((math.min(a, b) - r) / PrismSpatialIndex.BucketSizeMeters);
+            int3 max = (int3)math.floor((math.max(a, b) + r) / PrismSpatialIndex.BucketSizeMeters);
+            long volume = (long)(max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1);
+            if (volume > HighWaterMark) { Occupied[i] = 1; return; }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!Buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it)) continue;
+                do
+                {
+                    var s = Spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (PrismSpatialIndex.DistanceToSegmentSq(s.Position, a, ab, abLenSq) > rSq) continue;
+                    Occupied[i] = 1;
+                    return;
+                } while (Buckets.TryGetNextValue(out idx, ref it));
+            }
+            Occupied[i] = 0;
+        }
+    }
+
+    /// <summary>
     /// Burst-compiled per-cell volume summation over the packed arrays - the
     /// compute half of Cell.EnsureVolumeFresh ("volume is the spine"). One linear
     /// pass filters slots bound to the target cell (live, not destroyed) and
@@ -864,6 +913,16 @@ namespace CosmicShore.Gameplay
         private float[] _virtualRadius;
         public int VirtualCount { get; private set; }
 
+        /// <summary>
+        /// Bumped by every write that can put a live entry somewhere it was not: a bucket add (register, restore,
+        /// a virtual register, a bucket crossing) and every position write (<see cref="UpdatePosition"/>,
+        /// <see cref="UpdatePositionsBatch"/>). Removals do not bump it - an entry leaving can only make a query
+        /// find less. A caller that answered "is anything near here?" earlier in the frame
+        /// (<see cref="SegmentsOccupied"/>, read by <c>ProjectileSweepBatch</c>) may trust a "no" only while this
+        /// is unchanged.
+        /// </summary>
+        public int WriteStamp { get; private set; }
+
         // Per-slot occupancy stamp, incremented on every Register. A slot index is
         // only a valid handle while its generation is unchanged, so anything that
         // holds an index across frames (the explosion backlog) can detect BOTH a
@@ -985,6 +1044,7 @@ namespace CosmicShore.Gameplay
 
         private void AddToBucket(int index, float3 position)
         {
+            WriteStamp++;
             if (_bucketEntryCount >= _buckets.Capacity)
                 _buckets.Capacity = _buckets.Capacity * 2;
             _buckets.Add(BucketKey(position), index);
@@ -1365,6 +1425,42 @@ namespace CosmicShore.Gameplay
         {
             float t = abLenSq > 1e-8f ? math.saturate(math.dot(p - a, ab) / abLenSq) : 0f;
             return math.distancesq(p, a + ab * t);
+        }
+
+        static readonly ProfilerMarker s_SegmentsOccupiedMarker = new("PrismSpatialIndex.SegmentsOccupied");
+
+        /// <summary>
+        /// MANY segments at once: for each capsule <c>a[i]..a[i]+ab[i]</c> of radius <c>radius[i]</c>, writes 1 when
+        /// <see cref="QuerySegment"/> on it COULD return a prism and 0 when it certainly returns none. One parallel
+        /// Burst job (<see cref="SegmentOccupancyJob"/>) with QuerySegment's own bucket walk and test, so a 0 is exact
+        /// for these arrays at this <see cref="WriteStamp"/>. It errs only towards 1: a virtual entry counts (it has
+        /// no Prism, so QuerySegment would drop it), and a capsule wide enough that QuerySegment would take its linear
+        /// path is answered 1 without looking. Main thread; completes before it returns.
+        /// <para>Built for the held guns (<c>ProjectileSweepBatch</c>): a Brittle Star keeps up to ~2000 rounds in
+        /// the air and each one asked QuerySegment every frame, ~3.6 us apiece in the editor, almost always for
+        /// nothing in open space.</para>
+        /// </summary>
+        public void SegmentsOccupied(NativeArray<float3> a, NativeArray<float3> ab, NativeArray<float> radius,
+            NativeArray<byte> occupied, int count)
+        {
+            using var _ = s_SegmentsOccupiedMarker.Auto();
+            if (count <= 0) return;
+            if (!_buckets.IsCreated || !_spatial.IsCreated || _highWaterMark == 0)
+            {
+                for (int i = 0; i < count; i++) occupied[i] = 0;
+                return;
+            }
+
+            new SegmentOccupancyJob
+            {
+                Spatial = _spatial,
+                Buckets = _buckets,
+                A = a,
+                AB = ab,
+                Radius = radius,
+                HighWaterMark = _highWaterMark,
+                Occupied = occupied,
+            }.Schedule(count, 64).Complete();
         }
 
         /// <summary>
@@ -2105,6 +2201,7 @@ namespace CosmicShore.Gameplay
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             float3 newPosition = position;
+            WriteStamp++;
             if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
             {
                 int3 oldKey = BucketKey(s.Position);
@@ -2485,6 +2582,7 @@ namespace CosmicShore.Gameplay
             if (!_spatial.IsCreated) return;
             int n = count < 0 ? math.min(indices.Length, positions.Length) : count;
             if (n <= 0) return;
+            WriteStamp++;
 
             // Burst, inline (Docs/SWARM_FAUNA.md §19.4): an entry whose point did not move is skipped before anything is
             // touched, one that stayed in its 8 u bucket gets a field write, and only a bucket CROSSING (~10% of swarm
