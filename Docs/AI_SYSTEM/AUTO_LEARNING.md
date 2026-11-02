@@ -19,7 +19,7 @@ or leaves it to the sweep below.
 | A person plays any mode in the Unity editor | the person | - |
 | The race is recorded | `HumanFlightRecorder` (every mode, every match) | `flight_<Mode>_<Vessel>_<time>.json` |
 | It is sent, with no question | `BugHuntAutoSend` after Play | `origin/bugledger/<user>`, `BugLedger/shared/reports/<user>/flights/` |
-| New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, every hour | `Tools/Build/ai_learn.py --run` |
+| New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, once a day | `Tools/Build/ai_learn.py --run` |
 | The AI's numbers change for that mode only | the learners (`<asset>_<Mode>` variants) | `Assets/Resources/AIBoostPolicies/`, `Assets/Resources/RaceLines/`, `SkimRaceAIConfig_Regatta` |
 | What changed, and whether the AI now races like the person | the sweep | `Docs/Reports/AI_LEARNING.md` |
 | It reaches the person's editor | `Ys-bleeding-edge` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
@@ -32,8 +32,8 @@ hold lifts, a vessel gains a learner), and one whose learner failed is tried aga
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
 
-The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, every hour at :20 UTC, created 2026-10-25 on
-Yash's request) wakes the session "AI learning sweep (hourly)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
+The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, once a day at 03:47 IST (22:17 UTC) since 2026-11-02, hourly before that; created 2026-10-25 on
+Yash's request) wakes the session "AI learning sweep (daily)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
 sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARNING.md".
 
 
@@ -79,7 +79,7 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 | Recording every race | yes | `HumanFlightRecorder` |
 | Sending races and console errors | yes | `BugHuntAutoSend` |
 | Fixing the console errors people hit | yes, daily | the "Bug Hunt daily sweep" scheduled task (`/bug-ledger` §6) |
-| Relearning the AI from new races | yes, hourly | this document |
+| Relearning the AI from new races | yes, daily | this document |
 | Judging and fixing an AI that cannot race | yes, in the same sweep | §2 step 4 |
 | Offline checks (gates, generators, harnesses) | in every sweep that changes code | §2 step 4 |
 | Unity EditMode / PlayMode tests | **no** | no Unity runner is attached to CI (`unity-ci.yml`, since 2026-10-13); they need an editor |
