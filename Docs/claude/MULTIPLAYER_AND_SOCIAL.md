@@ -56,6 +56,8 @@ tunnel (`R_VesselActions/MEERKAT.md` §9.5).
 **24** (2026-10-28, `cece/keen-lovelace-cyci91`; 21-23 are taken on in-flight branches) - the Tiger Moth: a new network
 prefab (`TigerMoth.prefab`, `R_VesselActions/TIGER_MOTH.md`); on 2026-10-29, same build, `Butterfly.prefab` left the
 network prefab list (the Butterfly retired).
+**25** (2026-11-02, `fix/android-startup-logs`; 25 was free on `Ys-bleeding-edge` that day) - `QuadFish.prefab` and
+`MassBrittlestarFauna.prefab` left the network prefab list: neither species is opted in to replication.
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

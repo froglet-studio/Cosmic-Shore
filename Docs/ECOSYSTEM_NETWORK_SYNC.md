@@ -195,14 +195,16 @@ for a client on a long link.
 | Species | Seed | Cap | Class | Networked? |
 |---|---|---|---|---|
 | Shark | 32 | 68 | `LightFauna` | **YES — step 1** |
-| Brittlestar | 99 | 228 | `LightFauna` | wired, off |
-| QuadFish | 383 | 893 | `LightFauna` | wired, off — the count to be careful about |
+| Brittlestar | 99 | 228 | `LightFauna` | not wired (rig removed 2026-11-02) |
+| QuadFish | 383 | 893 | `LightFauna` | not wired (rig removed 2026-11-02) — the count to be careful about |
 | Worm colony | 5 | 9 | `WormFauna` + `WormSegmentFauna` | **excluded, see below** |
 
 **Shipped ON: Shark only.** It is the smallest population in the roster, so it is the honest
 first measurement of what replication costs per creature, and the other three species are the
 control — if sharks match across screens and quadfish do not, the mechanism is working. Turning
-the next species on is one field on four assets.
+the next wired species on is one field on four assets. Brittlestar and QuadFish must first get
+their rig back: revert the commit that removed it, or re-add `NetworkObject`, `ClientNetworkTransform`
+and `FaunaNetworkSync`, register the prefab, and raise the protocol version.
 
 **The worm colony is excluded deliberately, not forgotten.** It is a colony: the root grows its
 members at runtime as separate `WormSegmentFauna` objects, each carrying its own heart. Networking
@@ -210,9 +212,10 @@ the root alone would give clients a headless worm. Replicating a colony means re
 TOPOLOGY (which segments exist, in what chain, after which splits), which is its own slice.
 
 Prefabs wired with `NetworkObject` + `NetworkTransform` + `FaunaNetworkSync` and registered in
-`DefaultNetworkPrefabs.asset`: `MassSharkFauna`, `MassBrittlestarFauna`, `QuadFish`,
-`TadPoleFauna`. A species whose prefab is wired but whose config is off is fully local — a
-half-wired species degrades to local, never to broken.
+`DefaultNetworkPrefabs.asset`: `MassSharkFauna`, `TadPoleFauna`. A species whose prefab is wired
+but whose config is off is fully local — a half-wired species degrades to local, never to broken.
+`MassBrittlestarFauna` and `QuadFish` lost the rig on 2026-11-02 (Yash): no config opted in, and every
+birth paid to strip it. Opting one of them in without the rig is the audit's dead opt-in error.
 
 `FloraNetworkSync` is on the Cell in all 8 networked scenes and is **inert until a flora config
 opts in** (none does today). Note Wildlife Liberation authors **no flora at all**
@@ -272,9 +275,9 @@ one prefab collide in its scene-object index — which threw inside
 `NetworkSceneManager.PopulateScenePlacedObjects` and stopped every guest from joining any host
 that had restarted in place (`Docs/PartySystem/BUGS.md` B16).
 
-All four fauna prefabs (`QuadFish`, `TadPoleFauna`, `MassSharkFauna`, `MassBrittlestarFauna`)
-carry the full staged rig - NetworkObject **and** `FaunaNetworkSync` - while all 42 fauna configs
-leave `NetworkSynced` off. That is the documented pre-rollout state and is not a defect: the audit
+`TadPoleFauna` and `MassSharkFauna` carry the full staged rig - NetworkObject **and**
+`FaunaNetworkSync` - and only the shark's configs opt in; `QuadFish` and `MassBrittlestarFauna` lost
+theirs on 2026-11-02. A staged rig is the documented pre-rollout state and is not a defect: the audit
 reports it as INFORMATION, per prefab rather than per config. It warns only about a prefab with a
 NetworkObject and NO rig (liability with no rollout behind it), and errors on a config that is
 opted IN whose prefab cannot honour it.
