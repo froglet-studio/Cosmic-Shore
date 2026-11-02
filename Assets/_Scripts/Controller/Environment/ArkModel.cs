@@ -148,8 +148,10 @@ namespace CosmicShore.Gameplay
             _root.localScale *= _scale;
 
             IndexBones(_root);
+            MakeDoubleSided();
             BindPuppets();
             BindReactor();
+            AttachSolid();
 
             _hold = ark.Hold;
             if (_hold) _hold.ParcelGranted += OnParcelGranted;
@@ -157,6 +159,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            foreach (var copy in _doubleSided.Values) if (copy) Destroy(copy);
+            _doubleSided.Clear();
             if (_hold) _hold.ParcelGranted -= OnParcelGranted;
         }
 
@@ -328,15 +332,129 @@ namespace CosmicShore.Gameplay
                     if (!materials[i]) continue;
                     for (int j = 0; j < _def.DomainReplacesMaterials.Count; j++)
                     {
-                        if (materials[i] != _def.DomainReplacesMaterials[j]) continue;
+                        var placeholder = _def.DomainReplacesMaterials[j];
+                        // The placeholder may already wear its double-sided copy (MakeDoubleSided runs at attach).
+                        bool isPlaceholder = materials[i] == placeholder
+                            || placeholder && _doubleSided.TryGetValue(placeholder, out var c) && c == materials[i];
+                        if (!isPlaceholder) continue;
                         materials[i] = ship;
+                        _shipMaterial = ship;
                         changed = true;
                         break;
                     }
                 }
                 if (changed) renderer.sharedMaterials = materials;
             }
+            MakeDoubleSided();
         }
+
+        /// <summary>The hull made solid to vessels, and the bulkhead that closes the stern gape (<see cref="ArkHullSolid"/>),
+        /// in the model's own (dressed) Body and Window materials.</summary>
+        void AttachSolid()
+        {
+            Material body = null, window = null;
+            foreach (var kv in _doubleSided)
+            {
+                var slot = SlotOf(kv.Key);
+                if (slot == SlotBody && !body) body = kv.Value;
+                if (slot == SlotWindow && !window) window = kv.Value;
+            }
+            Solid = ArkHullSolid.Attach(_ark, _root, _scale, body, window);
+        }
+
+        /// <summary>The hull's solid body (vessels slide along it; the tunnel is the one way through).</summary>
+        public ArkHullSolid Solid { get; private set; }
+
+        // The model's material slots (ArkReverse.fbx: 0 Domain, 1 Body, 2 Window, 3 Engine).
+        const int SlotDomain = 0, SlotBody = 1, SlotWindow = 2, SlotEngine = 3;
+
+        /// <summary>Which slot a (source) material is: the import's submesh order is not the build's slot order, so
+        /// a material is known by what it is - the Domain placeholder or the domain's ship material, the Engine and
+        /// Window (Screen) vessel materials, else the Body.</summary>
+        int SlotOf(Material source)
+        {
+            if (!source) return SlotBody;
+            if (source == _shipMaterial) return SlotDomain;
+            for (int j = 0; j < _def.DomainReplacesMaterials.Count; j++)
+                if (_def.DomainReplacesMaterials[j] == source) return SlotDomain;
+            string n = source.name;
+            if (n.Contains("Engine")) return SlotEngine;
+            if (n.Contains("Screen") || n.Contains("Window")) return SlotWindow;
+            return SlotBody;
+        }
+
+        Material _shipMaterial;
+        static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
+
+        // ── Render both faces ────────────────────────────────────────────────
+        // The owner, 2026-10-31: "the Ark has inverted materials: the inside of the hull renders but not the outside".
+        // The model's parts are built as closed and open shells whose winding is not consistent across parts (the
+        // mantle cavity is meant to be seen from inside), and the domain's ship material (and the Body material) cull
+        // back faces, so a part wound inward vanishes from outside. The Ark draws every material double-sided on its own
+        // per-Ark copies; the shared vessel materials are untouched.
+
+        readonly Dictionary<Material, Material> _doubleSided = new();
+
+        void MakeDoubleSided()
+        {
+            if (!_root) return;
+            foreach (var renderer in _root.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = renderer.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    var m = materials[i];
+                    if (!m || _doubleSided.ContainsValue(m)) continue;
+                    if (!_doubleSided.TryGetValue(m, out var copy))
+                    {
+                        copy = new Material(m) { name = m.name + " (Ark, both faces)", doubleSidedGI = true };
+                        if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);          // ShaderGraph / URP: Off
+                        if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
+                        if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
+                        MakeOpaque(copy);
+                        if (copy.HasProperty(ColorMultiplierId))
+                            copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(SlotOf(m)));
+                        _doubleSided[m] = copy;
+                    }
+                    materials[i] = copy;
+                    changed = true;
+                }
+                if (changed) renderer.sharedMaterials = materials;
+            }
+        }
+
+        /// <summary>
+        /// The vessel materials the model wears are TRANSPARENT (Body and every domain's ship material: _Surface 1, no
+        /// depth write), which suits a small vessel and not a 196-unit ship: with no depth, the cavity's glow, the brood
+        /// and the far side's neon drew through the hull, so the Ark read as a lit lantern you could see across (the
+        /// owner, 2026-11-01: "the ark is far too bright ... not visibility ... through the whole ark"). The Ark's copies
+        /// are opaque and write depth; their colours are the same.
+        /// </summary>
+        static void MakeOpaque(Material m)
+        {
+            if (!m.HasProperty("_Surface")) return;
+            m.SetFloat("_Surface", 0f);
+            if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 1f);
+            if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", 1f);
+            if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", 0f);
+            if (m.HasProperty("_SrcBlendAlpha")) m.SetFloat("_SrcBlendAlpha", 1f);
+            if (m.HasProperty("_DstBlendAlpha")) m.SetFloat("_DstBlendAlpha", 0f);
+            m.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.SetOverrideTag("RenderType", "Opaque");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+        }
+
+        /// <summary>How bright a slot's copy is drawn (<see cref="ArkModelDefinitionSO"/>'s look): the glow slots are
+        /// toned down so the Ark reads as a hull, not a lamp, while its domain still reads.</summary>
+        float SlotBrightness(int slot) => slot switch
+        {
+            SlotDomain => _def.DomainBrightness,
+            SlotBody => _def.BodyBrightness,
+            SlotWindow => _def.WindowBrightness,
+            SlotEngine => _def.EngineBrightness,
+            _ => 1f,
+        };
 
         // ── Puppetry ─────────────────────────────────────────────────────────
 

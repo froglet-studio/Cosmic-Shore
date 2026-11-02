@@ -259,6 +259,11 @@ prey on them:
 - **Escort is gone, and haul is now the courier contract.** "Haul and escort sound too similar" (Garrett,
   2026-10-28). A squad that wants to protect someone else's courier takes the Jade defence job. A Jade defence job
   can also name a moving thing (a courier's Ark) rather than a cell.
+  The **Ark escort** (`ARK_ESCORT.md`, built 2026-10-29) is not a job of this table. It is a card of its own beside
+  the jobs: your squad sees your own Ark through a run of hostile worlds at a difficulty you pick. Since 2026-11-01 it
+  sails between real places on the HyperSea (`ARK_ESCORT.md` §5): from where your Ark lies to the nearest port or your
+  own harbour, and it berths there when it makes it through. The defence job naming your own Ark is its natural home
+  on the board (`ARK_ESCORT.md` §5, plan item 3).
 - **Bounties come from notoriety.** In the Notion docs, Ruby's currency is notoriety. It grows quickly with missions
   and decays over time, and the more of it a squad has, the bigger the bounty on it. A bounty job points at a real
   squad.

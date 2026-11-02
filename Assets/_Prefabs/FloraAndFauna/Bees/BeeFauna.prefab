@@ -82,6 +82,8 @@ MonoBehaviour:
   isKilled: 0
   collisionEffects: []
   forager: 0
+  shieldBite: 0.25
+  superShieldBite: 0.1
 --- !u!114 &6009907184062220078
 MonoBehaviour:
   m_ObjectHideFlags: 0

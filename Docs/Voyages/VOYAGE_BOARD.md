@@ -68,6 +68,10 @@ closed to every Ark (proposed).
     closing it gives the map back every place. The Ark escort's card opens the same way to its difficulty stepper.
   Uncharted content draws the old flat chart, with no edge view.
 - The lanes' `cells` still set how long a leg sails in the Arkway; the card shows the real distance (§5 decision 8).
+- **The Ark escort** sails between charted places too (`ARK_ESCORT.md` §5): `VoyageRules.EscortRoute` picks the
+  course (where the Ark lies to the nearest port or the squad's own harbour), the escort card shows it through
+  `CardHomeRoute` and `CardCourse`, the map frames it while the escort is out, and the sim's report records it
+  (`From`, `To`, `CourseLightYears`). Its worlds are still its own rolled set, not the course's cells (§5 decision 8).
 
 ## 4. Keeping the board and the game the same
 
