@@ -943,7 +943,8 @@ flown). 20 gates on the shipped shell; seeds 45501-45504 (the fixed seeds) and 1
 
 **Not modelled:** rivals and trails (the AI is alone), the danger prism's elemental debuff, the asset's real cone (the
 planner's narrower slot is used; `cone=1` widens it), physics contact shapes (a 3 u hull sphere against each prism's box).
-It is a model: Unity decides.
+It is a model: Unity decides. Since 2026-11-02 (step 4) the drift is modelled as the game flies it: the Dolphin's 1.5x drift turn
+rate, the course frozen while drifting, and the AI's 1.5/s nose lag on the drift too (`driftLag`, `noseLag`).
 
 **What it found (one AI alone, median seconds over 12 courses; 2026-11-01, the AI as shipped that day):**
 
@@ -1059,6 +1060,56 @@ break even. What the measurements say about WHY:
 - Charging the planner nothing for the old alignment turn changes nothing measurable, so its costs stay.
 
 Test: `SwitchbackAISteeringTests.Switchback_BlastAI_Defaults_AreSteps1And2`.
+
+### Step 3: the planner's hit costs from the measured ones (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 3". `SwitchbackBlastPlanner.HitPenalty` (seconds a standing prism in the lane costs) is now
+0.25 (was 0.6): what `DolphinVesselChangeSpeedByPrism` does to the Dolphin, x0.5 speed easing back over 1 s. The Danger
+cost was already right (1.5 s: a dead stop easing back over 3 s).
+
+**It changes nothing measurable.** Offline (24 courses a cell, levels Medium to Legendary) every cell's median stays
+within about 2 s for any value from 0.1 to 0.6, and the plans barely change: the thread line runs down the bore, which
+the layout keeps clear, and the blast lane's prisms are mostly covered by the blast. It ships because the planner's costs
+should be the game's, not because it is faster.
+
+**Where the time is (I4):** about 8 missed rings a race, 53 of 54 of them at OPEN gates (20 u radius at I4), not at
+the blocked gates' eyes, and repeatedly at the same few hairpins (gate 1 at every level, then 22 and 25): a 90-150 deg
+turn into a short leg that the stick's 110 deg/s cannot make at 68-107 u/s (a 35-56 u circle), so the AI overshoots,
+loops back and often misses again. A person carves those with drift taps (Yash's drift-spam), which is the next step.
+The simulator's trace now logs each miss (`MISS gate ... by ... u`).
+
+### Step 4: drift carving - measured, NOT shipped (2026-11-02): it needs a decision on the AI's nose lag
+
+Yash: "go ahead with step 4" (carve the I4 hairpins with drift taps, as a person spams drift). Measured offline; no
+game code changed. Two facts from the code decide it:
+- **The drift:** `DolphinDriftAction` multiplies the turn rate by 1.5 (165 deg/s) and its grip is 0, so the course is
+  frozen while the nose swings, and on release the course snaps to the nose (`VesselTransformer.EndDrift`).
+- **The AI's nose lags its command at 1.5/s ALWAYS, drifting included** (`VesselTransformer.NoseFollowFraction`): only a
+  local human pilot has no lag (Garrett, 2026-10-21, "get rid of all steering lag"; AI, autopilot and remote hulls kept it
+  because the autopilots were trained against it). That is why drift-spam is fast for a person and not for the AI.
+
+The simulator now models the lag in the drift too (`driftLag`, on by default as in the game; before 2026-11-02 its drift
+swung the nose with no lag). Re-measured, steps 1 and 2 hold: I3 Legendary 334 s before step 1 -> 156 s, I4 Legendary
+never finishing -> 172 s, and the step 2 strike is still 27-28 s faster than the setup leg at Legendary.
+
+Median seconds, 24 courses a cell (steps 1-3 shipped in every row):
+
+| | I1 | I3 | I4 |
+|---|---|---|---|
+| Today (the AI's nose lags) | 94-103 | 156-175 | 169-172 |
+| + drift carving (25 deg in, 15 deg out, 0.8 s max) | 187-235 | 268-329 | 254-366 (hundreds of missed rings) |
+| AI nose with no lag (`noseLag=0`) | 51-53 | 82-92 | 93-104 |
+| No lag + drift carving | 52-53 | 80-81 | 83-86 |
+
+AI-side ways round the lag were tried and lose: judging the stick from the COMMANDED heading
+(`VesselTransformer.CommandedRotation`) instead of the nose (I4 236-260 s), and leading the command past the aim
+(most races never finish). The AI's nose-judged stick already gets the most out of the lag.
+
+**The decision (not a Switchback change: a game mode never changes the vessel, LOCKED):** whether AI hulls keep the
+fleet nose lag. Removing it halves every Switchback time in the model and makes drift carving worth another ~10 %; it
+also changes every AI in every mode, and `SkimRacePilot` was trained against the lag. Owners: Garrett's 2026-10-21
+steering-lag rule, `VesselTransformer` (`who_works_where.py`). The simulator's `noseLag=0`, `carve=...`, `cmdSteer=1`
+and `cmdLead=...` reproduce every row.
 
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 
