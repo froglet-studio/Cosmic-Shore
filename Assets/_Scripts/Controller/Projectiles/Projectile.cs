@@ -467,6 +467,7 @@ namespace CosmicShore.Gameplay
         private void OnDisable()
         {
             if (NeedsPrismColliders) PrismColliderLodManager.UnregisterFocus(transform);
+            ProjectileSweepBatch.Remove(this);
 
             // A pooled round is reissued to a different pilot at a different MASS level, so it
             // must not carry the last flight's shell back out with it. LaunchProjectile decides
@@ -940,6 +941,8 @@ namespace CosmicShore.Gameplay
             var t = transform; // cache
             var useSpike = spike && meshRenderer;
             bool fuzed = false;
+            int generation = FlightGeneration;
+            bool batched = sweptPrismDetection || sweptVesselDetection;
 
             try
             {
@@ -950,6 +953,14 @@ namespace CosmicShore.Gameplay
                 {
                     float deltaTime = Time.deltaTime;
                     float factor = Cruises ? 1f : Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+
+                    // The batched broad phase (ProjectileSweepBatch): join it, and if this is the frame's first
+                    // swept step, build it for every round in flight - before any of them moves.
+                    if (batched)
+                    {
+                        ProjectileSweepBatch.Add(this);
+                        ProjectileSweepBatch.EnsureBuilt();
+                    }
 
                     // Grow BEFORE the step is swept, so this frame's hit volume is the size the
                     // round has actually reached rather than the one it left the muzzle at.
@@ -1065,6 +1076,12 @@ namespace CosmicShore.Gameplay
             catch (Exception ex)
             {
                 CSDebug.LogError($"[Projectile] Move loop error: {ex}");
+            }
+            finally
+            {
+                // Only THIS flight's registration: a relaunch has already bumped the generation and joined
+                // the batch again, and this (cancelled) loop must not take that away.
+                if (batched && generation == FlightGeneration) ProjectileSweepBatch.Remove(this);
             }
         }
 
@@ -1838,6 +1855,71 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void CacheSweepRadius() => _sweepRadius = MeasureHitRadius();
 
+        #region Batched broad phase (ProjectileSweepBatch)
+
+        /// <summary>This round's place in <see cref="ProjectileSweepBatch"/>; -1 when not in it.</summary>
+        internal int SweepBatchSlot = -1;
+
+        // This frame's batched answer, valid only for the step it was taken for (see BatchClear).
+        int _batchFrame = -1;
+        int _batchStamp;
+        Vector3 _batchFrom;
+        Vector3 _batchVelocity;
+        float _batchVesselRadius;
+        float _batchPrismRadius;
+        bool _batchVesselsClear;
+        bool _batchPrismsClear;
+
+        /// <summary>The most this flight's sweep radius can reach: in-flight growth moves it between the launch
+        /// radius and launch x growth factor (<see cref="RoundGrowthRamp"/>), never past either end.</summary>
+        internal float MaxSweepRadius =>
+            Mathf.Max(_sweepRadius, _launchSweepRadius * Mathf.Max(1f, _flightGrowthFactor));
+
+        /// <summary>
+        /// The capsule this frame's step can at most cover: from here to <c>here + Velocity * dt</c> (the real step is
+        /// that times the flight's cosine factor, in (0, 1]), at the largest radius the sweeps can use. The prism
+        /// radius carries <see cref="SweepCandidateExtent"/>, as <see cref="SweepPrismsAlong"/> asks the index with it.
+        /// </summary>
+        internal void SweepEnvelope(float dt, out Vector3 from, out Vector3 to, out float vesselRadius, out float prismRadius)
+        {
+            from = transform.position;
+            to = from + Velocity * dt;
+            vesselRadius = MaxSweepRadius + BatchRadiusSlack;
+            prismRadius = vesselRadius + SweepCandidateExtent;
+            _batchFrom = from;
+            _batchVelocity = Velocity;
+            _batchVesselRadius = vesselRadius;
+            _batchPrismRadius = prismRadius;
+        }
+
+        // Float slack so the batched capsule strictly contains the real one (bucket edges, rounding).
+        const float BatchRadiusSlack = 0.01f;
+
+        internal void StampSweepBatch(int frame, int indexStamp, bool vesselsClear, bool prismsClear)
+        {
+            _batchFrame = frame;
+            _batchStamp = indexStamp;
+            _batchVesselsClear = vesselsClear;
+            _batchPrismsClear = prismsClear;
+        }
+
+        /// <summary>
+        /// True only when this frame's batch said the step from <paramref name="from"/> touches nothing of that kind
+        /// AND the step is still the one it was asked about: same frame, same start, same velocity, a radius it
+        /// covered, and (prisms) no index write since. Anything else answers false and the caller queries as before.
+        /// </summary>
+        bool BatchClear(Vector3 from, bool prisms)
+        {
+            if (_batchFrame != Time.frameCount) return false;
+            if (from != _batchFrom || Velocity != _batchVelocity) return false;
+            if (!prisms) return _batchVesselsClear && _sweepRadius <= _batchVesselRadius;
+            if (!_batchPrismsClear || _sweepRadius + SweepCandidateExtent > _batchPrismRadius) return false;
+            var index = PrismSpatialIndex.Instance;
+            return index && index.WriteStamp == _batchStamp;
+        }
+
+        #endregion
+
         float MeasureHitRadius()
         {
             if (_rootCollider is SphereCollider sphere)
@@ -1887,7 +1969,7 @@ namespace CosmicShore.Gameplay
             float radius = virtualOnly ? _memberSweepRadius : _sweepRadius;
 
             s_sweepCandidates.Clear();
-            if (!virtualOnly)
+            if (!virtualOnly && !BatchClear(from, prisms: true))
                 index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates);
 
             // VIRTUAL entries (Docs/SWARM_FAUNA.md §19) - QuerySegment returns only prisms with a GameObject - on the
@@ -2032,6 +2114,9 @@ namespace CosmicShore.Gameplay
 
             int vesselMask = ResolveLayerMaskOnce(ref s_sweepVesselMask, "Ships");
             if (vesselMask <= 0) return;
+
+            // The batched broad phase found no Ships collider anywhere along this frame's step envelope.
+            if (BatchClear(from, prisms: false)) return;
 
             int depth = s_vesselSweepDepth++;
             try

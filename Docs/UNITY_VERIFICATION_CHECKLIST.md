@@ -20814,3 +20814,17 @@ Branch `claude/festive-ptolemy-gsap7o`. Verified offline only: `unity_refcompile
    Star's rounds (same prefab) do not look too heavy.
 4. **Rounds still hit.** The round's Rigidbody is now kinematic: bullets still damage prisms, score on
    pilots, and set off mines/crystals as before.
+
+## 🔴 Batched round sweeps (`ProjectileSweepBatch`) for the held guns (2026-11-02, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `unity_refcompile` (player + editor), not run.
+
+1. **Run the edit-mode tests** `PrismSpatialIndexTests.SegmentsOccupied_AgreesWithQuerySegment` and
+   `PrismSpatialIndexTests.WriteStamp_MovesOnAddAndMove_NotOnDestroy`: both pass.
+2. **Profile the Brittle Star holding all five guns** (Destruction mode, open space, Release): `Projectile.SweepVessels`
+   plus `Projectile.SweepPrisms` should drop from several ms to well under 1 ms, with one `Projectile.SweepBatch` a frame.
+   Repeat with the Sparrow's full-auto.
+3. **Hits are unchanged.** Shoot a prism wall and an enemy pilot with each vessel: prisms break, the pilot is scored, and
+   (below Space 5) a Sparrow round still stops on the first prism it meets.
+4. **No new console errors.** A `[ProjectileSweepBatch] build failed` error means the batch fell back to per-round
+   queries (correct, but the speed-up is lost): send it.
