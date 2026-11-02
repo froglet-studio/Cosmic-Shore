@@ -264,6 +264,11 @@ namespace CosmicShore.Utility
             // Something (a respawn, a player restart) may have handed the hull back to its flight model.
             var transformer = b.Status.VesselTransformer;
             if (transformer && transformer.IsActive) transformer.ToggleActive(false);
+            // The round's start hands the local seat its input back (SetPause(false) on Go). Its strategy then writes
+            // the untouched stick over the recorded one every frame before the hull's puppetry reads it, so the
+            // recorded pilot's hull alone sat still in every turn while the AI seats (never local) moved.
+            var controller = b.Status.Player?.InputController;
+            if (controller && b.Status.InputStatus is { Paused: false }) controller.SetPause(true);
             if (!b.Track.TryEvaluate(t, out var position, out var rotation, out float speed)) return;
             b.Root.SetPositionAndRotation(position, rotation);
             b.Status.Speed = speed;
