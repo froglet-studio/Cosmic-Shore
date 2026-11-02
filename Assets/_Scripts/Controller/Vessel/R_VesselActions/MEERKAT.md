@@ -224,17 +224,28 @@ line for line:
 ## 5. Stand-ins and open slots
 
 - **Hull:** the Stoat's model and lope, as in the studio. A real Meerkat hull is `/vessel-model` work.
-- **HUD:** the Stoat's `StoatHUDVariant` with `MeerkatHUDController` (the LOCKED four-icon row, charge → mass → space →
-  time): Charge, the sentinels standing out of the pool; Mass, the last exit portal's prisms still standing (of six);
-  Space, the reticle growing back (full once RT would form); Time, the ride's progress through any soliton (in the ready
-  colour while riding). The Stoat's view has no ready colour on its Charge and Space gauges.
+- **HUD (its own since 2026-11-03):** `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs,
+  built by `author_meerkat_assets.py`, the Angler's pattern), `MeerkatHUDView` and `MeerkatHUDController` (the LOCKED
+  four-icon row, charge → mass → space → time). One plate gauge per card: Charge, the sentinels standing out of the pool,
+  in the ready colour while Sentinel Mode is on; Mass, the last exit portal's prisms still standing (of six); Space, the
+  reticle growing back, in the ready colour once RT would form; Time, what is left of the ride, in the ready colour while
+  riding.
 - **The element map** (`ElementalAbilityMaps/Meerkat.asset`): Garrett's four rows (§10; Space's area and swallow are §8), written by
-  `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, scaling 4/4, L5 gates 4/4.
-- **The ability icons** are the Stoat's placeholders (`StoatHUDVariant`); the Meerkat's own four are `/ability-icon` work.
+  `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, L5 gates 4/4; it prints Space as "NO SCALING"
+  because Space's surface area is a direct level read the table cannot attribute (`MeerkatSolitonExecutor.SpaceLevel`), not
+  because it does not scale.
+- **The ability icons (its own since 2026-11-03, round 1):** `Assets/_Graphics/Icons/AbilityIcons/Meerkat/` from
+  `Tools/Build/icon_kit/specs/meerkat.py` (guids in `Tools/Build/meerkat_icon_ids.py`): Sentinel Mode (the hull on sentry
+  over the mouth it guards), Exit Portal (the way out ringed by six prisms), Soliton (the wormhole, an arch from one mouth
+  to the other), Faster Ride (the hull shooting out of a mouth). Single white sprites; Garrett picks from the sheet
+  (`Docs/Icons/sheets/meerkat.png`) per the `/ability-icon` round.
 - **No `[CliCommand]`, no Unity tuning window:** tune in the artifact and clone. In play mode the
   `MeerkatSolitonConfig` asset's inspector changes are read live, for a quick look.
-- **Touch:** no per-hull phone profile yet (`TouchInputStrategy` raises RT/LT the fleet's way; the right stick on a phone
-  is not mapped for this hull).
+- **Touch (prototype, 2026-11-03, Yash; needs Garrett's sign-off and a phone test):** a ThumbLifts profile
+  (`Tools/Build/author_touch_profiles.py`). The Meerkat steers off the left stick alone, so two thumbs are the pad's two
+  sticks: the left flies, the right bends the reticle. Lift the left thumb to form the soliton (RT; held while riding it is
+  the slide's push), lift the right to lengthen the straight shaft (LT, ramped over `keyRampSeconds`). Sentinel Mode is the
+  Charge card's tap (a lift waits 0.12 s). A bend needs the right thumb down, so a long shaft forms straight.
 
 ## 6. Files
 
@@ -247,7 +258,9 @@ line for line:
 | Network | `Controller/Vessel/MeerkatSolitonNetworkRelay.cs` |
 | Look | `SolitonTunnelView.cs`, `SolitonTunnelLensPass.cs` (with the contour field, §2.1), `_Graphics/Materials/Graphs/SolitonTunnel*.shader`, `Resources/SolitonTunnel*.mat`, `Controller/Environment/SolitonTunnel/` |
 | The contour field's lab | `Docs/Studios/StoatTubeLensLab.html` (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF) |
-| HUD | `UI/Controller/MeerkatHUDController.cs` |
+| HUD | `UI/Controller/MeerkatHUDController.cs`, `UI/View/MeerkatHUDView.cs`, `_Prefabs/UI Elements/VesselHUD/MeerkatHUDVariant.prefab` |
+| Ability icons | `Tools/Build/icon_kit/specs/meerkat.py`, `Tools/Build/meerkat_icon_ids.py`, `_Graphics/Icons/AbilityIcons/Meerkat/` |
+| Phone controls | `Tools/Build/author_touch_profiles.py` (the Meerkat's row), `Resources/TouchControlProfiles.asset` |
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
 | The roots (§7) | `SolitonTunnelMath.cs`, `SolitonNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/SolitonTunnelMathTests.cs` |
 | ~~The tree and the roots' look (§7)~~ deleted 2026-10-29 (`2ad5882115`; restore: `Docs/Shaders/WORMHOLE_SHADERS.md` §12) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |

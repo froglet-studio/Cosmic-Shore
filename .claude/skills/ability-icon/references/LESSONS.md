@@ -528,3 +528,15 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     Serpent's shielded bricks, `author_squirrel_shielded_ring_icon.py`) were cut the same way. Small halves fail `thin`
     and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
     negative-space X).
+
+## 2026-11-03 - the Meerkat: a first row for a hull still on a borrowed model
+
+79. **A hull on a borrowed model draws its cards from the model it will have, with a fallback.** The Meerkat flew the
+    Stoat's mesh while its own was being built in the same session, so `specs/meerkat.py` reads `Meerkat.fbx` when it
+    exists and `Stoat.fbx` until then (`HULL_FBX`): the cards that draw the hull (Sentinel Mode, Faster Ride) are
+    re-rendered by re-running `author.py` once the hull lands, the guids unchanged. The Stoat's long thin stick reads as a
+    needle at 40 px and fails `coverage` side-on at a normal box; a hull that thin needs a bigger box or a second shape
+    with mass (a mouth ring) to carry the card, not a thicker dilate.
+80. **A wormhole reads as an arch only when its feet go INTO something.** An arch with its mouths cut open across the
+    ends still read as a horseshoe; standing each foot in an edge-on ellipse ring, with the ring's near lip cut over the
+    tube, reads as a tunnel from one hole in space to another.
