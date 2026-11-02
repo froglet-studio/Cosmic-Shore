@@ -190,5 +190,19 @@ namespace CosmicShore.ScriptableObjects
         public string MapSourceTumult = "A - invented name; the star is drawn from the model";
         public string MapSourceReal = "S - real";
         public string MapSourceProposed = "A - proposed";
+
+        [Header("Galaxy map: the cells")]
+        [Tooltip("A cell's name on the map once it is big enough to name: {sea} its sea (SeaSpray...), {q} {r} its coordinates.")]
+        public string MapCellLabel = "{sea} {q}, {r}";
+        [Tooltip("The {kind} on a cell's card.")]
+        public string MapKindCell = "Cell";
+        [Tooltip("A cell's {name} on its card: {q} {r} its coordinates.")]
+        public string MapCellName = "Cell {q}, {r}";
+        [Tooltip("A cell's {body}: {sea} its sea, {density} its perceived density, {danger} 0-3, {berth} MapCellBerth or nothing.")]
+        public string MapCellBody = "{sea}, {density} g/cc. Danger {danger} of 3. 20 ly across: an Ark crosses it in a minute.{berth}";
+        [Tooltip("{berth} on a cell's card when a place is within its berth (3 cells): {place} its name.")]
+        public string MapCellBerth = " Inside the berth of {place}.";
+        [Tooltip("{source} on a cell's card.")]
+        public string MapSourceCell = "M - the sea model at the cell's centre";
     }
 }

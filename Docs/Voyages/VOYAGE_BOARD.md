@@ -138,6 +138,15 @@ Voyage window's map now zooms as the board does: from the whole galaxy (140,000 
   star, cluster or landmark opens (what it is, its line, its source tag, its height and distances from Sol, Tumult and
   the squad, and the minutes by Ark). A tapped voyage place still opens its voyage. The edge view stands the stars and
   landmarks at their heights.
+- **Readable names and the cells** (Garrett, 2026-11-02: "the words are not readable even when zoomed in, but words
+  should be readable at all semantic zoom levels. at the deepest levels we should see the hexagons and you should zoom
+  into the hexagons to see cells"). The map's text had copied the card eyebrow's 14 px and drawn a share of it; every
+  map text now has its own size (`VoyageMapText`: places 22 px, landmarks 20, stars, clusters and cells 18, ladder and
+  readout 17, caption 18, card 19, at the 1920x1080 reference) and sits on a dark plate. The 20 ly cells' outlines
+  (`HyperSea.CellCentre`, pointy-top) fade in as a cell grows from 16 to 36 px across (the Region tier into the
+  Neighbourhood); a cell names itself (`MapCellLabel`, its sea and coordinates) from 150 px, and from 40 px a tap on
+  open water opens its card (sea, perceived density, danger, the place whose berth holds it) and outlines it; a second
+  tap closes it. The Cell tier puts one cell across the view and the System tier is inside it.
 - Every word is authored: the `Map*` lines of `VoyageLines` (`voyage_slice.json` `hud`, written by
   `author_voyage_assets.py`); star and cluster names, landmark lines and kind labels are the table's.
 - **Goldens:** `node Docs/Voyages/VoyageBoard/sky_golden.js` prints what `HyperSeaSkyTests` holds (the luminosity

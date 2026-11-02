@@ -401,7 +401,7 @@ namespace CosmicShore.UI
                 "intensity", voyage.Intensity.ToString(CultureInfo.InvariantCulture));
         }
 
-        static string SeaName(VoyageLines lines, SeaKind sea) => sea switch
+        internal static string SeaName(VoyageLines lines, SeaKind sea) => sea switch
         {
             SeaKind.Spray => lines.SeaSpray,
             SeaKind.Froth => lines.SeaFroth,

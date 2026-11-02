@@ -497,3 +497,9 @@ MonoBehaviour:
     MapSourceTumult: 'A - invented name; the star is drawn from the model'
     MapSourceReal: S - real
     MapSourceProposed: A - proposed
+    MapCellLabel: '{sea} {q}, {r}'
+    MapKindCell: Cell
+    MapCellName: 'Cell {q}, {r}'
+    MapCellBody: '{sea}, {density} g/cc. Danger {danger} of 3. 20 ly across: an Ark crosses it in a minute.{berth}'
+    MapCellBerth: ' Inside the berth of {place}.'
+    MapSourceCell: M - the sea model at the cell's centre
