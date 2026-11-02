@@ -5400,3 +5400,46 @@ options changed:
 - **Your Ark** rows are larger: the domain sits under the name and the three hulls are 80 x 30.
 - **G's** cards behind the open one are two, closer and fainter (were three). A and G got the course-mix bar back
   into the space this freed.
+
+## 115. Rev 46 mockups: small voyage cards that slide open, from the card or the HyperSea map (2026-11-02, the direction going ahead; awaiting board approval)
+
+**Asked (Shombith, 2026-11-02, after the Rev 43-44 edits):** "Rather than big cards make smaller cards like arena maybe
+and they slide open when we click them or select them in the map. With this design move ahead."
+
+**On the canvas:** tab **Menu Redesign C**, round "Rev 46 - Voyage window: small voyage cards that slide open ..."
+(version `1793651532-f418`). Copies are in `Docs/MenuRedesignB/board/R46*.dc.html` and the generator is
+`Docs/MenuRedesignB/rounds/r46_voyage_cards.py`. One component draws every board, and each state board starts it in a
+different state. All six are interactive:
+- **Prototype:** you can press a card or a pin, zoom the map, step through the levels and close the card.
+- **Cards:** the four voyages as small cards, with the HyperSea map at Sector showing their four pins.
+- **Open:** a card slid open: Lantern Reach at level 1, with the map on its course and the route lit.
+- **FromMap:** The Maw's pin pressed on the map. The pin is ringed in the route colour and its card is slid open.
+- **Crew:** the open voyage at level 2, Ark crew (the 12 settings).
+- **Story:** the open voyage at level 3, the story (optional), for The Maw.
+
+**The design:**
+- **The cards.** The four voyages are 2 x 2 arena-style cards on the right of the map. Each shows:
+  - the Sector render around its destination as art;
+  - the voyage's number and kind;
+  - the title;
+  - the sail time, the course, the intensity and the pay;
+  - who found it.
+- **Opening a voyage.** A card (A, or a click), or the voyage's pin on the HyperSea map at Sector, slides the voyage
+  open over the cards (0.32 s). From a card, the map moves to the voyage's course. From a pin, the map keeps the pin
+  ringed.
+- **Moving and closing.** B slides the voyage shut. D-pad left / right steps to the next voyage without closing it.
+- **Inside the open voyage,** the three levels stay: the voyage (with Your Ark), Ark crew, Story. Each voyage opens
+  onto its own course render and edge profile.
+- **Kept from earlier rounds:** the four tabs on LB / RB, the sea lines, and Garrett's seven-tier HyperSea map.
+
+**Where the numbers come from.** Every voyage's words and numbers are the Voyage Board's (its four voyages) and the
+slice's. Two exceptions: the summaries for Gallowglass and The Maw extend the board's place lines (the slice has no job
+for them), and are marked as proposed copy for Garrett.
+
+**What the build would change** (Garrett's window, `author_voyage_window.py`):
+- SAGA / EPISODES become the four tabs.
+- The three-across job grid becomes 2 x 2 small cards.
+- `VoyageJobCard.Overlay` becomes the slide-in voyage with its three levels.
+- A pin on `VoyageMapGraphic` opens the same card.
+
+Affects: Garrett's Voyage window and HyperSea map. Nothing is built yet.

@@ -3286,6 +3286,68 @@
       "h": 900,
       "page": "fleet-codex",
       "title": "Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes"
+    },
+    "R46Prototype.dc.html": {
+      "x": 0,
+      "y": 17360,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Prototype - the prototype: press a card or a pin, zoom the map, step the levels - interactive",
+      "is_interactive": true
+    },
+    "R46Cards.dc.html": {
+      "x": 2100,
+      "y": 17360,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Cards - the voyages as four small cards, the HyperSea map at Sector with their pins - interactive",
+      "is_interactive": true
+    },
+    "R46Open.dc.html": {
+      "x": 4200,
+      "y": 17360,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Open - a card slid open: Lantern Reach at level 1, the map on its course - interactive",
+      "is_interactive": true
+    },
+    "R46FromMap.dc.html": {
+      "x": 0,
+      "y": 18620,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 FromMap - opened from the map: The Maw's pin pressed at Sector, its card slid open - interactive",
+      "is_interactive": true
+    },
+    "R46Crew.dc.html": {
+      "x": 2100,
+      "y": 18620,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Crew - the open voyage at level 2, Ark crew: the 12 settings - interactive",
+      "is_interactive": true
+    },
+    "R46Story.dc.html": {
+      "x": 4200,
+      "y": 18620,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Story - the open voyage at level 3, its story (optional) - interactive",
+      "is_interactive": true
+    },
+    "R46Notes.dc.html": {
+      "x": 0,
+      "y": 19880,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 - notes: what was asked, what it is, what the build changes"
     }
   },
   "createdOnFiles": {
@@ -3295,7 +3357,7 @@
   "designSystems": [],
   "launch": {
     "view": "canvas",
-    "page": "fleet-codex"
+    "page": "menu-redesign-c"
   },
   "notes": {
     "hud_end": {
@@ -3850,6 +3912,24 @@
       "w": 240,
       "maxW": 12420,
       "page": "menu-redesign-c"
+    },
+    "rev45": {
+      "kind": "title1",
+      "text": "Rev 45 - Fleet Codex - a vessel in tabs",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "fleet-codex"
+    },
+    "rev46": {
+      "kind": "title1",
+      "text": "Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)",
+      "x": 0,
+      "y": 16960,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
     }
   },
   "order": [
@@ -4254,7 +4334,14 @@
     "R44Notes.dc.html",
     "R45A.dc.html",
     "R45B.dc.html",
-    "R45Notes.dc.html"
+    "R45Notes.dc.html",
+    "R46Prototype.dc.html",
+    "R46Cards.dc.html",
+    "R46Open.dc.html",
+    "R46FromMap.dc.html",
+    "R46Crew.dc.html",
+    "R46Story.dc.html",
+    "R46Notes.dc.html"
   ],
   "pages": [
     {

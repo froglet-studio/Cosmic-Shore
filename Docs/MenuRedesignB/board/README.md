@@ -19,7 +19,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-02 from canvas version `1793650687-b174` of **Froglet Design Board**: Rev 3 to Rev 45, 402 boards on 4 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-02 from canvas version `1793651532-f418` of **Froglet Design Board**: Rev 3 to Rev 46, 409 boards on 4 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -535,6 +535,16 @@ Copied on 2026-11-02 from canvas version `1793650687-b174` of **Froglet Design B
 
 ### Tab: Menu Redesign C  (`menu-redesign-c`)
 
+#### Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)
+
+- [`R46Prototype.dc.html`](R46Prototype.dc.html) - Rev 46 Prototype - the prototype: press a card or a pin, zoom the map, step the levels - interactive
+- [`R46Cards.dc.html`](R46Cards.dc.html) - Rev 46 Cards - the voyages as four small cards, the HyperSea map at Sector with their pins - interactive
+- [`R46Open.dc.html`](R46Open.dc.html) - Rev 46 Open - a card slid open: Lantern Reach at level 1, the map on its course - interactive
+- [`R46FromMap.dc.html`](R46FromMap.dc.html) - Rev 46 FromMap - opened from the map: The Maw's pin pressed at Sector, its card slid open - interactive
+- [`R46Crew.dc.html`](R46Crew.dc.html) - Rev 46 Crew - the open voyage at level 2, Ark crew: the 12 settings - interactive
+- [`R46Story.dc.html`](R46Story.dc.html) - Rev 46 Story - the open voyage at level 3, its story (optional) - interactive
+- [`R46Notes.dc.html`](R46Notes.dc.html) - Rev 46 - notes: what was asked, what it is, what the build changes
+
 #### Rev 44 - Voyage window, four more: four tabs (Voyages, Saga, Quests, Episodes locked) on the sea lines
 
 - [`R44Compare.dc.html`](R44Compare.dc.html) - Rev 44 - the four options and their tab rows side by side
@@ -601,7 +611,7 @@ Copied on 2026-11-02 from canvas version `1793650687-b174` of **Froglet Design B
 
 ### Tab: Fleet Codex  (`fleet-codex`)
 
-#### Fleet Codex
+#### Rev 45 - Fleet Codex - a vessel in tabs
 
 - `R45A.dc.html` (not copied yet) - Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as device tabs (recommended) - interactive
 - `R45B.dc.html` (not copied yet) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Controls table - interactive
