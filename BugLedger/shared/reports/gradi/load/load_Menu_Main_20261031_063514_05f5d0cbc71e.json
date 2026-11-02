@@ -1,0 +1,519 @@
+{
+    "schemaVersion": 1,
+    "reportId": "05f5d0cbc71e",
+    "timestamp": "2026-10-31T06:35:14.3390811Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/voyage-escort-roles",
+    "gitCommitHash": "1aa57d5a3",
+    "trigger": "Cell swap -> Barren",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: nothing to build behind a veil",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 3182.26220703125,
+    "visualReadyMs": -1.0,
+    "waitMs": 1187.6724853515625,
+    "humanWaitMs": 0.0,
+    "workMs": 1994.5897216796875,
+    "unattributedMs": 38.77269744873047,
+    "framesDuringLoad": 17,
+    "avgFpsDuringLoad": 5.342111587524414,
+    "worstFrameMs": 433.7835998535156,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 37.57469940185547,
+            "endMs": 1225.2471923828125,
+            "durationMs": 1187.6724853515625,
+            "exclusiveMs": 1187.6724853515625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: 1340 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1225.2535400390625,
+            "endMs": 1264.7347412109375,
+            "durationMs": 39.481201171875,
+            "exclusiveMs": 39.481201171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 1264.7381591796875,
+            "endMs": 3181.022216796875,
+            "durationMs": 1916.2840576171875,
+            "exclusiveMs": 1882.830322265625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1296.8447265625,
+            "endMs": 1299.2733154296875,
+            "durationMs": 2.4285888671875,
+            "exclusiveMs": 2.4285888671875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1299.2808837890625,
+            "endMs": 1301.6497802734375,
+            "durationMs": 2.368896484375,
+            "exclusiveMs": 2.368896484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1301.6588134765625,
+            "endMs": 1303.924560546875,
+            "durationMs": 2.2657470703125,
+            "exclusiveMs": 2.2657470703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1303.932373046875,
+            "endMs": 1306.238037109375,
+            "durationMs": 2.3056640625,
+            "exclusiveMs": 2.3056640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1306.24609375,
+            "endMs": 1309.103271484375,
+            "durationMs": 2.857177734375,
+            "exclusiveMs": 2.857177734375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1309.11083984375,
+            "endMs": 1311.1123046875,
+            "durationMs": 2.00146484375,
+            "exclusiveMs": 2.00146484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1432.2884521484375,
+            "endMs": 1434.962890625,
+            "durationMs": 2.6744384765625,
+            "exclusiveMs": 2.6744384765625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1434.97412109375,
+            "endMs": 1437.7430419921875,
+            "durationMs": 2.7689208984375,
+            "exclusiveMs": 2.7689208984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1437.7620849609375,
+            "endMs": 1440.094482421875,
+            "durationMs": 2.3323974609375,
+            "exclusiveMs": 2.3323974609375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1440.1025390625,
+            "endMs": 1441.9664306640625,
+            "durationMs": 1.8638916015625,
+            "exclusiveMs": 1.8638916015625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1441.9742431640625,
+            "endMs": 1444.088623046875,
+            "durationMs": 2.1143798828125,
+            "exclusiveMs": 2.1143798828125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1444.09619140625,
+            "endMs": 1446.5594482421875,
+            "durationMs": 2.4632568359375,
+            "exclusiveMs": 2.4632568359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1702.24072265625,
+            "endMs": 1704.73388671875,
+            "durationMs": 2.4931640625,
+            "exclusiveMs": 2.4931640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "startMs": 1704.741455078125,
+            "endMs": 1707.2572021484375,
+            "durationMs": 2.5157470703125,
+            "exclusiveMs": 2.5157470703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 3182.204345703125,
+            "endMs": 3182.256103515625,
+            "durationMs": 0.0517578125,
+            "exclusiveMs": 0.0517578125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 1922.36328125,
+            "percent": 60.4087028503418,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 1187.6724853515625,
+            "percent": 37.32164001464844,
+            "spanCount": 1,
+            "waitMs": 1187.6724853515625
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 38.77269744873047,
+            "percent": 1.218400478363037,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 7,
+            "name": "Fauna",
+            "attributedMs": 33.4537353515625,
+            "percent": 1.0512564182281495,
+            "spanCount": 14,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1916.2840576171875,
+            "exclusiveMs": 1882.830322265625,
+            "maxSingleMs": 1916.2840576171875,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 1187.6724853515625,
+            "exclusiveMs": 1187.6724853515625,
+            "maxSingleMs": 1187.6724853515625,
+            "isWait": true
+        },
+        {
+            "label": "Cell swap: 1340 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 39.481201171875,
+            "exclusiveMs": 39.481201171875,
+            "maxSingleMs": 39.481201171875,
+            "isWait": false
+        },
+        {
+            "label": "Fauna spawn (QuadFish)",
+            "category": 7,
+            "categoryName": "Fauna",
+            "count": 14,
+            "totalMs": 33.4537353515625,
+            "exclusiveMs": 33.4537353515625,
+            "maxSingleMs": 2.857177734375,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.0517578125,
+            "exclusiveMs": 0.0517578125,
+            "maxSingleMs": 0.0517578125,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 251.06199645996095,
+            "durationMs": 433.7835998535156,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        },
+        {
+            "atMs": 811.38037109375,
+            "durationMs": 283.3023986816406,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        },
+        {
+            "atMs": 527.3455200195313,
+            "durationMs": 276.0596923828125,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        },
+        {
+            "atMs": 2030.3214111328125,
+            "durationMs": 255.5933837890625,
+            "during": "Cell swap: the retired world is released (500 prisms a frame)"
+        },
+        {
+            "atMs": 1625.1358642578125,
+            "durationMs": 245.63040161132813,
+            "during": "Cell swap: the retired world is released (500 prisms a frame)"
+        },
+        {
+            "atMs": 2373.90234375,
+            "durationMs": 232.52310180664063,
+            "during": "Cell swap: the retired world is released (500 prisms a frame)"
+        },
+        {
+            "atMs": 2709.41064453125,
+            "durationMs": 215.8072967529297,
+            "during": "Cell swap: the retired world is released (500 prisms a frame)"
+        },
+        {
+            "atMs": 1381.177001953125,
+            "durationMs": 208.0435028076172,
+            "during": "Cell swap: the retired world is released (500 prisms a frame)"
+        },
+        {
+            "atMs": 1172.2425537109375,
+            "durationMs": 205.0718994140625,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        },
+        {
+            "atMs": 2995.967529296875,
+            "durationMs": 187.27320861816407,
+            "during": "Cell swap: the retired world is released (500 prisms a frame)"
+        },
+        {
+            "atMs": 966.9194946289063,
+            "durationMs": 157.09120178222657,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Cell swap -> Barren"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Fauna spawned during load",
+            "value": 14
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 15681
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 303,
+            "totalMs": 31.90850067138672,
+            "maxSingleMs": 0.3840000033378601
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 0.6022725105285645,
+            "type": "Error",
+            "message": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping in…"
+        }
+    ],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "1.2s (37%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "1 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
