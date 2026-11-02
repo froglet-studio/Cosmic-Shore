@@ -57,6 +57,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 | B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
 | B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time | 🟡 |
+| B48 | A re-invite does nothing: a re-click on a pending invite (inside its 60 s, `OUTGOING_INVITE_TIMEOUT_SECONDS`) only refreshed the local timeout with no network write, and a re-published line read as a duplicate to the invitee (same host, same session). The phone's first two invites failed this way (multiplayer test, 2026-11-02) | Fixed 2026-11-02 (`claude/mp-plan-p0`, section below): each send carries a serial (an optional 6th field), a re-click after 5 s goes out again, and the invitee surfaces a new serial from the same host as a new invite. Not editor-verified | 🟡 |
+| B49 | After every outgoing invite expires the host stays `Inviting` for good and never returns to `InParty` (reproduced, multiplayer test, 2026-11-02) | Fixed 2026-11-02 (`claude/mp-plan-p0`): clearing the last outgoing invite (timeout, cancel, the invitee leaving presence, or a failed send) returns `Inviting` to `InParty`; the state machine always allowed it, nothing took it. Not editor-verified | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2501,6 +2503,31 @@ Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Threshe
   the boot-order decision (host after the menu is up).
 - **The Amoebius edit-mode suite no longer builds**: code merged since 29 Oct (Third Eye HUD, Game Center and Play
   Games sign-in, Fulmen, the multiplayer debug overlay) uses 102 engine APIs the port lacks. Not filled in this sweep.
+
+### B48-B49 fixed (2026-11-02, remote fix session, `claude/mp-plan-p0`): re-invites and the stuck Inviting state
+
+Found by the local testing session on Yash's PC (`fix/android-startup-logs` 5698447fb8). Read from the code; not run.
+
+**B48.** `HostConnectionService.SendInviteAsync` returned early for a target already pending, after refreshing the
+timeout: nothing went over the network. And had it re-published, the invitee's `TryRaiseIncomingInvite` would have
+dropped it: a line from the same host with the same session id is a duplicate, and once the first invite was
+resolved (declined, or the popup gone) the "PENDING to real id" branch swallowed every later line from that host. So
+an invitee who missed the first invite could not be given a second until 60 s passed and the line vanished for two
+refreshes. **Fix:** `InviteService` numbers every send (`targetId|hostId|sessionId|name|avatar|serial`); a timeout
+refresh keeps the serial. A re-click after `INVITE_RESEND_MIN_SECONDS` (5 s) goes through the full send (new serial,
+one lobby write); a double-click inside 5 s stays local. The receiver keeps the serial of the line it surfaced, and a
+different serial from the same host is a re-invite: it surfaces as new, except while a join is in flight. Compatible
+both ways: an older build ignores the 6th field, and a 5-field line from one is serial 0 under the old rules. It is a
+Lobby player property, not a Netcode payload, so `NetworkConfig.ProtocolVersion` is unchanged.
+
+**B49.** `Inviting` is entered on the first send and left only when a joiner lands (`RefreshPartyMembersAsync`). The
+transition table has `Inviting -> InParty` for "all invites cancelled", but no code took it, so timeouts, cancels and
+invitees leaving presence left the host `Inviting` for good. **Fix:** `HandleInviteClearedAsync` (every clear goes
+through it) and the failed-send path return to `InParty` when the last outgoing invite is gone
+(`StateAfterInviteCleared`).
+
+Tests: `InviteResendTests` (serials, the 5/6-field compatibility, the re-invite rule, the debounce, the return to
+`InParty` and that the state machine allows it). Not run: no editor here.
 
 ### B47 investigated (2026-11-01, remote fix session, `claude/mp-rejoin-b47`): the double initialization
 

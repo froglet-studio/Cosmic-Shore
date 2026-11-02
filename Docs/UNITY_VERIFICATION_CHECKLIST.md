@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B48-B49: re-invites go out again and reach the invitee; the host leaves Inviting when its last invite clears (`claude/mp-plan-p0`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** an invite line carries a send serial (optional 6th field); a re-click on a pending invite after 5 s
+re-sends it; the invitee surfaces a new serial from the same host as a new invite; clearing the last outgoing invite
+returns `Inviting` to `InParty`. `HostConnectionService`, `InviteService`; tests `InviteResendTests`. Details:
+`Docs/PartySystem/BUGS.md` B48-B49.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs, 0 errors in project code; ship gates
+all OK. Not run anywhere.
+
+**Test (two players: MPPM, two built players, or a PC and the phone):**
+1. EditMode: `InviteResendTests` and `PartyInviteSystemTests` pass.
+2. P1 invites P2; on P2 dismiss or ignore the popup (or keep P2 in a loading screen). After 5 s, P1 presses Invite on
+   P2 again. Expected: P2's popup appears again, and Accept lands P2 in P1's party.
+3. P1 double-clicks Invite on P2. Expected: one popup on P2, not two; one `[INVITE-SEND]` lobby save on P1 (Party
+   log channel on).
+4. P1 invites P2; P2 does nothing for 60 s. Expected: the invite clears on P1, and `party` on P1 reads `state=InParty`,
+   not `Inviting`. Invite again: P2 gets it.
+5. P1 invites P2 and P3, cancels P2 (✕): P1 stays `Inviting`; cancel P3 too: P1 is back to `InParty`.
+6. Mixed builds (one player on a build before this change): invites still arrive both ways.
+
 ### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`claude/mp-plan-p0`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor

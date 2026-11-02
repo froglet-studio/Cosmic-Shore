@@ -109,6 +109,7 @@ namespace CosmicShore.Gameplay
         // ScanForAcceptances' OutgoingCount gate) before a distant player had finished reading
         // it. Kept in step with FriendsListPanel.partyInviteExpirationSeconds.
         private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 60f;
+        private const float INVITE_RESEND_MIN_SECONDS        = 5f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
@@ -258,6 +259,20 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         private PartyInviteData? _lastFiredInvite;
+
+        /// <summary>
+        /// The send serial (<see cref="InviteService.ParseSerial"/>) of the line behind <see cref="_lastFiredInvite"/>.
+        /// A line from the same host with a DIFFERENT serial is a re-invite: the host pressed Invite again, so it
+        /// surfaces as new even though the host and session match (multiplayer plan item 2a, 2026-11-02).
+        /// </summary>
+        private int _lastFiredInviteSerial;
+
+        /// <summary>
+        /// When this machine last put an invite line for each target on the wire. A re-click within
+        /// <see cref="INVITE_RESEND_MIN_SECONDS"/> only refreshes the timeout (a double-click must not cost a
+        /// second lobby write); a later one re-sends with a new serial so an invitee who missed it sees it again.
+        /// </summary>
+        private readonly Dictionary<string, float> _inviteSentAt = new();
 
         /// <summary>
         /// Consecutive refresh ticks on which the sender of <see cref="_lastFiredInvite"/> had no
@@ -882,11 +897,16 @@ namespace CosmicShore.Gameplay
                 throw new InvalidOperationException("Party is full.");
             }
 
-            // Idempotent re-click: just refresh the timeout, no network roundtrip.
-            if (_inviteService.Contains(targetPlayerId))
+            // A re-click on a pending invite. It used to ONLY refresh the timeout, with no network write, so an
+            // invitee who had missed the first one never saw the second (plan item 2a: the phone's first two
+            // invites, 2026-11-02). Now a re-click after INVITE_RESEND_MIN_SECONDS goes out again with a new
+            // serial, which the invitee reads as a new invite; a double-click inside that window stays local.
+            if (_inviteService.Contains(targetPlayerId) && !ShouldResendInvite(
+                    _inviteSentAt.TryGetValue(targetPlayerId, out float sentAt) ? sentAt : float.NegativeInfinity,
+                    Time.unscaledTime))
             {
                 CSDebug.LogVerbose(CSLogChannel.Party,
-                    $"[INVITE-SEND] {targetPlayerId} already pending - refreshing timeout");
+                    $"[INVITE-SEND] {targetPlayerId} sent under {INVITE_RESEND_MIN_SECONDS}s ago - refreshing timeout only");
                 _inviteService.RefreshTimeout(targetPlayerId,
                     Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 return;
@@ -953,6 +973,7 @@ namespace CosmicShore.Gameplay
                     connectionData.LocalAvatarId,
                     Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 inviteAdded = true;
+                _inviteSentAt[targetPlayerId] = Time.unscaledTime;
 
                 // First invite transitions us from InParty to Inviting.
                 // Subsequent invites to additional players are no-ops (already Inviting).
@@ -996,7 +1017,11 @@ namespace CosmicShore.Gameplay
                 if (inviteAdded)
                 {
                     _inviteService.Remove(targetPlayerId);
+                    _inviteSentAt.Remove(targetPlayerId);
                     OutgoingInviteCleared?.Invoke(targetPlayerId);
+                    // The send that failed may have been the one that moved us to Inviting (plan item 2b).
+                    if (StateAfterInviteCleared(_stateMachine.CurrentState, _inviteService.OutgoingCount) is { } back)
+                        _stateMachine.TryTransition(back);
                 }
                 throw;
             }
@@ -1717,10 +1742,10 @@ namespace CosmicShore.Gameplay
                     foreach (var p in _lobbyService.ActiveLobby.Players)
                     {
                         if (p.Id == connectionData.LocalPlayerId) continue;
-                        if (!TryFindIncomingInvite(p, out var invite)) continue;
+                        if (!TryFindIncomingInvite(p, out var invite, out int inviteSerial)) continue;
                         if (_lastFiredInvite.HasValue && _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
                             lastHostStillInviting = true;
-                        TryRaiseIncomingInvite(invite);
+                        TryRaiseIncomingInvite(invite, inviteSerial);
                     }
                     ForgetWithdrawnInvite(lastHostStillInviting);
 
@@ -1970,9 +1995,10 @@ namespace CosmicShore.Gameplay
             finally { _presenceRejoinInFlight = false; }
         }
 
-        private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite)
+        private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite, out int serial)
         {
             invite = default;
+            serial = 0;
             if (!sender.Properties.TryGetValue(INVITE_PAYLOADS_KEY, out var payloadsProp))
                 return false;
             if (payloadsProp == null || string.IsNullOrEmpty(payloadsProp.Value))
@@ -1992,6 +2018,7 @@ namespace CosmicShore.Gameplay
                 if (parsed.Value.targetId != connectionData.LocalPlayerId) continue;
 
                 invite = parsed.Value.invite;
+                serial = InviteService.ParseSerial(line);
                 return true;
             }
             return false;
@@ -2066,15 +2093,32 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private void TryRaiseIncomingInvite(PartyInviteData invite)
+        private void TryRaiseIncomingInvite(PartyInviteData invite, int serial)
         {
             // Already a client in this session - suppress re-fire.
             if (_partySessionService.ActiveSession != null &&
                 !connectionData.IsPartyHost &&
                 _partySessionService.ActiveSession.Id == invite.PartySessionId)
             {
-                _lastFiredInvite    = invite;
-                _lastInviteResolved = true;
+                _lastFiredInvite       = invite;
+                _lastFiredInviteSerial = serial;
+                _lastInviteResolved    = true;
+                return;
+            }
+
+            // The host pressed Invite again (a new send serial): surface it as new, even if the old one from the
+            // same host was declined, missed or is still showing - that is the whole point of re-inviting. Not
+            // while a join is under way: the in-session guard above answers it once the join lands.
+            bool transitioning = PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning;
+            if (IsReinvite(_lastFiredInvite.HasValue, _lastFiredInvite?.HostPlayerId, _lastFiredInviteSerial,
+                    invite.HostPlayerId, serial) && !transitioning)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[INVITE-RECV] Re-invite from '{invite.HostDisplayName}' (serial {_lastFiredInviteSerial} -> {serial})");
+                _lastFiredInvite       = invite;
+                _lastFiredInviteSerial = serial;
+                _lastInviteResolved    = false;
+                _eventBus.RaiseInviteReceived(invite);
                 return;
             }
 
@@ -2085,7 +2129,8 @@ namespace CosmicShore.Gameplay
                 _lastFiredInvite.HasValue &&
                 _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
             {
-                _lastFiredInvite = invite;
+                _lastFiredInvite       = invite;
+                _lastFiredInviteSerial = serial;
                 return;
             }
 
@@ -2097,10 +2142,33 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[INVITE-RECV] New invite from '{invite.HostDisplayName}' " +
                 $"(sessionId: {invite.PartySessionId})");
-            _lastFiredInvite    = invite;
-            _lastInviteResolved = false;
+            _lastFiredInvite       = invite;
+            _lastFiredInviteSerial = serial;
+            _lastInviteResolved    = false;
             _eventBus.RaiseInviteReceived(invite);
         }
+
+        /// <summary>
+        /// Is a re-click on a pending invite allowed to go out on the wire again? Only once
+        /// <see cref="INVITE_RESEND_MIN_SECONDS"/> have passed since the last send, so a double-click costs one write.
+        /// </summary>
+        internal static bool ShouldResendInvite(float lastSentAt, float now) => now - lastSentAt >= INVITE_RESEND_MIN_SECONDS;
+
+        /// <summary>
+        /// Is an incoming line a RE-invite of the one already surfaced: same host, and a send serial that differs?
+        /// Lines from older builds carry serial 0 and never count (they keep the old duplicate rules).
+        /// </summary>
+        internal static bool IsReinvite(bool haveLast, string lastHostId, int lastSerial, string hostId, int serial) =>
+            haveLast && serial > 0 && lastSerial > 0 && serial != lastSerial && lastHostId == hostId;
+
+        /// <summary>
+        /// The state to return to when an invite is cleared: <see cref="PartyState.InParty"/> once the LAST outgoing
+        /// invite is gone while still <see cref="PartyState.Inviting"/>, otherwise none. The state machine allowed it
+        /// ("all invites cancelled") but nothing took it, so a host whose invites all timed out stayed Inviting for
+        /// the rest of the session (plan item 2b, reproduced 2026-11-02).
+        /// </summary>
+        internal static PartyState? StateAfterInviteCleared(PartyState current, int outgoingRemaining) =>
+            current == PartyState.Inviting && outgoingRemaining == 0 ? PartyState.InParty : (PartyState?)null;
 
         private void RefreshOnlinePlayersDiff(bool serverRead)
         {
@@ -2652,7 +2720,14 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})");
+            _inviteSentAt.Remove(playerId);
             OutgoingInviteCleared?.Invoke(playerId);
+
+            if (StateAfterInviteCleared(_stateMachine.CurrentState, _inviteService.OutgoingCount) is { } back)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[INVITE-SEND] Last outgoing invite cleared ({reason}) - back to {back}");
+                _stateMachine.TryTransition(back);
+            }
 
             if (_lobbyService.ActiveLobby == null) return;
             bool needsLock = !callerHoldsLobbyMutex;

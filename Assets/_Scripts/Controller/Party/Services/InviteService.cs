@@ -21,8 +21,13 @@
 //   the sentinel since eager creation landed.
 //
 // PAYLOAD FORMAT (per invite line):
-//   targetPlayerId|localPlayerId|sessionId|localDisplayName|localAvatarId
+//   targetPlayerId|localPlayerId|sessionId|localDisplayName|localAvatarId|serial
 //   Fields are separated by '|'.  Multiple invites are joined by '\n'.
+//   serial (added 2026-11-02) numbers each SEND, so a re-invite is a new line the invitee can tell from
+//   the one it already saw: without it a re-invite to the same session read as a duplicate and the
+//   invitee never saw it (the phone's first two invites in the test of 2026-11-02). Optional on read: a
+//   5-field line from an older build is serial 0, and an older build ignores the 6th field. A Lobby
+//   player property, not a Netcode payload, so NetworkConfig.ProtocolVersion is unchanged.
 //
 // LIFETIME:
 //   Pure C# - no MonoBehaviour.  Instantiated as a field on
@@ -87,6 +92,9 @@ namespace CosmicShore.Gameplay
 
         private readonly Dictionary<string, Entry> _entries = new();
 
+        /// <summary>The serial of the last line built; each send takes the next one.</summary>
+        private int _lastSerial;
+
         // ─────────────────────────────────────────────────────────────────────
         // IInviteService - query properties
         // ─────────────────────────────────────────────────────────────────────
@@ -119,7 +127,8 @@ namespace CosmicShore.Gameplay
             int    localAvatarId,
             float  expiresAtUnscaledTime)
         {
-            string payload = BuildPayload(targetPlayerId, sessionId, localPlayerId, localDisplayName, localAvatarId);
+            // A new serial per SEND (not per refresh of the timeout): the invitee treats a new serial as a new invite.
+            string payload = BuildPayload(targetPlayerId, sessionId, localPlayerId, localDisplayName, localAvatarId, ++_lastSerial);
 
             if (_entries.TryGetValue(targetPlayerId, out var existing))
             {
@@ -215,6 +224,17 @@ namespace CosmicShore.Gameplay
         /// <c>parts[3]</c> = HostDisplayName, <c>parts[4]</c> = HostAvatarId.
         /// </summary>
         /// <param name="line">A single invite line from the composite property value.</param>
+        /// <summary>
+        /// The send serial of an invite line (its optional 6th field), or 0 for a 5-field line from an older build
+        /// or anything malformed. Read separately from <see cref="ParseLine"/>, whose shape tests reflect on.
+        /// </summary>
+        internal static int ParseSerial(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return 0;
+            var parts = line.Split(FIELD_SEPARATOR);
+            return parts.Length >= 6 && int.TryParse(parts[5], out int serial) && serial > 0 ? serial : 0;
+        }
+
         internal static (string targetId, PartyInviteData invite)? ParseLine(string line)
         {
             if (string.IsNullOrEmpty(line)) return null;
@@ -234,13 +254,15 @@ namespace CosmicShore.Gameplay
             string sessionId,
             string localPlayerId,
             string localDisplayName,
-            int    localAvatarId)
+            int    localAvatarId,
+            int    serial)
         {
             return $"{targetPlayerId}{FIELD_SEPARATOR}" +
                    $"{localPlayerId}{FIELD_SEPARATOR}" +
                    $"{sessionId}{FIELD_SEPARATOR}" +
                    $"{localDisplayName}{FIELD_SEPARATOR}" +
-                   $"{localAvatarId}";
+                   $"{localAvatarId}{FIELD_SEPARATOR}" +
+                   $"{serial}";
         }
     }
 }
