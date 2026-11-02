@@ -1,0 +1,1234 @@
+{
+    "schemaVersion": 1,
+    "reportId": "d30414216496",
+    "timestamp": "2026-11-02T10:16:10.7643371Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "HEAD",
+    "gitCommitHash": "5698447fb8",
+    "trigger": "Game launch — Random → MinigameSkimRace",
+    "loadKind": "launch",
+    "completionReason": "Loaded — arena complete (laid + grown), connecting screen done",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "MinigameSkimRace",
+    "gameMode": "SkimRace",
+    "intensity": 1,
+    "totalPlayers": 4,
+    "humanPlayers": 3,
+    "aiBackfill": 1,
+    "isMultiplayer": true,
+    "networkRole": "Client",
+    "connectedClients": 0,
+    "totalMs": 27413.318359375,
+    "visualReadyMs": 20264.09765625,
+    "waitMs": 4678.517578125,
+    "humanWaitMs": 0.0,
+    "workMs": 22734.80078125,
+    "unattributedMs": 9191.501953125,
+    "framesDuringLoad": 36,
+    "avgFpsDuringLoad": 1.313230276107788,
+    "worstFrameMs": 7160.4072265625,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 8764.6083984375,
+            "endMs": 8765.1767578125,
+            "durationMs": 0.568359375,
+            "exclusiveMs": 0.568359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Client scene load (MinigameSkimRace)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 8780.666015625,
+            "endMs": 21121.98046875,
+            "durationMs": 12341.314453125,
+            "exclusiveMs": 11288.6875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 1,
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 20069.353515625,
+            "endMs": 24906.466796875,
+            "durationMs": 4837.11328125,
+            "exclusiveMs": 3303.94140625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 2,
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 20071.853515625,
+            "endMs": 21605.025390625,
+            "durationMs": 1533.171875,
+            "exclusiveMs": 1347.443359375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Environment segment spawn (SpawnableTrack, intensity 1)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 20083.548828125,
+            "endMs": 20164.15625,
+            "durationMs": 80.607421875,
+            "exclusiveMs": 80.607421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 20184.0703125,
+            "endMs": 20186.880859375,
+            "durationMs": 2.810546875,
+            "exclusiveMs": 2.810546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 20189.09765625,
+            "endMs": 20189.712890625,
+            "durationMs": 0.615234375,
+            "exclusiveMs": 0.615234375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 20189.720703125,
+            "endMs": 20189.859375,
+            "durationMs": 0.138671875,
+            "exclusiveMs": 0.138671875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 20189.876953125,
+            "endMs": 20193.912109375,
+            "durationMs": 4.03515625,
+            "exclusiveMs": 4.03515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 20194.00390625,
+            "endMs": 20195.453125,
+            "durationMs": 1.44921875,
+            "exclusiveMs": 1.44921875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 20195.474609375,
+            "endMs": 20196.783203125,
+            "durationMs": 1.30859375,
+            "exclusiveMs": 1.30859375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 20196.80078125,
+            "endMs": 20197.8671875,
+            "durationMs": 1.06640625,
+            "exclusiveMs": 1.06640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 20197.947265625,
+            "endMs": 20197.9921875,
+            "durationMs": 0.044921875,
+            "exclusiveMs": 0.044921875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (Ian)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 20198.00390625,
+            "endMs": 20212.4296875,
+            "durationMs": 14.42578125,
+            "exclusiveMs": 14.42578125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 20212.447265625,
+            "endMs": 20222.482421875,
+            "durationMs": 10.03515625,
+            "exclusiveMs": 9.369140625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 14,
+            "depth": 4,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 20220.6953125,
+            "endMs": 20221.361328125,
+            "durationMs": 0.666015625,
+            "exclusiveMs": 0.666015625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (YashPhone)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 20222.4921875,
+            "endMs": 20238.748046875,
+            "durationMs": 16.255859375,
+            "exclusiveMs": 16.255859375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 20238.7578125,
+            "endMs": 20248.078125,
+            "durationMs": 9.3203125,
+            "exclusiveMs": 8.603515625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": 17,
+            "depth": 4,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 20246.3359375,
+            "endMs": 20247.052734375,
+            "durationMs": 0.716796875,
+            "exclusiveMs": 0.716796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 19,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 20248.0859375,
+            "endMs": 20264.09375,
+            "durationMs": 16.0078125,
+            "exclusiveMs": 16.0078125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 20,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "startMs": 21093.08984375,
+            "endMs": 21103.041015625,
+            "durationMs": 9.951171875,
+            "exclusiveMs": 9.115234375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 21,
+            "parentId": 20,
+            "depth": 4,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 21101.013671875,
+            "endMs": 21101.849609375,
+            "durationMs": 0.8359375,
+            "exclusiveMs": 0.8359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 22,
+            "parentId": 3,
+            "depth": 3,
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 21103.046875,
+            "endMs": 21120.703125,
+            "durationMs": 17.65625,
+            "exclusiveMs": 17.65625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 23,
+            "parentId": -1,
+            "depth": 0,
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "startMs": 24906.4921875,
+            "endMs": 24907.892578125,
+            "durationMs": 1.400390625,
+            "exclusiveMs": 1.400390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 24,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 24949.53125,
+            "endMs": 27043.578125,
+            "durationMs": 2094.046875,
+            "exclusiveMs": 2094.046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 11288.6875,
+            "percent": 41.17957305908203,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 9191.501953125,
+            "percent": 33.52933120727539,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 3303.94140625,
+            "percent": 12.052322387695313,
+            "spanCount": 1,
+            "waitMs": 3303.94140625
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 2179.443359375,
+            "percent": 7.950308322906494,
+            "spanCount": 5,
+            "waitMs": 0.0
+        },
+        {
+            "category": 1,
+            "name": "Netcode & Sync",
+            "attributedMs": 1374.576171875,
+            "percent": 5.014264106750488,
+            "spanCount": 5,
+            "waitMs": 1374.576171875
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 49.919921875,
+            "percent": 0.18210098147392274,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": 4,
+            "name": "AI Backfill",
+            "attributedMs": 14.42578125,
+            "percent": 0.05262325704097748,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 6.634765625,
+            "percent": 0.024202708154916765,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 2.787109375,
+            "percent": 0.01016699057072401,
+            "spanCount": 4,
+            "waitMs": 0.0
+        },
+        {
+            "category": 12,
+            "name": "Game Flow & Countdown",
+            "attributedMs": 1.400390625,
+            "percent": 0.005108431447297335,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Client scene load (MinigameSkimRace)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 12341.314453125,
+            "exclusiveMs": 11288.6875,
+            "maxSingleMs": 12341.314453125,
+            "isWait": false
+        },
+        {
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 4837.11328125,
+            "exclusiveMs": 3303.94140625,
+            "maxSingleMs": 4837.11328125,
+            "isWait": true
+        },
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 2094.046875,
+            "exclusiveMs": 2094.046875,
+            "maxSingleMs": 2094.046875,
+            "isWait": false
+        },
+        {
+            "label": "Roster pull retry wait (client, 1500ms)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 1,
+            "totalMs": 1533.171875,
+            "exclusiveMs": 1347.443359375,
+            "maxSingleMs": 1533.171875,
+            "isWait": true
+        },
+        {
+            "label": "Environment segment spawn (SpawnableTrack, intensity 1)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 80.607421875,
+            "exclusiveMs": 80.607421875,
+            "maxSingleMs": 80.607421875,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (ys1)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 2,
+            "totalMs": 33.6640625,
+            "exclusiveMs": 33.6640625,
+            "maxSingleMs": 17.65625,
+            "isWait": false
+        },
+        {
+            "label": "Waiting for player/vessel NetworkObjects to replicate (pending pairs)",
+            "category": 1,
+            "categoryName": "Netcode & Sync",
+            "count": 4,
+            "totalMs": 29.3515625,
+            "exclusiveMs": 27.1328125,
+            "maxSingleMs": 10.03515625,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (YashPhone)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 16.255859375,
+            "exclusiveMs": 16.255859375,
+            "maxSingleMs": 16.255859375,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Ian)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 14.42578125,
+            "exclusiveMs": 14.42578125,
+            "maxSingleMs": 14.42578125,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (SkimRaceRingCrystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 4,
+            "totalMs": 6.634765625,
+            "exclusiveMs": 6.634765625,
+            "maxSingleMs": 2.810546875,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 4.03515625,
+            "exclusiveMs": 4.03515625,
+            "maxSingleMs": 4.03515625,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 4,
+            "totalMs": 2.787109375,
+            "exclusiveMs": 2.787109375,
+            "maxSingleMs": 0.8359375,
+            "isWait": false
+        },
+        {
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "count": 1,
+            "totalMs": 1.400390625,
+            "exclusiveMs": 1.400390625,
+            "maxSingleMs": 1.400390625,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.615234375,
+            "exclusiveMs": 0.615234375,
+            "maxSingleMs": 0.615234375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.138671875,
+            "exclusiveMs": 0.138671875,
+            "maxSingleMs": 0.138671875,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 24950.734375,
+            "durationMs": 7160.4072265625,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        },
+        {
+            "atMs": 15619.7548828125,
+            "durationMs": 2722.828857421875,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 3659.174560546875,
+            "durationMs": 2051.12548828125,
+            "during": "—"
+        },
+        {
+            "atMs": 5700.896484375,
+            "durationMs": 1655.32177734375,
+            "during": "—"
+        },
+        {
+            "atMs": 25394.185546875,
+            "durationMs": 753.3602294921875,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 12895.943359375,
+            "durationMs": 722.5391235351563,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 576.1691284179688,
+            "durationMs": 595.7628784179688,
+            "during": "—"
+        },
+        {
+            "atMs": 1610.5216064453125,
+            "durationMs": 580.8803100585938,
+            "during": "—"
+        },
+        {
+            "atMs": 8786.791015625,
+            "durationMs": 542.1875610351563,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 12173.9306640625,
+            "durationMs": 534.1768798828125,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 9218.65234375,
+            "durationMs": 531.4821166992188,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 21605.31640625,
+            "durationMs": 487.4950866699219,
+            "during": "Roster pull retry wait (client, 1500ms)"
+        },
+        {
+            "atMs": 51.15119934082031,
+            "durationMs": 484.5787048339844,
+            "during": "—"
+        },
+        {
+            "atMs": 16538.05078125,
+            "durationMs": 461.956298828125,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 16994.28125,
+            "durationMs": 461.6943054199219,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 16075.09375,
+            "durationMs": 455.7590026855469,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 1029.896240234375,
+            "durationMs": 452.8332824707031,
+            "during": "—"
+        },
+        {
+            "atMs": 6534.3818359375,
+            "durationMs": 416.7908935546875,
+            "during": "—"
+        },
+        {
+            "atMs": 6117.33984375,
+            "durationMs": 416.5486145019531,
+            "during": "—"
+        },
+        {
+            "atMs": 10834.45703125,
+            "durationMs": 415.5423889160156,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 8140.12451171875,
+            "durationMs": 411.16351318359377,
+            "during": "—"
+        },
+        {
+            "atMs": 11240.8740234375,
+            "durationMs": 409.3952941894531,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 7729.5,
+            "durationMs": 407.4766845703125,
+            "during": "—"
+        },
+        {
+            "atMs": 10415.208984375,
+            "durationMs": 400.5625,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 10015.0048828125,
+            "durationMs": 400.26629638671877,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 11638.4765625,
+            "durationMs": 398.55859375,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 9615.21875,
+            "durationMs": 396.3525085449219,
+            "during": "Client scene load (MinigameSkimRace)"
+        },
+        {
+            "atMs": 6927.748046875,
+            "durationMs": 393.7532958984375,
+            "during": "—"
+        },
+        {
+            "atMs": 7321.58203125,
+            "durationMs": 392.9197998046875,
+            "during": "—"
+        },
+        {
+            "atMs": 4047.41357421875,
+            "durationMs": 388.4007873535156,
+            "during": "—"
+        },
+        {
+            "atMs": 27413.30859375,
+            "durationMs": 367.44927978515627,
+            "during": "—"
+        },
+        {
+            "atMs": 26380.212890625,
+            "durationMs": 366.9444885253906,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 27080.61328125,
+            "durationMs": 348.5476989746094,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 26694.986328125,
+            "durationMs": 316.2239990234375,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 25711.02734375,
+            "durationMs": 309.1745910644531,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 26014.115234375,
+            "durationMs": 308.6859130859375,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Game launch — Random → MinigameSkimRace"
+        },
+        {
+            "atMs": 3.6635000705718996,
+            "label": "SceneLoader deferred scene load to server (client waits for Netcode scene pull)"
+        },
+        {
+            "atMs": 8780.658203125,
+            "label": "Netcode scene load begins: MinigameSkimRace"
+        },
+        {
+            "atMs": 19950.037109375,
+            "label": "Unity scene loaded: MinigameSkimRace (Single)"
+        },
+        {
+            "atMs": 20010.38671875,
+            "label": "Game controller spawned (SkimRaceController, IsServer=False)"
+        },
+        {
+            "atMs": 20076.4140625,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 20193.978515625,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        },
+        {
+            "atMs": 20264.09765625,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 21120.712890625,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 21121.978515625,
+            "label": "Netcode scene load complete: MinigameSkimRace (client 1)"
+        },
+        {
+            "atMs": 21268.189453125,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 24903.73046875,
+            "label": "Game config received from server"
+        },
+        {
+            "atMs": 24903.8046875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 24904.287109375,
+            "label": "Connecting panel shown (holding for arena build)"
+        },
+        {
+            "atMs": 24905.7734375,
+            "label": "Netcode scene load completed on ALL clients: MinigameSkimRace"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 40
+        },
+        {
+            "name": "Environment segments spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 4
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 360
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 426,
+            "totalMs": 43.89670181274414,
+            "maxSingleMs": 0.33980000019073489
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 0.016880599781870843,
+            "type": "Error",
+            "message": "[FmodSafe] CreateInstance failed for '{69d21aaf-4e71-4ba8-945a-2728d4c7fe1e} (event:/SFX/Oneshots/Menu/Close View)' (EventNotFoundException: [FMOD] Event not found: {69d21aaf-4e71-4ba8-945a-2728d4c7fe1e} (event:/SFX/Ones…"
+        },
+        {
+            "timeSeconds": 0.2939184010028839,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 0.7258352041244507,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 1.2238926887512208,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 1.753372311592102,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 3.787635326385498,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 4.189127445220947,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 5.82844352722168,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 6.271334648132324,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 6.661097049713135,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 7.067481994628906,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 7.4549336433410648,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 7.862493991851807,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 8.275341987609864,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 8.93285846710205,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 9.356742858886719,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 9.747824668884278,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 10.142762184143067,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 10.550286293029786,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 10.978361129760743,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 11.370817184448243,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 11.765568733215332,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 12.446695327758789,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 13.142138481140137,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 15.7666654586792,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 16.22686004638672,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 16.691375732421876,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 17.162973403930665,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 17.917247772216798,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 17.938961029052736,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.3216609954834,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.32587432861328,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.40675926208496,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.408546447753908,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.4118595123291,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.41478729248047,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.417377471923829,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.41936683654785,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 18.462539672851564,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)"
+        },
+        {
+            "timeSeconds": 21.28579330444336,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 21.287599563598634,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 21.28907012939453,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 21.290756225585939,
+            "type": "Exception",
+            "message": "EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)"
+        },
+        {
+            "timeSeconds": 21.843875885009767,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 25.206666946411134,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 25.546817779541017,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 25.871620178222658,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 26.156639099121095,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 26.528493881225587,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 26.828962326049806,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        },
+        {
+            "timeSeconds": 27.234649658203126,
+            "type": "Assert",
+            "message": "TLS Allocator ALLOC_TEMP_TLS, underlying allocator ALLOC_TEMP_MAIN has unfreed allocations, size 325799"
+        }
+    ],
+    "hints": [
+        {
+            "id": "load-long",
+            "severity": 1,
+            "title": "Long load",
+            "finding": "This load took 27.4s.",
+            "fixAdvice": "Aim for <10s: trim the top slices below.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "3.3s (12%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 7.2s during \"InitDelayMs gate before InitializeGame (1000ms)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "51 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
