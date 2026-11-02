@@ -266,7 +266,7 @@ namespace CosmicShore.UI
                 {
                     t.font = template.font;
                     t.fontSharedMaterial = template.fontSharedMaterial;
-                    t.fontSize = template.fontSize * 0.55f;
+                    t.fontSize = VoyageMapText.Caption;
                     t.color = template.color;
                 }
                 t.textWrappingMode = TextWrappingModes.NoWrap;
@@ -277,7 +277,7 @@ namespace CosmicShore.UI
                 rt.anchorMin = new Vector2(0f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(0f, 1f);
-                rt.sizeDelta = new Vector2(-GaugeWidth - 12f, 20f);
+                rt.sizeDelta = new Vector2(-GaugeWidth - 12f, VoyageMapText.Caption * 1.4f);
                 rt.anchoredPosition = new Vector2(GaugeWidth + 6f, -4f);
                 _caption = t;
             }

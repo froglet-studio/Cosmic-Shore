@@ -386,7 +386,7 @@ namespace CosmicShore.UI
             if (_captionText && _captionText.gameObject.activeSelf)
             {
                 var r = rectTransform.rect;
-                boxes.Add(new Rect(r.xMin, r.yMin, r.width, 24f + InsetMargin));
+                boxes.Add(new Rect(r.xMin, r.yMin, r.width, VoyageMapText.Caption * 1.4f + InsetMargin));
             }
             foreach (var t in _labels)
             {
@@ -394,7 +394,7 @@ namespace CosmicShore.UI
                 var rt = (RectTransform)t.transform;
                 var p = rt.anchoredPosition + rectTransform.rect.center;
                 // A place's name is centred under its marker, at the top of its box.
-                float w = Mathf.Max(24f, t.text.Length * t.fontSize * .55f), h = rt.sizeDelta.y;
+                float w = Mathf.Max(24f, t.text.Length * t.fontSize * .58f), h = rt.sizeDelta.y;
                 boxes.Add(new Rect(p.x - w * .5f, p.y - h * .5f, w, h));
             }
         }
@@ -708,7 +708,7 @@ namespace CosmicShore.UI
 
         // ── Labels: each location's own name, and the course line ─────────────
 
-        TextMeshProUGUI NewText(string name, float sizeShare)
+        TextMeshProUGUI NewText(string name, float size)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(transform, false);
@@ -717,9 +717,11 @@ namespace CosmicShore.UI
             {
                 t.font = _labelTemplate.font;
                 t.fontSharedMaterial = _labelTemplate.fontSharedMaterial;
-                t.fontSize = _labelTemplate.fontSize * sizeShare;
                 t.color = _labelTemplate.color;
             }
+            // A size of its own, not the template's: the card eyebrow it copies is 14 px, which a share of made
+            // unreadable on the map (Garrett, 2026-11-02: "words should be readable at all semantic zoom levels").
+            t.fontSize = size;
             t.textWrappingMode = TextWrappingModes.NoWrap;
             t.raycastTarget = false;
             return t;
@@ -734,9 +736,10 @@ namespace CosmicShore.UI
                     if (child.name == LabelName && child.TryGetComponent(out TMP_Text existing)) _labels.Add(existing);
             while (_labels.Count < n)
             {
-                var t = NewText(LabelName, 0.6f);
+                var t = NewText(LabelName, VoyageMapText.Place);
                 t.alignment = TextAlignmentOptions.Top;
-                ((RectTransform)t.transform).sizeDelta = new Vector2(160f, 24f);
+                t.fontStyle = FontStyles.Bold;
+                ((RectTransform)t.transform).sizeDelta = new Vector2(260f, VoyageMapText.Place * 1.4f);
                 _labels.Add(t);
             }
 
@@ -768,6 +771,7 @@ namespace CosmicShore.UI
             {
                 var l = i < n ? _content.Locations[i] : null;
                 _labels[i].gameObject.SetActive(_labelShown[i]);
+                _labels[i].fontSize = VoyageMapText.Place;
                 if (_labelShown[i]) _labels[i].text = l.Name;
             }
         }
@@ -783,13 +787,13 @@ namespace CosmicShore.UI
             if (!_captionText && !show) return;
             if (!_captionText)
             {
-                _captionText = NewText(CaptionName, 0.55f);
+                _captionText = NewText(CaptionName, VoyageMapText.Caption);
                 _captionText.alignment = TextAlignmentOptions.BottomLeft;
                 var rt = (RectTransform)_captionText.transform;
                 rt.anchorMin = new Vector2(0f, 0f);
                 rt.anchorMax = new Vector2(1f, 0f);
                 rt.pivot = new Vector2(0f, 0f);
-                rt.sizeDelta = new Vector2(-2f * InsetMargin, 24f);
+                rt.sizeDelta = new Vector2(-2f * InsetMargin, VoyageMapText.Caption * 1.4f);
                 rt.anchoredPosition = new Vector2(InsetMargin, InsetMargin);
             }
             _captionText.gameObject.SetActive(show);
@@ -806,7 +810,8 @@ namespace CosmicShore.UI
                 var at = At(l);
                 _labels[i].gameObject.SetActive(i < _labelShown.Count && _labelShown[i] && InFrame(at));
                 ((RectTransform)_labels[i].transform).anchoredPosition =
-                    at - rectTransform.rect.center + new Vector2(0f, -MarkerSize);
+                    at - rectTransform.rect.center +
+                    new Vector2(0f, -MarkerSize * .5f - 2f - ((RectTransform)_labels[i].transform).sizeDelta.y * .5f);
             }
         }
     }
