@@ -176,6 +176,22 @@ def hub_end_to_end(tmp, work, remote, script, env0):
         # console at once (its owner allowed remote starts), and stops a run when it is stopped from the console.
         if call("/api/requests")[0] != 401 or call("/api/cancel", {"id": good["id"]}, "wrong")[0] != 401:
             bad.append("hub: the runs list or a stop answered without the team key")
+        # The one team link: /install?key=... picks the installer from the browser's operating system; no key, no file.
+        def fetch(path, ua):
+            r = urllib.request.Request(base + path, headers={"User-Agent": ua})
+            try:
+                with urllib.request.urlopen(r, timeout=30) as resp:
+                    return resp.status, resp.headers.get("Content-Disposition", ""), resp.read().decode()
+            except urllib.error.HTTPError as e:
+                return e.code, "", ""
+        if fetch("/install", "Mozilla/5.0 (Windows NT 10.0)")[0] != 401:
+            bad.append("hub: the team link handed out an installer without the team key")
+        st, disp, text = fetch("/install?key=" + (key or ""), "Mozilla/5.0 (Windows NT 10.0; Win64)")
+        if st != 200 or "setup.bat" not in disp or "--gui" not in text or (key or "x") not in text:
+            bad.append(f"hub: the team link on Windows did not give the Windows installer ({st} {disp})")
+        st, disp, text = fetch("/install?key=" + (key or ""), "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)")
+        if st != 200 or "setup.sh" not in disp:
+            bad.append(f"hub: the team link on a Mac did not give the Mac installer ({st} {disp})")
         listed = [r["id"] for r in (call("/api/requests", None, key)[1] or {}).get("requests", [])] if key else []
         ahome = os.path.join(tmp, "cache-agent")
         os.makedirs(ahome, exist_ok=True)

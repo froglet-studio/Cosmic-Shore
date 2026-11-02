@@ -206,7 +206,8 @@ namespace CosmicShore.Data
 
         static readonly double BarC = Math.Cos(-27 * Deg), BarS = Math.Sin(-27 * Deg);
 
-        static double Bar(double x, double y)
+        /// <summary>How deep in the central bar (x, y) lies, 0 to 1.</summary>
+        public static double Bar(double x, double y)
         {
             double u = x * BarC - y * BarS, v = x * BarS + y * BarC;
             return Math.Exp(-Math.Pow(v / 12500, 4) - (u / 3000) * (u / 3000));

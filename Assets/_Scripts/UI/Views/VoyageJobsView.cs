@@ -256,6 +256,7 @@ namespace CosmicShore.UI
             var map = EnsureMap();
             if (!map) return;
             ShowMap(true);
+            map.SetLines(lines);
             map.Show(content, style, here, route, caption, focus: route != null);
             var edge = EnsureEdge();
             bool charted = map.Chart != null;

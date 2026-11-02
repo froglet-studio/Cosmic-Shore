@@ -112,6 +112,38 @@ embeds the catalogue. `deepzoom/build_data.py <downloads> realsky.json` rebuilds
 - Gaia DR3 is CC BY-NC 3.0 IGO, not usable in a paid game without ESA's terms; nothing here uses it.
 - NASA Exoplanet Archive (not used yet): acknowledgement only.
 
+## 4b. Deep zoom in the game (2026-11-02)
+
+Garrett, 2026-11-02: "i was expecting to be able to browse the vicinity and preserve all the ability to zoom into the
+points of interest etc. but when i zoomed in on bleeding edge it had none of the detail i saw in the artifact." The
+Voyage window's map now zooms as the board does: from the whole galaxy (140,000 ly) down to a 4 ly star system.
+
+- **`HyperSeaSky`** (`Assets/_Scripts/Data/Voyages/HyperSeaSky.cs`): `deepzoom.js` ported line for line in doubles: the
+  quadtree, the luminosity function, the star column, star colours, the model's stars per tile from the board's own
+  seeds (mulberry32, bit for bit), Tumult's invented names, the seven tiers, the view state (`Lcut`, the height slab and
+  the height it slices at) and the opacity, size and label rules. **`HyperSeaSkyCatalog`** reads the sky table a slice
+  per frame; **`HyperSeaSkyField`** collects what a view draws, making at most 3 new tiles a frame and keeping 600.
+- **The sky table** (`Assets/Resources/Voyages/HyperSeaSky.txt`, 4.7 MB, plain tab-separated text): the board's 97,293
+  catalogue stars, 5,799 clusters and 48 landmarks with the drawing level the board gives each, the kinds of place and
+  the syllables of Tumult's names. Written by `node Docs/Voyages/VoyageBoard/export_sky.js` (`--check` is the drift
+  gate), which runs the board's own model and `deepzoom.js`, so the place filter and the famous cluster names are the
+  board's. Greek letters are spelled out ("Tau Ori") and the middle dot becomes a dash, for the game's fonts. The table
+  is adapted from HYG and so stays CC BY-SA 4.0: it ships as a plain text asset (no DRM on it) and carries the credit in
+  its header and in every catalogue star's card.
+- **`VoyageMapSky`** (`Assets/_Scripts/UI/Views/VoyageMapSky.cs`), owned by `VoyageMapGraphic`: the stars (glow over
+  3.2 levels deep), globular clusters as warm glows, open clusters as dashed rings, the landmarks the content does not
+  already draw, up to 48 names placed most important first without overlapping, the ladder (the seven tiers, then SOL
+  and TUMULT dives with the board's flight: log-width easing, the centre moving with one over the width on a long
+  zoom), the readout (`{tier}: {what} - {width} across`, plus the slice from Neighbourhood down) and the card a tapped
+  star, cluster or landmark opens (what it is, its line, its source tag, its height and distances from Sol, Tumult and
+  the squad, and the minutes by Ark). A tapped voyage place still opens its voyage. The edge view stands the stars and
+  landmarks at their heights.
+- Every word is authored: the `Map*` lines of `VoyageLines` (`voyage_slice.json` `hud`, written by
+  `author_voyage_assets.py`); star and cluster names, landmark lines and kind labels are the table's.
+- **Goldens:** `node Docs/Voyages/VoyageBoard/sky_golden.js` prints what `HyperSeaSkyTests` holds (the luminosity
+  function, the column, colours, seven tiles star by star, five views).
+- Not ported: lanes by heading and the course profile (§5 decision 9, pending), crew's-eye units, pre-cut tiles on R2.
+
 ## 5. Open decisions (Garrett)
 
 1. Tumult 2,300 ly from the galactic centre toward Sol (23,900 ly from Sol).

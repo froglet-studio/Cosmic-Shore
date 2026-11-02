@@ -441,3 +441,59 @@ MonoBehaviour:
     EdgeAbove: '{ly} LY ABOVE THE MIDPLANE'
     EdgeBelow: '{ly} LY BELOW THE MIDPLANE'
     EdgeMidplane: ON THE MIDPLANE
+    MapTierGalaxy: GALAXY
+    MapTierArm: ARM
+    MapTierSector: SECTOR
+    MapTierRegion: REGION
+    MapTierNeighbourhood: NEIGHBOURHOOD
+    MapTierCell: CELL
+    MapTierSystem: SYSTEM
+    MapTierGalaxyWhat: arms, bulge, the halo's globular clusters
+    MapTierArmWhat: giant nurseries, the brightest supergiants
+    MapTierSectorWhat: star clusters and the brightest stars
+    MapTierRegionWhat: clusters, clouds and the stars you see by eye
+    MapTierNeighbourhoodWhat: a slab of nearby stars around one height
+    MapTierCellWhat: one 20 ly cell and the stars inside it
+    MapTierSystemWhat: single star systems a few ly apart
+    MapDiveSol: SOL
+    MapDiveTumult: TUMULT
+    MapReadout: '{tier}: {what} - {width} across{slab}'
+    MapReadoutSlab: ' - a slice {thick} either side of {height}'
+    MapLy: '{ly} ly'
+    MapAbove: '{ly} above the midplane'
+    MapBelow: '{ly} below the midplane'
+    MapMidplane: on the midplane
+    MapInspect: '<size=80%>{kind}</size><br><b>{name}</b><br>{body} <size=80%>[{source}]</size><br><size=80%>{where}</size>'
+    MapWhere: '{height} - {sol} from Sol - {tumult} from Tumult - {here} from your squad, {time} by Ark in a straight line'
+    MapMinutes: '{n} min'
+    MapHours: '{n} h'
+    MapKindStar: Star
+    MapKindModelStar: Star, from the galaxy model
+    MapKindTumultStar: Star, as Tumult's crews chart it
+    MapKindGlobular: Globular cluster
+    MapKindOpen: Open cluster
+    MapUnnamedStar: Unnamed star
+    MapUnchartedStar: Uncharted star
+    MapStarBody: 'A {type}, {light} the Sun''s light (absolute magnitude {mag}).{also}'
+    MapStarAlso: ' Also {desig}.'
+    MapLight: '{x}x'
+    MapTypeOB: blue-white giant
+    MapTypeB: blue-white star
+    MapTypeA: white star
+    MapTypeF: yellow-white star
+    MapTypeG: yellow star like the Sun
+    MapTypeK: orange star
+    MapTypeM: red star
+    MapTypeRedSupergiant: red supergiant
+    MapTypeGiant: giant
+    MapGlobularBody: 'A ball of hundreds of thousands of old stars orbiting through the halo, about {light} the Sun''s light.'
+    MapOpenBody: '{members} member stars{age}.'
+    MapOpenBodyYoung: 'A young star cluster{age}.'
+    MapOpenAge: ', about {age} years old'
+    MapAgeBillion: '{n} billion'
+    MapAgeMillion: '{n} million'
+    MapSourceCatalog: 'S - {source}'
+    MapSourceModel: M - drawn from the galaxy model, not a catalog star
+    MapSourceTumult: 'A - invented name; the star is drawn from the model'
+    MapSourceReal: S - real
+    MapSourceProposed: A - proposed
