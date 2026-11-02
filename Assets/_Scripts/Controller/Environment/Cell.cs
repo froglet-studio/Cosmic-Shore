@@ -645,12 +645,14 @@ namespace CosmicShore.Gameplay
         public bool HasFaunaPen => FaunaContainmentRadius > 0f || FaunaExclusionRadius > 0f || _faunaCorridor.IsActive;
 
         /// <summary>
-        /// Sets the path corridor (<paramref name="radius"/> 0 or an empty path clears it) and re-steers every live
-        /// creature through the clamped <see cref="Fauna.Goal"/> setter, so fauna already in the cell leave the path.
+        /// Sets the path corridor (<paramref name="radius"/> 0 or an empty path clears it), takes the mass inside it out of
+        /// the targeting grids (<see cref="IsTargetable"/>), and re-steers every live creature through the clamped
+        /// <see cref="Fauna.Goal"/> setter, so fauna already in the cell leave the path.
         /// </summary>
-        public void SetFaunaPathCorridor(IReadOnlyList<Vector3> path, float radius, bool closed)
+        public void SetFaunaPathCorridor(IReadOnlyList<Vector3> path, float radius, bool closed, float goalStandoff = 0f)
         {
-            _faunaCorridor.Set(path, radius, closed);
+            _faunaCorridor.Set(path, radius, closed, goalStandoff);
+            RefileForCorridor();
             for (int i = 0; i < liveFauna.Count; i++)
             {
                 var f = liveFauna[i];
@@ -658,7 +660,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public void ClearFaunaPathCorridor() => _faunaCorridor.Clear();
+        public void ClearFaunaPathCorridor()
+        {
+            if (!_faunaCorridor.IsActive) return;
+            _faunaCorridor.Clear();
+            RefileForCorridor();
+        }
 
         /// <summary>
         /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
@@ -3498,7 +3505,7 @@ namespace CosmicShore.Gameplay
                     // grid writes — it is the same instant, and the read is a
                     // managed→engine interop on the per-prism creation path.
                     Vector3 blockPosition = block.transform.position;
-                    if (!IsInsideNucleus(blockPosition) && !IsInedibleShield(block))
+                    if (IsTargetable(block, blockPosition))
                     {
                         gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
@@ -3589,11 +3596,42 @@ namespace CosmicShore.Gameplay
         {
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
 
-            bool shouldBeGridTracked = !IsInedibleShield(block) && !IsInsideNucleus(block.transform.position);
+            bool shouldBeGridTracked = IsTargetable(block, block.transform.position);
             if (shouldBeGridTracked == gridTracked.ContainsKey(block)) return;
 
             RemoveBlock(block);
             AddBlock(block);
+        }
+
+        /// <summary>
+        /// Whether a tracked prism at <paramref name="position"/> belongs in the TARGETING grids (the density centroids every
+        /// creature's goal is read from): mass a creature can eat there. Nucleus-interior mass (the territorial claim), an
+        /// inedible shield and mass inside the path corridor (<see cref="FaunaPathCorridor"/>: "mass inside it is not prey")
+        /// stay out, so the centroids never steer a swarm onto mass it may not eat. Before the corridor rule, Switchback's
+        /// race trail was the densest mass in the cell, every forager's goal sat on the path, the corridor pushed it to its
+        /// wall, and the PC playtest of 2026-11-02 found the boids piled 207-222 u from the path (radius 220) and every
+        /// creature within 256 u of it.
+        /// </summary>
+        bool IsTargetable(Prism block, Vector3 position) =>
+            !IsInsideNucleus(position) && !IsInedibleShield(block) && !_faunaCorridor.Contains(position);
+
+        /// <summary>Re-files every tracked prism whose targeting classification changed (the corridor moved, appeared or
+        /// went): out of the grids if it is now in the tube, back in if the tube left it.</summary>
+        void RefileForCorridor()
+        {
+            _shieldRefile.Clear();
+            foreach (var kv in trackedBlocks)
+            {
+                var block = kv.Key;
+                if (!block) continue;
+                if (IsTargetable(block, block.transform.position) != gridTracked.ContainsKey(block)) _shieldRefile.Add(block);
+            }
+            for (int i = 0; i < _shieldRefile.Count; i++)
+            {
+                RemoveBlock(_shieldRefile[i]);
+                AddBlock(_shieldRefile[i]);
+            }
+            _shieldRefile.Clear();
         }
 
         /// <summary>

@@ -65,6 +65,16 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback fauna corridor: corridor mass out of the targeting grids, goals parked past the wall (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `Cell.IsTargetable` / `RefileForCorridor`, `FaunaCorridor.GoalStandoff`, `SwitchbackController.faunaCorridorGoalStandoff` (50 u).
+Docs/ECOSYSTEM.md section 67. Verified offline only (refcompile player + editor).
+
+1. EditMode: `FaunaCorridorTests` (incl. `PushOut_WithAStandoff_ParksPastTheWall`). **Pass:** all green.
+2. Switchback I4, 3 AI, full race; look from above (Third Eye Free camera). **Pass:** no fauna within 220 u of the path; the
+   flocks spread through the cell away from the course instead of lining the corridor's wall at ~220 u.
+3. Any other mode (lava lamp, Regatta). **Pass:** fauna behave as before (no corridor there, nothing re-filed).
+
 ### 🔴 Charge light: one crystal's strikes no longer take a whole frame (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `ChargeArcs.StrikeAlong` measures a Mass column only against the strand pieces that can reach it (exact),
