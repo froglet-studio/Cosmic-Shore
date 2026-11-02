@@ -47,26 +47,59 @@ MAX_BODY = 256 * 1024
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+def installer_for(user_agent):
+    """The installer file a browser gets from the ONE team link (`/install?key=...`): picked from its User-Agent, so one
+    link in one email serves every computer (Shombith, 2026-11-01: "one link for everybody")."""
+    ua = (user_agent or "").lower()
+    if "windows" in ua:
+        return "windows.bat"
+    if "mac os" in ua or "macintosh" in ua or "darwin" in ua:
+        return "mac.sh"
+    return "linux.sh"
+
+
 def installer(name, url, key, flags):
     """(text, content type, file name) of the double-click installer for `name` (windows | mac | linux), or (None, ..)."""
     import setup
-    ref = setup.APP_REF if L.git_ok("cat-file", "-e", "origin/bleeding-edge:Tools/Compute/setup.py") is None else "bleeding-edge"
+    def stamp(r):
+        if L.git_ok("cat-file", "-e", f"origin/{r}:Tools/Compute/compute.py") is None:
+            return None
+        out = (L.git_ok("log", "-1", "--format=%ct", f"origin/{r}", "--", "Tools/Compute") or "").strip()
+        return int(out) if out.isdigit() else 0
+    ref = setup.newest_compute_ref(stamp) or setup.APP_REF          # the newest Tools/Compute wins (setup.py)
     opts = " ".join([f"--hub {url}", f"--hub-key {key}", *flags])
     if name == "setup.py":
         with open(os.path.join(HERE, "setup.py"), encoding="utf-8") as fh:
             return fh.read(), "text/x-python", "froglet-compute-setup.py"
+    if name in ("setup-banner.png", "cosmicshore.png"):          # the setup window's art (the card art, the wordmark)
+        with open(os.path.join(HERE, "console", "stills", name), "rb") as fh:
+            return fh.read(), "image/png", name
     if name == "windows.bat":
         # The window does the rest: it finds the Cosmic-Shore folder (or Browse), asks the schedule, installs, starts the tray.
+        # Every step says what it did, and a failure keeps the window open (Shombith, 2026-11-02: "something opens
+        # and closes"): the console checks Python, git and tkinter with `--gui-check` before the window starts.
         text = "\r\n".join([
             "@echo off", "setlocal",
-            "where python >nul 2>&1 || (echo Python is not installed. Install Python 3 from python.org (tick \"Add to PATH\"), then run this again. & pause & exit /b 1)",
-            "where git >nul 2>&1 || (echo Git is not installed. Install Git for Windows, then run this again. & pause & exit /b 1)",
+            "title Froglet Compute Setup",
+            'set "DIR=%USERPROFILE%\\.froglet-compute"', 'if not exist "%DIR%" mkdir "%DIR%"',
+            'set "LOG=%DIR%\\setup-bat.log"',
+            'echo [%DATE% %TIME%] Froglet Compute setup started > "%LOG%"',
+            "echo Froglet Compute: checking this PC...",
+            "where python >nul 2>&1 || (echo. & echo Python is not installed. Install Python 3 from python.org and tick \"Add python.exe to PATH\", then run this file again. & pause & exit /b 1)",
+            "where git >nul 2>&1 || (echo. & echo Git is not installed. Install Git for Windows, then run this file again. & pause & exit /b 1)",
             'set "SETUP=%TEMP%\\froglet-compute-setup.py"',
-            f'curl -fsSL "{url}/install/setup.py?key={key}" -o "%SETUP%" || (echo Could not reach the console at {url}. & pause & exit /b 1)',
+            f'curl -fsSL "{url}/install/setup.py?key={key}" -o "%SETUP%" || (echo. & echo Could not download the setup from {url} - is this PC online? & pause & exit /b 1)',
             'for /f "delims=" %%p in (\'where python\') do (set "PY=%%p" & goto :found)',
             ":found",
-            'set "PYW=%PY:python.exe=pythonw.exe%"',
-            f'if exist "%PYW%" (start "" "%PYW%" "%SETUP%" --gui {opts}) else (start "" "%PY%" "%SETUP%" --gui {opts})',
+            'echo python: %PY% >> "%LOG%"',
+            '"%PY%" --version >> "%LOG%" 2>&1',
+            '"%PY%" "%SETUP%" --gui-check >> "%LOG%" 2>&1 || (echo. & type "%LOG%" & echo. & echo The setup window cannot open on this PC: the reason is above. Send a photo of this window to Claude. & pause & exit /b 1)',
+            "echo Opening the setup window...",
+            # Under the console python, not pythonw, with everything it prints kept in the log: the window hides
+            # this console once it is up; if it never says it opened, this window stays with the whole transcript.
+            f'"%PY%" "%SETUP%" --gui {opts} >> "%LOG%" 2>&1',
+            'echo exit code %ERRORLEVEL% >> "%LOG%"',
+            'findstr /c:"the setup window opened" "%LOG%" >nul || (echo. & type "%LOG%" & echo. & echo The setup window never opened. Everything above is also in %LOG%. Send a photo of this window to Claude. & pause & exit /b 1)',
             "exit /b 0", ""])
         return text, "application/x-bat", "froglet-compute-setup.bat"
     if name == "windows-plain.bat":
@@ -94,7 +127,7 @@ def installer(name, url, key, flags):
         return text, "text/x-shellscript", "froglet-compute-setup.sh"
     return None, None, None
 AI_SYNC_EVERY = 3600                 # seconds between the VM's ai-branch syncs
-CODE_CHECK_EVERY = 600               # seconds between the VM's looks for newer code on its branch
+CODE_CHECK_EVERY = 60                # seconds between the VM's looks for newer code on its branch (a fetch is cheap; "why wait 10 mins", Shombith 2026-11-02)
 
 
 class Hub:
@@ -112,6 +145,8 @@ class Hub:
         self.ai_sync, self.ai_sync_at = None, 0.0        # the hourly ai-branch sync (the VM only): its last result
         self.updates = {}                                # Update AI: vessel -> {state, by, note, at} (archive_update.py)
         self.code_check_at = time.time()                 # the VM's self-restart on newer code (restart_if_code_moved)
+        self.code_tree = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() if not app else ""   # the code this hub RUNS
+        self.code_update = None                          # the last look for newer code: {at, note} when it could not
         self.leaving = set()                             # computers the console removed: their next heartbeat is told to leave
         self.forgets = {}                                # Remove / Delete: machine or request id -> {state, note, at}
 
@@ -161,24 +196,30 @@ class Hub:
             time.sleep(self.rebuild)
 
     def restart_if_code_moved(self):
-        """The VM: when the checkout's upstream branch has newer Tools/Compute, pull it and exit; systemd restarts the
-        hub on the new code within seconds (Restart=always). Nobody types a restart (Shombith, 2026-11-01)."""
+        """The VM: when the checkout's upstream branch has newer Tools/Compute, pull it; and whenever the checkout's
+        Tools/Compute is no longer the one this hub loaded (it pulled, or the VM's worker pulled first: Shombith,
+        2026-11-02, the hub sat on old code while the checkout was current), exit; systemd restarts the hub on the
+        new code within seconds (Restart=always). Nobody types a restart (Shombith, 2026-11-01)."""
         try:
             up = (L.git_ok("rev-parse", "--abbrev-ref", "@{u}") or "").strip()
             if not up.startswith("origin/"):
                 return
             ref = up[len("origin/"):]
             L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
-            mine = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
+            head = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
             theirs = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
-            if not mine or not theirs or mine == theirs:
+            if theirs and head != theirs:
+                if L.git_ok("pull", "--ff-only", "--quiet") is None:
+                    self.code_update = {"at": L.now(), "note": f"origin/{ref} moved but the checkout could not fast-forward"}
+                    return
+                head = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
+            if not head or not self.code_tree or head == self.code_tree:
+                self.code_update = None
                 return
-            L.git_ok("pull", "--ff-only", "--quiet")
-            if (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() != theirs:
-                return
-            L.log(f"hub: origin/{ref} has newer Froglet Compute: pulled it, restarting", self.quiet)
+            L.log(f"hub: the checkout's Froglet Compute is newer than the one running ({self.code_tree[:7]} -> {head[:7]}): restarting", self.quiet)
             os._exit(0)
         except Exception as e:
+            self.code_update = {"at": L.now(), "note": f"could not look for newer code: {e}"}
             L.log(f"hub: could not look for newer code ({e})", self.quiet)
 
     # ── the ai branch: the VM keeps it current, so nobody runs a sync by hand (README section 15) ──
@@ -426,7 +467,7 @@ def handler(hub, page):
             text, ctype, fname = installer(name, hub.url or f"http://{self.headers.get('Host', '')}", hub.key, flags)
             if text is None:
                 return self._send(404, {"error": "no such installer"})
-            raw = text.encode("utf-8")
+            raw = text if isinstance(text, bytes) else text.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
@@ -459,8 +500,13 @@ def handler(hub, page):
                 return self._send(403, {"error": "this app answers its own computer only"})
             if path in ("/", "/index.html"):
                 return self._send(200, page(), "text/html; charset=utf-8")
+            if path in ("/install", "/install/"):
+                return self._send_installer(installer_for(self.headers.get("User-Agent")))
             if path.startswith("/install/"):
                 return self._send_installer(path[9:])
+            if path in ("/ai_plan.md", "/AI_PLAN.md"):            # Garrett's AI plan, raw, for anyone (and any tool)
+                plan = (hub.snapshot() or {}).get("ai_plan") or {}
+                return self._send(200, (plan.get("doc") or "the AI plan is not on the queue refs yet").encode("utf-8"), "text/markdown; charset=utf-8")
             if path.startswith("/stills/") and re.fullmatch(r"[a-z0-9-]+\.jpg", path[8:]):
                 still = os.path.join(os.path.dirname(C.PAGE), "stills", path[8:])
                 if os.path.isfile(still):
@@ -482,6 +528,7 @@ def handler(hub, page):
             if path == "/api/status":
                 d = hub.snapshot() or {}
                 return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"), "error": hub.error,
+                                        "code": hub.code_tree[:12], "code_update": hub.code_update,
                                         "ai_synced": hub.ai_sync if hub.syncs_ai() else None,
                                         "updates": hub.updates, "forgets": hub.forgets,
                                         "live": (d.get("live") or {}).get("machines", []),
