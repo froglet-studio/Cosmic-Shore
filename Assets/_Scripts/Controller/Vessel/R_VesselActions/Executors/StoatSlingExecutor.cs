@@ -88,6 +88,7 @@ namespace CosmicShore.Gameplay
 
         StoatModeExecutor _mode;
         StoatRippleExecutor _ripple;
+        float _gapScale = 1f;   // Space's reach on the laid pair's gap (replicated, so every peer lays the same pair)
         StoatDipoleExecutor _dipole;
         bool _resolvedSiblings;
         float _lastTiming = -1f;
@@ -241,8 +242,14 @@ namespace CosmicShore.Gameplay
             // Space is reach: read live, never cached (vessel contract rule 2).
             float reach = config.OrbitReach.EvaluateLive(_status);
             float radius = StoatSlingMath.OrbitRadius(hold01, config.OrbitRadiusWide * reach, config.OrbitRadiusTight * reach, config.HoldExponent);
-            return StoatSlingMath.ClearOfRepulsor(radius, 2f * config.CatchSide, config.WhiteClear);
+            // The gap grows with the same reach, so the orbit's clear-of-the-repulsor cap grows with it (72 → ~101 u).
+            float halfGap = _laid ? config.CatchSide * _gapScale : PairHalfGap();
+            return StoatSlingMath.ClearOfRepulsor(radius, 2f * halfGap, config.WhiteClear);
         }
+
+        /// <summary>The pair's half-gap for a pair laid now: catchSide × Space's reach (the replicated tier — every peer
+        /// lays the same pair from the replicated press).</summary>
+        float PairHalfGap() => config.CatchSide * StoatSlingMath.GapScale(config.OrbitReach.EvaluateReplicated(_status));
 
         /// <summary>
         /// The press: a LIGHT pair laid AHEAD — the attractor to the pressed side, the repulsor mirrored — held, not
@@ -264,12 +271,14 @@ namespace CosmicShore.Gameplay
             }
 
             bool left = side == Side.Left;
-            StoatSlingMath.CatchPair(hull.position, hull.forward, hull.right, left, config.CatchAhead, config.CatchSide,
+            _gapScale = StoatSlingMath.GapScale(config.OrbitReach.EvaluateReplicated(_status));
+            float halfGap = config.CatchSide * _gapScale;
+            StoatSlingMath.CatchPair(hull.position, hull.forward, hull.right, left, config.CatchAhead, halfGap,
                 out var attractor, out var repulsor);
             // The pair's axis runs attractor → repulsor (BlackHolePairMath puts the attractor at −axis).
             float strength = config.PoleGM / Mathf.Max(1e-3f, bh.GmPerStrength);
             _pair = BlackHoleRegistry.SpawnPair(0.5f * (attractor + repulsor), StoatSlingMath.PairAxis(left, hull.right), strength,
-                config.PoleHorizon, config.CatchSide, config.DriftSpeed, config.Lifetime, StoatSlingMath.SpinAxis(left, hull.up),
+                config.PoleHorizon, halfGap, config.DriftSpeed, config.Lifetime, StoatSlingMath.SpinAxis(left, hull.up),
                 OwnerTransform(), held: true);
             if (_pair == null) return;
 
@@ -438,7 +447,7 @@ namespace CosmicShore.Gameplay
                 var middle = 0.5f * (_pair.Black.transform.position + _pair.White.transform.position);
                 float separation = Vector3.Distance(_pair.Black.transform.position, _pair.White.transform.position);
                 BlackHoleRegistry.Annihilate(_pair);
-                Detonate(middle, separation);
+                Detonate(middle, StoatSlingMath.RippleSeparation(separation, _gapScale));
             }
             if (_crystal && !_crystal.IsGone && !_crystal.IsAnnihilating) _crystal.Annihilate(BlackHoleRegistry.Config.CrystalReplaceSeconds);
         }
@@ -448,7 +457,7 @@ namespace CosmicShore.Gameplay
         void OnPairMet(BlackHoleRegistry.Pair pair, Vector3 at)
         {
             if (pair == null || pair != _pair) return;
-            Detonate(at, 2f * pair.HalfGap0);
+            Detonate(at, StoatSlingMath.RippleSeparation(2f * pair.HalfGap0, _gapScale));
         }
 
         void Detonate(Vector3 at, float separation)

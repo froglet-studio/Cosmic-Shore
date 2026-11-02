@@ -493,6 +493,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void SpaceScaling_WidensTheGap_AndTheClearCap_ButNotTheRipple()
+        {
+            Assert.AreEqual(1f, StoatSlingMath.GapScale(0.5f), 1e-6f, "never shrinks");
+            Assert.AreEqual(1.4f, StoatSlingMath.GapScale(1.4f), 1e-6f);
+            // catchSide 45, whiteClear 0.8: the gap 90 → 126, the clear cap 72 → ~101.
+            float wide = 150f * 1.4f;
+            Assert.AreEqual(72f, StoatSlingMath.ClearOfRepulsor(150f, 2f * 45f, 0.8f), 1e-3f);
+            Assert.AreEqual(100.8f, StoatSlingMath.ClearOfRepulsor(wide, 2f * 45f * 1.4f, 0.8f), 1e-3f);
+            Assert.AreEqual(90f, StoatSlingMath.RippleSeparation(126f, 1.4f), 1e-3f, "Space does not leak into Charge's reach");
+            Assert.AreEqual(0f, StoatSlingMath.RippleSeparation(-5f, 1.4f), 1e-6f);
+        }
+
+        [Test]
         public void Momentum_IsTheOrbitsWarpByTheTiming_FadingToNothing()
         {
             Assert.AreEqual(3f, StoatSlingMath.MomentumWarp(3f, 1f, 0f, 2.5f), 1e-5f, "a perfect release keeps the orbit's warp");

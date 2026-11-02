@@ -120,6 +120,15 @@ namespace CosmicShore.Gameplay
         public static bool IsFlick(float stick, float secondsSinceRest, float flickStick, float flickSeconds) =>
             stick >= flickStick && secondsSinceRest <= flickSeconds;
 
+        /// <summary>Space's reach as the pair's gap scale: never below 1 (a broken tier must not shrink the gap).</summary>
+        public static float GapScale(float reach) => Mathf.Max(1f, reach);
+
+        /// <summary>
+        /// The separation the Charge ripple reads: the pair's, back at the base gap — Space widens the gap, but the
+        /// ripple's reach is Charge's, so the Space scale is taken back out.
+        /// </summary>
+        public static float RippleSeparation(float separation, float gapScale) => Mathf.Max(0f, separation) / Mathf.Max(1f, gapScale);
+
         /// <summary>
         /// The kick a launch may add: <paramref name="kick"/>, but never past <paramref name="capShare"/> × the speed at the
         /// release, and nothing for a release before <paramref name="minSweepDegrees"/> of orbit.
