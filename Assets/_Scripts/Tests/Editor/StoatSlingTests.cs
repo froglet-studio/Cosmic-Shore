@@ -493,6 +493,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void WarpTimesKick_NeverPastThreeTimesCruise()
+        {
+            Assert.AreEqual(50f, StoatSlingMath.WarpCappedKick(50f, 1f, 60f, 3f), 1e-4f, "unwarped and under: all of it");
+            Assert.AreEqual(180f, StoatSlingMath.WarpCappedKick(500f, 1f, 60f, 3f), 1e-3f, "3 x cruise");
+            Assert.AreEqual(180f / 5.6f, StoatSlingMath.WarpCappedKick(500f, 5.6f, 60f, 3f), 1e-3f, "Time 10: warp x kick still 3 x cruise");
+            Assert.LessOrEqual(5.6f * StoatSlingMath.WarpCappedKick(1e4f, 5.6f, 60f, 3f), 3f * 60f + 1e-3f);
+            Assert.AreEqual(180f, StoatSlingMath.WarpCappedKick(500f, 0.5f, 60f, 3f), 1e-3f, "a slow clock does not raise it");
+        }
+
+        [Test]
+        public void InstantRelease_PaysNothing_NoKickAndNoMomentum()
+        {
+            float kick = StoatSlingMath.CappedKick(StoatSlingMath.TimedKick(50f, 1f, 0.25f, 2.5f), 160f, 1.6f, 0f, 30f);
+            Assert.AreEqual(0f, StoatSlingMath.WarpCappedKick(kick, 5.6f, 60f, 3f), 1e-6f);
+            Assert.AreEqual(1f, StoatSlingMath.MomentumWarp(1f, 1f, 0f, 6f), 1e-6f, "no warp kept");
+        }
+
+        [Test]
         public void Accretion_FourPercentAPrism_CappedAtForty()
         {
             Assert.AreEqual(0f, StoatSlingMath.AccretionBonus(0, 0.04f, 0.4f), 1e-6f);

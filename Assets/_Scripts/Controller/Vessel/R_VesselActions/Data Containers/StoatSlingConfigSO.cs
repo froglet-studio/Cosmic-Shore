@@ -144,6 +144,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The hard cap: a launch's kick never takes the hull past this × its speed at the release (the orbit's).")]
         [SerializeField, Range(1f, 3f)] float speedCapShare = 1.6f;
 
+        [Tooltip("The kick runs on the warped flight clock: warp × kick is never past this × cruise (the engine's speed).")]
+        [SerializeField, Range(1f, 6f)] float warpKickCapCruise = 3f;
+
         [Header("Time mode - the poles (LIGHTER than Mass mode's)")]
         [Tooltip("The attractor's (and repulsor's) horizon, world units. Mass mode's dipole poles are 2.1 u; Time mode's " +
                  "pull nothing it orbits - the catch flies the orbit - so they are light (the user, 2026-10-14).")]
@@ -316,6 +319,7 @@ namespace CosmicShore.ScriptableObjects
         public float MomentumSeconds => Mathf.Clamp(momentumSeconds, 0f, 10f);
         public float AccretionPerPrism => Mathf.Clamp(accretionPerPrism, 0f, 0.2f);
         public float AccretionMax => Mathf.Clamp01(accretionMax);
+        public float WarpKickCapCruise => Mathf.Clamp(warpKickCapCruise, 1f, 6f);
         public float SpeedCapShare => Mathf.Clamp(speedCapShare, 1f, 3f);
 
         /// <summary>Whether a launch's trail is laid shielded right now (Mass 5, the replicated unlock bit).</summary>

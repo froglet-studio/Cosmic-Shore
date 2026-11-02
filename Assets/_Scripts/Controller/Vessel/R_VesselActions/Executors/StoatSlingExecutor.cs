@@ -428,6 +428,9 @@ namespace CosmicShore.Gameplay
                 float swept = _orbitAngle * Mathf.Rad2Deg;
                 float kick = StoatSlingMath.CappedKick(StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, power),
                     _status.Speed, config.SpeedCapShare, swept, config.MinSweepDegrees);
+                // The kick runs on the warped flight clock, so warp × kick is what the world sees: never past
+                // warpKickCapCruise (3) × cruise, so Time 10's warp cannot turn a launch into a spike.
+                kick = StoatSlingMath.WarpCappedKick(kick, transformer.FlightTimeScale, EngineSpeed(), config.WarpKickCapCruise);
                 // EARNED: the orbit's warp is kept as momentum, as much as the release was timed - nothing for an instant one.
                 if (swept >= config.MinSweepDegrees)
                 {

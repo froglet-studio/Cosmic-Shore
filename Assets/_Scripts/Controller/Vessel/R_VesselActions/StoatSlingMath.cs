@@ -120,6 +120,13 @@ namespace CosmicShore.Gameplay
         public static bool IsFlick(float stick, float secondsSinceRest, float flickStick, float flickSeconds) =>
             stick >= flickStick && secondsSinceRest <= flickSeconds;
 
+        /// <summary>
+        /// The kick, capped so <paramref name="flightClock"/> × the kick (the speed the world sees it add) is never past
+        /// <paramref name="capCruise"/> × <paramref name="cruiseSpeed"/>. A clock below 1 does not raise the cap.
+        /// </summary>
+        public static float WarpCappedKick(float kick, float flightClock, float cruiseSpeed, float capCruise) =>
+            Mathf.Clamp(kick, 0f, Mathf.Max(0f, capCruise) * Mathf.Max(0f, cruiseSpeed) / Mathf.Max(1f, flightClock));
+
         /// <summary>Space-5 Accretion: <paramref name="captured"/> × <paramref name="perPrism"/>, clamped to 0..<paramref name="max"/>.</summary>
         public static float AccretionBonus(int captured, float perPrism, float max) =>
             Mathf.Clamp(Mathf.Max(0, captured) * Mathf.Max(0f, perPrism), 0f, Mathf.Max(0f, max));
