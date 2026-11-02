@@ -542,6 +542,38 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// The wide-radius fallback of <see cref="PrismSpatialIndex.QuerySphere"/> and
+    /// <see cref="PrismSpatialIndex.QuerySegment"/>: one pass over the packed hot array, the same
+    /// flag test and the same capsule distance (<see cref="PrismSpatialIndex.DistanceToSegmentSq"/>,
+    /// a zero-length segment for a sphere) as the managed loop it replaces, writing the matching slots
+    /// in ascending order. That managed loop read every slot through the NativeArray indexer; Fulmen's
+    /// burn (200 u radius, up to 128 segment queries a frame) paid ~1.3 ms a query on a 12-15k
+    /// index and froze Yash's menu for 126-162 ms a frame (10-30). Runs synchronously (.Run()).
+    /// </summary>
+    [BurstCompile]
+    public struct LinearCapsuleScanJob : IJob
+    {
+        [ReadOnly] public NativeArray<PrismSpatialData> Spatial;
+        public int Count;
+        public float3 A;
+        public float3 AB;
+        public float AbLenSq;
+        public float RadiusSq;
+        public NativeList<int> Hits;
+
+        public void Execute()
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                var s = Spatial[i];
+                if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                if (PrismSpatialIndex.DistanceToSegmentSq(s.Position, A, AB, AbLenSq) > RadiusSq) continue;
+                Hits.Add(i);
+            }
+        }
+    }
+
+    /// <summary>
     /// Burst-compiled per-cell volume summation over the packed arrays - the
     /// compute half of Cell.EnsureVolumeFresh ("volume is the spine"). One linear
     /// pass filters slots bound to the target cell (live, not destroyed) and
@@ -874,6 +906,7 @@ namespace CosmicShore.Gameplay
         private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
         private static readonly ProfilerMarker s_resolveDamage = new("AOE.ResolveDamage");
         private static readonly ProfilerMarker s_shellQuery = new("ShellContact.Query");
+        private static readonly ProfilerMarker s_linearScan = new("PrismSpatialIndex.LinearScan");
 
         public bool IsAvailable => _spatial.IsCreated;
         public int HighWaterMark => _highWaterMark;
@@ -913,6 +946,7 @@ namespace CosmicShore.Gameplay
             _lodCenters = new NativeArray<float3>(16, Allocator.Persistent);
             _lodBecameNear = new NativeList<int>(512, Allocator.Persistent);
             _lodBecameFar = new NativeList<int>(512, Allocator.Persistent);
+            _linearHits = new NativeList<int>(512, Allocator.Persistent);
         }
 
         #region Prism motion (PrismMotion's contact rule)
@@ -1048,17 +1082,7 @@ namespace CosmicShore.Gameplay
             int3 max = (int3)math.floor((c + radius) / BucketSizeMeters);
 
             if (BucketWalkCostsMoreThanLinearScan(min, max))
-            {
-                for (int i = 0; i < _highWaterMark; i++)
-                {
-                    var s = _spatial[i];
-                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
-                    if (math.distancesq(s.Position, c) > radiusSq) continue;
-                    var prism = _prisms[i];
-                    if (prism) results.Add(prism);
-                }
-                return results.Count;
-            }
+                return LinearCapsuleScan(c, float3.zero, 0f, radiusSq, results);
 
             for (int x = min.x; x <= max.x; x++)
             for (int y = min.y; y <= max.y; y++)
@@ -1119,17 +1143,7 @@ namespace CosmicShore.Gameplay
             int3 max = (int3)math.floor(hi / BucketSizeMeters);
 
             if (BucketWalkCostsMoreThanLinearScan(min, max))
-            {
-                for (int i = 0; i < _highWaterMark; i++)
-                {
-                    var s = _spatial[i];
-                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
-                    if (DistanceToSegmentSq(s.Position, p0, ab, abLenSq) > radiusSq) continue;
-                    var prism = _prisms[i];
-                    if (prism) results.Add(prism);
-                }
-                return results.Count;
-            }
+                return LinearCapsuleScan(p0, ab, abLenSq, radiusSq, results);
 
             for (int x = min.x; x <= max.x; x++)
             for (int y = min.y; y <= max.y; y++)
@@ -1353,6 +1367,35 @@ namespace CosmicShore.Gameplay
             return math.distancesq(p, a + ab * t);
         }
 
+        /// <summary>
+        /// Every live prism within <paramref name="radiusSq"/> of the segment a..a+ab (a sphere when ab is zero),
+        /// by one Burst pass over the whole hot array (<see cref="LinearCapsuleScanJob"/>), appended to
+        /// <paramref name="results"/> in slot order - the order the managed scan it replaced produced.
+        /// </summary>
+        int LinearCapsuleScan(float3 a, float3 ab, float abLenSq, float radiusSq, List<Prism> results)
+        {
+            using (s_linearScan.Auto())
+            {
+                _linearHits.Clear();
+                new LinearCapsuleScanJob
+                {
+                    Spatial = _spatial,
+                    Count = _highWaterMark,
+                    A = a,
+                    AB = ab,
+                    AbLenSq = abLenSq,
+                    RadiusSq = radiusSq,
+                    Hits = _linearHits,
+                }.Run();
+                for (int k = 0; k < _linearHits.Length; k++)
+                {
+                    var prism = _prisms[_linearHits[k]];
+                    if (prism) results.Add(prism);
+                }
+            }
+            return results.Count;
+        }
+
         #endregion
 
         #region Reservations
@@ -1543,6 +1586,9 @@ namespace CosmicShore.Gameplay
         NativeArray<float3> _lodCenters;
         NativeList<int> _lodBecameNear;
         NativeList<int> _lodBecameFar;
+
+        // Wide-radius query scratch (LinearCapsuleScanJob's output, persistent, reused per query).
+        NativeList<int> _linearHits;
 
         /// <summary>
         /// Collider-LOD classification view: one Burst pass over the packed hot
@@ -3496,6 +3542,7 @@ namespace CosmicShore.Gameplay
             if (_lodCenters.IsCreated) _lodCenters.Dispose();
             if (_lodBecameNear.IsCreated) _lodBecameNear.Dispose();
             if (_lodBecameFar.IsCreated) _lodBecameFar.Dispose();
+            if (_linearHits.IsCreated) _linearHits.Dispose();
             LiveCount = 0;
         }
 

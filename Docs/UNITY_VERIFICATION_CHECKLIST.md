@@ -65,6 +65,18 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Wide-radius prism queries run as one Burst pass - Fulmen's burn freeze (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `PrismSpatialIndex.QuerySphere` / `QuerySegment` take `LinearCapsuleScanJob` (Burst, `.Run()`, marker
+`PrismSpatialIndex.LinearScan`) when their bucket box is bigger than the index; same prisms, same order. Test:
+`PrismSpatialIndexTests.WideAndTightQueries_MatchBruteForce_OnBothPaths`. No Unity editor and no Amoebius build in the
+session (the engine cannot build the game today), so neither the test nor the game has run; refcompile player + editor OK.
+
+1. Run the EditMode tests `PrismSpatialIndexTests`, `PrismSweptQueryTests`, `PrismConeQueryTests`. **Pass:** all green.
+2. Fire a Fulmen strike into dense enemy mass in the menu (Release) and send the capture. **Pass:** no frame with `Fulmen.Burn`
+   above a few ms (was 126-162 ms on 10-30); the bolts still burn the same prisms within the 200 u radius.
+3. Fly Skim Race with AI seats and a Sparrow in any mode. **Pass:** AI dodges mass and rounds hit prisms as before.
+
 ### 🔴 Switchback AI step 1: dodge only Danger prisms, none in the last 200 u to the ring (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `SwitchbackPrismAvoidance.Dodges`, used by `SwitchbackBlastAI`'s sense and emergency sweep;
