@@ -64,10 +64,17 @@ namespace CosmicShore.Gameplay
                  "Off: it flies straight at the key and the drift swings the nose onto the obstacle; offline the setup turn " +
                  "cost about as much as the blast saved (SWITCHBACK.md \"Step 2\").")]
         [SerializeField] bool aiStrikeSetupLeg;
-        [Tooltip("The AI nose's follow rate per second by difficulty (Easy, Medium, Hard, Legendary): 1.5 = the fleet lag every " +
-                 "AI flies with elsewhere, 0 = no lag (as a human on a keyboard). The lag is the AI's biggest handicap in " +
-                 "Switchback (SWITCHBACK.md \"Lag by difficulty\"); a negative entry leaves that level on the fleet lag.")]
-        [SerializeField] float[] aiNoseFollowByLevel = { 1.5f, 2f, 3f, 0f };
+        [Tooltip("The AI nose's follow rate per second, one row per intensity (I1..I4), by difficulty: 1.5 = the fleet lag every " +
+                 "AI flies with elsewhere, higher = faster, 0 = no lag (as a human). The lag is the AI's biggest handicap in " +
+                 "Switchback, so these rows set each level's race time: offline, I4 lands Easy ~140 s, Medium ~130, Hard " +
+                 "~120, Legendary ~112 (SWITCHBACK.md \"Lag by difficulty\"). A negative entry leaves that level on the fleet lag.")]
+        [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
+        {
+            new(1.9f, 2.2f, 3f, 5f),     // I1
+            new(2f, 2.4f, 3f, 5f),       // I2
+            new(2.1f, 2.2f, 2.8f, 6f),   // I3
+            new(1.8f, 2.2f, 3.5f, 6f),   // I4
+        };
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -142,16 +149,17 @@ namespace CosmicShore.Gameplay
             return r;
         }
 
-        /// <summary>The AI nose follow rate for a difficulty level (1 Easy .. 4 Legendary): <see cref="aiNoseFollowByLevel"/>,
-        /// or -1 (the fleet lag) for a level the table does not cover.</summary>
-        public static float NoseFollowFor(float[] byLevel, int level) =>
-            byLevel != null && level >= 1 && level <= byLevel.Length ? byLevel[level - 1] : -1f;
+        /// <summary>The AI nose follow rate for an intensity (1..4) and a difficulty level (1 Easy .. 4 Legendary):
+        /// <see cref="aiNoseFollowByIntensity"/>, or -1 (the fleet lag) for an intensity or level the table does not cover.</summary>
+        public static float NoseFollowFor(SwitchbackNoseFollow[] byIntensity, int intensity, int level) =>
+            byIntensity != null && intensity >= 1 && intensity <= byIntensity.Length ? byIntensity[intensity - 1].For(level) : -1f;
 
         protected override void OnRacerArmed(IPlayer pilot)
         {
             var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
             if (transformer == null) return;
-            transformer.AINoseFollowPerSecond = NoseFollowFor(aiNoseFollowByLevel, (int)gameData.AIDifficultyFor(pilot));
+            transformer.AINoseFollowPerSecond =
+                NoseFollowFor(aiNoseFollowByIntensity, Intensity, (int)gameData.AIDifficultyFor(pilot));
         }
 
         SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));
@@ -424,5 +432,24 @@ namespace CosmicShore.Gameplay
             UnregisterThirdEyeOverlays();
             base.OnNetworkDespawn();
         }
+    }
+
+    /// <summary>One intensity's AI nose follow rates per second, by difficulty (SWITCHBACK.md "Lag by difficulty"):
+    /// 1.5 = the fleet lag, higher = faster, 0 = no lag, negative = leave that level on the fleet lag.</summary>
+    [System.Serializable]
+    public struct SwitchbackNoseFollow
+    {
+        [Tooltip("Easy's nose follow rate per second.")] public float easy;
+        [Tooltip("Medium's nose follow rate per second.")] public float medium;
+        [Tooltip("Hard's nose follow rate per second.")] public float hard;
+        [Tooltip("Legendary's nose follow rate per second (0 = no lag).")] public float legendary;
+
+        public SwitchbackNoseFollow(float easy, float medium, float hard, float legendary)
+        {
+            this.easy = easy; this.medium = medium; this.hard = hard; this.legendary = legendary;
+        }
+
+        /// <summary>The rate for a level (1 Easy .. 4 Legendary), or -1 (the fleet lag) for any other.</summary>
+        public float For(int level) => level switch { 1 => easy, 2 => medium, 3 => hard, 4 => legendary, _ => -1f };
     }
 }

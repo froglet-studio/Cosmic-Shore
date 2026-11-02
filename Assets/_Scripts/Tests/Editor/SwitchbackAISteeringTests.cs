@@ -120,20 +120,28 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Switchback_AINoseLag_LadderByDifficulty()
+        public void Switchback_AINoseLag_TableByIntensityAndDifficulty()
         {
-            // SWITCHBACK.md "Lag by difficulty" (2026-11-02): Easy keeps the fleet lag, each level up follows faster,
-            // Legendary has none. Offline the levels then order at every intensity (I4: 172 / 133 / 125 / 100 s).
+            // SWITCHBACK.md "Lag by difficulty" (2026-11-02, Yash's bands): each level 10 s apart at every intensity, I4
+            // Easy 130-150 s, Medium 120-140, Hard 110-130, Legendary 100-120. A faster level always follows faster.
             var go = new GameObject("SwitchbackAISteeringTests_NoseLag");
             try
             {
-                var ladder = Field<float[]>(go.AddComponent<SwitchbackController>(), "aiNoseFollowByLevel");
-                CollectionAssert.AreEqual(new[] { 1.5f, 2f, 3f, 0f }, ladder);
-                Assert.AreEqual(VesselTransformer.RotationFollowRate, SwitchbackController.NoseFollowFor(ladder, 1),
-                    "Easy flies the lag every AI has elsewhere");
-                Assert.AreEqual(0f, SwitchbackController.NoseFollowFor(ladder, 4), "Legendary has no lag");
-                Assert.Less(SwitchbackController.NoseFollowFor(ladder, 0), 0f, "an unknown level keeps the fleet lag");
-                Assert.Less(SwitchbackController.NoseFollowFor(ladder, 5), 0f);
+                var table = Field<SwitchbackNoseFollow[]>(go.AddComponent<SwitchbackController>(), "aiNoseFollowByIntensity");
+                Assert.AreEqual(4, table.Length, "one row per intensity");
+                var i4 = table[3];
+                CollectionAssert.AreEqual(new[] { 1.8f, 2.2f, 3.5f, 6f }, new[] { i4.easy, i4.medium, i4.hard, i4.legendary });
+                for (int intensity = 1; intensity <= 4; intensity++)
+                for (int level = 1; level <= 4; level++)
+                {
+                    float rate = SwitchbackController.NoseFollowFor(table, intensity, level);
+                    Assert.Greater(rate, VesselTransformer.RotationFollowRate, $"I{intensity} level {level}: faster than the fleet lag");
+                    if (level > 1)
+                        Assert.GreaterOrEqual(rate, SwitchbackController.NoseFollowFor(table, intensity, level - 1),
+                            $"I{intensity}: level {level} follows at least as fast as the level below");
+                }
+                Assert.Less(SwitchbackController.NoseFollowFor(table, 0, 1), 0f, "an unknown intensity keeps the fleet lag");
+                Assert.Less(SwitchbackController.NoseFollowFor(table, 4, 5), 0f, "an unknown level keeps the fleet lag");
             }
             finally { Object.DestroyImmediate(go); }
         }
