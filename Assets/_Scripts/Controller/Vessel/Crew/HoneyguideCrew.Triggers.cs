@@ -252,6 +252,7 @@ namespace CosmicShore.Gameplay
         {
             float rate = _cfg.PeckAction is FullAutoActionSO gun ? Mathf.Max(0.1f, gun.FiringRate) : 10f;
             _peckLeft = (Mathf.Max(1, _cfg.PeckBurst) - 0.5f) / rate;
+            PeckAt = Time.time;
             SetPeck(true);
         }
 
@@ -377,6 +378,7 @@ namespace CosmicShore.Gameplay
                     if (f.Jousted(_status.PlayerName)) n++;
                 }
             }
+            if (n > 0) { StruckAt = Time.time; StruckCount += n; }   // the strip flashes it
             return n;
         }
 
@@ -472,6 +474,8 @@ namespace CosmicShore.Gameplay
             var dir = p.transform.position - from;
             if (dir.sqrMagnitude < 1e-4f) dir = _vessel.Transform.forward;
             p.Damage(dir.normalized * Mathf.Max(1f, _status.Speed), _status.Domain, _status.PlayerName);
+            BrokeAt = Time.time;   // the strip flashes it
+            BrokeCount++;
         }
 
         /// <summary>Shatters every hostile prism within r of `at`; returns how many.</summary>
@@ -580,7 +584,7 @@ namespace CosmicShore.Gameplay
             var b = Current(k);
             if (b == null)
                 return k == 0 ? PeckTargetAhead(pos, fwd)
-                    : true;   // Flit: freestyle has no goal, so ahead is closer (the lab flits when the goal is ahead)
+                    : FlitWanted(pos, fwd);   // Flit: a creature or vessel on its lane, or the goal far ahead (HoneyguideCrew.Hunt.cs)
             float reach = b.Def.reach;
             switch (b.Effect)
             {
@@ -590,7 +594,7 @@ namespace CosmicShore.Gameplay
                 case HoneyguideEffect.Lance: return NewestColour() != 0 || HostileAhead(pos, fwd, reach, 6f, 0f, -1);
                 case HoneyguideEffect.LittleBang: return CountHostile(pos + fwd * _cfg.GrenadeThrow, reach) >= 2;
                 case HoneyguideEffect.Eyelet:
-                case HoneyguideEffect.Thruster: return true;
+                case HoneyguideEffect.Thruster: return !_zipping;   // a slip under way is not cut short for a dart
                 case HoneyguideEffect.Sepia: return _droneLeft <= 0f && CountHostile(pos, reach) >= 1;
                 case HoneyguideEffect.Monte:
                 {

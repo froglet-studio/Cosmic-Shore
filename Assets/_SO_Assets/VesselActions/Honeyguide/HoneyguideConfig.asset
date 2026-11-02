@@ -281,6 +281,29 @@ MonoBehaviour:
   monteHops: 3
   aiTriggerThink: 0.3
   aiPreviewSeconds: 0.17
+  aiHunts: 1
+  aiHuntFreestyleOnly: 1
+  aiHuntThink: 0.75
+  aiHuntCommit: 4
+  aiHuntSwitch: 1.3
+  aiHuntReach: 900
+  aiHuntFalloff: 250
+  aiWantFauna: 1
+  aiWantVessel: 1.2
+  aiWantPrisms: 0.8
+  aiWantCrystal: 0.6
+  aiWantHive: 1.5
+  aiCrystalRest: 40
+  aiCrystalSnatch: 80
+  aiPrismMassMin: 8
+  aiPrismMassRadius: 30
+  aiPrismMassScan: 3
+  aiSlipMinGain: 40
+  aiSlipSkipSeconds: 3
+  aiSlipLoopCount: 4
+  aiSlipLoopWindow: 8
+  aiSlipRest: 5
+  rideWatchdog: 2
   previewMaterial: {fileID: 2100000, guid: 4fcd7db6f5d04653a0b8401a011f6386, type: 2}
   previewWidth: 0.6
   previewColour: {r: 0.36, g: 0.72, b: 1, a: 0.85}
@@ -356,6 +379,15 @@ MonoBehaviour:
   hiveNoRewardsLine: 'no colour completed'
   stripOmniTemplate: 'Omnicrystal {distance} u'
   stripNoTargetLine: 'No omnicrystal in sight'
+  stripFaunaTemplate: 'Hunting fauna {distance} u'
+  stripVesselTemplate: 'Chasing a rival {distance} u'
+  stripPrismsTemplate: 'Breaking {colour} prisms {distance} u'
+  stripOpposingWord: 'opposing'
+  stripHiveTemplate: 'Mass hive {distance} u'
+  stripSlipLine: 'Slipping'
+  stripJetLine: 'Darting'
+  stripReelLine: 'Reeling in'
+  stripHitSeconds: 0.6
   madeToastTemplate: '{name} {level}: {text}'
   abilityToastTemplate: 'The Ratel''s new ability, {name}: {text}'
   cardDetailTemplate: "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close"

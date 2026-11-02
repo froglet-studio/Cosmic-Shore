@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
         readonly TMP_Text _strip, _leave;
         Rect _stripRect, _leaveRect;
         string _stripTextFor;
-        float _stripTextFs, _stripTextW;
+        float _stripTextFs, _stripTextW, _stripHullX = -1f;
         bool _hiveDrag;
         int _hiveLast = -1;
 
@@ -358,9 +358,7 @@ namespace CosmicShore.Gameplay
             var lineRect = _leaveRect.width > 0f ? new Rect(_lineRect.x, _lineRect.y, _lineRect.width - _leaveRect.width - 6f * ui, _lineRect.height) : _lineRect;
             Place(_free, lineRect, fs * (turned ? 0.85f : 0.8f), madeLine);
             Place(_leave, _leaveRect, fs, _leaveRect.width > 0f ? cfg.HiveLeaveLabel : "");
-            string stripLine = _small ? ""
-                : _crew.StripDistance >= 0f ? _mStrip.Fill(cfg.StripOmniTemplate, "distance", IntText(Mathf.RoundToInt(_crew.StripDistance)))
-                : cfg.StripNoTargetLine;
+            string stripLine = _small ? "" : StripLine(cfg);
             Place(_strip, new Rect(_stripRect.x, _stripRect.y, _stripRect.width, _stripRect.height), fs * 0.8f, stripLine);
             // the track ends short of the distance text; measured only when the line or its size changes
             if (!ReferenceEquals(stripLine, _stripTextFor) || !Mathf.Approximately(fs, _stripTextFs))
@@ -982,31 +980,220 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Hex(vh, CellPx(n[0]), _size * 0.5f, 0f, Alpha(cfg.ColourOf(n[1]), 0.35f * g));
         }
 
-        // The strip: the Honeyguide flies to the right along a track centred in the strip (Garrett 2026-11-02: "it should go
-        // to the right not the left and be more centered"); the nearest omnicrystal, a diamond, waits at the track's right
-        // end, and the Honeyguide's disc stands back from it by its distance (the far end is stripRangeU). In hive mode the
-        // hive, a hex, sits at the right end with the hull beside it. Its distance is the text at the right.
+        // The strip's words: the ride under way, else what the hull is after and how far (HoneyguideCrew.Hunt.cs).
+        string StripLine(HoneyguideConfigSO cfg)
+        {
+            if (_crew.InHive) return "";
+            switch (_crew.Ride)
+            {
+                case HoneyguideCrew.RideKind.Slip: return cfg.StripSlipLine;
+                case HoneyguideCrew.RideKind.Jet: return cfg.StripJetLine;
+                case HoneyguideCrew.RideKind.Reel: return cfg.StripReelLine;
+            }
+            string dist = IntText(Mathf.RoundToInt(Mathf.Max(0f, _crew.GoalDistance)));
+            switch (_crew.Goal)
+            {
+                case HoneyguideCrew.HuntGoal.Fauna: return _mStrip.Fill(cfg.StripFaunaTemplate, "distance", dist);
+                case HoneyguideCrew.HuntGoal.Vessel: return _mStrip.Fill(cfg.StripVesselTemplate, "distance", dist);
+                case HoneyguideCrew.HuntGoal.Prisms:
+                {
+                    int c = _crew.GoalColour;
+                    string word = c >= 1 && c <= 3 ? cfg.ColourName(c) : cfg.StripOpposingWord;
+                    return _mStrip.Fill(cfg.StripPrismsTemplate, "colour", word, "distance", dist);
+                }
+                case HoneyguideCrew.HuntGoal.Hive: return _mStrip.Fill(cfg.StripHiveTemplate, "distance", dist);
+                case HoneyguideCrew.HuntGoal.Crystal: return _mStrip.Fill(cfg.StripOmniTemplate, "distance", dist);
+            }
+            return cfg.StripNoTargetLine;
+        }
+
+        // The strip (Garrett 2026-11-02: "this should do a better job of using its strip of real estate to give players a fun
+        // view of the game that is very cheap to render. it should still look awesome, but it is more symbolic than 3d"). A
+        // side-on picture of the hunt, all flat shapes in the board's one mesh: the Honeyguide (a little arrow, wings beating)
+        // flies right along the whole strip toward what it is after, which waits at the right end as its own glyph - an
+        // omnicrystal's diamond, the hive's hex, a creature (a wriggling body), a rival vessel (an arrow turned to face it, in
+        // its colour) or an opposing prism mass (a cluster of hexes in its colour). The hull stands back from it by its
+        // distance (square-root scaled, so the last stretch shows). The track's ticks stream left at the hull's speed. A slip
+        // lights the track behind it in the trail's colour with streaks; a dart leaves afterimages; the lasso is a line to
+        // the target. A Peck sends dots down the track, a strike rings out at the target, a broken prism throws shards, an
+        // omnicrystal bursts. The words at the right name it (StripLine).
         void Strip(VertexHelper vh, HoneyguideConfigSO cfg)
         {
             var r = _stripRect;
             if (r.width < 4f) return;
-            float ui = _ui, cy = r.center.y, x0 = r.x + r.width * 0.24f, x1 = Mathf.Min(r.x + r.width * 0.72f, r.xMax - _stripTextW - 14f * ui);
-            if (x1 - x0 < 30f * ui) x0 = Mathf.Max(r.x + 8f * ui, x1 - 30f * ui);   // a long line: the track gives way to it
+            float ui = _ui, cy = r.center.y, now = Time.time;
+            float x0 = r.x + 8f * ui, x1 = r.xMax - _stripTextW - 18f * ui;
+            if (x1 - x0 < 40f * ui) x0 = Mathf.Max(r.x + 4f * ui, x1 - 40f * ui);   // a long line: the track gives way to it
             if (x1 <= x0) return;
-            HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1f * ui, x1 - x0, 2f * ui), StripTrack);
+
             if (_crew.InHive)
             {
+                HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1f * ui, x1 - x0, 2f * ui), StripTrack);
                 var hull = new Vector2(x1 - 12f * ui, cy);
                 HoneyguideMesh.Hex(vh, new Vector2(x1, cy), 6f * ui, 0f, HiveBar);
                 HoneyguideMesh.Disc(vh, hull, 5f * ui, Ability);
                 HoneyguideMesh.Ring(vh, hull, 7f * ui, 8.5f * ui, 16, 0f, Alpha(Color.white, 0.8f));   // invulnerable
+                _stripHullX = -1f;
                 return;
             }
-            float d = _crew.StripDistance;
-            if (d < 0f) { HoneyguideMesh.Disc(vh, new Vector2(x0, cy), 5f * ui, Ability); return; }
-            float f = Mathf.Clamp01(d / Mathf.Max(1f, cfg.StripRangeU));
-            HoneyguideMesh.Poly(vh, new Vector2(x1, cy), 6f * ui, 4, Mathf.PI / 2f, Color.white);
-            HoneyguideMesh.Disc(vh, new Vector2(Mathf.Lerp(x1 - 12f * ui, x0, f), cy), 5f * ui, Ability);
+
+            var goal = _crew.Goal;
+            var ride = _crew.Ride;
+            float hitSecs = Mathf.Max(0.05f, cfg.StripHitSeconds);
+            var goalCol = _crew.GoalColour >= 1 ? cfg.ColourOf(_crew.GoalColour) : Cream;
+
+            // the track, and its ticks streaming left as the hull flies (faster on a ride)
+            HoneyguideMesh.Quad(vh, new Rect(x0, cy - 0.75f * ui, x1 - x0, 1.5f * ui), StripTrack);
+            float gap = 16f * ui, pace = Mathf.Clamp(_crew.HullSpeed * 0.8f, 10f, 140f) * ui * (ride != HoneyguideCrew.RideKind.None ? 3f : 1f);
+            float shift = Mathf.Repeat(now * pace, gap);
+            for (float x = x1 - shift; x > x0; x -= gap)
+            {
+                float edge = Mathf.Clamp01(Mathf.Min(x - x0, x1 - x) / (24f * ui));
+                HoneyguideMesh.Quad(vh, new Rect(x - 0.75f * ui, cy - 2.5f * ui, 1.5f * ui, 5f * ui), Alpha(StripTrack, 0.4f + 0.6f * edge));
+            }
+
+            // where the hull stands: back from the goal by its distance, eased so it glides
+            float d = _crew.GoalDistance, range = goal is HoneyguideCrew.HuntGoal.Crystal or HoneyguideCrew.HuntGoal.Hive
+                ? cfg.StripRangeU : cfg.AIHuntReach;
+            float near = x1 - 16f * ui, far = x0 + 10f * ui;
+            float want = goal == HoneyguideCrew.HuntGoal.None || d < 0f ? Mathf.Lerp(far, near, 0.5f)
+                : Mathf.Lerp(near, far, Mathf.Sqrt(Mathf.Clamp01(d / Mathf.Max(1f, range))));
+            _stripHullX = _stripHullX < 0f ? want : Mathf.Lerp(_stripHullX, want, 1f - Mathf.Exp(-6f * Time.unscaledDeltaTime));
+            var hullAt = new Vector2(_stripHullX, cy + Mathf.Sin(now * 3.1f) * 1.2f * ui);
+            var goalAt = new Vector2(x1, cy);
+
+            // the ride: a slip lights the track behind in its trail's colour; a dart leaves afterimages; the lasso is a line
+            if (ride == HoneyguideCrew.RideKind.Slip)
+            {
+                var sc = cfg.ColourOf(_crew.RideColour);
+                HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1.5f * ui, hullAt.x - x0, 3f * ui), Alpha(sc, 0.55f));
+                for (int k = 0; k < 3; k++)
+                {
+                    float len = (14f + 8f * Mathf.Repeat(now * 5f + k * 0.37f, 1f)) * ui, dy = (k - 1) * 3f * ui;
+                    HoneyguideMesh.Line(vh, hullAt + new Vector2(-6f * ui, dy), hullAt + new Vector2(-6f * ui - len, dy), 1.2f * ui, Alpha(sc, 0.8f));
+                }
+            }
+            else if (ride == HoneyguideCrew.RideKind.Jet)
+            {
+                for (int k = 1; k <= 3; k++)
+                    DrawHoneyguide(vh, hullAt - new Vector2(7f * k * ui, 0f), ui, now, Alpha(Ability, 0.45f / k));
+            }
+            else if (ride == HoneyguideCrew.RideKind.Reel && goal != HoneyguideCrew.HuntGoal.None)
+                HoneyguideMesh.Line(vh, hullAt, goalAt, 1.5f * ui, Alpha(Color.white, 0.85f));
+
+            // what it is after
+            float struck = (now - _crew.StruckAt) / hitSecs, broke = (now - _crew.BrokeAt) / hitSecs;
+            switch (goal)
+            {
+                case HoneyguideCrew.HuntGoal.Crystal:
+                {
+                    float pulse = 1f + 0.12f * Mathf.Sin(now * 4f);
+                    HoneyguideMesh.Poly(vh, goalAt, 9f * ui * pulse, 4, Mathf.PI / 2f, Alpha(Color.white, 0.18f));
+                    HoneyguideMesh.Poly(vh, goalAt, 6f * ui * pulse, 4, Mathf.PI / 2f, Color.white);
+                    break;
+                }
+                case HoneyguideCrew.HuntGoal.Hive:
+                    HoneyguideMesh.Hex(vh, goalAt, 6.5f * ui, 0f, HiveBar);
+                    HoneyguideMesh.HexRing(vh, goalAt, 9f * ui, 1.2f * ui, 0f, Alpha(HiveBar, 0.4f + 0.3f * Mathf.Sin(now * 3f)));
+                    break;
+                case HoneyguideCrew.HuntGoal.Fauna:
+                {
+                    // a creature: a round body that wriggles away, two feelers and a tail beating
+                    float jolt = struck < 1f ? (1f - struck) * 3f * ui * Mathf.Sin(now * 60f) : 0f;
+                    var at = goalAt + new Vector2(Mathf.Sin(now * 6f) * 1.5f * ui + jolt, Mathf.Sin(now * 9f) * 1f * ui);
+                    float beat = Mathf.Sin(now * 14f) * 2.5f * ui;
+                    HoneyguideMesh.Line(vh, at + new Vector2(3f * ui, 0f), at + new Vector2(9f * ui, beat), 1.2f * ui, goalCol);
+                    HoneyguideMesh.Line(vh, at + new Vector2(-2f * ui, 2f * ui), at + new Vector2(-6f * ui, 6f * ui + 0.4f * beat), 1f * ui, goalCol);
+                    HoneyguideMesh.Line(vh, at + new Vector2(-2f * ui, -2f * ui), at + new Vector2(-6f * ui, -6f * ui - 0.4f * beat), 1f * ui, goalCol);
+                    HoneyguideMesh.Disc(vh, at, 4.5f * ui, goalCol);
+                    HoneyguideMesh.Disc(vh, at + new Vector2(-1.8f * ui, 1.2f * ui), 1.1f * ui, Backdrop);
+                    goalAt = at;
+                    break;
+                }
+                case HoneyguideCrew.HuntGoal.Vessel:
+                {
+                    // a rival: an arrow turned to face the Honeyguide, in its colour
+                    float jolt = struck < 1f ? (1f - struck) * 3f * ui * Mathf.Sin(now * 60f) : 0f;
+                    var at = goalAt + new Vector2(jolt, Mathf.Sin(now * 2.3f) * 1.5f * ui);
+                    HoneyguideMesh.Poly(vh, at, 7f * ui, 3, Mathf.PI, goalCol);
+                    HoneyguideMesh.Poly(vh, at + new Vector2(2f * ui, 0f), 3f * ui, 3, Mathf.PI, Backdrop);
+                    goalAt = at;
+                    break;
+                }
+                case HoneyguideCrew.HuntGoal.Prisms:
+                {
+                    // an opposing prism mass: a cluster of hexes in its colour; a break knocks one out for a moment
+                    float s = 2.8f * ui;
+                    for (int k = 0; k < PrismCluster.Length; k++)
+                    {
+                        if (broke < 1f && k == _crew.BrokeCount % PrismCluster.Length) continue;
+                        HoneyguideMesh.Hex(vh, goalAt + PrismCluster[k] * s, s * 0.92f, 0f, k % 2 == 0 ? goalCol : Color.Lerp(goalCol, Backdrop, 0.3f));
+                    }
+                    break;
+                }
+            }
+
+            // the Honeyguide
+            DrawHoneyguide(vh, hullAt, ui, now, Ability);
+
+            // a Peck: three dots down the track toward the goal
+            float peck = now - _crew.PeckAt;
+            if (peck >= 0f && peck < 0.5f)
+                for (int k = 0; k < 3; k++)
+                {
+                    float u = Mathf.Clamp01((peck - 0.08f * k) / 0.3f);
+                    if (u <= 0f || u >= 1f) continue;
+                    HoneyguideMesh.Disc(vh, Vector2.Lerp(hullAt + new Vector2(7f * ui, 0f), goalAt, u), 1.4f * ui, Cream);
+                }
+
+            // a strike: a ring and sparks out of the target (or just ahead of the hull with no target)
+            if (struck >= 0f && struck < 1f)
+            {
+                var at = goal is HoneyguideCrew.HuntGoal.Fauna or HoneyguideCrew.HuntGoal.Vessel ? goalAt : hullAt + new Vector2(14f * ui, 0f);
+                float e = Ease(struck), fade = 1f - struck;
+                HoneyguideMesh.Ring(vh, at, (4f + 10f * e) * ui, (5.5f + 11f * e) * ui, 16, 0f, Alpha(Color.white, fade));
+                for (int k = 0; k < 6; k++)
+                {
+                    float a = k * Mathf.PI / 3f + 0.3f;
+                    var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                    HoneyguideMesh.Line(vh, at + dir * (6f + 8f * e) * ui, at + dir * (9f + 12f * e) * ui, 1.2f * ui, Alpha(ApFull, fade));
+                }
+            }
+
+            // a broken prism: shards thrown out of the mass (or off the nose), falling
+            if (broke >= 0f && broke < 1f)
+            {
+                var at = goal == HoneyguideCrew.HuntGoal.Prisms ? goalAt : hullAt + new Vector2(10f * ui, 0f);
+                float fade = 1f - broke, t = broke * hitSecs;
+                for (int k = 0; k < 5; k++)
+                {
+                    float a = 0.6f + k * 1.1f;
+                    var v = new Vector2(Mathf.Cos(a), Mathf.Sin(a) + 0.6f) * (22f * ui);
+                    var p = at + v * t + new Vector2(0f, -30f * ui * t * t);
+                    if (p.y < r.y || p.y > r.yMax) continue;   // shards stay in the strip
+                    HoneyguideMesh.Quad(vh, new Rect(p.x - 1f * ui, p.y - 1f * ui, 2f * ui, 2f * ui), Alpha(goalCol, fade));
+                }
+            }
+
+            // an omnicrystal taken (or a hive opened): a diamond burst from the hull
+            float took = (now - _crew.CrystalAt) / hitSecs;
+            if (took >= 0f && took < 1f)
+                HoneyguideMesh.Ring(vh, hullAt, (5f + 14f * Ease(took)) * ui, (6.5f + 15f * Ease(took)) * ui, 4, Mathf.PI / 2f, Alpha(Color.white, 1f - took));
+        }
+
+        // the hexes of the strip's prism mass, in hex radii from its centre
+        static readonly Vector2[] PrismCluster =
+        {
+            new(0f, 0f), new(1.73f, 0f), new(-0.87f, 1.5f), new(0.87f, 1.5f), new(-0.87f, -1.5f), new(0.87f, -1.5f),
+        };
+
+        // The strip's Honeyguide: an arrow pointing right with two wings beating.
+        static void DrawHoneyguide(VertexHelper vh, Vector2 at, float ui, float now, Color c)
+        {
+            float flap = Mathf.Sin(now * 12f) * 2.5f * ui;
+            HoneyguideMesh.Line(vh, at + new Vector2(-1f * ui, 0f), at + new Vector2(-5f * ui, 4f * ui + flap), 1.4f * ui, c);
+            HoneyguideMesh.Line(vh, at + new Vector2(-1f * ui, 0f), at + new Vector2(-5f * ui, -4f * ui - flap), 1.4f * ui, c);
+            HoneyguideMesh.Poly(vh, at, 5f * ui, 3, 0f, c);
         }
 
         const float ChargePop = 0.35f;   // seconds the landed charge swells and its ring spreads
