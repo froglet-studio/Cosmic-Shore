@@ -2882,6 +2882,17 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // Ready-up is a round trip through the host. With no host listening (a Relay drop whose
+            // recovery failed) the ServerRpc goes nowhere and latching would strand the player on
+            // "Waiting for others..." for good - so refuse, loudly, and keep the button.
+            var nm = NetworkManager.Singleton;
+            if (arcadeConfigSyncManager && (nm == null || !nm.IsListening))
+            {
+                CSDebug.LogWarning("[ArcadeConfigModal] Start refused - no network host is running " +
+                                   "(the connection dropped and was not recovered). Reconnect or restart, then try again.");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
