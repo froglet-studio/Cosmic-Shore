@@ -29,6 +29,7 @@ section here. The build that follows a pick is verified against the picked board
 | Menu Redesign | `menu-redesign` | The master tab: items 0-12 and every round from Rev 3 to Rev 40, each old page a titled section (newest first) | Shombith, 2026-11-02 (section 112) |
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
 | Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, section 113) | Shombith, 2026-11-02 (section 112) |
+| Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5298,3 +5299,32 @@ shows that are not authored lines yet (waypoints, odds, the cell-by-cell mix, th
 `VoyageLines` through `voyage_slice.json`, Garrett's file.
 
 Affects: Garrett's Voyage window (`author_voyage_window.py`, `VoyageJobsView`, `VoyageWindowModals`) once a pick is built.
+
+## 114. Rev 45 mockups: the Fleet Codex, a vessel in tabs (2026-11-02, awaiting a pick)
+
+**Asked (Shombith, 2026-11-02):** "Redo: inside the details of the vessels we need to categorize and not mix up
+everything. There should be specific tabs for elements, game modes and controls, for each mobile and PC and controller
+controls. Do a mockup of this ... Two mockups are fine." The subject is the Fleet Codex artifact
+(https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8, `/fleet-codex`), whose vessel view today is one long page with
+everything in it.
+
+**On the canvas:** a new tab, **Fleet Codex** (`fleet-codex`), the round titled "Rev 45 - Fleet Codex - a vessel in
+tabs". Copies: `Docs/MenuRedesignB/board/R45*.dc.html`. An options round, the Brittle Star in both with the live
+codex's data, drawn in the codex's own look (as the Compute Console tab draws the console in its own), the hangar
+render uploaded to the canvas:
+- **R45A · Tabs (recommended), interactive:** the vessel's identity (render, description, flight numbers) stays on the
+  left; the rest is four tabs: Elements, Game Modes, Controls, Docs and changes. Elements shows one element at a time
+  (Charge, Mass, Space, Time chips) with its button on all three devices, the full text, what it scales and its level 5.
+  Controls has three device tabs, Controller, PC and Mobile, each grouped Fly, Modes, Weapons. Recommended because it
+  answers "not mix up everything" most directly: one subject on screen, each with room for its full text.
+- **R45B · Rail, interactive:** a section rail on the left under a compact identity header; Elements puts all four side
+  by side (shortened text); Controls is one table, actions down and devices across, with All devices / Controller /
+  PC / Mobile to narrow it. Better for comparing; the full ability text does not fit.
+- **R45Notes:** what each changes and what the build needs.
+
+**Differs from the build:** the live codex's vessel view is one scroll (header, flight strip, four element cards,
+games, docs, changes) with each ability's pad and key only. Either option needs new data in
+`Tools/Build/fleet_codex.py`: each hull's phone scheme and buttons (`author_touch_profiles.py` / TouchControlProfiles)
+for the Mobile tab, and the flight rows (steer, aim) from the input strategies; the level-5 proposals A shows live only
+in vessel docs (read them from a marked table or drop the line); a ladder exists only for course-based modes. The fleet
+matrix stays as it is.
