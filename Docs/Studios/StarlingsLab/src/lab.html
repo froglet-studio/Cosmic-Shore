@@ -180,6 +180,15 @@
   const ELS = ['Mass', 'Time', 'Space', 'Charge'];
   const IMPL = {
     Mass: ['mass-mound-builders', 'mass-danger-drip', 'mass-carapace', 'mass-brood', 'mass-big-family', 'mass-snowball'],
+    Time: ['time-dragonfly', 'time-quickening', 'time-slipstream', 'time-skim-rush', 'time-agility', 'time-hummingbird', 'time-lead-time', 'time-skip-ahead', 'time-blink-step', 'time-out-of-phase',
+      'time-slingshot', 'time-save-point', 'time-fast-forward', 'time-metronome', 'time-synchrony', 'time-mayfly-couriers', 'time-rewind', 'time-echo-swarm', 'time-stopwatch', 'time-hurry-up'],
+    Space: ['space-hole-punch', 'space-wide-bite', 'space-annex', 'space-shield-eaters', 'space-black-hole', 'space-split'],
+    Charge: ['charge-lasers', 'charge-emp', 'charge-tesla-coil', 'charge-short-circuit', 'charge-sting', 'charge-chain-lightning'],
+  };
+  // the 24 cards the Unity game runs (Tools/Build/author_starling_assets.py marks these wired in the deck). The 14 Time
+  // cards added for the Time race (2026-11-02) are lab-only until /artifact-to-unity ports them and the race.
+  const IMPL_UNITY = {
+    Mass: ['mass-mound-builders', 'mass-danger-drip', 'mass-carapace', 'mass-brood', 'mass-big-family', 'mass-snowball'],
     Time: ['time-quickening', 'time-agility', 'time-dragonfly', 'time-skip-ahead', 'time-hurry-up', 'time-blink-step'],
     Space: ['space-hole-punch', 'space-wide-bite', 'space-annex', 'space-shield-eaters', 'space-black-hole', 'space-split'],
     Charge: ['charge-lasers', 'charge-emp', 'charge-tesla-coil', 'charge-short-circuit', 'charge-sting', 'charge-chain-lightning'],
@@ -189,13 +198,15 @@
   // first. Before this the AI took a random card of the element, which hid what an element can do on a course.
   const FAVOURITE = {
     Mass: ['mass-brood', 'mass-carapace', 'mass-big-family', 'mass-mound-builders', 'mass-snowball', 'mass-danger-drip'],
-    Time: ['time-skip-ahead', 'time-dragonfly', 'time-quickening', 'time-hurry-up', 'time-agility', 'time-blink-step'],
+    Time: ['time-skip-ahead', 'time-agility', 'time-quickening', 'time-hurry-up', 'time-slingshot', 'time-metronome', 'time-synchrony', 'time-slipstream', 'time-fast-forward', 'time-lead-time',
+      'time-hummingbird', 'time-mayfly-couriers', 'time-blink-step', 'time-stopwatch', 'time-rewind', 'time-save-point', 'time-out-of-phase', 'time-skim-rush', 'time-echo-swarm', 'time-dragonfly'],
     Space: ['space-hole-punch', 'space-shield-eaters', 'space-wide-bite', 'space-black-hole', 'space-split', 'space-annex'],
     Charge: ['charge-sting', 'charge-lasers', 'charge-emp', 'charge-short-circuit', 'charge-chain-lightning', 'charge-tesla-coil'],
   };
   for (const el of ELS) for (const id of IMPL[el]) if (!CARD[id]) throw new Error('Starlings Lab: card ' + id + ' is not in cards.json');
+  const TUNE = {};                 // tuning: TUNE[id][i] = [a, b] overrides stat i's numbers before they go into cards.json
   function sv(id, i, L) {           // stat i of card id at level L, by the card's own formula (same rule as the deck page)
-    const s = CARD[id].stats[i];
+    const s0 = CARD[id].stats[i], o = TUNE[id] && TUNE[id][i], s = o ? Object.assign({}, s0, { a: o[0], b: o[1] }) : s0;
     const v = s.kind === 'lin' ? s.a + s.b * (L - 1) : s.a * Math.pow(s.b, L - 1);
     return s.dec === 0 ? Math.floor(v + 1e-9) : v;
   }
@@ -231,19 +242,38 @@
   //   Hairpins: 8 switches that zigzag between the middle and the edge (sharp turns)
   // Intensity narrows the switches and adds rivals that hang round them and shoot starlings.
   const LAPS = 3;
-  const RACE_I = { 1: { ringR: 90, rivals: 0 }, 2: { ringR: 75, rivals: 1 }, 3: { ringR: 60, rivals: 2 }, 4: { ringR: 50, rivals: 3 } };
+  const RACE_I = { 1: { ringR: 90, gunners: 2, reef: 30 }, 2: { ringR: 75, gunners: 3, reef: 40 }, 3: { ringR: 60, gunners: 4, reef: 50 }, 4: { ringR: 50, gunners: 5, reef: 60 } };
+  // Hazards (Garrett, 2026-11-02: every Time card has its place, so the race has a situation for each). Each race turns
+  // each one on or off from its seed and shows them before the start:
+  //   gunners: rivals hang round the switches and shoot starlings (Blink Step, Rewind, Save Point, Stopwatch)
+  //   drift:   the switches circle the cell, so the swarm has to aim ahead (Lead Time, Hummingbird)
+  //   keys:    every other switch is locked until the swarm carries a key crystal through it; the keys lie off the line
+  //            (Mayfly Couriers, Hummingbird, Echo Swarm, Dragonfly)
+  //   reefs:   danger-prism reefs on every other leg kill starlings that fly into them (Out of Phase, Skim Rush)
+  // A switch counts after QUORUM passes: 3/4 of the swarm's START size. A full swarm threads in one pass; a swarm that
+  // has lost more than a quarter of itself must mill round the switch until its starlings have counted again (a starling
+  // counts again REPASS s after it last did), so every starling lost to a hazard costs time at every later switch.
+  const HAZARDS = { gunners: 'gunners at the switches', drift: 'switches drift', keys: 'locked switches', reefs: 'reefs' };
+  const QUORUM = 0.75, REPASS = 0.6, DRIFT_W = 0.1, GUN_FIRE = 0.5, GUN_RANGE = 300, REEF_KILL = 2;   // REEF_KILL: chance per second a starling in a reef dies
   const SHAPES = { open: { name: 'Open water', hint: 'long straights', n: 6, inner: 0.8 }, bends: { name: 'Bends', hint: 'medium turns', n: 8, inner: 0.55 }, hairpins: { name: 'Hairpins', hint: 'sharp turns', n: 8, inner: 0.3 } };
   const RACE_KEYS = ['open', 'bends', 'hairpins'];
-  let raceSel = 'random';
+  let FORCED = [], CONT_PICK = null;   // the look-ahead search's forced picks and continuation (see raceOne / lookAhead)
+  let raceSel = 'random', raceHazards = null;   // raceHazards: null draws them from the seed, else { gunners, drift, keys, reefs }
   function buildCourse() {      // W.course from raceSel, or from the seed when it is 'random'
     const key = raceSel === 'random' ? RACE_KEYS[seed % RACE_KEYS.length] : raceSel, sh = SHAPES[key], n = sh.n, rings = [];
     for (let k = 0; k < n; k++) {
       const a = k / n * Math.PI * 2, r = R * (k % 2 ? 0.85 : sh.inner), z = key === 'open' ? Math.sin(2 * a) * R * 0.25 : (k % 2 ? 1 : -1) * R * 0.2;
       rings.push([Math.cos(a) * r, Math.sin(a) * r, z]);
     }
-    W.course = { key, shape: key, rings, ringR: RACE_I[intensity].ringR };
+    const fr = mulberry32(seed * 7919 + 17), hz = {};
+    for (const h of Object.keys(HAZARDS)) hz[h] = raceHazards ? !!raceHazards[h] : fr() < 0.5;
+    W.course = { key, shape: key, rings, ringR: RACE_I[intensity].ringR, hz, spin: fr() < 0.5 ? 1 : -1 };
   }
-  const ringAt = (j) => W.course.rings[((j % W.course.rings.length) + W.course.rings.length) % W.course.rings.length];
+  const ringBase = (j) => W.course.rings[((j % W.course.rings.length) + W.course.rings.length) % W.course.rings.length];
+  function rot(p, a) { const c = Math.cos(a), s = Math.sin(a); return [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]]; }
+  const driftA = (t) => W.course.hz.drift ? DRIFT_W * W.course.spin * t : 0;
+  const ringAt = (j, t) => rot(ringBase(j), driftA(t == null ? W.t : t));
+  const isLocked = (j) => W.course.hz.keys && (j % W.course.rings.length) % 2 === 1;
   const raceLen = () => W.course.rings.length * LAPS;
 
   const v3 = (x, y, z) => [x, y, z];
@@ -262,13 +292,18 @@
       phase: 0, phaseT: 0, phaseCount: { omni: 0, elem: 0, vessel: 0, mass: 0 }, early: { omni: 0, elem: 0, vessel: 0, mass: 0 },
       elemTimes: [], gotY: 0, removedX: 0, debuffed: false, cd: {}, form: null, formT: 0, stats: { removed: 0, stolen: 0, laid: 0, petals: 0, kos: 0, debuffs: 0, fauna: 0, crystals: 0, omnis: 0, lost: 0 },
       events: [], nextId: 1, splitT: 0, blackHoleUsed: false };
-    W.done = 0; W.finishT = null;
+    W.done = 0; W.finishT = null; W.forced = FORCED; W.handN = 0; W.handLog = []; W.contPick = CONT_PICK;
     if (game === 'race') buildCourse();
     const n = Math.round(P.startSize), home = game === 'race' ? ringAt(-1) : [0, 0, 0];
     for (let i = 0; i < n; i++) { const o = inBall(rnd, 60); addMember([home[0] + o[0], home[1] + o[1], home[2] + o[2]]); }
-    if (game === 'race') {    // the course: switches, maybe an omnicrystal, rivals at the switches; no crystals, no fauna
+    if (game === 'race') {    // the course: switches, an omnicrystal on the line, and this race's hazards; no fauna
+      const hz = W.course.hz, n = W.course.rings.length; W.keys = 0; W.passes = 0; W.fetch = []; W.rewinds = []; W.saveLog = []; W.saveUsedLap = -1;
       spawnOmni();
-      for (let i = 0; i < RACE_I[intensity].rivals; i++) W.rivals.push(newRival());
+      if (hz.gunners) for (let i = 0; i < RACE_I[intensity].gunners; i++) { const r = newRival(); r.post = Math.floor(i * n / RACE_I[intensity].gunners); r.off = inBall(rnd, 90); W.rivals.push(r); }
+      if (hz.keys) for (let k = 1; k < n; k += 2) for (let i = 0; i < 1; i++) { const home = keyHome(k, (k >> 1) % 2); W.crystals.push({ p: home.slice(), home, el: 'Time', key: true, alive: true }); }
+      if (hz.reefs) for (let k = 0; k < n; k += 2) { const a = ringBase(k), b = ringBase(k + 1), mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+        for (let i = 0; i < RACE_I[intensity].reef; i++) { const o = inBall(rnd, 70); W.prisms.push({ p: [mid[0] + o[0], mid[1] + o[1], mid[2] + o[2]], team: 'E', shield: 0, danger: true, reef: true, alive: true, bites: 0 }); } }
+      W.drawEl = 'Time'; dealHand();   // the Time game is Time's own game: its hands are Time cards, and the first is dealt at the start line, with the course and its hazards in view
       return;
     }
     for (let c = 0; c < I.clusters; c++) {
@@ -283,9 +318,11 @@
   function addMember(p) { W.members.push({ id: W.nextId++, p: p.slice(), v: [W.rnd() - 0.5, W.rnd() - 0.5, W.rnd() - 0.5].map((x) => x * 40), shells: 0, shellT: 0, alive: true, sw: 0, laserT: W.rnd() }); }
   function spawnOmni() {
     if (game !== 'race') { W.omni = { p: inBall(W.rnd, R * 0.8) }; return; }
-    const a = ringAt(W.done + 1), b = ringAt(W.done + 2), o = inBall(W.rnd, 30);   // mid-leg, one leg ahead
-    W.omni = { p: [(a[0] + b[0]) / 2 + o[0], (a[1] + b[1]) / 2 + o[1], (a[2] + b[2]) / 2 + o[2]] };
+    const cut = has('time-hurry-up') ? sv('time-hurry-up', 0, lv('time-hurry-up')) / 100 : 0;   // Hurry Up: hands come round sooner
+    const a = ringBase(W.done + (cut ? Math.max(1, Math.floor(3 * (1 - cut) + W.rnd())) : 3));   // in the switch about three ahead, so a hand comes about every third switch
+    W.omni = { p: rot(a, driftA(W.t + 20)) };
   }
+  function keyHome(k, i) { const c = ringBase(k), l = Math.hypot(c[0], c[1]) || 1, side = i ? 1 : -1, out = 420; return [c[0] + c[0] / l * out * side * 0.6 + c[1] / l * out * 0.8, c[1] + c[1] / l * out * side * 0.6 - c[0] / l * out * 0.8, c[2] + (i ? 80 : -80)]; }
   function rivalWay() { if (game !== 'race') return inBall(W.rnd, R * 0.8); const c = ringAt(W.done + 1 + Math.floor(W.rnd() * 3)), o = inBall(W.rnd, 120); return [c[0] + o[0], c[1] + o[1], c[2] + o[2]]; }
   function newRival() { return { p: game === 'race' ? rivalWay() : inBall(W.rnd, R * 0.7), v: [0, 0, 0], way: rivalWay(), petals: 12, crystals: 3, silenced: 0, slowT: 0, slow: 0, fireT: W.rnd() * 2, layT: 0, nip: 0, stingN: 0, scT: 0, ko: 0 }; }
   const alive = () => W.members.filter((m) => m.alive);
@@ -303,7 +340,13 @@
 
   function swarmCount() { const L = lv('space-split'); if (!L) return 1; if (L >= 15) return 4; if (L >= 10) return 3; if (L >= 5) return 2; return W.splitT > 0 ? 2 : 1; }
   function targetFor(phaseIdx, at) {
-    if (game === 'race') return W.finishT == null ? ringAt(W.done) : at;   // racing: the objective is the next switch
+    if (game === 'race') {   // racing: the objective is the next switch (or a key for a locked one), aimed ahead with Lead Time
+      if (W.finishT != null) return at;
+      if (isLocked(W.done) && W.keys < 1) { const k = nearest(W.crystals, at, (c) => c.alive && c.key); if (k) return k.p; }
+      if (!has('time-lead-time')) return ringAt(W.done, W.t);
+      const eta = len(sub(ringAt(W.done, W.t), at)) / P.cruise;   // Lead Time: where the switch will be when the swarm gets there
+      return ringAt(W.done, W.t + Math.min(eta, sv('time-lead-time', 0, lv('time-lead-time'))));
+    }
     const k = PHASES[phaseIdx % 4].key;
     if (k === 'omni') return W.omni ? W.omni.p : at;
     if (k === 'elem') { const c = nearest(W.crystals, at, (c) => c.alive); return c ? c.p : at; }
@@ -326,6 +369,16 @@
     W.stats.removed++; W.removedX++;
   }
   function layPrism(p, opt) { W.prisms.push(Object.assign({ p: p.slice(), team: 'Y', shield: 0, danger: false, alive: true, bites: 0 }, opt || {})); W.stats.laid++; }
+  function segD2(a, b, p) {   // squared distance from p to the segment a-b
+    const ab = sub(b, a), ap = sub(p, a), l2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2];
+    const t = l2 ? Math.max(0, Math.min(1, (ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2]) / l2)) : 0;
+    return d2(p, [a[0] + ab[0] * t, a[1] + ab[1] * t, a[2] + ab[2] * t]);
+  }
+  function takeKey(c) { c.alive = false; c.respawn = 8; W.keys++; W.stats.crystals++; }
+  function killMember(m, why) {   // a starling lost; Rewind may bring it back 2 s later
+    m.alive = false; W.stats.lost++;
+    if (has('time-rewind') && W.rnd() < sv('time-rewind', 0, lv('time-rewind')) / 100) (W.rewinds || (W.rewinds = [])).push({ t: 2, p: m.p.slice() });
+  }
   function killFauna(f) { if (!f.alive) return false; f.alive = false; f.respawn = 12; W.stats.fauna++; return true; }
 
   // grid for prism contact queries, rebuilt every step (a few hundred inserts)
@@ -363,6 +416,12 @@
     if (picker === 'none') { W.hand = null; W.handEl = null; return; }
     // Time-race pickers: 'T:<card id>' builds Time and takes that card first; 'course' builds Time and takes the card the
     // race's random factors reward (RACE_PICK, from the measured scorecard); 'T:random' takes any Time card.
+    if (picker === 'seq') {   // the look-ahead search: forced picks first, then the continuation picker
+      const h = W.handN++; W.handLog.push(W.hand.map((c) => c.id));
+      const want = W.forced[h]; let fi = want ? W.hand.findIndex((c) => c.id === want) : -1;
+      if (fi < 0) { if (!W.handEl) fi = ELS.indexOf('Time'); else if (W.contPick) fi = W.contPick(W.hand.map((c) => c.id)); else fi = Math.floor(W.rnd() * W.hand.length); }
+      pick(fi); W.drawEl = 'Time'; return;
+    }
     const timeRace = picker === 'course' || picker.startsWith('T:');
     const pk = timeRace ? 'Time' : picker;
     let i = 0;
@@ -397,9 +456,19 @@
     const turn = Math.max(P.turn, has('time-agility') ? sv('time-agility', 0, lv('time-agility')) : 0) * Math.PI / 180;
     const reach = 25 * (has('space-wide-bite') ? sv('space-wide-bite', 0, lv('space-wide-bite')) / 100 : 1);
 
+    // ---- Time cards on a clock: Fast Forward (double time, cooldowns too), Metronome, Synchrony, Out of Phase ----
+    for (const k of ['ffT', 'syncT', 'slingT', 'phaseOutT']) W[k] = Math.max(0, (W[k] || 0) - dt);
+    if (has('time-fast-forward') && cooldown('ff', 20, dt)) W.ffT = sv('time-fast-forward', 0, lv('time-fast-forward'));
+    const cdt = W.ffT > 0 ? dt * 2 : dt;
+    if (has('time-synchrony') && cooldown('sync', sv('time-synchrony', 0, lv('time-synchrony')), cdt)) W.syncT = 0.6;
+    if (has('time-out-of-phase') && cooldown('oop', 15, cdt)) W.phaseOutT = sv('time-out-of-phase', 0, lv('time-out-of-phase'));
+    let beat = 1;
+    if (has('time-metronome')) { const L = lv('time-metronome'), every = sv('time-metronome', 0, L); W.beatT = ((W.beatT || 0) + cdt) % every; beat = W.beatT < 0.35 ? sv('time-metronome', 1, L) : 0.9; }
+    const clockMul = (W.ffT > 0 ? 2 : 1) * beat * (W.syncT > 0 ? sv('time-synchrony', 1, lv('time-synchrony')) : 1);
+
     // ---- forms (one at a time): Dragonfly, Snowball ----
     if (W.form) { W.formT -= dt; if (W.formT <= 0) { if (W.form === 'Snowball' && lv('mass-snowball') >= 10) for (const q of W.prisms) if (q.ball) { q.shield = 1; q.ball = false; } W.form = null; } }
-    if (!W.form && has('time-dragonfly') && cooldown('dragonfly', 15, dt)) { W.form = 'Dragonfly'; W.formT = sv('time-dragonfly', 1, lv('time-dragonfly')); }
+    if (!W.form && has('time-dragonfly') && cooldown('dragonfly', 15, cdt)) { W.form = 'Dragonfly'; W.formT = sv('time-dragonfly', 1, lv('time-dragonfly')); }
     else if (!W.form && has('mass-snowball') && cooldown('snowball', 20, dt)) { W.form = 'Snowball'; W.formT = sv('mass-snowball', 0, lv('mass-snowball')); }
     const dart = W.form === 'Dragonfly' ? sv('time-dragonfly', 0, lv('time-dragonfly')) : 1;
 
@@ -411,18 +480,50 @@
     const groups = []; for (let s = 0; s < nSw; s++) groups.push(ms.filter((m) => m.sw === s));
     const cents = groups.map(centroidOf), targets = groups.map((g, s) => targetFor(W.phase + s, cents[s]));
     W.centroid = centroidOf(ms);
-    if (game === 'race' && W.finishT == null && ms.length && d2(W.centroid, ringAt(W.done)) < W.course.ringR * W.course.ringR) {   // threaded a switch
-      W.done++; W.events.push({ t: W.t, kind: 'switch', n: W.done });
-      if (W.done >= raceLen()) { W.finishT = W.t; W.events.push({ t: W.t, kind: 'finish' }); }
+    if (game === 'race' && W.finishT == null && ms.length) {   // threading: QUORUM members through the switch (Echo Swarm's ghost counts too)
+      const ring = ringAt(W.done), rr = W.course.ringR * W.course.ringR, ghost = has('time-echo-swarm') ? sv('time-echo-swarm', 0, lv('time-echo-swarm')) / 100 : 0;
+      if (!isLocked(W.done) || W.keys >= 1) for (const m of ms) {
+        if (segD2(m.pp || m.p, m.p, ring) < rr && (m.thr !== W.done || W.t - m.thrT >= REPASS)) { m.thr = W.done; m.thrT = W.t; W.passes += 1 + ghost; }   // counts again after REPASS s
+      }
+      if (W.passes >= Math.ceil(P.startSize * QUORUM)) {
+        if (isLocked(W.done)) W.keys--;
+        W.done++; W.passes = 0; W.events.push({ t: W.t, kind: 'switch', n: W.done });
+        if (W.done >= raceLen()) { W.finishT = W.t; W.events.push({ t: W.t, kind: 'finish' }); }
+      }
     }
+    // ---- Slingshot: when the objective is far, the swarm draws back and flings itself at it ----
+    if (has('time-slingshot') && !W.slingT) { const L = lv('time-slingshot'), dist = len(sub(targets[0], cents[0])); if (dist > 450 && cooldown('sling', sv('time-slingshot', 1, L), cdt)) W.slingT = sv('time-slingshot', 0, L) / (P.cruise * 2); }
+    // ---- Hummingbird: near its objective the swarm turns on the spot and sips keys in ----
+    const humming = has('time-hummingbird') && len(sub(targets[0], cents[0])) < 200;
+    if (humming && game === 'race') { const sip = sv('time-hummingbird', 0, lv('time-hummingbird')); for (const c of W.crystals) if (c.alive && c.key && d2(c.p, W.centroid) < sip * sip * 4) takeKey(c); }
+    // ---- Mayfly Couriers: mayflies fetch keys for a locked switch ahead ----
+    if (game === 'race' && W.course.hz.keys && has('time-mayfly-couriers')) {
+      const L = lv('time-mayfly-couriers'), n = sv('time-mayfly-couriers', 0, L), sp = sv('time-mayfly-couriers', 1, L);
+      W.fetch = W.fetch.filter((f) => { f.t -= cdt; if (f.t <= 0) { W.keys++; return false; } return true; });
+      if (W.keys + W.fetch.length < 1 + (isLocked(W.done + 1) ? 1 : 0) && W.fetch.length < n) { const c = nearest(W.crystals, W.centroid, (c) => c.alive && c.key && d2(c.p, W.centroid) < 900 * 900); if (c) { c.alive = false; c.respawn = 8; W.fetch.push({ t: 2 * len(sub(c.p, W.centroid)) / sp }); } }
+    }
+    // ---- Save Point: once a lap, a swarm knocked to its minimum rewinds to its size a few seconds ago ----
+    if (game === 'race') {
+      W.saveLog.push([W.t, ms.length]); while (W.saveLog.length > 2 && W.saveLog[1][0] < W.t - 12) W.saveLog.shift();
+      const lap = Math.floor(W.done / W.course.rings.length);
+      if (has('time-save-point') && W.saveUsedLap !== lap && ms.length <= minS + 2) {
+        const back = sv('time-save-point', 0, lv('time-save-point')), then = W.saveLog.find((e) => e[0] >= W.t - back) || W.saveLog[0];
+        for (let i = ms.length; i < then[1]; i++) addMember(W.centroid);
+        W.saveUsedLap = lap; W.events.push({ t: W.t, kind: 'save point' }); ms = alive();
+      }
+    }
+    if (W.rewinds) W.rewinds = W.rewinds.filter((r) => { r.t -= dt; if (r.t <= 0) { addMember(r.p); return false; } return true; });
 
     // ---- Skip Ahead: the swarm skips a moment of travel toward its objective ----
-    if (has('time-skip-ahead') && cooldown('skip', sv('time-skip-ahead', 0, lv('time-skip-ahead')), dt)) {
+    if (has('time-skip-ahead') && cooldown('skip', sv('time-skip-ahead', 0, lv('time-skip-ahead')), cdt)) {
       const dist = sv('time-skip-ahead', 1, lv('time-skip-ahead'));
       for (let s = 0; s < nSw; s++) { const dv = sub(targets[s], cents[s]), L = len(dv); if (L < 30) continue; const k = Math.min(dist, L - 20) / L; for (const m of groups[s]) { m.p[0] += dv[0] * k; m.p[1] += dv[1] * k; m.p[2] += dv[2] * k; } }
     }
 
     // ---- members move: seek the objective, flock, wander; turn-rate limited ----
+    const slip = has('time-slipstream') ? sv('time-slipstream', 0, lv('time-slipstream')) / 100 : 0;
+    const skimPer = has('time-skim-rush') ? sv('time-skim-rush', 0, lv('time-skim-rush')) / 100 : 0;
+    const humTurn = has('time-hummingbird') ? sv('time-hummingbird', 1, lv('time-hummingbird')) * Math.PI / 180 : 0;
     for (const m of ms) {
       const s = m.sw, c = cents[s];
       let goal = targets[s];
@@ -431,18 +532,24 @@
       const toG = sub(goal, m.p), lg = len(toG) || 1;
       for (let a = 0; a < 3; a++) want[a] += toG[a] / lg * 1.0;
       const toC = sub(c, m.p), lc = len(toC) || 1;
-      const tight = W.form === 'Snowball' ? 3 : W.form === 'Dragonfly' ? 1.5 : 0.35;
+      const tight = W.form === 'Snowball' ? 3 : W.form === 'Dragonfly' ? 1.5 : W.syncT > 0 ? 1.5 : 0.35;
       for (let a = 0; a < 3; a++) want[a] += toC[a] / lc * tight * Math.min(1, lc / 80);
-      for (const o of groups[s]) { if (o === m) continue; const dd = d2(o.p, m.p); if (dd < 400 && dd > 0) { const k = (W.form === 'Snowball' ? 0.3 : 1) / Math.sqrt(dd); for (let a = 0; a < 3; a++) want[a] += (m.p[a] - o.p[a]) * k; } }
+      let draft = false; const vl0 = len(m.v) || 1;
+      for (const o of groups[s]) { if (o === m) continue; const dd = d2(o.p, m.p); if (dd < 400 && dd > 0) { const k = (W.form === 'Snowball' ? 0.3 : 1) / Math.sqrt(dd); for (let a = 0; a < 3; a++) want[a] += (m.p[a] - o.p[a]) * k; }
+        if (slip && !draft && dd < 1600) { const ah = ((o.p[0] - m.p[0]) * m.v[0] + (o.p[1] - m.p[1]) * m.v[1] + (o.p[2] - m.p[2]) * m.v[2]) / vl0; if (ah > 0.85 * Math.sqrt(dd)) draft = true; } }
       for (let a = 0; a < 3; a++) want[a] += (rnd() - 0.5) * 0.6;
       const r0 = len(m.p); if (r0 > R * 0.95) for (let a = 0; a < 3; a++) want[a] -= m.p[a] / r0 * 2;
       const arrive = Math.min(1, 0.35 + lg / 150);   // members ease in at the objective instead of overshooting it
-      const speed = P.cruise * (1 + quick) * dart * arrive;
+      // bursts (Dragonfly's dart, Slingshot's fling, the clock cards' surges) push along the line to the objective only: a
+      // starling turning away from it gets none of the burst, so a burst carries the swarm at its objective, not past it
+      const burst = dart * clockMul * (W.slingT > 0 ? 3 : 1), vl1 = len(m.v) || 1;
+      const align = burst > 1 ? Math.max(0, ((m.v[0] * toG[0] + m.v[1] * toG[1] + m.v[2] * toG[2]) / (vl1 * lg) - 0.5) * 2) : 1;
+      const speed = P.cruise * (1 + quick) * (1 + (burst - 1) * align) * arrive * (draft ? 1 + slip : 1) * (1 + (m.skim || 0) * skimPer);
       const lw = len(want) || 1, dir = want.map((x) => x / lw), vl = len(m.v) || 1, cur = m.v.map((x) => x / vl);
-      const dot = Math.max(-1, Math.min(1, cur[0] * dir[0] + cur[1] * dir[1] + cur[2] * dir[2])), ang = Math.acos(dot), maxA = turn * dt * (W.form ? 2 : 1);
+      const dot = Math.max(-1, Math.min(1, cur[0] * dir[0] + cur[1] * dir[1] + cur[2] * dir[2])), ang = Math.acos(dot), maxA = (humming ? Math.max(turn, humTurn) : turn) * dt * (W.form ? 2 : 1) * (W.slingT > 0 ? 0.5 : 1);
       let nd = dir;
       if (ang > maxA) { const t = maxA / ang; nd = [cur[0] + (dir[0] - cur[0]) * t, cur[1] + (dir[1] - cur[1]) * t, cur[2] + (dir[2] - cur[2]) * t]; const l = len(nd) || 1; nd = nd.map((x) => x / l); }
-      m.v = nd.map((x) => x * speed);
+      m.v = nd.map((x) => x * speed); m.pp = m.p.slice();   // pp: where it was, so a fast starling can't skip through a switch between steps
       for (let a = 0; a < 3; a++) m.p[a] += m.v[a] * dt;
     }
 
@@ -452,10 +559,13 @@
     const bitesNeed = has('space-shield-eaters') ? Math.max(1, sv('space-shield-eaters', 0, lv('space-shield-eaters'))) : Infinity;
     const baseBite = 0.5;    // lab: a bare member's chance per second to break a plain enemy prism it touches
     for (const m of ms) {
-      for (const c of W.crystals) if (c.alive && d2(c.p, m.p) < 28 * 28) { c.alive = false; c.respawn = 6; W.stats.crystals++; if (PHASES[W.phase].key === 'elem' || (nSw > 1)) W.gotY++; if (alive().length < cap) addMember(c.p); }   // lab: each elemental crystal hatches one starling
+      if (skimPer) { let sk = false; near(m.p, 45, (q) => { if (q.team === 'E') sk = true; }); m.skim = Math.max(0, Math.min(5, (m.skim || 0) + (sk ? dt * 3 : -dt))); }
+      if (game === 'race' && W.course.hz.reefs && !(W.phaseOutT > 0)) { let hit = false; near(m.p, 12, (q) => { if (q.reef && q.alive) hit = true; }); if (hit && ms.length > minS && rnd() < REEF_KILL * dt) { killMember(m, 'reef'); continue; } }
+      for (const c of W.crystals) if (c.alive && c.key && d2(c.p, m.p) < 28 * 28) takeKey(c);
+      for (const c of W.crystals) if (c.alive && !c.key && d2(c.p, m.p) < 28 * 28) { c.alive = false; c.respawn = 6; W.stats.crystals++; if (PHASES[W.phase].key === 'elem' || (nSw > 1)) W.gotY++; if (alive().length < cap) addMember(c.p); }   // lab: each elemental crystal hatches one starling
       if (W.omni && d2(W.omni.p, m.p) < 20 * 20) { W.omni = null; W.omniRespawn = 4; W.stats.omnis++; if (PHASES[W.phase].key === 'omni') endPhase(true); else dealHand(); }
       near(m.p, reach, (q) => {
-        if (q.team !== 'E') return;
+        if (q.team !== 'E' || q.reef) return;
         if (q.shield) { if (bitesNeed < Infinity && rnd() < dt * 2) { q.bites++; if (q.bites >= bitesNeed) { q.shield = 0; q.bites = 0; } } return; }
         if (stealRate && rnd() < stealRate * dt) { removePrism(q, 'steal'); return; }
         if (rnd() < (baseBite + holeRate) * dt) removePrism(q, 'break');
@@ -523,20 +633,22 @@
     for (const r of W.rivals) {
       if (r.ko) { r.ko -= dt; if (r.ko <= 0) Object.assign(r, newRival()); continue; }
       r.silenced = Math.max(0, r.silenced - dt); r.slowT = Math.max(0, r.slowT - dt);
-      if (d2(r.p, r.way) < 60 * 60 || (game === 'race' && W.t % 4 < dt)) r.way = rivalWay();
-      const to = sub(r.way, r.p), l = len(to) || 1, sp = 90 * (r.slowT > 0 ? 0.6 : 1);   // lab: rivals cruise 90 u/s, slower than the starlings
+      if (r.post != null) { const c = ringAt(r.post); r.way = [c[0] + r.off[0], c[1] + r.off[1], c[2] + r.off[2]]; }   // a gunner holds its switch
+      else if (d2(r.p, r.way) < 60 * 60 || (game === 'race' && W.t % 4 < dt)) r.way = rivalWay();
+      const to = sub(r.way, r.p), l = len(to) || 1, sp = 90 * (r.slowT > 0 ? 0.6 : 1) * (has('time-stopwatch') && d2(r.p, W.centroid) < Math.pow(sv('time-stopwatch', 1, lv('time-stopwatch')), 2) ? 1 - sv('time-stopwatch', 0, lv('time-stopwatch')) / 100 : 1);   // lab: rivals cruise 90 u/s, slower than the starlings
       r.v = to.map((x) => x / l * sp); for (let a = 0; a < 3; a++) r.p[a] += r.v[a] * dt;
-      r.layT += dt; if (r.layT > 1.5) { r.layT = 0; W.prisms.push({ p: r.p.slice(), team: 'E', shield: 0, danger: false, alive: true, bites: 0 }); }
-      for (const c of W.crystals) if (c.alive && d2(c.p, r.p) < 20 * 20) { c.alive = false; c.respawn = 6; r.crystals++; }
+      r.layT += dt; if (game !== 'race' && r.layT > 1.5) { r.layT = 0; W.prisms.push({ p: r.p.slice(), team: 'E', shield: 0, danger: false, alive: true, bites: 0 }); }
+      for (const c of W.crystals) if (c.alive && !c.key && d2(c.p, r.p) < 20 * 20) { c.alive = false; c.respawn = 6; r.crystals++; }
       near(r.p, 14, (q) => { if (q.team === 'Y' && q.danger) { q.alive = false; r.slowT = 2; hurtRival(r, 1, 'danger prism'); } });
       r.fireT -= dt;
       if (r.fireT <= 0 && r.silenced <= 0) {
-        r.fireT = I.fire;
-        const tgt = nearest(ms, r.p, (m) => d2(m.p, r.p) < 220 * 220);
+        r.fireT = r.post != null ? GUN_FIRE : I.fire;
+        const tgt = nearest(ms, r.p, (m) => d2(m.p, r.p) < (r.post != null ? GUN_RANGE : 220) ** 2);
         if (tgt) {
           W.events.push({ t: W.t, kind: 'shot', a: r.p.slice(), b: tgt.p.slice() });
           const nowAlive = alive().length;
-          if (nowAlive > minS && rnd() < 0.5 && rnd() >= dodge) { if (tgt.shells > 0) tgt.shells--; else { tgt.alive = false; W.stats.lost++; } }
+          const sw = has('time-stopwatch') && d2(r.p, W.centroid) < Math.pow(sv('time-stopwatch', 1, lv('time-stopwatch')) + 220, 2) ? sv('time-stopwatch', 0, lv('time-stopwatch')) / 100 : 0;
+          if (nowAlive > minS && rnd() < 0.5 * (1 - sw) && rnd() >= dodge) { if (tgt.shells > 0) tgt.shells--; else killMember(tgt, 'shot'); }
         }
       }
     }
@@ -552,7 +664,7 @@
     }
 
     // ---- respawns and tidy ----
-    for (const c of W.crystals) if (!c.alive && !c.dropped) { c.respawn -= dt; if (c.respawn <= 0) { c.alive = true; c.p = inBall(rnd, R * 0.85); } }
+    for (const c of W.crystals) if (!c.alive && !c.dropped) { c.respawn -= dt; if (c.respawn <= 0) { c.alive = true; c.p = c.home ? c.home.slice() : inBall(rnd, R * 0.85); } }
     W.crystals = W.crystals.filter((c) => c.alive || !c.dropped);
     if (!W.omni) { W.omniRespawn -= dt; if (W.omniRespawn <= 0) spawnOmni(); }
     if (W.t % 5 < dt) { W.prisms = W.prisms.filter((q) => q.alive); W.members = W.members.filter((m) => m.alive); }
@@ -610,7 +722,7 @@
     opts = opts || {};
     const seeds = opts.seeds || [1, 2, 3, 4, 5], seconds = opts.seconds || 600, dt = 0.1, level = opts.level || 5;
     const saved = { seed, picker, game, raceSel, intensity }, rows = [];
-    if (opts.course) raceSel = opts.course; if (opts.intensity) intensity = opts.intensity;
+    if (opts.course) raceSel = opts.course; if (opts.intensity) intensity = opts.intensity; const savedHz = raceHazards; if (opts.hazards !== undefined) raceHazards = opts.hazards;
     const savedLv = P.lvTime; P.lvTime = level; game = 'race';
     for (const va of (opts.variants || RACE_VARIANTS)) {
       picker = va.picker; let tot = 0, best = Infinity, worst = 0, hands = 0, lost = 0;
@@ -623,8 +735,36 @@
       const k = seeds.length;
       rows.push({ variant: va.name, race: +(tot / k).toFixed(1), best: +best.toFixed(1), worst: +worst.toFixed(1), hands: +(hands / k).toFixed(1), lost: +(lost / k).toFixed(1) });
     }
-    P.lvTime = savedLv; picker = saved.picker; game = saved.game; raceSel = saved.raceSel; intensity = saved.intensity; reset(saved.seed);
+    P.lvTime = savedLv; raceHazards = savedHz; picker = saved.picker; game = saved.game; raceSel = saved.raceSel; intensity = saved.intensity; reset(saved.seed);
     return rows;
+  }
+  // `give` ({ id: level }) hands the swarm those cards at the start and deals no picks (the combo table); `priority` (card
+  // ids, best first) picks by a fixed plan (the strategy table).
+  // One race, deterministic: seed, course, hazards, intensity, a forced pick sequence (card ids, one per hand; the first
+  // hand is the spread, where a Time builder takes the Time card), then `cont` picks: a function(handIds) -> index, or random.
+  function raceOne(o) {
+    const saved = { seed, picker, game, raceSel, raceHazards, intensity, lv: P.lvTime };
+    raceSel = o.course || 'random'; raceHazards = o.hazards === undefined ? null : o.hazards; if (o.intensity) intensity = o.intensity;
+    P.lvTime = o.level || 5; game = 'race'; picker = o.give ? 'none' : 'seq'; FORCED = o.forced || [];
+    CONT_PICK = o.cont || (o.priority ? (ids) => { let b = 0; for (let k = 1; k < ids.length; k++) if (o.priority.indexOf(ids[k]) < o.priority.indexOf(ids[b])) b = k; return b; } : null);
+    reset(o.seed); if (o.give) Object.assign(W.held, o.give); if (o.size) alive().slice(o.size).forEach((m) => { m.alive = false; });   // size: start short (a measuring hook)
+    const cap = o.seconds || 600;
+    for (let i = 0; i < cap / 0.1 && W.finishT == null; i++) simStep(0.1);
+    const out = { time: W.finishT == null ? cap : W.finishT, hands: W.handLog.slice(), held: Object.assign({}, W.held), lost: W.stats.lost, course: W.course.key, hz: Object.assign({}, W.course.hz) };
+    FORCED = []; CONT_PICK = null; P.lvTime = saved.lv; picker = saved.picker; game = saved.game; raceSel = saved.raceSel; raceHazards = saved.raceHazards; intensity = saved.intensity; reset(saved.seed);
+    return out;
+  }
+  // The look-ahead picker (tactics with perfect foresight of this race): at each hand it races every card in the hand to
+  // the finish (later hands picked by `cont`) and keeps the fastest. Its picks are what "optimal" means on the scorecard.
+  function lookAhead(o) {
+    const seq = []; let base = raceOne(Object.assign({}, o, { forced: seq })), steps = 0;
+    while (seq.length < base.hands.length && steps++ < 12) {
+      const hand = base.hands[seq.length];
+      let best = null;
+      for (const id of [...new Set(hand)]) { const r = raceOne(Object.assign({}, o, { forced: seq.concat([id]) })); if (!best || r.time < best.r.time) best = { id, r }; }
+      seq.push(best.id); base = best.r;
+    }
+    return { picks: seq, time: base.time, held: base.held, course: base.course, hz: base.hz };
   }
   // every course at one intensity: the race time of each build on each course
   function runRaceCourses(opts) {
@@ -674,9 +814,9 @@
     // the cell wall
     const cc = proj([0, 0, 0]); ctx.strokeStyle = 'rgba(120,180,220,.25)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(cc[0], cc[1], R * sc, 0, 7); ctx.stroke();
     if (game === 'race') {   // the switches: a dotted racing line, the next switch bright, its number and lap beside it
-      const rs = W.course.rings, st = rs.map(proj), nx = W.done % rs.length;
+      const rs = W.course.rings.map((_, j) => ringAt(j)), st = rs.map(proj), nx = W.done % rs.length;
       ctx.setLineDash([4 * dpr, 6 * dpr]); ctx.strokeStyle = 'rgba(230,220,160,.35)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); st.forEach((q, j) => (j ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
-      st.forEach((q, j) => { const cur = j === nx && W.finishT == null; ctx.globalAlpha = cur ? 1 : Math.max(0.35, fade(q[2])); ctx.strokeStyle = cur ? '#ffe28a' : 'rgba(230,220,160,.7)'; ctx.lineWidth = (cur ? 3 : 1.5) * dpr; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(6 * dpr, W.course.ringR * sc), 0, 7); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.font = (11 * dpr) + 'px system-ui'; ctx.fillText(String(j + 1), q[0] + 10 * dpr + W.course.ringR * sc, q[1] - 8 * dpr); });
+      st.forEach((q, j) => { const cur = j === nx && W.finishT == null; ctx.globalAlpha = cur ? 1 : Math.max(0.35, fade(q[2])); ctx.strokeStyle = cur ? '#ffe28a' : 'rgba(230,220,160,.7)'; ctx.lineWidth = (cur ? 3 : 1.5) * dpr; if (isLocked(j)) ctx.setLineDash([3 * dpr, 3 * dpr]); ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(6 * dpr, W.course.ringR * sc), 0, 7); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = ctx.strokeStyle; ctx.font = (11 * dpr) + 'px system-ui'; ctx.fillText(String(j + 1) + (isLocked(j) ? ' locked' : ''), q[0] + 10 * dpr + W.course.ringR * sc, q[1] - 8 * dpr); });
       ctx.globalAlpha = 1;
     }
     // prisms
@@ -740,7 +880,7 @@
       d.lastChild.style.width = on ? (100 * Math.min(1, W.phaseT / L)) + '%' : '0';
     });
     const s = score(), held = Object.keys(W.held).length;
-    $('hudText').textContent = (game === 'race' ? 'Time race, ' + SHAPES[W.course.shape].name + ' (' + SHAPES[W.course.shape].hint + '): switch ' + Math.min(raceLen(), W.done + 1) + ' / ' + raceLen() + ', lap ' + Math.min(LAPS, Math.floor(W.done / W.course.rings.length) + 1) + ' / ' + LAPS + '  ·  ' + (W.finishT != null ? 'FINISHED in ' + W.finishT.toFixed(1) + ' s' : W.t.toFixed(1) + ' s') + '  ·  ' : '') + 'Starlings ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
+    $('hudText').textContent = (game === 'race' ? 'Time race, ' + SHAPES[W.course.shape].name + ' (' + SHAPES[W.course.shape].hint + (Object.keys(HAZARDS).filter((h) => W.course.hz[h]).map((h) => ', ' + HAZARDS[h]).join('')) + '): switch ' + Math.min(raceLen(), W.done + 1) + ' / ' + raceLen() + (W.course.hz.keys ? ', keys ' + W.keys : '') + ', lap ' + Math.min(LAPS, Math.floor(W.done / W.course.rings.length) + 1) + ' / ' + LAPS + '  ·  ' + (W.finishT != null ? 'FINISHED in ' + W.finishT.toFixed(1) + ' s' : W.t.toFixed(1) + ' s') + '  ·  ' : '') + 'Starlings ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
     drawHand();
   }
   let handShown = null;
@@ -963,7 +1103,7 @@
     LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, CARDS, IMPL,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || 1 / 30; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
-    reset, score, runBatch, runRace, runRaceCourses, setCourse(c) { raceSel = c; reset(); }, give(id, level) { W.held[id] = level; }, setParam, setGame(g) { game = g; reset(); }, record, pick, turnView,
+    reset, score, runBatch, runRace, runRaceCourses, raceOne, lookAhead, setCourse(c) { raceSel = c; reset(); }, setHazards(h) { raceHazards = h; reset(); }, TUNE, HAZARDS, RACE_KEYS, raceState: () => W.course && { course: W.course, done: W.done, finishT: W.finishT, keys: W.keys, held: Object.assign({}, W.held), members: alive().length, hands: W.hands, t: W.t }, give(id, level) { W.held[id] = level; }, setParam, setGame(g) { game = g; reset(); }, record, pick, turnView,
     setIntensity(i) { intensity = i; reset(); }, setPicker(p) { picker = p; },
     state: () => ({ t: W.t, seed, intensity, picker, phase: PHASES[W.phase].key, phaseT: W.phaseT, members: alive().length, hand: W.hand && W.hand.map((c) => c.id), drawEl: W.drawEl, held: Object.assign({}, W.held), form: W.form }),
   };
