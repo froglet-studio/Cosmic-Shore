@@ -23,6 +23,9 @@ gets a profile of their own, named after them, so the race's toasts name the rea
 
 --game films with a player built in another checkout (when this one's Amoebius does not build): its player,
 its assets (COSMIC_SHORE_PROJECT) and its enums; moments in modes or hulls that checkout lacks are skipped.
+
+--cut REEL.json re-films an earlier reel's cut list: the same moments, in its order, each on the shot it was
+filmed on (to compare two players on one cut); --moments, --count, --explore and --rival-shots are then unused.
 """
 from __future__ import annotations
 
@@ -168,7 +171,7 @@ def profile_recordings(recordings, pilot):
 
 
 def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=None, slow=0.4, shot="pilot"):
-    flight_path = m["path"] if os.path.exists(m["path"]) else next(iter(glob.glob(os.path.join(flights_root, "**", m["flight"]), recursive=True)), None)
+    flight_path = m["path"] if os.path.exists(m.get("path", "")) else next(iter(glob.glob(os.path.join(flights_root, "**", m["flight"]), recursive=True)), None)
     if not flight_path:
         raise SystemExit(f"flight {m['flight']} not found under {flights_root}")
     pilot = PILOT_NAMES.get(m.get("pilot", ""), m.get("pilot", "") or "Pilot")
@@ -257,13 +260,15 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
 
 def _commit(repo):
     r = subprocess.run(["git", "-C", repo, "rev-parse", "--short=10", "HEAD"], capture_output=True, text=True)
-    return r.stdout.strip() or None
+    dirty = subprocess.run(["git", "-C", repo, "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True)
+    return (r.stdout.strip() + ("-dirty" if dirty.stdout.strip() else "")) or None  # a local patch shows
 
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # the console's replies carry symbols a cp1252 console cannot print
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--moments", required=True)
+    ap.add_argument("--moments")
+    ap.add_argument("--cut", help="an earlier reel's cut list (REEL.json) to film again: its moments and shots")
     ap.add_argument("--flights", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--count", type=int, default=6)
@@ -283,13 +288,19 @@ def main():
     a = ap.parse_args()
     game = os.path.abspath(a.game) if a.game else None
 
-    doc = json.load(open(a.moments))
-    modes, hulls, _ = flight_to_replay.enums(game)
-    used = set()
-    for e in a.exclude:
-        used |= {c["flight"] for c in json.load(open(e)).get("moments", [])}
-    chosen = pick(doc.get("all") or doc["top"], a.count,
-                  lambda m: m["mode"] in modes and m["hull"] in hulls, used, a.explore, a.seed)
+    if a.cut:
+        doc = json.load(open(a.cut))
+        chosen = sorted(doc["moments"], key=lambda c: c["index"])
+    elif a.moments:
+        doc = json.load(open(a.moments))
+        modes, hulls, _ = flight_to_replay.enums(game)
+        used = set()
+        for e in a.exclude:
+            used |= {c["flight"] for c in json.load(open(e)).get("moments", [])}
+        chosen = pick(doc.get("all") or doc["top"], a.count,
+                      lambda m: m["mode"] in modes and m["hull"] in hulls, used, a.explore, a.seed)
+    else:
+        sys.exit("--moments or --cut is required")
     rng = random.Random(a.seed + 1)
     exe = player_exe(a.player, os.path.join(game, "Port", "src", "CosmicShore.Player") if game else PLAYER_PROJECT)
     os.makedirs(a.out, exist_ok=True)
@@ -301,6 +312,8 @@ def main():
               + ", ".join(e["type"] for e in m["events"]))
         with_rival = any(e["type"] in RIVAL_EVENTS for e in m["events"])
         shot = "rival" if with_rival and rng.random() < a.rival_shots else "pilot"
+        if a.cut:
+            shot = "rival" if m.get("shot", "").endswith("next pilot") else "pilot"
         clip, rows, dur, shot = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every, game, a.slow, shot)
         clips.append(clip)
         durs.append(dur)
@@ -330,7 +343,7 @@ def main():
             t += durs[i] - (fade if i < len(cuts) - 1 else 0)
             c["reel_end"] = round(t, 2)
     json.dump({"schema": "cosmic-shore.reel/1", "reel": os.path.basename(reel), "renderer": "amoebius",
-               "weights": doc.get("weights"),
+               "weights": doc.get("weights"), "cut_from": os.path.basename(a.cut) if a.cut else None,
                "player_commit": _commit(game or REPO), "moments": cuts}, open(os.path.join(a.out, f"{a.name}.json"), "w"), indent=1)
     print(f"wrote {reel}")
 
