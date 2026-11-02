@@ -84,8 +84,16 @@ namespace CosmicShore.UI
         ControlGlyphSetSO glyphSet;
 
         [SerializeField, Tooltip("Element petal artwork, shared with the HUD's flower row. Empty " +
-                                 "loads Resources/ElementalBarsConfig.")]
+                                 "loads Resources/ElementalBarsConfig. Only the fallback for an empty " +
+                                 "Element Shapes slot: a row's element mark is the element's SHAPE.")]
         ElementalBarsConfigSO barsConfig;
+
+        [SerializeField, Tooltip("The element marks the rows draw, Charge, Mass, Space, Time: each element's SHAPE " +
+                                 "(Assets/_Graphics/ElementShapes: pentagon, triangle, kite, diamond), the icon the " +
+                                 "Codex, the arcade cards and the ability rows draw. Shombith, 2026-11-02: \"use the " +
+                                 "correct icons for elements, check codex for that\". An empty slot falls back to " +
+                                 "the HUD petal (barsConfig).")]
+        Sprite[] elementShapes = new Sprite[4];
 
         [SerializeField, Tooltip("The fleet's vessel-prefab table, so a row can read an ability's " +
                                  "REAL icon off that vessel's own HUD. Empty loads the one asset " +
@@ -414,7 +422,7 @@ namespace CosmicShore.UI
                          entry.AbilityLabel,
                          string.Empty,
                          ResolveAbilityIcon(vesselClass, vessel, element, entry.AbilityLabel),
-                         barsConfig ? barsConfig.GetPetalSprite(element) : null,
+                         ElementMark(element),
                          _keyboardWhenBound ? null : glyph?.padGlyph,
                          _keyboardWhenBound ? glyph?.keyboardLabel : null,
                          // A passive has nothing to fire and therefore nothing to recharge.
@@ -427,6 +435,14 @@ namespace CosmicShore.UI
                 used++;
             }
             return BuildOmniRow(map, used);
+        }
+
+        /// <summary>The element's shape (Charge=1..Time=4 index the shapes from 0), else the HUD petal.</summary>
+        Sprite ElementMark(Element element)
+        {
+            int i = (int)element - 1;
+            if (elementShapes != null && i >= 0 && i < elementShapes.Length && elementShapes[i]) return elementShapes[i];
+            return barsConfig ? barsConfig.GetPetalSprite(element) : null;
         }
 
         /// <summary>

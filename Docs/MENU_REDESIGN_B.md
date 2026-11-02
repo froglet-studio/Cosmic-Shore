@@ -29,6 +29,7 @@ section here. The build that follows a pick is verified against the picked board
 | Menu Redesign | `menu-redesign` | The master tab: items 0-12 and every round from Rev 3 to Rev 40, each old page a titled section (newest first) | Shombith, 2026-11-02 (section 112) |
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
 | Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, section 113) | Shombith, 2026-11-02 (section 112) |
+| Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5298,3 +5299,101 @@ shows that are not authored lines yet (waypoints, odds, the cell-by-cell mix, th
 `VoyageLines` through `voyage_slice.json`, Garrett's file.
 
 Affects: Garrett's Voyage window (`author_voyage_window.py`, `VoyageJobsView`, `VoyageWindowModals`) once a pick is built.
+
+## 114. Rev 45 mockups: the Fleet Codex, a vessel in tabs (2026-11-02; Shombith picked B, built)
+
+**Asked (Shombith, 2026-11-02):** "Redo: inside the details of the vessels we need to categorize and not mix up
+everything. There should be specific tabs for elements, game modes and controls, for each mobile and PC and controller
+controls. Do a mockup of this ... Two mockups are fine." The subject is the Fleet Codex artifact
+(https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8, `/fleet-codex`), whose vessel view today is one long page with
+everything in it.
+
+**On the canvas:** a new tab, **Fleet Codex** (`fleet-codex`), the round titled "Rev 45 - Fleet Codex - a vessel in
+tabs". Copies: `Docs/MenuRedesignB/board/R45*.dc.html`. An options round, the Brittle Star in both with the live
+codex's data, drawn in the codex's own look (as the Compute Console tab draws the console in its own), the hangar
+render uploaded to the canvas:
+- **R45A · Tabs (recommended), interactive:** the vessel's identity (render, description, flight numbers) stays on the
+  left; the rest is four tabs: Elements, Game Modes, Controls, Docs and changes. Elements shows one element at a time
+  (Charge, Mass, Space, Time chips) with its button on all three devices, the full text, what it scales and its level 5.
+  Controls has three device tabs, Controller, PC and Mobile, each grouped Fly, Modes, Weapons. Recommended because it
+  answers "not mix up everything" most directly: one subject on screen, each with room for its full text.
+- **R45B · Rail, interactive:** a section rail on the left under a compact identity header; Elements puts all four side
+  by side (shortened text); Controls is one table, actions down and devices across, with All devices / Controller /
+  PC / Mobile to narrow it. Better for comparing; the full ability text does not fit.
+- **R45Notes:** what each changes and what the build needs.
+
+**Differs from the build:** the live codex's vessel view is one scroll (header, flight strip, four element cards,
+games, docs, changes) with each ability's pad and key only. Either option needs new data in
+`Tools/Build/fleet_codex.py`: each hull's phone scheme and buttons (`author_touch_profiles.py` / TouchControlProfiles)
+for the Mobile tab, and the flight rows (steer, aim) from the input strategies; the level-5 proposals A shows live only
+in vessel docs (read them from a marked table or drop the line); a ladder exists only for course-based modes. The fleet
+matrix stays as it is.
+
+**Picked (Shombith, 2026-11-02): "I like design B and also make the first page in that design and include. Make only
+one page, doesn't need two pages."** Built the same hour into the live codex (`Docs/FleetCodex/index.html`, version 2
+of https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8): ONE page. The rail now holds the fleet, **Fleet overview** first
+(the old first page: the totals and the vessel x element matrix, in B's look) and then every vessel with its L5 count;
+choosing one shows B's vessel view in the same page: the identity header, then Elements (all four side by side, long
+text behind Read all), Game Modes, Controls (one table, actions down and devices across, narrowed by All devices /
+Controller / PC / Mobile) and Docs and changes. Links: `#fleet`, `#<Vessel>`, `#<Vessel>-controls` (and `-modes`,
+`-docs`). B's section rail became tabs under the header, because the rail now lists the vessels. The Controls data is
+new in `Tools/Build/fleet_codex.py`: the steer row from the hull's transformer class (one stick when it descends from
+`SingleStickVesselTransformer`), each ability's pad and key from the ability table, other bound inputs from the
+prefab's `_inputEventShipActions`, and the phone column from `author_touch_profiles.py` (thumb lifts, cards, extra
+buttons, the slider, the tilt notes). Checked in Chromium at 1440 and 400 px, light and dark: no script errors, no
+sideways scroll.
+
+## 115. Rev 48 mockups: the Fleet Codex, modern - one page, the kit with its controls, the game's icons (2026-11-02; Shombith picked B, built)
+
+**Asked (Shombith, 2026-11-02), on the built design B:** "I don't like the design, make it modern, take inspiration from
+website, shouldn't separate tabs like this for controls, also omni crystal ability is not shown, use the correct
+iconography for everything and give me 3 mockups first"; then "do not use these icons, use the correct icons for elements,
+check codex for that; also cards in arcade have these, please fix that too"; then "multi user vessels should show
+differently, like wrasse and grouper".
+
+**On the canvas:** the **Fleet Codex** tab, the round titled "Rev 48 - Fleet Codex, modern: one page, the kit with its
+controls, the omni crystal" (Rev 46 and 47 were taken on other tabs while it was drawn). Copies:
+`Docs/MenuRedesignB/board/R48*.dc.html`. Drawn in the website's Silver Screen look (the Compute console's, section 111:
+black and white stills, Bebas Neue headings, Space Mono labels, Inter body), with the game's own art uploaded to the
+canvas: each ability's HUD card (the Brittle Star's parts composited as its HUD draws them), the Codex's element shapes
+(`Assets/_Graphics/ElementShapes`), the omni crystal and the spare-ring stock icon, the Xbox face-button glyphs and the
+LT / RT trigger art, the phone's touch icons, every hull's hangar render and the Brittle Star Time card art.
+- **R48A · Marquee (recommended), interactive:** the fleet in a rail (crew vessels grouped apart with both names and their
+  seats); the hull as a film still with its numbers; the five abilities (four elements and the omni crystal) as cards,
+  each carrying its controller button, keyboard key and phone control; pick one for its full text and level 5; fly and
+  fire and the game it plays in below. Recommended because everything about an ability sits in one place and it is the
+  website's own hero pattern.
+- **R48B · Bento, interactive:** a fleet filmstrip (crew vessels as wider posters with a seat badge); the vessel as tiles;
+  ONE control map drawing the controller, keyboard and phone together, the picked ability lit on all three.
+- **R48C · Ledger:** the light edition; the kit as one table with controller, keyboard and phone as columns of every row;
+  the fleet as an index line, the crews on a line of their own.
+- **R48Notes:** what changed from Rev 45, the crew-vessel rule, what the build reads.
+
+**Crew vessels** (Goby and Pistol, Wrasse and Grouper, Honeyguide and Ratel: `SO_Vessel.CrewNames`; the Orca's four seats
+are in `ORCA_CREW.md` only, its class asset names no crew): listed apart and named as crews; a crew's page splits its kit and
+controls by seat.
+
+**Fixed in the game in the same branch:** the arcade launch panel's ability rows drew the HUD petal for the element; they
+now draw the Codex's shape (`VesselControlsPanel.elementShapes`, written by `author_menu_configure.py`). The arcade grid
+cards already did (`GameCard.GenreShapes`, section 90). Verification: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Found, not changed:** `Resources/ControlGlyphSet.asset` draws LT with the PlayStation `L1.png` and RT with the Xbox
+`R1.png`; the boards use `Trigger_LT` / `Trigger_RT`. The input layer's to fix.
+
+**Differs from the build:** the live codex (version 2, design B) has tabs and draws keycaps as text and no art; any pick
+replaces the page, and the generator gains the HUD icons, the omni ability (`ElementalAbilityMapSO.omniAbilityLabel`, empty
+on the Brittle Star, so its words come from its crystal effect) and the crews.
+
+**Picked (Shombith, 2026-11-02): "Build B".** Built the same day into the live codex (`Docs/FleetCodex/index.html`,
+version 3 of https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8), as a responsive page rather than the 1920 board: the top
+bar and search; the filmstrip of the fleet with the solo hulls first and the crews after them, each crew as a wider poster
+named as a crew with a seat badge; the vessel as a bento (the hull with its numbers, its five abilities in the HUD's
+order with the omni crystal last, the control map, the games with their card art, the picked ability's full text with its
+dials and level 5, docs and changes); `#fleet` is every vessel's abilities in one table, the icon, button and level 5 in
+each cell. Differences from the board: the controller map names its controls in a legend beside the pad, not on it (the
+face-button labels collided); a chord (LT+RT) draws both triggers; a vessel whose HUD draws an icon only at runtime
+(the Dolphin's Charge, the Squirrel's Space) or borrows another hull's HUD with no art of its own (the Wrasse, Orca and
+Meerkat) shows its element's Codex shape. `Tools/Build/fleet_codex.py` now reads every icon and the omni ability from the
+game (the `/fleet-codex` skill lists each source). Checked in Chromium at 1600 px dark and 400 px light: no script error,
+no broken image, no sideways scroll.
+
