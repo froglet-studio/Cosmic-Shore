@@ -88,6 +88,8 @@ namespace CosmicShore.Gameplay
 
         StoatModeExecutor _mode;
         StoatRippleExecutor _ripple;
+        int _capturedAtLay;     // the attractor's CapturedCount when the pair was laid (Space-5 Accretion counts from it)
+        float _accretion;       // Space-5 Accretion: the next ripple's reach bonus, 0..accretionMax
         float _gapScale = 1f;   // Space's reach on the laid pair's gap (replicated, so every peer lays the same pair)
         StoatDipoleExecutor _dipole;
         bool _resolvedSiblings;
@@ -132,6 +134,10 @@ namespace CosmicShore.Gameplay
         /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 before a catch) — the rings and the HUD.</summary>
         public float Timing01 => IsOrbiting && config ? config.SweetSpot(_orbitAngle * Mathf.Rad2Deg) : 0f;
         /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card).</summary>
+        /// <summary>Space-5 Accretion on the orbit: how much of the +40% ripple-reach bonus the pair has earned, 0..1.</summary>
+        public float Accretion01 => config && config.AccretionMax > 0f ? Mathf.Clamp01(_accretion / config.AccretionMax) : 0f;
+        /// <summary>The Charge ripple the open pair would throw now, as a share of the base gap's (HUD), 0..1+.</summary>
+        public float RippleCharge01 => HasPair ? 1f + _accretion : 0f;
         public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;
@@ -284,6 +290,8 @@ namespace CosmicShore.Gameplay
 
             _laid = true;
             _caught = false;
+            _accretion = 0f;
+            _capturedAtLay = _pair.Black ? _pair.Black.CapturedCount : 0;
             _orbitSide = side;
             _orbitRadius = _squeezeRadius = RadiusFor(_holds[(int)side].Live);
             _orbitAngle = 0f;
@@ -463,7 +471,35 @@ namespace CosmicShore.Gameplay
         void Detonate(Vector3 at, float separation)
         {
             ResolveSiblings();
-            if (_ripple) _ripple.Detonate(at, separation);
+            if (_ripple) _ripple.Detonate(at, separation, _accretion);
+            _accretion = 0f;
+        }
+
+        /// <summary>
+        /// Space 5 — Accretion, re-homed onto the orbit (2026-11-02): while the pair is held the attractor STEALS what
+        /// falls in (out of the repulsor in your domain), and every capture since the pair was laid adds
+        /// accretionPerPrism to that pair's ripple reach, to accretionMax. Every peer runs this on its own copy — the
+        /// upgrade bit, the name and the domain are replicated, and the gravity field counts captures on every peer.
+        /// Let go, the attractor reverts to the default rule and the bonus is kept for the ripple.
+        /// </summary>
+        void StepAccretion()
+        {
+            var black = _pair != null ? _pair.Black : null;
+            if (!black) return;
+            var abilities = _status.ElementalAbilityHandler;
+            bool active = _laid && _pair.IsAlive && _pair.Held && _status.Player != null && abilities && abilities.IsUpgradeActive(Element.Space);
+            if (!active)
+            {
+                if (black.PrismCapture == BlackHole.PrismCaptureRule.Steal) black.PrismCapture = BlackHole.PrismCaptureRule.Default;
+                return;
+            }
+            black.PrismCapture = BlackHole.PrismCaptureRule.Steal;
+            black.CaptureDomain = _status.Domain;
+            black.CaptureOwnerName = _status.PlayerName;
+            float before = _accretion;
+            _accretion = StoatSlingMath.AccretionBonus(black.CapturedCount - _capturedAtLay, config.AccretionPerPrism, config.AccretionMax);
+            if (_accretion > before)
+                CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] Accretion: {black.CapturedCount - _capturedAtLay} stolen, ripple +{_accretion:P0}");
         }
 
         void OnEnable() => BlackHoleRegistry.PairMet += OnPairMet;
@@ -512,6 +548,7 @@ namespace CosmicShore.Gameplay
             var prisms = _status.VesselPrismController;
             if (prisms) prisms.ForceShielded = Time.time < _launchShieldUntil && config.ShieldsLaunchTrail(_status);
 
+            StepAccretion();
             if (_laid)
             {
                 // The pair ended under us (annihilated, or held past its lifetime and let go on its own).

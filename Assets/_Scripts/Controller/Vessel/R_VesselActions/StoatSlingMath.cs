@@ -120,6 +120,10 @@ namespace CosmicShore.Gameplay
         public static bool IsFlick(float stick, float secondsSinceRest, float flickStick, float flickSeconds) =>
             stick >= flickStick && secondsSinceRest <= flickSeconds;
 
+        /// <summary>Space-5 Accretion: <paramref name="captured"/> × <paramref name="perPrism"/>, clamped to 0..<paramref name="max"/>.</summary>
+        public static float AccretionBonus(int captured, float perPrism, float max) =>
+            Mathf.Clamp(Mathf.Max(0, captured) * Mathf.Max(0f, perPrism), 0f, Mathf.Max(0f, max));
+
         /// <summary>Space's reach as the pair's gap scale: never below 1 (a broken tier must not shrink the gap).</summary>
         public static float GapScale(float reach) => Mathf.Max(1f, reach);
 

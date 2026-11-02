@@ -123,6 +123,12 @@ namespace CosmicShore.ScriptableObjects
                  "replicated unlock bit; every peer runs it from the replicated release.")]
         [SerializeField] bool massUpgradeShieldsLaunchTrail = true;
 
+        [Header("Space 5 - Accretion on the orbit (2026-11-02)")]
+        [Tooltip("Each prism the held pair's attractor steals adds this share to the reach of the ripple that pair throws.")]
+        [SerializeField, Range(0f, 0.2f)] float accretionPerPrism = 0.04f;
+        [Tooltip("Accretion's ceiling on the ripple's reach bonus (0.4 = +40%).")]
+        [SerializeField, Range(0f, 1f)] float accretionMax = 0.4f;
+
         [Header("Earned speed (Grok's review, 2026-11-02: holding a pair must not be the speed)")]
         [Tooltip("Before a catch, a held pair warps the flight to only this share of the catch's warp (catchWarpFromPress " +
                  "still gates it). The full warp is the orbit's, and after a good launch, its momentum.")]
@@ -308,6 +314,8 @@ namespace CosmicShore.ScriptableObjects
         public float PressWarpShare => Mathf.Clamp01(pressWarpShare);
         public float MinSweepDegrees => Mathf.Clamp(minSweepDegrees, 0f, 90f);
         public float MomentumSeconds => Mathf.Clamp(momentumSeconds, 0f, 10f);
+        public float AccretionPerPrism => Mathf.Clamp(accretionPerPrism, 0f, 0.2f);
+        public float AccretionMax => Mathf.Clamp01(accretionMax);
         public float SpeedCapShare => Mathf.Clamp(speedCapShare, 1f, 3f);
 
         /// <summary>Whether a launch's trail is laid shielded right now (Mass 5, the replicated unlock bit).</summary>

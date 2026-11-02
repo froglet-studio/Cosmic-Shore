@@ -493,6 +493,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Accretion_FourPercentAPrism_CappedAtForty()
+        {
+            Assert.AreEqual(0f, StoatSlingMath.AccretionBonus(0, 0.04f, 0.4f), 1e-6f);
+            Assert.AreEqual(0.12f, StoatSlingMath.AccretionBonus(3, 0.04f, 0.4f), 1e-5f);
+            Assert.AreEqual(0.4f, StoatSlingMath.AccretionBonus(10, 0.04f, 0.4f), 1e-5f);
+            Assert.AreEqual(0.4f, StoatSlingMath.AccretionBonus(50, 0.04f, 0.4f), 1e-5f, "never past +40%");
+            Assert.AreEqual(0f, StoatSlingMath.AccretionBonus(-3, 0.04f, 0.4f), 1e-6f);
+        }
+
+        [Test]
         public void SpaceScaling_WidensTheGap_AndTheClearCap_ButNotTheRipple()
         {
             Assert.AreEqual(1f, StoatSlingMath.GapScale(0.5f), 1e-6f, "never shrinks");
