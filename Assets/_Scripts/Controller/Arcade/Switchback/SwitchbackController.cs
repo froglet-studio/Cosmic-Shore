@@ -240,6 +240,7 @@ namespace CosmicShore.Gameplay
             if (!IsServer || _hits == null || !_hits.Running) return;
             NoteHits();
             _hits.EndRace(Intensity, CourseSeedUsed);
+            _blastAI?.LogFlightStats();
         }
 
         // ── Blast Run (SWITCHBACK.md "Blast Run") ──────────────────────

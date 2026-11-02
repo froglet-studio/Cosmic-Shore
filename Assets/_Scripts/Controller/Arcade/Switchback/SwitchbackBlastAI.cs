@@ -24,6 +24,8 @@ namespace CosmicShore.Gameplay
         sealed class Pilot
         {
             public int Slot = -1, Nudges;
+            // Flight stats against the people's (BugLedger Switchback Dolphin flights): time, speed-time, drift time, taps.
+            public float FlyT, SpeedT, DriftT, TapStart = -1f, TapYaw, LastTapYaw; public int Taps, TapAlt; public List<float> TapLens = new();
             public float NudgeUntil;
             public Vector3 NudgeDir;
             public int Threaded = -1;
@@ -381,8 +383,46 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool Emergency(IPlayer p, Vector3 pos, Vector3 vel, Vector3 fwd, out Vector3 steer)
         {
+            if (p != null) NoteFlight(StateFor(p), p, vel, fwd);
             if (EmergencyDanger(p, pos, vel, fwd, out steer)) return true;
             return Nudge(p, pos, vel, fwd, out steer);
+        }
+
+        void NoteFlight(Pilot st, IPlayer p, Vector3 vel, Vector3 fwd)
+        {
+            float dt = Time.deltaTime;
+            var vs = p.Vessel?.VesselStatus;
+            bool drifting = vs != null && vs.IsDrifting;
+            st.FlyT += dt; st.SpeedT += vel.magnitude * dt;
+            float now = Time.time;
+            if (drifting)
+            {
+                st.DriftT += dt;
+                if (st.TapStart < 0f) { st.TapStart = now; st.TapYaw = 0f; }
+                var tf = p.Vessel.Transform;
+                if (tf != null) st.TapYaw += Vector3.Dot(Vector3.Cross(vel.normalized, fwd), tf.up);
+            }
+            else if (st.TapStart >= 0f)
+            {
+                if (st.TapLens.Count < 4096) st.TapLens.Add(now - st.TapStart);
+                if (st.Taps > 0 && (st.TapYaw > 0f) != (st.LastTapYaw > 0f)) st.TapAlt++;
+                st.LastTapYaw = st.TapYaw; st.Taps++; st.TapStart = -1f;
+            }
+        }
+
+        /// <summary>Race end: each AI's flight stats in the people's terms (speed, drift share, taps/min, tap length, alternation).</summary>
+        public void LogFlightStats()
+        {
+            foreach (var kv in _pilots)
+            {
+                var st = kv.Value;
+                if (st.FlyT <= 1f) continue;
+                st.TapLens.Sort();
+                float med = st.TapLens.Count > 0 ? st.TapLens[st.TapLens.Count / 2] : 0f;
+                CSDebug.Log($"[Switchback AI] flight pilot={kv.Key.Name} speed={st.SpeedT / st.FlyT:F0} drift={st.DriftT / st.FlyT:F2} " +
+                            $"tapsPerMin={st.Taps / st.FlyT * 60f:F1} tapMed={med:F2} alt={(st.Taps > 1 ? (float)st.TapAlt / (st.Taps - 1) : 0f):F2} " +
+                            $"nudges={st.Nudges} level={_levelFor(kv.Key)}");
+            }
         }
 
         bool Nudge(IPlayer p, Vector3 pos, Vector3 vel, Vector3 fwd, out Vector3 steer)
