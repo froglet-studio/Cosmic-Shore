@@ -99,3 +99,13 @@ having run, and the starting numbers below it date from 2026-10-08, so take fres
 3. **`/code-standards`**: review the branch (`git diff origin/bleeding-edge...HEAD`) against its standards,
    reconciled with `CLAUDE.md` "Code Style" and `Docs/claude/ANTI_PATTERNS.md`. Where they disagree, this repo
    wins and the disagreement is noted here.
+
+**Progress (2026-11-02):** step 1 ran in a local session on the shared captures, with no editor turn needed; the
+findings are the 11-02 restart row in `Docs/PERFORMANCE_OPTIMIZATION.md` §2. Step 2 waits: the "30 KB a frame" above
+is the editor's `GC Allocated In Frame`, mostly editor allocation, so a game-only number comes first.
+
+**Where unity-perf and this repo disagree:**
+
+- unity-perf says editor numbers do not count and only a target-device profile does. This repo ranks Release-mode
+  editor captures (`diag` / `prof`) because that is what every collaborator sends. Both apply: rank on editor
+  captures, and confirm a fix's gain on a device (`Docs/perf/DEVICE_LOGS.md`) before calling it done on mobile.

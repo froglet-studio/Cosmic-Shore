@@ -44,6 +44,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+# The interpreter running this script runs every sub-check too: on Windows "python3" can be the Microsoft Store alias,
+# which prints "Python was not found" and fails every gate (2026-11-02).
+PY = sys.executable or "python3"
 sys.path.insert(0, HERE)
 import perf_capture_report as pcr  # noqa: E402  (the one judgement of a capture)
 
@@ -139,13 +142,13 @@ def pct(old, new):
 SWARM = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 SUBSTRATE = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
 GATE_SCRIPTS = [
-    ("mathf params alloc", ["python3", "Tools/Build/check_mathf_params_alloc.py"]),
-    ("burst MathF (swarm pose)", ["python3", "Tools/Build/swarm_core_harness/check_burst_pose.py",
+    ("mathf params alloc", [PY,"Tools/Build/check_mathf_params_alloc.py"]),
+    ("burst MathF (swarm pose)", [PY,"Tools/Build/swarm_core_harness/check_burst_pose.py",
                                   f"{SWARM}/SwarmPrismSync.cs", "Tools/Build/swarm_core_harness/TickJobHarness.cs"]),
-    ("burst MathF (substrate)", ["python3", "Tools/Build/substrate_harness/check_burst_substrate.py",
+    ("burst MathF (substrate)", [PY,"Tools/Build/substrate_harness/check_burst_substrate.py",
                                  f"{SUBSTRATE}/SubstrateKernel.cs", f"{SUBSTRATE}/SubstrateAgentJob.cs",
                                  "Tools/Build/substrate_harness/ReferenceStep.cs"]),
-    ("console logging", ["python3", "Tools/Build/check_console_logging.py"]),
+    ("console logging", [PY,"Tools/Build/check_console_logging.py"]),
 ]
 
 # scan_perframe_allocations.py prints one "=== <class>: N" header per finding class; the counts are those N.
@@ -165,9 +168,12 @@ def parse_scan(text):
 
 def run_scan():
     """scan_perframe_allocations.py is a reader (always exit 0); its headers carry the counts."""
-    r = subprocess.run(["python3", "Tools/Build/scan_perframe_allocations.py", "--all"], cwd=REPO,
+    r = subprocess.run([PY,"Tools/Build/scan_perframe_allocations.py", "--all"], cwd=REPO,
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
     text = r.stdout + r.stderr
+    # A reader that failed prints no headers, which would parse as 0 findings and pass the gate.
+    if r.returncode != 0 or not SCAN_HEADER.search(text):
+        raise RuntimeError(f"scan_perframe_allocations.py did not run (exit {r.returncode}): {text.strip()[-300:]}")
     return parse_scan(text), text[-1200:]
 
 
@@ -513,7 +519,7 @@ def cmd_amoebius(args):
     os.makedirs(os.path.join(REPO, "Port", "obj", "perf_hunt"), exist_ok=True)
     for mode, intensity, players in parse_modes(args.modes):
         out = os.path.join(REPO, "Port", "obj", "perf_hunt", f"{mode}_I{intensity}_{players}p.json")
-        cmd = ["python3", "Port/tools/amoebius_markers_run.py", "--mode", mode, "--intensity", str(intensity),
+        cmd = [PY,"Port/tools/amoebius_markers_run.py", "--mode", mode, "--intensity", str(intensity),
                "--players", str(players), "--frames", str(args.frames), "--out", out, "--label", f"perf_hunt {now_iso()[:10]}",
                "--profile", "perfhunt", "--port", str(47900 + len(verdicts))]
         if args.no_build:
@@ -619,7 +625,7 @@ def write_report(block):
 
 def file_task(task, done_when, see):
     # A ticket names nobody (Docs/TEAM.md rule 9); whoever owns the files finds it with who_works_where.py.
-    r = subprocess.run(["python3", "Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
+    r = subprocess.run([PY,"Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
                         "--task", task, "--done-when", done_when, "--see", see, "--by", "perf_hunt sweep",
                         "--priority", "P2", "--dept", "developers", "--milestone", "M1",
                         "--why", "a performance gate or a capture regressed; M1 needs every mode at speed on every platform"],
