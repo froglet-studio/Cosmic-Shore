@@ -86,13 +86,21 @@ namespace CosmicShore.Gameplay
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
-            return IsServer && _blastAI != null && _blastAI.TryAim(pilot, out target);
+            if (!IsServer || _blastAI == null) return false;
+            long t = SwitchbackAIClock.Begin();
+            bool r = _blastAI.TryAim(pilot, out target);
+            SwitchbackAIClock.End(t);
+            return r;
         }
 
         protected override bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
         {
             look = default;
-            return IsServer && _blastAI != null && _blastAI.TryDriftLook(pilot, out look);
+            if (!IsServer || _blastAI == null) return false;
+            long t = SwitchbackAIClock.Begin();
+            bool r = _blastAI.TryDriftLook(pilot, out look);
+            SwitchbackAIClock.End(t);
+            return r;
         }
 
         /// <summary>Each AI's own lane through an open ring, so no two AIs fly one line (and its fresh trail).</summary>
@@ -101,11 +109,21 @@ namespace CosmicShore.Gameplay
             {
                 steerTo = default;
                 if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
-                return IsServer && _blastAI != null && _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
+                if (!IsServer || _blastAI == null) return false;
+                long t = SwitchbackAIClock.Begin();
+                bool r = _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
+                SwitchbackAIClock.End(t);
+                return r;
             };
 
-        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) =>
-            IsServer && _blastAI != null ? _blastAI.LaneOffset(pilot, ringNo, gate) : Vector3.zero;
+        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate)
+        {
+            if (!IsServer || _blastAI == null) return Vector3.zero;
+            long t = SwitchbackAIClock.Begin();
+            var r = _blastAI.LaneOffset(pilot, ringNo, gate);
+            SwitchbackAIClock.End(t);
+            return r;
+        }
 
         SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));
 
@@ -281,7 +299,9 @@ namespace CosmicShore.Gameplay
                 _hits?.Dispose();
                 var rt = _runtime;
                 _hits = new SwitchbackHitStats(pr => rt && rt.IsMover(pr));
+                SwitchbackAIClock.Reset();
             }
+            _blastAI?.Dispose();
             _blastAI = planAI
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
                                         RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
@@ -291,6 +311,16 @@ namespace CosmicShore.Gameplay
                     NoDodgeNearRing = aiNoDodgeNearRing,
                 }
                 : null;
+            if (_blastAI != null)
+            {
+                var ai = _blastAI;
+                _runtime.LateTick += () =>
+                {
+                    long t = SwitchbackAIClock.Begin();
+                    ai.LateTick();
+                    SwitchbackAIClock.End(t);
+                };
+            }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback] BLAST RUN intensity {intensity}: {_course.Count} gates, {layout.Stations.Count} blocked gates, " +
@@ -328,6 +358,7 @@ namespace CosmicShore.Gameplay
                 if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
                 _keyManager = null;
                 _blastLayout = null;
+                _blastAI?.Dispose();
                 _blastAI = null;
             }
             UnregisterThirdEyeOverlays();

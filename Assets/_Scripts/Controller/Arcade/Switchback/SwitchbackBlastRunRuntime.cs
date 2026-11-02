@@ -228,6 +228,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The runtime does not watch the key crystals: <see cref="SwitchbackBlastAI"/> does.</summary>
         public bool KeyAvailable(int station) => true;
 
+        /// <summary>Raised at LateUpdate (the AI schedules its batched lane casts here).</summary>
+        public event System.Action LateTick;
+
+        void LateUpdate() => LateTick?.Invoke();
+
         void Update()
         {
             if (_gameData == null || _courseCount == 0) return;

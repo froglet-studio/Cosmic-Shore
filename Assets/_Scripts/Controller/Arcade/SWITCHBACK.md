@@ -987,6 +987,48 @@ dodges from 2,247 to 112. The AI hits more plain prisms (at I3 about 30-40 a rac
 `soak_SwitchbackBlastAI.fix.diff` (Yash's session, not applied) makes each dodge more accurate and is compatible.
 Tests: `SwitchbackPrismAvoidanceTests.Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing`.
 
+### Step 2: the lane fan, batched on Jobs + Burst (2026-11-02) - real Unity soak
+
+Step 1 stopped the Dolphins dodging plain prisms, so they ploughed through rival trails (85 of 108 hits at I1 D1).
+`SwitchbackBlastAI.Emergency` now runs the Danger sweep first (step 1, unchanged) and then, if that has nothing,
+the **lane fan** (`SwitchbackSenseBatch`):
+
+- Every AI writes its pose in its Update. At LateUpdate (`SwitchbackBlastRunRuntime.LateTick`), one Burst
+  `IJobParallelFor` builds 11 `SpherecastCommand`s per AI: straight down the velocity, short taps of 8 deg and
+  16 deg right/left/up/down, and two 6 u flank casts (pure right and left). It runs as one `ScheduleBatch`, and a
+  Burst pick job then chooses each AI's answer on the workers. The next frame's first read completes the batch,
+  so the answer is one frame old. The NativeArrays are persistent and there is no GC after construction.
+- When something (rival or own trail, plain prism) is on the line within 0.8 s (radius ship + 1 u), the AI makes
+  a short tap (held for 0.12 s, then re-judged) to the clear tap that is innermost and closest to the nose. It
+  avoids a tap toward a flank that already has a trail within 4.5 u.
+- If the line ahead is clear but a trail runs alongside within 4.5 u, the AI makes a short tap away from it.
+- If no tap is clear, the AI takes the farthest tap only if it reaches 1.5x further than the straight line;
+  otherwise it holds the line. Big swerves into the next trail were fix 2's failure.
+- In the last 200 u before a ring, it reacts only to a hit closer than 0.35 s. It never nudges while striking a
+  crystal.
+- Editor only: `SB_NOFAN=1` turns the fan off, for A/B soaks on one build.
+- `SwitchbackAIClock` times the AI hooks on the main thread. It adds the Profiler marker `Switchback.AI` and appends
+  `aiMs/frame=` to the race summary.
+
+Soak (headless Unity, 3 AIs, totals over 2 races per cell; "before" is step 1 with `SB_NOFAN=1`):
+
+| Cell | Before: course/rival/own = total | After: course/rival/own = total | Winner time (s), before -> after |
+|---|---|---|---|
+| I1 D1 | 19/85/4 = 108 | 21/34/0 = 55 | 153, 166 -> 172, 176 |
+| I1 D4 | 27/120/1 = 148 | 13/56/3 = 72 | 166, 157 -> 165, 172 |
+| I3 D4 | 79/185/5 = 271 (mover 2) | 51/118/2 = 173 (mover 2) | 209, 216 -> 237, 228 |
+
+Across all three cells, hits went from 527 to 300 (-43%), and every race finished. AI main-thread cost went from
+0.037-0.051 ms per frame to 0.039-0.064 ms per frame (all AIs together; the casts run on workers).
+
+Not done yet (the pt21u spec):
+- human-style left/right drift-tap spamming toward the ring (the taps are stick steering; the emergency hook still
+  releases the commit drift);
+- a crystal detour that blasts a blocker found near the next ring, with a forward-simulated drift arc and timed aim
+  (the existing Blast plan and its strike aim are unchanged);
+- no human play data exists on the box, since every recording is from a soak.
+- Winners are slower by about 0-14% for now.
+
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 
 The old FrogletTools ▸ AI ▸ Third Eye window (a second camera, rendered twice) is gone. The code still lives in

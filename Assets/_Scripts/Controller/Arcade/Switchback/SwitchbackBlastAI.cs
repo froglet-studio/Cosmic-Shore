@@ -17,12 +17,15 @@ namespace CosmicShore.Gameplay
     /// created once; the key scan runs at 10 Hz; strings are built only on a decision. Nothing is networked - the
     /// pilots it steers are server-owned, the movers and keys are read off the shared clock and the crystal manager.</para>
     /// </summary>
-    public sealed class SwitchbackBlastAI : ISwitchbackAIWorld
+    public sealed class SwitchbackBlastAI : ISwitchbackAIWorld, IDisposable
     {
         enum Phase { None, Setup, Strike, Done }
 
         sealed class Pilot
         {
+            public int Slot = -1, Nudges;
+            public float NudgeUntil;
+            public Vector3 NudgeDir;
             public int Threaded = -1;
             public float NextPlan;
             public SwitchbackAIDecision D;
@@ -354,7 +357,66 @@ namespace CosmicShore.Gameplay
         /// the crystal count: the crystal's blast clears what is behind it. Every other frame when cold, every frame for
         /// <see cref="HotSeconds"/> after a hit. No allocation.
         /// </summary>
+        // The lane fan (SwitchbackSenseBatch): every prism, trails included, but only short taps of 8-16 degrees.
+        const float NudgeSeconds = 0.8f, NudgeHoldSeconds = 0.12f, NudgeMinSpeed = 20f, NudgeNearRingSeconds = 0.35f;
+        SwitchbackSenseBatch _batch;
+        int _nextSlot;
+#if UNITY_EDITOR
+        // Soak A/B only: SB_NOFAN=1 runs the Danger sweep alone (the step-1 behaviour) for a before/after on one build.
+        static readonly bool s_noFan = Environment.GetEnvironmentVariable("SB_NOFAN") == "1";
+#else
+        const bool s_noFan = false;
+#endif
+
+        /// <summary>LateUpdate: cast every AI's lane fan on the job workers (read back next frame).</summary>
+        public void LateTick() => _batch?.Schedule();
+
+        public void Dispose() { _batch?.Dispose(); _batch = null; }
+
+        /// <summary>
+        /// The emergency steer: first the Danger sweep (<see cref="EmergencyDanger"/>, any swerve it needs); otherwise the
+        /// lane fan - when anything (rival or own trail, plain prism) lies on the line within <see cref="NudgeSeconds"/>,
+        /// a short tap to the nearest clear lane toward where the nose points, never a hard swerve. No clear tap: hold
+        /// the line (a plain hit costs ~0.25 s; a big swerve into the next trail costs more).
+        /// </summary>
         public bool Emergency(IPlayer p, Vector3 pos, Vector3 vel, Vector3 fwd, out Vector3 steer)
+        {
+            if (EmergencyDanger(p, pos, vel, fwd, out steer)) return true;
+            return Nudge(p, pos, vel, fwd, out steer);
+        }
+
+        bool Nudge(IPlayer p, Vector3 pos, Vector3 vel, Vector3 fwd, out Vector3 steer)
+        {
+            steer = default;
+            if (p == null || s_noFan) return false;
+            var st = StateFor(p);
+            if (_batch == null)
+            {
+                if (s_prismMask < 0) s_prismMask = LayerMask.GetMask("TrailBlocks");
+                _batch = new SwitchbackSenseBatch(8, s_prismMask);
+            }
+            if (st.Slot < 0) st.Slot = _nextSlot < _batch.Capacity ? _nextSlot++ : -2;
+            if (st.Slot < 0) return false;
+            float speed = vel.magnitude;
+            bool striking = st.Avoid == SwitchbackAvoidAction.Blast || (st.D.Plan == SwitchbackAIPlan.Blast && st.Phase == Phase.Strike);
+            if (speed < NudgeMinSpeed || striking) return false; // slot left idle this frame
+            Vector3 dir = vel / speed;
+            Vector3 up = p.Vessel?.Transform != null ? p.Vessel.Transform.up : Vector3.up;
+            _batch.Write(st.Slot, pos, dir, up, fwd, SwitchbackPrismAvoidance.ShipRadius + 1f,
+                         speed * (NudgeSeconds + Time.deltaTime));
+            float now = Time.time;
+            if (now < st.NudgeUntil) { steer = pos + st.NudgeDir * EmergSteerDistance; return true; }
+            if (!_batch.Read(st.Slot, out Vector3 tap, out float hitDist, out bool clear)) return false;
+            // No clear tap: the farthest one only if it buys real room (else hold the line).
+            if (!clear && !_batch.FarthestHelps(st.Slot)) return false;
+            // The last stretch to a ring: only a hit that is about to land (the mouth is the line).
+            if (st.Threaded >= 0 && NearRing(pos, _ringIndexFor(st.Threaded)) && hitDist > speed * NudgeNearRingSeconds) return false;
+            st.NudgeDir = tap; st.NudgeUntil = now + NudgeHoldSeconds; st.Nudges++;
+            steer = pos + tap * EmergSteerDistance;
+            return true;
+        }
+
+        bool EmergencyDanger(IPlayer p, Vector3 pos, Vector3 vel, Vector3 fwd, out Vector3 steer)
         {
             steer = default;
             if (p == null) return false;
@@ -454,7 +516,7 @@ namespace CosmicShore.Gameplay
             if (prism != null) size = prism.transform.lossyScale.ToString("F1");
             return $"speed={(vs?.Speed ?? 0f):F0} drifting={vs?.IsDrifting} boosting={vs?.IsBoosting} emerg={st.EmergOn} " +
                    $"sinceEmerg={now - st.LastEmergAt:F2} sinceSense={now - st.LastSenseAt:F2} avoid={st.Avoid} " +
-                   $"plan={st.D.Plan} phase={st.Phase} angle={ang} dist={dist} scale={size} level={_levelFor(p)}";
+                   $"nudge={now < st.NudgeUntil} nudges={st.Nudges} plan={st.D.Plan} phase={st.Phase} angle={ang} dist={dist} scale={size} level={_levelFor(p)}";
         }
 
         static int ManagedCrystals()
