@@ -6,37 +6,20 @@
     "Menu_Main|Garland|owner",
     "Menu_Main|Garland|yskha",
     "Menu_Main|MinigameRegatta|owner",
-    "Menu_Main|MinigameThresherTime|belac",
-    "Menu_Main|S2-4min|belac",
-    "Menu_Main|S2-4min|owner",
     "Menu_Main|S2-4min|yskha",
-    "Menu_Main|S2|yskha",
     "MinigameBloomrush|MinigameBloomrush|owner",
     "MinigameBreakwater|MinigameBreakwater|owner",
-    "MinigameBreakwater|MinigameBreakwater|yskha",
     "MinigameBroadside|MinigameBroadside|owner",
-    "MinigameBurrowRun|MinigameBurrowRun|owner",
     "MinigameDustup|MinigameDustup|owner",
     "MinigameGrizzlyCharge|MinigameGrizzlyCharge|mrglo",
     "MinigameHijack|MinigameHijack|owner",
     "MinigameRegatta|MinigameRegatta|belac",
     "MinigameRegatta|MinigameRegatta|owner",
     "MinigameRegatta|MinigameRegatta|yskha",
-    "MinigameScarabScramble|MinigameScarabScramble|yskha",
-    "MinigameScurryMultiplayer_Gameplay|MinigameScurryMultiplayer_Gameplay|owner",
-    "MinigameScurryMultiplayer_Gameplay|MinigameScurryMultiplayer_Gameplay|yskha",
-    "MinigameSerpentTime|MinigameSerpentTime|owner",
-    "MinigameSkimRace|SkimRace|owner",
-    "MinigameSkimRace|SkimRace|yskha",
-    "MinigameSlingshot|MinigameSlingshot|owner",
-    "MinigameSlingshot|MinigameSlingshot|yskha",
     "MinigameSwitchback|MinigameSwitchback|belac",
     "MinigameSwitchback|MinigameSwitchback|yskha",
     "MinigameTapestry|MinigameTapestry|owner",
-    "MinigameThresherTime|MinigameThresherTime|belac",
     "MinigameThresherTime|MinigameThresherTime|owner",
-    "MinigameThresherTime|MinigameThresherTime|yskha",
-    "MinigameWarpline|MinigameWarpline|owner",
     "MinigameWarpline|MinigameWarpline|yskha",
     "MinigameWaystation|MinigameWaystation|belac",
     "MinigameWrasseRun|MinigameWrasseRun|owner",
@@ -53,8 +36,8 @@
     }
   ],
   "bugs": {
-    "open": 258,
-    "source": "593 branch(es)",
+    "open": 266,
+    "source": "611 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -87,86 +70,127 @@
         "title": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!"
       }
     ],
-    "validating": 12
+    "validating": 15
   },
   "captures": [
     {
-      "cpuBusyMs": 9.332637786865234,
-      "gcKB": 102.84180450439453,
-      "key": "MinigameThresherTime|MinigameThresherTime",
-      "timestamp": "2026-10-31 13:21:04",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 8.662942886352539,
-      "gcKB": 62.80649948120117,
-      "key": "MinigameWrasseRun|MinigameWrasseRun",
-      "timestamp": "2026-10-31 13:26:13",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 10.644816398620605,
-      "gcKB": 47.9668083190918,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-31 13:34:18",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 10.928648948669434,
-      "gcKB": 38.00899124145508,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-31 13:46:04",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 10.17245101928711,
-      "gcKB": 51.5711669921875,
-      "key": "Menu_Main|Garland",
-      "timestamp": "2026-10-31 13:50:03",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
       "cpuBusyMs": 11.916385650634766,
       "gcKB": 44.717464447021484,
       "key": "MinigameThresherTime|MinigameThresherTime",
       "timestamp": "2026-10-31 23:23:30",
       "user": "yskha",
       "valid": true,
-      "verdict": "adopted as the baseline"
+      "verdict": "not adopted as a baseline (frame cap active)"
     },
     {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active",
+        "Game view unfocused"
+      ],
       "cpuBusyMs": 8.744303703308105,
       "gcKB": 19.895732879638672,
       "key": "Menu_Main|S2-4min",
       "timestamp": "2026-10-31 23:57:57",
       "user": "yskha",
       "valid": true,
-      "verdict": "improved"
+      "verdict": "improved (WARN contaminated: frame cap active, Game view unfocused)"
     },
     {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
       "cpuBusyMs": 10.994444847106934,
       "gcKB": 20.812030792236328,
       "key": "Menu_Main|Garland",
       "timestamp": "2026-11-01 00:01:58",
       "user": "yskha",
       "valid": true,
-      "verdict": "REGRESSION"
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 5.793318748474121,
+      "gcKB": 102.5220947265625,
+      "key": "MinigameTapestry|MinigameTapestry",
+      "timestamp": "2026-11-01 17:39:16",
+      "user": "owner",
+      "valid": true,
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "8b8ac67622",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 8.021550178527832,
+      "gcKB": 37.71286392211914,
+      "key": "MinigameSwitchback|MinigameSwitchback",
+      "timestamp": "2026-11-01 17:39:53",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "improved (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 8.221084594726562,
+      "gcKB": 74.62781524658203,
+      "key": "MinigameWaystation|MinigameWaystation",
+      "timestamp": "2026-11-01 17:44:33",
+      "user": "owner",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.16506290435791,
+      "gcKB": 73.08143615722656,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-11-01 17:58:18",
+      "user": "owner",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "unknown",
+      "commit": "unknown",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 11.639899253845215,
+      "gcKB": 13.866352081298828,
+      "key": "Menu_Main|menu-main",
+      "timestamp": "2026-11-02 11:59:39",
+      "user": "yskha-phone",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
     }
   ],
   "gates": [
     {
       "gate": "mathf params alloc",
-      "ok": false
+      "ok": true
     },
     {
       "gate": "burst MathF (swarm pose)",
@@ -185,11 +209,9 @@
       "ok": true
     }
   ],
-  "gatesOk": false,
-  "generatedUtc": "2026-11-01T12:03:20Z",
+  "gatesOk": true,
+  "generatedUtc": "2026-11-02T13:54:59Z",
   "next": [
-    "Fix the red gate 'mathf params alloc': mathf-params-alloc check: 1 FAILURE(S) (python3 Tools/Build/perf_hunt.py gates)",
-    "Resolve: Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): gcKB 47.01902389526367 -> 61.291324615478516 (+30%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker Inl_UniversalRenderTotal 0.9318 -> 1.5055 ms/frame (+62%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker LateBehaviourUpdate 0.1986 -> 1.202 ms/frame (+505%)",
@@ -223,42 +245,16 @@
     "Resolve: Performance regression in MinigameWrasseRun|MinigameWrasseRun (owner, 2026-10-31 13:26:13): gcKB 21.30614471435547 -> 62.80649948120117 (+195%)",
     "Resolve: Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
     "Resolve: Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
-    "Resolve: Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker BehaviourUpdate 2.8945 -> 5.2361 ms/frame (+81%)",
-    "Resolve: Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker SkimRace.Pilot.Decide 0.0883 -> 2.1497 ms/frame (+2335%)",
-    "Resolve: Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker SkimRace.Pilot.FillObstacles 0.4598 -> 1.0159 ms/frame (+121%)",
-    "Resolve: Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker SkimRace.Driver.GuardMass 0.0807 -> 0.304 ms/frame (+277%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (owner, 2026-10-31 13:46:04): gcKB 19.72303009033203 -> 38.00899124145508 (+93%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (owner, 2026-10-31 13:46:04): marker Inl_UniversalRenderTotal 1.7527 -> 2.8013 ms/frame (+60%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (owner, 2026-10-31 13:46:04): marker LateBehaviourUpdate 1.0037 -> 1.3199 ms/frame (+32%)",
+    "Resolve: Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
-    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): cpuBusyMs 12.06631088256836 -> 15.054362297058105 (+25%)",
-    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): p95Ms 26.01799964904785 -> 44.07959747314453 (+69%)",
-    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): gcKB 43.353912353515625 -> 419.37359619140625 (+867%)",
-    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): marker BehaviourUpdate 1.5892 -> 2.2523 ms/frame (+42%)",
-    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): marker CoroutinesDelayedCalls 0.1798 -> 0.4217 ms/frame (+135%)",
-    "Resolve: Performance regression in MinigameBreakwater|MinigameBreakwater (yskha, 2026-10-27 18:28:55): gcKB 20.30805015563965 -> 25.985919952392578 (+28%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): cpuBusyMs 6.25537633895874 -> 7.491267681121826 (+20%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): p95Ms 11.715299606323242 -> 14.072200775146484 (+20%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): marker CoroutinesDelayedCalls 0.0452 -> 0.4876 ms/frame (+979%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): marker LightFauna.Tick.PrismScan 0.02 -> 0.4013 ms/frame (+1906%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): marker LightFauna.Feed 0.0126 -> 0.2133 ms/frame (+1593%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): cpuBusyMs 18.333860397338867 -> 38.53213882446289 (+110%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): p95Ms 30.013904571533203 -> 72.9738998413086 (+143%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): gcKB 32.186988830566406 -> 182.2527618408203 (+466%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker PlayerLoop 18.2795 -> 37.923 ms/frame (+107%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker BehaviourUpdate 3.2337 -> 10.4725 ms/frame (+224%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker CoroutinesDelayedCalls 0.8348 -> 3.9836 ms/frame (+377%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker Inl_UniversalRenderTotal 2.5593 -> 3.5694 ms/frame (+39%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker Fauna.BodySync 0.7164 -> 0.9816 ms/frame (+37%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker UGUI.Rendering.UpdateBatches 0.6913 -> 0.9254 ms/frame (+34%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker Physics.Simulate 0.2484 -> 0.7666 ms/frame (+209%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker LightFauna.Tick.PrismScan 0.247 -> 0.6403 ms/frame (+159%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker LightFauna.Feed 0.0742 -> 0.3733 ms/frame (+403%)",
-    "Resolve: Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker LOD.Sweep 0.0697 -> 0.3421 ms/frame (+391%)",
+    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261020-fb02]",
+    "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go",
-    "258 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
+    "Capture Switchback I2 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped: the editor captures it by itself",
+    "Capture Switchback Blast Run I4 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped",
+    "266 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [
     {
@@ -288,7 +284,6 @@
     }
   ],
   "regressions": [
-    "Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): gcKB 47.01902389526367 -> 61.291324615478516 (+30%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker Inl_UniversalRenderTotal 0.9318 -> 1.5055 ms/frame (+62%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker LateBehaviourUpdate 0.1986 -> 1.202 ms/frame (+505%)",
@@ -322,53 +317,23 @@
     "Performance regression in MinigameWrasseRun|MinigameWrasseRun (owner, 2026-10-31 13:26:13): gcKB 21.30614471435547 -> 62.80649948120117 (+195%)",
     "Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
     "Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
-    "Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker BehaviourUpdate 2.8945 -> 5.2361 ms/frame (+81%)",
-    "Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker SkimRace.Pilot.Decide 0.0883 -> 2.1497 ms/frame (+2335%)",
-    "Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker SkimRace.Pilot.FillObstacles 0.4598 -> 1.0159 ms/frame (+121%)",
-    "Performance regression in MinigameSkimRace|SkimRace (yskha, 2026-10-28 00:05:38): marker SkimRace.Driver.GuardMass 0.0807 -> 0.304 ms/frame (+277%)",
-    "Performance regression in Menu_Main|S2-4min (owner, 2026-10-31 13:46:04): gcKB 19.72303009033203 -> 38.00899124145508 (+93%)",
-    "Performance regression in Menu_Main|S2-4min (owner, 2026-10-31 13:46:04): marker Inl_UniversalRenderTotal 1.7527 -> 2.8013 ms/frame (+60%)",
-    "Performance regression in Menu_Main|S2-4min (owner, 2026-10-31 13:46:04): marker LateBehaviourUpdate 1.0037 -> 1.3199 ms/frame (+32%)",
+    "Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
-    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
-    "Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): cpuBusyMs 12.06631088256836 -> 15.054362297058105 (+25%)",
-    "Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): p95Ms 26.01799964904785 -> 44.07959747314453 (+69%)",
-    "Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): gcKB 43.353912353515625 -> 419.37359619140625 (+867%)",
-    "Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): marker BehaviourUpdate 1.5892 -> 2.2523 ms/frame (+42%)",
-    "Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-29 22:16:46): marker CoroutinesDelayedCalls 0.1798 -> 0.4217 ms/frame (+135%)",
-    "Performance regression in MinigameBreakwater|MinigameBreakwater (yskha, 2026-10-27 18:28:55): gcKB 20.30805015563965 -> 25.985919952392578 (+28%)",
-    "Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): cpuBusyMs 6.25537633895874 -> 7.491267681121826 (+20%)",
-    "Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): p95Ms 11.715299606323242 -> 14.072200775146484 (+20%)",
-    "Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): marker CoroutinesDelayedCalls 0.0452 -> 0.4876 ms/frame (+979%)",
-    "Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): marker LightFauna.Tick.PrismScan 0.02 -> 0.4013 ms/frame (+1906%)",
-    "Performance regression in Menu_Main|S2-4min (belac, 2026-10-30 16:50:58): marker LightFauna.Feed 0.0126 -> 0.2133 ms/frame (+1593%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): cpuBusyMs 18.333860397338867 -> 38.53213882446289 (+110%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): p95Ms 30.013904571533203 -> 72.9738998413086 (+143%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): gcKB 32.186988830566406 -> 182.2527618408203 (+466%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker PlayerLoop 18.2795 -> 37.923 ms/frame (+107%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker BehaviourUpdate 3.2337 -> 10.4725 ms/frame (+224%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker CoroutinesDelayedCalls 0.8348 -> 3.9836 ms/frame (+377%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker Inl_UniversalRenderTotal 2.5593 -> 3.5694 ms/frame (+39%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker Fauna.BodySync 0.7164 -> 0.9816 ms/frame (+37%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker UGUI.Rendering.UpdateBatches 0.6913 -> 0.9254 ms/frame (+34%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker Physics.Simulate 0.2484 -> 0.7666 ms/frame (+209%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker LightFauna.Tick.PrismScan 0.247 -> 0.6403 ms/frame (+159%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker LightFauna.Feed 0.0742 -> 0.3733 ms/frame (+403%)",
-    "Performance regression in MinigameSerpentTime|MinigameSerpentTime (owner, 2026-10-29 16:07:48): marker LOD.Sweep 0.0697 -> 0.3421 ms/frame (+391%)"
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)"
   ],
   "scenarios": [
     {
       "afterSeconds": 480,
       "label": "S2",
-      "owed": false,
+      "owed": true,
       "scene": "Menu_Main",
       "title": "S2 Lattice"
     },
     {
       "afterSeconds": 90,
       "label": "SkimRace",
-      "owed": false,
+      "owed": true,
       "scene": "MinigameSkimRace",
       "title": "Skim Race I2"
     },
@@ -378,6 +343,20 @@
       "owed": true,
       "scene": "MinigameWildlifeLiberation",
       "title": "S5 Wildlife Liberation"
+    },
+    {
+      "afterSeconds": 90,
+      "label": "Switchback",
+      "owed": true,
+      "scene": "MinigameSwitchback",
+      "title": "Switchback I2"
+    },
+    {
+      "afterSeconds": 90,
+      "label": "SwitchbackBlast",
+      "owed": true,
+      "scene": "MinigameSwitchback",
+      "title": "Switchback Blast Run I4"
     }
   ]
 }
