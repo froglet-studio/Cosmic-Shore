@@ -55,6 +55,19 @@ and moments in modes or hulls it lacks are skipped. Each picture costs about 5 g
 so filming runs at `--slow 0.4` (about 30 pictures a game second); the replay clock puts the clip back at true speed.
 The player profile `reels` keeps its data in `%LOCALAPPDATA%/CosmicShore-reels` (Recordings under it).
 
+## What the reels showed (Garrett, 2026-11-02)
+
+- **Only the Stoat moved its body.** A replay drives each hull by pose with its input paused, so `InputStatus`
+  stayed idle and every `VesselAnimation` played its idle pose; the Stoat's lope runs on speed alone.
+  `ReplayPuppetry` now reads the stick back from each recorded turn (the inverse of `VesselTransformer`'s
+  Pitch / Yaw / Roll) and `ReplayMatchDirector` holds it on the hull's `InputStatus`, so every hull's puppetry
+  follows the turns it makes. It reaches every match replay, not only reels.
+- **The environments are empty because the played modes are.** 95 of the shared flights are Regatta, whose cell
+  uses the Barren spawn profile on purpose (no flora, no fauna: a race whose obstacles differ per peer is not a
+  race); Skim Race, Switchback, Warpline and Slingshot share a profile with no flora and two fauna that spawn
+  slowly; Breakwater's fauna never release. The modes with life (Rampage, Wrecking Ball, Tandava, the Arboretum,
+  Lattice and Hesperides cells) have almost no flights. Changing a race cell is the mode owner's call.
+
 ## Rules
 
 - **Reels rendered by Amoebius are for learning what to show.** Anything public is re-rendered from the same

@@ -53,6 +53,10 @@ namespace CosmicShore.Utility
             public IVesselStatus Status;
             public Transform Root;
             public readonly Dictionary<string, ShipActionSO> Actions = new();
+            // The last pose step, for the stick its turn implies (ReplayPuppetry).
+            public Quaternion LastRotation;
+            public float LastTime = float.NegativeInfinity;
+            public Vector3 Stick;
         }
 
         enum Phase { WaitingForSeats, WaitingForGo, Playing, Leaving }
@@ -264,6 +268,38 @@ namespace CosmicShore.Utility
             b.Root.SetPositionAndRotation(position, rotation);
             b.Status.Speed = speed;
             b.Status.Course = rotation * Vector3.forward;
+            Puppeteer(b, transformer, rotation, speed, t);
+        }
+
+        /// <summary>
+        /// Holds the stick the recorded turn implies, so the hull's <c>VesselAnimation</c> puppets the turns it is
+        /// seen making instead of idling (only a speed-driven gait, the Stoat's, moved before). The flight model
+        /// is off, so the stick moves the puppet and nothing else.
+        /// </summary>
+        static void Puppeteer(Binding b, VesselTransformer transformer, Quaternion rotation, float speed, float t)
+        {
+            var input = b.Status.InputStatus;
+            if (input == null) return;
+            float dt = t - b.LastTime;
+            if (transformer && dt > 0f)
+            {
+                var full = ReplayPuppetry.FullStickRates(speed, transformer.RotationThrottleScaler,
+                    transformer.PitchScaler, transformer.YawScaler, transformer.RollScaler,
+                    transformer.ExternalTurnRateMultiplier);
+                var target = ReplayPuppetry.StickFor(ReplayPuppetry.LocalTurnRate(b.LastRotation, rotation, dt), full);
+                b.Stick = dt > ReplayPuppetry.MaxStepSeconds ? target : ReplayPuppetry.Ease(b.Stick, target, dt);
+                input.XDiff = ReplayPuppetry.ThrottleFor(speed, transformer.MinimumSpeed, transformer.ThrottleScaler);
+            }
+            if (dt != 0f)
+            {
+                b.LastRotation = rotation;
+                b.LastTime = t;
+            }
+            input.YSum = b.Stick.x;
+            input.XSum = b.Stick.y;
+            input.YDiff = b.Stick.z;
+            input.EasedLeftJoystickPosition = new Vector2(b.Stick.y, b.Stick.x);
+            input.Idle = speed <= 0.01f;
         }
 
         void RunActions(float t)
