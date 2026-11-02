@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -18,9 +20,14 @@ namespace CosmicShore.UI
     /// is (<see cref="HyperSea.SeaColor"/>), the course is the one an Ark sails cell by cell round the reefs
     /// (<see cref="VoyageChart"/>), a corner shows the whole galaxy with where this water is and Sol, and the caption
     /// under the map is the job's course line (authored, filled by the caller). Uncharted content draws as before.</para>
+    ///
+    /// <para>It is a galaxy explorer (Garrett, 2026-11-01: "the map divides them as a fun interactive galaxy explorer
+    /// deciding where you want your voyages to take you"): drag to pan, pinch or scroll to zoom, tap a place
+    /// (<see cref="PlaceTapped"/>). The window's edge view follows it (<see cref="ViewChanged"/>).</para>
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
-    public class VoyageMapGraphic : MaskableGraphic
+    public class VoyageMapGraphic : MaskableGraphic, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler,
+        IDragHandler, IEndDragHandler, IScrollHandler, IPointerClickHandler
     {
         const float Pad = 0.12f;
         const float LaneWidth = 2f;
@@ -33,9 +40,22 @@ namespace CosmicShore.UI
         /// <summary>The least a focused map shows across, in light years, so a short course keeps its surroundings.</summary>
         const float MinFocusLy = 360f;
 
+        // The explorer: how far it zooms (the view's width, light years on a charted map, the framed width's share on
+        // an uncharted one), how far a wheel notch zooms, how near a tap must land on a place, how often a moving view
+        // repaints its sea.
+        const float MinViewLy = 120f, MaxViewLy = 20000f;
+        const float MinZoom = 0.5f, MaxZoom = 8f;
+        const float WheelZoom = 1.15f;
+        const float TapReach = 28f;
+        const float RepaintEvery = 0.12f;
+        // The sea is painted wider than the view, so a pan slides over painted water until the next repaint; while a
+        // finger is down it is painted at half resolution (a quarter of the density samples, about 1,900), and in full
+        // once the view settles.
+        const float PaintMargin = 0.35f;
+
         // The sea behind a charted map: one texture holding the framed water, the galaxy corner and a white strip the
         // solid shapes sample, so the whole map stays one mesh and one draw.
-        const int SeaTexWidth = 128;
+        const int SeaTexWidth = 192;
         const int InsetTex = 64;
         const int WhiteRows = 2;
         const float InsetShare = 0.3f;
@@ -58,6 +78,38 @@ namespace CosmicShore.UI
         TMP_Text _captionText;
         float _minX, _maxX, _minZ, _maxZ;
         Vector2 _placedFor;
+
+        // The explorer's view over the framed map: an offset of the centre and a zoom of the scale.
+        Vector2 _pan;
+        float _zoom = 1f;
+        string _frameKey;
+        readonly Dictionary<int, Vector2> _pointers = new();
+        bool _viewDirty;
+        float _lastPaint;
+        Vector2 _paintLo, _paintHi;
+        bool _insetPainted;
+        bool _paintedCoarse;
+
+        /// <summary>A place was tapped: its location id.</summary>
+        public event Action<string> PlaceTapped;
+        /// <summary>The view moved or zoomed, or the map was redrawn (the edge view follows it).</summary>
+        public event Action ViewChanged;
+
+        /// <summary>The content on show (null before the first <see cref="Show(VoyageContent, VoyageToyDefinitionSO, string, IReadOnlyList{string}, string, bool)"/>).</summary>
+        public VoyageContent Content => _content;
+        public VoyageToyDefinitionSO Style => _style;
+        /// <summary>The real sea's chart, or null for uncharted content.</summary>
+        public VoyageChart Chart => _chart;
+        /// <summary>The course on show, or null.</summary>
+        public VoyageChart.Voyage Course => _voyage;
+        public string Here => _here;
+        public IReadOnlyList<string> Route => _route;
+        /// <summary>Pixels per map unit (per light year on a charted map).</summary>
+        public float PixelsPerUnit => Scale();
+        /// <summary>The map point at the centre of the view.</summary>
+        public Vector2 ViewCentre => Centre;
+        /// <summary>A map x (light years on a charted map) as an x from the rect's centre.</summary>
+        public float OffsetX(float mapX) => (mapX - Centre.x) * Scale();
 
         static Texture2D s_Atlas;
         static string s_AtlasKey;
@@ -91,7 +143,16 @@ namespace CosmicShore.UI
             if (route != null) _route.AddRange(route);
             _chart = VoyageChart.For(content);
             _voyage = _chart?.Along(_route);
-            raycastTarget = false;
+            raycastTarget = true;
+            // A new frame (another course, or none) starts the explorer over; a redraw of the same one keeps where the
+            // player has looked.
+            string key = (focus ? "f:" : "a:") + string.Join(">", _route);
+            if (key != _frameKey)
+            {
+                _frameKey = key;
+                _pan = Vector2.zero;
+                _zoom = 1f;
+            }
             Bounds();
             Label();
             Caption();
@@ -115,7 +176,7 @@ namespace CosmicShore.UI
             {
                 foreach (var p in _voyage.Points) Include(Galaxy(p));
                 float half = MinFocusLy * 0.5f;
-                var c = Centre;
+                var c = FrameCentre;
                 Include(c - new Vector2(half, half));
                 Include(c + new Vector2(half, half));
                 return;
@@ -135,14 +196,18 @@ namespace CosmicShore.UI
         /// <summary>True when a place lies inside the framed map (a focused map leaves out the places beyond it).</summary>
         bool InFrame(Vector2 rectPoint) => rectTransform.rect.Contains(rectPoint);
 
-        float Scale()
+        /// <summary>The framed map's scale, before the explorer's zoom.</summary>
+        float FrameScale()
         {
             var r = rectTransform.rect;
             float w = Mathf.Max(1e-3f, _maxX - _minX), h = Mathf.Max(1e-3f, _maxZ - _minZ);
             return Mathf.Max(1e-6f, Mathf.Min(r.width * (1f - 2f * Pad) / w, r.height * (1f - 2f * Pad) / h));
         }
 
-        Vector2 Centre => new((_minX + _maxX) * 0.5f, (_minZ + _maxZ) * 0.5f);
+        float Scale() => FrameScale() * _zoom;
+
+        Vector2 FrameCentre => new((_minX + _maxX) * 0.5f, (_minZ + _maxZ) * 0.5f);
+        Vector2 Centre => FrameCentre + _pan;
 
         /// <summary>A map point (chart units, or light years with y flipped) in the rect.</summary>
         Vector2 ToRect(Vector2 p) => rectTransform.rect.center + (p - Centre) * Scale();
@@ -157,20 +222,151 @@ namespace CosmicShore.UI
         // gate's publicized reference (public).
         void LateUpdate()
         {
-            if (rectTransform.rect.size == _placedFor) return;
-            Relayout();
+            if (rectTransform.rect.size != _placedFor)
+            {
+                Relayout();
+                return;
+            }
+            if (!_viewDirty) return;
+            _viewDirty = false;
+            // A moving view slides over the water already painted, and repaints a few times a second at most (until
+            // then the view stays dirty, so the repaint still comes once the view has stopped).
+            if (NeedsPaint())
+            {
+                if (Time.unscaledTime - _lastPaint >= RepaintEvery)
+                {
+                    PaintSea();
+                    SetMaterialDirty();
+                }
+                else _viewDirty = true;
+            }
+            PlaceLabels();
+            SetVerticesDirty();
+            ViewChanged?.Invoke();
         }
 
         void Relayout()
         {
             _placedFor = rectTransform.rect.size;
+            _insetPainted = false;
             PaintSea();
             PlaceLabels();
             SetVerticesDirty();
             SetMaterialDirty();
+            ViewChanged?.Invoke();
+        }
+
+        // ── The explorer: drag, pinch, wheel, tap ────────────────────────────
+
+        Vector2 Local(PointerEventData e, Vector2 screen)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screen, e.pressEventCamera, out var p);
+            return p;
+        }
+
+        public void OnPointerDown(PointerEventData e) => _pointers[e.pointerId] = Local(e, e.position);
+        public void OnPointerUp(PointerEventData e) => _pointers.Remove(e.pointerId);
+        public void OnBeginDrag(PointerEventData e) => _pointers[e.pointerId] = Local(e, e.position);
+
+        public void OnDrag(PointerEventData e)
+        {
+            if (float.IsInfinity(_minX)) return;
+            var now = Local(e, e.position);
+            if (_pointers.Count >= 2 && _pointers.ContainsKey(e.pointerId))
+            {
+                // Two fingers: the pinch zooms about their midpoint, and the midpoint's move pans.
+                Vector2 other = default;
+                foreach (var kv in _pointers)
+                    if (kv.Key != e.pointerId) { other = kv.Value; break; }
+                var was = _pointers[e.pointerId];
+                float d0 = Vector2.Distance(was, other), d1 = Vector2.Distance(now, other);
+                if (d0 > 1f) ZoomAbout((now + other) * 0.5f, d1 / d0);
+                Pan(((now + other) - (was + other)) * 0.5f);
+            }
+            else Pan(now - Local(e, e.position - e.delta));
+            _pointers[e.pointerId] = now;
+        }
+
+        public void OnEndDrag(PointerEventData e)
+        {
+            _pointers.Remove(e.pointerId);
+            // Settled: paint the water the view now shows.
+            _lastPaint = float.NegativeInfinity;
+            _viewDirty = true;
+        }
+
+        public void OnScroll(PointerEventData e)
+        {
+            if (float.IsInfinity(_minX) || Mathf.Approximately(e.scrollDelta.y, 0f)) return;
+            ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
+        }
+
+        public void OnPointerClick(PointerEventData e)
+        {
+            if (_content?.Locations == null || float.IsInfinity(_minX)) return;
+            var at = Local(e, e.position);
+            string best = null;
+            float bestD = TapReach * TapReach;
+            foreach (var l in _content.Locations)
+            {
+                if (!Drawn(l)) continue;
+                float d = (At(l) - at).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = l.Id; }
+            }
+            if (best != null) PlaceTapped?.Invoke(best);
+        }
+
+        /// <summary>Move the view by <paramref name="delta"/> pixels (the map follows the finger).</summary>
+        void Pan(Vector2 delta)
+        {
+            _pan -= delta / Scale();
+            ClampView();
+            _viewDirty = true;
+        }
+
+        /// <summary>Zoom by <paramref name="factor"/> keeping the map point under <paramref name="at"/> (rect space) still.</summary>
+        void ZoomAbout(Vector2 at, float factor)
+        {
+            var world = FromRect(at);
+            float frame = FrameScale();
+            float width = Mathf.Max(1f, rectTransform.rect.width);
+            float lo = _chart != null ? width / MaxViewLy / frame : MinZoom;
+            float hi = _chart != null ? width / MinViewLy / frame : MaxZoom;
+            _zoom = Mathf.Clamp(_zoom * factor, Mathf.Min(lo, 1f), Mathf.Max(hi, 1f));
+            // The centre that puts world back under the pointer.
+            _pan = world - (at - rectTransform.rect.center) / Scale() - FrameCentre;
+            ClampView();
+            _viewDirty = true;
+        }
+
+        /// <summary>A charted map stays over the galaxy; an uncharted one within a frame's width of its places.</summary>
+        void ClampView()
+        {
+            if (_chart != null)
+            {
+                var c = Centre;
+                float r = c.magnitude, max = (float)GalaxyHalf;
+                if (r > max) _pan = c * (max / r) - FrameCentre;
+                return;
+            }
+            float w = _maxX - _minX, h = _maxZ - _minZ;
+            _pan = new Vector2(Mathf.Clamp(_pan.x, -w, w), Mathf.Clamp(_pan.y, -h, h));
         }
 
         // ── The sea behind a charted map ─────────────────────────────────────
+
+        /// <summary>True when the view has left the painted water, or zoomed far enough that it reads blurred or coarse.</summary>
+        bool NeedsPaint()
+        {
+            if (!_painted) return _chart != null;
+            if (_paintedCoarse && _pointers.Count == 0) return true;
+            var r = rectTransform.rect;
+            var lo = FromRect(r.min);
+            var hi = FromRect(r.max);
+            if (lo.x < _paintLo.x || lo.y < _paintLo.y || hi.x > _paintHi.x || hi.y > _paintHi.y) return true;
+            float share = (hi.x - lo.x) / Mathf.Max(1e-3f, _paintHi.x - _paintLo.x);
+            return share < 0.3f;
+        }
 
         void PaintSea()
         {
@@ -178,19 +374,28 @@ namespace CosmicShore.UI
             if (_chart == null || float.IsInfinity(_minX)) return;
             var r = rectTransform.rect;
             if (r.width < 1f || r.height < 1f) return;
+            _lastPaint = Time.unscaledTime;
             _seaTexHeight = Mathf.Clamp(Mathf.RoundToInt(SeaTexWidth * r.height / r.width), 16, 256);
             int w = SeaTexWidth + InsetTex, h = Mathf.Max(_seaTexHeight, InsetTex) + WhiteRows;
             _white = new Vector2((w - 0.5f) / w, (h - 0.5f) / h);
 
-            // Every card of the same content and size shares one texture: the sea is the same water on each.
+            // The water around the view, half a view wider on every side, so a pan slides over painted sea.
             var lo = FromRect(r.min);
             var hi = FromRect(r.max);
-            string key = $"{_content.GetHashCode()}:{w}x{h}:{lo.x:F0},{lo.y:F0},{hi.x:F0},{hi.y:F0}";
+            var span = hi - lo;
+            lo -= span * PaintMargin;
+            hi += span * PaintMargin;
+            _paintLo = lo;
+            _paintHi = hi;
+            int coarse = _pointers.Count > 0 ? 2 : 1;
+            string key = $"{_content.GetHashCode()}:{w}x{h}:{lo.x:F0},{lo.y:F0},{hi.x:F0},{hi.y:F0}:{coarse}";
             _painted = true;
+            _paintedCoarse = coarse > 1;
             if (s_Atlas && s_AtlasKey == key) return;
 
             if (!s_Atlas || s_Atlas.width != w || s_Atlas.height != h)
             {
+                _insetPainted = false;
                 if (s_Atlas) Destroy(s_Atlas);
                 s_Atlas = new Texture2D(w, h, TextureFormat.RGBA32, false)
                 {
@@ -200,28 +405,37 @@ namespace CosmicShore.UI
                     name = "VoyageSea",
                 };
             }
-            var px = new Color32[w * h];
-            // The framed water: each texel the column density at its point.
-            for (int y = 0; y < _seaTexHeight; y++)
-            for (int x = 0; x < SeaTexWidth; x++)
+            // The inset and the white strip are painted once per texture; a repaint redraws only the water.
+            var px = _insetPainted ? s_Atlas.GetPixels32() : new Color32[w * h];
+            // The framed water: each texel the column density at its point (a 2x2 block per sample while dragging).
+            int step = _pointers.Count > 0 ? 2 : 1;
+            for (int y = 0; y < _seaTexHeight; y += step)
+            for (int x = 0; x < SeaTexWidth; x += step)
             {
-                double gx = lo.x + (hi.x - lo.x) * (x + 0.5) / SeaTexWidth;
-                double gy = -(lo.y + (hi.y - lo.y) * (y + 0.5) / _seaTexHeight);
-                px[y * w + x] = Sea(HyperSea.Density(gx, gy), 255);
+                double gx = lo.x + (hi.x - lo.x) * (x + 0.5 * step) / SeaTexWidth;
+                double gy = -(lo.y + (hi.y - lo.y) * (y + 0.5 * step) / _seaTexHeight);
+                var c = Sea(HyperSea.Density(gx, gy), 255);
+                for (int by = y; by < Mathf.Min(y + step, _seaTexHeight); by++)
+                for (int bx = x; bx < x + step && bx < SeaTexWidth; bx++)
+                    px[by * w + bx] = c;
             }
-            // The whole galaxy, 100,000 ly across, clear outside the disk.
-            for (int y = 0; y < InsetTex; y++)
-            for (int x = 0; x < InsetTex; x++)
+            if (!_insetPainted)
             {
-                double gx = -GalaxyHalf + 2 * GalaxyHalf * (x + 0.5) / InsetTex;
-                double gy = -(-GalaxyHalf + 2 * GalaxyHalf * (y + 0.5) / InsetTex);
-                double rr = System.Math.Sqrt(gx * gx + gy * gy) / GalaxyHalf;
-                byte a = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01((float)(1.0 - rr) * 12f));
-                px[y * w + SeaTexWidth + x] = Sea(HyperSea.Density(gx, gy), a);
+                // The whole galaxy, 100,000 ly across, clear outside the disk.
+                for (int y = 0; y < InsetTex; y++)
+                for (int x = 0; x < InsetTex; x++)
+                {
+                    double gx = -GalaxyHalf + 2 * GalaxyHalf * (x + 0.5) / InsetTex;
+                    double gy = -(-GalaxyHalf + 2 * GalaxyHalf * (y + 0.5) / InsetTex);
+                    double rr = Math.Sqrt(gx * gx + gy * gy) / GalaxyHalf;
+                    byte a = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01((float)(1.0 - rr) * 12f));
+                    px[y * w + SeaTexWidth + x] = Sea(HyperSea.Density(gx, gy), a);
+                }
+                for (int y = h - WhiteRows; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = new Color32(255, 255, 255, 255);
+                _insetPainted = true;
             }
-            for (int y = h - WhiteRows; y < h; y++)
-            for (int x = 0; x < w; x++)
-                px[y * w + x] = new Color32(255, 255, 255, 255);
             s_Atlas.SetPixels32(px);
             s_Atlas.Apply(false);
             s_AtlasKey = key;
@@ -234,6 +448,14 @@ namespace CosmicShore.UI
         }
 
         Vector2 Uv(int x, int y) => new((float)x / s_Atlas.width, (float)y / s_Atlas.height);
+
+        /// <summary>A map point on the painted water, as a uv in the atlas (kept inside the water's own texels).</summary>
+        Vector2 SeaUv(Vector2 map)
+        {
+            float u = Mathf.InverseLerp(_paintLo.x, _paintHi.x, map.x) * SeaTexWidth;
+            float v = Mathf.InverseLerp(_paintLo.y, _paintHi.y, map.y) * _seaTexHeight;
+            return new Vector2(u / s_Atlas.width, v / s_Atlas.height);
+        }
 
         Rect InsetRect()
         {
@@ -253,10 +475,12 @@ namespace CosmicShore.UI
 
             if (sea)
             {
+                // The view's corners on the painted water (it is painted wider than the view, see PaintSea).
                 var r = rectTransform.rect;
+                var lo = SeaUv(FromRect(r.min));
+                var hi = SeaUv(FromRect(r.max));
                 Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
-                    new Vector2(r.xMax, r.yMin), SeaTint, Uv(0, 0), Uv(0, _seaTexHeight), Uv(SeaTexWidth, _seaTexHeight),
-                    Uv(SeaTexWidth, 0));
+                    new Vector2(r.xMax, r.yMin), SeaTint, lo, new Vector2(lo.x, hi.y), hi, new Vector2(hi.x, lo.y));
                 // Under the lanes and places, so a place in the corner still shows over it.
                 Inset(vh, white);
             }
@@ -310,14 +534,17 @@ namespace CosmicShore.UI
             Diamond(vh, InBox(Centre), 7f, _style.HereColor, white);
         }
 
-        Color MarkerColor(VoyageLocation l) => l.Experience switch
+        Color MarkerColor(VoyageLocation l) => MarkerColor(_style, l);
+
+        /// <summary>A place's marker colour: its experience's, from the harbour's style.</summary>
+        public static Color MarkerColor(VoyageToyDefinitionSO style, VoyageLocation l) => l.Experience switch
         {
-            VoyageExperience.VaultField => _style.VaultColor,
-            VoyageExperience.Core => _style.CoreColor,
-            _ => _style.PortColor,
+            VoyageExperience.VaultField => style.VaultColor,
+            VoyageExperience.Core => style.CoreColor,
+            _ => style.PortColor,
         };
 
-        static void Line(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c, Vector2 uv)
+        internal static void Line(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c, Vector2 uv)
         {
             var d = b - a;
             if (d.sqrMagnitude < 1e-4f) return;
@@ -325,14 +552,14 @@ namespace CosmicShore.UI
             Quad(vh, a - n, a + n, b + n, b - n, c, uv, uv, uv, uv);
         }
 
-        static void Diamond(VertexHelper vh, Vector2 p, float size, Color c, Vector2 uv)
+        internal static void Diamond(VertexHelper vh, Vector2 p, float size, Color c, Vector2 uv)
         {
             float s = size * 0.5f;
             Quad(vh, p + new Vector2(0f, s), p + new Vector2(s, 0f), p + new Vector2(0f, -s), p + new Vector2(-s, 0f), c,
                 uv, uv, uv, uv);
         }
 
-        static void Quad(VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color color,
+        internal static void Quad(VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color color,
             Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
         {
             int i = vh.currentVertCount;

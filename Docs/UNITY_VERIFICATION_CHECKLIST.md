@@ -19936,6 +19936,35 @@ Not compiled: the session had no Unity editor and no .NET SDK, so nothing here h
    window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
 6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
 
+## 🔴 2026-11-01 — The Voyage window as Garrett sketched it: Saga | Episodes, a galaxy explorer, the voyage grid (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md` §3 (Garrett's sketch). **Files:** `MissionView.prefab` re-laid in place by the
+new `Tools/Build/author_voyage_window.py` (`--check`, `--self-test`; `author_menu_mission.py` now stands down on that one
+file), new `UI/Views/VoyageWindowModals.cs`, new `UI/Views/VoyageEdgeGraphic.cs`, `VoyageMapGraphic.cs` (drag, pinch,
+wheel, tap), `VoyageJobsView.cs` (grid, edge view, tap a place), `VoyageJobCard.cs` (`Overlay`), `VoyageChart.cs`
+(`Heights`), `VoyageContentSO.cs` (`MapPlace`, `EdgeCaption`, `EdgeAbove`, `EdgeBelow`, `EdgeMidplane`) and
+`VoyageContent.asset` from `author_voyage_assets.py`. Affects: Shombith's Rev 17 J Voyage window (the Episodes column now
+opens from EPISODES, unchanged inside); Garrett's voyages. Not compiled: no Unity editor and no .NET SDK in the session.
+
+1. Open the project. **Pass:** no compile errors; MissionView.prefab opens with no missing-script or broken-reference
+   warnings.
+2. Menu_Main, open the Voyage window. **Pass:** two wide buttons at the top, SAGA and EPISODES; under them the galaxy map
+   (the sea around Tumult, places named, the galaxy corner), a thin edge-on strip under it (the disk at true scale, a
+   depth gauge on its left, a caption naming where the squad is and its height), then the voyage cards three across.
+3. Press SAGA. **Pass:** a modal with Tandava and Severing side by side over a dimmed window; SET SAIL on Tandava works as
+   before. Press outside the cards. **Pass:** it closes. Press EPISODES. **Pass:** Episode 1 with its five quests and
+   Episode 2's locked bar; claiming a quest works as before. Press EPISODES again. **Pass:** it closes.
+4. Drag the map. **Pass:** it pans, the place names follow, the sea fills in as you go; the edge strip pans with it.
+   Mouse wheel or pinch over the map. **Pass:** it zooms about the pointer, and the edge strip zooms with it.
+5. Tap a place a voyage sails to. **Pass:** that voyage's card opens over the others and the map frames its course. Tap
+   a place no voyage sails to. **Pass:** its name and line show under the map.
+6. Press a closed card (or its OPEN chip). **Pass:** it expands over the other cards to its brief (squad, intensity, pay,
+   who brought it) with SET SAIL; the map frames its course and the edge strip draws the course climbing or diving
+   between the places' heights. Press Close. **Pass:** back to the grid; the map shows every place.
+7. The Ark escort card. **Pass:** closed in the grid like the others; open, its difficulty stepper either side of SET
+   SAIL.
+8. Set sail on a job, finish it, come back. **Pass:** the one card under way stands open over the grid while it is out.
+
 ## 🔴 2026-11-01 — The Voyage window: one galaxy map, job cards that open to their brief (unverified: not compiled, no editor or compiler in the session)
 
 **Plan:** `Docs/Voyages/VOYAGE_BOARD.md` §3. **Files:** `UI/Views/VoyageJobsView.cs`, `VoyageJobCard.cs`,

@@ -48,7 +48,8 @@ LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "H
                 "Failed", "Stowed", "Extracted", "ArkLost", "NoWork", "Following",
                 "ChooseNext", "CardRoute", "CardHomeRoute", "CardUnderway", "CardCourse",
                 "SeaSpray", "SeaFroth", "SeaWater", "SeaThick", "SeaReef", "CardOpen", "CardClose", "CardDetails",
-                "CardHomeDetails", "CardSquadSeat", "CardSquadSeparator"]
+                "CardHomeDetails", "CardSquadSeat", "CardSquadSeparator", "MapPlace", "EdgeCaption",
+                "EdgeAbove", "EdgeBelow", "EdgeMidplane"]
 
 
 def guid_for(name):
