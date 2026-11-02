@@ -24,7 +24,9 @@ WHAT IT MAKES (R_VesselActions/MEERKAT.md)
           X (6) -> StoatHoldAction (the stance, which the studio's Meerkat keeps); no per-device overrides
         - MeerkatSolitonNetworkRelay on the root (every peer sees every tunnel)
         - StoatHUDController -> MeerkatHUDController (the Stoat's HUD view as a stand-in; the Time card shows the reticle)
-      Everything else is the Stoat's: the studio flies the Stoat's model and lope as the Meerkat's stand-in hull.
+      Everything else is the Stoat's, except the HULL (2026-11-03): the model instance draws Meerkat.fbx, the Meerkat's own
+      hull built on the Stoat's rig (Tools/Build/vessel_model/specs/meerkat.py), so StoatAnimation still drives it; and the
+      HUD, MeerkatHUDVariant (its section below).
     Assets/_SO_Assets/VesselActions/Meerkat/: MeerkatSolitonConfig.asset (every studio key at its SHIPPED value - a
       one-shot: after it exists only studio_to_unity.py writes its numbers), MeerkatSolitonFormAction / ShortenAction.
     SO_Class_Meerkat (the Stoat's icons as placeholders, owned from the start) + its entry in SO_Classlist_All / _Classes;
@@ -86,6 +88,7 @@ HUD_DIR = os.path.join(ROOT, "Assets", "_Prefabs", "UI Elements", "VesselHUD")
 HUD_DONOR = os.path.join(HUD_DIR, "StoatHUDVariant.prefab")
 HUD_VARIANT = os.path.join(HUD_DIR, "MeerkatHUDVariant.prefab")
 ICONS_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Meerkat")
+MODEL = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Meerkat.fbx")
 
 # 24 Flea (claude/flea-vessel), 25-27 Warden / Bulwark / Tempest (cece/keen-feynman-unrdda): checked across every origin
 # branch 2026-10-27, so the Meerkat is 28.
@@ -105,6 +108,8 @@ GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"    # Runtime GameData (the d
 STOAT_CAMERA_GUID = "2fb2a0bb0eaf4bd1863fdf55490fa869"  # StoatCameraSettingsSO (the clone's, until round 10)
 CAMERA_GUID = "5e1e0cd061ab49dbbb24bf9c1080387b"        # MeerkatCameraSettingsSO
 HUD_VARIANT_GUID = "5d49e3f0fa4f801553ac3c6de6f80713"   # MeerkatHUDVariant (its own row, 2026-11-03)
+STOAT_FBX_GUID = "0ef0b84d93774ac39ddc699c59d0821a"     # Stoat.fbx, the hull the clone draws
+MEERKAT_FBX_GUID = "81b9ac1e02714f0fa49b1eef2bb2d9f5"   # Meerkat.fbx, its own hull on the Stoat's rig (2026-11-03)
 STOAT_HUD_VARIANT_GUID = "1f9b41e6fa58494599674753191b495b"
 STOAT_HUD_VIEW_GUID = "c120940f60a14c2aa390446ea0791b5a"
 
@@ -453,6 +458,9 @@ def retrofit(text: str) -> str:
     m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
     if m and f"  - component: {{fileID: {RELAY_ID}}}\n" not in m.group(1):
         text = text[:m.end(1)] + f"  - component: {{fileID: {RELAY_ID}}}\n" + text[m.end(1):]
+    # the hull (2026-11-03): the model instance's every reference to Stoat.fbx becomes Meerkat.fbx; its rig, node, slot and
+    # take names are the Stoat's (/vessel-model, the Goby's borrowed-rig pattern), so the swap is the guid alone
+    text = text.replace(f"guid: {STOAT_FBX_GUID}", f"guid: {MEERKAT_FBX_GUID}")
     return hud_retrofit(kit_retrofit_prefab(text))
 
 
@@ -712,6 +720,8 @@ def check_prefab(text: str):
     want(f"  m_SourcePrefab: {{fileID: 100100000, guid: {HUD_VARIANT_GUID}, type: 3}}\n" in text
          and STOAT_HUD_VARIANT_GUID not in text,
          "Meerkat.prefab: the nested HUD is not MeerkatHUDVariant (it would wear the Stoat's row)")
+    want(MEERKAT_FBX_GUID in text and STOAT_FBX_GUID not in text,
+         "Meerkat.prefab: the hull is not Meerkat.fbx (it would fly the Stoat's model)")
     sv = re.search(r"--- !u!114 &%s stripped\n((?:.*\n)*?)(?=--- !u!|\Z)" % HUD_VIEW_ID, text)
     want(sv and f"guid: {script_guid('MeerkatHUDView')}, type: 3" in sv.group(1)
          and f"  view: {{fileID: {HUD_VIEW_ID}}}\n" in hud,
@@ -785,6 +795,8 @@ def check_all():
         return ["Meerkat.prefab (+ .meta) is missing: run Tools/Build/author_meerkat_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Meerkat.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB))
+    if not os.path.exists(MODEL) or not os.path.exists(MODEL + ".meta") or guid_of(MODEL + ".meta") != MEERKAT_FBX_GUID:
+        errs.append("Meerkat.fbx (+ .meta): missing, or not the guid the prefab draws: Tools/Build/vessel_model/build.py meerkat")
     if not os.path.exists(HUD_VARIANT) or not os.path.exists(HUD_VARIANT + ".meta"):
         errs.append("MeerkatHUDVariant.prefab (+ .meta) is missing: run Tools/Build/author_meerkat_assets.py")
     else:
@@ -879,6 +891,7 @@ def self_test():
     expect(check_prefab(good.replace(binding(BUTTON4_ACTION, SENTINEL_GUID), "")), 1, "Y unbound")
     expect(check_prefab(good.replace(f"  kit: {{fileID: {KIT_ID}}}\n", "")), 1, "the HUD without the kit")
     expect(check_prefab(good.replace(HUD_VARIANT_GUID, STOAT_HUD_VARIANT_GUID)), 1, "the Stoat's HUD nested")
+    expect(check_prefab(good.replace(MEERKAT_FBX_GUID, STOAT_FBX_GUID)), 1, "the Stoat's hull")
     expect(check_prefab(good.replace("CosmicShore.UI.MeerkatHUDView", "CosmicShore.UI.StoatHUDView").replace(
         script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's HUD view")
     hud = build_hud_variant(read(HUD_DONOR))

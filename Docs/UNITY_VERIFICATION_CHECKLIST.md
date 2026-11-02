@@ -87,6 +87,11 @@ all green. No editor run: another session had Unity open on this checkout; `unit
    Sentinel Mode toggles and no lift fires. **Pass:** each as described. The profile is a prototype that needs Garrett's
    sign-off.
 5. An AI Meerkat and a remote Meerkat. **Pass:** their HUD never drives yours.
+6. **Its own hull** (`Meerkat.fbx`, swapped into `Meerkat.prefab` by guid; the assimp reader did not run offline). Reimport,
+   then fly it in the Toybox. **Pass:** the Meerkat draws its own hull (raised head, visor band, ear dishes, claws), not the
+   Stoat's; it lopes and banks with `StoatAnimation` (no part left at rest, nothing detached); the four element morphs show
+   as elements level; the jets sit on its nacelles; the class card, hangar preview and squad image show the new hull.
+   Sentinels (Y, then form a soliton) read as the hull standing guard. Judge whether it reads as a meerkat in flight.
 
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 

@@ -15,9 +15,12 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
   - Space's surface area sizes a wormhole (§8, round 23), and the swallow carries things first in first out;
   - Mass sizes the network (§7a, round 26);
   - Garrett's four abilities are in (§10).
-- **Unity tuning not in the artifact:** `studio_to_unity.py --check` reads 69 mapped, 14 drift. These are Yash's Unity
-  values for the tunnel's throat and mouth, the network's size, forks, diameters, tip and gnarl, its top speed, and
-  `suckRadius`. The decision is in `Docs/Reports/MEERKAT.md` §5.
+- **The artifact and the game agree again (round 27, 2026-11-03):** the slip-and-slide, the plain wormhole and Yash's 14
+  Unity numbers are in the artifact; `studio_to_unity.py --vessel meerkat --check` reads 80 mapped, 0 drift.
+- **Ahead in the artifact (round 28, 2026-11-03): the Rift.** The omni crystal's ultimate there is a Wraith-style void
+  run that lays a rift (`Docs/Studios/MEERKAT.md` round 28); the game still grows the Soliton Network until
+  `/artifact-to-unity` clones it.
+- **Its own hull, HUD, icons, class cards and phone profile (2026-11-03):** §5.
 - **Nothing here is editor-verified yet.** The open hand tests are the Meerkat entries in
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of them are marked SUPERSEDED. The report is `Docs/Reports/MEERKAT.md`.
 
@@ -223,7 +226,10 @@ line for line:
 
 ## 5. Stand-ins and open slots
 
-- **Hull:** the Stoat's model and lope, as in the studio. A real Meerkat hull is `/vessel-model` work.
+- **Hull (its own since 2026-11-03):** `Meerkat.fbx` (`Docs/VesselModels/Meerkat.md`, `vessel_model/specs/meerkat.py`), a
+  new hull on the Stoat's borrowed rig (the Goby's pattern): the same bones, rests, slots, shape keys and takes, so
+  `StoatAnimation` still drives it and `author_meerkat_assets.py` swaps it in by the model guid alone (`--check` fails on
+  a prefab still drawing `Stoat.fbx`). The class cards are rendered from it (`render_cards.py Meerkat`).
 - **HUD (its own since 2026-11-03):** `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs,
   built by `author_meerkat_assets.py`, the Angler's pattern), `MeerkatHUDView` and `MeerkatHUDController` (the LOCKED
   four-icon row, charge → mass → space → time). One plate gauge per card: Charge, the sentinels standing out of the pool,
