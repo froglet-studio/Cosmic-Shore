@@ -378,6 +378,43 @@ def default_queue(cwd=None):
 LAST_JOBS = {}          # the jobs the last build read: the hub overlays live heartbeats with them
 
 
+AI_PLAN_DOC = "Docs/AI_SYSTEM/AI_PLAN.md"
+
+
+def ai_plan(jobs, cwd=None, refs=None):
+    """Garrett's AI plan (Docs/AI_SYSTEM/AI_PLAN.md, LOCKED 2026-11-02) for the console's AI plan view: the doc's
+    text, its machine-readable steps (ai_plan.json, the same file every worker holds jobs to) and, per step, the
+    jobs that serve it. Read from the first queue ref that carries it, as the worker reads it; the working tree with
+    `local`. Anyone who opens the console reads it (Shombith, 2026-11-02)."""
+    plan = L.load_ai_plan(local=refs is None, refs=refs, cwd=cwd)
+    if not plan:
+        return None
+    doc = ""
+    for ref in (refs or [None]):
+        if ref is None:
+            try:
+                with open(os.path.join(cwd or L.REPO, AI_PLAN_DOC), encoding="utf-8") as fh:
+                    doc = fh.read()
+            except OSError:
+                doc = ""
+        else:
+            doc = L.git_ok("show", f"{ref}:{AI_PLAN_DOC}", cwd=cwd) or ""
+        if doc:
+            break
+    serving, off = {}, []
+    for jid, j in sorted(jobs.items()):
+        if j.get("status") == "retired":
+            continue
+        step, why = L.plan_step(j, plan), L.plan_problem(j, plan)
+        if why:
+            off.append({"job": jid, "why": why})
+        elif step:
+            serving.setdefault(step, []).append(jid)
+    steps = [dict(s, serving=serving.get(s["id"], [])) for s in plan.get("steps", [])]
+    return {"doc": doc, "doc_path": AI_PLAN_DOC, "set_by": plan.get("set_by"), "steps": steps, "off_plan": off,
+            "retired": plan.get("retired_jobs") or {}, "other_plans": plan.get("other_plans") or {}}
+
+
 def build(local=False, fetch=True, cwd=None, prs=None, url=None, queue=None):
     """`queue`: the branches jobs and manual runs are read from (default compute_lib.QUEUE_REFS)."""
     global LAST_JOBS
@@ -396,7 +433,11 @@ def build(local=False, fetch=True, cwd=None, prs=None, url=None, queue=None):
         vessel_ai = AU.status(machines, cwd)
     except Exception as e:
         vessel_ai = [{"error": f"{type(e).__name__}: {e}"}]
-    return {"schema": SCHEMA, "generated": L.now(), "core": core_four(), "vessel_ai": vessel_ai,
+    try:
+        plan = ai_plan(jobs, cwd, None if local else refs)
+    except Exception as e:
+        plan = {"error": f"{type(e).__name__}: {e}"}
+    return {"schema": SCHEMA, "generated": L.now(), "core": core_four(), "vessel_ai": vessel_ai, "ai_plan": plan,
             "queue": "working tree (--local)" if local else refs,
             "jobs": out_jobs, "machines": out_machines, "runs": run_data, "install": install_info(cwd),
             "manual": manual(jobs, machines, cwd, None if local else refs), "forms": run_forms(jobs), "catalog": catalog(jobs, cwd),
@@ -539,6 +580,15 @@ def self_test():
         bad.append(f"console unity recordings: replays read wrong: {got[0]['replays']}")
     elif got[0]["flights"] != 1 or got[0]["third_eye"] != "open":
         bad.append(f"console unity recordings: flights / third eye read wrong: {got[0]}")
+    # The AI plan page: every live job lands on its step, an off-plan job is listed (negative control), the doc is read.
+    jobs = L.load_jobs(local=True)
+    plan = ai_plan(jobs)
+    if plan and (not plan["doc"] or not any(s["serving"] for s in plan["steps"]) or plan["off_plan"]):
+        bad.append(f"ai plan: doc {len(plan['doc'])} chars, serving {[s['id'] for s in plan['steps'] if s['serving']]}, off {plan['off_plan']}")
+    if plan:
+        stray = ai_plan(dict(jobs, **{"stray-search": {"id": "stray-search", "plan": "nobody"}}))
+        if not any(o["job"] == "stray-search" for o in stray["off_plan"]):
+            bad.append("ai plan: a job naming no AI plan was not listed as off the plan")
     return bad
 
 

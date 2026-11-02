@@ -11,7 +11,8 @@ it does: Pause and Resume (a `paused` file the agent honours: nothing starts, th
 progress finishes), Schedule... (whenever away / only at night / every day between two hours / only when someone sends
 a run / all the time, and whether a sent run may start at once: it re-registers the agent through `compute.py install`
 with the matching flags, so the choice is the same one the installer and the paste line take), Open the console,
-Uninstall... (asks, then `compute.py uninstall` and the tray's own login entry), Quit (the agent keeps working).
+Quit (stops the agent until the next login). Uninstall is not here: it is in the setup window (run the installer again)
+and on the console (Remove this computer); Shombith, 2026-11-02. One tray per computer (`tray.lock`).
 
 With `pystray` and `Pillow` installed (the installer tries `pip install --user pystray pillow`; both optional) it is a
 real tray icon with a menu; without them it is a small window with the same buttons, which the person may minimise.
@@ -274,6 +275,8 @@ def schedule_window(parent=None, on_done=None):
     sched = cfg.get("schedule") or {}
     win = tk.Toplevel(parent) if parent else tk.Tk()
     win.title("Froglet Compute: when may this computer work?")
+    if not parent:
+        _theme(win, tk, ttk)
     win.resizable(False, False)
     frame = ttk.Frame(win, padding=16)
     frame.grid()
@@ -323,11 +326,42 @@ def do_uninstall(ask):
         return False
     subprocess.run([sys.executable, COMPUTE, "uninstall"], capture_output=True, text=True, **L.NO_WINDOW)
     remove_autostart()
+    stop_agent()
+    return True
+
+
+_TRAY_LOCK = None
+
+
+def tray_lock(path=None):
+    """True when this is the computer's only tray (a lock file held while it runs, like the agent's). The installer
+    starts a tray every time it runs and the login entry starts another, and each showed its own Uninstall dialog
+    (Shombith, 2026-11-01, "got two screens"): a second tray now exits at once."""
+    global _TRAY_LOCK
+    path = path or os.path.join(L.cache_dir(), "tray.lock")
+    fh = open(path, "a+")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return False
+    _TRAY_LOCK = fh
     return True
 
 
 def run_tray(configure=False):
-    """The tray icon (pystray) or, without it, a small window with the same controls."""
+    """The tray icon (pystray) or, without it, a small window with the same controls. A second tray on the same
+    computer only opens the Schedule window when asked to configure, then leaves."""
+    if not tray_lock():
+        if configure:
+            schedule_window()
+        return 0
     try:
         import pystray
         from PIL import Image, ImageDraw
@@ -338,11 +372,22 @@ def run_tray(configure=False):
     if pystray is None:
         return run_window(configure)
 
+    logo_path = os.path.join(HERE, "console", "stills", "froglet.png")
+
     def icon_image(color):
+        """The Froglet logo on a dark tile, the status as a dot in the corner (Shombith, 2026-11-02: the logo in the
+        app and the tray)."""
         im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
-        d.rounded_rectangle((6, 6, 58, 58), radius=14, fill=(11, 12, 16, 255))
-        d.ellipse((22, 22, 42, 42), fill=color)
+        d.rounded_rectangle((2, 2, 62, 62), radius=14, fill=(5, 6, 10, 255))
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo.thumbnail((52, 30), Image.LANCZOS)
+            im.alpha_composite(logo, ((64 - logo.width) // 2, (64 - logo.height) // 2 - 2))
+        except Exception:
+            d.ellipse((22, 22, 42, 42), fill=color)
+            return im
+        d.ellipse((46, 46, 60, 60), fill=color, outline=(5, 6, 10, 255), width=2)
         return im
     colors = {"working": (0, 212, 255, 255), "free": (76, 195, 138, 255), "paused": (232, 180, 76, 255), "off": (120, 120, 120, 255)}
 
@@ -363,16 +408,7 @@ def run_tray(configure=False):
             pystray.MenuItem("Schedule…", lambda: threading.Thread(target=lambda: schedule_window(), daemon=True).start()),
             pystray.MenuItem("Open the console", lambda: webbrowser.open(console_url())),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Uninstall…", lambda: uninstall()),
             pystray.MenuItem("Quit (stops the agent until the next login)", lambda: (stop_agent(), icon.stop())))
-
-    def uninstall():
-        tk, ttk, messagebox = _tk()
-        root = tk.Tk(); root.withdraw()
-        if do_uninstall(lambda q: messagebox.askyesno("Froglet Compute", q)):
-            root.destroy(); icon.stop()
-        else:
-            root.destroy()
 
     icon = pystray.Icon("froglet-compute", icon_image(colors["free"]), "Froglet Compute", menu())
 
@@ -392,11 +428,21 @@ def run_tray(configure=False):
     return 0
 
 
+def _theme(root, tk, ttk):
+    """The console's dark theme, shared with the setup window (setup.py sits beside this file in the app copy)."""
+    try:
+        import setup
+        setup.theme(root, tk, ttk)
+    except Exception:
+        pass
+
+
 def run_window(configure=False):
     tk, ttk, messagebox = _tk()
     root = tk.Tk()
     root.title("Froglet Compute")
     root.resizable(False, False)
+    _theme(root, tk, ttk)
     frame = ttk.Frame(root, padding=16); frame.grid()
     status = ttk.Label(frame, text="", font=("", 11, "bold")); status.grid(column=0, row=0, columnspan=2, sticky="w")
     sub = ttk.Label(frame, text="This computer trains the team's AI while you are away.", foreground="#666"); sub.grid(column=0, row=1, columnspan=2, sticky="w", pady=(0, 10))
@@ -404,7 +450,6 @@ def run_window(configure=False):
     ttk.Button(frame, text="Quit (stops the agent until the next login)", command=lambda: (stop_agent(), root.destroy())).grid(column=0, row=5, columnspan=2, sticky="ew", pady=(8, 0))
     ttk.Button(frame, text="Schedule…", command=lambda: schedule_window(root, refresh)).grid(column=1, row=2, sticky="ew", pady=2, padx=(6, 0))
     ttk.Button(frame, text="Open the console", command=lambda: webbrowser.open(console_url())).grid(column=0, row=3, sticky="ew", pady=2)
-    ttk.Button(frame, text="Uninstall…", command=lambda: do_uninstall(lambda q: messagebox.askyesno("Froglet Compute", q)) and root.destroy()).grid(column=1, row=3, sticky="ew", pady=2, padx=(6, 0))
     ttk.Label(frame, text="Closing this window keeps the computer working; Quit stops it.", foreground="#666").grid(column=0, row=4, columnspan=2, sticky="w", pady=(10, 0))
 
     def refresh():
@@ -436,6 +481,12 @@ def self_test():
     if status_text({"updated": 100, "status": "free"}, True, False, now) != "Starting up": bad.append("stale heartbeat")
     if status_text({"updated": 990, "status": "free", "current": {"job": "x", "unit": "u"}}, True, True, now) != "Paused (finishing u)": bad.append("paused")
     if "tray" not in tray_launcher_text(): bad.append("launcher")
+    import tempfile
+    lock = os.path.join(tempfile.mkdtemp(prefix="tray-lock-"), "tray.lock")
+    if not tray_lock(lock): bad.append("the first tray could not take the lock")
+    second = subprocess.run([sys.executable, "-c", f"import sys; sys.path.insert(0, {HERE!r}); import tray; sys.exit(0 if tray.tray_lock({lock!r}) else 3)"],
+                            capture_output=True, text=True)
+    if second.returncode != 3: bad.append(f"a second tray took the lock too (exit {second.returncode}: {second.stderr[-200:]})")
     return bad
 
 

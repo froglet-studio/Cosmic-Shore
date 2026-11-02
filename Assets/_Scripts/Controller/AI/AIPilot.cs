@@ -335,6 +335,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
+        /// <summary>The steering hook set now (a mode's or a crew's), or null: a crew that set one reads this to take back only
+        /// its own and never clears a mode's (HoneyguideCrew.Hunt.cs).</summary>
+        public Func<Vector3> ExternalTargetProvider => _externalTargetProvider;
+
         /// <summary>
         /// The last-ditch avoidance hook: asked every frame with the hull's position, its real velocity (course x speed)
         /// and its nose. True (with a point to steer at) means impact is imminent: the steering flies that point instead

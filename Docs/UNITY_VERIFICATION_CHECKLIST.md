@@ -20772,3 +20772,11 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] Tap a star, a cluster or a landmark: a card opens bottom-right with what it is, its line, its source tag and its distances from Sol, Tumult and the squad; a tap on open water closes it. Tapping a voyage's place still opens that voyage.
 - [ ] The edge view under the map shows the stars at their heights.
 - [ ] Frame rate while dragging at the Region and Galaxy tiers on a phone (new tiles are made 3 a frame; a Galaxy-tier tile is the costliest).
+
+## 🔴 Honeyguide AI: unstuck slips, a freestyle hunt, the symbolic strip (2026-11-02, NOT COMPILED, NOT RUN IN EDITOR)
+`HoneyguideCrew.Hunt.cs` (new), `HoneyguideCrew.Pilot.cs`/`Zip.cs`/`Triggers.cs`/`Hive.cs`, `HoneyguideDynamoView.Strip`, `HoneyguideConfigSO` (+ asset), `AIPilot.ExternalTargetProvider`. Record: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` § The AI's hunt. Not compiled: the cloud session could not install a .NET SDK (dot.net blocked), so `unity_refcompile` was skipped; `gates.sh` otherwise all OK.
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Freestyle, play the Ratel (the AI flies): over a minute or two the AI goes after creatures, rivals and opposing prism masses, not only omnicrystals, and still takes one now and then.
+- [ ] The AI slips along trails toward where it is going and does not ping-pong on one trail.
+- [ ] The strip shows the goal's glyph, the hull closing on it, slips/darts, strikes, breaks and pickups.
+- [ ] A match with its own AI objective (Regatta, Astro League): the Honeyguide AI still plays the match's objective.

@@ -9,6 +9,13 @@ The design is `Docs/Compute/README.md`; read it before changing anything under `
 session does for its person. The family: `/compute-job` (write a search: a space and a loss), `/compute-scout` (find
 what to search next), `/regatta-balance` (the three-stage Regatta plan), `/bioform-forge` (swarm bodies, NCA creatures).
 
+## 0. The default for AI training
+
+Froglet Compute is how this project trains AIs (CLAUDE.md, Shombith 2026-11-02): searches through `/compute-job`, Unity
+trainer runs through the console's New run, every job serving a step of Garrett's AI plan (`Docs/AI_SYSTEM/AI_PLAN.md`,
+the console's AI plan page; the hub serves it raw at `/ai_plan.md`). A session asked to "train" or "tune" an AI routes
+it here rather than running a sweep by hand.
+
 ## 1. "What should my computer work on?" (retrieve the queue)
 
 ```
