@@ -120,6 +120,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Switchback_AINoseLag_LadderByDifficulty()
+        {
+            // SWITCHBACK.md "Lag by difficulty" (2026-11-02): Easy keeps the fleet lag, each level up follows faster,
+            // Legendary has none. Offline the levels then order at every intensity (I4: 172 / 133 / 125 / 100 s).
+            var go = new GameObject("SwitchbackAISteeringTests_NoseLag");
+            try
+            {
+                var ladder = Field<float[]>(go.AddComponent<SwitchbackController>(), "aiNoseFollowByLevel");
+                CollectionAssert.AreEqual(new[] { 1.5f, 2f, 3f, 0f }, ladder);
+                Assert.AreEqual(VesselTransformer.RotationFollowRate, SwitchbackController.NoseFollowFor(ladder, 1),
+                    "Easy flies the lag every AI has elsewhere");
+                Assert.AreEqual(0f, SwitchbackController.NoseFollowFor(ladder, 4), "Legendary has no lag");
+                Assert.Less(SwitchbackController.NoseFollowFor(ladder, 0), 0f, "an unknown level keeps the fleet lag");
+                Assert.Less(SwitchbackController.NoseFollowFor(ladder, 5), 0f);
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void OtherGateRaces_KeepTheirSceneSwitch()
         {
             // Negative control: Headlong did not opt in, so it reads its own (off) inspector switch.

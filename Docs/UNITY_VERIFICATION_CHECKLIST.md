@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback AI: the nose lag by difficulty, 1.5 / 2 / 3 / 0 per second (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselTransformer.AINoseFollowPerSecond` (default -1 = the fleet lag; every mode but Switchback leaves
+it unset), `GateRaceController.OnRacerArmed`, and `SwitchbackController.aiNoseFollowByLevel` {1.5, 2, 3, 0} written to each
+AI racer when it is armed. Offline, I4 medians go from 172 / 169 / 169 / 172 s to 172 / 133 / 125 / 100 s
+(`SWITCHBACK.md` "Lag by difficulty").
+
+**Verified without the editor:** reference compile (editor, player-dev); gates; `switchback_sim_harness` selftest and
+eval. NOT run: the tests or a race in Unity.
+
+**Verify in editor:**
+1. EditMode: `NoseFollowDialTests` and `SwitchbackAISteeringTests` pass (incl. the two new tests).
+2. Re-run the Switchback soak (`SwitchbackSoakRunner`) at I1 and I4 with Easy and Legendary AIs: Legendary finishes
+   clearly faster than Easy (model: about 2x at I1), with no new wall or ring misses at the I4 hairpins.
+3. Watch a Legendary Dolphin in the AI Diagnose panel (F2, Chase): the nose snaps to its aim with no visible lag and the
+   hull does not jitter. Fly another mode (Skim Race) with AI: its AIs fly as before (the lag is unchanged there).
+
 ### 🔴 Switchback AI step 3: the planner's plain-hit cost 0.6 -> 0.25 s (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `SwitchbackBlastPlanner.HitPenalty` 0.25 (the measured cost of a plain prism hit). Offline it changes
