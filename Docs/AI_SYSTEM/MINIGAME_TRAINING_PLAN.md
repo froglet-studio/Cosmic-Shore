@@ -475,3 +475,9 @@ the parked doc). Every number here but the editor races is a model.
 
 **Next, in order.** Yash plays Slingshot at each intensity: the sweep relearns the sling rows on its own (`AUTO_LEARNING.md`).
 Then the Stoat's `drive_fit` model joins stage 1 of `REGATTA_BALANCE_PLAN.md`, and Regatta takes the trained numbers (§4).
+
+**Steps 1-4 (2026-11-02, `SWITCHBACK.md` "Step 1" to "Step 4").** Shipped: dodge only Danger prisms and nothing in the
+last 200 u to a ring (1), strike the key straight with the drift aiming the blast (2), the planner's measured hit
+cost (3). Step 4, drift carving, is measured and NOT shipped: the AI's nose lags its command at 1.5/s even while
+drifting (a person's does not, Garrett 2026-10-21), so AI carving loses badly; with no AI nose lag every time halves
+and carving adds ~10 %. Whether AI hulls keep the lag is Garrett's and Yash's decision, for every mode at once.
