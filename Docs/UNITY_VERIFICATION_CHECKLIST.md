@@ -20894,3 +20894,12 @@ Verified (flick launch, Mass power, earned speed, window AI included): Unity 600
 - [ ] Frame rate at I4 holds (about 1,260 prisms a course, about 40 moving): Profiler `Slingshot.Orrery.Spawn`, `SwitchbackBlastRun` movers.
 - [ ] AI Stoats finish I1-I4 and do not crash into moons (model: 79-91 s, no moon hits, under 7 prisms touched a race).
 - [ ] Run `SlingshotOrreryTests`.
+
+## 🟡 Redline: the AI Mantas fly the Regatta steering; the Manta's Time search on a new Redline model (2026-11-03, Yash, NOT PLAYED IN EDITOR)
+`RedlineController.AICommitFromApproachPoint => true` (new test `RedlineAISteeringTests`). Why and the measurements: `Assets/_Scripts/Controller/Arcade/REDLINE.md` §5.1, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §13. Model only: `Tools/Build/manta_redline_sim.py` (`--self-test` ok), compute job `redline-manta-time` (`redline_fit` self-test ok, `compute.py validate` and `compute.py self-test` ok). Plan step: time-arcade.
+Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; EditMode `RedlineAISteeringTests|SwitchbackAISteeringTests|MantaAutopilotDriveTests|RedlineCourseTests|MinigameAbilityAITests` 43/43 pass. `unity_refcompile` cannot run on Windows. Not played.
+- [x] The project compiles; EditMode `RedlineAISteeringTests` passes.
+- [ ] Arcade > Redline at I1 with three AI Mantas: every AI finishes the 24 rings. The model says about 110 s a race at I1-I3 (their throttle is the skill throttle, 37.5% at I1, so they are slow there) and about 330 s at I4. Note what you see.
+- [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I3 or I4 race.
+- [ ] The AIs do not weave on the long legs, and Soar there (the speed readout near 650 at I4).
+- [ ] Headlong is unchanged (it keeps the old steering).

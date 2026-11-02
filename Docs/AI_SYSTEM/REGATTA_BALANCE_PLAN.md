@@ -46,7 +46,7 @@ editor is the measurement.
 | Hull | Own Time game | People's races (2026-10-26) | Offline model | Compute job | State |
 |---|---|---|---|---|---|
 | Rhino | Headlong | none | `rhino_drive` (axis steering) | `drive-rhino-headlong` | ready. First local run: the shipped drive did not finish I4 on any course seed in the model |
-| Manta | Redline | none | `manta_drive` | `drive-manta-redline` | ready |
+| Manta | Redline | none | `manta_redline_sim.py` (the shipped Redline AI ported line for line, with its nose lag and skill throttle; `manta_drive` was about 3x too fast) | `redline-manta-time` (replaced `drive-manta-redline` 2026-11-03) | ready. Redline flies the Regatta steering since 2026-11-03: the shipped AI finished 4 of 12 model races on the old one, 12 of 12 on it (`REDLINE.md` §5.1) |
 | Dolphin | Switchback | 6+ (Yash, I1-I2; the learner writes `_Switchback_I<n>`) | none as an evaluator: `switchback_dolphin_sim.py` races recorded courses | - | **build**: port `SwitchbackCourse` the way `course_port.py` ported Headlong, then a `drive_fit` mode |
 | Urchin | Skein | 1 | none | - | **build**: a rail-ride model of Skein |
 | Squirrel | Skim Race | 7 (learned per intensity, `SkimRaceAIConfig_I1-I4`) | `skimrace_sim_harness` (C#, its `tuneall` is a search) | - | **build**: wrap the harness as a command job (needs `dotnet8`) |
