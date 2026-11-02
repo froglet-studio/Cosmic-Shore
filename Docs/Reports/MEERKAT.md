@@ -104,6 +104,18 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
 
   In round 27 the network costs 10-20 s a race on I1-I3. Nothing steers inside it, so the AI comes out wherever it slid
   and flies back. In a wormhole, holding RT, the AI slides 113-116 u/s on average against the 142.8 u/s it plans with.
+- **Round 28, the Rift** (artifact only; the same method: a fresh page, Warpline course seed 7, `runBatch([11])`):
+
+  | Warpline I1 / I2 / I3 / I4 (s) | Hard | Medium | Easy | No wormhole |
+  |---|---|---|---|---|
+  | the Rift | 70.1 / 72.4 / 76.1 / 76.6 | 75.8 / 74.3 / 85.1 / 75.5 | 77.8 / 79.3 / 86.2 / 83.1 | 97.4 / 97.2 / 101.6 / 91.0 |
+  | the network (round 27) | 93.9 / 97.2 / 106.8 / 76.6 | 99.1 / 98.5 / 85.1 / 87.1 | 107.3 / 105.5 / 86.2 / 83.1 | 139.9 / 132.7 / 174.6 / 166.0 |
+
+  - The network's 10-20 s loss is gone: the Rift is 24-31 s faster than the network on Hard I1-I3.
+  - Every AI rift ran the full 5 s, 712-716 u.
+  - Alone, the AI later rides its own rift in 9 of the 12 races that laid one; in field races 3 of 5 rides are by rivals.
+  - The difficulty order now holds on I1-I3. On I4, Medium beats Hard by 1.1 s.
+
   These are the artifact's races; the Unity build has still not been raced in the editor.
 - **Unity, without the editor (2026-10-28):** the maths tests pass in a dotnet harness, and the reference compile is
   clean, player and editor.
@@ -139,7 +151,16 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
    lift the left to form, lift the right to lengthen, tap the Charge card for Sentinel Mode. It needs a phone test and
    Garrett's sign-off on the scheme; a bent long tunnel is not possible on a phone.
 7. **The AI's difficulty order** fails in the artifact's round-27 races: on Warpline I3, Medium and Easy beat Hard, and
-   on I4 Easy beats Medium. A finding for the AI plan (`Docs/AI_SYSTEM/AI_PLAN.md`), not tuned here.
+   on I4 Easy beats Medium. A finding for the AI plan (`Docs/AI_SYSTEM/AI_PLAN.md`), not tuned here. With round 28's Rift
+   it holds on I1-I3; on I4 Medium beats Hard by 1.1 s.
+8. **The Rift is in the artifact, not yet in Unity** (round 28, 2026-11-03, `Docs/Studios/MEERKAT.md` round 28).
+   - The omnicrystal's ultimate, after Apex's Wraith: into the void, then a soliton laid along the path flown, anyone's to
+     ride for 45 s. It replaces the Soliton Network; the network stays behind the `omniMode` selector.
+   - Its four keys (`omniMode`, `riftSpeed`, `riftSeconds`, `riftLife`) are artifact-only until the clone.
+   - `/artifact-to-unity` next: the Soliton Network omni ability becomes the Rift (a void run in
+     `MeerkatSolitonExecutor`, its path laid as a `SolitonTunnel` with an `ITubePath`).
+   - Yash's call before then: whether a long rift should stay as thin as Garrett's surface area makes it (a 712 u rift has
+     a 1.6 u throat).
 
 ## 6. Latest activity (generated)
 

@@ -89,25 +89,25 @@
       "id": "meerkat",
       "name": "Meerkat",
       "file": "meerkat.html",
-      "kind": "design studio - round 27",
-      "chip": "design studio · round 27",
-      "summary": "The wormhole vessel, as the game now has it. One thumb flies; the spindle frame on your nose is the tunnel RT would form: one oval arc the right stick bends (up to 150°) and LT lengthens. RT forms it and you slip and slide through it, pressed to the wall, a small push on RT, out on the slingshot. Everyone sees a plain wormhole: space bent along the tube, mouths that lens the world into an Einstein ring. Garrett's four abilities, the omnicrystal's network sized by Mass, every parameter under its game name; AI rivals at Easy, Medium or Hard and a level scorecard.",
+      "kind": "design studio - round 28",
+      "chip": "design studio · round 28",
+      "summary": "The wormhole vessel. One thumb flies; the spindle frame on your nose is the tunnel RT would form: one oval arc the right stick bends (up to 150°) and LT lengthens. RT forms it and you slip and slide through it, out on the slingshot; everyone sees a plain wormhole. Round 28: the omnicrystal is its ultimate, the Rift (after Apex's Wraith): into the void, phased and faster, then the path you flew stands as a soliton anyone may ride. Garrett's four abilities, every parameter under its game name; AI rivals at Easy, Medium or Hard and a level scorecard.",
       "spec": [
         {
           "k": "Ability",
           "v": "the Soliton wormhole, on one thumb"
         },
         {
+          "k": "Ultimate",
+          "v": "the Rift: into the void, a soliton laid behind"
+        },
+        {
           "k": "Ride",
           "v": "slip-and-slide, out on the slingshot"
         },
         {
-          "k": "Look",
-          "v": "the plain wormhole: lens, Einstein ring"
-        },
-        {
           "k": "Status",
-          "v": "in the game on Ys-bleeding-edge; artifact and game agree (round 27)"
+          "v": "round 27 in the game; the Rift is the artifact's (round 28)"
         }
       ],
       "preview": "previews/meerkat.png",
