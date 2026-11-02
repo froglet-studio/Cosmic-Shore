@@ -44,6 +44,32 @@ namespace CosmicShore.Tests
         static readonly D3 Camera = new D3(0.35, 0.42, 0.837).Unit;
 
         [Test]
+        public void EachCrystalSlotIsTheElementTheCombineOrdersThere()
+        {
+            // The slot's element is the one its piece names per vertex; a slot out of step would paint one crystal, and its
+            // share of the omni, in another's shade.
+            Assert.AreEqual(OmniCombineCore.Order.Length, OmniCombinePlayer.SlotElements.Length);
+            for (int k = 0; k < OmniCombineCore.Order.Length; k++)
+                Assert.AreEqual(OmniCombineCore.Order[k], OmniCombinePlayer.SlotElements[k].ToString(), $"slot {k}");
+        }
+
+        [Test]
+        public void TheShippedConverterPaintsEveryPlateInItsElementsShade()
+        {
+            // Each crystal keeps its own shade all the way in and the omni wears all four (Garrett, 2026-10-28): the
+            // crystals and the omni share the body material, which paints each plate by the element its piece names.
+            var config = AssetDatabase.LoadAssetAtPath<OmniCombineConfigSO>(ConfigPath);
+            Assert.IsNotNull(config, ConfigPath);
+            Assert.AreSame(config.OmniMaterial, config.ShellMaterial, "the crystals land as the omni's own plates");
+            Assert.AreEqual(1f, config.OmniMaterial.GetFloat("_ElementShades"),
+                "OmniCrystalBody paints no element shades: every plate would be the one lime (author_omni_crystal_triangles.py)");
+            foreach (var shade in new[] { "_ChargeColor", "_SpaceColor", "_TimeColor" })
+                Assert.AreNotEqual(config.OmniMaterial.GetColor("_BrightColor"), config.OmniMaterial.GetColor(shade), shade);
+            Assert.AreEqual(config.MassMaterial.GetColor("_BrightColor"), config.OmniTrianglesMaterial.GetColor("_BrightColor"),
+                "the Mass prisms land as the omni's triangles in the same Mass shade");
+        }
+
+        [Test]
         public void TheShippedDataLoadsThroughJsonUtility()
         {
             var data = LoadData();

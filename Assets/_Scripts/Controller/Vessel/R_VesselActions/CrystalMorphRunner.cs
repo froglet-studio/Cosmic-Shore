@@ -10,7 +10,8 @@ namespace CosmicShore.Gameplay
     /// crystal BECOMES: adopt the spent crystal's own renderers, stamp the morph once, carry the
     /// colour pair across, hand the surface to the real object, dissolve. A vessel's runner
     /// supplies only the target — the Scarab's ball (<see cref="ScarabCrystalMorph"/>), the
-    /// Squirrel's eight shielded ring prisms (<see cref="SquirrelCrystalMorph"/>).
+    /// Squirrel's eight shielded ring prisms (<see cref="SquirrelCrystalMorph"/>), the Dolphin's
+    /// Echo Obliteration cone (<see cref="DolphinCrystalMorph"/>).
     ///
     /// ── What the omni crystal is made of, and which part moves ───────────────────────────────
     /// The omni crystal is ONE body plus overlays (Docs/PALETTE.md §2.10): slot 0 is the whole
@@ -50,6 +51,7 @@ namespace CosmicShore.Gameplay
     {
         static readonly int MorphId = Shader.PropertyToID("_CrystalMorph");
         static readonly int OpacityId = Shader.PropertyToID("_Opacity");
+        static readonly int ElementShadesId = Shader.PropertyToID("_ElementShades");   // OmniCrystalFresnelShader
         /// <summary>The colour pair, under the SAME names on the omni body
         /// (OmniCrystalFresnelShader) and on BlockGraph, which draws both targets.</summary>
         protected static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
@@ -165,6 +167,10 @@ namespace CosmicShore.Gameplay
                 var model = models[i]?.model;
                 if (model == null) continue;
                 if (!TryGetDrawn(model, out var mesh, out var source)) continue;
+                // The omni body wears each plate in its element's shade, which its mesh names per vertex: the copy and
+                // every morph mesh built from it keep them (Docs/PALETTE.md §2.12).
+                if (source.sharedMaterial && source.sharedMaterial.HasProperty(ElementShadesId))
+                    mesh = CrystalElementPlates.WithElements(mesh);
 
                 cage ??= mesh;
                 bool isBody = mesh == cage;

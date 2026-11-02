@@ -170,7 +170,7 @@ SgSurface sg_defaultSurface() {
 }
 vec3 sg_PosOS; vec3 sg_NrmOS; vec4 sg_TanOS;
 vec3 sg_PosWS; vec3 sg_NrmWS; vec4 sg_TanWS;
-vec4 sg_Uv0; vec4 sg_Uv1; vec4 sg_Uv2; vec4 sg_Uv3; vec4 sg_Color;
+vec4 sg_Uv0; vec4 sg_Uv1; vec4 sg_Uv2; vec4 sg_Uv3; vec4 sg_Uv4; vec4 sg_Color;
 float sg_VertexID; bool sg_FrontFace;
 vec4 sg_ScreenPosRaw; vec2 sg_ScreenUV;
 mat4 sg_ObjectToWorld; mat4 sg_WorldToObject;
@@ -192,7 +192,7 @@ vec4 sg_computeScreenPos(vec4 clip) {
         const string VertexMain = @"
 out vec3 vPosOS; out vec3 vNrmOS; out vec4 vTanOS;
 out vec3 vPosWS; out vec3 vNrmWS; out vec4 vTanWS;
-out vec4 vUv0; out vec4 vUv1; out vec4 vUv2; out vec4 vUv3; out vec4 vColor; out vec4 vScreenRaw;
+out vec4 vUv0; out vec4 vUv1; out vec4 vUv2; out vec4 vUv3; out vec4 vUv4; out vec4 vColor; out vec4 vScreenRaw;
 flat out float vVertexID;
 flat out vec4 vM0; flat out vec4 vM1; flat out vec4 vM2; flat out vec4 vM3;
 void main() {
@@ -203,7 +203,7 @@ void main() {
   sg_WorldToObject = inverse(M);
   mat3 NM = transpose(mat3(sg_WorldToObject));
   sg_PosOS = aPos; sg_NrmOS = aNormal; sg_TanOS = aTangent;
-  sg_Uv0 = vec4(aUv, 0.0, 0.0); sg_Uv1 = aUv1; sg_Uv2 = aUv2; sg_Uv3 = aUv3;
+  sg_Uv0 = vec4(aUv, 0.0, 0.0); sg_Uv1 = aUv1; sg_Uv2 = aUv2; sg_Uv3 = aUv3; sg_Uv4 = aUv4;
   sg_Color = uVertexColor == 1 ? aColor : vec4(1.0);
   sg_VertexID = float(gl_VertexID);
   sg_FrontFace = true;
@@ -218,7 +218,7 @@ void main() {
   vec4 w = M * vec4(p, 1.0);
   vPosOS = p; vNrmOS = n; vTanOS = vec4(t, aTangent.w);
   vPosWS = w.xyz; vNrmWS = NM * n; vTanWS = vec4(mat3(M) * t, aTangent.w);
-  vUv0 = sg_Uv0; vUv1 = sg_Uv1; vUv2 = sg_Uv2; vUv3 = sg_Uv3; vColor = sg_Color;
+  vUv0 = sg_Uv0; vUv1 = sg_Uv1; vUv2 = sg_Uv2; vUv3 = sg_Uv3; vUv4 = sg_Uv4; vColor = sg_Color;
   vVertexID = sg_VertexID;
   vM0 = M[0]; vM1 = M[1]; vM2 = M[2]; vM3 = M[3];
   gl_Position = sg_ViewProj * w;
@@ -229,7 +229,7 @@ void main() {
         const string FragmentMain = @"
 in vec3 vPosOS; in vec3 vNrmOS; in vec4 vTanOS;
 in vec3 vPosWS; in vec3 vNrmWS; in vec4 vTanWS;
-in vec4 vUv0; in vec4 vUv1; in vec4 vUv2; in vec4 vUv3; in vec4 vColor; in vec4 vScreenRaw;
+in vec4 vUv0; in vec4 vUv1; in vec4 vUv2; in vec4 vUv3; in vec4 vUv4; in vec4 vColor; in vec4 vScreenRaw;
 flat in float vVertexID;
 flat in vec4 vM0; flat in vec4 vM1; flat in vec4 vM2; flat in vec4 vM3;
 uniform vec3 uLightDir;
@@ -246,7 +246,7 @@ void main() {
   sg_WorldToObject = inverse(sg_ObjectToWorld);
   sg_PosOS = vPosOS; sg_NrmOS = vNrmOS; sg_TanOS = vTanOS;
   sg_PosWS = vPosWS; sg_NrmWS = normalize(vNrmWS); sg_TanWS = vTanWS;
-  sg_Uv0 = vUv0; sg_Uv1 = vUv1; sg_Uv2 = vUv2; sg_Uv3 = vUv3; sg_Color = vColor;
+  sg_Uv0 = vUv0; sg_Uv1 = vUv1; sg_Uv2 = vUv2; sg_Uv3 = vUv3; sg_Uv4 = vUv4; sg_Color = vColor;
   sg_VertexID = vVertexID;
   sg_FrontFace = gl_FrontFacing;
   sg_ScreenPosRaw = vScreenRaw;
@@ -291,6 +291,7 @@ layout(location=14) in vec4 aTangent;
 layout(location=15) in vec4 aUv1;
 layout(location=10) in vec4 aUv2;       // TEXCOORD2/3: the mesh's own channels in a graph draw (SceneRenderer.BindGraphUv23)
 layout(location=11) in vec4 aUv3;
+layout(location=8) in vec4 aUv4;        // TEXCOORD4 (CrystalElementPlates' element), also bound by BindGraphUv23
 uniform int uSkinned;
 uniform mat4 uBones[128];
 uniform int uVertexColor;

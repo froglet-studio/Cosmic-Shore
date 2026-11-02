@@ -112,6 +112,9 @@ namespace CosmicShore.Gameplay
                 crystal.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
                 crystal.SetColor("_BrightColor", colorSet.BrightCrystalColor);
                 crystal.SetColor("_DarkColor", colorSet.DullCrystalColor);
+                // The free omni body wears each element's shapes in that element's shade of lime (Docs/PALETTE.md
+                // §2.12); a team omni is the whole crystal in its domain's colour, so its clone turns the shades off.
+                crystal.SetFloat("_ElementShades", 0f);
             }
             
             // The pooled debris prefab's own shared material is the one the batched debris path

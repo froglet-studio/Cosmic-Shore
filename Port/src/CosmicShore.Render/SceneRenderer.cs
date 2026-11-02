@@ -1016,9 +1016,9 @@ void main(){
             public uint SkinVbo;
             public object SkinRef;
             public int Frame;
-            /// <summary>TEXCOORD2/3 (vec4 each) in their own buffer, for compiled graphs and hand translations that read them.</summary>
+            /// <summary>TEXCOORD2/3/4 (vec4 each) in their own buffer, for compiled graphs and hand translations that read them.</summary>
             public uint Uv23Vbo;
-            public object Uv2Ref, Uv3Ref;
+            public object Uv2Ref, Uv3Ref, Uv4Ref;
             public bool HasUv23;
         }
 
@@ -2276,7 +2276,7 @@ void main(){
                 _program.Set("uBurstFade", st.SliceP2.x, st.SliceP2.y, st.SliceP2.z, st.SliceP2.w);
                 _program.Set("uBurstNoise", st.SliceP3.x, st.SliceP3.y, st.SliceP3.z, st.SliceP3.w);
                 _program.Set("uBurstK", st.BurstK.x, st.BurstK.y, st.BurstK.z, st.BurstK.w);
-                BindGraphUv23(entry);   // TEXCOORD2 at location 10, where this family reads it (iGrow)
+                BindGraphUv23(entry, uv4: false);   // TEXCOORD2 at location 10, where this family reads it (iGrow); 8 stays iDark
             }
             SetSkinUniforms(first, entry, _program);
             _program.Set("uFamily", st.Family);
@@ -2877,16 +2877,17 @@ void main(){
             var uv1 = mesh.RenderUv1Wide;
             var uv2 = mesh.RenderUvWide(2);
             var uv3 = mesh.RenderUvWide(3);
+            var uv4 = mesh.RenderUvWide(4);
             int subs = mesh.RenderSubmeshCount;
             bool dirty = e.Vao == 0 || !ReferenceEquals(e.VertsRef, verts) || !ReferenceEquals(e.NormRef, norms) || !ReferenceEquals(e.TanRef, tans) || !ReferenceEquals(e.Uv1Ref, uv1)
                 || !ReferenceEquals(e.UvRef, uvs) || !ReferenceEquals(e.ColRef, cols) || e.SubRefs.Length != subs
-                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights) || !ReferenceEquals(e.Uv2Ref, uv2) || !ReferenceEquals(e.Uv3Ref, uv3);
+                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights) || !ReferenceEquals(e.Uv2Ref, uv2) || !ReferenceEquals(e.Uv3Ref, uv3) || !ReferenceEquals(e.Uv4Ref, uv4);
             if (!dirty)
                 for (int i = 0; i < subs; i++)
                     if (!ReferenceEquals(e.SubRefs[i], mesh.RenderSubmesh(i))) { dirty = true; break; }
             if (!dirty) return e;
 
-            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1; e.Uv2Ref = uv2; e.Uv3Ref = uv3;
+            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1; e.Uv2Ref = uv2; e.Uv3Ref = uv3; e.Uv4Ref = uv4;
             e.SubRefs = new object[subs];
             int n = verts.Length;
             if (n == 0) return null;
@@ -2969,15 +2970,16 @@ void main(){
                 _gl.DisableVertexAttribArray(12);
                 _gl.DisableVertexAttribArray(13);
             }
-            e.HasUv23 = uv2 != null || uv3 != null;
+            e.HasUv23 = uv2 != null || uv3 != null || uv4 != null;
             if (e.HasUv23)
             {
-                var extra = new float[n * 8];
+                var extra = new float[n * 12];
                 for (int i = 0; i < n; i++)
                 {
-                    int o = i * 8;
+                    int o = i * 12;
                     if (uv2 != null) { extra[o] = uv2[i].x; extra[o + 1] = uv2[i].y; extra[o + 2] = uv2[i].z; extra[o + 3] = uv2[i].w; }
                     if (uv3 != null) { extra[o + 4] = uv3[i].x; extra[o + 5] = uv3[i].y; extra[o + 6] = uv3[i].z; extra[o + 7] = uv3[i].w; }
+                    if (uv4 != null) { extra[o + 8] = uv4[i].x; extra[o + 9] = uv4[i].y; extra[o + 10] = uv4[i].z; extra[o + 11] = uv4[i].w; }
                 }
                 if (e.Uv23Vbo == 0) e.Uv23Vbo = _gl.GenBuffer();
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, e.Uv23Vbo);
@@ -2995,15 +2997,23 @@ void main(){
         /// without the channel reads), leaving the instance buffer bound for the next pointer.
         /// <see cref="BindInstanceAttributes"/> restores them.
         /// </summary>
-        unsafe void BindGraphUv23(MeshEntry entry)
+        unsafe void BindGraphUv23(MeshEntry entry, bool uv4 = true)
         {
+            // A compiled graph also reads TEXCOORD4 at location 8 (the scene program's iDark, which
+            // BindInstanceAttributes restores too); the scene program's own families pass uv4: false.
+            const uint stride = 12 * sizeof(float);
             if (entry.HasUv23)
             {
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, entry.Uv23Vbo);
-                _gl.EnableVertexAttribArray(10); _gl.VertexAttribPointer(10, 4, VertexAttribPointerType.Float, false, 8 * sizeof(float), (void*)0);
-                _gl.EnableVertexAttribArray(11); _gl.VertexAttribPointer(11, 4, VertexAttribPointerType.Float, false, 8 * sizeof(float), (void*)(4 * sizeof(float)));
+                _gl.EnableVertexAttribArray(10); _gl.VertexAttribPointer(10, 4, VertexAttribPointerType.Float, false, stride, (void*)0);
+                _gl.EnableVertexAttribArray(11); _gl.VertexAttribPointer(11, 4, VertexAttribPointerType.Float, false, stride, (void*)(4 * sizeof(float)));
                 _gl.VertexAttribDivisor(10, 0);
                 _gl.VertexAttribDivisor(11, 0);
+                if (uv4)
+                {
+                    _gl.EnableVertexAttribArray(8); _gl.VertexAttribPointer(8, 4, VertexAttribPointerType.Float, false, stride, (void*)(8 * sizeof(float)));
+                    _gl.VertexAttribDivisor(8, 0);
+                }
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _instanceVbo);
             }
             else
@@ -3012,6 +3022,11 @@ void main(){
                 _gl.DisableVertexAttribArray(11);
                 _gl.VertexAttrib4(10, 0f, 0f, 0f, 0f);
                 _gl.VertexAttrib4(11, 0f, 0f, 0f, 0f);
+                if (uv4)
+                {
+                    _gl.DisableVertexAttribArray(8);
+                    _gl.VertexAttrib4(8, 0f, 0f, 0f, 0f);
+                }
             }
         }
 

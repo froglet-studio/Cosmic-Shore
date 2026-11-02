@@ -40,6 +40,28 @@ namespace CosmicShore.Engine
             return wide;
         }
 
+        /// <summary>Original contract: whether the mesh carries a value per vertex for <paramref name="attribute"/>
+        /// (CrystalElementPlates asks it of TEXCOORD4 before baking the plates' elements).</summary>
+        public bool HasVertexAttribute(CosmicShore.Engine.Rendering.VertexAttribute attribute)
+        {
+            int n = vertexCount;
+            if (n == 0) return false;
+            switch (attribute)
+            {
+                case CosmicShore.Engine.Rendering.VertexAttribute.Position: return true;
+                case CosmicShore.Engine.Rendering.VertexAttribute.Normal: return _normals.Length == n;
+                case CosmicShore.Engine.Rendering.VertexAttribute.Tangent: return _tangents != null && _tangents.Length == n;
+                case CosmicShore.Engine.Rendering.VertexAttribute.Color: return _colors.Length == n;
+                case CosmicShore.Engine.Rendering.VertexAttribute.BlendWeight:
+                case CosmicShore.Engine.Rendering.VertexAttribute.BlendIndices: return _boneWeights != null && _boneWeights.Length == n;
+            }
+            int channel = (int)attribute - (int)CosmicShore.Engine.Rendering.VertexAttribute.TexCoord0;
+            if (channel < 0 || channel > 7) return false;
+            if (_uvFull.TryGetValue(channel, out var full) && full.Length == n) return true;
+            var v2 = channel == 0 ? _uv : _extraUvs[channel - 1];
+            return v2 != null && v2.Length == n;
+        }
+
         /// <summary>Full-width UVs of a channel (x,y from the Vector2 storage when never set wider).</summary>
         public Vector4[] GetUVsFull(int channel)
         {

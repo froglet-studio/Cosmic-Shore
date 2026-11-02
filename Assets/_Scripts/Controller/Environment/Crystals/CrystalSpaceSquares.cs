@@ -212,6 +212,9 @@ namespace CosmicShore.Gameplay
             twin.name = drawn.name.EndsWith(suffix)
                 ? $"{drawn.name[..^suffix.Length].TrimEnd()} {ShapedSuffix} {suffix}"
                 : $"{drawn.name} {ShapedSuffix}";
+            // A body that never went through the skin bake (no flip wave on its crystal) names its plates' elements here,
+            // on the plates as drawn, before the turns move any vertex (Docs/PALETTE.md §2.12).
+            if (!CrystalElementPlates.Carries(twin)) CrystalElementPlates.TryWrite(twin, drawn, out _);
             if (!(turns ? TryAddTurns(twin, squares, turns, out problem) : TryAddShapes(twin, squares, out problem)))
             {
                 if (Application.isPlaying) Object.Destroy(twin);

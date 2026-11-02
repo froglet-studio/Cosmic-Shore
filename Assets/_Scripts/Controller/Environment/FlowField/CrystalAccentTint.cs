@@ -7,7 +7,9 @@ namespace CosmicShore.Gameplay
     /// so an overlay that is not itself a crystal model still wears the crystal's colour: lime while
     /// the omni is a free pickup, the domain pair once a domain owns it (Skim Race track crystals, the
     /// Dolphin's TeamCrystal). Used by the omni crystal's charge edges, whose bolt halo is the crystal's
-    /// own bright colour exactly as on the charge crystal (Docs/PALETTE.md §2.10).
+    /// own bright colour exactly as on the charge crystal (Docs/PALETTE.md §2.10). Where the body wears
+    /// each element's shapes in its own shade (<c>_ElementShades</c> on, the free omni since 2026-10-28,
+    /// §2.12) the overlay takes the Charge shade, the colour of the pentagons its arcs light.
     ///
     /// Event-driven, nothing per frame: it syncs once on enable and again on
     /// <see cref="Crystal.ModelMaterialSettled"/>, which fires the moment the body's material is
@@ -23,6 +25,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Crystal crystal;
 
         static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int ElementShadesId = Shader.PropertyToID("_ElementShades");
+        static readonly int ChargeColorId = Shader.PropertyToID("_ChargeColor");
         static MaterialPropertyBlock s_block;
 
         Renderer _renderer;
@@ -56,7 +60,9 @@ namespace CosmicShore.Gameplay
 
             s_block ??= new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(s_block);
-            s_block.SetColor(BrightColorId, material.GetColor(BrightColorId));
+            bool shaded = material.HasProperty(ElementShadesId) && material.GetFloat(ElementShadesId) > 0.5f &&
+                          material.HasProperty(ChargeColorId);
+            s_block.SetColor(BrightColorId, material.GetColor(shaded ? ChargeColorId : BrightColorId));
             _renderer.SetPropertyBlock(s_block);
         }
     }

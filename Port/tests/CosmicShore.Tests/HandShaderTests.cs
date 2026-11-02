@@ -93,3 +93,28 @@ Shader "Test/State"
         Assert.Equal("white", jet.TextureDefaults["_MainTex"]);
     }
 }
+
+// The omni crystal body wears each plate's element shade, as Unity's OmniCrystalFresnelShader does (Garrett,
+// 2026-11-02: "omnicrystal has light pentagons when they should be dark"): the plate's element arrives in TEXCOORD4.x
+// (CrystalElementPlates), and with _ElementShades on it picks _ChargeColor ... _TimeColor instead of _BrightColor.
+public class OmniCrystalElementShadeTests
+{
+    [Fact]
+    public void OmniBody_PicksEachPlatesElementShade_FromTexcoord4()
+    {
+        var db = ContentYamlTests.Db;
+        if (db == null) return;
+        const string guid = "554d96e9b67505208a3fbf0acb165350";
+        var full = db.PathOf(guid);
+        var prog = HandShaders.For(guid, full, db.ProjectRelative(full));
+        Assert.True(prog.Ok, prog.Error);
+        foreach (var name in new[] { "_ElementShades", "_ChargeColor", "_MassColor", "_SpaceColor", "_TimeColor" })
+            Assert.Contains(" " + name + ";", prog.Uniforms);
+        Assert.Contains("ElementBright(sg_Uv4.x)", prog.Fragment);
+        Assert.DoesNotContain("mix(_BrightColor, _DarkColor", prog.Fragment);
+        // The shipped body asks for the shades, and its Charge (pentagon) shade is the darkest of the four.
+        var mat = File.ReadAllText(Path.Combine(Path.GetDirectoryName(full)!, "..", "CrystalMaterials", "OmniCrystalBody.mat"));
+        Assert.Contains("_ElementShades: 1", mat);
+        Assert.Contains("_ChargeColor: {r: 0.18,", mat);
+    }
+}

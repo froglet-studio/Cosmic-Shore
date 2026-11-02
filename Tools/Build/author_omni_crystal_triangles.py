@@ -115,6 +115,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fbx_binary as F
+import author_elemental_crystal_colors as ELEMENT_COLORS  # noqa: E402  (the palette's four shades, the recolour rule)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -231,7 +232,8 @@ ARCS_PROFILE_VALUES = [("rate", 1), ("boltIntensity", 1), ("glowIntensity", 1),
                        ("seamFadeSeconds", 0.85), ("seamPetalGlow", 0.35), ("fluxGapSeconds", 0.9), ("fluxChargeSeconds", 0.45),
                        ("fluxStrikeSeconds", 0.06), ("fluxHoldSeconds", 0.45), ("fluxFadeSeconds", 0.45), ("fluxFork", 0.3),
                        ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("fluxBundle", 0.016), ("fluxTurns", 1), ("strikeProtractionFrom", 0.15), ("strikeProtractionFull", 0.45), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4),
-                       ("sleepBelowScreenRadiusPixels", 24), ("halfRateBelowScreenRadiusPixels", 64)]  # cost: not the lab's pick (the performance session, 2026-10-15)
+                       ("sleepBelowScreenRadiusPixels", 32), ("halfRateBelowScreenRadiusPixels", 64),
+                       ("quarterRateBelowScreenRadiusPixels", 40), ("maxRebuildsPerFrame", 8), ("rebuildBudgetMs", 0.75), ("maxWakesPerFrame", 2)]  # cost: not the lab's pick (the performance session, 2026-10-15)
 # The omni's light: a plain child of Crystal.prefab (GameObject, Transform, MeshFilter, MeshRenderer, CrystalChargeArcs,
 # CrystalAccentTint). The Charge crystal's: a plain child of CrystalCharge.prefab (no tint: its body has no _BrightColor).
 OMNI_ARCS_IDS = (3086241560104200061, 3086241560104200062, 3086241560104200063, 3086241560104200064,
@@ -279,18 +281,61 @@ def depth_material(name, body_name, body_text, thickness, top_height, split_unit
     return _sub1(t, r"^    m_Colors:\n((?:    - .*\n)+)", with_strike, name + " m_Colors")
 
 
-def material_texts():
+def body_texts():
+    """The two body materials as plain clones of their donors on the omni shader: the omni's lime (free) and the blue-white
+    neutral (embedded), no element shades. The depth-prism materials here and in author_mass_crystal_look.py are built
+    from these."""
     out = {}
     for name, donor in BODY_DONORS:
         t = _sub1(_donor(donor), rf"^  m_Name: {re.escape(donor)}$", f"  m_Name: {name}", name + " m_Name")
         t = _sub1(t, r"^  m_Shader: \{fileID: [-0-9]+, guid: \w+,\s*\n?\s*type: 3\}",
                   f"  m_Shader: {{fileID: 4800000, guid: {OMNI_SHADER_GUID}, type: 3}}", name + " m_Shader")
         out[name] = t
+    return out
+
+
+# EVERY ELEMENT'S SHAPES IN ITS OWN SHADE (Garrett, 2026-10-28: "change the omnicrystal to retain all four elemental
+# colors of lime in all instances"; Docs/PALETTE.md §2.12). The free body paints each plate by the element its mesh
+# names (CrystalElementPlates, TEXCOORD4): pentagons Charge, squares Space, rhombi Time (and the triangles Mass where a
+# body still has them). Each shade is the palette's ElementalCrystalColors at the body's bright colour's brightest
+# channel - ELEMENT_COLORS.recolor, the rule every free elemental crystal is authored by. _BrightColor stays the omni's
+# lime: the colour of a plate that names no element, and what ThemeManager repaints (it turns a team clone's shades off).
+# The triangle prisms (OmniDepthPrisms) wear the Mass shade, and the Charge light (OmniChargeArcs) the Charge shade.
+ELEMENT_SHADE_PROPS = (("Charge", "_ChargeColor"), ("Mass", "_MassColor"), ("Space", "_SpaceColor"), ("Time", "_TimeColor"))
+
+
+def element_shade(text, element):
+    """`element`'s shade at `text`'s _BrightColor brightness, as a serialized colour value."""
+    return _saved(ELEMENT_COLORS.recolor(text, element), "_BrightColor", "c")
+
+
+def _with_rows(text, block, rows, label):
+    """`text` with `rows` ("    - _Name: value\n") added to its m_Floats or m_Colors block, replacing any of the same
+    name, in Unity's sorted order."""
+    names = {r.split(":")[0] for r in rows}
+
+    def merged(m):
+        kept = [r + "\n" for r in m.group(1).splitlines() if r.split(":")[0] not in names]
+        return f"    {block}:\n" + "".join(sorted(kept + list(rows), key=lambda r: r.split(":")[0]))
+    return _sub1(text, rf"^    {block}:\n((?:    - .*\n)+)", merged, label)
+
+
+def element_shaded(body_text):
+    """The free body with _ElementShades on and the four element shades."""
+    t = _with_rows(body_text, "m_Floats", ["    - _ElementShades: 1\n"], "body m_Floats")
+    return _with_rows(t, "m_Colors", [f"    - {prop}: {element_shade(body_text, e)}\n" for e, prop in ELEMENT_SHADE_PROPS],
+                      "body m_Colors")
+
+
+def material_texts():
+    out = body_texts()
     body, body_inactive = out["OmniCrystalBody"], out["OmniCrystalBodyInactive"]
-    out[OMNI_ARCS_MAT] = arcs_material_text(OMNI_ARCS_MAT, _saved(body, "_BrightColor", "c"))
+    out["OmniCrystalBody"] = element_shaded(body)
+    out[OMNI_ARCS_MAT] = arcs_material_text(OMNI_ARCS_MAT, element_shade(body, "Charge"))
     out[CHARGE_ARCS_MAT] = arcs_material_text(CHARGE_ARCS_MAT, _saved(_donor(CHARGE_DONOR), "_BrightCrystalColor", "c"))
     top_h, split = prism_shape(bake_tri_mesh()[0])
-    out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, MATERIAL_THICKNESS, top_h, split)
+    out[DEPTH_NAME] = ELEMENT_COLORS.recolor(
+        depth_material(DEPTH_NAME, "OmniCrystalBody", body, MATERIAL_THICKNESS, top_h, split), "Mass")
     out[DEPTH_NAME + "Inactive"] = depth_material(DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive,
                                                   MATERIAL_THICKNESS, top_h, split)
     return {f"{MAT_DIR}/{n}.mat": t for n, t in out.items()}
