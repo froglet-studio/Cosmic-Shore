@@ -125,6 +125,9 @@ sealed class Opts
     // drifting included (only a local human pilot has no lag, Garrett 2026-10-21). The game: driftLag on, noseLag on.
     public bool DriftLag = true;
     public bool NoseLag = true;
+    // The AI nose's follow rate per second by level (Easy, Medium, Hard, Legendary): 1.5 = the fleet lag, 0 = no lag;
+    // noseFollow=1.5,1.5,1.5,1.5 = every AI on the fleet lag, as before 2026-11-02.
+    public float[] NoseFollowLevels = { 1.5f, 2f, 3f, 0f };   // SwitchbackController.aiNoseFollowByLevel (2026-11-02)
     public bool CmdSteer;              // what-if: the AI judges its stick from its COMMANDED heading, not the lagging nose
     public float CmdLead;              // ...and leads the command past the aim by this share of the nose's lag        // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose
     public bool DangerOnly = true;
@@ -174,6 +177,7 @@ sealed class Opts
                 case "carveMax": o.CarveMaxSeconds = float.Parse(v); break;
                 case "driftLag": o.DriftLag = v != "0"; break;
                 case "noseLag": o.NoseLag = v != "0"; break;
+                case "noseFollow": o.NoseFollowLevels = Array.ConvertAll(v.Split(','), float.Parse); break;
                 case "cmdSteer": o.CmdSteer = v != "0"; break;
                 case "cmdLead": o.CmdLead = float.Parse(v); break;
                 case "noDodgeNear": o.NoDodgeNear = float.Parse(v); break;
@@ -553,7 +557,7 @@ sealed class Race
                 if (o.DriftLag)
                 {
                     cmd = RotateToward(cmd, look, Turn * o.DriftTurnMult * Stick(Ang(fwd, look)) * Mathf.Deg2Rad * dt);
-                    fwd = o.NoseLag ? RotateToward(fwd, cmd, Ang(fwd, cmd) * Mathf.Deg2Rad * Mathf.Min(1f, NoseFollow * dt)) : cmd;
+                    fwd = NoseFollowTo(fwd, cmd);
                 }
                 else { fwd = RotateToward(fwd, look, Turn * o.DriftTurnMult * Mathf.Deg2Rad * dt); cmd = fwd; }
             }
@@ -569,7 +573,7 @@ sealed class Race
                 }
                 float s = emerg ? 1f : Stick(Ang(o.CmdSteer ? cmd : fwd, steer));
                 cmd = RotateToward(cmd, steer, Turn * s * Mathf.Deg2Rad * dt);
-                fwd = o.NoseLag ? RotateToward(fwd, cmd, Ang(fwd, cmd) * Mathf.Deg2Rad * Mathf.Min(1f, NoseFollow * dt)) : cmd;
+                fwd = NoseFollowTo(fwd, cmd);
                 travel = fwd;
             }
             up = Vector3.ProjectOnPlane(up, fwd).sqrMagnitude > 1e-4f ? Vector3.ProjectOnPlane(up, fwd).normalized : Vector3.Cross(fwd, Vector3.right).normalized;
@@ -644,6 +648,13 @@ sealed class Race
             if (plans == 1) { if (d.Plan == SwitchbackAIPlan.Blast) Blast++; else if (d.Plan == SwitchbackAIPlan.Thread) Thread++; else Direct++; }
             if (log != null && (plans == 1 || prev.Plan != d.Plan))
                 log.Add($"{t,6:F1} gate {idx} plan={d.Plan} why={d.Why} cost thread={d.CostThread:F1} blast={d.CostBlast:F1} standing={d.Standing} cover={d.Coverage:P0}");
+        }
+
+        // VesselTransformer.NoseFollowFraction for an AI hull: the fleet's LERP_AMOUNT 1.5/s, or this level's rate; 0 = none
+        Vector3 NoseFollowTo(Vector3 nose, Vector3 command)
+        {
+            float rate = o.NoseLag ? o.NoseFollowLevels[Mathf.Clamp(level - 1, 0, o.NoseFollowLevels.Length - 1)] : 0f;
+            return rate <= 0f ? command : RotateToward(nose, command, Ang(nose, command) * Mathf.Deg2Rad * Mathf.Min(1f, rate * dt));
         }
 
         bool GateBlastAim(out Vector3 a)

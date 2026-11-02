@@ -1241,10 +1241,15 @@ namespace CosmicShore.Gameplay
             p.Vessel?.VesselStatus is Component status && status &&
             status.TryGetComponent(out AIPilot autopilot) && autopilot.AutoPilotEnabled;
 
+        /// <summary>A mode's per-pilot set-up as each AI racer is armed (server): Switchback sets its AI's nose follow
+        /// rate by difficulty here. Default: nothing.</summary>
+        protected virtual void OnRacerArmed(IPlayer pilot) { }
+
         void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
         {
             var pilot = p.Vessel?.VesselStatus?.AIPilot;
             if (pilot == null) return;
+            OnRacerArmed(p);
 
             var captured = p;
             int lockedIndex = -1;

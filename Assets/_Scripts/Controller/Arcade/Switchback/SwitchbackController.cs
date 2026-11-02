@@ -64,6 +64,10 @@ namespace CosmicShore.Gameplay
                  "Off: it flies straight at the key and the drift swings the nose onto the obstacle; offline the setup turn " +
                  "cost about as much as the blast saved (SWITCHBACK.md \"Step 2\").")]
         [SerializeField] bool aiStrikeSetupLeg;
+        [Tooltip("The AI nose's follow rate per second by difficulty (Easy, Medium, Hard, Legendary): 1.5 = the fleet lag every " +
+                 "AI flies with elsewhere, 0 = no lag (as a human on a keyboard). The lag is the AI's biggest handicap in " +
+                 "Switchback (SWITCHBACK.md \"Lag by difficulty\"); a negative entry leaves that level on the fleet lag.")]
+        [SerializeField] float[] aiNoseFollowByLevel = { 1.5f, 2f, 3f, 0f };
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -136,6 +140,18 @@ namespace CosmicShore.Gameplay
             var r = _blastAI.LaneOffset(pilot, ringNo, gate);
             SwitchbackAIClock.End(t);
             return r;
+        }
+
+        /// <summary>The AI nose follow rate for a difficulty level (1 Easy .. 4 Legendary): <see cref="aiNoseFollowByLevel"/>,
+        /// or -1 (the fleet lag) for a level the table does not cover.</summary>
+        public static float NoseFollowFor(float[] byLevel, int level) =>
+            byLevel != null && level >= 1 && level <= byLevel.Length ? byLevel[level - 1] : -1f;
+
+        protected override void OnRacerArmed(IPlayer pilot)
+        {
+            var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
+            if (transformer == null) return;
+            transformer.AINoseFollowPerSecond = NoseFollowFor(aiNoseFollowByLevel, (int)gameData.AIDifficultyFor(pilot));
         }
 
         SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));
