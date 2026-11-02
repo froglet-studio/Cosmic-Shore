@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Compiles the SHIPPED CrystalMorphMeshBuilder + IcosphereMeshGenerator and BOTH shipped
-       edit-mode suites (hull + panel census) against UnityStub.cs, and runs them with NUnitLite.
+       edit-mode suites (hull + panel census), the Dolphin's cone cast suite, against UnityStub.cs, and runs them with NUnitLite.
        Also the elemental crystal's hull fusion geometry (CrystalHullFusionGeometry + its suite), and the
        spherical-blast morph geometry (SphereBlastMorphGeometry + its suite: Butterfly, Rhino, Manta), and the
        fauna-birth heart pick (FaunaHeartMorphGeometry + its suite: Angler, Jacks).
@@ -22,6 +22,7 @@
     <Compile Include="../../../Assets/_Scripts/Utility/Foundation/IcosphereMeshGenerator.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphMeshBuilderTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalMorphPanelCensusTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/DolphinCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalHullFusionGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/CrystalHullFusionGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/CrystalMorphRecast.cs" />
@@ -30,6 +31,8 @@
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/FaunaHeartMorphGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/FaunaBirthCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/HiveCombMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/HoneyguideCrystalMorphGeometryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.14.0" />

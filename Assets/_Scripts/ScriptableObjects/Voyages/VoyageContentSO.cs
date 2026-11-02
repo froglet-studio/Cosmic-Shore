@@ -106,5 +106,14 @@ namespace CosmicShore.ScriptableObjects
         public string CardSquadSeat = "{vessel} ({pilot})";
         [Tooltip("What stands between two seats in {squad}.")]
         public string CardSquadSeparator = ", ";
+        [Tooltip("Under the galaxy map when the player taps a place no job sails to: {name} the place, {blurb} its line.")]
+        public string MapPlace = "{name} - {blurb}";
+        [Tooltip("The caption on the map's edge view (the disk seen edge-on at true scale): {place} the place it is " +
+                 "centred on, {height} that place's height (one of the three lines below).")]
+        public string EdgeCaption = "EDGE ON, TRUE SCALE - DISK 1,000 LY - {place} {height}";
+        [Tooltip("{height} above, below and on the midplane; {ly} the light years.")]
+        public string EdgeAbove = "{ly} LY ABOVE THE MIDPLANE";
+        public string EdgeBelow = "{ly} LY BELOW THE MIDPLANE";
+        public string EdgeMidplane = "ON THE MIDPLANE";
     }
 }

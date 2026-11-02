@@ -1,5 +1,5 @@
 // A UnityEngine MATH stub for Tools/Build/meerkat_kit_harness: the brittlestar harness's stub (Vector2/Vector3/Quaternion/
-// Mathf) plus what MeerkatWormholeMath needs (Vector3.Normalize, Vector4, a 4x4 matrix's rows and multiplies), so the
+// Mathf) plus what SolitonTunnelShapeMath needs (Vector3.Normalize, Vector4, a 4x4 matrix's rows and multiplies), so the
 // PURE Meerkat files and their edit-mode tests compile and RUN under plain .NET. Formulas follow Unity's documented behaviour; nothing here ships.
 using System;
 namespace UnityEngine

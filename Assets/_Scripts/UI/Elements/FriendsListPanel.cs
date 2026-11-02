@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
@@ -147,6 +148,36 @@ namespace CosmicShore.UI
             // that was added between polling ticks. Debounced and mutex-aware
             // inside HostConnectionService, so bursty opens are safe.
             HostConnectionService.Instance?.ForceRefreshNow();
+
+            // While the list is on screen the presence safety poll runs at WATCHED_POLL_SECONDS (a quit that
+            // sent no leave drops off in seconds), and the Friends tab re-reads UGS Friends every
+            // FRIENDS_REFRESH_SECONDS: its push alone left a friend who quit showing online.
+            if (!_holdsWatchDemand)
+            {
+                PresenceWatchDemand.Acquire();
+                _holdsWatchDemand = true;
+            }
+            _friendsRefreshRoutine = StartCoroutine(FriendsRefreshLoop());
+        }
+
+        /// <summary>Seconds between UGS Friends re-reads while the panel is visible.</summary>
+        const float FRIENDS_REFRESH_SECONDS = 15f;
+
+        bool      _holdsWatchDemand;
+        Coroutine _friendsRefreshRoutine;
+
+        System.Collections.IEnumerator FriendsRefreshLoop()
+        {
+            var wait = new WaitForSecondsRealtime(FRIENDS_REFRESH_SECONDS);
+            while (true)
+            {
+                if (friendsService != null && friendsService.IsInitialized)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.Party, "[FriendsListPanel] Friends refresh (panel visible).");
+                    friendsService.RefreshAsync().Forget();
+                }
+                yield return wait;
+            }
         }
 
         /// <summary>
@@ -206,6 +237,17 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            if (_holdsWatchDemand)
+            {
+                PresenceWatchDemand.Release();
+                _holdsWatchDemand = false;
+            }
+            if (_friendsRefreshRoutine != null)
+            {
+                StopCoroutine(_friendsRefreshRoutine);
+                _friendsRefreshRoutine = null;
+            }
+
             UnsubscribeSoap();
             UnsubscribeServiceEvents();
 

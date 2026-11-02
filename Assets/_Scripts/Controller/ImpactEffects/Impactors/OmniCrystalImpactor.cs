@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
         /// An omni crystal was collected by this vessel, raised wherever its vessel-side effects run: on the machine that
         /// resolves the collect, and on the collecting pilot's own machine when it replays them (<see cref="ReplayOnRemoteOwner"/>).
         /// A listener that acts on its own hull checks it is that hull's simulating machine. The Meerkat's Omnicrystal
-        /// ability grows its roots from it (<c>MeerkatWormholeExecutor</c>, MEERKAT.md section 7).
+        /// ability grows its roots from it (<c>MeerkatSolitonExecutor</c>, MEERKAT.md section 7).
         /// </summary>
         public static event Action<IVesselStatus, Vector3> CollectedByVessel;
 

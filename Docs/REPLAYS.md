@@ -300,7 +300,7 @@ browser", and "Replays inside the arena").
 | Rings that move | Skim Race's crystal rings | Captured once, at Go; a ring that moves with its crystal later in the match stays at its first place. |
 | A mode with no preview definition | Maelstrom (and any mode the preview library lacks) | Recorded and watchable, on the dark stage. |
 | A controller-built arena | Astro League's goals, Scarab's hoops | Their structures are built by the match controller, which the preview does not model either (`Docs/ModePreview/ARCHITECTURE.md` §7); such a replay shows the cell around the ghosts. |
-| One camera director | Spectate, replay and Third Eye on one set of shots | `SpectatorController`, `TheaterSubjectCamera` / `TheaterFreeCamera` and the editor-only `ThirdEyeRig` all pose cameras separately today; unifying them is its own refactor. |
+| One camera director | Spectate, replay and Third Eye on one set of shots | `SpectatorController`, `TheaterSubjectCamera` / `TheaterFreeCamera` and the AI Diagnose panel's `ThirdEyeRig` (dev builds, `Controller/Camera/ThirdEye/`) all pose cameras separately today; unifying them is its own refactor. |
 
 ## 9. Ownership
 

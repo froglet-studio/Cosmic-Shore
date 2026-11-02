@@ -286,6 +286,8 @@ namespace CosmicShore.Gameplay
         {
             var outSets = new List<int[][]>();
             var seen = new HashSet<string>();
+            var keyBuf = new System.Text.StringBuilder(64);
+            string[] keys = null;
             foreach (var e in engines)
                 for (int k = 0; k < 6; k++)
                     foreach (var pm in Perms)
@@ -297,12 +299,24 @@ namespace CosmicShore.Gameplay
                             for (int j = 0; j < k; j++) c = Rot60(c);
                             ports[p] = new[] { c, pm[e[p][1] - 1] };
                         }
-                        var keys = ports.Select(p => p[0] + ":" + p[1]).ToArray();
+                        if (keys == null || keys.Length != ports.Length) keys = new string[ports.Length];
+                        for (int p = 0; p < ports.Length; p++) keys[p] = PortKey(ports[p][0], ports[p][1]);
                         Array.Sort(keys, string.CompareOrdinal);
-                        string key = string.Join(",", keys);
+                        keyBuf.Clear();
+                        for (int p = 0; p < keys.Length; p++) { if (p > 0) keyBuf.Append(','); keyBuf.Append(keys[p]); }
+                        string key = keyBuf.ToString();
                         if (!seen.Contains(key) && SymmetricPorts(ports)) { seen.Add(key); outSets.Add(ports); }
                     }
             return outSets;
+        }
+
+        // "cell:colour" for the port-set dedupe key; cached so board generation doesn't re-format the same few hundred pairs.
+        static readonly Dictionary<int, string> s_portKeys = new();
+        static string PortKey(int cell, int colour)
+        {
+            int id = cell * 8 + colour;
+            if (!s_portKeys.TryGetValue(id, out var k)) s_portKeys[id] = k = cell + ":" + colour;
+            return k;
         }
 
         // ------------------------------------------------------------------ state
@@ -473,7 +487,12 @@ namespace CosmicShore.Gameplay
         public int BatteryCap(DynamoSettings s) => s.BatteryCap + (Ability == DynamoAbility.Capacitor ? 2 : 0);
 
         /// <summary>The ports one spin from now (the Ratel's warning rings).</summary>
-        public int[][] NextPorts() => Ports.Select(p => new[] { Rot60(p[0]), p[1] }).ToArray();
+        public int[][] NextPorts()
+        {
+            var next = new int[Ports.Length][];
+            for (int k = 0; k < next.Length; k++) next[k] = new[] { Rot60(Ports[k][0]), Ports[k][1] };
+            return next;
+        }
 
         /// <summary>The cells of the first placement of pattern <paramref name="pid"/> the board shows, or null. A placement
         /// needs at least one real prism (it goes to the battery). Order: rotations, then mirror images (the Mirror ability),
@@ -715,7 +734,8 @@ namespace CosmicShore.Gameplay
                     for (int k = 0; k < arg; k++)
                     {
                         var empty = EmptyCells();
-                        var e = empty.Where(i => PortAt(i) == 0).ToList();
+                        var e = new List<int>(empty.Count);
+                        foreach (int i in empty) if (PortAt(i) == 0) e.Add(i);
                         var pool = e.Count > 0 ? e : empty;
                         if (pool.Count == 0) break;
                         int cell = pool[(int)Math.Floor(NextRandom() * pool.Count)];

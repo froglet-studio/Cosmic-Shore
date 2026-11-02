@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -34,10 +32,27 @@ namespace CosmicShore.Gameplay
                  "pilot is equidistant from - which is what makes the start fair.")]
         [SerializeField, Min(1f)] float firstGateDistance = SwitchbackCourseSource.DefaultFirstGateDistance;
 
-        [Header("Course features (intensity 3 and 4)")]
-        [Tooltip("Lays the skim walls of intensity 3 and the danger prisms of intensity 4 along the course " +
-                 "(SwitchbackFeatures). Intensities 1 and 2 lay nothing.")]
+        [Header("Blast Run")]
+        [Tooltip("Lays Blast Run's doors and block fields along the course (SwitchbackBlastRun) on every peer.")]
         [SerializeField] SpawnableSwitchbackFeatures featuresPrefab;
+
+        [Header("Blast Run AI")]
+        [Tooltip("The AI's blast planner (SWITCHBACK.md \"AI: the blast planner\"): at each blocked gate an AI chooses to thread " +
+                 "the eye or take the key crystal and blast the door, by its difficulty. Off = the old crystal detour.")]
+        [SerializeField] bool aiBlastPlanner = true;
+        [Tooltip("Use the four skills below (Easy, Medium, Hard, Legendary) instead of the built-in table " +
+                 "(SwitchbackAISkill.ForLevel).")]
+        [SerializeField] bool aiSkillOverride;
+        [SerializeField] SwitchbackAISkill[] aiSkills =
+        {
+            SwitchbackAISkill.ForLevel(1), SwitchbackAISkill.ForLevel(2), SwitchbackAISkill.ForLevel(3), SwitchbackAISkill.ForLevel(4),
+        };
+        [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
+        [SerializeField] bool aiPlanGizmos = true;
+        [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
+                 "view with Gizmos on) and logs each emergency dodge at Info level. Also on while a script sets " +
+                 "SwitchbackBlastAI.DebugSense.")]
+        [SerializeField] bool aiSenseDebug;
 
         /// <summary>u a course feature keeps outside the nucleus.</summary>
         const float NucleusMargin = 30f;
@@ -56,104 +71,182 @@ namespace CosmicShore.Gameplay
         protected override bool AICommitFromApproachPoint => true;
 
         /// <summary>Blast Run's race NEEDS its key crystals: an AI takes the one on its leg (they sit on the line, so the
-        /// detour costs nothing) and its blast opens the door. Every other fun type flies the waypoints only.</summary>
-        protected override bool AIDetoursForCrystals => SwitchbackFunTypes.HasBlastRun(FunType);
+        /// detour costs nothing) and its blast opens the door.</summary>
+        protected override bool AIDetoursForCrystals => true;
+
+        /// <summary>With the blast planner on, the planner decides which key an AI takes (and when not to): no blind detour.</summary>
+        protected override float AICrystalDetourSlack => aiBlastPlanner && _blastAI != null ? 0f : base.AICrystalDetourSlack;
+
+        protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
+        {
+            target = default;
+            return IsServer && _blastAI != null && _blastAI.TryAim(pilot, out target);
+        }
+
+        protected override bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
+        {
+            look = default;
+            return IsServer && _blastAI != null && _blastAI.TryDriftLook(pilot, out look);
+        }
+
+        /// <summary>Each AI's own lane through an open ring, so no two AIs fly one line (and its fresh trail).</summary>
+        protected override AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) =>
+            (Vector3 position, Vector3 velocity, Vector3 forward, out Vector3 steerTo) =>
+            {
+                steerTo = default;
+                if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
+                return IsServer && _blastAI != null && _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
+            };
+
+        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) =>
+            IsServer && _blastAI != null ? _blastAI.LaneOffset(pilot, ringNo, gate) : Vector3.zero;
+
+        SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));
+
+        SwitchbackAISkill SkillFor(IPlayer pilot)
+        {
+            int level = (int)gameData.AIDifficultyFor(pilot);
+            if (aiSkillOverride && aiSkills != null && aiSkills.Length >= 4 && level >= 1 && level <= 4) return aiSkills[level - 1];
+            return SwitchbackAISkill.ForLevel(level);
+        }
+
+        void OnDrawGizmosSelected()
+        {
+            if (aiPlanGizmos && _blastAI != null) _blastAI.DrawGizmos(GizmoLineSink.Instance);
+        }
+
+        void OnDrawGizmos()
+        {
+            if (aiSenseDebug && _blastAI != null) _blastAI.DrawSenseGizmos(GizmoLineSink.Instance);
+        }
+
+        // The in-game Third Eye (AI Diagnose panel, Overlays) draws the same two views in the Game view. Registering is a list
+        // add; nothing runs unless the overlay is switched on in a dev build, where ThirdEye exists at all.
+        ThirdEyeOverlays.Overlay _planOverlay, _senseOverlay;
+        ThirdEyeReadouts.Readout _hitsReadout;
+
+        void RegisterThirdEyeOverlays()
+        {
+            if (_planOverlay != null) return;
+            _hitsReadout = ThirdEyeReadouts.Register("Hits", SwitchbackHitStats.Readout);
+            _planOverlay = ThirdEyeOverlays.Register("AI plan (Switchback)",
+                "Each AI's blast plan: line to its key, fire line, gape axis, aim point (server only).",
+                sink => { if (_blastAI != null) _blastAI.DrawGizmos(sink); });
+            _senseOverlay = ThirdEyeOverlays.Register("AI sense (Switchback)",
+                "Each AI's prism sense tube, emergency sweep and dodge. Also turns on aiSenseDebug's lines and logs.",
+                sink => { if (_blastAI != null) _blastAI.DrawSenseGizmos(sink); },
+                on => { aiSenseDebug = on; SwitchbackBlastAI.DebugSense = on; },
+                aiSenseDebug);
+        }
+
+        void UnregisterThirdEyeOverlays()
+        {
+            ThirdEyeOverlays.Unregister(_planOverlay);
+            ThirdEyeOverlays.Unregister(_senseOverlay);
+            ThirdEyeReadouts.Unregister(_hitsReadout);
+            _planOverlay = _senseOverlay = null;
+            _hitsReadout = null;
+        }
+
+        public override void OnDestroy()
+        {
+            UnregisterThirdEyeOverlays();
+            base.OnDestroy();
+        }
 
         protected override RaceCourseSource CreateCourseSource() =>
             new SwitchbackCourseSource { FirstGateDistance = firstGateDistance };
 
-        // ── fun types (SWITCHBACK.md "Fun types") ─────────────────────────
-
-        /// <summary>
-        /// This match's fun type: the launch panel's choice on the server (<see cref="GameDataSO.SwitchbackFunType"/>),
-        /// and on a client the one the server sent with the course - a client never trusts its own panel for
-        /// geometry every peer must agree on.
-        /// </summary>
-        SwitchbackFunType FunType => ReceivedCourseVariant >= 0
-            ? SwitchbackFunTypes.Sanitize(ReceivedCourseVariant)
-            : gameData ? gameData.SwitchbackFunType : SwitchbackFunType.Baseline;
-
-        protected override int CourseVariant => (int)FunType;
-
-        protected override void PrepareCourseSource(RaceCourseSource source)
-        {
-            if (source is SwitchbackCourseSource switchback) switchback.FunType = FunType;
-        }
-
-        /// <summary>The launch panel's FIXED SEED: each (fun type, intensity) world flies one known course
-        /// (<see cref="SwitchbackFunTypes.WorldSeed"/>), so a tester can compare runs. An authored seed or a forced
-        /// one still wins.</summary>
+        /// <summary>The launch panel's FIXED SEED: each intensity flies one known course
+        /// (<see cref="SwitchbackBlastRun.FixedSeed"/>, 45_501-45_504), so a tester can compare runs. An authored seed
+        /// or a forced one still wins.</summary>
         protected override int PickCourseSeed()
         {
             if (gameData && gameData.SwitchbackFixedSeed && courseSeed == 0 && CourseSeedOverride.Forced == 0)
-                return SwitchbackFunTypes.WorldSeed(FunType, Intensity);
+                return SwitchbackBlastRun.FixedSeed(Intensity);
             return base.PickCourseSeed();
         }
 
-        SwitchbackFunTypeRuntime _runtime;
+        // ── The hit counter (SWITCHBACK.md "AI: the hit counter") ──────────────────────
 
-        protected override bool ThreadsAlternate(int raceIndex, int ringIndex, Vector3 prev, Vector3 cur) =>
-            _runtime && _runtime.ThreadsShortcut(raceIndex, prev, cur);
+        SwitchbackHitStats _hits;
+        float _nextHitNote;
+
+        protected override void OnCountdownTimerEnded()
+        {
+            base.OnCountdownTimerEnded();
+            if (IsServer) _hits?.BeginRace();
+        }
+
+        protected override void OnServerTick()
+        {
+            base.OnServerTick();
+            if (_hits != null && !_hits.Running && !_hits.Ended && gameData && gameData.IsTurnRunning) _hits.BeginRace();
+            if (_hits == null || !_hits.Running || Time.time < _nextHitNote) return;
+            _nextHitNote = Time.time + 0.25f;
+            NoteHits();
+        }
+
+        void NoteHits()
+        {
+            if (_hits == null || gameData == null) return;
+            int length = RaceLength;
+            foreach (var p in gameData.Players)
+            {
+                if (p == null) continue;
+                bool ai = p.IsInitializedAsAI || (p is Player human && PilotControl.IsHeldByAI(human));
+                int avoids = 0, blasts = 0, emerg = 0;
+                _blastAI?.TryCounts(p, out avoids, out blasts, out emerg);
+                int threaded = 0;
+                foreach (var st in gameData.RoundStatsList)
+                    if (st != null && st.Name == p.Name) { threaded = st.SwitchesThreaded; break; }
+                float finish = threaded >= length && length > 0 ? _hits.Elapsed : -1f;
+                _hits.Note(p, ai, ai ? (int)gameData.AIDifficultyFor(p) : 0, avoids, blasts, emerg, threaded, finish);
+            }
+        }
+
+        protected override void OnTurnEndedCustom()
+        {
+            base.OnTurnEndedCustom();
+            if (!IsServer || _hits == null || !_hits.Running) return;
+            NoteHits();
+            _hits.EndRace(Intensity, CourseSeedUsed);
+        }
 
         // ── Blast Run (SWITCHBACK.md "Blast Run") ──────────────────────
 
-        /// <summary>The hunter packs, one entry per pack - written by the server, read by every peer's runtime.</summary>
-        NetworkList<BlastRunPackState> _packs;
+        SwitchbackBlastRunRuntime _runtime;
         SwitchbackFeatureLayout _blastLayout;
         CrystalManager _keyManager;
-        float _nextPackTick, _lastPackTick;
-
-        void Awake()
-        {
-            // A NetworkList must exist before the object spawns (NGO collects its variables at spawn).
-            _packs = new NetworkList<BlastRunPackState>();
-        }
+        SwitchbackBlastAI _blastAI;
 
         /// <summary>
-        /// The course features, hung on the course on every peer from the course every peer received (Breakwater's
-        /// stations are the same shape): Baseline, Plan 1 and Plan 3 lay the shipped I3 skim walls and I4 danger
-        /// prisms; Plan 2 and Combined lay <see cref="SwitchbackLiveFeatures"/> - ribbons, moving danger and
-        /// shortcuts. Then the fun-type runtime (splits, medals, the run log line) starts for every fun type.
+        /// Blast Run, hung on the course on every peer from the course every peer received (Breakwater's stations are
+        /// the same shape): the layout (doors, block fields, movers), its prisms, the key crystals, then the runtime
+        /// that moves the movers and logs the run.
         /// </summary>
         protected override void OnCourseRaised()
         {
             int intensity = Intensity;
-            var funType = FunType;
-            if (gameData && ReceivedCourseVariant >= 0) gameData.SwitchbackFunType = funType;   // a client's HUD and logs agree with the course
-
             Vector3 centre = ResolveCellCentre();
             ResolveShell(out float inner, out _);
             // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
             float clearRadius = inner / innerRadiusNucleusFactor + NucleusMargin;
 
-            bool blast = SwitchbackFunTypes.HasBlastRun(funType);
-            bool live = SwitchbackFunTypes.HasLiveFeatures(funType) || blast;
-            SwitchbackFeatureLayout layout = null;
-            if (blast)
-            {
-                layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius);
-                RaiseBlastRun(layout);
-            }
-            else if (live)
-            {
-                var settings = SwitchbackCourseSettings.ForIntensity(intensity, funType);
-                settings.GateCount = _course.Count;
-                layout = SwitchbackLiveFeatures.Layout(_course, settings, intensity, centre, clearRadius);
-            }
+            var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius);
+            RaiseBlastRun(layout);
 
             Transform container = null;
-            bool layPrisms = live ? layout.Prisms.Count > 0 : SwitchbackFeatures.HasFeatures(intensity);
-            if (layPrisms)
+            if (layout.Prisms.Count > 0)
             {
                 if (!featuresPrefab)
-                    CSDebug.LogError("[Switchback] No features prefab assigned - intensity " + intensity + " (" + funType +
-                                     ") is missing its prisms. Assign SpawnableSwitchbackFeatures on the controller.");
+                    CSDebug.LogError("[Switchback] No features prefab assigned - intensity " + intensity +
+                                     " is missing its Blast Run prisms. Assign SpawnableSwitchbackFeatures on the controller.");
                 else
                 {
                     var features = Instantiate(featuresPrefab, transform);
                     features.name = "SwitchbackFeatures";
-                    if (live) features.SetLayout(_course, intensity, funType, layout, centre, clearRadius);
-                    else features.SetCourse(_course, intensity, centre, clearRadius);
+                    features.SetLayout(_course, intensity, layout, centre, clearRadius);
                     var go = features.Spawn(intensity);
                     if (go)
                     {
@@ -163,24 +256,37 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            _runtime = new GameObject("SwitchbackFunType").AddComponent<SwitchbackFunTypeRuntime>();
+            _runtime = new GameObject("SwitchbackBlastRun").AddComponent<SwitchbackBlastRunRuntime>();
             _runtime.transform.SetParent(transform, false);
-            _runtime.Init(gameData, funType, intensity, IsServer ? CourseSeedUsed : 0, _course, centre,
-                          () => RaceLength, layout, container);
-            if (blast) _runtime.AttachPacks(_packs);
+            // The prism sense (dodge any prism, trails included) runs on every course, blocked gates or none; only the
+            // blast planning needs stations. (Before 2026-10-29 a course with no blocked gate had no sense at all.)
+            if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
+            bool planAI = IsServer && aiBlastPlanner;
+            _runtime.Init(gameData, intensity, IsServer ? CourseSeedUsed : 0, _course.Count, () => RaceLength, layout, container,
+                          trackAllPrisms: planAI && layout.Stations.Count > 0);
+            RegisterThirdEyeOverlays();
+            if (IsServer)
+            {
+                _hits?.Dispose();
+                var rt = _runtime;
+                _hits = new SwitchbackHitStats(pr => rt && rt.IsMover(pr));
+            }
+            _blastAI = planAI
+                ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
+                                        RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
+                                        p => (int)gameData.AIDifficultyFor(p))
+                : null;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
-                $"[Switchback] Fun type {funType} intensity {intensity}: {_course.Count} gates" +
-                (layout != null ? $", {layout.Ribbons.Count} ribbons, {layout.Shortcuts.Count} shortcuts, " +
-                                  $"{layout.MovingClusters.Count} moving clusters" : "") +
-                (blast ? $", BLAST RUN {layout.Stations.Count} blocked gates, {layout.Packs.Count} hunter packs, " +
-                         $"{layout.Prisms.Count} prisms" : "") + ".");
+                $"[Switchback] BLAST RUN intensity {intensity}: {_course.Count} gates, {layout.Stations.Count} blocked gates, " +
+                $"{layout.Movers.Count} movers, {layout.Prisms.Count} prisms.");
         }
 
         /// <summary>
         /// Every peer: register the key crystals (the key blast's wider core reads them on whichever peer detonates).
         /// The server also hands them to the cell's crystal manager - which lays one crystal at each key and respawns it
-        /// there, replicated to clients through its slot list - and seeds the hunter packs at their dens.
+        /// there, replicated to clients through its slot list. Nothing else of Blast Run is replicated: the block
+        /// fields and their movers are a pure function of the course and the shared clock.
         /// </summary>
         void RaiseBlastRun(SwitchbackFeatureLayout layout)
         {
@@ -195,74 +301,21 @@ namespace CosmicShore.Gameplay
             else
                 CSDebug.LogError("[Switchback] BLAST RUN: no CrystalManager in the scene - the " + keys.Count +
                                  " key crystals are not laid, and the doors can only be blasted with other crystals.");
-
-            _packs.Clear();
-            foreach (var pk in layout.Packs) _packs.Add(new BlastRunPackState { Position = pk.Den, DownMask = 0 });
-            _nextPackTick = _lastPackTick = 0f;
-        }
-
-        /// <summary>
-        /// Server, 10 Hz while the turn runs: each pack flies at the race's LEAD runner (most gates threaded) if the leader
-        /// is within sense of its den, else home (<see cref="BlastRunHunters.Step"/>); a hunter blasted down to
-        /// <see cref="BlastRunHunters.AliveToStand"/> prisms is marked down, and a pack with no hunter left stops.
-        /// </summary>
-        protected override void OnServerTick()
-        {
-            base.OnServerTick();
-            if (_blastLayout == null || _blastLayout.Packs.Count == 0 || !_runtime || !IsSpawned) return;
-            if (gameData == null || !gameData.IsTurnRunning || Time.time < _nextPackTick) return;
-            float dt = _lastPackTick > 0f ? Time.time - _lastPackTick : 1f / BlastRunHunters.TickHz;
-            _lastPackTick = Time.time;
-            _nextPackTick = Time.time + 1f / BlastRunHunters.TickHz;
-
-            bool hasLeader = TryLeadRunner(out Vector3 leader);
-            int n = Mathf.Min(_blastLayout.Packs.Count, _packs.Count);
-            for (int p = 0; p < n; p++)
-            {
-                var pk = _blastLayout.Packs[p];
-                var state = _packs[p];
-                int down = state.DownMask;
-                for (int m = 0; m < pk.Members; m++)
-                {
-                    if ((down & (1 << m)) != 0) continue;
-                    int alive = _runtime.AlivePackPrisms(p, m, out bool judged);
-                    if (judged && BlastRunHunters.IsDown(alive)) down |= 1 << m;
-                }
-                Vector3 pos = BlastRunHunters.AllDown(down, pk.Members)
-                    ? state.Position
-                    : BlastRunHunters.Step(state.Position, pk.Den, hasLeader, leader, Mathf.Min(dt, 0.5f));
-                var next = new BlastRunPackState { Position = pos, DownMask = down };
-                if (!next.Equals(state)) _packs[p] = next;
-            }
-        }
-
-        /// <summary>The pilot with the most gates threaded who has a hull in play; ties go to the first in the roster.</summary>
-        bool TryLeadRunner(out Vector3 position)
-        {
-            position = default;
-            int best = -1;
-            foreach (var p in gameData.Players)
-            {
-                if (p == null || p.RoundStats == null) continue;
-                var vessel = p.Vessel;
-                if (vessel == null || (vessel is Object uo && !uo) || !vessel.Transform) continue;
-                int threaded = p.RoundStats.SwitchesThreaded;
-                if (threaded <= best) continue;
-                best = threaded;
-                position = vessel.Transform.position;
-            }
-            return best >= 0;
         }
 
         public override void OnNetworkDespawn()
         {
+            _hits?.Dispose();
+            _hits = null;
             if (_blastLayout != null)
             {
                 BlastRunKeyCrystals.Clear();
                 if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
                 _keyManager = null;
                 _blastLayout = null;
+                _blastAI = null;
             }
+            UnregisterThirdEyeOverlays();
             base.OnNetworkDespawn();
         }
     }

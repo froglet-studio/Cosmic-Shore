@@ -36,7 +36,7 @@ Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`). **16** (
 `R_VesselActionHandler.NetPilot` and `NetArtifacts`: the pilot in each vessel's seat and its slotted artifacts
 (`VesselPilotLoadout`, `Docs/Pilots/PILOTS_AND_ARTIFACTS.md`).
 **17** (2026-10-27, `claude/adoring-cerf-m94x1o`; 16 is taken on an in-flight branch) - the Meerkat: a new network
-prefab (`Meerkat.prefab`) and `MeerkatWormholeNetworkRelay`'s `n_tunnel` (each tunnel its owner forms, and its rider's
+prefab (`Meerkat.prefab`) and `MeerkatSolitonNetworkRelay`'s `n_tunnel` (each tunnel its owner forms, and its rider's
 way out; `R_VesselActions/MEERKAT.md`). **18** (2026-10-27, same branch) - `TunnelState` carries the tunnel's straight
 shaft and bend radius (round 7, the umbrella handle). **19** was claimed twice on 2026-10-27: on `Ys-bleeding-edge` for
 `LobbySnapshot.AiD0..AiD5`, each placed AI's own difficulty beside its hull (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3), and
@@ -46,11 +46,11 @@ artifacts) and 17-18 (the Meerkat); keeping 18 would have let an 18 build, which
 bleeding-edge 19 build (no `AiD`) cannot join a Ys-bleeding-edge 19 build (with it).
 **21** (2026-10-27, `cece/lucid-brown-ykcmhu`) - `R_VesselActionHandler.NetElementBase` and `NetElementBasePublished`:
 a hull's base element levels, so they travel with it when it changes machines (`ElementHandover`).
-**22** (2026-10-28, `claude/adoring-cerf-m94x1o`; 21 is taken on `cece/lucid-brown-ykcmhu`) - `MeerkatWormholeNetworkRelay`'s
+**22** (2026-10-28, `claude/adoring-cerf-m94x1o`; 21 is taken on `cece/lucid-brown-ykcmhu`) - `MeerkatSolitonNetworkRelay`'s
 `n_roots`: each network of roots a Meerkat grows from an omnicrystal (seed, trunk size, frame, the omnicrystal taken) and
 its rider's way out (`R_VesselActions/MEERKAT.md` §7).
 **23** (2026-10-28, `worktree-agent-a0cdd70864b1be2cf`; 23 was free on bleeding-edge and every in-flight branch, checked
-that day) - `MeerkatWormholeNetworkRelay.TunnelState` carries `Kit` (a byte: the soliton's sentinel and its Charge / Mass /
+that day) - `MeerkatSolitonNetworkRelay.TunnelState` carries `Kit` (a byte: the soliton's sentinel and its Charge / Mass /
 Space L5 bits) and `PortalSize` (its exit portal's size): Garrett's kit, decided by the owner and published with each
 tunnel (`R_VesselActions/MEERKAT.md` §9.5).
 **24** (2026-10-28, `cece/keen-lovelace-cyci91`; 21-23 are taken on in-flight branches) - the Tiger Moth: a new network
