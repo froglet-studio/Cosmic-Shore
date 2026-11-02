@@ -178,7 +178,7 @@ when a prompt is about vessel work. Studio domain colours come from the game's p
 ## AI learning is automatic (LOCKED rule, Yash, 2026-10-26)
 
 "I don't wanna click any commands or anything. Never." Every race played in the editor is recorded and sent on its own
-(`HumanFlightRecorder`, `BugHuntAutoSend`), and the hourly **AI learning sweep** relearns the AIs from it
+(`HumanFlightRecorder`, `BugHuntAutoSend`), and the daily **AI learning sweep** relearns the AIs from it
 (`Tools/Build/ai_learn.py --run`), judges whether they now race like the person, fixes what numbers cannot, and pushes
 to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
 to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
