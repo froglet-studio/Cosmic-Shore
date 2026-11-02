@@ -3496,6 +3496,78 @@
       "h": 868,
       "page": "menu-redesign-c",
       "title": "Rev 49 - notes: what was asked, what all four share, the recommendation"
+    },
+    "R49ACrew.dc.html": {
+      "x": 0,
+      "y": 29288,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "is_interactive": true
+    },
+    "R49AStory.dc.html": {
+      "x": 0,
+      "y": 30336,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 A - Destination glow, level 3, the story (optional) - interactive",
+      "is_interactive": true
+    },
+    "R49BCrew.dc.html": {
+      "x": 940,
+      "y": 29288,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "is_interactive": true
+    },
+    "R49BStory.dc.html": {
+      "x": 940,
+      "y": 30336,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 B - Hangar light, level 3, the story (optional) - interactive",
+      "is_interactive": true
+    },
+    "R49CCrew.dc.html": {
+      "x": 1880,
+      "y": 29288,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "is_interactive": true
+    },
+    "R49CStory.dc.html": {
+      "x": 1880,
+      "y": 30336,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 C - Route poster, level 3, the story (optional) - interactive",
+      "is_interactive": true
+    },
+    "R49DCrew.dc.html": {
+      "x": 2820,
+      "y": 29288,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "is_interactive": true
+    },
+    "R49DStory.dc.html": {
+      "x": 2820,
+      "y": 30336,
+      "w": 760,
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 D - Split art, level 3, the story (optional) - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -4596,7 +4668,15 @@
     "R49B.dc.html",
     "R49C.dc.html",
     "R49D.dc.html",
-    "R49Notes.dc.html"
+    "R49Notes.dc.html",
+    "R49ACrew.dc.html",
+    "R49AStory.dc.html",
+    "R49BCrew.dc.html",
+    "R49BStory.dc.html",
+    "R49CCrew.dc.html",
+    "R49CStory.dc.html",
+    "R49DCrew.dc.html",
+    "R49DStory.dc.html"
   ],
   "pages": [
     {

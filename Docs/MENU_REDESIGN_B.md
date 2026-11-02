@@ -5586,3 +5586,20 @@ give me mockups of just the cards maybe 4."
 **Which picks this answers.** "Lets go I" picks Rev 44 option I (Formation, the squad leading the card). Rev 46's small
 cards that slide open stay the window: a picked look is the card that slides open.
 
+
+### 118.1 The three parts of each Rev 49 card (2026-11-02)
+
+**Asked (Shombith):** "Show me the 3 parts of the cards."
+
+Each look now has three boards, one column per look (canvas version `1793656480-cfc4`):
+- **The card** (level 1): as before.
+- **`R49<Key>Crew`** (level 2, Ark crew): three seats, each with its hull and its four settings (vessel, pilot,
+  element, artifact).
+  - The settings follow the squad picked: Skim Wing (You, Halcyon, AI wingmate) or Breakers (Kestrel, You, AI
+    wingmate, Rev 31's joined squad).
+  - Its buttons are Save squad and Voyage.
+- **`R49<Key>Story`** (level 3, Story, optional): the full summary, then who brought it, the place, the news and the
+  water.
+
+All three parts share the look's own background, lightly darkened for reading. In Play mode, Ark crew, Story,
+Voyage and the crumbs link the three boards of a look.

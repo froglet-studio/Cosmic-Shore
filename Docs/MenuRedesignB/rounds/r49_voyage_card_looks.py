@@ -35,6 +35,15 @@ COURSE = r43.MAP                      # the Region render: the course from Tumul
 SECTOR_PIN = (1012, 576)              # Lantern Reach on the Sector render (px of 2196 x 1358)
 COURSE_PIN = (660, 157)
 ARKS = r44.ARKS
+SEATS_BY_SQUAD = [
+    [["Leader", "You", "Sparrow", "Shrapnel", "Charge", "Extra Bay"], ["Rogue One", "Halcyon", "Dolphin", "Riptide", "Space", "Seed Pod"],
+     ["Rogue Two", "AI wingmate", "Squirrel", "Trace", "Time", "No artifact"]],
+    [["Leader", "Kestrel", "Rhino", "Tomahawk", "Mass", "Long Edge"], ["Rogue One", "You", "Manta", "Reaper", "Charge", "Tailwind"],
+     ["Rogue Two", "AI wingmate", "Serpent", "Scales", "Space", "No artifact"]],
+]
+for _arks, _seats in zip(ARKS, SEATS_BY_SQUAD):
+    _arks["seats"] = [dict(zip(("role", "who", "vessel", "pilot", "element", "art"), x), hull=r43.HULL[x[2]],
+                           none=x[5] == "No artifact") for x in _seats]
 
 UP = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5L5 3l3.5 3.5"></path></svg>'
 DOWN = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 3.5L5 7l3.5-3.5"></path></svg>'
@@ -44,7 +53,7 @@ class Component extends DCLogic {
 constructor(p){ super(p); this.state = { ark: 0 }; }
 renderVals() {
 const k = this.state.ark, A = ARKS[k];
-return { ak: { name: A.name, idx: k + 1, count: ARKS.length, h0: A.hulls[0], h1: A.hulls[1], h2: A.hulls[2], a0: A.alts[0], a1: A.alts[1], a2: A.alts[2],
+return { ak: { name: A.name, seats: A.seats, idx: k + 1, count: ARKS.length, h0: A.hulls[0], h1: A.hulls[1], h2: A.hulls[2], a0: A.alts[0], a1: A.alts[1], a2: A.alts[2],
   prev: () => this.setState({ ark: (k + ARKS.length - 1) %% ARKS.length }), next: () => this.setState({ ark: (k + 1) %% ARKS.length }),
   list: ARKS.map((a, i) => ({ name: a.name, line: a.line, h0: a.hulls[0], h1: a.hulls[1], h2: a.hulls[2], on: i === k, off: i !== k,
     pressed: i === k ? 'true' : 'false', fill: i === k ? 'rgba(230,233,255,.12)' : 'rgba(0,1,10,.35)', edge: i === k ? '#E6E9FF' : 'rgba(116,123,173,.45)',
@@ -114,17 +123,28 @@ def ends():
             f'<span style="font-size:13px">Lantern Reach</span><span class="cap" style="font-size:10px;color:{ROUTE}">Destination</span></div></div>')
 
 
+CUR = {"key": "A"}   # which look is being drawn; the level buttons link its three boards (Play follows them)
+
+
+def link(level):
+    return f'R{REV}{CUR["key"]}{["", "", "Crew", "Story"][level]}.dc.html'
+
+
 def buttons():
     return (f'<div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:2">{kc("A")}<span>Set sail</span></button>'
-            f'<button class="btn sl" type="button" style="flex:1;background:rgba(43,50,102,.85);color:{LIGHT}">{kc("X")}<span>Ark crew</span></button>'
-            f'<button class="btn sl" type="button" style="flex:1;background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35)">{kc("Y")}<span>Story</span></button></div>')
+            f'<a class="btn sl" href="{link(2)}" style="flex:1;text-decoration:none;background:rgba(43,50,102,.85);color:{LIGHT}">{kc("X")}<span>Ark crew</span></a>'
+            f'<a class="btn sl" href="{link(3)}" style="flex:1;text-decoration:none;background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35)">{kc("Y")}<span>Story</span></a></div>')
 
 
 TITLE = "Open the vaults at Lantern Reach"
 LINE = "Vaults are lit at Lantern Reach."
 
 
+LAST = {}
+
+
 def card_root(inner, ground):
+    LAST["ground"] = ground
     return (f'<section aria-label="Voyage card" class="sl" style="position:absolute;left:0;top:0;width:{W}px;height:{H}px;overflow:hidden;background:#060A26;'
             f'box-shadow:inset 0 0 0 1px #2B3266">{ground}<div style="position:absolute;inset:0;padding:22px 26px 24px;display:flex;flex-direction:column;gap:14px">{inner}</div></section>')
 
@@ -184,6 +204,68 @@ def look_D():
     return card_root(inner, ground)
 
 
+# ------------------------------------------------------------------------------------------------ the other two parts
+# Shombith, 2026-11-02: "Show me the 3 parts of the cards." Under each look: level 2 (Ark crew, the 12 settings, which
+# follow the squad picked) and level 3 (Story, optional), on that look's own ground, darkened for reading.
+
+def crumbs(level):
+    names = ["1 Voyage", "2 Ark crew", "3 Story"]
+    return (f'<div style="display:flex;align-items:center;gap:14px;padding-bottom:10px;border-bottom:1px solid rgba(230,233,255,.14)">'
+            f'<a href="{link(1)}" style="display:flex;align-items:center;gap:8px;text-decoration:none">{kc("B")}<span class="cap" style="font-size:13px;color:rgba(230,233,255,.7)">Voyage</span></a>'
+            f'<span style="flex:1"></span>'
+            + "".join(f'<a href="{link(i + 1)}" class="cap" style="font-size:12px;text-decoration:none;color:{LIGHT if i + 1 == level else "rgba(230,233,255,.5)"}">{n}</a>' for i, n in enumerate(names))
+            + '</div>')
+
+
+def seat_col():
+    setting = lambda lab, key: (f'<button class="pick" type="button" style="display:flex;align-items:center;gap:6px;height:46px;padding:0 10px;'
+                                f'background:rgba(0,1,10,.45);box-shadow:inset 0 0 0 1px rgba(116,123,173,.4)"><span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">'
+                                f'<span class="lab" style="font-size:9px;color:rgba(230,233,255,.6)">{lab}</span><span class="ell" style="font-size:15px">{{{{s.{key}}}}}</span></span>'
+                                f'<span style="color:rgba(230,233,255,.5)">{r43.CHEV}</span></button>')
+    return ('<sc-for list="{{ak.seats}}" as="s" hint-placeholder-count="3"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">'
+            '<span class="lab" style="font-size:10px;color:rgba(230,233,255,.7)">{{s.role}}</span><span style="font-size:18px">{{s.who}}</span>'
+            '<img src="{{s.hull}}" alt="{{s.vessel}}" style="width:100%;height:110px;object-fit:contain;margin:6px 0">'
+            + setting("Vessel", "vessel") + setting("Pilot", "pilot") + setting("Element", "element") + setting("Artifact", "art")
+            + '</div></sc-for>')
+
+
+def squad_tabs():
+    return ('<div style="display:flex;align-items:center;gap:8px"><span class="lab" style="font-size:11px;margin-right:4px">Squad</span>'
+            '<sc-for list="{{ak.list}}" as="q" hint-placeholder-count="2"><button class="pick sls" type="button" onClick="{{q.pick}}" aria-pressed="{{q.pressed}}" '
+            'style="padding:6px 12px;background:{{q.fill}};box-shadow:inset 0 0 0 1px {{q.edge}}"><span style="font-size:14px">{{q.name}}</span></button></sc-for>'
+            f'<span style="flex:1"></span><span style="display:flex;gap:4px"><button class="pick" type="button" aria-label="Previous squad" onClick="{{{{ak.prev}}}}"><span class="kc">{UP}</span></button>'
+            f'<button class="pick" type="button" aria-label="Next squad" onClick="{{{{ak.next}}}}"><span class="kc">{DOWN}</span></button></span></div>')
+
+
+def level_crew(ground):
+    inner = (f'{crumbs(2)}<div style="display:flex;flex-direction:column;gap:4px"><span class="lab" style="color:rgba(230,233,255,.75)">Ark crew - three seats, four settings each</span>'
+             f'<span style="font-size:30px">{{{{ak.name}}}}</span><span style="font-size:14px;color:#C9CDEA">Loaded from your squad. Changes are for this voyage until you save them.</span></div>'
+             f'{squad_tabs()}<div style="display:flex;gap:12px">{seat_col()}</div><div style="flex:1"></div>'
+             f'<div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:2">{kc("A")}<span>Set sail</span></button>'
+             f'<button class="btn sl" type="button" style="flex:1.2;background:rgba(43,50,102,.85);color:{LIGHT}">{kc("X")}<span>Save squad</span></button>'
+             f'<a class="btn sl" href="{link(1)}" style="flex:1;text-decoration:none;background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35)">{kc("B")}<span>Voyage</span></a></div>')
+    return card_root(inner, ground + '<div class="abs" style="inset:0;background:rgba(6,10,38,.42)"></div>')
+
+
+STORY = [("Who brought it", "Oriel Vance, CITADEL, Hunter", "Reads a vault's shell like a face. Has opened more than she has kept."),
+         ("The place", "Lantern Reach, a vault field", "Super-shielded shells drift in a lit shoal, each with an artifact inside."),
+         ("The news", "Heard at Celadon Harbour", "A trader swears the shells at Lantern Reach are lit again."),
+         ("The water", "Coreward lane, 70 ly below the midplane", "Light from here takes 580 years to reach Lantern Reach. You take 29 minutes. The thickest water is 2.7 g/cm3, as heavy as iron.")]
+
+
+def level_story(ground):
+    blocks = "".join(f'<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-top:1px solid rgba(230,233,255,.14)">'
+                     f'<span class="lab" style="font-size:11px;color:rgba(230,233,255,.7)">{k}</span><span style="font-size:18px">{a}</span>'
+                     f'<span style="font-size:15px;line-height:1.5;color:#D6DAF5">{b}</span></div>' for k, a, b in STORY)
+    inner = (f'{crumbs(3)}<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:10px;align-items:center">'
+             f'<span class="lab" style="color:rgba(230,233,255,.75)">Story</span><span class="cap" style="font-size:11px;padding:2px 8px;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35);color:rgba(230,233,255,.7)">Optional</span></div>'
+             f'<span style="font-size:30px;line-height:1.1">{TITLE}</span>'
+             f'<span style="font-size:16px;color:#D6DAF5">Vaults are lit at Lantern Reach. Crack one with a payload, carry its artifact back to the Ark and stow it.</span></div>'
+             f'{blocks}<div style="flex:1"></div><div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:2">{kc("A")}<span>Set sail</span></button>'
+             f'<a class="btn sl" href="{link(1)}" style="flex:1;text-decoration:none;background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35)">{kc("B")}<span>Voyage</span></a></div>')
+    return card_root(inner, ground + '<div class="abs" style="inset:0;background:rgba(6,10,38,.52)"></div>')
+
+
 LOOKS = [("A", "Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it", look_A),
          ("B", "Hangar light: your squad lit large on a floor of light, the voyage a strip under it", look_B),
          ("C", "Route poster: the real course on the HyperSea map, dimmed behind the card", look_C),
@@ -218,7 +300,11 @@ def notes():
 def main():
     files = {}
     for key, what, fn in LOOKS:
+        CUR["key"] = key
         files[f"R{REV}{key}.dc.html"] = page(f"Rev {REV} {key} - {what}", fn())
+        ground = LAST["ground"]
+        files[f"R{REV}{key}Crew.dc.html"] = page(f"Rev {REV} {key} - level 2, Ark crew", level_crew(ground))
+        files[f"R{REV}{key}Story.dc.html"] = page(f"Rev {REV} {key} - level 3, Story", level_story(ground))
     nb = r43.HEAD.format(title=f"Rev {REV} - notes") + (f'<div style="width: {W}px; height: {H}px; position: relative; overflow: hidden; background: #00041F; color: {LIGHT}; '
                                                         f"font-family: 'Aldrich', 'Chakra Petch', sans-serif\">\n{notes()}\n</div>\n") + r43.TAIL.format(w=W, h=H)
     files[f"R{REV}Notes.dc.html"] = nb
