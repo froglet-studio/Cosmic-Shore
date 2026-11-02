@@ -572,6 +572,10 @@ namespace CosmicShore.Gameplay
             if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
                 return false;
 
+            // The path corridor (Switchback): mass on the course is never fauna food.
+            if (_faunaCorridor.IsActive && _faunaCorridor.Contains(position))
+                return false;
+
             if (SparesOwnMass(faunaDomain, preyDomain)) return false;
 
             if (HasNucleusControlZone)
@@ -627,6 +631,34 @@ namespace CosmicShore.Gameplay
         /// to and nothing to eat there.
         /// </summary>
         public float FaunaExclusionRadius { get; set; }
+
+        readonly FaunaCorridor _faunaCorridor = new();
+
+        /// <summary>
+        /// The path corridor, or inactive (every biome but a race mode that sets one): a tube round a course's
+        /// gate-to-gate path the cell's fauna keep out of - born outside it, goals pushed out of it, mass in it not prey
+        /// (<see cref="FaunaCorridor"/>). Same diet + steering contract as the radii above, never a wall.
+        /// </summary>
+        public FaunaCorridor FaunaPathCorridor => _faunaCorridor;
+
+        /// <summary>True when any fauna pen (outer, inner or path corridor) is set - the spawn sites' one gate.</summary>
+        public bool HasFaunaPen => FaunaContainmentRadius > 0f || FaunaExclusionRadius > 0f || _faunaCorridor.IsActive;
+
+        /// <summary>
+        /// Sets the path corridor (<paramref name="radius"/> 0 or an empty path clears it) and re-steers every live
+        /// creature through the clamped <see cref="Fauna.Goal"/> setter, so fauna already in the cell leave the path.
+        /// </summary>
+        public void SetFaunaPathCorridor(IReadOnlyList<Vector3> path, float radius, bool closed)
+        {
+            _faunaCorridor.Set(path, radius, closed);
+            for (int i = 0; i < liveFauna.Count; i++)
+            {
+                var f = liveFauna[i];
+                if (f) f.Goal = f.Goal;
+            }
+        }
+
+        public void ClearFaunaPathCorridor() => _faunaCorridor.Clear();
 
         /// <summary>
         /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
@@ -713,6 +745,12 @@ namespace CosmicShore.Gameplay
         /// point on the inner wall - the same reasoning as <c>Fauna.ClampToBand</c>.
         /// </summary>
         public Vector3 ClampToFaunaContainment(Vector3 goal, Vector3? selfPosition = null)
+        {
+            var sphere = ClampToFaunaSphere(goal, selfPosition);
+            return _faunaCorridor.IsActive ? _faunaCorridor.PushOut(sphere, selfPosition) : sphere;
+        }
+
+        Vector3 ClampToFaunaSphere(Vector3 goal, Vector3? selfPosition)
         {
             bool hasOuter = FaunaContainmentRadius > 0f;
             bool hasInner = FaunaExclusionRadius > 0f;

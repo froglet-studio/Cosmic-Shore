@@ -36,6 +36,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lays Blast Run's doors and block fields along the course (SwitchbackBlastRun) on every peer.")]
         [SerializeField] SpawnableSwitchbackFeatures featuresPrefab;
 
+        [Header("Fauna corridor")]
+        [Tooltip("Per intensity (I1..I4): u round the gate-to-gate path no fauna is born in, steers into or eats in " +
+                 "(Cell.SetFaunaPathCorridor - a diet + steering pen, never a wall). Keeps the path free for prism " +
+                 "obstacles and takes fauna body-sync / animator cost off where pilots fly. 0 = no corridor (fauna as before). " +
+                 "220 sits just past PrismColliderLodManager's 200 u collider radius. Docs/perf/SWITCHBACK_PRISM_BUDGET.md.")]
+        [SerializeField] float[] faunaCorridorRadiusByIntensity = { 220f, 220f, 220f, 220f };
+
         [Header("Blast Run AI")]
         [Tooltip("The AI's blast planner (SWITCHBACK.md \"AI: the blast planner\"): at each blocked gate an AI chooses to thread " +
                  "the eye or take the key crystal and blast the door, by its difficulty. Off = the old crystal detour.")]
@@ -62,6 +69,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>u a course feature keeps outside the nucleus.</summary>
         const float NucleusMargin = 30f;
+
+        static readonly Unity.Profiling.ProfilerMarker s_featuresSpawnMarker = new("Switchback.Features.Spawn");
 
         protected override string ModeName => "Switchback";
 
@@ -265,6 +274,7 @@ namespace CosmicShore.Gameplay
 
             var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius);
             RaiseBlastRun(layout);
+            ApplyFaunaCorridor(intensity);
 
             Transform container = null;
             if (layout.Prisms.Count > 0)
@@ -277,7 +287,8 @@ namespace CosmicShore.Gameplay
                     var features = Instantiate(featuresPrefab, transform);
                     features.name = "SwitchbackFeatures";
                     features.SetLayout(_course, intensity, layout, centre, clearRadius);
-                    var go = features.Spawn(intensity);
+                    GameObject go;
+                    using (s_featuresSpawnMarker.Auto()) go = features.Spawn(intensity);
                     if (go)
                     {
                         go.name = "SwitchbackFeatures (prisms)";
@@ -349,8 +360,35 @@ namespace CosmicShore.Gameplay
                                  " key crystals are not laid, and the doors can only be blasted with other crystals.");
         }
 
+        /// <summary>Per-intensity corridor radius from <see cref="faunaCorridorRadiusByIntensity"/> (clamped index; 0 when unset).</summary>
+        public static float CorridorRadiusFor(float[] byIntensity, int intensity)
+        {
+            if (byIntensity == null || byIntensity.Length == 0) return 0f;
+            return Mathf.Max(0f, byIntensity[Mathf.Clamp(intensity - 1, 0, byIntensity.Length - 1)]);
+        }
+
+        readonly List<Vector3> _corridorPath = new(32);
+        Cell _corridorCell;
+
+        /// <summary>Every peer: fence the course path off from the cell's fauna (an open chain, so not closed).</summary>
+        void ApplyFaunaCorridor(int intensity)
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            if (!cell) return;
+            float radius = CorridorRadiusFor(faunaCorridorRadiusByIntensity, intensity);
+            _corridorPath.Clear();
+            for (int i = 0; i < _course.Count; i++) _corridorPath.Add(_course[i].Position);
+            cell.SetFaunaPathCorridor(_corridorPath, radius, closed: false);
+            _corridorCell = radius > 0f ? cell : null;
+            if (radius > 0f)
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[Switchback] fauna corridor {radius:0} u round {_course.Count} gates (intensity {intensity}).");
+        }
+
         public override void OnNetworkDespawn()
         {
+            if (_corridorCell) _corridorCell.ClearFaunaPathCorridor();
+            _corridorCell = null;
             _hits?.Dispose();
             _hits = null;
             if (_blastLayout != null)

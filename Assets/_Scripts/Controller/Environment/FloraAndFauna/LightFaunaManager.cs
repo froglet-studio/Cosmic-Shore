@@ -112,6 +112,9 @@ namespace CosmicShore.Gameplay
                 randomOffset.y = 0f;
 
                 Vector3 spawnPosition = transform.position + randomOffset;
+                // A school member is born outside a race path corridor too (Switchback); no-op elsewhere.
+                if (cell && cell.FaunaPathCorridor.IsActive)
+                    spawnPosition = cell.FaunaPathCorridor.PushOut(spawnPosition, transform.position);
 
                 LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
                 fauna.domain = spawnDomain;

@@ -20637,3 +20637,12 @@ Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
    every leg off the line, near ball every second leg, tight rings). **Pass:** as described.
 8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
    follow-up 7).
+
+## 🟡 Switchback fauna path corridor + prism budget (2026-11-02, NOT RUN IN EDITOR)
+Refcompile (player) error set identical to base; perf_hunt gates OK; EditMode tests (`FaunaCorridorTests`) NOT run — headless project busy.
+- [ ] Switchback I1–I4: no fauna born / steering within 220 u of the gate path; fauna elsewhere unchanged.
+- [ ] Set `faunaCorridorRadiusByIntensity` to 0 → fauna behave exactly as before.
+- [ ] Herbivores don't graze prisms inside the corridor; LightFauna schools spawn outside it.
+- [ ] Corridor cleared after leaving the match (other modes in the same cell unaffected).
+- [ ] Profiler: `Fauna.Corridor.PushOut`, `Switchback.Features.Spawn` present; `Fauna.BodySync` lower near the path.
+- [ ] Run `FaunaCorridorTests`. See Docs/perf/SWITCHBACK_PRISM_BUDGET.md.
