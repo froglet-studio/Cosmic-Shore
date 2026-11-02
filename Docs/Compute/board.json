@@ -1,0 +1,777 @@
+{
+ "generated": 1793591262,
+ "jobs": [
+  {
+   "archive": null,
+   "baseline": {
+    "error": null,
+    "loss": 3.5329213999552658,
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+     "model": "manta_drive",
+     "races": 12,
+     "seconds_by_intensity": {
+      "1": 27.83,
+      "2": 33.03,
+      "3": 38.2,
+      "4": 39.17
+     }
+    },
+    "params": {
+     "BoostStickBand": 0.35,
+     "YastriStickBand": 0.75
+    }
+   },
+   "best": {
+    "descriptors": null,
+    "evals_at": 282,
+    "loss": 3.3404447965235153,
+    "machine": "shombithofficial/dragonsweapon",
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+     "model": "manta_drive",
+     "races": 12,
+     "seconds_by_intensity": {
+      "1": 23.7,
+      "2": 27.8,
+      "3": 30.03,
+      "4": 32.23
+     }
+    },
+    "params": {
+     "BoostStickBand": 0.9999960483273265,
+     "YastriStickBand": 0.6279535609738189
+    },
+    "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+    "time": 1793195382
+   },
+   "blocked": "converged (promote it: compute.py promote drive-manta-redline)",
+   "converged": true,
+   "epoch": "c5c7f8e4ef2d",
+   "evals": 34070,
+   "id": "drive-manta-redline",
+   "machine_hours": 1.0,
+   "machines": [
+    "shombithofficial/dragonsweapon"
+   ],
+   "owner": "Yash (vessel AI)",
+   "plan": "regatta-balance",
+   "priority": 57.869,
+   "stage": 1,
+   "status": "ready",
+   "title": "Manta AI drive for Redline, I1-I4 (self-play)",
+   "units": null,
+   "value": 9,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 1.65,
+    "unblocks": 3.0,
+    "value": 9.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": {
+    "error": null,
+    "loss": 4.617154322825912,
+    "metrics": {
+     "dnf": 3,
+     "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+     "model": "rhino_drive",
+     "races": 12,
+     "seconds_by_intensity": {
+      "1": 51.3,
+      "2": 49.47,
+      "3": 66.2,
+      "4": 630.0
+     }
+    },
+    "params": {
+     "alignDegrees": 12.0,
+     "brakeLeadSeconds": 0.25,
+     "brakeMarginUnits": 120.0,
+     "brakeSteerFloor": 0.3,
+     "cornerReleaseDegrees": 30.0,
+     "cornerSpeed": 600.0,
+     "engageRunwaySeconds": 1.5,
+     "minCornerSpeed": 160.0,
+     "minSpeedGain": 50.0,
+     "releaseAlignDegrees": 25.0,
+     "releaseRunwaySeconds": 0.5,
+     "releaseStickBand": 0.6,
+     "stickBand": 0.35,
+     "throttleSlewPerSecond": 4.0
+    }
+   },
+   "best": {
+    "descriptors": null,
+    "evals_at": 6248,
+    "loss": 3.752319993690058,
+    "machine": "shombithofficial/dragonsweapon",
+    "metrics": {
+     "dnf": 1,
+     "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+     "model": "rhino_drive",
+     "races": 12,
+     "seconds_by_intensity": {
+      "1": 28.83,
+      "2": 29.8,
+      "3": 35.5,
+      "4": 246.3
+     }
+    },
+    "params": {
+     "alignDegrees": 18.317092750249948,
+     "brakeLeadSeconds": 0.7021197075193469,
+     "brakeMarginUnits": 72.40435905857507,
+     "brakeSteerFloor": 0.17383785412933148,
+     "cornerReleaseDegrees": 28.047422397637558,
+     "cornerSpeed": 1467.1729564569866,
+     "engageRunwaySeconds": 0.8797651805366813,
+     "minCornerSpeed": 106.24260329256833,
+     "minSpeedGain": 9.733419635628536,
+     "releaseAlignDegrees": 53.71227513403386,
+     "releaseRunwaySeconds": 0.6135022936496907,
+     "releaseStickBand": 0.7100531628201312,
+     "stickBand": 0.8865374774808841,
+     "throttleSlewPerSecond": 1.1074555902582848
+    },
+    "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+    "time": 1793261697
+   },
+   "blocked": "converged (promote it: compute.py promote drive-rhino-headlong)",
+   "converged": true,
+   "epoch": "8b234fce62c5",
+   "evals": 6908,
+   "id": "drive-rhino-headlong",
+   "machine_hours": 0.96,
+   "machines": [
+    "shombithofficial/dragonsweapon"
+   ],
+   "owner": "Yash (vessel AI)",
+   "plan": "regatta-balance",
+   "priority": 54.213,
+   "stage": 1,
+   "status": "ready",
+   "title": "Rhino AI drive for Headlong, I1-I4 (self-play)",
+   "units": null,
+   "value": 9,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 1.54,
+    "unblocks": 3.0,
+    "value": 9.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": {
+    "error": null,
+    "loss": 4.126082518723912,
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+     "model": "rhino_drive",
+     "races": 4,
+     "seconds_by_intensity": {
+      "1": 50.9,
+      "2": 63.0,
+      "3": 75.1,
+      "4": 61.1
+     }
+    },
+    "params": {
+     "alignDegrees": 12.0,
+     "brakeLeadSeconds": 0.25,
+     "brakeMarginUnits": 120.0,
+     "brakeSteerFloor": 0.3,
+     "cornerReleaseDegrees": 30.0,
+     "cornerSpeed": 333.0,
+     "engageRunwaySeconds": 1.5,
+     "minCornerSpeed": 160.0,
+     "minSpeedGain": 50.0,
+     "releaseAlignDegrees": 25.0,
+     "releaseRunwaySeconds": 0.5,
+     "releaseStickBand": 0.6,
+     "stickBand": 0.35,
+     "throttleSlewPerSecond": 4.0
+    }
+   },
+   "best": {
+    "descriptors": null,
+    "evals_at": 2508,
+    "loss": 3.318610519702796,
+    "machine": "shombith/cloud-session",
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+     "model": "rhino_drive",
+     "races": 4,
+     "seconds_by_intensity": {
+      "1": 22.6,
+      "2": 27.0,
+      "3": 31.3,
+      "4": 30.3
+     }
+    },
+    "params": {
+     "alignDegrees": 14.050997862900255,
+     "brakeLeadSeconds": 0.0008444750974436754,
+     "brakeMarginUnits": 4.26675416850244,
+     "brakeSteerFloor": 0.7774586721487775,
+     "cornerReleaseDegrees": 19.097539642270966,
+     "cornerSpeed": 815.1918101230054,
+     "engageRunwaySeconds": 0.6986892172779244,
+     "minCornerSpeed": 186.93866077486393,
+     "minSpeedGain": 0.22039804013529013,
+     "releaseAlignDegrees": 33.807226174553826,
+     "releaseRunwaySeconds": 0.44538741214525446,
+     "releaseStickBand": 0.5841463444016426,
+     "stickBand": 0.7436504140878325,
+     "throttleSlewPerSecond": 4.159821335697551
+    },
+    "sha": "168c3e3d3240ae0ea2ce1f5516a4ba5387d3b0ba",
+    "time": 1793189076
+   },
+   "blocked": "converged (promote it: compute.py promote drive-rhino-regatta)",
+   "converged": true,
+   "epoch": "52c7cb0e7a63",
+   "evals": 2508,
+   "id": "drive-rhino-regatta",
+   "machine_hours": 0.05,
+   "machines": [
+    "shombith/cloud-session"
+   ],
+   "owner": "Yash (vessel AI)",
+   "plan": "regatta-balance",
+   "priority": 45.454,
+   "stage": 1,
+   "status": "ready",
+   "title": "Rhino AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
+   "units": null,
+   "value": 7,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 1.66,
+    "unblocks": 3.0,
+    "value": 7.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": {
+    "error": null,
+    "loss": 3.4400048145939093,
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+     "model": "manta_drive",
+     "races": 4,
+     "seconds_by_intensity": {
+      "1": 24.8,
+      "2": 30.7,
+      "3": 35.4,
+      "4": 35.1
+     }
+    },
+    "params": {
+     "BoostStickBand": 0.975,
+     "YastriStickBand": 0.9750000000000001
+    }
+   },
+   "best": {
+    "descriptors": null,
+    "evals_at": 19838,
+    "loss": 3.331236150386243,
+    "machine": "shombithofficial/dragonsweapon",
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+     "model": "manta_drive",
+     "races": 4,
+     "seconds_by_intensity": {
+      "1": 23.1,
+      "2": 28.2,
+      "3": 30.8,
+      "4": 30.5
+     }
+    },
+    "params": {
+     "BoostStickBand": 0.9999990322004417,
+     "YastriStickBand": 0.8951160906357027
+    },
+    "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+    "time": 1793263797
+   },
+   "blocked": "converged (promote it: compute.py promote drive-manta-regatta)",
+   "converged": true,
+   "epoch": "837e0889a5e5",
+   "evals": 23934,
+   "id": "drive-manta-regatta",
+   "machine_hours": 0.23,
+   "machines": [
+    "shombithofficial/dragonsweapon"
+   ],
+   "owner": "Yash (vessel AI)",
+   "plan": "regatta-balance",
+   "priority": 42.075,
+   "stage": 1,
+   "status": "ready",
+   "title": "Manta AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
+   "units": null,
+   "value": 7,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 1.54,
+    "unblocks": 3.0,
+    "value": 7.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": {
+    "error": null,
+    "loss": 4.180346244060349,
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
+     "model": "dolphin_drive",
+     "races": 4,
+     "seconds_by_intensity": {
+      "1": 54.0,
+      "2": 64.5,
+      "3": 73.0,
+      "4": 71.9
+     }
+    },
+    "params": {
+     "alignDegrees": 12.0,
+     "engageRunwaySeconds": 2.5,
+     "maxHoldOffSeconds": 4.0,
+     "minDischargeSeconds": 0.2,
+     "minPulseGainUnits": 30.0,
+     "peakMarginUnits": 3.0,
+     "spendAtCharge01": 0.95
+    }
+   },
+   "best": {
+    "descriptors": null,
+    "evals_at": 900,
+    "loss": 4.143021784222951,
+    "machine": "shombithofficial/dragonsweapon",
+    "metrics": {
+     "dnf": 0,
+     "limits": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
+     "model": "dolphin_drive",
+     "races": 4,
+     "seconds_by_intensity": {
+      "1": 52.1,
+      "2": 62.3,
+      "3": 69.8,
+      "4": 69.5
+     }
+    },
+    "params": {
+     "alignDegrees": 42.74878165850352,
+     "engageRunwaySeconds": 0.5817524224265437,
+     "maxHoldOffSeconds": 5.368634344508081,
+     "minDischargeSeconds": 0.05721116114607276,
+     "minPulseGainUnits": 0.8600468067382449,
+     "peakMarginUnits": 28.783361032738703,
+     "spendAtCharge01": 0.997195574119021
+    },
+    "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+    "time": 1793264738
+   },
+   "blocked": "converged (promote it: compute.py promote drive-dolphin-regatta)",
+   "converged": true,
+   "epoch": "ee78e83fdb59",
+   "evals": 43617,
+   "id": "drive-dolphin-regatta",
+   "machine_hours": 1.01,
+   "machines": [
+    "shombithofficial/dragonsweapon"
+   ],
+   "owner": "Yash (vessel AI)",
+   "plan": "regatta-balance",
+   "priority": 41.879,
+   "stage": 1,
+   "status": "ready",
+   "title": "Dolphin AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
+   "units": null,
+   "value": 7,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 1.53,
+    "unblocks": 3.0,
+    "value": 7.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "status blocked (stage 2 starts once stage 1 is promoted and the roster's drives are the trained ones (/regatta-balance))",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "regatta-course-i1",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "Yash (Regatta AI and course)",
+   "plan": "regatta-balance",
+   "priority": 35.1,
+   "stage": 2,
+   "status": "blocked",
+   "title": "The Regatta I1 circuit that levels the field",
+   "units": null,
+   "value": 9,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.5,
+    "value": 9.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "status blocked (stage 2 starts once stage 1 is promoted and the roster's drives are the trained ones (/regatta-balance))",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "regatta-course-i2",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "Yash (Regatta AI and course)",
+   "plan": "regatta-balance",
+   "priority": 35.1,
+   "stage": 2,
+   "status": "blocked",
+   "title": "The Regatta I2 circuit that levels the field",
+   "units": null,
+   "value": 9,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.5,
+    "value": 9.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "status blocked (stage 2 starts once stage 1 is promoted and the roster's drives are the trained ones (/regatta-balance))",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "regatta-course-i3",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "Yash (Regatta AI and course)",
+   "plan": "regatta-balance",
+   "priority": 35.1,
+   "stage": 2,
+   "status": "blocked",
+   "title": "The Regatta I3 circuit that levels the field",
+   "units": null,
+   "value": 9,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.5,
+    "value": 9.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "status blocked (stage 2 starts once stage 1 is promoted and the roster's drives are the trained ones (/regatta-balance))",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "regatta-course-i4",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "Yash (Regatta AI and course)",
+   "plan": "regatta-balance",
+   "priority": 35.1,
+   "stage": 2,
+   "status": "blocked",
+   "title": "The Regatta I4 circuit that levels the field",
+   "units": null,
+   "value": 9,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.5,
+    "value": 9.0
+   }
+  },
+  {
+   "archive": {
+    "filled": 120
+   },
+   "baseline": {
+    "error": null,
+    "loss": 0.12447,
+    "metrics": {
+     "appendage_share": 0.072,
+     "census": [
+      6,
+      77,
+      0,
+      0
+     ],
+     "elongation": 2.421,
+     "integrity": 0.933,
+     "island": 3.499,
+     "lively": 0.942,
+     "major": 1,
+     "max_step": 2.497,
+     "n": 83
+    },
+    "params": {
+     "arch": 0.04999999999999999,
+     "arm_flare": 0.6,
+     "arm_len": 6.0,
+     "arms": 0,
+     "body_elem": 1,
+     "crest": 0.0,
+     "head_elem": 1,
+     "length": 40.0,
+     "limb_angle": 80.0,
+     "limb_elem": 0,
+     "limb_lag": 0.3,
+     "limb_len": 8.0,
+     "limb_pairs": 1,
+     "limb_spread": 0.0,
+     "limb_start": 0.3,
+     "limb_sweep": 25.0,
+     "radius": 5.0,
+     "ring_units": 7,
+     "swim": "vertical",
+     "taper": 0.6,
+     "wave_amp": 0.08,
+     "wave_count": 1
+    }
+   },
+   "best": {
+    "descriptors": {
+     "appendages": 0.375,
+     "elongation": 1.3602731149185863,
+     "major": 2
+    },
+    "evals_at": 115752,
+    "loss": 0.0,
+    "machine": "shombithofficial/dragonsweapon",
+    "metrics": {
+     "appendage_share": 0.375,
+     "census": [
+      12,
+      0,
+      148,
+      0
+     ],
+     "elongation": 1.36,
+     "integrity": 1.0,
+     "island": 6.373,
+     "lively": 1.2,
+     "major": 2,
+     "max_step": 2.47,
+     "n": 160
+    },
+    "params": {
+     "arch": -0.09150922364406061,
+     "arm_flare": 0.1931104036447134,
+     "arm_len": 9.85986943010637,
+     "arms": 0,
+     "body_elem": 2,
+     "crest": 10.793490731840652,
+     "head_elem": 0,
+     "length": 53.39681677693686,
+     "limb_angle": 53.84584581583538,
+     "limb_elem": 2,
+     "limb_lag": 0.9439147973323292,
+     "limb_len": 27.28264556128448,
+     "limb_pairs": 3,
+     "limb_spread": 0.2957692766107862,
+     "limb_start": 0.22877659126440397,
+     "limb_sweep": 4.21999807236324,
+     "radius": 7.807589373898804,
+     "ring_units": 3,
+     "swim": "pulse",
+     "taper": 0.037517147535312365,
+     "wave_amp": 0.24431119909556698,
+     "wave_count": 3
+    },
+    "sha": "f06108b5190ff5bb6237257424f7eb1a9abf08aa",
+    "time": 1793270753
+   },
+   "blocked": "converged (promote it: compute.py promote bioform-forge)",
+   "converged": true,
+   "epoch": "46859a87c158",
+   "evals": 171144,
+   "id": "bioform-forge",
+   "machine_hours": 1.0,
+   "machines": [
+    "shombithofficial/dragonsweapon"
+   ],
+   "owner": "Garrett (swarm fauna); Shombith and Yash for Tandava's forms",
+   "plan": "bioforms",
+   "priority": 20.857,
+   "stage": 1,
+   "status": "ready",
+   "title": "Grow the swarm bestiary: new bodies a swarm can switch into",
+   "units": null,
+   "value": 7,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 1.53,
+    "unblocks": 1.5,
+    "value": 7.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "status blocked (stage 3 starts once the four stage-2 courses are promoted (their settings go into evaluator.args.courses))",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "regatta-elements",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "Yash (Regatta); every hull's owner for its baseline",
+   "plan": "regatta-balance",
+   "priority": 20.8,
+   "stage": 3,
+   "status": "blocked",
+   "title": "The smallest elemental baseline that closes Regatta's last gap",
+   "units": null,
+   "value": 8,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.0,
+    "value": 8.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "status proposed",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "unity-train",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "the AI trainer: studyholic, Garrett and Shombith (Docs/AI_SYSTEM/AI_TRAINING_PLAN.md); deployed AI: Yash",
+   "plan": "ai-training",
+   "priority": 18.2,
+   "stage": null,
+   "status": "proposed",
+   "title": "Train each vessel's AI in the real game: the Unity trainer, run headless (57 vessel x mode pairs)",
+   "units": null,
+   "value": 7,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.0,
+    "value": 7.0
+   }
+  },
+  {
+   "archive": null,
+   "baseline": null,
+   "best": null,
+   "blocked": "not run: its code ref origin/cece/gifted-curie-x2cpd0 is not one workers run (origin/bleeding-edge, origin/ai)",
+   "converged": false,
+   "epoch": null,
+   "evals": 0,
+   "id": "nca-train-forged",
+   "machine_hours": 0.0,
+   "machines": [],
+   "owner": "Garrett (NCA creatures, research branch cece/gifted-curie-x2cpd0)",
+   "plan": "bioforms",
+   "priority": 15.6,
+   "stage": 2,
+   "status": "proposed",
+   "title": "Grow forged bioforms as 3D neural cellular automata (torch, hours per body)",
+   "units": null,
+   "value": 6,
+   "why": {
+    "asked": 1.3,
+    "crowding": 1.0,
+    "starvation": 2.0,
+    "unblocks": 1.0,
+    "value": 6.0
+   }
+  }
+ ],
+ "machines": [
+  {
+   "active": false,
+   "caps": [
+    "bash",
+    "cuda",
+    "dotnet8",
+    "numpy",
+    "python3",
+    "torch",
+    "unity"
+   ],
+   "cores": null,
+   "current": {},
+   "machine": "gradies/gbox",
+   "updated": 1793590862
+  },
+  {
+   "active": false,
+   "caps": [
+    "bash",
+    "node",
+    "numpy",
+    "python3"
+   ],
+   "cores": 3,
+   "current": {},
+   "machine": "shombith/cloud-session",
+   "updated": 1793192374
+  },
+  {
+   "active": false,
+   "caps": [
+    "bash",
+    "dotnet8",
+    "numpy",
+    "python3",
+    "unity"
+   ],
+   "cores": 11,
+   "current": {},
+   "machine": "shombithofficial/dragonsweapon",
+   "updated": 1793570555
+  }
+ ]
+}
