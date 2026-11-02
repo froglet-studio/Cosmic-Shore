@@ -140,3 +140,6 @@ items.jsonl
 .env.*
 Tools/Build/vessel_model/.artist_cache/
 Tools/Build/vessel_model/.sheets/
+
+# Fleet Codex: generated data (Tools/Build/fleet_codex.py), published to the artifact, never committed
+Docs/FleetCodex/build/
