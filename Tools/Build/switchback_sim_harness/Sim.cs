@@ -566,7 +566,17 @@ sealed class Race
             {
                 float kk = a0 / (a0 - a1); Vector3 hit = pos + (newPos - pos) * kk;
                 if ((hit - ring).magnitude <= g.Radius) { idx++; Rings++; }
-                else { Misses++; locked = -1; drifting = false; extending = true; extT = 0f; }
+                else
+                {
+                    Misses++;
+                    if (log != null)
+                    {
+                        int st = w.Planner.StationFor(idx);
+                        log.Add($"{t,6:F1} MISS gate {idx} {(st >= 0 ? "blocked (eye " + w.L.Stations[st].Port.ToString("F0") + " u)" : "open (r " + g.Radius.ToString("F0") + " u)")} " +
+                                $"by {(hit - ring).magnitude:F0} u at {vEff:F0} u/s, drifting {drifting}, plan {d.Plan}, emerg {emergOn}");
+                    }
+                    locked = -1; drifting = false; extending = true; extT = 0f;
+                }
             }
             pos = newPos; t += dt; frame++;
         }

@@ -65,6 +65,18 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback AI step 3: the planner's plain-hit cost 0.6 -> 0.25 s (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackBlastPlanner.HitPenalty` 0.25 (the measured cost of a plain prism hit). Offline it changes
+no race time measurably (`SWITCHBACK.md` "Step 3").
+
+**Verified without the editor:** reference compile (editor, player-dev); gates; `switchback_sim_harness` selftest and
+eval. NOT run: `SwitchbackBlastPlannerTests` in Unity.
+
+**Verify in editor:**
+1. Run `SwitchbackBlastPlannerTests` (EditMode): all 24 pass (the difficulty ladder and "Legendary never suboptimal"
+   use the cost model).
+
 ### 🔴 Switchback AI step 2: the strike without a setup leg (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `SwitchbackBlastAI.GateBlastAim` no longer flies a setup leg behind the key by default

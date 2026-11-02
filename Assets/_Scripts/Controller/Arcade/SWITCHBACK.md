@@ -1060,6 +1060,23 @@ break even. What the measurements say about WHY:
 
 Test: `SwitchbackAISteeringTests.Switchback_BlastAI_Defaults_AreSteps1And2`.
 
+### Step 3: the planner's hit costs from the measured ones (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 3". `SwitchbackBlastPlanner.HitPenalty` (seconds a standing prism in the lane costs) is now
+0.25 (was 0.6): what `DolphinVesselChangeSpeedByPrism` does to the Dolphin, x0.5 speed easing back over 1 s. The Danger
+cost was already right (1.5 s: a dead stop easing back over 3 s).
+
+**It changes nothing measurable.** Offline (24 courses a cell, levels Medium to Legendary) every cell's median stays
+within about 2 s for any value from 0.1 to 0.6, and the plans barely change: the thread line runs down the bore, which
+the layout keeps clear, and the blast lane's prisms are mostly covered by the blast. It ships because the planner's costs
+should be the game's, not because it is faster.
+
+**Where the time is (I4):** about 8 missed rings a race, 53 of 54 of them at OPEN gates (20 u radius at I4), not at
+the blocked gates' eyes, and repeatedly at the same few hairpins (gate 1 at every level, then 22 and 25): a 90-150 deg
+turn into a short leg that the stick's 110 deg/s cannot make at 68-107 u/s (a 35-56 u circle), so the AI overshoots,
+loops back and often misses again. A person carves those with drift taps (Yash's drift-spam), which is the next step.
+The simulator's trace now logs each miss (`MISS gate ... by ... u`).
+
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 
 The old FrogletTools ▸ AI ▸ Third Eye window (a second camera, rendered twice) is gone. The code still lives in
