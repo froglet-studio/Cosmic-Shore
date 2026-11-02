@@ -162,7 +162,26 @@ human who slings will beat it.
   The solver flies any armed aim; laying the plane first is what makes the launch leave from the point where the circle
   already faces the ring, as a pilot's snap aim does, instead of kinking the flight line by the ring's tilt. Tests:
   `ThresherSlingAIPolicyTests`, `ThresherChainSolverTests.AutopilotAim_*` (with a negative control: an unlaid plane
-  kinks an off-plane launch by its tilt). Not yet watched in an editor race.
+  kinks an off-plane launch by its tilt).
+- **Measured in the real game** (2026-11-02, `ThresherTimeSoakRunner`: the normal launch path, every seat an AI Thresher,
+  Unity batch mode, time scale 1, I1, course seeds 7001 and 7002, two AI seats plus the host's hull handed to the AI). The
+  host seat flies cruise-only: the boost policy's `requireAIPlayer` keeps it off a seat that is not an AI player, so the
+  sling never runs on a hull a person hands to the AI. That makes it a free control.
+
+  | Seed | Aimed launch ON | Aimed launch OFF (the plain let-go, today's 15° cone) |
+  |---|---|---|
+  | 7001 | an AI Thresher won in **77.0 s**; the other AI 11 / 16 rings, the cruise-only host 7 / 16 | the cruise-only host won in 159.6 s; the AI Threshers 1 / 16 and 3 / 16 (30-31 plants, no launch) |
+  | 7002 | an AI Thresher won in **115.7 s**; the other AI 15 / 16, the host 15 / 16 | the cruise-only host won in 142.0 s; the AI Threshers 2 / 16 and 4 / 16 |
+
+  With the aim on, each AI launched 17-26 times a race at a median 2,410-3,760 u/s, the median launch 4.1-9.6° off its
+  next ring and 71-82% of launches within 15° of it. With it off, the learned plant rule (a ring 6.7° off, every 2.9 s)
+  makes the AI plant at nearly every chance and orbit instead of race: worse than never slinging. Not raced: I2-I4, the
+  variant as it was before 2026-11-02 (its 62.8° cone), more seeds. Each race is one sample; the winner is the AI, not a
+  person. To run it: `Unity -batchmode -nographics -projectPath . -executeMethod
+  CosmicShore.Editor.ThresherTimeSoakLauncher.Run -ttSoak "1:2" -ttSoakAimed 1 -ttSoakOut Logs/tt_soak.jsonl -ttSoakTag
+  aimed -ttSoakQuit` (`-ttSoakAimed 0` for the plain let-go, `-ttSoakSeed` the first course seed); one JSON line per
+  pilot per race. A run rewrites a few project and runtime-data assets (materials, `ProjectSettings`, the selected
+  vessel and player count): put them back before committing.
 
 ## 5. Numbers, and where they are authored
 

@@ -539,5 +539,7 @@ measure when it is designed.
 
 **Next, in order, once the Stoat's Slingshot is done.** (1) Yash plays Thresher Time at I1-I4 (I3 has no race yet); the
 sweep relearns from it on its own. (2) The AI makes slinging pay at every intensity (§6), measured against Yash's races. The aimed launch is in
-(2026-11-02); what is left is watching it race (the checklist's Thresher Time entry) and races at I3.
+(2026-11-02) and raced headless at I1: an AI Thresher won in 77 s and 116 s, where the same courses with the aim off
+left the AIs at 1-4 of 16 rings (`THRESHERTIME.md` §4 "Measured in the real game"). What is left: the soak at I2-I4
+(`ThresherTimeSoakLauncher`), watching it in the editor, and people's races at I3.
 (3) A Thresher Time model joins stage 1 of `REGATTA_BALANCE_PLAN.md`. (4) Then Regatta is designed from the four trained hulls.

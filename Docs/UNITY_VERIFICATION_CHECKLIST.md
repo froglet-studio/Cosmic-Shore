@@ -82,7 +82,13 @@ the aimed launch off. `THRESHERTIME.md` §4 "The aimed launch". Affects: Garrett
 0.01° and reads 0.0198°, the float floor of `Vector3.Angle` near zero; nothing it calls was changed. Also
 `learn_drives_from_flights.py --self-test` (the aimed-launch detector, three negative controls) and `--check`; the
 input-only gate (now covering `Controller/AI/Boost`), Mathf-params and console-logging gates. NOT run: `unity_refcompile`
-(it cannot run on Windows), a player build, any race.
+(it cannot run on Windows), a player build.
+
+**Raced headless (2026-11-02, `ThresherTimeSoakRunner`, batch mode, I1, seeds 7001 / 7002, 2 races each way):** aimed
+on, an AI Thresher won in 77.0 s and 115.7 s, each AI launching 17-26 times at a median 2,410-3,760 u/s and 4.1-9.6° off
+its next ring; aimed off, the AI Threshers threaded 1-4 of 16 rings and a cruise-only seat won in 142-160 s
+(`THRESHERTIME.md` §4 "Measured in the real game"). Not raced: I2-I4. Also found: a hull a person hands to the AI flies
+cruise-only in Thresher Time (the policy's `requireAIPlayer`).
 
 **Verify in editor:**
 1. Thresher Time I1, two AI Thresher rivals, F2 (AI Diagnose), watch one: it plants with the ring ahead, its status reads
