@@ -65,6 +65,15 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
+markers `DiagnosticsHUD.Capture.Burst / .Describe / .DiagStart`. Verified offline only (refcompile player, player-dev, editor; gates).
+
+1. Play any mode past 90 s with the Profiler on. **Pass:** the frame the auto-capture starts no longer stalls 50-70 ms; the three markers name what is left.
+2. Open the saved `capture_*.json`. **Pass:** its `burst` line still ends with the `log: ...` part, as before.
+3. HUD console (F7) `burst`. **Pass:** prints the full line, log included.
+
 ### 🔴 Switchback fauna corridor: corridor mass out of the targeting grids, goals parked past the wall (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `Cell.IsTargetable` / `RefileForCorridor`, `FaunaCorridor.GoalStandoff`, `SwitchbackController.faunaCorridorGoalStandoff` (50 u).
