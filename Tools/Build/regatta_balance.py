@@ -170,6 +170,7 @@ def read_constants():
     c["stoat_boost_min"] = _nested_key(dipole, "boost", "Min", "StoatDipoleConfig")     # the warp at rest (Time 0)
     c["stoat_boost_max"] = _nested_key(dipole, "boost", "Max", "StoatDipoleConfig")     # ...at Time 10
     c["stoat_boost_floor"] = _nested_key(dipole, "boost", "Floor", "StoatDipoleConfig")
+    c["stoat_catch_share"] = _key(_read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"), "catchWarpShare", "StoatSlingConfig")
 
     scarab = _read("Assets/_Scripts/Controller/Vessel/ScarabVesselTransformer.cs")
     c["scarab_top"] = float(re.search(r"baseTopSpeed = ([0-9.]+)f", scarab).group(1))
@@ -322,16 +323,21 @@ def squirrel_model(c, level):
                 accel=("lerp", LERP_AMOUNT))
 
 
+# How much of the warp the orbit-only Stoat keeps over a race: its flight clock averages 2.47 x cruise against a 2.725 x top
+# (a pair cannot be held for a whole lap: it catches you), measured over Slingshot's courses by stoat_orbit_sim.py.
+STOAT_WARP_KEPT = 0.85
+
+
 def stoat_model(c, level):
-    """The Stoat (added to the card 2026-10-17, Yash): its speed is the pathfinder's WARP - while its pair bends the
-    path the hull's own flight clock runs at `boost` x (StoatDipoleConfig: x2.5 at rest, Time -> x5, floored at 1).
-    A warp of the CLOCK scales the turn rate with the speed, so the turning circle stays cruise / turn (72 u) at any
-    warp, and every Regatta corner (104 u and up) is taken at the warped speed. A competent pilot on the best line
-    holds a warping pair the whole lap - the same idealisation as every other row (the Squirrel saturated, the Manta
-    in Soar). The residual it hides: the Stoat Flight Studio's AI, on its own circuit, averaged 131 u/s on a x3 field
-    (warped ~60% of the time), STOAT_DIPOLE.md §1b; record it against the editor once Stoat flights exist."""
+    """The Stoat (added to the card 2026-10-17, Yash; orbit-only since 2026-11-02, Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md):
+    its speed is the WARP of a held pair - the hull's own flight clock runs at 1 + (boost - 1) x catchWarpShare (StoatDipoleConfig's
+    boost x2.5 at rest, Time -> x5, floored at 1; StoatSlingConfig's share 1.15), so x2.725 -> x5.6. A warp of the CLOCK scales the
+    turn rate with the speed, so the turning circle stays cruise / turn (72 u) at any warp, and every Regatta corner (104 u and up)
+    is taken at the warped speed. A competent pilot re-presses so the warp barely falls (STOAT_WARP_KEPT). The kick is not counted.
+    Record it against the editor once orbit-only Stoat flights exist."""
     v = c["vessels"]["Stoat"]
-    warp = max(c["stoat_boost_floor"], elemental_float(level, c["stoat_boost_min"], c["stoat_boost_max"]))
+    boost = max(c["stoat_boost_floor"], elemental_float(level, c["stoat_boost_min"], c["stoat_boost_max"]))
+    warp = 1.0 + (boost - 1.0) * c["stoat_catch_share"] * STOAT_WARP_KEPT
     top = (v["ts"] + v["ms"]) * warp
     turn = min(v["pitch"], v["yaw"]) * warp
     return dict(top=top, corner=lambda r: corner_speed_simple(r, v["rts"], turn, top), accel=("lerp", LERP_AMOUNT))
