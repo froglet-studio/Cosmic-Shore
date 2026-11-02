@@ -347,8 +347,8 @@ the VM"): the live console's Add a computer offers **one file to double-click** 
 it asks for the folder), which joins the computer, and **one team link**, `<console>/install?key=<team key>` (the
 sheet's Copy button), that picks the file from the browser's operating system, so one link in one email serves
 every computer (it carries the key: email only, never a public channel); and **the VM updates itself**: the hub looks at its branch every
-10 minutes and, when `Tools/Compute` moved, pulls and exits so systemd restarts it on the new code; the VM's worker
-(the agent, running from the checkout) does the same. The SSH restart is history. The installer (and the paste line under it) asks **when the computer should work**:
+minute (a fetch is cheap) and, when `Tools/Compute` moved, pulls and exits so systemd restarts it on the new code; the VM's worker
+(the agent, running from the checkout) does the same every 10 minutes, as every PC's agent does. The SSH restart is history. The installer (and the paste line under it) asks **when the computer should work**:
 whenever its person is away (the default), only at night, every day between two hours (`--between`), only when
 someone sends a run from the console (`--only-sent`: it stays free and never picks queue work), or all the time; and
 whether a sent run may start at once while the person is at the computer. Weekly schedules are not there yet.

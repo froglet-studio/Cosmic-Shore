@@ -112,7 +112,7 @@ def installer(name, url, key, flags):
         return text, "text/x-shellscript", "froglet-compute-setup.sh"
     return None, None, None
 AI_SYNC_EVERY = 3600                 # seconds between the VM's ai-branch syncs
-CODE_CHECK_EVERY = 600               # seconds between the VM's looks for newer code on its branch
+CODE_CHECK_EVERY = 60                # seconds between the VM's looks for newer code on its branch (a fetch is cheap; "why wait 10 mins", Shombith 2026-11-02)
 
 
 class Hub:
