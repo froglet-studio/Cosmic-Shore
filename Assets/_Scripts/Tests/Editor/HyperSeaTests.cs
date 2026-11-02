@@ -225,6 +225,10 @@ namespace CosmicShore.Tests
             Assert.AreEqual(SeaKind.Water, voyage.ThickestSea);
             Assert.AreEqual(2, voyage.Intensity, "the roughest leg");
             Assert.AreEqual(28 + 49 - 1, voyage.Points.Count, "the legs share their meeting cell");
+            Assert.AreEqual(voyage.Points.Count, voyage.Heights.Count, "a height for every point");
+            Near(Places["tumult"].z, voyage.Heights[0], "the course starts at the harbour's height");
+            Near(Places["tollmoor"].z, voyage.Heights[27], "and meets the next leg at Tollmoor's");
+            Near(Places["saltmarch"].z, voyage.Heights[^1], "and ends at Saltmarch's");
         }
 
         [Test]

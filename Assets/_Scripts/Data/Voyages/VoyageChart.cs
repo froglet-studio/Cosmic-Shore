@@ -32,6 +32,9 @@ namespace CosmicShore.Data
         {
             /// <summary>The course drawn flat, in light years, every leg's cells in order.</summary>
             public readonly List<(double x, double y)> Points = new();
+            /// <summary>Each point's height above the midplane in light years: a leg climbs evenly from where it starts
+            /// to where it ends (as <see cref="HyperSeaChart.Measure"/> sails it). The window's edge view draws it.</summary>
+            public readonly List<double> Heights = new();
             public int Cells;
             public double LightYears => Cells * HyperSea.CellLy;
             public double Minutes => Cells * HyperSea.MinutesPerCell;
@@ -95,7 +98,13 @@ namespace CosmicShore.Data
                 var leg = LegBetween(route[i - 1], route[i]);
                 if (leg == null) return null;
                 int from = v.Points.Count == 0 ? 0 : 1;   // a leg starts where the last one ended
-                for (int p = from; p < leg.Course.Points.Count; p++) v.Points.Add(leg.Course.Points[p]);
+                double z0 = _content.Location(route[i - 1]).GalaxyZ, z1 = _content.Location(route[i]).GalaxyZ;
+                int n = leg.Course.Points.Count;
+                for (int p = from; p < n; p++)
+                {
+                    v.Points.Add(leg.Course.Points[p]);
+                    v.Heights.Add(n > 1 ? z0 + (z1 - z0) * p / (n - 1) : z1);
+                }
                 v.Cells += leg.Course.Cells;
                 v.ThickestDensity = Math.Max(v.ThickestDensity, leg.Course.ThickestDensity);
                 v.Intensity = Math.Max(v.Intensity, leg.Course.Intensity);

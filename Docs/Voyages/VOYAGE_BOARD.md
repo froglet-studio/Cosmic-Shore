@@ -49,16 +49,24 @@ closed to every Ark (proposed).
   berths, and its `measure`. Pure C#, no engine type.
 - **`VoyageChart`** (`VoyageChart.cs`): the voyage content's charted locations (each a 3-cell berth) and a job's route
   sailed on the real sea, leg by leg along the lanes `VoyageRules.Route` picks; legs are cached.
-- **The Voyage window** (Garrett, 2026-11-01: "the map should be visible ... and the voyage cards below that. drilling
-  into a card expands its information and causes the map to focus on that path, but the map remains. on the voyage
-  card players confirm their squad mission difficulty etc."): ONE galaxy map (`VoyageMapGraphic`, stood by
-  `VoyageJobsView` just before the job cards) with the sea around the places, painted from the density field, a corner
-  with the whole galaxy, Sol and where this water is. Each job card is closed by default: route and pilot, title and
-  the course line `CardCourse` (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`), e.g. "1,500 LY THROUGH WATER -
-  LIGHT TAKES 1,500 YEARS". OPEN (or a press anywhere on the card) expands it to its brief (`CardDetails`, or
-  `CardHomeDetails` for the way home: the mission, the place, the squad's seats, the intensity, the pay, who brought
-  it) with Set sail, and the map frames that job's course cell by cell. One card is open at a time; closing it gives
-  the map back every place. Uncharted content draws the old flat chart.
+- **The Voyage window**, as Garrett sketched it (2026-11-01: "clicking on a voyage expands it over the others. And the
+  voyages are ... arranged in a matrix like the different arcade games. Then the episodes and saga are top level above
+  the fold modals that contain their own content"; "the map divides them as a fun interactive galaxy explorer deciding
+  where you want your voyages to take you"). Laid out by `Tools/Build/author_voyage_window.py`:
+  - **SAGA | EPISODES** at the top (`VoyageWindowModals`): SAGA opens Tandava and its Severing, EPISODES opens Episode 1's
+    quests and Episode 2, each in a modal over the window; a press outside it closes it.
+  - **The galaxy map** (`VoyageMapGraphic`, stood by `VoyageJobsView` before the cards): the sea around the places,
+    painted from the density field, the galaxy in a corner with Sol and where you are looking. It is an explorer: drag
+    to pan, pinch or wheel to zoom (120 to 20,000 ly across), tap a place to open the voyage that sails there, or, if
+    none does, to read its line (`MapPlace`).
+  - **The edge view** under it (`VoyageEdgeGraphic`): the disk edge-on at the map's own scale both ways, as the board's
+    side view (true 1,000 ly thickness, a depth gauge, the places and the course at their heights, `EdgeCaption`).
+  - **The voyage cards**, three across in a grid: closed, route and pilot, title and the course line `CardCourse`
+    (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`). OPEN (or a press on the card) expands it over the others
+    to its brief (`CardDetails`, or `CardHomeDetails` for the way home: the mission, the place, the squad's seats, the
+    intensity, the pay, who brought it) with Set sail, and the map frames that job's course. One is open at a time;
+    closing it gives the map back every place. The Ark escort's card opens the same way to its difficulty stepper.
+  Uncharted content draws the old flat chart, with no edge view.
 - The lanes' `cells` still set how long a leg sails in the Arkway; the card shows the real distance (§5 decision 8).
 - **The Ark escort** sails between charted places too (`ARK_ESCORT.md` §5): `VoyageRules.EscortRoute` picks the
   course (where the Ark lies to the nearest port or the squad's own harbour), the escort card shows it through
@@ -71,6 +79,39 @@ closed to every Ark (proposed).
 `HyperSeaTests` holds as goldens (hash, noise, density at nine points, positions, sea names and colours, cells, and nine
 courses round the reefs with their measures). Change the board's sea, then rerun it and update the test.
 
+## 4a. Deep zoom, the real sky and the lanes (2026-11-02)
+
+Garrett, 2026-11-01: "lets start by building up a reasonable region around sol and tumult. give us enough semantic zoom
+levels that it feels good to go from the full galaxy into either of those two locations"; 2026-11-02: "the side view
+... should be showing a view that makes sense of how vessel paths are using the galactic depth to have few crossings".
+
+- **Seven tiers** (Galaxy, Arm, Sector, Region, Neighbourhood, Cell, System) down to a 4 ly view, on a quadtree of
+  140,000 ly whose levels admit stars by brightness (about 900 on screen at any zoom), with a height slab from
+  Neighbourhood down. Real objects: 97,296 HYG stars, 157 Harris globulars, 5,647 Hunt & Reffert open clusters; between
+  them, procedural stars seeded per tile. The tiers are a ladder on the left; Sol and Tumult dive.
+- **Lanes by heading [A]** (proposed, not canon): a course cruises at a height set by its heading against the local
+  coreward direction, 8 lanes 20 ly apart, climbing over the first and last 40% so the climb costs no time. Courses that
+  cross in plan then pass at different depths; a course heading the same way joins a lane rather than crossing it.
+  Short courses cannot always reach their lane, so some crossings stay under a cell apart. `LANES_ON` in `lanes.js`.
+  The game does not fly lanes: `golden.js` runs the model with them off, so `HyperSeaTests`' goldens are unchanged.
+- **The side view is the course profile**: the selected or sailing course across, its height up, the stars near it,
+  every lane it crosses with the depth gap, a minutes axis. With nothing selected it shows the old x-aligned slice.
+
+**Building it.** `voyage-board.html` is generated, never hand-edited: `python3 deepzoom/assemble.py voyage-board.html`
+patches `deepzoom/voyage-board.before-deepzoom.html` (the board before deep zoom) with `deepzoom.js` and `lanes.js` and
+embeds the catalogue. `deepzoom/build_data.py <downloads> realsky.json` rebuilds the catalogue; without a fresh
+`realsky.json` beside it, `assemble.py` reuses the one already embedded in `voyage-board.html`.
+
+**Licences** (read 2026-11-02; not legal advice, check before a paid release):
+- HYG v4.1 (David Nash, astronexus): CC BY-SA 4.0. Usable commercially with credit; the board's star table is adapted
+  from it, so that table stays CC BY-SA and ships as plain data, never under DRM. Game code is unaffected.
+- Harris 1996 (2010 edition, McMaster): free with credit; no fee may be charged for the catalogue itself.
+- Hunt & Reffert 2024 (A&A 686, A42, CDS VizieR): VizieR's terms could not be read from this session. The copy used came
+  from a mirror whose packaging is All Rights Reserved, so only upstream columns are kept (name, position, distance,
+  members, age) and the data must be re-pulled from CDS before shipping.
+- Gaia DR3 is CC BY-NC 3.0 IGO, not usable in a paid game without ESA's terms; nothing here uses it.
+- NASA Exoplanet Archive (not used yet): acknowledgement only.
+
 ## 5. Open decisions (Garrett)
 
 1. Tumult 2,300 ly from the galactic centre toward Sol (23,900 ly from Sol).
@@ -82,3 +123,5 @@ courses round the reefs with their measures). Change the board's sea, then rerun
 7. Voyages of 8 to 55 minutes.
 8. **New with the port:** the slice's lanes sail 1-2 cells while the real sea puts the same places 27-62 cells apart.
    Keep the short legs for play and show the real distance (as now), or make a leg's length its real cells.
+9. **New with the lanes:** courses fly lanes by heading (§4a), a law of the sea or a custom crews keep. It changes
+   course heights and so their danger; the game does not fly it yet.

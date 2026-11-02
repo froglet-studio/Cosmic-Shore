@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler and Jacks omni-crystal morph: the crystal folds into the newborn creature's heart (`claude/fauna-birth-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`FaunaBirthCrystalMorphByCrystal.asset`) wired into the Angler container and, through
+`author_jacks_assets.py`, the Jacks container replaces the husk spray: the cage folds into the heart crystal of the
+creature the pickup is born as, and rides it while the body blooms. Record: `R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `FaunaBirthCrystalMorphGeometryTests` green.
+- [ ] Angler: no husk spray; the crystal folds into the new creature's heart where it was collected, and the creature joins the school.
+- [ ] Jacks: the crystal flies about 30 u back into the heart of the worm segment nearest it.
+- [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
+- [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
+- [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -129,6 +142,19 @@ on the class name alone (`LobbyPatcher`) passed, which fits that reading.
 2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
 3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
    and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
+### 🔴 Honeyguide omni-crystal morph: the crystal breaks into the hive comb (`claude/honeyguide-hive-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`HoneyguideCrystalMorphByCrystal.asset` in `HoneyguideImpactorDataContainer` replaces the husk spray: the crystal's 64
+panels land on the eight cells at the heart of the comb the pickup lays. Record: `R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `HoneyguideCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the crystal flies back about 40 u and breaks into the middle of the comb; the rest of the comb blooms as before.
+- [ ] The eight heart cells' spikes sprouting at the hand-off reads acceptably (if not, see the doc's §2).
+- [ ] The hive works as before: super shields, chains, debuff immunity, the reward.
+- [ ] An omni crystal taken while a hive is open: no second hive, the crystal fades with no warning.
+- [ ] During a pick of three: the hive opens when the pick ends; if that is over 1.5 s, the crystal fades with a warning.
 
 ### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
@@ -19935,6 +19961,35 @@ Not compiled: the session had no Unity editor and no .NET SDK, so nothing here h
 5. Open the window on a phone-sized Game view. **Pass:** the map, corner galaxy and line fit the card; opening the
    window the first time takes no visible hitch (the sea is painted once and shared; courses are cached).
 6. Set sail on a card. **Pass:** the voyage plays as before (the lanes' cell counts still set the leg's length).
+
+## 🔴 2026-11-01 — The Voyage window as Garrett sketched it: Saga | Episodes, a galaxy explorer, the voyage grid (unverified: not compiled, no editor or compiler in the session)
+
+**Plan:** `Docs/Voyages/VOYAGE_BOARD.md` §3 (Garrett's sketch). **Files:** `MissionView.prefab` re-laid in place by the
+new `Tools/Build/author_voyage_window.py` (`--check`, `--self-test`; `author_menu_mission.py` now stands down on that one
+file), new `UI/Views/VoyageWindowModals.cs`, new `UI/Views/VoyageEdgeGraphic.cs`, `VoyageMapGraphic.cs` (drag, pinch,
+wheel, tap), `VoyageJobsView.cs` (grid, edge view, tap a place), `VoyageJobCard.cs` (`Overlay`), `VoyageChart.cs`
+(`Heights`), `VoyageContentSO.cs` (`MapPlace`, `EdgeCaption`, `EdgeAbove`, `EdgeBelow`, `EdgeMidplane`) and
+`VoyageContent.asset` from `author_voyage_assets.py`. Affects: Shombith's Rev 17 J Voyage window (the Episodes column now
+opens from EPISODES, unchanged inside); Garrett's voyages. Not compiled: no Unity editor and no .NET SDK in the session.
+
+1. Open the project. **Pass:** no compile errors; MissionView.prefab opens with no missing-script or broken-reference
+   warnings.
+2. Menu_Main, open the Voyage window. **Pass:** two wide buttons at the top, SAGA and EPISODES; under them the galaxy map
+   (the sea around Tumult, places named, the galaxy corner), a thin edge-on strip under it (the disk at true scale, a
+   depth gauge on its left, a caption naming where the squad is and its height), then the voyage cards three across.
+3. Press SAGA. **Pass:** a modal with Tandava and Severing side by side over a dimmed window; SET SAIL on Tandava works as
+   before. Press outside the cards. **Pass:** it closes. Press EPISODES. **Pass:** Episode 1 with its five quests and
+   Episode 2's locked bar; claiming a quest works as before. Press EPISODES again. **Pass:** it closes.
+4. Drag the map. **Pass:** it pans, the place names follow, the sea fills in as you go; the edge strip pans with it.
+   Mouse wheel or pinch over the map. **Pass:** it zooms about the pointer, and the edge strip zooms with it.
+5. Tap a place a voyage sails to. **Pass:** that voyage's card opens over the others and the map frames its course. Tap
+   a place no voyage sails to. **Pass:** its name and line show under the map.
+6. Press a closed card (or its OPEN chip). **Pass:** it expands over the other cards to its brief (squad, intensity, pay,
+   who brought it) with SET SAIL; the map frames its course and the edge strip draws the course climbing or diving
+   between the places' heights. Press Close. **Pass:** back to the grid; the map shows every place.
+7. The Ark escort card. **Pass:** closed in the grid like the others; open, its difficulty stepper either side of SET
+   SAIL.
+8. Set sail on a job, finish it, come back. **Pass:** the one card under way stands open over the grid while it is out.
 
 ## 🔴 2026-11-01 — The Voyage window: one galaxy map, job cards that open to their brief (unverified: not compiled, no editor or compiler in the session)
 
