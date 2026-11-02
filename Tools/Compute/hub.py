@@ -61,7 +61,12 @@ def installer_for(user_agent):
 def installer(name, url, key, flags):
     """(text, content type, file name) of the double-click installer for `name` (windows | mac | linux), or (None, ..)."""
     import setup
-    ref = setup.APP_REF if L.git_ok("cat-file", "-e", "origin/bleeding-edge:Tools/Compute/setup.py") is None else "bleeding-edge"
+    def stamp(r):
+        if L.git_ok("cat-file", "-e", f"origin/{r}:Tools/Compute/compute.py") is None:
+            return None
+        out = (L.git_ok("log", "-1", "--format=%ct", f"origin/{r}", "--", "Tools/Compute") or "").strip()
+        return int(out) if out.isdigit() else 0
+    ref = setup.newest_compute_ref(stamp) or setup.APP_REF          # the newest Tools/Compute wins (setup.py)
     opts = " ".join([f"--hub {url}", f"--hub-key {key}", *flags])
     if name == "setup.py":
         with open(os.path.join(HERE, "setup.py"), encoding="utf-8") as fh:

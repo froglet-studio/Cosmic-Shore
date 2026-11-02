@@ -374,7 +374,9 @@ The paste line still works. **A failure is never silent** (Shombith, 2026-11-02:
 runs `setup.py --gui-check` in its console first (Python, git, a working tkinter) and stays open with the reason; the
 window then runs under the console python (never `pythonw`, which swallowed its errors) and hides that console once
 it is up, so an error before that is printed and the `.bat` pauses on it; a later error is a message box; both and the
-window's opening go to `~/.froglet-compute/setup.log`. **The window wears the console's dark theme** (Shombith, 2026-11-02: "the website theme with movie poster text"): the
+window's opening go to `~/.froglet-compute/setup.log`. **An install copies the NEWEST Tools/Compute** of bleeding-edge and the compute branch (the ref whose `Tools/Compute`
+changed last, `setup.newest_compute_ref`; the hub's installers use the same rule): after #1659 merged, bleeding-edge had
+an older copy than the branch carrying the installer fixes, and an install took it. **The window wears the console's dark theme** (Shombith, 2026-11-02: "the website theme with movie poster text"): the
 console's tokens (black, cyan accent, Impact for Bebas Neue), Cosmic Shore's own card art (`console/stills/setup-banner.png`,
 from Bloomrush's card) behind the wordmark and the title, served by the hub with the key, a progress bar over the six
 install steps, and **Uninstall in the window** (run the installer again: it says "installed on this computer" and offers it;

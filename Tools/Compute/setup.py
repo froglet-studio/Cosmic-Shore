@@ -325,15 +325,33 @@ def gui(argv):
     return 0
 
 
+def newest_compute_ref(stamp, candidates=("bleeding-edge", APP_REF)):
+    """The candidate ref whose Tools/Compute changed most recently (`stamp(ref)` -> commit time, or None when the
+    ref has no Tools/Compute). After #1659 merged, bleeding-edge had Froglet Compute too, but the compute branch
+    carried the installer fixes for days: an install took bleeding-edge's older copy (Shombith's PC, 2026-11-02).
+    The newest code wins; once the follow-up merges, bleeding-edge is newest and stays so."""
+    best, when = "", -1
+    for ref in candidates:
+        t = stamp(ref)
+        if t is not None and t > when:
+            best, when = ref, t
+    return best
+
+
 def ref_with_compute():
-    """bleeding-edge when Froglet Compute is merged there, the compute branch until then."""
+    """The ref an install copies Tools/Compute from: whichever of bleeding-edge and the compute branch changed it last."""
     git("fetch", "--quiet", "origin", "bleeding-edge", APP_REF, check=False)
-    for ref in ("bleeding-edge", APP_REF):
-        if subprocess.run(["git", "cat-file", "-e", f"origin/{ref}:Tools/Compute/compute.py"],
-                          capture_output=True).returncode == 0:
-            return ref
-    raise SystemExit("\nstopped: neither origin/bleeding-edge nor origin/" + APP_REF + " has Tools/Compute. "
-                     "Is this the Cosmic-Shore repository, and can you fetch from it?")
+
+    def stamp(ref):
+        if subprocess.run(["git", "cat-file", "-e", f"origin/{ref}:Tools/Compute/compute.py"], capture_output=True, **NO_WINDOW).returncode:
+            return None
+        out = git("log", "-1", "--format=%ct", f"origin/{ref}", "--", "Tools/Compute", check=False).strip()
+        return int(out) if out.isdigit() else 0
+    ref = newest_compute_ref(stamp)
+    if not ref:
+        raise SystemExit("\nstopped: neither origin/bleeding-edge nor origin/" + APP_REF + " has Tools/Compute. "
+                         "Is this the Cosmic-Shore repository, and can you fetch from it?")
+    return ref
 
 
 def copy_app(ref):
