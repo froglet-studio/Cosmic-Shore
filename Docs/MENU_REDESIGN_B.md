@@ -5343,7 +5343,7 @@ prefab's `_inputEventShipActions`, and the phone column from `author_touch_profi
 buttons, the slider, the tilt notes). Checked in Chromium at 1440 and 400 px, light and dark: no script errors, no
 sideways scroll.
 
-## 115. Rev 48 mockups: the Fleet Codex, modern - one page, the kit with its controls, the game's icons (2026-11-02, awaiting a pick)
+## 115. Rev 48 mockups: the Fleet Codex, modern - one page, the kit with its controls, the game's icons (2026-11-02; Shombith picked B, built)
 
 **Asked (Shombith, 2026-11-02), on the built design B:** "I don't like the design, make it modern, take inspiration from
 website, shouldn't separate tabs like this for controls, also omni crystal ability is not shown, use the correct
@@ -5383,4 +5383,17 @@ cards already did (`GameCard.GenreShapes`, section 90). Verification: `Docs/UNIT
 **Differs from the build:** the live codex (version 2, design B) has tabs and draws keycaps as text and no art; any pick
 replaces the page, and the generator gains the HUD icons, the omni ability (`ElementalAbilityMapSO.omniAbilityLabel`, empty
 on the Brittle Star, so its words come from its crystal effect) and the crews.
+
+**Picked (Shombith, 2026-11-02): "Build B".** Built the same day into the live codex (`Docs/FleetCodex/index.html`,
+version 3 of https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8), as a responsive page rather than the 1920 board: the top
+bar and search; the filmstrip of the fleet with the solo hulls first and the crews after them, each crew as a wider poster
+named as a crew with a seat badge; the vessel as a bento (the hull with its numbers, its five abilities in the HUD's
+order with the omni crystal last, the control map, the games with their card art, the picked ability's full text with its
+dials and level 5, docs and changes); `#fleet` is every vessel's abilities in one table, the icon, button and level 5 in
+each cell. Differences from the board: the controller map names its controls in a legend beside the pad, not on it (the
+face-button labels collided); a chord (LT+RT) draws both triggers; a vessel whose HUD draws an icon only at runtime
+(the Dolphin's Charge, the Squirrel's Space) or borrows another hull's HUD with no art of its own (the Wrasse, Orca and
+Meerkat) shows its element's Codex shape. `Tools/Build/fleet_codex.py` now reads every icon and the omni ability from the
+game (the `/fleet-codex` skill lists each source). Checked in Chromium at 1600 px dark and 400 px light: no script error,
+no broken image, no sideways scroll.
 

@@ -421,10 +421,320 @@ def controls(key, elements, one_stick, bindings, atp, profile):
     return {"oneStick": one_stick, "touchScheme": scheme, "rows": rows, "notes": notes}
 
 
+# ---- Art: the game's own icons (Rev 48 B, Shombith 2026-11-02: "use the correct iconography for everything") --------
+
+ELEMENT_NUM = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
+UI_ART = {
+    # the element marks: the Codex's shapes, never the HUD petal ("check codex for that")
+    "shape/Charge": "Assets/_Graphics/ElementShapes/charge_pentagon_label.png",
+    "shape/Mass": "Assets/_Graphics/ElementShapes/mass_triangle_label.png",
+    "shape/Space": "Assets/_Graphics/ElementShapes/space_kite_label.png",
+    "shape/Time": "Assets/_Graphics/ElementShapes/time_diamond_label.png",
+    "omni": "Assets/_Graphics/ElementIcons/OmniCrystal_Active.png",
+}
+PAD_ART = {   # a controls row's pad label -> the controller art (Xbox face buttons, the LT / RT trigger art)
+    "A": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/A button.png",
+    "B": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/B button.png",
+    "X": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/x button.png",
+    "Y": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/Y button.png",
+    "LT": "Assets/_Graphics/UI/ControlIcons/Trigger_LT.png",
+    "RT": "Assets/_Graphics/UI/ControlIcons/Trigger_RT.png",
+    "RB": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/R1.png",
+    "Left stick": "Assets/_Graphics/UI/ControlIcons/Thumbstick_Base.png",
+    "Right stick": "Assets/_Graphics/UI/ControlIcons/Thumbstick_Look.png",
+    "Both sticks": "Assets/_Graphics/UI/ControlIcons/Thumbsticks_Outward.png",
+}
+TOUCH_DIR = "Assets/_Graphics/Design Assests/HUD UI/Touch"
+IMAGE_SCRIPT = "fe87c0e1cc204ed48ad3b37840f39efc"
+GENERIC_CRYSTAL_EFFECTS = re.compile(r"Haptics|Morph|Absorb|Retire|Fusion|Sound|Audio", re.I)
+
+
+class Art:
+    """Copies (and scales) the game's PNGs into <out>/img/, once each, and remembers the published path."""
+
+    def __init__(self, out_dir, enabled=True):
+        self.out, self.enabled, self.done = out_dir, enabled, {}
+
+    def png(self, src, rel, box=128):
+        if not self.enabled or not src or not os.path.exists(os.path.join(REPO, src)):
+            return None
+        rel = "img/" + rel
+        if rel not in self.done:
+            from PIL import Image
+            im = Image.open(os.path.join(REPO, src)).convert("RGBA")
+            bb = im.getbbox()
+            if bb:
+                im = im.crop(bb)
+            im.thumbnail((box, box), Image.LANCZOS)
+            self.save(im, rel)
+        return rel
+
+    def save(self, im, rel):
+        path = os.path.join(self.out, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        im.save(path, optimize=True)
+        self.done[rel] = path
+        return rel
+
+
+_yaml_cache = {}
+
+
+def unity_docs(path):
+    if path not in _yaml_cache:
+        text = open(path, encoding="utf-8", errors="replace").read()
+        parts = re.split(r"^--- !u!(\d+) &(-?\d+)( stripped)?.*$", text, flags=re.M)
+        docs = {parts[i + 1]: (parts[i], bool(parts[i + 2]), parts[i + 3]) for i in range(1, len(parts), 4)}
+        _yaml_cache[path] = (text, docs)
+    return _yaml_cache[path]
+
+
+def prefab_mods(body):
+    out = []
+    for blk in re.split(r"\n    - target: ", body)[1:]:
+        tf = re.match(r"\{fileID: (-?\d+), guid: (\w+)", blk)
+        pp = re.search(r"propertyPath: (\S+)", blk)
+        orf = re.search(r"objectReference: \{fileID: (-?\d+)(?:, guid: (\w+))?", blk)
+        if tf and pp:
+            out.append((tf.group(1), tf.group(2), pp.group(1), orf.group(2) if orf else None))
+    return out
+
+
+def image_sprite(prefabs, path, guid, fid, outer):
+    """The sprite guid an Image shows, through the vessel's overrides and the prefab-variant chain."""
+    for tf, tg, pp, og in outer:
+        if tf == fid and tg == guid and pp == "m_Sprite":
+            return og
+    _, docs = unity_docs(path)
+    doc = docs.get(fid)
+    if not doc:
+        return None
+    cls, stripped, body = doc
+    if not stripped:
+        s = re.search(r"m_Sprite: \{fileID: (-?\d+)(?:, guid: (\w+))?", body)
+        return s.group(2) if s and s.group(1) != "0" else None
+    src = re.search(r"m_CorrespondingSourceObject: \{fileID: (-?\d+), guid: (\w+)", body)
+    inst = re.search(r"m_PrefabInstance: \{fileID: (-?\d+)", body)
+    if not src or src.group(2) not in prefabs:
+        return None
+    mods = prefab_mods(docs.get(inst.group(1), ("", False, ""))[2]) if inst else []
+    return image_sprite(prefabs, prefabs[src.group(2)], src.group(2), src.group(1), outer + mods)
+
+
+def image_parts(path, fid):
+    """The sprites of an Image's visible child images (the cards the HUD builds from parts), in draw order."""
+    _, docs = unity_docs(path)
+    doc = docs.get(fid)
+    go = re.search(r"m_GameObject: \{fileID: (-?\d+)", doc[2]) if doc else None
+    if not go:
+        return []
+    by_go = {}
+    for k, (c, s, b) in docs.items():
+        g = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b)
+        if g:
+            by_go.setdefault(g.group(1), []).append(k)
+    out = []
+
+    def walk(gid, depth):
+        for k in by_go.get(gid, []):
+            c, s, b = docs[k]
+            if c == "114" and IMAGE_SCRIPT in b:
+                sp = re.search(r"m_Sprite: \{fileID: (-?\d+)(?:, guid: (\w+))?", b)
+                if sp and sp.group(2):
+                    out.append(sp.group(2))
+            if c in ("224", "4") and depth < 2 and "m_Children:" in b:
+                for ch in re.findall(r"- \{fileID: (-?\d+)\}", b.split("m_Children:")[1].split("m_Father")[0]):
+                    cg = re.search(r"m_GameObject: \{fileID: (-?\d+)", docs.get(ch, ("", False, ""))[2])
+                    if cg:
+                        act = re.search(r"m_IsActive: (\d)", docs.get(cg.group(1), ("", False, ""))[2])
+                        if not act or act.group(1) == "1":
+                            walk(cg.group(1), depth + 1)
+    walk(go.group(1), 0)
+    return out
+
+
+def hud_of(key, prefabs):
+    path = os.path.join(REPO, f"Assets/_Prefabs/Spacevessels/{key}.prefab")
+    if not os.path.exists(path):
+        return None
+    _, docs = unity_docs(path)
+    for fid, (cls, stripped, body) in docs.items():
+        g = re.search(r"m_SourcePrefab: \{fileID: \d+, guid: (\w+)", body) if cls == "1001" else None
+        sp = prefabs.get(g.group(1)) if g else None
+        if sp and "abilityIcons:" in open(sp, encoding="utf-8", errors="replace").read():
+            return sp, g.group(1), prefab_mods(body)
+    return None
+
+
+def lockup_cards(key):
+    """The icon kit's resting cards (spec LOCKUP), rendered in silver: the HUD's card as it sits, parts and all."""
+    spec_path = os.path.join(HERE, "icon_kit", "specs", key.lower() + ".py")
+    if not os.path.exists(spec_path) or "LOCKUP" not in open(spec_path).read():
+        return {}
+    try:
+        import importlib
+        sys.path.insert(0, os.path.join(HERE, "icon_kit"))
+        import states
+        spec = importlib.import_module("specs." + key.lower())
+        silver = {k: (236, 236, 236, 255) for k in states.domain_colours()}
+        shielded = getattr(states, "SHIELDED", None)
+        if isinstance(shielded, dict):
+            for k in list(shielded):
+                shielded[k] = (190, 190, 190, 255)
+        out = {}
+        for el in ELEMENTS + ["Omni"]:
+            sib = spec.LOCKUP.get(el)
+            if sib:
+                out[el] = states.compose(sib["state"], sib["parts"], next(iter(silver)), silver)
+        return out
+    except Exception as e:   # the kit is optional: the HUD's own sprites still answer
+        print(f"  icon kit could not render {key}: {e}", file=sys.stderr)
+        return {}
+
+
+def own_icon(key, png_path, hud_path):
+    """A HUD sprite counts for this hull only when the HUD is the hull's own or the art sits in the hull's own icon folder:
+    a hull that borrows another's HUD (the Wrasse on the Sparrow's) would otherwise show that hull's abilities."""
+    own_hud = os.path.basename(hud_path).lower().startswith(key.lower())
+    own_art = f"/AbilityIcons/{key}/".lower() in png_path.replace(os.sep, "/").lower()
+    return own_hud or own_art
+
+
+def named_icon(key, label, pngs_by_dir):
+    """The hull's own icon whose name is the ability's name (Manta_Kabloom.png for Kabloom)."""
+    want = norm(label)
+    for path in pngs_by_dir.get(key, []):
+        stem = norm(os.path.basename(path)[:-4].split("_", 1)[-1])
+        if want and stem == want:
+            return path
+    return None
+
+
+def ability_art(key, art, prefabs, pngs, labels=None):
+    """element -> published icon path, plus 'Omni'. Kit card, else the HUD's sprite (own HUD or own art), else its
+    visible parts, else the hull's own icon named after the ability."""
+    out = {}
+    labels = labels or {}
+    for el, im in lockup_cards(key).items():
+        out[el] = art.save(im, f"img/ab/{key}_{el}.png") if art.enabled else None
+    hud = hud_of(key, prefabs)
+    if hud:
+        path, guid, outer = hud
+        text, _ = unity_docs(path)
+        m = re.search(r"\n  abilityIcons:\n((?:  - .*\n(?:    .*\n)*)*)", text)
+        for el_num, fid in re.findall(r"  - element: (\d+)\n    icon: \{fileID: (-?\d+)\}", m.group(1) if m else ""):
+            el = ELEMENTS[int(el_num) - 1] if 1 <= int(el_num) <= 4 else None
+            if not el or el in out:
+                continue
+            g = image_sprite(prefabs, path, guid, fid, outer)
+            if g and g in pngs:
+                if own_icon(key, pngs[g], path):
+                    out[el] = art.png(os.path.relpath(pngs[g], REPO), f"ab/{key}_{el}.png")
+                continue
+            parts = [pngs[x] for x in image_parts(path, fid) if x in pngs and own_icon(key, pngs[x], path)]
+            stems = [os.path.basename(x)[:-4] for x in parts]
+            # a part whose name extends another's is that part's other state (TrailsFat of Trails): the card at rest has one
+            parts = [x for x, s in zip(parts, stems) if not any(s != o and s.startswith(o) for o in stems)]
+            if parts and art.enabled:
+                from PIL import Image
+                canvas = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+                for x in parts:
+                    im = Image.open(x).convert("RGBA").resize((128, 128), Image.LANCZOS)
+                    canvas.alpha_composite(im)
+                out[el] = art.save(canvas, f"img/ab/{key}_{el}.png")
+        if "Omni" not in out:
+            om = re.search(r"omniAbilitySprite: \{fileID: \d+, guid: (\w+)", text)
+            ov = [og for tf, tg, pp, og in outer if pp == "omniAbilitySprite"]
+            g = ov[0] if ov else (om.group(1) if om else None)
+            if g and g in pngs and own_icon(key, pngs[g], path):
+                out["Omni"] = art.png(os.path.relpath(pngs[g], REPO), f"ab/{key}_Omni.png")
+    by_dir = {}
+    for path in pngs.values():
+        m = re.search(r"/AbilityIcons/([^/]+)/[^/]+\.png$", path.replace(os.sep, "/"))
+        if m:
+            by_dir.setdefault(m.group(1), []).append(path)
+    for el, label in labels.items():
+        if el not in out:
+            hit = named_icon(key, label, by_dir)
+            if hit:
+                out[el] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}.png")
+    return out
+
+
+def omni_entry(key, asset_names):
+    """What this hull does with an OMNI crystal: the map's own words, else its crystal effects named."""
+    label = ""
+    map_path = os.path.join(REPO, f"Assets/Resources/ElementalAbilityMaps/{key}.asset")
+    if os.path.exists(map_path):
+        m = re.search(r"^  omniAbilityLabel: ?(.*)$", open(map_path, encoding="utf-8").read(), re.M)
+        label = unquote(m.group(1)) if m else ""
+    effects = []
+    container = os.path.join(REPO, f"Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/{key}ImpactorDataContainer.asset")
+    if os.path.exists(container):
+        m = re.search(r"^  vesselCrystalEffects:\n((?:  - .*\n)*)", open(container, encoding="utf-8").read(), re.M)
+        for g in re.findall(r"guid: (\w+)", m.group(1) if m else ""):
+            name = os.path.basename(asset_names.get(g, ""))[:-6]
+            if name and not GENERIC_CRYSTAL_EFFECTS.search(name):
+                effects.append(action_label(re.sub(r"(ByCrystal|Crystal)?Effect$", "", name), key))
+    return {"label": label, "effects": effects, "fromMap": bool(label)}
+
+
+def crew_of(c, note):
+    m = re.search(r"(\d+)-seat", note)
+    seats = int(m.group(1)) if m else (len(c.get("crew", [])) or 1)
+    return {"names": c.get("crew", []), "seats": seats}
+
+
+def control_art(rows, elements, icons, art):
+    """Each controls row's pad art and phone art, as published paths."""
+    for r in rows:
+        r["padArt"] = art.png(PAD_ART.get(r["pad"]), "ui/pad_" + re.sub(r"\W", "", r["pad"]) + ".png", 64) if r["pad"] in PAD_ART else None
+        touch, tart = r.get("touch") or "", None
+        g = re.match(r"(Lift (left|right|either|both) thumbs?|Thumbs apart)", touch)
+        if g:
+            glyph = {"Lift left thumb": "LiftLeftThumb", "Lift right thumb": "LiftRightThumb", "Lift either thumb": "LiftEitherThumb",
+                     "Lift both thumbs": "LiftBothThumbs", "Thumbs apart": "ThumbsApart"}.get(g.group(0))
+            tart = art.png(f"{TOUCH_DIR}/TouchGlyph_{glyph}.png", f"ui/touch_{glyph}.png", 96) if glyph else None
+        elif touch.endswith("card") or " card " in touch:
+            tart = icons.get(r.get("element") or "")
+        else:
+            b = re.match(r"(\w+) button", touch)
+            if b:
+                tart = art.png(f"{TOUCH_DIR}/TouchIcon_{b.group(1)}.png", f"ui/touch_{b.group(1)}.png", 96)
+        r["touchArt"] = tart
+    return rows
+
+
+def card_art(card_asset, art, pngs, name):
+    if not card_asset:
+        return None
+    m = re.search(r"^  CardBackground: \{fileID: \d+, guid: (\w+)", open(os.path.join(REPO, card_asset), encoding="utf-8").read(), re.M)
+    src = pngs.get(m.group(1)) if m else None
+    if not src or not art.enabled:
+        return None
+    from PIL import Image
+    rel = "img/cards/" + re.sub(r"\W", "", name) + ".jpg"
+    if rel not in art.done:
+        im = Image.open(src).convert("RGB")
+        im.thumbnail((640, 640), Image.LANCZOS)
+        path = os.path.join(art.out, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        im.save(path, quality=78, optimize=True)
+        art.done[rel] = path
+    return rel
+
+
 def build(out_dir, images=True):
+    import shutil
+    if images and os.path.isdir(os.path.join(out_dir, "img")):
+        shutil.rmtree(os.path.join(out_dir, "img"))   # a removed icon must not be republished
     enum, roster, cls, rows, cards = class_enum(), toy_roster(), classes(), ability_rows(), card_facts()
     previews = guid_paths(["Assets/_Graphics"], ".png") if images else {}
     asset_names = guid_paths(["Assets/_SO_Assets", "Assets/Resources"], ".asset")
+    prefab_index = guid_paths(["Assets"], ".prefab")
+    png_index = guid_paths(["Assets"], ".png")
+    art = Art(out_dir, enabled=images)
+    ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 96) for k, v in UI_ART.items()}
     bases, by_guid = script_classes()
     atp, touch_rows = touch_profiles()
     vessels = []
@@ -435,9 +745,15 @@ def build(out_dir, images=True):
         maps = rows.get(key, {})
         elements = {e: element_entry(maps[e]) for e in ELEMENTS if e in maps}
         one_stick = is_one_stick(key, bases, by_guid)
+        icons = ability_art(key, art, prefab_index, png_index,
+                            {el: e["ability"] for el, e in elements.items() if not e["open"]}) if maps else {}
+        for el, e in elements.items():
+            e["icon"] = icons.get(el)
+            e["shape"] = ui.get("shape/" + el)
+        omni = dict(omni_entry(key, asset_names), icon=icons.get("Omni"), mark=ui.get("omni")) if maps else None
         retired = "RETIRED" in note.upper()
         vessels.append({
-            "key": key, "id": value, "name": name, "crew": c.get("crew", []),
+            "key": key, "id": value, "name": name,
             "description": c.get("description", ""), "note": note,
             "status": {
                 "hasMap": bool(maps), "hasPrefab": os.path.exists(os.path.join(REPO, f"Assets/_Prefabs/Spacevessels/{key}.prefab")),
@@ -450,20 +766,30 @@ def build(out_dir, images=True):
             "flight": flight(key) if maps else None,
             "controls": controls(key, elements, bool(one_stick), prefab_bindings(key, asset_names), atp,
                                  touch_rows.get(key)) if maps else None,
+            "omni": omni,
+            "crew": crew_of(c, note),
             "cards": sorted(cards.get(name, []) + (cards.get(key, []) if key != name else []), key=lambda x: x["name"]),
             "docs": docs_for(key, name, note),
             "changes": changes(key),
             "image": write_image(c.get("previewGuid"), previews, key, out_dir) if images else None,
             "classAsset": c.get("asset"),
         })
+    for v in vessels:
+        if v["controls"]:
+            icons = {el: e.get("icon") for el, e in v["elements"].items()}
+            control_art(v["controls"]["rows"], v["elements"], icons, art)
+            # the omni crystal's control: whatever the omni ability fires on, when the hull binds one (the Ring on LT)
+        for card in v["cards"]:
+            card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
     data = {
-        "schema": "cosmic-shore.fleet-codex/1",
+        "schema": "cosmic-shore.fleet-codex/2",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
         "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
         "commit": git("rev-parse", "--short", "HEAD"),
         "commitDate": git("log", "-1", "--date=short", "--format=%ad"),
         "github": GITHUB,
         "elements": ELEMENTS,
+        "ui": ui,
         "vessels": vessels,
     }
     # The content hash ignores the stamp, so a run that found nothing new says so.
@@ -491,8 +817,8 @@ def main():
     print(f"written to {os.path.abspath(a.out)}")
     if a.files_json:
         out = os.path.abspath(a.out)
-        files = ["fleet.json"] + sorted(f"img/{n}" for n in os.listdir(os.path.join(out, "img"))
-                                        if n.endswith(".webp")) if os.path.isdir(os.path.join(out, "img")) else ["fleet.json"]
+        files = sorted(os.path.relpath(os.path.join(d, n), out).replace(os.sep, "/")
+                       for d, _, ns in os.walk(out) for n in ns)
         print("FILES " + json.dumps([{"path": f} for f in files]))
 
 

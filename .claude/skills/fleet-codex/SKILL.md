@@ -11,7 +11,7 @@ menu). It is the ONLY codex: always republish to that URL, never create another.
 | Piece | Path |
 |---|---|
 | Generator (a READER: writes only its `--out`, touches no asset) | `Tools/Build/fleet_codex.py` |
-| The page: ONE page in design B (Rev 45, picked 2026-11-02): a rail with the fleet overview and every vessel; a vessel's Elements / Game Modes / Controls / Docs and changes tabs. Links `#fleet`, `#<VesselKey>`, `#<VesselKey>-controls` (`-modes`, `-docs`) | `Docs/FleetCodex/index.html` |
+| The page: design B of the board's **Rev 48** (picked 2026-11-02; section 115 of `Docs/MENU_REDESIGN_B.md`), in the website's Silver Screen look: a top bar, a filmstrip of the fleet (crew vessels as wider posters with their seats), and the vessel as a bento: the hull, its five abilities (four elements and the omni crystal), ONE control map drawing controller, keyboard and phone with the picked ability lit, its games, the picked ability's full text, docs and changes. `#fleet` is the whole fleet as one table, `#<VesselKey>` one vessel | `Docs/FleetCodex/index.html` |
 | Generated data, git-ignored | `Docs/FleetCodex/build/` (`fleet.json`, `img/<Key>.webp`) |
 | What it reads and why | `Docs/FleetCodex/README.md` |
 
@@ -23,6 +23,11 @@ Where each fact comes from (so a wrong fact is fixed at its source, never in the
 | L5 status (wired / open / switched off / named-not-gated / gated-not-named) and its gate site | the `IsUpgradeActive` call sites the prefab reaches (`element_ability_table.py`) |
 | "What X scales" (field, ×min → ×max, asset; struck through when switched off) | the `ElementalFloat`s the prefab reaches (`element_ability_table.py`) |
 | Name, crew, description, hangar image | `Assets/_SO_Assets/Classes/SO_Class_*.asset` (`PreviewImage`) |
+| Crew vessels (both names, seats) | the class asset's `CrewNames`; seats from "N-seat" in the `VesselClassType` comment, else the names' count (the Orca's 4 seats come from its enum comment: its class asset names no crew) |
+| Each ability's icon | 1. the icon kit's resting card (`Tools/Build/icon_kit/specs/<hull>.py` `LOCKUP`, rendered in silver through `states.compose`); 2. the vessel's HUD (`abilityIcons` -> the Image's sprite, through the vessel prefab's overrides and the variant chain), accepted only when the HUD is the hull's own or the art sits in `AbilityIcons/<Hull>/` (the Wrasse borrows the Sparrow's HUD); 3. the HUD card's visible child parts composited, alternate states dropped (a part whose name extends another's); 4. the hull's own icon named after the ability (`Manta_Kabloom.png`). None of these: the page shows the element's Codex shape |
+| The omni crystal ability | the map's `omniAbilityLabel`, else the vessel container's `vesselCrystalEffects` named (the shared haptics / morph / absorb effects skipped); its icon is the kit's `LOCKUP["Omni"]` or the HUD's `omniAbilitySprite`, else the omni crystal |
+| Element marks, controller glyphs, phone art | `Assets/_Graphics/ElementShapes/*_label.png` (the Codex's, never the HUD petal); the Xbox face buttons and `Trigger_LT` / `Trigger_RT` (`PAD_ART` in the generator; not `ControlGlyphSet`, which draws a PlayStation L1 for LT); `TouchIcon_*` / `TouchGlyph_*` in `HUD UI/Touch` |
+| Game card art | each card's `CardBackground`, shown in black and white |
 | Id and one-line note | `VesselClassType.cs` (value and line comment) |
 | In the Vessel Changer | `ToyVesselRoster.Default` |
 | Flight numbers | the prefab (`regatta_balance.read_vessel`: `Default*` throttle/minimum, turn scalers, boost) |

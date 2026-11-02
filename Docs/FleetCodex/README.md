@@ -6,7 +6,7 @@ wired, flight numbers, the game cards that seat it, its docs and its recent chan
 2026-11-02: "an artifact which shows all these details for all vessels and is updated when new updates are added or
 abilities are changed".
 
-- `index.html`: the page, one page in design B of the design board's Rev 45 (section 114 of `Docs/MENU_REDESIGN_B.md`). It fetches `fleet.json` from beside it. The rail lists the fleet overview and every vessel; a vessel has Elements, Game Modes, Controls (Controller / PC / Mobile) and Docs and changes tabs.
+- `index.html`: the page, design B of the design board's Rev 48 (section 115 of `Docs/MENU_REDESIGN_B.md`), in the website's Silver Screen look. It fetches `fleet.json` and `img/` from beside it: a filmstrip of the fleet (crews as crews), the vessel as a bento of tiles, its five abilities with the game's own icons, one control map for controller, keyboard and phone.
 - `Tools/Build/fleet_codex.py`: writes `build/fleet.json` and `build/img/<Key>.webp` from the shipped assets and git.
   A reader; `build/` is git-ignored.
 - `/fleet-codex` (`.claude/skills/fleet-codex/SKILL.md`): how to refresh and republish, where every fact comes from,
