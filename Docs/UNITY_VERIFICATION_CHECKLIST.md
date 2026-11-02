@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler and Jacks omni-crystal morph: the crystal folds into the newborn creature's heart (`claude/fauna-birth-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`FaunaBirthCrystalMorphByCrystal.asset`) wired into the Angler container and, through
+`author_jacks_assets.py`, the Jacks container replaces the husk spray: the cage folds into the heart crystal of the
+creature the pickup is born as, and rides it while the body blooms. Record: `R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `FaunaBirthCrystalMorphGeometryTests` green.
+- [ ] Angler: no husk spray; the crystal folds into the new creature's heart where it was collected, and the creature joins the school.
+- [ ] Jacks: the crystal flies about 30 u back into the heart of the worm segment nearest it.
+- [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
+- [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
+- [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's

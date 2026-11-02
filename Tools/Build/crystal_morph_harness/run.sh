@@ -10,6 +10,8 @@
 #                                                                   its nest flora's bud, CrystalMorphRecast)
 #   Assets/_Scripts/Tests/Editor/SphereBlastCrystalMorphGeometryTests.cs (Butterfly / Rhino / Manta:
 #                                                                   the crystal onto its spherical blast)
+#   Assets/_Scripts/Tests/Editor/FaunaBirthCrystalMorphGeometryTests.cs (Angler / Jacks: the crystal
+#                                                                   folding into the newborn creature's heart)
 #   Assets/_Scripts/Tests/Editor/HoneyguideCrystalMorphGeometryTests.cs (Honeyguide: the crystal breaking
 #                                                                   into the hive comb's eight heart cells)
 # against the shipped CrystalMorphMeshBuilder, with UnityStub.cs standing in for UnityEngine
