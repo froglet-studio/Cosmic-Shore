@@ -927,7 +927,7 @@ def self_test():
     expect(check_config(cfg.replace(GAME_DATA_GUID, "0" * 32), lab, cs, cg), 1, "gameData unwired")
     expect(check_config(cfg.replace(BEE_HIVE_MASS_GUID, "0" * 32), lab, cs, cg), 1, "the left hive plants no bees")
     expect(check_config(cfg.replace("  retiredAbilities:\n  - 2\n", "  retiredAbilities: \n", 1), lab, cs, cg), 1, "Printer drawn again")
-    for key in ("tickSeconds: 15\n", "apBank: 6\n", "abilityChoices: 3\n", "pickSeconds: 10\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
+    for key in ("tickSeconds: 15\n", "apBank: 6\n", "abilityChoices: 3\n", "pickSeconds: 20\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
                 "peckRange: 45\n", "flitDistance: 18\n", "flitCooldown: 2\n", "usesPerCard: 3\n", "peckBurst: 3\n", "peckCooldown: 1\n",
                 "flitStrikeRadius: 8\n", "strikeRadius: 12\n", "massHiveSeconds: 45\n", "hiveReach: 25\n"):
         if f"  {key}" not in cfg:

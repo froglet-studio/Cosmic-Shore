@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Escort Maw Spawn Profile 3
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 0
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  SupportedFloras: []
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 2
+  InitialFaunaReleaseTier: 0
+  FaunaSpawnVolumeThreshold: 1
+  BaseFaunaSpawnTime: 20
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 0
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 0
+  HerbivoreSpawnRadius: 0
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 0
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 81ddc4d7aeb4959e784a75ecb83be862, type: 2}
+  - {fileID: 11400000, guid: 6fad376939d76b089685a520825e1f19, type: 2}
+  - {fileID: 11400000, guid: d7edac6f44414b6faee7515f9dafacc6, type: 2}
+  - {fileID: 11400000, guid: ad864182f4b3452ca8e0db03608be524, type: 2}
+  - {fileID: 11400000, guid: 03021c5cb91b168797ba3fa93bbad91f, type: 2}

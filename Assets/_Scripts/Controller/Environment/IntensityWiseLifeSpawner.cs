@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
             // per-intensity asset, so scaling the seed batch here is how one cell config carries
             // more wildlife than another out of the same species assets. Asked of the CELL, which
             // owns the profile - see Cell.ResolveFaunaPopulation for why every producer must.
-            int initialCount = Mathf.Max(0, host.ResolveFaunaPopulation(faunaCfg.InitialSpawnCount));
+            int initialCount = Mathf.Max(0, host.ResolveFaunaFloor(faunaCfg, faunaCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
             // Initial batch - gated on FaunaSpawningEnabled (cell holds mass) +

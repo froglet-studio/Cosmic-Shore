@@ -38,6 +38,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShippedContent_GivesTheArkEscortACourseOnTheRealSea()
+        {
+            // ARK_ESCORT.md §5: from each domain's harbour, an escort sails to a real port on the HyperSea and back home,
+            // and the chart can measure the course (the card's light years).
+            var content = AssetDatabase.LoadAssetAtPath<VoyageContentSO>(ContentPath);
+            Assert.IsNotNull(content, ContentPath + " is missing (run Tools/Build/author_voyage_assets.py)");
+            var c = content.Content;
+            foreach (var home in new[] { CosmicShore.Data.Domains.Jade, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Gold })
+            {
+                var state = CosmicShore.Data.VoyageRules.NewGalaxy(c, home);
+                var route = CosmicShore.Data.VoyageRules.EscortRoute(state, c);
+                Assert.IsNotNull(route, $"{home}: the escort has no destination");
+                Assert.AreEqual(state.Home, route[0], $"{home}: the escort sets out from home");
+                Assert.AreEqual(CosmicShore.Data.VoyageExperience.Port, c.Location(route[^1]).Experience, $"{home}: it berths at a port");
+                var sea = CosmicShore.Data.VoyageChart.For(c)?.Along(route);
+                Assert.IsNotNull(sea, $"{home}: the chart cannot sail {string.Join(" > ", route)}");
+                Assert.Greater(sea.LightYears, 0);
+
+                Assert.IsTrue(CosmicShore.Data.VoyageRules.EscortArrived(state, c, route[^1]));
+                var back = CosmicShore.Data.VoyageRules.EscortRoute(state, c);
+                Assert.AreEqual(state.Home, back[^1], $"{home}: from the port, the next escort sails home");
+            }
+        }
+
+        [Test]
         public void VoyageWindow_ThirdVoyage_IsTheJobCardTemplate()
         {
             string card = AssetDatabase.AssetPathToGUID("Assets/_Scripts/UI/Views/VoyageJobCard.cs");
