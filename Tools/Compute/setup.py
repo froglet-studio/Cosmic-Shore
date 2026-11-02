@@ -148,9 +148,11 @@ def gui(argv):
     root.update()
     os.makedirs(os.path.dirname(SETUP_LOG), exist_ok=True)
     root.lift(); root.attributes("-topmost", True); root.after(300, lambda: root.attributes("-topmost", False))
+    opened = f"the setup window opened (python {sys.version.split()[0]}, {sys.executable})"
+    print(opened, flush=True)                 # the .bat keeps this transcript and stays open when this line is missing
     try:
         with open(SETUP_LOG, "a", encoding="utf-8") as fh:
-            fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + f"the setup window opened (python {sys.version.split()[0]}, {sys.executable})\n")
+            fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + opened + "\n")
     except OSError:
         pass
     if os.name == "nt":

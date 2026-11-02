@@ -73,6 +73,9 @@ def installer(name, url, key, flags):
         text = "\r\n".join([
             "@echo off", "setlocal",
             "title Froglet Compute Setup",
+            'set "DIR=%USERPROFILE%\\.froglet-compute"', 'if not exist "%DIR%" mkdir "%DIR%"',
+            'set "LOG=%DIR%\\setup-bat.log"',
+            'echo [%DATE% %TIME%] Froglet Compute setup started > "%LOG%"',
             "echo Froglet Compute: checking this PC...",
             "where python >nul 2>&1 || (echo. & echo Python is not installed. Install Python 3 from python.org and tick \"Add python.exe to PATH\", then run this file again. & pause & exit /b 1)",
             "where git >nul 2>&1 || (echo. & echo Git is not installed. Install Git for Windows, then run this file again. & pause & exit /b 1)",
@@ -80,11 +83,15 @@ def installer(name, url, key, flags):
             f'curl -fsSL "{url}/install/setup.py?key={key}" -o "%SETUP%" || (echo. & echo Could not download the setup from {url} - is this PC online? & pause & exit /b 1)',
             'for /f "delims=" %%p in (\'where python\') do (set "PY=%%p" & goto :found)',
             ":found",
-            '"%PY%" "%SETUP%" --gui-check || (echo. & echo The setup window cannot open on this PC (the reason is above). & pause & exit /b 1)',
+            'echo python: %PY% >> "%LOG%"',
+            '"%PY%" --version >> "%LOG%" 2>&1',
+            '"%PY%" "%SETUP%" --gui-check >> "%LOG%" 2>&1 || (echo. & type "%LOG%" & echo. & echo The setup window cannot open on this PC: the reason is above. Send a photo of this window to Claude. & pause & exit /b 1)',
             "echo Opening the setup window...",
-            # Under the console python, not pythonw: the window hides this console once it is up, and an error
-            # before that is printed here and the .bat stays open on it.
-            f'"%PY%" "%SETUP%" --gui {opts} || (echo. & echo The setup window could not open; the reason is above. & pause & exit /b 1)',
+            # Under the console python, not pythonw, with everything it prints kept in the log: the window hides
+            # this console once it is up; if it never says it opened, this window stays with the whole transcript.
+            f'"%PY%" "%SETUP%" --gui {opts} >> "%LOG%" 2>&1',
+            'echo exit code %ERRORLEVEL% >> "%LOG%"',
+            'findstr /c:"the setup window opened" "%LOG%" >nul || (echo. & type "%LOG%" & echo. & echo The setup window never opened. Everything above is also in %LOG%. Send a photo of this window to Claude. & pause & exit /b 1)',
             "exit /b 0", ""])
         return text, "application/x-bat", "froglet-compute-setup.bat"
     if name == "windows-plain.bat":
