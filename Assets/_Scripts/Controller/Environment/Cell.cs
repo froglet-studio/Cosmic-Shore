@@ -572,10 +572,26 @@ namespace CosmicShore.Gameplay
             if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
                 return false;
 
+            if (SparesOwnMass(faunaDomain, preyDomain)) return false;
+
             if (HasNucleusControlZone)
                 return !IsInsideNucleus(position);
             return preyDomain != faunaDomain;
         }
+
+        /// <summary>
+        /// A PACIFIED world (the Ark escort; Garrett, 2026-10-31: a squad that takes a world's territory pacifies it, and
+        /// its fauna then help protect the Ark): this domain's fauna do not graze this domain's mass anywhere in the cell,
+        /// the nucleus exterior included. Null (every other cell) keeps the diet as it was. Set ONLY by
+        /// <c>ArkEscortRun.TryPacify</c>, together with <see cref="SetModeControlOverride"/> (which re-colours the live
+        /// swarm and pins the spawn colour), so a pacified world's one fauna colour is the squad's and its creatures eat only
+        /// other domains' mass. Symmetric (it names a domain, not the Ark). Recorded in Docs/ECOSYSTEM.md section 0.
+        /// </summary>
+        public Domains? SparedDomain { get; set; }
+
+        /// <summary>True when a pacified world spares <paramref name="preyDomain"/>'s mass from its own fauna.</summary>
+        public bool SparesOwnMass(Domains eaterDomain, Domains preyDomain) =>
+            SparedDomain is { } spared && preyDomain == spared && eaterDomain == spared;
 
         /// <summary>
         /// Radius (world units, centred on the cell) the cell's fauna are penned inside, or 0
@@ -1122,8 +1138,50 @@ namespace CosmicShore.Gameplay
             {
                 var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
                 if (!profile) return 0f;
-                return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
+                return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime * Mathf.Max(0.05f, RuntimeFaunaSpawnPeriodScale));
             }
+        }
+
+        /// <summary>Multiplier on this cell's fauna spawn period (below 1: creatures come faster). 1 everywhere but a
+        /// mode that asks (the Ark escort's tiers). Production gating only: nothing is culled.</summary>
+        public float RuntimeFaunaSpawnPeriodScale { get; set; } = 1f;
+
+        // ── The feeding lure (an Ark escort carve-out) ──────────────────────
+
+        Transform _feedingLure;
+        Domains _feedingLureDomain = Domains.Blue;
+        float _feedingLureShare;
+        float _feedingLureJitter = 60f;
+
+        /// <summary>
+        /// A GRANTED, FENCED carve-out of "no direct Ark weighting" (Garrett, 2026-10-31: "way more fauna relentlessly
+        /// attacking our Ark ... mad never-ending chaos" at the high difficulties; recorded in Docs/ECOSYSTEM.md §0.z):
+        /// while set, a <paramref name="share"/> of this cell's fauna goal picks (the densest-region queries every grazer
+        /// steers by) land on <paramref name="lure"/> (jittered by <paramref name="jitter"/> units) instead of the densest
+        /// mass. Fauna of <paramref name="ownDomain"/> are never lured. The ONE caller is <c>ArkEscortRun</c>, on its own
+        /// worlds, with the Ark as the lure and the tier's share; null clears it. Steering only: diets, edibility, deaths
+        /// and populations are untouched, so a lured creature still only eats what its diet allows on arrival.
+        /// </summary>
+        public void SetFeedingLure(Transform lure, Domains ownDomain, float share, float jitter = 60f)
+        {
+            _feedingLure = lure;
+            _feedingLureDomain = ownDomain;
+            _feedingLureShare = Mathf.Clamp01(share);
+            _feedingLureJitter = Mathf.Max(0f, jitter);
+        }
+
+        /// <summary>The lure's point for a goal pick of <paramref name="eaterDomain"/> (null: any), when the roll takes it.
+        /// An all-domain query (null) is only lured when the cell's fauna are not the lure's own domain.</summary>
+        bool TryFeedingLure(Domains? eaterDomain, out Vector3 point)
+        {
+            point = default;
+            if (!_feedingLure || _feedingLureShare <= 0f) return false;
+            // GetExplosionTarget(domain) asks for mass NOT of `domain` (the asker's own colour): the lure's colour.
+            var asker = eaterDomain ?? ControllingDomain;
+            if (asker == _feedingLureDomain) return false;
+            if (Random.value >= _feedingLureShare) return false;
+            point = _feedingLure.position + Random.insideUnitSphere * _feedingLureJitter;
+            return true;
         }
 
         /// <summary>
@@ -1668,7 +1726,39 @@ namespace CosmicShore.Gameplay
         /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
         /// </summary>
         public int ResolveFaunaCap(FaunaConfigurationSO config) =>
-            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+            config ? ScaleTuned(ResolveFaunaPopulation(config.MaxLivePopulation),
+                RuntimeFaunaCapScale * (RuntimeFaunaTuning?.CapScale(SpeciesOf(config)) ?? 1f)) : 0;
+
+        /// <summary>
+        /// This cell's seed FLOOR for a species (<c>PopulationSize</c> / <c>InitialSpawnCount</c>, as the spawner names
+        /// it): <see cref="ResolveFaunaPopulation"/>, then the run's floor scales (<see cref="RuntimeFaunaFloorScale"/>,
+        /// the species' <c>floorScale</c> in <see cref="RuntimeFaunaTuning"/>). Untuned cells: identical to
+        /// <see cref="ResolveFaunaPopulation"/>. A floor above the cap is still clamped by the cap where producers check it.
+        /// </summary>
+        public int ResolveFaunaFloor(FaunaConfigurationSO config, int authored) =>
+            ScaleTuned(ResolveFaunaPopulation(authored),
+                RuntimeFaunaFloorScale * (config ? RuntimeFaunaTuning?.FloorScale(SpeciesOf(config)) ?? 1f : 1f));
+
+        /// <summary>A run's per-species fauna overrides for this cell, or null (every cell but a tuned escort world).
+        /// Set by the Ark escort's PrepareCell; read as each creature registers (<c>Fauna.Initialize</c>).</summary>
+        public FaunaRuntimeTuning RuntimeFaunaTuning { get; set; }
+
+        /// <summary>Multiplier on every species' seed floor here (a run's <c>fauna.&lt;world&gt;.floorScale</c>); 1 = untouched.</summary>
+        public float RuntimeFaunaFloorScale { get; set; } = 1f;
+
+        /// <summary>Multiplier on every species' live cap here (a run's <c>fauna.&lt;world&gt;.capScale</c>); 1 = untouched.
+        /// Production gating only: nothing is culled to meet a lowered cap.</summary>
+        public float RuntimeFaunaCapScale { get; set; } = 1f;
+
+        static string SpeciesOf(FaunaConfigurationSO config) =>
+            config && config.FaunaPrefab ? FaunaRuntimeTuning.SpeciesKey(config.FaunaPrefab.name) : null;
+
+        /// <summary>0 stays 0 (uncapped), a non-zero number never rounds below 1, scale 1 is the identity.</summary>
+        static int ScaleTuned(int resolved, float scale)
+        {
+            if (resolved <= 0 || scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
+            return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
+        }
 
         /// <summary>
         /// True when this species is already at or over this cell's live cap - the one place
@@ -2506,6 +2596,19 @@ namespace CosmicShore.Gameplay
         public bool SatelliteEcologyEnabled { get; set; }
 
         /// <summary>
+        /// Opt a SATELLITE into its cytoplasm: the drifting shard field that points at the cell's crystal (a satellite
+        /// otherwise runs none, see <see cref="SpawnCytoplasm"/>). The Ark escort's worlds are the opt-in (Garrett,
+        /// 2026-11-01: "the cells should have their own shards (cytoplasm) that help find their own crystal"): the field
+        /// is bound to the satellite's own runtime, so its shards point at that world's crystal, and it is thinned by
+        /// <see cref="SatelliteCytoplasmSpacingScale"/> because three worlds stand at once. Set BEFORE
+        /// <see cref="InitializeSatellite"/>. Honoured only while <see cref="IsSatellite"/>.
+        /// </summary>
+        public bool SatelliteCytoplasmEnabled { get; set; }
+
+        /// <summary>A satellite's shard spacing over its config's (1 = as authored; 1.5 = about 30% of the shards).</summary>
+        public float SatelliteCytoplasmSpacingScale { get; set; } = 1.5f;
+
+        /// <summary>
         /// Runtime multiplier over every flora/fauna population this cell resolves, composed on
         /// top of the profile's own authored scales inside <see cref="ResolveFaunaPopulation"/> /
         /// <see cref="ResolveFloraPopulation"/> - so, like
@@ -3205,7 +3308,9 @@ namespace CosmicShore.Gameplay
             // paying a second cell's worth of them beside the running menu is atmosphere nobody
             // asked for at a frame cost everybody feels. Structure only; the scene cell's own
             // cytoplasm is untouched.
-            if (IsSatellite) return;
+            // The one opt-in (SatelliteCytoplasmEnabled): an Ark escort's worlds, where the shards are how a pilot finds
+            // each world's own crystal.
+            if (IsSatellite && !SatelliteCytoplasmEnabled) return;
 
             // Guarded for repeat passes, exactly like the environment spawn: the field holds ONE
             // cytoplasm and every cleanup path (ResetCell, the swap retire, the toy re-parent) reads
@@ -3219,6 +3324,13 @@ namespace CosmicShore.Gameplay
             {
                 spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
                 spawnedCytoplasm.SetOrigin(transform.position);
+                if (IsSatellite)
+                {
+                    // its OWN runtime (its crystal, its cell-items event), thinned, built when its crystal arrives
+                    spawnedCytoplasm.Rebind(runtime);
+                    spawnedCytoplasm.SpacingScale = SatelliteCytoplasmSpacingScale;
+                    spawnedCytoplasm.InitializeWhenCrystalArrives = true;
+                }
                 spawnedCytoplasm.Initialize();
             }
         }
@@ -3454,6 +3566,35 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool ShieldedMassIsFood => phase == CellPhase.Frenzy;
 
+        bool _armourIsFood;
+
+        /// <summary>
+        /// This world lets creatures that can GNAW armour wear through shielded and super-shielded mass
+        /// (<c>Fauna.ArmourBite</c> above 0; <see cref="Prism.GnawArmour"/>): armour is then filed in the targeting grids
+        /// like any other mass, and those species' diets take it a bite of wear at a time. Set ONLY by the Ark escort on
+        /// its own worlds (<c>ArkEscortRun.PrepareCell</c>; Garrett, 2026-10-31: the fauna should eat the Ark's armoured
+        /// plates for real), so Skim Race tracks, arenas and every other cell keep their armour inviolate. A species with
+        /// no bite still never eats armour here. Side effect, accepted: armoured mass counts as an intruder for a pen's
+        /// containment Frenzy. Recorded in Docs/ECOSYSTEM.md §0 (a granted carve-out of "super-shielded mass is never food").
+        /// </summary>
+        public bool ArmourIsFood
+        {
+            get => _armourIsFood;
+            set
+            {
+                if (_armourIsFood == value) return;
+                _armourIsFood = value;
+                _shieldRefile.Clear();
+                foreach (var kv in trackedBlocks)
+                {
+                    var props = kv.Key ? kv.Key.prismProperties : null;
+                    if (props != null && (props.IsShielded || props.IsSuperShielded)) _shieldRefile.Add(kv.Key);
+                }
+                for (int i = 0; i < _shieldRefile.Count; i++) NotifyBlockShieldStateChanged(_shieldRefile[i]);
+                _shieldRefile.Clear();
+            }
+        }
+
         /// <summary>
         /// The diet's shield rule in this cell, used for grid membership AND by every grazer
         /// (<c>Fauna.IsInedibleShield</c>), so "not food" and "not a steering target" can never disagree:
@@ -3463,8 +3604,10 @@ namespace CosmicShore.Gameplay
         {
             var props = block ? block.prismProperties : null;
             if (props == null) return false;
+            if (!props.IsShielded && !props.IsSuperShielded) return false;
+            if (_armourIsFood) return false;   // gnawable armour (ArmourIsFood): a steering target like any mass
             if (props.IsSuperShielded) return true;
-            return props.IsShielded && !ShieldedMassIsFood;
+            return !ShieldedMassIsFood;
         }
 
         // The Frenzy state the targeting grids were last filed under. Entering or leaving a Frenzy flips whether shielded
@@ -3498,6 +3641,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetExplosionTarget(Domains domain)
         {
+            if (TryFeedingLure(domain, out var lure)) return lure;
             if (!countGrids.TryGetValue(domain, out var grid) || grid == null)
                 return GetCellAnchorPosition();
 
@@ -3532,6 +3676,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool TryGetDensestRegionAnyDomain(out Vector3 region)
         {
+            if (TryFeedingLure(null, out region)) return true;
             region = GetCellAnchorPosition();
             if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
                 return false;

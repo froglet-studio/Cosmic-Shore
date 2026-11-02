@@ -1002,6 +1002,7 @@ namespace CosmicShore.Gameplay
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             DestroyerName = null;         // pool reuse: the next life has no destroyer yet
+            _armourWear = 0f;             // pool reuse: the next life's armour is whole
             DestroyedAt = 0f;             // pool reuse: recycled corpses come back (PrismRecycler); no stale death time
             RecyclesWhenDestroyed = false; // pool reuse: each life opts in to recycling itself
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
@@ -1943,6 +1944,45 @@ namespace CosmicShore.Gameplay
             if (destroyed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             SetupDestruction(Domain, playerName, devastate: true);
+        }
+
+        // Armour wear from creature bites (GnawArmour). Local to the simulation that runs the bites; never replicated:
+        // the crack itself travels as an ordinary shield drop (DeactivateShields).
+        float _armourWear;
+
+        /// <summary>Armour points a super-shield takes to crack under creature bites (a shield takes 1).</summary>
+        public const float SuperArmourPoints = 2f;
+
+        /// <summary>Armour worn so far this life, in armour points (0 = whole).</summary>
+        public float ArmourWear => _armourWear;
+
+        /// <summary>
+        /// A creature's bite on an ARMOURED prism (shielded or super-shielded): wears the armour by
+        /// <paramref name="bite"/> armour points and returns true when it just CRACKED, after which the prism is plain
+        /// mass and the caller consumes it. A shield cracks at 1 point, a super-shield at <see cref="SuperArmourPoints"/>.
+        /// Every bite that does not crack reads as the deflection wobble ("being gnawed").
+        ///
+        /// <para>The one creature path through armour (the Ark escort; Garrett, 2026-10-31: "fauna should attack and
+        /// actually eat the Ark's shielded and super-shielded plates"). Fenced: only <c>Fauna.BiteMass</c> calls it, and
+        /// only for a species whose shield / super-shield bite is above 0 in a cell whose <c>ArmourIsFood</c> is set (the
+        /// escort sets it on its own worlds). Vessels, explosions and abilities still meet
+        /// <see cref="AbsorbSuperShieldHit"/> unchanged. Recorded in Docs/ECOSYSTEM.md §0.</para>
+        /// </summary>
+        public bool GnawArmour(float bite)
+        {
+            if (destroyed || bite <= 0f) return false;
+            var props = prismProperties;
+            if (props is not { IsShielded: true } && props is not { IsSuperShielded: true }) return false;
+            _armourWear += bite;
+            float need = props.IsSuperShielded ? SuperArmourPoints : 1f;
+            if (_armourWear < need)
+            {
+                StampDeflection(0f);
+                return false;
+            }
+            _armourWear = 0f;
+            DeactivateShields();   // the sanctioned break: both flags clear, the shield-state funnel re-files the prism
+            return true;
         }
 
         /// <summary>

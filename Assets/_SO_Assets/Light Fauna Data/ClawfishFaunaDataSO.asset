@@ -23,3 +23,5 @@ MonoBehaviour:
   rotationLerpSpeed: 7
   feedingClusterRadius: 19.69
   attackRange: 24.62
+  shieldBite: 0.34
+  superShieldBite: 0.17

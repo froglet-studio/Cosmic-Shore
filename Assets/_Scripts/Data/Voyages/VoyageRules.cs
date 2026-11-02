@@ -511,6 +511,50 @@ namespace CosmicShore.Data
             return best;
         }
 
+        // ── The Ark escort on the chart ─────────────────────────────────────
+
+        /// <summary>
+        /// Where an Ark escort sails (Docs/Voyages/ARK_ESCORT.md §5): from where the Ark lies to the nearest place it can
+        /// berth that is not here, by lanes - a port, or the squad's own harbour, never a rival domain's (VOYAGES.md §6.7
+        /// rule 2). Ties go to the location listed first. The route, both ends included, as <see cref="Route"/> gives it;
+        /// null at sea, or when nothing qualifies, so an uncharted escort still sails its worlds without a destination.
+        /// </summary>
+        public static List<string> EscortRoute(VoyageState state, VoyageContent content)
+        {
+            if (state == null || content?.Locations == null || state.AtSea) return null;
+            var here = content.Location(state.At) ?? content.Location(state.Home);
+            if (here == null) return null;
+            var dist = Distances(content, here.Id);
+            VoyageLocation best = null;
+            int bestHops = int.MaxValue;
+            foreach (var l in content.Locations)
+            {
+                if (l == null || l.Id == here.Id || !IsEscortBerth(l, state)) continue;
+                if (dist.TryGetValue(l.Id, out int hops) && hops < bestHops) { best = l; bestHops = hops; }
+            }
+            return best == null ? null : Route(content, here.Id, best.Id);
+        }
+
+        static bool IsEscortBerth(VoyageLocation l, VoyageState state) =>
+            l.Experience == VoyageExperience.Port || (l.Experience == VoyageExperience.Harbour && l.Id == state.Home);
+
+        /// <summary>
+        /// An escort brought the Ark in at <paramref name="to"/>: the Ark lies there now, the crew reads that port's news,
+        /// and a day passes (news ages, the next board is drawn afresh). False, and nothing changes, at sea, with a job
+        /// out, or for a place the content does not know. An escort that is overrun moves nothing: the Ark limps back to
+        /// where it set out.
+        /// </summary>
+        public static bool EscortArrived(VoyageState state, VoyageContent content, string to)
+        {
+            if (state == null || content == null || state.AtSea || state.HasJob()) return false;
+            var l = content.Location(to);
+            if (l == null) return false;
+            state.At = l.Id;
+            if (IsPort(l)) state.LastPort = l.Id;
+            state.Day++;
+            return true;
+        }
+
         static VoyageLocation NearestOf(VoyageContent content, string from, VoyageExperience kind, string notThis)
         {
             var dist = Distances(content, from);

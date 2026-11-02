@@ -100,6 +100,65 @@ in project code. `check_conditional_compilation.py` OK; ship gates all OK.
 2. Run the Switchback soak (`SwitchbackSoakLauncher`). Expected: every seat AI, no "host seat not handed to the AI" error.
 3. Make a release (non-development) player build of any platform. Expected: it compiles past the scripts step.
 
+### 🔴 Tiger Moth Time, Charge, Mass, Space and omni cards, and the three-colour dust (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** kit parts under the Time icon (`TigerMoth_Drop*`) and the Charge icon (`TigerMoth_ScaleDust*`) in
+`ButterflyHUDVariant.prefab`; `ButterflyHUDView.SetDrop` / `SetScaleDust` / `SetPilotColors`, driven by
+`ButterflyHUDController` from `TigerMothDropExecutor` (`IsDropping`, `IsReady`, new `LastTollTime`),
+`SpreadWingsActionExecutor` (`IsDustMode`, new `DustField`), `ButterflyDustField.LastBiteTime` (new) and
+`WormholeMouth.LastTollTime` (new). No Unity and no .NET: not compiled.
+
+- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon`, three `drop*Icon` and four `mass*Icon`, five `dustReach*Icon` and two more `scaleDustMotes*Icon` fields
+  wired, and `omniAbilitySprite` set to `TigerMoth_Bloom`.
+- [ ] Time: the moth in your colour, streaks dim; hold LT: streaks full; while the veil sweeps every part dims. No
+  wormhole before Charge 5.
+- [ ] Charge: Mass mode dims the card; Dust mode shows the dust in your shielded colour and a grey rival; fly the dust
+  over a rival: the card's rival turns red for about 0.6 s on each bite.
+- [ ] Reach Charge 5 (Toll Gate): both cards show the wormhole ring in your colour; a rival flying through your
+  wormhole turns both rings red for a beat.
+- [ ] Mass: the moth from above over three wide keys, plate full; RT into Dust mode: the plate empties and the keys'
+  ends fade to the bare keys; back to Mass mode they return. At Mass 5 (Gilded Wake) the keys turn your shielded colour
+  in Mass mode.
+- [ ] Mass keys are square with a square cut; at Mass 5 their outer ends reach further and taper to a point, the inner
+  edge stays square.
+- [ ] Space: the moth over a long rain of round motes in three colours; at Space 5 a super-shielded star in your colour
+  appears at the bottom of the rain. Dims in Mass mode.
+- [ ] The dust in play (Dust mode capsule and the omni-crystal bloom) shows three colours of your domain: danger,
+  plain and shielded motes; the Charge and Space cards' motes match.
+- [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no
+  longer locked.
+
+### 🔴 Honeyguide playtest fixes: omnicrystal opens hive mode, the strip, the pick of three (`cece/honeyguide-playtest-fixes`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett's playtest, 2026-11-02): `HoneyguideCrew.Hive.cs` also opens hive mode from
+`OmniCrystalImpactor.CollectedByVessel` (the crystal's own pickup signal, the Meerkat's path), beside the impactor
+container's `HoneyguideOmniCrystalEffect`; `HoneyguideDynamoView.cs` draws the strip's Honeyguide flying right to a crystal
+fixed at the right end of a centred track, and centres the pick-of-three cards; `pickSeconds` 10 -> 20 (C#, asset, lab).
+
+**Not run:** no Unity editor and no .NET SDK in the session, so `unity_refcompile` stopped before compiling; the
+generator `--check`/`--self-test`, console-logging and conditional-compilation gates pass.
+
+**Test** (Toybox Vessel Changer -> Honeyguide and Ratel, take the Ratel seat):
+1. Compile. **Pass:** no errors; EditMode `HoneyguideTests` pass.
+2. Watch the strip above the board while the AI flies at an omnicrystal. **Pass:** the Honeyguide's disc moves right
+   toward the white diamond at the right end of a track near the middle; the distance text is not covered.
+3. Let the AI collect it. **Pass:** the board becomes the hive's comb within a moment (after a pick of three, if one was
+   open), the "hive" toast shows, the strip shows the hex. Also as the pilot seat: the small board turns into the comb.
+4. Make 4 patterns. **Pass:** the three ability cards sit centred between the card row and the spin bar; 20 s to pick.
+
+### 🔴 Angler and Jacks omni-crystal morph: the crystal folds into the newborn creature's heart (`claude/fauna-birth-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`FaunaBirthCrystalMorphByCrystal.asset`) wired into the Angler container and, through
+`author_jacks_assets.py`, the Jacks container replaces the husk spray: the cage folds into the heart crystal of the
+creature the pickup is born as, and rides it while the body blooms. Record: `R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `FaunaBirthCrystalMorphGeometryTests` green.
+- [ ] Angler: no husk spray; the crystal folds into the new creature's heart where it was collected, and the creature joins the school.
+- [ ] Jacks: the crystal flies about 30 u back into the heart of the worm segment nearest it.
+- [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
+- [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
+- [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -164,6 +223,19 @@ on the class name alone (`LobbyPatcher`) passed, which fits that reading.
 2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
 3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
    and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
+### 🔴 Honeyguide omni-crystal morph: the crystal breaks into the hive comb (`claude/honeyguide-hive-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`HoneyguideCrystalMorphByCrystal.asset` in `HoneyguideImpactorDataContainer` replaces the husk spray: the crystal's 64
+panels land on the eight cells at the heart of the comb the pickup lays. Record: `R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `HoneyguideCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the crystal flies back about 40 u and breaks into the middle of the comb; the rest of the comb blooms as before.
+- [ ] The eight heart cells' spikes sprouting at the hand-off reads acceptably (if not, see the doc's §2).
+- [ ] The hive works as before: super shields, chains, debuff immunity, the reward.
+- [ ] An omni crystal taken while a hive is open: no second hive, the crystal fades with no warning.
+- [ ] During a pick of three: the hive opens when the pick ends; if that is over 1.5 s, the crystal fades with a warning.
 
 ### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 

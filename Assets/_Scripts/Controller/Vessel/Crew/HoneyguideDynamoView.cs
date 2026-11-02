@@ -64,6 +64,8 @@ namespace CosmicShore.Gameplay
         // hive mode (Garrett 2026-10-31): the strip over the board, the Leave button, the thumb's chain
         readonly TMP_Text _strip, _leave;
         Rect _stripRect, _leaveRect;
+        string _stripTextFor;
+        float _stripTextFs, _stripTextW;
         bool _hiveDrag;
         int _hiveLast = -1;
 
@@ -360,6 +362,13 @@ namespace CosmicShore.Gameplay
                 : _crew.StripDistance >= 0f ? _mStrip.Fill(cfg.StripOmniTemplate, "distance", IntText(Mathf.RoundToInt(_crew.StripDistance)))
                 : cfg.StripNoTargetLine;
             Place(_strip, new Rect(_stripRect.x, _stripRect.y, _stripRect.width, _stripRect.height), fs * 0.8f, stripLine);
+            // the track ends short of the distance text; measured only when the line or its size changes
+            if (!ReferenceEquals(stripLine, _stripTextFor) || !Mathf.Approximately(fs, _stripTextFs))
+            {
+                _stripTextFor = stripLine;
+                _stripTextFs = fs;
+                _stripTextW = string.IsNullOrEmpty(stripLine) ? 0f : _strip.GetPreferredValues(stripLine).x;
+            }
 
             var built = core.Built(_crew.Settings);
             for (int k = 0; k < 3; k++)
@@ -510,14 +519,18 @@ namespace CosmicShore.Gameplay
 
         Rect DetailRect(float ui) => new(_rect.x + _rect.width * 0.1f, _cy - _size * 3.5f, _rect.width * 0.8f, _size * 7f);
 
-        // Round 7: the offered abilities as a column of cards between the cards' row and the spin bar, a heading on top (the
-        // lab's drawReveal). The small board shows the names only.
+        // Round 7: the offered abilities as a column of cards between the cards' row and the spin bar, centred there, a heading
+        // on top (the lab's drawReveal). The small board shows the names only.
         void LayOffers(HoneyguideConfigSO cfg, DynamoAbility[] offers, float ui, float fs, ref Rect titleRect)
         {
             _offerCount = offers == null ? 0 : Mathf.Min(offers.Length, MaxOffers);
             float top = _rect.yMax - (_small ? 3f : 5f) * ui, bottom = _slots[0].yMax, head = (_small ? 1.2f : 2f) * fs, gap = (_small ? 3f : 8f) * ui;
             float w = Mathf.Min(_rect.width - 20f * ui, 30f * fs), x = _rect.center.x - w / 2f;
             float ch = _offerCount > 0 ? Mathf.Min((_small ? 1.6f : 5.5f) * fs, (top - bottom - head - gap * (_offerCount + 1)) / _offerCount) : 0f;
+            // centred in the band between the cards and the spin bar (Garrett 2026-11-02: "those abilities should be more
+            // vertically centered"), the pick's time line under the last card included
+            float block = head + gap + _offerCount * ch + Mathf.Max(0, _offerCount - 1) * gap + 6f * ui;
+            top -= Mathf.Max(0f, (top - bottom - block) / 2f);
             if (_offerCount > 0) titleRect = new Rect(x, top - head, w, head);
             for (int k = 0; k < MaxOffers; k++)
             {
@@ -969,25 +982,31 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Hex(vh, CellPx(n[0]), _size * 0.5f, 0f, Alpha(cfg.ColourOf(n[1]), 0.35f * g));
         }
 
-        // The strip: the Honeyguide at the left, the nearest omnicrystal along the track by its distance (the far end is
-        // stripRangeU), a diamond; in hive mode the hive, a hex, under the hull. Its distance is the text at the right.
+        // The strip: the Honeyguide flies to the right along a track centred in the strip (Garrett 2026-11-02: "it should go
+        // to the right not the left and be more centered"); the nearest omnicrystal, a diamond, waits at the track's right
+        // end, and the Honeyguide's disc stands back from it by its distance (the far end is stripRangeU). In hive mode the
+        // hive, a hex, sits at the right end with the hull beside it. Its distance is the text at the right.
         void Strip(VertexHelper vh, HoneyguideConfigSO cfg)
         {
             var r = _stripRect;
             if (r.width < 4f) return;
-            float ui = _ui, cy = r.center.y, x0 = r.x + 8f * ui, x1 = r.x + r.width * 0.62f;
+            float ui = _ui, cy = r.center.y, x0 = r.x + r.width * 0.24f, x1 = Mathf.Min(r.x + r.width * 0.72f, r.xMax - _stripTextW - 14f * ui);
+            if (x1 - x0 < 30f * ui) x0 = Mathf.Max(r.x + 8f * ui, x1 - 30f * ui);   // a long line: the track gives way to it
+            if (x1 <= x0) return;
             HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1f * ui, x1 - x0, 2f * ui), StripTrack);
-            HoneyguideMesh.Disc(vh, new Vector2(x0, cy), 5f * ui, Ability);
             if (_crew.InHive)
             {
-                HoneyguideMesh.Hex(vh, new Vector2(x0 + 12f * ui, cy), 6f * ui, 0f, HiveBar);
-                HoneyguideMesh.Ring(vh, new Vector2(x0, cy), 7f * ui, 8.5f * ui, 16, 0f, Alpha(Color.white, 0.8f));   // invulnerable
+                var hull = new Vector2(x1 - 12f * ui, cy);
+                HoneyguideMesh.Hex(vh, new Vector2(x1, cy), 6f * ui, 0f, HiveBar);
+                HoneyguideMesh.Disc(vh, hull, 5f * ui, Ability);
+                HoneyguideMesh.Ring(vh, hull, 7f * ui, 8.5f * ui, 16, 0f, Alpha(Color.white, 0.8f));   // invulnerable
                 return;
             }
             float d = _crew.StripDistance;
-            if (d < 0f) return;
+            if (d < 0f) { HoneyguideMesh.Disc(vh, new Vector2(x0, cy), 5f * ui, Ability); return; }
             float f = Mathf.Clamp01(d / Mathf.Max(1f, cfg.StripRangeU));
-            HoneyguideMesh.Poly(vh, new Vector2(Mathf.Lerp(x0 + 12f * ui, x1, f), cy), 6f * ui, 4, Mathf.PI / 2f, Color.white);
+            HoneyguideMesh.Poly(vh, new Vector2(x1, cy), 6f * ui, 4, Mathf.PI / 2f, Color.white);
+            HoneyguideMesh.Disc(vh, new Vector2(Mathf.Lerp(x1 - 12f * ui, x0, f), cy), 5f * ui, Ability);
         }
 
         const float ChargePop = 0.35f;   // seconds the landed charge swells and its ring spreads
