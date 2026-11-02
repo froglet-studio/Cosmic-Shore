@@ -654,7 +654,7 @@ public class VesselTransformer : MonoBehaviour
 
         /// <summary>
         /// An AI pilot's nose follow rate per second, set by a mode's AI skill (Switchback's difficulty ladder,
-        /// <c>SwitchbackController.aiNoseFollowByLevel</c>): below 0, the fleet lag (<c>LERP_AMOUNT</c>, every mode that
+        /// <c>SwitchbackController.aiNoseFollowByIntensity</c>): below 0, the fleet lag (<c>LERP_AMOUNT</c>, every mode that
         /// sets nothing); 0, no lag, as a human on a keyboard; above 0, that rate. Ignored while this machine's human flies
         /// the hull. Server-side state: an AI hull's flight runs where its AI runs, and peers see the replicated pose.
         /// </summary>
