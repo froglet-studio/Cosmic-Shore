@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Charge light: one crystal's strikes no longer take a whole frame (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `ChargeArcs.StrikeAlong` measures a Mass column only against the strand pieces that can reach it (exact),
+and `CrystalChargeArcs.StrikePrisms` tests its columns in budget-sized slices across rebuilds. Markers
+`CrystalChargeArcs.Rebuild.Arcs / .Strikes / .Upload`. Verified offline only (refcompile player + editor, gates, an
+old-vs-new harness: identical strikes).
+
+1. Lava lamp (Menu_Main, Release) for 2 minutes with omni crystals on screen. **Pass:** no `CrystalChargeArcs.Rebuild` frame over ~3 ms (was 17-67 ms).
+2. Look at an omni with raised Mass columns while its arcs leap. **Pass:** a column still lights when an arc runs through it, with no visible lag or flicker.
+3. Switchback I4 full race. **Pass:** the charge arcs look as smooth as before.
+
 
 ### 🔴 Stoat completion: gap scaling, Accretion on the orbit, warp × kick cap, HUD (`stoat/complete`, 2026-11-02) — NOT EDITOR-VERIFIED
 

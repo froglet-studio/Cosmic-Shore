@@ -45,6 +45,9 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker ScheduleMarker = new("CrystalChargeArcs.Schedule");
         static readonly ProfilerMarker RebuildMarker = new("CrystalChargeArcs.Rebuild");
         static readonly ProfilerMarker SleepMarker = new("CrystalChargeArcs.Sleep");
+        static readonly ProfilerMarker DrawMarker = new("CrystalChargeArcs.Rebuild.Arcs");
+        static readonly ProfilerMarker StrikesMarker = new("CrystalChargeArcs.Rebuild.Strikes");
+        static readonly ProfilerMarker UploadMarker = new("CrystalChargeArcs.Rebuild.Upload");
 
         // The shared scheduler (Switchback perf pass 2026-11-02): every enabled light registers; the first LateUpdate of a
         // frame decides for all of them which rebuild this frame - largest on screen first, waiting ones climbing the
@@ -88,6 +91,9 @@ namespace CosmicShore.Gameplay
         Vector3[] prismCentres;
         Vector3[] prismSeats;
         float[] prismRadii, prismStrike, prismPlaces, prismSeatRadii;
+        const int FirstStrikeSlice = 8;   // columns a light's first strike slice tests, before it knows what one costs
+        int strikeCursor;          // the next Mass column this light's strikes resume from (they spread over rebuilds)
+        float strikeMsPerPrism;    // what one column's strikes cost last time, to size the next slice
         bool asleep;   // too small on screen: the unlit faces are uploaded and nothing is rebuilt until it wakes
         float pixels;      // this frame's radius on screen (the scheduler's)
         float priority;    // this frame's place in the queue: pixels, raised by every frame it has waited
@@ -233,13 +239,14 @@ namespace CosmicShore.Gameplay
             float seconds = Time.time - clockStart;
             var eye = transform.InverseTransformPoint(view.transform.position);
             writer.Clear();
-            if (effect == Effect.SeamWalk) ChargeArcs.SeamWalk(sites, walker, seconds, settings, writer, eye, faceLight);
-            else
+            using (DrawMarker.Auto())
             {
-                ChargeArcs.Flux(sites, chain, seconds, settings, writer, eye, faceLight);
-                StrikePrisms(seconds);
+                if (effect == Effect.SeamWalk) ChargeArcs.SeamWalk(sites, walker, seconds, settings, writer, eye, faceLight);
+                else ChargeArcs.Flux(sites, chain, seconds, settings, writer, eye, faceLight);
             }
-            Upload();
+            if (effect == Effect.Flux)
+                using (StrikesMarker.Auto()) StrikePrisms(seconds);
+            using (UploadMarker.Auto()) Upload();
         }
 
         /// <summary>True when this crystal's radius on the view camera is under the profile's sleep size (1.25x that to
@@ -271,10 +278,14 @@ namespace CosmicShore.Gameplay
             System.Array.Clear(faceLight, 0, faceLight.Length);
             Upload();
             if (depthPrisms && depthPrisms.Strike != null) System.Array.Clear(depthPrisms.Strike, 0, depthPrisms.Strike.Length);
+            if (prismStrike != null) System.Array.Clear(prismStrike, 0, prismStrike.Length);
         }
 
         /// <summary>Lights every protracted Mass prism a flux arc is passing through: each prism's body is carried from the
-        /// prisms' space into this one and tested against the arcs' paths.</summary>
+        /// prisms' space into this one and tested against the arcs' paths. The columns are tested in a slice sized to the
+        /// profile's rebuild budget from what one column cost last time, resuming where the last slice stopped, so a crystal
+        /// with many raised columns spreads them over rebuilds instead of taking a whole frame (a column not in this slice
+        /// keeps its last strike, a frame or two old, while the arcs hold for a whole discharge).</summary>
         void StrikePrisms(float seconds)
         {
             if (!depthPrisms || !depthPrisms.isActiveAndEnabled || depthPrisms.Strike == null) return;
@@ -300,9 +311,26 @@ namespace CosmicShore.Gameplay
                 prismSeats[j] = transform.InverseTransformPoint(from.TransformPoint(seat));
                 prismSeatRadii[j] = seatRadius * scale;
             }
+            // How many columns fit the budget at what one cost so far (all of them when there is no budget; a first slice of
+            // FirstStrikeSlice before there is a cost to go on).
+            float budgetMs = profile.RebuildBudgetMs;
+            int slice = budgetMs <= 0f ? count
+                : strikeMsPerPrism > 0f ? Mathf.Clamp(Mathf.FloorToInt(budgetMs / strikeMsPerPrism), 1, count)
+                : Mathf.Min(count, FirstStrikeSlice);
+            if (strikeCursor >= count) strikeCursor = 0;
+            int first = strikeCursor, firstEnd = Mathf.Min(count, first + slice), wrapped = slice - (firstEnd - first);
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             // Only a prism standing out of the omni lights, when an arc crosses its column; a retracted one stays dark.
             ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, prismPlaces, prismSeats, prismSeatRadii,
-                                   count, prismStrike);
+                                   first, firstEnd, prismStrike);
+            if (wrapped > 0)
+                ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, prismPlaces, prismSeats,
+                                       prismSeatRadii, 0, wrapped, prismStrike);
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            // Smoothed, so one slow frame (a GC, a hitch) does not shrink the next slices to a single column.
+            float cost = (float)(ms / slice);
+            strikeMsPerPrism = strikeMsPerPrism > 0f ? Mathf.Lerp(strikeMsPerPrism, cost, 0.25f) : cost;
+            strikeCursor = wrapped > 0 ? wrapped : firstEnd;
             System.Array.Copy(prismStrike, depthPrisms.Strike, count);
         }
 
