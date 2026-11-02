@@ -20701,3 +20701,10 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] Hangar: the Stoat reads Catch Orbit, Timed Slingshot, Ripple and Orbit Mode, and each plays a fitting move.
 - [ ] Regatta: pick a Stoat on an AI chip (the host can pick any seat). It finishes all four intensities among the Dolphin and Squirrel.
 - [ ] Restore test: set `orbitOnly` off on `StoatModeAction.asset`: B steps Mass -> Time -> Gate and the field trajectory flies as before. Set it back.
+
+## 🔴 Serpent wall sweep: cheap tests before component lookups (2026-11-02, NOT COMPILED, NOT RUN IN EDITOR)
+`SerpentWallAssembler.Sweep` now runs the wall-plane test before `IsRecruitable`, and `IsRecruitable` reads the prism's own fields before `GetComponentInParent<Ark>()` (only while `Ark.Live` has one) and `TryGetComponent<SerpentWallAssembler>()`. Same answers, cheaper order. Not compiled: `unity_refcompile` needs Linux (`fcntl`) and this was a Windows session with no WSL; no editor turn. `/ship` gates: the failing ones are asset generators that do not read this file.
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Serpent Time: seed walls near trails; they still steal loose prisms, skip creatures, seeds, super-shielded armour and other walls' seeds, and take opponents' shielded prisms only with the Space upgrade.
+- [ ] Voyage (an Ark present): a wall seeded beside the Ark does not strip its hull.
+- [ ] Profiler, Serpent Time with walls up: `SerpentWall.Sweep` well under the 4.1 ms a frame `SerpentWallAssembler.Update` took on 2026-10-29 (Andrew's capture).
