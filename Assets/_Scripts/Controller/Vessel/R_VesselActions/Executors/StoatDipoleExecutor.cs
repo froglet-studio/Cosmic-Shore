@@ -46,8 +46,9 @@ namespace CosmicShore.Gameplay
     /// so the nose's follow is undisturbed) and carries the field's gravity speed along the nose, on the
     /// hull's own flight clock (<see cref="VesselTransformer.FlightTimeScale"/>, the pathfinder's boost).</para>
     ///
-    /// <para><b>Parked 2026-11-02</b> (<see cref="StoatModeActionSO.OrbitOnly"/>, <c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>):
-    /// the shipped Stoat never enters Mass mode, so this stands aside. Kept whole, to come back on the one switch.</para>
+    /// <para><b>Removed from the kit 2026-11-02</b> (<c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>): Mass mode is gone and no
+    /// input is bound to the dipole, so this never lays a pair. It stays on the prefab until an editor pass removes the
+    /// component; the doc says how to bring it back.</para>
     ///
     /// <para><b>Modes.</b> The triggers lay the dipole in MASS mode only (<see cref="StoatModeExecutor"/>); in Time
     /// mode they fly the orbit slingshot. Every annihilation — a release, a fresh press over a live pair — throws the

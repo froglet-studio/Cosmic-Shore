@@ -20761,3 +20761,17 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] Serpent Time: seed walls near trails; they still steal loose prisms, skip creatures, seeds, super-shielded armour and other walls' seeds, and take opponents' shielded prisms only with the Space upgrade.
 - [ ] Voyage (an Ark present): a wall seeded beside the Ark does not strip its hull.
 - [ ] Profiler, Serpent Time with walls up: `SerpentWall.Sweep` well under the 4.1 ms a frame `SerpentWallAssembler.Update` took on 2026-10-29 (Andrew's capture).
+
+## 🟡 Stoat: Mass and Gate mode removed, the orbit by side, inner pull, steer out, two phone discs (2026-11-02, Yash, NOT PLAYED)
+Affects: Garrett's Stoat kit (not yet asked). `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`; model: `Tools/Build/stoat_orbit_sim.py`.
+Verified (flick launch, Mass power, earned speed, window AI included): Unity 6000.3.17f1 batch compile, no errors; EditMode StoatSling|StoatDipole|HangarAbilityKinds|TouchControl|SwitchbackAISteering 104/106 - the two failures (Rhino's Energize has no Hangar kind; the Brittle Star's six buttons on a 720p phone) are outside this change. `unity_refcompile` cannot run on Windows. Not played.
+- [ ] B (T on a keyboard) does nothing; LT and RT only ever lay the orbit; no line of dots ahead, ever.
+- [ ] RT: the pair to the right, and the orbit turns you clockwise (seen from above). LT: to the left, anti-clockwise. Passing a right orbit on its left side does not catch you.
+- [ ] Caught: you are drawn inward to a smaller circle than the ring you were caught on, and go round a little faster.
+- [ ] Flick the steering thumb (or snap the stick) while orbiting: you launch that way at once, up to 60° off the orbit. A slow push only steers. Releasing with the stick over launches that way too; at rest, along the orbit.
+- [ ] Mass: a Mass crystal or two makes the launch visibly harder. Mass 5: the trail laid during a launch is shielded.
+- [ ] Earned speed: pressing and releasing at once barely speeds you up; a launch in the lime window carries the orbit's speed for several seconds; no launch ever spikes past about 1.6× your orbit speed.
+- [ ] Phone: a buzz as the orbit enters the lime window; a held disc reaches a full (tight) squeeze in about 1 s.
+- [ ] Phone: two orbit discs (left / right icons) round the right thumb; a thumb anywhere else steers; the Space and Mass cards press nothing.
+- [ ] AI rivals in Slingshot I1-I4 finish, hold the orbit to the window and launch at the next ring (model: 78-91 s, about 12 presses a minute).
+- [ ] Hangar: Heavy Launch (Mass) and Catch Orbit describe the launch, the spin and the inner orbit.

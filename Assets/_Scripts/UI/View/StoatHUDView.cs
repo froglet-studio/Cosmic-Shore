@@ -45,13 +45,11 @@ namespace CosmicShore.UI
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
-        [Header("Mode icons (the Mass card's icon follows the mode B is in; empty = the card keeps its authored icon)")]
-        [Tooltip("Mass mode: the field trajectory - the dipole and the thick trail.")]
+        [Header("Mode icons (the Mass card's icon follows the mode; empty = the card keeps its authored icon)")]
+        [Tooltip("Mass mode: the field trajectory (removed from the kit 2026-11-02; kept for when a mode returns).")]
         [SerializeField] Sprite massModeIcon;
-        [Tooltip("Time mode: the catch sling - the orbit.")]
+        [Tooltip("Time mode: the catch sling - the orbit. The Stoat's only mode since 2026-11-02.")]
         [SerializeField] Sprite timeModeIcon;
-        [Tooltip("Gate mode: the warp gate.")]
-        [SerializeField] Sprite gateModeIcon;
 
         StoatModeExecutor.Mode? _shownMode;
         Sprite _authoredModeIcon;   // the card's own icon, shown for a mode whose slot is empty
@@ -60,11 +58,11 @@ namespace CosmicShore.UI
         public override void Initialize()
         {
             Seat(rippleGauge, 0f);
-            Seat(modeGauge, 1f);
+            Seat(modeGauge, 0f);
             Seat(accretionGauge, 0f);
             Seat(timeGauge, 0f);
             _shownMode = null;
-            SetModeIcon(StoatModeExecutor.Mode.Mass);
+            SetModeIcon(StoatModeExecutor.Mode.Time);
         }
 
         void Seat(Image gauge, float fill)
@@ -84,7 +82,6 @@ namespace CosmicShore.UI
             var sprite = mode switch
             {
                 StoatModeExecutor.Mode.Time => timeModeIcon,
-                StoatModeExecutor.Mode.Gate => gateModeIcon,
                 _ => massModeIcon,
             };
             if (!TryGetAbilityIcon(Element.Mass, out var icon) || !icon) return;

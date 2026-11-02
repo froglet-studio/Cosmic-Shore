@@ -1,14 +1,17 @@
 # Slingshot (`GameModes.Slingshot = 64`)
 
-> **Flown on the orbit alone since 2026-11-02** (Yash; `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). The notes below about the field dipole and the B switch
-> are history: the hull starts in Time mode and stays there. **How it flies:** press LT or RT and a pair is laid ahead on that
-> side, and holding it warps your flight (×2.7 at rest, the hull's only speed: 60 u/s without one). Fly past it and it catches you;
-> release a quarter-turn round, when the orbit ring is lime, for the whole kick. A fresh press slings you out of the last orbit, so
-> chained presses keep the warp up.
+> **Flown on the orbit alone since 2026-11-02** (Yash; `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`): Mass and Gate mode are removed from
+> the Stoat, so the notes below about the field dipole and the B switch are history. **How it flies:** press LT for
+> the left orbit or RT for the right (on a phone, the two orbit discs round your right thumb; any other thumb
+> steers). The pair is laid ahead on that side, and holding it warps you (×2.7 at rest; 60 u/s without one). Fly
+> past it on that side and it catches you and draws you in to its inner orbit, clockwise on the right and
+> anti-clockwise on the left, a little faster. Release when the orbit ring is lime for the whole kick: you launch toward where
+> you steer, or FLICK your steering thumb to launch that way at once (up to 60° off the orbit; Mass is the power). A fresh press slings you out of the last orbit, so chained presses keep the warp up.
 >
-> **The AI** presses to turn and, on a leg with its ring at least 280 u away, for the warp alone (`aiWarpMinDistance`): 56-62 s a
-> race in the model, I1-I4 (`Tools/Build/stoat_orbit_sim.py`; 2 laps at cruise is about 140 s). No orbit-only race has been flown
-> yet, so that number and the feel are what the first races test. The sweep relearns the sling rows from them.
+> **Speed is earned:** holding a pair alone gives half the orbit's warp; a timed launch keeps the orbit's speed for 6 s; an
+> instant release pays nothing. **The AI** presses to turn, holds for the timing window and launches at its target there:
+> 78-91 s a race in the model at I1-I4, about 12 presses a minute (`Tools/Build/stoat_orbit_sim.py --earned`; 2 laps at
+> cruise is about 140 s). No race on this kit has been flown yet, so that number and the feel are what the first races test.
 
 > **The Stoat's TIME race since 2026-10-27** (Yash: "Stoat will use Slingshot and Meerkat will use Warpline"). Warpline,
 > its time race until then, now flies the Meerkat (`WARPLINE.md`). The AI Stoats train here (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`):
