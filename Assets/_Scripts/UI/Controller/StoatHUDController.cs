@@ -45,16 +45,20 @@ namespace CosmicShore.UI
         void Update()
         {
             if (!_isLocalPilotHud || !view) return;
-            if (dipole)
+            // The orbit alone (2026-11-02): Charge and Space read the sling — the ripple the open pair would throw and
+            // Space-5 Accretion on the orbit. The dipole only drives them if it is ever back in the kit.
+            if (sling && (!dipole || !dipole.isActiveAndEnabled || !dipole.IsOpen))
+            {
+                view.SetRipple(sling.RippleCharge01);
+                view.SetAccretion(sling.Accretion01);
+            }
+            else if (dipole)
             {
                 view.SetRipple(dipole.RippleCharge01);
                 view.SetAccretion(dipole.Accretion01);
             }
-            if (mode)
-            {
-                view.SetMode(mode.MassMode01);
-                view.SetModeIcon(mode.Current);
-            }
+            // The Mass card is Heavy Launch now: it keeps its authored icon (no mode swap) and its gauge rests.
+            if (mode) view.SetMode(0f);
 
             // Time: progress to the sweet spot while the orbit holds the hull, lime in the window.
             if (sling && sling.IsOrbiting) view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);

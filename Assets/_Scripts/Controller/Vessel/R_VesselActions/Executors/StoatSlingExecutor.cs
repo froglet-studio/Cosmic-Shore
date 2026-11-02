@@ -136,8 +136,9 @@ namespace CosmicShore.Gameplay
         /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card).</summary>
         /// <summary>Space-5 Accretion on the orbit: how much of the +40% ripple-reach bonus the pair has earned, 0..1.</summary>
         public float Accretion01 => config && config.AccretionMax > 0f ? Mathf.Clamp01(_accretion / config.AccretionMax) : 0f;
-        /// <summary>The Charge ripple the open pair would throw now, as a share of the base gap's (HUD), 0..1+.</summary>
-        public float RippleCharge01 => HasPair ? 1f + _accretion : 0f;
+        /// <summary>The Charge ripple the open pair would throw now, as a share of the largest (Accretion full), 0..1;
+        /// empty with no pair. HUD only.</summary>
+        public float RippleCharge01 => HasPair && config ? (1f + _accretion) / (1f + config.AccretionMax) : 0f;
         public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;

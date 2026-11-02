@@ -959,7 +959,7 @@ def stoat_icon_guid(name: str) -> str:
 # Thresher card art -> the Stoat's (the variant is copied from the Thresher's; same card order).
 ICON_SWAP = (("372925148d56fc4971f260a7f5cdd470", "Stoat_Ripple.png"),        # Charge
              ("290bd445e0cc6921b2c8e07e2e99edf2", "Stoat_Modes.png"),         # Mass
-             ("91ad84c1b3d7d9508b8aa3323cfb54fe", "Stoat_FieldDipole.png"),   # Space
+             ("91ad84c1b3d7d9508b8aa3323cfb54fe", "Stoat_ModeTime.png"),      # Space: the orbit (2026-11-02; was Stoat_FieldDipole.png)
              ("0cd003be08a8ace88fb858daf3916010", "Stoat_Pathfinder.png"))    # Time
 
 
