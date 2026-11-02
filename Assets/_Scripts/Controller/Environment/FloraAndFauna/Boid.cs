@@ -310,6 +310,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // The cell's fauna path corridor (Cell.SetFaunaPathCorridor): a flock target (a prism it is drawn to, its
+            // DefaultGoal, a mound) is written straight to `target`, past Goal's pens, so the corridor is applied here
+            // too - the target moves to the corridor wall, and a boid inside it heads out. Steering only, never a wall.
+            if (cell && cell.FaunaPathCorridor.IsActive)
+                target = cell.FaunaPathCorridor.PushOut(target, transform.position);
+
             if (isAttached)
             {
                 Vector3 toTarget = target - transform.position;
@@ -359,6 +365,16 @@ namespace CosmicShore.Gameplay
                 ? spatialIndex.QuerySphere(transform.position, CohesionR, PrismScratch)
                 : 0;
 
+            // The path corridor is a diet pen too (FaunaCorridor: "mass inside it is not prey"): a non-boid prism inside
+            // it neither attracts nor feeds this boid, or the race trail would pull the flock straight back onto the path.
+            // Only checked when the boid is within CohesionR of the tube, so far flocks pay one ClosestSqr per tick.
+            FaunaCorridor corridor = cell && cell.FaunaPathCorridor.IsActive ? cell.FaunaPathCorridor : null;
+            if (corridor != null)
+            {
+                float reach = corridor.Radius + CohesionR;
+                if (corridor.ClosestSqr(transform.position, out _) > reach * reach) corridor = null;
+            }
+
             for (int i = 0; i < prismCount; i++)
             {
                 Prism otherPrism = PrismScratch[i];
@@ -393,6 +409,7 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
+                    if (corridor != null && corridor.Contains(otherPrism.transform.position)) continue;
                     blockAttraction += -diff / sqr;
 
                     // Drones eat OPPOSING-domain mass (combat). Foragers (tadpoles) are cleanup
