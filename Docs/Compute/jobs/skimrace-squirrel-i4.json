@@ -1,0 +1,260 @@
+{
+ "after": [],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.15
+ },
+ "area_owner": "Yash (vessel AI; the Skim Race AI harness is studyholic's)",
+ "asked_by": "Garrett 2026-11-01 (the compute scout's top Regatta stage-1 opportunity, model-squirrel-skimrace)",
+ "convergence": {
+  "min_evals": 1500,
+  "min_improvement": 0.002,
+  "window_evals": 1200
+ },
+ "evaluator": {
+  "args": {
+   "intensity": 4,
+   "policy": "Assets/Resources/SkimRaceAIConfig.asset",
+   "seedbase": 5000,
+   "seeds": 8,
+   "stay_near_shipped": 0.01
+  },
+  "module": "skimrace_fit",
+  "timeout": 900
+ },
+ "goal": "An AI that races the Squirrel's own Time game, Skim Race, well at I4 on the map the scene ships today. I4's own file was tuned on fingerprint 227b9055; the scene's I4 is now efdff5b2, so the deployment flies the general policy there (sim: winner median 66.7 s against a 41.1 s ideal, loss 2.89; the stale I4 file would score 4.95). skimrace_retune.py is the cure Docs/SKIM_RACE_AI.md section 11 names; this is its search on every machine instead of one.",
+ "id": "skimrace-squirrel-i4",
+ "kind": "search",
+ "paths": [],
+ "plan": "regatta-balance",
+ "promote": "A PROPOSAL for the AI owner (Yash): race the team's best against the general policy on 20 FRESH races (seedbase 99000, tuneall's conditions) - the retune's own gate; keep it only if it finishes as many and its winner median is faster. Then record it as the SkimRaceAIConfig_I4 block in Tools/Build/author_skimrace_ai_config.py with today's TrackFingerprint and a bumped PolicyVersion, regenerate the asset with that script and run both --checks (skimrace_retune.py's writer), never by hand; add the editor check to Docs/UNITY_VERIFICATION_CHECKLIST.md.",
+ "ref": "origin/ai",
+ "requires": [
+  "python3",
+  "dotnet8"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 2.0,
+   "init": 1.016,
+   "lo": 0.2,
+   "name": "LookaheadSeconds"
+  },
+  {
+   "hi": 200.0,
+   "init": 26.806,
+   "lo": 20.0,
+   "name": "LookaheadMin"
+  },
+  {
+   "hi": 700.0,
+   "init": 544.911,
+   "lo": 120.0,
+   "name": "LookaheadMax"
+  },
+  {
+   "hi": 9.0,
+   "init": 4.346,
+   "lo": 3.0,
+   "name": "SkimHeight"
+  },
+  {
+   "hi": 900.0,
+   "init": 181.107,
+   "lo": 150.0,
+   "name": "CrystalBumpHalfWidth"
+  },
+  {
+   "hi": 500.0,
+   "init": 165.032,
+   "lo": 60.0,
+   "name": "CrystalDirectDistance"
+  },
+  {
+   "hi": 3.0,
+   "init": 2.832,
+   "lo": 1.0,
+   "name": "LeadGain"
+  },
+  {
+   "hi": 90.0,
+   "init": 19.738,
+   "lo": 10.0,
+   "name": "MaxLeadDegrees"
+  },
+  {
+   "hi": 0.5,
+   "init": 0.041,
+   "lo": 0.02,
+   "name": "StickGainPerDegree"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.1,
+   "lo": 0.1,
+   "name": "MinThrottle"
+  },
+  {
+   "hi": 2.0,
+   "init": 0.955,
+   "lo": 0.0,
+   "name": "ReachabilityMargin"
+  },
+  {
+   "hi": 16.0,
+   "init": 3.01,
+   "lo": 0.0,
+   "name": "PassMargin"
+  },
+  {
+   "hi": 0.9,
+   "init": 0.292,
+   "lo": 0.1,
+   "name": "CrossingHeightFraction"
+  },
+  {
+   "hi": 7.0,
+   "init": 5.159,
+   "lo": 2.5,
+   "name": "RibbonClearHeight"
+  },
+  {
+   "hi": 40.0,
+   "init": 28.981,
+   "lo": 17.0,
+   "name": "RibbonClearLateral"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.004,
+   "lo": 0.0,
+   "name": "TerminalCentreBias"
+  },
+  {
+   "hi": 8.0,
+   "init": 5.579,
+   "lo": 1.0,
+   "name": "StallSeconds"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.167,
+   "lo": 0.1,
+   "name": "RecoveryThrottle"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.705,
+   "lo": 0.2,
+   "name": "MassGuardSeconds"
+  },
+  {
+   "hi": 3.0,
+   "init": 1.298,
+   "lo": 0.2,
+   "name": "MassGuardMargin"
+  },
+  {
+   "hi": 0.5,
+   "init": 0.274,
+   "lo": 0.08,
+   "name": "MassGuardSegment"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.797,
+   "lo": 0.3,
+   "name": "LowBoostApproachScale"
+  },
+  {
+   "hi": 5.0,
+   "init": 2.383,
+   "lo": 1.5,
+   "name": "LowBoostFull"
+  },
+  {
+   "hi": 3.0,
+   "init": 1.642,
+   "lo": 0.2,
+   "name": "TrackGuardMargin"
+  },
+  {
+   "hi": 5.0,
+   "init": 3.138,
+   "lo": 2.5,
+   "name": "DirectBoost"
+  },
+  {
+   "hi": 2.5,
+   "init": 1.507,
+   "lo": 0.2,
+   "name": "DirectBoostHysteresis"
+  },
+  {
+   "hi": 10.0,
+   "init": 2.0,
+   "lo": 2.0,
+   "name": "DirectViaClearance"
+  },
+  {
+   "hi": 40.0,
+   "init": 22.338,
+   "lo": 6.0,
+   "name": "DirectViaLift"
+  },
+  {
+   "hi": 50.0,
+   "init": 18.61,
+   "lo": 18.0,
+   "name": "DirectViaLateral"
+  },
+  {
+   "hi": 5.0,
+   "init": 2.345,
+   "lo": 0.5,
+   "name": "TerminalChordClearance"
+  },
+  {
+   "hi": 6.0,
+   "init": 0.766,
+   "lo": 0.0,
+   "name": "ChordClearance"
+  },
+  {
+   "hi": 1.5,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "CrossingLeadSeconds"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.761,
+   "lo": 0.2,
+   "name": "CrossingLookaheadScale"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.944,
+   "lo": 0.3,
+   "name": "CrossingThrottle"
+  },
+  {
+   "hi": 400.0,
+   "init": 121.55,
+   "lo": 30.0,
+   "name": "CrossingSlowDistance"
+  },
+  {
+   "hi": 3.0,
+   "init": 2.992,
+   "lo": 0.8,
+   "name": "LaneHeightStep"
+  }
+ ],
+ "stage": 1,
+ "status": "ready",
+ "title": "Squirrel Skim Race AI for today's I4 track (the retune, shared)",
+ "updated": "2026-11-01",
+ "value": 7
+}

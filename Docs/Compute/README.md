@@ -152,6 +152,7 @@ The evaluators today:
 | Module | Loss | Notes |
 |---|---|---|
 | `drive_fit` | mean ln(race seconds) over I1-I4 (x course seeds) for a hull's AI drive, + a pull toward the shipped values | stage 1 of `/regatta-balance`; models: `rhino_drive`, `manta_drive`, `dolphin_drive` |
+| `skimrace_fit` | tuneall's own score on one Skim Race intensity's track (time / ideal, a DNF priced above any finish, mean + half the worst race), + a pull toward the shipped values | stage 1 for the Squirrel; builds `skimrace_sim_harness` (the shipped pilot core) in Python on any OS, needs a dotnet 8+ SDK; the space is the policy's stated pursuit fields inside Sim.cs's Ranges (`only=stated`) |
 | `regatta_course` | ln(slowest / fastest AI) on one intensity's Regatta circuit + rail, length and character penalties | stage 2; the circuit is `course_port.py` (gated against the C# harness) |
 | `regatta_elements` | mean over intensities of ln(slowest / fastest) + minimality x mean level | stage 3; regatta_balance.py's competent-pilot model |
 | `bioform_forms` | what a swarm needs from a body (size, integrity, one animal, keepable, lively, loops) | MAP-Elites over 22 genome numbers; bakes SwarmPlanJson + NCA prisms targets |
