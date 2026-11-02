@@ -431,6 +431,8 @@ UI_ART = {
     "shape/Space": "Assets/_Graphics/ElementShapes/space_kite_label.png",
     "shape/Time": "Assets/_Graphics/ElementShapes/time_diamond_label.png",
     "omni": "Assets/_Graphics/ElementIcons/OmniCrystal_Active.png",
+    # the HUD's level-5 look: the bloom AbilityLockupView puts behind an upgraded card (AbilityLockupStyle.bloomSprite)
+    "bloom": "Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/LockupBloom.png",
 }
 PAD_ART = {   # a controls row's pad label -> the controller art (Xbox face buttons, the LT / RT trigger art)
     "A": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/A button.png",
@@ -650,7 +652,7 @@ def ability_art(key, art, prefabs, pngs, labels=None):
                 out["Omni"] = art.png(os.path.relpath(pngs[g], REPO), f"ab/{key}_Omni.png")
     by_dir = {}
     for path in pngs.values():
-        m = re.search(r"/AbilityIcons/([^/]+)/[^/]+\.png$", path.replace(os.sep, "/"))
+        m = re.search(r"/AbilityIcons/([^/]+)/(?:[^/]+/)*[^/]+\.png$", path.replace(os.sep, "/"))
         if m:
             by_dir.setdefault(m.group(1), []).append(path)
     for el, label in labels.items():
@@ -705,6 +707,68 @@ def control_art(rows, elements, icons, art):
     return rows
 
 
+SEATS = os.path.join(REPO, "Docs", "FleetCodex", "seats.json")
+
+
+def seats_of(key, crew, elements):
+    """The crew vessel's seats from Docs/FleetCodex/seats.json, each ability linked to the map's card when its name is the
+    map's AbilityLabel for that element. A seat the class asset does not name, or an element the map lacks, stops the
+    build: the table is the one hand-written source here, so it must fail the day it stops matching the game."""
+    if not os.path.exists(SEATS):
+        return None
+    table = json.load(open(SEATS, encoding="utf-8")).get(key)
+    if not table:
+        return None
+    out = []
+    for seat in table["seats"]:
+        if crew and seat["name"] not in crew:
+            sys.exit(f"seats.json: {key} seat '{seat['name']}' is not in the class asset's CrewNames {crew}")
+        abilities = []
+        for a in seat["abilities"]:
+            e = elements.get(a["element"])
+            if e is None:
+                sys.exit(f"seats.json: {key} seat '{seat['name']}' names {a['element']}, which {key}'s ability map lacks")
+            linked = norm(a["name"]) == norm(e["ability"])
+            abilities.append({"element": a["element"], "name": a["name"], "text": a.get("text", ""), "linked": linked})
+        out.append({"name": seat["name"], "seats": seat.get("seats", 1), "role": seat.get("role", ""),
+                    "abilities": abilities})
+    return {"source": table.get("source"), "url": GITHUB + table["source"] if table.get("source") else None, "list": out}
+
+
+ABILITIES = os.path.join(REPO, "Docs", "FleetCodex", "abilities.json")
+
+
+def ability_words(key, elements, omni):
+    """What each ability DOES, from Docs/FleetCodex/abilities.json. The ability map records only what an element scales,
+    so this is the second hand-written table (each entry cites the doc or code it was read from). An entry whose ability
+    name no longer matches the map's AbilityLabel is dropped with a warning instead of describing a different ability:
+    re-read its source and update the table when that warning prints."""
+    if not os.path.exists(ABILITIES):
+        return
+    table = json.load(open(ABILITIES, encoding="utf-8")).get(key, {})
+    for el, words in table.items():
+        if el.startswith("_"):
+            continue
+        if el == "Omni":
+            if omni is not None:
+                omni["words"] = {k: words.get(k, "") for k in ("does", "trigger", "source")}
+            continue
+        e = elements.get(el)
+        if e is None or norm(words.get("ability", "")) != norm(e["ability"]):
+            print(f"abilities.json: {key} {el} describes '{words.get('ability')}', but the map's ability is "
+                  f"'{e['ability'] if e else None}': entry dropped, update the table", file=sys.stderr)
+            continue
+        e["words"] = {k: words.get(k, "") for k in ("does", "trigger", "scales", "source")}
+
+
+def upgrade_art(key, elements, art, pngs_by_dir):
+    """A level-5 upgrade's own art, when the hull's icon folder has a file named after it (the Scarab's Snap Dash)."""
+    for el, e in elements.items():
+        label = e["upgrade"]["label"]
+        hit = named_icon(key, label, pngs_by_dir) if label else None
+        e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
+
+
 def card_art(card_asset, art, pngs, name):
     if not card_asset:
         return None
@@ -734,6 +798,11 @@ def build(out_dir, images=True):
     prefab_index = guid_paths(["Assets"], ".prefab")
     png_index = guid_paths(["Assets"], ".png")
     art = Art(out_dir, enabled=images)
+    pngs_by_dir = {}
+    for path in png_index.values():
+        m = re.search(r"/AbilityIcons/([^/]+)/(?:[^/]+/)*[^/]+\.png$", path.replace(os.sep, "/"))
+        if m:
+            pngs_by_dir.setdefault(m.group(1), []).append(path)
     ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 96) for k, v in UI_ART.items()}
     bases, by_guid = script_classes()
     atp, touch_rows = touch_profiles()
@@ -751,6 +820,7 @@ def build(out_dir, images=True):
             e["icon"] = icons.get(el)
             e["shape"] = ui.get("shape/" + el)
         omni = dict(omni_entry(key, asset_names), icon=icons.get("Omni"), mark=ui.get("omni")) if maps else None
+        ability_words(key, elements, omni)
         retired = "RETIRED" in note.upper()
         vessels.append({
             "key": key, "id": value, "name": name,
@@ -768,6 +838,7 @@ def build(out_dir, images=True):
                                  touch_rows.get(key)) if maps else None,
             "omni": omni,
             "crew": crew_of(c, note),
+            "seats": seats_of(key, c.get("crew", []), elements) if maps else None,
             "cards": sorted(cards.get(name, []) + (cards.get(key, []) if key != name else []), key=lambda x: x["name"]),
             "docs": docs_for(key, name, note),
             "changes": changes(key),
@@ -779,6 +850,8 @@ def build(out_dir, images=True):
             icons = {el: e.get("icon") for el, e in v["elements"].items()}
             control_art(v["controls"]["rows"], v["elements"], icons, art)
             # the omni crystal's control: whatever the omni ability fires on, when the hull binds one (the Ring on LT)
+        if v["elements"]:
+            upgrade_art(v["key"], v["elements"], art, pngs_by_dir)
         for card in v["cards"]:
             card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
     data = {
