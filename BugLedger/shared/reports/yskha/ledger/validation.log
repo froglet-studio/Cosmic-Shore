@@ -300,3 +300,19 @@
 2026-11-02T17:24:57.966Z editor load: play=False capture=True minPlay=15s issues=46
 2026-11-02T17:29:36.062Z editor load: play=False capture=True minPlay=15s issues=46
 2026-11-02T17:40:15.980Z PlayMode session ended (543s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-e5bc8c31c5
+2026-11-02T17:58:19.490Z EditMode session ended (33min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-8909c619e5 E-e5bc8c31c5 E-e4bb9080ed E-a771e8a767
+2026-11-02T17:58:30.976Z editor load: play=False capture=True minPlay=15s issues=47
+2026-11-02T18:00:19.934Z EditMode session ended (2min editor session): not counted (capture=True, long enough=False)
+2026-11-02T19:08:25.235Z editor load: play=False capture=True minPlay=15s issues=47
+2026-11-02T19:13:00.626Z editor load: play=False capture=True minPlay=15s issues=47
+2026-11-02T19:16:30.193Z PlayMode session ended (127s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-02T19:17:30.518Z PlayMode session ended (45s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-02T19:19:13.996Z EditMode session ended (10min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-8909c619e5
+2026-11-02T19:19:27.014Z editor load: play=False capture=True minPlay=15s issues=47
+2026-11-02T19:27:39.773Z EditMode session ended (8min editor session): not counted (capture=True, long enough=False)
+2026-11-02T19:36:10.001Z editor load: play=False capture=True minPlay=15s issues=47
+2026-11-02T19:38:27.984Z editor load: play=False capture=True minPlay=15s issues=47
+2026-11-02T19:44:11.534Z PlayMode session ended (269s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-02T19:47:36.472Z PlayMode session ended (175s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-02T19:49:55.686Z PlayMode session ended (103s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-02T19:52:54.270Z PlayMode session ended (164s play run, exiting play mode): 0 fix(es) waiting; counted: none
