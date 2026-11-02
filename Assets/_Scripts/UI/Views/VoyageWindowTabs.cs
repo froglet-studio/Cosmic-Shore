@@ -42,6 +42,8 @@ namespace CosmicShore.UI
 
         ModalWindowManager _window;
         int _shown = -1;
+        // The frame the window opened on: the RB that slid the hub onto this window is not also a tab step.
+        int _openedFrame = -1;
 
         /// <summary>The tab on show.</summary>
         public int Shown => _shown;
@@ -64,6 +66,7 @@ namespace CosmicShore.UI
                 _window.OnModalClosed += Closed;
             }
             Show(0);
+            _openedFrame = Time.frameCount;
             if (!_window || _window.IsOpen) HubShoulders.Claim(this);
         }
 
@@ -88,6 +91,7 @@ namespace CosmicShore.UI
         void Opened()
         {
             Show(0);
+            _openedFrame = Time.frameCount;
             HubShoulders.Claim(this);
         }
 
@@ -101,7 +105,7 @@ namespace CosmicShore.UI
                 HubShoulders.Release(this);
                 return;
             }
-            if (ModePreviewWindow.AnyHasFocus) return;
+            if (ModePreviewWindow.AnyHasFocus || Time.frameCount == _openedFrame) return;
             var pad = Gamepad.current;
             if (pad == null) return;
             if (pad.rightShoulder.wasPressedThisFrame) Show(Step(_shown, +1, tabs.Length));

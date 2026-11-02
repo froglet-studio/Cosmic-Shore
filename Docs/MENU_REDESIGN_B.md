@@ -5643,7 +5643,8 @@ slide open. The window has the four tabs of Rev 44 (section 116).
     and artifact. A press cycles that setting.
     - Edits follow the Ark's own rules: only your own seat in a squad you joined, plus `KeepCardsOwn` and
       `FillPilots`.
-    - Save squad saves the change.
+    - The edits go to a copy of the squad, as the Ark's own squad editor does (`SquadsPage`'s draft). Save squad
+      writes it back and saves; closing the card or picking another squad drops an unsaved change.
   - **Story:** one beat at a time (the news, the place, who brought it, the water), with dots and < > to step. A beat
     with no sentence is left out.
 - **The ground** (`VoyageRoutePoster`, new): the map's own painted water, framed on the course at the card's shape
@@ -5661,10 +5662,25 @@ slide open. The window has the four tabs of Rev 44 (section 116).
 
 **Verified here** (no Unity editor ran):
 - `unity_refcompile` player and editor, and `/ship` `gates.sh`: ALL OK.
-- `author_voyage_window.py --check` and `--self-test` (seven negative controls).
+- `author_voyage_window.py --check` and `--self-test` (eight negative controls; `--check` reads the map column's
+  numbers back off the prefab, and a retuned `edgeGap` on disk fails it).
 - `author_voyage_assets.py --check` and `--self-test`; `author_menu_mission.py --check` and `--self-test`.
 - `check_console_logging.py` and `check_conditional_compilation.py`.
 - `VoyageCardRulesTests` (5) ran outside Unity against a small `Mathf` / `Vector2` stand-in, with a negative control:
   an unclamped tab step fails `Tabs_StopAtEitherEnd`.
 
 The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Fixed in the ship review:**
+- An RB that slid the hub onto the Voyage window also stepped it to Saga in the same frame. The tabs now skip the
+  frame the window opened on.
+- The route poster rebuilt its mesh every frame, even with the card shut. It now rebuilds only when the map repaints
+  or its own rect changes.
+- Ark crew edited the live squad. It now edits a copy, as the Ark does.
+
+**Follow-ups (open):**
+- A Save squad from the card does not publish the squad's public record (`SquadDirectory`); the Ark's
+  `SquadsPage` republishes after every read, so it catches up on the next Ark visit. Publishing from here is a
+  backend call, Shombith's area.
+- Faction display names are not authored, so "who brought it" names the pilot only.
+- D-pad stepping of the story's beats and the voyages, if the EventSystem's D-pad navigation can be shared.

@@ -20862,7 +20862,9 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
 - [ ] The open voyage's ground is the course on the map's water (amber Ark end, lime destination), and it follows the map as it is panned.
 - [ ] The pager (< >) goes round the voyages; the map frames each voyage's course.
 - [ ] The squad presets beside the formation switch the active squad (and it is still active after reopening the menu); Configure the squad opens Ark crew.
-- [ ] Ark crew: each seat's vessel / pilot / element / artifact cycle on press; in a joined squad only your own seat changes; Save squad keeps it (reopen to check).
+- [ ] Ark crew: each seat's vessel / pilot / element / artifact cycle on press; in a joined squad only your own seat changes; Save squad keeps it (reopen to check); closing the card without Save squad leaves the squad as it was.
 - [ ] Story: one beat at a time, the dots and < > step them, an empty beat is skipped.
 - [ ] Set sail from the open voyage sails that voyage, as the small card's did.
 - [ ] Gamepad: every control on the open card is reachable with the D-pad and A.
+- [ ] Sliding the hub onto the Voyage window with RB opens it on VOYAGES (that RB is not also a tab step).
+- [ ] Profiler: with the open card shut, `VoyageRoutePoster` rebuilds no mesh per frame (it redraws only when the map repaints).

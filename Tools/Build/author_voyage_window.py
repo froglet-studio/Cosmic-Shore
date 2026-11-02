@@ -609,6 +609,10 @@ def validate(text):
     assert Prefab.field(jb, "cardColumn") == p.rt(p.find("MissionView/Body/Voyages/Scroll")), \
         "VoyageJobsView does not slide the open voyage over the cards' column"
     assert re.search(r"^  columns: 2$", jb, re.M), "the voyage cards are not two across"
+    # The numbers rewrite2 wrote, read back off disk (a validator that only checks the shape passes a retuned value).
+    for key, want in (("edgeHeight", EDGE_H), ("edgeGap", EDGE_GAP)):
+        got = re.search(rf"^  {key}: (\S+)$", jb, re.M)
+        assert got and float(got.group(1)) == float(want), f"VoyageJobsView {key} is {got and got.group(1)}, not {want}"
     assert not p.child(p.find(content), "Featured") and not p.child(p.find(content), "Voyage2"), \
         "the saga voyages are back among the job cards"
     root_rt = p.rt(p.go_of(p.root()))
@@ -634,6 +638,7 @@ def self_test(text):
         ("an unwired tab", lambda t: re.sub(r"(  - button: \{fileID: )-?\d+", r"\g<1>0", t, count=1)),
         ("a dangling reference", lambda t: re.sub(r"(    page: \{fileID: )-?\d+", r"\g<1>12345", t, count=1)),
         ("three cards across", first("  columns: 2\n", "  columns: 3\n")),
+        ("the edge gap retuned", first(f"  edgeGap: {EDGE_GAP}\n", f"  edgeGap: {EDGE_GAP + 1}\n")),
         ("the modals' behaviour back", first(f"guid: {script_guid()}", f"guid: {MODALS_GUID}")),
     ]
     ok = all(expect(label, m) for label, m in cases)

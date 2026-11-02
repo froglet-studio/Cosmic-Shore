@@ -71,8 +71,8 @@ closed to every Ark (proposed).
     ground is the course on the map's own painted water (`VoyageRoutePoster`). It has three levels:
     - the voyage: the pager (< >, going round), title, three numbers, the route's two ends, and the squad with its
       presets beside it (`SquadBook`). It also has Configure the squad, Set sail, Ark crew and Story.
-    - Ark crew: three seats, each with its vessel, pilot, element and artifact, under the Ark's own edit rules. Save
-      squad keeps the change.
+    - Ark crew: three seats, each with its vessel, pilot, element and artifact, under the Ark's own edit rules, on a copy of
+      the squad. Save squad writes it back; closing the card drops an unsaved change.
     - Story: one beat at a time (the news, the place, who brought it, the water).
     Its words are `VoyageLines` (`Card*`, `Story*`, `Element*`). The Ark escort's card still opens in place to its
     difficulty stepper.

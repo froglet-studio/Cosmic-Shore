@@ -20,6 +20,9 @@ namespace CosmicShore.UI
         Color _ark = new(1f, 0.78f, 0.25f, 1f);
         Color _sea = new(0.75f, 0.75f, 0.8f, 1f);
         Texture _texture;
+        // The map's view the mesh was last built for: the poster rebuilds only when the map repaints or moves.
+        Vector2 _drawnLo, _drawnHi;
+        Rect _drawnRect;
 
         public override Texture mainTexture => _texture ? _texture : s_WhiteTexture;
 
@@ -38,22 +41,26 @@ namespace CosmicShore.UI
             SetMaterialDirty();
         }
 
-        // The map repaints its water as it is panned and zoomed; the card follows it while it shows.
+        // The map repaints its water as it is panned and zoomed; the card follows it, rebuilding only on a change.
         void LateUpdate()
         {
             if (!_source) return;
-            var tex = _source.TrySeaView(out var t, out _, out _, out _) ? t : null;
+            bool painted = _source.TrySeaView(out var tex, out _, out var lo, out var hi);
+            if (!painted) tex = null;
             if (tex != _texture) SetMaterialDirty();
-            SetVerticesDirty();
+            if (tex != _texture || lo != _drawnLo || hi != _drawnHi || rectTransform.rect != _drawnRect) SetVerticesDirty();
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
             _texture = null;
+            var r = rectTransform.rect;
+            _drawnRect = r;
             if (!_source || !_source.TrySeaView(out var tex, out var uv, out var lo, out var hi)) return;
             _texture = tex;
-            var r = rectTransform.rect;
+            _drawnLo = lo;
+            _drawnHi = hi;
             if (r.width < 1f || r.height < 1f) return;
             var (flo, fhi) = VoyageCardRules.Frame(lo, hi, _course, r.width / r.height);
             Vector2 Uv(Vector2 m) => new(uv.x + uv.width * Mathf.InverseLerp(lo.x, hi.x, m.x),

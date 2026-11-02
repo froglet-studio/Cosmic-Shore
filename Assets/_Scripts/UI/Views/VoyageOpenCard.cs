@@ -67,7 +67,12 @@ namespace CosmicShore.UI
         VoyageRoutePoster _poster;
         Model _model;
         int _level = 1, _beat;
-        bool _open, _dirtySquad;
+        bool _open;
+        // Ark crew edits a copy of the active squad, as the Ark does (SquadsPage's draft): Save squad writes it back, and
+        // closing the card or picking another squad drops it.
+        SavedSquad _draft;
+        int _draftIndex = -1;
+        bool Drafting => _draft != null;
         float _t, _from, _to;
 
         // Level parts.
@@ -387,6 +392,7 @@ namespace CosmicShore.UI
         {
             if (!_open) return;
             _open = false;
+            DropDraft();
             Animate(false);
         }
 
@@ -489,7 +495,7 @@ namespace CosmicShore.UI
         void DrawSquad()
         {
             var book = Book;
-            var active = book?.GetActive();
+            var active = Editing(book);
             int count = book?.Squads?.Count ?? 0;
             for (int i = 0; i < _presets.Count; i++)
             {
@@ -508,8 +514,8 @@ namespace CosmicShore.UI
             Set(_crewNote, active != null && active.IsJoined()
                 ? TemplateText.Fill(_lines.CardCrewJoined, "owner", active.OwnerName)
                 : _lines.CardCrewNote);
-            if (_saveLabel) _saveLabel.text = (_dirtySquad ? _lines.CardSaveSquad : _lines.CardSaved) ?? string.Empty;
-            if (_save) _save.interactable = _dirtySquad;
+            if (_saveLabel) _saveLabel.text = (Drafting ? _lines.CardSaveSquad : _lines.CardSaved) ?? string.Empty;
+            if (_save) _save.interactable = Drafting;
 
             string[] roles = { _lines.CardSeatLeader, _lines.CardSeatRogueOne, _lines.CardSeatRogueTwo };
             for (int seat = 0; seat < 3; seat++)
@@ -547,8 +553,8 @@ namespace CosmicShore.UI
             var book = Book;
             if (book == null || index == book.ActiveIndex) return;
             if (!book.TrySetActive(index)) return;
+            DropDraft();
             SaveBook();
-            _dirtySquad = false;
             // The pilots seated in the squad decide which voyages are offered: the window redraws its cards.
             SquadChanged?.Invoke();
             Draw();
@@ -570,8 +576,15 @@ namespace CosmicShore.UI
 
         void ChangeSetting(int seat, int setting)
         {
-            var squad = Book?.GetActive();
-            if (squad == null || !CanEdit(squad, seat)) return;
+            var book = Book;
+            var active = book?.GetActive();
+            if (active == null || !CanEdit(active, seat)) return;
+            if (_draft == null)
+            {
+                _draft = SquadMembership.Copy(active);
+                _draftIndex = book.ActiveIndex;
+            }
+            var squad = _draft;
             var slot = squad.GetSlot(seat);
             string previousPilot = slot.PilotId;
             bool mine = IsMySeat(squad, seat);
@@ -627,15 +640,27 @@ namespace CosmicShore.UI
                 foreach (var p in _catalog.Pilots) if (p) all.Add(p.Id);
                 squad.FillPilots(all);
             }
-            _dirtySquad = true;
             Draw();
+        }
+
+        /// <summary>The squad Ark crew shows: the unsaved copy while one is being edited, else the active squad.</summary>
+        SavedSquad Editing(SquadBook book) =>
+            _draft != null && book != null && _draftIndex == book.ActiveIndex ? _draft : book?.GetActive();
+
+        void DropDraft()
+        {
+            _draft = null;
+            _draftIndex = -1;
         }
 
         void SaveSquad()
         {
-            if (!_dirtySquad) return;
+            var book = Book;
+            if (_draft == null || book?.Squads == null) return;
+            if (_draftIndex == book.ActiveIndex && _draftIndex >= 0 && _draftIndex < book.Squads.Count)
+                book.Squads[_draftIndex] = _draft;
+            DropDraft();
             SaveBook();
-            _dirtySquad = false;
             SquadChanged?.Invoke();
             Draw();
         }
