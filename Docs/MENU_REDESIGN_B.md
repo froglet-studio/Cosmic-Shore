@@ -5603,3 +5603,15 @@ Each look now has three boards, one column per look (canvas version `1793656480-
 
 All three parts share the look's own background, lightly darkened for reading. In Play mode, Ark crew, Story,
 Voyage and the crumbs link the three boards of a look.
+
+### 118.2 Story, one beat at a time (2026-11-02)
+
+**Asked (Shombith, on the four Rev 49 Story boards):** "This is the part I hate, too much text and noise here, we have
+to fix this part."
+
+The four ruled sections (the summary paragraph, who brought it, the place, the news, the water) are gone. Story now
+shows **one beat at a time** (canvas version `1793656709-4581`):
+- Each beat is a small label, one sentence in large type, and a short attribution, over the look's own art.
+- The four beats are the news, the place, who brought it and the water.
+- D-pad left / right, or the dots under the beat, step through them. The title is a single small line at the top.
+- The buttons are unchanged: Set sail and Voyage.

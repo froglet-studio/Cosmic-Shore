@@ -254,16 +254,45 @@ STORY = [("Who brought it", "Oriel Vance, CITADEL, Hunter", "Reads a vault's she
 
 
 def level_story(ground):
-    blocks = "".join(f'<div style="display:flex;flex-direction:column;gap:5px;padding:14px 0;border-top:1px solid rgba(230,233,255,.14)">'
-                     f'<span class="lab" style="font-size:11px;color:rgba(230,233,255,.7)">{k}</span><span style="font-size:18px">{a}</span>'
-                     f'<span style="font-size:15px;line-height:1.5;color:#D6DAF5">{b}</span></div>' for k, a, b in STORY)
-    inner = (f'{crumbs(3)}<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:10px;align-items:center">'
-             f'<span class="lab" style="color:rgba(230,233,255,.75)">Story</span><span class="cap" style="font-size:11px;padding:2px 8px;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35);color:rgba(230,233,255,.7)">Optional</span></div>'
-             f'<span style="font-size:30px;line-height:1.1">{TITLE}</span>'
-             f'<span style="font-size:16px;color:#D6DAF5">Vaults are lit at Lantern Reach. Crack one with a payload, carry its artifact back to the Ark and stow it.</span></div>'
-             f'{blocks}<div style="flex:1"></div><div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:2">{kc("A")}<span>Set sail</span></button>'
+    """Level 3, Story (optional), rewritten after Shombith: "This is the part I hate, too much text and noise here."
+    One beat at a time - one sentence, large, over the look's own art - and D-pad left / right (or the dots) to step
+    through the four: the news, the place, who brought it, the water."""
+    dots = ('<sc-for list="{{sb.dots}}" as="d" hint-placeholder-count="4"><button class="pick" type="button" aria-label="{{d.label}}" onClick="{{d.pick}}" '
+            'style="width:{{d.w}}px;height:4px;background:{{d.c}};transition:width .2s"></button></sc-for>')
+    inner = (f'{crumbs(3)}<div style="display:flex;align-items:center;gap:10px"><span class="lab" style="color:rgba(230,233,255,.75)">Story</span>'
+             f'<span class="cap" style="font-size:10px;padding:2px 8px;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35);color:rgba(230,233,255,.7)">Optional</span>'
+             f'<span style="flex:1"></span><span style="font-size:15px;color:rgba(230,233,255,.8)">{TITLE}</span></div>'
+             f'<div style="flex:1"></div>'
+             f'<div style="display:flex;flex-direction:column;gap:18px;padding:0 10px">'
+             f'<span class="lab" style="color:{ROUTE}">{{{{sb.label}}}}</span>'
+             f'<span style="font-size:36px;line-height:1.25;text-shadow:0 2px 18px rgba(0,1,10,.75)">{{{{sb.line}}}}</span>'
+             f'<span class="cap" style="font-size:13px;color:rgba(230,233,255,.75)">{{{{sb.by}}}}</span></div>'
+             f'<div style="flex:1"></div>'
+             f'<div style="display:flex;align-items:center;gap:12px;justify-content:center">'
+             f'<button class="pick" type="button" aria-label="Previous" onClick="{{{{sb.prev}}}}"><span class="kc" style="height:26px">{DPAD_L}</span></button>'
+             f'<div style="display:flex;gap:8px;align-items:center">{dots}</div>'
+             f'<button class="pick" type="button" aria-label="Next" onClick="{{{{sb.next}}}}"><span class="kc" style="height:26px">{DPAD_R}</span></button></div>'
+             f'<div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:2">{kc("A")}<span>Set sail</span></button>'
              f'<a class="btn sl" href="{link(1)}" style="flex:1;text-decoration:none;background:transparent;color:#C9CDEA;box-shadow:inset 0 0 0 1px rgba(230,233,255,.35)">{kc("B")}<span>Voyage</span></a></div>')
-    return card_root(inner, ground + '<div class="abs" style="inset:0;background:rgba(6,10,38,.52)"></div>')
+    return card_root(inner, ground + '<div class="abs" style="inset:0;background:radial-gradient(ellipse 90% 60% at 50% 50%,rgba(6,10,38,.55),rgba(6,10,38,.82))"></div>')
+
+
+BEATS = [("The news", "A trader swears the shells at Lantern Reach are lit again.", "Heard at Celadon Harbour"),
+         ("The place", "Super-shielded shells drift in a lit shoal, each with an artifact inside.", "Lantern Reach, a vault field"),
+         ("Who brought it", "Reads a vault's shell like a face. Has opened more than she has kept.", "Oriel Vance - Citadel - Hunter"),
+         ("The water", "Light takes 580 years to reach Lantern Reach. You take 29 minutes.", "Coreward lane, 70 ly below the midplane")]
+
+
+def with_beats(page_html):
+    a = "constructor(p){ super(p); this.state = { ark: 0 }; }"
+    assert a in page_html and "return { ak: {" in page_html
+    page_html = page_html.replace(a, "constructor(p){ super(p); this.state = { ark: 0, beat: 0 }; }", 1)
+    page_html = page_html.replace("class Component extends DCLogic {", "const BEATS = %s;\nclass Component extends DCLogic {" % json.dumps(BEATS), 1)
+    vals = ("const b = this.state.beat, B = BEATS[b], n = BEATS.length;\n"
+            "const sb = { label: B[0], line: B[1], by: B[2], prev: () => this.setState({ beat: (b + n - 1) % n }), next: () => this.setState({ beat: (b + 1) % n }),\n"
+            "  dots: BEATS.map((x, i) => ({ label: x[0], w: i === b ? 28 : 8, c: i === b ? '#C8FF5A' : 'rgba(230,233,255,.35)', pick: () => this.setState({ beat: i }) })) };\n"
+            "return { sb, ak: {")
+    return page_html.replace("return { ak: {", vals, 1)
 
 
 LOOKS = [("A", "Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it", look_A),
@@ -304,7 +333,7 @@ def main():
         files[f"R{REV}{key}.dc.html"] = page(f"Rev {REV} {key} - {what}", fn())
         ground = LAST["ground"]
         files[f"R{REV}{key}Crew.dc.html"] = page(f"Rev {REV} {key} - level 2, Ark crew", level_crew(ground))
-        files[f"R{REV}{key}Story.dc.html"] = page(f"Rev {REV} {key} - level 3, Story", level_story(ground))
+        files[f"R{REV}{key}Story.dc.html"] = with_beats(page(f"Rev {REV} {key} - level 3, Story", level_story(ground)))
     nb = r43.HEAD.format(title=f"Rev {REV} - notes") + (f'<div style="width: {W}px; height: {H}px; position: relative; overflow: hidden; background: #00041F; color: {LIGHT}; '
                                                         f"font-family: 'Aldrich', 'Chakra Petch', sans-serif\">\n{notes()}\n</div>\n") + r43.TAIL.format(w=W, h=H)
     files[f"R{REV}Notes.dc.html"] = nb
