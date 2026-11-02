@@ -59,7 +59,8 @@ LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "H
                 "MapStarBody", "MapStarAlso", "MapLight", "MapTypeOB", "MapTypeB", "MapTypeA", "MapTypeF",
                 "MapTypeG", "MapTypeK", "MapTypeM", "MapTypeRedSupergiant", "MapTypeGiant", "MapGlobularBody",
                 "MapOpenBody", "MapOpenBodyYoung", "MapOpenAge", "MapAgeBillion", "MapAgeMillion",
-                "MapSourceCatalog", "MapSourceModel", "MapSourceTumult", "MapSourceReal", "MapSourceProposed"]
+                "MapSourceCatalog", "MapSourceModel", "MapSourceTumult", "MapSourceReal", "MapSourceProposed",
+                "MapCellLabel", "MapKindCell", "MapCellName", "MapCellBody", "MapCellBerth", "MapSourceCell"]
 
 
 def guid_for(name):

@@ -11,6 +11,27 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
+    /// The galaxy map's text sizes, in pixels at the menu canvas's 1920x1080 reference (Garrett, 2026-11-02: "words
+    /// should be readable at all semantic zoom levels"). The map copies its font and colour from a voyage card's eyebrow,
+    /// which is 14 px, so a share of it was unreadable; every map text has its own size here.
+    /// </summary>
+    public static class VoyageMapText
+    {
+        /// <summary>A voyage place's name under its marker.</summary>
+        public const float Place = 22f;
+        /// <summary>A landmark's name.</summary>
+        public const float Landmark = 20f;
+        /// <summary>A star's, a cluster's or a cell's name.</summary>
+        public const float Small = 18f;
+        /// <summary>The tier ladder and the readout.</summary>
+        public const float Ladder = 17f;
+        /// <summary>The course line under the map, and the edge view's caption.</summary>
+        public const float Caption = 18f;
+        /// <summary>The card a tapped thing opens.</summary>
+        public const float Card = 19f;
+    }
+
+    /// <summary>
     /// The galaxy map's deep zoom (Garrett, 2026-11-02: "browse the vicinity and preserve all the ability to zoom into the
     /// points of interest"), as the Voyage Board draws it (Docs/Voyages/VOYAGE_BOARD.md §4a-4b): the stars and clusters of
     /// <see cref="HyperSeaSkyField"/> under the map's places, the board's landmarks, their names where they earn one, the
@@ -24,7 +45,12 @@ namespace CosmicShore.UI
         const int LinesPerFrame = 6000;
         const int MaxLabels = 48;
         const int MaxVerts = 60000;
-        const float LadderRow = 15f, LadderGap = 6f, LadderLeft = 8f, LadderTop = 8f;
+        const float LadderRow = VoyageMapText.Ladder * 1.45f, LadderGap = 8f, LadderLeft = 8f, LadderTop = 8f;
+        // The cells (Garrett, 2026-11-02: "at the deepest levels we should see the hexagons and you should zoom into the
+        // hexagons to see cells"): their outline fades in as a cell grows from 16 to 36 px across (about the Region tier
+        // into the Neighbourhood), each names itself from 150 px, and a tap on open water opens a cell's card from 40 px.
+        const float CellFadeFrom = 16f, CellFadeTo = 36f, CellAlphaMax = .3f, CellNamedFrom = 150f, CellTapFrom = 40f;
+        const int MaxCells = 2500;
         const float Margin = 20f;
 
         static HyperSeaSkyCatalog s_Catalog;
@@ -40,6 +66,10 @@ namespace CosmicShore.UI
         static readonly Color FarColor = new(159 / 255f, 176 / 255f, 200 / 255f, .9f);
         static readonly Color LadderIdle = new(214 / 255f, 224 / 255f, 240 / 255f, .7f);
         static readonly Color PanelBack = new(.02f, .035f, .07f, .86f);
+        static readonly Color LabelBack = new(.02f, .035f, .07f, .62f);
+        static readonly Color CellLine = new(.84f, .88f, .94f, 1f);
+        static readonly Color CellLabel = new(.84f, .9f, 1f, .9f);
+        static readonly float Sq3 = Mathf.Sqrt(3f);
 
         readonly VoyageMapGraphic _map;
         readonly HyperSeaSkyField _field = new();
@@ -48,6 +78,9 @@ namespace CosmicShore.UI
         readonly List<Hit> _hits = new();
         readonly List<Candidate> _candidates = new();
         readonly List<Rect> _boxes = new();
+        readonly List<Rect> _backs = new();
+        readonly List<(int q, int r)> _cells = new();
+        float _cellAlpha;
         readonly List<TMP_Text> _labels = new();
         readonly List<TMP_Text> _ladder = new();
         readonly List<Rect> _ladderRects = new();
@@ -154,6 +187,8 @@ namespace CosmicShore.UI
             _clusters.Clear();
             _landmarks.Clear();
             _hits.Clear();
+            _cells.Clear();
+            _backs.Clear();
             _ladderRects.Clear();
             Selected = null;
             foreach (var t in _labels) if (t) t.gameObject.SetActive(false);
@@ -181,6 +216,7 @@ namespace CosmicShore.UI
             foreach (var p in _allLandmarks)
                 if (HyperSeaSky.LandmarkShown(p, w) && Math.Abs(p.X - cx) < halfW + 60 / s && Math.Abs(p.Y - cy) < halfH + 40 / s)
                     _landmarks.Add(p);
+            Cells(cx - halfW, cy - halfH, cx + halfW, cy + halfH);
             Hits();
             Ladder();
             Labels();
@@ -196,6 +232,53 @@ namespace CosmicShore.UI
         }
 
         bool SystemTier => _hasView && _view.W < 30;
+
+        /// <summary>A cell's width across its flats, in pixels, at the view's scale.</summary>
+        float CellPx => (float)(HyperSea.CellLy * _map.PixelsPerUnit);
+
+        /// <summary>A point of the map's rect in the board's frame (light years).</summary>
+        (double x, double y) BoardAt(Vector2 at)
+        {
+            var r = _map.rectTransform.rect;
+            double s = _map.PixelsPerUnit;
+            var c = _map.ViewCentre;
+            return (c.x + (at.x - r.center.x) / s, -(c.y + (at.y - r.center.y) / s));
+        }
+
+        /// <summary>The cells the view's outline grid draws (none while a cell is too small to see).</summary>
+        void Cells(double x0, double y0, double x1, double y1)
+        {
+            _cells.Clear();
+            float px = CellPx;
+            _cellAlpha = CellAlphaMax * Mathf.Clamp01((px - CellFadeFrom) / (CellFadeTo - CellFadeFrom));
+            if (_cellAlpha <= 0f) return;
+            double row = HyperSea.CellLy * Sq3 / 2;
+            int r0 = (int)Math.Floor(y0 / row) - 1, r1 = (int)Math.Ceiling(y1 / row) + 1;
+            for (int rr = r0; rr <= r1; rr++)
+            {
+                int q0 = (int)Math.Floor(x0 / HyperSea.CellLy - rr / 2.0) - 1, q1 = (int)Math.Ceiling(x1 / HyperSea.CellLy - rr / 2.0) + 1;
+                for (int q = q0; q <= q1; q++)
+                {
+                    if (_cells.Count >= MaxCells) return;
+                    _cells.Add((q, rr));
+                }
+            }
+        }
+
+        /// <summary>The card a cell opens: its centre in the plane, at the height the view slices.</summary>
+        SkyObject CellObject(int q, int r)
+        {
+            var (x, y) = HyperSea.CellCentre(q, r);
+            return new SkyObject { Kind = SkyKind.Cell, X = x, Y = y, Z = _view.Slab ? _view.Zf : HyperSea.SolHeight, CellQ = q, CellR = r };
+        }
+
+        /// <summary>A hexagon's corner k (0-5) on the screen: pointy-top, corners at 30 + 60k degrees in the board's frame,
+        /// whose y runs down the screen.</summary>
+        static Vector2 Corner(Vector2 centre, float circumPx, int k)
+        {
+            float t = Mathf.PI / 6f + k * Mathf.PI / 3f;
+            return centre + new Vector2(Mathf.Cos(t), -Mathf.Sin(t)) * circumPx;
+        }
 
         void Hits()
         {
@@ -230,6 +313,14 @@ namespace CosmicShore.UI
                 float d = d0 + (h.Object.Kind == SkyKind.Landmark ? 0f : 8f);
                 if (d < bestD) { bestD = d; best = h.Object; }
             }
+            // Open water at the deep tiers opens the cell under the tap; a second tap on the same cell closes it.
+            if (best == null && _hasView && CellPx >= CellTapFrom)
+            {
+                var (x, y) = BoardAt(at);
+                var (q, r) = HyperSea.CellOf(x, y);
+                if (Selected is { Kind: SkyKind.Cell } c && c.CellQ == q && c.CellR == r) return null;
+                best = CellObject(q, r);
+            }
             return best;
         }
 
@@ -242,6 +333,28 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             double s = _map.PixelsPerUnit;
             var lim = new Rect(r.xMin - 10f, r.yMin - 10f, r.width + 20f, r.height + 20f);
+            // The cells' outlines first, under everything: each cell draws three of its six edges (the 0, 60 and 120
+            // degree sides), so every shared edge is drawn once.
+            if (_cellAlpha > 0f)
+            {
+                float circ = CellPx / Sq3;
+                var lineCol = new Color(CellLine.r, CellLine.g, CellLine.b, _cellAlpha);
+                var cellLim = new Rect(r.xMin - circ, r.yMin - circ, r.width + 2f * circ, r.height + 2f * circ);
+                foreach (var (q, cr) in _cells)
+                {
+                    if (vh.currentVertCount > MaxVerts / 2) break;
+                    var (x, y) = HyperSea.CellCentre(q, cr);
+                    var at = At(x, y);
+                    if (!cellLim.Contains(at)) continue;
+                    var c5 = Corner(at, circ, 5);
+                    var c0 = Corner(at, circ, 0);
+                    var c1 = Corner(at, circ, 1);
+                    var c2 = Corner(at, circ, 2);
+                    VoyageMapGraphic.Line(vh, c5, c0, 1f, lineCol, white);
+                    VoyageMapGraphic.Line(vh, c0, c1, 1f, lineCol, white);
+                    VoyageMapGraphic.Line(vh, c1, c2, 1f, lineCol, white);
+                }
+            }
             foreach (var m in _stars)
             {
                 if (vh.currentVertCount > MaxVerts) return;
@@ -285,13 +398,24 @@ namespace CosmicShore.UI
                 if (!clim.Contains(at)) continue;
                 VoyageMapGraphic.Diamond(vh, at, LandmarkSize(p), LandmarkColor(p, style), white);
             }
-            if (Selected != null)
+            if (Selected is { Kind: SkyKind.Cell })
+            {
+                var at = At(Selected.X, Selected.Y);
+                float circ = CellPx / Sq3;
+                for (int k = 0; k < 6; k++)
+                    VoyageMapGraphic.Line(vh, Corner(at, circ, k), Corner(at, circ, (k + 1) % 6), 2f, Color.white, white);
+            }
+            else if (Selected != null)
             {
                 var at = At(Selected.X, Selected.Y);
                 float rad = Selected.IsCluster ? (float)HyperSeaSky.ClusterRadius(Selected, s) + 5f
                     : Selected.Kind == SkyKind.Landmark ? LandmarkSize(Selected) * .5f + 5f : 6f + 2f;
                 Ring(vh, at, rad, 1f, Color.white, 24, white);
             }
+            // The dark plates under the names and the readout, so they read over bright stars and thick water.
+            foreach (var b in _backs)
+                VoyageMapGraphic.Quad(vh, new Vector2(b.xMin, b.yMin), new Vector2(b.xMin, b.yMax), new Vector2(b.xMax, b.yMax),
+                    new Vector2(b.xMax, b.yMin), LabelBack, white, white, white, white);
             // The ladder's chips, under their text.
             for (int i = 0; i < _ladderRects.Count; i++)
             {
@@ -384,7 +508,7 @@ namespace CosmicShore.UI
 
         // ── Labels ───────────────────────────────────────────────────────────
 
-        TMP_Text NewText(string name, float sizeShare)
+        TMP_Text NewText(string name, float size)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(_map.transform, false);
@@ -393,18 +517,18 @@ namespace CosmicShore.UI
             {
                 t.font = _template.font;
                 t.fontSharedMaterial = _template.fontSharedMaterial;
-                t.fontSize = _template.fontSize * sizeShare;
                 t.color = _template.color;
             }
+            t.fontSize = size;
             t.textWrappingMode = TextWrappingModes.NoWrap;
             t.raycastTarget = false;
             var rt = (RectTransform)go.transform;
             rt.pivot = new Vector2(0f, .5f);
-            rt.sizeDelta = new Vector2(220f, 18f);
+            rt.sizeDelta = new Vector2(400f, size * 1.4f);
             return t;
         }
 
-        float LabelSize(bool small) => (_template ? _template.fontSize : 24f) * (small ? .42f : .5f);
+        static float LabelSize(bool small) => small ? VoyageMapText.Small : VoyageMapText.Landmark;
 
         void Labels()
         {
@@ -443,6 +567,24 @@ namespace CosmicShore.UI
                     Priority = big ? 2f : p.Region == "far" ? 0f : 1f, Color = _template ? _template.color : Color.white,
                 });
             }
+            // A cell big enough to read names itself, under everything else's names.
+            if (_lines != null && _cellAlpha > 0f && CellPx >= CellNamedFrom)
+            {
+                float px = CellPx;
+                foreach (var (q, cr) in _cells)
+                {
+                    var (x, y) = HyperSea.CellCentre(q, cr);
+                    string text = TemplateText.Fill(_lines.MapCellLabel, "sea",
+                        VoyageJobsView.SeaName(_lines, HyperSea.Sea(HyperSea.Density(x, y))),
+                        "q", q.ToString(CultureInfo.InvariantCulture), "r", cr.ToString(CultureInfo.InvariantCulture));
+                    // Near the top of the hexagon, starting left of its centre, clear of a star at the centre.
+                    _candidates.Add(new Candidate
+                    {
+                        Text = text, At = At(x, y) + new Vector2(-px * .28f, px * .3f), Offset = 0f, Priority = -3f,
+                        Color = CellLabel, Small = true,
+                    });
+                }
+            }
             _candidates.Sort((a, b) => b.Priority.CompareTo(a.Priority));
 
             var r = _map.rectTransform.rect;
@@ -452,13 +594,21 @@ namespace CosmicShore.UI
             if (_card && _card.gameObject.activeSelf) _boxes.Add(TextBox(_card.rectTransform));
             _map.ReservedBoxes(_boxes);
 
+            _backs.Clear();
+            if (_readout && _readout.gameObject.activeSelf)
+            {
+                var rb = TextBox(_readout);
+                rb.width = Mathf.Min(rb.width, _readout.preferredWidth) + 8f;
+                rb.x -= 4f;
+                _backs.Add(rb);
+            }
             int used = 0;
             foreach (var cand in _candidates)
             {
                 if (used >= MaxLabels) break;
                 if (string.IsNullOrEmpty(cand.Text)) continue;
                 float size = LabelSize(cand.Small);
-                float bw = cand.Text.Length * size * .52f + 6f, bh = size * 1.3f;
+                float bw = cand.Text.Length * size * .56f + 8f, bh = size * 1.35f;
                 float by = cand.At.y - bh * .5f;
                 float bx = cand.At.x + cand.Offset + 4f;
                 if (Clash(bx, by, bw, bh, r))
@@ -468,7 +618,9 @@ namespace CosmicShore.UI
                     bx = left;
                 }
                 _boxes.Add(new Rect(bx, by, bw, bh));
-                if (_labels.Count <= used) _labels.Add(NewText("SkyLabel", .42f));
+                // A dark plate under the name, as the board draws it, so it reads over bright stars and thick water.
+                _backs.Add(new Rect(bx, by, bw, bh));
+                if (_labels.Count <= used) _labels.Add(NewText("SkyLabel", VoyageMapText.Small));
                 var t = _labels[used++];
                 t.gameObject.SetActive(true);
                 t.fontSize = size;
@@ -525,13 +677,13 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             _tier = HyperSeaSky.TierOf(_view.W);
             _ladderRects.Clear();
-            float size = LabelSize(true);
+            float size = VoyageMapText.Ladder;
             float y = r.yMax - LadderTop;
             for (int i = 0; i < Rows; i++)
             {
                 if (i == HyperSeaSky.Tiers.Length) y -= LadderGap;
                 string text = RowText(i);
-                if (_ladder.Count <= i) _ladder.Add(NewText("Tier", .42f));
+                if (_ladder.Count <= i) _ladder.Add(NewText("Tier", VoyageMapText.Ladder));
                 var t = _ladder[i];
                 bool show = !string.IsNullOrEmpty(text) && y - LadderRow > r.yMin;
                 t.gameObject.SetActive(show);
@@ -541,7 +693,7 @@ namespace CosmicShore.UI
                 t.fontStyle = on ? FontStyles.Bold : FontStyles.Normal;
                 t.color = on ? new Color(.02f, .035f, .07f, 1f) : LadderIdle;
                 if (!ReferenceEquals(t.text, text)) t.text = text;
-                float w = text.Length * size * .62f + 12f;
+                float w = text.Length * size * .66f + 14f;
                 var box = new Rect(r.xMin + LadderLeft, y - LadderRow, w, LadderRow - 2f);
                 _ladderRects.Add(box);
                 ((RectTransform)t.transform).anchoredPosition = new Vector2(box.xMin + 6f, box.center.y) - r.center;
@@ -555,7 +707,7 @@ namespace CosmicShore.UI
             if (_lines == null) return;
             if (!_readout)
             {
-                _readout = NewText("Readout", .42f);
+                _readout = NewText("Readout", VoyageMapText.Ladder);
                 _readout.overflowMode = TextOverflowModes.Ellipsis;
                 ((RectTransform)_readout.transform).pivot = new Vector2(0f, 1f);
             }
@@ -567,14 +719,15 @@ namespace CosmicShore.UI
             bool show = !string.IsNullOrEmpty(text);
             _readout.gameObject.SetActive(show);
             if (!show) return;
-            _readout.fontSize = LabelSize(true);
+            _readout.fontSize = VoyageMapText.Ladder;
             _readout.color = _template ? _template.color : Color.white;
             if (_readout.text != text) _readout.text = text;
             float left = _ladderRects.Count > 0 ? _ladderRects[0].xMin : r.xMin + LadderLeft;
             float maxW = 0f;
             foreach (var b in _ladderRects) maxW = Mathf.Max(maxW, b.xMax);
             var rt = (RectTransform)_readout.transform;
-            rt.sizeDelta = new Vector2(Mathf.Max(80f, r.width * .5f), LabelSize(true) * 1.4f);
+            rt.sizeDelta = new Vector2(Mathf.Max(80f, r.width - (Mathf.Max(left, maxW + 8f) - r.xMin) - r.width * .32f),
+                VoyageMapText.Ladder * 1.4f);
             rt.anchoredPosition = new Vector2(Mathf.Max(left, maxW + 8f), r.yMax - LadderTop) - r.center;
         }
 
@@ -623,7 +776,7 @@ namespace CosmicShore.UI
                 _card.raycastTarget = false;
                 var crt = _card.rectTransform;
                 crt.pivot = new Vector2(1f, 0f);
-                _cardText = NewText("Text", .45f);
+                _cardText = NewText("Text", VoyageMapText.Card);
                 _cardText.transform.SetParent(go.transform, false);
                 _cardText.textWrappingMode = TextWrappingModes.Normal;
                 _cardText.richText = true;
@@ -637,9 +790,9 @@ namespace CosmicShore.UI
             }
             _card.gameObject.SetActive(show);
             if (!show) return;
-            _cardText.fontSize = LabelSize(false);
+            _cardText.fontSize = VoyageMapText.Card;
             _cardText.text = text;
-            float w = Mathf.Min(320f, r.width * .46f);
+            float w = Mathf.Min(460f, r.width * .5f);
             float h = _cardText.GetPreferredValues(text, w - 16f, 0f).y + 12f;
             h = Mathf.Min(h, r.height - 16f);
             var box = _card.rectTransform;
@@ -662,6 +815,20 @@ namespace CosmicShore.UI
                     body = o.Line;
                     source = o.Tag == "A" ? L.MapSourceProposed : L.MapSourceReal;
                     break;
+                case SkyKind.Cell:
+                {
+                    string qs = o.CellQ.ToString(CultureInfo.InvariantCulture), rs = o.CellR.ToString(CultureInfo.InvariantCulture);
+                    kind = L.MapKindCell;
+                    name = TemplateText.Fill(L.MapCellName, "q", qs, "r", rs);
+                    double n = HyperSea.Density(o.X, o.Y);
+                    string berth = BerthOf(o.CellQ, o.CellR);
+                    body = TemplateText.Fill(L.MapCellBody, "sea", VoyageJobsView.SeaName(L, HyperSea.Sea(n)),
+                        "density", n < 10 ? n.ToString(n < .1 ? "0.000" : "0.00", CultureInfo.InvariantCulture) : Fmt(n),
+                        "danger", HyperSea.Danger(n).ToString("0.0", CultureInfo.InvariantCulture),
+                        "berth", berth.Length > 0 ? TemplateText.Fill(L.MapCellBerth, "place", berth) : string.Empty);
+                    source = L.MapSourceCell;
+                    break;
+                }
                 case SkyKind.Globular:
                 case SkyKind.OpenCluster:
                 {
@@ -706,6 +873,22 @@ namespace CosmicShore.UI
             }
             return TemplateText.Fill(L.MapInspect, "kind", kind, "name", name, "body", body, "source", source,
                 "where", Where(o));
+        }
+
+        /// <summary>The name of the charted place whose berth (<see cref="VoyageChart.BerthCells"/>) holds a cell, or empty.</summary>
+        string BerthOf(int q, int r)
+        {
+            var content = _map.Content;
+            if (content?.Locations == null) return string.Empty;
+            string best = string.Empty;
+            int bestSteps = VoyageChart.BerthCells + 1;
+            foreach (var l in content.Locations)
+            {
+                if (l == null || !l.Charted) continue;
+                int steps = HyperSea.CellSteps(HyperSea.CellOf(l.GalaxyX, l.GalaxyY), (q, r));
+                if (steps < bestSteps) { bestSteps = steps; best = l.Name ?? string.Empty; }
+            }
+            return best;
         }
 
         string Where(SkyObject o)
