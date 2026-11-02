@@ -494,12 +494,20 @@ def _code_ref_and_tree():
 
 
 def _checkout_moved(ref, tree):
-    """A checkout (the VM): fetch and fast-forward the branch; True when Tools/Compute changed, so the caller restarts."""
+    """A checkout (the VM): True when its Tools/Compute is no longer `tree` (the code this agent started on), so the
+    caller restarts. Where a hub runs on the same checkout (its key file is here), the HUB pulls and the agent only
+    follows: the agent pulling first left the hub comparing a current checkout with the branch and never restarting
+    (Shombith, 2026-11-02, the installer fixes never reaching the live console). Elsewhere the agent pulls itself."""
     try:
+        head = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
+        if head and head != tree:
+            return True
         L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
         now = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
         if not now or now == tree:
             return False
+        if os.path.exists(os.path.join(L.cache_dir(), "hub.json")):
+            return False                                  # the hub pulls; this agent sees HEAD move at its next look
         L.git_ok("pull", "--ff-only", "--quiet")
         return (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() == now
     except Exception as e:

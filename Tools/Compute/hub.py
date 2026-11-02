@@ -130,6 +130,8 @@ class Hub:
         self.ai_sync, self.ai_sync_at = None, 0.0        # the hourly ai-branch sync (the VM only): its last result
         self.updates = {}                                # Update AI: vessel -> {state, by, note, at} (archive_update.py)
         self.code_check_at = time.time()                 # the VM's self-restart on newer code (restart_if_code_moved)
+        self.code_tree = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() if not app else ""   # the code this hub RUNS
+        self.code_update = None                          # the last look for newer code: {at, note} when it could not
         self.leaving = set()                             # computers the console removed: their next heartbeat is told to leave
         self.forgets = {}                                # Remove / Delete: machine or request id -> {state, note, at}
 
@@ -179,24 +181,30 @@ class Hub:
             time.sleep(self.rebuild)
 
     def restart_if_code_moved(self):
-        """The VM: when the checkout's upstream branch has newer Tools/Compute, pull it and exit; systemd restarts the
-        hub on the new code within seconds (Restart=always). Nobody types a restart (Shombith, 2026-11-01)."""
+        """The VM: when the checkout's upstream branch has newer Tools/Compute, pull it; and whenever the checkout's
+        Tools/Compute is no longer the one this hub loaded (it pulled, or the VM's worker pulled first: Shombith,
+        2026-11-02, the hub sat on old code while the checkout was current), exit; systemd restarts the hub on the
+        new code within seconds (Restart=always). Nobody types a restart (Shombith, 2026-11-01)."""
         try:
             up = (L.git_ok("rev-parse", "--abbrev-ref", "@{u}") or "").strip()
             if not up.startswith("origin/"):
                 return
             ref = up[len("origin/"):]
             L.git_ok("fetch", "--quiet", "--no-tags", "origin", f"+refs/heads/{ref}:refs/remotes/origin/{ref}")
-            mine = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
+            head = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
             theirs = (L.git_ok("rev-parse", f"origin/{ref}:Tools/Compute") or "").strip()
-            if not mine or not theirs or mine == theirs:
+            if theirs and head != theirs:
+                if L.git_ok("pull", "--ff-only", "--quiet") is None:
+                    self.code_update = {"at": L.now(), "note": f"origin/{ref} moved but the checkout could not fast-forward"}
+                    return
+                head = (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip()
+            if not head or not self.code_tree or head == self.code_tree:
+                self.code_update = None
                 return
-            L.git_ok("pull", "--ff-only", "--quiet")
-            if (L.git_ok("rev-parse", "HEAD:Tools/Compute") or "").strip() != theirs:
-                return
-            L.log(f"hub: origin/{ref} has newer Froglet Compute: pulled it, restarting", self.quiet)
+            L.log(f"hub: the checkout's Froglet Compute is newer than the one running ({self.code_tree[:7]} -> {head[:7]}): restarting", self.quiet)
             os._exit(0)
         except Exception as e:
+            self.code_update = {"at": L.now(), "note": f"could not look for newer code: {e}"}
             L.log(f"hub: could not look for newer code ({e})", self.quiet)
 
     # ── the ai branch: the VM keeps it current, so nobody runs a sync by hand (README section 15) ──
@@ -502,6 +510,7 @@ def handler(hub, page):
             if path == "/api/status":
                 d = hub.snapshot() or {}
                 return self._send(200, {"hub": True, "app": bool(hub.app), "built": d.get("generated"), "error": hub.error,
+                                        "code": hub.code_tree[:12], "code_update": hub.code_update,
                                         "ai_synced": hub.ai_sync if hub.syncs_ai() else None,
                                         "updates": hub.updates, "forgets": hub.forgets,
                                         "live": (d.get("live") or {}).get("machines", []),
