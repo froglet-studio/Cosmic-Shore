@@ -1196,6 +1196,19 @@ a signature that would have been an editor-only error: **`Obvious.Soap`'s `Scrip
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
 does not accept one. Any helper taking a SOAP list must take `IList<T>`.
 
+### Trap: the refcompile cache's `UnityEngine.CoreModule.dll` COMPILES a harness and then throws at run time
+
+The obvious shortcut for the run above is to reference `unity_refcompile`'s cached engine assembly
+(`/tmp/unity_refcompile_cache/engine_refs/UnityEngine.CoreModule.dll`) instead of writing a stub. It compiles, and
+every test that never touches an engine member passes, which makes it look right. It is a REFERENCE assembly: its
+method bodies are `throw null`, so the first `Mathf.Clamp`, `Vector2.Min` or `new Vector2(...)` operator in a test
+fails with a bare `NullReferenceException` whose message names nothing (`claude/epic-fermat-6c7n2l`, 2026-11-02:
+3 of 5 `VoyageCardRulesTests` passed, 2 "failed" on `Mathf.Clamp`). Print `e.InnerException.ToString()`, not
+`.Message`: the stack's top frame is `UnityEngine.Mathf...`, which settles it. The fix is the stub this technique
+already describes, with only the members the code under test calls: a `struct Vector2` with its operators and
+`Min`/`Max`, and the `Mathf` statics. Then negative-control the run (break one clamp, watch the right test fail), since
+a stub you wrote can agree with a bug you wrote.
+
 ### Technique: test a BINARY-FORMAT reader against the real tool's output, not hand-written bytes
 
 A reader for a format you did not author (a protobuf manifest, an ELF header, a signature

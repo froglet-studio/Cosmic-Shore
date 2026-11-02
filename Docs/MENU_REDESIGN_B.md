@@ -28,7 +28,7 @@ section here. The build that follows a pick is verified against the picked board
 |---|---|---|---|
 | Menu Redesign | `menu-redesign` | The master tab: items 0-12 and every round from Rev 3 to Rev 40, each old page a titled section (newest first) | Shombith, 2026-11-02 (section 112) |
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
-| Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, section 113) | Shombith, 2026-11-02 (section 112) |
+| Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118; built in section 119) | Shombith, 2026-11-02 (section 112) |
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 
 Work goes one item at a time, with three approval gates per item:
@@ -5397,3 +5397,290 @@ Meerkat) shows its element's Codex shape. `Tools/Build/fleet_codex.py` now reads
 game (the `/fleet-codex` skill lists each source). Checked in Chromium at 1600 px dark and 400 px light: no script error,
 no broken image, no sideways scroll.
 
+## 116. Rev 44 mockups: the Voyage window, four more - four tabs on the sea lines (2026-11-02; Shombith picked I, section 118)
+
+**Asked (Shombith, 2026-11-02, after Rev 43):** "I made a mistake episode 1 is not the hypersea. Episode saga are
+seperate things and so is quest tracker. SO 4 tabs and Voyage opens up first obviously with episodes coming soon or
+locked. And also I didn't much like the mockup ideas we should add sea lines in the background maybe create more
+mockups like 4 more."
+
+**On the canvas:** tab **Menu Redesign C**, round "Rev 44 - Voyage window, four more ..." under Rev 43 (version
+`1793649383-746d`). Copies `Docs/MenuRedesignB/board/R44*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r44_voyage_window.py` (it reuses Rev 43's pieces and takes the sea lines from R40E). One row
+per option, six screens each: **Voyage** (level 1), **Crew** (level 2), **Story** (level 3), **Saga**, **Quests**,
+**Episodes**; Compare and notes on the first row.
+
+- **The window's four tabs, on LB / RB:** **Voyages** (opens first), **Saga** (Tandava, then the Severing),
+  **Quests** (the quest tracker: Scurry, Hex Race, Joust, Maelstrom, Vessel Hangar, 0 of 5) and **Episodes**
+  (locked, "Coming soon").
+- **The sea lines** (the approved R40E layer) run behind every board. The map and the edge view stay opaque on the
+  left; the cards sit on glass so the lines show at their edges.
+- **G - Crew's hand:** each voyage is a card a crew member hands you, the open one in front and the others standing
+  behind it (LT / RT through them); Ark crew and Story are the back of the same card, turned over with Y.
+- **H - Logbook:** the voyage is a ruled page of the Ark's log with its numbers as a ledger; Ark crew is the next page
+  (a crew manifest: three seats x vessel, pilot, element, artifact), Story the page after.
+- **I - Formation (recommended):** your Ark leads the card, its three hulls in formation, LT / RT through your Arks and
+  Configure one press away; the voyage sits under it. Ark crew grows the formation into its three seats with their
+  settings. Recommended because the preset becomes the thing you see, and level 2 reads as the Ark opening up rather
+  than a new form.
+- **J - On the sea:** no card box at all; the levels are columns standing on the sea lines, and a deeper level pushes
+  the voyage into a slim column beside it.
+- Saga and Quests share one frame in every option (the art large where the map sits, the list in the option's card);
+  Episodes is one locked panel. Their contents are unchanged.
+
+**Differs from the build:** as section 113, plus a fourth tab: the quest tracker leaves the Episodes modal for its own
+Quests tab, and Episodes becomes a locked tab until episodes ship.
+
+### 116.1 Edit on the Rev 43 and Rev 44 boards: the route lit, and how you move between voyages (2026-11-02)
+
+**Asked (Shombith):** "Can we show the waypoints in the UI in a better animated glowy way and how do we navigate
+between actual voyage cards? Please show that edit on the old mockups." So the existing boards were edited in place
+(the skill's rule: a board is changed only when the person asks for it), canvas version `1793649920-b902`.
+
+- **Edited:** the level-1 Voyage board of every option, R43AVoyage-R43FVoyage and R44GVoyage-R44JVoyage, plus
+  R44ICrew, R44Compare and R44Notes (I's Ark switch moved off LT / RT). Generators: `r43_voyage_window.py`
+  (`route_glow`, `map_glow`, `voyage_pager`, `GLOW_CSS`) and `r44_voyage_window.py`.
+- **The waypoints, lit:** the route on the card is drawn in the map's own course colour (`#C8FF5A`). A light sweeps
+  from the Ark (Tumult, ringed in the Ark's amber) to the destination every 4.2 s, each waypoint flares as the sweep
+  passes and stays softly lit, and the destination pulses a ring. The same waypoints light on the map at the same
+  moments (their positions measured on the render), so the card and the map read as one route.
+- **Moving between voyages:** one answer in every option. A pager of the four voyages the crew found heads the card
+  (number, place, minutes, intensity, who found it; the open one outlined with a route-coloured line under it).
+  D-pad left / right steps through them, a click picks one, a swipe on the card turns it, and the map follows the open
+  voyage. LT / RT stay with the menu's screens and LB / RB with the window's tabs. The voyage strip that sat on the map
+  in A, B, E, G, H and I is gone at level 1, so there is one list, not two. In I the Ark switch moved from LT / RT to
+  D-pad up / down for the same reason.
+- This lifts the quiet rule's "no idle motion" for the route only, because it was asked for; nothing else on the
+  boards moves except the sea lines.
+
+### 116.2 Edit on the Rev 43 and Rev 44 boards: the HyperSea map zooms, as Garrett built it (2026-11-02)
+
+**Asked (Shombith):** "Garrett built the new zoomed in and zoomed out feature of the hypersea map. It is almost like a
+google map. So take that pull in and propose me the new mockup along with that. Just re edit the old mockups." / "This
+is called hypersea map, that should be called it in the UI as well." / "Confirmed with Garrett, name it HyperSea map."
+
+- **Taken in:** `bleeding-edge` merged into this branch, bringing Garrett's deep zoom (a1922d78) and readable names
+  and 20 ly cells (froglet-studio/Cosmic-Shore#1717): seven tiers (`VoyageLines.MapTier*`), the dives, the readout, and
+  a card for a tapped star, cluster, landmark or cell.
+- **Edited in place** (canvas version `1793650687-b174`): the ten level-1 Voyage boards are now **interactive**
+  (`is_interactive`). Their map is the **HyperSea map explorer**:
+  - **+ and -** and a zoom ladder (Galaxy, Arm, Sector, Region, Neighbourhood, Cell, System) step through the tiers.
+    Each tier is the Voyage Board rendered at that tier (uploaded renders), and the change is a 0.32 s zoom-like
+    crossfade: the outer view grows away as you go in.
+  - The **readout** uses Garrett's authored lines: `{tier}: {what}`, plus the scale bar as the board draws it.
+  - **Dive chips:** Your Ark (to System at Tumult), This course (Region, the lit route), All voyages (Sector, where
+    all four voyages are pinned, so it doubles as a way to pick one).
+  - A **galaxy inset** in the corner shows where you are looking.
+  - At Neighbourhood and deeper, Tumult's **tap card** (MapInspect, the board's own words) is shown.
+  - The pad hint reads: R3 Explore, RS Pan, LT / RT Zoom, A Inspect. **A proposal:** once R3 has given the map
+    focus, the triggers zoom instead of switching menu screens, and B gives the focus back.
+- **Named the HyperSea map** in the UI, on every board that shows it (the Crew and Story boards too). The **Galaxy**
+  tier keeps its own name.
+- The edge view stays the course profile at every tier. In Garrett's build it follows the map's scale; drawing that
+  is a follow-up if the explorer is picked.
+
+### 116.3 Edit on the Rev 43 and Rev 44 boards: a quieter voyage pager and card (2026-11-02)
+
+**Asked (Shombith, on R44 G with two screenshots, the pager and the card):** "I don't like these parts."
+Edited in place (canvas version `1793651196-2586`), in the shared pieces of `r43_voyage_window.py`, so all ten
+options changed:
+- **The pager** is now a tab strip: the four place names in full, the open one underlined in the route colour, and
+  D-pad keycaps at its ends. The chips, the minutes / intensity / callsign line under each name and the
+  "D-pad, click or swipe" hint are gone, so nothing is cut off.
+- **Who found it** is one line ("Found by Oriel Vance, CITADEL - Hunter"), not a monogram badge.
+- **The numbers** are no longer a bordered six-cell grid. Course, sail and intensity are shown large; pays, finds and
+  odds are one line.
+- **The waypoints** start at "Tumult" (it was cut off as "Tumult Rim harbo...").
+- **Your Ark** rows are larger: the domain sits under the name and the three hulls are 80 x 30.
+- **G's** cards behind the open one are two, closer and fainter (were three). A and G got the course-mix bar back
+  into the space this freed.
+
+### 116.4 R44 I (Formation): the squad presets beside the formation, and they switch it (2026-11-02)
+
+Shombith's comments on R44IVoyage:
+- "Text should read configure the squad".
+- "Add the squad presets over here. Do not use domain colors."
+
+Both were applied on the page, as a preset row at the bottom of the card. Then: "move the presets beside the ark
+preview and we can switch them."
+
+Built in `r44_voyage_window.py` (`squad_beside`, `formation_live`, `with_arks`) and published (canvas version
+`1793655575-253a`):
+- At level 1 the formation and the squad presets now stand side by side, with no domain colours.
+- Picking Skim Wing or Breakers, or D-pad up / down, swaps the formation's three hulls and the squad's name.
+- "Configure the squad" sits under the presets.
+
+## 117. Rev 46 mockups: small voyage cards that slide open, from the card or the HyperSea map (2026-11-02, the direction going ahead; awaiting board approval)
+
+**Asked (Shombith, 2026-11-02, after the Rev 43-44 edits):** "Rather than big cards make smaller cards like arena maybe
+and they slide open when we click them or select them in the map. With this design move ahead."
+
+**On the canvas:** tab **Menu Redesign C**, round "Rev 46 - Voyage window: small voyage cards that slide open ..."
+(version `1793651532-f418`). Copies are in `Docs/MenuRedesignB/board/R46*.dc.html` and the generator is
+`Docs/MenuRedesignB/rounds/r46_voyage_cards.py`. One component draws every board, and each state board starts it in a
+different state. All six are interactive:
+- **Prototype:** you can press a card or a pin, zoom the map, step through the levels and close the card.
+- **Cards:** the four voyages as small cards, with the HyperSea map at Sector showing their four pins.
+- **Open:** a card slid open: Lantern Reach at level 1, with the map on its course and the route lit.
+- **FromMap:** The Maw's pin pressed on the map. The pin is ringed in the route colour and its card is slid open.
+- **Crew:** the open voyage at level 2, Ark crew (the 12 settings).
+- **Story:** the open voyage at level 3, the story (optional), for The Maw.
+
+**The design:**
+- **The cards.** The four voyages are 2 x 2 arena-style cards on the right of the map. Each shows:
+  - the Sector render around its destination as art;
+  - the voyage's number and kind;
+  - the title;
+  - the sail time, the course, the intensity and the pay;
+  - who found it.
+- **Opening a voyage.** A card (A, or a click), or the voyage's pin on the HyperSea map at Sector, slides the voyage
+  open over the cards (0.32 s). From a card, the map moves to the voyage's course. From a pin, the map keeps the pin
+  ringed.
+- **Moving and closing.** B slides the voyage shut. D-pad left / right steps to the next voyage without closing it.
+- **Inside the open voyage,** the three levels stay: the voyage (with Your Ark), Ark crew, Story. Each voyage opens
+  onto its own course render and edge profile.
+- **Kept from earlier rounds:** the four tabs on LB / RB, the sea lines, and Garrett's seven-tier HyperSea map.
+
+**Where the numbers come from.** Every voyage's words and numbers are the Voyage Board's (its four voyages) and the
+slice's. Two exceptions: the summaries for Gallowglass and The Maw extend the board's place lines (the slice has no job
+for them), and are marked as proposed copy for Garrett.
+
+**What the build would change** (Garrett's window, `author_voyage_window.py`):
+- SAGA / EPISODES become the four tabs.
+- The three-across job grid becomes 2 x 2 small cards.
+- `VoyageJobCard.Overlay` becomes the slide-in voyage with its three levels.
+- A pin on `VoyageMapGraphic` opens the same card.
+
+Affects: Garrett's Voyage window and HyperSea map. Nothing is built yet.
+
+## 118. Rev 49 mockups: the picked I card, four more inviting looks - just the card (2026-11-02; Shombith picked C, built in section 119)
+
+**Asked (Shombith, 2026-11-02):** "Lets go I, but make the card background more inviting its a lot of texts and etc,
+give me mockups of just the cards maybe 4."
+
+**On the canvas:** tab **Menu Redesign C**, round "Rev 49 - Voyage card I (picked): four more inviting looks"
+(version `1793656101-7aa2`). Each board is the card alone, at its real size (760 x 868).
+- Copies: `Docs/MenuRedesignB/board/R49*.dc.html`.
+- Generator: `Docs/MenuRedesignB/rounds/r49_voyage_card_looks.py`.
+- All four are interactive: the squad presets switch the formation.
+
+**The four looks:**
+- **A - Destination glow (recommended):** the Sector render around Lantern Reach, softly blurred, fills the card, and
+  the squad stands in it. Recommended because the place's colour makes the card inviting without fighting the text.
+- **B - Hangar light:** a deep gradient with the sea lines. The squad is lit large on a floor of light, and the voyage
+  is a strip under it.
+- **C - Route poster:** the real course (Tumult to Lantern Reach on the HyperSea map), dimmed behind the whole card.
+- **D - Split art:** the destination's reefs as a picture across the top (softened, so the map's labels do not
+  compete). The squad sits on the seam.
+
+**Shared by all four.** What the I card does stays:
+- the voyage pager;
+- the formation, with the squad presets beside it;
+- Set sail, Ark crew and Story.
+
+**Less is written:**
+- one summary line (the rest moves to Story);
+- three numbers;
+- only the route's two ends, lit, with "7 waypoints - 29 min" between them.
+
+**Which picks this answers.** "Lets go I" picks Rev 44 option I (Formation, the squad leading the card). Rev 46's small
+cards that slide open stay the window: a picked look is the card that slides open.
+
+
+### 118.1 The three parts of each Rev 49 card (2026-11-02)
+
+**Asked (Shombith):** "Show me the 3 parts of the cards."
+
+Each look now has three boards, one column per look (canvas version `1793656480-cfc4`):
+- **The card** (level 1): as before.
+- **`R49<Key>Crew`** (level 2, Ark crew): three seats, each with its hull and its four settings (vessel, pilot,
+  element, artifact).
+  - The settings follow the squad picked: Skim Wing (You, Halcyon, AI wingmate) or Breakers (Kestrel, You, AI
+    wingmate, Rev 31's joined squad).
+  - Its buttons are Save squad and Voyage.
+- **`R49<Key>Story`** (level 3, Story, optional): the full summary, then who brought it, the place, the news and the
+  water.
+
+All three parts share the look's own background, lightly darkened for reading. In Play mode, Ark crew, Story,
+Voyage and the crumbs link the three boards of a look.
+
+### 118.2 Story, one beat at a time (2026-11-02)
+
+**Asked (Shombith, on the four Rev 49 Story boards):** "This is the part I hate, too much text and noise here, we have
+to fix this part."
+
+The four ruled sections (the summary paragraph, who brought it, the place, the news, the water) are gone. Story now
+shows **one beat at a time** (canvas version `1793656709-4581`):
+- Each beat is a small label, one sentence in large type, and a short attribution, over the look's own art.
+- The four beats are the news, the place, who brought it and the water.
+- D-pad left / right, or the dots under the beat, step through them. The title is a single small line at the top.
+- The buttons are unchanged: Set sail and Voyage.
+
+## 119. Built: the Voyage window with Rev 49 C, the route poster (2026-11-02, NOT RUN IN EDITOR)
+
+**Asked (Shombith, 2026-11-02):** "Lets go with C and implement it in the real game."
+
+**What is built.** Rev 49 C (section 118) is the open card, inside the Rev 46 window (section 117): small cards that
+slide open. The window has the four tabs of Rev 44 (section 116).
+- **The window** (`Tools/Build/author_voyage_window.py`, its second layout, marker `VoyagePages`, rewrites
+  `MissionView.prefab`):
+  - four tabs, VOYAGES | SAGA | QUESTS | EPISODES, with LB / RB labels. Voyages opens first, and Episodes carries a
+    lock, its page reading "Coming soon" over Episode 2.
+  - The HyperSea map fills a 1000-wide left column over its edge view (180 high). The voyage cards stand two across
+    on the right.
+  - The old Saga / Episodes modals and their dims are gone. Their content became the Saga and Quests pages.
+- **The tabs** (`VoyageWindowTabs`, new): one page shows at a time, and the picked tab carries its mark. LB / RB step
+  and stop at either end (`Step`). While the window is open it claims the bumpers (`HubShoulders`, new), so
+  `ScreenSwitcher` does not also slide the hub.
+- **The open voyage** (`VoyageOpenCard`, new, built at runtime by `VoyageJobsView` in the card column). It slides in over
+  the cards (0.32 s) when a card or its place on the map is pressed. It has three levels:
+  - **The voyage:** the chips (course, found by), the kicker, the title and three numbers (course, sail, intensity).
+    The route row shows only the two ends, lit, with "n cells - n min" between them. Then come the squad formation
+    (hull silhouettes) and its presets beside it from `SquadBook` (pressing one makes it the active squad and saves).
+    Its buttons are Configure the squad, Set sail, Ark crew and Story. The pager (< VOYAGE n OF m >) goes round the
+    voyages.
+  - **Ark crew:** three seats (Leader, Rogue One, Rogue Two), each with four setting buttons: vessel, pilot, element
+    and artifact. A press cycles that setting.
+    - Edits follow the Ark's own rules: only your own seat in a squad you joined, plus `KeepCardsOwn` and
+      `FillPilots`.
+    - The edits go to a copy of the squad, as the Ark's own squad editor does (`SquadsPage`'s draft). Save squad
+      writes it back and saves; closing the card or picking another squad drops an unsaved change.
+  - **Story:** one beat at a time (the news, the place, who brought it, the water), with dots and < > to step. A beat
+    with no sentence is left out.
+- **The ground** (`VoyageRoutePoster`, new): the map's own painted water, framed on the course at the card's shape
+  (`VoyageCardRules.Frame`), with the course lit over it and its two ends marked (the Ark amber, the destination
+  lime). It reuses the map's texture (`VoyageMapGraphic.TrySeaView`), because the map's atlas is shared and a second
+  live map would fight it.
+- **Every word is authored:** 56 new `VoyageLines` fields (`Card*`, `Story*`, `Element*`), set through
+  `Docs/Voyages/voyage_slice.json` and `author_voyage_assets.py`.
+
+**Different from the boards:**
+- D-pad left / right does not step the story's beats or the voyages. The EventSystem already moves the selection with
+  the D-pad, so the < > buttons are selectable instead.
+- "Who brought it" names the pilot only; faction display names are not authored yet.
+- The Ark escort's card still opens in place, with its difficulty stepper.
+
+**Verified here** (no Unity editor ran):
+- `unity_refcompile` player and editor, and `/ship` `gates.sh`: ALL OK.
+- `author_voyage_window.py --check` and `--self-test` (eight negative controls; `--check` reads the map column's
+  numbers back off the prefab, and a retuned `edgeGap` on disk fails it).
+- `author_voyage_assets.py --check` and `--self-test`; `author_menu_mission.py --check` and `--self-test`.
+- `check_console_logging.py` and `check_conditional_compilation.py`.
+- `VoyageCardRulesTests` (5) ran outside Unity against a small `Mathf` / `Vector2` stand-in, with a negative control:
+  an unclamped tab step fails `Tabs_StopAtEitherEnd`.
+
+The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Fixed in the ship review:**
+- An RB that slid the hub onto the Voyage window also stepped it to Saga in the same frame. The tabs now skip the
+  frame the window opened on.
+- The route poster rebuilt its mesh every frame, even with the card shut. It now rebuilds only when the map repaints
+  or its own rect changes.
+- Ark crew edited the live squad. It now edits a copy, as the Ark does.
+
+**Follow-ups (open):**
+- A Save squad from the card does not publish the squad's public record (`SquadDirectory`); the Ark's
+  `SquadsPage` republishes after every read, so it catches up on the next Ark visit. Publishing from here is a
+  backend call, Shombith's area.
+- Faction display names are not authored, so "who brought it" names the pilot only.
+- D-pad stepping of the story's beats and the voyages, if the EventSystem's D-pad navigation can be shared.
