@@ -292,7 +292,7 @@ enum before taking a value.
 6. **Duo-specific mechanics** from the brief (for the Goby & Pistol: the warped world, spline,
    primer, heat, flares).
 7. **Clone** the lab's numbers in with `/artifact-to-unity`. Never hand-tune a mapped field.
-8. Ship through `/ship`. Every C# commit passes `/verify-unity` (CLAUDE.md).
+8. Ship through `/ship`. Every C# commit passes the verify rule (`CLAUDE.md` § "Unity CLI verification").
 
 ## 6. Traps (fill this as duos teach them)
 

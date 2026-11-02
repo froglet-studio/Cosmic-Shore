@@ -143,6 +143,59 @@ human who slings will beat it.
   than code in `ThresherExecutor`, so its numbers are per-mode assets the AI learning sweep can learn from
   people's Thresher races (`Docs/AI_SYSTEM/AUTO_LEARNING.md`). The course is still cut for an AI at cruise
   (every corner flyable without a sling), so an AI that slings badly still finishes.
+- **The aimed launch** (2026-11-02, learned from Garrett's races). What is above is the BASE policy; in this mode the AI
+  flies `ThresherAIBoostPolicy_ThresherTime`, learned from people's races by the sweep (`AIBoostPolicySO.ForMode`): it
+  plants when a ring is at least 6.7° off and 115 u away, at most every 2.9 s, and, with `aimedLaunch` on, launches AIMED.
+  Garrett's races show why: 85% of his planted time is the aimed launch (both triggers full), planted with the ring
+  nearly ahead (4-20° off, 370-990 u away), let go after 1.2-3 s, leaving 0.05-1.3 s later within 2-10° of the ring at
+  480-4,600 u/s. The AI had learned his let-go TIMING but let go unaimed, so it left along the tangent up to 63° off the
+  ring at the orbit's own speed. Now, once the launch view is up (the same rule that puts up a pilot's crosshair: both
+  triggers full on a spin of at least `spectateSpinRate`), the driver hands `ThresherExecutor.AimAutopilotLaunch` its
+  objective every tick; the executor tilts the orbit plane onto it at the pilot's own `aimPitchRate`
+  (`ThresherCameraFraming.LayAimTowards`) and the let-go, after `aimedHoldSeconds` (1.54, his median) with the aim
+  within `aimToleranceDegrees` (3), ARMS the same launch with the same ×4.8 boost and exit buff. A local pilot's own aim
+  always wins; the aim is the AI's believed objective, so a difficulty mistake carries over. As for a person's aimed
+  launch, a remote replica sees the press only and lets go along the tangent. The plain let-go's cone is no longer
+  learned from an aimed launcher (his arms read as 62.8°, his brake taps as 103°): the variant's is the base's 15°, and
+  it waits `aimedHoldSeconds` first (`WantsUnaimedLetGo`), because a plant with the ring nearly ahead is inside the cone
+  on its first tick and would let go before the launch view could come up.
+  The solver flies any armed aim; laying the plane first is what makes the launch leave from the point where the circle
+  already faces the ring, as a pilot's snap aim does, instead of kinking the flight line by the ring's tilt. Tests:
+  `ThresherSlingAIPolicyTests`, `ThresherChainSolverTests.AutopilotAim_*` (with a negative control: an unlaid plane
+  kinks an off-plane launch by its tilt).
+- **Measured in the real game** (2026-11-02, `ThresherTimeSoakRunner`: the normal launch path, every seat an AI Thresher,
+  Unity batch mode, time scale 1, I1, course seeds 7001 and 7002, two AI seats plus the host's hull handed to the AI). The
+  host seat flies cruise-only: the boost policy's `requireAIPlayer` keeps it off a seat that is not an AI player, so the
+  sling never runs on a hull a person hands to the AI. That makes it a free control.
+
+  | Seed | Aimed launch ON | Aimed launch OFF (the plain let-go, today's 15° cone) |
+  |---|---|---|
+  | 7001 | an AI Thresher won in **77.0 s**; the other AI 11 / 16 rings, the cruise-only host 7 / 16 | the cruise-only host won in 159.6 s; the AI Threshers 1 / 16 and 3 / 16 (30-31 plants, no launch) |
+  | 7002 | an AI Thresher won in **115.7 s**; the other AI 15 / 16, the host 15 / 16 | the cruise-only host won in 142.0 s; the AI Threshers 2 / 16 and 4 / 16 |
+
+  With the aim on, each AI launched 17-26 times a race at a median 2,410-3,760 u/s, the median launch 4.1-9.6° off its
+  next ring and 71-82% of launches within 15° of it. With it off, the learned plant rule (a ring 6.7° off, every 2.9 s)
+  makes the AI plant at nearly every chance and orbit instead of race: worse than never slinging.
+
+  Every intensity, aimed launch on (2026-11-02; headless 2 races on seeds 7001 / 7002, and one watched race per
+  intensity in a Unity window with the AI Diagnose panel up, seed 7001). An AI Thresher won every race:
+
+  | Intensity | Headless winner | Watched winner | Launches a race, median speed, median off the ring | Cruise-only seat |
+  |---|---|---|---|---|
+  | I1 | 77.0 / 115.7 s | 78.7 s | 17-26, 2,410-4,069 u/s, 4.1-9.6° | 7-15 / 16 rings |
+  | I2 | 110.9 / 97.8 s | 148.2 s | 20-32, 1,790-4,098 u/s, 5.9-8.6° | 10-12 / 16 |
+  | I3 | - | 100.6 s | 21-23, 4,165-4,258 u/s, 1.5-2.7° | 6 / 16 |
+  | I4 | - | 110.8 s | 23-24, 3,794-3,815 u/s, 3.6-4.8° | 6 / 16 |
+
+  People's races for scale (other courses, `LEARNED_DRIVES_ThresherTime.md`): Garrett won I1 in 64.6 s and I2 in
+  106.1 s; Shombith won I4 in 120.1 s. The watched I2 race ran 37 s slower than the headless one on the same course
+  (rendering and a second editor open on the PC: the AI and the chain step per frame); one race is one sample. Not raced:
+  the aimed launch off at I2-I4, the variant as it was before 2026-11-02 (its 62.8° cone), more seeds. Each race is one sample; the winner is the AI, not a
+  person. To run it: `Unity -batchmode -nographics -projectPath . -executeMethod
+  CosmicShore.Editor.ThresherTimeSoakLauncher.Run -ttSoak "1:2" -ttSoakAimed 1 -ttSoakOut Logs/tt_soak.jsonl -ttSoakTag
+  aimed -ttSoakQuit` (`-ttSoakAimed 0` for the plain let-go, `-ttSoakSeed` the first course seed); one JSON line per
+  pilot per race. A run rewrites a few project and runtime-data assets (materials, `ProjectSettings`, the selected
+  vessel and player count): put them back before committing.
 
 ## 5. Numbers, and where they are authored
 

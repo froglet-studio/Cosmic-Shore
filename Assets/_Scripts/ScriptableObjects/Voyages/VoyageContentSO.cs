@@ -83,5 +83,240 @@ namespace CosmicShore.ScriptableObjects
         public string CardHomeRoute = "{from} TO {to}";
         [Tooltip("The Voyage window's card for the job under way.")]
         public string CardUnderway = "UNDER WAY TO {to}";
+        [Tooltip("A voyage card's course line on the galaxy map: {ly} light years sailed (and light takes as many years: " +
+                 "{years}), {minutes} at a minute a cell, {sea} the thickest water crossed, {intensity} the course's I1-I4.")]
+        public string CardCourse = "{ly} LY THROUGH {sea} - LIGHT TAKES {years} YEARS";
+        [Tooltip("The sea's names, thinnest to thickest, for {sea}.")]
+        public string SeaSpray = "SPRAY";
+        public string SeaFroth = "FROTH";
+        public string SeaWater = "WATER";
+        public string SeaThick = "THICK WATER";
+        public string SeaReef = "REEF";
+        [Tooltip("A voyage card's chip that opens it to its brief, and closes it again.")]
+        public string CardOpen = "Open";
+        public string CardClose = "Close";
+        [Tooltip("An open voyage card's brief. Tokens: {summary} the job, {to} and {place} the destination and its line, " +
+                 "{squad} the seats, {intensity} the course's I1-I4, {reward} the crystals it pays, {pilot} and {story} " +
+                 "who brought it. <br> breaks a line.")]
+        [TextArea] public string CardDetails =
+            "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}";
+        [Tooltip("The way home's brief (the same tokens; it pays nothing itself).")]
+        [TextArea] public string CardHomeDetails = "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}";
+        [Tooltip("One seat of the squad in a brief's {squad}: {vessel} its hull, {pilot} its pilot.")]
+        public string CardSquadSeat = "{vessel} ({pilot})";
+        [Tooltip("What stands between two seats in {squad}.")]
+        public string CardSquadSeparator = ", ";
+        [Tooltip("Under the galaxy map when the player taps a place no job sails to: {name} the place, {blurb} its line.")]
+        public string MapPlace = "{name} - {blurb}";
+        [Tooltip("The caption on the map's edge view (the disk seen edge-on at true scale): {place} the place it is " +
+                 "centred on, {height} that place's height (one of the three lines below).")]
+        public string EdgeCaption = "EDGE ON, TRUE SCALE - DISK 1,000 LY - {place} {height}";
+        [Tooltip("{height} above, below and on the midplane; {ly} the light years.")]
+        public string EdgeAbove = "{ly} LY ABOVE THE MIDPLANE";
+        public string EdgeBelow = "{ly} LY BELOW THE MIDPLANE";
+        public string EdgeMidplane = "ON THE MIDPLANE";
+
+        [Header("Galaxy map deep zoom (Docs/Voyages/VOYAGE_BOARD.md §4b)")]
+        [Tooltip("The galaxy map's zoom ladder, widest to narrowest: each tier's name (a press dives to it) and its line in the readout.")]
+        public string MapTierGalaxy = "GALAXY";
+        public string MapTierArm = "ARM";
+        public string MapTierSector = "SECTOR";
+        public string MapTierRegion = "REGION";
+        public string MapTierNeighbourhood = "NEIGHBOURHOOD";
+        public string MapTierCell = "CELL";
+        public string MapTierSystem = "SYSTEM";
+        public string MapTierGalaxyWhat = "arms, bulge, the halo's globular clusters";
+        public string MapTierArmWhat = "giant nurseries, the brightest supergiants";
+        public string MapTierSectorWhat = "star clusters and the brightest stars";
+        public string MapTierRegionWhat = "clusters, clouds and the stars you see by eye";
+        public string MapTierNeighbourhoodWhat = "a slab of nearby stars around one height";
+        public string MapTierCellWhat = "one 20 ly cell and the stars inside it";
+        public string MapTierSystemWhat = "single star systems a few ly apart";
+        [Tooltip("The ladder's dives: a press flies from wherever the map is down to Sol's star system, or Tumult's.")]
+        public string MapDiveSol = "SOL";
+        public string MapDiveTumult = "TUMULT";
+        [Tooltip("The map's readout: {tier} and {what} the tier on show, {width} the view's width (MapLy), {slab} MapReadoutSlab from Neighbourhood down, else nothing.")]
+        public string MapReadout = "{tier}: {what} - {width} across{slab}";
+        [Tooltip("{thick} how far the slice reaches above and below (MapLy), {height} where it is centred (MapAbove, MapBelow or MapMidplane).")]
+        public string MapReadoutSlab = " - a slice {thick} either side of {height}";
+        [Tooltip("A distance on the map: {ly} the light years.")]
+        public string MapLy = "{ly} ly";
+        [Tooltip("A height on the map; {ly} is MapLy.")]
+        public string MapAbove = "{ly} above the midplane";
+        public string MapBelow = "{ly} below the midplane";
+        public string MapMidplane = "on the midplane";
+        [Tooltip("The card a tapped star, cluster or landmark opens on the map: {kind} what it is, {name}, {body} its line, {source} where it comes from, {where} its height and distances (MapWhere). <br> breaks a line.")]
+        [TextArea] public string MapInspect = "<size=80%>{kind}</size><br><b>{name}</b><br>{body} <size=80%>[{source}]</size><br><size=80%>{where}</size>";
+        [Tooltip("{height} MapAbove/MapBelow/MapMidplane, {sol} {tumult} {here} distances (MapLy), {time} MapMinutes or MapHours.")]
+        public string MapWhere = "{height} - {sol} from Sol - {tumult} from Tumult - {here} from your squad, {time} by Ark in a straight line";
+        public string MapMinutes = "{n} min";
+        public string MapHours = "{n} h";
+        [Tooltip("{kind} for a catalogue star, a model star, one of Tumult's named stars, and the two kinds of cluster (a landmark shows its own kind).")]
+        public string MapKindStar = "Star";
+        public string MapKindModelStar = "Star, from the galaxy model";
+        public string MapKindTumultStar = "Star, as Tumult's crews chart it";
+        public string MapKindGlobular = "Globular cluster";
+        public string MapKindOpen = "Open cluster";
+        [Tooltip("{name} for a catalogue star with no name, and a model star.")]
+        public string MapUnnamedStar = "Unnamed star";
+        public string MapUnchartedStar = "Uncharted star";
+        [Tooltip("A star's {body}: {type} below, {light} MapLight, {mag} its absolute magnitude, {also} MapStarAlso when it has a designation besides its name.")]
+        public string MapStarBody = "A {type}, {light} the Sun's light (absolute magnitude {mag}).{also}";
+        public string MapStarAlso = " Also {desig}.";
+        [Tooltip("How bright, against the Sun: {x} the multiple.")]
+        public string MapLight = "{x}x";
+        [Tooltip("A star's {type}, by its colour (O/B, B, A, F, G, K, M), and for the brightest red stars.")]
+        public string MapTypeOB = "blue-white giant";
+        public string MapTypeB = "blue-white star";
+        public string MapTypeA = "white star";
+        public string MapTypeF = "yellow-white star";
+        public string MapTypeG = "yellow star like the Sun";
+        public string MapTypeK = "orange star";
+        public string MapTypeM = "red star";
+        public string MapTypeRedSupergiant = "red supergiant";
+        public string MapTypeGiant = "giant";
+        [Tooltip("A globular cluster's {body}; {light} MapLight.")]
+        public string MapGlobularBody = "A ball of hundreds of thousands of old stars orbiting through the halo, about {light} the Sun's light.";
+        [Tooltip("An open cluster's {body}: {members} its stars, {age} MapOpenAge or nothing; MapOpenBodyYoung when its members are not counted.")]
+        public string MapOpenBody = "{members} member stars{age}.";
+        public string MapOpenBodyYoung = "A young star cluster{age}.";
+        [Tooltip("{age} MapAgeBillion or MapAgeMillion; {n} the number.")]
+        public string MapOpenAge = ", about {age} years old";
+        public string MapAgeBillion = "{n} billion";
+        public string MapAgeMillion = "{n} million";
+        [Tooltip("{source} on the card: a catalogue's credit ({source}), the model, Tumult's names, a real or a proposed landmark.")]
+        public string MapSourceCatalog = "S - {source}";
+        public string MapSourceModel = "M - drawn from the galaxy model, not a catalog star";
+        public string MapSourceTumult = "A - invented name; the star is drawn from the model";
+        public string MapSourceReal = "S - real";
+        public string MapSourceProposed = "A - proposed";
+
+        [Header("Galaxy map: the cells")]
+        [Tooltip("A cell's name on the map once it is big enough to name: {sea} its sea (SeaSpray...), {q} {r} its coordinates.")]
+        public string MapCellLabel = "{sea} {q}, {r}";
+        [Tooltip("The {kind} on a cell's card.")]
+        public string MapKindCell = "Cell";
+        [Tooltip("A cell's {name} on its card: {q} {r} its coordinates.")]
+        public string MapCellName = "Cell {q}, {r}";
+        [Tooltip("A cell's {body}: {sea} its sea, {density} its perceived density, {danger} 0-3, {berth} MapCellBerth or nothing.")]
+        public string MapCellBody = "{sea}, {density} g/cc. Danger {danger} of 3. 20 ly across: an Ark crosses it in a minute.{berth}";
+        [Tooltip("{berth} on a cell's card when a place is within its berth (3 cells): {place} its name.")]
+        public string MapCellBerth = " Inside the berth of {place}.";
+        [Tooltip("{source} on a cell's card.")]
+        public string MapSourceCell = "M - the sea model at the cell's centre";
+
+        // The open voyage card (Rev 49 C, Docs/MENU_REDESIGN_B.md section 119): three levels, the voyage, its Ark crew, its story.
+        [Tooltip("The open card's way back to the voyage cards (B).")]
+        public string CardBack = "VOYAGES";
+        [Tooltip("The open card's place among the voyages: {n} this one, {count} all of them.")]
+        public string CardPager = "VOYAGE {n} OF {count}";
+        [Tooltip("The open card's step to the previous voyage (D-pad left).")]
+        public string CardPrevious = "<";
+        [Tooltip("The open card's step to the next voyage (D-pad right).")]
+        public string CardNext = ">";
+        [Tooltip("The open card's first level, the voyage.")]
+        public string CardLevelVoyage = "1 VOYAGE";
+        [Tooltip("The open card's second level, the squad's twelve settings.")]
+        public string CardLevelCrew = "2 ARK CREW";
+        [Tooltip("The open card's third level, the story.")]
+        public string CardLevelStory = "3 STORY";
+        [Tooltip("The chip on the open card's course: {ly} light years.")]
+        public string CardCourseChip = "YOUR COURSE - {ly} LY";
+        [Tooltip("Who brought the voyage: {pilot} the crew member's name.")]
+        public string CardFoundBy = "FOUND BY {pilot}";
+        [Tooltip("Over the open card's title: {n} its number, {place} where it goes.")]
+        public string CardKicker = "VOYAGE {n} - {place}";
+        [Tooltip("Under the open card's course number.")]
+        public string CardCourseLabel = "COURSE";
+        [Tooltip("The open card's course number: {ly} light years.")]
+        public string CardCourseValue = "{ly} ly";
+        [Tooltip("Under the open card's sailing time.")]
+        public string CardSailLabel = "SAIL";
+        [Tooltip("The open card's sailing time: {minutes} minutes.")]
+        public string CardSailValue = "{minutes} min";
+        [Tooltip("Under the open card's intensity.")]
+        public string CardIntensityLabel = "INTENSITY";
+        [Tooltip("The open card's intensity: {intensity} 1-4.")]
+        public string CardIntensityValue = "I{intensity}";
+        [Tooltip("Between the course's two ends on the open card: {cells} 20 ly cells, {minutes} minutes.")]
+        public string CardCells = "{cells} CELLS - {minutes} MIN";
+        [Tooltip("Under the course's first end: where the Ark is.")]
+        public string CardYourArk = "YOUR ARK";
+        [Tooltip("Under the course's last end.")]
+        public string CardDestination = "DESTINATION";
+        [Tooltip("Over the squad's name on the open card.")]
+        public string CardSquadLabel = "YOUR SQUAD";
+        [Tooltip("Over the squads to pick from (the Ark's squads).")]
+        public string CardPresetsLabel = "SQUAD PRESETS";
+        [Tooltip("Where the squad presets stand when the player has made none.")]
+        public string CardNoSquad = "Make a squad in the Ark to sail with it.";
+        [Tooltip("Opens the open card's second level, the squad's settings.")]
+        public string CardConfigure = "CONFIGURE THE SQUAD";
+        [Tooltip("Sails the open voyage.")]
+        public string CardSetSail = "SET SAIL";
+        [Tooltip("Opens the open card's second level.")]
+        public string CardCrew = "ARK CREW";
+        [Tooltip("Opens the open card's third level.")]
+        public string CardStory = "STORY";
+        [Tooltip("Back to the open card's first level.")]
+        public string CardVoyage = "VOYAGE";
+        [Tooltip("Over the squad's name on the second level.")]
+        public string CardCrewHead = "ARK CREW - THREE SEATS, FOUR SETTINGS EACH";
+        [Tooltip("Under the squad's name on the second level.")]
+        public string CardCrewNote = "Press a setting to change it. Save squad keeps the change.";
+        [Tooltip("Under a joined squad's name on the second level: {owner} who made it.")]
+        public string CardCrewJoined = "{owner}'s squad - only your own seat changes here.";
+        [Tooltip("Saves the squad's settings.")]
+        public string CardSaveSquad = "SAVE SQUAD";
+        [Tooltip("Save squad's label once the squad is saved.")]
+        public string CardSaved = "SAVED";
+        [Tooltip("The first seat's name.")]
+        public string CardSeatLeader = "LEADER";
+        [Tooltip("The second seat's name.")]
+        public string CardSeatRogueOne = "ROGUE ONE";
+        [Tooltip("The third seat's name.")]
+        public string CardSeatRogueTwo = "ROGUE TWO";
+        [Tooltip("Who flies the player's own seat.")]
+        public string CardSeatYou = "You";
+        [Tooltip("Who flies an AI seat.")]
+        public string CardSeatAi = "AI wingmate";
+        [Tooltip("Who flies an open seat (a friend takes it).")]
+        public string CardSeatOpen = "Open seat";
+        [Tooltip("A seat's vessel setting.")]
+        public string CardSettingVessel = "VESSEL";
+        [Tooltip("A seat's pilot setting.")]
+        public string CardSettingPilot = "PILOT";
+        [Tooltip("A seat's element setting.")]
+        public string CardSettingElement = "ELEMENT";
+        [Tooltip("A seat's artifact setting.")]
+        public string CardSettingArtifact = "ARTIFACT";
+        [Tooltip("A seat that carries no artifact.")]
+        public string CardNoArtifact = "No artifact";
+        [Tooltip("The Charge element's name on a seat.")]
+        public string ElementCharge = "Charge";
+        [Tooltip("The Mass element's name on a seat.")]
+        public string ElementMass = "Mass";
+        [Tooltip("The Space element's name on a seat.")]
+        public string ElementSpace = "Space";
+        [Tooltip("The Time element's name on a seat.")]
+        public string ElementTime = "Time";
+        [Tooltip("Over the story's beats on the third level.")]
+        public string CardStoryHead = "STORY";
+        [Tooltip("Beside the story's head: the story can be skipped.")]
+        public string CardStoryOptional = "OPTIONAL";
+        [Tooltip("The story's beat about the news that brought the voyage.")]
+        public string StoryNews = "THE NEWS";
+        [Tooltip("The story's beat about where the voyage goes.")]
+        public string StoryPlace = "THE PLACE";
+        [Tooltip("The story's beat about the crew member who found it.")]
+        public string StoryCrew = "WHO BROUGHT IT";
+        [Tooltip("Under the crew beat: {pilot} the crew member's name.")]
+        public string StoryCrewBy = "{pilot}";
+        [Tooltip("The story's beat about the course.")]
+        public string StoryWater = "THE WATER";
+        [Tooltip("The water beat: {years} light's years, {to} the place, {minutes} the Ark's minutes.")]
+        public string StoryWaterLine = "Light takes {years} years to reach {to}. You take {minutes} minutes.";
+        [Tooltip("Under the water beat: {sea} the thickest water on the course.")]
+        public string StoryWaterBy = "{sea} on the way";
     }
 }

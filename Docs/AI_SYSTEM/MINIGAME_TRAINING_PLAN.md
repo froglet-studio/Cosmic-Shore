@@ -1,6 +1,6 @@
 # Training the AIs through each vessel's own minigames
 
-**Decided by Yash, 2026-10-26, restated 2026-10-27.** **Focus since 2026-10-27: the Stoat (Slingshot) and the Meerkat (Warpline), §8.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
+**Serves `AI_PLAN.md` step `time-arcade`** (Garrett's one AI plan, LOCKED 2026-11-02: one universal AI per vessel per element, trained in that element's arcade games over I1-I4; where this page and `AI_PLAN.md` disagree, `AI_PLAN.md` wins). **Decided by Yash, 2026-10-26, restated 2026-10-27 and 2026-11-01.** **Focus since 2026-11-01 (§10): no new vessels; each existing vessel's Time minigame, then the arena games. Yash flies the Dolphin in Switchback (§9) himself; the Stoat (Slingshot) and the Meerkat (Warpline) are the vessels Claude sessions build with him (§8).** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
 
 **The plan in one paragraph (2026-10-27).** The AIs are not trained in Regatta. Each vessel is trained in its OWN
 minigames: first its **Time minigame** (the card whose genre petal is Time, usually its race: the Stoat's is Warpline),
@@ -38,7 +38,7 @@ Yash's words of 2026-10-26:
 3. **People play it over and over**, with AI rivals of the same hull on the grid. Every race is recorded automatically
    (`HumanFlightRecorder`, every mode). Since 2026-10-25 the record includes each AI's state (`rivalState`), so a
    recording shows how the person flies and why each AI did what it did.
-4. **The learner turns the races into AI numbers for that minigame, on its own** (the hourly AI learning sweep,
+4. **The learner turns the races into AI numbers for that minigame, on its own** (the daily AI learning sweep, 03:47 IST,
    `AUTO_LEARNING.md`, runs `learn_drives_from_flights.py --mode <Mode> --write`; nobody runs it by hand). It writes `<asset>_<Mode>` variants that
    only that mode loads (`AIBoostPolicySO.ForMode`), and reports flights per intensity. It needs three finished races
    of a hull before it writes. The Squirrel (Skim Race, `learn_from_flights.py`, per-intensity `SkimRaceAIConfig_I1-I4`)
@@ -56,21 +56,24 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 
 | Vessel | Time minigame | Shape | State (2026-10-27) |
 |---|---|---|---|
-| **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
+| **Dolphin** | **Switchback** (Blast Run since 2026-10-29) | gate race, blocked gates cleared by the key crystal's blast | **First, Yash's own.** The Blast Run AI rebuilt in four steps on 2026-11-02 and its difficulty levels set to Yash's time bands (§9.1): offline I4 medians 140 / 129 / 120 / 112 s, Easy to Legendary. Learned charge drive per intensity (§3.6-3.7). Not yet run in Unity since the steps (the soak is handed to a PC session) |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
-| **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, field pairs and the catch sling | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
-| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatWormholeExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
+| **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, the catch orbit alone since 2026-11-02 (§11) | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
+| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
-| Manta | Redline | gate race | none yet |
+| **Manta** | **Redline** | gate race, laps of a circuit cut for Soar | **Started 2026-11-03 (Yash, §13).** No race recorded yet. The AI flies the Regatta steering; its Soar bands are searched on a Redline model of the shipped AI (`redline-manta-time`) |
 | Urchin | Skein | gate race on rails | none yet |
 | Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
+| Scarab | **Scarab Rally** (new 2026-10-27; Scarab Scramble is now its Mass card) | ring race: throttle, drift, juke | none yet |
+| **Tiger Moth** | **Waystation** (the Drop Tower course since 2026-11-01) | Drop Tower race: short hops through plates, then one long drop | none yet on the towers. The belly-aim autopilot takes the clusters and the long drop; the hop autopilot (`WaystationController.TickHops`) takes the towers. No learner reads it yet |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
-| Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
+| **Thresher** | **Thresher Time** | gate race, the sling | **Next after the Stoat (Yash, 2026-11-02, §12).** 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3), learned into `ThresherAIBoostPolicy_ThresherTime` (2026-11-01; two of its three races are Garrett's). The AI plants on almost every corner and, since 2026-11-02, launches aimed like Garrett |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
 | Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
-| Serpent | **none** | - | no Time minigame of its own yet: one has to be made or chosen |
+| Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
+| Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
 
 ## 3. Switchback first (Dolphin)
 
@@ -136,6 +139,8 @@ drift, the AI nose lag, the charge economy), two defects showed, and the Regatta
 **What changed:**
 - `SwitchbackController.AICommitFromApproachPoint` = true: the Regatta steering, which now carries the approach-point
   cap.
+- **2026-10-29:** Switchback is now Blast Run only; the Switchback boost policies below were learned on the Classic
+  ladder and stay until Blast Run races are recorded and the learner (which now ships `BlastRun` only) is re-run.
 - `DolphinAIBoostPolicy_Switchback` written from Yash's races (`LEARNED_DRIVES_Switchback.md`): discharge lined up
   within 27.4 deg (was 12), with 0.87 s of runway (2.5), at 0.82 charge (0.95).
 - Tests: `SwitchbackAISteeringTests`. Other gate races keep their scene switch (Headlong is the negative control).
@@ -260,7 +265,7 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
 | Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26) |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
-| Manta / Redline | Soar | the Soar executor's bands |
+| Manta / Redline | Soar | the Soar executor's bands (0.35 / 0.75); searched by `redline-manta-time` (§13) |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
 
@@ -376,3 +381,246 @@ the Stoat's other race, keeps its scene steering until its own races show the sa
   only in its `PER_INTENSITY_MODES` (Switchback, §3.7), and Slingshot and Warpline are not in it yet.
 - **Their four abilities** are prototyped in the Vessel Studio first (the Stoat studio round 28, the Meerkat studio round
   6) and reach Unity only on Yash's say-so (`/vessel` §3).
+
+## 9. Next: the Switchback Dolphin, Yash's brief (2026-11-01)
+
+The next AI session works on the Dolphin in Switchback alone. Yash's words:
+
+> "I want a very good switchback AI where the dolphins will actually drift towards the crystal while aiming at the
+> obstacles in switchback's intensities. And then while hitting the crystal, it will just blow with its own dolphin
+> blast. It will blow the obstacles. Then it will go towards the target ring in either little bit drifting and going
+> faster or directly straight. As a user, I can tell you that when I am spamming my drift little bit in few intervals,
+> then I can actually go drifting towards the target, which is faster than just using the thumbstick to go forward. And
+> yeah, so generally dolphin users, they in 1 second or 0.5 seconds, they keep spamming the triggers."
+
+**What already exists (read first).** Switchback is Blast Run since 2026-10-29 (`SWITCHBACK.md` "Switchback is Blast
+Run", "Blast Run", "AI: the blast planner", "AI: any prism in the way", "AI: the emergency sweep", "Watching the AI").
+`SwitchbackBlastPlanner` picks Direct / Thread / Blast at each blocked gate; `SwitchbackBlastAI` (server only) flies a
+Blast to the gate's key crystal with the nose held on the obstacle (`TryOverrideAim`, `TryOverrideDriftLook`), so the
+crystal's blast clears it. Switchback opts back in to crystals (`SwitchbackController.AIDetoursForCrystals` = true),
+the one exception to §6.1, because its key crystals are part of the course. The charge drive is
+`DolphinAIBoostPolicy_Switchback[_I<n>]` (§3.6-3.7).
+
+**What is new in the brief:**
+1. **Drift into the crystal with the nose on the obstacle**, at every intensity (the planner may still choose Thread or
+   Direct where no blast pays).
+2. **Drift-spam as the way to fly fast toward the target**: short drift presses every 0.5-1 s, which Yash says beats
+   holding the stick forward. Nothing in the AI does this today: the AI holds one commit drift per gate and discharges
+   on a straight (`ChargeBoostAIPolicySO`, `AIPilot` commit drift). Neither the learner nor any doc measures it.
+3. **After the blast, to the ring** by drift-spam or straight, whichever is faster there.
+
+**How to measure Yash's drift-spam (no new recording needed).** Every Switchback race already records each drift
+press and release at its exact time (`buttonEvents`: `[t, InputEvent, pressed]`, the input names in `buttonNames`) and
+the drifting state bit per 10 Hz sample (`state`, `stateBits.drifting`), plus speed, the next ring and crystals. The
+first step is a measure of the press period, the press length, the speed gained against holding straight, and where
+in a leg people spam; then a model of it in `switchback_dolphin_sim.py` before any AI change. Yash plays Switchback at
+each intensity as usual; the races reach the learner on their own (`AUTO_LEARNING.md`).
+
+**Measured offline (2026-11-01, `SWITCHBACK.md` "Offline: the Blast Run simulator").** The shipped AI, alone, median of
+12 courses: I1 about 90-100 s, I2 145-185 s, I3 200-255 s, I4 210-540 s (Hard and Legendary do not always finish I4).
+A harder level is slower: its prism dodging pulls it off line and it loops back for missed rings. With dodging off it
+finishes I4 in about 120-145 s at every level. Blasting as flown today saves about as much as its setup turn costs. The
+plan that follows from it, in order: dodge only what costs (Danger prisms, never inside the last stretch to a ring);
+make the blast free (fly THROUGH the key on the racing line with the nose drifted onto the door, no setup turn behind
+it); set the planner's hit costs from the measured ones; then drift-spam, from Yash's Blast Run races.
+
+### 9.1 Done 2026-11-01..02: the Blast Run AI in four steps, and difficulty by nose lag
+
+All in `SWITCHBACK.md` ("Offline: the Blast Run simulator" to "Lag by difficulty"), measured on the offline simulator
+`Tools/Build/switchback_sim_harness` (it compiles the SHIPPED course, Blast Run layout, planner and avoidance C# and races
+a kinematic Dolphin with the game's drift, nose lag and prism costs; `run.sh eval|trace|selftest`).
+
+| Step | What | Offline effect (median s) | State |
+|---|---|---|---|
+| 1 | Dodge only Danger prisms, and nothing in the last 200 u to a ring (`aiDodgeDangerOnly`, `aiNoDodgeNearRing`) | I3 Legendary 334 -> 156; I4 Legendary never finished -> 172 | shipped |
+| 2 | Strike the key crystal straight, the drift aiming the blast at the door; no setup leg behind the key (`aiStrikeSetupLeg` off); the lane fan batched on Jobs + Burst (`SwitchbackSenseBatch`) | 27-28 s faster than the setup leg at Legendary | shipped |
+| 3 | The planner's plain-hit cost is the measured 0.25 s (was 0.6) | no measurable race change | shipped |
+| 4 | Drift carving (drift-spam toward the ring, Yash's brief) | with the AI nose lag: much slower; with none: every time halves, carving adds ~10 % | measured, NOT shipped |
+| 4, option 2 | The AI nose's follow rate by intensity and difficulty (`aiNoseFollowByIntensity`, `VesselTransformer.AINoseFollowPerSecond`; every other mode keeps the fleet lag) | I4 140 / 129 / 120 / 112, I1 88 / 82 / 69 / 61, inside Yash's bands (Easy 130-150 ... Legendary 100-120 at I4, 10 s steps elsewhere) | shipped |
+
+**Why the nose lag is the difficulty lever here.** At one nose rate the four levels finish within a few seconds of each
+other: the lag, not the rest of the skill, set the time. Yash asked for the levels 10 s apart in 20 s bands; one ladder
+for every intensity could not hold that, so the rates are a row per intensity. This departs from `/vessel-ai` §3.1 (Hard
+is the shipped pilot, the other levels add mistakes, one setting per level for every intensity); the skill records it as
+Switchback's exception, and `AI_PLAN.md` §7 lists it for the plan.
+
+**Real-game tools added on the way:** the per-AI prism hit counter and race summary (`SwitchbackHitStats`, `aidiag hits`),
+per-AI flight stats at race end (speed, drift share, taps/min, tap length) to compare with people's flights, the headless
+soak (`SwitchbackSoakRunner` + `SwitchbackSoakLauncher`, `-sbSoak "I:D:races"`, offline host), the AI Diagnose panel's
+Switchback overlays, and profiler markers (`Switchback.AI.Sense`, `Switchback.AI.Sweep`, `Switchback.SenseBatch.*`).
+
+**The universal search (2026-11-02, Yash: "do the recommended ones").** People's races keep teaching the sweep, and
+its per-intensity files are now the SEEDS of one Dolphin search, never its result (`AI_PLAN.md` decision 1). The
+Froglet Compute job `switchback-dolphin-time` (evaluator `switchback_fit`) searches ONE charge drive for I1-I4 at
+every difficulty level, its first generation the four shipped drives. A first local run (260 evaluations, this
+session) found a drive that, on 8 FRESH courses per intensity, beats what the game flies today at every level
+(composite Easy 1.63 vs 1.73, Medium 1.49 vs 1.52, Hard 1.36 vs 1.39, Legendary 1.22 vs 1.29; all 144 races
+finished); I4 medians Easy 140 / Medium 128 / Hard 116 / Legendary 102 s against today's 147 / 134 / 120 / 115. It is
+NOT promoted: the team's idle machines now run the job longer, and promotion is Yash's (the job's `promote`). Two things
+to know first: Medium's I1 median got slower (92 s vs 79 s) while its composite improved, and a new drive moves the
+difficulty bands, so `aiNoseFollowByIntensity` is re-measured with it before shipping. A first try raced Hard only and
+lost I4 at Easy; that is why the job races every level.
+
+**Next:** the Unity soak of steps 1-4 and the difficulty table at I1-I4 (each level should step ~10 s; real races ran
+~1.6x the model in the step 1 soak, so the rows may need scaling), then drift-spam from Yash's Blast Run races (§9: his
+press period and length are recorded in every race's `buttonEvents`).
+
+## 10. The order of work from 2026-11-01: minigames first, no new vessels (Yash)
+
+> "For now we won't be making any more new vessels. We will be focusing on making the mini games. The time mini games,
+> all our existing vessels, awesome. And then finally we will make arena games such as regattas. So for now you can for
+> me focus on stoat and meerkat. But other than that, I'm totally focused on dolphins, switchback, time game, where I'm
+> making awesome AI so the game feels hard to play as well as challenging." (Yash, 2026-11-01)
+
+1. **No new vessels.** Every prototype (the concept ten, the Siphonophore, the Omega crews, the calm three, the Orca's
+   play styles) is parked and catalogued in `Docs/Studios/CONCEPT_FLEET.md` §13. A session brings one back only when
+   Yash asks for it by name.
+2. **The Time minigames of the existing vessels, made awesome.** One per vessel (§2), four intensities that teach then
+   test (§1), and an AI that makes it hard and challenging to win: rivals of the same hull, learned from people's races
+   (`AUTO_LEARNING.md`), at every intensity.
+3. **Then the arena games**, Regatta first, rebuilt from the skills the vessels learned in their own minigames (§4).
+
+**Who is on what.**
+
+| Work | Who | Where it is written |
+|---|---|---|
+| The Dolphin in **Switchback** (Blast Run): an AI that drifts into the key crystal with the nose on the obstacle, blasts it and drift-spams to the ring, so the race is hard to win | **Yash** plays it at every intensity; the AI sessions build from his races | §9; `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md` |
+| The **Stoat** in **Slingshot** and the **Meerkat** in **Warpline**: the kit, the race and the AI | Claude sessions with Yash | §7, §8; `Docs/Studios/STOAT_PLAY_STYLES.md`, `Docs/Studios/MEERKAT.md` |
+| The **Thresher** in **Thresher Time**: an AI that slings well at I1-I4 | after the Stoat, Claude sessions with Yash | §12; `Assets/_Scripts/Controller/Arcade/THRESHERTIME.md` |
+| The other vessels' Time minigames | later, one vessel at a time, in the §2 order | §2 |
+| The arena games (Regatta and the rest) | after the Time minigames | §4; `REGATTA_AI_ROADMAP.md` (on hold) |
+
+## 11. The next vessel: the Stoat, on the orbit alone (Yash, 2026-11-02)
+
+> "We have made the AIs of dolphin of switchback amazing, now let's move to another vessel [...] I think we keep only the orbit
+> effect of stoat, and remove the pathfinding field trajectory effect [...] if you think stoat is the next best vessel to go to
+> Ragatta, then add it." (Yash, 2026-11-02)
+
+**Decision: the Stoat is next, and it was never off Regatta's card** (on it since 2026-10-17; `author_regatta_assets.py`
+`HULL_ORDER`). Its kit is the orbit alone (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Its Time game is **Slingshot**.
+
+**Why it is not because it is fast.** Raw speed says the opposite:
+
+| Hull | Cruise / top, u/s | Own Time game, flights (finished) | Regatta, modelled seconds I1-I4 | For | Against |
+|---|---:|---|---|---|---|
+| **Stoat** | 60 / 164 warped (336 at Time 10) | Slingshot 4 (1), Warpline 15 | 60 / 61 / 65 / 94 AI at Time 10 (gate steering only) | In the pack with the Dolphin and Squirrel; Yash's own vessel (§8); the steering fix, a learner and starting numbers exist; the race asks a skill (where to turn, a timed release) | Hairpins cost it about twice the field trajectory's time; Mass and two level-5s have nothing to act on while parked; Yash's `stoat/skim-sling` branch rebuilds the same Time mode |
+| Manta | 180 / 720 | Redline 0 | 25 / 31 / 35 / 35 | The fastest hull, a learner and a drive model; tops the compute queue | Already twice the field: the plan's job is closing that gap, so more speed widens it. No races, and Redline lacks the Regatta steering |
+| Rhino | 50 / 840 | Headlong 0 | 51 / 63 / 75 / 61 | The highest top speed, a learner and a drive model | No element reaches it, so the balance stage cannot level it. No races, and Headlong lacks the Regatta steering |
+| Sparrow | 35 / 135 | Breakwater 12 (9) | 74-90 at Time 10 (competent-pilot model) | The most proven remaining game | The slowest modelled hull on the card; no drive model |
+
+Dolphin 54-72 s and Squirrel 48.5-59.5 s are the marks to race (`REGATTA_BALANCE_PLAN.md`). So the Stoat is the one hull that
+can already meet them at the card's Time level. The Manta came next until §12 put the Thresher there; it is still the choice
+if raw speed is what is wanted.
+
+**What changed for the AI.** A held pair is now the hull's only speed, so the AI also presses for the warp alone on a long leg
+(`aiWarpMinDistance`): 56-62 s a Slingshot race in the model against 70-82 s without it (`stoat_orbit_sim.py`; the table is in
+the parked doc). Every number here but the editor races is a model.
+
+**Next, in order.** Yash plays Slingshot at each intensity: the sweep relearns the sling rows on its own (`AUTO_LEARNING.md`).
+Then the Stoat's `drive_fit` model joins stage 1 of `REGATTA_BALANCE_PLAN.md`, and Regatta takes the trained numbers (§4).
+
+## 12. After the Stoat: the Thresher, in Thresher Time (Yash, 2026-11-02)
+
+> "I need another vessel to race, I think garrett will like the vessel that has a ball attached to a rope, and moves using
+> the tension of rope and momentum of ball [...] Thresher's time game need to be made first before regatta, thats the rule,
+> make AIs good in their vessel's respective time game, then we will design regatta based on those AI skills and game
+> modes." (Yash, 2026-11-02)
+
+**Decision: the Thresher is the vessel after the Stoat, and it trains in Thresher Time, not Regatta.** The Stoat stays first
+(Slingshot, §11). The Thresher is **not** added to Regatta's card now: its AI gets good in its own Time game at I1-I4 first,
+and Regatta is designed afterwards from what the trained AIs can do (§1 step 6, §4). Yash's picks to race Regatta are the
+Squirrel, the Dolphin, the Stoat and the Thresher. The Sparrow was weighed for that seat and lost it: it is the slowest
+modelled hull (74-90 s against the field's 48-72 s, §11), and its skill is shooting a way clear, which a plain race does not
+ask. It stays on Regatta's card.
+
+**Why the Thresher.** It is Garrett's vessel: he merged every Thresher change and flew the last on 2026-10-30, so it has the
+team's acceptance the Stoat is still waiting for. And its race asks a skill: plant the ball, swing, release on the line
+(`THRESHERTIME.md` §2: a sling pays as a corner, not on a straight).
+
+**Where its AI stands (2026-11-02).**
+- People's races: 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3). The sweep wrote
+  `ThresherAIBoostPolicy_ThresherTime` from them on 2026-11-01 (`LEARNED_DRIVES_ThresherTime.md`).
+- In Thresher Time the AI flies that learned variant (`AIBoostPolicySO.ForMode`), not the base policy `THRESHERTIME.md` §4
+  describes (a ring at least 70° off, a 15° release cone). The variant plants when a ring is at least 6.7° off and 115 u
+  away, at most every 2.9 s, winds while planted, and lets go within 62.8° of the ring or after 3.2 s. It always lets go
+  unaimed: the ×4.8 aimed launch is still a human's only. **Since 2026-11-02 (later the same day) it launches aimed**:
+  under the launch view it aims at the ring and lets go after 1.54 s, Garrett's median (`THRESHERTIME.md` §4 "The aimed
+  launch"); the 62.8° cone, learned from his arms, is back to the base's 15° for the plain let-go.
+- No offline model of Thresher Time, so no compute job.
+
+**Garrett's races** (his machine reports as `gradi`, his pilot name is Kyoki; collected 2026-11-02 from
+`origin/bugledger/gradi`). Every race he sent is already on the sweep's seen list (`ai_learning_seen.json`), and nothing
+needed collecting by hand. Two were matches with Caleb, Shombith and Yash; each person's file is their own hull.
+
+| Race (his clock) | Intensity | Result | Plants | Planted, of it both triggers full | Peak u/s |
+|---|---|---|---:|---|---:|
+| 2026-10-29 17:55 | I1 | 15 / 16 rings; Caleb won in 108.5 s | 10 | 23.2 s, 21.2 s | 1,966 |
+| 2026-10-30 19:54 | I1 | **won, 64.6 s**, rivals Legendary (learned from) | 7 | 7.0 s, 6.8 s | 3,985 |
+| 2026-10-31 13:53 | I2 | **won, 106.1 s** (learned from) | 12 | 18.6 s, 17.8 s | 4,595 |
+| 2026-10-31 13:56 | I4 | 14 / 16 rings; Shombith won in 120.1 s | 8 | 23.1 s, 15.1 s | 4,576 |
+
+What his races teach that the AI cannot take yet: **85% of his planted time is the aimed launch** (both triggers full), and
+it is where his speed comes from (peaks of 2,000-4,600 u/s; the other pilots who plant little peak at 170-410). Caleb flies
+the same way. The learner read when he plants and lets go, so the AI copied his timing but not his aim; it now reads the
+aimed launch too (`learn_drives_from_flights.py` `aimed_launch`: 68% of the plants in the races it learns from) and the AI
+flies it. The Thresher's
+Toybox play, where Garrett tuned it from 2026-10-08, was never recorded: the recorder records matches only, and no
+Freestyle flight exists from anyone.
+
+**For later.** The Thresher and the Stoat race the same verb (orbit, then release for a kick), so two of the four share it.
+Garrett's yes comes before it goes on Regatta's card: it is his vessel, and a mode takes a kit as it is (CLAUDE.md, "A game
+mode never changes the vessel"). Its ball threads rings as the hull does (`THRESHER.md`, Garrett), which Regatta has to
+measure when it is designed.
+
+**Next, in order, once the Stoat's Slingshot is done.** (1) Yash plays Thresher Time at I1-I4 (I3 has no race yet); the
+sweep relearns from it on its own. (2) The AI makes slinging pay at every intensity (§6), measured against Yash's races. The aimed launch is in
+(2026-11-02) and raced headless at I1: an AI Thresher won in 77 s and 116 s, where the same courses with the aim off
+left the AIs at 1-4 of 16 rings (`THRESHERTIME.md` §4 "Measured in the real game"). At I2-I4 an AI Thresher won every race too (I2 97.8-148.2 s, I3 100.6 s,
+I4 110.8 s), and the races were watched in a Unity window. What is left: people's races at I3, the aim-off A/B at
+I2-I4, and more courses.
+(3) A Thresher Time model joins stage 1 of `REGATTA_BALANCE_PLAN.md`. (4) Then Regatta is designed from the four trained hulls.
+
+## 13. The Manta, in Redline (Yash, 2026-11-03)
+
+> "Let's make Manta AI training, what is the time game mode of manta?" (Yash, 2026-11-03)
+
+**The Manta's Time game is Redline** (`GameModes.Redline` 53, `Assets/_Scripts/Controller/Arcade/REDLINE.md`): three
+laps of an eight-ring circuit cut around the Manta's full-Soar turning circle, where every corner asks how much Soar it is
+worth. Nobody has raced it yet, so the AI trains on a model first and on people's races when there are some.
+
+**What was wrong with the model the queue raced.** `drive-manta-redline` (Shombith's machine ran it 34,070 times)
+raced `manta_drive_sim.py`, which is Regatta's model: a point mass at full throttle with no nose lag. Its
+best bands (BoostStickBand 1.0, YastriStickBand 0.63: always Soar) were an artefact of that. Redline flies none of the
+three. The AI's throttle is the skill throttle (Lerp(0.2, 0.9, intensity x 0.25): 37.5% at I1), the AI nose follows
+its command at 1.5/s, and Redline flew the old gate steering. The editor's own AI Mantas in recorded Regatta races
+reached 12-21 of 24 rings in about 100 s at I1, where that model finished all 24 in 25-35 s.
+
+**The new model**, `Tools/Build/manta_redline_sim.py`, ports what an AI Manta does in Redline line for line: the
+course, the gate aim, `AIPilot`'s stick, skill throttle and orbit break-off, the Soar triggers, and the hull's turn law
+with the nose lag. On Regatta's I1 course it laps in 28 s; the editor's Hard AI Mantas lapped it in 23-28 s
+(`--self-test` holds the trigger shape, the stick's signs, determinism, and three negative controls).
+
+**What it measured, and the one game change** (`REDLINE.md` §5.1 has the table):
+1. On the old steering the shipped AI finished 4 of 12 races over I1-I4, none at I3 or I4, and no pair of Soar bands
+   changed that. **Redline now flies the Regatta steering** (`RedlineController.AICommitFromApproachPoint`,
+   `RedlineAISteeringTests`), as ten other gate races do: 12 of 12.
+2. A full-throttle floor (Regatta's) is faster at I1 and loses races at I4, so the skill throttle stays.
+3. **The nose lag is the biggest lever left**: with none, the AI is 1.7x faster at I1 and 5x at I4. That is
+   `AI_PLAN.md` decision 7 (Yash), now asked for the Manta too.
+4. The bands matter once the steering is right: 0.15 / 0.75 finished every course with I4 at 228 s, against the
+   shipped 0.35 / 0.75's 326 s. The old job's 1.0 / 0.63 finishes none of I3-I4.
+
+**The search**: `redline-manta-time` (evaluator `redline_fit`, plan step `time-arcade`) searches ONE Soar drive for
+I1-I4 with the plan's composite (mean + half the worst intensity). Its first generation is the shipped executor bands,
+`MantaSoarAITuning_Regatta` (learned from people's Regatta races), and `MantaSoarAITuning_Redline` once the sweep writes
+it. The answer is a proposal for Yash: it becomes `MantaSoarAITuning_Redline` through the learner's writer, never by
+hand. Its machines need the evaluator on `bleeding-edge` and the simulator on `ai`. A first local run (120
+evaluations, 2026-11-03) found 0.118 / 0.83. On 6 FRESH courses an intensity it scored a composite of 23.95 against
+the shipped bands' 24.91 and the Regatta genome's 24.94. It finished 5 of 6 at I4 (median 295 s, against 318 s and
+4 of 6 for the shipped bands), but ran 3-6 s slower at I1-I3. A small gain, not promoted. The old job's 1.0 / 0.63
+scored 38.21 and finished none of the 12 races at I3-I4. The bands are a small lever; the nose lag is the big one.
+
+**Next, in order.** (1) Run Redline in the editor at I1-I4 with AI Mantas (`Docs/UNITY_VERIFICATION_CHECKLIST.md`):
+they should finish and re-attack a missed mouth. (2) Yash races Redline at each intensity: every race is recorded and
+the sweep learns `MantaSoarAITuning_Redline` on its own after three finished races. (3) Decision 7 for the Manta's nose
+rate. (4) The searched drive is promoted with Yash's yes, and stage 2 of `REGATTA_BALANCE_PLAN.md` races it.

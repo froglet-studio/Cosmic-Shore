@@ -46,7 +46,7 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
 ```
 
 - **Validity first.** A capture taken in Debug code optimization, with Deep Profile, under a frame cap, with Burst
-  off, with managed job time, or with a second camera enabled (the Third Eye window) is NOT a number. The reader says
+  off, with managed job time, or with a second camera enabled (the old Third Eye window; since 2026-11-01 the Third Eye drives the main camera, so only its overlays cost) is NOT a number. The reader says
   so in its first section; the sweep refuses to compare it. Ask for a clean one (the team task template is in
   `Docs/TEAM_TASKS.md`, area Performance) rather than reading a tainted one.
 - **An Amoebius allocation is the game's only when the engine API does not copy.** Before filing a game task from the
@@ -58,6 +58,16 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   captures by itself; the badge counts down), then stop Play (it goes to Claude by itself; the file
   lands on their `bugledger/<user>` branch). Say that in one line. Never ask for pasted JSON when the pipe exists;
   accept a paste when they offer one.
+- **A person whose `bugledger/<user>` branch has load, crash and net reports but NO `perf/` folder is almost
+  certainly playing in Debug code optimization**, which `PerfAutoCapture` refuses to capture. Debug makes every
+  scene's C# ~5x slower, so "everything is slow in the editor" plus no captures points there first (2026-11-02:
+  Shombith, 126 load reports, 0 captures, while Yash's same-day captures of the same code ran 66-96 fps). Hand them
+  `Docs/PERFORMANCE_OPTIMIZATION.md` §4.2a before reading any code.
+- **"It lags while I hold the trigger" is a per-ROUND cost, so count rounds in flight first** (rate x muzzles x flight
+  time, and the pool's prewarm says what the author expected: the Brittle Star prewarms 1,400). Then list everything
+  `Gun.FireSingle` / `Projectile.LaunchProjectile` / `OnEnable` does per round: on 2026-11-02 two of them scaled with
+  the trigger and were nobody's design - every round was a `PrismColliderLodManager` focus (the manager loops foci
+  per prism) and every round started an unthrottled FMOD `ProjectileLaunch` one-shot.
 
 - **A load is not a frame: capture it with Load Time Insights**, and a Cell Selector world swap now records like a
   game launch (arm Record Insight Mode in FrogletTools > Performance > Performance Benchmark > Load Time Insights,
@@ -124,8 +134,8 @@ where they disagree (`Docs/claude/PLUGINS_AND_CONNECTORS.md`). Before writing co
   Noise is ±5-10 %; a smaller claimed win needs repeats.
 - Amoebius: `perf_hunt.py amoebius --no-build` before and after; allocations repeat to ~1 %, so a KB/frame win there
   is real on day one. Milliseconds there only order things.
-- The gates: `perf_hunt.py gates` green; `unity_refcompile --config player-dev` for the C#; `/verify-unity` when the
-  CLI exists, else say so and file the check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+- The gates: `perf_hunt.py gates` green; `unity_refcompile --config player-dev` for the C#; the `unity` CLI when an
+  editor is open (`CLAUDE.md` verify rule); if neither ran, say so and file the check in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - Write the delta into `Docs/PERFORMANCE_OPTIMIZATION.md` §2 (the dated row: what, the before/after numbers, the
   protocol, the commit). A number without its protocol is not a result.
 

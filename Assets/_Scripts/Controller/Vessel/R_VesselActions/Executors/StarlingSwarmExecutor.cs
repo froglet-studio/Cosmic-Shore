@@ -130,6 +130,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised on every peer when a pick lands: the element picked.</summary>
         public event System.Action<Element> Picked;
 
+        /// <summary>Raised when the pilot sets the element the next hand is drawn from.</summary>
+        public event System.Action<Element> DrawElementChosen;
+
         readonly StarlingPickPress _press = new();
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -170,11 +173,38 @@ namespace CosmicShore.Gameplay
         /// release picks, a long hold or a pulled trigger shows the card's details instead (<see cref="StarlingPickPress"/>).</summary>
         public void PressPick(Element element) => _press.Begin(element, Time.unscaledTime, TriggerHeld());
 
-        /// <summary>The pick button came up: pick the card unless its details were shown.</summary>
+        /// <summary>
+        /// The pick button came up. Unless its details were shown, a quick press means (Garrett, 2026-11-01):
+        /// <list type="bullet">
+        /// <item>a spread hand up: pick that element's card, as before;</item>
+        /// <item>an element hand up: X (Charge) and B (Time) move the highlight left and right, A (Mass) takes the
+        /// highlighted card (<see cref="ElementHandButton"/>);</item>
+        /// <item>no hand up: draw the next hand from that element (it keeps the old one until you choose).</item>
+        /// </list>
+        /// </summary>
         public void ReleasePick(Element element)
         {
-            if (_press.End(element)) Pick(element);
+            if (!_press.End(element) || _rules == null) return;
+            if (!_rules.HasHand) ChooseDrawElement(element);
+            else if (!_rules.IsElementHand) Pick(element);
+            else
+            {
+                int step = ElementHandButton(element);
+                if (step == 0) PickFocus();
+                else if (step != int.MinValue) _rules.MoveFocus(step);
+            }
         }
+
+        /// <summary>What a pick button does in an element hand: -1 / +1 move the highlight (X = Charge left, B = Time
+        /// right, the pad's west and east), 0 takes the highlighted card (A = Mass, south), and Y (Space) does nothing
+        /// (<see cref="int.MinValue"/>).</summary>
+        public static int ElementHandButton(Element element) => element switch
+        {
+            Element.Charge => -1,
+            Element.Time => 1,
+            Element.Mass => 0,
+            _ => int.MinValue,
+        };
 
         bool TriggerHeld()
         {
@@ -183,11 +213,33 @@ namespace CosmicShore.Gameplay
             return input != null && Mathf.Max(input.LeftTriggerAnalog, input.RightTriggerAnalog) >= threshold;
         }
 
-        /// <summary>Pick the hand's card of <paramref name="element"/> (A = Mass, B = Time, X = Charge, Y = Space).</summary>
+        /// <summary>Pick the spread hand's card of <paramref name="element"/> (A = Mass, B = Time, X = Charge, Y = Space).</summary>
         public void Pick(Element element)
         {
             if (_rules == null || !_rules.Pick(element)) return;
             Picked?.Invoke(element);
+        }
+
+        /// <summary>Take card <paramref name="index"/> of the hand up now (a tap on the HUD's hand row).</summary>
+        public void PickAt(int index)
+        {
+            if (_rules == null) return;
+            var card = _rules.HandCard(index);
+            if (card.IsEmpty || !_rules.PickAt(index)) return;
+            Picked?.Invoke(card.Card.Element);
+        }
+
+        /// <summary>Take the highlighted card of an element hand.</summary>
+        public void PickFocus()
+        {
+            if (_rules != null && _rules.IsElementHand) PickAt(_rules.Focus);
+        }
+
+        /// <summary>Draw the next hand from <paramref name="element"/> (only with no hand up).</summary>
+        public void ChooseDrawElement(Element element)
+        {
+            if (_rules == null || !_rules.ChooseDrawElement(element)) return;
+            DrawElementChosen?.Invoke(element);
         }
 
         // =============================================================================================== the run
@@ -951,14 +1003,17 @@ namespace CosmicShore.Gameplay
 
         // =============================================================================================== the AI
 
-        /// <summary>An AI Starling picks a card a moment after a hand arrives (the lab's random picker); a human always picks.</summary>
+        /// <summary>An AI Starling picks a card a moment after a hand arrives (the lab's random picker), then draws the next
+        /// hand from a random element (which keeps the old one a quarter of the time); a human always picks.</summary>
         void AutoPickForAI(float now)
         {
             if (!_rules.HasHand || _status.Player == null || !_status.IsInitializedAsAI) { _aiPickAt = 0f; return; }
             if (_aiPickAt <= 0f) { _aiPickAt = now + 2f; return; }
             if (now < _aiPickAt) return;
             _aiPickAt = 0f;
-            Pick(StarlingRules.HandOrder[(int)(Rnd() * 4f) % 4]);
+            if (_rules.IsElementHand) PickAt((int)(Rnd() * _rules.HandSize) % _rules.HandSize);
+            else Pick(StarlingRules.HandOrder[(int)(Rnd() * 4f) % 4]);
+            ChooseDrawElement(StarlingRules.HandOrder[(int)(Rnd() * 4f) % 4]);
         }
 
         // =============================================================================================== the picture

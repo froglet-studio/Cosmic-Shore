@@ -1739,6 +1739,14 @@ Do not rebuild it from this section. What is worth carrying forward, because non
 
 ## 5. The switch
 
+> **2026-10-27 (Garrett): a switch is always placed around an ELEMENTAL CRYSTAL, in every game.** This is
+> part of the Scarab's kit (`ScarabSwitchAnchors`, called by `PlaceSwitchActionExecutor` before any mode's
+> resolver). It is no longer a flora-heart assist that falls back to free placement. Any Charge, Mass, Space or
+> Time crystal anchors a ring, in any state: a free pickup, a flora heart, or a heart still embedded in a living
+> fauna. Omni crystals never do. With no elemental crystal on the flight path (within `anchorReach`, floored at
+> 10 u), the press is refused and nothing is spent. The ring is placed where the crystal is at the press and does
+> not follow a fauna that carries it away.
+
 The Scarab's placeable structure is **not** a wall. It is a **curved, directional switch** — a
 ring with a mouth and a curved deflecting panel, placed ahead of the vessel on the A button, with
 its size and shape governed by the Mass element (§7).

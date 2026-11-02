@@ -46,6 +46,10 @@ namespace CosmicShore.Gameplay
     /// so the nose's follow is undisturbed) and carries the field's gravity speed along the nose, on the
     /// hull's own flight clock (<see cref="VesselTransformer.FlightTimeScale"/>, the pathfinder's boost).</para>
     ///
+    /// <para><b>Removed from the kit 2026-11-02</b> (<c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>): Mass mode is gone and no
+    /// input is bound to the dipole, so this never lays a pair. It stays on the prefab until an editor pass removes the
+    /// component; the doc says how to bring it back.</para>
+    ///
     /// <para><b>Modes.</b> The triggers lay the dipole in MASS mode only (<see cref="StoatModeExecutor"/>); in Time
     /// mode they fly the orbit slingshot. Every annihilation — a release, a fresh press over a live pair — throws the
     /// Charge ripple from the meeting point (<see cref="StoatRippleExecutor"/>), on every peer from its own copy.</para>
@@ -304,8 +308,8 @@ namespace CosmicShore.Gameplay
             _source.OwnerVessel = OwnerTransform();
             _age = 0f;
             // The white hole's birth: its light converging from far away onto the pair (the studio's spawnWave('in', mid)).
-            // Off by default (StoatDipoleConfigSO.AnnihilationWaves): in play it read as the annihilation flash at CREATION.
-            if (config.AnnihilationWaves)
+            // Its own switch (StoatDipoleConfigSO.BirthWave), off: in play a wave at CREATION read as the annihilation flash.
+            if (config.BirthWave)
                 BlackHoleWaves.Spawn(BlackHoleWaves.Kind.In, 0.5f * (sinkAt + sourceAt), inSeconds: config.SourceGrowSeconds);
             ApplyOwnerRules();
             return true;

@@ -19,8 +19,9 @@ is what decides which jobs that pilot brings; joining, captains and emissaries w
 2. **Pick a voyage in the Voyage window** (the app shell, never the Toy Box or the world; Garrett, 2026-10-28: "the
    galaxy map should be in the app shell not the game. the jobs should be the different voyages"). Each pilot seated
    in the squad drums up one job from the news the squad's port holds, so the three pilots you seat decide the three
-   jobs you are offered; each job is a voyage card drawn over the **galaxy map** (the locations, the lanes, where you
-   are, the job's course), with the way home as one more card when you are away.
+   jobs you are offered; each job is a voyage card in a grid under the **galaxy map** (the locations, the lanes, where
+   you are; pan, zoom and tap it to choose where to go), with the way home as one more card when you are away. Opening a
+   card expands it over the others and frames its course on the map (the window's layout: `VOYAGE_BOARD.md` §3).
 3. **Set sail.** The game enters freestyle and your squad deploys: you fly your seat's vessel, friends who joined fly
    theirs, and every other seat is an AI wingmate flying its slot's vessel.
 4. **(retired)** The in-world job board and the floating 3D chart were removed on 2026-10-28: Garrett could not tell
@@ -58,6 +59,8 @@ eat the hull). ENSIGN, VOLT and FLUME were already built.
 
 - **The map**: one harbour per domain (Celadon, Carmine, Aurum), the Tollmoor port, two vault fields (Lantern Reach,
   the Hollow) and two cores (Verdigris, Saltmarch, where a wreck lies at the start), joined by lanes of 2 to 4 cells.
+  Each sits on the real HyperSea, our Milky Way, at the Voyage Board's position (2026-11-01,
+  [VOYAGE_BOARD.md](VOYAGE_BOARD.md)): the job cards draw the sea around them and the course an Ark sails round the reefs.
 - **Pilot people**: one person per callsign (name, faction type, a line of story), layered on the 18 callsign pilots.
 - **Job kinds**: courier (merchant), hunt (hunter), salvage (pirate), defence (aristocrat), and the way home.
 - **Events**: what each outcome writes to which port's news, and which job seed each piece of news makes.
@@ -105,6 +108,10 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 - **AI wingmates escort the Ark**: one that ranges past the leash is brought back to its flank, and they are taken back
   when the voyage ends. Taking the helm of another seat is not built yet.
 
+- **The Voyage window has one map, the Voyage Board's sea** (Garrett, 2026-11-01): the real Milky Way around Tumult,
+  above the job cards; OPEN on a card expands its brief (squad, mission, intensity, pay) with Set sail and focuses the
+  map on that course, cell by cell ([VOYAGE_BOARD.md](VOYAGE_BOARD.md) §3). The lanes' cell counts still
+  set a leg's length in play; whether a leg should sail its real cells is open ([VOYAGE_BOARD.md](VOYAGE_BOARD.md) §5).
 - **The Voyage window's third voyage is the job cards** (Garrett, 2026-10-28: "put it in as the third voyage", then "it
   is confusing that it is still in the toybox"): `VoyageJobsView` on the window's Voyages list stands one
   `VoyageJobCard` per job, copies of `MissionView.prefab`'s `Voyage3`, each with a `VoyageMapGraphic` in its art's

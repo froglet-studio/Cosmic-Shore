@@ -217,8 +217,8 @@ steps down, and past every level the ordinary effect.
 | `_Scripts/Utility/Effects/PrismInteractionLod.cs` | Picks the level: destruction (explosion / shatter / glitter) and stealing (grade / shed) |
 | `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The carrier: culling bounds, stamp, drain, retire (destruction and sheds on separate expiry queues) |
 | `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The five kinds, the two fade curves, the URP passes |
-| `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetSierpinski` (the destruction's cut at a depth); `GetShed` (the union-jack cut the sheds draw) |
-| `_Scripts/Utility/PrismSierpinskiTiling.cs` | The destruction's Sierpinski cut by recursion depth — pure, held to the lab's port and to `Prism.asset` (depth 0) by `parity.py` (.NET) |
+| `_Scripts/Utility/Foundation/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetSierpinski` (the destruction's cut at a depth); `GetShed` (the union-jack cut the sheds draw) |
+| `_Scripts/Utility/Foundation/PrismSierpinskiTiling.cs` | The destruction's Sierpinski cut by recursion depth — pure, held to the lab's port and to `Prism.asset` (depth 0) by `parity.py` (.NET) |
 | `_Scripts/Utility/Effects/PrismDebris.cs` | `ResolveExplosionFlight` — the explosion's flight, shared |
 | `_Scripts/Controller/Vessel/Prism.cs`, `PrismEventChannelWithReturnSO.cs`, `PrismFactory.cs` | `DamageByCollision` → `PrismEventData.PlainDeath` (above level 1) → the factory's slice, detail level, explosion |
 | `Tools/Shaders/verify_prism_collision_burst.py` | Executes the shipped HLSL (12 properties, 5 negative controls, the shipped grade executed) and glslang-compiles every pass |

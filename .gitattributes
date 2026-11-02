@@ -78,3 +78,15 @@
 **/*.bundle/Contents/MacOS/**                      binary
 **/*.bundle/Contents/_CodeSignature/CodeResources  binary
 **/*.bundle/Contents/Info.plist                    binary
+###############################################################################
+# Unity Smart Merge (UnityYAMLMerge) for serialized YAML assets.
+# Each machine must define the driver once in its LOCAL git config; see
+# Docs/unity-cli-setup.md "Smart merge for scenes, prefabs and assets".
+# A machine without the driver falls back to git's normal text merge.
+###############################################################################
+*.unity      merge=unityyamlmerge
+*.prefab     merge=unityyamlmerge
+*.asset      merge=unityyamlmerge
+*.mat        merge=unityyamlmerge
+*.controller merge=unityyamlmerge
+*.anim       merge=unityyamlmerge

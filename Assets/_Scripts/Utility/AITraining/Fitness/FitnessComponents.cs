@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.Utility.AITraining
@@ -33,6 +34,10 @@ namespace CosmicShore.Utility.AITraining
                 FitnessProfileSO.ComponentKind.LifeformsKilled => new LifeformsKilledFitness(label),
                 FitnessProfileSO.ComponentKind.CombatPoints => new CombatPointsFitness(label),
                 FitnessProfileSO.ComponentKind.GoalsScored => new GoalsScoredFitness(label),
+                FitnessProfileSO.ComponentKind.SwitchesThreaded => new ScoringMetricFitness(label, ScoringMetric.SwitchesThreaded),
+                FitnessProfileSO.ComponentKind.PrismsStolen => new ScoringMetricFitness(label, ScoringMetric.PrismsStolen),
+                FitnessProfileSO.ComponentKind.VolumeRemaining => new ScoringMetricFitness(label, ScoringMetric.VolumeRemaining),
+                FitnessProfileSO.ComponentKind.PeopleLine => new PeopleLineFitness(label),
                 _ => null
             };
         }
@@ -156,6 +161,30 @@ namespace CosmicShore.Utility.AITraining
         public override float Evaluate(DecisionContext ctx, IRoundStats r) => r?.Score ?? 0f;
     }
 
+    /// <summary>
+    /// Minus the mean distance from the pilot's path to the nearest point of the people's recorded lines of this pair
+    /// (<see cref="PeopleLine"/>): the trainer then prefers, among AIs that score the same, the one that flies where
+    /// people fly (Shombith, 2026-11-01: "the AI flies where people fly"). Sampled every SampleSeconds of episode time.
+    /// With no line loaded (nobody raced this pair, or a run outside Froglet Compute) it is 0, so a profile may carry
+    /// it everywhere.
+    /// </summary>
+    class PeopleLineFitness : FitnessBase
+    {
+        public const float SampleSeconds = 0.25f;
+        float _nextSample, _sum;
+        int _n;
+        public PeopleLineFitness(string l) : base(l) { }
+        public override void OnEpisodeStart(DecisionContext ctx) { _nextSample = 0f; _sum = 0f; _n = 0; }
+        public override void OnFrame(DecisionContext ctx)
+        {
+            if (!PeopleLine.HasLines || ctx.EpisodeTime < _nextSample) return;
+            _nextSample = ctx.EpisodeTime + SampleSeconds;
+            _sum += PeopleLine.Distance(ctx.Position);
+            _n++;
+        }
+        public override float Evaluate(DecisionContext ctx, IRoundStats r) => _n > 0 ? -_sum / _n : 0f;
+    }
+
     class DistanceTravelledFitness : FitnessBase
     {
         Vector3 _last;
@@ -192,6 +221,18 @@ namespace CosmicShore.Utility.AITraining
     {
         public GoalsScoredFitness(string l) : base(l) { }
         public override float Evaluate(DecisionContext ctx, IRoundStats r) => r?.GoalsScored ?? 0f;
+    }
+
+    /// <summary>
+    /// This pilot's reading of a mode's own <see cref="ScoringMetric"/>, through the same
+    /// <see cref="ScoringMetrics.Read"/> the mode's ScoringRuleSO scores with, so training and
+    /// the scoreboard cannot disagree about what a gate, a stolen prism or standing volume is.
+    /// </summary>
+    class ScoringMetricFitness : FitnessBase
+    {
+        readonly ScoringMetric _metric;
+        public ScoringMetricFitness(string l, ScoringMetric metric) : base(l) { _metric = metric; }
+        public override float Evaluate(DecisionContext ctx, IRoundStats r) => r != null ? ScoringMetrics.Read(r, _metric) : 0f;
     }
 
     class HighSpeedTimeFitness : FitnessBase

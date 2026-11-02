@@ -27,7 +27,7 @@ namespace CosmicShore.UI
         [SerializeField] StoatHUDView view;
 
         [Tooltip("This vessel's wormhole (the reticle's readiness and the ride).")]
-        [SerializeField] MeerkatWormholeExecutor wormhole;
+        [SerializeField] MeerkatSolitonExecutor wormhole;
 
         [Tooltip("This vessel's soliton kit (the sentinels and the exit portal).")]
         [SerializeField] MeerkatSolitonKit kit;

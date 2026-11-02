@@ -159,6 +159,10 @@ namespace CosmicShore.Gameplay
         public FloraConfigurationSO NextFloraSeed => _floraSeeds.Count > 0 ? _floraSeeds[0] : null;
         /// <summary>True when the Time ability can dash: a school to dash toward, and no dash in flight.</summary>
         public bool DashReady => _tamed.Count > 0 && Time.time >= _dashUntil;
+        /// <summary>The group the next dash goes to (0 or 1); a group with nobody in it is passed over, as Dash does.</summary>
+        public int DashGroup => ResolveGroup(_dashGroup);
+        /// <summary>A dash is in flight (it ignores another press until it lands).</summary>
+        public bool Dashing => Time.time < _dashUntil;
         /// <summary>The furthest-along taming in the light right now, 0..1.</summary>
         public float StrongestTame01
         {
@@ -277,6 +281,27 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Where the next <see cref="Dash"/> would carry the hull, without dashing: the same group choice (this group's turn,
+        /// else the other) and the same <see cref="AnglerCommandMath.DashPoint"/>. A READ for the autopilot
+        /// (<see cref="AnglerLeapfrogAIPolicySO"/>) to decide whether the dash is worth pressing. False with no school, or
+        /// with every group already round the hull.
+        /// </summary>
+        public bool TryGetDashPoint(out Vector3 point)
+        {
+            point = default;
+            if (_status == null || !config || !_status.Transform || _tamed.Count == 0) return false;
+            Vector3 from = _status.Transform.position;
+            for (int tries = 0; tries < 2; tries++)
+            {
+                int group = tries == 0 ? _dashGroup : 1 - _dashGroup;
+                if (!TryGroupCentroid(group, out Vector3 centroid)) continue;
+                point = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac);
+                if ((point - from).sqrMagnitude >= 1f) return true;
+            }
+            return false;
+        }
+
         bool TryGroupCentroid(int group, out Vector3 centroid)
         {
             centroid = Vector3.zero;
@@ -313,9 +338,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < pool.Count && !cfg; i++)
                 if (IsMorphable(pool[i]) && pick-- == 0) cfg = pool[i];
             if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return false;
-            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
-            if (!f || !f.TryLeash(this)) return false;
+            if (!f) return false;
+            CrystalFaunaBirth.Announce(_status, f);   // the omni crystal folds into its heart (FAUNA_BIRTH_CRYSTAL_MORPH.md)
+            if (!f.TryLeash(this)) return false;
             var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
             _members[f] = m;
             JoinSchool(m);
@@ -837,7 +864,7 @@ namespace CosmicShore.Gameplay
             if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return;   // a client never originates a replicated species
 
             Vector3 at = AnglerCommandMath.FormationSlot(0, t.position, t.forward, t.right, t.up, config.FormBack);
-            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
             if (!f || !f.TryLeash(this)) return;   // born wild: an ordinary creature of the cell from here on
             var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };

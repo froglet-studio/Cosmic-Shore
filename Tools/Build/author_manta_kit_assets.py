@@ -264,6 +264,7 @@ FILES["Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/MantaStingS
 # bomb bay) for the Kabloom effect; the four prism effects are the fleet-shared set and
 # are carried through unchanged.
 VESSEL_CONTAINER_GUID = "fed903592808c9b49b28dc65e94825fc"
+SPHERE_BLAST_MORPH_GUID = "c62807b520fd4bbb8569dd7b68924156"  # SphereBlastCrystalMorphByCrystal.asset
 FILES["Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/MantaImpactorDataContainer.asset"] = (
     so_asset("VesselImpactorDataContainerSO", "MantaImpactorDataContainer",
              "  vesselPrismEffects:\n"
@@ -282,7 +283,11 @@ FILES["Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/MantaImpacto
              "  vesselChargeCrystalEffects: []\n"
              "  vesselSpaceCrystalEffects: []\n"
              "  vesselTimeCrystalEffects: []\n"
-             "  vesselSkimmerEffects: []\n"),
+             "  vesselSkimmerEffects: []\n"
+             # The omni-crystal retirement: the crystal becomes the Kabloom self-blast sphere
+             # instead of the shared husk spray (R_VesselActions/SPHERE_BLAST_CRYSTAL_MORPH.md;
+             # one asset shared with the Butterfly and the Rhino).
+             f"  omniCrystalRetirement: {{fileID: 11400000, guid: {SPHERE_BLAST_MORPH_GUID}, type: 2}}\n"),
     ASSET_META.format(guid=VESSEL_CONTAINER_GUID))
 
 # ── The map re-cut (the design record; multipliers pinned where a dedicated

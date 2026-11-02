@@ -1170,14 +1170,23 @@ namespace CosmicShore.Utility
         /// out of the shell stands above the arcs, which bow just over it.
         /// </summary>
         public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
-            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int count, float[] strike)
+            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int count, float[] strike) =>
+            FluxStrikes(sites, chain, seconds, settings, centres, radii, places, seats, seatRadii, 0, count, strike);
+
+        /// <summary>
+        /// As above for prisms [<paramref name="start"/>, <paramref name="end"/>) only: those are cleared and recomputed,
+        /// every other entry of <paramref name="strike"/> is left as it was. A crystal with many columns spreads them over
+        /// rebuilds this way (<see cref="CrystalChargeArcs"/>), so one crystal cannot take a whole frame.
+        /// </summary>
+        public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
+            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int start, int end, float[] strike)
         {
             s_seats = seats;
             s_seatRadii = seatRadii;
-            try { FluxStrikesUngated(sites, chain, seconds, settings, centres, radii, count, strike); }
+            try { FluxStrikesUngated(sites, chain, seconds, settings, centres, radii, start, end, strike); }
             finally { s_seats = null; s_seatRadii = null; }
             if (places == null) return;
-            for (int j = 0; j < count; j++)
+            for (int j = start; j < end; j++)
                 if (strike[j] > 0f) strike[j] *= StrikeGate(places[j], settings);
         }
 
@@ -1197,9 +1206,10 @@ namespace CosmicShore.Utility
         }
 
         static void FluxStrikesUngated(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
-            Vector3[] centres, float[] radii, int count, float[] strike)
+            Vector3[] centres, float[] radii, int start, int end, float[] strike)
         {
-            System.Array.Clear(strike, 0, count);
+            if (end <= start) return;
+            System.Array.Clear(strike, start, end - start);
             if (seconds < 0f) return;
             float fork = settings.FluxFork;
             long now = Now(seconds, settings);
@@ -1213,22 +1223,66 @@ namespace CosmicShore.Utility
                 for (int q = 0; q < path.SourceOffsets.Length; q++)
                 {
                     StrandPoints(path, q, steps, fork, settings, sites.Radius);
-                    StrikeAlong(s_points, centres, radii, count, intensity * 1.1f, settings, strike);
+                    StrikeAlong(s_points, centres, radii, start, end, intensity * 1.1f, settings, strike);
                 }
             }
         }
 
-        static void StrikeAlong(List<Vector3> path, Vector3[] centres, float[] radii, int count, float intensity,
+        // The strand cut into pieces of PieceSegments segments, each inside one sphere (s_pieceCentre / s_pieceRadius):
+        // a column farther from a piece's sphere than its own widest radius cannot be struck by any segment in that piece,
+        // so StrikeAlong measures a column only against the pieces that could reach it. The minimum over those is the
+        // minimum over the whole strand whenever it is under the radius (the only case that lights), so the strikes are
+        // exactly what the all-pairs loop gave, at a fraction of the cost (Switchback playtest 2026-11-02: one omni's
+        // strikes took 17-67 ms in a frame - 4 discharges x 5 strands x 96 points x 9 column samples x every column).
+        const int PieceSegments = 12;
+        const int MaxPieces = 32;
+        static readonly Vector3[] s_pieceCentre = new Vector3[MaxPieces];
+        static readonly float[] s_pieceRadius = new float[MaxPieces];
+
+        static int BuildPieces(List<Vector3> path)
+        {
+            int segments = path.Count - 1;
+            int pieces = Mathf.Min(MaxPieces, (segments + PieceSegments - 1) / PieceSegments);
+            int per = (segments + pieces - 1) / pieces;
+            for (int c = 0; c < pieces; c++)
+            {
+                int from = c * per, to = Mathf.Min(segments, from + per);   // points from..to (segments from..to-1)
+                Vector3 lo = path[from], hi = path[from];
+                for (int i = from + 1; i <= to; i++) { lo = Vector3.Min(lo, path[i]); hi = Vector3.Max(hi, path[i]); }
+                Vector3 centre = (lo + hi) * 0.5f;
+                float r2 = 0f;
+                for (int i = from; i <= to; i++) r2 = Mathf.Max(r2, (path[i] - centre).sqrMagnitude);
+                s_pieceCentre[c] = centre;
+                s_pieceRadius[c] = Mathf.Sqrt(r2);
+            }
+            return pieces;
+        }
+
+        static void StrikeAlong(List<Vector3> path, Vector3[] centres, float[] radii, int start, int end, float intensity,
             in ChargeArcSettings settings, float[] strike)
         {
             if (path.Count < 2) return;
-            for (int j = 0; j < count; j++)
+            int pieces = BuildPieces(path);
+            int segments = path.Count - 1;
+            int per = (segments + pieces - 1) / pieces;
+            for (int j = start; j < end; j++)
             {
                 float r = radii[j];
                 if (r <= 0f) continue;
+                int samples = s_seats != null ? ColumnSamples : 0;
+                // The column (seat .. prism, or the prism alone) and its widest radius: a piece whose sphere stays farther
+                // than that from the whole column cannot reach any sample on it.
+                Vector3 top = centres[j], foot = samples == 0 ? top : s_seats[j];
+                float widest = samples == 0 ? r : Mathf.Max(r, s_seatRadii[j]);
+                uint near = 0;
+                for (int c = 0; c < pieces; c++)
+                {
+                    float gap = DistanceToSegment(s_pieceCentre[c], foot, top) - s_pieceRadius[c];
+                    if (gap <= widest * 1.001f + 1e-4f) near |= 1u << c;
+                }
+                if (near == 0) continue;
                 // How deep inside the body (or its column) the arc runs, as a fraction of the radius there: 0 on the axis.
                 float depth = float.MaxValue;
-                int samples = s_seats != null ? ColumnSamples : 0;
                 for (int c = 0; c <= samples; c++)
                 {
                     float along = samples == 0 ? 1f : c / (float)samples;
@@ -1236,7 +1290,12 @@ namespace CosmicShore.Utility
                     float rr = samples == 0 ? r : Mathf.Lerp(s_seatRadii[j], r, along);
                     if (rr <= 0f) continue;
                     float d = float.MaxValue;
-                    for (int i = 0; i + 1 < path.Count; i++) d = Mathf.Min(d, DistanceToSegment(p, path[i], path[i + 1]));
+                    for (int k = 0; k < pieces; k++)
+                    {
+                        if ((near & (1u << k)) == 0) continue;
+                        int to = Mathf.Min(segments, (k + 1) * per);
+                        for (int i = k * per; i < to; i++) d = Mathf.Min(d, DistanceToSegment(p, path[i], path[i + 1]));
+                    }
                     depth = Mathf.Min(depth, d / rr);
                 }
                 if (depth >= 1f) continue;

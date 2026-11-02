@@ -837,9 +837,16 @@ MonoBehaviour:
 
     profile_guid = guid("profile/Hesperides")
     profile_rel = f"{folder}/Hesperides Cell Spawn Profile.asset"
+    # The garden's BEES (Docs/ECOSYSTEM.md §66): a hive is a flora slot, so the cell lists its config with the
+    # plants. Tools/Build/author_bee_assets.py authors that config (its population, its element palette); this
+    # script only lists it, by the guid that script mints, so the profile keeps one owner.
+    sys.path.insert(0, os.path.join(REPO, "Tools", "Build"))
+    import author_bee_assets as bees
+    bee_hive = bees.guid(bees.rel(bees.hesp_hive_path()))
     flora_refs = "\n".join(
         [f"  - {{fileID: 11400000, guid: {cell_flora[n]}, type: 2}}" for n in seeding] +
-        [f"  - {{fileID: 11400000, guid: {topiary_guids[n]}, type: 2}}" for n in topiary_guids])
+        [f"  - {{fileID: 11400000, guid: {topiary_guids[n]}, type: 2}}" for n in topiary_guids] +
+        [f"  - {{fileID: 11400000, guid: {bee_hive}, type: 2}}"])
     made.append(write(profile_rel, f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000

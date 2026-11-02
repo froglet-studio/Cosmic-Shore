@@ -28,6 +28,21 @@ namespace CosmicShore.Core
         public long lifetimeCrystalsEarned;
         public long lifetimeCrystalsSpent;
         public List<string> unlockedRewardIds = new();
+
+        /// <summary>Vessels bought (starters are owned by everyone and are not listed). The record the game obeys.</summary>
+        public List<string> vessels = new();
+        /// <summary>Hangar levels bought, per vessel and element (VesselClassType and Element values).</summary>
+        public List<ServerHangarLevel> hangar = new();
+        /// <summary>False until this account's client-written unlocks were brought across (once, capped).</summary>
+        public bool unlocksMigrated;
+    }
+
+    [Serializable]
+    public class ServerHangarLevel
+    {
+        public int vessel;
+        public int element;
+        public int level;
     }
 
     /// <summary>
@@ -50,6 +65,18 @@ namespace CosmicShore.Core
         public static UniTask<ServerEconomyResult> SpendAsync(string source, int amount, string item) =>
             CallAsync(new Dictionary<string, object>
                 { { "action", "spend" }, { "source", source }, { "amount", amount }, { "item", item ?? string.Empty } });
+
+        /// <summary>Buys a vessel at the server's price (the shipped asset's, via author_economy_catalog.py) and records it.</summary>
+        public static UniTask<ServerEconomyResult> UnlockVesselAsync(string vesselName) =>
+            CallAsync(new Dictionary<string, object> { { "action", "unlockVessel" }, { "vessel", vesselName } });
+
+        /// <summary>Buys the next Hangar level of one vessel's element and records it.</summary>
+        public static UniTask<ServerEconomyResult> UpgradeHangarAsync(int vessel, int element) =>
+            CallAsync(new Dictionary<string, object> { { "action", "upgradeHangar" }, { "vessel", vessel }, { "element", element } });
+
+        /// <summary>Once per account: the unlocks this client recorded before the server owned them (capped by value).</summary>
+        public static UniTask<ServerEconomyResult> MigrateUnlocksAsync(List<string> vessels, List<ServerHangarLevel> hangar) =>
+            CallAsync(new Dictionary<string, object> { { "action", "migrateUnlocks" }, { "vessels", vessels }, { "hangar", hangar } });
 
         public static UniTask<ServerEconomyResult> ClaimAsync(string rewardId, int amount) =>
             CallAsync(new Dictionary<string, object> { { "action", "claim" }, { "rewardId", rewardId }, { "amount", amount } });

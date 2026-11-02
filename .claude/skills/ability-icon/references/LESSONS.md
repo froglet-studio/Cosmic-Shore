@@ -400,3 +400,131 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     each plate about its own centre so the gaps read at icon size. That matches `ElementIcons/OmniCrystal_Active.png`
     (`specs/scarab.py` `omni_crystal`). Before drawing any crystal, prism, ball or creature, find its FBX or its
     shipped mark first.
+
+61. **A structure the ability BUILDS is drawn from its own geometry code, at its real proportions, and each card shows
+    only the state that card owns.** The Seed Wall options drew a generic pinwheel; Garrett: "use the actual dimensions
+    of the wall. only show the shielded prisms in the omnicrystal icon. use the base prisms and danger prisms to denote
+    the upgrade with their actual positioning and scales." So the Mass card takes every number from
+    `SerpentWallLattice` (bricks 1 x 2 short sides on a pitch of 5, alternating up / right, the panel the exact tilted
+    square `CellPanel` returns): the wall as BUILT (base bricks, domain), the seed (white), and the level-5 state as the
+    danger panels where the game lays them. The shielded look belongs to what shields it - the crystal - so the
+    vessel's OMNI card shows the same wall with every brick shielded and nothing else (`specs/serpent.py`). Include
+    the omni card in a hull's analysis from the start: it is the fifth card, and the one an element card must not
+    duplicate. The real proportions may run the wall to the card's edge and leave thin bricks; argue `in_box` and
+    `coverage` in the spec rather than distort the lattice.
+
+## 2026-10-31 - the Angler's Charge card (Erase / Lock-on)
+
+62. **A creature is drawn from its own prefab, in the view that keeps it whole.** The Angler's school is fauna, and the
+    QuadFish (`QuadFish.prefab`: a crystal core and four HealthBlock fins at (+-0.908, +-0.738), each turned 51 deg) is
+    its commonest. Side-on, the fin pairs overlap into a ball with two loose fins that read as an "S" at 60 px; the
+    codex portrait's look - the core with its four fins in an X - reads as the creature at every size. Look at the
+    codex portrait (`Assets/_Graphics/Codex/fauna_*.png`) before picking a creature's view, and say in the spec which
+    liberty the drawing takes. Garrett picked B ("the spend", "B is fine"): when an ability COSTS something (a lock
+    spends a creature), the card shows the cost - the school left behind in the domain colour, the spent one white.
+
+63. **A hull's side view can come out keel-up: check where a known point lands before drawing.** `mesh_silhouette`'s
+    pitch 90 drew the Angler upside down (its esca hung below the keel); `project_point` on the bulb (the mesh's
+    furthest-forward vertex) put it below the centre, and pitch -90 set it upright. Project one point you know (a mast,
+    a fin, the nose) and confirm it lands where the ship has it before any option goes out. On the Mass card Garrett took
+    the close-up (B) over the to-scale light (A): the hull and its lit esca ARE the Angler, so a true-size speck lost
+    the identity the card is for (contrast the Scarab's bubble, LESSONS 56, where the volume was the act).
+
+64. **When the ability alternates between two of something, the card shows both, how many, and whose turn it is.** The
+    Angler's paint sends one of two groups per throw, A then B. Garrett on the first Paint options: "it would be nice if
+    I could see how many were in group A and group B. It should alternate which is highlighted so the player knows which
+    they are sending." D took it: each group keeps a fixed place (A above, B below) with its live count as HUD text
+    beside it, the next to send white and the waiting one dim in the domain colour. A fixed place lets the highlight
+    move without anything else on the card moving. Look for a turn-taking state in the executor (`SendGroup`) before
+    drawing the act alone.
+
+65. **A rebind step that cannot find its `after=` anchor must fail, never drop the field.** The Angler's Mass and Space
+    steps anchored on `lockWakeAlpha` and `lureJoinedSeconds`, view fields with C# defaults that Unity had never
+    serialized into the prefab, so `rebind.py` created every part Image and wrote none of the `lure*Icon` /
+    `paint*Icon` fields: two cards merged with parts the HUD never tints, and `--check` reported no drift because the
+    rebuilt output matched. `rebind.py` now raises when an anchor is missing. Anchor on a field the prefab already
+    serializes (an earlier part's `...Icon` reference is safe), and after a rebind grep the prefab for every new field.
+    On the Time card Garrett took H, "the jump" (a ghost where the hull was, the hull where the dash puts it), over a
+    dashed path or a speed wedge: the set distance is what the dash is, and only the before/after pair shows it.
+
+66. **Name the vessel the pilot flies, not the asset it inherited, and check every injected type's namespace.** The
+    Tiger Moth replaced the Butterfly and kept its HUD, so the files say Butterfly; the first Drop sheet went out as
+    "Butterfly", and Garrett: "the tigermoth is the new name for this vessel. you appear to be confused about that."
+    Read the vessel doc's header (a RETIRED line) before naming a spec, and name the spec, sheets and new parts for the
+    live vessel while leaving the inherited asset names alone. Separately, the Angler's controller injected
+    `GameDataSO` without `using CosmicShore.Utility`, a compile error someone else had to fix (#1651); with no compiler
+    in the session, grep the namespace of every type a C# change newly names.
+
+67. **Draw an upgrade's part only once the upgrade is live, and say who it hit by colour, not by what flew off.**
+    Garrett on the Tiger Moth: "the portal should only appear once the upgrade comes" (the Toll Gate wormhole had been
+    drawn at rest), and on Scale Dust: "we don't need the element to be seen coming out. Show a grey ship and turn it
+    Red when you hit then it will look different then space." A rival that turns from grey to danger on contact says
+    "hit" without a second object, and it keeps the Charge card apart from the Space card's own dust. An upgrade that
+    reaches two cards (Toll Gate is Charge's, its wormhole is the Time card's) shows on both, the same ring in the
+    domain colour, red as a rival pays.
+
+68. **The omni crystal card is part of every lockup.** "You are still forgetting to show the omnicrystal totem as part
+    of this exercise." Every vessel has the card left of Charge (`VesselHUDView.omniAbilitySprite`, locked when empty);
+    the kit's sheets now draw it (`states.ORDER`, `card.flower("Omni")`), and a hull's round is not done until its omni
+    card has been asked about.
+
+69. **"To scale" has a floor: the smallest size that still reads.** "Make the moth to scale in the explosion": the
+    Tiger Moth (span 21.35) in its 900-unit bloom is 1.2% of the sphere, about 1.5 px on the 128 canvas and nothing on a
+    40 px card. Draw the small thing as small as it still reads (box ~24, about 8 px on the HUD), let the big thing fill
+    the card to its rim, and say the true ratio in the spec. Scatter many small marks on a golden-angle spiral, not a
+    seeded random: random clumps, and a clump hides the small thing at the centre.
+
+70. **Re-read the whole view file after rewriting a section of it.** Wiring the Tiger Moth's Time card replaced a block
+    of `ButterflyHUDView` and took `SetMassMode` with it, while the controller and `Initialize` still called it: a
+    compile error nobody here could see. With no compiler in the session, grep every method the controller calls on
+    the view (`grep -o 'view\.[A-Za-z]*(' Controller.cs`) against the view after each edit.
+
+71. **One colour language for an effect, in the world and on its card.** "make a dust made of danger color, team domain
+    color, team shielded domain color. use this in the icon and for the actual dust". When a card draws a world effect
+    in several colours, each colour is its own part (the kit's `motes(tone=)` splits one scatter into thirds), and the
+    game's effect reads the same palette from one shared method, so the card and the world cannot drift.
+72. **Mass reads square; its upgrade sharpens the outside.** The Tiger Moth's keys: rectangles with a straight cut
+    ("more square edges. including the cut out"); Gilded Wake points their OUTER ends ("octahedrons on the outside but
+    keep them square edge on the interior"). An upgrade drawn as a swapped part, not a tint alone.
+
+73. **No rhombus for a prism or a mote: the Time petal owns that shape.** "you need to stop using the rhombuses for
+    shielded prisms, that shape is owned by the time petal, which is confusing. prisms are mass so cut the rhombus in half
+    when you can so it is two close triangles. you can also put a negative space x on square prisms ... for the motes make
+    them little circles or ellipses". Use `motifs.prism_halves` or `motifs.prism_square_x`, and round motes. Before
+    drawing any small mark, check it against the petal shapes on the plate above the card.
+74. **When a card is "too busy", cut to the one thing the dial changes plus the upgrade.** The Tiger Moth's Space card
+    lost its tended prism and its broken rival prism for "just the multicolor motes and ... a bigger domain color
+    supershielded prism at the bottom of the rain". And an upgrade that changes a shape can change its proportions too:
+    Gilded Wake's keys "go wider and start the taper sooner".
+
+75. **The CTA lime is never a card's "on" colour; the lit parts already say it.** The Brittle Star's four plates turned
+    lime while each mode was on, and on the Charge card the lime plate under white whips was "too much" (Garrett,
+    2026-11-01). The plate keeps its resting gauge colour whatever the mode does; only a warning state (overheat's hot
+    colour) changes it. Say "on" with the parts: the whips white at full alpha, dim (0.25) with the mode off. When an
+    ability has an analog input (RT's pull), give the two ends their own parts and let the view crossfade them on the
+    input (whips out, sabers in), so the card moves with the trigger instead of flipping.
+76. **An omni card can count, by shape.** The omni card is one sprite tinted one colour, so a resource the crystal
+    adds (the Brittle Star's spare rings, 0-2) is drawn as slots: a solid shape per unit held, an outline per empty slot,
+    one sprite per amount, swapped at runtime (`VesselHUDView.SetOmniAbilitySprite`). Garrett picked this over a
+    picture of the gift (2026-11-01: "I like that c can display the resource amount held"): offer a counting option
+    whenever the crystal fills a stock.
+
+## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
+
+78. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
+    ability that can take over" - the Honeyguide's RT and LT each show whichever banked ability is current, so the
+    thirteen upgrades are drawn as one family with the base icons (`Upgrades/` subfolder, still under the 24 px
+    distinct gate, which holds them apart). Two things the first draft got wrong at 40 px: a loop with a straight tether
+    reads as a MAGNIFYING GLASS (the lasso's rope must curve and leave the loop tangentially), and an even-spiked ring
+    reads as a GEAR (vary the spike lengths and put the act's subject, here the hull, in the hole). Several hulls'
+    real meshes in one icon fragment into many components at small boxes; a ghost copy at 0.6 with `close_px` 2 keeps
+    each hull one piece. Not reviewed by the owner yet.
+
+
+77. **A prism is never a rhombus; the fix lives in the motif, not in each card.** The Time petal owns the rhombus, so a
+    shielded prism drawn as a diamond read as Time (Garrett, 2026-11-01). `motifs.prism` (and `prism_lit`) now draw two
+    close triangles, the diamond cut along its long axis with a gap of 0.16 of the half-diagonal, so every hull that
+    called it was recut by re-running `author.py` (Angler, Manta, Scarab, Sparrow, Squirrel); hand-drawn rhombi (the
+    Serpent's shielded bricks, `author_squirrel_shielded_ring_icon.py`) were cut the same way. Small halves fail `thin`
+    and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
+    negative-space X).

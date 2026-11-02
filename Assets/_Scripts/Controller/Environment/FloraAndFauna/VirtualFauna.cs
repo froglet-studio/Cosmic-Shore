@@ -89,7 +89,7 @@ namespace CosmicShore.Gameplay
         static bool IsPreyFauna(Fauna f, Fauna predator, bool herbivoresOnly)
         {
             if (!f || f == predator || !f.IsAlivePrey || f.IsPredationImmune) return false;
-            return !herbivoresOnly || f.Diet == FaunaDiet.Herbivore;
+            return !herbivoresOnly || FaunaDiets.IsPrey(f.Diet);
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace CosmicShore.Gameplay
             {
                 var f = s_materialised[q];
                 if (!f || f == predator || !f.IsAlivePrey) continue;
-                if (herbivoresOnly && f.Diet != FaunaDiet.Herbivore) continue;
+                if (herbivoresOnly && !FaunaDiets.IsPrey(f.Diet)) continue;
                 if ((f.transform.position - mouth).sqrMagnitude <= r2) results.Add(f);
             }
 

@@ -85,6 +85,11 @@ CLASS_ID = 16
 STOAT_CLASS_ID = 15
 
 
+# The omni crystal folds into the hull (R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md): a placeholder until this hull's
+# omni ability puts something in the world to land on. Shared asset, not generated here.
+VESSEL_ABSORB_MORPH_GUID = "9a40b3a2720043cd86332dbf7e16dd8d"   # VesselAbsorbCrystalMorphByCrystal.asset
+
+
 def guid_for(name: str) -> str:
     return hashlib.md5(f"CosmicShore/BrittleStar/{name}".encode()).hexdigest()
 
@@ -194,6 +199,11 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": hashlib.md5(b"CosmicShore/Britt
              "783faf75777a15c5b2241cfc3e2691d3": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_CreationMode.png").hexdigest(),
              "586d56db81bb568c940094830cd59abb": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_DestructionMode.png").hexdigest(),
              "669089ec7ad29ed295eccc53d8615225": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_SpeedMode.png").hexdigest()}
+# The cards the icon kit has recut into parts (the Stoat sprite they replaced -> a view field one of the parts wires).
+KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "chargeStarIcon",    # Charge: the five cords (2026-11-01)
+             "783faf75777a15c5b2241cfc3e2691d3": "massStarIcon",      # Mass: the corner trails, the tunnel (2026-11-01)
+             "586d56db81bb568c940094830cd59abb": "spaceStarIcon",     # Space: the five guns, the fan (2026-11-01)
+             "669089ec7ad29ed295eccc53d8615225": "timeStarIcon"}      # Time: the stretch (2026-11-01)
 # Script guids that must not survive the clone (every Stoat-specific component).
 STOAT_SCRIPTS = ("f8734be12714484eb93134990801178a",   # StoatAnimation
                  "1c6aec6ea8ef44f1bef4884679d33d0a",   # StoatHullBuilder
@@ -590,7 +600,7 @@ def vessel_container_asset() -> str:
             "  vesselSpaceCrystalEffects:\n" + crystal +
             "  vesselTimeCrystalEffects:\n" + crystal +
             "  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {VESSEL_ABSORB_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
@@ -910,7 +920,11 @@ def check(files: "dict[str, str]") -> "list[str]":
         for field in ("ringGauge", "creationGauge", "destructionGauge", "speedGauge"):
             need(re.search(r"  %s: \{fileID: [1-9]\d*\}" % field, hud), f"HUD view field {field} is not wired")
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            # A card the icon kit has recut (Tools/Build/icon_kit/specs/brittlestar.py) wears kit PARTS on child Images and
+            # its slot Image carries no sprite, so the round-1 sprite is gone on purpose: its view field stands in.
+            recut = KIT_RECUT.get(old)
+            done = new in hud or (recut and re.search(r"  %s: \{fileID: [1-9]\d*\}" % recut, hud))
+            need(old not in hud and done, f"HUD icon {new} not swapped in")
 
     for path, want in owned_files().items():
         have = files.get(path)

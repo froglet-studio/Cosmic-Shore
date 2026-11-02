@@ -909,7 +909,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 
 | File | Role |
 |---|---|
-| `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — the four-stage curve, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. Also declares `GunSpreadStages`, the parameter object the curve consumes (six loose floats at a call site are transposable, and a transposed pair produces a plausible wrong curve rather than an error). |
+| `_Scripts/Utility/Foundation/GunSpreadMath.cs` | The pure cone math — the four-stage curve, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. Also declares `GunSpreadStages`, the parameter object the curve consumes (six loose floats at a call site are transposable, and a transposed pair produces a plausible wrong curve rather than an error). |
 | `R_VesselActions/Data Containers/GunSpreadProfile.cs` | The authored profile (cone + haptic ramp). Serialized on the bullet action. |
 | `R_VesselActions/Executors/GunSprayAccuracy.cs` | Per-vessel hold state, the spread clock, the haptic ramp, and the deferred reset. |
 | `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and the authored growth pair; `ResolveGrowthFactor` reads the shared curve. Hands the accuracy component to its executor. |

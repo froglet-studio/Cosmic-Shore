@@ -84,6 +84,12 @@ namespace CosmicShore.Tests
                 throw new InvalidOperationException("unreachable");
             }
 
+            // NoInlining: the rule matches the "UnsubscribeAsync" FRAME in the stack trace. Mono may
+            // inline a one-line thrower into Throw(), and then the trace names only
+            // "LobbyChannel.Throw" - the test failed that way in Unity 6000.3.17f1 (B47 batch,
+            // Docs/PartySystem/BUGS.md). The SDK's real UnsubscribeAsync is an async state machine
+            // and is never inlined, so this pins the fake to the shape the rule sees in production.
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
             private static void UnsubscribeAsync() => throw new ObjectDisposedException("$lobby!!!x");
         }
 
@@ -195,6 +201,21 @@ namespace CosmicShore.Tests
             Assert.AreEqual(UgsFailureClass.Full, UgsRequestPolicy.Classify(Session(SessionError.Unknown, "lobby is full")));
             Assert.AreEqual(UgsFailureClass.Gone, UgsRequestPolicy.Classify(Session(SessionError.Unknown, "lobby not found")));
             Assert.AreEqual(UgsFailureClass.RateLimited, UgsRequestPolicy.Classify(Session(SessionError.Unknown, "Too Many Requests")));
+        }
+
+        [Test]
+        public void Classify_RelayJoinIntoADeadHost_IsGone()
+        {
+            // The four-player test of 2026-10-30: a frozen host's lobby outlived its Relay allocation, and every
+            // join into it threw this. The words that say so are on the INNER exception.
+            var relay404 = new SessionException("Failed to join allocation", SessionError.Unknown,
+                new Exception("Not Found: join code not found"));
+            Assert.AreEqual(UgsFailureClass.Gone, UgsRequestPolicy.Classify(relay404));
+            Assert.AreEqual(UgsFailureClass.Gone,
+                UgsRequestPolicy.Classify(new Exception("Received error message from Relay: allocation ID not found.")));
+            Assert.AreEqual(UgsFailureClass.Benign,
+                UgsRequestPolicy.Classify(new SessionException("Failed to join allocation", SessionError.Unknown, null)),
+                "without the inner words the catch-all stays the stale-index noise it usually is");
         }
 
         [Test]

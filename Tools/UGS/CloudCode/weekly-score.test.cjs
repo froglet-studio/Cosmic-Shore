@@ -13,6 +13,9 @@ class FakeDataApi {
     return { data: { results: keys.map((k) => saved.get(player + "/" + k)).filter(Boolean) } };
   }
   async setProtectedItem(_p, player, body) { saved.set(player + "/" + body.key, { key: body.key, value: body.value, writeLock: "x" }); }
+  async getPrivateCustomItems(_p, id, keys) {
+    return { data: { results: keys.map((k) => saved.get(id + "/" + k)).filter(Boolean) } };
+  }
 }
 const realLoad = Module._load;
 Module._load = function (req) {
@@ -56,6 +59,17 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(ok, 200);
     assert.equal(weekKey(Date.UTC(2026, 9, 25, 23)), "2026-10-19");
     assert.equal(weekKey(Date.UTC(2026, 9, 26, 0)), "2026-10-26");
+  });
+  await test("an account in the Undertow posts to the twin board, never the public one (phase B)", async () => {
+    saved.set("fp-shadow/trust", { key: "trust", value: { stage: "undertow" } });
+    const r = await call("shadow", { leaderboardId: "weekly_challenge", seconds: 61, periodKey: "2026-W44" });
+    assert.equal(r.ok, true);
+    assert.equal(posted.at(-1).board, "weekly_challenge_undertow");
+    assert.ok(!posted.some((p) => p.player === "shadow" && p.board === "weekly_challenge"));
+  });
+  await test("no trust record, or the shore, posts to the public board as before", async () => {
+    const r = await call("fresh", { leaderboardId: "weekly_challenge", seconds: 62 });
+    assert.equal(r.ok, true); assert.equal(posted.at(-1).board, "weekly_challenge");
   });
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error("FAILED:", e); process.exit(1); });

@@ -148,7 +148,7 @@ change, and those are the commits nobody can bisect.
 
 ---
 
-## Phase 2 (steps 1–2 done 2026-10-17; step 3 onward not started)
+## Phase 2 (steps 1–4 done; step 5 not started)
 
 **Phase 1 stopped here deliberately.** The next two candidate layers both drag gameplay code
 with them, so neither extracts without a refactor first. Forcing either would mean dragging
@@ -216,9 +216,92 @@ editor-side count is a function of runtime progress, not a fixed 26.
    kept) to `Controller/Player/`, namespace `CosmicShore.Data` kept. `CosmicShore.Data` then
    referenced nothing, so its asmdef `references` is now `[]` — any Netcode type added to `Data/`
    fails to compile, which is the point of a leaf.
-3. Extract `CosmicShore.SOAP`, minus the vessel/HUD channels.
-4. Decide where `Utility` actually divides, then extract the dependency-free part.
+3. ~~Extract `CosmicShore.SOAP`, minus the vessel/HUD channels.~~ **Done 2026-10-31** — see § Phase 2
+   step 3 below.
+4. ~~Decide where `Utility` actually divides, then extract the dependency-free part.~~ **Done 2026-10-31**
+   — see § Phase 2 step 4 below.
 5. Only then: `Assembly-CSharp-Editor` gets split, and tests get real asmdefs (§ Tests).
+
+---
+
+### Phase 2 step 3 (shipped 2026-10-31): `CosmicShore.SOAP` and `CosmicShore.DisplayName`
+
+Measured on the tree, runtime files only (no `Editor/` or `Tests/` folders):
+
+| assembly | folder | files | lines | references |
+|---|---|---:|---:|---|
+| `CosmicShore.Data` | `Data/` | 81 | 5,667 | none |
+| `CosmicShore.DisplayName` | `Utility/DisplayName/` | 2 | 744 | `CosmicShore.Data` |
+| `CosmicShore.SOAP` | `ScriptableObjects/SOAP/` | 56 | 1,340 | `CosmicShore.Data`, `CosmicShore.DisplayName`, `Obvious.Soap` |
+| `Assembly-CSharp` (what is left) | everything else | 2,338 | 565,921 | all of the above (auto-referenced) |
+
+Every move is a `git mv` of the file **and** its `.meta` (guid kept, so no scene, prefab or asset
+reference changes), with the type name and namespace unchanged:
+
+- `PrismType` (the enum) moved out of `Controller/Prisms/PrismFactory.cs` into
+  `Data/Enums/PrismType.cs`, verbatim, namespace `CosmicShore.Gameplay` kept. It was the one
+  payload type `PrismEventChannelWithReturnSO` needed from gameplay.
+- `UI/TemplateText.cs` → `Data/TemplateText.cs` (namespace `CosmicShore.UI` kept): a dependency-free
+  string filler that `DisplayNameValidator` calls.
+- `ScriptableObjects/DisplayNameValidationConfigSO.cs` → `Utility/DisplayName/`, beside the
+  validator it configures; the pair is the `CosmicShore.DisplayName` leaf, which the party SOAP
+  payloads (`PartyInviteData`, `PartyPlayerData`) call.
+- The SOAP files that carry gameplay types moved to **`ScriptableObjects/SOAPGameplay/`**, which
+  stays in `Assembly-CSharp`: `VesselPrefabContainer` (`IVesselStatus`), the whole
+  `ScriptableVesselHUDData` channel (`MiniGameHUD` payload), and `ScriptableEventVesselImpactor` /
+  `ScriptableEventExplosionDebuffApplied` (`VesselImpactor`, `IVessel`). The rest of
+  `ScriptableClassType` stayed: `VesselClassType` is a `Data` enum.
+- `ScriptableObjects/SOAP/AssemblyInfo.cs` grants `InternalsVisibleTo` to `Assembly-CSharp`
+  (`System/NetworkMonitor.cs` writes `NetworkMonitorData`'s `internal set` properties) and to
+  `Assembly-CSharp-Editor` (the tests, as before).
+
+**The rule this adds for everyone:** a new SOAP event, variable or listener whose payload is a
+gameplay type (a vessel, a HUD, a MonoBehaviour from `Controller/` or `UI/`) goes in
+`ScriptableObjects/SOAPGameplay/`, not `ScriptableObjects/SOAP/`. Put there by mistake, it fails
+to compile with "type or namespace not found" — loud, at once, never silent.
+
+**Verified headless, not in the Unity Editor** (no editor in the agent container):
+`Tools/Build/unity_refcompile/run.sh` in the `player` and `editor` configs, on the untouched tree
+and on the split, gave identical results (player: 0 project errors, 4 unverified both times;
+editor: 0 project errors, 7 unobtainable-package / 8 unverified / 47 unchanged-Editor-file errors
+both times), with the three new assemblies compiling clean. `validate_project.py` warnings are
+identical before and after; `check_conditional_compilation.py` and `check_console_logging.py`
+pass. The Editor compile, the domain reload and a play session are still owed
+(recorded in the commit's Verification status, which `/qa-backlog` picks up).
+
+**What it buys today is small, and that is expected:** ~1.4% of runtime lines left
+`Assembly-CSharp`. An edit inside `Assembly-CSharp` still recompiles `Assembly-CSharp`; what stops
+is recompiling these three when gameplay changes. The seconds arrive with step 4 (the clean part
+of `Utility`) and the gameplay layers after it.
+
+---
+
+### Phase 2 step 4 (shipped 2026-10-31): `CosmicShore.Foundation` — `Utility/Foundation/`
+
+Measured on 2026-10-31: **88 of 272** runtime `Utility` files reach only `Data`, `DisplayName` and
+`SOAP` (a fixed-point closure over the tree). That set is not a layer: it mixes ecology data
+containers, AI-training genes, UI widgets and Netcode behaviours that happen to compile alone. The
+boundary drawn is the part that is a layer by purpose — **logging, math/geometry, and small general
+helpers** — 24 files, 4,074 lines, references `CosmicShore.Data`, `UniTask`, `Unity.Mathematics`:
+
+| group | files |
+|---|---|
+| logging | `CSDebug.cs` (with `CSLogChannel`), so every future leaf assembly can log |
+| math / geometry | `MathfNoAlloc`, `IcosahedralSymmetry`, `IcosphereMeshGenerator`, `OctahedronMeshGenerator`, `StellatedOctahedronMeshGenerator`, `HighPolyPrismMesh`, `PrismSierpinskiTiling`, `PrismSilverGnomonTiling`, `PrismSliceGeometry`, `GunSpreadMath`, `ShieldShellMath` |
+| helpers | `DisposableGroup`, `WaitCache`, `RateLimitCooldown`, `ClientPrefs`, `GuidSO`, `GuidContainerSO`, `TagSO`, `DontDestroyOnLoad`, `ITransform`, `ClassExtensions/TransformExtensions`, `BugSignature`, `Email/EmailValidator` |
+
+Every file moved by `git mv` with its `.meta` (guid, type name and namespace kept). The 28 tools,
+tests, skills and docs that named the old paths were updated (`check_console_logging.py`'s allowlist,
+the harness `run.sh` files, `prism_collision_burst_lab`, `PrismShieldMorphTests` among them).
+
+**Left out on purpose** (clean today, but not this layer): `Network/*` (NetworkBehaviours — moving
+them changes which assembly Netcode's codegen runs in; do it as its own step with a two-client test),
+`AITraining/Core/*` (Yash's area), the ecology `DataContainers/*`, UI widgets (`PopupPanel`,
+`NotificationUI`, `FadeIn`), the `*SSU` shader components, `Theater/*` and the `PerformanceBenchmark/*`
+statistics.
+
+Verified the same way as step 3 (headless `player` and `editor` configs identical to the untouched
+tree; gates unchanged). Editor compile and a play session owed.
 
 ---
 
@@ -282,3 +365,40 @@ is cleared; the counts are recorded in `.editorconfig` next to each rule.
 6. **One asmdef per commit**, so a bisect can name the boundary that broke something.
 7. Run `python3 Tools/CI/validate_project.py` and
    `python3 Tools/Build/check_conditional_compilation.py`.
+8. **Grep for the moved files' PATHS, not only their types.** Tools, harness `run.sh` files, tests
+   and gate allowlists read source by path (`check_console_logging.py` allowlists `CSDebug.cs` by
+   path; step 4 found 28 such readers). A moved file they name fails quietly or turns a gate red.
+9. **Compile it headless before and after, and diff the two results**:
+   `bash Tools/Build/unity_refcompile/run.sh` in the `player` and `--config editor` configs, on the
+   untouched tree (`git stash -u`) and on the split. Equal counts are the evidence; the absolute
+   numbers include standing reference-set artifacts.
+
+**Traps the 2026-10-31 steps paid for:**
+- **A type-name scan misses fully-qualified references.** `DisplayNameValidator` called
+  `CosmicShore.UI.TemplateText.Fill(...)` with no `using`, so the leaf check passed and the compile
+  failed. The compiler is the real leaf test; a scan only picks candidates.
+- **A type-name scan over-reports nested names.** `Events`, `State`, `Status`, `Kind` are declared
+  nested inside unrelated classes, so they look like outside references. Read each hit.
+- **The first error is the only one to read.** One failed leaf makes `Assembly-CSharp` compile
+  without it, and that cascades into hundreds of "type not found" errors. Filter the log to files
+  inside the new assembly's folder.
+- **Do not edit the tree during a cold `unity_refcompile` run.** It snapshots the file list first;
+  moving files mid-run produced `CS2001 source file could not be found` for every moved file.
+
+### Follow-ups (rows, not done on the step 3-4 branch)
+
+- **`Utility/Network/*` into its own step.** Clean today (no gameplay types), left out because
+  moving a `NetworkBehaviour` changes which assembly Netcode's codegen runs in. Needs a two-client
+  test (RPCs, `ClientNetworkTransform` sync) before and after. Owner to check with: Shombith
+  (multiplayer).
+- **The rest of the 88 clean `Utility` files** (ecology `DataContainers`, `AITraining/Core` — Yash's,
+  UI widgets, `*SSU` shader components, `Theater`, `PerformanceBenchmark` statistics) compile alone
+  but are not one layer, and moving them buys little compile time. Re-measure with
+  `CompileTimingMonitor` before spending a branch on them.
+- **`Docs/PRISM_ANIMATION.md` cites `Controller/Prisms/PrismFactory.cs` by line (6 refs).** Step 3
+  removed the 18-line `PrismType` enum from the top of that file, so every cited line is now 18 too
+  high. Re-anchor them on the symbol.
+- **The wall-clock table above is still empty.** It needs one developer machine and the protocol in
+  § Measuring; that number decides whether the gameplay-layer split is worth starting.
+
+

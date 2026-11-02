@@ -655,7 +655,7 @@ MonoBehaviour:
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
-  UseUnreliableDeltas: 0
+  UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -668,9 +668,9 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
@@ -974,33 +974,23 @@ MonoBehaviour:
   _touchActionOverrides:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}
     - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}
     - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}
     - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}
     - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}

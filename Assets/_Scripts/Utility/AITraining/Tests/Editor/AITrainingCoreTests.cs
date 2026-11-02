@@ -330,12 +330,56 @@ namespace CosmicShore.Utility.AITraining.Tests
             Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.LifeformsKilled, "k"));
             Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.CombatPoints, "c"));
             Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.GoalsScored, "g"));
+            Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.SwitchesThreaded, "s"));
+            Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.PrismsStolen, "t"));
+            Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.VolumeRemaining, "v"));
+        }
+
+        [Test]
+        public void MetricRecipes_OnePerMode_EachInTheCatalog_AndNoScoreRow()
+        {
+            var seen = new System.Collections.Generic.HashSet<GameModes>();
+            foreach (var r in FitnessProfileSO.MetricRecipes)
+            {
+                Assert.IsTrue(seen.Add(r.Mode), r.Mode + " has two recipes");
+                Assert.IsTrue(TrainingModeCatalog.TryGet(r.Mode, out _), r.Mode + " has a recipe but no catalog row");
+                Assert.IsFalse(FitnessProfileSO.ScoreIsGolf(r.Mode), r.Mode.ToString());
+                var p = ScriptableObject.CreateInstance<FitnessProfileSO>();
+                p.ApplyFor(r.Mode);
+                Assert.AreEqual(r.Description, p.Description, r.Mode.ToString());
+                Assert.IsFalse(p.Entries.Any(e => e.Kind == FitnessProfileSO.ComponentKind.ScoreFromRoundStats), r.Mode.ToString());
+                Object.DestroyImmediate(p);
+            }
+        }
+
+        [Test]
+        public void Pilot_TargetModeSetAfterBind_AppliesAtBeginEpisode()
+        {
+            // The runner's order: BindVessel builds the sensors, then TargetMode is set, then BeginEpisode.
+            var go = new GameObject("pilot");
+            var pilot = go.AddComponent<TrainingPilot>();
+            pilot.BindVessel(null, null, null);
+            pilot.TargetMode = TargetSensor.TargetMode.NextGate;
+            pilot.BeginEpisode(0);
+            Assert.AreEqual(TargetSensor.TargetMode.NextGate, pilot.ActiveTargetMode);
+            pilot.EndEpisode();
+            Object.DestroyImmediate(go);
+        }
+
+        [Test]
+        public void TargetSensor_NextGate_NoRace_HasNoTarget()
+        {
+            var sensor = new TargetSensor(null, null) { Mode = TargetSensor.TargetMode.NextGate };
+            var ctx = new DecisionContext();
+            sensor.Sample(ctx);
+            Assert.IsFalse(ctx.HasTarget);
+            Assert.AreEqual(TargetKind.None, ctx.TargetKind);
         }
 
         [Test]
         public void Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor()
         {
-            Assert.AreEqual(12, TrainingModeCatalog.Live.Count);
+            Assert.AreEqual(34, TrainingModeCatalog.Live.Count);
             foreach (var row in TrainingModeCatalog.Live)
             {
                 var scenario = AssetDatabase.LoadAssetAtPath<TrainingScenarioSO>(row.ScenarioPath);
@@ -364,10 +408,9 @@ namespace CosmicShore.Utility.AITraining.Tests
                 }
                 Object.DestroyImmediate(expected);
 
-                bool personal = row.GameMode == GameModes.BroodRush
-                    || row.GameMode == GameModes.AstroLeague
-                    || row.GameMode == GameModes.ScarabScramble;
-                Assert.AreEqual(!personal, FitnessProfileSO.ScoreIsGolf(row.GameMode), row.Token);
+                // A golf mode weights the shared Score (negated at harvest); every other mode leaves it out.
+                bool weightsScore = profile.Entries.Any(e => e.Kind == FitnessProfileSO.ComponentKind.ScoreFromRoundStats);
+                Assert.AreEqual(weightsScore, FitnessProfileSO.ScoreIsGolf(row.GameMode), row.Token);
                 if (row.GameMode == GameModes.BroodRush)
                     StringAssert.Contains("representative", profile.Description);
             }

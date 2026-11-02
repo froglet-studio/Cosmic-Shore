@@ -85,8 +85,9 @@ namespace CosmicShore.Core
         Task _signInTask;
 
         /// <summary>
-        /// True while a Steam sign-in is being tried. A refused Steam attempt falls back to anonymous, so the
-        /// SDK's SignInFailed for it is not a failed sign-in and is not reported as one. Read on the SDK's thread.
+        /// True while a platform sign-in (Steam, Game Center; PlatformSignIn) is being tried. A refused attempt falls
+        /// back to anonymous, so the SDK's SignInFailed for it is not a failed sign-in and is not reported as one.
+        /// Read on the SDK's thread.
         /// </summary>
         volatile bool _steamAttemptInFlight;
 
@@ -260,23 +261,24 @@ namespace CosmicShore.Core
 
             authenticationData.State = AuthenticationData.AuthState.SigningIn;
 
-            // Steam on PC (fair play, Threat Board T1; SteamSignIn): with no cached session, sign in WITH Steam so
-            // a reinstall lands on the same account; with one, resume it anonymously and link Steam afterwards.
-            bool steam = SteamSignIn.IsEnabled;
+            // Steam on PC, Game Center on iOS (fair play, Threat Board T1; PlatformSignIn): with no cached session,
+            // sign in WITH the platform so a reinstall lands on the same account; with one, resume it anonymously
+            // and link the platform afterwards.
+            bool platform = PlatformSignIn.IsEnabled;
             bool resumingCachedSession = svc.SessionTokenExists;
-            Log($"Signing in... (SessionTokenExists={resumingCachedSession}, Steam={steam})");
+            Log($"Signing in... (SessionTokenExists={resumingCachedSession}, Platform={platform})");
 
             try
             {
-                bool signedInWithSteam = false;
-                if (steam && !resumingCachedSession)
+                bool signedInWithPlatform = false;
+                if (platform && !resumingCachedSession)
                 {
                     _steamAttemptInFlight = true;
-                    try { signedInWithSteam = await SteamSignIn.TrySignInAsync(svc); }
+                    try { signedInWithPlatform = await PlatformSignIn.TrySignInAsync(svc); }
                     finally { _steamAttemptInFlight = false; }
                 }
 
-                if (!signedInWithSteam)
+                if (!signedInWithPlatform)
                     await svc.SignInAnonymouslyAsync().AsMainThread();
             }
             catch (Exception e)
@@ -291,8 +293,8 @@ namespace CosmicShore.Core
             // the rest of the listener chain down with it.
             OnSignInSuccess();
 
-            if (steam && resumingCachedSession)
-                SteamSignIn.LinkInBackground(svc);
+            if (platform && resumingCachedSession)
+                PlatformSignIn.LinkInBackground(svc);
         }
 
         /// <summary>

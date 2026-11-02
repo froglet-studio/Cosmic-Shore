@@ -1,0 +1,1495 @@
+<title>Cosmic Shore Colour Domains</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@400;500;600&display=swap">
+<style>
+/* Layout: one field-guide column on the game's own night chrome; a sticky VISION bar that every figure below obeys; the shaping bench sits under the 3D view. */
+:root{
+  color-scheme: dark;
+  --void:#03051A;      /* page: between the game's "Black" 00010A and Neutral (Very Dark) 00041F */
+  --panel:#0A0D29;
+  --panel-2:#12163C;
+  --well:#060920;
+  --line:#222645;      /* Neutral (Dark): chrome */
+  --dim:#434C89;       /* Neutral (Light) */
+  --muted:#A3A9D1;
+  --text:#E6E9FF;      /* Light */
+  --cta:#99FF80;       /* CTA: selection, focus */
+  --cta-ink:#0A1905;
+  --warn:#FFAE00;
+  --bad:#FF4B3A;
+  --display:'Aldrich','Eurostile','Arial Narrow',system-ui,sans-serif;
+  --ui:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+  --s:10px;            /* the corner sliver */
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--void);color:var(--text);font-family:var(--ui);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--void)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:clamp(30px,5vw,52px);line-height:1.05}
+h2{font-size:clamp(22px,3vw,30px);line-height:1.15}
+h3{font-size:18px}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--ui);font-weight:600;text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+code,.mono{font-family:var(--ui);font-variant-numeric:tabular-nums;font-weight:500}
+a{color:var(--cta)}
+.sliver{clip-path:polygon(var(--s) 0,100% 0,100% calc(100% - var(--s)),calc(100% - var(--s)) 100%,0 100%,0 var(--s))}
+.sliver-flip{clip-path:polygon(0 0,calc(100% - var(--s)) 0,100% var(--s),100% 100%,var(--s) 100%,0 calc(100% - var(--s)))}
+
+header.hero{padding-block:40px 28px;display:grid;gap:14px}
+header.hero p{font-size:17px;color:var(--muted)}
+header.hero p b{color:var(--text);font-weight:500}
+
+/* sticky vision bar */
+.visionbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:color-mix(in srgb,var(--void) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.visionbar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:10px}
+.visionbar .lbl{font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--muted)}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button,.chip,.btn,.ftabs button{font-family:var(--ui);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--text);background:var(--panel-2);border:0;padding:7px 12px;cursor:pointer;--s:6px;clip-path:polygon(var(--s) 0,100% 0,100% calc(100% - var(--s)),calc(100% - var(--s)) 100%,0 100%,0 var(--s))}
+.seg button:hover,.chip:hover,.btn:hover,.ftabs button:hover{background:#1B2150}
+.seg button[aria-pressed="true"]{background:var(--cta);color:var(--cta-ink)}
+.btn.primary{background:var(--cta);color:var(--cta-ink)}
+.btn.primary:hover{background:#B5FFA3}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.small{font-size:11px;padding:5px 9px}
+.seg button:focus-visible,.chip:focus-visible,.btn:focus-visible,.ftabs button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
+.range{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.range input{width:110px;accent-color:var(--cta)}
+.range output{min-width:5ch;color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+.badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-left:auto}
+.badge b{font-weight:600;color:var(--text)}
+.badge.edited b{color:var(--warn)}
+@media (max-width:720px){.visionbar{position:static}.badge{margin-left:0}}
+
+section{padding-block:44px 8px;display:grid;gap:18px;scroll-margin-top:64px}
+.sect-head{display:grid;gap:8px}
+
+/* the wheel */
+.wheel-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.wheel-grid{grid-template-columns:1fr}}
+.wheel-box{position:relative;width:100%;max-width:560px;aspect-ratio:1;margin:0 auto}
+.wheel-box canvas{width:100%;height:100%;display:block}
+.wlabel{position:absolute;transform:translate(-50%,-50%);text-align:center;pointer-events:none;white-space:nowrap;text-shadow:0 1px 3px #000,0 0 8px #000}
+.wlabel b{display:block;font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+.wlabel span{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.wlabel.sk{font-size:10px;font-weight:600;letter-spacing:.06em;opacity:.9}
+.wheel-controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;margin-top:10px}
+.key{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);justify-content:center}
+.key i{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:6px}
+.hatch{background:repeating-linear-gradient(45deg,#E6E9FF55 0 2px,#151935 2px 6px)}
+.check{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
+.check input{accent-color:var(--cta);width:16px;height:16px}
+
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.cards{grid-template-columns:1fr}}
+.card{background:var(--panel);padding:14px 16px 14px 18px;display:grid;gap:6px;position:relative;min-width:0}
+.card::before{content:"";position:absolute;left:0;top:var(--s);bottom:0;width:4px;background:var(--fam)}
+.card .top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.card h3{color:var(--fam);text-transform:uppercase;letter-spacing:.06em}
+.card .word{font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--muted)}
+.card p{font-size:13.5px;color:var(--muted)}
+.card p b{color:var(--text);font-weight:500}
+.sw{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.sw i{width:18px;height:18px;display:inline-block;box-shadow:inset 0 0 0 1px #ffffff22}
+.sw small{font-size:11px;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
+.stat{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stat b{color:var(--text);font-weight:600}
+.up{color:var(--cta)} .down{color:var(--bad)}
+
+/* 3D */
+.x-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:980px){.x-grid{grid-template-columns:1fr}}
+.stage{position:relative;background:radial-gradient(ellipse at 50% 40%,#0D1236 0%,#03051A 70%);height:min(640px,72vh);min-height:380px;overflow:hidden;--s:14px}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.tag{position:absolute;transform:translate(-50%,-140%);pointer-events:none;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding:2px 6px;background:#03051ACC;color:var(--text)}
+.tag.axis{background:none;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:none;transform:translate(-50%,-50%)}
+.tag.small{font-size:10px;font-weight:500;letter-spacing:.02em;text-transform:none;transform:translate(-50%,-160%)}
+.tag.sel{outline:1px solid var(--cta);color:var(--cta)}
+.stage .hud{position:absolute;left:12px;bottom:10px;right:12px;display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);pointer-events:none;flex-wrap:wrap}
+.stage .hud b{color:var(--text);font-variant-numeric:tabular-nums}
+.stage .tip{position:absolute;left:12px;top:10px;font-size:12px;color:var(--muted);pointer-events:none;max-width:60%}
+.panel{background:var(--panel);padding:16px;display:grid;gap:14px;min-width:0}
+.ctl{display:grid;gap:6px}
+.ctl .lbl,.lbl{font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--muted)}
+.hint{font-size:12px;color:var(--muted);line-height:1.45}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.chip{display:flex;align-items:center;gap:6px;justify-content:flex-start;text-align:left;padding:7px 8px}
+.chip i{width:10px;height:10px;flex:none;background:var(--fam)}
+.chip[aria-pressed="false"]{opacity:.38}
+.chip small{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:500;color:var(--muted)}
+
+/* shaping bench */
+.bench{margin-top:4px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:980px){.bench{grid-template-columns:1fr}}
+.bench h3{font-size:20px}
+.ftabs{display:flex;flex-wrap:wrap;gap:4px}
+.ftabs button{border-left:3px solid var(--fam)}
+.ftabs button[aria-pressed="true"]{background:var(--fam);color:#03051A}
+.rows{display:grid;gap:6px}
+.arow{display:grid;grid-template-columns:30px minmax(0,1fr) 92px auto auto;gap:8px 10px;align-items:center;background:var(--panel-2);padding:9px 10px;--s:7px}
+.arow.sel{background:#1A2056;box-shadow:inset 3px 0 0 var(--cta)}
+.aswatch{width:30px;height:30px;border:0;padding:0;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff33}
+input[type=text],textarea{background:var(--well);border:1px solid var(--line);color:var(--text);font-family:var(--ui);font-size:13px;padding:5px 7px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:56px}
+.arow .sliders{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px}
+.arow .sliders label{display:grid;grid-template-columns:14px minmax(0,1fr) 40px;gap:6px;align-items:center;font-size:11px;font-weight:600;color:var(--muted)}
+.arow .sliders input{width:100%;accent-color:var(--cta);min-width:0}
+.arow .sliders output{font-variant-numeric:tabular-nums;color:var(--text);font-weight:500;text-align:right}
+.arow .src{grid-column:1/-1;font-size:11px;color:var(--dim)}
+.arow .clip{color:var(--warn);margin-left:8px}
+.arow .sig{font-size:12px;white-space:nowrap}
+@media (max-width:560px){.arow{grid-template-columns:30px minmax(0,1fr) 84px}.arow .sig{grid-row:2;grid-column:1 / span 2}.arow .del{grid-row:2;grid-column:3}.arow .sliders{grid-template-columns:1fr}}
+.actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.picked{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center}
+.picked .big{width:44px;height:44px}
+.changes{display:grid;gap:4px;font-size:12.5px;max-height:220px;overflow:auto}
+.changes div{display:flex;gap:8px}
+.changes i{width:8px;flex:none;background:var(--fam)}
+.impact th,.impact td{padding:4px 6px;font-size:12px}
+.props{display:grid;gap:6px;max-height:340px;overflow:auto}
+.prop{background:var(--panel-2);padding:10px 12px;display:grid;gap:4px;--s:7px}
+.prop .ph{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.prop .ph b{font-weight:600}
+.prop p{font-size:12.5px;color:var(--muted)}
+.status{font-size:12px;color:var(--muted)}
+.status.ok{color:var(--cta)} .status.bad{color:var(--bad)}
+.copybox{width:100%;min-height:120px;font-size:11px}
+
+/* vision analysis */
+.v-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.v-grid{grid-template-columns:1fr}}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%}
+th,td{padding:6px 8px;text-align:center;font-size:12.5px}
+th{font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted)}
+td.cell{background:var(--panel-2);min-width:64px}
+td.cell .pair{display:flex;justify-content:center;gap:2px;margin-bottom:3px}
+td.cell .pair i{width:14px;height:14px;display:block}
+td.cell.merge{background:#3A0F14;color:#FFB3AA}
+td.cell.close{background:#3A2A06;color:#FFD780}
+td.diag{background:transparent}
+.bar{height:8px;background:#1A1F48;position:relative;margin-top:4px}
+.bar span{position:absolute;inset:0 auto 0 0;background:var(--fam)}
+.bar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text);opacity:.7}
+td.surv{min-width:80px;text-align:left}
+td.surv small{font-weight:600;margin-left:4px}
+.legend-row{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend-row i{display:inline-block;width:12px;height:12px;vertical-align:-1px;margin-right:6px}
+
+.safe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.safe{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.safe .card{gap:8px}
+.safe .big{height:44px}
+.quad{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.quad div{height:20px}
+.quad-l{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;text-align:center}
+.verdict{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+.verdict.ok{color:var(--cta)} .verdict.mid{color:var(--warn)} .verdict.no{color:var(--bad)}
+
+.findings{display:grid;gap:10px}
+.finding{background:var(--panel);padding:14px 18px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px}
+.finding .n{font-family:var(--display);font-size:22px;color:var(--dim);grid-row:span 2;line-height:1.1}
+.finding h3{font-size:16px}
+.finding p{font-size:14px;color:var(--muted)}
+.finding p b{color:var(--text);font-weight:500}
+.inline-sw{display:inline-block;width:.9em;height:.9em;vertical-align:-.1em;margin:0 .2em;box-shadow:inset 0 0 0 1px #ffffff33}
+
+.method{background:var(--panel);padding:18px;display:grid;gap:12px;font-size:13.5px;color:var(--muted)}
+.method table td,.method table th{text-align:left;font-size:12.5px}
+.method table td:first-child{color:var(--text);font-weight:600;white-space:nowrap}
+footer{padding-block:30px 50px;color:var(--dim);font-size:12px}
+.brush{position:absolute;border:1.5px solid var(--text);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #03051A,inset 0 0 0 1px #03051A}
+.brush.on{border-color:var(--bad)}
+.conflicts{display:grid;gap:4px;font-size:12.5px;color:var(--warn)}
+.rulehead{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.pill{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;margin-left:6px;background:var(--cta);color:var(--cta-ink);vertical-align:1px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<header class="wrap hero">
+  <div class="eyebrow">Cosmic Shore · palette field guide · measured from <code>OriginalColorSetSO</code></div>
+  <h1>Six words for colour</h1>
+  <p>Every hue in Cosmic Shore belongs to one of six families, and each family has one meaning. <b>Ruby, Gold and Jade</b> are the three domains (freedom, commerce, order). <b>Blue</b> is neutral and owns every grey. <b>Lime</b> means "collect or click this". <b>Fire</b> means danger. Between the families sit bands of colour nobody may use, so that no colour can be read as two things. Section 02 has a bench for reshaping the families and saving the result as a proposal.</p>
+</header>
+
+<div class="visionbar">
+  <div class="wrap">
+    <span class="lbl">See it as</span>
+    <div class="seg" id="vision" role="group" aria-label="Colour vision">
+      <button data-v="typical" aria-pressed="true">Typical</button>
+      <button data-v="protan" aria-pressed="false">Protan</button>
+      <button data-v="deutan" aria-pressed="false">Deutan</button>
+      <button data-v="tritan" aria-pressed="false">Tritan</button>
+      <button data-v="achroma" aria-pressed="false">Achromat</button>
+    </div>
+    <label class="range" for="sev">Severity <input id="sev" type="range" min="0" max="1" step="0.05" value="1"><output id="sevOut">100%</output></label>
+    <label class="range" for="margin" title="The forbidden band's full thickness, measured in OKLab. 1 JND (just-noticeable difference) is about 0.02.">Band (OKLab) <input id="margin" type="range" min="0" max="0.1" step="0.005" value="0.05"><output id="marginOut" style="min-width:11ch">0.050 · 2.5 JND</output></label>
+    <div class="badge" id="defsBadge"></div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<section id="wheel">
+  <div class="sect-head">
+    <div class="eyebrow">01 · The wheel, redrawn from the game's numbers</div>
+    <h2>Where each family lives on the hue circle</h2>
+    <p class="muted">An HSV disc: hue runs clockwise from red at the top, saturation grows outward, and the slider sets value. Every pixel is assigned to the family whose anchors are nearest in OKLab, the same rule <code>kite_mote_colors.py</code> uses. Hatched pixels are the forbidden band: closer than the margin to two families at once. Switch the vision bar to see the disc as a colour-blind player does.</p>
+  </div>
+  <div class="wheel-grid">
+    <div>
+      <div class="wheel-box"><canvas id="wheelCanvas" width="560" height="560" aria-label="HSV colour wheel partitioned into the six colour families"></canvas><div id="wheelLabels"></div></div>
+      <div class="wheel-controls">
+        <label class="range" for="val">Value <input id="val" type="range" min="0.15" max="1" step="0.01" value="1"><output id="valOut">1.00</output></label>
+        <label class="check" for="showSketch"><input id="showSketch" type="checkbox" checked> Original sketch swatches</label>
+        <label class="check" for="showAnchors"><input id="showAnchors" type="checkbox" checked> Anchors</label>
+      </div>
+      <div class="key" style="margin-top:8px"><span><i class="hatch"></i>Forbidden band</span><span><i style="border:2px solid #E6E9FF;border-radius:50%"></i>Sketch swatch</span><span><i style="border:2px solid #E6E9FF;transform:rotate(45deg) scale(.8)"></i>Anchor (drawn at its own hue and saturation)</span></div>
+    </div>
+    <div class="cards" id="cards"></div>
+  </div>
+</section>
+
+<section id="explorer">
+  <div class="sect-head">
+    <div class="eyebrow">02 · The regions in three dimensions</div>
+    <h2>One rule, five colour spaces</h2>
+    <p class="muted">Each dot is one screen colour from a grid over the sRGB cube. The regions are always measured in OKLab, then drawn in the space you pick, so you can see how a perceptual boundary bends inside RGB or HSV. The band's thickness is measured in OKLab, so only the OKLab view shows it as an even slab; the other views stretch it. Left-drag empty space to orbit, scroll or pinch to zoom. <b>Drag a ringed anchor</b> to move it through whichever space is showing; <b>right-drag to erase</b> colours from the family that owns them; <b>click a dot</b> to pick its colour for the bench below.</p>
+  </div>
+  <div class="x-grid">
+    <div class="stage sliver" id="stage">
+      <canvas id="three" aria-label="3D view of the colour family regions"></canvas>
+      <div id="tags"></div>
+      <div class="tip" id="tip"></div>
+      <div class="brush" id="brushRing" hidden></div>
+      <div class="hud"><span id="hudLeft"></span><span id="hudRight"></span></div>
+    </div>
+    <div class="panel sliver-flip">
+      <div class="ctl">
+        <span class="lbl">Colour space</span>
+        <div class="seg" id="space" role="group" aria-label="Colour space">
+          <button data-v="rgb" aria-pressed="false">RGB</button>
+          <button data-v="hsv" aria-pressed="false">HSV</button>
+          <button data-v="hsl" aria-pressed="false">HSL</button>
+          <button data-v="lab" aria-pressed="false">CIELAB</button>
+          <button data-v="oklab" aria-pressed="true">OKLab</button>
+        </div>
+        <span class="hint" id="spaceHint"></span>
+      </div>
+      <div class="ctl">
+        <span class="lbl">Left drag</span>
+        <div class="seg" id="tool" role="group" aria-label="Left-drag tool">
+          <button data-v="orbit" aria-pressed="true">Orbit</button>
+          <button data-v="erase" aria-pressed="false">Erase</button>
+        </div>
+        <label class="range" for="brush">Brush <input id="brush" type="range" min="6" max="48" step="2" value="18"><output id="brushOut">18 px</output></label>
+        <span class="hint">With a mouse, right-drag always erases. An erased colour leaves the family that owns it and the neighbour across the band moves in. Nothing ever leaves empty space beyond the band, so a colour that can't move without opening a gap stays where it is. Erasing works on Regions, in Typical vision, with the convex rule.</span>
+        <div class="actions"><button class="btn small" id="undo" disabled>Undo</button><span class="status" id="eraseStatus" role="status"></span></div>
+      </div>
+      <div class="ctl">
+        <span class="lbl">Show</span>
+        <div class="seg" id="layer" role="group" aria-label="Layer">
+          <button data-v="regions" aria-pressed="true">Regions</button>
+          <button data-v="bounds" aria-pressed="false">Boundaries</button>
+          <button data-v="survive" aria-pressed="false">Survives vision</button>
+        </div>
+        <span class="hint" id="layerHint"></span>
+      </div>
+      <div class="ctl">
+        <span class="lbl">Families</span>
+        <div class="chips" id="chips"></div>
+        <span class="hint">First click isolates one family; further clicks add or remove. Percentages are each family's share of the gamut for the vision above.</span>
+      </div>
+      <div class="ctl">
+        <span class="lbl">Paint dots with</span>
+        <div class="seg" id="paint" role="group" aria-label="Paint">
+          <button data-v="seen" aria-pressed="true">Colour as seen</button>
+          <button data-v="family" aria-pressed="false">Family colour</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label class="check" for="move"><input id="move" type="checkbox"> Move dots to the colour this vision sees</label>
+        <span class="hint">With a dichromat vision on, the gamut collapses toward a sheet: dots that land on top of each other are colours that viewer cannot tell apart. Anchors cannot be dragged in this mode.</span>
+        <label class="check" for="markSketch"><input id="markSketch" type="checkbox"> Mark the sketch's swatches</label>
+        <label class="check" for="markGuide"><input id="markGuide" type="checkbox"> Mark the UI style guide's swatches</label>
+        <label class="check" for="hulls"><input id="hulls" type="checkbox" checked> Draw hull surfaces (OKLab view)</label>
+        <label class="check" for="spin"><input id="spin" type="checkbox" checked> Turn slowly</label>
+      </div>
+      <div class="ctl">
+        <label class="range" for="density">Grid <input id="density" type="range" min="16" max="48" step="4" value="32"><output id="densityOut">33³</output></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="bench" id="bench">
+    <div class="panel sliver">
+      <div class="sect-head" style="gap:4px">
+        <h3>Shape a family</h3>
+        <div class="rulehead"><span class="lbl">Region rule</span>
+          <div class="seg" id="rule" role="group" aria-label="Region rule">
+            <button data-v="convex" aria-pressed="true">Convex cells (the truth)</button>
+            <button data-v="nearest" aria-pressed="false">Nearest anchor (game today)</button>
+          </div></div>
+        <p class="hint" id="ruleHint"></p>
+        <div class="conflicts" id="conflicts"></div>
+      </div>
+      <div class="ftabs" id="ftabs" role="group" aria-label="Family to edit"></div>
+      <label class="range" for="reach" style="flex-wrap:wrap">Reach <input id="reach" type="range" min="-0.08" max="0.08" step="0.0025" value="0" style="width:180px"><output id="reachOut" style="min-width:12ch">0.000</output></label>
+      <div class="rows" id="rows"></div>
+      <div class="actions">
+        <button class="btn" id="addAnchor">Add anchor</button>
+        <button class="btn" id="clearErase">Clear erasing</button>
+        <button class="btn" id="resetFam">Reset this family</button>
+      </div>
+    </div>
+    <div class="panel sliver-flip">
+      <div class="ctl">
+        <span class="lbl">Picked colour</span>
+        <div id="picked"></div>
+      </div>
+      <div class="ctl">
+        <span class="lbl">Changes from the shipped definitions</span>
+        <div class="changes" id="changes"></div>
+        <div class="scroll"><table class="impact" id="impact"></table></div>
+        <div class="actions">
+          <button class="btn" id="copyDefs">Copy definitions</button>
+          <button class="btn" id="resetAll">Reset all</button>
+          <span class="status" id="copyStatus" role="status"></span>
+        </div>
+        <textarea class="copybox" id="copyBox" hidden readonly aria-label="Definitions as JSON"></textarea>
+      </div>
+      <div class="ctl" id="proposalBox">
+        <span class="lbl">Proposals</span>
+        <span class="hint">Save your edits under a name so the team can load and compare them. A Claude session can read saved proposals from this page and apply one to the game's assets.</span>
+        <div id="saveForm" style="display:grid;gap:6px">
+          <input type="text" id="propName" placeholder="Name, e.g. Teal Jade, wider Gold" maxlength="80" aria-label="Proposal name">
+          <textarea id="propNote" placeholder="Why (optional)" maxlength="600" aria-label="Proposal note"></textarea>
+          <div class="actions"><button class="btn primary" id="saveProp">Save proposal</button><span class="status" id="propStatus" role="status"></span></div>
+        </div>
+        <div class="props" id="props"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="vision-analysis">
+  <div class="sect-head">
+    <div class="eyebrow">03 · Colour vision</div>
+    <h2>Which families merge for colour-blind players</h2>
+    <p class="muted">About 1 in 12 men and 1 in 200 women see colour differently. Protans and deutans (red-green, the common forms) lose one of the three cone signals, tritans (blue-yellow, rare) lose another, achromats see only lightness. The simulation is Machado, Oliveira and Fernandes (2009), applied in linear RGB; lower severity models the milder anomalous forms.</p>
+  </div>
+  <div class="v-grid">
+    <div class="panel sliver">
+      <div class="ctl"><span class="lbl">How far apart the six signal colours stay · <span id="mxVision"></span></span>
+      <span class="hint">OKLab distance between each pair of signal colours as this vision sees them, in just-noticeable differences (1 JND ≈ 0.02). The two squares are the pair as seen.</span></div>
+      <div class="scroll"><table id="matrix"></table></div>
+      <div class="legend-row"><span><i style="background:#3A0F14"></i>Inside the margin: reads as one family</span><span><i style="background:#3A2A06"></i>Under 5 JND: easy to confuse in motion</span></div>
+    </div>
+    <div class="panel sliver-flip">
+      <div class="ctl"><span class="lbl">How much of each region keeps its family</span>
+      <span class="hint">Share of each family's colours (typical vision) that still land in the same family, outside the margin, at full severity. Measured on a 25³ sRGB grid. When you have edits, the tick marks the shipped value and the small number is the change.</span></div>
+      <div class="scroll"><table id="survival"></table></div>
+    </div>
+  </div>
+  <div class="sect-head" style="margin-top:10px">
+    <h3>The safest swatch in each family</h3>
+    <p class="muted">For every colour in a family, the worst lead it keeps over the nearest other family across typical, protan, deutan and tritan vision. The swatch with the best worst case is shown beside the family's signal colour. A lead at or above the margin means every one of those viewers reads it as its family.</p>
+  </div>
+  <div class="safe" id="safe"></div>
+</section>
+
+<section id="findings">
+  <div class="sect-head">
+    <div class="eyebrow">04 · What the measurement says</div>
+    <h2>Noteworthy findings</h2>
+    <p class="muted">Measured for the old nearest-anchor rule the game's tools used before the source of truth. The figures above follow the truth and your edits; this text does not.</p>
+  </div>
+  <div class="findings" id="findingList"></div>
+</section>
+
+<section id="method">
+  <div class="sect-head">
+    <div class="eyebrow">05 · Method</div>
+    <h2>The anchors and the rule</h2>
+  </div>
+  <div class="method sliver">
+    <p><b>Nearest anchor (the rule in the game today).</b> A colour belongs to the family whose nearest anchor is closest in OKLab, provided it is at least the margin (0.05, about 2.5 just-noticeable differences) closer to that family than to any other. Otherwise it is in the forbidden band. Blue's distance is also the colour's chroma, because every grey is Blue's. This is the rule in <code>Tools/Build/kite_mote_colors.py</code> and <code>Docs/VesselModels/COLOR.md</code> §5b, with the anchors read from the live assets on 2026-10-30. Its regions can be any shape, and a family with several anchors can be pinched or bent.</p>
+    <p><b>Convex cells: the source of truth (31 Oct 2026).</b> Every family is one convex cell, and the six cells fill OKLab with no gaps: each family has a score that rises in a straight line across OKLab, and a colour goes to the family that scores highest there. The band is the margin's full thickness, measured in OKLab (0.05 is about 2.5 just-noticeable differences), centred on each border, so it only ever lies between two families and is the same thickness everywhere. The truth is Garrett's “shaped by eye”: he reshaped the regions with the eraser, and its boundaries are frozen exactly as the page fitted them then. Every anchor is at its game value and rests inside its own family, clear of the band, except the engine ember face (#300A05), which is within one band of black, so no convex border can clear it. The repo copy is <code>Docs/VesselModels/colour_domains.json</code>, explained in <code>COLOR_DOMAINS.md</code> and checked against the game by <code>Tools/Build/colour_domains.py --check</code>. When you edit here, the page refits from those frozen boundaries: each family's anchors and taken colours sit as far from every border as they can, at least half a band away. Erasing hands a colour to the neighbour that scores highest there; a colour that can't change hands without opening a wider gap stays where it is. Reach raises a family's score so its borders slide toward its neighbours. Lime's extra green-yellow window (HSV hue 75–105°, no blue) applies only to the four element shades, so it is not drawn here; all four rest inside Lime.</p>
+    <div class="scroll"><table id="anchorTable"></table></div>
+  </div>
+</section>
+
+</main>
+<footer class="wrap">Sources: <code>Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset</code>, <code>Assets/Resources/ElementalBarsConfig.asset</code>, <code>Tools/Build/vessel_model/vessel_colors.py</code>, <code>Docs/STYLE_FOUNDATION.md</code>, <code>Docs/VesselModels/COLOR.md</code>, <code>Docs/PALETTE.md</code>, <code>Docs/Voyages/VOYAGES.md</code>.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/ConvexHull.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/ConvexGeometry.js"></script>
+<script>
+(() => {
+'use strict';
+// ------------------------------------------------------------------ data (live from the repo, 2026-10-30)
+const FAMS = ['fire','gold','lime','jade','blue','ruby'];   // hue order, clockwise from the top
+const BLUE = FAMS.indexOf('blue');
+const META = {
+  fire:{name:'Fire', word:'Danger',
+    text:'<b>Bad: avoid it or deal with it.</b> Danger-prism rims, the engine ember (×5 under boost), the approved full-bleed danger fill. Never a team.'},
+  gold:{name:'Gold', word:'Commerce · Team 3',
+    text:'<b>Merchants, bounty hunters, gatherers, contractors, sport.</b> Also currency and purchase, which never share a component with team score.'},
+  lime:{name:'Lime', word:'Call to action',
+    text:'<b>A categorically good thing to collect or click.</b> Free crystals, primary buttons, focus, online status. Never on a vessel. Four element shades:', elements:[['Charge',[0.626,1,0]],['Mass',[0.3682,0.7764,0]],['Space',[0.25,1,0]],['Time',[0.6094,0.8125,0]]]},
+  jade:{name:'Jade', word:'Order · Team 1',
+    text:'<b>Aristocrats (militant, diplomat), researchers, preservationists, first responders, priests.</b> In the UI: active toggles, sliders, scrollbars.'},
+  blue:{name:'Blue', word:'Neutral · no team',
+    text:'<b>Nobody\'s, and every grey.</b> The hull body and glass, the living lifeform heart, panel chrome. The sentinel for "not picked yet".'},
+  ruby:{name:'Ruby', word:'Freedom · Team 2',
+    text:'<b>Hunters, pirates, explorers, activists, thieves.</b> In the UI: tooltip boxes.'},
+};
+const A_ = (id,c,name,src) => ({id,c,name,src});
+const GREY_SRC = 'COLOR.md rule 1: every grey is Blue\'s';
+const SHIPPED = {rule:'nearest', margin:0.05, fams:{
+  fire:{signal:0,reach:0,claimed:[],erased:[],anchors:[A_('fire-0',[1,0.0039,0.0046],'Danger signal','OriginalColorSetSO · EnvironmentColors.Danger, brightest channel 1'),A_('fire-1',[1,0.33,0.1],'HUD fire','ElementalBarsConfig · fireColor'),A_('fire-2',[0.42,0.11,0.04],'Engine ember rim','vessel_colors.py · engine rim (EngineVesselMaterial _Color1)'),A_('fire-3',[0.19,0.04,0.02],'Engine ember face','vessel_colors.py · engine face (EngineVesselMaterial _Color2)')]},
+  gold:{signal:0,reach:0,claimed:[],erased:[],anchors:[A_('gold-0',[1,0.6565,0],'Gold UI = signal','OriginalColorSetSO · GoldColors.TrailHighlightColor')]},
+  lime:{signal:0,reach:0,claimed:[],erased:[],anchors:[A_('lime-0',[0.5625,1,0.1562],'CTA signal','OriginalColorSetSO · DarkCTA, brightest channel 1'),A_('lime-1',[0.59,0.92,0.16],'BrightCTA = HUD lime','OriginalColorSetSO · BrightCTA; ElementalBarsConfig · limeColor'),A_('lime-2',[0.66,1,0.18],'Kite view lime','KiteNavigatorView.cs · Lime')]},
+  jade:{signal:1,reach:0,claimed:[],erased:[],anchors:[A_('jade-0',[0.0549,0.7529,0.7137],'Jade UI','OriginalColorSetSO · JadeColors.TrailHighlightColor'),A_('jade-1',[0.0729,1,0.9479],'Jade signal','GetDomainSignalColor(Jade): the UI colour at brightest channel 1')]},
+  blue:{signal:0,reach:0,claimed:[],erased:[],anchors:[A_('blue-0',[0.4,0.5,1],'Blue UI = signal','OriginalColorSetSO · BlueColors.TrailHighlightColor'),A_('blue-1',[0.22,0.51,1],'HUD blue','ElementalBarsConfig · blueColor'),A_('blue-2',[0.18,0.21,0.33],'Hull body rim','vessel_colors.py · body rim (BlueBaseVesselMaterial _Color1)'),A_('blue-3',[0.028,0.033,0.065],'Hull body face','vessel_colors.py · body face (BlueBaseVesselMaterial _Color2)'),A_('blue-4',[0.7,0.8,1],'Glass rim','vessel_colors.py · window rim (ScreenVesselMaterial _Color1)'),A_('blue-5',[0.06,0.16,0.62],'Glass face','vessel_colors.py · window face (ScreenVesselMaterial _Color2)'),A_('blue-6',[0,0,0],'Black (every grey)',GREY_SRC),A_('blue-7',[1,1,1],'White (every grey)',GREY_SRC)]},
+  ruby:{signal:1,reach:0,claimed:[],erased:[],anchors:[A_('ruby-0',[0.7843,0,0.7647],'Ruby UI','OriginalColorSetSO · RubyColors.TrailHighlightColor'),A_('ruby-1',[1,0,0.975],'Ruby signal','GetDomainSignalColor(Ruby): the UI colour at brightest channel 1')]},
+}};
+// THE SOURCE OF TRUTH (2026-10-31): Garrett's "shaped by eye", with its boundaries frozen exactly as the page fitted them
+// while he shaped (`cells`), and every anchor at its game value. The repo copy is Docs/VesselModels/colour_domains.json
+// (Tools/Build/colour_domains.py --check).
+const ADOPTED_RAW = {"fams":{"blue":{"anchors":[{"c":[0.4,0.5,1],"id":"blue-0","name":"Blue UI = signal","src":"OriginalColorSetSO \u00b7 BlueColors.TrailHighlightColor"},{"c":[0.22,0.51,1],"id":"blue-1","name":"HUD blue","src":"ElementalBarsConfig \u00b7 blueColor"},{"c":[0.18,0.21,0.33],"id":"blue-2","name":"Hull body rim","src":"vessel_colors.py \u00b7 body rim (BlueBaseVesselMaterial _Color1)"},{"c":[0.028,0.033,0.065],"id":"blue-3","name":"Hull body face","src":"vessel_colors.py \u00b7 body face (BlueBaseVesselMaterial _Color2)"},{"c":[0.7,0.8,1],"id":"blue-4","name":"Glass rim","src":"vessel_colors.py \u00b7 window rim (ScreenVesselMaterial _Color1)"},{"c":[0.06,0.16,0.62],"id":"blue-5","name":"Glass face","src":"vessel_colors.py \u00b7 window face (ScreenVesselMaterial _Color2)"},{"c":[0,0,0],"id":"blue-6","name":"Black (every grey)","src":"COLOR.md rule 1: every grey is Blue's"},{"c":[1,1,1],"id":"blue-7","name":"White (every grey)","src":"COLOR.md rule 1: every grey is Blue's"}],"claimed":[[0.2188,0.0313,0.0938],[0.8125,0.8125,0.6563],[0.9375,0.875,0.7188],[0.9063,0.9375,0.7813],[0.875,0.9063,0.75],[0.25,0,0.9688],[0.25,0,1],[0.9063,0.5625,0.75],[0.9688,0.625,0.8125],[0.7813,0.4375,0.6875],[0.4375,0.0313,0.5],[0.4063,0,0.4688],[1,0.6563,0.9375]],"erased":[],"reach":0,"signal":0},"fire":{"anchors":[{"c":[1,0.0039,0.0046],"id":"fire-0","name":"Danger signal","src":"OriginalColorSetSO \u00b7 EnvironmentColors.Danger, brightest channel 1"},{"c":[1,0.33,0.1],"id":"fire-1","name":"HUD fire","src":"ElementalBarsConfig \u00b7 fireColor"},{"c":[0.42,0.11,0.04],"id":"fire-2","name":"Engine ember rim","src":"vessel_colors.py \u00b7 engine rim (EngineVesselMaterial _Color1)"},{"c":[0.19,0.04,0.02],"id":"fire-3","name":"Engine ember face","src":"vessel_colors.py \u00b7 engine face (EngineVesselMaterial _Color2)"}],"claimed":[[0.9688,0.5,0.4063],[0.9375,0.5,0.4063],[0.25,0.0313,0.3438],[0.2813,0,0.4375],[0.2813,0,0.4063],[0.2813,0,0.4375],[0.2813,0,0.5],[0.2813,0,0.5313],[0.25,0,0.5313],[0.3438,0,0.5]],"erased":[],"reach":0,"signal":0},"gold":{"anchors":[{"c":[1,0.6565,0],"id":"gold-0","name":"Gold UI = signal","src":"OriginalColorSetSO \u00b7 GoldColors.TrailHighlightColor"}],"claimed":[[1,1,0.375],[0.7813,0.7188,0],[0.9688,0.8438,0.5938],[1,0.875,0.5938],[0.9688,0.9688,0.7813],[1,0.9688,0],[1,0.9688,0],[0.9063,0.9688,0],[0.875,0.9375,0.0938],[1,0.9375,0],[1,0.9375,0]],"erased":[],"reach":0,"signal":0},"jade":{"anchors":[{"c":[0.0549,0.7529,0.7137],"id":"jade-0","name":"Jade UI","src":"OriginalColorSetSO \u00b7 JadeColors.TrailHighlightColor"},{"c":[0.0729,1,0.9479],"id":"jade-1","name":"Jade signal","src":"GetDomainSignalColor(Jade): the UI colour at brightest channel 1"}],"claimed":[[0,1,0.5625],[0.3125,0.5625,0.4375],[0.1875,0.4688,0.375],[0.375,0.7188,0.3125],[0.0313,0.5,0.4063],[0.0313,0.5625,0.4063],[0.1875,0.5,0.375],[0.3125,0.5313,0.375],[0.2813,0.5,0.4063],[0,0.5625,1],[0,0.5313,0.9688],[0,0.5313,1],[0,0.5,0.9375],[0.0313,0.5313,1],[0.0625,0.5,0.9375],[0.0625,0.4688,0.875],[0.0313,0.4688,0.9375],[0.0313,0.3438,0.6875]],"erased":[],"reach":0,"signal":1},"lime":{"anchors":[{"c":[0.5625,1,0.1562],"id":"lime-0","name":"CTA signal","src":"OriginalColorSetSO \u00b7 DarkCTA, brightest channel 1"},{"c":[0.59,0.92,0.16],"id":"lime-1","name":"BrightCTA = HUD lime","src":"OriginalColorSetSO \u00b7 BrightCTA; ElementalBarsConfig \u00b7 limeColor"},{"c":[0.66,1,0.18],"id":"lime-2","name":"Kite view lime","src":"KiteNavigatorView.cs \u00b7 Lime"}],"claimed":[[1,1,0.1563],[0.9375,1,0.1875],[1,1,0.125],[0.9375,0.9688,0],[0.875,0.875,0.25],[0.125,0.2813,0],[0.125,0.2813,0.0313],[0.125,0.3125,0],[0.125,0.3438,0.0313],[0.25,0.375,0.1563],[0.25,0.375,0.1875],[0.25,0.4063,0.1875],[0.25,0.4375,0.1875],[0.9375,0.9375,0.125],[0.9375,0.9375,0.1563],[0.9375,0.9375,0.1875],[0.9688,1,0.1875],[1,1,0.0625],[1,1,0.0938],[1,1,0.125],[1,1,0]],"erased":[],"reach":0,"signal":0},"ruby":{"anchors":[{"c":[0.7843,0,0.7647],"id":"ruby-0","name":"Ruby UI","src":"OriginalColorSetSO \u00b7 RubyColors.TrailHighlightColor"},{"c":[1,0,0.975],"id":"ruby-1","name":"Ruby signal","src":"GetDomainSignalColor(Ruby): the UI colour at brightest channel 1"}],"claimed":[[0.375,0,0.625],[0.4063,0,0.9375],[0.4063,0,0.9688],[0.4063,0,1],[0.4063,0.0313,1],[0.4063,0.0625,1],[0.4063,0.0938,1],[0.4063,0.125,1],[0.4063,0.1563,1],[0.4063,0.1875,0.9375],[0.4063,0.1875,0.9688],[0.4375,0.0938,1],[0.4375,0.125,1],[0.4375,0.1563,1],[0.4375,0.1875,1],[0.4375,0.2188,0.9688],[0.4688,0.1875,1]],"erased":[],"reach":0,"signal":1}},"margin":0.05,"rule":"convex","cells":[0.001287,0.317596,0.046646,0.032165,0.019962,0.16431,0.229468,0.007794,-0.016072,-0.152405,0.311618,0.017049,0.000796,-0.23786,-0.030262,0.021545,0.00415,0.11425,-0.072808,0.040834,0.074667,0.616661,-0.484357,-0.119387]};
+const ADOPTED_ON = '31 Oct 2026'; const ADOPTED_NAME = 'shaped by eye';
+const SKETCH = [['Danger Fire','#ec501e'],['orange','#ffa629'],['Commerce Gold','#fcc128'],['yellow','#fbf10c'],['CTA Lime','#b7fe20'],['green','#14ae5d'],['Order Jade','#2adcd0'],['azure','#0c98ff'],['Neutral Blue','#110bf3'],['violet','#9848ff'],['Freedom Ruby','#c525ec'],['red','#f24922'],['grey core','#b3b3b3']];
+const GUIDE = [['Guide Jade','#00d4ff'],['Guide Ruby','#a600ff'],['Guide Gold','#ffae00'],['Guide CTA','#99ff80'],['Guide danger','#ff4b3a']];
+const CVD = {
+  protan:[[0.152286,1.052583,-0.204868],[0.114503,0.786281,0.099216],[-0.003882,-0.048116,1.051998]],
+  deutan:[[0.367322,0.860646,-0.227968],[0.280085,0.672501,0.047413],[-0.011820,0.042940,0.968881]],
+  tritan:[[1.255528,-0.076749,-0.178779],[-0.078411,0.930809,0.147602],[0.004733,0.691367,0.303900]],
+};
+const VNAME = {typical:'typical vision',protan:'protan (red-weak)',deutan:'deutan (green-weak)',tritan:'tritan (blue-weak)',achroma:'achromat (lightness only)'};
+const clone = o => JSON.parse(JSON.stringify(o, (k,v) => k==='lch'||k==='clipped' ? undefined : v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural = (n,w) => `${n} ${w}${n===1?'':'s'}`;
+
+// ------------------------------------------------------------------ colour math
+const lin = v => v <= 0.04045 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+const gam = v => { v = v < 0 ? 0 : v > 1 ? 1 : v; return v <= 0.0031308 ? 12.92*v : 1.055*Math.pow(v,1/2.4)-0.055; };
+const clamp01 = v => v<0?0:v>1?1:v;
+function okLin(r,g,b,out,o){
+  let l=0.4122214708*r+0.5363325363*g+0.0514459929*b, m=0.2119034982*r+0.6806995451*g+0.1073969566*b, s=0.0883024619*r+0.2817188376*g+0.6299787005*b;
+  l=Math.cbrt(Math.max(l,0)); m=Math.cbrt(Math.max(m,0)); s=Math.cbrt(Math.max(s,0));
+  out[o]=0.2104542553*l+0.7936177850*m-0.0040720468*s; out[o+1]=1.9779984951*l-2.4285922050*m+0.4505937099*s; out[o+2]=0.0259040371*l+0.7827717662*m-0.8086757660*s;
+  return out;
+}
+const ok3 = (r,g,b) => okLin(r,g,b,[0,0,0],0);
+function oklabToLin(L,a,b){
+  let l=L+0.3963377774*a+0.2158037573*b, m=L-0.1055613458*a-0.0638541728*b, s=L-0.0894841775*a-1.2914855480*b;
+  l=l*l*l; m=m*m*m; s=s*s*s;
+  return [4.0767416621*l-3.3077115913*m+0.2309699292*s, -1.2684380046*l+2.6097574011*m-0.3413193965*s, -0.0041960863*l-0.7034186147*m+1.7076147010*s];
+}
+function labToLin(L,a,b){
+  const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200, fi=t=>{ const t3=t*t*t; return t3>0.008856?t3:(t-16/116)/7.787; };
+  const X=fi(fx)*0.95047, Y=fi(fy), Z=fi(fz)*1.08883;
+  return [3.2404542*X-1.5371385*Y-0.4985314*Z, -0.9692660*X+1.8760108*Y+0.0415560*Z, 0.0556434*X-0.2040259*Y+1.0572252*Z];
+}
+const inGamut = v => v[0]>=-1e-4&&v[0]<=1+1e-4&&v[1]>=-1e-4&&v[1]<=1+1e-4&&v[2]>=-1e-4&&v[2]<=1+1e-4;
+// keep lightness and hue, give up chroma until the colour fits on a screen
+function fitLab(toLin,L,a,b){
+  let v=toLin(L,a,b); if(inGamut(v)) return {rgb:v.map(gam), clipped:false};
+  let lo=0, hi=1; for(let k=0;k<24;k++){ const mid=(lo+hi)/2; if(inGamut(toLin(L,a*mid,b*mid))) lo=mid; else hi=mid; }
+  return {rgb:toLin(L,a*lo,b*lo).map(gam), clipped:true};
+}
+function oklch(c){ const o=ok3(lin(c[0]),lin(c[1]),lin(c[2])); return [o[0], Math.hypot(o[1],o[2]), (Math.atan2(o[2],o[1])*180/Math.PI+360)%360]; }
+function fromOklch(L,C,h){ const r=h*Math.PI/180; return fitLab(oklabToLin, clamp01(L), C*Math.cos(r), C*Math.sin(r)); }
+function simLin(r,g,b,kind,sev,out){
+  if(kind==='typical'||sev<=0){ out[0]=r; out[1]=g; out[2]=b; return out; }
+  let x,y,z;
+  if(kind==='achroma'){ x=y=z=0.2126*r+0.7152*g+0.0722*b; }
+  else { const M=CVD[kind]; x=M[0][0]*r+M[0][1]*g+M[0][2]*b; y=M[1][0]*r+M[1][1]*g+M[1][2]*b; z=M[2][0]*r+M[2][1]*g+M[2][2]*b; }
+  const k=1-sev; out[0]=clamp01(k*r+sev*x); out[1]=clamp01(k*g+sev*y); out[2]=clamp01(k*b+sev*z); return out;
+}
+function simGamma(rgb,kind,sev){ const o=simLin(lin(rgb[0]),lin(rgb[1]),lin(rgb[2]),kind,sev,[0,0,0]); return [gam(o[0]),gam(o[1]),gam(o[2])]; }
+function labOf(c,kind,sev){ const s=simLin(lin(c[0]),lin(c[1]),lin(c[2]),kind,sev,[0,0,0]); return ok3(s[0],s[1],s[2]); }
+const hex = c => '#'+c.map(v=>Math.round(clamp01(v)*255).toString(16).padStart(2,'0')).join('');
+const HEX = c => hex(c).toUpperCase();
+const fromHex = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+const css = c => `rgb(${c.map(v=>Math.round(clamp01(v)*255)).join(',')})`;
+function hsv(r,g,b){ const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let h=0;
+  if(d>1e-9){ if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; if(h<0) h+=360; }
+  return [h, mx>0?d/mx:0, mx, d, (mx+mn)/2]; }
+function hsv2rgb(h,s,v){ h=((h%360)+360)%360; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c; let r,g,b;
+  if(h<60)[r,g,b]=[c,x,0]; else if(h<120)[r,g,b]=[x,c,0]; else if(h<180)[r,g,b]=[0,c,x]; else if(h<240)[r,g,b]=[0,x,c]; else if(h<300)[r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+  return [r+m,g+m,b+m]; }
+function cielab(lr,lg,lb){
+  const X=(0.4124564*lr+0.3575761*lg+0.1804375*lb)/0.95047, Y=0.2126729*lr+0.7151522*lg+0.0721750*lb, Z=(0.0193339*lr+0.1191920*lg+0.9503041*lb)/1.08883;
+  const f=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116; const fx=f(X),fy=f(Y),fz=f(Z);
+  return [116*fy-16, 500*(fx-fy), 200*(fy-fz)];
+}
+const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+
+// The two nearest points of two convex hulls (Mitchell-Dem'yanov-Malozemov on the hulls' weights).
+// v = pa - pb runs from B's hull to A's; |v| is the gap, 0 when the hulls overlap.
+function nearestPts(A,B){
+  const na=A.length, nb=B.length, al=new Float64Array(na).fill(1/na), be=new Float64Array(nb).fill(1/nb);
+  const u=[0,0,0], w=[0,0,0];
+  for(const a of A){ u[0]+=a[0]/na; u[1]+=a[1]/na; u[2]+=a[2]/na; }
+  for(const b of B){ w[0]+=b[0]/nb; w[1]+=b[1]/nb; w[2]+=b[2]/nb; }
+  const v=[u[0]-w[0],u[1]-w[1],u[2]-w[2]], d=[0,0,0];
+  for(let it=0;it<6000;it++){
+    let imin=0,dmin=Infinity,imax=-1,dmax=-Infinity;
+    for(let i=0;i<na;i++){ const x=dot3(A[i],v); if(x<dmin){dmin=x;imin=i;} if(al[i]>1e-12&&x>dmax){dmax=x;imax=i;} }
+    let jmax=0,emax=-Infinity,jmin=-1,emin=Infinity;
+    for(let j=0;j<nb;j++){ const x=dot3(B[j],v); if(x>emax){emax=x;jmax=j;} if(be[j]>1e-12&&x<emin){emin=x;jmin=j;} }
+    const vv=dot3(v,v); if(vv-(dmin-emax)<1e-11) break;
+    if(dmax-dmin>=emax-emin){ for(let k=0;k<3;k++) d[k]=A[imin][k]-A[imax][k]; const dd=dot3(d,d); if(dd<1e-18) break;
+      const s=Math.min(Math.max(-dot3(v,d)/dd,0),al[imax]); al[imax]-=s; al[imin]+=s; for(let k=0;k<3;k++){ v[k]+=s*d[k]; u[k]+=s*d[k]; } }
+    else { for(let k=0;k<3;k++) d[k]=B[jmin][k]-B[jmax][k]; const dd=dot3(d,d); if(dd<1e-18) break;
+      const s=Math.min(Math.max(-dot3(v,d)/dd,0),be[jmin]); be[jmin]-=s; be[jmax]+=s; for(let k=0;k<3;k++){ v[k]+=s*d[k]; w[k]-=s*d[k]; } }
+  }
+  return {pa:u, pb:w, v, dist:Math.sqrt(dot3(v,v))};
+}
+// Fit one max-affine partition: family f scores A_f(x) = n_f·x + c_f and owns the points where it scores highest.
+// Cells are convex and tile OKLab completely; the border between f and g is the plane A_f = A_g.
+// The fit is a multiclass maximum-margin one (Crammer-Singer, squared hinge, solved by Newton's method):
+// every core colour must beat every rival by 1, with the smallest weights, so each border sits in the middle of its gap.
+function fitAffine(cores, wts, init){
+  const D=24, C=1e8, eps=1e-6, X=[];
+  cores.forEach((pts,y)=>pts.forEach((p,k)=>X.push([p[0],p[1],p[2],y,wts? wts[y][k] : 1])));
+  const th=init? Float64Array.from(init) : new Float64Array(D), g=new Float64Array(D), H=new Float64Array(D*D), dl=new Float64Array(D), tt=new Float64Array(D);
+  const J=t=>{ let s=0; for(let f=0;f<6;f++){ const o=f*4; s+=0.5*(t[o]*t[o]+t[o+1]*t[o+1]+t[o+2]*t[o+2])+0.5*eps*t[o+3]*t[o+3]; }
+    for(const [x0,x1,x2,y,w] of X){ const oy=y*4, sy=t[oy]*x0+t[oy+1]*x1+t[oy+2]*x2+t[oy+3];
+      for(let f=0;f<6;f++){ if(f===y) continue; const o=f*4, r=1-(sy-(t[o]*x0+t[o+1]*x1+t[o+2]*x2+t[o+3])); if(r>0) s+=0.5*C*w*r*r; } } return s; };
+  for(let it=0;it<80;it++){
+    H.fill(0);
+    for(let f=0;f<6;f++){ const o=f*4; for(let k=0;k<3;k++){ g[o+k]=th[o+k]; H[(o+k)*D+o+k]=1; } g[o+3]=eps*th[o+3]; H[(o+3)*D+o+3]=eps; }
+    for(const [x0,x1,x2,y,w] of X){ const oy=y*4, sy=th[oy]*x0+th[oy+1]*x1+th[oy+2]*x2+th[oy+3], phi=[x0,x1,x2,1];
+      for(let f=0;f<6;f++){ if(f===y) continue; const o=f*4, r=1-(sy-(th[o]*x0+th[o+1]*x1+th[o+2]*x2+th[o+3])); if(r<=0) continue; const cw=C*w;
+        for(let k=0;k<4;k++){ g[oy+k]-=cw*r*phi[k]; g[o+k]+=cw*r*phi[k];
+          for(let l=0;l<4;l++){ const v=cw*phi[k]*phi[l]; H[(oy+k)*D+oy+l]+=v; H[(o+k)*D+o+l]+=v; H[(oy+k)*D+o+l]-=v; H[(o+k)*D+oy+l]-=v; } } } }
+    let gn=0; for(let k=0;k<D;k++) gn+=g[k]*g[k]; if(gn<1e-14) break;
+    // solve H dl = -g (Gaussian elimination, partial pivoting)
+    const A=Float64Array.from(H), b=Float64Array.from(g, v=>-v);
+    for(let c=0;c<D;c++){ let p=c; for(let r=c+1;r<D;r++) if(Math.abs(A[r*D+c])>Math.abs(A[p*D+c])) p=r;
+      if(p!==c){ for(let k=0;k<D;k++){ const s=A[c*D+k]; A[c*D+k]=A[p*D+k]; A[p*D+k]=s; } const s=b[c]; b[c]=b[p]; b[p]=s; }
+      const piv=A[c*D+c]||1e-12; for(let r=c+1;r<D;r++){ const fct=A[r*D+c]/piv; if(!fct) continue; for(let k=c;k<D;k++) A[r*D+k]-=fct*A[c*D+k]; b[r]-=fct*b[c]; } }
+    for(let r=D-1;r>=0;r--){ let s=b[r]; for(let k=r+1;k<D;k++) s-=A[r*D+k]*dl[k]; dl[r]=s/(A[r*D+r]||1e-12); }
+    const J0=J(th); let gd=0; for(let k=0;k<D;k++) gd+=g[k]*dl[k];
+    let s=1; for(;s>1e-8;s*=0.5){ for(let k=0;k<D;k++) tt[k]=th[k]+s*dl[k]; if(J(tt)<=J0+1e-4*s*gd) break; }
+    let step=0; for(let k=0;k<D;k++){ step+=Math.abs(s*dl[k]); th[k]=th[k]+s*dl[k]; }
+    if(step<1e-10) break;
+  }
+  return th;
+}
+// Refine a partition so it works in real OKLab distance: every core colour should sit at least half a band
+// (plus a little room, which centres each border in its gap) from every border of its own cell.
+// Smooth hinge on the signed distance to each border, Adam steps, scale kept fixed (the partition is scale-free).
+function refineCells(cores, wts, init, half, iters){
+  const X=[]; cores.forEach((pts,y)=>pts.forEach((p,k)=>X.push([p[0],p[1],p[2],y,wts? wts[y][k] : 1])));
+  const th=Float64Array.from(init), D=24, mo=new Float64Array(D), ve=new Float64Array(D), gr=new Float64Array(D);
+  const norm=()=>{ let s=0; for(let f=0;f<6;f++) for(let k=0;k<3;k++) s+=th[f*4+k]**2; s=Math.sqrt(s)||1; for(let k=0;k<D;k++) th[k]/=s; };
+  norm();
+  const T=half+0.02, beta=400, lr=0.004;
+  for(let it=1;it<=iters;it++){
+    gr.fill(0);
+    for(const [x0,x1,x2,y,w] of X){ const oy=y*4;
+      for(let g=0;g<6;g++){ if(g===y) continue; const og=g*4;
+        const a0=th[oy]-th[og], a1=th[oy+1]-th[og+1], a2=th[oy+2]-th[og+2], ac=th[oy+3]-th[og+3], L=Math.hypot(a0,a1,a2)||1e-9;
+        const num=a0*x0+a1*x1+a2*x2+ac, d=num/L, z=beta*(T-d); if(z<-30) continue;
+        const sg=w/(1+Math.exp(-z));                  // d(softplus(z)/beta)/d(-d)
+        const k0=(x0/L-num*a0/(L*L*L)), k1=(x1/L-num*a1/(L*L*L)), k2=(x2/L-num*a2/(L*L*L)), kc=1/L;
+        gr[oy]-=sg*k0; gr[oy+1]-=sg*k1; gr[oy+2]-=sg*k2; gr[oy+3]-=sg*kc;
+        gr[og]+=sg*k0; gr[og+1]+=sg*k1; gr[og+2]+=sg*k2; gr[og+3]+=sg*kc; } }
+    for(let k=0;k<D;k++){ mo[k]=0.9*mo[k]+0.1*gr[k]; ve[k]=0.999*ve[k]+0.001*gr[k]*gr[k];
+      th[k]-=lr*(mo[k]/(1-Math.pow(0.9,it)))/(Math.sqrt(ve[k]/(1-Math.pow(0.999,it)))+1e-12); }
+    norm();
+  }
+  return th;
+}
+const centroid = P => { const c=[0,0,0]; for(const p of P){ c[0]+=p[0]; c[1]+=p[1]; c[2]+=p[2]; } return c.map(x=>x/P.length); };
+
+// ------------------------------------------------------------------ definitions and the two rules
+const DRAFT_KEY='cs-colour-domains-draft-v5';
+const rgbList = (arr,cap) => (Array.isArray(arr)? arr : []).slice(0,cap).filter(c=>Array.isArray(c)&&c.length===3).map(c=>c.map(v=>clamp01(+v||0)));
+function sanitize(d){
+  if(!d||typeof d!=='object'||!d.fams) return null;
+  const out={rule: d.rule==='nearest'?'nearest':'convex', margin: Number.isFinite(+d.margin)? Math.min(0.1,Math.max(0,+d.margin)) : 0.05, fams:{}};
+  for(const f of FAMS){
+    const F=d.fams[f]; if(!F||!Array.isArray(F.anchors)||!F.anchors.length) return null;
+    const anchors=F.anchors.slice(0,24).map((a,i)=>({id:String(a.id||(f+'-x'+i)).slice(0,40), c:(Array.isArray(a.c)&&a.c.length===3? a.c : [0.5,0.5,0.5]).map(v=>clamp01(+v||0)), name:String(a.name||'Anchor').slice(0,60), src:a.src?String(a.src).slice(0,160):null}));
+    const sig=Number.isInteger(F.signal)&&F.signal>=0&&F.signal<anchors.length? F.signal : 0;
+    out.fams[f]={signal:sig, reach:Math.min(0.08,Math.max(-0.08,+F.reach||0)), anchors, claimed:rgbList(F.claimed,400), erased:rgbList(F.erased,400)};
+  }
+  if(Array.isArray(d.cells)&&d.cells.length===24&&d.cells.every(Number.isFinite)) out.cells=d.cells.slice();
+  return out;
+}
+const BASE = sanitize(ADOPTED_RAW), START = clone(BASE);
+let defs = clone(START), draftRestored=false;
+try { const raw=localStorage.getItem(DRAFT_KEY); if(raw){ const d=sanitize(JSON.parse(raw)); if(d){ defs=d; draftRestored=true; } } } catch(e) {}
+
+let modelSeq=0;
+function buildModel(d,tag,iters){ return {tag:tag||('m'+(++modelSeq)), d, rule:d.rule, reach:Float64Array.from(FAMS.map(f=>d.fams[f].reach)), margin:d.margin, iters:iters||400, G:new Map(), stats:null}; }
+const SHIP = buildModel(clone(SHIPPED),'ship'), BASEM = buildModel(clone(BASE),'base');
+let MODEL = buildModel(defs);
+const signalOf = (M,f) => { const F=M.d.fams[f]; return (F.anchors[F.signal]||F.anchors[0]).c; };
+const famCss = f => css(SHIPPED.fams[f].anchors[SHIPPED.fams[f].signal].c);   // a family's identity swatch in the page chrome stays fixed
+
+// The convex rule's cells: one score per family, A_f(x) = n_f·x + c_f, each family owning where it scores highest.
+// That tiles OKLab with convex cells; the band is every colour within half the margin (OKLab distance) of a border.
+const warm=new Map();   // the last fit per vision, so the next one starts from it
+const coreWeights = d => FAMS.map(f=>{ const F=d.fams[f]; return F.anchors.map(()=>30).concat(F.claimed.map(()=>1)); });   // an anchor outweighs a taken colour
+function planesOf(th,reach){
+  const t=Float64Array.from(th);
+  // reach raises a family's score so each of its borders slides about that far (OKLab) toward the neighbour
+  if(reach) for(let f=0;f<6;f++){ if(!reach[f]) continue; let L=0; for(let g=0;g<6;g++) if(g!==f) L+=Math.hypot(th[f*4]-th[g*4],th[f*4+1]-th[g*4+1],th[f*4+2]-th[g*4+2]); t[f*4+3]+=reach[f]*L/5; }
+  const P=[], pairs=[];
+  for(let i=0;i<6;i++) for(let j=i+1;j<6;j++){ const d0=t[i*4]-t[j*4], d1=t[i*4+1]-t[j*4+1], d2=t[i*4+2]-t[j*4+2], len=Math.hypot(d0,d1,d2)||1e-9;
+    P.push(i,j,d0/len,d1/len,d2/len,-(t[i*4+3]-t[j*4+3])/len); pairs.push({i,j}); }
+  return {P,pairs};
+}
+// slack of each family at x from a plane list alone: distance inside its own cell minus half the band
+function slackP(P,x,h){ const s=[1e9,1e9,1e9,1e9,1e9,1e9]; for(let k=0;k<P.length;k+=6){ const v=P[k+2]*x[0]+P[k+3]*x[1]+P[k+4]*x[2]-P[k+5]; if(v-h<s[P[k]]) s[P[k]]=v-h; if(-v-h<s[P[k+1]]) s[P[k+1]]=-v-h; } return s; }
+// Everything a vision needs to classify colours under one model: the cores, and either the anchor list or the bands and cuts.
+function geom(M,kind,sev){
+  const key=kind+':'+sev; let g=M.G.get(key); if(g) return g;
+  if(M!==BASEM&&M.rule==='convex'&&M.isBase===undefined){ const a=clone(M.d), b=clone(BASE); delete a.cells; delete b.cells; M.isBase=JSON.stringify(a)===JSON.stringify(b); }
+  if(M!==BASEM&&M.isBase){ g=geom(BASEM,kind,sev); M.G.set(key,g); return g; }
+  const cores=FAMS.map(f=>{ const F=M.d.fams[f]; return F.anchors.map(a=>labOf(a.c,kind,sev)).concat(M.rule==='convex'? F.claimed.map(c=>labOf(c,kind,sev)) : []); });
+  if(M.rule==='nearest'){
+    const list=[]; cores.forEach((pts,fi)=>pts.forEach(p=>list.push(fi,p[0],p[1],p[2])));
+    g={rule:'nearest', A:new Float64Array(list), cores};
+  } else {
+    // the adopted rule is fitted from scratch; an edit starts from the adopted fit (or, mid-drag, from the last frame's)
+    const wts=coreWeights(M.d), wkey=kind+':'+sev;
+    let th0;
+    if(M===BASEM&&M.d.cells&&kind==='typical') th0=Float64Array.from(M.d.cells);            // the frozen source of truth
+    else if(M===BASEM&&M.d.cells) th0=refineCells(cores,wts,Float64Array.from(M.d.cells),M.margin/2,400);   // as a colour-blind viewer's colours fall
+    else if(M===BASEM) th0=refineCells(cores,wts,fitAffine(cores,wts),M.margin/2,700);
+    else { const init=(state.dragging&&warm.get(wkey))||geom(BASEM,kind,sev).theta; th0=refineCells(cores,wts,init,M.margin/2,M.iters); }
+    warm.set(wkey,th0);
+    const {P,pairs}=planesOf(th0,M.reach);
+    g={rule:'convex', P:new Float64Array(P), W:new Float64Array(0), pairs, cores, theta:th0};   // no cuts: the only empty space is the band
+  }
+  M.G.set(key,g); return g;
+}
+// For one OKLab colour, each family's LEAD: how much nearer than its rival (nearest rule), or how far inside its own region plus the band (convex rule).
+// Either way a colour belongs to the family with the largest lead when that lead is at least the margin.
+const dTmp=new Float64Array(6);
+function famLeads(L,a,b,M,g,out){
+  if(g.rule==='nearest'){
+    const A=g.A, d=dTmp; for(let f=0;f<6;f++) d[f]=1e9;
+    for(let i=0;i<A.length;i+=4){ const dl=L-A[i+1], da=a-A[i+2], db=b-A[i+3]; const e=Math.sqrt(dl*dl+da*da+db*db); const f=A[i]; if(e<d[f]) d[f]=e; }
+    const c=Math.sqrt(a*a+b*b); if(c<d[BLUE]) d[BLUE]=c;
+    let m1=0, m2=1; for(let f=0;f<6;f++) d[f]-=M.reach[f];
+    if(d[1]<d[0]){ m1=1; m2=0; } for(let f=2;f<6;f++){ if(d[f]<d[m1]){ m2=m1; m1=f; } else if(d[f]<d[m2]) m2=f; }
+    for(let f=0;f<6;f++) out[f]=(f===m1? d[m2] : d[m1])-d[f];
+    return out;
+  }
+  const P=g.P, W=g.W, h=M.margin/2;
+  for(let f=0;f<6;f++) out[f]=1e9;
+  for(let k=0;k<P.length;k+=6){ const v=P[k+2]*L+P[k+3]*a+P[k+4]*b-P[k+5], i=P[k], j=P[k+1]; if(v-h<out[i]) out[i]=v-h; if(-v-h<out[j]) out[j]=-v-h; }
+  for(let k=0;k<W.length;k+=5){ const v=W[k+1]*L+W[k+2]*a+W[k+3]*b-W[k+4], f=W[k]; if(v<out[f]) out[f]=v; }
+  for(let f=0;f<6;f++) out[f]+=M.margin;
+  return out;
+}
+function top2(o){ let n1=0,n2=1; if(o[1]>o[0]){n1=1;n2=0;} for(let f=2;f<6;f++){ if(o[f]>o[n1]){n2=n1;n1=f;} else if(o[f]>o[n2]) n2=f; } return [n1,n2]; }
+function classifyRGB(M,rgb,kind,sev){
+  const o=labOf(rgb,kind,sev), leads=famLeads(o[0],o[1],o[2],M,geom(M,kind,sev),new Float64Array(6)), [n1,n2]=top2(leads);
+  return {fam: leads[n1]>=M.margin? n1 : -1, n1, n2, lead:leads[n1], leads};
+}
+function makeGrid(N){
+  const n=(N+1)**3, rgb=new Float32Array(n*3), ln=new Float32Array(n*3); let i=0;
+  for(let r=0;r<=N;r++) for(let g=0;g<=N;g++) for(let b=0;b<=N;b++){ rgb[i]=r/N; rgb[i+1]=g/N; rgb[i+2]=b/N; ln[i]=lin(r/N); ln[i+1]=lin(g/N); ln[i+2]=lin(b/N); i+=3; }
+  return {N,n,rgb,lin:ln,cache:new Map(),seen:new Map()};
+}
+// what a vision sees does not depend on the definitions, so it is cached apart from the classification
+function seenOf(G,kind,sev){
+  const key=kind+':'+sev; let s=G.seen.get(key); if(s) return s;
+  const n=G.n, seen=new Float32Array(n*3), lab=new Float32Array(n*3), t=[0,0,0];
+  for(let i=0;i<n;i++){ simLin(G.lin[i*3],G.lin[i*3+1],G.lin[i*3+2],kind,sev,t); seen[i*3]=gam(t[0]); seen[i*3+1]=gam(t[1]); seen[i*3+2]=gam(t[2]); okLin(t[0],t[1],t[2],lab,i*3); }
+  s={seen,lab}; G.seen.set(key,s); return s;
+}
+function analyse(G,M,kind,sev){
+  const key=M.tag+':'+kind+':'+sev; if(G.cache.has(key)) return G.cache.get(key);
+  const g=geom(M,kind,sev), n=G.n, S=seenOf(G,kind,sev), d6=new Float32Array(n*6), n1=new Int8Array(n), n2=new Int8Array(n), lead=new Float32Array(n), o=new Float64Array(6);
+  for(let i=0;i<n;i++){
+    famLeads(S.lab[i*3],S.lab[i*3+1],S.lab[i*3+2],M,g,o);
+    for(let f=0;f<6;f++) d6[i*6+f]=o[f];
+    const t=top2(o); n1[i]=t[0]; n2[i]=t[1]; lead[i]=o[t[0]];
+  }
+  const res={seen:S.seen,d6,n1,n2,lead}; G.cache.set(key,res); return res;
+}
+const G24=makeGrid(24);
+function stats(M){
+  if(M.stats) return M.stats;
+  const T=analyse(G24,M,'typical',0), kinds=['protan','deutan','tritan','achroma'], R=kinds.map(k=>analyse(G24,M,k,1));
+  const share=new Array(6).fill(0), kept=kinds.map(()=>new Array(6).fill(0)); let band=0;
+  for(let i=0;i<G24.n;i++){ if(T.lead[i]<M.margin){ band++; continue; } const f=T.n1[i]; share[f]++; R.forEach((r,k)=>{ if(r.n1[i]===f&&r.lead[i]>=M.margin) kept[k][f]++; }); }
+  return M.stats={n:G24.n,share,band,kept,kinds};
+}
+
+// ------------------------------------------------------------------ state
+const state = {vision:'typical', sev:1, space:'oklab', layer:'regions', paint:'seen', move:false, show:new Set(FAMS), N:32, val:1, sel:{f:'jade', i:SHIPPED.fams.jade.signal}, picked:null, dragging:false, tool:'orbit', brush:18};
+const sevNow = () => state.vision==='typical' ? 0 : state.sev;
+const undoStack=[];
+function pushUndo(){ undoStack.push(clone(defs)); if(undoStack.length>40) undoStack.shift(); document.getElementById('undo').disabled=false; }
+function undo(){ if(!undoStack.length) return; defs=undoStack.pop(); state.sel.i=Math.min(state.sel.i,defs.fams[state.sel.f].anchors.length-1); syncRule(); syncMargin(); renderBench(); bump(); document.getElementById('undo').disabled=!undoStack.length; eraseSay('Undone.'); }
+
+// ------------------------------------------------------------------ diff against the shipped definitions
+const fmtReach = r => (r>0?'+':r<0?'−':'')+Math.abs(r).toFixed(3)+` (${r>0?'+':r<0?'−':''}${Math.abs(r/0.02).toFixed(1)} JND)`;
+function diff(d){
+  const out=[];
+  if(d.rule!==BASE.rule) out.push([null, d.rule==='convex'? 'Rule: convex cells kept a band apart' : 'Rule: nearest anchor (the game today)']);
+  if(Math.abs(d.margin-BASE.margin)>1e-9) out.push([null,`Band ${BASE.margin.toFixed(3)} → ${d.margin.toFixed(3)} OKLab`]);
+  FAMS.forEach(f=>{ const s=BASE.fams[f], c=d.fams[f], byId=new Map(s.anchors.map(a=>[a.id,a]));
+    c.anchors.forEach(a=>{ const o=byId.get(a.id);
+      if(!o) out.push([f,`Added “${a.name}” ${HEX(a.c)}`]);
+      else { if(HEX(o.c)!==HEX(a.c)) out.push([f,`Moved “${a.name}” ${HEX(o.c)} → ${HEX(a.c)}`]); if(o.name!==a.name) out.push([f,`Renamed “${o.name}” to “${a.name}”`]); } });
+    s.anchors.forEach(o=>{ if(!c.anchors.some(a=>a.id===o.id)) out.push([f,`Removed “${o.name}” ${HEX(o.c)}`]); });
+    if(Math.abs(c.reach-s.reach)>1e-9) out.push([f,`Reach ${fmtReach(c.reach)}`]);
+    const sig=c.anchors[c.signal]; if(sig.id!==s.anchors[s.signal].id) out.push([f,`Signal is now “${sig.name}”`]);
+    const hx=a=>new Set(a.map(HEX)), se=hx(s.erased), ce=hx(c.erased), sc=hx(s.claimed), cc=hx(c.claimed);
+    const addE=[...ce].filter(x=>!se.has(x)).length, remE=[...se].filter(x=>!ce.has(x)).length, addC=[...cc].filter(x=>!sc.has(x)).length, remC=[...sc].filter(x=>!cc.has(x)).length;
+    if(addE||remE) out.push([f,`Erase cuts ${addE?'+'+addE:''}${addE&&remE?' ':''}${remE?'−'+remE:''}`]);
+    if(addC||remC) out.push([f,`Taken colours ${addC?'+'+addC:''}${addC&&remC?' ':''}${remC?'−'+remC:''}`]);
+  });
+  return out;
+}
+
+// ------------------------------------------------------------------ cards
+const cardsEl=document.getElementById('cards');
+function renderCards(){
+  const st=stats(MODEL), sh=stats(BASEM), edited=diff(defs).length>0;
+  cardsEl.innerHTML=FAMS.map((f,fi)=>{
+    const m=META[f], F=defs.fams[f], sig=signalOf(MODEL,f), q=oklch(sig);
+    const anchors=F.anchors.map(a=>`<i style="background:${css(a.c)}" title="${esc(a.name)} ${HEX(a.c)}"></i>`).join('');
+    const elements=m.elements? `<div class="sw">${m.elements.map(([n,c])=>`<i style="background:${css(c)}" title="${n} ${HEX(c)}"></i><small>${n}</small>`).join(' ')}</div>`:'';
+    const now=st.share[fi]/st.n*100, was=sh.share[fi]/sh.n*100, dd=now-was;
+    const delta= edited&&Math.abs(dd)>=0.05? ` <span class="${dd>0?'up':'down'}">${dd>0?'+':'−'}${Math.abs(dd).toFixed(1)}</span>` : '';
+    return `<article class="card sliver" style="--fam:${famCss(f)}"><div class="top"><h3>${m.name}</h3><span class="word">${m.word}</span></div><p>${m.text}</p>${elements}
+      <div class="sw">${anchors}<small>${plural(F.anchors.length,'anchor')}${F.claimed.length&&MODEL.rule==='convex'?' + '+F.claimed.length+' taken':''}${F.erased.length&&MODEL.rule==='convex'?' · '+plural(F.erased.length,'cut'):''}</small></div>
+      <div class="stat">signal <b>${HEX(sig)}</b> · OKLCh hue <b>${q[2].toFixed(0)}°</b> · chroma <b>${q[1].toFixed(2)}</b> · region <b>${now.toFixed(1)}%</b>${delta} of gamut</div></article>`;
+  }).join('');
+}
+
+// ------------------------------------------------------------------ wheel
+const wc=document.getElementById('wheelCanvas'), wctx=wc.getContext('2d'), wl=document.getElementById('wheelLabels');
+let wheelQueued=false;
+function queueWheel(){ if(wheelQueued) return; wheelQueued=true; requestAnimationFrame(()=>{ wheelQueued=false; drawWheel(); }); }
+function drawWheel(){
+  const W=wc.width, R=W/2-6, cx=W/2, cy=W/2, img=wctx.createImageData(W,W), px=img.data;
+  const kind=state.vision, sev=sevNow(), g=geom(MODEL,kind,sev), o=new Float64Array(6), s=[0,0,0], lab=[0,0,0], V=state.val, m=MODEL.margin;
+  const best=FAMS.map(()=>({lead:-1,x:0,y:0})), bg=[3,5,26];
+  for(let y=0;y<W;y++) for(let x=0;x<W;x++){
+    const dx=x+0.5-cx, dy=y+0.5-cy, r=Math.hypot(dx,dy), p=(y*W+x)*4;
+    if(r>R){ px[p+3]=0; continue; }
+    const h=(Math.atan2(dx,-dy)*180/Math.PI+360)%360, sat=r/R, c=hsv2rgb(h,sat,V);
+    simLin(lin(c[0]),lin(c[1]),lin(c[2]),kind,sev,s);
+    okLin(s[0],s[1],s[2],lab,0); famLeads(lab[0],lab[1],lab[2],MODEL,g,o); const n1=top2(o)[0], lead=o[n1];
+    let R8=gam(s[0])*255, G8=gam(s[1])*255, B8=gam(s[2])*255;
+    if(lead<m){
+      if(((x+y)%9)<2){ R8=R8*0.35+230*0.45; G8=G8*0.35+233*0.45; B8=B8*0.35+255*0.45; }
+      else { R8=R8*0.22+bg[0]*0.78; G8=G8*0.22+bg[1]*0.78; B8=B8*0.22+bg[2]*0.78; }
+    } else if(sat>0.55 && lead>best[n1].lead){ best[n1]={lead,x,y}; }
+    px[p]=R8; px[p+1]=G8; px[p+2]=B8; px[p+3]=255;
+  }
+  wctx.putImageData(img,0,0);
+  wctx.strokeStyle='#222645'; wctx.lineWidth=2; wctx.beginPath(); wctx.arc(cx,cy,R+2,0,Math.PI*2); wctx.stroke();
+  const at=c=>{ const q=hsv(...c), a=q[0]*Math.PI/180, rr=q[1]*R; return [cx+Math.sin(a)*rr, cy-Math.cos(a)*rr]; };
+  let html='';
+  FAMS.forEach((f,i)=>{ const b=best[i]; if(b.lead<0) return;
+    html+=`<div class="wlabel" style="left:${b.x/W*100}%;top:${b.y/W*100}%;color:${css(simGamma(signalOf(MODEL,f),kind,sev))}"><b>${META[f].name}</b><span>${META[f].word.split(' · ')[0]}</span></div>`; });
+  html+=`<div class="wlabel" style="left:50%;top:54.5%;color:#E6E9FF"><span>grey is Blue's</span></div>`;
+  if(document.getElementById('showAnchors').checked){
+    FAMS.forEach(f=>defs.fams[f].anchors.forEach((a,i)=>{ const [x,y]=at(a.c), sel=state.sel.f===f&&state.sel.i===i, k=sel?9:6.5;
+      wctx.save(); wctx.translate(x,y); wctx.rotate(Math.PI/4);
+      wctx.fillStyle='#03051A'; wctx.fillRect(-k-2.5,-k-2.5,2*k+5,2*k+5);
+      wctx.fillStyle=sel?'#99FF80':'#E6E9FF'; wctx.fillRect(-k-1,-k-1,2*k+2,2*k+2);
+      wctx.fillStyle=css(simGamma(a.c,kind,sev)); wctx.fillRect(-k+1.5,-k+1.5,2*k-3,2*k-3); wctx.restore(); }));
+  }
+  if(document.getElementById('showSketch').checked){
+    wctx.lineWidth=2.5;
+    SKETCH.forEach(([n,h])=>{ const c=fromHex(h), [x,y]=at(c);
+      wctx.strokeStyle='#03051A'; wctx.beginPath(); wctx.arc(x,y,9,0,Math.PI*2); wctx.stroke();
+      wctx.strokeStyle='#E6E9FF'; wctx.beginPath(); wctx.arc(x,y,7,0,Math.PI*2); wctx.stroke();
+      wctx.fillStyle=css(simGamma(c,kind,sev)); wctx.beginPath(); wctx.arc(x,y,5.5,0,Math.PI*2); wctx.fill();
+      if(!/ /.test(n)) html+=`<div class="wlabel sk" style="left:${x/W*100}%;top:${(y+17)/W*100}%;color:#E6E9FF">${n}</div>`; });
+  }
+  wl.innerHTML=html;
+}
+
+// ------------------------------------------------------------------ 3D
+const stage=document.getElementById('stage'), canvas=document.getElementById('three'), tagsEl=document.getElementById('tags'), tipEl=document.getElementById('tip'), brushRing=document.getElementById('brushRing');
+let renderer, scene, camera, controls, solidPts, ghostPts, markerPts, selPts, outline, hullGroup, tags=[], markers=[], solidIdx=null, solidPos=null, has3D=typeof THREE!=='undefined';
+const hasHull = () => has3D && typeof THREE.ConvexGeometry==='function';
+const SPACE_HINT={
+  rgb:'The cube the screen is built from. Equal steps here are not equal to the eye, which is why the regions come out as lopsided wedges. Dragging an anchor here moves red, green and blue directly.',
+  hsv:'A cylinder: hue around, saturation out, value up. Dragging an anchor here turns its hue around the axis and slides its value up and down.',
+  hsl:'A double cone: white at the top, black at the bottom, the vivid colours around the waist.',
+  lab:'CIELAB (1976): the first perceptual space. Close to OKLab, but its blues drift purple as they lighten.',
+  oklab:'OKLab: the space the game measures in, and the only one where the convex regions look convex. Equal distances look equally different, so the band is the same thickness everywhere.'
+};
+const LAYER_HINT={
+  regions:'Each family\'s usable volume. The faint haze is the forbidden band.',
+  bounds:'Only the forbidden band. Each sheet is tinted with the two families it separates; pick one family to see its whole shell.',
+  survive:'Solid dots keep their family for the chosen vision; faint dots change family or fall into the band. Pick a vision in the bar above.'
+};
+function posOf(space,r,g,b,out,o){
+  if(space==='rgb'){ out[o]=(r-0.5)*1.5; out[o+1]=(g-0.5)*1.5; out[o+2]=(b-0.5)*1.5; return out; }
+  if(space==='hsv'||space==='hsl'){
+    const q=hsv(r,g,b), a=q[0]*Math.PI/180, rad=space==='hsv'? q[1]*0.95 : q[3]*0.95, y=space==='hsv'? q[2] : q[4];
+    out[o]=Math.cos(a)*rad; out[o+1]=(y-0.5)*1.7; out[o+2]=-Math.sin(a)*rad; return out; }
+  const lr=lin(r), lg=lin(g), lb=lin(b);
+  if(space==='lab'){ const c=cielab(lr,lg,lb); out[o]=c[1]*0.0085; out[o+1]=(c[0]/100-0.5)*1.7; out[o+2]=-c[2]*0.0085; return out; }
+  const c=ok3(lr,lg,lb); out[o]=c[1]*2.9; out[o+1]=(c[0]-0.5)*1.7; out[o+2]=-c[2]*2.9; return out;
+}
+// the inverse: which screen colour sits at a point of the current view (out-of-gamut points give up chroma)
+function colourAt(space,x,y,z){
+  if(space==='rgb') return [x/1.5+0.5,y/1.5+0.5,z/1.5+0.5].map(clamp01);
+  const t=clamp01(y/1.7+0.5);
+  if(space==='hsv'||space==='hsl'){
+    const h=(Math.atan2(-z,x)*180/Math.PI+360)%360, r=Math.hypot(x,z)/0.95;
+    if(space==='hsv') return hsv2rgb(h,clamp01(r),t);
+    const c=Math.min(r,1-Math.abs(2*t-1)), p=hsv2rgb(h,1,1), m=t-c/2; return p.map(v=>clamp01(v*c+m)); }
+  if(space==='lab') return fitLab(labToLin,t*100,x/0.0085,-z/0.0085).rgb;
+  return fitLab(oklabToLin,t,x/2.9,-z/2.9).rgb;
+}
+const VS=`attribute vec3 aColor; uniform float uSize; uniform float uScale; varying vec3 vColor;
+void main(){ vColor=aColor; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=max(1.5,uSize*uScale/(-mv.z)); gl_Position=projectionMatrix*mv; }`;
+const FS=`uniform float uAlpha; uniform float uRing; uniform vec3 uRingColor; varying vec3 vColor;
+void main(){ vec2 p=gl_PointCoord-0.5; float r=length(p); if(r>0.5) discard;
+  vec3 c=vColor; if(uRing>0.5){ if(r>0.40) c=uRingColor; else if(r>0.33) c=vec3(0.01,0.02,0.1); }
+  gl_FragColor=vec4(c,uAlpha); }`;
+function mat(alpha,ring,depth,ringColor){ return new THREE.ShaderMaterial({vertexShader:VS,fragmentShader:FS,transparent:alpha<1,depthWrite:depth,depthTest:depth,uniforms:{uSize:{value:0.05},uScale:{value:600},uAlpha:{value:alpha},uRing:{value:ring},uRingColor:{value:new THREE.Color(ringColor||0xE6E9FF)}}}); }
+let grid=null;
+function init3D(){
+  if(!has3D){ document.getElementById('hudLeft').textContent='The 3D view needs WebGL and the three.js library, which did not load.'; return; }
+  try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); }catch(e){ has3D=false; document.getElementById('hudLeft').textContent='WebGL is not available in this browser.'; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  scene=new THREE.Scene(); hullGroup=new THREE.Group(); scene.add(hullGroup);
+  camera=new THREE.PerspectiveCamera(38,1,0.05,50); camera.position.set(2.5,1.55,2.75);
+  controls=new THREE.OrbitControls(camera,canvas); controls.enableDamping=true; controls.dampingFactor=0.08; controls.minDistance=1.2; controls.maxDistance=8; controls.autoRotateSpeed=0.6;
+  controls.mouseButtons.RIGHT=-1;   // the right button is the eraser
+  const spin=document.getElementById('spin'); if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) spin.checked=false; controls.autoRotate=spin.checked;
+  spin.addEventListener('change',()=>controls.autoRotate=spin.checked&&!state.dragging);
+  new ResizeObserver(resize).observe(stage); resize();
+  initPointer();
+  (function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); updateTags(); })();
+}
+function resize(){
+  if(!renderer) return; const w=stage.clientWidth, h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+  const scale=h*renderer.getPixelRatio()/(2*Math.tan(camera.fov*Math.PI/360));
+  [solidPts,ghostPts,markerPts,selPts].forEach(p=>{ if(p) p.material.uniforms.uScale.value=scale; });
+}
+function addTag(text,p,cls,color){ const el=document.createElement('div'); el.className='tag '+(cls||''); el.textContent=text; if(color) el.style.color=color; tagsEl.appendChild(el); tags.push({el,v:new THREE.Vector3(p[0],p[1],p[2])}); }
+const tmpV=has3D? new THREE.Vector3():null;
+function updateTags(){
+  const w=stage.clientWidth, h=stage.clientHeight;
+  for(const t of tags){ tmpV.copy(t.v).project(camera); if(tmpV.z>1){ t.el.hidden=true; continue; } t.el.hidden=false; t.el.style.left=((tmpV.x+1)/2*w)+'px'; t.el.style.top=((1-tmpV.y)/2*h)+'px'; }
+}
+function buildOutline(space){
+  if(outline){ scene.remove(outline); outline.geometry.dispose(); } const S=[]; const seg=(a,b)=>S.push(...a,...b);
+  const circle=(y,r,n=72)=>{ for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, b=(i+1)/n*Math.PI*2; seg([Math.cos(a)*r,y,-Math.sin(a)*r],[Math.cos(b)*r,y,-Math.sin(b)*r]); } };
+  const ax=[];
+  if(space==='rgb'){ const c=0.75, v=[-c,c];
+    for(const a of v) for(const b of v){ seg([-c,a,b],[c,a,b]); seg([a,-c,b],[a,c,b]); seg([a,b,-c],[a,b,c]); }
+    [['Black',[0,0,0]],['White',[1,1,1]],['Red',[1,0,0]],['Green',[0,1,0]],['Blue',[0,0,1]],['Cyan',[0,1,1]],['Magenta',[1,0,1]],['Yellow',[1,1,0]]].forEach(([n,p])=>ax.push([n,[(p[0]-0.5)*1.62,(p[1]-0.5)*1.62,(p[2]-0.5)*1.62]]));
+  } else if(space==='hsv'){ circle(0.85,0.95); circle(-0.85,0.95); seg([0,-0.85,0],[0,0.85,0]);
+    for(let k=0;k<6;k++){ const a=k*Math.PI/3; seg([Math.cos(a)*0.95,-0.85,-Math.sin(a)*0.95],[Math.cos(a)*0.95,0.85,-Math.sin(a)*0.95]); }
+    ax.push(['value 1',[0,0.97,0]],['value 0',[0,-0.97,0]]); ['0° red','120° green','240° blue'].forEach((n,k)=>{ const a=k*2*Math.PI/3; ax.push([n,[Math.cos(a)*1.12,0.85,-Math.sin(a)*1.12]]); });
+  } else if(space==='hsl'){ circle(0,0.95); for(let k=0;k<6;k++){ const a=k*Math.PI/3, p=[Math.cos(a)*0.95,0,-Math.sin(a)*0.95]; seg(p,[0,0.85,0]); seg(p,[0,-0.85,0]); } seg([0,-0.85,0],[0,0.85,0]);
+    ax.push(['white',[0,0.97,0]],['black',[0,-0.97,0]]); ['0° red','120° green','240° blue'].forEach((n,k)=>{ const a=k*2*Math.PI/3; ax.push([n,[Math.cos(a)*1.13,0,-Math.sin(a)*1.13]]); });
+  } else { const r=space==='lab'?0.85:0.87; seg([0,-0.85,0],[0,0.85,0]); seg([-r,0,0],[r,0,0]); seg([0,0,-r],[0,0,r]); circle(0,r*0.5); circle(0,r);
+    const L=space==='lab'?['L* 100','L* 0','+a* red','−a* green','+b* yellow','−b* blue']:['L 1','L 0','+a red','−a green','+b yellow','−b blue'];
+    ax.push([L[0],[0,0.97,0]],[L[1],[0,-0.97,0]],[L[2],[r+0.12,0,0]],[L[3],[-r-0.12,0,0]],[L[4],[0,0,-r-0.12]],[L[5],[0,0,r+0.12]]);
+  }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(S,3));
+  outline=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0x434C89,transparent:true,opacity:0.7})); scene.add(outline);
+  return ax;
+}
+let rebuildQueued=false;
+function queueRebuild(){ if(rebuildQueued) return; rebuildQueued=true; requestAnimationFrame(()=>{ rebuildQueued=false; rebuild3D(); }); }
+function swapPoints(old,P,C,count,material){
+  if(old){ scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(P.slice(0,count*3),3)); g.setAttribute('aColor',new THREE.BufferAttribute(C.slice(0,count*3),3));
+  const p=new THREE.Points(g,material); scene.add(p); return p;
+}
+function clearHulls(){ if(!hullGroup) return; for(const c of [...hullGroup.children]){ hullGroup.remove(c); c.geometry.dispose(); c.material.dispose(); } }
+const dragAllowed = () => !(state.move && state.vision!=='typical');
+const eraseBlock = () => MODEL.rule!=='convex'? 'Switch the region rule to Convex hulls to erase' : state.layer!=='regions'? 'Switch Show to Regions to erase' : state.vision!=='typical'? 'Switch the vision bar to Typical to erase' : null;
+let stroke=null;   // grid indices under the eraser during a stroke
+function rebuild3D(){
+  if(!has3D||!renderer) return;
+  if(!grid||grid.N!==state.N) grid=makeGrid(state.N);
+  const kind=state.vision, sev=sevNow(), m=MODEL.margin;
+  const T=analyse(grid,MODEL,'typical',0), V=analyse(grid,MODEL,kind,sev);
+  const moved = state.move && kind!=='typical', posSrc = moved ? V.seen : grid.rgb;
+  const n=grid.n, sp=new Float32Array(n*3), sc=new Float32Array(n*3), gp=new Float32Array(n*3), gc=new Float32Array(n*3), idx=new Int32Array(n); let ns=0, ng=0;
+  const counts=new Array(6).fill(0); let band=0;
+  const sig=FAMS.map(f=>signalOf(MODEL,f)), seen=[0,0,0];
+  const hullsWanted = hasHull() && document.getElementById('hulls').checked && state.space==='oklab' && !moved && state.layer==='regions' && !state.dragging && !stroke;
+  const famPts = hullsWanted? FAMS.map(()=>[]) : null;
+  for(let i=0;i<n;i++){
+    const usableV=V.lead[i]>=m, fV=V.n1[i];
+    if(usableV) counts[fV]++; else band++;
+    let solid=false, col;
+    seen[0]=V.seen[i*3]; seen[1]=V.seen[i*3+1]; seen[2]=V.seen[i*3+2];
+    if(state.layer==='regions'){
+      if(!state.show.has(FAMS[fV])) continue;
+      if(usableV && !(stroke&&stroke.has(i))){ solid=true; col= state.paint==='seen'? seen : sig[fV]; } else col=[0.9,0.91,1];
+    } else if(state.layer==='bounds'){
+      const a=V.n1[i], b=V.n2[i];
+      if(!usableV){ if(!(state.show.has(FAMS[a])||state.show.has(FAMS[b]))) continue; solid=true;
+        col= state.paint==='seen'? seen : [(sig[a][0]+sig[b][0])/2,(sig[a][1]+sig[b][1])/2,(sig[a][2]+sig[b][2])/2]; }
+      else { if(!state.show.has(FAMS[fV])) continue; col= state.paint==='seen'? seen : sig[fV]; }
+    } else {
+      const fT=T.n1[i]; if(T.lead[i]<m || !state.show.has(FAMS[fT])) continue;
+      solid = usableV && fV===fT; col= state.paint==='seen'? seen : sig[fT];
+    }
+    if(solid){ posOf(state.space,posSrc[i*3],posSrc[i*3+1],posSrc[i*3+2],sp,ns*3); sc[ns*3]=col[0]; sc[ns*3+1]=col[1]; sc[ns*3+2]=col[2]; idx[ns]=i;
+      if(famPts) famPts[fV].push(new THREE.Vector3(sp[ns*3],sp[ns*3+1],sp[ns*3+2])); ns++; }
+    else { posOf(state.space,posSrc[i*3],posSrc[i*3+1],posSrc[i*3+2],gp,ng*3); gc[ng*3]=col[0]; gc[ng*3+1]=col[1]; gc[ng*3+2]=col[2]; ng++; }
+  }
+  solidIdx=idx.slice(0,ns); solidPos=sp.slice(0,ns*3);
+  const size=1.55/state.N*0.95;
+  const ghostAlpha = state.layer==='regions'?0.05: state.layer==='bounds'?0.045:0.11;
+  solidPts=swapPoints(solidPts,sp,sc,ns,mat(1,0,true)); solidPts.material.uniforms.uSize.value=size;
+  ghostPts=swapPoints(ghostPts,gp,gc,ng,mat(ghostAlpha,0,false)); ghostPts.material.uniforms.uSize.value=size*0.9; ghostPts.renderOrder=1;
+  // hull surfaces: the convex hull of each family's dots, drawn as a faint skin with its edges
+  clearHulls();
+  if(famPts) famPts.forEach((pts,fi)=>{ if(pts.length<8) return;
+    try{
+      const geo=new THREE.ConvexGeometry(pts), col=new THREE.Color(...sig[fi]);
+      const skin=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.07,depthWrite:false,side:THREE.DoubleSide}));
+      const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo,20),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:0.55}));
+      skin.renderOrder=4; edges.renderOrder=5; hullGroup.add(skin,edges);
+    }catch(e){} });
+  // anchors, references, the picked colour
+  tagsEl.innerHTML=''; tags=[]; markers=[];
+  buildOutline(state.space).forEach(([t,p])=>addTag(t,p,'axis'));
+  const MP=[], MC=[]; let selPos=null, selCol=null;
+  const place=(rgb)=>{ const s=simGamma(rgb,kind,sev), src=moved? s : rgb; return {s,p:posOf(state.space,src[0],src[1],src[2],[0,0,0],0)}; };
+  FAMS.forEach(f=>{ if(!state.show.has(f)&&state.sel.f!==f) return; const F=defs.fams[f];
+    F.anchors.forEach((a,i)=>{ const {s,p}=place(a.c), isSig=i===F.signal, isSel=state.sel.f===f&&state.sel.i===i;
+      MP.push(...p); MC.push(...s); markers.push({type:'anchor',f,i,p});
+      if(isSel){ selPos=p; selCol=s; }
+      if(isSig) addTag(META[f].name+(isSel?' · '+a.name:''),p,isSel?'sel':'',css(s));
+      else if(state.sel.f===f) addTag(a.name,p,'small'+(isSel?' sel':'')); }); });
+  const ref=(rgb,label)=>{ const {s,p}=place(rgb); MP.push(...p); MC.push(...s); markers.push({type:'ref',p}); addTag(label,p,'small'); };
+  if(document.getElementById('markSketch').checked) SKETCH.forEach(([n,h])=>ref(fromHex(h),'sketch: '+n));
+  if(document.getElementById('markGuide').checked) GUIDE.forEach(([n,h])=>ref(fromHex(h),n));
+  if(state.picked) ref(state.picked,'picked '+HEX(state.picked));
+  markerPts=swapPoints(markerPts,new Float32Array(MP),new Float32Array(MC),MP.length/3,mat(1,1,true)); markerPts.material.uniforms.uSize.value=0.085; markerPts.renderOrder=6;
+  if(selPos){ selPts=swapPoints(selPts,new Float32Array(selPos),new Float32Array(selCol),1,mat(1,1,false,0x99FF80)); selPts.material.uniforms.uSize.value=0.15; selPts.renderOrder=7; }
+  else if(selPts){ scene.remove(selPts); selPts=null; }
+  resize();
+  document.querySelectorAll('#chips .chip[data-f]').forEach(ch=>{ ch.querySelector('small').textContent=(counts[FAMS.indexOf(ch.dataset.f)]/n*100).toFixed(1)+'%'; });
+  document.getElementById('hudLeft').innerHTML=`${VNAME[kind]}${kind!=='typical'?' · '+Math.round(sev*100)+'%':''} · <b>${ns.toLocaleString()}</b> solid dots`;
+  document.getElementById('hudRight').innerHTML=`forbidden band <b>${(band/n*100).toFixed(1)}%</b> of the gamut`;
+  document.getElementById('spaceHint').textContent=SPACE_HINT[state.space];
+  document.getElementById('layerHint').textContent=LAYER_HINT[state.layer];
+  setTip();
+}
+function setTip(msg){
+  if(msg){ tipEl.textContent=msg; return; }
+  const block=eraseBlock();
+  tipEl.textContent = !dragAllowed()? 'Dragging is off while dots show what this vision sees'
+    : `Editing ${META[state.sel.f].name}: drag its rings · ${state.tool==='erase'?'drag to erase':'right-drag to erase'}${block?' (off: '+block.toLowerCase()+')':''} · click a dot to pick it`;
+}
+// pointer: drag an anchor ring, right-drag (or Erase tool) to erase, click a dot to pick it
+let ray, ndc, drag=null, down=null;
+function initPointer(){
+  ray=new THREE.Raycaster(); ndc=new THREE.Vector2();
+  const setRay=e=>{ const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera); };
+  const hitMarker=()=>{ if(!markerPts) return -1; ray.params.Points.threshold=0.05; const hits=ray.intersectObject(markerPts); if(!hits.length) return -1;
+    hits.sort((a,b)=>a.distanceToRay-b.distanceToRay); return hits[0].index; };
+  const showBrush=(e,on)=>{ const r=stage.getBoundingClientRect(); brushRing.hidden=false; brushRing.classList.toggle('on',!!on);
+    brushRing.style.left=(e.clientX-r.left)+'px'; brushRing.style.top=(e.clientY-r.top)+'px'; brushRing.style.width=brushRing.style.height=(state.brush*2)+'px'; };
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  stage.addEventListener('pointerdown',e=>{
+    if(e.target!==canvas) return;
+    const wantErase = e.button===2 || (e.button===0 && state.tool==='erase');
+    if(wantErase){
+      e.stopPropagation(); e.preventDefault();
+      const block=eraseBlock(); if(block){ eraseSay(block+'.','bad'); return; }
+      controls.enabled=false; controls.autoRotate=false; stroke=new Set();
+      try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+      showBrush(e,true); eraseAt(e); return;
+    }
+    if(e.button!==0) return;
+    setRay(e); down={x:e.clientX,y:e.clientY};
+    const k=hitMarker(); if(k<0||markers[k].type!=='anchor') return;
+    const mk=markers[k]; selectAnchor(mk.f,mk.i);
+    if(!dragAllowed()) return;
+    controls.enabled=false; controls.autoRotate=false; state.dragging=true;
+    const normal=camera.getWorldDirection(new THREE.Vector3()).negate();
+    drag={f:mk.f,i:mk.i,plane:new THREE.Plane().setFromNormalAndCoplanarPoint(normal,new THREE.Vector3(...mk.p))};
+    try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+    e.stopPropagation(); e.preventDefault();
+  },true);
+  window.addEventListener('pointermove',e=>{
+    if(stroke){ showBrush(e,true); eraseAt(e); return; }
+    if(drag){ setRay(e); const p=new THREE.Vector3(); if(!ray.ray.intersectPlane(drag.plane,p)) return; canvas.style.cursor='grabbing';
+      setAnchorColour(drag.f,drag.i,colourAt(state.space,p.x,p.y,p.z),'drag'); return; }
+    if(e.target!==canvas){ brushRing.hidden=true; return; }
+    if(state.tool==='erase'&&e.buttons===0) showBrush(e,false); else brushRing.hidden=true;
+    if(e.buttons===0){ setRay(e); const k=hitMarker(); canvas.style.cursor= k>=0&&markers[k].type==='anchor'&&dragAllowed()? 'grab' : state.tool==='erase'? 'none' : ''; }
+  });
+  canvas.addEventListener('pointerleave',()=>{ if(!stroke) brushRing.hidden=true; });
+  const end=e=>{
+    if(stroke){ finishErase(); controls.enabled=true; controls.autoRotate=document.getElementById('spin').checked; if(state.tool!=='erase') brushRing.hidden=true; else brushRing.classList.remove('on'); return; }
+    if(drag){ drag=null; state.dragging=false; controls.enabled=true; controls.autoRotate=document.getElementById('spin').checked; canvas.style.cursor=''; down=null; invalidate(); return; }
+    if(down&&e.type==='pointerup'&&e.target===canvas&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<5){ setRay(e); pickDot(); }
+    down=null;
+  };
+  window.addEventListener('pointerup',end); window.addEventListener('pointercancel',end);
+  function pickDot(){
+    if(!solidPts||!solidIdx) return;
+    ray.params.Points.threshold=1.55/state.N*0.6;
+    const hits=ray.intersectObject(solidPts); if(!hits.length) return;
+    const gi=solidIdx[hits[0].index]; state.picked=[grid.rgb[gi*3],grid.rgb[gi*3+1],grid.rgb[gi*3+2]];
+    renderPicked(); queueRebuild();
+  }
+}
+// the eraser takes the dots under the brush that face the camera (the nearest layer, not the whole volume behind it)
+const projM = has3D? new THREE.Matrix4() : null;
+function eraseAt(e){
+  if(!solidPos||!stroke) return;
+  const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top, R2=state.brush*state.brush, W=r.width, H=r.height;
+  const m=projM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).elements, P=solidPos, cand=[]; let minW=Infinity;
+  for(let k=0;k<solidIdx.length;k++){ const x=P[k*3], y=P[k*3+1], z=P[k*3+2], cw=m[3]*x+m[7]*y+m[11]*z+m[15]; if(cw<=0) continue;
+    const sx=((m[0]*x+m[4]*y+m[8]*z+m[12])/cw+1)/2*W, sy=(1-(m[1]*x+m[5]*y+m[9]*z+m[13])/cw)/2*H, dx=sx-mx, dy=sy-my;
+    if(dx*dx+dy*dy>R2) continue; cand.push(k,cw); if(cw<minW) minW=cw; }
+  const depth=Math.max(0.06,3.2/state.N); let added=0;
+  for(let i=0;i<cand.length;i+=2) if(cand[i+1]<=minW+depth&&stroke.size<600){ const gi=solidIdx[cand[i]]; if(!stroke.has(gi)){ stroke.add(gi); added++; } }
+  if(added) queueRebuild();
+}
+// Remove the stroke's colours from the families that own them. Farthest from the family's core first, each colour goes to the
+// rival that scores highest there, if the grown core still keeps a full band from every other family and the refitted cells
+// keep every core colour where it was. What no neighbour can take becomes a flat cut in its old family (fewest cuts).
+function finishErase(){
+  const ids=stroke? [...stroke] : []; stroke=null;
+  if(!ids.length||!grid){ queueRebuild(); return; }
+  const T=analyse(grid,MODEL,'typical',0), m=MODEL.margin, items=[];
+  for(const i of ids){ if(T.lead[i]<m) continue; const rgb=[grid.rgb[i*3],grid.rgb[i*3+1],grid.rgb[i*3+2]].map(v=>+v.toFixed(4)); items.push({rgb, lab:labOf(rgb,'typical',0), from:T.n1[i]}); }
+  if(!items.length){ queueRebuild(); return; }
+  pushUndo(); eraseSay('Working out who moves in…'); setTimeout(()=>handOff(items),20);
+}
+function handOff(items){
+  const m=defs.margin, h=m/2, wts=()=>coreWeights(defs);
+  // a colour under the brush that a family had taken over simply leaves it
+  FAMS.forEach((f,fi)=>{ const hs=new Set(items.filter(it=>it.from===fi).map(it=>HEX(it.rgb))); if(hs.size) defs.fams[f].claimed=defs.fams[f].claimed.filter(c=>!hs.has(HEX(c))); });
+  const coresNow=()=>FAMS.map(f=>{ const F=defs.fams[f]; return F.anchors.map(a=>labOf(a.c,'typical',0)).concat(F.claimed.map(c=>labOf(c,'typical',0))); });
+  let C=coresNow(), th=refineCells(C,wts(),geom(MODEL,'typical',0).theta,h,300);
+  const rep={taken:new Array(6).fill(0), band:0, stay:0, inside:0, from:new Set(items.map(it=>it.from))};
+  // each colour goes to the rival that scores highest there; then one refit for the whole stroke
+  for(const it of items){
+    if(nearestPts(C[it.from],[it.lab]).dist<1e-5){ it.to=-2; rep.inside++; continue; }
+    const s=cellOf(th,it.lab); let g=-1; for(let k=0;k<6;k++) if(k!==it.from&&(g<0||s.score[k]>s.score[g])) g=k;
+    it.to=g; defs.fams[FAMS[g]].claimed.push(it.rgb);
+  }
+  th=refineCells(coresNow(),wts(),th,h,900);
+  // a colour the cells could not move out of its old family without opening a gap stays there
+  let dropped=0;
+  for(const it of items){ if(it.to<0) continue; const c=cellOf(th,it.lab); if(c.f===it.from&&c.dist>=h){ const L=defs.fams[FAMS[it.to]].claimed; L.splice(L.indexOf(it.rgb),1); it.to=-1; dropped++; } }
+  if(dropped) th=refineCells(coresNow(),wts(),th,h,500);
+  pruneClaims(); th=refineCells(coresNow(),wts(),th,h,300); warm.set('typical:0',th);
+  for(const it of items){ if(it.to===-2) continue; const c=cellOf(th,it.lab); if(c.f===it.from&&c.dist>=h) rep.stay++; else if(c.dist<h) rep.band++; else rep.taken[c.f]++; }
+  bump();
+  const from=[...rep.from].map(fi=>META[FAMS[fi]].name).join(', '), moved=rep.taken.reduce((a,b)=>a+b,0);
+  const takers=rep.taken.map((k,g)=>k? `${META[FAMS[g]].name} took ${k}` : '').filter(Boolean).join(', ');
+  const parts=[`Erased ${plural(items.length-rep.inside,'colour')} from ${from}.`];
+  if(takers) parts.push(takers+'.');
+  if(rep.band) parts.push(`${rep.band} now band.`);
+  if(rep.stay) parts.push(`${rep.stay} stay in ${from}: moving them would open a gap wider than the band, because they sit too close to ${from}'s anchors or a neighbour there would crowd a third family.`);
+  if(rep.inside) parts.push(`${rep.inside} kept: inside the anchors (move or remove an anchor to free them).`);
+  eraseSay(parts.join(' '), moved||rep.band? 'ok' : 'bad');
+}
+// which cell a colour falls in under a fit, and how far it is from that cell's nearest border
+function cellOf(th,x){
+  const score=[0,1,2,3,4,5].map(f=>th[f*4]*x[0]+th[f*4+1]*x[1]+th[f*4+2]*x[2]+th[f*4+3]); let f=0; for(let g=1;g<6;g++) if(score[g]>score[f]) f=g;
+  let dist=Infinity; for(let g=0;g<6;g++){ if(g===f) continue; const d=(score[f]-score[g])/Math.hypot(th[f*4]-th[g*4],th[f*4+1]-th[g*4+1],th[f*4+2]-th[g*4+2]); if(d<dist) dist=d; }
+  return {f,dist,score};
+}
+// a colour a family took over only matters while it is a corner of that family's hull
+function pruneClaims(){
+  FAMS.forEach(f=>{ const F=defs.fams[f]; for(let k=F.claimed.length-1;k>=0;k--){
+    const others=F.anchors.map(a=>labOf(a.c,'typical',0)).concat(F.claimed.filter((_,j)=>j!==k).map(c=>labOf(c,'typical',0)));
+    if(nearestPts(others,[labOf(F.claimed[k],'typical',0)]).dist<1e-6) F.claimed.splice(k,1); } });
+}
+// definitions saved before cuts were retired: hand each cut colour to the rival that scores highest there
+function migrateCuts(d){
+  if(!d||d.rule!=='convex'||!FAMS.some(f=>d.fams[f].erased.length)) return d;
+  const C=FAMS.map(f=>d.fams[f].anchors.map(a=>labOf(a.c,'typical',0)).concat(d.fams[f].claimed.map(c=>labOf(c,'typical',0))));
+  const th=refineCells(C,coreWeights(d),fitAffine(C,coreWeights(d)),d.margin/2,500);
+  FAMS.forEach((f,fi)=>{ d.fams[f].erased.forEach(e=>{ const x=labOf(e,'typical',0); if(nearestPts(C[fi],[x]).dist<1e-5) return;
+    const s=cellOf(th,x); let g=-1; for(let k=0;k<6;k++) if(k!==fi&&(g<0||s.score[k]>s.score[g])) g=k; d.fams[FAMS[g]].claimed.push(e); }); d.fams[f].erased=[]; });
+  return d;
+}
+function eraseSay(msg,cls){ const el=document.getElementById('eraseStatus'); el.className='status'+(cls?' '+cls:''); el.textContent=msg; }
+// family chips
+const chipsEl=document.getElementById('chips');
+FAMS.forEach(f=>{ const b=document.createElement('button'); b.className='chip'; b.dataset.f=f; b.style.setProperty('--fam',famCss(f)); b.setAttribute('aria-pressed','true'); b.innerHTML=`<i></i>${META[f].name}<small></small>`;
+  b.addEventListener('click',()=>{ if(state.show.size===6){ state.show=new Set([f]); } else { state.show.has(f)?state.show.delete(f):state.show.add(f); if(!state.show.size) state.show=new Set(FAMS); }
+    syncChips(); queueRebuild(); });
+  chipsEl.appendChild(b); });
+const allChip=document.createElement('button'); allChip.className='chip'; allChip.style.setProperty('--fam','#E6E9FF'); allChip.innerHTML='<i></i>All'; allChip.setAttribute('aria-pressed','true');
+allChip.addEventListener('click',()=>{ state.show=new Set(FAMS); syncChips(); queueRebuild(); });
+chipsEl.appendChild(allChip);
+const syncChips=()=>chipsEl.querySelectorAll('.chip[data-f]').forEach(c=>c.setAttribute('aria-pressed',state.show.has(c.dataset.f)?'true':'false'));
+
+// ------------------------------------------------------------------ the bench
+const ftabs=document.getElementById('ftabs'), rowsEl=document.getElementById('rows'), reachEl=document.getElementById('reach'), reachOut=document.getElementById('reachOut');
+const RULE_HINT={
+  convex:'The rule of the source of truth. Every family is one convex cell and the six cells fill OKLab with no gaps: the page fits the borders so each family\'s anchors (and the colours it took over) sit as far from every border as they can, at least half a band. The band is the margin\'s thickness, measured in OKLab, centred on each border, and only on borders between two families. Right-drag in the 3D view to erase: the neighbour that scores highest there takes the colour, and if no neighbour can without opening a gap wider than the band, the colour stays.',
+  nearest:'The rule in the game today (kite_mote_colors.py): every colour goes to the family with the nearest anchor, and a colour less than the margin nearer to one family than the next is forbidden. Regions can be any shape. Erasing needs the convex rule.'
+};
+function famChanged(f){ return JSON.stringify(clone(defs.fams[f]))!==JSON.stringify(BASE.fams[f]); }
+function renderTabs(){
+  ftabs.innerHTML=FAMS.map(f=>`<button data-f="${f}" aria-pressed="${f===state.sel.f}" style="--fam:${famCss(f)}">${META[f].name}${famChanged(f)?' ·':''}</button>`).join('');
+}
+function rowHtml(f,a,i){
+  const F=defs.fams[f], lch=a.lch||oklch(a.c), sel=i===state.sel.i, base=`a-${f}-${i}`;
+  return `<div class="arow sliver${sel?' sel':''}" data-i="${i}">
+    <button class="aswatch" data-act="select" style="background:${css(a.c)}" aria-label="Select ${esc(a.name)}"></button>
+    <input type="text" id="${base}-name" data-act="name" value="${esc(a.name)}" aria-label="Anchor name" maxlength="60">
+    <input type="text" id="${base}-hex" class="mono" data-act="hex" value="${HEX(a.c)}" maxlength="7" aria-label="Hex colour" spellcheck="false">
+    <label class="check sig" for="${base}-sig"><input type="radio" id="${base}-sig" name="sig" data-act="signal"${i===F.signal?' checked':''}> Signal</label>
+    <button class="btn small del" data-act="del"${F.anchors.length<2?' disabled':''}>Remove</button>
+    <div class="sliders">
+      <label for="${base}-L">L <input type="range" id="${base}-L" data-act="lch" data-k="0" min="0" max="1" step="0.005" value="${lch[0]}"><output>${lch[0].toFixed(2)}</output></label>
+      <label for="${base}-C">C <input type="range" id="${base}-C" data-act="lch" data-k="1" min="0" max="0.37" step="0.002" value="${lch[1]}"><output>${lch[1].toFixed(3)}</output></label>
+      <label for="${base}-h">h <input type="range" id="${base}-h" data-act="lch" data-k="2" min="0" max="360" step="1" value="${lch[2]}"><output>${lch[2].toFixed(0)}°</output></label>
+    </div>
+    <div class="src">${a.src? esc(a.src) : 'New anchor, not in the game yet'}<span class="clip"${a.clipped?'':' hidden'}>· chroma clipped to what a screen can show</span></div>
+  </div>`;
+}
+function renderRows(){
+  const f=state.sel.f, F=defs.fams[f];
+  rowsEl.innerHTML=F.anchors.map((a,i)=>rowHtml(f,a,i)).join('');
+  reachEl.value=F.reach; reachOut.textContent=fmtReach(F.reach);
+  document.getElementById('resetFam').textContent='Reset '+META[f].name;
+  syncClearBtn();
+}
+function renderConflicts(){
+  const el=document.getElementById('conflicts'); document.getElementById('ruleHint').textContent=RULE_HINT[MODEL.rule];
+  if(MODEL.rule!=='convex'){ el.innerHTML=''; return; }
+  const g=geom(MODEL,'typical',0), bad=[], o=new Float64Array(6);
+  FAMS.forEach((f,fi)=>defs.fams[f].anchors.forEach((a,k)=>{ const x=g.cores[fi][k]; famLeads(x[0],x[1],x[2],MODEL,g,o); if(o[fi]>=MODEL.margin-0.002) return;
+    const [n1,n2]=top2(o), other= n1===fi? n2 : n1;
+    bad.push(`${META[f].name}'s “${esc(a.name)}” is ${o[fi]<MODEL.margin/2? 'outside its region' : 'inside the band'}: it is too close to ${META[FAMS[other]].name} for a full band between them.`); }));
+  el.innerHTML=bad.map(t=>`<div>${t}</div>`).join('');
+}
+function renderBench(){ renderTabs(); renderRows(); renderPicked(); renderChanges(); renderConflicts(); }
+function refreshRow(i){
+  const row=rowsEl.querySelector(`.arow[data-i="${i}"]`); if(!row) return;
+  const a=defs.fams[state.sel.f].anchors[i], lch=a.lch||oklch(a.c);
+  row.querySelector('.aswatch').style.background=css(a.c);
+  const hx=row.querySelector('[data-act="hex"]'); if(document.activeElement!==hx) hx.value=HEX(a.c);
+  row.querySelectorAll('[data-act="lch"]').forEach(inp=>{ const k=+inp.dataset.k; if(document.activeElement!==inp) inp.value=lch[k]; inp.nextElementSibling.textContent= k===0? lch[0].toFixed(2) : k===1? lch[1].toFixed(3) : lch[2].toFixed(0)+'°'; });
+  row.querySelector('.clip').hidden=!a.clipped;
+}
+function selectAnchor(f,i){
+  const famChange=state.sel.f!==f; state.sel={f,i};
+  if(famChange) renderBench();
+  else rowsEl.querySelectorAll('.arow').forEach(r=>r.classList.toggle('sel',+r.dataset.i===i));
+  renderPicked(); queueRebuild(); queueWheel();
+}
+let dragUndoTaken=false;
+function setAnchorColour(f,i,c,from){
+  const a=defs.fams[f].anchors[i]; if(!a) return;
+  if(from==='drag'){ if(!dragUndoTaken){ pushUndo(); dragUndoTaken=true; } } else if(from!=='lch') pushUndo();
+  a.c=c.map(v=>Math.round(clamp01(v)*10000)/10000);
+  if(from!=='lch'){ a.lch=null; a.clipped=false; }
+  if(state.sel.f===f) refreshRow(i);
+  bump();
+}
+rowsEl.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]'), row=e.target.closest('.arow'); if(!row) return; const i=+row.dataset.i, F=defs.fams[state.sel.f];
+  if(!t||t.dataset.act==='select'){ if(state.sel.i!==i) selectAnchor(state.sel.f,i); return; }
+  if(t.dataset.act==='del'&&F.anchors.length>1){
+    pushUndo(); F.anchors.splice(i,1); if(F.signal===i) F.signal=0; else if(F.signal>i) F.signal--;
+    state.sel.i=Math.min(state.sel.i,F.anchors.length-1); renderRows(); renderTabs(); bump();
+  }
+});
+rowsEl.addEventListener('focusin',e=>{ const row=e.target.closest('.arow'); if(row&&+row.dataset.i!==state.sel.i) selectAnchor(state.sel.f,+row.dataset.i); });
+rowsEl.addEventListener('pointerdown',e=>{ if(e.target.matches('[data-act="lch"]')) pushUndo(); });
+rowsEl.addEventListener('input',e=>{
+  const t=e.target, row=t.closest('.arow'); if(!row) return; const i=+row.dataset.i, a=defs.fams[state.sel.f].anchors[i];
+  if(t.dataset.act==='name'){ a.name=t.value; renderChanges(); saveDraftSoon(); queueRebuild(); return; }
+  if(t.dataset.act==='lch'){
+    const v=[...row.querySelectorAll('[data-act="lch"]')].map(x=>+x.value), r=fromOklch(v[0],v[1],v[2]);
+    a.lch=v; a.clipped=r.clipped; setAnchorColour(state.sel.f,i,r.rgb,'lch');
+  }
+});
+rowsEl.addEventListener('change',e=>{
+  const t=e.target, row=t.closest('.arow'); if(!row) return; const i=+row.dataset.i, F=defs.fams[state.sel.f];
+  if(t.dataset.act==='hex'){ let v=t.value.trim(); if(!v.startsWith('#')) v='#'+v; if(/^#[0-9a-f]{6}$/i.test(v)) setAnchorColour(state.sel.f,i,fromHex(v),'hex'); else t.value=HEX(F.anchors[i].c); }
+  if(t.dataset.act==='signal'&&t.checked){ pushUndo(); F.signal=i; renderTabs(); bump(); }
+});
+ftabs.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const f=b.dataset.f; selectAnchor(f,defs.fams[f].signal); });
+reachEl.addEventListener('pointerdown',()=>pushUndo());
+reachEl.addEventListener('input',()=>{ const F=defs.fams[state.sel.f]; F.reach=+reachEl.value; reachOut.textContent=fmtReach(F.reach); renderTabs(); bump(); });
+document.getElementById('addAnchor').addEventListener('click',()=>addAnchor(state.picked));
+function addAnchor(c){
+  const f=state.sel.f, F=defs.fams[f];
+  if(F.anchors.length>=24) return;
+  pushUndo();
+  F.anchors.push({id:'new-'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36), c:(c||signalOf(MODEL,f)).slice(), name:'New anchor '+(F.anchors.length+1), src:null});
+  state.sel.i=F.anchors.length-1; renderRows(); renderTabs(); bump();
+}
+document.getElementById('clearErase').addEventListener('click',()=>{ const F=defs.fams[state.sel.f]; pushUndo(); F.erased=[]; F.claimed=[]; renderRows(); renderTabs(); bump(); eraseSay(`Cleared the colours ${META[state.sel.f].name} had taken over.`); });
+document.getElementById('resetFam').addEventListener('click',()=>{ const f=state.sel.f; pushUndo(); defs.fams[f]=clone(BASE.fams[f]); state.sel.i=defs.fams[f].signal; renderBench(); bump(); });
+document.getElementById('resetAll').addEventListener('click',resetAll);
+document.getElementById('undo').addEventListener('click',undo);
+document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!e.target.closest('input,textarea')){ e.preventDefault(); undo(); } });
+function resetAll(){ pushUndo(); defs=clone(START); state.sel.i=defs.fams[state.sel.f].signal; syncRule(); syncMargin(); renderBench(); bump(); }
+
+const pickedEl=document.getElementById('picked');
+function renderPicked(){
+  const c=state.picked;
+  if(!c){ pickedEl.innerHTML='<span class="hint">Click any dot in the 3D view to pick its colour. You can then add it to the family you are editing, or move the selected anchor onto it.</span>'; return; }
+  const r=classifyRGB(MODEL,c,'typical',0), F=defs.fams[state.sel.f], a=F.anchors[state.sel.i];
+  const where= r.fam>=0? `in <b style="color:${famCss(FAMS[r.fam])}">${META[FAMS[r.fam]].name}</b>, ${((r.lead-MODEL.margin)/0.02).toFixed(1)} JND inside its border` : `in the band between <b>${META[FAMS[r.n1]].name}</b> and <b>${META[FAMS[r.n2]].name}</b>`;
+  pickedEl.innerHTML=`<div class="picked"><div class="big" style="background:${css(c)}"></div><div class="stat"><b>${HEX(c)}</b> · now ${where}</div></div>
+    <div class="actions"><button class="btn small" data-pick="add">Add to ${META[state.sel.f].name}</button><button class="btn small" data-pick="move">Move “${esc(a?a.name:'')}” here</button><button class="btn small" data-pick="clear">Clear</button></div>`;
+}
+pickedEl.addEventListener('click',e=>{ const b=e.target.closest('[data-pick]'); if(!b||!state.picked) return;
+  if(b.dataset.pick==='add') addAnchor(state.picked);
+  else if(b.dataset.pick==='move') setAnchorColour(state.sel.f,state.sel.i,state.picked,'pick');
+  else { state.picked=null; renderPicked(); queueRebuild(); } });
+
+function renderChanges(){
+  const list=diff(defs), el=document.getElementById('changes');
+  el.innerHTML= list.length? list.map(([f,t])=>`<div><i style="background:${f?famCss(f):'#E6E9FF'}"></i><span>${f?`<b>${META[f].name}</b> · `:''}${esc(t)}</span></div>`).join('') : `<span class="hint">None. You are looking at the source of truth, “${ADOPTED_NAME}” (${ADOPTED_ON}).</span>`;
+  const badge=document.getElementById('defsBadge');
+  badge.className='badge'+(list.length?' edited':'');
+  badge.innerHTML= (list.length? `Definitions <b>edited · ${plural(list.length,'change')}</b> <button class="btn small" id="badgeBase">Back to the truth</button>` : `Definitions <b>source of truth · ${ADOPTED_NAME}</b>`)
+    + (JSON.stringify(clone(defs))===JSON.stringify(SHIPPED)? '' : ' <button class="btn small" id="badgeGame">Game today</button>');
+  const load=(src,msg)=>{ pushUndo(); defs=clone(src); state.sel.i=Math.min(state.sel.i,defs.fams[state.sel.f].anchors.length-1); state.sel.i=defs.fams[state.sel.f].signal; syncRule(); syncMargin(); renderBench(); bump(); eraseSay(msg+' Undo brings your edits back.'); };
+  const bb=document.getElementById('badgeBase'); if(bb) bb.addEventListener('click',()=>load(BASE,`Showing the source of truth, “${ADOPTED_NAME}”.`));
+  const bg=document.getElementById('badgeGame'); if(bg) bg.addEventListener('click',()=>load(SHIPPED,'Showing the game\'s current rule: nearest anchor, shipped anchors.'));
+}
+function renderImpact(){
+  const st=stats(MODEL), ba=stats(BASEM), ga=stats(SHIP);
+  const row=(label,color,game,was,now)=>{ const d=now-was; return `<tr><td style="text-align:left;color:${color};font-weight:600">${label}</td><td>${game.toFixed(1)}%</td><td>${was.toFixed(1)}%</td><td>${now.toFixed(1)}%</td><td class="${Math.abs(d)<0.05?'':d>0?'up':'down'}">${Math.abs(d)<0.05?'·':(d>0?'+':'−')+Math.abs(d).toFixed(1)}</td></tr>`; };
+  document.getElementById('impact').innerHTML='<thead><tr><th style="text-align:left">Share of gamut</th><th>Game today</th><th>Truth</th><th>Now</th><th>Change</th></tr></thead><tbody>'
+    +FAMS.map((f,fi)=>row(META[f].name,famCss(f),ga.share[fi]/ga.n*100,ba.share[fi]/ba.n*100,st.share[fi]/st.n*100)).join('')
+    +row('Forbidden band','#A3A9D1',ga.band/ga.n*100,ba.band/ba.n*100,st.band/st.n*100)+'</tbody>';
+}
+
+// definitions as JSON, for a person or a Claude session to apply
+function exportDefs(d){
+  return {format:'cosmic-shore-colour-domains/2',
+    rule: d.rule==='convex'
+      ? 'Convex: each family\'s core is the OKLab convex hull of its anchors and taken colours; each pair of families is separated by a band of the margin\'s thickness centred in the widest gap between their cores (shifted by half the difference of their reach); a family\'s region is everything on its side of all its bands and of its erase cuts (planes through each erased colour, facing the core).'
+      : 'Nearest anchor: each colour joins the family whose nearest anchor is closest in OKLab, minus that family\'s reach; Blue\'s distance is also the colour\'s chroma; a colour less than the margin closer to its family than to the next is forbidden.',
+    margin:d.margin,
+    cells: d.rule==='convex'? Object.fromEntries(FAMS.map((f,i)=>{ const t=geom(MODEL,'typical',0).theta; return [f,{n:[t[i*4],t[i*4+1],t[i*4+2]].map(v=>+v.toFixed(6)),c:+t[i*4+3].toFixed(6)}]; })) : undefined,
+    families:Object.fromEntries(FAMS.map(f=>{ const F=d.fams[f]; return [f,{signal:F.anchors[F.signal].name, reach:F.reach,
+      anchors:F.anchors.map(a=>({id:a.id,name:a.name,hex:HEX(a.c),rgb:a.c.map(v=>+v.toFixed(4)),source:a.src||'new'})),
+      taken:F.claimed.map(HEX), eraseCuts:F.erased.map(HEX)}]; })),
+    changes:diff(d).map(([f,t])=>(f?META[f].name+': ':'')+t)};
+}
+document.getElementById('copyDefs').addEventListener('click',()=>{
+  const text=JSON.stringify(exportDefs(defs),null,2), box=document.getElementById('copyBox'), st=document.getElementById('copyStatus');
+  const fallback=()=>{ box.hidden=false; box.value=text; box.focus(); box.select(); st.className='status'; st.textContent='Selected below: copy it with your keyboard.'; };
+  try{ navigator.clipboard.writeText(text).then(()=>{ st.className='status ok'; st.textContent='Copied.'; box.hidden=true; }, fallback); }catch(e){ fallback(); }
+});
+
+// ------------------------------------------------------------------ vision analysis
+function drawMatrix(){
+  const kind=state.vision, sev=sevNow(), m=MODEL.margin;
+  document.getElementById('mxVision').textContent=VNAME[kind]+(kind!=='typical'?' · '+Math.round(sev*100)+'%':'');
+  const seen=FAMS.map(f=>simGamma(signalOf(MODEL,f),kind,sev)), labs=seen.map(c=>ok3(...c.map(lin)));
+  let h='<thead><tr><th></th>'+FAMS.map(f=>`<th style="color:${famCss(f)}">${META[f].name}</th>`).join('')+'</tr></thead><tbody>';
+  FAMS.forEach((f,i)=>{ h+=`<tr><th style="color:${famCss(f)}">${META[f].name}</th>`;
+    FAMS.forEach((g,j)=>{ if(i===j){ h+='<td class="diag"></td>'; return; }
+      const dd=Math.hypot(labs[i][0]-labs[j][0],labs[i][1]-labs[j][1],labs[i][2]-labs[j][2]), jnd=dd/0.02;
+      h+=`<td class="cell ${dd<m?'merge': jnd<5?'close':''}" title="${META[f].name} vs ${META[g].name}: ${dd.toFixed(3)} OKLab"><div class="pair"><i style="background:${css(seen[i])}"></i><i style="background:${css(seen[j])}"></i></div>${jnd.toFixed(1)}</td>`; });
+    h+='</tr>'; });
+  document.getElementById('matrix').innerHTML=h+'</tbody>';
+}
+function drawSurvival(){
+  const st=stats(MODEL), sh=stats(BASEM), edited=diff(defs).length>0;
+  let h='<thead><tr><th></th>'+st.kinds.map(k=>`<th>${k==='achroma'?'Achromat':k[0].toUpperCase()+k.slice(1)}</th>`).join('')+'</tr></thead><tbody>';
+  FAMS.forEach((f,fi)=>{
+    h+=`<tr><th style="color:${famCss(f)};text-align:left">${META[f].name}<div class="stat" style="font-weight:400;text-transform:none;letter-spacing:0">${(st.share[fi]/st.n*100).toFixed(1)}% of gamut</div></th>`;
+    st.kinds.forEach((k,ki)=>{ const p=st.share[fi]? st.kept[ki][fi]/st.share[fi]*100 : 0, q=sh.share[fi]? sh.kept[ki][fi]/sh.share[fi]*100 : 0, d=p-q;
+      const mark= edited? `<em style="left:${q}%"></em>` : '', dl= edited&&Math.abs(d)>=0.5? `<small class="${d>0?'up':'down'}">${d>0?'+':'−'}${Math.abs(d).toFixed(0)}</small>` : '';
+      h+=`<td class="surv" style="--fam:${famCss(f)}"><b>${p.toFixed(0)}%</b>${dl}<div class="bar"><span style="width:${p}%"></span>${mark}</div></td>`; });
+    h+='</tr>'; });
+  document.getElementById('survival').innerHTML=h+'</tbody>';
+}
+const SAFE_VIS=['typical','protan','deutan','tritan'];
+function worstLead(M,rgb,fi){ let w=1e9; for(const k of SAFE_VIS) w=Math.min(w,classifyRGB(M,rgb,k,k==='typical'?0:1).leads[fi]); return w; }
+function drawSafe(){
+  const M=MODEL, m=M.margin, T=analyse(G24,M,'typical',0), R=SAFE_VIS.map(k=>analyse(G24,M,k,k==='typical'?0:1));
+  document.getElementById('safe').innerHTML=FAMS.map((f,fi)=>{
+    let best=-1e9, bi=-1;
+    for(let i=0;i<G24.n;i++){ if(T.n1[i]!==fi||T.lead[i]<m) continue; let w=1e9; for(const r of R) w=Math.min(w,r.d6[i*6+fi]); if(w>best){ best=w; bi=i; } }
+    if(bi<0) return `<article class="card sliver" style="--fam:${famCss(f)}"><h3>${META[f].name}</h3><p>No colour in this family clears the margin with these definitions.</p></article>`;
+    const c=[G24.rgb[bi*3],G24.rgb[bi*3+1],G24.rgb[bi*3+2]], sig=signalOf(M,f), sw=worstLead(M,sig,fi);
+    const verdict= best>=m? ['ok','Readable by all four'] : best>0? ['mid','Best compromise, inside the margin'] : ['no','No safe colour exists'];
+    const quad=rgb=>`<div class="quad">${SAFE_VIS.map(k=>`<div style="background:${css(simGamma(rgb,k,k==='typical'?0:1))}"></div>`).join('')}</div>`;
+    return `<article class="card sliver" style="--fam:${famCss(f)}">
+      <div class="top"><h3>${META[f].name}</h3><span class="verdict ${verdict[0]}">${verdict[1]}</span></div>
+      <div class="big" style="background:${css(c)}"></div>
+      ${quad(c)}<div class="quad-l"><span>typ</span><span>pro</span><span>deu</span><span>tri</span></div>
+      <div class="stat">safest <b>${HEX(c)}</b> · worst lead <b>${(best/0.02).toFixed(1)} JND</b></div>
+      <div class="stat">signal <span class="inline-sw" style="background:${css(sig)}"></span><b>${HEX(sig)}</b> · worst lead <b>${(sw/0.02).toFixed(1)} JND</b></div>
+    </article>`; }).join('');
+}
+
+// ------------------------------------------------------------------ change propagation
+let heavyTimer=0, draftTimer=0, wheelDirty=false;
+function pruneCaches(){ for(const G of [grid,G24]) if(G) for(const k of [...G.cache.keys()]) if(!k.startsWith('ship:')&&!k.startsWith(MODEL.tag+':')) G.cache.delete(k); }
+function bump(){
+  MODEL=buildModel(defs,undefined,state.dragging?120:400); pruneCaches();
+  queueRebuild(); drawMatrix(); renderChanges(); renderConflicts();
+  if(state.dragging) wheelDirty=true; else queueWheel();
+  clearTimeout(heavyTimer); heavyTimer=setTimeout(heavy, state.dragging? 400 : 160);
+  saveDraftSoon();
+}
+function invalidate(){ dragUndoTaken=false; if(wheelDirty){ wheelDirty=false; queueWheel(); } clearTimeout(heavyTimer); heavy(); queueRebuild(); }
+function heavy(){ renderCards(); drawSurvival(); drawSafe(); renderImpact(); renderPicked(); renderTabs(); syncClearBtn(); }
+function syncClearBtn(){ const F=defs.fams[state.sel.f], ce=document.getElementById('clearErase'); ce.textContent=`Clear ${META[state.sel.f].name}'s taken colours`; ce.disabled=!(F.erased.length||F.claimed.length); }
+function saveDraftSoon(){ clearTimeout(draftTimer); draftTimer=setTimeout(()=>{ try{ if(JSON.stringify(clone(defs))!==JSON.stringify(START)) localStorage.setItem(DRAFT_KEY,JSON.stringify(clone(defs))); else localStorage.removeItem(DRAFT_KEY); }catch(e){} },400); }
+
+// ------------------------------------------------------------------ proposals (shared store)
+const P={db:null,user:null,me:null,owner:false,canWrite:null,docs:[],status:'connecting',names:{},undo:null};
+const propsEl=document.getElementById('props'), propStatus=document.getElementById('propStatus');
+function say(msg,cls){ propStatus.className='status'+(cls?' '+cls:''); propStatus.innerHTML=msg; }
+async function initProposals(){
+  if(!window.claude||typeof window.claude.use!=='function'){ P.status='none'; renderProposals(); return; }
+  try{ P.db=await window.claude.use('db'); P.user=await window.claude.use('user'); }catch(e){ P.db=null; }
+  if(!P.db){ P.status='none'; renderProposals(); return; }
+  if(P.user){ try{ P.me=await P.user.id(); P.owner=await P.user.isOwner(); P.canWrite=await P.user.can('data.write'); }catch(e){} }
+  const timer=setTimeout(()=>{ if(P.status==='connecting'){ P.status='slow'; renderProposals(); } },10000);
+  P.db.collection('proposals').orderBy('createdAt','desc').limit(60).onSnapshot(snap=>{
+    P.docs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!snap.metadata.fromCache){ clearTimeout(timer); P.status='live'; } else if(P.status==='connecting') P.status='cached';
+    renderProposals(); resolveNames();
+  }, err=>{ clearTimeout(timer); P.status='error'; P.err=err&&err.code; renderProposals(); });
+  renderProposals();
+}
+async function resolveNames(){
+  if(!P.user||!P.user.profiles) return;
+  const ids=[...new Set(P.docs.map(d=>d.authorId).filter(Boolean))]; if(!ids.length) return;
+  try{ const ps=await P.user.profiles(ids); ids.forEach(id=>{ P.names[id]=(ps&&ps[id]&&ps[id].name)||''; }); renderProposals(); }catch(e){}
+}
+function renderProposals(){
+  const form=document.getElementById('saveForm');
+  form.hidden = P.status==='none' || P.canWrite===false;
+  let head='';
+  if(P.status==='none') head='<span class="hint">Saving proposals works when this page is open on claude.ai and you are signed in. Use Copy definitions instead.</span>';
+  else if(P.canWrite===false) head='<span class="hint">You can load the team\'s proposals; your access to this page does not let you save them.</span>';
+  if(P.status==='connecting') head+='<span class="hint">Loading proposals…</span>';
+  if(P.status==='slow') head+='<span class="hint">The proposals cannot be reached yet. They will appear when the connection returns.</span>';
+  if(P.status==='error') head+=`<span class="status bad">The proposals could not be loaded (${esc(P.err||'error')}).</span>`;
+  if((P.status==='live'||P.status==='cached')&&!P.docs.length) head+='<span class="hint">No proposals yet. Edit a family, name the result and save it to start the list.</span>';
+  propsEl.innerHTML=head+P.docs.map(d=>{
+    const who= d.authorId===P.me? 'you' : (P.names[d.authorId]||'Someone'), when=d.createdAt? new Date(d.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    const mine= d.authorId===P.me || P.owner, ch=Array.isArray(d.changes)? d.changes : [];
+    return `<article class="prop sliver" data-id="${esc(d.id)}"><div class="ph"><b>${esc(d.name||'Untitled')}${d.adoptedAt?' <span class="pill">Adopted</span>':''}</b><span class="stat">${esc(who)} · ${esc(when)}</span></div>${d.adoptedNote?`<p>${esc(d.adoptedNote)}</p>`:''}
+      ${d.note?`<p>${esc(d.note)}</p>`:''}<p>${plural(ch.length,'change')}${ch.length?': '+esc(ch.slice(0,3).join('; '))+(ch.length>3?'; …':''):''}</p>
+      <div class="actions"><button class="btn small" data-p="load">Load</button>${mine?'<button class="btn small" data-p="del">Delete</button>':''}</div></article>`; }).join('');
+}
+document.getElementById('saveProp').addEventListener('click',async e=>{
+  if(!P.db) return;
+  const name=document.getElementById('propName').value.trim(), note=document.getElementById('propNote').value.trim(), ch=diff(defs);
+  if(!name){ say('Give the proposal a name first.','bad'); document.getElementById('propName').focus(); return; }
+  if(!ch.length){ say('Nothing has changed from the shipped definitions yet.','bad'); return; }
+  const st=stats(MODEL); e.target.disabled=true; say('Saving…');
+  try{
+    await P.db.collection('proposals').add({name, note, authorId:P.me||null, createdAt:new Date().toISOString(), defs:clone(defs),
+      changes:ch.map(([f,t])=>(f?META[f].name+': ':'')+t), shares:Object.fromEntries(FAMS.map((f,fi)=>[f,+(st.share[fi]/st.n*100).toFixed(2)])), band:+(st.band/st.n*100).toFixed(2)});
+    say(`Saved “${esc(name)}”.`,'ok'); document.getElementById('propName').value=''; document.getElementById('propNote').value='';
+  }catch(err){
+    const code=err&&err.code;
+    if(code==='invalid_argument'){ P.canWrite=false; renderProposals(); say('This page did not accept the save: your access may be view-only.','bad'); }
+    else if(code==='quota_exceeded') say('The proposal list is full. Delete old proposals, then save again.','bad');
+    else say('Could not save just now. Try again in a moment.','bad');
+  } finally { e.target.disabled=false; }
+});
+propsEl.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-p]'); if(!b) return; const card=b.closest('.prop'), d=P.docs.find(x=>x.id===card.dataset.id); if(!d) return;
+  if(b.dataset.p==='load'){
+    const nd=migrateCuts(sanitize(d.defs)); if(!nd){ say('That proposal could not be read.','bad'); return; }
+    pushUndo(); defs=nd; state.sel.i=defs.fams[state.sel.f].signal; syncRule(); syncMargin(); renderBench(); bump();
+    say(`Loaded “${esc(d.name||'Untitled')}”. Undo brings your previous edits back.`,'ok');
+  } else if(b.dataset.p==='del'){
+    if(b.dataset.armed!=='1'){ b.dataset.armed='1'; b.textContent='Confirm delete'; setTimeout(()=>{ if(b.isConnected){ b.dataset.armed=''; b.textContent='Delete'; } },4000); return; }
+    try{ await P.db.doc('proposals/'+d.id).delete(); say(`Deleted “${esc(d.name||'Untitled')}”.`); }catch(err){ say('Could not delete it.','bad'); }
+  }
+});
+
+// ------------------------------------------------------------------ findings (shipped definitions, margin 0.05, 25³ grid)
+const sw = h => `<span class="inline-sw" style="background:${h}"></span><b>${h.toUpperCase()}</b>`;
+const FINDINGS=[
+ ['Blue is a third of the screen; Gold is a sliver',
+  `Because every grey and near-black is Blue's, Blue holds <b>34.5%</b> of the sRGB gamut and the forbidden band another <b>36%</b>. Gold is the smallest family at <b>1.7%</b>: it is squeezed between the HUD's orange fire ${sw('#ff541a')} and the lime. Lime has <b>9.4%</b>, Ruby <b>7.4%</b>, Fire <b>6.6%</b>, Jade <b>4.3%</b>.`],
+ ['The style guide\'s Jade sits in the forbidden band',
+  `The UI guide's Jade ${sw('#00d4ff')} is only 0.006 from the Jade/Blue border, well inside the 0.05 margin, so on screen it reads as neither family. The palette's own Jade is a teal ${sw('#0ec0b6')}. <code>COLOR.md</code> §6 already parks the Jade hue as a decision to make later; this measures why it matters.`],
+ ['Red-green colour blindness erases Jade',
+  `Under protan and deutan vision, <b>0%</b> of Jade's region stays Jade: the teal turns into the grey-blue that Blue owns. Under deutan vision Gold also drops to <b>0%</b>, splitting between Lime and Fire. A Jade player and an unassigned (Blue) object look the same to roughly 1 in 12 men.`],
+ ['Ruby and Blue nearly meet for protans',
+  `The Ruby and Blue signal colours are <b>0.057</b> apart under protan vision, about 3 JND and barely over the margin. For deutans they are 0.097 apart. Ruby's tooltip purple ${sw('#a600ff')} lands in Blue for deutans.`],
+ ['Tritans lose the Lime/Jade split',
+  `Under tritan vision Lime keeps only <b>4%</b> of its region: the CTA signal and Jade's signal are 0.063 apart. For a tritan, a free crystal and a Jade team marker differ mostly in lightness.`],
+ ['In greyscale, Jade and Lime are the same lightness',
+  `With colour removed entirely the Jade and Lime signals differ by <b>0.002</b> in OKLab lightness, and Ruby and Blue by 0.022. This is why the Style Foundation's principle 2 (form tells things apart before hue does) carries real weight: a team marker and a call to action must differ in shape, glow or motion as well.`],
+ ['No Jade or Gold colour works for every viewer',
+  `Searching every colour in each family for the one that stays itself under typical, protan, deutan and tritan vision: Lime ${sw('#aaff40')}, Ruby ${sw('#bf20bf')} and Fire ${sw('#ff0000')} clear the margin for all four. Gold's best ${sw('#ff9f00')} falls just short (0.049). Jade's best ${sw('#00fff4')} keeps a lead of 0.001, which is no lead at all. With the current anchors, Jade cannot be made colour-blind safe by tuning Jade alone; it needs its neighbours (the light glass blue and the HUD blue) to move, or a second cue.`],
+ ['How the sketch maps',
+  `The sketch's in-between swatches are not all gaps. Its yellow ${sw('#fbf10c')} lands inside Lime, its orange ${sw('#ffa629')} inside Gold, its azure ${sw('#0c98ff')} inside Blue and its red ${sw('#f24922')} inside Fire. Only its green ${sw('#14ae5d')} and violet ${sw('#9848ff')} sit in forbidden bands. Its Neutral Blue ${sw('#110bf3')} reads as Ruby to a protan viewer.`],
+];
+document.getElementById('findingList').innerHTML=FINDINGS.map(([t,p],i)=>`<article class="finding sliver"><span class="n">${String(i+1).padStart(2,'0')}</span><h3>${t}</h3><p>${p}</p></article>`).join('');
+document.getElementById('anchorTable').innerHTML='<thead><tr><th>Family</th><th>Shipped anchors (sRGB, as stored) and where each comes from</th></tr></thead><tbody>'+FAMS.map(f=>`<tr><td style="color:${famCss(f)}">${META[f].name}</td><td>${SHIPPED.fams[f].anchors.map(a=>`<span class="inline-sw" style="background:${css(a.c)}"></span>${esc(a.name)} <span class="mono">${HEX(a.c)}</span> <span style="color:var(--dim)">(${esc(a.src)})</span>`).join('<br>')}</td></tr>`).join('')+'</tbody>';
+
+// ------------------------------------------------------------------ wiring
+function seg(id,key,after){ const el=document.getElementById(id); el.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; state[key]=b.dataset.v; el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false')); after(); }); }
+seg('vision','vision',()=>{ queueWheel(); queueRebuild(); drawMatrix(); });
+seg('space','space',queueRebuild); seg('layer','layer',queueRebuild); seg('paint','paint',queueRebuild);
+seg('tool','tool',()=>{ if(state.tool!=='erase') brushRing.hidden=true; setTip(); });
+const ruleEl=document.getElementById('rule');
+function syncRule(){ ruleEl.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===defs.rule?'true':'false')); }
+ruleEl.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||b.dataset.v===defs.rule) return; pushUndo(); defs.rule=b.dataset.v; syncRule(); bump(); });
+const sevEl=document.getElementById('sev'); sevEl.addEventListener('input',()=>{ state.sev=+sevEl.value; document.getElementById('sevOut').textContent=Math.round(state.sev*100)+'%'; queueWheel(); queueRebuild(); drawMatrix(); });
+const mEl=document.getElementById('margin');
+const marginText = v => `${v.toFixed(3)} · ${(v/0.02).toFixed(1)} JND`;
+function syncMargin(){ mEl.value=defs.margin; document.getElementById('marginOut').textContent=marginText(defs.margin); }
+mEl.addEventListener('pointerdown',()=>pushUndo());
+mEl.addEventListener('input',()=>{ defs.margin=+mEl.value; document.getElementById('marginOut').textContent=marginText(defs.margin); bump(); });
+const vEl=document.getElementById('val'); vEl.addEventListener('input',()=>{ state.val=+vEl.value; document.getElementById('valOut').textContent=state.val.toFixed(2); queueWheel(); });
+const dEl=document.getElementById('density'); dEl.addEventListener('input',()=>{ state.N=+dEl.value; document.getElementById('densityOut').textContent=(state.N+1)+'³'; queueRebuild(); });
+const bEl=document.getElementById('brush'); bEl.addEventListener('input',()=>{ state.brush=+bEl.value; document.getElementById('brushOut').textContent=state.brush+' px'; });
+['move','markSketch','markGuide','hulls'].forEach(id=>document.getElementById(id).addEventListener('change',queueRebuild));
+['showSketch','showAnchors'].forEach(id=>document.getElementById(id).addEventListener('change',queueWheel));
+
+if(draftRestored) migrateCuts(defs);
+// The lab contract's test surface (/labmaker §2.2). Nothing here is random and nothing moves on a clock, so tick only
+// advances t; runBatch is the scorecard: each family's share, the band, and every anchor's family and clearance.
+window.__lab = {
+  manualClock:false, t:0,
+  SHIPPED:{margin:BASE.margin}, SPEC:[['bench','margin',0,0.1,0.005,'Band (OKLab)','The forbidden band\'s full thickness in OKLab; 1 JND is about 0.02.']],
+  get P(){ return clone(defs); },
+  PLATFORM:{device: window.matchMedia && window.matchMedia('(pointer: coarse)').matches? 'phone' : 'desktop'},
+  tick(dt=1/60,n=1){ this.t+=dt*n; return this.t; },
+  reset(){ this.t=0; },
+  state(){ return {t:this.t, rule:defs.rule, vision:state.vision, edits:diff(defs).length}; },
+  classify(hexStr){ const r=classifyRGB(MODEL,fromHex(hexStr),'typical',0); return {family: r.fam>=0? FAMS[r.fam] : null, nearest: FAMS[r.n1], clearanceJND: +((r.lead-MODEL.margin)/0.02).toFixed(2)}; },
+  score(){ const st=stats(MODEL); return +(100-st.band/st.n*100).toFixed(2); },
+  runBatch(){ const st=stats(MODEL); return {shares:Object.fromEntries(FAMS.map((f,i)=>[f,+(st.share[i]/st.n*100).toFixed(2)])), band:+(st.band/st.n*100).toFixed(2),
+    anchors:FAMS.flatMap(f=>defs.fams[f].anchors.map(a=>{ const r=this.classify(hex(a.c)); return [a.id, r.family, r.clearanceJND]; }))}; },
+};
+syncRule(); syncMargin(); renderBench(); renderCards(); drawWheel(); drawMatrix(); drawSurvival(); drawSafe(); renderImpact();
+if(draftRestored) eraseSay(`Restored your unsaved edits from last time. Reset all goes back to the source of truth, “${ADOPTED_NAME}”.`);
+init3D(); rebuild3D(); initProposals();
+})();
+</script>

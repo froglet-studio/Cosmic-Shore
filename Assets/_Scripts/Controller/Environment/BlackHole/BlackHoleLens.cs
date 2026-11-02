@@ -421,6 +421,8 @@ namespace CosmicShore.Gameplay
             /// <summary>Called every frame by the registry's driver while holes are live.</summary>
             internal static void Maintain()
             {
+                // Shared with the Goby's vortex lens and the Meerkat's original lens, so it is NOT gated on the hole look:
+                // the Mobile look simply never creates a BlackHoleLens, so holes never acquire it (Docs/BLACK_HOLE.md §5.4).
                 if (s_users == 0) { Restore(); return; }
 
                 // A camera switched on since last frame (a vessel spawn, the death or end camera)

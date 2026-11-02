@@ -24,6 +24,10 @@ namespace CosmicShore.Gameplay
         /// cells. The corridor's spacing is dead time; a ship crosses it under way.</summary>
         public float ArkCruiseSpeedFactor = 4f;
 
+        /// <summary>The cell-aware speed profile (cruise / entry / crawl / membrane band, with a departure anchor). Null
+        /// keeps the legacy two-speed arrival profile above (the Arkway toy); the Ark escort sets it.</summary>
+        public ArkSpeedProfile? ArkPacing;
+
         public float ArkHullLength = 110f;
 
         /// <summary>The model the Ark is drawn as (sockets, domain, jets and wings). Null keeps the spindle hull.</summary>
@@ -104,7 +108,7 @@ namespace CosmicShore.Gameplay
     /// the second and every later cell stream in unveiled beside live play, which is what a
     /// satellite build is for — and the voyage opens only when that veil actually comes down.
     /// </summary>
-    public sealed class ArkwayRun : MonoBehaviour, IObjectiveProvider
+    public sealed partial class ArkwayRun : MonoBehaviour, IObjectiveProvider
     {
         const float TickSeconds = 0.2f;
 
@@ -683,6 +687,18 @@ namespace CosmicShore.Gameplay
         void AimArk()
         {
             if (!_ark) return;
+            if (_cfg.ArkPacing is { } pacing)
+            {
+                // Cell-aware: brake onto the destination membrane, crawl its cytoplasm, and crawl on out through the far
+                // side of the cell just left before making way again.
+                _ark.SetSpeedProfile(pacing);
+                _ark.SetDestination(_conveyor.CurrentTargetCentre, _conveyor.CurrentCellRadius);
+                if (_conveyor.HasDeparture)
+                    _ark.SetDeparture(_conveyor.DepartureCentre, _conveyor.DepartureRadius);
+                else
+                    _ark.ClearDeparture();
+                return;
+            }
             float approach = Mathf.Max(1f, _cfg.ArkSpeed);
             float cruise = approach * Mathf.Max(1f, _cfg.ArkCruiseSpeedFactor);
             _ark.SetSpeedProfile(approach, cruise, _conveyor.CurrentCellRadius);
@@ -703,6 +719,7 @@ namespace CosmicShore.Gameplay
 
             float leash = _conveyor.CurrentCellRadius * Mathf.Max(1f, _cfg.LeashRadiusFactor);
             float distSqr = (t.position - _ark.Position).sqrMagnitude;
+            TrackLeashShell(leash, t.position);
 
             bool breached = _leashBreachedAt >= 0f;
             if (!breached)
@@ -863,10 +880,14 @@ namespace CosmicShore.Gameplay
                 return;
             }
             _arrow.HideOnScreenWithin = ArrowHideOnScreenWithin;
+            HookDamageAlarm();
+            EnsureLeashShell();
         }
 
         void DestroyObjectiveArrow()
         {
+            UnhookDamageAlarm();
+            DestroyLeashShell();
             if (!_arrow) return;
             Destroy(_arrow.gameObject);
             _arrow = null;

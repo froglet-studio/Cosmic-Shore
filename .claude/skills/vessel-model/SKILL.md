@@ -303,5 +303,5 @@ Prove the write before you claim it: `git status --short "Assets/_Models/Vessel 
 show an `M` on the file (LESSONS 24: the first in-place run wrote under `Tools/Assets/` with
 every gate green).
 
-Every C# change still needs `/verify-unity`; this skill's own tools are Python and need none,
+Every C# change still needs the verify rule (`CLAUDE.md` § "Unity CLI verification"); this skill's own tools are Python and need none,
 but `python3 Tools/Build/check_console_logging.py` and the generated-asset gates run on commit.

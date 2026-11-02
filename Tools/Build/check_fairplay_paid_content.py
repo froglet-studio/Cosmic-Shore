@@ -45,10 +45,12 @@ FAIR_PLAY = [
     "Assets/_Scripts/Utility/DisplayName/DisplayNameValidator.cs",
 ]
 FAIR_PLAY_NAME_PARTS = ["FairPlay", "Undertow", "TrustRecord", "AntiCheat"]
-FAIR_PLAY_DIRS = ["Assets/_Scripts/System/Moderation", "Assets/_Scripts/System/Steam", "Tools/UGS/CloudCode"]
+FAIR_PLAY_DIRS = ["Assets/_Scripts/System/Moderation", "Assets/_Scripts/System/Steam", "Assets/_Scripts/System/PlatformSignIn",
+                  "Tools/UGS/CloudCode"]
 
 PAID = [
     "Assets/_Scripts/System/Monetization",
+    "Tools/UGS/Commerce",
     "Assets/_Scripts/System/IAPManager.cs",
     "Assets/_Scripts/ScriptableObjects/SO_EpisodeTokenConfig.cs",
     "Assets/_Scripts/ScriptableObjects/SO_EpisodeData.cs",
@@ -116,7 +118,7 @@ def fair_play_files():
 def paid_files():
     out = []
     for entry in PAID:
-        out.extend(p for p in walk(entry, (".cs",)) if not is_test(p))
+        out.extend(p for p in walk(entry, (".cs", ".js")) if not is_test(p))
     return sorted(set(out))
 
 

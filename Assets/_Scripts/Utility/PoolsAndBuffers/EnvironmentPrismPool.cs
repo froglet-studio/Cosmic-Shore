@@ -124,20 +124,29 @@ namespace CosmicShore.Gameplay
                     long insightT0 = LoadInsights.AccumulateStart();
                     var op = UnityEngine.Object.InstantiateAsync(prefab, shortfall, parent);
                     float waitStart = Time.unscaledTime;
-                    while (!op.isDone)
+                    // Instrumentation only (B45): a frozen frame names how many batches were waiting on the engine.
+                    FrameStallWatch.BeginAsyncClone();
+                    try
                     {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        LoadInsights.Count("Frames an async clone batch waited to integrate");
-                        if (!parent) return (null, batchedFailed);
-                        if (Time.unscaledTime - waitStart > stallSeconds)
+                        while (!op.isDone)
                         {
-                            CSDebug.LogWarning(
-                                $"[EnvironmentPrismPool] Async clone batch ({shortfall} prisms) not " +
-                                $"integrated after {stallSeconds:F0}s — forcing WaitForCompletion. " +
-                                "The engine's async-instantiate budget is being starved by other loading.");
-                            op.WaitForCompletion();
-                            break;
+                            await UniTask.Yield(PlayerLoopTiming.Update);
+                            LoadInsights.Count("Frames an async clone batch waited to integrate");
+                            if (!parent) return (null, batchedFailed);
+                            if (Time.unscaledTime - waitStart > stallSeconds)
+                            {
+                                CSDebug.LogWarning(
+                                    $"[EnvironmentPrismPool] Async clone batch ({shortfall} prisms) not " +
+                                    $"integrated after {stallSeconds:F0}s — forcing WaitForCompletion. " +
+                                    "The engine's async-instantiate budget is being starved by other loading.");
+                                op.WaitForCompletion();
+                                break;
+                            }
                         }
+                    }
+                    finally
+                    {
+                        FrameStallWatch.EndAsyncClone();
                     }
 
                     LoadInsights.AccumulateSample("Prism clone: InstantiateAsync batch, call to integrated (wall time)", insightT0);

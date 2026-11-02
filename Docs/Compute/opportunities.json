@@ -1,0 +1,979 @@
+{
+ "coverage": [
+  {
+   "held": false,
+   "hull": "Sparrow",
+   "learned": [
+    "SparrowAIBoostPolicy_Breakwater"
+   ],
+   "mode": "Breakwater",
+   "model": null,
+   "played": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "queued": null,
+   "races": 11
+  },
+  {
+   "held": false,
+   "hull": "Meerkat",
+   "learned": [],
+   "mode": "BurrowRun",
+   "model": null,
+   "played": [],
+   "queued": null,
+   "races": 0
+  },
+  {
+   "held": false,
+   "hull": "Grizzly",
+   "learned": [],
+   "mode": "GrizzlyTime",
+   "model": null,
+   "played": [
+    1
+   ],
+   "queued": null,
+   "races": 1
+  },
+  {
+   "held": false,
+   "hull": "Rhino",
+   "learned": [],
+   "mode": "Headlong",
+   "model": "rhino_drive",
+   "played": [],
+   "queued": "drive-rhino-headlong",
+   "races": 0
+  },
+  {
+   "held": false,
+   "hull": "Manta",
+   "learned": [],
+   "mode": "Redline",
+   "model": "manta_drive",
+   "played": [],
+   "queued": "drive-manta-redline",
+   "races": 0
+  },
+  {
+   "held": true,
+   "hull": "Manta",
+   "learned": [
+    "MantaSoarAITuning_Regatta",
+    "RaceLine:Manta_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": "manta_drive",
+   "played": [
+    1,
+    3,
+    4
+   ],
+   "queued": "drive-manta-regatta",
+   "races": 13
+  },
+  {
+   "held": true,
+   "hull": "Dolphin",
+   "learned": [
+    "RaceLine:Dolphin_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": "dolphin_drive",
+   "played": [
+    1
+   ],
+   "queued": "drive-dolphin-regatta",
+   "races": 1
+  },
+  {
+   "held": true,
+   "hull": "Rhino",
+   "learned": [
+    "RhinoAIBoostPolicy_Regatta",
+    "RaceLine:Rhino_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": "rhino_drive",
+   "played": [
+    1,
+    3
+   ],
+   "queued": "drive-rhino-regatta",
+   "races": 6
+  },
+  {
+   "held": true,
+   "hull": "Urchin",
+   "learned": [],
+   "mode": "Regatta",
+   "model": null,
+   "played": [
+    1,
+    3
+   ],
+   "queued": null,
+   "races": 6
+  },
+  {
+   "held": true,
+   "hull": "Squirrel",
+   "learned": [],
+   "mode": "Regatta",
+   "model": null,
+   "played": [
+    1,
+    3
+   ],
+   "queued": null,
+   "races": 49
+  },
+  {
+   "held": true,
+   "hull": "Serpent",
+   "learned": [
+    "RaceLine:Serpent_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": null,
+   "played": [
+    3
+   ],
+   "queued": null,
+   "races": 2
+  },
+  {
+   "held": true,
+   "hull": "Sparrow",
+   "learned": [
+    "RaceLine:Sparrow_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": null,
+   "played": [
+    1,
+    3,
+    4
+   ],
+   "queued": null,
+   "races": 6
+  },
+  {
+   "held": true,
+   "hull": "Scarab",
+   "learned": [
+    "RaceLine:Scarab_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": null,
+   "played": [
+    2
+   ],
+   "queued": null,
+   "races": 3
+  },
+  {
+   "held": true,
+   "hull": "Stoat",
+   "learned": [
+    "RaceLine:Stoat_Regatta"
+   ],
+   "mode": "Regatta",
+   "model": null,
+   "played": [
+    2
+   ],
+   "queued": null,
+   "races": 2
+  },
+  {
+   "held": false,
+   "hull": "Scarab",
+   "learned": [],
+   "mode": "ScarabScramble",
+   "model": null,
+   "played": [
+    1,
+    4
+   ],
+   "queued": null,
+   "races": 3
+  },
+  {
+   "held": false,
+   "hull": "Urchin",
+   "learned": [],
+   "mode": "Skein",
+   "model": null,
+   "played": [
+    3
+   ],
+   "queued": null,
+   "races": 1
+  },
+  {
+   "held": false,
+   "hull": "Squirrel",
+   "learned": [],
+   "mode": "SkimRace",
+   "model": null,
+   "played": [
+    1,
+    2,
+    3
+   ],
+   "queued": null,
+   "races": 18
+  },
+  {
+   "held": false,
+   "hull": "Stoat",
+   "learned": [
+    "StoatDipoleConfig_Slingshot",
+    "StoatSlingConfig_Slingshot"
+   ],
+   "mode": "Slingshot",
+   "model": null,
+   "played": [],
+   "queued": null,
+   "races": 0
+  },
+  {
+   "held": false,
+   "hull": "Dolphin",
+   "learned": [
+    "DolphinAIBoostPolicy_Switchback_I1",
+    "DolphinAIBoostPolicy_Switchback_I4",
+    "DolphinAIBoostPolicy_Switchback",
+    "DolphinAIBoostPolicy_Switchback_I2"
+   ],
+   "mode": "Switchback",
+   "model": null,
+   "played": [
+    1,
+    2,
+    4
+   ],
+   "queued": null,
+   "races": 19
+  },
+  {
+   "held": false,
+   "hull": "Thresher",
+   "learned": [],
+   "mode": "ThresherTime",
+   "model": null,
+   "played": [
+    1
+   ],
+   "queued": null,
+   "races": 3
+  },
+  {
+   "held": false,
+   "hull": "Meerkat",
+   "learned": [],
+   "mode": "Warpline",
+   "model": null,
+   "played": [],
+   "queued": null,
+   "races": 0
+  },
+  {
+   "held": false,
+   "hull": "Butterfly",
+   "learned": [],
+   "mode": "Waystation",
+   "model": null,
+   "played": [
+    1
+   ],
+   "queued": null,
+   "races": 2
+  },
+  {
+   "held": false,
+   "hull": "Wrasse",
+   "learned": [],
+   "mode": "WrasseRun",
+   "model": null,
+   "played": [
+    1
+   ],
+   "queued": null,
+   "races": 8
+  }
+ ],
+ "errors": [],
+ "generated": 1793290327,
+ "opportunities": [
+  {
+   "id": "model-dolphin-switchback",
+   "kind": "build",
+   "lens": "regatta",
+   "title": "Stage 1 needs an offline race model: the Dolphin in Switchback, its own Time game",
+   "value": 8,
+   "why": "the plan trains every Regatta hull's AI on its own Time game at I1-I4; start from Tools/Build/switchback_dolphin_sim.py (needs SwitchbackCourse ported like course_port.py; it races recorded courses today)"
+  },
+  {
+   "id": "model-squirrel-skimrace",
+   "kind": "build",
+   "lens": "regatta",
+   "title": "Stage 1 needs an offline race model: the Squirrel in SkimRace, its own Time game",
+   "value": 8,
+   "why": "the plan trains every Regatta hull's AI on its own Time game at I1-I4; start from Tools/Build/skimrace_sim_harness (C#, dotnet8; its `tuneall` is already a search: wrap it as a command job)"
+  },
+  {
+   "id": "model-urchin-skein",
+   "kind": "build",
+   "lens": "regatta",
+   "title": "Stage 1 needs an offline race model: the Urchin in Skein, its own Time game",
+   "value": 8,
+   "why": "the plan trains every Regatta hull's AI on its own Time game at I1-I4; no model exists yet (rhino_drive_sim.py is the pattern)"
+  },
+  {
+   "id": "plan-combat-balance",
+   "kind": "build",
+   "lens": "plans",
+   "title": "Put the Broadside balance plan on the queue (Docs/ElementalAbilitySystem/SILENCE.md section 6 (Garrett 2026-10-20))",
+   "value": 7,
+   "why": "a plan already set for 7 hulls, with no compute job yet: it needs an offline model of the mode's score (petals per minute in mirror and mixed matches) - /compute-job"
+  },
+  {
+   "id": "bioform-forge-charge-space-time",
+   "kind": "job",
+   "lens": "bioforms",
+   "title": "Forge bodies for the thin elements: charge, space, time",
+   "value": 6,
+   "why": "a swarm whose majority is charge, space, time has 1 body to switch into"
+  },
+  {
+   "id": "nca-port-jelly-whale",
+   "kind": "build",
+   "lens": "bioforms",
+   "title": "Trained NCA creatures not in the game yet: jelly, whale",
+   "value": 6,
+   "why": "the research branch finished their training; author_nca_creatures.py SPECIES is where a row goes (Docs/NCA_CREATURES.md)"
+  },
+  {
+   "id": "no-machines",
+   "kind": "fix",
+   "lens": "board",
+   "title": "No machine is working",
+   "value": 6,
+   "why": "the top job (drive-manta-redline) waits; /compute sets a machine up in two commands"
+  },
+  {
+   "id": "model-dolphin-switchback",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Dolphin in Switchback",
+   "value": 6,
+   "why": "19 human race(s) (I[1, 2, 4]); I[3] have no race to imitate and no model to self-play. Start from Tools/Build/switchback_dolphin_sim.py (needs SwitchbackCourse ported like course_port.py; it races recorded courses today)."
+  },
+  {
+   "id": "model-squirrel-skimrace",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Squirrel in SkimRace",
+   "value": 6,
+   "why": "18 human race(s) (I[1, 2, 3]); I[4] have no race to imitate and no model to self-play. Start from Tools/Build/skimrace_sim_harness (C#, dotnet8; its `tuneall` is already a search: wrap it as a command job)."
+  },
+  {
+   "id": "model-urchin-skein",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Urchin in Skein",
+   "value": 6,
+   "why": "1 human race(s) (I[3]); I[1, 2, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-meerkat-burrowrun",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Meerkat in BurrowRun",
+   "value": 5,
+   "why": "0 human race(s) (I-); I[1, 2, 3, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-meerkat-warpline",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Meerkat in Warpline",
+   "value": 5,
+   "why": "0 human race(s) (I-); I[1, 2, 3, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-butterfly-waystation",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Butterfly in Waystation",
+   "value": 4,
+   "why": "2 human race(s) (I[1]); I[2, 3, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-grizzly-grizzlytime",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Grizzly in GrizzlyTime",
+   "value": 4,
+   "why": "1 human race(s) (I[1]); I[2, 3, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-scarab-scarabscramble",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Scarab in ScarabScramble",
+   "value": 4,
+   "why": "3 human race(s) (I[1, 4]); I[2, 3] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-thresher-threshertime",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Thresher in ThresherTime",
+   "value": 4,
+   "why": "3 human race(s) (I[1]); I[2, 3, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "model-wrasse-wrasserun",
+   "kind": "build",
+   "lens": "coverage",
+   "title": "An offline race model for the Wrasse in WrasseRun",
+   "value": 4,
+   "why": "8 human race(s) (I[1]); I[2, 3, 4] have no race to imitate and no model to self-play. No model exists: write one the way rhino_drive_sim.py models the Rhino."
+  },
+  {
+   "id": "plan-broodrush-balance",
+   "kind": "build",
+   "lens": "plans",
+   "title": "A balance plan for BroodRush (6 hulls), the Regatta way",
+   "value": 4,
+   "why": "every arena card is a mixed fleet: train each hull's AI to a plateau, search what levels them, then the smallest elemental tuning (/regatta-balance is the worked example); nobody has proposed one"
+  },
+  {
+   "id": "sweep-author-skimrace-ai-config",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/author_skimrace_ai_config.py already searches by hand (tuneall)",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-breakwater-arena",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/breakwater_arena.py already searches by hand (def sweep)",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-fit-schwarz-p-leaf-sizes",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/fit_schwarz_p_leaf_sizes.py already searches by hand (itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-fit-shield-clearance",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/fit_shield_clearance.py already searches by hand (itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-manta-drive-sim",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/manta_drive_sim.py already searches by hand (--bands, --sweep, def _sweep_one, itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-manta-line-sim",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/manta_line_sim.py already searches by hand (--sweep, def _sweep_one, def sweep, itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-measure-nested-gyroid-template",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/measure_nested_gyroid_template.py already searches by hand (itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-measure-schwarz-p-tile",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/measure_schwarz_p_tile.py already searches by hand (itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-rhino-drive-sim",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/rhino_drive_sim.py already searches by hand (--sweep, def _sweep_one, def sweep, itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-rhino-line-sim",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/rhino_line_sim.py already searches by hand (--sweep, def _sweep_one, def sweep, itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-run",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/skimrace_sim_harness/run.sh already searches by hand (tuneall)",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-scarab-drive-sim",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/scarab_drive_sim.py already searches by hand (--sweep, def _sweep_one, def sweep, itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-skimrace-retune",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/skimrace_retune.py already searches by hand (tuneall)",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-touch-drift-slip",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/touch_drift_slip.py already searches by hand (--sweep)",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "sweep-verify-schwarz-p-tile-tables",
+   "kind": "build",
+   "lens": "sweeps",
+   "title": "Tools/Build/verify_schwarz_p_tile_tables.py already searches by hand (itertools.product()",
+   "value": 4,
+   "why": "its author wrote the loss; a grid on one machine becomes a search on every machine once it is an evaluator (/compute-job)"
+  },
+  {
+   "id": "lab-angler-command-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/ANGLER_COMMAND_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-collision-burst-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/COLLISION_BURST_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-crew-of-four-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/CREW_OF_FOUR_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-crew-vessel-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/CREW_VESSEL_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-honeyguide-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/HONEYGUIDE_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-omni-shepard-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/OMNI_SHEPARD_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-starlings-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/STARLINGS_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-thresher-plant-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/THRESHER_PLANT_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "lab-wrasse-lasso-lab",
+   "kind": "build",
+   "lens": "labs",
+   "title": "Docs/Studios/WRASSE_LASSO_LAB.md: its headless scorecard is a loss function",
+   "value": 3,
+   "why": "a node evaluator around the lab's runBatch lets machines search the lab's dials (/compute-job, 'a lab as a loss')"
+  },
+  {
+   "id": "model-stoat-slingshot",
+   "kind": "build",
+   "lens": "regatta",
+   "title": "(held) an offline race model for the Stoat in Slingshot",
+   "value": 3,
+   "why": "its AI waits for Garrett's configuration (issue 1198): ask Garrett before building for it"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-ai-ai-boost-md-107",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/AI/AI_BOOST.md:107",
+   "value": 2,
+   "why": "- **Not measured.** No race has been run with these; the numbers are first guesses on the human"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-ai-ai-boost-md-172",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/AI/AI_BOOST.md:172",
+   "value": 2,
+   "why": "the base asset (600) and every other mode are unchanged. It was set by hand at Yash's ask from all six races, four"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-breakwater-md-546",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/BREAKWATER.md:546",
+   "value": 2,
+   "why": "becomes a guess."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-broadside-md-403",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/BROADSIDE.md:403",
+   "value": 2,
+   "why": "was not measured against. Afterimages (5 s of blade-shaped prisms after an energize; danger at"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-cleave-md-803",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/CLEAVE.md:803",
+   "value": 2,
+   "why": "> LENGTH is still a guess. It is four editor fields, and the milestones follow whichever applies."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-dustup-md-95",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/DUSTUP.md:95",
+   "value": 2,
+   "why": "- **The target is reasoned, not measured.** How long a pass takes between two 45\u00b0/s hulls in the"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-dustup-md-97",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/DUSTUP.md:97",
+   "value": 2,
+   "why": "- **The AI's hover is a guess at geometry it does not control.** `AIPilot` owns the vessel's roll,"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-regatta-md-319",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/REGATTA.md:319",
+   "value": 2,
+   "why": "line is learned (0.809). The Rhino's 0.676 was SET BY HAND on 2026-10-24 (Yash's ask) from all six of his Rhino races,"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-regatta-md-320",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/REGATTA.md:320",
+   "value": 2,
+   "why": "four of them unfinished, because only two finished; the learner replaces it at the third finished race. The Dolphin's 0.785 was set by hand the same day from Yash's one"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-regatta-md-322",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/REGATTA.md:322",
+   "value": 2,
+   "why": "was set by hand on 2026-10-25 from Yash's two Scarab races (I2, 37 crossings, both unfinished: the AI Stoat won)."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-regatta-md-427",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/REGATTA.md:427",
+   "value": 2,
+   "why": "170 \u2192 119 s over the four courses with `cornerSpeed` 1000 (it is 333, set by hand on 2026-10-24 from Yash's Rhino"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-scarabscramble-md-219",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/SCARABSCRAMBLE.md:219",
+   "value": 2,
+   "why": "body; the sleeping-actor-vs-growing-static-trigger failure is reasoned, not measured. If a blast"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-sirocco-md-77",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/SIROCCO.md:77",
+   "value": 2,
+   "why": "- **The target is reasoned, not measured.** A pass through a cactus catches a fraction of it and"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-sirocco-md-79",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/SIROCCO.md:79",
+   "value": 2,
+   "why": "600 is a guess at ~2-3 minutes for a two-pilot side. Play-test it."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-skein-md-674",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/SKEIN.md:674",
+   "value": 2,
+   "why": "upstream retired Drumfire). The enum is proven duplicate-free rather than eyeballed."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-switchback-md-571",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/SWITCHBACK.md:571",
+   "value": 2,
+   "why": "list \u2014 is removed. Arithmetic is asserted in `ArcadeGridCapacityTests` rather than eyeballed,"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-warpline-md-116",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/WARPLINE.md:116",
+   "value": 2,
+   "why": "is 250, set by hand: Yash threads half his rings still warped, steering by the pair's bend, which the AI does not use,"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-wildlife-liberation-md-325",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md:325",
+   "value": 2,
+   "why": "> by eye \u2014 the rounding in the per-segment prism walk is not monotonic in frequency, so an"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-arcade-wildlife-liberation-md-326",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md:326",
+   "value": 2,
+   "why": "> eyeballed bump can easily make a cage *lighter*."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-butterfly-md-599",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md:599",
+   "value": 2,
+   "why": "6. **Dustup's hover** (30 u along the hull's own up) is a guess, unverified."
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-dolphin-crystal-seeding-md-315",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md:315",
+   "value": 2,
+   "why": "- **Release is a restore, not a fade to a guess.** `HardReset` (disable, vessel swap, re-init)"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-jacks-md-367",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md:367",
+   "value": 2,
+   "why": "22,350 pair tests at the cap. Not measured in Unity yet. If it shows in a capture, bucket the herd on the board (a cell"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-scarab-md-1640",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md:1640",
+   "value": 2,
+   "why": "hypothesis \u2014 reasoned from how PhysX schedules pairs, not measured \u2014 and `sleepThreshold = 0` is"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-scarab-md-1847",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md:1847",
+   "value": 2,
+   "why": "**Four shape rules, all asserted rather than eyeballed.** The wings **begin at the switch ring**"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-serpent-sniper-scope-md-1081",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md:1081",
+   "value": 2,
+   "why": "The defect is the SIZE, and it is arithmetic rather than a guess. `SniperShotAction.asset` authors"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-serpent-sniper-scope-md-1192",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md:1192",
+   "value": 2,
+   "why": "a black backing \u2014 is deliberately *not* guessed at here: `ResolveTracerColour` falls back to"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-serpent-sniper-scope-md-1637",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md:1637",
+   "value": 2,
+   "why": "- Consider whether the window should be placeable (top-left is a guess that clears the goal stack),"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-serpent-sniper-scope-md-293",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md:293",
+   "value": 2,
+   "why": "is what lets the reticle be drawn at the beam's true size rather than at a guess, which is the whole"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-sparrow-spray-accuracy-md-424",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md:424",
+   "value": 2,
+   "why": "The danger colour is taken from the live colour set rather than eyeballed, because it is the one"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-squirrel-element-recut-md-264",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md:264",
+   "value": 2,
+   "why": "Sized by measurement rather than by eye: Aldrich's widest digit advances **49.641** at its 68pt"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-squirrel-element-recut-md-513",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md:513",
+   "value": 2,
+   "why": "output is a table, spot-check one row against the file by eye before quoting it.* Corrected: only"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-squirrel-element-recut-md-630",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md:630",
+   "value": 2,
+   "why": "### And the reason it could not be verified by eye \u2014 a palette fact worth knowing"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-squirrel-element-recut-md-773",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md:773",
+   "value": 2,
+   "why": "the one number chosen by eye rather than measured; it is `Squirrel.prefab` \u2192"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-squirrel-element-recut-md-842",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md:842",
+   "value": 2,
+   "why": "back. Do not try to tell Jade's card from the old sentinel bug by eye \u2014 they are 22.6\u00b0 of hue"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-thresher-md-1076",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md:1076",
+   "value": 2,
+   "why": "dash) whips the camera the same way. Not measured here \u2014 the measurement is the vessel rule 43"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-urchin-trail-rider-md-1353",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md:1353",
+   "value": 2,
+   "why": "sized from geometry (an r\u00b2 patch \u2248 28 same-size blocks, an r\u00b3 ball \u2248 113), not measured against"
+  },
+  {
+   "id": "byhand-assets-scripts-controller-vessel-r-vesselactions-urchin-trail-rider-md-447",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md:447",
+   "value": 2,
+   "why": "generator rather than guessed. A super-shielded prism's spikes are inside the same envelope, so"
+  },
+  {
+   "id": "byhand-docs-ability-lockup-md-177",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Docs/ABILITY_LOCKUP.md:177",
+   "value": 2,
+   "why": "Nothing is guessed and nothing is per-vessel, which is what makes a wrong label structurally"
+  },
+  {
+   "id": "byhand-docs-ability-lockup-md-421",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Docs/ABILITY_LOCKUP.md:421",
+   "value": 2,
+   "why": "one is a *reference* question, asked rather than guessed. Sources are the components on the HUD"
+  },
+  {
+   "id": "byhand-docs-ability-lockup-md-593",
+   "kind": "build",
+   "lens": "by-hand",
+   "title": "Docs/ABILITY_LOCKUP.md:593",
+   "value": 2,
+   "why": "**The two kinds line up by arithmetic rather than by eye**, and it is worth stating because it is"
+  }
+ ]
+}

@@ -616,6 +616,122 @@ namespace CosmicShore.Tests
             Assert.AreSame(prism, _index.ResolvePrism(prism.SpatialIndexId, materialise: true));
         }
 
+        /// <summary>
+        /// The wide-radius queries run as one Burst pass (LinearCapsuleScanJob). Both QuerySphere and QuerySegment must
+        /// return exactly the brute-force set on BOTH paths, and the linear path in slot order (what the managed scan it
+        /// replaced produced). A destroyed prism inside the radius must stay out.
+        /// </summary>
+        [Test]
+        public void WideAndTightQueries_MatchBruteForce_OnBothPaths()
+        {
+            var rng = new System.Random(20261102);
+            var prisms = new List<Prism>();
+            for (int i = 0; i < 300; i++)
+                prisms.Add(SpawnRegisteredPrism(new Vector3(
+                    (float)rng.NextDouble() * 120f - 60f,
+                    (float)rng.NextDouble() * 120f - 60f,
+                    (float)rng.NextDouble() * 120f - 60f)));
+            _index.MarkDestroyed(prisms[7].SpatialIndexId);
+
+            Vector3 a = new(-20f, 5f, 3f), b = new(25f, -10f, 12f);
+            // 200 u (Fulmen's burn) takes the linear path; 6 u takes the bucket walk at this high-water mark.
+            foreach (float radius in new[] { 200f, 40f, 6f })
+            {
+                var expectSphere = new List<Prism>();
+                var expectSegment = new List<Prism>();
+                foreach (var p in prisms)
+                {
+                    if (p == prisms[7]) continue;
+                    Vector3 at = p.transform.position;
+                    if ((at - a).sqrMagnitude <= radius * radius) expectSphere.Add(p);
+                    Vector3 ab = b - a;
+                    float t = Mathf.Clamp01(Vector3.Dot(at - a, ab) / ab.sqrMagnitude);
+                    if ((a + ab * t - at).sqrMagnitude <= radius * radius) expectSegment.Add(p);
+                }
+
+                _index.QuerySphere(a, radius, _results);
+                CollectionAssert.AreEquivalent(expectSphere, _results, $"QuerySphere r={radius}");
+                if (radius >= 40f) CollectionAssert.AreEqual(expectSphere, _results, $"QuerySphere r={radius}: slot order");
+
+                _index.QuerySegment(a, b, radius, _results);
+                CollectionAssert.AreEquivalent(expectSegment, _results, $"QuerySegment r={radius}");
+                if (radius >= 40f) CollectionAssert.AreEqual(expectSegment, _results, $"QuerySegment r={radius}: slot order");
+            }
+        }
+
+        // ProjectileSweepBatch skips a round's QuerySegment when SegmentsOccupied says 0, so a 0 must mean
+        // QuerySegment finds nothing - on the bucket walk, and with a destroyed prism in the field.
+        [Test]
+        public void SegmentsOccupied_AgreesWithQuerySegment()
+        {
+            var rng = new System.Random(20261103);
+            var prisms = new List<Prism>();
+            for (int i = 0; i < 300; i++)
+                prisms.Add(SpawnRegisteredPrism(new Vector3(
+                    (float)rng.NextDouble() * 160f - 80f,
+                    (float)rng.NextDouble() * 160f - 80f,
+                    (float)rng.NextDouble() * 160f - 80f)));
+            _index.MarkDestroyed(prisms[11].SpatialIndexId);
+
+            const int n = 400;
+            var a = new NativeArray<Unity.Mathematics.float3>(n, Allocator.TempJob);
+            var ab = new NativeArray<Unity.Mathematics.float3>(n, Allocator.TempJob);
+            var radius = new NativeArray<float>(n, Allocator.TempJob);
+            var occupied = new NativeArray<byte>(n, Allocator.TempJob);
+            try
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    var from = new Vector3((float)rng.NextDouble() * 200f - 100f, (float)rng.NextDouble() * 200f - 100f,
+                                           (float)rng.NextDouble() * 200f - 100f);
+                    var step = new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() - 0.5f,
+                                           (float)rng.NextDouble() - 0.5f) * (i % 2 == 0 ? 6f : 50f);
+                    // Every tenth segment ends on a live prism: a sure hit, the negative control.
+                    if (i % 10 == 0) from = prisms[(i / 10) % 300 == 11 ? 12 : (i / 10) % 300].transform.position;
+                    a[i] = from;
+                    ab[i] = step;
+                    radius[i] = i % 3 == 0 ? 0.9f : 8.8f;
+                }
+
+                _index.SegmentsOccupied(a, ab, radius, occupied, n);
+
+                int clear = 0, sure = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    Vector3 from = a[i];
+                    int found = _index.QuerySegment(from, from + (Vector3)ab[i], radius[i], _results);
+                    if (found > 0)
+                        Assert.AreEqual(1, occupied[i], $"segment {i}: QuerySegment found {found} prism(s), batch said clear");
+                    else if (occupied[i] == 0) clear++;
+                    if (i % 10 == 0) { Assert.AreEqual(1, occupied[i], $"segment {i} starts on a prism"); sure++; }
+                }
+                Assert.Greater(clear, n / 4, "the batch should answer most open-space segments clear");
+                Assert.AreEqual(n / 10, sure);
+            }
+            finally
+            {
+                a.Dispose(); ab.Dispose(); radius.Dispose(); occupied.Dispose();
+            }
+        }
+
+        // The batch trusts a "clear" only while nothing was added or moved since it was taken.
+        [Test]
+        public void WriteStamp_MovesOnAddAndMove_NotOnDestroy()
+        {
+            var p = SpawnRegisteredPrism(new Vector3(1f, 2f, 3f));
+            int s0 = _index.WriteStamp;
+            _index.MarkDestroyed(p.SpatialIndexId);
+            Assert.AreEqual(s0, _index.WriteStamp, "a removal can only make a query find less");
+            _index.MarkRestored(p.SpatialIndexId);
+            Assert.AreNotEqual(s0, _index.WriteStamp, "a restored prism is new to a query");
+            int s1 = _index.WriteStamp;
+            _index.UpdatePosition(p.SpatialIndexId, new Vector3(1.5f, 2f, 3f));
+            Assert.AreNotEqual(s1, _index.WriteStamp, "a move within the bucket still moves the stamp");
+            int s2 = _index.WriteStamp;
+            SpawnRegisteredPrism(new Vector3(40f, 0f, 0f));
+            Assert.AreNotEqual(s2, _index.WriteStamp, "a register moves the stamp");
+        }
+
         [Test]
         public void Virtual_NullOwner_IsRejected()
         {

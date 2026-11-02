@@ -161,6 +161,14 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a holder steers this creature.</summary>
         public bool IsLeashed => Leash != null;
 
+        /// <summary>
+        /// True while the holder asks for more speed than <paramref name="ownTopSpeed"/> - a THROW (the Angler's sling).
+        /// Then the behaviour tick leaves the velocity to the leash's per-frame steer instead of clamping it back to the
+        /// creature's own range (ANGLER.md follow-up 11). Any order at or under the creature's own top speed returns false.
+        /// </summary>
+        protected bool LeashOwnsSpeed(float ownTopSpeed) =>
+            Leash != null && Leash.TrySteer(this, out _, out float speed, out _) && speed > ownTopSpeed + 0.01f;
+
         /// <summary>Which creatures a leash can hold: those that eat prisms. A predator eats creatures, never prisms, so
         /// there is nothing to order it to eat.</summary>
         protected virtual bool CanBeLeashed => diet == FaunaDiet.Herbivore;
@@ -443,6 +451,9 @@ namespace CosmicShore.Gameplay
         /// cell's own spawn profile.</summary>
         public Cell HostCell => hostCell;
 
+        /// <summary>The cell this creature lives in (its host, else its runtime data's cell), or null.</summary>
+        public Cell HomeCell => cell;
+
         /// <summary>This individual's variant tuning block, or null if it rolled none.
         /// <see cref="FaunaNetworkSync"/> reads it to work out WHICH palette sibling supplied
         /// it, which is the half of the identity that element alone does not name.</summary>
@@ -553,6 +564,7 @@ namespace CosmicShore.Gameplay
                     ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
+                ApplyRuntimeTuningFrom(host);   // a run's overrides win over the variant's
 
                 // RE-SIZE THE HEART LAST, and unconditionally. This is load-bearing and it is
                 // easy to delete by accident, because from here it looks redundant with
@@ -870,6 +882,93 @@ namespace CosmicShore.Gameplay
         /// <para>Public since round 11c: the threat flora (ThreatGrove) eat through the same rule, so a plant that
         /// eats is held to it exactly as a creature is.</para>
         /// </summary>
+        /// <summary>
+        /// Armour points this species wears off armour per bite: <paramref name="superShielded"/> picks the super-shield
+        /// rate. 0 (the default) = this species never gnaws that tier. Only matters in a cell whose
+        /// <see cref="Cell.ArmourIsFood"/> is set (the Ark escort's worlds); a species authors it on its own config.
+        /// </summary>
+        protected float ArmourBite(bool superShielded) => _biteScale * Mathf.Max(superShielded ? _superBiteMin : _shieldBiteMin,
+            superShielded ? _tunedSuperShieldBite ?? AuthoredArmourBite(true) : _tunedShieldBite ?? AuthoredArmourBite(false));
+
+        float _biteScale = 1f, _shieldBiteMin, _superBiteMin;
+
+        /// <summary>The species' authored armour bite (its config); <see cref="ArmourBite"/> lets a run's tuning win.</summary>
+        protected virtual float AuthoredArmourBite(bool superShielded) => 0f;
+
+        float? _tunedShieldBite, _tunedSuperShieldBite;
+        string _speciesKey;
+
+        /// <summary>This creature's species key for run tuning (<see cref="FaunaRuntimeTuning.SpeciesKey"/>).</summary>
+        public string SpeciesKey => _speciesKey ??= FaunaRuntimeTuning.SpeciesKey(name);
+
+        /// <summary>
+        /// Take a run's overrides for this species (<see cref="FaunaRuntimeTuning"/>; only in cells that carry one). Called
+        /// as the cell takes the creature (<see cref="Initialize"/>) and again after its variant tuning
+        /// (<see cref="AssignLineage(Cell, FaunaConfigurationSO, LifeformVariantPick{FaunaVariantTuning}?)"/>), so it
+        /// must be idempotent: set absolute values, never scale what is already there.
+        /// </summary>
+        protected virtual void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            if (tuning.TryGet(species, "shieldBite", out float v)) _tunedShieldBite = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "superShieldBite", out v)) _tunedSuperShieldBite = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "biteScale", out v)) _biteScale = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "shieldBiteMin", out v)) _shieldBiteMin = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "superShieldBiteMin", out v)) _superBiteMin = Mathf.Max(0f, v);
+        }
+
+        void ApplyRuntimeTuningFrom(Cell host)
+        {
+            var tuning = host ? host.RuntimeFaunaTuning : null;
+            if (tuning == null || !tuning.HasAny || !tuning.Touches(SpeciesKey)) return;
+            ApplyRuntimeTuning(tuning, SpeciesKey);
+        }
+
+        /// <summary>True when this creature may wear through <paramref name="prism"/>'s armour: its cell lets armour be
+        /// food and this species bites that tier.</summary>
+        protected bool GnawsArmourOf(Prism prism)
+        {
+            var props = prism ? prism.prismProperties : null;
+            if (props == null || (!props.IsShielded && !props.IsSuperShielded)) return false;
+            var c = cell;
+            return c && c.ArmourIsFood && ArmourBite(props.IsSuperShielded) > 0f;
+        }
+
+        /// <summary>
+        /// One creature bite of <paramref name="prism"/>, through armour when this species gnaws it: an armoured prism
+        /// this creature may only gnaw takes one bite of wear (<see cref="Prism.GnawArmour"/>) and is consumed only on
+        /// the bite that cracks it; everything else is consumed as before (<paramref name="devastate"/> as the caller
+        /// states). Wear runs only on the simulation authority: a client puppet never cracks armour (it waits for the
+        /// shield drop to arrive). Returns <see cref="BiteResult.Ate"/> when mass was taken (feed the stomach then),
+        /// <see cref="BiteResult.Gnawed"/> for a bite of wear, <see cref="BiteResult.None"/> otherwise.
+        /// </summary>
+        protected BiteResult BiteMass(Prism prism, Transform mouth, Domains eaterDomain, string eaterName, bool devastate)
+        {
+            if (!prism || prism.destroyed) return BiteResult.None;
+            var props = prism.prismProperties;
+            bool armoured = props != null && (props.IsShielded || props.IsSuperShielded);
+            if (armoured && GnawsArmourOf(prism) && !EatsShieldWhole(prism))
+            {
+                if (!IsSimAuthority) return BiteResult.None;
+                if (!prism.GnawArmour(ArmourBite(props.IsSuperShielded))) return BiteResult.Gnawed;
+                devastate = true;   // cracked: plain mass now, eaten in the same bite
+            }
+            prism.Consume(mouth, eaterDomain, eaterName, devastate, true);
+            return prism.destroyed ? BiteResult.Ate : BiteResult.None;
+        }
+
+        /// <summary>What a <see cref="BiteMass"/> did.</summary>
+        protected enum BiteResult { None, Gnawed, Ate }
+
+        /// <summary>A SHIELDED (never super) prism this creature's diet already eats whole: a Frenzy, or a herd upgrade.</summary>
+        bool EatsShieldWhole(Prism prism)
+        {
+            var props = prism.prismProperties;
+            if (props == null || props.IsSuperShielded || !props.IsShielded) return false;
+            var c = cell;
+            if (c && c.ShieldedMassIsFood) return true;
+            return Leash is IFaunaHerd herd && herd.EatsShields(this);
+        }
+
         public static bool IsShieldedMass(Prism prism)
         {
             var properties = prism ? prism.prismProperties : null;
@@ -891,6 +990,7 @@ namespace CosmicShore.Gameplay
         protected bool IsInedibleShield(Prism prism)
         {
             if (!IsShieldedMass(prism)) return false;
+            if (GnawsArmourOf(prism)) return false;
             if (prism.prismProperties.IsSuperShielded) return true;
             var c = cell;
             if (c && c.ShieldedMassIsFood) return false;
@@ -1005,13 +1105,19 @@ namespace CosmicShore.Gameplay
         {
             RestoreSpindle();   // a pooled body is measured from the prefab's seats, never its last life's
 
+            // the body is the skin with the most vertices; where several share one mesh (a body built of braids, the
+            // /fauna-creation kit's), the one that spans furthest in the world - the spine
             Component body = null;
+            float bodySpan = 0f;
             var skins = SpindleMeshes();
             _authoredSpindleMeshes ??= new Dictionary<Component, Mesh>();
             foreach (var skin in skins)
             {
                 if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = MeshOf(skin);
-                if (!body || _authoredSpindleMeshes[skin].vertexCount > _authoredSpindleMeshes[body].vertexCount) body = skin;
+                var m = _authoredSpindleMeshes[skin];
+                float span = m ? RestMeshToWorld(skin, m).MultiplyVector(m.bounds.size).magnitude : 0f;
+                int count = m ? m.vertexCount : 0, bodyCount = body ? _authoredSpindleMeshes[body].vertexCount : -1;
+                if (!body || count > bodyCount || (count == bodyCount && span > bodySpan)) { body = skin; bodySpan = span; }
             }
             if (!body) return;
 
@@ -1052,6 +1158,19 @@ namespace CosmicShore.Gameplay
             BodyGirthFactor = bodySpindle.Map.Thickest;
 
             _authoredPrismSeats ??= new Dictionary<HealthPrism, Vector3>();
+            // Each host's vertices in the world and its world-to-mesh inverse, once per refit instead of once per prism
+            // (perf pass 2026-11-02). The same MultiplyPoint3x4 / inverse on the same inputs, so every distance and seat
+            // is bit-identical to the per-prism version.
+            var worldVerts = new Vector3[hosts.Count][];
+            var worldToMeshOf = new Matrix4x4[hosts.Count];
+            for (int h = 0; h < hosts.Count; h++)
+            {
+                var toWorld = hosts[h].toWorld;
+                var verts = hosts[h].spindle.Vertices;
+                var w = worldVerts[h] = new Vector3[verts.Length];
+                for (int i = 0; i < verts.Length; i++) w[i] = toWorld.MultiplyPoint3x4(verts[i]);
+                worldToMeshOf[h] = toWorld.inverse;
+            }
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
             {
                 if (!hp || !hp.transform.parent || !IsSpindlePart(hp)) continue;
@@ -1062,23 +1181,23 @@ namespace CosmicShore.Gameplay
                 int host = -1; float nearest = float.MaxValue;
                 for (int h = 0; h < hosts.Count; h++)
                 {
-                    var toMesh = hosts[h].toWorld.inverse;
-                    var p = toMesh.MultiplyPoint3x4(centre);
-                    float unit = ((Vector3)hosts[h].toWorld.GetColumn(0)).magnitude;
-                    var verts = hosts[h].spindle.Vertices;
+                    // measured in the WORLD: a braid stretched along its length only (the shipped Branch, the tadpole's,
+                    // a /fauna-creation body) has no single unit, and one axis's would misjudge the nearest host
+                    var verts = worldVerts[h];
                     for (int i = 0; i < verts.Length; i++)
                     {
-                        float d = (verts[i] - p).sqrMagnitude * unit * unit;
+                        float d = (verts[i] - centre).sqrMagnitude;
                         if (d < nearest) { nearest = d; host = h; }
                     }
                 }
                 if (host < 0) continue;
                 var (_, seat, meshToWorld) = hosts[host];
-                var worldToMesh = meshToWorld.inverse;
+                var worldToMesh = worldToMeshOf[host];
                 var local = worldToMesh.MultiplyPoint3x4(centre);
                 hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
 
-                if (IsAuthoredDanger(hp)) continue;   // a tooth keeps its size, at its new seat (never a Charge body's armed prism)
+                // every prism is refit, authored danger too: "the stinger can thin on space. the stinger is just a danger
+                // prism" (Garrett 2026-11-01). A tooth or a stinger is a prism like any other; there is no danger exception.
 
                 var authored = hp.AuthoredScale;
                 var parent = hp.transform.parent.localToWorldMatrix;
@@ -1390,10 +1509,36 @@ namespace CosmicShore.Gameplay
         // from the rest of a creature's Update (PERFORMANCE_OPTIMIZATION.md §1, S5).
         static readonly Unity.Profiling.ProfilerMarker s_BodySyncMarker = new("Fauna.BodySync");
 
+        // Far bodies sync at a third of the rate (Switchback perf pass 2026-11-02: 54 bodies, ~0.45 ms/frame). Beyond
+        // FarBodySyncDistance from the view camera a creature's index entry, shell and render matrix are refreshed every
+        // FarBodySyncEvery frames, staggered by instance; at that range a frame or two of lag is under a pixel and the
+        // senses that read the index tick slower than that anyway. Near ones, and any with no camera, sync every frame.
+        const float FarBodySyncDistance = 250f;
+        const int FarBodySyncEvery = 3;
+        static int s_farCheckFrame = -1;
+        static Vector3 s_viewPos;
+        static bool s_hasView;
+
+        bool SkipFarBodySyncThisFrame()
+        {
+            int frame = Time.frameCount;
+            if (s_farCheckFrame != frame)
+            {
+                s_farCheckFrame = frame;
+                var cam = CameraManager.ViewCamera;
+                s_hasView = cam;
+                if (s_hasView) s_viewPos = cam.transform.position;
+            }
+            if (!s_hasView) return false;
+            if ((transform.position - s_viewPos).sqrMagnitude < FarBodySyncDistance * FarBodySyncDistance) return false;
+            return (frame + GetInstanceID()) % FarBodySyncEvery != 0;
+        }
+
         protected void NotifyBodyPrismsMoved()
         {
             var prisms = _bodyPrisms;
             if (prisms == null) return;
+            if (SkipFarBodySyncThisFrame()) return;
             using (s_BodySyncMarker.Auto())
             {
                 for (int i = 0; i < prisms.Length; i++)
@@ -1443,6 +1588,7 @@ namespace CosmicShore.Gameplay
         public virtual void Initialize(Cell cell)
         {
             hostCell = cell;
+            ApplyRuntimeTuningFrom(cell);
         }
 
         // ===================================================================
@@ -1734,9 +1880,19 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(killerName)) return;
             if (killerName == StarvationKiller) return;
 
+            Killed?.Invoke(this, killerName);
+
             var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
             if (runtimeData) runtimeData.OnFaunaKilled.Raise(killerName);
         }
+
+        /// <summary>
+        /// Raised for every ATTRIBUTED creature death on the simulation authority, with the creature and its killer's
+        /// name - the same deaths <see cref="CellRuntimeDataSO.OnFaunaKilled"/> carries, plus WHICH creature died, so a
+        /// tool can ask where it was (the Ark escort's kills-on-Ark split). A metrics hook: nothing in the food web
+        /// listens, and a listener must unsubscribe when it is done.
+        /// </summary>
+        public static event System.Action<Fauna, string> Killed;
 
         /// <summary>Attribution string every starvation death uses - never a scoring kill.</summary>
         public const string StarvationKiller = "starvation";

@@ -43,7 +43,10 @@ trio, and the traps).
   cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
   nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
   domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
-  legacy opposing-mass diet. **Super-shielded mass is never food, in any cell; shielded mass is
+  legacy opposing-mass diet. **Super-shielded mass is never food, in any cell** (one granted
+  exception: a cell with `Cell.ArmourIsFood`, set only by the Ark escort on its own worlds, lets a
+  species with a shield / super-shield bite wear through armour, `Prism.GnawArmour` via
+  `Fauna.BiteMass`; Garrett 2026-10-31, recorded in `Docs/ECOSYSTEM.md` §0); **shielded mass is
   food only during a FRENZY** (the designer, 2026-10-21: "in general shielded prisms should be food
   during a frenzy when the cell has too many prism") — a cell in `CellPhase.Frenzy` has too much
   mass, so its fauna may eat its armour too, and a herd whose holder's upgrade allows it

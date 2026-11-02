@@ -19,13 +19,13 @@ namespace CosmicShore.UI
         [Header("Stoat")]
         [SerializeField] StoatHUDView view;
 
-        [Tooltip("This vessel's mode switch (Mass / Time / Gate).")]
+        [Tooltip("This vessel's mode (Time only since 2026-11-02).")]
         [SerializeField] StoatModeExecutor mode;
         [Tooltip("This vessel's field dipole (the ripple a let-go would throw; Space-5 Accretion).")]
         [SerializeField] StoatDipoleExecutor dipole;
         [Tooltip("This vessel's orbit slingshot (Time mode's timing).")]
         [SerializeField] StoatSlingExecutor sling;
-        [Tooltip("This vessel's pathfinder (the warp boost).")]
+        [Tooltip("This vessel's flight clock (the warp) and rings.")]
         [SerializeField] StoatPathfinderExecutor pathfinder;
 
         bool _isLocalPilotHud;
@@ -45,30 +45,35 @@ namespace CosmicShore.UI
         void Update()
         {
             if (!_isLocalPilotHud || !view) return;
-            if (dipole)
+            // The orbit alone (2026-11-02): Charge and Space read the sling — the ripple the open pair would throw and
+            // Space-5 Accretion on the orbit. The dipole only drives them if it is ever back in the kit.
+            if (sling && (!dipole || !dipole.isActiveAndEnabled || !dipole.IsOpen))
+            {
+                view.SetRipple(sling.RippleCharge01);
+                view.SetAccretion(sling.Accretion01);
+            }
+            else if (dipole)
             {
                 view.SetRipple(dipole.RippleCharge01);
                 view.SetAccretion(dipole.Accretion01);
             }
-            if (mode)
-            {
-                view.SetMode(mode.MassMode01);
-                view.SetModeIcon(mode.Current);
-            }
+            // The Mass card is Heavy Launch now: it keeps its authored icon (no mode swap) and its gauge rests.
+            if (mode) view.SetMode(0f);
 
-            // Time: progress to the sweet spot while the orbit holds the hull. Gate: a jump's warp as a share of its top,
-            // ready past half. Mass: the pathfinder's boost.
-            bool timeMode = mode && mode.IsTimeMode;
-            if (timeMode && sling && sling.IsOrbiting)
-                view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
-            else if (mode && mode.IsGateMode && pathfinder)
-                view.SetTime(pathfinder.GateWarp01, pathfinder.IsWarped);
-            else if (!timeMode && pathfinder)
-            {
-                float top = pathfinder.BoostTarget;
-                view.SetTime(top > 1.001f ? (pathfinder.BoostMultiplier - 1f) / (top - 1f) : 0f, pathfinder.IsWarped);
-            }
+            // Time: progress to the sweet spot while the orbit holds the hull, lime in the window.
+            if (sling && sling.IsOrbiting) view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
             else view.SetTime(0f, false);
+
+            // The Skim Sling's run: SKIP ×N after each skip, held while that skip is ridden, then faded.
+            if (sling && sling.UsesSkim && sling.Config && sling.Config.Skim)
+            {
+                float hold = sling.Config.Skim.SkipCounterSeconds;
+                float age = sling.SkipFxAge;
+                bool riding = sling.IsOrbiting && sling.SkipCount > 0;
+                float alpha = riding ? 1f : age >= 0f && age < hold ? 1f - Mathf.Clamp01((age - 0.5f * hold) / (0.5f * hold)) : 0f;
+                view.SetSkip(riding ? sling.SkipCount : sling.SkipFxCount, alpha, sling.SkipFxPerfect);
+            }
+            else view.SetSkip(0, 0f, false);
         }
     }
 }

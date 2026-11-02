@@ -1,34 +1,122 @@
 # Waystation (`GameModes.Waystation = 58`)
 
-> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
-> same airframe, dust and modes, with the Drop in place of the Fold (the AI drops when a ring lies under its belly). "Butterfly" below
-> means that airframe.
+> **Since 2026-11-01 Waystation is the Drop Tower race** (Shombith: "make Waystation Prototype as Waystation"). It
+> was built beside this mode as Waystation Prototype (GameModes 76, PR #1661) and then folded in: the towers, their
+> walls and the hop autopilot now live in `WaystationTower` and `WaystationController`, and 76 is retired and reserved.
+> Garrett's clusters, square exit gates and belly-aim autopilot are unchanged. The design round, its numbers and the
+> fun score are in `Docs/Studios/TIGER_MOTH_TIME.md`. Everything from "The loop, in the Butterfly's own terms" down is
+> the Butterfly- and Fold-era record of the clusters, kept because the clusters are still those clusters.
 >
-> **The exit gate faces SQUARE to the next cluster since 2026-10-29** (Garrett: "redesign waystation so the last ring
-> in a cluster is oriented so you can keep your flow by dropping to the next cluster"). The Fold jumped along the
-> nose, so the gate pointed at the jump; the Drop falls along the belly, so the gate now stands ACROSS it: thread it,
-> roll the next cluster under you, drop, and the landing turn leaves you flying into the next coil. See
-> "The square exit gate" below; the Fold-era text is kept as the record.
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`). The
+> exit gate faces SQUARE to the next cluster since the same day (Garrett: "keep your flow by dropping to the next
+> cluster").
 
-The **Butterfly-only migration race**. The rings come in **clusters** — coils you weave — laid a
-**FOLD** apart. Inside a cluster you fly; between clusters you teleport. Every pilot flies the
-same course in ORDER, and the first **DOMAIN** whose **LEAD RUNNER** threads the last ring wins.
+The **Tiger Moth's Time race**. The rings come in **clusters**, coils you weave, with a **Drop Tower** of short hops in
+every gap but the last, and one long drop to finish. Every pilot flies the same course in ORDER, and the first
+**DOMAIN** whose **LEAD RUNNER** threads the last ring wins.
 
 | | |
 |---|---|
 | Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity` |
-| Controller | `WaystationController : GateRaceController` |
-| Course | `WaystationCourse` + `WaystationCourseSettings` |
+| Controller | `WaystationController : GateRaceController` (clusters' belly-aim autopilot, tower walls, hop autopilot) |
+| Course | `WaystationCourse` (clusters) + `WaystationTower` (towers, walls), assembled by `WaystationCourseSource` |
 | Metric | `ScoringMetric.SwitchesThreaded` (9) — **reused**, not added |
 | Domain fold | `ScoringMetrics.BestByDomain` (the lead runner, via `GateRaceScoringRuleSO`) |
 | Rule asset | `WaystationScoringRule.asset` — a **second asset** on `GateRaceScoringRuleSO` |
-| Turn monitor | `RaceGateTurnMonitor` — the platform's, which asks the controller |
-| Target | `EndConditionOverridesSO.waystationRingTarget` (24) |
-| Comeback | `ScoreDifferenceSource.SwitchesThreaded`, rate **0.4** |
-| Cell | `Skim Race Cell Config` — the same cell Switchback runs in (standard 392u nucleus, which is where the course's `[412, 1060]` shell comes from; no flora, two fauna species grazing the trail) |
-| Offline authority | `Tools/Build/waystation_course.py` (`--check`, `--self-test`, `--compile`) |
-| Compile harness | `Tools/Build/waystation_harness/` — compiles and RUNS the shipped course C# |
-| Generator | `Tools/Build/author_waystation_assets.py` (`--check`) |
+| Turn monitor | `RaceGateTurnMonitor` — the platform's, which reads the laid course's ring count |
+| Target | `EndConditionOverridesSO.waystationClusterTarget` (5 CLUSTERS; the finish line is every ring laid, 18-41) |
+| Comeback | rate **0.4** (sized on the shortest race, 15 cluster rings) |
+| Cell | `Skim Race Cell Config` — the same cell Switchback runs in |
+| Offline authority | `Tools/Build/waystation_tower_course.py` (`--check`, `--self-test`, `--compile`) over `Tools/Build/waystation_course.py` (the clusters) |
+| Compile harnesses | `Tools/Build/waystation_tower_harness/` (towers), `Tools/Build/waystation_harness/` (clusters) |
+| Generator | `Tools/Build/author_waystation_assets.py` (`--check`; it also retires the prototype's assets and registrations) |
+
+## The Drop Tower (2026-11-01)
+
+### The loop, in the Tiger Moth's own terms
+
+1. **Clusters.** You weave the coils of rings. Each cluster ends at its square exit
+   gate, which leaves the next cluster under your belly once you roll.
+2. **A Drop Tower in every gap but the last.** The tower is a staircase of short hops laid along the gap's drop line:
+   - Each hop's ring hangs just past a **floor plate**, under the line you fly.
+   - Fly over the ring and **tap the Drop**. The fall is incorporeal, so you pass through the plate, thread the ring
+     and land flying along the fall line.
+   - **Too short a hold** lands you on or in front of the plate.
+   - **Too long a hold** leaves too little runway for the Drop to recharge and the next roll to finish, and the
+     **pipe** standing across your new heading meets you.
+   - The pattern is down, sideways (no roll), roll 180, down, sideways back. Every Drop is a 90-degree turn, and from
+     Garrett's square exit gate this square wave is the only pattern that makes progress toward the cluster.
+   - At I3 and I4 some sideways hops are **roll gates**: the ring is abeam, so you roll 90 degrees first.
+3. **The last gap is the long drop.** One Garrett-style drop of 1000 u or more. It leaves the Tiger Moth's neutral
+   wormhole pair, the team route for whoever follows. It comes last, so its 20 s recharge never costs a tower.
+
+### What the mode owns, and what it reuses
+
+| Piece | Where it comes from |
+|---|---|
+| Clusters, exit gates, ring order, scoring (`SwitchesThreaded`, golf), turn monitor, race beats | Waystation and the gate-race platform, unedited |
+| Long-drop autopilot (belly aim, roll onto an abeam ring) | `WaystationController`; its `aiFoldMinDistance` rose 420 -> 700 so it takes only the long gap and the clusters |
+| Drop Towers (rings) | `WaystationTower.Lay` / `Build` (pure), mirrored by `Tools/Build/waystation_tower_course.py` |
+| Tower walls (floor plates, pipes) | `WaystationTower.Walls` (pure, from the broadcast course), laid by `WaystationController.OnCourseRaised` on every peer as environment prisms (`SpawnablePrism`, `Domains.Blue`), plain or danger by a hash of (gate, wall, tile); regrown one tile per plate every 1.5 s |
+| Hop autopilot | `WaystationController` (`TryHopAim` / `TryHopBelly` / `TickHops`): flies the cruise line over the ring, rolls the belly onto its drop line, presses through the replicated path, releases at the window's centre (`WaystationTower.HoldForTravel`) |
+| Arena | Waystation's: the shared barren Skim Race cell |
+| Target | `EndConditionOverridesSO.waystationClusterTarget` = 5 CLUSTERS. The finish line is every ring the course lays, towers included (`RaceGateTurnMonitor` reads the laid course; the source answers the same count, so it does not warn) |
+
+### The vessel is not changed (LOCKED rule, Shombith 2026-10-31)
+
+No vessel code or asset is touched. A wall is an ordinary environment prism, so a hull meets it the way any hull meets
+that kind of prism.
+
+What a Tiger Moth takes when its colliders come back on inside a wall tile, read from the code
+(`VesselImpactor.cs:122-166`, `ButterflyImpactorDataContainer.asset`):
+- Prisms are trigger boxes and the hull is a non-trigger sphere of radius 6. Re-enabling the collider raises
+  `OnTriggerEnter` once, on the next physics step. Nothing guards against it and there is no `OnTriggerStay`.
+- **A plain neutral tile** explodes. The throttle drops by ×(1 − min(0.1·volume, 0.5)) and eases back over 1 s, and
+  boost is reset.
+- **A danger tile** explodes. The throttle drops to ×0 and recovers over 3 s, and all four elements take a **permanent**
+  burn, because Blue counts as a rival domain. Boost is reset.
+- Flying into a tile costs the same as landing in one.
+
+### Intensity ladder
+
+The course, not the arena, is what changes:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Rings per cluster (Waystation's) | 3 | 4 | 5 | 6 |
+| Hop window (travel / hold) | 50..250 u / ±0.079 s | 66..234 u / ±0.065 s | 85..225 u / ±0.055 s | 102..218 u / ±0.047 s |
+| Tower ring radius | 48 | 42 | 36 | 32 |
+| Roll gates (share of free sideways hops) | 0 | 0 | 0.5 | 1 |
+| Danger share of wall tiles | 0.10 | 0.20 | 0.35 | 0.50 |
+
+### Gates
+
+Run these:
+
+```
+python3 Tools/Build/waystation_tower_course.py --check
+python3 Tools/Build/waystation_tower_course.py --self-test
+python3 Tools/Build/waystation_tower_course.py --compile
+python3 Tools/Build/author_waystation_assets.py --check
+```
+
+- `--check` sweeps 200 seeds × 4 intensities. It checks window, runway, path, edges, mouths, shell, towers, long gap,
+  stand-down, danger and radius.
+- `--self-test` runs six negative controls, each of which must fail the check it targets.
+- `--compile` builds and runs the shipped `WaystationTower.cs` and compares it with the model. On 2026-10-31 it agreed
+  on 2267 gates (worst disagreement 0.0013 u) and on every wall's tile and danger counts.
+
+### Known limitations
+
+- **Never flown.** The hop autopilot, the walls in a real cell, the network copy of the walls and the feel of the
+  hold are all unverified.
+- **A few gaps get no tower.** 2 to 48 of every 600 gaps, most at I4, where a tower would leave the cell or cut a
+  cluster. That gap is then flown or dropped the cluster-era way.
+- **Regrowth is per peer**, as in Serpent Time. After heavy contact, two peers can disagree by a few tiles for a moment.
+- **The preview** shows the tower rings but not their walls, which only the match controller lays.
+- **The danger hash** is the same function as Serpent Time's `SerpentTimeCluster.IsDangerSlab`, now also on
+  bleeding-edge, but written out again in `WaystationTower.Hash01`. Share one hash in a later cleanup; changing it
+  would change which tiles are danger, so the model and `--compile` must move with it.
 
 ## The loop, in the Butterfly's own terms
 

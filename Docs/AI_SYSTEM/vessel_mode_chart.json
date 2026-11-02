@@ -44,6 +44,16 @@
    ]
   },
   {
+   "mode": "BrittleStarTime",
+   "name": "Brittle Star Time",
+   "hulls": [
+    "Brittle Star"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Broadside",
    "name": "Broadside",
    "hulls": [
@@ -108,7 +118,7 @@
    "mode": "Dustup",
    "name": "Dustup",
    "hulls": [
-    "Butterfly"
+    "Tiger Moth"
    ],
    "lists": [
     "ArcadeGames"
@@ -225,6 +235,16 @@
    ]
   },
   {
+   "mode": "ScarabRally",
+   "name": "Scarab Rally",
+   "hulls": [
+    "Scarab"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "ScarabScramble",
    "name": "Scarab Scramble",
    "hulls": [
@@ -247,10 +267,30 @@
    ]
   },
   {
+   "mode": "SerpentGulag",
+   "name": "Serpent Gulag",
+   "hulls": [
+    "Serpent"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "SerpentTime",
+   "name": "Serpentine",
+   "hulls": [
+    "Serpent"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Sirocco",
    "name": "Sirocco",
    "hulls": [
-    "Butterfly"
+    "Tiger Moth"
    ],
    "lists": [
     "ArcadeGames"
@@ -300,7 +340,7 @@
    "mode": "Tapestry",
    "name": "Tapestry",
    "hulls": [
-    "Butterfly"
+    "Tiger Moth"
    ],
    "lists": [
     "ArcadeGames"
@@ -350,7 +390,7 @@
    "mode": "Waystation",
    "name": "Waystation",
    "hulls": [
-    "Butterfly"
+    "Tiger Moth"
    ],
    "lists": [
     "ArcadeGames"
@@ -398,6 +438,21 @@
  ],
  "hulls": [
   {
+   "hull": "Brittle Star",
+   "abilities": {},
+   "stats": null,
+   "verb": "",
+   "aiDrive": "",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "BrittleStarTime"
+   ],
+   "gateRacesOffered": [],
+   "flown": {},
+   "asRival": {}
+  },
+  {
    "hull": "BrittleStar",
    "abilities": {
     "Charge": "Charge Mode",
@@ -421,121 +476,6 @@
    "gateRacesOffered": [],
    "flown": {},
    "asRival": {}
-  },
-  {
-   "hull": "Butterfly",
-   "abilities": {
-    "Charge": "Scale Dust",
-    "Mass": "Mass / Dust Mode",
-    "Space": "Dust Reach",
-    "Time": "Fold"
-   },
-   "stats": {
-    "ts": 55.0,
-    "ms": 12.0,
-    "pitch": 45.0,
-    "yaw": 45.0,
-    "rts": 0.0,
-    "boost": 4.0
-   },
-   "verb": "",
-   "aiDrive": "",
-   "regattaAI": false,
-   "tunedFor": [],
-   "offeredIn": [
-    "Dustup",
-    "Sirocco",
-    "Tapestry",
-    "Waystation"
-   ],
-   "gateRacesOffered": [
-    "Waystation"
-   ],
-   "flown": {
-    "Dustup": {
-     "races": 1,
-     "finished": 0,
-     "best": null,
-     "median": null,
-     "intensities": [
-      1
-     ],
-     "pilots": [
-      "owner"
-     ],
-     "rivalDifficulty": [
-      "Medium"
-     ],
-     "last": "2026-10-23 13:58:50"
-    },
-    "Tapestry": {
-     "races": 1,
-     "finished": 0,
-     "best": null,
-     "median": null,
-     "intensities": [
-      1
-     ],
-     "pilots": [
-      "owner"
-     ],
-     "rivalDifficulty": [
-      "Medium"
-     ],
-     "last": "2026-10-23 14:03:31"
-    },
-    "Waystation": {
-     "races": 2,
-     "finished": 1,
-     "best": 204.5,
-     "median": 204.5,
-     "intensities": [
-      1
-     ],
-     "pilots": [
-      "belac"
-     ],
-     "rivalDifficulty": [
-      "Medium"
-     ],
-     "last": "2026-10-21 15:32:54"
-    }
-   },
-   "asRival": {
-    "Waystation": {
-     "races": 2,
-     "medianRings": 0,
-     "target": 24,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
-    },
-    "Dustup": {
-     "races": 2,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
-    },
-    "Tapestry": {
-     "races": 1,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
-    }
-   }
   },
   {
    "hull": "Dolphin",
@@ -573,6 +513,22 @@
     "Switchback"
    ],
    "flown": {
+    "Bends": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-10-28 23:57:21"
+    },
     "Regatta": {
      "races": 1,
      "finished": 0,
@@ -590,13 +546,14 @@
      "last": "2026-10-22 23:55:59"
     },
     "Switchback": {
-     "races": 19,
-     "finished": 16,
+     "races": 37,
+     "finished": 20,
      "best": 58,
-     "median": 94.5,
+     "median": 104.9,
      "intensities": [
       1,
       2,
+      3,
       4
      ],
      "pilots": [
@@ -605,9 +562,10 @@
       "yskha"
      ],
      "rivalDifficulty": [
+      "Legendary",
       "Medium"
      ],
-     "last": "2026-10-26 22:00:31"
+     "last": "2026-10-29 22:27:58"
     }
    },
    "asRival": {
@@ -627,16 +585,29 @@
      ]
     },
     "Switchback": {
-     "races": 40,
+     "races": 80,
      "medianRings": 11,
      "target": 20,
      "difficulty": [
+      "Legendary",
       "Medium"
      ],
      "intensities": [
       1,
       2,
+      3,
       4
+     ]
+    },
+    "Bends": {
+     "races": 1,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      2
      ]
     },
     "Broadside": {
@@ -872,10 +843,10 @@
   {
    "hull": "Meerkat",
    "abilities": {
-    "Charge": "'(open design slot)'",
-    "Mass": "'(open design slot)'",
-    "Space": "'(open design slot)'",
-    "Time": "'(open design slot)'"
+    "Charge": "'Sentinel Mode'",
+    "Mass": "'Exit Portal'",
+    "Space": "'Soliton'",
+    "Time": "'Faster Ride'"
    },
    "stats": {
     "ts": 60.0,
@@ -1013,9 +984,9 @@
   {
    "hull": "Scarab",
    "abilities": {
-    "Charge": "Cavitation Blast",
+    "Charge": "Shove",
     "Mass": "Switch",
-    "Space": "Ball Forge",
+    "Space": "Nucleus Seeding",
     "Time": "Throttle"
    },
    "stats": {
@@ -1034,6 +1005,7 @@
     "AstroLeague",
     "Broadside",
     "Regatta",
+    "ScarabRally",
     "ScarabScramble",
     "Tollway",
     "Undertow",
@@ -1135,9 +1107,9 @@
   {
    "hull": "Serpent",
    "abilities": {
-    "Charge": "Sniper Shot",
+    "Charge": "Scope",
     "Mass": "Seed Wall",
-    "Space": "Scope",
+    "Space": "Cloak / Sniper Shot",
     "Time": "Solid Fuel Pellets"
    },
    "stats": {
@@ -1154,7 +1126,9 @@
    "tunedFor": [],
    "offeredIn": [
     "BroodRush",
-    "Regatta"
+    "Regatta",
+    "SerpentGulag",
+    "SerpentTime"
    ],
    "gateRacesOffered": [
     "Regatta"
@@ -1443,7 +1417,7 @@
      "last": "2026-10-25 07:03:19"
     },
     "SkimRace": {
-     "races": 18,
+     "races": 19,
      "finished": 0,
      "best": null,
      "median": null,
@@ -1464,7 +1438,7 @@
       "Legendary",
       "Medium"
      ],
-     "last": "2026-10-27 04:44:11"
+     "last": "2026-10-28 00:05:46"
     },
     "Tandava": {
      "races": 1,
@@ -1501,7 +1475,7 @@
      ]
     },
     "SkimRace": {
-     "races": 37,
+     "races": 39,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
@@ -1597,6 +1571,22 @@
      ],
      "last": "2026-10-26 00:13:56"
     },
+    "Slingshot": {
+     "races": 3,
+     "finished": 1,
+     "best": 75.2,
+     "median": 75.2,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Legendary"
+     ],
+     "last": "2026-10-29 20:17:13"
+    },
     "Warpline": {
      "races": 20,
      "finished": 17,
@@ -1627,6 +1617,17 @@
      "target": 24,
      "difficulty": [
       "Hard"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Slingshot": {
+     "races": 6,
+     "medianRings": 15,
+     "target": 16,
+     "difficulty": [
+      "Legendary"
      ],
      "intensities": [
       2
@@ -1707,6 +1708,26 @@
      ]
     }
    }
+  },
+  {
+   "hull": "Tiger Moth",
+   "abilities": {},
+   "stats": null,
+   "verb": "",
+   "aiDrive": "",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "Dustup",
+    "Sirocco",
+    "Tapestry",
+    "Waystation"
+   ],
+   "gateRacesOffered": [
+    "Waystation"
+   ],
+   "flown": {},
+   "asRival": {}
   },
   {
    "hull": "Urchin",
@@ -1894,7 +1915,7 @@
    }
   }
  ],
- "flights": 229,
+ "flights": 256,
  "pilots": [
   "belac",
   "gradi",

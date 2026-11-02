@@ -1068,6 +1068,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: CrewOfFourLab.html `STYLES`, `styleBoostStep`, `dockStep`, `seekLock`; .claude/skills/vessel-studio/copy_orca.py; CREW_OF_FOUR_LAB.md round 9.
 - Promoted: no
 
+### L-STU-156 — An AI's dirty object laid ON a rival traps the rival bouncing in place; lay it behind you and route the AI round walls
+- Lab: Serpent Studio (`Docs/Studios/VesselStudio/serpent.html`) · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: round 1's first AI cloaked with the seed at its own hull. A rival right behind flew into the super-shielded seed and bounced against it for seconds, and the first scorecard read that as walls being wildly strong.
+- Do instead: put the dropped object where the vessel really leaves it (the seed is the latest trail prism, behind the hull) and give every AI a wall-avoidance route before scoring what walls are worth.
+- Evidence: `serpent.html` round 1, `SERPENT_TIME.md` §6 (a).
+- Promoted: no
+
+### L-STU-157 — A sniper AI that waits for a perfect aim never fires; fire inside half the cone, ease the throttle, back off for range
+- Lab: Serpent Studio · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: lining up from 280 u for a 0.35° aim, the sniper AI never fired; the stick mix never settles that fine.
+- Do instead: fire when the believed target sits inside half the cone at that distance, lift the throttle while lining up, and back away when too close. The game's port fires when the wall's centre is inside the rifle's own cone (radius floored at 6 u), after the scope has settled.
+- Evidence: `serpent.html` `aiInput`; `SerpentTimeController.OnTarget`.
+- Promoted: no
+
+### L-STU-158 — An InstancedMesh needs its instance colour attribute before its first render, or it draws white forever (three r128)
+- Lab: Serpent Studio · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: every wall brick drew white. The colour buffer was created by the first `setColorAt` call, after the mesh had already rendered once, and r128 never rebinds it.
+- Do instead: call `setColorAt(0, …)` (and set `count`) when the mesh is created, before the first frame.
+- Evidence: `serpent.html` (`prismMesh.setColorAt(0, DEBRIS)` at creation).
+- Promoted: no
+
 ### L-STU-155 — A lab that reads part of a shipped look shows a HALF-updated object when the look changes, and its --check stays green
 - Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`) · Branch: `cece/serene-cannon-93olp5` · By: the 2026-10-28 omni-shades session · Date: 2026-10-28
 - What happened: the omni crystal moved from one lime to four per-element shades (`Docs/PALETTE.md` §2.12). The lab's baker reads `OmniDepthPrisms._BrightColor` and the body's `_BrightColor`, so the re-bake moved the triangle prisms to the Mass shade while the body, whose new colours ride a per-vertex element channel and four new properties the baker never reads, stayed one lime. `omni_shepard_lab_assets.py --check` and `verify_lab.cjs` both passed: the page truthfully shows what it reads and nothing says what it does not.
@@ -1781,4 +1802,32 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: Garrett asked to remove Printer (a free prism every spin) "for now". The draw was `ABILITIES[floor(rng * 9)]`, held step for step to `DynamoCore.cs` by `parity.cjs`. Deleting the key would have renumbered the serialized `DynamoAbility` enum and changed every seed. Instead the core draws from `S.abilities` (null = all, so the arithmetic is identical), and the shipped settings pass all but `RETIRED_ABILITIES`. Parity stayed green on every old rule set, and new rule sets (the shipped pool, two abilities, one) plus a planted "ignore the pool" control (caught, 4,431 steps) cover the change. One Unity golden did need re-measuring: it plays the shipped config, and it was already stale from round 6 (start slot 27 against the page's 26), which nobody had seen because no CI runs the edit-mode tests. The page and `DynamoCore.cs` on the shipped asset agreed on the new values.
 - Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
 - Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
+- Promoted: no
+
+### L-STU-159 — Independent pairwise boundaries do not tile space: fit one partition for every family at once
+- Lab: Colour Domains Lab (`Docs/Studios/ColourDomainsLab.html`) · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: Garrett asked for convex regions that "encroach on each other's territory, but respect the thickness of the forbidden band". Round 3 put a band in the middle of each pair's gap, one pair at a time. Fifteen bands chosen independently leave pockets that no family owns; Garrett's saved proposal ended with 65.5% of the gamut as band, and he reported regions "not encroaching in order to fill in". Round 4 gave every family one score `A_f = n_f·x + c_f` and the colour to the highest: the cells are convex and tile the space by construction, and the band is the same thickness on every border.
+- Do instead: when regions must be convex AND fill a space, fit them TOGETHER as a max-affine partition (a multiclass maximum-margin fit, then a refinement on the true distance to each border). Never place pairwise boundaries one by one.
+- Evidence: `fitAffine` / `refineCells` in the page; `Tools/Build/colour_domains.py classify`.
+- Promoted: no
+
+### L-STU-160 — A tool that cuts space when it cannot hand it over creates the gaps it exists to prevent
+- Lab: Colour Domains Lab · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: the eraser removed a colour from its family, and when no neighbour could take it, cut a flat face through it. Behind a cut the space was empty however deep it went: 17.1% of the gamut, and a Jade/Ruby gap visibly thicker than every other band. Garrett: "i was still able to create large gaps and the starting config has gaps that are thicker than others". Measured by walking a line from Jade's signal to Ruby's and printing the owner of each step (`JJJJJJJ..xxxxBBBB....RRRR`, x = cut), which named the cause in one line.
+- Do instead: an edit that cannot be honoured without breaking the invariant (here: the only empty space is the band) must leave the colour where it is and SAY so, never fall back to something that silently breaks the invariant. When a user reports an uneven result, print a 1-D walk through the space with the owner at each step before theorising.
+- Evidence: `handOff` in the page (no cuts); `COLOR_DOMAINS.md` § How the lab got here.
+- Promoted: no
+
+### L-STU-161 — When a shaped result comes from a fit that is not unique, freeze the RESULT, not the inputs
+- Lab: Colour Domains Lab · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: Garrett liked the boundaries of his "shaped by eye" save and asked for them as the source of truth. Refitting the same inputs from a different starting point agreed on only 84% of a 41³ grid, and restoring two anchors he had dragged by accident moved 7% of all colours. Replaying the page's exact path (start from the previous adopted fit, 400 steps) reproduced the saved shares to within 0.05 points, so those boundaries were frozen as the truth's `cells`, and the anchors became a CHECK against them (all inside, one named exception) rather than the input.
+- Do instead: for anything shaped by eye on top of an optimiser, store the optimiser's output as the definition, prove it by replaying the page's path against numbers saved with the shape, and turn the inputs into assertions. Ask which part the person liked before "fixing" an accidental input: here it was the boundaries, not the anchors.
+- Evidence: `colour_domains.json` `cells`; `colour_domains.py --check` / `--self-test` (seven planted failures); the page's `__lab.runBatch()` matches the Python checker to 0.01 points.
+- Promoted: no
+
+### L-STU-162 — A comparison page the person will PICK on needs a save path on its first publish
+- Lab: Lime Element Shades (`Docs/Studios/LimeElementShades.html`) · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: the first publish compared ladders with sliders but kept their state only in the viewer's browser. Garrett set his values and asked "can you retrieve them?"; they could not be read, a republish added a db-backed "Save my pick" and a copyable text line, and he had to set them again. Three saves then landed (two identical), so the latest by `savedAt` is the pick.
+- Do instead: any page whose purpose is a CHOICE (a pick, a tuning, a vote) declares `db` and carries a save button and a plain-text readout from its first publish; read the latest save by `savedAt`, and say which one you took.
+- Evidence: the page's `picks` collection (three documents, 2026-10-31 20:31-20:33); `kite_mote_colors.py` `PICKED`.
 - Promoted: no

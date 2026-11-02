@@ -1,0 +1,1312 @@
+<title>Wrasse Haul Lab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<!--
+  WRASSE HAUL LAB, round 1 (a /labmaker browser studio, an A/B).
+  Question (Garrett, 2026-10-29): "the wrass has three fun things to do: attack vessels, prisms, and lasso elements.
+  but the constant looping gets very repetitive. every vessel must be fun the thousandth time." Show the new concept
+  (Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 2: Hunt, Haul, Sling, Clean) against the shipped Wrasse, A/B.
+    A - the shipped Wrasse: the Sling, a pure loop fires the moment it closes, motes spawn evenly.
+    B - the concept: shoals that move like their element, loops cinch into a haul towed at the tail, lift the thumb
+        mid-swing to throw it, fly home into the Grouper to dock (rest, and clean its silence).
+  The kite, the Sling, the tail and the loop rule are the Wrasse Lasso Lab's copy of the shipped KiteNavigatorCore,
+  line for line; the numbers are KiteNavigatorConfig.asset's. Write-up: Docs/Studios/WRASSE_HAUL_LAB.md.
+  Verify: node .claude/skills/labmaker/verify_lab.cjs <this file>
+-->
+<style>
+  /* Layout: a reef-dark play stage with the editor docks beside it on a PC; on a phone (held upright) the stage owns
+     the screen and every panel lives in one pull-up sheet. The A | B switch is the loudest control on the page. */
+  :root {
+    --bg: #eef3f1; --panel: #ffffff; --ink: #14201d; --muted: #566661; --line: #d5dfdb;
+    --accent: #2c7a5b; --accent-ink: #ffffff; --warn: #a65410; --ok: #23784a; --changed: #2a63c4;
+    --a-tone: #6f7f7a; --b-tone: #2c7a5b;
+    --stage: #061417; --stage-ink: #cfe4dd; --stage-dim: #6f8f87; --lime: #b9f25c;
+    --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1213; --panel: #111a1b; --ink: #e2ece8; --muted: #8fa39d; --line: #233133;
+      --accent: #6cc79a; --accent-ink: #062016; --warn: #f0a050; --ok: #6cd294; --changed: #79a8ff;
+      --a-tone: #93a49f; --b-tone: #6cc79a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1213; --panel: #111a1b; --ink: #e2ece8; --muted: #8fa39d; --line: #233133;
+    --accent: #6cc79a; --accent-ink: #062016; --warn: #f0a050; --ok: #6cd294; --changed: #79a8ff;
+    --a-tone: #93a49f; --b-tone: #6cc79a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--body); overflow: hidden; }
+  button, select, input, textarea { font: inherit; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 230px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  #panels { display: contents; }
+  header { grid-area: head; display: flex; gap: 8px 14px; align-items: center; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 700 17px/1.1 var(--display); margin: 0; letter-spacing: .01em; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  #diff { color: var(--changed); font-size: 12px; }
+  .spacer { flex: 1; }
+  .row-ctl { display: flex; gap: 6px; align-items: center; min-width: 0; }
+  .ab { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .ab button { border: 0; background: var(--panel); color: var(--ink); padding: 5px 14px; cursor: pointer; display: flex; gap: 6px; align-items: baseline; }
+  .ab button b { font: 700 16px/1 var(--display); }
+  .ab button small { color: var(--muted); }
+  .ab button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .ab button[aria-pressed="true"] small { color: var(--accent-ink); opacity: .8; }
+  .ab button + button { border-left: 1px solid var(--line); }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  select { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 3px 6px; }
+  .label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #hud { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); top: 10px; color: var(--stage-ink); font: 12px/1.5 var(--mono); pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #hud b { color: var(--lime); font-weight: 600; }
+  #hint { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; color: var(--stage-dim); font-size: 12px; pointer-events: none; padding: 0 16px; }
+
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 70px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .row label .key { color: var(--muted); font: 10.5px var(--mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 12px var(--mono); }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .note { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
+  .beats { list-style: none; padding: 0; margin: 6px 0 10px; display: grid; gap: 8px; }
+  .beats li { border-left: 3px solid var(--accent); padding: 1px 0 1px 10px; }
+  .beats li.a { border-left-color: var(--a-tone); }
+  .beats b { font: 700 14px var(--display); display: block; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12px; }
+  .ctrl td { color: var(--muted); }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, input[type=text] { width: 100%; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  .toggles label { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+  .score-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  .curve { width: 100%; height: 150px; display: block; }
+  .legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 4px; }
+  #panelBtn, #sheetClose { display: none; }
+
+  @media (max-width: 1100px) { .score-grid { grid-template-columns: minmax(0, 1fr); } }
+  /* Phone: the stage is the screen; one sheet holds the settings and the tables. */
+  @media (max-width: 900px) {
+    #app { display: flex; flex-direction: column; height: 100%; }
+    header { gap: 6px 8px; padding-block: 6px; }
+    header h1 { font-size: 15px; }
+    header .meta, #diff, #platform, #resetAll, #pause, #splitBtn { display: none; }
+    header .spacer { display: none; }
+    #title { flex: 1; }
+    #panelBtn { order: 1; display: inline-block; }
+    #abRow { order: 2; }
+    #modeRow { order: 3; flex: 1 1 150px; min-width: 0; }
+    #modeRow .btn { padding: 4px 8px; }
+    #modeRow select { flex: 1 1 0; min-width: 0; }
+    .ab button { padding: 5px 12px; }
+    #stageWrap { flex: 1; }
+    #panels { display: block; position: fixed; left: 0; right: 0; bottom: 0; height: 74%; background: var(--panel); border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; overflow: auto; z-index: 20; padding-bottom: env(safe-area-inset-bottom, 0px); box-shadow: 0 -8px 30px rgba(0,0,0,.35); transform: translateY(105%); transition: transform .22s ease; }
+    body.sheet #panels { transform: none; }
+    #sheetClose { display: block; margin: 8px auto 0; }
+    #dock, #bottom { border: 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: visible; }
+    #bottom { border-top: 1px solid var(--line); }
+  }
+  @media (prefers-reduced-motion: reduce) { #panels { transition: none; } }
+</style>
+
+<div id="app">
+  <header>
+    <h1 id="title">Wrasse Haul Lab</h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <div class="ab" id="abRow" role="group" aria-label="Variant">
+      <button id="abA" aria-pressed="false"><b>A</b><small>shipped</small></button>
+      <button id="abB" aria-pressed="true"><b>B</b><small>haul</small></button>
+    </div>
+    <button class="btn" id="splitBtn" aria-pressed="false" title="Run A and B side by side, same seed, same AI">Side by side</button>
+    <span class="spacer"></span>
+    <div class="row-ctl" id="modeRow">
+      <select id="pilotSel" aria-label="Who flies the kite"></select>
+      <button class="btn" id="restart">Restart</button>
+      <button class="btn" id="pause">Pause</button>
+    </div>
+    <button class="btn" id="panelBtn">Settings</button>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="resetAll" title="Every number back to the shipped asset and the lab's defaults">Defaults</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage"></canvas>
+    <div id="hud"></div>
+    <div id="hint"></div>
+  </div>
+  <div id="panels">
+    <button class="btn" id="sheetClose">Back to the game</button>
+    <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+    <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  // A READER of the shipped Wrasse. Every game constant names the field it was copied from. The concept's knobs
+  // (prefix hl = haul / throw / dock, sh = shoals) and the stand-in world (prefix lab) are this lab's proposals.
+  const LAB = { name: 'Wrasse Haul Lab', branch: 'cece/jolly-lovelace-t8y3a1', round: 1, doc: 'Docs/Studios/WRASSE_HAUL_LAB.md' };
+  const SHIPPED = {
+    // KiteNavigatorConfig.asset (Assets/_SO_Assets/VesselActions/KiteNavigator/), read 2026-10-29 on cece/jolly-lovelace-t8y3a1
+    boardRadius: 160,            // KiteNavigatorConfigSO.boardRadius (u)
+    kiteRadius: 8,               // .kiteRadius (u): the head's contact radius
+    tailLength: 4.8,             // .tailLength (board radii)
+    moteCount: 26,               // .moteCount
+    moteCluster: 4,              // .moteCluster (average motes per one-element cluster)
+    moteSpread: 18,              // .moteSpread (u, gaussian)
+    mixedLoops: 0,               // .mixedLoops: 0 Fizzle (shipped), 1 Majority
+    growth: 2,                   // .growth: base x growth^(n-1)
+    moteSize: 4.5,               // .moteSize (u, the flower's radius)
+    spaceMaxScale: 60,           // .spaceMaxScale (AOEExplosion MaxScale at n = 1)
+    spaceMaxScaleCap: 640,       // .spaceMaxScaleCap
+    massPrisms: 6,               // .massPrisms
+    massPrismCap: 240,           // .massPrismCap
+    timeBoostSeconds: 1.5,       // .timeBoostSeconds
+    timeBoostCap: 30,            // .timeBoostCap (s): at most 20 boosts banked
+    chargePetals: 1,             // .chargePetals
+    chargeCap: 30,               // .chargeCap
+    stealCooldown: 1,            // .stealCooldown (s)
+    slingRope: 42,               // .slingRope (u)
+    slingStiffness: 260,         // .slingStiffness (1/s^2)
+    slingDamping: 5,             // .slingDamping (1/s)
+    slingDrag: 0.35,             // .slingDrag (1/s, while held)
+    slingFreeDrag: 0.9,          // .slingFreeDrag (1/s, let go)
+    slingMaxSpeed: 364,          // .slingMaxSpeed (u/s)
+    // lab: the stand-in world both variants fly in
+    labFlow: 40,                 // lab: how fast the world flows down the board (u/s); the hull is always flying
+    labPrisms: 70,               // lab: hostile prisms kept on the board
+    labDanger: 0.08,             // lab: share of hostile prisms that are danger prisms
+    labRivalSpeed: 80,           // lab: the rival hull's wander speed (u/s), the lasso lab's Medium
+    labRivalSilence: 4,          // lab: silence one rival hit puts on the Grouper or an ally (s)
+    labRivalCooldown: 3,         // lab: seconds between the rival's hits
+    labSilenceCap: 15,           // lab: most silence a hull can carry (s)
+    // proposal B: the haul, the throw, the dock
+    hlThrowSpeed: 220,           // proposal: the kite must swing faster than this (u/s) for a lift to throw the haul
+    hlThrowGain: 1.15,           // proposal: the haul leaves at this multiple of the kite's speed
+    hlThrowDrag: 1.8,            // proposal: how fast a thrown haul slows (1/s)
+    hlMassPerMote: 0.12,         // proposal: each hauled mote adds this much to the kite's mass on the rope
+    hlDragPerMote: 0.04,         // proposal: each hauled mote adds this much drag while held (1/s)
+    hlTow: 16,                   // proposal: how far behind the head the haul rides (u)
+    hlHeadSpill: 1,              // proposal: the head crossing its own haul spills it (1 on, 0 off)
+    hlDockRadius: 20,            // proposal: fly into the Grouper this close to dock (u)
+    hlLaunchGain: 5,             // proposal: launch speed per u of drag out of the dock (1/s)
+    hlCleanRate: 2,              // proposal: extra silence the dock cleans off the Grouper per second (s/s)
+    hlAllyClean: 5,              // proposal: silence one loop round an ally's shadow cleans (s)
+    hlOmni: 1.5,                 // proposal: an all-four braid throws every element at this multiple
+    hlHullCatch: 26,             // proposal: a Time haul thrown this close to the Grouper is caught (u)
+    // proposal B: shoals that move like their element
+    shFeatureShare: 0.75,        // proposal: share of new shoals that gather round a world feature (flora, crystals)
+    shTimeSense: 50,             // proposal: a Time shoal darts when the kite comes this close (u)
+    shTimeDart: 110,             // proposal: a Time shoal's dart (u/s)
+    shMassSize: 1.75,            // proposal: Mass shoals are this many times the cluster size
+    shMassDrift: 6,              // proposal: Mass shoals' drift (u/s)
+    shSpaceBlink: 2,             // proposal: seconds between a Space shoal's hops
+    shSpaceHop: 38,              // proposal: how far a Space shoal hops (u)
+    shChargeSense: 60,           // proposal: a Charge shoal shies from the kite inside this (u)
+    shChargeShy: 45,             // proposal: how fast it shies (u/s)
+    shChargeLure: 14,            // proposal: how fast it drifts toward the rival (u/s)
+  };
+
+  // ================= (2) SPEC: one row per slider =================
+  const SPEC = [
+    ['Haul', 'hlThrowSpeed', 80, 360, 5, 'Throw speed (u/s)', 'Proposal. Lift your thumb while the kite swings faster than this and the haul flies. A slower lift lets the kite drift on with its haul, as today.'],
+    ['Haul', 'hlThrowGain', 0.6, 2, 0.05, 'Throw strength (x)', 'Proposal. The haul leaves at this multiple of the kite\'s speed.'],
+    ['Haul', 'hlThrowDrag', 0.5, 5, 0.1, 'Throw drag (1/s)', 'Proposal. How fast a thrown haul slows and lands.'],
+    ['Haul', 'hlMassPerMote', 0, 0.5, 0.01, 'Weight per mote', 'Proposal. Each hauled mote makes the kite heavier on the rope: wider, slower swings.'],
+    ['Haul', 'hlDragPerMote', 0, 0.2, 0.01, 'Drag per mote (1/s)', 'Proposal. Each hauled mote adds drag while you hold.'],
+    ['Haul', 'hlTow', 6, 40, 1, 'Tow distance (u)', 'Proposal. How far behind the head the haul rides.'],
+    ['Haul', 'hlHeadSpill', 0, 1, 1, 'Head crossing spills (0 / 1)', 'Proposal. Turning the head back through your own haul spills it.'],
+    ['Haul', 'hlOmni', 1, 3, 0.1, 'Omni braid (x)', 'Proposal. A haul holding all four elements throws each at this multiple.'],
+    ['Dock', 'hlDockRadius', 8, 40, 1, 'Dock radius (u)', 'Proposal. Fly into the Grouper with no haul (or only Time) and the kite docks.'],
+    ['Dock', 'hlLaunchGain', 1, 12, 0.5, 'Launch gain (1/s)', 'Proposal. Drag out of the dock and let go: the kite leaves along the drag at this many u/s per u dragged.'],
+    ['Dock', 'hlCleanRate', 0, 6, 0.25, 'Dock cleaning (s/s)', 'Proposal. Extra silence cleaned off the Grouper per second while docked.'],
+    ['Dock', 'hlAllyClean', 0, 15, 0.5, 'Ally cleaning (s)', 'Proposal. A loop round an ally\'s shadow cleans this much of its silence.'],
+    ['Dock', 'hlHullCatch', 10, 60, 1, 'Time catch radius (u)', 'Proposal. A Time haul thrown this close to the Grouper is caught as boosts.'],
+    ['Shoals', 'shFeatureShare', 0, 1, 0.05, 'Gather round features', 'Proposal. Share of new shoals that form round a world feature (a stand-in for flora and crystals the plane cuts).'],
+    ['Shoals', 'shTimeSense', 0, 120, 1, 'Time: dart range (u)', 'Proposal. A Time shoal darts away when the kite comes this close.'],
+    ['Shoals', 'shTimeDart', 0, 250, 5, 'Time: dart speed (u/s)', 'Proposal.'],
+    ['Shoals', 'shMassSize', 1, 3, 0.05, 'Mass: shoal size (x)', 'Proposal. Mass shoals are big and slow.'],
+    ['Shoals', 'shMassDrift', 0, 30, 1, 'Mass: drift (u/s)', 'Proposal.'],
+    ['Shoals', 'shSpaceBlink', 0.5, 6, 0.1, 'Space: hop every (s)', 'Proposal. A Space shoal flickers, then hops.'],
+    ['Shoals', 'shSpaceHop', 0, 90, 1, 'Space: hop length (u)', 'Proposal.'],
+    ['Shoals', 'shChargeSense', 0, 140, 1, 'Charge: shy range (u)', 'Proposal. A Charge shoal shies from the kite inside this.'],
+    ['Shoals', 'shChargeShy', 0, 120, 1, 'Charge: shy speed (u/s)', 'Proposal.'],
+    ['Shoals', 'shChargeLure', 0, 60, 1, 'Charge: drift to rival (u/s)', 'Proposal. Charge shoals are caught near danger.'],
+    ['World', 'labFlow', 0, 120, 1, 'World flow (u/s)', 'Lab. The hull always flies, so the world flows down the board.'],
+    ['World', 'labPrisms', 0, 160, 1, 'Hostile prisms', 'Lab. Hostile prisms kept on the board.'],
+    ['World', 'labDanger', 0, 0.5, 0.01, 'Danger share', 'Lab. Share of hostile prisms that are danger prisms (they spill a haul).'],
+    ['World', 'labRivalSpeed', 20, 160, 5, 'Rival speed (u/s)', 'Lab.'],
+    ['World', 'labRivalSilence', 0, 10, 0.5, 'Silence per rival hit (s)', 'Lab stand-in for SILENCE.md: what one scored hit puts on the Grouper or an ally.'],
+    ['World', 'labRivalCooldown', 0.5, 10, 0.5, 'Rival hit cooldown (s)', 'Lab.'],
+    ['World', 'tailLength', 0.8, 8, 0.1, 'Tail length (board radii)', 'Shipped 4.8.'],
+    ['World', 'moteCount', 6, 60, 1, 'Motes on the board', 'Shipped 26.'],
+    ['World', 'moteCluster', 1, 10, 1, 'Cluster size', 'Shipped 4.'],
+    ['World', 'moteSpread', 6, 40, 1, 'Cluster spread (u)', 'Shipped 18.'],
+    ['World', 'growth', 1, 3, 0.1, 'Growth per mote', 'Shipped 2. In B the exponent counts the whole haul, so this is the haul\'s balance knob too.'],
+    ['Sling', 'slingRope', 15, 120, 1, 'Rope length (u)', 'Shipped 42.'],
+    ['Sling', 'slingStiffness', 60, 600, 10, 'Rope stiffness (1/s²)', 'Shipped 260.'],
+    ['Sling', 'slingDamping', 0, 20, 0.5, 'Rope damping (1/s)', 'Shipped 5.'],
+    ['Sling', 'slingDrag', 0, 2, 0.05, 'Drag on the rope (1/s)', 'Shipped 0.35.'],
+    ['Sling', 'slingFreeDrag', 0, 4, 0.05, 'Drag after letting go (1/s)', 'Shipped 0.9.'],
+    ['Sling', 'slingMaxSpeed', 200, 800, 10, 'Top speed (u/s)', 'Shipped 364.'],
+  ];
+
+  const LS = 'lab:wrasse-haul:';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet('P', {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  // ================= constants of the shipped core (KiteNavigatorCore.cs) =================
+  const TAIL_STEP = 2.5, RIM = 0.96, SKIP_NEWEST = 3;
+  const BLAST_SECONDS = 3;          // AOEExplosion.prefab: 3 s sin ease
+  const REF_MM_PER_U = 0.18;        // lab: a 160 u board radius drawn 29 mm on a phone held upright (the lasso lab's thumb)
+  const DT = 1 / 60;
+  const ELEMS = ['Charge', 'Mass', 'Space', 'Time'];
+  const LIME_E = ['#a0ff00', '#5ec600', '#40ff00', '#9bcf00']; // GENERATED by Tools/Build/kite_mote_colors.py (the lasso lab's copy): the game's four limes
+  const ECOL = ['#7fb8ff', '#f2b45a', '#c08cff', '#5fe0d4'];   // lab colours per element (a reading aid)
+  const CH = 0, MA = 1, SP = 2, TI = 3;
+  const SCORE_SECS = 180;
+
+  const OPT = Object.assign({ variant: 'B', split: true, pilot: 'skilled', colours: true, tether: false, haptics: true }, lsGet('opt', {}));
+
+  // ================= seeded RNG =================
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const gauss = (r) => { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const hyp = Math.hypot, clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const wrapA = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  const grow = (base, n, cap) => Math.min(cap, base * Math.pow(P.growth, n - 1));
+  const sum4 = (c) => c[0] + c[1] + c[2] + c[3];
+  // value: growth^(n-1), the lasso lab's unit, but never past what the element's own cap lets the game deliver
+  const VALUE_CAP = () => [P.chargeCap / P.chargePetals, P.massPrismCap / P.massPrisms, P.spaceMaxScaleCap / P.spaceMaxScale, P.timeBoostCap / P.timeBoostSeconds];
+  const valueOf = (e, n, mult) => Math.min(VALUE_CAP()[e], Math.pow(P.growth, n - 1) * (mult || 1));
+
+  // ================= (3) THE MODEL =================
+  // Board units (u): x right, y forward (up the screen), the Grouper at the board's centre. simStep never draws and
+  // never reads a device: the thumb arrives as {x, y, down}, from a person or from an AI pilot.
+  let seed = 7;
+  const live = { A: null, B: null };
+
+  function newWorld(s, variant, pilot) {
+    const R = P.boardRadius;
+    const W = {
+      t: 0, seed: s >>> 0, variant, pilot, rngW: mulberry32(s * 2654435761 >>> 0), rngA: mulberry32((s ^ 0x9e3779b9) >>> 0),
+      kite: { x: 0, y: -0.35 * R, vx: 0, vy: 0 }, tail: [], motes: [], shoals: [], prisms: [], friendly: [], blasts: [], throws: [], fx: [],
+      features: [], allies: [], hull: { silence: 0 }, haul: { c: [0, 0, 0, 0], x: 0, y: -0.35 * R, age: 0 },
+      docked: false, undockT: -9, dockHand: null, rope: { pax: 0, pay: 0, taut: false, on: false, ax: 0, ay: 0 },
+      finger: { x: 0, y: -2 * R, down: false }, prevDown: false, charge: 0, nextId: 1, headless: false,
+      st: { loops: 0, fizzles: 0, empty: 0, motes: 0, value: 0, travel: 0, boosts: 0, mass: 0, popped: 0, blasted: 0, stolen: 0, throws: 0, onTarget: 0, haulSum: 0, haulMax: 0, spills: 0, spillWhy: {}, cleaned: 0, restT: 0, dockT: 0, curve: [] },
+      ai: { thinkT: 0, goal: null, jx: 0, jy: 0, sense: 1, mode: 'hunt', modeT: 0, restUntil: 0, launch: null, haulTarget: 6, throwC: null, loopsSeen: 0 },
+    };
+    const r = W.rngW;
+    // the same world opens both variants: rival, allies, features and prisms first, from the same seed
+    W.rival = { x: 0.2 * R, y: 0.55 * R, vx: 0, vy: 0, tx: 0, ty: 0.5 * R, retarget: 0, lastSteal: -9, lastHit: -9, flash: -9 };
+    for (let i = 0; i < 2; i++) W.allies.push({ a: i * Math.PI + 0.6, r: 0.55 * R, silence: 0, flash: -9, cleanFx: -9 });
+    for (let i = 0; i < 3; i++) W.features.push(newFeature(W, true));
+    while (W.prisms.length < P.labPrisms) spawnPrism(W, true);
+    fillMotes(W, true);
+    void r;
+    return W;
+  }
+  function newFeature(W, anywhere) {
+    const r = W.rngW, R = P.boardRadius;
+    return { x: (r() * 2 - 1) * R * 0.7, y: anywhere ? (r() * 2 - 1) * R * 0.8 : R * (1.1 + r() * 0.6), e: Math.floor(r() * 4) % 4, kind: r() < 0.6 ? 'flora' : 'crystal' };
+  }
+  function spawnPrism(W, anywhere) {
+    const r = W.rngW, R = P.boardRadius;
+    W.prisms.push({ x: (r() * 2 - 1) * R, y: anywhere ? (r() * 2 - 1) * R : R * (1.0 + r() * 0.5), a: r() * Math.PI, dead: false, danger: r() < P.labDanger });
+  }
+  const inDisc = (x, y, f) => x * x + y * y <= (P.boardRadius * (f || 1)) ** 2;
+
+  // ---- motes. A: the lasso lab's even spawner. B: shoals ----
+  function spawnCluster(W, anywhere) {
+    const r = W.rngW, R = P.boardRadius, e = Math.floor(r() * 4) % 4, n = Math.max(1, Math.round(P.moteCluster * (0.5 + r())));
+    const cx = (r() * 2 - 1) * R * 0.8, cy = anywhere ? (r() * 2 - 1) * R * 0.85 : R * (0.95 + r() * 0.45);
+    for (let i = 0; i < n; i++) W.motes.push({ id: W.nextId++, e, x: cx + gauss(r) * P.moteSpread, y: cy + gauss(r) * P.moteSpread, dead: false, sh: null });
+  }
+  function spawnShoal(W, anywhere, at) {
+    const r = W.rngW, R = P.boardRadius;
+    let e = Math.floor(r() * 4) % 4, cx = (r() * 2 - 1) * R * 0.8, cy = anywhere ? (r() * 2 - 1) * R * 0.85 : R * (0.95 + r() * 0.45);
+    if (at) { e = at.e; cx = at.x; cy = at.y; }
+    else if (r() < P.shFeatureShare) {
+      const cand = W.features.filter((f) => anywhere ? inDisc(f.x, f.y, 1.1) : f.y > 0.3 * R);
+      if (cand.length) { const f = cand[Math.floor(r() * cand.length) % cand.length]; e = f.e; const a = r() * 2 * Math.PI, d = 18 + r() * 26; cx = f.x + Math.cos(a) * d; cy = f.y + Math.sin(a) * d; }
+    }
+    let n = at ? at.n : Math.max(1, Math.round(P.moteCluster * (0.5 + r())));
+    if (!at && e === MA) n = Math.round(n * P.shMassSize);
+    const spread = at ? 20 : P.moteSpread * (e === MA ? 0.9 : 1);
+    const sh = { e, cx, cy, vx: 0, vy: 0, wa: r() * 2 * Math.PI, scatter: 0, cool: 0, blinkT: P.shSpaceBlink * (0.5 + r()), members: 0, loose: !!at };
+    W.shoals.push(sh);
+    for (let i = 0; i < n; i++) { W.motes.push({ id: W.nextId++, e, ox: gauss(r) * spread, oy: gauss(r) * spread, x: cx, y: cy, dead: false, sh }); sh.members++; }
+    placeMembers(sh, W);
+    return sh;
+  }
+  function placeMembers(sh, W) { const s = 1 + 0.7 * sh.scatter; for (const m of W.motes) if (m.sh === sh) { m.x = sh.cx + m.ox * s; m.y = sh.cy + m.oy * s; } }
+  function fillMotes(W, anywhere) {
+    let guard = 0;
+    while (W.motes.length < P.moteCount && guard++ < 40) { if (W.variant === 'A') spawnCluster(W, anywhere || P.labFlow <= 0); else spawnShoal(W, anywhere || P.labFlow <= 0); }
+  }
+  function stepShoals(W, dt) {
+    const k = W.kite, R = P.boardRadius, flow = P.labFlow, r = W.rngW;
+    for (const sh of W.shoals) {
+      if (sh.members <= 0) continue;
+      const dx = sh.cx - k.x, dy = sh.cy - k.y, dk = hyp(dx, dy) || 1, ax = dx / dk, ay = dy / dk;
+      sh.wa += (r() - 0.5) * 1.2 * dt;
+      let tvx = Math.cos(sh.wa), tvy = Math.sin(sh.wa), relax = 1.5;
+      if (sh.e === TI) {
+        sh.cool -= dt;
+        if (dk < P.shTimeSense && sh.cool <= 0 && !W.docked) { sh.vx = ax * P.shTimeDart; sh.vy = ay * P.shTimeDart; sh.scatter = 1; sh.cool = 0.9; pushFx(W, { kind: 'dart', x: sh.cx, y: sh.cy, e: TI }); }
+        tvx *= 14; tvy *= 14; relax = 1.8;
+      } else if (sh.e === MA) {
+        tvx *= P.shMassDrift; tvy *= P.shMassDrift; relax = 0.8;
+        let best = null, bd = 130; for (const o of W.shoals) if (o !== sh && o.e === MA && o.members > 0) { const d = hyp(o.cx - sh.cx, o.cy - sh.cy); if (d < bd) { bd = d; best = o; } }
+        if (best && bd > 30) { tvx += (best.cx - sh.cx) / bd * 4; tvy += (best.cy - sh.cy) / bd * 4; }
+      } else if (sh.e === SP) {
+        tvx *= 8; tvy *= 8;
+        sh.blinkT -= dt;
+        if (sh.blinkT <= 0) { const a = r() * 2 * Math.PI; pushFx(W, { kind: 'hop', x: sh.cx, y: sh.cy, e: SP }); sh.cx += Math.cos(a) * P.shSpaceHop; sh.cy += Math.sin(a) * P.shSpaceHop; sh.blinkT = P.shSpaceBlink * (0.8 + 0.4 * r()); }
+      } else {
+        if (dk < P.shChargeSense && !W.docked) { tvx = ax * P.shChargeShy; tvy = ay * P.shChargeShy; relax = 4; }
+        else { const v = W.rival, d = hyp(v.x - sh.cx, v.y - sh.cy) || 1; tvx = (v.x - sh.cx) / d * P.shChargeLure; tvy = (v.y - sh.cy) / d * P.shChargeLure; }
+      }
+      const a = 1 - Math.exp(-relax * dt); sh.vx += (tvx - sh.vx) * a; sh.vy += (tvy - sh.vy) * a;
+      sh.cx += sh.vx * dt; sh.cy += (sh.vy - flow) * dt;
+      if (Math.abs(sh.cx) > R * 0.92) { sh.cx = Math.sign(sh.cx) * R * 0.92; sh.vx *= -0.5; sh.wa = Math.PI - sh.wa; }
+      sh.scatter = Math.max(0, sh.scatter - 1.2 * dt);
+      placeMembers(sh, W);
+    }
+    W.shoals = W.shoals.filter((s) => s.members > 0);
+  }
+
+  // ---- the shipped tail (KiteNavigatorCore.AdvanceTail), the lasso lab's copy ----
+  function segX(a, b, c, d) {
+    const r0 = b.x - a.x, r1 = b.y - a.y, s0 = d.x - c.x, s1 = d.y - c.y, den = r0 * s1 - r1 * s0;
+    if (Math.abs(den) < 1e-9) return null;
+    const t = ((c.x - a.x) * s1 - (c.y - a.y) * s0) / den, u = ((c.x - a.x) * r1 - (c.y - a.y) * r0) / den;
+    if (!(t > 0 && t <= 1 && u >= 0 && u <= 1)) return null;
+    return { x: a.x + r0 * t, y: a.y + r1 * t };
+  }
+  function advanceTail(W) {
+    const T = W.tail, q = { x: W.kite.x, y: W.kite.y }, n = T.length;
+    if (n > 0) { const l = T[n - 1]; if ((q.x - l.x) ** 2 + (q.y - l.y) ** 2 <= TAIL_STEP * TAIL_STEP) return null; }
+    let loop = null;
+    if (n >= 3) {
+      const a = T[n - 1];
+      for (let i = 0; i < n - SKIP_NEWEST; i++) { const x = segX(a, q, T[i], T[i + 1]); if (x) { loop = [x].concat(T.slice(i + 1), [q]); break; } }
+    }
+    if (loop) { T.length = 0; T.push(q); } else T.push(q);
+    const limit = P.tailLength * P.boardRadius; let total = 0;
+    for (let i = T.length - 1; i > 0; i--) { total += hyp(T[i].x - T[i - 1].x, T[i].y - T[i - 1].y); if (total > limit) { T.splice(0, i); break; } }
+    return loop;
+  }
+  function pip(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y + 1e-9) + a.x) inside = !inside; }
+    return inside;
+  }
+  // KiteNavigatorCore.ResolveLoop
+  function resolveLoop(c, rule) {
+    const total = sum4(c); if (total <= 0) return null;
+    const kinds = c.filter((v) => v > 0).length; let best = 0;
+    for (let i = 1; i < 4; i++) if (c[i] > c[best]) best = i;
+    let n = c[best];
+    if (kinds > 1) { if (rule !== 1) return { fizzle: true }; n = c[best] - (total - c[best]); if (n < 1) return { fizzle: true }; }
+    return { e: best, n };
+  }
+  const allyPos = (W, al) => ({ x: Math.cos(al.a) * al.r, y: Math.sin(al.a) * al.r });
+
+  function closeLoop(W, poly) {
+    const c = [0, 0, 0, 0], inside = [];
+    for (const m of W.motes) if (!m.dead && pip(m.x, m.y, poly)) { c[m.e]++; inside.push(m); }
+    let cx = 0, cy = 0; for (const p of poly) { cx += p.x; cy += p.y; } cx /= poly.length; cy /= poly.length;
+    // B: a loop round an ally's shadow cleans its silence, whatever else it holds
+    if (W.variant === 'B') for (const al of W.allies) { const p = allyPos(W, al); if (al.silence > 0 && pip(p.x, p.y, poly)) { const d = Math.min(al.silence, P.hlAllyClean); al.silence -= d; W.st.cleaned += d; al.cleanFx = W.t; pushFx(W, { kind: 'clean', x: p.x, y: p.y, text: '-' + d.toFixed(1) + ' s silence' }); } }
+    const res = resolveLoop(c, Math.round(P.mixedLoops));
+    if (!res) { W.st.empty++; return; }
+    for (const m of inside) { m.dead = true; if (m.sh) m.sh.members--; }
+    if (res.fizzle) { W.st.fizzles++; pushFx(W, { kind: 'fizzle', poly, x: cx, y: cy }); return; }
+    const e = res.e, n = res.n;
+    W.st.loops++; W.st.motes += n;
+    if (W.variant === 'A') {   // the shipped Wrasse: the loop fires on close
+      W.st.value += valueOf(e, n, 1);
+      let text = ELEMS[e] + ' x' + n;
+      if (e === SP) { const R = 0.5 * grow(P.spaceMaxScale, n, P.spaceMaxScaleCap); W.blasts.push({ x: cx, y: cy, R, t0: W.t, r: 0 }); text = 'Blast ' + Math.round(R * 2) + ' u'; }
+      else if (e === MA) { const k = Math.round(grow(P.massPrisms, n, P.massPrismCap)); W.st.mass += k; layFriendly(W, cx, cy, k); text = '+' + k + ' prisms'; }
+      else if (e === CH) { W.charge = Math.min(P.chargeCap, W.charge + grow(P.chargePetals, n, P.chargeCap)); text = 'Charge ' + Math.round(W.charge); }
+      else { const k = Math.round(grow(1, n, P.timeBoostCap / P.timeBoostSeconds)); W.st.boosts += k; text = '+' + k + ' boost' + (k > 1 ? 's' : ''); }
+      pushFx(W, { kind: 'loop', poly, x: cx, y: cy, e, n, text });
+    } else {                  // B: the loop cinches into the haul
+      const h = W.haul; h.c[e] += n; h.age = 0;
+      const tot = sum4(h.c); if (tot > W.st.haulMax) W.st.haulMax = tot;
+      pushFx(W, { kind: 'cinch', poly, x: cx, y: cy, e, n, tx: h.x, ty: h.y, text: 'haul ' + tot + (h.c.filter((v) => v > 0).length > 1 ? ' braided' : '') });
+    }
+    if (isLive(W) && W.pilot === 'you') buzz(n);
+  }
+  function layFriendly(W, x, y, k) {
+    const r = W.rngW, rad = Math.sqrt(k) * 2.4;
+    for (let i = 0; i < Math.min(k, 240); i++) { const a = r() * 2 * Math.PI, d = Math.sqrt(r()) * rad; W.friendly.push({ x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, a: r() * Math.PI, t0: W.t }); }
+    if (W.friendly.length > 600) W.friendly.splice(0, W.friendly.length - 600);
+  }
+  function pushFx(W, f) { if (W.headless) return; f.t0 = W.t; W.fx.push(f); if (W.fx.length > 30) W.fx.shift(); }
+
+  // ---- the Sling (KiteNavigatorCore.Sling, the lasso lab's stepKite 'sling' + ropeForce + rimBounce) ----
+  function capSpeed(k, max) { const s = hyp(k.vx, k.vy); if (s > max) { k.vx *= max / s; k.vy *= max / s; } }
+  function ropeForce(W, k, ax, ay, rest, stiff, damp, dt, mass) {
+    const r = W.rope, dx = k.x - ax, dy = k.y - ay, d = hyp(dx, dy);
+    const avx = (ax - r.pax) / dt, avy = (ay - r.pay) / dt; r.pax = ax; r.pay = ay;
+    if (d <= rest || d < 1e-6) return false;
+    const nx = dx / d, ny = dy / d, vr = (k.vx - avx) * nx + (k.vy - avy) * ny;
+    const a = (stiff * (d - rest) + damp * vr) / mass;   // B: a heavier haul answers the same pull more slowly (mass 1 = shipped)
+    k.vx -= nx * a * dt; k.vy -= ny * a * dt;
+    return true;
+  }
+  function rimBounce(k) {
+    const R = P.boardRadius * RIM, d = hyp(k.x, k.y);
+    if (d <= R) return;
+    const nx = k.x / d, ny = k.y / d; k.x = nx * R; k.y = ny * R;
+    const vn = k.vx * nx + k.vy * ny; if (vn > 0) { k.vx -= 1.4 * vn * nx; k.vy -= 1.4 * vn * ny; }
+  }
+  function stepSling(W, inp, dt, edgeDown) {
+    const k = W.kite, r = W.rope, down = !!inp.down, N = W.variant === 'B' ? sum4(W.haul.c) : 0;
+    const mass = 1 + P.hlMassPerMote * N, extraDrag = P.hlDragPerMote * N;
+    if (edgeDown) { r.pax = inp.x; r.pay = inp.y; }
+    r.on = down; r.ax = inp.x; r.ay = inp.y;
+    if (down) { r.taut = ropeForce(W, k, inp.x, inp.y, P.slingRope, P.slingStiffness, P.slingDamping, dt, mass); const c = Math.exp(-(P.slingDrag + extraDrag) * dt); k.vx *= c; k.vy *= c; }
+    else { r.taut = false; const c = Math.exp(-P.slingFreeDrag * dt); k.vx *= c; k.vy *= c; }
+    capSpeed(k, P.slingMaxSpeed); k.x += k.vx * dt; k.y += k.vy * dt; rimBounce(k);
+  }
+
+  // ---- B: the throw, the haul's ride, spills, the dock ----
+  function tryThrow(W) {
+    const h = W.haul, k = W.kite, sp = hyp(k.vx, k.vy), c = h.c, thrown = c[MA] + c[SP] + c[TI];
+    if (!thrown || sp < P.hlThrowSpeed) return false;
+    const omni = c[0] > 0 && c[1] > 0 && c[2] > 0 && c[3] > 0;
+    const pc = [omni ? c[CH] : 0, c[MA], c[SP], c[TI]];
+    W.throws.push({ x: h.x, y: h.y, vx: k.vx * P.hlThrowGain, vy: k.vy * P.hlThrowGain, c: pc, omni, t0: W.t, trail: [], hitTime: false, hitCharge: false });
+    W.st.throws++; W.st.haulSum += sum4(pc);
+    h.c = [omni ? 0 : c[CH], 0, 0, 0];
+    pushFx(W, { kind: 'throw', x: h.x, y: h.y, text: omni ? 'OMNI sling' : 'sling' });
+    if (isLive(W) && W.pilot === 'you') buzz(3);
+    return true;
+  }
+  function deliver(W, e, n, mult) { W.st.value += valueOf(e, n, mult); }
+  function stepThrows(W, dt) {
+    const flow = P.labFlow, R = P.boardRadius, v = W.rival;
+    for (const th of W.throws) {
+      const c = Math.exp(-P.hlThrowDrag * dt); th.vx *= c; th.vy *= c;
+      th.x += th.vx * dt; th.y += (th.vy - flow) * dt;
+      if (!W.headless) { th.trail.push({ x: th.x, y: th.y }); if (th.trail.length > 18) th.trail.shift(); }
+      const mult = th.omni ? P.hlOmni : 1;
+      if (th.c[TI] > 0 && !th.hitTime && hyp(th.x, th.y) < P.hlHullCatch) {   // the Grouper catches a Time haul
+        const kk = Math.round(Math.min(P.timeBoostCap / P.timeBoostSeconds, grow(1, th.c[TI], 1e9) * mult)); W.st.boosts += kk; deliver(W, TI, th.c[TI], mult);
+        th.hitTime = true; th.onT = true; pushFx(W, { kind: 'catch', x: 0, y: 0, text: '+' + kk + ' boosts' });
+      }
+      if (th.c[CH] > 0 && !th.hitCharge && hyp(th.x - v.x, th.y - v.y) < 30) { ram(W, th.c[CH], mult); th.hitCharge = true; th.onT = true; }
+      const sp = hyp(th.vx, th.vy);
+      if (sp < 70 || W.t - th.t0 > 1.4 || !inDisc(th.x, th.y, 1.05)) land(W, th);
+    }
+    W.throws = W.throws.filter((th) => !th.done);
+  }
+  function land(W, th) {
+    th.done = true;
+    const mult = th.omni ? P.hlOmni : 1, v = W.rival;
+    let on = !!th.onT;
+    if (th.c[SP] > 0) {
+      const Rb = 0.5 * Math.min(P.spaceMaxScaleCap, grow(P.spaceMaxScale, th.c[SP], 1e9) * mult);
+      W.blasts.push({ x: th.x, y: th.y, R: Rb, t0: W.t, r: 0 });
+      const hits = W.prisms.filter((p) => !p.dead && hyp(p.x - th.x, p.y - th.y) < Rb).length;
+      if (hits >= 4) on = true;
+      deliver(W, SP, th.c[SP], mult);
+    }
+    if (th.c[MA] > 0) {
+      const k = Math.round(Math.min(P.massPrismCap, grow(P.massPrisms, th.c[MA], 1e9) * mult)); W.st.mass += k; layFriendly(W, th.x, th.y, k);
+      const near = hyp(th.x - v.x, th.y - v.y) < 60 || W.allies.some((al) => { const p = allyPos(W, al); return hyp(th.x - p.x, th.y - p.y) < 60; });
+      if (near) on = true;
+      deliver(W, MA, th.c[MA], mult);
+      pushFx(W, { kind: 'text', x: th.x, y: th.y, text: '+' + k + ' prisms' });
+    }
+    if (th.c[TI] > 0 && !th.hitTime) spawnShoal(W, false, { e: TI, n: th.c[TI], x: th.x, y: th.y });   // a missed Time haul is a loose shoal again
+    if (th.c[CH] > 0 && !th.hitCharge) spawnShoal(W, false, { e: CH, n: th.c[CH], x: th.x, y: th.y });
+    if (on) W.st.onTarget++;
+    pushFx(W, { kind: 'land', x: th.x, y: th.y, on });
+  }
+  function ram(W, n, mult) {
+    const v = W.rival;
+    if (W.t - v.lastSteal < P.stealCooldown) return false;
+    const got = Math.round(Math.min(P.chargeCap, grow(P.chargePetals, n, 1e9) * (mult || 1)));
+    W.st.stolen += got; v.lastSteal = W.t; v.flash = W.t; deliver(W, CH, n, mult || 1);
+    pushFx(W, { kind: 'steal', x: v.x, y: v.y, text: '+' + got + ' petals' });
+    if (isLive(W) && W.pilot === 'you') buzz(4);
+    return true;
+  }
+  function spill(W, why) {
+    const h = W.haul;
+    for (let e = 0; e < 4; e++) if (h.c[e] > 0) spawnShoal(W, false, { e, n: h.c[e], x: h.x, y: h.y });
+    h.c = [0, 0, 0, 0]; W.st.spills++; W.st.spillWhy[why] = (W.st.spillWhy[why] || 0) + 1;
+    pushFx(W, { kind: 'spill', x: h.x, y: h.y, text: 'spilt (' + why + ')' });
+    if (isLive(W) && W.pilot === 'you') buzz(2);
+  }
+  const haulRadius = (N) => 4 + 2.2 * Math.sqrt(N);
+  function stepHaul(W, dt) {
+    const h = W.haul, k = W.kite, sp = hyp(k.vx, k.vy), N = sum4(h.c);
+    const ux = sp > 1 ? k.vx / sp : 0, uy = sp > 1 ? k.vy / sp : -1;
+    const tx = k.x - ux * P.hlTow, ty = k.y - uy * P.hlTow, a = 1 - Math.exp(-7 * dt);
+    h.x += (tx - h.x) * a; h.y += (ty - h.y) * a; h.age += dt;
+    if (N <= 0 || W.docked) return;
+    const hr = haulRadius(N), v = W.rival;
+    // the Charge part is a flail: it rams the rival and pops hostile prisms it swings through
+    if (h.c[CH] > 0) {
+      for (const p of W.prisms) if (!p.dead && !p.danger && (p.x - h.x) ** 2 + (p.y - h.y) ** 2 < (hr + 2) ** 2) { p.dead = true; W.st.popped++; }
+      if (hyp(v.x - h.x, v.y - h.y) < hr + 10 && ram(W, h.c[CH], 1)) { h.c[CH] = 0; if (sum4(h.c) === 0) return; }
+    }
+    if (h.age < 0.4) return;
+    if (hyp(v.x - h.x, v.y - h.y) < hr + 10 && W.t - v.lastSteal > 0.5) { spill(W, 'rival'); return; }
+    for (const p of W.prisms) if (!p.dead && p.danger && (p.x - h.x) ** 2 + (p.y - h.y) ** 2 < (hr + 2) ** 2) { spill(W, 'danger prism'); return; }
+    if (P.hlHeadSpill >= 0.5 && sp > 80) {
+      const dx = h.x - k.x, dy = h.y - k.y;
+      if (dx * dx + dy * dy < (hr * 0.6) ** 2 && dx * k.vx + dy * k.vy > 0) spill(W, 'head');
+    }
+  }
+  function stepDock(W, inp, edgeDown, edgeUp) {
+    const k = W.kite, h = W.haul;
+    if (W.docked) {
+      k.x = 0; k.y = 0; k.vx = 0; k.vy = 0; W.tail.length = 0;
+      if (inp.down) W.dockHand = { x: inp.x, y: inp.y };
+      if (edgeUp && W.dockHand) {
+        const d = hyp(W.dockHand.x, W.dockHand.y);
+        if (d > 14) { const s = Math.min(P.slingMaxSpeed, d * P.hlLaunchGain); k.vx = W.dockHand.x / d * s; k.vy = W.dockHand.y / d * s; k.x = k.vx / s * (P.hlDockRadius + 2); k.y = k.vy / s * (P.hlDockRadius + 2); W.docked = false; W.undockT = W.t; pushFx(W, { kind: 'launch', x: 0, y: 0 }); }
+        W.dockHand = null;
+      }
+      void edgeDown;
+      return true;
+    }
+    if (W.t - W.undockT > 0.6 && hyp(k.x, k.y) < P.hlDockRadius) {
+      const N = sum4(h.c);
+      if (N > 0 && N === h.c[TI]) { const kk = Math.round(grow(1, h.c[TI], P.timeBoostCap / P.timeBoostSeconds)); W.st.boosts += kk; deliver(W, TI, h.c[TI], 1); h.c = [0, 0, 0, 0]; pushFx(W, { kind: 'catch', x: 0, y: 0, text: '+' + kk + ' boosts' }); }
+      if (sum4(h.c) === 0) { W.docked = true; W.dockHand = null; W.rope.on = false; pushFx(W, { kind: 'dock', x: 0, y: 0 }); return true; }
+    }
+    return false;
+  }
+
+  // ---- the rival and the silence it lays on the Grouper and the allies (a stand-in for SILENCE.md) ----
+  function segDist2(x, y, ax, ay, bx, by) {
+    const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy, t = l2 > 0 ? clamp(((x - ax) * vx + (y - ay) * vy) / l2, 0, 1) : 0, qx = ax + vx * t - x, qy = ay + vy * t - y;
+    return qx * qx + qy * qy;
+  }
+  function stepRival(W, dt, px, py) {
+    const v = W.rival, R = P.boardRadius, k = W.kite, sp = P.labRivalSpeed, r = W.rngW;
+    v.retarget -= dt;
+    if (v.retarget <= 0 || hyp(v.tx - v.x, v.ty - v.y) < 12) {
+      v.retarget = 1.5 + r() * 1.5;
+      if (r() < 0.45) { const tg = r() < 0.5 ? { x: 0, y: 0 } : allyPos(W, W.allies[Math.floor(r() * 2) % 2]); v.tx = tg.x; v.ty = tg.y; }   // it hunts the Grouper or an ally
+      else { const a = r() * 2 * Math.PI, d = Math.sqrt(r()) * R * 0.75; v.tx = Math.cos(a) * d; v.ty = Math.sin(a) * d; }
+    }
+    let ax = v.tx - v.x, ay = v.ty - v.y; const d = hyp(ax, ay) || 1; ax = ax / d * sp; ay = ay / d * sp;
+    const armed = W.variant === 'A' ? W.charge >= 1 : W.haul.c[CH] > 0, kd = hyp(k.x - v.x, k.y - v.y) || 1;
+    if (armed && kd < 95) { ax += (v.x - k.x) / kd * sp * 1.1; ay += (v.y - k.y) / kd * sp * 1.1; }   // it dodges a charged kite
+    const a = 1 - Math.exp(-3 * dt); v.vx += (ax - v.vx) * a; v.vy += (ay - v.vy) * a;
+    v.x += v.vx * dt; v.y += v.vy * dt;
+    const dd = hyp(v.x, v.y); if (dd > R * 0.85) { v.x *= R * 0.85 / dd; v.y *= R * 0.85 / dd; }
+    if (W.t - v.lastHit >= P.labRivalCooldown) {
+      if (hyp(v.x, v.y) < 45) { W.hull.silence = Math.min(P.labSilenceCap, W.hull.silence + P.labRivalSilence); v.lastHit = W.t; pushFx(W, { kind: 'hit', x: 0, y: 0, text: 'Grouper silenced' }); }
+      else for (const al of W.allies) { const p = allyPos(W, al); if (hyp(v.x - p.x, v.y - p.y) < 40) { al.silence = Math.min(P.labSilenceCap, al.silence + P.labRivalSilence); al.flash = W.t; v.lastHit = W.t; break; } }
+    }
+    // A: the shipped head ram (a charged head steals petals)
+    if (W.variant === 'A' && W.charge >= 1) {
+      const cr = P.kiteRadius + 10;
+      if (segDist2(v.x, v.y, px, py, k.x, k.y) < cr * cr && W.t - v.lastSteal >= P.stealCooldown) {
+        const got = Math.round(W.charge); W.st.stolen += got; W.st.value += Math.min(VALUE_CAP()[CH], got); W.charge = 0; v.lastSteal = W.t; v.flash = W.t;
+        pushFx(W, { kind: 'steal', x: v.x, y: v.y, text: '+' + got + ' petals' });
+      }
+    }
+  }
+
+  // ---- one world step ----
+  function simStepW(W, inp, dt) {
+    const R = P.boardRadius, flow = P.labFlow, k = W.kite, px = k.x, py = k.y;
+    const f = W.finger, down = !!inp.down, edgeDown = down && !W.prevDown, edgeUp = !down && W.prevDown;
+    const mv = W.t > 0 ? hyp(inp.x - f.x, inp.y - f.y) : 0;
+    W.st.travel += mv; const sec = Math.floor(W.t); W.st.curve[sec] = (W.st.curve[sec] || 0) + mv * REF_MM_PER_U;
+    f.x = inp.x; f.y = inp.y; f.down = down;
+    if (!down) W.st.restT += dt;
+    let docked = false;
+    if (W.variant === 'B') {
+      docked = stepDock(W, inp, edgeDown, edgeUp);
+      if (!docked) { if (edgeUp) tryThrow(W); stepSling(W, inp, dt, edgeDown); stepDock(W, inp, false, false); }
+    } else stepSling(W, inp, dt, edgeDown);
+    W.prevDown = down;
+    if (W.docked) { W.st.dockT += dt; const c = Math.min(W.hull.silence, P.hlCleanRate * dt); W.hull.silence -= c; W.st.cleaned += c; }
+    // silence runs down on its own
+    W.hull.silence = Math.max(0, W.hull.silence - dt);
+    for (const al of W.allies) { al.silence = Math.max(0, al.silence - dt); al.a += 0.12 * dt; }
+    // the world flows
+    if (W.variant === 'B') stepShoals(W, dt);
+    for (const m of W.motes) { if (m.dead) continue; if (!m.sh) m.y -= flow * dt; if (m.y < -R * 1.25 || !inDisc(m.x, m.y, 1.9)) { m.dead = true; if (m.sh) m.sh.members--; } }
+    W.motes = W.motes.filter((m) => !m.dead);
+    fillMotes(W, false);
+    for (const ft of W.features) { ft.y -= flow * dt; }
+    for (let i = 0; i < W.features.length; i++) if (W.features[i].y < -R * 1.3) W.features[i] = newFeature(W, false);
+    // the tail; a closed loop fires (A) or cinches (B)
+    if (!W.docked) { const poly = advanceTail(W); if (poly) closeLoop(W, poly); }
+    if (W.variant === 'B') { stepHaul(W, dt); stepThrows(W, dt); }
+    // the head pops hostile prisms; blasts destroy them
+    const cr = P.kiteRadius + 2.5;
+    for (const p of W.prisms) {
+      if (p.dead) continue; p.y -= flow * dt;
+      if (!p.danger && !W.docked && segDist2(p.x, p.y, px, py, k.x, k.y) < cr * cr) { p.dead = true; W.st.popped++; pushFx(W, { kind: 'pop', x: p.x, y: p.y }); }
+      else if (p.y < -R * 1.2) p.dead = true;
+    }
+    for (const b of W.blasts) {
+      const tt = Math.min(1, (W.t - b.t0) / BLAST_SECONDS); b.r = b.R * Math.sin(tt * Math.PI / 2); b.y -= flow * dt;
+      for (const p of W.prisms) if (!p.dead && inDisc(p.x, p.y) && (p.x - b.x) ** 2 + (p.y - b.y) ** 2 < b.r * b.r) { p.dead = true; W.st.blasted++; }
+    }
+    W.blasts = W.blasts.filter((b) => W.t - b.t0 < BLAST_SECONDS + 0.4);
+    W.prisms = W.prisms.filter((p) => !p.dead);
+    while (W.prisms.length < P.labPrisms) spawnPrism(W, false);
+    for (const q of W.friendly) q.y -= flow * dt;
+    W.friendly = W.friendly.filter((q) => q.y > -R * 1.2);
+    stepRival(W, dt, px, py);
+    W.t += dt;
+  }
+
+  // ================= AI pilots: INPUTS ONLY =================
+  // Each writes the thumb {x, y, down} a person would, never the kite.
+  const SKILL = {
+    skilled: { think: 0.18, noise: 3, purity: 0.95, align: 0.35, haulMin: 6, haulMax: 9, rest: 1.0, dock: 0.7, avoid: true },
+    rookie: { think: 0.45, noise: 16, purity: 0.55, align: 0.8, haulMin: 3, haulMax: 6, rest: 1.8, dock: 0.5, avoid: false },
+  };
+  function pickGoal(W, S, wantE) {
+    const R = P.boardRadius, k = W.kite, rc = 30, alive = W.motes.filter((m) => !m.dead && inDisc(m.x, m.y, 0.9) && m.y > -0.6 * R);
+    let best = null, bv = 0;
+    for (const a of alive) {
+      let cx = 0, cy = 0, n = 0, others = 0, rad = 0;
+      for (const b of alive) if (b.e === a.e && hyp(a.x - b.x, a.y - b.y) < rc) { cx += b.x; cy += b.y; n++; }
+      cx /= n; cy /= n;
+      for (const b of alive) { const d = hyp(cx - b.x, cy - b.y); if (b.e === a.e && d < rc) rad = Math.max(rad, d); }
+      for (const b of alive) if (b.e !== a.e && hyp(cx - b.x, cy - b.y) < rad + 16) others++;
+      if (others > 0 && W.rngA() < S.purity) continue;
+      let v = Math.pow(P.growth, n - 1) * (others > 0 ? 0.25 : 1);
+      if (wantE != null) v *= a.e === wantE ? 2.5 : 1;
+      if (W.variant === 'A' && a.e === SP) v *= 1.4;
+      v /= 1 + hyp(cx - k.x, cy - k.y) / R;
+      if (hyp(cx, cy) > 0.72 * R) v *= 0.35;
+      if (v > bv) { bv = v; best = { kind: 'loop', x: cx, y: cy, rad: rad + P.moteSize, e: a.e, n }; }
+    }
+    return best;
+  }
+  // the lasso lab's sling hand: lead the kite a quarter turn round a point
+  function whirl(W, A, gx, gy) {
+    const k = W.kite, flow = P.labFlow, rx = k.x - gx, ry = k.y - gy, d = hyp(rx, ry) || 1, h = P.slingRope * 0.25;
+    const cr = rx * (k.vy + flow) - ry * k.vx; if (Math.abs(cr) > 50 * d) A.sense = cr >= 0 ? 1 : -1;
+    return { x: gx - A.sense * ry / d * h + A.jx, y: gy + A.sense * rx / d * h + A.jy, down: true };
+  }
+  function pursue(W, A, gx, gy) { const k = W.kite, dx = gx - k.x, dy = gy - k.y, d = hyp(dx, dy) || 1; return { x: gx + dx / d * P.slingRope * 0.6 + A.jx, y: gy + dy / d * P.slingRope * 0.6 + A.jy, down: true }; }
+  function aiInput(W, dt) {
+    const A = W.ai, S = SKILL[W.pilot] || SKILL.skilled, k = W.kite, R = P.boardRadius;
+    if (W.pilot === 'idle' || W.pilot === 'you') return { x: 0, y: -R * 1.2, down: false };
+    if (A.goal && A.goal.kind === 'loop') A.goal.y -= P.labFlow * dt;
+    A.thinkT -= dt; A.modeT += dt;
+    const rethink = () => { if (A.thinkT > 0) return; A.thinkT = S.think * (0.8 + 0.4 * W.rngA()); const g = pickGoal(W, S, W.variant === 'B' ? lead(W.haul.c) : null); if (g && (!A.goal || hyp(g.x - A.goal.x, g.y - A.goal.y) > 20)) { A.goal = g; A.jx = gauss(W.rngA) * S.noise; A.jy = gauss(W.rngA) * S.noise; } else if (!g) A.goal = null; };
+    if (W.variant === 'A') {
+      if (W.charge >= 1) { const v = W.rival, lt = hyp(v.x - k.x, v.y - k.y) / 300; return pursue(W, A, v.x + v.vx * lt, v.y + v.vy * lt); }
+      rethink();
+      return A.goal ? whirl(W, A, A.goal.x, A.goal.y) : { x: k.x, y: k.y, down: false };
+    }
+    // B: dock -> launch -> hunt (loop, loop, loop) -> throw -> home
+    const h = W.haul, N = sum4(h.c);
+    if (W.docked) {
+      if (A.mode !== 'docked' && A.mode !== 'launch') { A.mode = 'docked'; A.restUntil = W.t + S.rest * (0.7 + 0.6 * W.rngA()); }
+      if (A.mode === 'docked') {
+        if (W.t < A.restUntil && W.hull.silence <= 0.5) return { x: 0, y: -R * 1.2, down: false };
+        if (W.t < A.restUntil + 1.5 && W.hull.silence > 0.5) return { x: 0, y: -R * 1.2, down: false };   // stay and clean
+        const g = pickGoal(W, S, null); const dir = g ? Math.atan2(g.y, g.x) : Math.PI / 2;
+        A.mode = 'launch'; A.launch = { a: dir + gauss(W.rngA) * 0.1, i: 0 }; A.goal = g;
+      }
+      const L = A.launch; L.i++;
+      if (L.i > 14) { A.mode = 'hunt'; A.modeT = 0; A.haulTarget = S.haulMin + Math.floor(W.rngA() * (S.haulMax - S.haulMin + 1)); return { x: Math.cos(L.a) * 48, y: Math.sin(L.a) * 48, down: false }; }
+      const d = Math.min(48, L.i * 5); return { x: Math.cos(L.a) * d, y: Math.sin(L.a) * d, down: true };
+    }
+    if (A.mode === 'docked' || A.mode === 'launch') { A.mode = 'hunt'; A.modeT = 0; }
+    if (A.mode === 'hunt') {
+      // an ally carrying silence, with nothing hauled: loop round its shadow
+      if (N === 0) { const al = W.allies.find((q) => q.silence > 5); if (al) { const p = allyPos(W, al); return whirl(W, A, p.x, p.y); } }
+      if (h.c[CH] > 0 && N === h.c[CH] && N >= 2) { const v = W.rival; return pursue(W, A, v.x, v.y); }   // a Charge haul is a flail: swing it into the rival
+      const rivalNear = S.avoid && N > 0 && hyp(W.rival.x - h.x, W.rival.y - h.y) < 70;
+      const dangerNear = S.avoid && N >= 2 && W.prisms.some((p) => p.danger && (p.x - h.x) ** 2 + (p.y - h.y) ** 2 < 1600);
+      if (N >= A.haulTarget || rivalNear || dangerNear || (N > 0 && A.modeT > 22)) {
+        A.mode = 'throw'; A.modeT = 0; A.throwC = { x: k.x, y: k.y }; A.target = throwTarget(W);
+      } else {
+        rethink();
+        return A.goal ? whirl(W, A, A.goal.x, A.goal.y) : { x: k.x, y: k.y, down: false };
+      }
+    }
+    if (A.mode === 'throw') {
+      if (N - h.c[CH] === 0) { A.mode = W.rngA() < S.dock ? 'home' : 'hunt'; A.modeT = 0; return { x: k.x, y: k.y, down: false }; }
+      const T = A.target, sp = hyp(k.vx, k.vy);
+      const ang = Math.abs(wrapA(Math.atan2(T.y - h.y, T.x - h.x) - Math.atan2(k.vy, k.vx)));
+      if ((sp > P.hlThrowSpeed * 1.05 && ang < S.align) || A.modeT > 5) { A.thrownAt = W.t; return { x: k.x, y: k.y, down: false }; }
+      if (A.thrownAt && W.t - A.thrownAt < 0.05) return { x: k.x, y: k.y, down: false };
+      // whirl round a point set back from the target, so the release points at it
+      const dx = T.x - A.throwC.x, dy = T.y - A.throwC.y, d = hyp(dx, dy) || 1, cx = A.throwC.x - dx / d * 20, cy = A.throwC.y - dy / d * 20;
+      A.throwC.y -= P.labFlow * dt;
+      return whirl(W, A, cx, cy);
+    }
+    if (A.mode === 'home') {
+      if (N > 0 && N !== h.c[TI]) { A.mode = 'hunt'; A.modeT = 0; }
+      if (A.modeT > 6) { A.mode = 'hunt'; A.modeT = 0; }
+      return pursue(W, A, 0, 0);
+    }
+    return { x: k.x, y: k.y, down: false };
+  }
+  function lead(c) { let b = -1, bv = 0; for (let i = 1; i < 4; i++) if (c[i] > bv) { bv = c[i]; b = i; } return b < 0 ? null : b; }
+  function throwTarget(W) {
+    const c = W.haul.c;
+    if (c[SP] >= c[MA] && c[SP] >= c[TI] && c[SP] > 0) {   // the densest patch of hostile prisms
+      let best = { x: 0, y: 0.4 * P.boardRadius }, bn = -1;
+      for (let i = 0; i < W.prisms.length; i += 3) { const p = W.prisms[i]; if (!inDisc(p.x, p.y, 0.8)) continue; let n = 0; for (const q of W.prisms) if ((q.x - p.x) ** 2 + (q.y - p.y) ** 2 < 1600) n++; if (n > bn) { bn = n; best = { x: p.x, y: p.y }; } }
+      return best;
+    }
+    if (c[TI] >= c[MA]) return { x: 0, y: 0 };
+    return { x: W.rival.x, y: W.rival.y };
+  }
+
+  // ================= headless batch: the scorecard =================
+  function runOne(variant, pilot, s, secs) {
+    const W = newWorld(s, variant, pilot); W.headless = true;
+    const n = Math.ceil((secs || SCORE_SECS) / DT);
+    for (let i = 0; i < n; i++) simStepW(W, aiInput(W, DT), DT);
+    return W;
+  }
+  function summarise(Ws, variant, pilot) {
+    const a = { loops: 0, fizzles: 0, value: 0, travel: 0, secs: 0, popped: 0, blasted: 0, stolen: 0, boosts: 0, mass: 0, throws: 0, onTarget: 0, haulSum: 0, spills: 0, cleaned: 0, restT: 0, dockT: 0 };
+    for (const W of Ws) { for (const key of Object.keys(a)) if (key !== 'secs') a[key] += W.st[key]; a.secs += W.t; }
+    const min = a.secs / 60, f1 = (v) => +v.toFixed(1);
+    return {
+      variant, pilot,
+      mmPerMin: Math.round(a.travel * REF_MM_PER_U / min),
+      restPct: Math.round(100 * a.restT / a.secs),
+      dockPct: Math.round(100 * a.dockT / a.secs),
+      loopsPerMin: f1(a.loops / min),
+      haulAtThrow: a.throws ? f1(a.haulSum / a.throws) : 0,
+      throwsPerMin: f1(a.throws / min),
+      onTargetPct: a.throws ? Math.round(100 * a.onTarget / a.throws) : 0,
+      valuePerMin: f1(a.value / min),
+      prismsPerMin: f1((a.popped + a.blasted) / min),
+      petalsPerMin: f1(a.stolen / min),
+      boostsPerMin: f1(a.boosts / min),
+      massPerMin: f1(a.mass / min),
+      cleanedPerMin: f1(a.cleaned / min),
+      spillsPerMin: f1(a.spills / min),
+      fizzlePct: a.loops + a.fizzles ? Math.round(100 * a.fizzles / (a.loops + a.fizzles)) : 0,
+    };
+  }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], secs = opts.secs || 90, rows = [];
+    const lines = [['A', 'skilled'], ['A', 'rookie'], ['B', 'skilled'], ['B', 'rookie'], ['A', 'idle'], ['B', 'idle']];
+    for (const [v, pl] of lines) rows.push(summarise(seeds.map((s) => runOne(v, pl, s, secs)), v, pl));
+    return rows;
+  }
+  // thumb speed per second over one run: the shape of the arc
+  function curve(variant, pilot, s, secs) {
+    const W = runOne(variant, pilot || 'skilled', s || 1, secs || SCORE_SECS), out = [];
+    for (let i = 0; i < Math.floor(W.t); i++) out.push(+(W.st.curve[i] || 0).toFixed(1));
+    return out;
+  }
+  // The yardstick's own checks: an idle thumb does nothing; in A a pure loop fires; in B the same loop cinches and only
+  // a fast lift throws; a mixed loop fizzles in both; a docked kite cleans silence.
+  function selfTest() {
+    const out = [], keep = { flow: P.labFlow, mc: P.moteCount, lp: P.labPrisms };
+    P.labFlow = 0; P.moteCount = 3; P.labPrisms = 0;
+    const ring = (cx, cy, r) => { const poly = []; for (let i = 0; i < 48; i++) { const a = i / 48 * 2 * Math.PI; poly.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r }); } return poly; };
+    const blank = (variant, s) => { const W = newWorld(s || 2, variant, 'you'); W.headless = true; W.motes = []; W.shoals = []; W.prisms = []; Object.assign(W.rival, { x: -150, y: -150, tx: -150, ty: -150, retarget: 99 }); return W; };
+    const plant = (W, mixed) => { for (const [x, y, e] of [[0, 40, SP], [6, 44, SP], [-5, 36, mixed ? MA : SP]]) W.motes.push({ id: W.nextId++, e, x, y, dead: false, sh: null }); };
+    try {
+      for (const variant of ['A', 'B']) { const W = runOne(variant, 'idle', 1, 10); out.push([variant + ': an idle thumb closes no loop and throws nothing', W.st.loops + W.st.fizzles === 0 && W.st.throws === 0]); }
+      for (const variant of ['A', 'B']) { const W = blank(variant); plant(W, true); closeLoop(W, ring(0, 40, 20)); out.push([variant + ': a mixed loop fizzles', W.st.fizzles === 1 && W.st.loops === 0 && sum4(W.haul.c) === 0]); }
+      { const W = blank('A'); plant(W, false); closeLoop(W, ring(0, 40, 20)); out.push(['A: a pure Space loop of 3 fires on close', W.st.loops === 1 && W.blasts.length === 1]); }
+      { const W = blank('B'); plant(W, false); closeLoop(W, ring(0, 40, 20));
+        out.push(['B: a pure Space loop of 3 cinches into the haul (no blast)', W.st.loops === 1 && W.blasts.length === 0 && W.haul.c[SP] === 3]);
+        W.kite.vx = 40; W.kite.vy = 0; W.prevDown = true; simStepW(W, { x: W.kite.x, y: W.kite.y, down: false }, DT);
+        out.push(['B: a slow lift keeps the haul', W.st.throws === 0 && W.haul.c[SP] === 3]);
+        W.prevDown = true; W.kite.vx = 330; W.kite.vy = 0; simStepW(W, { x: W.kite.x, y: W.kite.y, down: false }, DT);
+        out.push(['B: a fast lift throws it', W.st.throws === 1 && sum4(W.haul.c) === 0]);
+        for (let i = 0; i < 120; i++) simStepW(W, { x: W.kite.x, y: W.kite.y, down: false }, DT);
+        out.push(['B: the thrown Space haul blasts where it lands', W.blasts.length === 1 && W.throws.length === 0]); }
+      { const W = blank('B'); plant(W, false); closeLoop(W, ring(0, 40, 20)); W.haul.age = 1; W.prisms.push({ x: W.haul.x, y: W.haul.y, a: 0, dead: false, danger: true });
+        stepHaul(W, DT); out.push(['B: a danger prism spills the haul back as a shoal', W.st.spills === 1 && sum4(W.haul.c) === 0 && W.motes.filter((m) => !m.dead).length === 3]); }
+      { const W = blank('B', 3); W.hull.silence = 10; W.kite.x = 0; W.kite.y = 5; W.kite.vx = 0; W.kite.vy = 0; W.t = 1;
+        for (let i = 0; i < 60; i++) simStepW(W, { x: 0, y: -300, down: false }, DT);
+        out.push(['B: a docked kite cleans the Grouper faster than silence runs down', W.docked && W.hull.silence < 7.5]);
+        for (let i = 0; i < 10; i++) simStepW(W, { x: 0, y: i * 5, down: true }, DT);
+        simStepW(W, { x: 0, y: 50, down: false }, DT);
+        out.push(['B: drag out and let go launches from the dock', !W.docked && W.kite.vy > 100]); }
+      { const W = blank('A'); W.kite.x = 80; W.kite.y = 0;   // the shipped Sling: a small circling hand whirls the kite into loops
+        for (let i = 0; i < 480; i++) { const a = i / 75 * 2 * Math.PI; simStepW(W, { x: Math.cos(a) * 25 + i * 0.08, y: Math.sin(a) * 25, down: true }, DT); }
+        out.push(['the Sling: a small circling hand closes loops', W.st.empty + W.st.loops + W.st.fizzles > 0]); }
+    } finally { P.labFlow = keep.flow; P.moteCount = keep.mc; P.labPrisms = keep.lp; }
+    return out;
+  }
+
+  // ================= live play =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const isLive = (W) => W === live.A || W === live.B;
+  function reset(s) { if (s != null) seed = s >>> 0; live.A = newWorld(seed, 'A', OPT.pilot); live.B = newWorld(seed, 'B', OPT.pilot); }
+  const cur = () => live[OPT.variant];
+  let views = [];   // [{W, cx, cy, s, x0, w}]
+  function layout() {
+    const cw = canvas.width, ch = canvas.height, R = P.boardRadius, split = OPT.split && PLATFORM.device !== 'phone', phone = ch > cw * 1.15;
+    views = [];
+    if (split) {
+      const half = cw / 2, s = Math.min(half * 0.9 / (2 * R), ch * 0.78 / (2 * R));
+      views.push({ W: live.A, cx: half / 2, cy: ch * 0.49, s, x0: 0, w: half }, { W: live.B, cx: half * 1.5, cy: ch * 0.49, s, x0: half, w: half });
+    } else {
+      const s = Math.min(cw * 0.94 / (2 * R), ch * (phone ? 0.66 : 0.8) / (2 * R));
+      views.push({ W: cur(), cx: cw / 2, cy: phone ? ch * 0.47 : ch * 0.49, s, x0: 0, w: cw });
+    }
+  }
+  const pointer = { x: 0, y: -2000, down: false, touch: false, id: null };
+  let pxPerMm = 3.78;
+  function cssToCanvas() { const r = canvas.getBoundingClientRect(); return canvas.width / Math.max(1, r.width); }
+  function setPointer(e) { const r = canvas.getBoundingClientRect(), k = cssToCanvas(); layout(); const v = views[views.length > 1 ? (OPT.variant === 'A' ? 0 : 1) : 0]; pointer.x = ((e.clientX - r.left) * k - v.cx) / v.s; pointer.y = (v.cy - (e.clientY - r.top) * k) / v.s; }
+  let fsTried = false;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (pointer.id != null && pointer.id !== e.pointerId) return;
+    pointer.id = e.pointerId; pointer.touch = e.pointerType !== 'mouse'; pointer.down = true;
+    if (OPT.pilot !== 'you') { OPT.pilot = 'you'; OPT.split = false; saveOpt(); syncHeader(); reset(); }
+    setPointer(e);
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    if (pointer.touch && PLATFORM.device === 'phone' && !fsTried) { fsTried = true; const el = document.documentElement; try { const p = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); } catch (err) { /* the viewer may refuse */ } }
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', (e) => { if (pointer.id != null && pointer.id !== e.pointerId) return; setPointer(e); });
+  const up = (e) => { if (pointer.id !== e.pointerId) return; pointer.down = false; pointer.id = null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  function humanInput() { return { x: pointer.x, y: pointer.y, down: pointer.down }; }
+  function buzz(n) { if (!OPT.haptics) return; try { if (navigator.vibrate) navigator.vibrate(n > 1 ? [10, 30, 10 + 6 * Math.min(n, 8)] : 12); } catch (e) { /* not on iOS */ } }
+
+  // ================= drawing =================
+  const PETAL = { [MA]: [[0, 1], [0.8, -0.6], [-0.8, -0.6]], [SP]: [[0, 1], [0.45, 0.1], [0, -0.7], [-0.45, 0.1]], [TI]: [[0, 1], [0.5, 0], [0, -1], [-0.5, 0]], [CH]: [[0, 1], [0.6, 0.35], [0.4, -0.7], [-0.4, -0.7], [-0.6, 0.35]] };
+  const PETAL_R = { [CH]: [0.445, 0.367], [MA]: [0.395, 0.453], [SP]: [0.461, 0.383], [TI]: [0.461, 0.383] };
+  const ecol = (e) => OPT.colours ? ECOL[e] : LIME_E[e];
+  function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + clamp(a, 0, 1).toFixed(3) + ')'; }
+  function drawFlower(e, x, y, rad, t, alpha) {
+    const [co, os] = PETAL_R[e], spin = e === SP ? t * 150 * Math.PI / 180 : 0;
+    ctx.fillStyle = hexA(ecol(e), alpha == null ? 1 : alpha);
+    for (let i = 0; i < 5; i++) {
+      const a = spin + i * 2 * Math.PI / 5, pulse = e === MA ? 1 + 0.15 * Math.sin(t * 6 + i * 2.1) : 1;
+      const px = x + Math.sin(a) * rad * co * pulse, py = y - Math.cos(a) * rad * co * pulse, sc = rad * os;
+      ctx.beginPath();
+      PETAL[e].forEach((p, j) => { const lx = p[0] * sc, ly = p[1] * sc, rx = lx * Math.cos(a) - ly * Math.sin(a), ry = lx * Math.sin(a) + ly * Math.cos(a); j ? ctx.lineTo(px + rx, py - ry) : ctx.moveTo(px + rx, py - ry); });
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  function renderView(V) {
+    const W = V.W, R = P.boardRadius, t = W.t, dpr = cssToCanvas(), S = V.s;
+    const toS = (x, y) => [V.cx + x * S, V.cy - y * S];
+    const [bx, by] = toS(0, 0), br = R * S;
+    const grd = ctx.createRadialGradient(bx, by, br * 0.1, bx, by, br); grd.addColorStop(0, '#0d2a2e'); grd.addColorStop(1, '#0a1f22');
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.clip();
+    ctx.strokeStyle = 'rgba(140,200,190,.07)'; ctx.lineWidth = dpr;
+    const step = 40, off = ((t * P.labFlow) % step);
+    for (let y = -R - step; y < R + step; y += step) { const [, sy] = toS(0, y - off); ctx.beginPath(); ctx.moveTo(bx - br, sy); ctx.lineTo(bx + br, sy); ctx.stroke(); }
+    // B's world features (a stand-in for flora and crystals the plane cuts)
+    if (W.variant === 'B') for (const f of W.features) {
+      const [sx, sy] = toS(f.x, f.y);
+      ctx.strokeStyle = hexA(ecol(f.e), 0.28); ctx.lineWidth = 1.5 * dpr;
+      if (f.kind === 'flora') { for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + 0.3; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(a) * 14 * S, sy + Math.sin(a) * 14 * S); ctx.stroke(); } ctx.beginPath(); ctx.arc(sx, sy, 4 * S, 0, 7); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.moveTo(sx, sy - 10 * S); ctx.lineTo(sx + 6 * S, sy); ctx.lineTo(sx, sy + 10 * S); ctx.lineTo(sx - 6 * S, sy); ctx.closePath(); ctx.stroke(); }
+    }
+    // friendly mass (ours) and hostile prisms
+    ctx.fillStyle = 'rgba(185,242,92,.55)';
+    for (const q of W.friendly) { const [sx, sy] = toS(q.x, q.y), g = Math.min(1, (t - q.t0) / 0.35); ctx.save(); ctx.translate(sx, sy); ctx.rotate(q.a); ctx.fillRect(-1 * S * g, -2.5 * S * g, 2 * S * g, 5 * S * g); ctx.restore(); }
+    for (const p of W.prisms) {
+      const [sx, sy] = toS(p.x, p.y); ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.a);
+      if (p.danger) { ctx.fillStyle = '#ff9a3c'; ctx.fillRect(-1.6 * S, -2.8 * S, 3.2 * S, 5.6 * S); ctx.strokeStyle = 'rgba(255,154,60,.5)'; ctx.lineWidth = dpr; ctx.strokeRect(-3 * S, -4.2 * S, 6 * S, 8.4 * S); }
+      else { ctx.fillStyle = '#e0566a'; ctx.fillRect(-1 * S, -2.5 * S, 2 * S, 5 * S); }
+      ctx.restore();
+    }
+    for (const b of W.blasts) { const [sx, sy] = toS(b.x, b.y), age = (t - b.t0) / (BLAST_SECONDS + 0.4); ctx.strokeStyle = 'rgba(192,140,255,' + (0.8 * (1 - age)).toFixed(3) + ')'; ctx.lineWidth = 3 * dpr; ctx.beginPath(); ctx.arc(sx, sy, b.r * S, 0, 7); ctx.stroke(); ctx.fillStyle = 'rgba(192,140,255,' + (0.12 * (1 - age)).toFixed(3) + ')'; ctx.fill(); }
+    // loop / cinch fills
+    for (const f of W.fx) {
+      const age = t - f.t0;
+      if ((f.kind === 'loop' || f.kind === 'fizzle' || f.kind === 'cinch') && age < 0.7) {
+        const a = 1 - age / 0.7, sh = f.kind === 'cinch' ? 1 - 0.6 * (age / 0.7) : 1;   // a cinch pulls the loop shut toward the haul
+        ctx.beginPath(); f.poly.forEach((p, i) => { const x = f.kind === 'cinch' ? f.x + (p.x - f.x) * sh : p.x, y = f.kind === 'cinch' ? f.y + (p.y - f.y) * sh : p.y; const [sx, sy] = toS(x, y); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.closePath();
+        ctx.fillStyle = f.kind === 'fizzle' ? 'rgba(150,150,150,' + (0.25 * a).toFixed(3) + ')' : hexA(ecol(f.e), 0.35 * a); ctx.fill();
+        ctx.strokeStyle = f.kind === 'fizzle' ? 'rgba(200,200,200,' + (0.5 * a).toFixed(3) + ')' : hexA('#ffffff', 0.7 * a); ctx.lineWidth = 2 * dpr; ctx.stroke();
+      }
+    }
+    const mr = Math.max(P.moteSize * S, 4 * dpr);
+    for (const m of W.motes) {
+      const [sx, sy] = toS(m.x, m.y);
+      let al = 1; if (m.sh && m.sh.e === SP && m.sh.blinkT < 0.4) al = 0.35 + 0.65 * Math.abs(Math.sin(t * 40));   // a Space shoal flickers before it hops
+      drawFlower(m.e, sx, sy, mr, t, al);
+    }
+    // the Grouper (hull) at the centre, its silence ring and banked boosts
+    { const hs = 10 * S, sil = W.hull.silence;
+      ctx.fillStyle = W.docked ? 'rgba(185,242,92,.6)' : 'rgba(120,220,180,.45)'; ctx.beginPath(); ctx.moveTo(bx, by - hs * 1.4); ctx.lineTo(bx + hs, by + hs); ctx.lineTo(bx - hs, by + hs); ctx.closePath(); ctx.fill();
+      if (sil > 0) { ctx.strokeStyle = 'rgba(255,107,92,.85)'; ctx.lineWidth = 3 * dpr; ctx.beginPath(); ctx.arc(bx, by, 19 * S, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * sil / P.labSilenceCap); ctx.stroke(); }
+      if (W.variant === 'B') { ctx.strokeStyle = 'rgba(185,242,92,' + (W.docked ? 0.7 : 0.22) + ')'; ctx.setLineDash([3 * dpr, 4 * dpr]); ctx.lineWidth = 1.2 * dpr; ctx.beginPath(); ctx.arc(bx, by, P.hlDockRadius * S, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+      if (W.docked && sil > 0) { for (let i = 0; i < 5; i++) { const a = t * 3 + i * 1.256; ctx.fillStyle = 'rgba(185,242,92,.8)'; ctx.beginPath(); ctx.arc(bx + Math.cos(a) * 24 * S, by + Math.sin(a) * 24 * S, 1.6 * dpr, 0, 7); ctx.fill(); } }
+      const nb = Math.min(20, W.st.boosts); for (let i = 0; i < nb; i++) { const a = -Math.PI / 2 + i * 2 * Math.PI / 20; ctx.fillStyle = 'rgba(185,242,92,.75)'; ctx.beginPath(); ctx.arc(bx + Math.cos(a) * 29 * S, by + Math.sin(a) * 29 * S, 1.4 * dpr, 0, 7); ctx.fill(); }
+    }
+    // allies' shadows and their silence
+    for (const al of W.allies) {
+      const p = allyPos(W, al), [sx, sy] = toS(p.x, p.y), as = 7 * S;
+      ctx.fillStyle = t - al.cleanFx < 0.5 ? '#ffffff' : 'rgba(120,220,180,.35)'; ctx.beginPath(); ctx.moveTo(sx, sy - as * 1.4); ctx.lineTo(sx + as, sy + as); ctx.lineTo(sx - as, sy + as); ctx.closePath(); ctx.fill();
+      if (al.silence > 0) { ctx.strokeStyle = 'rgba(255,107,92,.8)'; ctx.lineWidth = 2.5 * dpr; ctx.beginPath(); ctx.arc(sx, sy, 13 * S, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * al.silence / P.labSilenceCap); ctx.stroke(); }
+    }
+    // the rival hull
+    { const v = W.rival, [sx, sy] = toS(v.x, v.y), rs = 10 * S, fl = t - v.flash < 0.3, a = Math.atan2(-v.vy, v.vx); ctx.save(); ctx.translate(sx, sy); ctx.rotate(a); ctx.fillStyle = fl ? '#ffffff' : '#ff6b5c'; ctx.beginPath(); ctx.moveTo(rs, 0); ctx.lineTo(-rs * 0.7, -rs * 0.7); ctx.lineTo(-rs * 0.7, rs * 0.7); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    // thrown hauls in flight
+    for (const th of W.throws) {
+      for (let i = 1; i < th.trail.length; i++) { const [x0, y0] = toS(th.trail[i - 1].x, th.trail[i - 1].y), [x1, y1] = toS(th.trail[i].x, th.trail[i].y); ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 * i / th.trail.length).toFixed(3) + ')'; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+      drawHaul(th.c, ...toS(th.x, th.y), S, t, th.omni);
+    }
+    // the tether (a lab aid), the tail, the haul and the kite
+    const rp = W.rope;
+    if (OPT.tether && rp.on && !W.docked) { const [ax, ay] = toS(rp.ax, rp.ay), [kx, ky] = toS(W.kite.x, W.kite.y); ctx.setLineDash([4 * dpr, 6 * dpr]); ctx.strokeStyle = rp.taut ? 'rgba(185,242,92,.55)' : 'rgba(185,242,92,.2)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(kx, ky); ctx.stroke(); ctx.setLineDash([]); }
+    if (W.docked && W.dockHand) { const [ax, ay] = toS(W.dockHand.x, W.dockHand.y); ctx.strokeStyle = 'rgba(185,242,92,.6)'; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ax, ay); ctx.stroke(); }
+    const T = W.tail;
+    if (T.length > 1) { const lw = Math.max(1.4 * S, 1.2 * dpr); for (let i = 1; i < T.length; i++) { const a = i / T.length, [x0, y0] = toS(T[i - 1].x, T[i - 1].y), [x1, y1] = toS(T[i].x, T[i].y); ctx.strokeStyle = 'rgba(185,242,92,' + (0.08 + 0.75 * a).toFixed(3) + ')'; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); } }
+    if (W.variant === 'B' && sum4(W.haul.c) > 0) {
+      const [hx, hy] = toS(W.haul.x, W.haul.y), [kx, ky] = toS(W.kite.x, W.kite.y);
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(hx, hy); ctx.stroke();
+      drawHaul(W.haul.c, hx, hy, S, t, false);
+    }
+    { const k = W.kite, [kx, ky] = toS(k.x, k.y), a = Math.atan2(-k.vy, k.vx), ks = P.kiteRadius * S * 1.15, armed = W.variant === 'A' && W.charge >= 1;
+      ctx.save(); ctx.translate(kx, ky); ctx.rotate(W.docked ? -Math.PI / 2 : a);
+      ctx.fillStyle = armed ? '#7fb8ff' : '#b9f25c'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12 * dpr;
+      ctx.beginPath(); ctx.moveTo(ks * 1.5, 0); ctx.lineTo(0, ks * 0.75); ctx.lineTo(-ks * 0.9, 0); ctx.lineTo(0, -ks * 0.75); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    // effects
+    ctx.textAlign = 'center'; ctx.font = '600 ' + Math.round(12 * dpr) + 'px "IBM Plex Mono", monospace';
+    for (const f of W.fx) {
+      const age = t - f.t0, [sx, sy] = toS(f.x, f.y);
+      if (f.text && age < 1.1) { ctx.fillStyle = 'rgba(255,255,255,' + (1 - age / 1.1).toFixed(3) + ')'; ctx.fillText(f.text, sx, sy - 16 * dpr - age * 30 * dpr); }
+      if (f.kind === 'fizzle' && age < 0.9) { ctx.fillStyle = 'rgba(210,210,210,' + (1 - age / 0.9).toFixed(3) + ')'; ctx.fillText('fizzle', sx, sy - age * 20 * dpr); }
+      if ((f.kind === 'pop' || f.kind === 'hop' || f.kind === 'dart') && age < 0.35) { ctx.strokeStyle = f.kind === 'pop' ? 'rgba(255,140,150,' + (1 - age / 0.35).toFixed(3) + ')' : hexA(ecol(f.e), 1 - age / 0.35); ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(sx, sy, (4 + age * 60) * S, 0, 7); ctx.stroke(); }
+      if ((f.kind === 'land' || f.kind === 'throw' || f.kind === 'spill' || f.kind === 'dock' || f.kind === 'launch' || f.kind === 'catch' || f.kind === 'clean') && age < 0.6) {
+        const col = f.kind === 'spill' ? '255,107,92' : f.kind === 'land' && !f.on ? '200,200,200' : '185,242,92';
+        ctx.strokeStyle = 'rgba(' + col + ',' + (1 - age / 0.6).toFixed(3) + ')'; ctx.lineWidth = (f.kind === 'land' ? 4 : 2.5) * dpr; ctx.beginPath(); ctx.arc(sx, sy, (8 + age * (f.kind === 'land' ? 90 : 50)) * S, 0, 7); ctx.stroke();
+      }
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(160,220,200,.25)'; ctx.lineWidth = dpr; ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.stroke();
+    if (W.finger.down) { const [sx, sy] = toS(W.finger.x, W.finger.y); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(sx, sy, 14 * dpr, 0, 7); ctx.stroke(); }
+    if (views.length > 1) {   // each half names itself and carries its own running numbers, top right
+      const st = W.st, x = V.x0 + V.w - 14 * dpr;
+      ctx.textAlign = 'right'; ctx.fillStyle = W.variant === OPT.variant ? '#b9f25c' : '#8fb1a8'; ctx.font = '700 ' + Math.round(22 * dpr) + 'px "Bricolage Grotesque", system-ui';
+      ctx.fillText(W.variant + (W.variant === 'A' ? '  shipped' : '  haul'), x, 30 * dpr);
+      ctx.fillStyle = '#cfe4dd'; ctx.font = Math.round(11.5 * dpr) + 'px "IBM Plex Mono", monospace';
+      const l2 = 'value ' + Math.round(st.value) + '  loops ' + st.loops + (W.variant === 'B' ? '  haul ' + sum4(W.haul.c) + '  throws ' + st.throws : '');
+      const l3 = 'rest ' + Math.round(100 * st.restT / Math.max(1e-6, W.t)) + '%  silence ' + W.hull.silence.toFixed(1) + ' s' + (W.docked ? '  docked' : '');
+      ctx.fillText(l2, x, 50 * dpr); ctx.fillText(l3, x, 66 * dpr);
+    }
+  }
+  function drawHaul(c, x, y, S, t, omni) {
+    const N = sum4(c); if (!N) return;
+    const hr = haulRadius(N) * S;
+    ctx.fillStyle = omni ? 'rgba(255,255,255,.22)' : 'rgba(185,242,92,.16)'; ctx.beginPath(); ctx.arc(x, y, hr * 1.25, 0, 7); ctx.fill();
+    let i = 0; const mr = Math.max(2.5, P.moteSize * S * 0.75);
+    for (let e = 0; e < 4; e++) for (let j = 0; j < c[e]; j++, i++) { const a = i * 2.399 + t * 1.5, d = Math.sqrt((i + 0.5) / N) * hr; drawFlower(e, x + Math.cos(a) * d, y + Math.sin(a) * d, mr, t, 1); }
+    if (c[CH] > 0) { ctx.strokeStyle = 'rgba(127,184,255,' + (0.5 + 0.4 * Math.sin(t * 30)).toFixed(3) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, hr * 1.3, 0, 7); ctx.stroke(); }
+  }
+  function render() {
+    ctx.fillStyle = '#061417'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    layout();
+    for (const V of views) renderView(V);
+    hud();
+  }
+  function hud() {
+    const W = cur(), st = W.st, mm = st.travel * REF_MM_PER_U, min = Math.max(1e-6, W.t / 60), lines = [];
+    lines.push('<b>' + W.variant + '</b> ' + (W.variant === 'A' ? 'shipped Wrasse' : 'Hunt · Haul · Sling · Clean') + ' · ' + (W.pilot === 'you' ? 'you' : 'AI ' + W.pilot) + ' · ' + W.t.toFixed(0) + ' s');
+    lines.push('value <b>' + Math.round(st.value) + '</b>  loops ' + st.loops + '  fizzles ' + st.fizzles + (W.variant === 'B' ? '  throws ' + st.throws + '  spills ' + st.spills : ''));
+    if (W.variant === 'B') { const c = W.haul.c, N = sum4(c); lines.push('haul <b>' + N + '</b>' + (N ? ' (' + c.map((v, i) => v ? ELEMS[i][0] + v : '').filter(Boolean).join(' ') + ')' : '') + (W.docked ? '  <b>docked</b>' : '')); }
+    lines.push('prisms ' + (st.popped + st.blasted) + '  mass ' + st.mass + '  boosts ' + st.boosts + '  petals ' + st.stolen);
+    lines.push('silence ' + W.hull.silence.toFixed(1) + ' s' + (W.variant === 'B' ? '  cleaned ' + st.cleaned.toFixed(0) + ' s' : ''));
+    lines.push('thumb ' + Math.round(mm / min) + ' mm/min  rest ' + Math.round(100 * st.restT / Math.max(1e-6, W.t)) + '%' + (paused ? '  [paused]' : ''));
+    $('hud').innerHTML = lines.join('<br>');
+    $('hud').hidden = views.length > 1;
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  pxPerMm = PLATFORM.device === 'phone' ? 6.3 : 3.78;
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI =================
+  function saveOpt() { lsSet('opt', OPT); }
+  function fmt(v, step) { const s = String(step), dec = s.includes('.') ? s.split('.')[1].length : 0; return Number(v).toFixed(dec); }
+  const outputs = {};
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length;
+    $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from the defaults' : 'lab defaults';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); const ch = Math.abs(P[key] - SHIPPED[key]) > 1e-9; o.out.classList.toggle('changed', ch); o.out.title = 'default ' + SHIPPED[key] + ' · yours ' + P[key] + ' · effective ' + P[key]; }
+  }
+  function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); if (['moteCount', 'moteCluster', 'moteSpread', 'labPrisms'].includes(key)) reset(); refreshDiff(); }
+
+  const HINT = {
+    A: 'The shipped Wrasse. Hold the board and your thumb is a hand on a rope: small circles whirl the kite in big ones. A loop round one element fires at once.',
+    B: 'Loop a shoal: it cinches into a haul behind the kite. Loop again to grow it. Swing fast and lift your thumb to throw it. Fly into the Grouper (centre) to dock and rest; drag out and let go to launch.',
+  };
+  function syncHeader() {
+    $('abA').setAttribute('aria-pressed', String(OPT.variant === 'A')); $('abB').setAttribute('aria-pressed', String(OPT.variant === 'B'));
+    $('splitBtn').setAttribute('aria-pressed', String(!!OPT.split));
+    $('pilotSel').value = OPT.pilot;
+    $('hint').textContent = OPT.split && PLATFORM.device !== 'phone' ? 'Side by side: the same seed and the same AI fly A and B. Pick You fly to play one yourself.' : HINT[OPT.variant];
+  }
+  $('abA').onclick = () => { OPT.variant = 'A'; saveOpt(); syncHeader(); if (curDock === 'Concept') showDock('Concept'); };
+  $('abB').onclick = () => { OPT.variant = 'B'; saveOpt(); syncHeader(); if (curDock === 'Concept') showDock('Concept'); };
+  $('splitBtn').onclick = () => { OPT.split = !OPT.split; if (OPT.split && OPT.pilot === 'you') { OPT.pilot = 'skilled'; reset(); } saveOpt(); syncHeader(); };
+  { const ps = $('pilotSel'); for (const [v, t] of [['you', 'You fly'], ['skilled', 'Watch: skilled AI'], ['rookie', 'Watch: rookie AI']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; ps.appendChild(o); }
+    ps.onchange = () => { OPT.pilot = ps.value; if (OPT.pilot === 'you') OPT.split = false; saveOpt(); syncHeader(); reset(); }; }
+
+  let curDock = lsGet('dock', 'Concept');
+  const DOCK = ['Concept', 'Haul', 'Dock', 'Shoals', 'World', 'Sling', 'View'];
+  function showDock(name) {
+    curDock = name; lsSet('dock', name);
+    for (const b of $('dockTabs').children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+    const body = $('dockBody'); body.replaceChildren();
+    if (name === 'Concept') {
+      const wrap = document.createElement('div');
+      const beatsB = [['Hunt', 'Shoals move like their element. Time darts away when the kite comes close, Mass is big and slow, Space flickers and hops, Charge shies from the kite and drifts toward the rival. Most gather round world features (flora, crystals).'],
+        ['Haul', 'A pure loop cinches its motes into a haul behind the head. More loops grow it (the exponent counts the whole haul) and braid other elements in. The haul is heavy on the rope. A rival, a danger prism or your own head crossing it spills it.'],
+        ['Sling', 'Swing fast and lift your thumb: the haul flies along the swing. Space blasts where it lands, Mass lays a cluster, Time thrown into the Grouper banks boosts, Charge stays on the tail as a flail that rams. All four braided: an Omni sling.'],
+        ['Clean', 'Fly into the Grouper with nothing hauled (or only Time) and the kite docks: your thumb can rest, and the dock cleans the Grouper\'s silence. A loop round an ally\'s shadow cleans it too. Drag out and let go to launch.']];
+      const beatsA = [['Lasso', 'A pure loop of n motes fires base x 2^(n-1) at once: Space a blast at the loop\'s centre, Mass a cluster, Time saved boosts, Charge kite power.'], ['Head', 'The head pops hostile prisms and, charged, rams the rival to steal petals.'], ['Motes', 'Clusters flow in evenly from the top, weighted the same everywhere.']];
+      const h = document.createElement('p'); h.className = 'note'; h.textContent = OPT.variant === 'A' ? 'A is the shipped Wrasse (KiteNavigatorCore, the Sling).' : 'B is the proposal in Docs/Studios/ONE_THUMB_SEAT_ARCS.md section 2. Every number marked proposal has no game field yet.';
+      const ul = document.createElement('ul'); ul.className = 'beats';
+      for (const [t, d] of (OPT.variant === 'A' ? beatsA : beatsB)) { const li = document.createElement('li'); if (OPT.variant === 'A') li.className = 'a'; const b = document.createElement('b'); b.textContent = t; li.append(b, document.createTextNode(d)); ul.appendChild(li); }
+      const how = document.createElement('p'); how.className = 'note'; how.textContent = 'Mouse: hold the button to hold the rope, release to let go (the game\'s mouse never lets go; in B the release is the throw). Touch: the same with your thumb.';
+      wrap.append(h, ul, how); body.appendChild(wrap);
+    } else if (name === 'View') {
+      const box = document.createElement('div'); box.className = 'toggles';
+      for (const [key, label] of [['tether', 'Show the rope (a lab aid; the game keeps it invisible)'], ['colours', 'Lab colours per element (the game draws four limes, each with its petal shape)'], ['haptics', 'Buzz on a loop and a throw (Android)']]) {
+        const l = document.createElement('label'), c = document.createElement('input'); c.type = 'checkbox'; c.id = 'opt-' + key; c.checked = !!OPT[key]; c.onchange = () => { OPT[key] = c.checked; saveOpt(); };
+        const s = document.createElement('span'); s.textContent = label; l.append(c, s); box.appendChild(l);
+      }
+      const seedL = document.createElement('label'); seedL.innerHTML = '<span>Seed</span>'; const si = document.createElement('input'); si.type = 'text'; si.id = 'seedIn'; si.value = seed; si.style.width = '90px'; si.onchange = () => reset(parseInt(si.value, 10) || 1); seedL.appendChild(si); box.appendChild(seedL);
+      body.appendChild(box);
+    } else {
+      const p = document.createElement('p'); p.className = 'note';
+      p.textContent = name === 'Sling' ? 'The shipped Sling (KiteNavigatorConfig.asset sling* fields). Both variants use it.' : name === 'World' ? 'The stand-in world both variants fly in, and the shipped mote and loop numbers.' : 'Proposals for B. The game has no field for these yet.';
+      body.append(p, sliders(name));
+    }
+  }
+  function sliders(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); inp.id = 'p-' + key; Object.assign(inp, { min: lo, max: hi, step, value: P[key] }); inp.setAttribute('aria-label', label);
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  for (const n of DOCK) { const b = document.createElement('button'); b.textContent = n; b.dataset.name = n; b.setAttribute('role', 'tab'); b.onclick = () => showDock(n); $('dockTabs').appendChild(b); }
+
+  // the bottom dock: Scorecard / Decisions / About
+  // The round's scorecard as measured at the lab defaults (runBatch({seeds:[1,2,3], secs:180}) + curve('A'|'B','skilled',1)),
+  // shown until Score is pressed so the panel opens with numbers. Re-measured whenever the model changes.
+  const MEASURED = /*MEASURED*/{"rows":[{"variant":"A","pilot":"skilled","mmPerMin":2115,"restPct":0,"dockPct":0,"loopsPerMin":22,"haulAtThrow":0,"throwsPerMin":0,"onTargetPct":0,"valuePerMin":177.9,"prismsPerMin":301.3,"petalsPerMin":40.4,"boostsPerMin":27.9,"massPerMin":257.3,"cleanedPerMin":0,"spillsPerMin":0,"fizzlePct":25},{"variant":"A","pilot":"rookie","mmPerMin":1784,"restPct":0,"dockPct":0,"loopsPerMin":18,"haulAtThrow":0,"throwsPerMin":0,"onTargetPct":0,"valuePerMin":136,"prismsPerMin":281.8,"petalsPerMin":30.3,"boostsPerMin":18.9,"massPerMin":212.7,"cleanedPerMin":0,"spillsPerMin":0,"fizzlePct":30},{"variant":"B","pilot":"skilled","mmPerMin":2209,"restPct":31,"dockPct":23,"loopsPerMin":9.1,"haulAtThrow":3.7,"throwsPerMin":2.6,"onTargetPct":48,"valuePerMin":54.9,"prismsPerMin":120.1,"petalsPerMin":25.8,"boostsPerMin":1.9,"massPerMin":140.7,"cleanedPerMin":12.5,"spillsPerMin":4.2,"fizzlePct":13},{"variant":"B","pilot":"rookie","mmPerMin":1752,"restPct":36,"dockPct":26,"loopsPerMin":8.6,"haulAtThrow":6.3,"throwsPerMin":1.8,"onTargetPct":50,"valuePerMin":56.7,"prismsPerMin":93.7,"petalsPerMin":14.4,"boostsPerMin":0.4,"massPerMin":245.3,"cleanedPerMin":12.5,"spillsPerMin":3.9,"fizzlePct":18},{"variant":"A","pilot":"idle","mmPerMin":0,"restPct":100,"dockPct":0,"loopsPerMin":0,"haulAtThrow":0,"throwsPerMin":0,"onTargetPct":0,"valuePerMin":0,"prismsPerMin":29.4,"petalsPerMin":0,"boostsPerMin":0,"massPerMin":0,"cleanedPerMin":0,"spillsPerMin":0,"fizzlePct":0},{"variant":"B","pilot":"idle","mmPerMin":0,"restPct":100,"dockPct":0,"loopsPerMin":0,"haulAtThrow":0,"throwsPerMin":0,"onTargetPct":0,"valuePerMin":0,"prismsPerMin":26.6,"petalsPerMin":0,"boostsPerMin":0,"massPerMin":0,"cleanedPerMin":0,"spillsPerMin":0,"fizzlePct":0}],"curves":{"A":[42.6,33.3,36.4,24.5,33.9,41.4,32.7,80.4,12.5,38.7,52.4,52.9,13.3,15,38.1,34.2,11.2,30.3,13.5,13.7,49.1,51.7,23.2,35.4,14,13.5,37.8,22.1,11.9,31.7,12,41.4,68.2,52.1,52.9,15,12,75.1,14.9,8.6,36.3,53.2,12.7,42.7,45.8,39.4,12.5,42.6,13.6,60.7,30.7,12.5,66.5,14.4,63.7,15.9,24.2,28.9,47.3,42.5,32.4,12.6,78.1,62.1,23.5,71.7,41.1,17.5,40.2,95.3,17.2,23.4,19.5,10.5,50.1,9.4,54.4,25.2,13.9,32.4,21.8,13.7,53.1,47.1,8.2,42,9.6,30.9,11.4,64.2,13.2,11.2,34.6,42.5,56.9,26.8,126.4,23.5,24.2,38.8,21.7,24.7,13.6,43,45.3,23,62.7,40.2,33.4,30.9,30.7,14.8,55.1,30.9,11.4,56.8,13.9,21,14.1,51.3,33.3,16.1,12.8,33.8,29.6,40.5,32.2,11.1,57.4,21,7,5.4,6.4,12.1,29.5,58.6,13.2,13.2,14.6,14,62.6,30.5,44.2,46.4,21.6,44.5,88.7,11,5.6,10.2,7.3,17,53.6,12.6,32.2,14.8,27.1,12.9,26.1,25.4,12.2,32.5,51.1,27.7,38.8,57.9,44.5,14.8,6.8,5.1,30.5,28.9,54,14,67.2,13.2,35.5,18.7,24,46.9],"B":[42,49.4,14.7,12.6,64.3,53,76,25.8,42.1,57.2,52.7,67.8,41.8,55.7,36.3,39.1,16.3,28.5,22.3,19.6,59.7,55.7,13.9,135.9,0,119.2,57.7,21.4,55.6,47.9,34.4,56.8,6.1,22.1,13.3,11.2,14.5,69.7,107.8,70.3,70.6,0,53.2,37.5,48.2,77.8,53.1,12.8,51.8,46.6,26.9,8.6,11.5,18.6,14.1,58.3,38.7,65.7,37.7,5.4,69.6,47.6,5.1,60,48.4,33.8,49.9,40.4,48.8,14.5,10.2,51.3,37,50.4,47.6,46.5,36.4,43.7,18,73.5,52.8,24.1,83.4,54.7,0,67.9,92.5,62.9,17.4,66.4,58.8,6.8,33.5,74.9,41.6,71.5,71.2,42.5,25.7,37.7,46.3,75,58.6,18.9,20.7,13.3,75.4,37.7,72.4,37.4,27.5,99.7,33.7,29.9,58,81.5,57.6,50.7,45.7,5.8,28.5,13.9,63.6,65.8,11.3,23.1,9.1,9.3,12.1,12.7,91.6,49.5,31.2,40.9,11.6,9.7,15.2,15.9,13.2,38.2,5.3,2.2,0.9,64.2,52.3,4.7,36.1,49.2,50.2,41.8,28,25.3,13.6,7.1,10.7,10.2,15,4.4,1.8,0.7,0.3,0.1,0,0,0,0,0,0,41.7,75.5,0,64.9,49.3,19.8,68.8,52.2,41,68,50.7,54.8]}}/*END*/;
+  let lastRows = MEASURED ? MEASURED.rows : null, lastCurves = MEASURED ? MEASURED.curves : null;
+  const COLS = [
+    ['mmPerMin', 'Thumb mm/min', 'Thumb travel on the glass per minute (57 mm board); lower is less work'],
+    ['restPct', 'Rest %', 'Share of the time the thumb is off the glass'],
+    ['dockPct', 'Docked %', 'Share of the time the kite sits in the dock (B)'],
+    ['loopsPerMin', 'Loops/min', 'Pure loops per minute'],
+    ['haulAtThrow', 'Haul at throw', 'Motes per throw (B)'],
+    ['throwsPerMin', 'Throws/min', 'Throws per minute (B)'],
+    ['onTargetPct', 'On target %', 'Throws that landed where they count: a blast that took 4+ prisms, Time caught by the Grouper, Mass within 60 u of the rival or an ally, Charge on the rival'],
+    ['valuePerMin', 'Value/min', 'growth^(n-1) per pure loop fired (A) or per element delivered (B), capped where the element\'s own cap stops the game (Space 640/60, Mass 240/6, Time 20 boosts, Charge 30 petals)'],
+    ['prismsPerMin', 'Prisms/min', 'Hostile prisms destroyed (head pops, flail pops and blasts)'],
+    ['massPerMin', 'Mass/min', 'Our prisms laid'],
+    ['boostsPerMin', 'Boosts/min', 'Boosts banked for the Grouper'],
+    ['petalsPerMin', 'Petals/min', 'Petals stolen from the rival'],
+    ['cleanedPerMin', 'Silence cleaned s/min', 'Silence cleaned off the Grouper and allies beyond what runs down on its own (B)'],
+    ['spillsPerMin', 'Spills/min', 'Hauls spilt (B)'],
+    ['fizzlePct', 'Fizzle %', 'Closed loops that held two elements'],
+  ];
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score A against B</button> <span class="note" id="batchNote">Showing the round 1 numbers, measured at the lab defaults. Press to re-run at your settings: A and B x skilled and rookie AI x 3 seeds x 180 s, plus an idle thumb on each (a few seconds).</span></p>' +
+      '<div class="score-grid"><div class="tablewrap"><table id="scoreTable"></table></div><div><div class="label">Thumb speed, mm per second, 5 s average (skilled AI, seed 1, 180 s)</div><canvas class="curve" id="curveCv" width="600" height="150"></canvas><div class="legend"><span><i id="lgA"></i>A shipped</span><span><i id="lgB"></i>B haul</span></div><p class="note" id="curveNote"></p></div></div>';
+    box.querySelector('#runBatch').onclick = () => {
+      const note = box.querySelector('#batchNote'); note.textContent = 'Scoring...';
+      setTimeout(() => { const t0 = performance.now(); lastRows = runBatch({ seeds: [1, 2, 3], secs: SCORE_SECS }); lastCurves = { A: curve('A', 'skilled', 1), B: curve('B', 'skilled', 1) }; note.textContent = 'Scored in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s at the current settings. The AI writes the thumb, never the kite.'; drawScore(box); }, 30);
+    };
+    if (lastRows) queueMicrotask(() => drawScore(box));
+    return box;
+  }
+  function drawScore(box) {
+    const t = box.querySelector('#scoreTable'), rows = lastRows; t.replaceChildren();
+    const hr = document.createElement('tr'); for (const h of ['Variant', 'Pilot'].concat(COLS.map((c) => c[1]))) { const th = document.createElement('th'); th.textContent = h; if (h !== 'Variant' && h !== 'Pilot') th.className = 'num'; hr.appendChild(th); }
+    COLS.forEach((c, i) => { hr.children[i + 2].title = c[2]; }); t.appendChild(hr);
+    for (const r of rows) {
+      const tr = document.createElement('tr'); if (r.pilot === 'idle') tr.className = 'ctrl';
+      for (const v of [r.variant + (r.variant === 'A' ? ' shipped' : ' haul'), r.pilot === 'idle' ? 'idle thumb (control)' : r.pilot]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }
+      for (const [k] of COLS) { const td = document.createElement('td'); td.className = 'num'; td.textContent = r[k]; tr.appendChild(td); }
+      t.appendChild(tr);
+    }
+    drawCurve(box);
+  }
+  const smoothAll = (arr) => arr.map((_, i) => { let t = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(arr.length - 1, i + 2); j++) { t += arr[j]; n++; } return t / n; });
+  function drawCurve(box) {
+    const cv = box.querySelector('#curveCv'); if (!cv || !lastCurves) return;
+    const cs = getComputedStyle(document.documentElement), colA = cs.getPropertyValue('--a-tone').trim() || '#888', colB = cs.getPropertyValue('--b-tone').trim() || '#2c7a5b', ink = cs.getPropertyValue('--muted').trim() || '#888', line = cs.getPropertyValue('--line').trim() || '#ccc';
+    box.querySelector('#lgA').style.background = colA; box.querySelector('#lgB').style.background = colB;
+    const c2 = cv.getContext('2d'), Wd = cv.width, Ht = cv.height, padL = 30, padB = 18, padT = 6;
+    c2.clearRect(0, 0, Wd, Ht);
+    const n = Math.max(lastCurves.A.length, lastCurves.B.length), mx = Math.max(10, ...smoothAll(lastCurves.A), ...smoothAll(lastCurves.B)), top = Math.ceil(mx / 20) * 20;
+    const X = (i) => padL + (Wd - padL - 4) * i / Math.max(1, n - 1), Y = (v) => padT + (Ht - padT - padB) * (1 - v / top);
+    c2.strokeStyle = line; c2.lineWidth = 1; c2.fillStyle = ink; c2.font = '10px "IBM Plex Mono", monospace'; c2.textAlign = 'right';
+    for (const v of [0, top / 2, top]) { c2.beginPath(); c2.moveTo(padL, Y(v)); c2.lineTo(Wd - 4, Y(v)); c2.stroke(); c2.fillText(String(v), padL - 4, Y(v) + 3); }
+    c2.textAlign = 'center'; for (const s of [0, 60, 120, 180]) if (s < n + 1) c2.fillText(s + ' s', X(Math.min(n - 1, s)), Ht - 4);
+    const smooth = (arr) => arr.map((_, i) => { let t = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(arr.length - 1, i + 2); j++) { t += arr[j]; n++; } return t / n; });   // a 5 s average: the arc, not the jitter
+    for (const [arr, col] of [[lastCurves.A, colA], [lastCurves.B, colB]]) { c2.strokeStyle = col; c2.lineWidth = 2; c2.beginPath(); smooth(arr).forEach((v, i) => i ? c2.lineTo(X(i), Y(v)) : c2.moveTo(X(i), Y(v))); c2.stroke(); }
+    const still = (arr) => arr.filter((v) => v < 10).length;
+    box.querySelector('#curveNote').textContent = 'Seconds with the thumb nearly still (under 10 mm): A ' + still(lastCurves.A) + ', B ' + still(lastCurves.B) + ' of ' + n + '. A flat line is the same work every second; valleys are rests.';
+  }
+
+  // the decision log: shared in the artifact's db, readable by Claude; this browser otherwise
+  let db = null, me = '', remote = [], localLog = lsGet('log', []);
+  function snapshot() { return { round: LAB.round, seed, variant: OPT.variant, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('log', localLog); return 'local';
+  }
+  const TOPICS = ['A or B for the Wrasse', 'Haul: loops wait for the throw', 'Throw on a fast lift', 'Shoals that move like their element', 'Dock and cleaning silence', 'Something else'];
+  function currentChoice(topic) {
+    const d = diffOnly(), set = Object.keys(d).length ? ' Settings: ' + JSON.stringify(d) : ' Lab defaults.';
+    if (topic === 'A or B for the Wrasse') return (OPT.variant === 'B' ? 'B, the haul' : 'A, keep the shipped Wrasse') + '.' + set;
+    return topic + ': keep / change / drop.' + set;
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="note" id="logStatus"></p><p><select id="logTopic" aria-label="Topic"></select></p><textarea id="logChoice" rows="3" aria-label="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus'), sel = box.querySelector('#logTopic'), ta = box.querySelector('#logChoice');
+    for (const t of TOPICS) { const o = document.createElement('option'); o.textContent = t; sel.appendChild(o); }
+    sel.onchange = () => { ta.value = currentChoice(sel.value); }; ta.value = currentChoice(TOPICS[0]);
+    status.textContent = db ? 'Shared log: saved with the lab, read by Claude at the start of the next round.' : 'Kept in this browser. Copy the log to send it.';
+    status.className = 'note ' + (db ? 'status-ok' : 'status-warn');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(sel.value, ta.value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => {
+      const txt = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n');
+      try { navigator.clipboard.writeText(txt).then(() => { status.textContent = 'Copied.'; }, () => { ta.value = txt; ta.select(); }); } catch (e) { ta.value = txt; ta.select(); }
+    };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.replaceChildren(); const hr = document.createElement('tr'); for (const h of ['When', 'Topic', 'Decision']) { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); } t.appendChild(hr);
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; td.style.whiteSpace = 'normal'; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    if (curBottom === 'Decisions') showBottom('Decisions');
+    try { db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; }); } catch (e) { db = null; }
+  })();
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutHead"></p>' +
+      '<p><b>The question.</b> Garrett: the Wrasse has three fun things to do (attack vessels, pop prisms, lasso elements), but the constant looping gets very repetitive. Does the concept (B: Hunt, Haul, Sling, Clean) give the seat a peak and a valley the shipped kite (A) does not have, while staying one thumb and portrait?</p>' +
+      '<p><b>Shipped, in both:</b> the Sling (KiteNavigatorCore.Sling, the lasso lab\'s copy line for line), the tail and the loop rule (a crossing closes a loop; one element fires base x 2^(n-1); a mixed loop fizzles) and every effect number from KiteNavigatorConfig.asset.</p>' +
+      '<p><b>Not modelled:</b> the 3D world. Motes, prisms, the rival and the allies live only on the board; the world features that shoals gather round are a stand-in for the flora and crystals the hull\'s plane cuts. The board is the round 6 disc, not the round 7 whole-screen rectangle. The pilot\'s turns (the board never rotates; the world flows down at a steady speed). Silence is a stand-in: a timer the rival adds to, not SILENCE.md\'s scored-hit worth. The real AOEExplosion, Mass cluster and boost (a ring, a count and a dot). Rival hulls that fight the kite back, Wrasse Run\'s rings, the HUD, sound, network play, the two-seat swap. The thumb figures assume a 57 mm board. The AI pilots are lab heuristics, so each variant\'s score is partly a score of its pilot, and B\'s rest share is set by its pilot\'s choice to dock.</p>';
+    box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc;
+    return box;
+  }
+  const BOTTOM = { Scorecard: scorecardPanel, Decisions: logPanel, About: aboutPanel };
+  let curBottom = lsGet('bottom', 'Scorecard'); if (!BOTTOM[curBottom]) curBottom = 'Scorecard';
+  function showBottom(name) { curBottom = name; lsSet('bottom', name); for (const b of $('bottomTabs').children) b.setAttribute('aria-selected', String(b.dataset.name === name)); $('bottomBody').replaceChildren(BOTTOM[name]()); }
+  for (const n of Object.keys(BOTTOM)) { const b = document.createElement('button'); b.textContent = n; b.dataset.name = n; b.setAttribute('role', 'tab'); b.onclick = () => showBottom(n); $('bottomTabs').appendChild(b); }
+
+  $('meta').textContent = 'round ' + LAB.round;
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => reset();
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet('P', {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+  $('panelBtn').onclick = () => { document.body.classList.add('sheet'); paused = true; $('pause').textContent = 'Resume'; };
+  $('sheetClose').onclick = () => { document.body.classList.remove('sheet'); paused = false; $('pause').textContent = 'Pause'; };
+
+  // ================= sizing + fixed-step loop (manual clock for recorders) =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const cw = Math.max(1, Math.round(r.width * dpr)), ch = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), acc = 0;
+  function step(dt) {
+    // a person drives the world they see; an AI flies both, so A and B stay side by side in time
+    if (OPT.pilot === 'you') { const W = cur(); simStepW(W, humanInput(), dt); }
+    else for (const v of ['A', 'B']) { const W = live[v]; simStepW(W, aiInput(W, dt), dt); }
+  }
+  function frame(now) {
+    const el = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize();
+      if (!paused) { acc += el; let n = 0; while (acc >= DT && n < 6) { step(DT); acc -= DT; n++; } if (n === 6) acc = 0; }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  syncHeader(); showDock(DOCK.includes(curDock) ? curDock : 'Concept'); showBottom(curBottom);
+  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ================= the test surface =================
+  window.__lab = window.__wrasseHaul = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, OPT,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) step(dt); resize(); render(); },
+    reset, runBatch, runOne: (v, p, s, secs) => { const W = runOne(v, p, s, secs); return { st: W.st, t: W.t }; }, curve, selfTest, setParam, record,
+    world: (v) => live[v || OPT.variant],   // read it, never write it
+    score: () => { const W = cur(); return { variant: W.variant, value: +W.st.value.toFixed(2), loops: W.st.loops, fizzles: W.st.fizzles, throws: W.st.throws, spills: W.st.spills, cleaned: +W.st.cleaned.toFixed(2), thumbU: +W.st.travel.toFixed(1), t: +W.t.toFixed(3) }; },
+    state: () => { const W = cur(); return { t: W.t, seed, variant: W.variant, pilot: W.pilot, kite: Object.assign({}, W.kite), haul: W.haul.c.slice(), docked: W.docked, motes: W.motes.length, silence: W.hull.silence }; },
+    use(variant, pilot, split) { if (variant) OPT.variant = variant; if (pilot) OPT.pilot = pilot; if (split != null) OPT.split = !!split; syncHeader(); reset(); },
+  };
+})();
+</script>

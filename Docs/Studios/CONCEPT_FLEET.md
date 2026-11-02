@@ -1,5 +1,11 @@
 # The concept fleet: ten new movement vessels, round 1
 
+> **PARKED (Yash, 2026-11-01).** No new vessels for now. Every prototype in this file is kept as it is, playable in the
+> Vessel Studio, and catalogued in **§13** (what it is, where it lives, where it stopped, how to bring it back). A
+> session brings one back **only when Yash asks for it by name**; until then it is not extended, ported or retuned.
+> The work now is the minigames: each existing vessel's Time minigame first, then the arena games such as Regatta
+> (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §10).
+
 **What this is.** Ten vessel concepts, each a different way of MOVING through the HyperSea, each playable today in the
 Vessel Studio (the one artifact, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa; the hub's "New vessels" row) on a
 phone or a PC, with an AI at Easy / Medium / Hard, the three cameras, a scorecard and the shared decision log. The owner
@@ -51,8 +57,10 @@ way by reading and writing the SAME records, in this order, at the start and the
 | 22 | Jacks | `bleeding-edge` | 2026-10-21 |
 | 23 | Honeyguide (Honeyguide and Ratel) | `bleeding-edge` | 2026-10-21 |
 | 24 | Flea | `claude/flea-vessel` (Garrett's branch, unmerged) | 2026-10-24 |
-| 25-27 | free again: the Omega crews (Warden, Bulwark, Tempest) claimed them on 2026-10-26 and were removed on 2026-10-27 (§10.5), before any merge to `bleeding-edge` | | |
-| **25** | **next free** (the Siphonophore, the Tether / Gibbon, the Dragonfly, the Marlin and the Albatross have none yet) | | |
+| 25-27 | free on paper: the Omega crews (Warden, Bulwark, Tempest) claimed them on 2026-10-26 and were removed on 2026-10-27 (§10.5), before any merge to `bleeding-edge`; the comment on `Meerkat = 28` in the enum still names them as claimed, so do not reuse them without checking every branch | | |
+| 28 | Meerkat (the wormhole vessel) | `bleeding-edge` | 2026-10-27 |
+| 29 | Tiger Moth (the Butterfly's airframe with the Drop) | `bleeding-edge` | 2026-10-28 |
+| **30** | **next free** (checked 2026-11-01; the parked prototypes in §13 have none) | | |
 
 An id a branch claims and then abandons is released only when that branch is deleted; say so here.
 
@@ -882,3 +890,70 @@ nothing of it was changed here.
 
 **Decision needed (Yash and Garrett):** whether the calm ideas go into the Orca (Garrett's call), stay as three Level 1
 vessels, or both. The Orca is the vessel with an owner and a Unity build; the three are lab pages.
+
+## 13. Parked: every prototype vessel, and how to bring one back (Yash, 2026-11-01)
+
+> "Document all our prototype vessels, whatever we made. You can bring them up later when I ask for them, but for now
+> we won't be making any more new vessels. We will be focusing on making the mini games. The time mini games, all our
+> existing vessels, awesome. And then finally we will make arena games such as regattas." (Yash, 2026-11-01)
+
+**The rule while parked.** No new vessel, page, recipe, ability kit or Unity clone. A prototype is brought back only when
+Yash asks for it by name; then the session starts from its row below (the page, the recipe, the section of this file,
+the branch) and follows §0. Nothing below is deleted: every page stays in the ONE Vessel Studio artifact
+(https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, version 66 when parked), and every recipe stays drift-gated by
+`python3 .claude/skills/vessel-studio/vessel_pages.py --check`.
+
+**Not parked** (live work, outside this list): the **Stoat** and the **Meerkat** (Yash's two, in the game, with their
+Time races Slingshot and Warpline / Burrow Run; `MINIGAME_TRAINING_PLAN.md` §8) and the **Dolphin** in Switchback (§9
+there). Shipped vessels and their studios (Squirrel, Brittle Star, Shrike, Serpent, Goby and Pistol) are the fleet, not
+prototypes.
+
+### 13.1 The concept ten (round 1, 2026-10-17; Garrett kept five: Gibbon, Flea, Dragonfly, Marlin, Albatross)
+
+Every one is a recipe `Docs/Studios/VesselStudio/vessels/<id>.json` on a movement kind in `studio-kinds.js`, run by
+`studio-vessel.js` as the page `<id>.html`; the design, research and round-1 numbers are §2-§6 of this file.
+
+| Vessel | In one line | Where it stopped | Bring back by |
+|---|---|---|---|
+| **Gibbon** (swing) | The web-slinger: no engine, LT / RT shoot the left and right hand's webs, swing and fling | Round 2 in the studio (§8.2, §8.3): two modes, then the web-slinger; its AI moves but finishes no course. The Tether half is on `cece/loving-feynman-hlgf18` (unmerged, §8.1) | Yash flies it and decides the feel; then the AI, then an id and a Unity clone |
+| **Flea** (ricochet) | Crawls at 40 u/s; speed comes from bouncing off mass, RT timed to the contact is a perfect bounce, LT crouches and hops | **In Unity** on `claude/flea-vessel` (Garrett's, unmerged; id 24): Vessel Changer, `FleaMath` golden tests, the Stoat's body (`R_VesselActions/FLEA.md`). Never opened in an editor (T-20261024-bd25) | Garrett flies the branch; then its small racing minigame (T-20261017-929b) |
+| **Albatross** (soar) | No engine: ballast makes it fall, the wings turn speed into lift, updrafts rise over every prism | Round 1 page; its AI is weak | A cell stage in the studio for the nucleus-frame up / down, thermals and the membrane cost (T-20261017-ba54) |
+| **Remora** (slipstream) | Slow alone; in a rival's wake its cap is their speed x1.3; LT latches and is towed, release slings | Round 1 page (not one of Garrett's five) | Only on request |
+| **Dragonfly** (hover) | Velocity has nothing to do with the nose: strafe on the left stick, look on the right, LT stops dead, RT dashes | Round 1 page | The control swap, stored boosts, the mine / joust kit (T-20261017-3cc7) |
+| **Mole** (burrow) | Slow in the open, fast inside mass and passes through it; LT digs a tunnel, RT breaches | Round 1 page (not one of the five) | Only on request |
+| **Marlin** (momentum) | The drifter: the nose turns freely while the velocity slides; RT burns, LT retro-burns, B flips | Round 1 page. The name "Marlin" is kept in the game for a swordsman, so this one needs a new name (Garrett's call) | A pure drifter that never grips (T-20261017-1bc9), and its name |
+| **Eel** (body) | The body is its trail; longer is slower; LT coils, release whips the tail and cuts; RT sheds segments | Round 1 page (not one of the five) | Only on request |
+| **Octopus** (pulse) | LT inhales, release jets; releasing on your own beat chains up to x1.8; RT spends a pulse on ink | Round 1 page (not one of the five). Its pulse became the Siphonophore Bell's Pulse Jet (§11.5) and the Moon Jelly's breath (§12) | Only on request |
+| **Gecko** (surface) | LT near mass sticks and runs along it, a rival's rail becomes yours; release / RT hops with carried momentum | Round 1 page (not one of the five) | Only on request |
+
+### 13.2 The supervessels (round 3, 2026-10-26 / 27)
+
+| Vessel | In one line | Where it stopped | Bring back by |
+|---|---|---|---|
+| **Omega Crews** (Warden, Bulwark, Tempest) | Three shipped vessels fly as themselves, then combine into one omega form with three seats (Helm, Arms, Core) | **Superseded.** Built in Unity as ids 25-27 (2026-10-26), rebuilt as a march formation, then **removed from Unity** on Yash's word (2026-10-27, §10.5). The page `omega.html` stays as the record. The lesson is the design principle of §10.4: a Voltron vessel is designed from the ground up, never assembled from vessels that already have a loop | Not planned; the Siphonophore replaced it |
+| **Siphonophore** | Three zooids that are not complete vessels (the Bell lights crystals, the Sting opens husks, the Bract nets them) and one colony that digests the catch into the score; neither phase can do the other's work | Round 2 in the studio (`siphonophore.html`, `siphonophore-studio.js`): the ability kit flown one ability at a time (§11.4, §11.5: Slipstream, Tentacle Lash with Trawl, Pulse Jet, Ram Spool). Not in Unity; no id | Yash picks the kit on the Decisions tab; then an id and a Unity clone (`/duo-vessel`, `/artifact-to-unity`) |
+
+### 13.3 The calm three (Level 1, 2026-10-27)
+
+One stick and one or two buttons, made for a calm 20-minute session; the design and numbers are §12.
+
+| Vessel | In one line | Where it stopped | Bring back by |
+|---|---|---|---|
+| **Moon Jelly** (`breath`) | Hold to breathe in, let go to pulse; slow, steady breaths build a calm chain and a Moonrise | Round 1 page `moonjelly.html` | Only on request |
+| **Sea Turtle** (`tide`) | The course is a current; hold to tuck in and ride it, let go to turn; the Rapids burst | Round 1 page `seaturtle.html` | Only on request |
+| **Seahorse** (`tend`) | Hold on to a block: it grows a garden and calls your crystal in; let go to dart; puff up when a rival comes | Round 1 page `seahorse.html` | Only on request |
+
+### 13.4 The Orca's play styles (Garrett's vessel, round 9 of his lab, 2026-10-27)
+
+The Orca itself is Garrett's and in the game (id 20). Round 9 of his Crew of Four Lab added opt-in choices, every
+default his shipped round 7: the helm's boost Tank / Breath / Tide, its shield Shield / Dock, the missiles Fly-by-wire /
+Seeker (`Docs/Studios/CREW_OF_FOUR_LAB.md`, round 9; the hub page `orca.html`, made by `copy_orca.py`). None is in
+Unity. **Waiting on:** Yash and Garrett pick one option per ability, or a choice for the player.
+
+### 13.5 How to bring one back
+
+1. Read its row and its section of this file, then `python3 Tools/Build/who_works_where.py query <its paths>`.
+2. Open its page in the Vessel Studio and read its Decisions tab (`ArtifactData list`, collection `decisions`).
+3. For Unity, follow §0 (the id ledger first: 30 is the next free id) and `/artifact-to-unity`.
+4. Record what changed here and in `Docs/Reports/CONCEPT_FLEET.md`.
+

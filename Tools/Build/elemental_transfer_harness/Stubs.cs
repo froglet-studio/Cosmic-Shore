@@ -140,7 +140,7 @@ namespace UnityEngine
 
 namespace CosmicShore.Utility
 {
-    // Assets/_Scripts/Utility/CSDebug.cs
+    // Assets/_Scripts/Utility/Foundation/CSDebug.cs
     public static class CSDebug
     {
         public static void LogError(string m) { }

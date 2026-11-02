@@ -81,14 +81,17 @@ namespace CosmicShore.ScriptableObjects
         public float PanelPhaseEnd => panelPhaseEnd;
 
         [Tooltip("Seconds a morph waits for the mass it lands on before giving up and fading the " +
-                 "crystal out. The Squirrel's ring is laid by a SIBLING effect in the same dispatch, " +
-                 "so it normally arrives at once; this only bounds a ring that never comes.")]
+                 "crystal out. The Squirrel's ring and the Dolphin's blast cone are made by a SIBLING " +
+                 "effect in the same dispatch, so they normally arrive at once; this only bounds a " +
+                 "target that never comes.")]
         [SerializeField, Min(0.05f)] float targetGraceSeconds = 1.5f;
         public float TargetGraceSeconds => targetGraceSeconds;
 
         [Tooltip("How far (world units) a laid ring's centre may sit from where the crystal was " +
                  "collected and still be THIS pickup's ring. Guards a peer that lays two rings of " +
-                 "one domain inside the grace window (two Squirrels on a team).")]
+                 "one domain inside the grace window (two Squirrels on a team). The Dolphin reads " +
+                 "it for its blast cone's APEX, so a morph still waiting out a swallowed blast " +
+                 "cannot claim the next pickup's cone.")]
         [SerializeField, Min(1f)] float ringCaptureRadius = 60f;
         public float RingCaptureRadius => ringCaptureRadius;
 

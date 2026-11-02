@@ -39,6 +39,20 @@ namespace CosmicShore.Core
             public float score;
         }
 
+        /// <summary>
+        /// What the HOST measured about one guest during the match (T5 speed / jumps, T6 AI-like steering;
+        /// <c>MovementPlausibilityMonitor</c>). Only the host's report may carry these, and the server counts them only
+        /// once two different hosts reported the same account.
+        /// </summary>
+        [Serializable]
+        public struct Observed
+        {
+            public string id;
+            public string kind;      // "speed" | "jumps" | "steering"
+            public float measured;
+            public float limit;
+        }
+
         public static UniTask<Result> StartAsync(string matchId, string mode, string hostId, List<string> players) =>
             CallAsync(new Dictionary<string, object>
             {
@@ -47,12 +61,16 @@ namespace CosmicShore.Core
             });
 
         public static UniTask<Result> EndAsync(string matchId, string mode, string hostId, List<string> players,
-            List<Score> scores, string winnerId) =>
-            CallAsync(new Dictionary<string, object>
+            List<Score> scores, string winnerId, List<Observed> observed = null)
+        {
+            var args = new Dictionary<string, object>
             {
                 { "action", "end" }, { "matchId", matchId }, { "mode", mode }, { "hostId", hostId }, { "players", players },
                 { "scores", scores }, { "winner", winnerId ?? string.Empty },
-            });
+            };
+            if (observed is { Count: > 0 }) args["observed"] = observed;
+            return CallAsync(args);
+        }
 
         static async UniTask<Result> CallAsync(Dictionary<string, object> args)
         {

@@ -62,6 +62,13 @@ namespace CosmicShore.UI
                                  "hand a card's small window a needlessly large surface.")]
         [Min(64)] int maxRenderHeight = 1080;
 
+        [SerializeField, Min(1f), Tooltip("The texture is this many times WIDER than the frame it starts in, and the " +
+                                          "surface shows its centre. A frame that later grows sideways (the configure " +
+                                          "window's FULL SCREEN, which extends the preview as a tray over the settings " +
+                                          "column) then shows more of the world instead of stretching the picture: a " +
+                                          "live texture cannot be swapped mid-session. 1 = the frame's own size.")]
+        float textureWidthScale = 1f;
+
         [Header("Tap to fly")]
         [SerializeField, Tooltip("Take focus only on a DOUBLE tap of the surface. For a surface that fills the window " +
                                  "behind its settings, where a single stray tap would otherwise launch the player " +
@@ -484,7 +491,8 @@ namespace CosmicShore.UI
             if (_surfaceRect && _surfaceRect.rect.height > 1f)
                 // 8:1, not 4:1: the configure window's preview is a wide banner (~6.3:1); a 4:1 texture
                 // drawn into it stretched the arena sideways by 1.6x.
-                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 8f);
+                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height * Mathf.Max(1f, textureWidthScale),
+                                     0.25f, 8f);
 
             _textureHeight = height;
             _renderTexture = new RenderTexture(Mathf.Max(64, Mathf.RoundToInt(height * aspect)), height, 24)
@@ -494,6 +502,32 @@ namespace CosmicShore.UI
                 filterMode = FilterMode.Bilinear,
                 useMipMap = false,
             };
+            _textureAspect = aspect;
+            FitTextureToSurface();
+        }
+
+        float _textureAspect;
+
+        /// <summary>The surface's frame changed size (the configure window's tray): show the matching part of the texture.</summary>
+        void OnRectTransformDimensionsChange() => FitTextureToSurface();
+
+        /// <summary>
+        /// Shows the centre of a texture wider than the surface, never stretched: the visible width is the surface's aspect
+        /// over the texture's (<see cref="VisibleWidth"/>). With <see cref="textureWidthScale"/> at 1 it is the whole texture.
+        /// </summary>
+        void FitTextureToSurface()
+        {
+            if (!surface || !_surfaceRect || _textureAspect <= 0f) return;
+            var r = _surfaceRect.rect;
+            float w = VisibleWidth(r.width, r.height, _textureAspect);
+            surface.uvRect = new Rect(0.5f - w / 2f, 0f, w, 1f);
+        }
+
+        /// <summary>The share of the texture's width a surface of this size shows undistorted (0..1). Pure, for tests.</summary>
+        internal static float VisibleWidth(float surfaceWidth, float surfaceHeight, float textureAspect)
+        {
+            if (surfaceHeight <= 1f || textureAspect <= 0f) return 1f;
+            return Mathf.Clamp01(surfaceWidth / surfaceHeight / textureAspect);
         }
 
         /// <summary>The surface's height in real screen pixels, clamped to the authored ceiling.</summary>

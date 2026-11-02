@@ -119,14 +119,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] ElementalFloat switchScale = new(1f);
         public ElementalFloat SwitchScale => switchScale;
 
-        [Tooltip("How far off the flight path a LIVING PLANT'S HEART may sit and still be " +
-                 "claimable as this ring's anchor (ScarabSwitchAnchors). A Scarab's switch grafts " +
-                 "onto a flora crystal - the ecology's own point of interest - so a ring's " +
-                 "position is a read of the world rather than a free choice, and 'plant one in " +
-                 "front of my own ball' stops being a move. Measured against the SEGMENT from the " +
-                 "ship to the projected centre, never the projected point (a point test is an " +
-                 "annulus with point-blank in the hole). 0 disables anchoring: the ring lands " +
-                 "wherever the nose points, which is the pre-2026-09 behaviour.")]
+        [Tooltip("How far off the flight path an ELEMENTAL CRYSTAL (Charge / Mass / Space / Time, " +
+                 "never omni) may sit and still take this ring (ScarabSwitchAnchors). Every switch " +
+                 "is placed around one, in any state - free, a flora heart, or inside a living " +
+                 "fauna - in every game; a press with none in reach is refused. Measured against " +
+                 "the SEGMENT from the ship to the projected centre, never the projected point. " +
+                 "Floored at ScarabSwitchAnchors.MinimumReach: anchoring cannot be switched off.")]
         [SerializeField, Min(0f)] float anchorReach = 70f;
 
         [Header("Ring body")]
@@ -151,8 +149,8 @@ namespace CosmicShore.Gameplay
                  "dial, not a cap — every prism is always laid.")]
         [SerializeField, Range(1, 96)] int daisPrismsPerFrame = 24;
 
-        /// <summary>How far off the flight path a plant's heart may sit and still anchor this
-        /// ring. 0 disables anchoring entirely.</summary>
+        /// <summary>How far off the flight path an elemental crystal may sit and still anchor this
+        /// ring (floored at <see cref="ScarabSwitchAnchors.MinimumReach"/>).</summary>
         public float AnchorReach => Mathf.Max(0f, anchorReach);
 
         public int ResourceIndex => resourceIndex;

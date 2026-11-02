@@ -110,6 +110,13 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float FaunaBiteRange = 34f;
         [Tooltip("Cap on prisms suctioned per tick — bounds the implosion-VFX burst.")]
         [Min(1)] public int MaxBitesPerTick = 6;
+
+        [Tooltip("Armour points the head wears off a SHIELDED prism per bite (cracks at 1). 0 = never gnaws shields. " +
+                 "Only in a cell that lets armour be food (Cell.ArmourIsFood: the Ark escort's worlds).")]
+        [Min(0f)] public float ShieldBite;
+        [Tooltip("Armour points the head wears off a SUPER-SHIELDED prism per bite (cracks at Prism.SuperArmourPoints). " +
+                 "0 = never. Only where Cell.ArmourIsFood is set.")]
+        [Min(0f)] public float SuperShieldBite;
         [Tooltip("Scale-glide time constant (~95% settled in this many seconds): a grown " +
                  "member blooms from zero, and every segment glides to its taper target " +
                  "when the chain re-proportions (growth, splits, end kills) — " +

@@ -115,6 +115,10 @@ INTENSITY_VAR = "490485287c38a2f4e9178566394efd69"       # the IntVariable every
 COLOR_SET = "8d1c1bdcb636a424d9c54fbd1afc952f"           # ThemeManagerDataContainer.ColorSet
 VESSEL_PREFABS = "05f8f1205bd90e14b8e59cf78da1a6f2"      # VesselControlsPanel.vesselPrefabs
 OMNI_ICON = K.meta_guid("Assets/_Graphics/ElementIcons/OmniCrystal_Active.png")   # VesselControlsPanel.omniIcon
+# VesselControlsPanel.elementShapes, Charge..Time: the element's SHAPE, the Codex's icon, never the HUD petal (Shombith,
+# 2026-11-02: "use the correct icons for elements, check codex for that").
+ELEMENT_SHAPES = [K.meta_guid(f"Assets/_Graphics/ElementShapes/{e}_label.png")
+                  for e in ("charge_pentagon", "mass_triangle", "space_kite", "time_diamond")]
 TOURNAMENT = "f1738a31735a43a196f1b3a711c91947"          # MaelstromData.asset
 ARENA_ROSTER = "45f4a55e49b44cc7ac47e0bf96411234"        # ArenaGames.asset
 STAR_ON, STAR_OFF = "09f81e9c4fc304748819eca2110c75c0", "2f19932d871d57543a48ef3270061ffb"
@@ -757,9 +761,10 @@ def preview_window(root, kind):
            f"  focusButton: {ref(ctx.c('Preview/Focus', 'button'))}\n"
            f"  focusHint: {ref(ctx.go('Fly/Hint'))}\n"
            "  renderHeight: 360\n  maxRenderHeight: 720\n"
+           + (f"  textureWidthScale: {TRAY_TEXTURE_SCALE:.6g}\n" if kind in G_KINDS else "")
            # Full-bleed behind the settings: one stray tap must not launch the player (the owner,
            # 2026-10-17: "one tap in the screen is taking me into the game, it should be double tap").
-           "  doubleTapToFocus: 1\n  doubleTapSeconds: 0.4\n"
+           + "  doubleTapToFocus: 1\n  doubleTapSeconds: 0.4\n"
            # The first-login guide's Preview step spotlights this: the full-bleed surface would be a
            # hole the size of the screen with its caption pushed off the bottom.
            f"  guideTarget: {ref(ctx.rt('Fly/Button'))}\n"))
@@ -925,6 +930,7 @@ def controls(parent, r, cols, inner_w):
            "    Icon: {fileID: 0}\n    Control: 0\n  - Headline: Right stick\n    Description: Throttle and roll.\n"
            "    Icon: {fileID: 0}\n    Control: 0\n"
            "  controlsLibrary: {fileID: 0}\n  glyphSet: {fileID: 0}\n  barsConfig: {fileID: 0}\n"
+           "  elementShapes:\n" + "".join(f"  - {K.ref(21300000, g, 3)}\n" for g in ELEMENT_SHAPES) +
            f"  vesselPrefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n"
            "  deviceSwitcher: {fileID: 0}\n  vesselNameText: {fileID: 0}\n  vesselIcon: {fileID: 0}\n"
            "  flightSectionTitle: \n"
@@ -1165,6 +1171,13 @@ def steps_row(chrome, kind):
 # --------------------------------------------------------------------------------------------
 
 G_KINDS = ("arcade", "arena")
+# Section 108 (Shombith, 2026-10-31: "when we press fullscreen it goes actual full screen rather the play area should
+# extend as a tray and the other parts of the UI (right side) should get hidden"): FULL SCREEN slides the preview's right
+# edge across the settings column, which fades (ConfigureCinema.extendAsTray); the preview renders that wide from the
+# start and shows its centre (ModePreviewWindow.textureWidthScale), so the tray shows more arena, never a stretched one.
+TRAY_EXTEND = SET_GAP + SET_W                        # the preview's right edge goes to the column's: 1160 -> 1860
+TRAY_TEXTURE_SCALE = (PV_W + TRAY_EXTEND) / PV_W
+TRAY_RIGHT_SIDE = ("ControlsPanel", "Steps", "Status", "Start")
 # Rev 25 round 2 (Shombith 2026-10-26: "Bring the old preview card size. The controls tab does not need to be that big. We
 # can make the detail view bigger also see texts are overlapping with images"): the preview is 1100 x 620 again and the
 # right column 680; the controls are one compact panel and the card takes the rest of the column.
@@ -1600,6 +1613,7 @@ def g_footer(chrome):
     host is waiting for the others. No summary chips and no "Ready to launch" (Rev 19: the chips repeated what the
     window already shows)."""
     status = chrome.child(N("Status", "Status", TL(G_SET_X, G_STATUS_TOP, G_SET_W, G_STATUS_H)))
+    status.add("cg", 225, canvas_group(True))     # the tray fades the whole right side (section 108)
     why = status.child(N("Status/Reason", "Reason", STRETCH))
     why.add("cg", 225, canvas_group(False))
     label_e(why, "", "Body", "Danger", align="center")   # why it cannot launch: a problem, so fire (never the spend gold)
@@ -1731,7 +1745,11 @@ def build_view(kind):
                  f"  previewRect: {ref(ctx.rt('Preview'))}\n"
                  f"  chrome: {ref(ctx.c('Chrome', 'cg'))}\n"
                  f"  flyingHint: {ref(ctx.c('FlyingHint', 'cg'))}\n"
-                 "  fadeSeconds: 0.35\n  fullOffsetMin: {x: 0, y: 0}\n  fullOffsetMax: {x: 0, y: -84}\n"))
+                 "  fadeSeconds: 0.35\n  fullOffsetMin: {x: 0, y: 0}\n  fullOffsetMax: {x: 0, y: -84}\n"
+                 + (f"  extendAsTray: 1\n  trayExtend: {TRAY_EXTEND}\n"
+                    + A.refs("rightSide", [ctx.c(k, "cg") for k in TRAY_RIGHT_SIDE])
+                    + A.refs("followTray", [ctx.rt("Objective")])
+                    if kind in G_KINDS else "")))
 
     root.add("panel", 114, lambda ctx, go: panel_body(ctx, go, kind))
     return root
@@ -2662,6 +2680,20 @@ def validate_prefabs(files):
             for field, want in (("preview", V("Preview#window")), ("previewRect", V("Preview#rt")), ("chrome", V("Chrome#cg")),
                                 ("flyingHint", V("FlyingHint#cg"))):
                 assert f"  {field}: {{fileID: {want}}}" in cin, f"{view}: ConfigureCinema.{field} is not wired"
+            if kind in G_KINDS:
+                # Section 108: FULL SCREEN is a tray - the preview's right edge slides over the settings column, which
+                # fades; the preview's texture is that wide from the start, so the tray never stretches the picture.
+                assert "  extendAsTray: 1\n" in cin and f"  trayExtend: {TRAY_EXTEND}\n" in cin, \
+                    f"{view}: FULL SCREEN fills the window again instead of extending as a tray"
+                block = re.match(r"(?:  - .*\n)*", cin.split("  rightSide:\n")[1]).group(0)
+                assert re.findall(r"fileID: (-?\d+)", block) == [str(V(f"{k}#cg")) for k in TRAY_RIGHT_SIDE], \
+                    f"{view}: the tray must fade exactly the right side ({', '.join(TRAY_RIGHT_SIDE)})"
+                assert f"  followTray:\n  - {{fileID: {V('Objective#rt')}}}\n" in cin, \
+                    f"{view}: the objective bar must ride the preview's right edge"
+                _, win = comp_doc(text, V("Preview#window"))
+                assert f"  textureWidthScale: {TRAY_TEXTURE_SCALE:.6g}\n" in win, \
+                    f"{view}: the preview's texture is not as wide as the tray: FULL SCREEN would stretch the arena"
+                assert abs(MARGIN + PV_W + TRAY_EXTEND - (G_SET_X + G_SET_W)) < 0.5, "the tray stops short of the column's edge"
         _, back = comp_doc(text, V("Back#button"))
         assert back and A.doc_of(text, V("Back#close"))[0] == 114 and "m_Calls: []" in back, \
             f"{view}: Back must close through ModalWindowCloseButton, not a persistent call"
@@ -2693,6 +2725,9 @@ def validate_g(text, body, V, kind, view):
                      % S["controls"], text, re.M)
     assert ctrl and f"  omniIcon: {{fileID: 21300000, guid: {OMNI_ICON}, type: 3}}\n" in ctrl.group(0) \
         and "omniRowTemplate: 'Omni crystal: {ability}'" in ctrl.group(0), f"{view}: the controls show no Omni crystal row"
+    shapes = re.search(r"^  elementShapes:\n((?:  - .*\n)+)", ctrl.group(0), re.M)
+    assert shapes and re.findall(r"guid: (\w+)", shapes.group(1)) == ELEMENT_SHAPES, \
+        f"{view}: the controls' element marks are not the four ElementShapes icons, Charge to Time (the Codex's)"
     for gone in ("Chips", "Ready", "VesselNode", "Sweep", "ClassInfo", "Numeral"):
         assert f"  m_Name: {gone}\n" not in text, f"{view}: {gone} is back (Rev 20 G / Rev 25 removed it)"
     _, stepper = comp_doc(text, V("Stepper#stepper"))
@@ -2814,12 +2849,15 @@ def self_test(files):
     view, node, modal = prefab_path("ConfigureView"), prefab_path("ConfigureIntensityNode"), MODAL_PREFAB
     omni_plant = ("the controls without their Omni row", lambda f: f.__setitem__(view, f[view].replace(
         f"  omniIcon: {{fileID: 21300000, guid: {OMNI_ICON}, type: 3}}\n", "  omniIcon: {fileID: 0}\n", 1)))
+    shape_plant = ("the controls' element marks back to the petal", lambda f: f.__setitem__(view, f[view].replace(
+        ELEMENT_SHAPES[0], ELEMENT_SHAPES[1], 1)))
     V = K.FileIds("ConfigureView")
     AV = K.FileIds("ConfigureArenaView")
     arena, mael, ped = prefab_path("ConfigureArenaView"), prefab_path("ConfigureMaelstromView"), prefab_path("ConfigureSeatPedestal")
     lb_row = prefab_path("LeaderboardRow")
     cases = [
         omni_plant + (validate_prefabs,),
+        shape_plant + (validate_prefabs,),
         ("the leaderboard row's entrance stripped", lambda f: f.__setitem__(lb_row, M.strip_entrances(f[lb_row])),
          validate_prefabs),
         ("the AI difficulty row unwired", lambda f: f.__setitem__(view, re.sub(
@@ -2920,6 +2958,12 @@ def self_test(files):
          validate_prefabs),
         ("FULL SCREEN calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ToggleFullScreen", "m_MethodName: Hide", 1)),
          validate_prefabs),
+        ("FULL SCREEN back to the whole window", lambda f: f.__setitem__(view, f[view].replace(
+            "  extendAsTray: 1\n", "  extendAsTray: 0\n", 1)), validate_prefabs),
+        ("the tray stretching a frame-sized texture", lambda f: f.__setitem__(view, re.sub(
+            r"  textureWidthScale: [\d.]+\n", "", f[view], count=1)), validate_prefabs),
+        ("the tray leaving START on screen", lambda f: f.__setitem__(view, f[view].replace(
+            f"  - {{fileID: {V('Start#cg')}}}\n  followTray:", "  followTray:", 1)), validate_prefabs),
         ("the cinema fading nothing", lambda f: f.__setitem__(view, f[view].replace(
             f"  chrome: {{fileID: {V('Chrome#cg')}}}\n", "  chrome: {fileID: 0}\n", 1)), validate_prefabs),
         ("the preview drawn over the settings", lambda f: f.__setitem__(view, f[view].replace(

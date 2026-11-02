@@ -73,6 +73,10 @@ namespace CosmicShore.UI
         [SerializeField] KitButton blockButton;
         [SerializeField] KitText blockLabel;
         [SerializeField] CanvasGroup blockGroup;
+        [Tooltip("Optional: the three reason buttons (Cheating, Offensive name, Trolling), each a group holding a KitButton " +
+                 "and its KitText. Left empty they are copies of Invite - which land ON Invite: every copy keeps the " +
+                 "original's place, so Report, Block and Invite drew as one unreadable button (2026-10-31).")]
+        [SerializeField] CanvasGroup[] reasonGroups = { };
 
         [Header("Words (empty = blank)")]
         [SerializeField] string onlineWord = "Online";
@@ -136,7 +140,9 @@ namespace CosmicShore.UI
             _block = blockButton ? new ActionRow { Button = blockButton, Label = blockLabel, Group = blockGroup }
                                  : CopyInviteRow("Block");
             for (int i = 0; i < _reasons.Length; i++)
-                _reasons[i] = CopyInviteRow("Report Reason " + ReasonOrder[i]);
+                _reasons[i] = reasonGroups != null && i < reasonGroups.Length && reasonGroups[i]
+                    ? RowOf(reasonGroups[i])
+                    : CopyInviteRow("Report Reason " + ReasonOrder[i]);
 
             if (_report.Exists) _report.Button.onClick.AddListener(PressReport);
             if (_block.Exists) _block.Button.onClick.AddListener(PressBlock);
@@ -151,6 +157,15 @@ namespace CosmicShore.UI
             SetLabel(_reasons[0], words.CheatingWord);
             SetLabel(_reasons[1], words.NameWord);
             SetLabel(_reasons[2], words.TrollingWord);
+        }
+
+        /// <summary>An authored action slot: its group, the KitButton and KitText inside it.</summary>
+        static ActionRow RowOf(CanvasGroup group)
+        {
+            var button = group.GetComponentInChildren<KitButton>(true);
+            if (!button) return default;
+            KitVisibility.SetShown(group, false);
+            return new ActionRow { Button = button, Label = group.GetComponentInChildren<KitText>(true), Group = group };
         }
 
         /// <summary>A copy of the Invite control (its group, or the button alone) beside it, with no click listeners.</summary>

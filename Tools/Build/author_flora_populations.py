@@ -212,6 +212,10 @@ OWNED_ELSEWHERE = {
     # (Docs/ECOSYSTEM.md §58.9). Its configs sit in no SpawnProfile today; registered so an
     # adopting cell's copy stands down by name rather than being re-modelled here.
     "Nested Gyroid": ("species", "Tools/Build/author_nested_gyroid_flora_assets.py"),
+    # The BEE HIVE (Docs/ECOSYSTEM.md §66): a flora whose comb past its seed is built from the mass its bees carry
+    # home, so its per-plant budget is the comb and its quota is one daughter per full comb; author_bee_assets.py
+    # writes every population field, on the four palette assets and on every cell's copy.
+    "Bee Hive": ("species", "Tools/Build/author_bee_assets.py"),
 }
 
 

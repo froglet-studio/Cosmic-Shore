@@ -164,6 +164,11 @@ DIPOLE_RIGHT = "62ce60a32bef4c70b42fd1f7cd9896ff"
 
 
 # ----------------------------------------------------------------------------- Netcode's hash
+# The omni crystal folds into the hull (R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md): a placeholder until this hull's
+# omni ability puts something in the world to land on. Shared asset, not generated here.
+VESSEL_ABSORB_MORPH_GUID = "9a40b3a2720043cd86332dbf7e16dd8d"   # VesselAbsorbCrystalMorphByCrystal.asset
+
+
 def xxhash32(data: bytes, seed: int = 0) -> int:
     """XXHash32 - what Netcode's `string.Hash32()` computes over the UTF-8 GlobalObjectId."""
     p1, p2, p3, p4, p5 = 2654435761, 2246822519, 3266489917, 668265263, 374761393
@@ -253,27 +258,22 @@ def executor_blocks(prism_controller_id: str) -> str:
 
 
 def bindings() -> str:
-    """The SHIPPED bindings (stage 6): each trigger carries BOTH its dipole and its orbit asset - the mode
-    switch decides which one acts (StoatModeExecutor; each executor stands aside outside its mode) - A the
-    hold, B the Mass / Time switch. The SAME four entries on a phone (the owner, 2026-10-21: "the stoat
-    should join the mobile fleet"; STOAT.md "On a phone"): the Space card presses LT, the extra buttons
-    "Dipole Right" and "Hold" press RT and A, the Mass card presses B (Tools/Build/author_touch_profiles.py).
-    A touch press carries no trigger depth, so both executors squeeze by hold time there (StoatSlingMath.Hold01)."""
+    """The SHIPPED bindings: LT the left orbit, RT the right orbit, A the hold, and nothing on B. Since 2026-11-02 (Yash)
+    the field dipole and the B mode switch are removed from the kit (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md); the
+    dipole assets are still authored below, bound to nothing. The SAME entries on a phone (the owner, 2026-10-21: "the
+    stoat should join the mobile fleet"; STOAT.md "On a phone"): the two orbit discs press LT and RT and the Hold disc A
+    (Tools/Build/author_touch_profiles.py). A touch press carries no trigger depth, so the orbit squeezes by hold time
+    there (StoatSlingMath.Hold01)."""
     entries = (
         "  - InputEvent: 2\n"
         "    ShipActions:\n"
-        f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n"
         f"    - {{fileID: 11400000, guid: {SLING_LEFT}, type: 2}}\n"
         "  - InputEvent: 1\n"
         "    ShipActions:\n"
-        f"    - {{fileID: 11400000, guid: {DIPOLE_RIGHT}, type: 2}}\n"
         f"    - {{fileID: 11400000, guid: {SLING_RIGHT}, type: 2}}\n"
         "  - InputEvent: 6\n"
         "    ShipActions:\n"
         f"    - {{fileID: 11400000, guid: {HOLD}, type: 2}}\n"
-        "  - InputEvent: 7\n"
-        "    ShipActions:\n"
-        f"    - {{fileID: 11400000, guid: {MODE_ACTION}, type: 2}}\n"
     )
     return "  _touchActionOverrides:\n" + entries + "  _gamepadActionOverrides:\n" + entries
 
@@ -634,7 +634,8 @@ def dipole_config_asset() -> str:
             "  sourceGrowSeconds: 1.1\n"
             "  dieSeconds: 0.7\n"
             "  sourceSizeX: 1\n"
-            "  annihilationWaves: 0\n"   # the birth/death light: too big and bright, fired at creation (the user, 2026-10-14)
+            "  annihilationWaves: 1\n"   # the death light + wiggle, its light now after post-processing (2026-10-28)
+            "  birthWave: 0\n"   # the birth light at a pair's CREATION: read as a flash at the wrong moment (the user, 2026-10-14)
             "  throughZoneRadius: 135\n"
             "  throughDegrees: 200\n"
             "  turnCap: 12\n"
@@ -910,6 +911,9 @@ BARS_VIEW_SCRIPT = "5f380cf9710e6ec478121956993a387e"
 MODE_ACTION = "f05e7ded817a4670bb78832c9c879566"
 RIPPLE_CONFIG = "da077e9619f845c388ad5b7baf8da948"
 OVERCLOCK_EFFECT = "6b508a166e124e95a6490871697185de"
+# The omni crystal's effect on the Stoat: Fulmen (FulmenByCrystalEffectSO), which replaced Overclock (Yash, cbd0ae2268).
+# The Overclock asset is still authored below; the container just no longer lists it.
+FULMEN_EFFECT = "a45807f7b21b4c898e6646a9865c0bba"
 CAMERA_SETTINGS = "2fb2a0bb0eaf4bd1863fdf55490fa869"
 VESSEL_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"
 SKIMMER_CONTAINER = "ffdd072d412946c6ad6adf899a6ef7a6"
@@ -956,7 +960,7 @@ def stoat_icon_guid(name: str) -> str:
 # Thresher card art -> the Stoat's (the variant is copied from the Thresher's; same card order).
 ICON_SWAP = (("372925148d56fc4971f260a7f5cdd470", "Stoat_Ripple.png"),        # Charge
              ("290bd445e0cc6921b2c8e07e2e99edf2", "Stoat_Modes.png"),         # Mass
-             ("91ad84c1b3d7d9508b8aa3323cfb54fe", "Stoat_FieldDipole.png"),   # Space
+             ("91ad84c1b3d7d9508b8aa3323cfb54fe", "Stoat_ModeTime.png"),      # Space: the orbit (2026-11-02; was Stoat_FieldDipole.png)
              ("0cd003be08a8ace88fb858daf3916010", "Stoat_Pathfinder.png"))    # Time
 
 
@@ -1432,29 +1436,8 @@ def apply_own_vessel(text: str) -> str:
 
 # --- the files stage 6 owns ---------------------------------------------------------------------
 def mode_action_asset() -> str:
-    return (so_header(MODE_ACTION_SCRIPT, "StoatModeAction") +
-            "  massModeThickness:\n" + elemental(3, 3, 6, 2, 1) +
-            "  blendSeconds: 0.8\n"
-            "  massUpgradeShieldsInMassMode: 1\n"
-            "  gateAhead: 90\n"
-            "  gateLengthMin: 120\n"
-            "  gateLengthMax: 600\n"
-            "  gateMouthRadius: 5\n"
-            "  gateHoldMaxSeconds: 3\n"
-            "  gateCollapseSeconds: 0.8\n"
-            "  gateAimConeDegrees: 25\n"
-            "  gateWarpShare: 1.5\n"
-            "  gateBoostSeconds: 2.5\n"
-            "  gateKeyRampSeconds: 0.5\n"
-            "  gateFunnelRadius: 30\n"
-            "  gateFunnelRate: 4\n"
-            "  autopilotTimeModeDegrees: 70\n"
-            "  autopilotModeIntervalSeconds: 3\n"
-            "  autopilotGateDistance: 400\n"
-            "  autopilotGateSwitchConeDegrees: 30\n"
-            "  autopilotGateMinDistance: 300\n"
-            "  autopilotGateConeDegrees: 12\n" +
-            empty_event("massModeEvent") + empty_event("timeModeEvent") + empty_event("gateModeEvent"))
+    """No rows since 2026-11-02: Mass and Gate mode, and the B switch, were removed from the kit."""
+    return so_header(MODE_ACTION_SCRIPT, "StoatModeAction")
 
 
 def ripple_config_asset() -> str:
@@ -1489,10 +1472,10 @@ def vessel_container_asset() -> str:
             "  vesselPrismEffects:\n" + g("243d6d82ba7f20146a70bdc112b9a278") + g("4da62d4eefe03594ba35027dd537aff0") +
             g("04f85a1f6b06b9248827bf8740168b2b") + g("6c233c580949b13419f068454c74a110") +
             g("c7ccaca885824b24b716b12148d77ce1") + g("ca2d1be3880b82941a0465a1f7e45280") +
-            "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(OVERCLOCK_EFFECT) +
+            "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(FULMEN_EFFECT) +
             "  vesselMassCrystalEffects: []\n  vesselChargeCrystalEffects: []\n  vesselSpaceCrystalEffects: []\n"
             "  vesselTimeCrystalEffects: []\n  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {VESSEL_ABSORB_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
@@ -1693,7 +1676,7 @@ def check(files: "dict[str, str]") -> "list[str]":
         if dm:
             want(dm.group(1) != net.group(1), "GlobalObjectIdHash still equals the Squirrel's - Netcode would key both on one entry")
 
-    want(bindings() in prefab, "gamepad bindings are not LT->dipole+orbit left, RT->dipole+orbit right, A->hold, B->mode (the touch overrides the same four)")
+    want(bindings() in prefab, "gamepad bindings are not LT->orbit left, RT->orbit right, A->hold, nothing on B (the touch overrides the same three)")
     want(f"  - component: {{fileID: {DIPOLE_EXECUTOR_ID}}}\n" in prefab, "StoatDipoleExecutor is not on the ShipActions object")
     want(f"  - component: {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n" in prefab, "StoatPathfinderExecutor is not on the ShipActions object")
     want(dipole_executor_blocks() in prefab, "the dipole / pathfinder executor documents are not authored as expected (StoatDipoleConfig)")
@@ -1750,14 +1733,14 @@ def check(files: "dict[str, str]") -> "list[str]":
     else:
         if f"  vesselClass: {STOAT_CLASS_ID}\n" not in mp:
             errors.append(f"{rel_map}: vesselClass is not {STOAT_CLASS_ID}")
-        if "    AbilityLabel: Field Dipole\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
-            errors.append(f"{rel_map}: Space must be the Field Dipole on the triggers (Input 2)")
-        if "    AbilityLabel: Pathfinder / Time Mode\n" not in mp:
-            errors.append(f"{rel_map}: Time must be the Pathfinder / Time Mode")
+        if "    AbilityLabel: Catch Orbit\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
+            errors.append(f"{rel_map}: Space must be the Catch Orbit on the triggers (Input 2)")
+        if "    AbilityLabel: Timed Slingshot\n" not in mp:
+            errors.append(f"{rel_map}: Time must be the Timed Slingshot")
         if "    AbilityLabel: Ripple\n" not in mp or "    UpgradeLabel: Siphon\n" not in mp:
             errors.append(f"{rel_map}: Charge must be the Ripple (level 5 Siphon)")
-        if "    AbilityLabel: Mass / Time Mode\n" not in mp or "    Input: 7\n" not in mp:
-            errors.append(f"{rel_map}: Mass must be the Mass / Time Mode switch on B (Input 7)")
+        if "    AbilityLabel: Heavy Launch\n" not in mp:
+            errors.append(f"{rel_map}: Mass must be the Heavy Launch (passive since 2026-11-02)")
         for label in ("Accretion", "Foresight", "Armoured Wake"):
             if f"    UpgradeLabel: {label}\n" not in mp:
                 errors.append(f"{rel_map}: the level-5 '{label}' is not declared")
@@ -1837,7 +1820,7 @@ def self_test() -> int:
     fires("wrong vesselType", lambda f: f.__setitem__(rel, f[rel].replace(f"  vesselType: {STOAT_CLASS_ID}\n", "  vesselType: 6\n")))
     fires("donor hash kept", lambda f: f.__setitem__(rel, re.sub(r"  GlobalObjectIdHash: \d+\n", "  GlobalObjectIdHash: 2256742461\n", f[rel], count=1)))
     fires("executor dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {SLING_EXECUTOR_ID}}}\n", "", 1)))
-    fires("left trigger unbound", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n", "", 1)))
+    fires("left trigger unbound", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {SLING_LEFT}, type: 2}}\n", "", 1)))
     fires("pathfinder dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n", "", 1)))
     fires("hull scale reverted", lambda f: f.__setitem__(rel, f[rel].replace(root_scale_line(), "  m_LocalScale: {x: 1, y: 1, z: 1}\n", 1)))
     fires("turn rates reverted", lambda f: f.__setitem__(rel, f[rel].replace("  PitchScaler: 48\n", "  PitchScaler: 120\n", 1)))
@@ -1867,7 +1850,9 @@ def self_test() -> int:
           f[os.path.relpath(CLASS_LISTS[0], ROOT)].replace(class_list_entry(), "")))
     fires("Squirrel model back", lambda f: f.__setitem__(rel, f[rel] + "--- !u!1001 &8410834229753696920\nPrefabInstance:\n"))
     fires("Squirrel camera back", lambda f: f.__setitem__(rel, f[rel].replace(CAMERA_SETTINGS, SQUIRREL_CAMERA, 1)))
-    fires("mode switch unbound", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {MODE_ACTION}, type: 2}}\n", "", 1)))
+    fires("the dipole bound again", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {SLING_LEFT}, type: 2}}\n",
+                                                                                   f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n"
+                                                                                   f"    - {{fileID: 11400000, guid: {SLING_LEFT}, type: 2}}\n", 1)))
     fires("ripple executor dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {RIPPLE_EXECUTOR_ID}}}\n", "", 1)))
     fires("a dangling reference", lambda f: f.__setitem__(rel, f[rel].replace(f"  view: {{fileID: {HUD_VIEW_ID}}}\n", "  view: {fileID: 1234567}\n", 1)))
     hud_rel = os.path.relpath(HUD_VARIANT_PATH, ROOT)

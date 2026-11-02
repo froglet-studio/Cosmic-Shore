@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844847d7340bd776c33777f80f508daa, type: 3}
+  m_Name: AnglerAIBoostPolicy
+  m_EditorClassIdentifier: 
+  alignDegrees: 12
+  releaseAlignDegrees: 25
+  stickBand: 0.35
+  releaseStickBand: 0.6
+  engageRunwaySeconds: 1.5
+  releaseRunwaySeconds: 0.5
+  disabledInModes: []
+  requireAIPlayer: 1
+  throwAlignDegrees: 4
+  minThrowDistance: 120
+  holdSeconds: 0.45
+  throwIntervalSeconds: 0.6
+  minDashDistance: 40
+  dashAheadDegrees: 50

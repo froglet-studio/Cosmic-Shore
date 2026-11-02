@@ -44,6 +44,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+# The interpreter running this script runs every sub-check too: on Windows "python3" can be the Microsoft Store alias,
+# which prints "Python was not found" and fails every gate (2026-11-02).
+PY = sys.executable or "python3"
 sys.path.insert(0, HERE)
 import perf_capture_report as pcr  # noqa: E402  (the one judgement of a capture)
 
@@ -65,6 +68,12 @@ SCENARIOS = [
      "Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix"),
     ("S5", "S5 Wildlife Liberation", "MinigameWildlifeLiberation", 120,
      "Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go"),
+    # Dolphin's Time Arcade (Yash, 2026-10-30: "make Switchback very performant"). Blast Run is Switchback's only
+    # intensity type; I2 is the everyday race, I4 the densest block field with the most clock-driven movers.
+    ("Switchback", "Switchback I2", "MinigameSwitchback", 90,
+     "Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped: the editor captures it by itself"),
+    ("SwitchbackBlast", "Switchback Blast Run I4", "MinigameSwitchback", 90,
+     "Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped"),
 ]
 REPORT = os.path.join(REPO, "Docs", "Reports", "PERFORMANCE.md")
 # Where performance work happens, in order (Yash, 2026-10-17: "mostly all my performance works will be done in
@@ -133,13 +142,13 @@ def pct(old, new):
 SWARM = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 SUBSTRATE = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
 GATE_SCRIPTS = [
-    ("mathf params alloc", ["python3", "Tools/Build/check_mathf_params_alloc.py"]),
-    ("burst MathF (swarm pose)", ["python3", "Tools/Build/swarm_core_harness/check_burst_pose.py",
+    ("mathf params alloc", [PY,"Tools/Build/check_mathf_params_alloc.py"]),
+    ("burst MathF (swarm pose)", [PY,"Tools/Build/swarm_core_harness/check_burst_pose.py",
                                   f"{SWARM}/SwarmPrismSync.cs", "Tools/Build/swarm_core_harness/TickJobHarness.cs"]),
-    ("burst MathF (substrate)", ["python3", "Tools/Build/substrate_harness/check_burst_substrate.py",
+    ("burst MathF (substrate)", [PY,"Tools/Build/substrate_harness/check_burst_substrate.py",
                                  f"{SUBSTRATE}/SubstrateKernel.cs", f"{SUBSTRATE}/SubstrateAgentJob.cs",
                                  "Tools/Build/substrate_harness/ReferenceStep.cs"]),
-    ("console logging", ["python3", "Tools/Build/check_console_logging.py"]),
+    ("console logging", [PY,"Tools/Build/check_console_logging.py"]),
 ]
 
 # scan_perframe_allocations.py prints one "=== <class>: N" header per finding class; the counts are those N.
@@ -159,9 +168,12 @@ def parse_scan(text):
 
 def run_scan():
     """scan_perframe_allocations.py is a reader (always exit 0); its headers carry the counts."""
-    r = subprocess.run(["python3", "Tools/Build/scan_perframe_allocations.py", "--all"], cwd=REPO,
+    r = subprocess.run([PY,"Tools/Build/scan_perframe_allocations.py", "--all"], cwd=REPO,
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
     text = r.stdout + r.stderr
+    # A reader that failed prints no headers, which would parse as 0 findings and pass the gate.
+    if r.returncode != 0 or not SCAN_HEADER.search(text):
+        raise RuntimeError(f"scan_perframe_allocations.py did not run (exit {r.returncode}): {text.strip()[-300:]}")
     return parse_scan(text), text[-1200:]
 
 
@@ -217,12 +229,35 @@ def scenario_label(b, label):
     return m.group(1).replace(" Cell Config", "").strip() or (label or "?")
 
 
+def contamination(b):
+    """Why this capture must not become a baseline, though it is still judged (Yash, 2026-10-30): a frame cap (fps
+    and frame ms are the cap's, not the game's), a second camera (the Third Eye renders the world again: Switchback's
+    10-29 22:16 capture drew 1185 vs 309 calls), or an unfocused Game view (the editor throttles the player). Empty
+    when clean."""
+    d = b.get("diag") or {}
+    env = d.get("environment") or {}
+    out = []
+    if d.get("frameCapVSync", 0) or d.get("frameCapTarget", 0) not in (0, -1, None):
+        out.append("frame cap active")
+    cams = str(b.get("cameras") or "")
+    try:
+        n = int(cams.split(" ")[0]) if cams else 0
+    except ValueError:
+        n = 0
+    if "third eye" in cams.lower() or n > 1:
+        out.append("Third Eye / extra camera")
+    if env.get("focused") is False:
+        out.append("Game view unfocused")
+    return out
+
+
 def summarize(b):
     """The numbers a baseline keeps for a Unity capture."""
     f = pcr.frame(b)
     markers = {m["name"]: round(m.get("avgMs") or 0, 4) for m in pcr.markers(b)[:40]}
     return {"cpuBusyMs": f["cpuBusy"], "p95Ms": f["p95"], "gcKB": f["gcKB"], "fps": f["fps"], "prismEnts": f["prismEnts"],
-            "prismPath": f["prismPath"], "markers": markers, "timestamp": b.get("timestamp"), "codeOpt": f["codeOpt"]}
+            "prismPath": f["prismPath"], "markers": markers, "timestamp": b.get("timestamp"), "codeOpt": f["codeOpt"],
+            "commit": b.get("gitCommitHash") or None, "branch": b.get("gitBranch") or None}
 
 
 def baseline_key(key, user):
@@ -250,18 +285,23 @@ def compare_capture(b, baselines, adopt=False, user=None):
     validity = pcr.validity(b)
     errors = [v for v in validity if v.startswith("ERROR")]
     summary = summarize(b)
+    dirty = contamination(b)
     verdict = {"key": key, "timestamp": b.get("timestamp"), "valid": not errors, "validity": validity,
-               "summary": summary, "regressions": [], "improvements": [], "baseline": None, "action": ""}
+               "summary": summary, "regressions": [], "improvements": [], "baseline": None, "action": "",
+               "commit": summary.get("commit"), "branch": summary.get("branch"), "contaminated": dirty}
     if errors:
         verdict["action"] = "invalid: not compared"
         return verdict
     bkey = baseline_key(key, user)
     base = baselines.get(bkey)
+    if dirty and (base is None or adopt):
+        verdict["action"] = "not adopted as a baseline (" + ", ".join(dirty) + ")"
+        return verdict
     if base is None or adopt:
         baselines[bkey] = dict(summary, adoptedUtc=now_iso())
         verdict["action"] = "adopted as the baseline" if base is None else "baseline replaced (--adopt)"
         return verdict
-    verdict["baseline"] = {"timestamp": base.get("timestamp"), "cpuBusyMs": base.get("cpuBusyMs"),
+    verdict["baseline"] = {"timestamp": base.get("timestamp"), "commit": base.get("commit"), "cpuBusyMs": base.get("cpuBusyMs"),
                            "p95Ms": base.get("p95Ms"), "gcKB": base.get("gcKB")}
     for k in ("cpuBusyMs", "p95Ms", "gcKB"):
         if rose(base.get(k), summary.get(k), k):
@@ -276,6 +316,8 @@ def compare_capture(b, baselines, adopt=False, user=None):
             ("instanced" in str(base["prismPath"]).lower()) != ("instanced" in str(summary["prismPath"]).lower()):
         verdict["regressions"].append(f"prism path changed: {base['prismPath']} -> {summary['prismPath']}")
     verdict["action"] = "REGRESSION" if verdict["regressions"] else ("improved" if verdict["improvements"] else "within baseline")
+    if dirty:
+        verdict["action"] += " (WARN contaminated: " + ", ".join(dirty) + ")"
     return verdict
 
 
@@ -477,7 +519,7 @@ def cmd_amoebius(args):
     os.makedirs(os.path.join(REPO, "Port", "obj", "perf_hunt"), exist_ok=True)
     for mode, intensity, players in parse_modes(args.modes):
         out = os.path.join(REPO, "Port", "obj", "perf_hunt", f"{mode}_I{intensity}_{players}p.json")
-        cmd = ["python3", "Port/tools/amoebius_markers_run.py", "--mode", mode, "--intensity", str(intensity),
+        cmd = [PY,"Port/tools/amoebius_markers_run.py", "--mode", mode, "--intensity", str(intensity),
                "--players", str(players), "--frames", str(args.frames), "--out", out, "--label", f"perf_hunt {now_iso()[:10]}",
                "--profile", "perfhunt", "--port", str(47900 + len(verdicts))]
         if args.no_build:
@@ -540,13 +582,13 @@ def render_report(gates, gate_failures, board, amoebius, tasks_filed):
     lines.append(f"**Editor captures sent to Claude from the editor:** {len(caps)} on {board['branchesScanned'] if board else 0} branch(es)")
     lines.append("")
     if caps:
-        lines.append("| Scene / label | By | When | CPU busy ms | p95 ms | GC KB/f | Prisms | Verdict |")
-        lines.append("|---|---|---|---:|---:|---:|---:|---|")
+        lines.append("| Scene / label | By | When | Commit | CPU busy ms | p95 ms | GC KB/f | Prisms | Verdict |")
+        lines.append("|---|---|---|---|---:|---:|---:|---:|---|")
         for v in caps:
             s = v["summary"]
             verdict = v['action'] + (': ' + '; '.join(v['regressions']) if v['regressions'] else '') + \
                       (' - ' + '; '.join(x for x in v['validity'] if x.startswith('ERROR')) if not v['valid'] else '')
-            lines.append(f"| {cell(v['key'])} | {cell(v['user'])} | {cell(v['timestamp'])} | {cell(s.get('cpuBusyMs'))} | {cell(s.get('p95Ms'))} | "
+            lines.append(f"| {cell(v['key'])} | {cell(v['user'])} | {cell(v['timestamp'])} | {cell(v.get('commit'))} | {cell(s.get('cpuBusyMs'))} | {cell(s.get('p95Ms'))} | "
                          f"{cell(s.get('gcKB'))} | {cell(s.get('prismEnts'))} | {cell(verdict)} |")
     else:
         lines.append("_None yet. A capture reaches this report by itself: the editor captures in Play (PerfAutoCapture) "
@@ -583,7 +625,7 @@ def write_report(block):
 
 def file_task(task, done_when, see):
     # A ticket names nobody (Docs/TEAM.md rule 9); whoever owns the files finds it with who_works_where.py.
-    r = subprocess.run(["python3", "Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
+    r = subprocess.run([PY,"Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
                         "--task", task, "--done-when", done_when, "--see", see, "--by", "perf_hunt sweep",
                         "--priority", "P2", "--dept", "developers", "--milestone", "M1",
                         "--why", "a performance gate or a capture regressed; M1 needs every mode at speed on every platform"],
@@ -616,7 +658,8 @@ def gate_and_capture_regressions(gates, board):
                         f"python3 Tools/Build/perf_hunt.py gates reports '{g['gate']}' OK", "Docs/PERFORMANCE_OPTIMIZATION.md 3.4"))
     for v in latest_per_machine(board["captures"] if board else []):
         for line in v["regressions"]:
-            out.append((f"capture:{v['key']}|{v['user']}:{line.split(' ')[0]}", f"Performance regression in {v['key']} ({v['user']}, {v['timestamp']}): {line}",
+            out.append((f"capture:{v['key']}|{v['user']}:{line.split(' ')[0]}", f"Performance regression in {v['key']} ({v['user']}, {v['timestamp']}"
+                        + (f", commit {(v.get('baseline') or {}).get('commit') or '?'}..{v['commit']}" if v.get("commit") else "") + f"): {line}",
                         f"a new capture of {v['key']} compares within its baseline (perf_hunt.py compare)", "Docs/Reports/PERFORMANCE.md"))
     return out
 
@@ -729,6 +772,7 @@ def build_status(gates, board, amoebius, regressions):
         "regressions": regressions,
         "baselines": sorted(baselines.keys()),
         "captures": [{"key": v["key"], "user": v.get("user"), "timestamp": v.get("timestamp"), "valid": v["valid"],
+                      "commit": v.get("commit"), "branch": v.get("branch"), "contaminated": v.get("contaminated") or [],
                       "verdict": v["action"], "cpuBusyMs": v["summary"].get("cpuBusyMs"), "gcKB": v["summary"].get("gcKB")} for v in caps[-8:]],
         "amoebius": [{"key": v["key"], "verdict": v["action"], "topGameAllocators": v.get("top", [])} for v in (amoebius or [])],
         "bugs": bugs,
@@ -816,6 +860,20 @@ def self_test():
         assert any("prism path" in r for r in compare_capture(legacy, base)["regressions"])
         better = json.loads(json.dumps(sample)); better["diag"]["avgCpuBusyMs"] = 12.0
         assert compare_capture(better, base)["action"] == "improved"
+        # A capped / Third Eye / unfocused capture is judged but never becomes a baseline (2026-10-30).
+        for mut in (lambda c: c["diag"].update(frameCapVSync=1),
+                    lambda c: c.update(cameras="2 enabled | CM PlayerCam screen depth 0 | Third Eye Camera 1088x753 rt depth -100"),
+                    lambda c: c["diag"]["environment"].update(focused=False)):
+            dirty = json.loads(json.dumps(sample)); mut(dirty)   # same scene, so `base` holds its baseline
+            fresh = {}
+            dv = compare_capture(dirty, fresh)
+            assert not fresh and dv["action"].startswith("not adopted") and dv["contaminated"], dv
+            assert compare_capture(dirty, base)["action"].endswith(")") and "WARN contaminated" in compare_capture(dirty, base)["action"]
+        assert contamination(sample) == []
+        tagged = json.loads(json.dumps(sample)); tagged["gitCommitHash"] = "abc1234"; tagged["gitBranch"] = "Ys-bleeding-edge"
+        tv = compare_capture(tagged, base)
+        assert tv["commit"] == "abc1234" and tv["summary"]["branch"] == "Ys-bleeding-edge", tv
+        assert [s[0] for s in SCENARIOS].count("Switchback") == 1 and any(s[2] == "MinigameSwitchback" and "I4" in s[1] for s in SCENARIOS)
         compare_capture(better, base, adopt=True)
         assert base["Menu_Main|S2|local"]["cpuBusyMs"] == 12.0
         # Baselines are per machine: another machine's slower capture adopts its own, never regresses against this one.

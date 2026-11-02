@@ -193,6 +193,50 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>This pilot's instance of the cycled ability of type <typeparamref name="T"/> (the prefab's
+        /// <c>abilities</c> list), for a mode that presses it itself - see <see cref="SetAbilityCycleSuppressed"/>.</summary>
+        public bool TryFindAbility<T>(out T ability) where T : ShipActionSO
+        {
+            ability = null;
+            if (abilities == null) return false;
+            foreach (var a in abilities)
+            {
+                if (a?.Ability is T inst) { ability = inst; return true; }
+                if (a?.SourceAsset is T && a.Ability is T inst2) { ability = inst2; return true; }
+            }
+            return false;
+        }
+
+        // Abilities a mode has taken off the blind cycler (StartAIPilot skips them): the mode owns their timing.
+        readonly HashSet<ShipActionSO> _suppressedAbilities = new();
+
+        /// <summary>
+        /// Take a cycled ability off the blind timer (or put it back): a mode that knows WHEN a weapon should go off
+        /// (the Ark escort's roles: a rocket at a creature on the nose with the Ark out of the lane) presses it itself
+        /// with <see cref="PressAbility"/>. Takes the instance <see cref="TryFindAbility{T}"/> returns or the source
+        /// asset. The running cycle restarts so the change takes effect now.
+        /// </summary>
+        public void SetAbilityCycleSuppressed(ShipActionSO ability, bool suppressed)
+        {
+            if (!ability) return;
+            bool changed = suppressed ? _suppressedAbilities.Add(ability) : _suppressedAbilities.Remove(ability);
+            if (changed && AutoPilotEnabled) StartAIPilot();
+        }
+
+        bool IsCycleSuppressed(AIAbility ability) =>
+            _suppressedAbilities.Count > 0
+            && ((ability.Ability && _suppressedAbilities.Contains(ability.Ability))
+                || (ability.SourceAsset && _suppressedAbilities.Contains(ability.SourceAsset)));
+
+        /// <summary>Start (<paramref name="down"/>) or stop one of this pilot's abilities on its vessel, the way the
+        /// cycler does - for a mode that owns the ability's timing.</summary>
+        public void PressAbility(ShipActionSO ability, bool down)
+        {
+            if (!ability || VesselStatus == null) return;
+            if (down) VesselActionTape.Start(ability, actionExecutorRegistry, VesselStatus);
+            else VesselActionTape.Stop(ability, actionExecutorRegistry, VesselStatus);
+        }
+
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
 
@@ -291,6 +335,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
+        /// <summary>The steering hook set now (a mode's or a crew's), or null: a crew that set one reads this to take back only
+        /// its own and never clears a mode's (HoneyguideCrew.Hunt.cs).</summary>
+        public Func<Vector3> ExternalTargetProvider => _externalTargetProvider;
+
+        /// <summary>
+        /// The last-ditch avoidance hook: asked every frame with the hull's position, its real velocity (course x speed)
+        /// and its nose. True (with a point to steer at) means impact is imminent: the steering flies that point instead
+        /// of the objective (and the orbit break), a drift is let go (a drift locks the course, so no steering could
+        /// change where the hull is going), and the boost driver's line-hold and rotation limit stand down for the frame.
+        /// </summary>
+        public delegate bool EmergencySteer(Vector3 position, Vector3 velocity, Vector3 forward, out Vector3 steerTo);
+        EmergencySteer _emergencySteer;
+        public void SetEmergencySteerProvider(EmergencySteer provider) => _emergencySteer = provider;
+        /// <summary>The emergency hook overrode this frame's steering.</summary>
+        public bool EmergencyActive { get; private set; }
+
         // Set by the external target provider, for the frame it is sampled in: see MarkAimAsPathLead.
         bool _aimIsPathLead;
 
@@ -359,6 +419,16 @@ namespace CosmicShore.Gameplay
         /// Cleared with <see cref="ClearExternalTargetProvider"/> and carried by <see cref="TakeModeHooksFrom"/>.
         /// </summary>
         public void SetThrottleFloor(float floor) => _throttleFloor = Mathf.Clamp01(floor);
+
+        Func<ShipActionSO, bool> _cycledAbilityFilter;
+
+        /// <summary>
+        /// Which of the vessel's timed abilities (<c>abilities</c>, pressed on their own clock) may still fire on that
+        /// clock: false for an authored asset keeps the cycler off it. For a mode whose AI presses that ability itself
+        /// at a moment that matters (Serpent Time cloaks just past a ring a rival still needs, not every 4 s). Null lets
+        /// all of them cycle, the default; the mode that sets it clears it.
+        /// </summary>
+        public void SetCycledAbilityFilter(Func<ShipActionSO, bool> allow) => _cycledAbilityFilter = allow;
 
         float SteeringThrottle => Mathf.Clamp(Mathf.Max(throttle, _throttleFloor), 0f, 1f);
 
@@ -474,6 +544,7 @@ namespace CosmicShore.Gameplay
         {
             if (!source || source == this) return;
             _externalTargetProvider = source._externalTargetProvider;
+            _emergencySteer = source._emergencySteer;
             _driftLookTargetProvider = source._driftLookTargetProvider;
             _belief = source._belief;
             _throttleFloor = source._throttleFloor;
@@ -583,6 +654,11 @@ namespace CosmicShore.Gameplay
 
             foreach (var item in cellItems)
             {
+                // A destroyed item (a heart collected and pooled, a retired corridor cell's crystal) can still be
+                // in a runtime list this pilot reads while another list raises OnCellItemsUpdated - and this
+                // handler runs INSIDE that Raise, so a throw here aborted the caller: CellConveyor.SpawnCoreCrystal
+                // -> StandCell lost its world and the escort skipped it (The Boneyard at d1, The Maw at d6).
+                if (!item) continue;
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
@@ -873,6 +949,9 @@ namespace CosmicShore.Gameplay
             {
                 if (ability.SourceAsset != null && _commitBoundActions.Contains(ability.SourceAsset))
                     continue;
+                // A mode that presses this one itself (SetAbilityCycleSuppressed).
+                if (IsCycleSuppressed(ability))
+                    continue;
                 // Same reason, other owner: the boost driver presses this one itself.
                 if (_boostActive && _boostDriver.Drives(ability.SourceAsset))
                     continue;
@@ -941,8 +1020,10 @@ namespace CosmicShore.Gameplay
             if (input != null) input.LeftTriggerAnalog = held ? 1f : 0f;
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("AI.Pilot.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (!AutoPilotEnabled)
                 return;
 
@@ -989,6 +1070,23 @@ namespace CosmicShore.Gameplay
                       toObjective, HeadingDirection(), orbitBreakAwayBias) * EscapeLegLength()
                 : _targetPosition;
 
+            // Imminent impact beats everything above, including a committed drift (whose locked course would carry the
+            // hull straight on into the obstacle whatever the nose did) - Switchback 2026-10-29, "dolphins eat prisms".
+            Vector3 dodge = default;
+            EmergencyActive = _emergencySteer != null &&
+                              _emergencySteer(transform.position, HeadingDirection() * VesselStatus.Speed, transform.forward,
+                                              out dodge);
+            if (EmergencyActive)
+            {
+                steerTarget = dodge;
+                if (VesselStatus.IsDrifting || _commitDriftHeld)
+                {
+                    vessel.StopShipControllerActions(CommitControl);
+                    SetCommitDriftHeld(false);
+                }
+                ReleaseAimTelegraph();
+            }
+
             _distance = steerTarget - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
@@ -1001,7 +1099,7 @@ namespace CosmicShore.Gameplay
             // telegraph: the vessel is repositioning, and announcing an aim at the escape point
             // would be announcing an aim at nothing. The branches below read this, and the
             // drift-ended branch is what releases a telegraph already lit.
-            LookingAtCrystal = !_extending &&
+            LookingAtCrystal = !_extending && !EmergencyActive &&
                                Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
             if (commitHeldOff)
             {
@@ -1109,9 +1207,9 @@ namespace CosmicShore.Gameplay
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : SteeringThrottle;
             }
 
-            if (_boostActive && _boostDriver.HoldsLine)
+            if (_boostActive && _boostDriver.HoldsLine && !EmergencyActive)
                 CentreStick();
-            if (_boostActive && !VesselStatus.IsSingleStickControls)
+            if (_boostActive && !EmergencyActive && !VesselStatus.IsSingleStickControls)
             {
                 if (_boostDriver.HoldsFullThrottle) _inputStatus.XDiff = 1f;
                 float driverThrottle = _boostDriver.Throttle;
@@ -1518,6 +1616,12 @@ namespace CosmicShore.Gameplay
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
+                // A mode that presses this ability itself, at moments it chooses, keeps the cycler off it.
+                if (_cycledAbilityFilter != null && !_cycledAbilityFilter(action.SourceAsset ? action.SourceAsset : action.Ability))
+                {
+                    yield return CosmicShore.Utility.WaitCache.Seconds(Mathf.Max(0.5f, action.Duration + action.Cooldown));
+                    continue;
+                }
                 VesselActionTape.Start(action.Ability, actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);

@@ -24,4 +24,27 @@ namespace CosmicShore.Gameplay
         void TakeFrom(IVesselStatus victim, IVesselStatus attacker, VesselImpactor impactor,
                       SkimmerImpactor impactee);
     }
+
+    /// <summary>
+    /// A contact take that sets its OWN pace and its OWN price: the Tiger Moth's shred (one petal off
+    /// one random element, every <see cref="SameVictimCooldownSeconds"/>, which its Charge shortens).
+    /// The reporter then uses this window instead of its own <c>sameVictimCooldownSeconds</c>, silences
+    /// the victim for <see cref="PetalsPerTake"/> petals instead of the hit class's points, and scores
+    /// one hit of its class per <see cref="CombatHitDrain.PetalsFor"/> petals, so score and silence
+    /// both stay proportional to the petals taken (Garrett, 2026-10-31: "score and silence should be
+    /// proportional to petals, but this is one petal not 4").
+    /// </summary>
+    public interface IPacedContactPetalTake : IContactPetalTake
+    {
+        /// <summary>Seconds between takes on one victim by <paramref name="attacker"/>. Read at the
+        /// attacker's replicated level, on the machine that decides the hit.</summary>
+        float SameVictimCooldownSeconds(IVesselStatus attacker);
+
+        /// <summary>Petals one take moves: what it silences for and what its score is priced on.</summary>
+        float PetalsPerTake { get; }
+
+        /// <summary>False when <paramref name="victim"/> holds nothing this take could move. The hit is
+        /// then not admitted at all: no petal, no silence, no score.</summary>
+        bool CanTakeFrom(IVesselStatus victim);
+    }
 }

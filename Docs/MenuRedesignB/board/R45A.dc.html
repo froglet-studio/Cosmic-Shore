@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 45 A - Fleet Codex, a vessel in tabs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A1318}
+.app{font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#E2EBEE;font-size:15px;line-height:1.5}
+.disp{font-family:'Oxanium',system-ui,sans-serif}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+.lab{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8EA2AB}
+.key{display:inline-flex;align-items:center;height:24px;padding:0 7px;box-sizing:border-box;border:1px solid #2C3E49;border-bottom-width:2px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E2EBEE;background:#0A1318;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;border:1px solid currentColor;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.tab{background:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0}
+.tab:focus-visible,.seg:focus-visible,a:focus-visible{outline:2px solid #5CC4CF;outline-offset:3px}
+.seg{border:1px solid #213039;background:#101C23;color:#8EA2AB;cursor:pointer;font:inherit;border-radius:6px;padding:0 14px;height:40px;display:inline-flex;align-items:center;gap:10px}
+.panel{background:#101C23;border:1px solid #213039;border-radius:8px}
+.row{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:20px;align-items:center;padding:12px 0;border-top:1px solid #213039}
+a{color:#5CC4CF}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px;position:relative;overflow:hidden;background:#0A1318">
+
+<header style="position:absolute;left:0;right:0;top:0;height:72px;box-sizing:border-box;padding:0 40px;display:flex;align-items:center;gap:28px;border-bottom:1px solid #213039;background:#0A1318">
+  <span class="disp" style="font-size:24px;font-weight:700;letter-spacing:.02em">Fleet Codex</span>
+  <a href="#fleet" style="display:inline-flex;align-items:center;gap:8px;font-weight:700;text-decoration:none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>The whole fleet</a>
+  <span style="flex:1"></span>
+  <span class="mono" style="color:#8EA2AB">Read from <span style="color:#E2EBEE">bleeding-edge</span> at d7481d2830 · 2026-11-02</span>
+</header>
+
+<aside aria-label="Brittle Star" style="position:absolute;left:40px;top:96px;width:440px;bottom:32px;display:flex;flex-direction:column;gap:18px">
+  <img src="/_blob/c84bea63aca36f0395c8a771b975039e" alt="Brittle Star in the hangar" style="width:440px;height:248px;object-fit:cover;border-radius:8px;border:1px solid #213039;background:#101C23">
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <span class="disp" style="font-size:44px;font-weight:700;line-height:1.05">Brittle Star</span>
+    <span class="mono" style="color:#8EA2AB">VesselClassType.BrittleStar = 16</span>
+  </div>
+  <p style="margin:0;color:#C4D2D8">A one-touch flyer built round a cockpit and a five-pointed support ring. Swap between Speed, Creation, Space and Charge modes - five guns that overheat, or five cords that whip and stiffen into sabers - turn the ring to bring a turret to bear, and throw spare rings as bombs.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    <span class="pill" style="color:#E2A552">0/4 L5 wired</span>
+    <span class="pill" style="color:#6CC18F">4/4 elements scale</span>
+    <span class="pill" style="color:#6CC18F">In the Vessel Changer</span>
+  </div>
+  <div class="panel" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden">
+    <div style="padding:12px 16px;border-right:1px solid #213039;border-bottom:1px solid #213039"><div class="disp num" style="font-size:24px;font-weight:600">45 <span style="font-family:'Atkinson Hyperlegible';font-size:13px;color:#8EA2AB">u/s</span></div><div style="font-size:12.5px;color:#8EA2AB">cruise (10 + 35)</div></div>
+    <div style="padding:12px 16px;border-bottom:1px solid #213039"><div class="disp num" style="font-size:24px;font-weight:600">80 / 80</div><div style="font-size:12.5px;color:#8EA2AB">pitch / yaw scalers</div></div>
+    <div style="padding:12px 16px;border-right:1px solid #213039"><div class="disp num" style="font-size:24px;font-weight:600">+0.1</div><div style="font-size:12.5px;color:#8EA2AB">turn gained per u/s</div></div>
+    <div style="padding:12px 16px"><div class="disp num" style="font-size:24px;font-weight:600">x1</div><div style="font-size:12.5px;color:#8EA2AB">boost multiplier</div></div>
+  </div>
+</aside>
+
+<main style="position:absolute;left:520px;right:40px;top:96px;bottom:32px;display:flex;flex-direction:column;gap:20px;min-width:0">
+  <nav aria-label="Vessel sections" role="tablist" style="display:flex;gap:36px;border-bottom:1px solid #213039;height:52px;align-items:flex-end">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+      <button class="tab" type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}"><span class="disp" style="font-size:20px;font-weight:600">{{t.label}}</span><span style="margin-left:8px;font-size:13px;color:#8EA2AB">{{t.count}}</span></button>
+    </sc-for>
+  </nav>
+
+  <sc-if value="{{isElements}}" hint-placeholder-val="{{true}}">
+    <div style="display:flex;gap:10px">
+      <sc-for list="{{elements}}" as="e" hint-placeholder-count="4">
+        <button class="seg" type="button" onClick="{{e.pick}}" style="{{e.style}}"><span class="lab" style="color:inherit">{{e.name}}</span><span style="font-weight:700;color:#E2EBEE">{{e.ability}}</span></button>
+      </sc-for>
+    </div>
+    <section class="panel" aria-label="{{el.name}}" style="flex:1;padding:24px 28px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <span class="lab">{{el.name}} · {{el.note}}</span>
+        <span class="disp" style="font-size:34px;font-weight:600;line-height:1.1">{{el.ability}}</span>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          <span style="display:inline-flex;gap:6px;align-items:center"><span style="font-size:12.5px;color:#8EA2AB">Controller</span><span class="key">{{el.pad}}</span></span>
+          <span style="display:inline-flex;gap:6px;align-items:center"><span style="font-size:12.5px;color:#8EA2AB">PC</span><span class="key">{{el.key}}</span></span>
+          <span style="display:inline-flex;gap:6px;align-items:center"><span style="font-size:12.5px;color:#8EA2AB">Mobile</span><span class="key">{{el.touch}}</span></span>
+        </div>
+        <p style="margin:0;font-size:15.5px;color:#C4D2D8;max-width:70ch">{{el.desc}}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span class="lab">What {{el.name}} scales</span>
+          <sc-for list="{{el.dials}}" as="d" hint-placeholder-count="2">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 14px;border:1px solid #213039;border-radius:6px;background:#0D171D">
+              <span class="mono" style="color:#E2EBEE">{{d.field}}</span><span class="mono num" style="color:#5CC4CF">{{d.range}}</span>
+              <span style="grid-column:1 / -1;font-size:12.5px;color:#8EA2AB">{{d.what}} · {{d.asset}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:14px 16px;border-radius:6px;background:#0D171D;border:1px dashed #2C3E49;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;gap:10px;align-items:center"><span class="disp" style="font-size:17px;font-weight:600">Level 5</span><span class="pill" style="color:#8D9BA3">Open</span></div>
+          <span style="font-size:14px;color:#C4D2D8">Not designed yet. Unlocks at level 5, relocks below 4.</span>
+          <span style="font-size:13px;color:#8EA2AB">Proposals for Garrett: {{el.proposals}}</span>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isModes}}" hint-placeholder-val="{{false}}">
+    <section class="panel" aria-label="Brittle Star Time" style="flex:1;padding:24px 28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span class="lab">Arcade · mode 74 · Time</span>
+        <span class="disp" style="font-size:34px;font-weight:600">Brittle Star Time</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill" style="color:#6CC18F">Arcade roster</span><span class="pill" style="color:#8D9BA3">I1-I4</span><span class="pill" style="color:#8D9BA3">This hull only</span><span class="pill" style="color:#8D9BA3">2 laps, fastest home</span></div>
+        <p style="margin:0;color:#C4D2D8;font-size:15.5px">Brittle Stars only, against the clock. Speed Mode lights all five arms and runs you at six times cruise - but it turns wide. Hold it through the corners you can, drop back to Cruise for the ones you cannot, and thread the rings. Two laps. Fastest domain home wins.</p>
+        <span style="font-size:13px;color:#8EA2AB">Not flown in the editor yet. Plan for four different intensities: BRITTLESTARTIME.md</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="lab">The ladder</span>
+        <div style="display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr));border:1px solid #213039;border-radius:6px;overflow:hidden">
+          <span style="padding:10px 12px;background:#0D171D;font-size:12.5px;color:#8EA2AB"></span><span class="disp" style="padding:10px 12px;background:#0D171D;font-weight:600">I1</span><span class="disp" style="padding:10px 12px;background:#0D171D;font-weight:600">I2</span><span class="disp" style="padding:10px 12px;background:#0D171D;font-weight:600">I3</span><span class="disp" style="padding:10px 12px;background:#0D171D;font-weight:600">I4</span>
+          <span style="padding:10px 12px;border-top:1px solid #213039;font-size:13.5px">Corners tighter than Speed Mode's 145 u circle</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">0</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">1</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">2</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">3</span>
+          <span style="padding:10px 12px;border-top:1px solid #213039;font-size:13.5px">Ring mouth radius (u)</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">90</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">68</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">54</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">42</span>
+          <span style="padding:10px 12px;border-top:1px solid #213039;font-size:13.5px">Corner floor (u)</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">188</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">108</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">65</span><span class="num" style="padding:10px 12px;border-top:1px solid #213039">65</span>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isControls}}" hint-placeholder-val="{{false}}">
+    <div style="display:flex;gap:10px">
+      <sc-for list="{{devices}}" as="dv" hint-placeholder-count="3">
+        <button class="seg" type="button" onClick="{{dv.pick}}" style="{{dv.style}}"><span style="font-weight:700">{{dv.label}}</span><span style="font-size:12.5px;color:#8EA2AB">{{dv.scheme}}</span></button>
+      </sc-for>
+    </div>
+    <section class="panel" aria-label="{{device.label}} controls" style="flex:1;padding:8px 28px 16px;display:flex;flex-direction:column;min-height:0">
+      <sc-for list="{{device.groups}}" as="g" hint-placeholder-count="3">
+        <span class="lab" style="padding-top:16px;padding-bottom:4px">{{g.name}}</span>
+        <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
+          <div class="row"><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="key">{{r.input}}</span></span><span><span style="font-weight:700">{{r.action}}</span><span style="color:#8EA2AB"> - {{r.detail}}</span></span></div>
+        </sc-for>
+      </sc-for>
+      <span style="margin-top:auto;padding-top:12px;font-size:13px;color:#8EA2AB">{{device.foot}}</span>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isDocs}}" hint-placeholder-val="{{false}}">
+    <div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px">
+      <section class="panel" aria-label="Docs" style="padding:8px 24px">
+        <span class="lab" style="display:block;padding:14px 0 6px">Docs</span>
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><a href="#doc">BRITTLE_STAR.md</a><span class="mono" style="color:#8EA2AB">Assets/_Scripts/Controller/Vessel/R_VesselActions</span></div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><a href="#doc">BRITTLE_STAR.md</a><span class="mono" style="color:#8EA2AB">Docs/Studios</span></div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><a href="#doc">BRITTLE_STAR_HANDOFF.md</a><span class="mono" style="color:#8EA2AB">Docs/Studios</span></div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr)"><a href="#doc">BRITTLESTARTIME.md</a><span class="mono" style="color:#8EA2AB">Assets/_Scripts/Controller/Arcade</span></div>
+      </section>
+      <section class="panel" aria-label="Recent changes" style="padding:8px 24px">
+        <span class="lab" style="display:block;padding:14px 0 6px">Recent changes</span>
+        <div class="row" style="grid-template-columns:90px minmax(0,1fr)"><span class="mono" style="color:#8EA2AB">2026-11-01</span><a href="#commit">Netcode: tune vessel ClientNetworkTransforms</a></div>
+        <div class="row" style="grid-template-columns:90px minmax(0,1fr)"><span class="mono" style="color:#8EA2AB">2026-11-01</span><a href="#commit">Brittle Star omni card counts the spare rings</a></div>
+        <div class="row" style="grid-template-columns:90px minmax(0,1fr)"><span class="mono" style="color:#8EA2AB">2026-11-01</span><a href="#commit">Brittle Star Space and Time cards, the fan and the stretch</a></div>
+        <div class="row" style="grid-template-columns:90px minmax(0,1fr)"><span class="mono" style="color:#8EA2AB">2026-11-01</span><a href="#commit">Brittle Star Mass card, the Creation tunnel</a></div>
+        <div class="row" style="grid-template-columns:90px minmax(0,1fr)"><span class="mono" style="color:#8EA2AB">2026-11-01</span><a href="#commit">Brittle Star Charge card, whips to sabers on RT</a></div>
+      </section>
+    </div>
+  </sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'elements', element: 'Charge', device: 'controller' };
+  }
+  renderVals() {
+    const s = this.state;
+    const on = 'color:#E2EBEE;box-shadow:inset 0 -2px 0 #5CC4CF;padding-bottom:12px';
+    const off = 'color:#8EA2AB;padding-bottom:12px';
+    const segOn = 'border-color:#5CC4CF;color:#5CC4CF;background:#0D2229';
+    const segOff = '';
+    const EL = {
+      Charge: { note: 'threat, energy', ability: 'Charge Mode', pad: 'Y', key: 'F', touch: 'Charge card',
+        desc: 'Five cords, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) and striking rival hulls for petals. Released, RT leaves them whips at 150% length: heavy, slow, a turn or a flick sends a wave down them that rings on for seconds. Pulled, RT shortens them to 100% and stiffens them into five sabers. Using them cools the guns. LT throws the ring, only with a spare in stock: it blows in a disk as wide as the nucleus.',
+        dials: [ { field: 'projectileScaleMultiplier', range: 'x1 to x1.8', what: 'cord cut width and round size', asset: 'BrittleStarConfig.asset' },
+                 { field: 'blastScale', range: 'x1 to x4', what: 'ring blast disk thickness', asset: 'BrittleStarConfig.asset' } ],
+        proposals: 'Shielding Cords, or Domain-Safe Ring' },
+      Mass: { note: 'size, volume', ability: 'Creation Mode', pad: 'B', key: 'R', touch: 'Creation card',
+        desc: 'A trail behind each of the ring’s five corners instead of the single small block from the cockpit: the same small block, five lines that turn with the ring’s firing rotation. The slowest mode, cruise x0.5.',
+        dials: [ { field: 'prismWidthScale', range: 'x1 to x2', what: 'width and height of every block laid', asset: 'BrittleStarConfig.asset' } ],
+        proposals: 'Shielded Corners, or Webbing' },
+      Space: { note: 'reach, presence', ability: 'Space Mode', pad: 'X', key: 'Q', touch: 'Space card',
+        desc: 'Five guns: RT fires every turret, its pull setting the rate (up to 90 rounds/s each, 387 u reach). The right stick turns the ring and moves the guns in (meeting 120 u ahead) and out (splayed 25 degrees). Every round heats the guns; overheated they stop, and in Space Mode your trail lays danger prisms. In every other mode RT fires the one turret turned to the aim.',
+        dials: [ { field: 'rangeMultiplier', range: 'x1 to x2', what: 'every gun’s range', asset: 'BrittleStarConfig.asset' },
+                 { field: 'heatCapacity', range: 'x1 to x3.33', what: 'heat the guns hold: a 6 s to 20 s burst', asset: 'BrittleStarConfig.asset' } ],
+        proposals: 'Piercing Rounds, or Cold Barrels' },
+      Time: { note: 'rate, mobility', ability: 'Speed Mode', pad: 'A', key: 'Space', touch: 'Speed card',
+        desc: 'Ignite every thruster: cruise x6 (45 to 270 u/s), the trail’s spacing stretched by the same ratio so production per second does not rise, and every prism stretched so the trail still joins up. It turns wide: a 145 u circle against cruise’s 30 u.',
+        dials: [ { field: 'speedModeMultiplier', range: 'x6 to x8', what: 'Speed Mode’s multiplier', asset: 'BrittleStarConfig.asset' } ],
+        proposals: 'Afterburner Ring, or Quick Build' },
+    };
+    const DEV = {
+      controller: { label: 'Controller', scheme: 'gamepad', foot: 'RT is analog: the pull sets the fire rate, and in Charge Mode how stiff the cords are.',
+        groups: [
+          { name: 'Fly', rows: [ { input: 'Left stick', action: 'Steer', detail: 'one-stick flight' }, { input: 'Right stick', action: 'Aim', detail: 'turns the ring; push out to splay the guns or cords' } ] },
+          { name: 'Modes (press again for Cruise)', rows: [ { input: 'A', action: 'Speed Mode', detail: 'Time' }, { input: 'B', action: 'Creation Mode', detail: 'Mass' }, { input: 'X', action: 'Space Mode', detail: 'Space' }, { input: 'Y', action: 'Charge Mode', detail: 'Charge' } ] },
+          { name: 'Weapons', rows: [ { input: 'RT', action: 'Fire', detail: 'five guns in Space Mode, cords whip to saber in Charge Mode, one turret otherwise' }, { input: 'LT', action: 'Ring Detonation', detail: 'throw the ring; needs a spare (one per crystal, two at most)' } ] } ] },
+      pc: { label: 'PC', scheme: 'keyboard and mouse', foot: 'No partial pull on keys or mouse buttons: a press is a full pull. The mouse scheme has no aim.',
+        groups: [
+          { name: 'Fly', rows: [ { input: 'Mouse', action: 'Steer', detail: 'one-thumb mouse scheme' }, { input: 'P ; L ’', action: 'Aim', detail: 'turns the ring (keyboard only)' } ] },
+          { name: 'Modes (press again for Cruise)', rows: [ { input: 'Space', action: 'Speed Mode', detail: 'Time' }, { input: 'R', action: 'Creation Mode', detail: 'Mass' }, { input: 'Q / middle mouse', action: 'Space Mode', detail: 'Space' }, { input: 'F', action: 'Charge Mode', detail: 'Charge' } ] },
+          { name: 'Weapons', rows: [ { input: 'Right Shift / left mouse', action: 'Fire', detail: 'full rate while held' }, { input: 'Left Shift / right mouse', action: 'Ring Detonation', detail: 'needs a spare ring' } ] } ] },
+      mobile: { label: 'Mobile', scheme: 'six buttons round the right thumb', foot: 'Lifting a thumb raises nothing on this hull. No partial pull: Fire is always the full rate, cords are sabers while held.',
+        groups: [
+          { name: 'Fly', rows: [ { input: 'Left thumb', action: 'Steer', detail: 'any single thumb flies' }, { input: 'Second finger, right side', action: 'Aim', detail: 'aims without firing' } ] },
+          { name: 'Modes (tap again for Cruise)', rows: [ { input: 'Speed card', action: 'Speed Mode', detail: 'Time' }, { input: 'Creation card', action: 'Creation Mode', detail: 'Mass' }, { input: 'Space card', action: 'Space Mode', detail: 'Space' }, { input: 'Charge card', action: 'Charge Mode', detail: 'Charge' } ] },
+          { name: 'Weapons', rows: [ { input: 'Fire button', action: 'Fire', detail: 'fires while held; drag it to aim' }, { input: 'Ring button', action: 'Ring Detonation', detail: 'throws on press; drag to turn the ring' } ] } ] },
+    };
+    const tabsDef = [ ['elements', 'Elements', '4'], ['modes', 'Game Modes', '1'], ['controls', 'Controls', '3 devices'], ['docs', 'Docs and changes', '9'] ];
+    const el = EL[s.element];
+    return {
+      tabs: tabsDef.map(([id, label, count]) => ({ label, count, on: s.tab === id, style: s.tab === id ? on : off, pick: () => this.setState({ tab: id }) })),
+      isElements: s.tab === 'elements', isModes: s.tab === 'modes', isControls: s.tab === 'controls', isDocs: s.tab === 'docs',
+      elements: Object.keys(EL).map(n => ({ name: n, ability: EL[n].ability, style: s.element === n ? segOn : segOff, pick: () => this.setState({ element: n }) })),
+      el: Object.assign({ name: s.element }, el),
+      devices: Object.keys(DEV).map(k => ({ label: DEV[k].label, scheme: DEV[k].scheme, style: s.device === k ? segOn : segOff, pick: () => this.setState({ device: k }) })),
+      device: DEV[s.device],
+    };
+  }
+}
+</script>
+</body>
+</html>

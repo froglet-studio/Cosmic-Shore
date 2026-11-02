@@ -73,6 +73,7 @@ namespace CosmicShore.Gameplay
         // Slice clears it again whether or not the hit destroyed the prism.
         Vector3 _sliceCutPoint;
         Vector3 _sliceCutNormal;
+        bool _burnedOut;   // transient, set only inside BurnOut: the death is drawn by PrismBurnView, so Explode raises no effect
         // Set transiently by DamageByCollision around its Damage call, the same way: this death is
         // prism movement's collision ABOVE level 1 of its ladder, so the factory draws the plain
         // explosion rather than a finer detail level (Docs/PRISM_ANIMATION.md §4.12).
@@ -1001,6 +1002,7 @@ namespace CosmicShore.Gameplay
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             DestroyerName = null;         // pool reuse: the next life has no destroyer yet
+            _armourWear = 0f;             // pool reuse: the next life's armour is whole
             DestroyedAt = 0f;             // pool reuse: recycled corpses come back (PrismRecycler); no stale death time
             RecyclesWhenDestroyed = false; // pool reuse: each life opts in to recycling itself
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
@@ -1768,6 +1770,10 @@ namespace CosmicShore.Gameplay
             var kind = PrismKinds.Of(this);
 
             SetupDestruction(domain, playerName, devastate);
+            // A BURNOUT is already drawn - the prism burned away on screen (PrismBurnView) or, beyond the burn's
+            // draw distance, simply goes back to the pool - so no debris and no per-prism SFX (a Fulmen strike
+            // burns out dozens at once). Everything the death MEANS happened in SetupDestruction.
+            if (_burnedOut) return;
             PlayDestructionSFX();
 
             // A supplied debrisSpeedLimit marks impactVector as a TRUE velocity (see
@@ -1938,6 +1944,63 @@ namespace CosmicShore.Gameplay
             if (destroyed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             SetupDestruction(Domain, playerName, devastate: true);
+        }
+
+        // Armour wear from creature bites (GnawArmour). Local to the simulation that runs the bites; never replicated:
+        // the crack itself travels as an ordinary shield drop (DeactivateShields).
+        float _armourWear;
+
+        /// <summary>Armour points a super-shield takes to crack under creature bites (a shield takes 1).</summary>
+        public const float SuperArmourPoints = 2f;
+
+        /// <summary>Armour worn so far this life, in armour points (0 = whole).</summary>
+        public float ArmourWear => _armourWear;
+
+        /// <summary>
+        /// A creature's bite on an ARMOURED prism (shielded or super-shielded): wears the armour by
+        /// <paramref name="bite"/> armour points and returns true when it just CRACKED, after which the prism is plain
+        /// mass and the caller consumes it. A shield cracks at 1 point, a super-shield at <see cref="SuperArmourPoints"/>.
+        /// Every bite that does not crack reads as the deflection wobble ("being gnawed").
+        ///
+        /// <para>The one creature path through armour (the Ark escort; Garrett, 2026-10-31: "fauna should attack and
+        /// actually eat the Ark's shielded and super-shielded plates"). Fenced: only <c>Fauna.BiteMass</c> calls it, and
+        /// only for a species whose shield / super-shield bite is above 0 in a cell whose <c>ArmourIsFood</c> is set (the
+        /// escort sets it on its own worlds). Vessels, explosions and abilities still meet
+        /// <see cref="AbsorbSuperShieldHit"/> unchanged. Recorded in Docs/ECOSYSTEM.md §0.</para>
+        /// </summary>
+        public bool GnawArmour(float bite)
+        {
+            if (destroyed || bite <= 0f) return false;
+            var props = prismProperties;
+            if (props is not { IsShielded: true } && props is not { IsSuperShielded: true }) return false;
+            _armourWear += bite;
+            float need = props.IsSuperShielded ? SuperArmourPoints : 1f;
+            if (_armourWear < need)
+            {
+                StampDeflection(0f);
+                return false;
+            }
+            _armourWear = 0f;
+            DeactivateShields();   // the sanctioned break: both flags clear, the shield-state funnel re-files the prism
+            return true;
+        }
+
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by FIRE burning out (<see cref="PrismBurnManager"/>): same gates, same shield
+        /// semantics (a shielded prism sheds its shield and survives), same scoring - but if it dies, the death raises
+        /// no explosion and no sound, because <c>PrismBurnView</c> already drew it burning away.
+        /// </summary>
+        public void BurnOut(Vector3 impactVector, Domains domain, string playerName)
+        {
+            _burnedOut = true;
+            try
+            {
+                Damage(impactVector, domain, playerName);
+            }
+            finally
+            {
+                _burnedOut = false;
+            }
         }
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)

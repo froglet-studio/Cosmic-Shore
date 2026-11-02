@@ -1,0 +1,269 @@
+<title>Lime Element Shades</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of candidate ladders under a control strip; every card is the same five rows so ladders compare row by row. Single dark look: the game's sky. */
+:root{
+  color-scheme: dark;
+  --void:#03051A; --panel:#0A0D29; --panel-2:#12163C; --line:#222645; --dim:#434C89; --muted:#A3A9D1; --text:#E6E9FF;
+  --cta:#99FF80; --cta-ink:#0A1905; --warn:#FFAE00; --bad:#FF4B3A;
+  --display:'Aldrich','Eurostile','Arial Narrow',system-ui,sans-serif;
+  --ui:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+  --s:10px;
+}
+*{box-sizing:border-box}
+body{background:var(--void);color:var(--text);font-family:var(--ui);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 48px;display:grid;gap:22px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4.5vw,44px);line-height:1.05}
+h2{font-size:22px}
+h3{font-size:17px;letter-spacing:.03em}
+p{margin:0;max-width:70ch}
+.eyebrow{font-weight:600;text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+b{font-weight:600}
+code{font-family:var(--ui);font-weight:500}
+.sliver{clip-path:polygon(var(--s) 0,100% 0,100% calc(100% - var(--s)),calc(100% - var(--s)) 100%,0 100%,0 var(--s))}
+header{display:grid;gap:10px}
+header p{font-size:16px;color:var(--muted)}
+header p b{color:var(--text)}
+.controls{background:var(--panel);padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 22px;align-items:end}
+.ctl{display:grid;gap:4px;min-width:0}
+.ctl label,.lbl{font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--muted)}
+.ctl output{font-variant-numeric:tabular-nums;color:var(--text);font-weight:600;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--cta)}
+select{background:var(--panel-2);color:var(--text);border:1px solid var(--line);font-family:var(--ui);font-size:14px;padding:6px 8px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
+.hint{font-size:12px;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.card{background:var(--panel);padding:14px 16px 16px;display:grid;gap:10px;min-width:0}
+.card.yours{background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--dim)}
+.card .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card .tag{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.card p{font-size:13px;color:var(--muted)}
+.rungs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.rung{display:grid;gap:3px;min-width:0;align-content:start}
+.rung .sw{height:46px}
+.rung .nm{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.rung .hx{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+canvas.field{width:100%;height:auto;aspect-ratio:2/1;display:block;max-width:100%}
+.strip{display:grid;grid-template-columns:62px repeat(4,1fr);gap:3px;align-items:center}
+.strip span{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.strip i{height:16px;display:block}
+.stats{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.stats dt{color:var(--muted)} .stats dd{margin:0;text-align:right;font-weight:600}
+.ok{color:var(--cta)} .mid{color:var(--warn)} .bad{color:var(--bad)}
+.btn{font-family:var(--ui);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--text);background:var(--panel-2);border:0;padding:6px 10px;cursor:pointer;--s:6px;clip-path:polygon(var(--s) 0,100% 0,100% calc(100% - var(--s)),calc(100% - var(--s)) 100%,0 100%,0 var(--s));justify-self:start}
+.btn:hover{background:#1B2150}
+.btn.primary{background:var(--cta);color:var(--cta-ink);font-size:12px;padding:8px 14px}
+.btn.primary:hover{background:#B5FFA3}
+.status{font-size:12px;color:var(--muted)} .status.ok{color:var(--cta)} .status.bad{color:var(--bad)}
+.pickline{grid-column:1/-1}
+#pickText{background:var(--void);border:1px solid var(--line);color:var(--text);font-family:var(--ui);font-size:13px;padding:6px 8px;width:100%;font-variant-numeric:tabular-nums}
+.chart{background:var(--panel);padding:16px 18px;display:grid;gap:10px}
+.chart canvas{width:100%;max-width:760px;height:auto;aspect-ratio:2/1;display:block}
+.notes{background:var(--panel);padding:16px 18px;display:grid;gap:8px;font-size:14px;color:var(--muted)}
+.notes b{color:var(--text)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main class="wrap">
+<header>
+  <div class="eyebrow">Cosmic Shore · Lime family · the four element shades</div>
+  <h1>One lime, four lightnesses</h1>
+  <p>Proposal: the four elements wear <b>one yellow-green hue</b> and differ only in <b>lightness</b>, so a group of them reads as one lime instead of four clashing tones, and the eye sorts them by brightness first. <b>Charge is the darkest rung</b> (its plasma lights it up); Mass, Time and Space climb the ladder in the order you pick. Every shade must rest inside Lime in the colour source of truth, clear of the band.</p>
+  <p class="hint">Today's shades spread across 15° of hue (OKLCh 126–141°), and Charge is the <b>lightest</b> of them, not the darkest. The first card shows them for comparison.</p>
+</header>
+
+<section class="controls sliver" aria-label="Your ladder">
+  <div class="ctl"><label for="hue">Hue</label><input id="hue" type="range" min="75" max="105" step="1" value="84"><output id="hueOut"></output><span class="hint">Yellower ← → greener, inside the old green-yellow window (no blue, no orange)</span></div>
+  <div class="ctl"><label for="lo">Darkest rung (Charge)</label><input id="lo" type="range" min="0.40" max="0.80" step="0.005" value="0.52"><output id="loOut"></output></div>
+  <div class="ctl"><label for="hi">Lightest rung</label><input id="hi" type="range" min="0.60" max="0.93" step="0.005" value="0.90"><output id="hiOut"></output><span class="hint">Capped at the brightest this hue reaches without blue</span></div>
+  <div class="ctl"><label for="order">Order above Charge</label><select id="order"></select><span class="hint">Darkest to lightest</span></div>
+  <div class="ctl save"><button class="btn primary" id="savePick" type="button">Save my pick</button><span class="status" id="saveStatus" role="status">Saves your ladder so Claude can read it.</span></div>
+  <div class="ctl pickline"><label for="pickText">Your ladder as text</label><input id="pickText" type="text" readonly><span class="hint">Copy this into the chat if saving is unavailable.</span></div>
+</section>
+
+<section class="cards" id="cards" aria-label="Candidate ladders"></section>
+
+<section class="chart sliver">
+  <div class="eyebrow">Your ladder inside the Lime family</div>
+  <h2>Lightness against chroma, at your hue</h2>
+  <p class="muted">A vertical slice of OKLab at the chosen hue. Shaded: where the source of truth says Lime, clear of the band. Hatched: the band. The line is the one lime at every brightness; the rungs sit on it, evenly spaced in lightness.</p>
+  <canvas id="slice" width="1520" height="760" aria-label="Lightness against chroma chart with the Lime region and the ladder"></canvas>
+</section>
+
+<section class="notes sliver">
+  <div class="eyebrow">What a pick changes</div>
+  <p><b>Nothing changes until you pick.</b> Then <code>Tools/Build/kite_mote_colors.py</code>, which picks the shades today, would take your ladder instead of its four-corner search, and write it to the same three places: the Wrasse kite view's motes (<code>KiteNavigatorConfig.asset</code>), the Wrasse Lasso Lab, and the elemental crystals (<code>OriginalColorSetSO.ElementalCrystalColors</code>, which the omni crystal's triangles wear too).</p>
+  <p><b>What this page cannot show.</b> In the game the free elemental crystals are dimmed to 0.45 and bloom past a threshold, so a dark rung loses its glow first. Charge's plasma is meant to make up for that. Only the editor can judge the lit, moving result.</p>
+</section>
+</main>
+
+<script>
+(() => {
+'use strict';
+// The colour source of truth (Docs/VesselModels/colour_domains.json): six OKLab score planes, order fire gold lime jade blue ruby.
+const CELLS=[0.001287,0.317596,0.046646,0.032165,0.019962,0.16431,0.229468,0.007794,-0.016072,-0.152405,0.311618,0.017049,0.000796,-0.23786,-0.030262,0.021545,0.00415,0.11425,-0.072808,0.040834,0.074667,0.616661,-0.484357,-0.119387];
+const FAMS=['fire','gold','lime','jade','blue','ruby'], LIME=2, MARGIN=0.05, HALF=MARGIN/2;
+const TODAY={Charge:[0.626,1,0],Mass:[0.3682,0.7764,0],Space:[0.25,1,0],Time:[0.6094,0.8125,0]};
+const ORDERS=[['Mass','Time','Space'],['Mass','Space','Time'],['Time','Mass','Space'],['Time','Space','Mass'],['Space','Mass','Time'],['Space','Time','Mass']];
+const CVD={protan:[[0.152286,1.052583,-0.204868],[0.114503,0.786281,0.099216],[-0.003882,-0.048116,1.051998]],
+  deutan:[[0.367322,0.860646,-0.227968],[0.280085,0.672501,0.047413],[-0.011820,0.042940,0.968881]],
+  tritan:[[1.255528,-0.076749,-0.178779],[-0.078411,0.930809,0.147602],[0.004733,0.691367,0.303900]]};
+
+const lin=v=>v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);
+const gam=v=>{v=Math.min(1,Math.max(0,v));return v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055;};
+function okLin(r,g,b){let l=0.4122214708*r+0.5363325363*g+0.0514459929*b,m=0.2119034982*r+0.6806995451*g+0.1073969566*b,s=0.0883024619*r+0.2817188376*g+0.6299787005*b;
+  l=Math.cbrt(Math.max(l,0));m=Math.cbrt(Math.max(m,0));s=Math.cbrt(Math.max(s,0));
+  return [0.2104542553*l+0.7936177850*m-0.0040720468*s,1.9779984951*l-2.4285922050*m+0.4505937099*s,0.0259040371*l+0.7827717662*m-0.8086757660*s];}
+const ok=c=>okLin(lin(c[0]),lin(c[1]),lin(c[2]));
+function okToLin(L,a,b){let l=L+0.3963377774*a+0.2158037573*b,m=L-0.1055613458*a-0.0638541728*b,s=L-0.0894841775*a-1.2914855480*b;l=l*l*l;m=m*m*m;s=s*s*s;
+  return [4.0767416621*l-3.3077115913*m+0.2309699292*s,-1.2684380046*l+2.6097574011*m-0.3413193965*s,-0.0041960863*l-0.7034186147*m+1.7076147010*s];}
+const hex=c=>'#'+c.map(v=>Math.round(Math.min(1,Math.max(0,v))*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+const css=c=>`rgb(${c.map(v=>Math.round(Math.min(1,Math.max(0,v))*255)).join(',')})`;
+const lch=c=>{const o=ok(c);return [o[0],Math.hypot(o[1],o[2]),(Math.atan2(o[2],o[1])*180/Math.PI+360)%360];};
+function sim(c,kind){ if(kind==='grey'){ const L=ok(c)[0]; const g=gam(L*L*L); return [g,g,g]; }
+  const M=CVD[kind], x=c.map(lin); return [0,1,2].map(i=>gam(M[i][0]*x[0]+M[i][1]*x[1]+M[i][2]*x[2])); }
+// which family, and how far inside its border (OKLab); band when under HALF
+function classifyLab(o){
+  const sc=[0,1,2,3,4,5].map(f=>CELLS[f*4]*o[0]+CELLS[f*4+1]*o[1]+CELLS[f*4+2]*o[2]+CELLS[f*4+3]);
+  let f=0; for(let g=1;g<6;g++) if(sc[g]>sc[f]) f=g;
+  let d=Infinity; for(let g=0;g<6;g++){ if(g===f) continue; const dn=Math.hypot(CELLS[f*4]-CELLS[g*4],CELLS[f*4+1]-CELLS[g*4+1],CELLS[f*4+2]-CELLS[g*4+2]); d=Math.min(d,(sc[f]-sc[g])/dn); }
+  return {fam: d>=HALF? f : -1, top:f, dist:d};
+}
+const classify=c=>classifyLab(ok(c));
+
+// One lime at several brightnesses: scaling linear RGB keeps the OKLab hue exactly, and L scales with the cube root.
+function hsvBase(H){ const r0=(120-H)/60; return [lin(r0),1,0]; }
+const topL=H=>ok(hsvBase(H).map(gam))[0];
+function atL(H,L){ const b=hsvBase(H), k=Math.pow(Math.min(L,topL(H))/topL(H),3); return b.map(v=>gam(k*v)); }
+function ladder(H,lo,hi,order){
+  const hiC=Math.min(hi,topL(H)), names=['Charge',...order];
+  return names.map((n,i)=>[n,atL(H,lo+(hiC-lo)*i/3)]);
+}
+
+const PRESETS=[
+  {name:'Even ladder', note:'The hue of the game\'s CTA lime, the full usable range.', H:84, lo:0.52, hi:0.902},
+  {name:'Bright ladder', note:'Same hue, all four kept vivid; steps are smaller.', H:84, lo:0.64, hi:0.902},
+  {name:'Yellow-green', note:'Leaning toward yellow, which reaches the lightest top.', H:78, lo:0.52, hi:0.915},
+  {name:'Green-yellow', note:'Leaning toward green; the darkest rung has to stay higher to remain Lime.', H:96, lo:0.56, hi:0.882},
+];
+
+const els={hue:hueIn(),lo:document.getElementById('lo'),hi:document.getElementById('hi'),order:document.getElementById('order')};
+function hueIn(){ return document.getElementById('hue'); }
+ORDERS.forEach((o,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent='Charge · '+o.join(' · '); els.order.appendChild(op); });
+
+function jnd(x){ return (x/0.02).toFixed(1); }
+function statsOf(set){
+  const cols=set.map(s=>s[1]), labs=cols.map(ok), ls=cols.map(lch);
+  const hues=ls.map(l=>l[2]); const hueSpread=Math.max(...hues)-Math.min(...hues);
+  const byL=[...labs].sort((a,b)=>a[0]-b[0]); let minStep=Infinity; for(let i=1;i<4;i++) minStep=Math.min(minStep,byL[i][0]-byL[i-1][0]);
+  const minDE=kind=>{ const L=cols.map(c=>kind? ok(sim(c,kind)) : ok(c)); let m=Infinity; for(let i=0;i<4;i++) for(let j=i+1;j<4;j++) m=Math.min(m,Math.hypot(L[i][0]-L[j][0],L[i][1]-L[j][1],L[i][2]-L[j][2])); return m; };
+  let clear=Infinity, allLime=true; cols.forEach(c=>{ const r=classify(c); if(r.fam!==LIME) allLime=false; clear=Math.min(clear,r.top===LIME? r.dist-HALF : -1); });
+  return {hueSpread,minStep,de:{typ:minDE(null),protan:minDE('protan'),deutan:minDE('deutan'),tritan:minDE('tritan'),grey:minDE('grey')},clear,allLime};
+}
+function rate(v,good,ok2){ return v>=good?'ok':v>=ok2?'mid':'bad'; }
+
+// a field of motes on the game's sky, the four shades mixed and in little clumps, as the kite view and a crystal spill show them
+function drawField(cv,set,seed){
+  const g=cv.getContext('2d'), W=cv.width, Hh=cv.height;
+  let s=seed>>>0; const rnd=()=>{ s+=0x6D2B79F5; let t=s; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; };
+  const sky=g.createLinearGradient(0,0,0,Hh); sky.addColorStop(0,'#020414'); sky.addColorStop(1,'#060a26'); g.fillStyle=sky; g.fillRect(0,0,W,Hh);
+  for(let i=0;i<60;i++){ g.fillStyle=`rgba(200,210,255,${0.15+rnd()*0.3})`; g.fillRect(rnd()*W,rnd()*Hh,1.5,1.5); }
+  const clumps=[[0.22,0.45],[0.52,0.38],[0.78,0.6],[0.38,0.75]];
+  for(let i=0;i<64;i++){
+    const c=clumps[i%4], x=(c[0]+(rnd()-0.5)*0.26)*W, y=(c[1]+(rnd()-0.5)*0.42)*Hh, col=set[Math.floor(rnd()*4)][1], r=(5+rnd()*7)*W/600;
+    g.save(); g.shadowColor=css(col); g.shadowBlur=r*1.6; g.fillStyle=css(col); g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); g.restore();
+  }
+}
+
+function cardHtml(title,note,set,cls,presetIdx){
+  const st=statsOf(set);
+  const strip=(label,kind)=>`<div class="strip"><span>${label}</span>${set.map(([n,c])=>`<i style="background:${css(kind?sim(c,kind):c)}" title="${n}"></i>`).join('')}</div>`;
+  return `<article class="card sliver ${cls||''}">
+    <div class="top"><h3>${title}</h3><span class="tag">${st.allLime? `<span class="ok">All in Lime</span>` : `<span class="bad">Not all in Lime</span>`}</span></div>
+    <p>${note}</p>
+    <div class="rungs">${set.map(([n,c])=>{ const l=lch(c); return `<div class="rung"><div class="sw" style="background:${css(c)}"></div><div class="nm">${n}</div><div class="hx">${hex(c)} · L ${l[0].toFixed(2)}</div></div>`; }).join('')}</div>
+    <canvas class="field" width="600" height="300" aria-label="${title}: the four shades mixed on the game's sky"></canvas>
+    ${strip('Lightness','grey')}${strip('Protan','protan')}${strip('Deutan','deutan')}${strip('Tritan','tritan')}
+    <dl class="stats">
+      <dt>Hue spread (OKLCh)</dt><dd class="${st.hueSpread<1?'ok':st.hueSpread<6?'mid':'bad'}">${st.hueSpread.toFixed(1)}°</dd>
+      <dt>Smallest lightness step</dt><dd class="${rate(st.minStep,0.08,0.05)}">${jnd(st.minStep)} JND</dd>
+      <dt>Closest pair, typical / lightness only</dt><dd class="${rate(Math.min(st.de.typ,st.de.grey),0.08,0.05)}">${jnd(st.de.typ)} / ${jnd(st.de.grey)} JND</dd>
+      <dt>Closest pair, protan / deutan / tritan</dt><dd class="${rate(Math.min(st.de.protan,st.de.deutan,st.de.tritan),0.08,0.05)}">${jnd(st.de.protan)} / ${jnd(st.de.deutan)} / ${jnd(st.de.tritan)} JND</dd>
+      <dt>Least room inside Lime</dt><dd class="${st.clear>=0.01?'ok':st.clear>=0?'mid':'bad'}">${st.clear>=0? jnd(st.clear)+' JND' : 'outside'}</dd>
+    </dl>
+    ${presetIdx!=null? `<button class="btn" data-preset="${presetIdx}">Load into the sliders</button>` : ''}
+  </article>`;
+}
+
+const cardsEl=document.getElementById('cards');
+function render(){
+  const H=+els.hue.value, lo=+els.lo.value, hiMax=topL(H), hi=Math.min(+els.hi.value,hiMax), order=ORDERS[+els.order.value];
+  document.getElementById('hueOut').textContent=`HSV ${H}° · OKLCh ${lch(atL(H,0.8))[2].toFixed(0)}°`;
+  document.getElementById('loOut').textContent=`L ${lo.toFixed(3)}`;
+  document.getElementById('hiOut').textContent=`L ${hi.toFixed(3)}${+els.hi.value>hiMax?' (capped)':''}`;
+  const sets=[]; let html='';
+  const yours=ladder(H,lo,hi,order); sets.push(yours); html+=cardHtml('Your ladder',`HSV hue ${H}°, lightness ${lo.toFixed(2)} to ${hi.toFixed(2)}, evenly spaced.`,yours,'yours',null);
+  const today=[['Charge',TODAY.Charge],['Mass',TODAY.Mass],['Time',TODAY.Time],['Space',TODAY.Space]]; sets.push(today);
+  html+=cardHtml('Today',`The shipped shades (kite_mote_colors.py): four hues, Charge the lightest.`,today,'',null);
+  PRESETS.forEach((p,i)=>{ const s=ladder(p.H,p.lo,p.hi,order); sets.push(s); html+=cardHtml(p.name,p.note+` HSV ${p.H}°, L ${p.lo.toFixed(2)}–${Math.min(p.hi,topL(p.H)).toFixed(2)}.`,s,'',i); });
+  cardsEl.innerHTML=html;
+  current={hsvHue:H, oklchHue:+lch(atL(H,0.8))[2].toFixed(1), darkestL:+lo.toFixed(3), lightestL:+hi.toFixed(3), order:['Charge',...order],
+    shades:Object.fromEntries(yours.map(([n,c])=>[n,{hex:hex(c),rgb:c.map(v=>+v.toFixed(4)),L:+lch(c)[0].toFixed(3)}]))};
+  document.getElementById('pickText').value=`hue HSV ${H} · L ${lo.toFixed(3)}–${hi.toFixed(3)} · `+yours.map(([n,c])=>n+' '+hex(c)).join(', ');
+  cardsEl.querySelectorAll('canvas.field').forEach((cv,i)=>drawField(cv,sets[i],1234));
+  drawSlice(H,yours);
+}
+cardsEl.addEventListener('click',e=>{ const b=e.target.closest('[data-preset]'); if(!b) return; const p=PRESETS[+b.dataset.preset]; els.hue.value=p.H; els.lo.value=p.lo; els.hi.value=p.hi; render(); window.scrollTo({top:0,behavior:'smooth'}); });
+['input','change'].forEach(ev=>[els.hue,els.lo,els.hi,els.order].forEach(el=>el.addEventListener(ev,render)));
+
+// L-chroma slice at the hue: Lime clear / band / other, the one-lime line, and the rungs
+function drawSlice(H,set){
+  const cv=document.getElementById('slice'), g=cv.getContext('2d'), W=cv.width, Hh=cv.height, pad={l:90,r:30,t:24,b:70};
+  const hueDeg=lch(atL(H,0.8))[2]*Math.PI/180, Cmax=0.32;
+  const X=c=>pad.l+c/Cmax*(W-pad.l-pad.r), Y=L=>Hh-pad.b-L*(Hh-pad.t-pad.b);
+  g.fillStyle='#03051A'; g.fillRect(0,0,W,Hh);
+  const img=g.getImageData(0,0,W,Hh), px=img.data, step=2;
+  for(let y=pad.t;y<Hh-pad.b;y+=step) for(let x=pad.l;x<W-pad.r;x+=step){
+    const L=(Hh-pad.b-y)/(Hh-pad.t-pad.b), C=(x-pad.l)/(W-pad.l-pad.r)*Cmax, a=C*Math.cos(hueDeg), b=C*Math.sin(hueDeg);
+    const l=okToLin(L,a,b); if(l.some(v=>v<-1e-4||v>1+1e-4)) continue;
+    const r=classifyLab([L,a,b]); const col=l.map(gam);
+    let R,G,B;
+    if(r.fam===LIME){ R=col[0]*255;G=col[1]*255;B=col[2]*255; }
+    else if(r.fam<0){ const st=((x+y)>>1)%6<1; R=st?120:28;G=st?126:30;B=st?150:52; }
+    else { R=col[0]*60+10;G=col[1]*60+10;B=col[2]*60+26; }
+    for(let dy=0;dy<step;dy++) for(let dx=0;dx<step;dx++){ const p=((y+dy)*W+x+dx)*4; px[p]=R;px[p+1]=G;px[p+2]=B;px[p+3]=255; }
+  }
+  g.putImageData(img,0,0);
+  g.strokeStyle='#434C89'; g.lineWidth=2; g.strokeRect(pad.l,pad.t,W-pad.l-pad.r,Hh-pad.t-pad.b);
+  g.fillStyle='#A3A9D1'; g.font='26px "Chakra Petch", sans-serif'; g.textAlign='right';
+  for(let L=0;L<=1.0001;L+=0.2){ g.fillText(L.toFixed(1),pad.l-12,Y(L)+9); }
+  g.textAlign='center'; for(let c=0;c<=0.3001;c+=0.1){ g.fillText(c.toFixed(1),X(c),Hh-pad.b+34); }
+  g.fillText('chroma (OKLab)',(pad.l+W-pad.r)/2,Hh-12); g.save(); g.translate(28,(pad.t+Hh-pad.b)/2); g.rotate(-Math.PI/2); g.fillText('lightness L',0,0); g.restore();
+  // the one-lime line
+  g.strokeStyle='rgba(230,233,255,.7)'; g.lineWidth=3; g.setLineDash([10,8]); g.beginPath();
+  for(let i=0;i<=40;i++){ const c=atL(H,0.02+i/40*(topL(H)-0.02)), l=lch(c); const x=X(l[1]), y=Y(l[0]); i?g.lineTo(x,y):g.moveTo(x,y); } g.stroke(); g.setLineDash([]);
+  set.forEach(([n,c])=>{ const l=lch(c), x=X(l[1]), y=Y(l[0]); g.fillStyle=css(c); g.strokeStyle='#E6E9FF'; g.lineWidth=4; g.beginPath(); g.arc(x,y,16,0,Math.PI*2); g.fill(); g.stroke();
+    g.fillStyle='#E6E9FF'; g.textAlign='left'; g.font='600 26px "Chakra Petch", sans-serif'; g.fillText(n,x+26,y+9); });
+}
+
+let current=null;
+render();
+// Save the pick where a Claude session can read it (db capability), one document per save.
+const saveBtn=document.getElementById('savePick'), saveStatus=document.getElementById('saveStatus');
+const say=(t,c)=>{ saveStatus.className='status'+(c?' '+c:''); saveStatus.textContent=t; };
+let db=null, me=null;
+(async()=>{ try{ if(window.claude&&window.claude.use){ db=await window.claude.use('db'); const user=await window.claude.use('user'); if(user) me=await user.id(); } }catch(e){}
+  if(!db){ saveBtn.disabled=true; say('Saving needs the page open on claude.ai while signed in. Copy the text line instead.'); } })();
+saveBtn.addEventListener('click',async()=>{
+  if(!db||!current) return; saveBtn.disabled=true; say('Saving…');
+  try{ await db.collection('picks').add({...current, authorId:me, savedAt:new Date().toISOString()}); say('Saved. Tell Claude it is saved.','ok'); }
+  catch(e){ say(e&&e.code==='invalid_argument'? 'This page did not accept the save: your access may be view-only.' : 'Could not save just now. Try again in a moment.','bad'); }
+  finally{ saveBtn.disabled=false; }
+});
+})();
+</script>

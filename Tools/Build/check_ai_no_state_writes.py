@@ -38,8 +38,13 @@ SCOPES = [
     "Assets/_Scripts/Controller/AI/SkimRace",
     "Assets/_Scripts/Utility/AITraining",
     "Assets/_Scripts/Editor/AI",
+    # The in-game Third Eye (dev builds): a viewer of every pilot; it may move only the camera it borrows.
+    "Assets/_Scripts/Controller/Camera/ThirdEye",
     # The microgame drill: its Ghost Demo presses a control for the autopilot (TRAINING_PLAN §10.7).
     "Assets/_Scripts/Controller/Arcade/Preview/Drill",
+    # Every hull's boost policy: each presses its vessel's abilities through the replicated press (2026-11-02, with the
+    # Thresher's aimed launch, which hands its executor an aim and nothing else).
+    "Assets/_Scripts/Controller/AI/Boost",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.
@@ -69,6 +74,8 @@ REFLECTION = re.compile(r"\.SetValue\s*\(|\bBindingFlags\b|\bSendMessage\s*\(|\b
 
 # (path suffix, receiver regex, member, reason) - each a reviewed exception.
 ALLOW = [
+    ("Camera/ThirdEye/ThirdEyeHud.cs", r"^Eye\.Fly$", "Speed",
+     "the AI Diagnose fly-speed slider sets the dev free-fly CAMERA speed (FreeFlyCamera), never a vessel"),
     ("Utility/AITraining/Pilot/TrainingPilot.cs", r"^_ctx$", "Speed",
      "_ctx is the genome's own DecisionContext, filled from a READ of _status.Speed"),
     ("Utility/AITraining/Pilot/TrainingPilot.cs", r"^_ctx$", "IsBoosting",
@@ -80,8 +87,8 @@ ALLOW = [
     ("Utility/AITraining/Runner/TrainingAutoLauncher.cs", r"^Time$", "timeScale",
      "overnight TRAINING batches only (never a benchmark); applies to every pilot equally, "
      "refused while another client is connected, restored after the batch"),
-    ("Editor/AI/ThirdEyeWindow.cs", r"^_cam\.transform$", "SetPositionAndRotation",
-     "_cam is the Third Eye window's own hidden camera rig, never a vessel; it only watches"),
+    ("Controller/Camera/ThirdEye/ThirdEye.cs", r"^_cam\.transform$", "SetPositionAndRotation",
+     "_cam is the game camera the Third Eye borrows while F2 is on (its own driver suspended), never a vessel"),
 ]
 
 ASSIGN = re.compile(
@@ -231,7 +238,7 @@ def self_test():
     if not scan_text("Assets/_Scripts/Utility/AITraining/Pilot/TrainingPilot.cs", "_status.Speed = s;"):
         print("SELF-TEST FAIL: exception leaked to another receiver")
         bad += 1
-    eye = "Assets/_Scripts/Editor/AI/ThirdEyeWindow.cs"
+    eye = "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEye.cs"
     if scan_text(eye, "_cam.transform.SetPositionAndRotation(p, q);"):
         print("SELF-TEST FAIL: reviewed call exception not honoured")
         bad += 1

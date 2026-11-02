@@ -60,5 +60,9 @@ if [ "${1:-}" = "--self-test" ]; then
   plant "Hurry Up ignored" rules 's/return _config.PhaseTimer(phase) \* (1f - cut);/return _config.PhaseTimer(phase);/'
   plant "the vessel phase does not end on a debuff" rules 's/(Phase == StarlingPhase.OpposingVessels \&\& DebuffedThisPhase)/false/'
   plant "the hand in the wrong order" rules 's/{ Element.Charge, Element.Mass, Element.Space, Element.Time }/{ Element.Mass, Element.Charge, Element.Space, Element.Time }/'
+  plant "an element hand offers one card" rules 's/HandSize = Mathf.Min(ElementHandSize, _scratch.Count);/HandSize = Mathf.Min(1, _scratch.Count);/'
+  plant "an element hand can offer a card twice" rules 's/(_scratch\[i\], _scratch\[j\]) = (_scratch\[j\], _scratch\[i\]);/_scratch[i] = _scratch[j];/'
+  plant "the first pick sets no draw element" rules 's/if (DrawElement == Element.None) DrawElement = c.Card.Element;//'
+  plant "the draw element changes with a hand up" rules 's/if (HasHand || SlotOf(element) < 0) return false;/if (SlotOf(element) < 0) return false;/'
   echo "starling_rules_parity --self-test: every planted change failed the test"
 fi

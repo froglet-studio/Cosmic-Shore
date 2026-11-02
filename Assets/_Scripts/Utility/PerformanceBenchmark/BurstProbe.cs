@@ -62,7 +62,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// <summary>The console handler. No arguments.</summary>
         public static string Handle(string[] args) => Report();
 
-        public static string Report()
+        public static string Report() => ReportWithoutLog() + " | " + ScanLog();
+
+        /// <summary>
+        /// <see cref="Report"/> without its Editor.log scan: the switches and the probe job, both main-thread and cheap.
+        /// The capture runs the scan off the main thread instead (<see cref="ScanLogAsync"/>): reading the whole log there
+        /// stalled the editor ~50-70 ms at the start of every auto-capture (90 s into a scene; the 2026-11-02 PC playtest
+        /// found the gap at 83.5 s race time in every race), and the log grows all session.
+        /// </summary>
+        public static string ReportWithoutLog()
         {
             var sb = new StringBuilder("burst:");
             sb.Append(" enabled=").Append(BurstCompiler.IsEnabled);
@@ -76,8 +84,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 #endif
             sb.Append(" | probe job in Assembly-CSharp: Run() ").Append(Probe(run: true));
             sb.Append(", Schedule() ").Append(Probe(run: false));
-            sb.Append(" | ").Append(ScanLog());
             return sb.ToString();
+        }
+
+        /// <summary>The Editor.log scan of <see cref="Report"/> on a worker thread. The path is read here, on the main
+        /// thread (a Unity API); the read and <see cref="LogReasons"/> touch no Unity API.</summary>
+        public static System.Threading.Tasks.Task<string> ScanLogAsync()
+        {
+            string path = Application.consoleLogPath;
+            return System.Threading.Tasks.Task.Run(() => ScanLogAt(path));
         }
 
         const string ReloadMarker = "Domain Reload Profiling:";
@@ -153,9 +168,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return b > a ? line.Substring(a + 1, b - a - 1) : "?";
         }
 
-        static string ScanLog()
+        static string ScanLog() => ScanLogAt(Application.consoleLogPath);
+
+        static string ScanLogAt(string path)
         {
-            string path = Application.consoleLogPath;
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) return "log: none to read";
             try
             {

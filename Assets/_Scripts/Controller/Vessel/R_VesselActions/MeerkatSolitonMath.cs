@@ -8,8 +8,8 @@ namespace CosmicShore.Gameplay
     /// §9), ported line for line from the Vessel Studio's Meerkat page (<c>Docs/Studios/VesselStudio/meerkat.html</c>, the
     /// "Garrett's kit" functions <c>kitOverrides</c>, <c>perpBasis</c>, <c>kitPortal</c>, <c>kitAddSentinel</c>,
     /// <c>kitZaps</c>, <c>kitTryRide</c>). No scene state: <c>MeerkatSolitonMathTests</c> holds it to the page's own numbers.
-    /// The soliton's surface area and its swallow and fire are round 23's (<see cref="MeerkatWormholeMath.SurfaceAreaThroat"/>,
-    /// <see cref="MeerkatWormholeMath.PullVelocity"/>, <see cref="MeerkatSwallow"/>), not this class's.
+    /// The soliton's surface area and its swallow and fire are round 23's (<see cref="SolitonTunnelShapeMath.SurfaceAreaThroat"/>,
+    /// <see cref="SolitonTunnelShapeMath.PullVelocity"/>, <see cref="MeerkatSwallow"/>), not this class's.
     /// </summary>
     public static class MeerkatSolitonMath
     {

@@ -398,14 +398,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The lens when the config wants it and its shader loads; otherwise the plain black
-        /// sphere. Built once — a config change mid-hole takes effect on the next spawn.
+        /// The drawn look (Docs/BLACK_HOLE.md §5.4): in the Mobile look (the default) nothing is built here — the
+        /// registry's driver draws the hole as one small forward mesh (<see cref="BlackHoleGlow"/>), no space warping;
+        /// in the Studio lens look the full-screen lens (<see cref="BlackHoleLens"/>). When neither can draw, the plain
+        /// black / white sphere. Built once — a config change mid-hole takes effect on the next spawn.
         /// </summary>
         void EnsureVisual()
         {
             if (_visualBuilt) return;
             _visualBuilt = true;
-            if (BlackHoleRegistry.Config.LensEnabled)
+            var config = BlackHoleRegistry.Config;
+            if (BlackHoleGlow.Active(config)) return;
+            if (config.LensEnabled && config.SpaceWarp)
                 _lens = BlackHoleLens.Create(this);
             if (_lens == null)
             {

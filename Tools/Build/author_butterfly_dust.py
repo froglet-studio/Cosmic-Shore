@@ -137,9 +137,12 @@ CAPSULE_LEN_FULL = 150.0      # ... Space 10: 150 u (Space 15: 195 u), Space's O
 CAPSULE_LEN_FLOOR = 20.0      # the deficit band cannot collapse it
 BLOOM_SCALE = 900.0           # AOE diameter: a 450 u radius heart-kill -- "large"
 BLOOM_SECONDS = 0.6           # a large bloom is allowed to be seen
-CHARGE_BITE_REST = 0.5        # Charge 0: half the priced bite ...
-CHARGE_BITE_FULL = 2.0        # ... Charge 10: double it (Charge 15: 2.75x)
-CHARGE_BITE_FLOOR = 0.25
+# Charge is the dust's SHRED RATE (2026-10-31, Garrett: "shred a random element petal every second and
+# decrease the cooldown to .1 seconds at charge 10"): one petal of one random held element per interval.
+SHRED_INTERVAL_REST = 1.0     # Charge 0: one petal a second ...
+SHRED_INTERVAL_FULL = 0.1     # ... Charge 10: ten a second
+SHRED_INTERVAL_FLOOR = 0.1    # and never faster above Charge 10
+SHRED_PETALS = 1
 BLOOM_STRIP_COOLDOWN = 1.0    # one bloom pays a victim once anyway (ExplosionImpactor._vesselsHit)
 # The crystal catcher: an always-on sphere around the hull whose ONLY job is to be the skimmer an
 # ElementalCrystalImpactor collects against. Fixed size (no element owns it -- Space is the dust's
@@ -262,12 +265,25 @@ wither = re.sub(r"(?m)^  faunaOnly: \d$", "  faunaOnly: 0", wither)
 wither = re.sub(r"(?m)^  sparesOwnDomain: \d$", "  sparesOwnDomain: 1", wither)
 out[DUST_WITHER] = wither
 
+# The shred (VesselElementalDebuffBySkimmerEffectSO): the retired bite's keys (a slice of every element,
+# Charge-scaled, and Monarch's deeper-bite upgrade) are stripped, and the shred's keys written before the
+# sound's anti-spam cooldown.
 debuff = rd(DUST_DEBUFF)
-debuff = re.sub(r"(?m)^  biteScale:\n(?:    [^\n]*\n)+", "", debuff)
-debuff = debuff.replace("  upgradeElement:",
-    "  biteScale:\n" + elemental(4, 1, 1, CHARGE_BITE_REST, CHARGE_BITE_FULL, 1, CHARGE_BITE_FLOOR)
-    + "  upgradeElement:", 1)
+for retired in ("biteScale", "shredInterval"):
+    debuff = re.sub(rf"(?m)^  {retired}:\n(?:    [^\n]*\n)+", "", debuff)
+for retired in ("debuffMagnitude", "debuffDuration", "upgradeElement", "upgradeBiteMultiplier", "petalsPerShred"):
+    debuff = re.sub(rf"(?m)^  {retired}: [^\n]*\n", "", debuff)
+debuff = debuff.replace("  cooldown:",
+    f"  petalsPerShred: {SHRED_PETALS}\n  shredInterval:\n"
+    + elemental(4, 1, SHRED_INTERVAL_REST, SHRED_INTERVAL_REST, SHRED_INTERVAL_FULL, 1, SHRED_INTERVAL_FLOOR)
+    + "  cooldown:", 1)
 out[DUST_DEBUFF] = debuff
+
+# The dust's reporter re-runs every frame a rival stays inside (the shred's standing contact).
+combat = rd(DUST_COMBAT)
+combat = re.sub(r"(?m)^  repeatWhileInside: \d\n", "", combat)
+combat = combat.replace("  requireFasterThanVictim: 0\n", "  requireFasterThanVictim: 0\n  repeatWhileInside: 1\n", 1)
+out[DUST_COMBAT] = combat
 
 # The ally half of a vessel contact (2026-10-29, Garrett: "have the dust clear silence and debuffs of allies"):
 # TigerMothDustCleanseAllyBySkimmerEffect.asset, authored by hand and held by author_tigermoth_assets.py --check.
@@ -686,8 +702,10 @@ if f"_nearFieldSkimmer: {{fileID: 281340694002912670}}" not in bp:
     errors.append("the near-field skimmer wire moved -- it must keep pointing at the stripped Skimmer")
 if CAPSULE_LEN_FULL <= CAPSULE_WIDTH:
     errors.append("a capsule shorter than its width is a sphere -- Space would grow nothing")
-if CHARGE_BITE_REST * CHARGE_BITE_FLOOR <= 0:
-    errors.append("bite floor must be positive")
+if not (0 < SHRED_INTERVAL_FLOOR <= SHRED_INTERVAL_FULL < SHRED_INTERVAL_REST):
+    errors.append("the shred must quicken with Charge and never reach a zero interval")
+if "  repeatWhileInside: 1\n" not in out[DUST_COMBAT]:
+    errors.append("the dust reporter does not repeat while a rival stays inside -- the shred would take once per pass")
 # The bloom's prism dust only runs through ExplosionImpactor.SweepPrismEffects, which sweeps ONLY a
 # blast that does not touch mass itself -- on an affectsPrisms blast the dust would never fire.
 if not re.search(r"(?m)^  affectsPrisms: 0$", out[BLOOM_PREFAB]):

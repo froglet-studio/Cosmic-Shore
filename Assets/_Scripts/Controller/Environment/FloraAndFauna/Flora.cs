@@ -693,7 +693,7 @@ namespace CosmicShore.Gameplay
         /// local death. Attribution is deliberately empty: the kill was scored on the server,
         /// and a mirrored death must not score again.
         /// </summary>
-        public void KillReplicated() => Die();
+        public void KillReplicated() => DieOnce();
 
         /// <summary>
         /// Publishes this plant's death to the replicated slot list before running it, so every

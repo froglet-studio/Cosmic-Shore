@@ -145,7 +145,10 @@ def sheet(spec, c, out):
     return out
 
 
-ORDER = ("Charge", "Mass", "Space", "Time")   # the lockup, left to right (VesselHUDView.AbilityDisplayOrder)
+ORDER = ("Omni", "Charge", "Mass", "Space", "Time")   # the lockup, left to right: the omni crystal card sits left of
+# Charge on every vessel (AbilityLockupView: core cards at negative slots), then VesselHUDView.AbilityDisplayOrder.
+# A spec with no LOCKUP["Omni"] shows it LOCKED under its emblem, which is what the HUD draws for a hull with no
+# omniAbilitySprite (Garrett 2026-10-31: "you are still forgetting to show the omnicrystal totem").
 
 
 def _lockup(spec, slot_element, slot_icon, slot_gauge, domain_key, domains, slot_marks=None, slot_style="lines"):

@@ -13,11 +13,13 @@ namespace CosmicShore.Gameplay
     /// <c>SniperScopeActionExecutor.IsScoped</c>: scoped fires the rifle, unscoped still cloaks.
     /// Neither ability has to know about the other's wiring — each asks the scope.</para>
     ///
-    /// <para><b>Element → parameter: CHARGE owns this ability</b>, and the parameter is the
-    /// RECOVERY — how long the pilot waits between shots. Charge is threat/energy fleet-wide, and
-    /// on a weapon whose per-shot effect is already absolute (one round, one prism, whatever its
-    /// armour) the only honest axis left is how often you get to use it. Its level-5 upgrade is
-    /// <b>Pierce</b>: the round no longer stops at the first prism.</para>
+    /// <para><b>Element → parameter: CHARGE sets the RECOVERY</b> — how long the pilot waits
+    /// between shots. Charge is threat/energy fleet-wide, and on a weapon whose per-shot effect is
+    /// already absolute (everything in the cone, whatever its armour) the only honest axis left is
+    /// how often you get to use it. The shot rides the SPACE card with the cloak (the same trigger,
+    /// scoped) and the scope is the CHARGE card (Garrett, 2026-10-30); Charge 5 is the scope's
+    /// Hunter's Sight afterimages (<see cref="ScopeAfterimages"/>). The old Pierce is retired:
+    /// armour is a target from the start.</para>
     ///
     /// <para><b>Why this is allowed to break a super-shield.</b> Super-shielded mass is invulnerable
     /// to <c>Prism.Damage</c> outright; the ONE sanctioned teardown is to drop the shields first
@@ -63,10 +65,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] private float minPathRadius = 6f;
 
         [Tooltip("How many prisms the round destroys before it stops, at EVERY tier. 0 is " +
-                 "unlimited - everything the cone contains. What the Charge-5 Pierce upgrade buys " +
-                 "is not this number but what counts as a target: below it, super-shielded mass " +
-                 "is not one and the round flies past it; at it, the round takes the armour off " +
-                 "and destroys the prism.")]
+                 "unlimited - everything the cone contains, super-shielded mass included.")]
         [SerializeField, Min(0)] private int pierceCount;
 
         [Header("Vessel strip (the Serpent's anti-vessel verb)")]

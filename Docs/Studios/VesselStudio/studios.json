@@ -91,7 +91,7 @@
       "file": "meerkat.html",
       "kind": "design studio - round 2",
       "chip": "design studio · round 2",
-      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the formed tunnel as a bridge of spindles over glass and the space round it bent, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatWormholeConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
+      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the formed tunnel as a bridge of spindles over glass and the space round it bent, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatSolitonConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
       "spec": [
         {
           "k": "Ability",
@@ -200,6 +200,35 @@
       "preview": "previews/goby.png",
       "accent": "#ff8a3d",
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
+    },
+    {
+      "id": "serpent",
+      "name": "Serpent",
+      "file": "serpent.html",
+      "kind": "built vessel - studio round 1 (its Time game, a design)",
+      "chip": "built vessel · round 1",
+      "summary": "The Serpent and its Time game, a dirty ring race: every gate holds several rings and any Serpent can plug one behind it with a seed wall (cloak just past it, or stop in it). Shoot the wall down with the scoped Sniper Shot, ram it, or take another ring; every round costs a crystal off the racing line. AI Serpents at Easy, Medium or Hard fly five play styles and play dirty too.",
+      "spec": [
+        {
+          "k": "Flight",
+          "v": "50 u/s · pellets stack to 9×"
+        },
+        {
+          "k": "Kit",
+          "v": "Scope · Sniper Shot · Seed Wall · Cloak"
+        },
+        {
+          "k": "Game",
+          "v": "Serpent Time (a design)"
+        },
+        {
+          "k": "Status",
+          "v": "the race is lab-only; the Serpent ships"
+        }
+      ],
+      "preview": "previews/serpent.png",
+      "accent": "#9be15d",
+      "docs": "Docs/Studios/SERPENT_TIME.md"
     },
     {
       "id": "orca",
@@ -689,7 +718,6 @@
     "Manta",
     "Dolphin",
     "Rhino",
-    "Serpent",
     "Sparrow",
     "Urchin",
     "Grizzly",
@@ -709,6 +737,7 @@
     "studio-kinds.js",
     "studio-vessel.js",
     "omega-studio.js",
-    "siphonophore-studio.js", "studio-audio.js"
+    "siphonophore-studio.js",
+    "studio-audio.js"
   ]
 }

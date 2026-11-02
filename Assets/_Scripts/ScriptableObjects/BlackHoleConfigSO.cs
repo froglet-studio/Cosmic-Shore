@@ -22,6 +22,15 @@ namespace CosmicShore.ScriptableObjects
     /// Place the asset at <c>Resources/BlackHoleConfig</c>. With no asset the defaults below
     /// apply, so a spawn works with nothing authored.
     /// </summary>
+    /// <summary>How holes and waves are drawn (<see cref="BlackHoleConfigSO.Look"/>). Serialized: values are stable.</summary>
+    public enum HoleLook
+    {
+        /// <summary>Cheap local meshes, no space warping (BlackHoleGlow.shader). The default.</summary>
+        Mobile = 0,
+        /// <summary>The Vessel Studio's full-screen lens, spaghettification and waves (BlackHoleLens.shader).</summary>
+        StudioLens = 1,
+    }
+
     [CreateAssetMenu(fileName = "BlackHoleConfig", menuName = "ScriptableObjects/Environment/Black Hole Config")]
     public class BlackHoleConfigSO : ScriptableObject
     {
@@ -120,8 +129,35 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float maxVesselPullSpeed = 90f;
 
-        [Header("Spaghettification (photons only — Docs/BLACK_HOLE.md §5)")]
-        [Tooltip("Master switch for the tidal stretch. Off publishes an empty bank, which makes the " +
+        [Header("Look (Docs/BLACK_HOLE.md §5.4)")]
+        [Tooltip("How holes and their waves are DRAWN — physics never reads this. Mobile (the default, Yash 2026-10-29): " +
+                 "no space warping at all — no screen-space lens, no prism or hull stretch, no view stretch, no " +
+                 "full-screen wash, no depth texture; each hole, wave and ripple is one small forward mesh " +
+                 "(BlackHoleGlow.shader, the Meerkat water tube's recipe): a dark core + thin ring for a black hole, a " +
+                 "bright soft core for a white hole, faint local rings for the waves. StudioLens: the Vessel Studio's " +
+                 "full-screen lens + spaghettification + waves as before (2-4 full-screen passes per frame).")]
+        [SerializeField] HoleLook look = HoleLook.Mobile;
+
+        [Tooltip("Mobile look: a faint glow just outside a black hole's shadow, × the ring colour (0 = none).")]
+        [Range(0f, 0.5f)]
+        [SerializeField] float mobileHaloGlow = 0.06f;
+
+        [Tooltip("Mobile look: how far (u) a wave's ring is drawn from where it was born before it has faded out " +
+                 "completely — the waves stay LOCAL; the studio's travel to infinity is not drawn.")]
+        [Range(20f, 1000f)]
+        [SerializeField] float mobileWaveReach = 220f;
+
+        [Tooltip("Mobile look: a wave crest's brightness (× gwGlow for the gravitational ripple). Keep it under the " +
+                 "bloom threshold (0.2) for a clean ripple that does not bloom.")]
+        [Range(0f, 1f)]
+        [SerializeField] float mobileWaveGlow = 0.12f;
+
+        [Tooltip("Mobile look: how much a gravitational ripple's troughs shade what is behind them (0 = light only).")]
+        [Range(0f, 0.5f)]
+        [SerializeField] float mobileWaveShade = 0.06f;
+
+        [Header("Spaghettification (photons only — Docs/BLACK_HOLE.md §5; Studio lens look only)")]
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] Master switch for the tidal stretch. Off publishes an empty bank, which makes the " +
                  "shader's first branch return the untouched vertex.")]
         [SerializeField] bool warpEnabled = true;
 
@@ -161,9 +197,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float warpEaseSeconds = 0.5f;
 
         [Header("Lens (photons only — what the player sees of the hole, Docs/BLACK_HOLE.md §5.1)")]
-        [Tooltip("Master switch for the lens (the Vessel Studio's: shadow, Einstein bending, photon ring, white core). " +
-                 "Off draws a plain black sphere instead. While a hole is live every game camera's depth texture is " +
-                 "switched on, so a vessel in front of the hole is not bent.")]
+        [Tooltip("Master switch for the hole's drawn look (either Look). Off draws a plain black / white sphere instead. " +
+                 "In the Studio lens look, while a hole is live every game camera's depth texture is switched on, so a " +
+                 "vessel in front of the hole is not bent; the Mobile look needs no depth texture.")]
         [SerializeField] bool lensEnabled = true;
 
         [Tooltip("The black hole's shadow radius, in horizons (the studio's bhShadow). 2.6 is the physical value: light " +
@@ -171,22 +207,22 @@ namespace CosmicShore.ScriptableObjects
         [Range(1f, 4f)]
         [SerializeField] float shadowSize = 2.6f;
 
-        [Tooltip("How strongly a black hole bends what is behind it, × the physical Einstein bending (the studio's " +
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] How strongly a black hole bends what is behind it, × the physical Einstein bending (the studio's " +
                  "bhLensStrength). A point straight behind the hole becomes a ring of radius θ_E = √(2 r_s / D).")]
         [Range(0f, 4f)]
         [SerializeField] float lensStrength = 1f;
 
-        [Tooltip("How far around the hole the bending is drawn, in horizon radii (the studio's bhLensReach). Light " +
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] How far around the hole the bending is drawn, in horizon radii (the studio's bhLensReach). Light " +
                  "passing at b is really bent by ~2/b at any distance, so the bend is faded out over the outer part " +
                  "of this reach (Lens Fade Start) and never ends at an edge.")]
         [Range(5f, 120f)]
         [SerializeField] float lensRadiusMultiplier = 30f;
 
-        [Tooltip("Where the bend starts fading out, as a fraction of the reach (the studio's bhLensFade).")]
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] Where the bend starts fading out, as a fraction of the reach (the studio's bhLensFade).")]
         [Range(0.1f, 0.95f)]
         [SerializeField] float lensFadeStart = 0.55f;
 
-        [Tooltip("A WHITE hole's lens: how strongly it bends what is behind it, × the physical Einstein bending (the " +
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] A WHITE hole's lens: how strongly it bends what is behind it, × the physical Einstein bending (the " +
                  "studio's whLensStrength). It bends the same way a black hole does — outside its horizon its " +
                  "spacetime is a black hole's.")]
         [Range(0f, 4f)]
@@ -204,7 +240,7 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 16f)]
         [SerializeField] float whiteCoreBrightness = 4f;
 
-        [Tooltip("How much of the scene shows through a white hole's core under its glow (the studio's whCoreSkyMix): " +
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] How much of the scene shows through a white hole's core under its glow (the studio's whCoreSkyMix): " +
                  "the bent scene × this, plus the white-hot glow. 0 = a pure white core, 1 = the scene at full " +
                  "strength under the glow.")]
         [Range(0f, 2f)]
@@ -232,11 +268,11 @@ namespace CosmicShore.ScriptableObjects
         [Range(0.1f, 6f)]
         [SerializeField] float whOutFade = 1.6f;
 
-        [Tooltip("Light shells bend the sky by (u)")]
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] Light shells bend the sky by (u)")]
         [Range(0f, 30f)]
         [SerializeField] float shellBend = 6f;
 
-        [Tooltip("Gravity wave strength (u)")]
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] Gravity wave strength (u)")]
         [Range(0f, 40f)]
         [SerializeField] float gwAmp = 12f;
 
@@ -252,11 +288,11 @@ namespace CosmicShore.ScriptableObjects
         [Range(0.05f, 3f)]
         [SerializeField] float gwRingdown = 1f;
 
-        [Tooltip("Prisms stretch & squeeze in it")]
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] Prisms stretch & squeeze in it")]
         [Range(0f, 2f)]
         [SerializeField] float gwPrism = 0.6f;
 
-        [Tooltip("Space stretches as it passes you")]
+        [Tooltip("[Studio lens only — unused by the Mobile look, which never bends or stretches anything] Space stretches as it passes you")]
         [Range(0f, 4f)]
         [SerializeField] float gwShake = 1f;
 
@@ -432,6 +468,13 @@ namespace CosmicShore.ScriptableObjects
         public float VesselPullScale => Mathf.Max(0f, vesselPullScale);
         public float MaxVesselPullSpeed => Mathf.Max(0f, maxVesselPullSpeed);
         public bool WarpEnabled => warpEnabled;
+        public HoleLook Look => look;
+        /// <summary>True only in the Studio lens look: the full-screen lens, the prism / hull stretch, the view stretch and the wash.</summary>
+        public bool SpaceWarp => look == HoleLook.StudioLens;
+        public float MobileHaloGlow => Mathf.Clamp(mobileHaloGlow, 0f, 0.5f);
+        public float MobileWaveReach => Mathf.Max(20f, mobileWaveReach);
+        public float MobileWaveGlow => Mathf.Clamp01(mobileWaveGlow);
+        public float MobileWaveShade => Mathf.Clamp(mobileWaveShade, 0f, 0.5f);
         public float TidalResponseSeconds => Mathf.Clamp(tidalResponseSeconds, 0f, 3f);
         public float MaxTidalStretch => Mathf.Clamp(maxTidalStretch, 1.5f, 30f);
         public float VesselTideScale => Mathf.Clamp01(vesselTideScale);

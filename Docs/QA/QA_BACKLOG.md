@@ -5184,11 +5184,14 @@ cloud payload, stats write, unlock state is unchanged.** **FAIL = a Cloud Save e
 a clock that never accrues (or accrues while paused/in menu), or a vessel whose unlock
 state flipped.** Reference: `Docs/Analytics/DATA_ARCHITECTURE.md`.
 
-### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
-Run **Audit Vessel Skimmers** and fly the Serpent through cell mass. Expected: it FAILS
-the audit (inactive `VacuumSkimmer`, no impactor/container) and does not skim. **PASS =
-the failure is exactly as described and nothing else regressed.** Report any *different*
-symptom. Fix is tracked in `Docs/ElementalAbilitySystem/BACKLOG.md` §10–14.
+### QA-P2-SERPENT-SKIMMER ⬜ — Serpent collects crystals (FIXED 2026-10-31, needs a hand test)
+**Fixed on `claude/funny-fermat-9m75dr`** (`Tools/Build/fix_serpent_crystal_pickup.py`): the Serpent's
+`VacuumSkimmer` is now a live far-field crystal catcher (active, trigger on, `SkimmerImpactor` + `ImpactCollider` +
+kinematic `Rigidbody`), and its container hands every crystal to the hull, so the seed-wall re-shield still runs.
+Test: run **Audit Vessel Skimmers** - the Serpent reads `'VacuumSkimmer' OK (crystal pickup only)`. Fly a Serpent
+through elemental crystals (any cell with flora, or Serpent Gulag's field) and an omni crystal. **PASS = each
+elemental crystal is taken and raises its element's bar, the omni crystal is taken, and an active seed wall
+re-shields on each pickup.** Report a crystal that is skimmed from far too far away (the sphere is 25 u).
 
 ### QA-P2-BENCH-LEGACY-AB ⬜ — record the legacy-CPU side of the prism A/B
 Follow the cherry-pick recipe in `Docs/PRISM_EXPLOSION_BENCHMARK.md` on a `bench-legacy`

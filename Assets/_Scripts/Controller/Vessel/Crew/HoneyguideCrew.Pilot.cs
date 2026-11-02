@@ -59,6 +59,8 @@ namespace CosmicShore.Gameplay
             _lastMade = _lastRetired = -1;
             _turnScaled = false;
             ResetTriggers();
+            ResetMassHive();
+            ResetHunt();
         }
 
         void EndPilotSide()
@@ -66,16 +68,21 @@ namespace CosmicShore.Gameplay
             if (_boosting && _status != null) _status.IsBoosting = false;
             _boosting = false;
             EndTriggers();
+            DestroyPreviews();
+            DestroyMassHive();
             EndZip(false);
             RestoreTurn();
+            ReleaseHunt(_status?.AIPilot);
         }
 
         void StepPilotSide(float dt)
         {
+            StepHunt();
             StepPassives(dt);
             StepBoost(dt);
             bool riding = StepZip(dt);
-            StepTriggers(dt, riding);   // the triggers are read on the rail too (a held Peck keeps firing; a press waits)
+            StepTriggers(dt, riding);   // the triggers are read on the rail too (a pull previews; a release ends the ride)
+            StepMassHive(dt);
             if (riding) return;   // on the rail: no contacts until it lands
             StepWatt();
             Contacts(dt);
@@ -207,6 +214,7 @@ namespace CosmicShore.Gameplay
         void Contacts(float dt)
         {
             if (_ignoreT > 0f) _ignoreT -= dt;
+            if (_aiSkipT > 0f) _aiSkipT -= dt;
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
             var t = _vessel.Transform;
@@ -228,7 +236,7 @@ namespace CosmicShore.Gameplay
                 if (trail != null && trail == _ignoreTrail && _ignoreT > 0f) continue;
                 var dom = p.Domain;
                 int c = HoneyguideConfigSO.ColourOf(dom);
-                if (!slipPrism && trail != null && trail.TrailList.Count >= _cfg.MinSlipTrailLength && c != 0 && (doms & (1 << c)) != 0
+                if (!slipPrism && trail != null && !(trail == _aiSkipTrail && _aiSkipT > 0f) && trail.TrailList.Count >= _cfg.MinSlipTrailLength && c != 0 && (doms & (1 << c)) != 0
                     && PrismscapeTopology.DimensionOf(p) == PrismscapeDimension.Trail
                     && Mathf.Abs(Vector3.Dot(fwd, p.transform.forward)) >= cos)
                 {
@@ -285,16 +293,27 @@ namespace CosmicShore.Gameplay
                                                   reach, _cfg.ExitOffset);
             if (land == null) return;
 
+            var l = land.Value;
+            var point = new Vector3((float)l.Point.X, (float)l.Point.Y, (float)l.Point.Z);
+            // An AI slips only when the ride takes it nearer where it is going, and not round and round (Garrett 2026-11-02:
+            // "lets have the honeyguide AI not get stuck when slipping"; HoneyguideCrew.Hunt.cs). The trail it turns down is
+            // left alone a while, so it does not ask again every frame.
+            if (AIFlies && !AISlipHelps(pos, point))
+            {
+                _aiSkipTrail = trail;
+                _aiSkipT = _cfg.AISlipSkipSeconds;
+                return;
+            }
+
             bool paid = _core.Spend(colour);
             if (!paid && _sail > 0) { _sail--; GiveBoost(_cfg.SailBoost); paid = true; }   // Plankter Sail
             if (!paid && Lvl(Mech.Void) > 0 && _core.Battery.Count > 0) { _core.Battery.RemoveAt(0); paid = true; }   // Void Jumper: the oldest charge
             if (!paid) return;
             if (Lvl(Mech.Gravity) > 0) GiveBoost(_cfg.GravityBoostPerLevel * Lvl(Mech.Gravity));
 
-            var l = land.Value;
             var heading = _cfg.ExitAligned ? new Vector3((float)l.Heading.X, (float)l.Heading.Y, (float)l.Heading.Z) : fwd;
             if (heading.sqrMagnitude < 1e-6f) heading = fwd;
-            var point = new Vector3((float)l.Point.X, (float)l.Point.Y, (float)l.Point.Z);
+            _rideColour = colour;
             // Not a teleport: the hull zips along the trail to the landing (Garrett 2026-10-21: "a satisfying zip over so they
             // keep some continuity and are not denied the joy of fast travel"). HoneyguideCrew.Zip.cs.
             BeginZip(contactIndex, l.Index, point, heading);
@@ -314,13 +333,13 @@ namespace CosmicShore.Gameplay
             var key = pat.effect;
             int lv = 0;
             var upgrade = _cfg.UpgradeFor(key);
-            if (upgrade != null)   // a trigger upgrade: it takes RT or LT over for activeSeconds (lab round 6)
+            if (upgrade != null)   // a trigger upgrade: it banks usesPerCard uses on RT or LT (lab round 8)
             {
-                int level = GrantUpgrade(key, upgrade, pat.name);
-                if (depth == 0) SetMadeLine(pat, level > 1 ? Roman(level) : "");
+                int uses = Bank(key, upgrade, pat.name);
+                if (depth == 0) SetMadeLine(pat, "");
                 if (depth == 0)
-                    Toast(TemplateText.Fill(_cfg.UpgradeToastTemplate, "name", pat.name, "level", level > 1 ? Roman(level) : "",
-                                            "trigger", _cfg.TriggerName(upgrade.trigger), "text", pat.effectText));
+                    Toast(TemplateText.Fill(_cfg.UpgradeToastTemplate, "name", pat.name, "trigger", _cfg.TriggerName(upgrade.trigger),
+                                            "uses", uses.ToString(), "text", pat.effectText));
                 return;
             }
             if (IsTimed(key))
@@ -498,29 +517,40 @@ namespace CosmicShore.Gameplay
                 }
                 case HoneyguideEffect.Monte:
                 {
-                    if (!indexed) return false;
-                    var from = pos;
-                    int hops = 0;
-                    for (int k = 0; k < _cfg.MonteHops; k++)
-                    {
-                        index.QuerySphere(from, reach, _query);
-                        float best = -1f;
-                        var next = from;
-                        foreach (var p in _query)
-                        {
-                            if (!p || p.destroyed || IsOwn(p)) continue;
-                            float d = Ahead(p.transform.position, from, fwd, reach, cone);
-                            if (d > best) { best = d; next = p.transform.position; }
-                        }
-                        if (best <= 0f) break;
-                        from = next;
-                        hops++;
-                    }
-                    at = from;
-                    return hops > 0;
+                    if (MonteHopList(reach, _hops) == 0) return false;
+                    at = _hops[^1];
+                    return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>Monte Cannon's hops into `into` (cleared first): each to the farthest prism ahead within `reach` of the
+        /// last (the lab's monteHops). Returns how many.</summary>
+        int MonteHopList(float reach, List<Vector3> into)
+        {
+            into.Clear();
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return 0;
+            var t = _vessel.Transform;
+            Vector3 from = t.position, fwd = t.forward;
+            float cone = Mathf.Cos(_cfg.JumpCone * Mathf.Deg2Rad);
+            for (int k = 0; k < _cfg.MonteHops; k++)
+            {
+                index.QuerySphere(from, reach, _query);
+                float best = -1f;
+                var next = from;
+                foreach (var p in _query)
+                {
+                    if (!p || p.destroyed || IsOwn(p)) continue;
+                    float d = Ahead(p.transform.position, from, fwd, reach, cone);
+                    if (d > best) { best = d; next = p.transform.position; }
+                }
+                if (best <= 0f) break;
+                from = next;
+                into.Add(from);
+            }
+            return into.Count;
         }
 
         // the distance to `p` when it lies ahead of `from` within the cone and between jumpMinDistance and maxD, else -1

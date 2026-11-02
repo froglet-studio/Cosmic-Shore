@@ -10,6 +10,8 @@ namespace CosmicShore.Utility.AITraining
     /// pilot owns one TargetSensor; the scenario chooses which mode it should run in.
     ///
     /// Crystals/buffs come from CellRuntimeDataSO. Enemies come from GameDataSO.Players.
+    /// The next gate comes from the gate race running on this machine
+    /// (<see cref="GateRaceController.TryGetNextRing"/>, the ring this pilot must thread next).
     /// </summary>
     public class TargetSensor : ITrainingSensor
     {
@@ -19,6 +21,9 @@ namespace CosmicShore.Utility.AITraining
             ClosestEnemyVessel = 1,
             BothPreferCrystal = 2,
             BothPreferEnemy = 3,
+            // Gate races (Regatta, Headlong, Switchback and the rest of the GateRaceController
+            // modes): the ring this pilot threads next. No race, or the pilot finished: no target.
+            NextGate = 4,
         }
 
         readonly CellRuntimeDataSO _cellData;
@@ -59,6 +64,13 @@ namespace CosmicShore.Utility.AITraining
 
             Vector3 myPos = ctx.Position;
             Domains myDomain = ctx.MyDomain;
+
+            if (Mode == TargetMode.NextGate)
+            {
+                if (_vessel != null && GateRaceController.TryGetNextRing(_vessel, out var ring))
+                    SetTarget(ctx, ring.transform.position, Vector3.zero, TargetKind.Waypoint, myPos);
+                return;
+            }
 
             Vector3 crystalPos = default;
             float crystalDist = float.PositiveInfinity;
@@ -123,17 +135,20 @@ namespace CosmicShore.Utility.AITraining
             }
 
             if (kind != TargetKind.None)
-            {
-                ctx.HasTarget = true;
-                ctx.TargetPosition = chosen;
-                ctx.TargetVelocity = chosenVel;
-                ctx.TargetKind = kind;
-                ctx.TargetRange = (chosen - myPos).magnitude;
-                Vector3 dir = (chosen - myPos).normalized;
-                ctx.ObjectiveDirection = dir;
-                ctx.DotForwardObjective = Vector3.Dot(dir, ctx.Forward);
-                _lastTargetPos = chosen;
-            }
+                SetTarget(ctx, chosen, chosenVel, kind, myPos);
+        }
+
+        void SetTarget(DecisionContext ctx, Vector3 chosen, Vector3 chosenVel, TargetKind kind, Vector3 myPos)
+        {
+            ctx.HasTarget = true;
+            ctx.TargetPosition = chosen;
+            ctx.TargetVelocity = chosenVel;
+            ctx.TargetKind = kind;
+            ctx.TargetRange = (chosen - myPos).magnitude;
+            Vector3 dir = (chosen - myPos).normalized;
+            ctx.ObjectiveDirection = dir;
+            ctx.DotForwardObjective = Vector3.Dot(dir, ctx.Forward);
+            _lastTargetPos = chosen;
         }
     }
 }
