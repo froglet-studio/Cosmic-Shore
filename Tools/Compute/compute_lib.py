@@ -235,7 +235,16 @@ def export_tree(sha, paths, parent, name, cwd=None, keep=3):
             os.remove(tar_path)
         with open(os.path.join(tmp, ".froglet-export"), "w") as fh:
             fh.write(sha + "\n" + "\n".join(present) + "\n")
-        os.replace(tmp, path)
+        # Windows: a virus scanner still reading the files just extracted makes the rename fail with "Access is
+        # denied" for a moment (2026-11-01, a scene file in the export); it succeeds once the scan lets go.
+        for attempt in range(8):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                if attempt == 7:
+                    raise
+                time.sleep(0.5 * (attempt + 1))
     old = sorted((d for d in os.listdir(parent) if d.startswith(name + "-") and not d.endswith(".part")
                   and os.path.join(parent, d) != path), key=lambda d: os.path.getmtime(os.path.join(parent, d)))
     for d in old[:max(0, len(old) - (keep - 1))]:
