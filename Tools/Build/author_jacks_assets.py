@@ -657,6 +657,9 @@ CONTAINER_PRISM = ["ca2d1be3880b82941a0465a1f7e45280",   # VesselHapticsByPrismE
                    "4da62d4eefe03594ba35027dd537aff0",   # VesselDamagePrismEffect
                    "c7ccaca885824b24b716b12148d77ce1"]   # VesselElementalDebuffByDangerPrismEffect
 CONTAINER_CRYSTAL = ["8de915fb00503344ca89a92a0a127b00"]  # VesselHapticsByCrystalEffect
+# The omni crystal folds into the heart of the worm it is born as (R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md), the
+# Angler's retirement too. Shared asset, not generated here.
+FAUNA_BIRTH_MORPH_GUID = "5aa5eaa4f05943558b1dedc40f4c607b"   # FaunaBirthCrystalMorphByCrystal
 
 
 def container_asset() -> str:
@@ -665,7 +668,7 @@ def container_asset() -> str:
         "  vesselPrismEffects:\n" + lst(CONTAINER_PRISM) + "  vesselCrystalEffects:\n" + lst(CONTAINER_CRYSTAL + [WORM_EFFECT_GUID]) +
         "  vesselMassCrystalEffects: []\n  vesselChargeCrystalEffects: []\n  vesselSpaceCrystalEffects: []\n"
         "  vesselTimeCrystalEffects: []\n  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-        "  omniCrystalRetirement: {fileID: 0}\n")
+        f"  omniCrystalRetirement: {{fileID: 11400000, guid: {FAUNA_BIRTH_MORPH_GUID}, type: 2}}\n")
 
 
 DESCRIPTION = ("  Description: Two jacks herd the cell's wildlife. Herding, run each jack with a thumb,\n"
@@ -891,6 +894,9 @@ def check_assets(config: str, controls, container: str):
     for g in CONTAINER_PRISM + CONTAINER_CRYSTAL + [WORM_EFFECT_GUID]:
         if g not in container:
             errs.append(f"JacksImpactorDataContainer: missing effect {g}")
+    if f"  omniCrystalRetirement: {{fileID: 11400000, guid: {FAUNA_BIRTH_MORPH_GUID}, type: 2}}\n" not in container:
+        errs.append("JacksImpactorDataContainer: the omni crystal does not fold into the worm's heart "
+                    "(omniCrystalRetirement is not FaunaBirthCrystalMorphByCrystal; run the tool)")
     return errs
 
 
@@ -910,11 +916,13 @@ def check_worm_effect(text: str):
 
 
 def container_retrofit(text: str) -> str:
-    """The worm effect in the container's crystal (omni) effects, once. Idempotent."""
-    if WORM_EFFECT_GUID in text:
-        return text
-    return re.sub(r"^(  vesselCrystalEffects:\n(?:  - .*\n)*)",
-                  lambda m: m.group(1) + f"  - {{fileID: 11400000, guid: {WORM_EFFECT_GUID}, type: 2}}\n", text, count=1, flags=re.M)
+    """The worm effect in the container's crystal (omni) effects, once, and the fauna-birth morph as its omni-crystal
+    retirement. Idempotent."""
+    if WORM_EFFECT_GUID not in text:
+        text = re.sub(r"^(  vesselCrystalEffects:\n(?:  - .*\n)*)",
+                      lambda m: m.group(1) + f"  - {{fileID: 11400000, guid: {WORM_EFFECT_GUID}, type: 2}}\n", text, count=1, flags=re.M)
+    return text.replace("  omniCrystalRetirement: {fileID: 0}\n",
+                        f"  omniCrystalRetirement: {{fileID: 11400000, guid: {FAUNA_BIRTH_MORPH_GUID}, type: 2}}\n")
 
 
 def check_registrations(container: str, network: str, lists, cls: str, kmap: str, fusion: str):

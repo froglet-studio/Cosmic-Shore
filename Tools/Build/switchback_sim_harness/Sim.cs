@@ -109,6 +109,11 @@ sealed class Opts
     public float MaxSeconds = 600f;
     public bool Planner = true, Sense = true, Emergency = true, Drive = true, NoLayout, RealCone, FlyRoll;
     // SwitchbackController.aiDodgeDangerOnly / aiNoDodgeNearRing, decided by SwitchbackPrismAvoidance.Dodges (shipped 2026-11-02)
+    public bool Setup;   // SwitchbackController.aiStrikeSetupLeg (off since 2026-11-02, step 2); setup=1 = the old strike
+    public bool StrikeAtKey;          // what-if B: the strike aims at the key itself (not 40 u past it on the fire line)
+    public float StrikeCommitCos = 0.9f; // what-if C: the commit drift's alignment on a strike (AIPilot: 0.9 = 26 deg)
+    public bool PassedByTravel;
+    public bool BlastHarmless;        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose
     public bool DangerOnly = true;
     public float NoDodgeNear = 200f;
     public HitModel Hit = HitModel.Default;
@@ -145,6 +150,11 @@ sealed class Opts
                 case "cone": o.RealCone = v != "0"; break;
                 case "roll": o.FlyRoll = v != "0"; break;
                 case "dangerOnly": o.DangerOnly = v != "0"; break;
+                case "setup": o.Setup = v != "0"; break;
+                case "strikeAtKey": o.StrikeAtKey = v != "0"; break;
+                case "strikeCommit": o.StrikeCommitCos = float.Parse(v); break;
+                case "passedByTravel": o.PassedByTravel = v != "0"; break;
+                case "blastHarmless": o.BlastHarmless = v != "0"; break;
                 case "noDodgeNear": o.NoDodgeNear = float.Parse(v); break;
                 case "pickup": o.PickupRadius = float.Parse(v); break;
                 case "hull": o.HullRadius = float.Parse(v); break;
@@ -363,6 +373,7 @@ sealed class Race
         // the executor's per-pilot state (SwitchbackBlastAI.Pilot)
         var d = default(SwitchbackAIDecision); d.Station = -1;
         Phase phase = Phase.None; int planned = -1, plans = 0; float nextPlan = 0f;
+        float keyClosest = float.MaxValue; bool keyClosestDrift = false; Phase keyClosestPhase = Phase.None;
         float nextSense = 0f; var avoidAct = SwitchbackAvoidAction.Clear; Vector3 avoidAim = default, blastCrystal = default, blastLook = default;
         bool emergOn = false; float emergHoldUntil = 0f, hotUntil = 0f; Vector3 emergSteer = default; int frame = 0;
         var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[32];
@@ -394,7 +405,9 @@ sealed class Race
             {
                 if (idx != planned)
                 {
-                    if (planned >= 0 && log != null) log.Add($"{t,6:F1} gate {planned} done plan={d.Plan} keys={Keys}");
+                    if (planned >= 0 && log != null) log.Add($"{t,6:F1} gate {planned} done plan={d.Plan} keys={Keys}" +
+                        (d.Plan == SwitchbackAIPlan.Blast ? $" closest to key {keyClosest:F0} u (drifting there {keyClosestDrift}, phase {keyClosestPhase})" : ""));
+                    keyClosest = float.MaxValue;
                     planned = idx; plans = 0;
                     Plan();
                 }
@@ -468,7 +481,9 @@ sealed class Race
             bool canCommit = !o.Drive || (!hold && v >= UpToSpeed * targetSpeed);
             if (!extending && !emerg)
             {
-                if (!drifting && canCommit && Vector3.Dot(desired, travel) >= CommitCos) { drifting = true; travel = desired; discharging = false; }
+                bool strikeNow = d.Plan == SwitchbackAIPlan.Blast && phase == Phase.Strike;
+                float commitCos = strikeNow ? o.StrikeCommitCos : CommitCos;
+                if (!drifting && canCommit && Vector3.Dot(desired, travel) >= commitCos) { drifting = true; travel = desired; discharging = false; }
                 else if (drifting && Vector3.Dot(desired, travel) < CommitCos)
                 {
                     drifting = false;
@@ -511,6 +526,11 @@ sealed class Race
             }
             up = Vector3.ProjectOnPlane(up, fwd).sqrMagnitude > 1e-4f ? Vector3.ProjectOnPlane(up, fwd).normalized : Vector3.Cross(fwd, Vector3.right).normalized;
             Vector3 newPos = pos + travel * vEff * dt;
+            if (log != null && d.Plan == SwitchbackAIPlan.Blast)
+            {
+                float kd = SegPointDist(pos, newPos, d.Key);
+                if (kd < keyClosest) { keyClosest = kd; keyClosestDrift = drifting; keyClosestPhase = phase; }
+            }
 
             // ---- keys: the skimmer takes a key it passes within the pickup radius; its blast fires down the nose
             if (!o.NoLayout)
@@ -520,7 +540,7 @@ sealed class Race
                     if (SegPointDist(pos, newPos, w.L.Stations[s].Key) > o.PickupRadius) continue;
                     w.Key[s] = false; Keys++;
                     Vector3 gape = o.FlyRoll && d.Plan == SwitchbackAIPlan.Blast && d.Station == s ? d.FireUp : up;
-                    int removed = w.Blast(w.L.Stations[s].Key, fwd, gape, t, o);
+                    int removed = o.BlastHarmless ? 0 : w.Blast(w.L.Stations[s].Key, fwd, gape, t, o);
                     if (log != null) log.Add($"{t,6:F1} key {s} (gate {w.L.Stations[s].Gate}) taken, nose {Ang(fwd, w.L.Stations[s].Door - w.L.Stations[s].Key):F0} deg off the door, blasted {removed}");
                 }
 
@@ -574,10 +594,10 @@ sealed class Race
             if (d.Plan != SwitchbackAIPlan.Blast || phase == Phase.Done) return false;
             Vector3 key = d.Key, fire = d.FireForward, toKey = key - pos;
             float dist = toKey.magnitude;
-            if (Vector3.Dot(-toKey, fire) > 5f) { phase = Phase.Done; return false; }
+            if (o.PassedByTravel ? (Vector3.Dot(toKey, travel) < 0f && dist > o.PickupRadius) : Vector3.Dot(-toKey, fire) > 5f) { phase = Phase.Done; return false; }
             float off = dist > 1f ? Ang(toKey, fire) : 0f;
-            if (dist > 60f && off > SetupAngle) { phase = Phase.Setup; a = key - fire * Mathf.Min(SetupBack, 0.5f * dist); }
-            else { phase = Phase.Strike; a = key + fire * StrikeThrough; }
+            if (o.Setup && dist > 60f && off > SetupAngle) { phase = Phase.Setup; a = key - fire * Mathf.Min(SetupBack, 0.5f * dist); }
+            else { phase = Phase.Strike; a = o.StrikeAtKey ? key + (dist > 1f ? toKey / dist : fire) * StrikeThrough : key + fire * StrikeThrough; }
             return true;
         }
 

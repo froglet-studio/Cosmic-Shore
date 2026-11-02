@@ -333,6 +333,13 @@ namespace CosmicShore.Gameplay
             pop.domain = domain;
             pop.Goal = goal;
 
+            // Per-world species data (FaunaConfigurationSO.SpeciesDataOverride) is bound BEFORE
+            // Initialize: a colony builds its chain, a substrate claims its block and a builder
+            // seeds its lattice in there, all off the data asset. Same seam argument as the
+            // lineage bind below - this is the one Instantiate every producer reaches.
+            if (cfg && pop is ISpeciesDataOverride speciesData)
+                speciesData.BindSpeciesData(cfg);
+
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
@@ -523,7 +530,7 @@ namespace CosmicShore.Gameplay
             // the pen leaking. Applied here, at the one spawn call both spawners share, for the
             // same reason banded placement lives here (see the warning above). No-op for every
             // biome that authors no pen.
-            if (host.FaunaExclusionRadius > 0f || host.FaunaContainmentRadius > 0f)
+            if (host.HasFaunaPen)
             {
                 // No explicit position means "the cell centre", which is the one point a closed
                 // inner pen definitely forbids - so resolve it here rather than letting the

@@ -193,6 +193,50 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>This pilot's instance of the cycled ability of type <typeparamref name="T"/> (the prefab's
+        /// <c>abilities</c> list), for a mode that presses it itself - see <see cref="SetAbilityCycleSuppressed"/>.</summary>
+        public bool TryFindAbility<T>(out T ability) where T : ShipActionSO
+        {
+            ability = null;
+            if (abilities == null) return false;
+            foreach (var a in abilities)
+            {
+                if (a?.Ability is T inst) { ability = inst; return true; }
+                if (a?.SourceAsset is T && a.Ability is T inst2) { ability = inst2; return true; }
+            }
+            return false;
+        }
+
+        // Abilities a mode has taken off the blind cycler (StartAIPilot skips them): the mode owns their timing.
+        readonly HashSet<ShipActionSO> _suppressedAbilities = new();
+
+        /// <summary>
+        /// Take a cycled ability off the blind timer (or put it back): a mode that knows WHEN a weapon should go off
+        /// (the Ark escort's roles: a rocket at a creature on the nose with the Ark out of the lane) presses it itself
+        /// with <see cref="PressAbility"/>. Takes the instance <see cref="TryFindAbility{T}"/> returns or the source
+        /// asset. The running cycle restarts so the change takes effect now.
+        /// </summary>
+        public void SetAbilityCycleSuppressed(ShipActionSO ability, bool suppressed)
+        {
+            if (!ability) return;
+            bool changed = suppressed ? _suppressedAbilities.Add(ability) : _suppressedAbilities.Remove(ability);
+            if (changed && AutoPilotEnabled) StartAIPilot();
+        }
+
+        bool IsCycleSuppressed(AIAbility ability) =>
+            _suppressedAbilities.Count > 0
+            && ((ability.Ability && _suppressedAbilities.Contains(ability.Ability))
+                || (ability.SourceAsset && _suppressedAbilities.Contains(ability.SourceAsset)));
+
+        /// <summary>Start (<paramref name="down"/>) or stop one of this pilot's abilities on its vessel, the way the
+        /// cycler does - for a mode that owns the ability's timing.</summary>
+        public void PressAbility(ShipActionSO ability, bool down)
+        {
+            if (!ability || VesselStatus == null) return;
+            if (down) VesselActionTape.Start(ability, actionExecutorRegistry, VesselStatus);
+            else VesselActionTape.Stop(ability, actionExecutorRegistry, VesselStatus);
+        }
+
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
 
@@ -606,6 +650,11 @@ namespace CosmicShore.Gameplay
 
             foreach (var item in cellItems)
             {
+                // A destroyed item (a heart collected and pooled, a retired corridor cell's crystal) can still be
+                // in a runtime list this pilot reads while another list raises OnCellItemsUpdated - and this
+                // handler runs INSIDE that Raise, so a throw here aborted the caller: CellConveyor.SpawnCoreCrystal
+                // -> StandCell lost its world and the escort skipped it (The Boneyard at d1, The Maw at d6).
+                if (!item) continue;
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
@@ -895,6 +944,9 @@ namespace CosmicShore.Gameplay
             foreach (var ability in abilities)
             {
                 if (ability.SourceAsset != null && _commitBoundActions.Contains(ability.SourceAsset))
+                    continue;
+                // A mode that presses this one itself (SetAbilityCycleSuppressed).
+                if (IsCycleSuppressed(ability))
                     continue;
                 // Same reason, other owner: the boost driver presses this one itself.
                 if (_boostActive && _boostDriver.Drives(ability.SourceAsset))

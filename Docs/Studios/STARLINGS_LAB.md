@@ -71,43 +71,67 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 
 Each element's build wins its own column, as the element jobs intend.
 
-## The Time trail (proposal, 2026-11-01, `feature/starlings-time-game`)
+## The Time race: the Starlings' Time arcade game (2026-11-02, `feature/starlings-time-race`)
 
-The pilot never steers, so a Starlings time game cannot be a race the player drives. The proposal: the mode lays each
-phase's objective at its own **station** on a course (a wall of enemy prisms at each Mass station, crystals at each
-Elemental one, the omnicrystal and the rivals near theirs), and the clock runs until the swarm has worked all 16
-stations, four laps of the cycle. Every leg still ends early on its goal or late on its timer, so each element shortens
-a different leg. The vessel is unchanged (the LOCKED rule): only the course belongs to the mode. Pick *Time trail* in
-the Game menu and a course; the Scorecard tab has **Run the time trail**; `__lab.runTrail({ course, seeds })` and
-`__lab.runCourses()` are the headless forms.
+Garrett, 2026-11-02: "There should be different arcade games for different elements, so it should be fine if someone
+picks all Time cards on all four intensity levels of the Time arcade game. The skill should be in picking Time cards
+best suited to the random factors of the race. The race should still be about getting through the switches fastest,
+because then the Starlings could be taken to Regatta."
 
-### Round 1: one course (8 stations)
+So the lab's game is now a **Time race**: a closed loop of switch rings flown three laps, as in Regatta. While racing,
+the swarm's objective is always the next switch; it threads one when its sampled centroid passes within the ring. The
+mode sets the objective only: the swarm's flight, its cards and the phase cycle are unchanged, and the phases still
+run on their timers and deal the hands. An omnicrystal always lies mid-leg ahead of the swarm, so hands keep coming
+(with hands only on the timers, a race dealt one card and left no choice). Each race draws its course from its seed
+and shows it before the start:
 
-On 30 seeds Charge first won 17, Space 9, Time 3 and Mass 1. Time was no longer the only answer, but Charge was the
-default: the Opposing vessels legs were the longest and only Charge shortens them.
+| Course | Shape |
+|---|---|
+| Open water | 6 switches on a wide loop: long straights |
+| Bends | 8 switches weaving in and out: medium turns |
+| Hairpins | 8 switches that zigzag between the middle and the edge: sharp turns |
 
-### Round 2: courses that vary per run (Garrett chose "vary courses per run", 2026-11-01)
+Intensity narrows the switches (90 / 75 / 60 / 50 u for I1-I4) and adds rivals that hang round them and shoot
+starlings (0 / 1 / 2 / 3). Pick *Time race* in the Game menu and a course; the Scorecard tab has **Run the time race**;
+`__lab.runRace({ course, intensity, seeds })` is the headless form.
 
-Each course changes only the environment (station spacing, wall size and shielding, rival count and speed), is shown
-before the run, and rewards a different element. *Any course* draws one per run. Also new: the element-first AI takes
-its favourite card from a hand (a random card hid what an element can do), the trail is 16 stations (with 8, the
-cards arrived too late to matter), and a **Reads the course** AI builds the element the course rewards.
+### Which Time card wins (every build is all Time; they differ in the card they take first)
 
-| Course | What it is | Mass first | Time first | Space first | Charge first | No cards |
-|---|---|---|---|---|---|---|
-| Long haul | stations alternate across the cell, no rivals | 215.4 | **196.8** | 209.3 | 216.5 | 216.9 |
-| Fortress | 130-prism walls, 60% shielded, rivals at 15 u/s | 149.2 | 140.8 | **108.1** | 125.2 | 152.7 |
-| Chase | rivals at 115 u/s | 152.8 | 126.6 | 150.1 | **106.4** | 155.3 |
+Seconds to finish three laps, lower wins, Time cards at level 5; I2 on 8 seeds, I1, I3 and I4 on 6.
 
-Seconds to finish (lower wins), 15 seeds each. On *Any course* (24 seeds): **Reads the course 141.7**, Charge first
-151.7, Random picks 152.0, Rotate 154.5, Space first 156.8, Time first 162.0, Mass first 172.6, no cards 176.4.
-Reading the course beats any fixed element by 10 s, so the draw element is a real choice made from the course.
+| Course | I | No cards | Skip Ahead | Agility | Quickening | Hurry Up | Blink Step | Dragonfly |
+|---|---|---|---|---|---|---|---|---|
+| Open water | I1 | 126.1 | **99.1** | 108.6 | 102.8 | 110.1 | 109.2 | 143.1 |
+| Open water | I2 | 128.5 | **98.1** | 109.3 | 128.8 | 107.9 | 114.0 | 139.1 |
+| Open water | I3 | 130.4 | 108.4 | 121.8 | **104.6** | 113.1 | 122.7 | 159.1 |
+| Open water | I4 | 131.7 | 123.2 | **119.3** | 129.5 | 119.8 | 127.7 | 255.4 |
+| Bends | I1 | 160.5 | 139.2 | **130.5** | 173.6 | 159.2 | 184.5 | 224.1 |
+| Bends | I2 | 178.4 | 174.2 | **155.9** | 221.0 | 201.3 | 202.3 | 252.2 |
+| Bends | I3 | 194.2 | 162.8 | **159.0** | 204.2 | 171.4 | 176.9 | 231.2 |
+| Bends | I4 | 238.4 | 190.5 | **164.7** | 290.8 | 263.5 | 207.5 | 408.9 |
+| Hairpins | I1 | 219.4 | **150.9** | 152.0 | 218.1 | 182.1 | 197.6 | 230.5 |
+| Hairpins | I2 | 297.1 | 186.1 | **174.1** | 273.5 | 220.8 | 218.0 | 239.3 |
+| Hairpins | I3 | 308.1 | 187.7 | **178.4** | 308.9 | 272.3 | 227.9 | 354.2 |
+| Hairpins | I4 | 339.2 | 220.7 | **187.5** | 349.5 | 266.9 | 272.9 | 331.0 |
 
-**Mass wins no course.** Its cards (Brood, Carapace, Big Family, Mound Builders, Snowball, Danger Drip) keep the swarm
-big and lay your prisms; nothing on a timed course rewards that, and a Crossfire course (rivals shooting four times as
-often) still went to Charge. This is a kit gap the time game exposes, not something a course can fix: Mass needs a
-card that ends a phase early (for example one that counts the prisms you lay toward a goal), and that is a vessel
-change for Garrett to decide.
+What it shows:
+
+1. **The card choice is the skill.** Skip Ahead wins the open loops at low intensity and Agility wins every course with
+   turns. A player who takes the right card for the course (the *Time, reads the course* build: Skip Ahead on Open
+   water, Agility otherwise) is best or close to best in every cell.
+2. **Speed without turning is a trap.** Dragonfly is the worst Time card on every course, and Quickening is worse than
+   no cards on Hairpins: the swarm overshoots the switch and circles back (worst races of 450-600 s). That is a real
+   decision, and a lesson about the cards.
+3. **The Starlings turn badly.** Without cards, Hairpins take 220-340 s against 126-132 s for Open water. In Regatta
+   the swarm will need Agility, or the Regatta course will need to suit it; that is for the Regatta balance plan
+   (`Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`).
+4. Hurry Up and Blink Step never win: Hurry Up only speeds the hands, and the race does not count starlings lost.
+
+### Before this: the Time trail (2026-11-01, PR #1691)
+
+The first proposal laid each phase's objective at a station and timed four laps of the cycle, with courses that each
+rewarded a different element (Long haul for Time, Fortress for Space, Chase for Charge; Mass won none). Garrett's
+2026-11-02 direction (each element has its own arcade game, and the Time game is a switch race) replaced it.
 
 ## Found
 
@@ -133,5 +157,6 @@ change for Garrett to decide.
 
 ## Round log
 
+- **Time race (2026-11-02, `feature/starlings-time-race`):** the trail is replaced by the switch race: three laps of switch rings, a random course each race (Open water, Bends, Hairpins), I1-I4 switch sizes and rivals, all-Time builds that differ in the card they take first, and `runRace`.
 - **Time trail (2026-11-01, `feature/starlings-time-game`):** the Game menu's Time trail, stations drawn on the stage, `runTrail` and its scorecard; round 2 adds the Long haul, Fortress and Chase courses, the favourite-card AI and the Reads-the-course AI (above).
 - **Round 1 (2026-10-20, `claude/project-thread-pkoq70`):** the first build covers the passive 3D swarm, the joystick view, the four-phase cycle, hands of 4 with level stacking, the protected minimum, 24 wired cards, I1 to I4, a six-build scorecard and the decision log.

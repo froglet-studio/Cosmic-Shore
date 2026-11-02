@@ -21,8 +21,8 @@ namespace CosmicShore.Gameplay
     /// left the bloom dusting nothing; see BUTTERFLY.md §3.3a.)</para>
     ///
     /// <para><b>Two layers of motes, both the capsule's motes.</b> Same material, same colour rule
-    /// (<see cref="ButterflyDustField.ResolveMoteColour"/> — the shielded rim of the pilot's
-    /// domain), same in-hold-out alpha and the same slow downward drift:</para>
+    /// (<see cref="ButterflyDustField.ResolveMotePalette"/> — each mote one of the danger, plain and
+    /// shielded rims of the pilot's domain), same in-hold-out alpha and the same slow downward drift:</para>
     /// <list type="bullet">
     /// <item><b>The bloom</b> — as the wavefront passes each radius it leaves dust behind, at a
     /// constant density through the whole sphere (the emitted count follows the swept VOLUME,
@@ -108,7 +108,8 @@ namespace CosmicShore.Gameplay
         float _fullRadius;
         Domains _domain;
         ParticleSystem _particles;
-        Color _colour;
+        readonly Color[] _colours = new Color[ButterflyDustField.MotePaletteSize];
+        int _colourTurn;
         int _bloomEmitted;
         float _lastRadius;
         uint _rng;
@@ -132,7 +133,7 @@ namespace CosmicShore.Gameplay
             if (_rng == 0) _rng = 0x9E3779B9u;
             _domain = _explosion.Domain;
             _fullRadius = _colliderRadius * _explosion.MaxScale;
-            _colour = ButterflyDustField.ResolveMoteColour(_gameData, _domain, dustColor);
+            ButterflyDustField.ResolveMotePalette(_gameData, _domain, dustColor, _colours);
             Build();
         }
 
@@ -157,7 +158,7 @@ namespace CosmicShore.Gameplay
                 emit.position = centre + RandomDirection() * r;
                 emit.velocity = new Vector3(0f, -fallSpeed, 0f);
                 emit.startSize = Mathf.Lerp(moteSize.x, moteSize.y, Next01());
-                emit.startColor = _colour;
+                emit.startColor = NextColour();
                 _particles.Emit(emit, 1);
             }
             _lastRadius = radius;
@@ -232,9 +233,17 @@ namespace CosmicShore.Gameplay
                 emit.position = position;
                 emit.velocity = RandomDirection() * puffSpeed + new Vector3(0f, -fallSpeed, 0f);
                 emit.startSize = Mathf.Lerp(moteSize.x, moteSize.y, Next01()) * puffSizeScale;
-                emit.startColor = _colour;
+                emit.startColor = NextColour();
                 _particles.Emit(emit, 1);
             }
+        }
+
+        /// <summary>The next mote's colour: the palette's three in turn, so every handful of motes shows all three.</summary>
+        Color NextColour()
+        {
+            var c = _colours[_colourTurn];
+            _colourTurn = (_colourTurn + 1) % _colours.Length;
+            return c;
         }
 
         void OnDestroy()
@@ -283,7 +292,7 @@ namespace CosmicShore.Gameplay
             main.startLifetime = moteLifetime;
             main.startSpeed = 0f;
             main.startSize = new ParticleSystem.MinMaxCurve(moteSize.x, moteSize.y);
-            main.startColor = _colour;
+            main.startColor = ButterflyDustField.MotePaletteGradient(_colours);
             main.gravityModifier = 0f;
             main.maxParticles = Mathf.Max(maxMotes, bloomMotes);
 

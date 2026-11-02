@@ -189,7 +189,7 @@ namespace CosmicShore.Gameplay
                 // Seed floor AND cap come from the CELL, so a profile's FaunaPopulationScale moves
                 // both together - scaling the floor alone would be clamped away by the authored
                 // cap and read as doing nothing. See Cell.ResolveFaunaPopulation.
-                int seedFloor = Mathf.Max(1, host.ResolveFaunaPopulation(faunaCfg.PopulationSize));
+                int seedFloor = Mathf.Max(1, host.ResolveFaunaFloor(faunaCfg, faunaCfg.PopulationSize));
                 int cap = host.ResolveFaunaCap(faunaCfg);
 
                 int toSpawn = spawnProfile.SeedFullWaveEveryTick

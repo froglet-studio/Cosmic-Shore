@@ -16,7 +16,7 @@ MonoBehaviour:
   apPerTick: 3
   apBank: 6
   abilityChoices: 3
-  pickSeconds: 10
+  pickSeconds: 20
   bonusApCap: 2
   batteryCap: 3
   revealAbility: 3.5

@@ -178,7 +178,7 @@ namespace CosmicShore.Gameplay
                  "stopped (Garrett 2026-10-29: 3). 1 = the old random draw.")]
         [SerializeField, Range(1, 4)] int abilityChoices = 3;
         [Tooltip("lab pickSeconds: seconds the Ratel has to pick before the first offer is taken; 0 waits for the pick.")]
-        [SerializeField, Min(0f)] float pickSeconds = 10f;
+        [SerializeField, Min(0f)] float pickSeconds = 20f;
         [Tooltip("lab bonusApCap: banked extra AP (the Refund ability).")]
         [SerializeField, Min(0)] int bonusApCap = 2;
         [Tooltip("lab batteryCap: slip charges held; a new one replaces the oldest when full.")]

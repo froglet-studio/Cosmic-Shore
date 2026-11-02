@@ -44,6 +44,7 @@ namespace CosmicShore.UI
         {
             accent.a = 1f;
             if (_accent.HasValue && _accent.Value == accent) return;
+            if (!_authored.HasValue) _authored = (glowColor, outerColor, innerColor);
             _accent = accent;
             var glow = accent * 0.55f;
             glow.a = glowColor.a;
@@ -54,6 +55,18 @@ namespace CosmicShore.UI
             glowColor = glow;
             outerColor = outer;
             innerColor = inner;
+            SetVerticesDirty();
+        }
+
+        (Color glow, Color outer, Color inner)? _authored;
+
+        /// <summary>Back to the colours the arrow had before its first <see cref="SetAccent"/> (a temporary accent,
+        /// such as the Ark's damage alarm, ending).</summary>
+        public void ClearAccent()
+        {
+            if (!_accent.HasValue || !_authored.HasValue) return;
+            (glowColor, outerColor, innerColor) = _authored.Value;
+            _accent = null;
             SetVerticesDirty();
         }
 
