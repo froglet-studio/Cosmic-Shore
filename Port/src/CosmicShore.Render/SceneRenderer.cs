@@ -1016,9 +1016,10 @@ void main(){
             public uint SkinVbo;
             public object SkinRef;
             public int Frame;
-            /// <summary>TEXCOORD2/3/4 (vec4 each) in their own buffer, for compiled graphs and hand translations that read them.</summary>
+            /// <summary>TEXCOORD2/3/4 and the full TEXCOORD0 (vec4 each) in their own buffer, for compiled graphs and hand
+            /// translations that read them.</summary>
             public uint Uv23Vbo;
-            public object Uv2Ref, Uv3Ref, Uv4Ref;
+            public object Uv2Ref, Uv3Ref, Uv4Ref, Uv0WideRef;
             public bool HasUv23;
         }
 
@@ -2878,16 +2879,17 @@ void main(){
             var uv2 = mesh.RenderUvWide(2);
             var uv3 = mesh.RenderUvWide(3);
             var uv4 = mesh.RenderUvWide(4);
+            var uv0w = mesh.RenderUvWide(0);   // only a TEXCOORD0 set wider than 2 (SetUVs(0, Vector4s)); else null
             int subs = mesh.RenderSubmeshCount;
             bool dirty = e.Vao == 0 || !ReferenceEquals(e.VertsRef, verts) || !ReferenceEquals(e.NormRef, norms) || !ReferenceEquals(e.TanRef, tans) || !ReferenceEquals(e.Uv1Ref, uv1)
                 || !ReferenceEquals(e.UvRef, uvs) || !ReferenceEquals(e.ColRef, cols) || e.SubRefs.Length != subs
-                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights) || !ReferenceEquals(e.Uv2Ref, uv2) || !ReferenceEquals(e.Uv3Ref, uv3) || !ReferenceEquals(e.Uv4Ref, uv4);
+                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights) || !ReferenceEquals(e.Uv2Ref, uv2) || !ReferenceEquals(e.Uv3Ref, uv3) || !ReferenceEquals(e.Uv4Ref, uv4) || !ReferenceEquals(e.Uv0WideRef, uv0w);
             if (!dirty)
                 for (int i = 0; i < subs; i++)
                     if (!ReferenceEquals(e.SubRefs[i], mesh.RenderSubmesh(i))) { dirty = true; break; }
             if (!dirty) return e;
 
-            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1; e.Uv2Ref = uv2; e.Uv3Ref = uv3; e.Uv4Ref = uv4;
+            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1; e.Uv2Ref = uv2; e.Uv3Ref = uv3; e.Uv4Ref = uv4; e.Uv0WideRef = uv0w;
             e.SubRefs = new object[subs];
             int n = verts.Length;
             if (n == 0) return null;
@@ -2970,16 +2972,17 @@ void main(){
                 _gl.DisableVertexAttribArray(12);
                 _gl.DisableVertexAttribArray(13);
             }
-            e.HasUv23 = uv2 != null || uv3 != null || uv4 != null;
+            e.HasUv23 = uv2 != null || uv3 != null || uv4 != null || uv0w != null;
             if (e.HasUv23)
             {
-                var extra = new float[n * 12];
+                var extra = new float[n * 16];
                 for (int i = 0; i < n; i++)
                 {
-                    int o = i * 12;
+                    int o = i * 16;
                     if (uv2 != null) { extra[o] = uv2[i].x; extra[o + 1] = uv2[i].y; extra[o + 2] = uv2[i].z; extra[o + 3] = uv2[i].w; }
                     if (uv3 != null) { extra[o + 4] = uv3[i].x; extra[o + 5] = uv3[i].y; extra[o + 6] = uv3[i].z; extra[o + 7] = uv3[i].w; }
                     if (uv4 != null) { extra[o + 8] = uv4[i].x; extra[o + 9] = uv4[i].y; extra[o + 10] = uv4[i].z; extra[o + 11] = uv4[i].w; }
+                    if (uv0w != null) { extra[o + 12] = uv0w[i].x; extra[o + 13] = uv0w[i].y; extra[o + 14] = uv0w[i].z; extra[o + 15] = uv0w[i].w; }
                 }
                 if (e.Uv23Vbo == 0) e.Uv23Vbo = _gl.GenBuffer();
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, e.Uv23Vbo);
@@ -2999,9 +3002,10 @@ void main(){
         /// </summary>
         unsafe void BindGraphUv23(MeshEntry entry, bool uv4 = true)
         {
-            // A compiled graph also reads TEXCOORD4 at location 8 (the scene program's iDark, which
-            // BindInstanceAttributes restores too); the scene program's own families pass uv4: false.
-            const uint stride = 12 * sizeof(float);
+            // A compiled graph also reads TEXCOORD4 at location 8 and the full TEXCOORD0 at 9 (the scene
+            // program's iDark and iBright, which BindInstanceAttributes restores too); the scene program's own
+            // families pass uv4: false.
+            const uint stride = 16 * sizeof(float);
             if (entry.HasUv23)
             {
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, entry.Uv23Vbo);
@@ -3012,7 +3016,9 @@ void main(){
                 if (uv4)
                 {
                     _gl.EnableVertexAttribArray(8); _gl.VertexAttribPointer(8, 4, VertexAttribPointerType.Float, false, stride, (void*)(8 * sizeof(float)));
+                    _gl.EnableVertexAttribArray(9); _gl.VertexAttribPointer(9, 4, VertexAttribPointerType.Float, false, stride, (void*)(12 * sizeof(float)));
                     _gl.VertexAttribDivisor(8, 0);
+                    _gl.VertexAttribDivisor(9, 0);
                 }
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _instanceVbo);
             }
@@ -3025,7 +3031,9 @@ void main(){
                 if (uv4)
                 {
                     _gl.DisableVertexAttribArray(8);
+                    _gl.DisableVertexAttribArray(9);
                     _gl.VertexAttrib4(8, 0f, 0f, 0f, 0f);
+                    _gl.VertexAttrib4(9, 0f, 0f, 0f, 0f);
                 }
             }
         }

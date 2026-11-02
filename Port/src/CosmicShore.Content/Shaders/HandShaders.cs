@@ -31,12 +31,14 @@ namespace CosmicShore.Content.Shaders
             ["e66cc995d379448caf38b18d87140dde"] = ("ForcefieldCrackleCapsule", "Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader"),
             ["c451cf0afd834429a6f4e6652dad5b50"] = ("ProjectileChargeField", "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader"),
             ["3c26ca90a8014ba2894f6d3007b6fdae"] = ("ChargeCrystal", "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader"),
+            ["0979e966bf522ddf32cac152d0784867"] = ("CrystalChargeArcsShader", "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader"),
             ["1b0aa366a170fb99b7d63b228298811a"] = ("Wormhole", "Assets/_Graphics/Materials/Graphs/Wormhole.shader"),
         };
 
         /// <summary>What a translation knowingly leaves out, by translation name (shown as the program's approximations).</summary>
         static readonly Dictionary<string, string> s_approximations = new(StringComparer.Ordinal)
         {
+            ["CrystalChargeArcsShader"] = "Fog: the additive light fades toward the fog colour, where Unity fades it toward black",
             ["Wormhole"] = "Panorama: the partner's six-face capture is a texture array Amoebius does not have (copyTextureSupport None, so the game never readies one); the void colour stands in",
         };
 

@@ -203,7 +203,7 @@ void main() {
   sg_WorldToObject = inverse(M);
   mat3 NM = transpose(mat3(sg_WorldToObject));
   sg_PosOS = aPos; sg_NrmOS = aNormal; sg_TanOS = aTangent;
-  sg_Uv0 = vec4(aUv, 0.0, 0.0); sg_Uv1 = aUv1; sg_Uv2 = aUv2; sg_Uv3 = aUv3; sg_Uv4 = aUv4;
+  sg_Uv0 = vec4(aUv, aUv0Wide.zw); sg_Uv1 = aUv1; sg_Uv2 = aUv2; sg_Uv3 = aUv3; sg_Uv4 = aUv4;
   sg_Color = uVertexColor == 1 ? aColor : vec4(1.0);
   sg_VertexID = float(gl_VertexID);
   sg_FrontFace = true;
@@ -292,6 +292,7 @@ layout(location=15) in vec4 aUv1;
 layout(location=10) in vec4 aUv2;       // TEXCOORD2/3: the mesh's own channels in a graph draw (SceneRenderer.BindGraphUv23)
 layout(location=11) in vec4 aUv3;
 layout(location=8) in vec4 aUv4;        // TEXCOORD4 (CrystalElementPlates' element), also bound by BindGraphUv23
+layout(location=9) in vec4 aUv0Wide;    // TEXCOORD0's z and w, when the mesh set it as Vector4s (zero otherwise)
 uniform int uSkinned;
 uniform mat4 uBones[128];
 uniform int uVertexColor;
