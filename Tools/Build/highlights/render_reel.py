@@ -143,8 +143,9 @@ def follow_next_pilot(p):
 
 
 def first_run(p, name):
-    """Age gate, consent (declined) and the pilot's name, for this pilot's throwaway profile only."""
-    for _ in range(3):
+    """Age gate, consent (declined) and the pilot's name, for this pilot's throwaway profile only. A name the game
+    refuses (its reserved names include 'owner', an OS user name some flights are filed under) becomes 'Pilot'."""
+    for attempt in range(3):
         if p.scene() != "Authentication":
             return
         if p.click("BirthYear"):
@@ -153,7 +154,9 @@ def first_run(p, name):
             p.click("Button_Continue")
         p.click("Button_No thanks")
         if p.click("UsernameInputField"):
-            p.do(f"type {name}")
+            for _ in range(24):  # the field keeps a refused name: clear it
+                p.do("key Backspace")
+            p.do(f"type {name if attempt == 0 else 'Pilot'}")
             p.wait(5)
             p.click("ConfirmUsernameButton")
         p.wait(120)
