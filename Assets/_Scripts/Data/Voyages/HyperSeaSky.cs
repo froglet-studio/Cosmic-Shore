@@ -19,6 +19,9 @@ namespace CosmicShore.Data
         OpenCluster = 4,
         /// <summary>One of the board's places: a landmark with its own line.</summary>
         Landmark = 5,
+        /// <summary>A 20 ly cell of the HyperSea's hex grid (<see cref="HyperSea.CellCentre"/>), opened by a tap on open
+        /// water at the deep tiers.</summary>
+        Cell = 6,
     }
 
     /// <summary>One thing the deep zoom can draw: a star, a cluster or a landmark. Light years, the board's frame.</summary>
@@ -46,6 +49,9 @@ namespace CosmicShore.Data
         /// ([S] real, [A] proposed), line and sub-line.</summary>
         public string Id = string.Empty, KindId = string.Empty, Region = string.Empty, Tag = string.Empty,
             Line = string.Empty, Sub = string.Empty;
+
+        /// <summary>A cell's axial coordinates.</summary>
+        public int CellQ, CellR;
 
         public bool IsCluster => Kind == SkyKind.Globular || Kind == SkyKind.OpenCluster;
         public bool IsStar => Kind == SkyKind.Star || Kind == SkyKind.ModelStar || Kind == SkyKind.TumultStar;

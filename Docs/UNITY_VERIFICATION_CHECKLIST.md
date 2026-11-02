@@ -20780,3 +20780,19 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] The AI slips along trails toward where it is going and does not ping-pong on one trail.
 - [ ] The strip shows the goal's glyph, the hull closing on it, slips/darts, strikes, breaks and pickups.
 - [ ] A match with its own AI objective (Regatta, Astro League): the Honeyguide AI still plays the match's objective.
+
+## 🔴 Galaxy map: readable names at every zoom, and the 20 ly cells (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Ran here: `unity_refcompile` player and editor (0 errors in changed files; the 21 baseline errors are the unfetchable
+Vivox/Moderation packages), `check_console_logging.py`, `export_sky.js --check`, `author_voyage_assets.py --check`.
+The hex corners were checked against `HyperSea.CellOf` (a point 95% of the way to each corner stays in its cell). No
+Unity editor ran, so nothing below was seen.
+
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Menu_Main, Voyage window, the galaxy map at every ladder tier: every name (places, landmarks, stars, clusters),
+  the ladder and the readout read easily at phone and PC sizes, each on a dark plate; nothing overlaps.
+- [ ] Zoom from Region toward Neighbourhood: the hexagon grid fades in and stays faint under the stars.
+- [ ] Zoom to the Cell tier: one hexagon fills the view and names itself ("WATER 3, -2" and so on); tapping open water
+  opens the cell's card and outlines the hexagon in white; tapping the same cell again closes it; a star tap still
+  opens the star.
+- [ ] The edge view's caption under the map still fits its strip.
