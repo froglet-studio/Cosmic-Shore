@@ -61,7 +61,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, the catch orbit alone since 2026-11-02 (§11) | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
 | **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
-| Manta | Redline | gate race | none yet |
+| **Manta** | **Redline** | gate race, laps of a circuit cut for Soar | **Started 2026-11-03 (Yash, §13).** No race recorded yet. The AI flies the Regatta steering; its Soar bands are searched on a Redline model of the shipped AI (`redline-manta-time`) |
 | Urchin | Skein | gate race on rails | none yet |
 | Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
@@ -265,7 +265,7 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
 | Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26) |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
-| Manta / Redline | Soar | the Soar executor's bands |
+| Manta / Redline | Soar | the Soar executor's bands (0.35 / 0.75); searched by `redline-manta-time` (§13) |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
 
@@ -579,3 +579,48 @@ left the AIs at 1-4 of 16 rings (`THRESHERTIME.md` §4 "Measured in the real gam
 I4 110.8 s), and the races were watched in a Unity window. What is left: people's races at I3, the aim-off A/B at
 I2-I4, and more courses.
 (3) A Thresher Time model joins stage 1 of `REGATTA_BALANCE_PLAN.md`. (4) Then Regatta is designed from the four trained hulls.
+
+## 13. The Manta, in Redline (Yash, 2026-11-03)
+
+> "Let's make Manta AI training, what is the time game mode of manta?" (Yash, 2026-11-03)
+
+**The Manta's Time game is Redline** (`GameModes.Redline` 53, `Assets/_Scripts/Controller/Arcade/REDLINE.md`): three
+laps of an eight-ring circuit cut around the Manta's full-Soar turning circle, where every corner asks how much Soar it is
+worth. Nobody has raced it yet, so the AI trains on a model first and on people's races when there are some.
+
+**What was wrong with the model the queue raced.** `drive-manta-redline` (Shombith's machine ran it 34,070 times)
+raced `manta_drive_sim.py`, which is Regatta's model: a point mass at full throttle with no nose lag. Its
+best bands (BoostStickBand 1.0, YastriStickBand 0.63: always Soar) were an artefact of that. Redline flies none of the
+three. The AI's throttle is the skill throttle (Lerp(0.2, 0.9, intensity x 0.25): 37.5% at I1), the AI nose follows
+its command at 1.5/s, and Redline flew the old gate steering. The editor's own AI Mantas in recorded Regatta races
+reached 12-21 of 24 rings in about 100 s at I1, where that model finished all 24 in 25-35 s.
+
+**The new model**, `Tools/Build/manta_redline_sim.py`, ports what an AI Manta does in Redline line for line: the
+course, the gate aim, `AIPilot`'s stick, skill throttle and orbit break-off, the Soar triggers, and the hull's turn law
+with the nose lag. On Regatta's I1 course it laps in 28 s; the editor's Hard AI Mantas lapped it in 23-28 s
+(`--self-test` holds the trigger shape, the stick's signs, determinism, and three negative controls).
+
+**What it measured, and the one game change** (`REDLINE.md` §5.1 has the table):
+1. On the old steering the shipped AI finished 4 of 12 races over I1-I4, none at I3 or I4, and no pair of Soar bands
+   changed that. **Redline now flies the Regatta steering** (`RedlineController.AICommitFromApproachPoint`,
+   `RedlineAISteeringTests`), as ten other gate races do: 12 of 12.
+2. A full-throttle floor (Regatta's) is faster at I1 and loses races at I4, so the skill throttle stays.
+3. **The nose lag is the biggest lever left**: with none, the AI is 1.7x faster at I1 and 5x at I4. That is
+   `AI_PLAN.md` decision 7 (Yash), now asked for the Manta too.
+4. The bands matter once the steering is right: 0.15 / 0.75 finished every course with I4 at 228 s, against the
+   shipped 0.35 / 0.75's 326 s. The old job's 1.0 / 0.63 finishes none of I3-I4.
+
+**The search**: `redline-manta-time` (evaluator `redline_fit`, plan step `time-arcade`) searches ONE Soar drive for
+I1-I4 with the plan's composite (mean + half the worst intensity). Its first generation is the shipped executor bands,
+`MantaSoarAITuning_Regatta` (learned from people's Regatta races), and `MantaSoarAITuning_Redline` once the sweep writes
+it. The answer is a proposal for Yash: it becomes `MantaSoarAITuning_Redline` through the learner's writer, never by
+hand. Its machines need the evaluator on `bleeding-edge` and the simulator on `ai`. A first local run (120
+evaluations, 2026-11-03) found 0.118 / 0.83. On 6 FRESH courses an intensity it scored a composite of 23.95 against
+the shipped bands' 24.91 and the Regatta genome's 24.94. It finished 5 of 6 at I4 (median 295 s, against 318 s and
+4 of 6 for the shipped bands), but ran 3-6 s slower at I1-I3. A small gain, not promoted. The old job's 1.0 / 0.63
+scored 38.21 and finished none of the 12 races at I3-I4. The bands are a small lever; the nose lag is the big one.
+
+**Next, in order.** (1) Run Redline in the editor at I1-I4 with AI Mantas (`Docs/UNITY_VERIFICATION_CHECKLIST.md`):
+they should finish and re-attack a missed mouth. (2) Yash races Redline at each intensity: every race is recorded and
+the sweep learns `MantaSoarAITuning_Redline` on its own after three finished races. (3) Decision 7 for the Manta's nose
+rate. (4) The searched drive is promoted with Yash's yes, and stage 2 of `REGATTA_BALANCE_PLAN.md` races it.

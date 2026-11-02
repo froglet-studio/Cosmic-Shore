@@ -121,7 +121,7 @@ the AI, the same callsign weights its targets.
 |---|---|---|---|
 | Squirrel | Skim Race | `skimrace-squirrel-time`: one policy for I1-I4 with the composite loss, its first generation grown from the three shipped genomes (the general `SkimRaceAIConfig`, `_I1`, `_I2`) | ready (see the measurements below) |
 | Rhino | Headlong | `drive-rhino-headlong` (mean ln seconds over I1-I4) | ready |
-| Manta | Redline | `drive-manta-redline` (mean ln seconds over I1-I4) | ready |
+| Manta | Redline | `redline-manta-time` (2026-11-03): one Soar drive for I1-I4 with the composite loss, its first generation the shipped executor bands and every `MantaSoarAITuning` genome of the Time element (Regatta's today; Redline's joins when the sweep learns it), raced on `Tools/Build/manta_redline_sim.py` (Redline's AI ported line for line, nose lag and skill throttle included) by the `redline_fit` evaluator. It replaced `drive-manta-redline`, whose model was about 3x faster than the editor's AI Mantas. Redline flies the Regatta steering since the same day (`REDLINE.md` §5.1) | ready |
 | Dolphin | Switchback | Yash's learner writes a drive per intensity (`_Switchback_I<n>`, `AUTO_LEARNING.md` section 7). The Blast Run AI was rebuilt in four steps on 2026-11-02 (Yash, `MINIGAME_TRAINING_PLAN.md` section 9.1). Its universal search is `switchback-dolphin-time` (2026-11-02): one charge drive for I1-I4 with the composite loss, its first generation grown from the four shipped genomes (the mode-wide drive, `_I1`, `_I2`, `_I4`), raced on `Tools/Build/switchback_sim_harness` (the shipped course, Blast Run layout, planner and avoidance) by the `switchback_fit` evaluator | ready |
 | Urchin | Skein | none | build: a rail-ride model of Skein |
 | Thresher | Thresher Time | Claude sessions with Yash (`MINIGAME_TRAINING_PLAN.md` section 12): the sweep's `ThresherAIBoostPolicy_ThresherTime` from people's races, the aimed launch (2026-11-02); no offline model, so no search yet | build: a Thresher Time model (added to this table 2026-11-02 by Yash's session; the Thresher is next after the Stoat in Yash's order) |
@@ -178,12 +178,15 @@ trainer (studyholic, Garrett, Shombith). Decision 2 below proposes the same gate
 7. **Switchback's difficulty table** (Yash, the AI owner). Switchback sets each AI pilot's nose lag from a row per
    intensity and difficulty, tuned to Yash's time bands (`SWITCHBACK.md` "Lag by difficulty"). It is a difficulty
    setting, not a genome, but it is per intensity, and its Legendary flies faster than the shipped pilot. Should a
-   universal Dolphin Time genome carry one nose rate per level instead, once that genome exists?
+   universal Dolphin Time genome carry one nose rate per level instead, once that genome exists? The Manta asks the
+   same (2026-11-03): in Redline's model the fleet nose lag makes the AI 1.7x (I1) to 5x (I4) slower than one with
+   none, more than any Soar band buys (`REDLINE.md` §5.1).
 
 ## 8. Status log
 
 | Date | What moved |
 |---|---|
+| 2026-11-03 | Manta (`time-arcade`, Yash): the universal search `redline-manta-time` is queued on a new Redline model, `manta_redline_sim.py`, checked against the editor's AI Mantas in Regatta (I1 lap 28 s in the model, 23-28 s in Hard races); `drive-manta-redline` is retired (its model was ~3x too fast, and its best bands finish none of I3-I4 here). Redline's AI flies the Regatta steering (12 of 12 model races finished, 4 of 12 before). The AI nose lag is the biggest lever left (1.7-5x), which is decision 7's question for the Manta too (`MINIGAME_TRAINING_PLAN.md` section 13) |
 | 2026-11-02 | Dolphin (`time-arcade`, Yash): the universal search `switchback-dolphin-time` is queued (Yash's answer to decision 1: the learned files seed it). A first local run beat today's drives at every difficulty on fresh courses (composite at Hard 1.36 vs 1.39); not promoted (`MINIGAME_TRAINING_PLAN.md` section 9.1) |
 | 2026-11-02 | Dolphin (`time-arcade`, Yash): the Switchback Blast Run AI rebuilt in four steps and its difficulty set by AI nose lag (offline I4 140 / 129 / 120 / 112 s, Easy to Legendary); `switchback_sim_harness` is the Switchback course port the Dolphin's row asked for. The question it raises is decision 7 |
 | 2026-11-02 | Plan set (Garrett). `ai_plan.json` and the compute gate built. `skimrace-squirrel-time` (Squirrel, I1-I4 composite, seeded from three genomes) replaces the two one-intensity Squirrel searches. The three Regatta-trained drive searches are retired. The Regatta course searches now wait on the Squirrel, Rhino and Manta Time genomes |
