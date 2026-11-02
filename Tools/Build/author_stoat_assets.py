@@ -164,6 +164,11 @@ DIPOLE_RIGHT = "62ce60a32bef4c70b42fd1f7cd9896ff"
 
 
 # ----------------------------------------------------------------------------- Netcode's hash
+# The omni crystal folds into the hull (R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md): a placeholder until this hull's
+# omni ability puts something in the world to land on. Shared asset, not generated here.
+VESSEL_ABSORB_MORPH_GUID = "9a40b3a2720043cd86332dbf7e16dd8d"   # VesselAbsorbCrystalMorphByCrystal.asset
+
+
 def xxhash32(data: bytes, seed: int = 0) -> int:
     """XXHash32 - what Netcode's `string.Hash32()` computes over the UTF-8 GlobalObjectId."""
     p1, p2, p3, p4, p5 = 2654435761, 2246822519, 3266489917, 668265263, 374761393
@@ -1495,7 +1500,7 @@ def vessel_container_asset() -> str:
             "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(FULMEN_EFFECT) +
             "  vesselMassCrystalEffects: []\n  vesselChargeCrystalEffects: []\n  vesselSpaceCrystalEffects: []\n"
             "  vesselTimeCrystalEffects: []\n  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {VESSEL_ABSORB_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
