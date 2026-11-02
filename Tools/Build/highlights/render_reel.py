@@ -14,6 +14,13 @@ Runs where Amoebius builds (Gbox; a cloud session needs the .NET 10 SDK hosts al
     python Tools/Build/highlights/render_reel.py --moments moments.json --flights FLIGHTS --out OUT \
         [--count 6] [--player PATH_TO_CosmicShore(.exe)] [--size 1280x720] [--game OTHER_CHECKOUT]
 
+--exclude REEL.json ... never reuses a flight an earlier reel used. --explore 0.25 fills that share of the slots
+from the middle of the ranking (seeded), so the rewatch scores also see moments the hand weights rate lower.
+Each moment is filmed on the pilot's chase camera, or (for a moment with a rival in it, by a seeded draw of
+--rival-shots) on the next pilot's chase camera, and the cut list records which, so shots get scored too.
+The game's screen-space canvases are switched off once the replay plays (HUD, toasts, minimap), and each pilot
+gets a profile of their own, named after them, so the race's toasts name the real pilot.
+
 --game films with a player built in another checkout (when this one's Amoebius does not build): its player,
 its assets (COSMIC_SHORE_PROJECT) and its enums; moments in modes or hulls that checkout lacks are skipped.
 """
@@ -23,6 +30,7 @@ import argparse
 import glob
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -33,27 +41,48 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "Port", "tools"))
 sys.path.insert(0, HERE)
-from amoebius_markers_run import Player, first_run_prompts  # noqa: E402
+from amoebius_markers_run import Player  # noqa: E402
 import flight_to_replay  # noqa: E402
 
 PLAYER_PROJECT = os.path.join(REPO, "Port", "src", "CosmicShore.Player")
 DIRECTOR = "[ReplayMatch]"
+# the editor's flight records are filed by OS user name; the reels show the person (Docs/TEAM.json)
+PILOT_NAMES = {"gradi": "Garrett", "yskha": "Yash", "belac": "Caleb", "shombith": "Shombith"}
+RIVAL_EVENTS = {"near_pass", "overtake", "crystal_snatch", "close_finish"}
 
 
-def pick(moments, count, playable=None):
-    """The reel's moments: best first by score, one per flight, no two of the same lead type in a row, the best last."""
+def pick(moments, count, playable=None, exclude=(), explore=0.0, seed=1):
+    """The reel's moments: best first by score, one per flight, no two of the same lead type in a row, the best last.
+    A share `explore` of the slots is drawn (seeded) from the middle of the ranking instead of its top."""
+    pool = [m for m in moments if m["flight"] not in exclude and (not playable or playable(m))]
+    n_explore = int(round(count * explore))
+    rng = random.Random(seed)
     chosen, flights = [], set()
-    for m in moments:
-        if m["flight"] in flights or (playable and not playable(m)):
-            continue
+
+    def take(m, how):
+        if m["flight"] in flights:
+            return False
         lead = m["events"][0]["type"]
-        if chosen and chosen[-1]["events"][0]["type"] == lead and len(moments) > count * 3:
-            continue
-        chosen.append(m)
+        if chosen and chosen[-1]["events"][0]["type"] == lead and len(pool) > count * 3:
+            return False
+        chosen.append(dict(m, picked=how))
         flights.add(m["flight"])
-        if len(chosen) == count:
+        return True
+
+    for m in pool:
+        if len(chosen) >= count - n_explore:
             break
-    return chosen[1:][::-1] + chosen[:1] if len(chosen) > 1 else chosen  # weakest first, the best moment last
+        take(m, "top")
+    middle = pool[len(pool) // 5: len(pool) * 3 // 5]
+    rng.shuffle(middle)
+    for m in middle:
+        if len(chosen) >= count:
+            break
+        take(m, "explore")
+    best = max(chosen, key=lambda m: m["score"]) if chosen else None
+    rest = [m for m in chosen if m is not best]
+    rng.shuffle(rest)
+    return rest + ([best] if best else [])  # the best moment last
 
 
 def player_exe(arg, project=PLAYER_PROJECT, built=False):
@@ -75,10 +104,46 @@ def replay_clock(p):
     return float(m.group(1)) if m else None
 
 
-def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=None, slow=0.4):
+def hide_hud(p):
+    """Switch off every Canvas in the scene: the HUD, toasts and minimap are not the footage."""
+    out = p.cmd("find", "Canvas").get("output", "")
+    n = 0
+    for line in out.splitlines():
+        m = re.match(r"(\S.*?)  active=True  \[(.*)\]", line)
+        if m and re.search(r"\bCanvas\b", m.group(2)):
+            p.cmd("set", f'"{m.group(1)}" Canvas enabled False')
+            n += 1
+    return n
+
+
+def first_run(p, name):
+    """Age gate, consent (declined) and the pilot's name, for this pilot's throwaway profile only."""
+    for _ in range(3):
+        if p.scene() != "Authentication":
+            return
+        if p.click("BirthYear"):
+            p.do("type 1990")
+            p.wait(5)
+            p.click("Button_Continue")
+        p.click("Button_No thanks")
+        if p.click("UsernameInputField"):
+            p.do(f"type {name}")
+            p.wait(5)
+            p.click("ConfirmUsernameButton")
+        p.wait(120)
+
+
+def profile_recordings(recordings, pilot):
+    """The Recordings folder of profile reels-<pilot>, beside the 'reels' profile's one."""
+    return recordings.replace("CosmicShore-reels", f"CosmicShore-reels-{pilot}") if pilot else recordings
+
+
+def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=None, slow=0.4, shot="pilot"):
     flight_path = m["path"] if os.path.exists(m["path"]) else next(iter(glob.glob(os.path.join(flights_root, "**", m["flight"]), recursive=True)), None)
     if not flight_path:
         raise SystemExit(f"flight {m['flight']} not found under {flights_root}")
+    pilot = PILOT_NAMES.get(m.get("pilot", ""), m.get("pilot", "") or "Pilot")
+    recordings = profile_recordings(recordings, re.sub(r"[^A-Za-z0-9]", "", pilot))
     shutil.rmtree(recordings, ignore_errors=True)
     os.makedirs(recordings, exist_ok=True)
     flight_to_replay.convert_file(flight_path, recordings, game)
@@ -86,7 +151,7 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
     shots = os.path.join(work, "frames")
     shutil.rmtree(shots, ignore_errors=True)
     os.makedirs(shots)
-    env = dict(os.environ, COSMIC_SHORE_PROFILE="reels", COSMIC_SHORE_NET="off", COSMIC_SHORE_AUDIO="off")
+    env = dict(os.environ, COSMIC_SHORE_PROFILE="reels-" + re.sub(r"[^A-Za-z0-9]", "", pilot), COSMIC_SHORE_NET="off", COSMIC_SHORE_AUDIO="off")
     if game:
         env["COSMIC_SHORE_PROJECT"] = game
     log = open(os.path.join(work, "player.log"), "w")
@@ -96,7 +161,7 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
     rows = []
     try:
         p.wait_scene({"Authentication", "Menu_Main"}, 300)
-        first_run_prompts(p)
+        first_run(p, pilot)
         p.wait_scene({"Menu_Main"}, 300)
         p.wait(60)
         print("  ", p.do("console replay latest").strip()[:200])
@@ -111,6 +176,9 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
         if clock is None:
             raise SystemExit("the replay never started (no ReplayMatchDirector): see player.log")
         p.do("key F7")  # the development build's diagnostics overlay off
+        print("   canvases off:", hide_hud(p))
+        if shot == "rival":
+            p.do("key Tab")  # the replay's own control: the next pilot's chase camera
         target = max(0.0, m["start"])
         if clock < target - 2.5:
             p.do("timescale 8")
@@ -177,13 +245,21 @@ def main():
     ap.add_argument("--name", default="reel")
     ap.add_argument("--slow", type=float, default=0.4, help="the timescale while filming (true speed is restored from the clock)")
     ap.add_argument("--game", help="the checkout the player was built from, when not this one")
+    ap.add_argument("--exclude", nargs="*", default=[], help="earlier reels' cut lists: their flights are not reused")
+    ap.add_argument("--explore", type=float, default=0.0, help="share of the slots drawn from the middle of the ranking")
+    ap.add_argument("--rival-shots", type=float, default=0.3, help="chance a moment with a rival is filmed from the rival")
+    ap.add_argument("--seed", type=int, default=1)
     a = ap.parse_args()
     game = os.path.abspath(a.game) if a.game else None
 
     doc = json.load(open(a.moments))
     modes, hulls, _ = flight_to_replay.enums(game)
+    used = set()
+    for e in a.exclude:
+        used |= {c["flight"] for c in json.load(open(e)).get("moments", [])}
     chosen = pick(doc.get("all") or doc["top"], a.count,
-                  lambda m: m["mode"] in modes and m["hull"] in hulls)
+                  lambda m: m["mode"] in modes and m["hull"] in hulls, used, a.explore, a.seed)
+    rng = random.Random(a.seed + 1)
     exe = player_exe(a.player, os.path.join(game, "Port", "src", "CosmicShore.Player") if game else PLAYER_PROJECT)
     os.makedirs(a.out, exist_ok=True)
     clips, cuts, durs = [], [], []
@@ -192,11 +268,14 @@ def main():
         os.makedirs(work, exist_ok=True)
         print(f"[{i + 1}/{len(chosen)}] {m['mode']} {m['hull']} {m['pilot']} {m['start']}-{m['end']} s: "
               + ", ".join(e["type"] for e in m["events"]))
-        clip, rows, dur = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every, game, a.slow)
+        with_rival = any(e["type"] in RIVAL_EVENTS for e in m["events"])
+        shot = "rival" if with_rival and rng.random() < a.rival_shots else "pilot"
+        clip, rows, dur = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every, game, a.slow, shot)
         clips.append(clip)
         durs.append(dur)
         cuts.append({"index": i, "flight": m["flight"], "pilot": m["pilot"], "mode": m["mode"], "hull": m["hull"],
-                     "start": m["start"], "peak": m["peak"], "end": m["end"], "shot": "chase (replay default)",
+                     "start": m["start"], "peak": m["peak"], "end": m["end"], "shot": "chase on the next pilot" if shot == "rival" else "chase on the pilot",
+                     "picked": m.get("picked", "top"),
                      "events": m["events"], "features": m["features"], "score": m["score"],
                      "clip": os.path.relpath(clip, a.out), "frames": len(rows)})
     # join the clips with a short dissolve
