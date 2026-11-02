@@ -1,0 +1,4 @@
+ApplicationExitInfo #0:
+          timestamp=2026-11-02 12:49:09.666 pid=23562 realUid=10398 packageUid=10398 definingUid=10398 user=0
+          process=com.FrogletGames.CosmicShore reason=3 (LOW_MEMORY) subreason=0 (UNKNOWN) status=0
+          importance=400 pss=0.00 rss=539MB description=null state=empty trace=null
