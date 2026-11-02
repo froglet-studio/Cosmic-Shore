@@ -93,6 +93,7 @@ namespace CosmicShore.Gameplay
         /// on the next step, once any pick of three in progress is done.</summary>
         public void OnOmniCrystal(Vector3 at)
         {
+            if (_vessel != null && !_rider && _cfg != null) NoteCrystalTaken();   // the AI rests from omnicrystals; the strip flashes
             if (_vessel == null || _rider || _cfg == null || !_cfg.HiveMode) return;
             if (_hive != null) return;   // one hive at a time: an omnicrystal taken in hive mode opens none
             _omniPending++;
@@ -426,8 +427,14 @@ namespace CosmicShore.Gameplay
                 float d = (c.transform.position - from).sqrMagnitude;
                 if (d < best) best = d;
             }
+            float crystal = best;
             if (_massHiveUp) best = Mathf.Min(best, (_massHiveAt - from).sqrMagnitude);   // the Mass hive opens hive mode too
             StripDistance = best < float.MaxValue ? Mathf.Sqrt(best) : -1f;
+            // a person's hull (or a match's AI): the strip's goal is the omnicrystal or the Mass hive; the AI's hunt sets its own
+            if (_steering || (_goal != HuntGoal.None && _goal != HuntGoal.Crystal && _goal != HuntGoal.Hive)) return;
+            _goal = StripDistance < 0f ? HuntGoal.None : best < crystal ? HuntGoal.Hive : HuntGoal.Crystal;
+            _goalColour = 0;
+            GoalDistance = StripDistance;
         }
 
         // ------------------------------------------------------------------ state copy (a Ratel on another machine)

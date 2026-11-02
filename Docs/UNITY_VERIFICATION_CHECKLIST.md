@@ -20761,3 +20761,11 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] Serpent Time: seed walls near trails; they still steal loose prisms, skip creatures, seeds, super-shielded armour and other walls' seeds, and take opponents' shielded prisms only with the Space upgrade.
 - [ ] Voyage (an Ark present): a wall seeded beside the Ark does not strip its hull.
 - [ ] Profiler, Serpent Time with walls up: `SerpentWall.Sweep` well under the 4.1 ms a frame `SerpentWallAssembler.Update` took on 2026-10-29 (Andrew's capture).
+
+## 🔴 Honeyguide AI: unstuck slips, a freestyle hunt, the symbolic strip (2026-11-02, NOT COMPILED, NOT RUN IN EDITOR)
+`HoneyguideCrew.Hunt.cs` (new), `HoneyguideCrew.Pilot.cs`/`Zip.cs`/`Triggers.cs`/`Hive.cs`, `HoneyguideDynamoView.Strip`, `HoneyguideConfigSO` (+ asset), `AIPilot.ExternalTargetProvider`. Record: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` § The AI's hunt. Not compiled: the cloud session could not install a .NET SDK (dot.net blocked), so `unity_refcompile` was skipped; `gates.sh` otherwise all OK.
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Freestyle, play the Ratel (the AI flies): over a minute or two the AI goes after creatures, rivals and opposing prism masses, not only omnicrystals, and still takes one now and then.
+- [ ] The AI slips along trails toward where it is going and does not ping-pong on one trail.
+- [ ] The strip shows the goal's glyph, the hull closing on it, slips/darts, strikes, breaks and pickups.
+- [ ] A match with its own AI objective (Regatta, Astro League): the Honeyguide AI still plays the match's objective.
