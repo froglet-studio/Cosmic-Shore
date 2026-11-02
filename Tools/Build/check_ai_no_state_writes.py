@@ -42,6 +42,9 @@ SCOPES = [
     "Assets/_Scripts/Controller/Camera/ThirdEye",
     # The microgame drill: its Ghost Demo presses a control for the autopilot (TRAINING_PLAN §10.7).
     "Assets/_Scripts/Controller/Arcade/Preview/Drill",
+    # Every hull's boost policy: each presses its vessel's abilities through the replicated press (2026-11-02, with the
+    # Thresher's aimed launch, which hands its executor an aim and nothing else).
+    "Assets/_Scripts/Controller/AI/Boost",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.

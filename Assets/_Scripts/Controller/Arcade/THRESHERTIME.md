@@ -143,6 +143,26 @@ human who slings will beat it.
   than code in `ThresherExecutor`, so its numbers are per-mode assets the AI learning sweep can learn from
   people's Thresher races (`Docs/AI_SYSTEM/AUTO_LEARNING.md`). The course is still cut for an AI at cruise
   (every corner flyable without a sling), so an AI that slings badly still finishes.
+- **The aimed launch** (2026-11-02, learned from Garrett's races). What is above is the BASE policy; in this mode the AI
+  flies `ThresherAIBoostPolicy_ThresherTime`, learned from people's races by the sweep (`AIBoostPolicySO.ForMode`): it
+  plants when a ring is at least 6.7° off and 115 u away, at most every 2.9 s, and, with `aimedLaunch` on, launches AIMED.
+  Garrett's races show why: 85% of his planted time is the aimed launch (both triggers full), planted with the ring
+  nearly ahead (4-20° off, 370-990 u away), let go after 1.2-3 s, leaving 0.05-1.3 s later within 2-10° of the ring at
+  480-4,600 u/s. The AI had learned his let-go TIMING but let go unaimed, so it left along the tangent up to 63° off the
+  ring at the orbit's own speed. Now, once the launch view is up (the same rule that puts up a pilot's crosshair: both
+  triggers full on a spin of at least `spectateSpinRate`), the driver hands `ThresherExecutor.AimAutopilotLaunch` its
+  objective every tick; the executor tilts the orbit plane onto it at the pilot's own `aimPitchRate`
+  (`ThresherCameraFraming.LayAimTowards`) and the let-go, after `aimedHoldSeconds` (1.54, his median) with the aim
+  within `aimToleranceDegrees` (3), ARMS the same launch with the same ×4.8 boost and exit buff. A local pilot's own aim
+  always wins; the aim is the AI's believed objective, so a difficulty mistake carries over. As for a person's aimed
+  launch, a remote replica sees the press only and lets go along the tangent. The plain let-go's cone is no longer
+  learned from an aimed launcher (his arms read as 62.8°, his brake taps as 103°): the variant's is the base's 15°, and
+  it waits `aimedHoldSeconds` first (`WantsUnaimedLetGo`), because a plant with the ring nearly ahead is inside the cone
+  on its first tick and would let go before the launch view could come up.
+  The solver flies any armed aim; laying the plane first is what makes the launch leave from the point where the circle
+  already faces the ring, as a pilot's snap aim does, instead of kinking the flight line by the ring's tilt. Tests:
+  `ThresherSlingAIPolicyTests`, `ThresherChainSolverTests.AutopilotAim_*` (with a negative control: an unlaid plane
+  kinks an off-plane launch by its tilt). Not yet watched in an editor race.
 
 ## 5. Numbers, and where they are authored
 

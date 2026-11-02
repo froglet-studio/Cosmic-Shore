@@ -69,7 +69,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Tiger Moth** | **Waystation** (the Drop Tower course since 2026-11-01) | Drop Tower race: short hops through plates, then one long drop | none yet on the towers. The belly-aim autopilot takes the clusters and the long drop; the hop autopilot (`WaystationController.TickHops`) takes the towers. No learner reads it yet |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
-| **Thresher** | **Thresher Time** | gate race, the sling | **Next after the Stoat (Yash, 2026-11-02, §12).** 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3), learned into `ThresherAIBoostPolicy_ThresherTime` (2026-11-01). The AI slings only the sharp corners and races at cruise elsewhere |
+| **Thresher** | **Thresher Time** | gate race, the sling | **Next after the Stoat (Yash, 2026-11-02, §12).** 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3), learned into `ThresherAIBoostPolicy_ThresherTime` (2026-11-01; two of its three races are Garrett's). The AI plants on almost every corner and, since 2026-11-02, launches aimed like Garrett |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
 | Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
 | Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
@@ -505,10 +505,32 @@ team's acceptance the Stoat is still waiting for. And its race asks a skill: pla
 **Where its AI stands (2026-11-02).**
 - People's races: 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3). The sweep wrote
   `ThresherAIBoostPolicy_ThresherTime` from them on 2026-11-01 (`LEARNED_DRIVES_ThresherTime.md`).
-- The AI slings only the sharp corners (`ThresherSlingAIPolicySO`: a ring at least 70° off and 120 u away) and races at
-  cruise everywhere else; the ×4.8 aimed launch is a human's only. `THRESHERTIME.md` §4 calls the AI field "a cruise-pace
-  field, not a slinging one", which a human who slings beats.
+- In Thresher Time the AI flies that learned variant (`AIBoostPolicySO.ForMode`), not the base policy `THRESHERTIME.md` §4
+  describes (a ring at least 70° off, a 15° release cone). The variant plants when a ring is at least 6.7° off and 115 u
+  away, at most every 2.9 s, winds while planted, and lets go within 62.8° of the ring or after 3.2 s. It always lets go
+  unaimed: the ×4.8 aimed launch is still a human's only. **Since 2026-11-02 (later the same day) it launches aimed**:
+  under the launch view it aims at the ring and lets go after 1.54 s, Garrett's median (`THRESHERTIME.md` §4 "The aimed
+  launch"); the 62.8° cone, learned from his arms, is back to the base's 15° for the plain let-go.
 - No offline model of Thresher Time, so no compute job.
+
+**Garrett's races** (his machine reports as `gradi`, his pilot name is Kyoki; collected 2026-11-02 from
+`origin/bugledger/gradi`). Every race he sent is already on the sweep's seen list (`ai_learning_seen.json`), and nothing
+needed collecting by hand. Two were matches with Caleb, Shombith and Yash; each person's file is their own hull.
+
+| Race (his clock) | Intensity | Result | Plants | Planted, of it both triggers full | Peak u/s |
+|---|---|---|---:|---|---:|
+| 2026-10-29 17:55 | I1 | 15 / 16 rings; Caleb won in 108.5 s | 10 | 23.2 s, 21.2 s | 1,966 |
+| 2026-10-30 19:54 | I1 | **won, 64.6 s**, rivals Legendary (learned from) | 7 | 7.0 s, 6.8 s | 3,985 |
+| 2026-10-31 13:53 | I2 | **won, 106.1 s** (learned from) | 12 | 18.6 s, 17.8 s | 4,595 |
+| 2026-10-31 13:56 | I4 | 14 / 16 rings; Shombith won in 120.1 s | 8 | 23.1 s, 15.1 s | 4,576 |
+
+What his races teach that the AI cannot take yet: **85% of his planted time is the aimed launch** (both triggers full), and
+it is where his speed comes from (peaks of 2,000-4,600 u/s; the other pilots who plant little peak at 170-410). Caleb flies
+the same way. The learner read when he plants and lets go, so the AI copied his timing but not his aim; it now reads the
+aimed launch too (`learn_drives_from_flights.py` `aimed_launch`: 68% of the plants in the races it learns from) and the AI
+flies it. The Thresher's
+Toybox play, where Garrett tuned it from 2026-10-08, was never recorded: the recorder records matches only, and no
+Freestyle flight exists from anyone.
 
 **For later.** The Thresher and the Stoat race the same verb (orbit, then release for a kick), so two of the four share it.
 Garrett's yes comes before it goes on Regatta's card: it is his vessel, and a mode takes a kit as it is (CLAUDE.md, "A game
@@ -516,5 +538,6 @@ mode never changes the vessel"). Its ball threads rings as the hull does (`THRES
 measure when it is designed.
 
 **Next, in order, once the Stoat's Slingshot is done.** (1) Yash plays Thresher Time at I1-I4 (I3 has no race yet); the
-sweep relearns from it on its own. (2) The AI makes slinging pay at every intensity (§6), measured against Yash's races.
+sweep relearns from it on its own. (2) The AI makes slinging pay at every intensity (§6), measured against Yash's races. The aimed launch is in
+(2026-11-02); what is left is watching it race (the checklist's Thresher Time entry) and races at I3.
 (3) A Thresher Time model joins stage 1 of `REGATTA_BALANCE_PLAN.md`. (4) Then Regatta is designed from the four trained hulls.

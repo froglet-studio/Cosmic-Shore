@@ -26,3 +26,6 @@ MonoBehaviour:
   releaseConeDegrees: 15
   maxPlantSeconds: 3
   windWhilePlanted: 1
+  aimedLaunch: 0
+  aimedHoldSeconds: 1.5
+  aimToleranceDegrees: 3

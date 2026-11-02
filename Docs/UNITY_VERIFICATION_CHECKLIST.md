@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the
+launch view (both triggers full on a fast enough spin) `ThresherSlingAIPolicySO` hands `ThresherExecutor.AimAutopilotLaunch`
+its ring; the executor lays the orbit plane onto it at the pilot's `aimPitchRate` and the let-go, after 1.54 s with the aim
+within 3°, arms the pilot's launch (×4.8 boost, the ×2 exit buff). `ThresherAIBoostPolicy_ThresherTime`: `aimedLaunch` 1,
+`aimedHoldSeconds` 1.54 (learned), `releaseConeDegrees` 62.8 → 15 (the 62.8 was learned from his arms). The base policy keeps
+the aimed launch off. `THRESHERTIME.md` §4 "The aimed launch". Affects: Garrett's Thresher (an additive aim seam in
+`ThresherExecutor`; no human path changed).
+
+**Verified without the editor:** Unity 6000.3.17f1 batch-mode EditMode run (a real compile, no errors) of
+`ThresherSlingAIPolicyTests`, `ThresherChainSolverTests` (incl. `AutopilotAim_*` with a negative control),
+`ThresherAnalogTriggerTests`, `ThresherTimeCourseTests`: 125 of 126 pass. The one failure is not this change's:
+`ThresherAnalogTriggerTests.PitchAim_IsTurnAimsPitch_AndLaysTheAimOntoAnOffPlaneLine` (2026-10-30) asserts an angle under
+0.01° and reads 0.0198°, the float floor of `Vector3.Angle` near zero; nothing it calls was changed. Also
+`learn_drives_from_flights.py --self-test` (the aimed-launch detector, three negative controls) and `--check`; the
+input-only gate (now covering `Controller/AI/Boost`), Mathf-params and console-logging gates. NOT run: `unity_refcompile`
+(it cannot run on Windows), a player build, any race.
+
+**Verify in editor:**
+1. Thresher Time I1, two AI Thresher rivals, F2 (AI Diagnose), watch one: it plants with the ring ahead, its status reads
+   "planted: aiming the launch", the orbit tilts toward the ring, and it leaves along the ring much faster than cruise
+   (hundreds to thousands of u/s), not along the circle's tangent.
+2. The same at I2 and I4. Note any launch that leaves well off the ring, and any race an AI fails to finish.
+3. Race them yourself at I1: the AI's finish time against yours (Garrett won I1 in 64.6 s against Legendary rivals).
+4. Fly the Thresher yourself: your crosshair launch is unchanged (aim, release, the boost, the exit).
+
 ### 🔴 Switchback AI step 3: the planner's plain-hit cost 0.6 -> 0.25 s (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `SwitchbackBlastPlanner.HitPenalty` 0.25 (the measured cost of a plain prism hit). Offline it changes

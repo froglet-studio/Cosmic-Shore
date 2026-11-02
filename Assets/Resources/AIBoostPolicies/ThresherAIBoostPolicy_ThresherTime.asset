@@ -23,6 +23,9 @@ MonoBehaviour:
   plantMinTurnDegrees: 6.691
   plantMinDistance: 115.249
   slingIntervalSeconds: 2.866
-  releaseConeDegrees: 62.813
+  releaseConeDegrees: 15
   maxPlantSeconds: 3.156
   windWhilePlanted: 1
+  aimedLaunch: 1
+  aimedHoldSeconds: 1.54
+  aimToleranceDegrees: 3

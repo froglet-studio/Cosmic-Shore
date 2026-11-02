@@ -451,8 +451,12 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     the orbit's speed however long it waited for its point (`ThresherChainSolver.ArmLaunch(aim, boost)`;
     739 u/s off the 154 u/s spin cap, 2 299 u/s off the 479 u/s sling ceiling). Before, only a launch
     timed inside the 0.25 s window with **Time L5 "Perfect Release"** got ×1.6; that upgrade and its
-    `ThresherStepResult.Perfect` flag are retired. A plain release (no crosshair: a slow orbit, the
-    autopilot, a remote replica's LT edge) still leaves at the orbit's speed. The ship carries the speed
+    `ThresherStepResult.Perfect` flag are retired. A plain release (no crosshair: a slow orbit, a remote
+    replica's LT edge) still leaves at the orbit's speed. **The autopilot aims too** (2026-11-02,
+    `Arcade/THRESHERTIME.md` §4 "The aimed launch"): it has no camera, so under the same launch view its
+    driver hands `AimAutopilotLaunch` its objective, the orbit plane is laid onto it at `aimPitchRate`
+    (`ThresherCameraFraming.LayAimTowards`), and its let-go arms this same launch, boost and exit buff
+    included; a local pilot's own aim always wins. The ship carries the speed
     as momentum and bleeds it back to cruise at the throttle step (`LERP_AMOUNT` 1.5/s); nothing clamps
     it (no `ModifyVelocity`, so §4.ab2's ceiling does not apply). The aim is held once armed. The ball is
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
@@ -473,7 +477,7 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     second (measured at the first tuning, ×3 over 3 s: RT held 532 u today → 579 u uncarried → 1 272 u carried; RT
     released 655 → 622 → 1 570 u). At ×2 over 8 s the carried buff covers **1.67×** today's ground in its 8 s (RT held
     871 → 1 453 u), with the physics speed within 1% of today's frame for frame. Only an aimed launch (the crosshair)
-    gets it; a plain release, the autopilot and a remote replica's release do not. A new plant ends it (an orbit
+    gets it (the autopilot's aimed launch included, 2026-11-02); a plain release and a remote replica's release do not. A new plant ends it (an orbit
     cannot travel faster than its own chord). Tests: `ThresherAnalogTriggerTests.ExitBuff_*`,
     `ChainLinks_CarriedWithTheHull_GainNoVelocity`; three mutations (no ball carry, no decay, links carried without
     their previous positions) each fail one. **Multiplayer, not handled:** remote peers simulate their own copy of the

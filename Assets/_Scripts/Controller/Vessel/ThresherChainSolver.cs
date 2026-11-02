@@ -1652,5 +1652,24 @@ namespace CosmicShore.Gameplay
             if (aimUp.sqrMagnitude < 1e-8f) aimUp = Vector3.Cross(aim, Vector3.forward);
             aimUp.Normalize();
         }
+
+        /// <summary>
+        /// The AUTOPILOT's aim (<see cref="ThresherSlingAIPolicySO"/>, 2026-11-02): an AI has no launch camera to turn,
+        /// so its aim is its objective. Tilts <paramref name="aimUp"/> (the orbit plane's normal) toward the plane that
+        /// holds <paramref name="toTarget"/> by at most <paramref name="maxRadians"/> - a pilot's own aimPitchRate x dt,
+        /// so the AI turns the spin no faster than a stick can - and returns the aim laid into that plane: the launch
+        /// direction an armed launch would leave along. aimUp keeps its side and stays unit. Zero when there is no
+        /// target, or it lies along the plane's normal (no launch point on the circle faces it).
+        /// </summary>
+        public static Vector3 LayAimTowards(ref Vector3 aimUp, Vector3 toTarget, float maxRadians)
+        {
+            if (toTarget.sqrMagnitude < 1e-8f || aimUp.sqrMagnitude < 1e-8f) return Vector3.zero;
+            Vector3 target = toTarget.normalized;
+            Vector3 want = Vector3.ProjectOnPlane(aimUp, target);
+            if (want.sqrMagnitude > 1e-8f)
+                aimUp = Vector3.RotateTowards(aimUp.normalized, want.normalized, Mathf.Max(0f, maxRadians), 0f).normalized;
+            Vector3 aim = Vector3.ProjectOnPlane(target, aimUp);
+            return aim.sqrMagnitude > 1e-6f ? aim.normalized : Vector3.zero;
+        }
     }
 }
