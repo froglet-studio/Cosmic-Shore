@@ -12,6 +12,8 @@ menu). It is the ONLY codex: always republish to that URL, never create another.
 |---|---|
 | Generator (a READER: writes only its `--out`, touches no asset) | `Tools/Build/fleet_codex.py` |
 | The page: design B of the board's **Rev 48** (picked 2026-11-02; section 115 of `Docs/MENU_REDESIGN_B.md`), in the website's Silver Screen look: a top bar, a filmstrip of the fleet (crew vessels as wider posters with their seats), and the vessel as a bento: the hull, its five abilities (four elements and the omni crystal), ONE control map drawing controller, keyboard and phone with the picked ability lit, its games, the picked ability's full text, docs and changes. `#fleet` is the whole fleet as one table, `#<VesselKey>` one vessel | `Docs/FleetCodex/index.html` |
+| Themes | five, picked from the top-right menu and remembered per viewer (`localStorage` `fleetCodexTheme`): Silver Screen (the default, follows light/dark), Tesseract, Endurance, Gargantua, HyperSea. A theme is only tokens on `html[data-skin]` (`--still`, `--display`, `--dscale`...); a new one is one token block plus one row in `THEMES` |
+| The two hand tables (the only typed facts; each entry cites the doc or code it was read from) | `Docs/FleetCodex/abilities.json` (what each ability DOES, how it fires, what more of its element does, and what an omni crystal does: the maps record only what an element scales) and `Docs/FleetCodex/seats.json` (which seat of a crew vessel owns which ability) |
 | Generated data, git-ignored | `Docs/FleetCodex/build/` (`fleet.json`, `img/<Key>.webp`) |
 | What it reads and why | `Docs/FleetCodex/README.md` |
 
@@ -19,6 +21,9 @@ Where each fact comes from (so a wrong fact is fixed at its source, never in the
 
 | On the page | Source |
 |---|---|
+| What an ability does, its trigger, the plain 'more Mass ...' line, what the omni crystal does | `Docs/FleetCodex/abilities.json`; an entry whose `ability` no longer equals the map's `AbilityLabel` is DROPPED with a stderr warning (re-read its `source` and fix the entry) |
+| Crew seats (a card per seat with its abilities inside) | `Docs/FleetCodex/seats.json`; a seat not in `CrewNames` or an element the map lacks STOPS the build |
+| An ability card's level-5 face (the L5 button flips it) | the upgrade's label, description, gate and status from the map; the art is the HUD's lockup bloom (`LockupBloom.png`) over the ability icon, or a file in the hull's icon folder named after the upgrade (`Scarab_Snap_Dash`) |
 | Ability, input (pad / keyboard), prose, L5 label + description | `Assets/Resources/ElementalAbilityMaps/<Key>.asset`, via `element_ability_table.py --json --verbose` |
 | L5 status (wired / open / switched off / named-not-gated / gated-not-named) and its gate site | the `IsUpgradeActive` call sites the prefab reaches (`element_ability_table.py`) |
 | "What X scales" (field, ×min → ×max, asset; struck through when switched off) | the `ElementalFloat`s the prefab reaches (`element_ability_table.py`) |
@@ -60,6 +65,7 @@ Do this after any vessel change lands, when asked, and in the daily scheduled ru
    cp "$SCRATCH/be/Docs/FleetCodex/index.html" "$SCRATCH/codex-index.html"
    ```
    It prints a `contentHash` (it ignores the timestamp and commit) and a `FILES [...]` line.
+   Read its stderr: an `abilities.json:` warning means an ability was renamed or replaced; read the entry's `source`, rewrite the entry, and commit it with the refresh.
 3. **Skip when nothing changed.** Read the published data (`Artifact` `action: "read"`, `url` the codex,
    `path: "fleet.json"`) and compare its `contentHash`. Equal and the page file unchanged: stop, and report "no
    change". (The read also satisfies the rule that a session reads an artifact before publishing to it.)
@@ -92,7 +98,7 @@ that runs §1 (`trig_01AewfLUV66vYQC6b84FRFm5`, 05:41 UTC). Manage it with the s
 ## Rules
 
 - One codex artifact. Never publish a second one, and never pass `force`.
-- Never hand-edit `fleet.json` or commit `Docs/FleetCodex/build/`.
+- Never hand-edit `fleet.json` or commit `Docs/FleetCodex/build/`. The only typed facts are the two tables (`abilities.json`, `seats.json`), and each entry names its source; a doc that disagrees with the code loses (`/vessel` §2).
 - The generator is a reader: it must never write an asset, and it must never guess (a vessel with no map shows "no
   map", a hull with no prefab numbers shows none).
 - Owners: the vessels belong to their owners (`who_works_where.py`); the codex only reads them. The skill and

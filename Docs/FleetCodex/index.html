@@ -141,7 +141,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .face .mo{overflow-wrap:anywhere}
 .how{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 9px 3px 4px;border:1px solid var(--line);border-radius:12px;background:var(--raise);font-family:var(--mono);font-size:10.5px;line-height:14px;color:var(--ink);max-width:100%}
 .how:not(:has(.g)){padding-left:9px}
-.how .g{display:inline-flex;gap:2px}.how .g img{width:18px;height:18px;object-fit:contain}.how .g .cap{font-size:10px}
+.how .g{display:inline-flex;gap:2px;background:#15191D;border-radius:9px;padding:1px 2px}.how .g img{width:18px;height:18px;object-fit:contain}.how .g .cap{font-size:10px}
 .scl{display:flex;gap:7px;align-items:flex-start;width:100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;line-height:16px;color:var(--muted)}
 .scl .chip{width:18px;height:18px}.scl .chip img{width:12px;height:12px}
 .l5t{display:flex;gap:7px;align-items:baseline;width:100%;font-size:12px;color:var(--ink)}
@@ -164,7 +164,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .back .ul{font-weight:600;font-size:15px;line-height:19px}
 .back .gate{font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow-wrap:anywhere}
 /* a crew vessel: one card per seat, the seat's abilities inside it */
-.kit.crew{grid-template-columns:1fr}
+.kit.crew{display:flex;flex-wrap:wrap;gap:12px}
+.kit.crew .seat{flex:var(--n,1) 1 calc(var(--n,1) * 196px + 30px);min-width:0;max-width:100%}
+.kit.crew>p{flex-basis:100%}
 .seat{border:1px solid var(--edge);border-radius:calc(var(--radius) + 4px);padding:14px;background:color-mix(in srgb,var(--surface) 70%,transparent);animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
 .seat-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 4px 12px}
 .seat-head .hd{font-size:calc(34px * var(--dscale))}
@@ -413,8 +415,8 @@ footer code{font-family:var(--mono);font-size:11.5px}
   }
   function omniCard(v, delay){
     var o = v.omni, key = "omni", isSel = pick === key;
-    var name = o.label ? o.label.charAt(0).toUpperCase() + o.label.slice(1) : (o.effects[0] || "Omni crystal");
     var ow = o.words || {};
+    var name = ow.ability || (o.label ? o.label.charAt(0).toUpperCase() + o.label.slice(1) : (o.effects[0] || "Omni crystal"));
     var sum = ow.does || (o.label ? "What this hull does when it flies into an omni crystal." : (o.effects.length ? "Its crystal effects: " + o.effects.join(", ") + "." : "No omni crystal effect of its own."));
     return '<article class="ab' + (isSel ? ' sel' : '') + '" data-k="omni" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
       '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="omni">' +
@@ -435,7 +437,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     var d = 0;
     if(v.seats){
       return '<div class="kit crew span7" role="group" aria-label="The crew">' + v.seats.list.map(function(s, si){
-        return '<section class="seat" style="--d:' + (si * 90) + 'ms" aria-label="' + esc(s.name) + '"><div class="seat-head"><span class="hd">' + esc(s.name) + '</span><span class="mo">' + (s.seats > 1 ? s.seats + ' SEATS' : 'SEAT ' + (si + 1)) + '</span><p>' + esc(s.role) + '</p></div><div class="seat-kit">' +
+        return '<section class="seat" style="--d:' + (si * 90) + 'ms;--n:' + s.abilities.length + '" aria-label="' + esc(s.name) + '"><div class="seat-head"><span class="hd">' + esc(s.name) + '</span><span class="mo">' + (s.seats > 1 ? s.seats + ' SEATS' : 'SEAT ' + (si + 1)) + '</span><p>' + esc(s.role) + '</p></div><div class="seat-kit">' +
           s.abilities.map(function(a, ai){ d += 50; return a.linked ? elementCard(v, a.element, d, a.name) : docCard(v, si, ai, a, d); }).join("") + '</div></section>';
       }).join("") + (v.omni ? '<section class="seat" style="--d:' + (v.seats.list.length * 90) + 'ms" aria-label="The hull"><div class="seat-head"><span class="hd">The hull</span><span class="mo">EVERY SEAT</span><p>Shared by the whole crew.</p></div><div class="hullrow">' + omniCard(v, d + 50) + '</div></section>' : '') +
         '<p class="mo" style="margin:2px 4px">Seats read from <a href="' + esc(v.seats.url) + '">' + esc(file(v.seats.source)) + '</a> through <code>Docs/FleetCodex/seats.json</code>.</p></div>';
@@ -501,7 +503,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     }
     var e = sel.e;
     if(sel.kind === "omni"){
-      return '<span class="mo">OMNI CRYSTAL &middot; ' + esc(crewName(v)) + '</span><h2 class="hd">' + esc(e.label || e.effects[0] || "Omni crystal") + '</h2>' +
+      return '<span class="mo">OMNI CRYSTAL &middot; ' + esc(crewName(v)) + '</span><h2 class="hd">' + esc((e.words && e.words.ability) || e.label || e.effects[0] || "Omni crystal") + '</h2>' +
         (e.words && e.words.does ? '<div class="what"><span class="how"><span>' + esc(e.words.trigger || "Fly into an omni crystal") + '</span></span><p class="big">' + esc(e.words.does) + '</p>' + (e.words.source ? '<p class="mo">Read from <a href="' + gh(e.words.source) + '">' + esc(file(e.words.source)) + '</a> through <code>Docs/FleetCodex/abilities.json</code>.</p>' : '') + '</div>' : '') +
         '<p>' + esc(e.label ? "In the ability map's own words: " + e.label + "." : "The map names no omni ability (its omniAbilityLabel is empty), so this is read from the vessel's crystal effects.") + '</p>' +
         (e.effects.length ? '<div class="dials">' + e.effects.map(function(x){ return '<div class="dial"><div class="top2"><span>' + esc(x) + '</span></div><div class="src">crystal effect on the vessel&rsquo;s container</div></div>'; }).join("") + '</div>' : '');

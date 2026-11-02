@@ -751,7 +751,7 @@ def ability_words(key, elements, omni):
             continue
         if el == "Omni":
             if omni is not None:
-                omni["words"] = {k: words.get(k, "") for k in ("does", "trigger", "source")}
+                omni["words"] = {k: words.get(k, "") for k in ("ability", "does", "trigger", "source")}
             continue
         e = elements.get(el)
         if e is None or norm(words.get("ability", "")) != norm(e["ability"]):
