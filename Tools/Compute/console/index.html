@@ -213,6 +213,15 @@ textarea.field, .approve textarea { min-height: 60px; resize: vertical; }
 @media (prefers-reduced-motion: reduce) { .prog.wait i, .st.starting .dot { animation: none; } }
 
 /* ── tables ── */
+.planstep td:first-child { white-space: nowrap; }
+.plandoc { max-width: 86ch; font-size: 14px; line-height: 1.6; }
+.plandoc h1, .plandoc h2, .plandoc h3 { font-family: var(--head); letter-spacing: 0.04em; font-weight: 400; margin: 22px 0 8px; }
+.plandoc h1 { font-size: 30px; } .plandoc h2 { font-size: 24px; } .plandoc h3 { font-size: 19px; }
+.plandoc p, .plandoc ul, .plandoc ol, .plandoc blockquote, .plandoc table { margin: 0 0 12px; }
+.plandoc ul, .plandoc ol { padding-left: 22px; }
+.plandoc blockquote { border-left: 2px solid var(--accent); padding: 2px 0 2px 14px; color: var(--muted); }
+.plandoc code { font-family: var(--mono); font-size: 12.5px; background: var(--sunk); padding: 1px 4px; border-radius: 3px; }
+.plandoc table { font-size: 13px; }
 .tablewrap { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 th, td { text-align: left; padding: 0 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
@@ -437,6 +446,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     <a href="#searches" data-view="searches" id="nav-searches"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19l5-7 4 4 7-10"/><path d="M4 4v15h16"/></svg><span>Searches</span><span class="n" id="n-searches"></span></a>
     <a href="#recordings" data-view="recordings" id="nav-recordings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Recordings</span><span class="n" id="n-recordings"></span></a>
     <a href="#ai" data-view="ai" id="nav-ai"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 8v8M18 8c0 5-12 3-12 8"/></svg><span>AI branch</span></a>
+    <a href="#plan" data-view="plan" id="nav-plan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6"/><path d="M9 13h6"/><path d="M9 17h3"/></svg><span>AI plan</span><span class="n" id="n-plan"></span></a>
     <a href="#vessels" data-view="vessels" id="nav-vessels"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-7 9 7-9 7z"/><path d="M12 5v14"/></svg><span>Vessel AIs</span><span class="n" id="n-vessels"></span></a>
     <div class="sep"></div>
     <button class="navbtn" type="button" id="b-install"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add a computer</span></button>
@@ -480,7 +490,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   var DATA = null, VIEW = "home", OPEN = null;
   var CAP = { db: null, user: null, me: null, sample: null, mcp: null, approvals: {}, processed: {}, outbox: {}, sent: {}, canApprove: null, ready: false };
   var CCR = "Claude Code Remote";
-  var VIEWS = ["home", "runs", "searches", "machines", "recordings", "ai", "vessels"];
+  var VIEWS = ["home", "runs", "searches", "machines", "recordings", "ai", "plan", "vessels"];
 
   // ── helpers: text always through textContent ──
   function h(tag, attrs, kids) {
@@ -582,7 +592,7 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     document.getElementById("n-searches").textContent = d.jobs.length;
     document.getElementById("n-machines").textContent = d.machines.length;
     document.getElementById("n-recordings").textContent = d.recordings.flights.length;
-    var nv = (d.vessel_ai || []).filter(function (v) { return v.newer; }).length; document.getElementById("n-vessels").textContent = nv ? nv + " new" : "";
+    var nv = (d.vessel_ai || []).filter(function (v) { return v.newer; }).length; document.getElementById("n-vessels").textContent = nv ? nv + " new" : ""; var np = d.ai_plan && d.ai_plan.off_plan ? d.ai_plan.off_plan.length : 0; document.getElementById("n-plan").textContent = np ? np + " off" : "";
     document.getElementById("n-runs").textContent = active.length ? active.length + " live" : "";
     var f = document.getElementById("sidefoot"); f.textContent = "";
     f.appendChild(h("span", null, [h("b", { text: (d.branch || "") }), d.branch ? " · " : "", "data " + ago(d.generated)]));
@@ -1081,6 +1091,82 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
     });
   }
 
+  // ── the AI plan: Garrett's AI_PLAN.md and its steps, the same ai_plan.json every worker holds jobs to ──
+  function mdInline(text) {
+    // **bold**, `code` and [label](url) as DOM nodes; everything else stays text (never innerHTML)
+    var out = [], re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push(document.createTextNode(text.slice(last, m.index)));
+      var t = m[0];
+      if (t[0] === "*") out.push(h("b", { text: t.slice(2, -2) }));
+      else if (t[0] === "`") out.push(h("code", { text: t.slice(1, -1) }));
+      else { var lab = t.slice(1, t.indexOf("](")), url = t.slice(t.indexOf("](") + 2, -1);
+        var gh = /^https?:\/\//.test(url) ? url : "https://github.com/" + (DATA.repo || "froglet-studio/Cosmic-Shore") + "/blob/bleeding-edge/Docs/AI_SYSTEM/" + url.replace(/^\.\//, "");
+        var a = h("a", { href: gh, target: "_blank", rel: "noopener" });
+        if (/^`[^`]+`$/.test(lab)) a.appendChild(h("code", { text: lab.slice(1, -1) })); else a.appendChild(document.createTextNode(lab));
+        out.push(a); }
+      last = m.index + t.length;
+    }
+    if (last < text.length) out.push(document.createTextNode(text.slice(last)));
+    return out;
+  }
+  function mdRender(src) {
+    var root = h("div", { class: "plandoc" }), lines = (src || "").replace(/\r/g, "").split("\n"), i = 0;
+    function para(tag, text) { var el = h(tag); mdInline(text).forEach(function (n) { el.appendChild(n); }); return el; }
+    while (i < lines.length) {
+      var l = lines[i];
+      if (!l.trim()) { i++; continue; }
+      var hm = /^(#{1,3})\s+(.*)$/.exec(l);
+      if (hm) { root.appendChild(para("h" + hm[1].length, hm[2])); i++; continue; }
+      if (/^\s*\|/.test(l)) {
+        var rows = []; while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+        var cells = function (r) { return r.trim().replace(/^\||\|$/g, "").split("|").map(function (c) { return c.trim(); }); };
+        var body = rows.filter(function (r, k) { return k !== 1 || !/^[\s|:-]+$/.test(r); });
+        var tb = h("tbody"), th = h("thead", null, [h("tr", null, cells(body[0]).map(function (c) { return para("th", c); }))]);
+        body.slice(1).forEach(function (r) { tb.appendChild(h("tr", null, cells(r).map(function (c) { return para("td", c); }))); });
+        root.appendChild(h("div", { class: "tablewrap" }, [h("table", null, [th, tb])])); continue;
+      }
+      if (/^>\s?/.test(l)) { var q = []; while (i < lines.length && /^>\s?/.test(lines[i])) q.push(lines[i++].replace(/^>\s?/, "")); root.appendChild(para("blockquote", q.join(" "))); continue; }
+      if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
+        var ordered = /^\s*\d+\./.test(l), list = h(ordered ? "ol" : "ul"), cur = null, sub = null, subCur = null;
+        while (i < lines.length && lines[i].trim() && (/^\s*([-*]|\d+\.)\s+/.test(lines[i]) || /^\s{2,}\S/.test(lines[i]))) {
+          var li = lines[i++], deep = /^\s{2,}([-*]|\d+\.)\s+/.test(li);
+          if (deep && cur) {                                   // a nested bullet: its own list inside the item above
+            if (!sub) { sub = h(/^\s*\d+\./.test(li) ? "ol" : "ul"); cur.appendChild(sub); }
+            subCur = para("li", li.replace(/^\s*([-*]|\d+\.)\s+/, "")); sub.appendChild(subCur);
+          } else if (/^\s*([-*]|\d+\.)\s+/.test(li)) { cur = para("li", li.replace(/^\s*([-*]|\d+\.)\s+/, "")); list.appendChild(cur); sub = null; subCur = null; }
+          else (subCur || cur) && mdInline(" " + li.trim()).forEach(function (n) { (subCur || cur).appendChild(n); });
+        }
+        root.appendChild(list); continue;
+      }
+      var buf = []; while (i < lines.length && lines[i].trim() && !/^(#{1,3}\s|\s*\||>|\s*([-*]|\d+\.)\s)/.test(lines[i])) buf.push(lines[i++].trim());
+      root.appendChild(para("p", buf.join(" ")));
+    }
+    return root;
+  }
+  function renderPlan(root) {
+    var P = DATA.ai_plan;
+    root.appendChild(title("AI plan", "what every AI run trains toward"));
+    if (!P) { root.appendChild(h("div", { class: "card" }, [h("p", { class: "note", text: "The AI plan is not on the queue branches yet (Docs/AI_SYSTEM/AI_PLAN.md)." })])); return; }
+    if (P.error) { root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "Could not read the AI plan" }), h("p", { class: "note", text: P.error })])); return; }
+    root.appendChild(h("p", { class: "lead", text: "Garrett's plan (" + (P.set_by || "LOCKED") + "): one AI per vessel and element, trained up the ladder from arcade intensities to the arena game to voyages. Every computer reads these steps before it runs anything: a search that serves no step never runs." }));
+    if (P.off_plan && P.off_plan.length) root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: P.off_plan.length + " search" + (P.off_plan.length === 1 ? " is" : "es are") + " off the plan and will not run" }),
+      h("p", { class: "note", text: P.off_plan.map(function (o) { return o.job + ": " + o.why; }).join(" · ") })]));
+    var st = { live: ["ready", "live"], next: ["waiting", "next"], blocked: ["blocked", "waits"], later: ["idle", "later"] };
+    var tb = h("tbody");
+    (P.steps || []).forEach(function (s) {
+      var jobs = s.serving.length ? s.serving.map(function (id) { var j = jobById(id);
+        return h("a", { href: "#searches", onclick: function (e) { e.preventDefault(); openJob(id); }, text: id + (j && j.best && j.best.loss != null ? " · " + fmt(j.best.loss, 2) : "") }); }) : [h("span", { class: "note", text: s.status === "live" ? "no search yet" : "-" })];
+      var cellJobs = h("td"); jobs.forEach(function (n, k) { if (k) cellJobs.appendChild(h("br")); cellJobs.appendChild(n); });
+      tb.appendChild(h("tr", { class: "planstep" }, [h("td", null, [h("span", { class: "pill " + (st[s.status] || st.later)[0], text: (st[s.status] || [0, s.status])[1] })]),
+        h("td", null, [h("b", { text: s.id }), h("span", { class: "sub", text: s.element + " · " + s.layer + (s.after ? " · after " + s.after.join(", ") : "") })]),
+        h("td", { text: s.title }), cellJobs]));
+    });
+    var steps = h("div", { class: "tablewrap" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["", "Step", "What it trains", "Searches serving it"].map(function (t) { return h("th", { text: t }); }))]), tb])]);
+    root.appendChild(card("The steps", h("a", { class: "btn small", href: "ai_plan.md", target: "_blank", rel: "noopener", text: "ai_plan.md" }), steps, "plan-steps"));
+    root.appendChild(card("The plan", h("span", { class: "note", text: P.doc_path }), mdRender(P.doc), "plan-doc"));
+  }
+
   // ── install sheet ──
   var OS = /Win/.test(navigator.platform || navigator.userAgent) ? "windows" : (/Mac/.test(navigator.platform || navigator.userAgent) ? "mac" : "linux");
   var IOPT = { when: "away", remote: true };
@@ -1128,6 +1214,11 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
           dl.appendChild(h("label", { class: "note", style: "display:block;margin-top:8px" }, [h("input", { type: "checkbox", checked: IOPT.remote !== false ? true : null, onchange: function (e) { IOPT.remote = e.target.checked; draw(); } }), " A run sent from the console may start at once, even while I use this computer"]));
           dl.appendChild(h("p", { class: "note", text: "Weekly schedules are not there yet: pick a daily window and leave the computer on those days." }));
           dl.appendChild(h("a", { class: "btn cta", href: file + qs, download: OS === "windows" ? "froglet-compute-setup.bat" : "froglet-compute-setup.sh" }, [svgIcon("M12 4v12|M6 10l6 6 6-6|M4 20h16", 14), "Download the installer for " + (OS === "windows" ? "Windows" : OS === "mac" ? "macOS" : "Linux")]));
+          var teamLink = location.origin + "/install" + qs;
+          var row = h("div", { class: "cmdline" }, [h("code", { text: teamLink })]); row.appendChild(copyBtn(function () { return teamLink; }));
+          dl.appendChild(h("b", { class: "sec", text: "The team link (one link for everybody)" }));
+          dl.appendChild(h("p", { class: "note", text: "Opened on any computer, it downloads the right installer for it, with the schedule chosen above. It carries the team key: send it by email, never in a public channel." }));
+          dl.appendChild(row);
         }
         sheet.appendChild(dl);
         sheet.appendChild(h("div", { class: "sec", text: "Or the line, if you prefer a terminal" }));
@@ -1833,11 +1924,11 @@ details.other > summary { cursor: pointer; font-size: 12.5px; color: var(--muted
   }
 
   // ── routing and boot ──
-  function stillFor(view) { return "stills/" + (view === "queue" ? "searches" : view) + ".jpg"; }
+  function stillFor(view) { return "stills/" + (view === "queue" ? "searches" : view === "plan" ? "ai" : view) + ".jpg"; }
   function render() {
     var root = document.getElementById("main"); root.textContent = "";
     renderChrome();
-    ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi, vessels: renderVessels })[VIEW](root);
+    ({ home: renderHome, runs: renderRuns, searches: renderSearches, machines: renderMachines, recordings: renderRecordings, ai: renderAi, plan: renderPlan, vessels: renderVessels })[VIEW](root);
     if (!LIVE) root.appendChild(h("p", { class: "note foot", text: "Snapshot of " + new Date(DATA.generated * 1000).toLocaleString() + (DATA.sync_every ? " · updates every " + DATA.sync_every : "") }));
   }
   function route() {

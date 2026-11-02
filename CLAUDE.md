@@ -51,9 +51,11 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
 - [`Docs/MENU_REDESIGN_B.md`](Docs/MENU_REDESIGN_B.md): **The UI redesign and its design board.** Every menu, HUD, start-flow and
-  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Menu Redesign B"
-  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2) before it is built; the **`/design-board`** skill brings the board into a
-  session, compares a new design against the board and the build, and adds it as a new round (never a second canvas); the copy of
+  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Froglet Design Board"
+  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2; "Menu Redesign B" until 2026-11-02) before it is built. The canvas is in tabs
+  ("Menu Redesign" is the master tab of every earlier round, "Compute Console", "Menu Redesign C", ...): **`/design-board-new`** opens a
+  new tab and asks its name; the **`/design-board`** skill brings the board into a
+  session, compares a new design against the board and the build, and adds it as a new round on a tab (never a second canvas); the copy of
   every board is `Docs/MenuRedesignB/board/`; `/ui-redesign-tracker` verifies a build against the picked board. Read before touching
   Menu_Main, GameCanvas's look or any `Tools/Build/author_menu_*.py`.
   Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)
@@ -201,6 +203,14 @@ The ladder is the element's arcade intensities, then its arena game balanced aga
 - work that serves no step is a proposal to Garrett first.
 
 A new round grows from every genome that exists. No AI is trained inside an arena game.
+
+**Froglet Compute is the default way to train an AI** (Shombith, 2026-11-02). A search, a Unity trainer run or a
+re-run of a learner goes on the team's machines through Compute, never as a sweep a session runs by hand or a trainer
+session in one person's editor: a new search is a `/compute-job` (its job names its plan step), a Unity trainer run
+is the console's **New run** (`compute.py request` from a terminal), and the console's **AI plan** page
+(https://130-210-34-146.sslip.io/#plan; the raw doc at `/ai_plan.md`) shows each step and the searches serving it.
+Run something by hand only to prove an evaluator before queueing it (`/compute-job` §4). The hourly AI learning sweep
+(`ai_learn.py`) stays as it is.
 
 ## A game mode never changes the vessel (LOCKED rule, Shombith, 2026-10-31)
 

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 48 - Fleet Codex notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Bebas+Neue&amp;family=Space+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050505}
+.app{font-family:'Inter',system-ui,sans-serif;color:#ECECEC;font-size:15px;line-height:22px}
+.hd{font-family:'Bebas Neue','Arial Narrow',Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.mo{font-family:'Space Mono',ui-monospace,Menlo,monospace;font-size:12px;color:#A6A6A6}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;color:#C8C8C8}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:900px;box-sizing:border-box;padding:44px 56px;background:#050505;display:flex;flex-direction:column;gap:24px">
+  <div class="col" style="gap:4px">
+    <span class="mo" style="letter-spacing:.14em">REV 48 · FLEET CODEX · NOTES</span>
+    <span class="hd" style="font-size:44px">One page, the kit with its controls, the game's own icons</span>
+    <span style="color:#C8C8C8;max-width:150ch">Asked (Shombith, 2026-11-02): "make it modern, take inspiration from website; shouldn't separate tabs like this for controls; also omni crystal ability is not shown; use the correct iconography for everything; give me 3 mockups" - then "use the correct icons for elements, check codex for that" and "multi user vessels should show differently, like wrasse and grouper".</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:36px;flex:1">
+    <div class="col">
+      <span class="hd" style="font-size:24px">What changed from Rev 45</span>
+      <ul>
+        <li>The look is the website's Silver Screen (the Compute console's: black and white stills, Bebas headings, Space Mono labels).</li>
+        <li>No Controls tab: every ability carries its controller button, keyboard key and phone control where the ability is.</li>
+        <li>The omni crystal ability is the fifth entry of the kit, as on the HUD (the Brittle Star's: a spare ring).</li>
+        <li>Icons are the game's: each ability's HUD card, the Codex's element shapes, the Xbox button glyphs, the phone's touch icons.</li>
+        <li>Crew vessels are grouped apart, named as crews (Wrasse and Grouper) with their seat count.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <span class="hd" style="font-size:24px">A · Marquee (recommended)</span>
+      <ul>
+        <li>The hull as a film still with its numbers on top; the five abilities as cards, each with its three controls along the bottom; pick one for its full text and level 5.</li>
+        <li>Recommended: everything about an ability sits in one place, and it is the website's own hero pattern (the console's Rev 42 A).</li>
+      </ul>
+      <span class="hd" style="font-size:24px;margin-top:8px">B · Bento</span>
+      <ul>
+        <li>A fleet filmstrip on top; the vessel as tiles; one control map draws the controller, keyboard and phone together, and picking an ability lights its control on all three.</li>
+      </ul>
+      <span class="hd" style="font-size:24px;margin-top:8px">C · Ledger</span>
+      <ul>
+        <li>The light edition: the kit as one table, controller, keyboard and phone as columns of every row; the fleet as an index line.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <span class="hd" style="font-size:24px">Crew vessels</span>
+      <ul>
+        <li>Listed apart from the solo hulls: Goby and Pistol, Wrasse and Grouper, Honeyguide and Ratel (2 seats), the Orca (4 seats: a helm and three gunners).</li>
+        <li>A crew's own page splits its kit and its controls by seat (the Grouper's, the Wrasse's), each seat with its portrait; the seat swap (D-pad, a phone flip) is named once at the top.</li>
+        <li>The Orca's class asset names no crew: its seats come from ORCA_CREW.md until the asset says them.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <span class="hd" style="font-size:24px">What the build reads</span>
+      <ul>
+        <li>Ability icons from each vessel's HUD (what the launch panel already reads); element shapes from Assets/_Graphics/ElementShapes; crews from SO_Vessel.CrewNames.</li>
+        <li>The omni ability from the map's omniAbilityLabel - empty on the Brittle Star, so its words come from its crystal effect until the map says them.</li>
+        <li>Fixed in the game in this round: the arcade launch panel drew the HUD petal for each ability's element; it now draws the Codex's shape. The arcade grid cards already did.</li>
+        <li>Found: the glyph table (ControlGlyphSet) draws a PlayStation L1 and an Xbox R1 for LT and RT. The boards use the LT / RT trigger art; the table is the input owner's to fix.</li>
+      </ul>
+    </div>
+  </div>
+  <span class="mo">Live codex: https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8 · /fleet-codex · awaiting a pick</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

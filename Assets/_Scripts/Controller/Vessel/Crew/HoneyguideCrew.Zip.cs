@@ -45,8 +45,13 @@ namespace CosmicShore.Gameplay
                 if (i == landIndex) break;
             }
             AddZipPoint(landing);
+            // the watchdog: no slip holds the hull longer than its path would take at a share of its top speed (rideWatchdog)
+            float length = 0f;
+            for (int i = 1; i < _zipPath.Count; i++) length += Vector3.Distance(_zipPath[i - 1], _zipPath[i]);
+            float most = _cfg.ZipRamp + _cfg.RideWatchdog * length / Mathf.Max(1f, _cfg.ZipSpeed) + 1f;
+            _rideKind = RideKind.Slip;
             StartRide(exitHeading, Mathf.Max(_status != null ? _status.Speed : 0f, 1f), _cfg.ZipSpeed,
-                      _cfg.ZipSpeed / Mathf.Max(0.01f, _cfg.ZipRamp), _cfg.ZipExitBoost, false, 0f, float.MaxValue);
+                      _cfg.ZipSpeed / Mathf.Max(0.01f, _cfg.ZipRamp), _cfg.ZipExitBoost, false, 0f, most);
         }
 
         /// <summary>A straight ride `distance` ahead in `seconds` (Flit, Eyelet Jet, Thruster Swarm). `plow` shatters the
@@ -59,6 +64,7 @@ namespace CosmicShore.Gameplay
             _zipPath.Add(t.position);
             AddZipPoint(t.position + t.forward * distance);
             float speed = distance / Mathf.Max(0.02f, seconds);
+            _rideKind = RideKind.Jet;
             StartRide(t.forward, speed, speed, 0f, 0f, plow, 0f, seconds * 2f);
         }
 
@@ -74,6 +80,7 @@ namespace CosmicShore.Gameplay
             _zipPath.Add(t.position);
             AddZipPoint(at);
             float speed = Mathf.Max(_status != null ? _status.Speed : 0f, _cfg.LassoReelSpeed);
+            _rideKind = RideKind.Reel;
             StartRide(heading.normalized, speed, speed, 0f, 0f, true, strike, _cfg.LassoReelSeconds);
         }
 

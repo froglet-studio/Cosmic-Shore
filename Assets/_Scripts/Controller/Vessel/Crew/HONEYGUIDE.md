@@ -105,9 +105,15 @@ decided in the Ratel Raid Lab (`Docs/Studios/HoneyguideRaidLab.html`, record `Do
 - **The AI Ratel** plays it too: `hiveSkills` by `engineerLevel` (Hard plays the solver's plan and never touches danger; Easy
   is the lab's rookie: greedy chains, sometimes cut short, a sloppy thumb). Medium is between them (a proposal).
 - **A rider** (the Ratel played on another machine): hive moves travel as relay inputs, and the hive rides in the state copy.
-- **The strip.** A thin strip over the Ratel's big board: the Honeyguide, the nearest omnicrystal along it by distance
-  (`stripRangeU` at the far end, from `Crystal.Active` four times a second) and the distance in u (`stripOmniTemplate`). In
-  hive mode it shows the hive under the hull, ringed (invulnerable).
+- **The strip** (rebuilt 2026-11-02, Garrett: "a fun view of the game that is very cheap to render ... more symbolic than
+  3d"). A thin strip over the Ratel's big board, flat shapes in the board's one mesh: the Honeyguide (an arrow, wings
+  beating) flies right along the whole strip toward what it is after, which waits at the right end as its own glyph (an
+  omnicrystal's diamond, the hive's hex, a wriggling creature, a rival's arrow in its colour, a cluster of opposing prisms
+  in theirs); the hull stands back by the square root of its distance (`stripRangeU` for an omnicrystal or hive,
+  `aiHuntReach` for a hunt). The track's ticks stream at the hull's speed. A slip lights the track behind in the trail's
+  colour, a dart leaves afterimages, the lasso draws its line; Peck dots, a strike's ring and sparks, a broken prism's
+  shards and an omnicrystal's burst flash for `stripHitSeconds`. The words at the right name it (`strip*Template`,
+  `strip*Line`). In hive mode it shows the hive under the hull, ringed (invulnerable).
 - **The bars shrink from both sides to the centre**, the spin bar and the hive's alike.
 
 - **Bees guard the left hive** (Garrett 2026-10-31): when hive mode ends, a native bee hive (`BeeHiveFlora`, the
@@ -120,6 +126,25 @@ decided in the Ratel Raid Lab (`Docs/Studios/HoneyguideRaidLab.html`, record `Do
 **Not in this port:** the Honeyguide's
 Mass power making a hive to fly to (it changes the element map: Mass is Flit on LT today, and what happens to Flit is
 Garrett's call). The strip shows omnicrystals only until then.
+
+## The AI's hunt and its slips (Garrett, 2026-11-02)
+
+"lets have the honeyguide AI not get stuck when slipping. Lets also have the AI go for more than just omnicrystals in
+freestyle. lets have the honeyguide also uses it abilities to hunt fauna and opposing prisms. omnicrystals should still be
+acquired, but not at such a high frequency." `HoneyguideCrew.Hunt.cs`:
+- **The hunt.** While an AI flies the hull (an AI crew, or the hull of a person playing the Ratel) outside a match or in
+  freestyle (`aiHuntFreestyleOnly`; `FlightClock`), every `aiHuntThink` s it weighs the nearest creature not of its domain,
+  rival vessel, the densest opposing prism mass (`Cell.GetExplosionTarget`, every `aiPrismMassScan` s, a goal with
+  `aiPrismMassMin` hostile prisms near it), the Mass hive and the nearest omnicrystal: each pulls `aiWant*`, halved at
+  `aiHuntFalloff`. A goal is kept `aiHuntCommit` s, then only a pull `aiHuntSwitch` times its own takes its place. After an
+  omnicrystal or a hive it rests from omnicrystals `aiCrystalRest` s unless one is within `aiCrystalSnatch`. It steers by
+  the hull's `AIPilot` external target hook (never a match's: `AIPilot.ExternalTargetProvider` tells them apart); an
+  omnicrystal goal hands the steering back to the pilot's own crystal chase. LT's base Flit fires on a creature or vessel
+  on its lane (or to travel, the goal far and dead ahead, never mid-slip); RT's Peck already takes hostile prisms ahead.
+- **The slip guard.** The AI slips only when the landing is `aiSlipMinGain` nearer its goal (the hunt's, or the pilot's
+  objective); a trail it turns down is not slipped for `aiSlipSkipSeconds`; `aiSlipLoopCount` slips inside
+  `aiSlipLoopWindow` rest its slips `aiSlipRest` s. Every slip ride has a watchdog (`rideWatchdog`). A person's slips are
+  the lab's, untouched.
 
 ## Very Low: one view, the Ratel first (Garrett, 2026-10-22)
 
@@ -144,6 +169,7 @@ On the Very Low preset (`CrewSingleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10)
 | Slip, card effects, jumps | `HoneyguideCrew.Pilot.cs` |
 | The ride (slips, Flit, the jets, the lasso's reel) | `HoneyguideCrew.Zip.cs` |
 | RT Peck, LT Flit, the 13 upgrades, the AI's triggers | `HoneyguideCrew.Triggers.cs` |
+| The AI's hunt (fauna, rivals, opposing prisms, fewer omnicrystals), its slip guard, what the strip reads | `HoneyguideCrew.Hunt.cs` |
 | The input's two triggers (the prefab maps RightStickAction and LeftStickAction to them) | `HoneyguideTriggerActionSO.cs`, `HoneyguideRTAction.asset`, `HoneyguideLTAction.asset` |
 | Peck (the hull's own gun at 2.5 shots a second, 45 u) | `HoneyguidePeckAction.asset` (a `FullAutoActionSO`) |
 | The board (runtime overlay canvas, touch and mouse) | `HoneyguideDynamoView.cs` |

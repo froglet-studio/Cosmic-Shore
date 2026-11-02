@@ -22,6 +22,12 @@ namespace CosmicShore.UI
     /// <para>The first card is the prefab's own (<see cref="template"/>), in the grid; the rest are copies of it, made here.
     /// The map and its edge view stand just before the grid. While a voyage is out the one card is the job under way,
     /// open, its Set sail dark.</para>
+    ///
+    /// <para>Rebuilt to Shombith's pick on 2026-11-02 (Docs/MENU_REDESIGN_B.md section 119): with a
+    /// <see cref="mapColumn"/> the HyperSea map and its edge view fill that column on the left, the voyage cards stand
+    /// two across on the right, and a job's card (or its place pressed on the map) slides the open voyage over the cards
+    /// (<see cref="VoyageOpenCard"/>: the voyage, its Ark crew, its story) instead of expanding over them. The Ark
+    /// escort's card still opens in place, with its difficulty stepper.</para>
     /// </summary>
     public class VoyageJobsView : MonoBehaviour
     {
@@ -36,6 +42,14 @@ namespace CosmicShore.UI
         [SerializeField] float edgeHeight = 96f;
         [Tooltip("Cards across the grid.")]
         [SerializeField] int columns = 3;
+        [Tooltip("Where the HyperSea map and its edge view stand (the map over the edge view, filling it). Empty: just " +
+                 "before the cards, as the window first stood them.")]
+        [SerializeField] RectTransform mapColumn;
+        [Tooltip("The column the voyage cards stand in: the open voyage slides over it. Empty: a job's card expands " +
+                 "over the others instead.")]
+        [SerializeField] RectTransform cardColumn;
+        [Tooltip("The space between the map and the edge view under it, in the map column.")]
+        [SerializeField] float edgeGap = 12f;
 
         const string MapName = "GalaxyMap";
         const string EdgeName = "EdgeView";
@@ -52,6 +66,8 @@ namespace CosmicShore.UI
         int _open = -1;
         string _placeCaption;
         ModalWindowManager _window;
+        VoyageOpenCard _card;
+        int _jobCount;
 
         void OnEnable()
         {
@@ -68,6 +84,14 @@ namespace CosmicShore.UI
             VoyageHarbour.Changed -= Refresh;
             if (_window) _window.OnModalOpened -= Refresh;
             _window = null;
+        }
+
+        void OnDestroy()
+        {
+            if (!_card) return;
+            _card.Closed -= CloseCard;
+            _card.Step -= StepCard;
+            _card.SquadChanged -= Refresh;
         }
 
         void LateUpdate()
@@ -99,6 +123,7 @@ namespace CosmicShore.UI
                 card.Show(string.Empty, shelf ? shelf.Lines.VoyageName : null, null, null, false, null, null, null, null);
                 Stand(-1);
                 ShowMap(false);
+                HideCard();
                 return;
             }
             var content = voyage.Content;
@@ -112,6 +137,7 @@ namespace CosmicShore.UI
                 var course = harbour.EscortCourse;
                 ShowEscort(card, content, lines, escort, harbour.EscortDifficulty, course, sail: false, open: true, onToggle: null);
                 Stand(0);
+                HideCard();
                 // The map frames the escort's course while it is out, as it does a job's (ARK_ESCORT.md §5).
                 if (course != null) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
                 else ShowMap(false);
@@ -120,6 +146,7 @@ namespace CosmicShore.UI
 
             if (harbour.IsUnderway)
             {
+                HideCard();
                 var job = harbour.CurrentJob;
                 var cards = Use(1);
                 cards[0].ShowStepper(null, null, null, null);
@@ -154,6 +181,7 @@ namespace CosmicShore.UI
                 if (escort) ShowEscort(none[1], content, lines, escort, Difficulty, VoyageRules.EscortRoute(state, content), sail: true,
                     open: _open == 1, onToggle: () => OpenCard(1));
                 Stand(_open);
+                HideCard();
                 Map(content, lines, style, here, null, _placeCaption);
                 return;
             }
@@ -163,6 +191,8 @@ namespace CosmicShore.UI
             if (escort) ShowEscort(shown[jobs.Count], content, lines, escort, Difficulty, VoyageRules.EscortRoute(state, content),
                 sail: true, open: _open == jobs.Count, onToggle: () => OpenCard(jobs.Count));
             bool focused = false;
+            bool slide = cardColumn;
+            _jobCount = jobs.Count;
             for (int i = 0; i < jobs.Count; i++)
             {
                 var job = jobs[i];
@@ -177,15 +207,20 @@ namespace CosmicShore.UI
                 var route = VoyageRules.Route(content, job.From, job.To);
                 string course = CourseLine(content, lines, route);
                 shown[i].ShowStepper(null, null, null, null);
-                shown[i].Show(eyebrow, job.Title, course, open ? Brief(content, lines, job, route) : null, open,
+                // With the slide-in voyage the cards stay small: the open one slides over them instead.
+                bool expand = open && !slide;
+                shown[i].Show(eyebrow, job.Title, course, expand ? Brief(content, lines, job, route) : null, expand,
                     () => OpenCard(index), lines.CardOpen, lines.CardClose, () => SetSail(taken));
                 if (open)
                 {
                     Map(content, lines, style, here, route, course);
                     focused = true;
+                    if (slide) ShowCard(OpenModel(content, lines, job, route, i, jobs.Count, () => SetSail(taken)));
                 }
             }
-            Stand(_open);
+            bool jobOpen = _open >= 0 && _open < jobs.Count;
+            Stand(slide && jobOpen ? -1 : _open);
+            if (!slide || !jobOpen) HideCard();
             if (!focused) Map(content, lines, style, here, null, _placeCaption);
         }
 
@@ -256,6 +291,7 @@ namespace CosmicShore.UI
             var map = EnsureMap();
             if (!map) return;
             ShowMap(true);
+            map.SetLines(lines);
             map.Show(content, style, here, route, caption, focus: route != null);
             var edge = EnsureEdge();
             bool charted = map.Chart != null;
@@ -286,6 +322,7 @@ namespace CosmicShore.UI
         /// zoomed map does not spill over the cards.</summary>
         RectTransform Host(string name, float height)
         {
+            if (mapColumn) return ColumnHost(name);
             var grid = template ? template.transform.parent : null;
             var parent = grid ? grid.parent : null;
             if (!parent) return null;
@@ -302,6 +339,24 @@ namespace CosmicShore.UI
             var le = host.AddComponent<LayoutElement>();
             le.preferredHeight = height;
             le.minHeight = height;
+            host.AddComponent<RectMask2D>();
+            return rt;
+        }
+
+        /// <summary>A host in the map column: the map fills it above the edge view, the edge view stands at its foot.</summary>
+        RectTransform ColumnHost(string name)
+        {
+            var existing = mapColumn.Find(name);
+            if (existing) return (RectTransform)existing;
+            var host = new GameObject(name, typeof(RectTransform));
+            host.transform.SetParent(mapColumn, false);
+            var rt = (RectTransform)host.transform;
+            bool edge = name == EdgeName;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = edge ? new Vector2(1f, 0f) : Vector2.one;
+            rt.pivot = edge ? new Vector2(0.5f, 0f) : new Vector2(0.5f, 0.5f);
+            rt.offsetMin = edge ? Vector2.zero : new Vector2(0f, edgeHeight + edgeGap);
+            rt.offsetMax = edge ? new Vector2(0f, edgeHeight) : Vector2.zero;
             host.AddComponent<RectMask2D>();
             return rt;
         }
@@ -400,7 +455,7 @@ namespace CosmicShore.UI
                 "intensity", voyage.Intensity.ToString(CultureInfo.InvariantCulture));
         }
 
-        static string SeaName(VoyageLines lines, SeaKind sea) => sea switch
+        internal static string SeaName(VoyageLines lines, SeaKind sea) => sea switch
         {
             SeaKind.Spray => lines.SeaSpray,
             SeaKind.Froth => lines.SeaFroth,
@@ -464,6 +519,86 @@ namespace CosmicShore.UI
             var harbour = VoyageHarbour.Current;
             if (!harbour) return;
             harbour.SetSail(job, FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
+        }
+
+        // ── The open voyage (slides over the cards) ──────────────────────────
+
+        void ShowCard(VoyageOpenCard.Model model)
+        {
+            if (!_card)
+            {
+                var lines = VoyageHarbour.Current && VoyageHarbour.Current.Content ? VoyageHarbour.Current.Content.Lines
+                    : VoyageContentSO.Load()?.Lines;
+                if (lines == null || !cardColumn) return;
+                _card = VoyageOpenCard.Create(cardColumn, template.LabelTemplate, template.SetSailButton, _map, vessels, lines);
+                _card.Closed += CloseCard;
+                _card.Step += StepCard;
+                _card.SquadChanged += Refresh;
+            }
+            _card.SetMap(_map);
+            _card.Show(model, keepLevel: true);
+        }
+
+        void HideCard()
+        {
+            if (_card) _card.Hide();
+        }
+
+        void CloseCard()
+        {
+            _open = -1;
+            Refresh();
+        }
+
+        /// <summary>The open voyage's pager: the voyage <paramref name="step"/> away, going round.</summary>
+        void StepCard(int step)
+        {
+            if (_jobCount <= 0 || _open < 0 || _open >= _jobCount) return;
+            _open = VoyageCardRules.Wrap(_open, step, _jobCount);
+            _placeCaption = null;
+            Refresh();
+        }
+
+        /// <summary>
+        /// The open voyage's words and numbers, all from the content's lines (<see cref="VoyageLines"/>), the job, the
+        /// crew member who brought it, its places and its course on the real sea.
+        /// </summary>
+        VoyageOpenCard.Model OpenModel(VoyageContent content, VoyageLines lines, VoyageJob job, IReadOnlyList<string> route,
+            int index, int count, System.Action setSail)
+        {
+            var m = new VoyageOpenCard.Model();
+            var from = content.Location(job.From);
+            var to = content.Location(job.To);
+            var person = content.Person(job.PilotId);
+            var voyage = VoyageChart.For(content)?.Along(route);
+            string n = (index + 1).ToString(CultureInfo.InvariantCulture);
+            string ly = voyage != null ? voyage.LightYears.ToString("N0", CultureInfo.InvariantCulture) : string.Empty;
+            string minutes = voyage != null ? voyage.Minutes.ToString("N0", CultureInfo.InvariantCulture) : string.Empty;
+            string intensity = voyage != null ? voyage.Intensity.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            m.Pager = TemplateText.Fill(lines.CardPager, "n", n, "count", count.ToString(CultureInfo.InvariantCulture));
+            m.Kicker = TemplateText.Fill(lines.CardKicker, "n", n, "place", to?.Name);
+            m.Title = job.Title;
+            m.CourseChip = voyage != null ? TemplateText.Fill(lines.CardCourseChip, "ly", ly) : string.Empty;
+            m.FoundBy = person != null ? TemplateText.Fill(lines.CardFoundBy, "pilot", person.Name) : string.Empty;
+            m.CourseValue = voyage != null ? TemplateText.Fill(lines.CardCourseValue, "ly", ly) : string.Empty;
+            m.SailValue = voyage != null ? TemplateText.Fill(lines.CardSailValue, "minutes", minutes) : string.Empty;
+            m.IntensityValue = voyage != null ? TemplateText.Fill(lines.CardIntensityValue, "intensity", intensity) : string.Empty;
+            m.Cells = voyage != null
+                ? TemplateText.Fill(lines.CardCells, "cells", voyage.Cells.ToString(CultureInfo.InvariantCulture), "minutes", minutes)
+                : string.Empty;
+            m.From = from?.Name;
+            m.To = to?.Name;
+            if (voyage != null)
+                foreach (var p in voyage.Points) m.Course.Add(VoyageMapGraphic.MapPoint(p));
+            m.Beats.AddRange(VoyageCardRules.Beats(
+                new VoyageCardRules.Beat(lines.StoryNews, job.Source?.Line, from?.Name),
+                new VoyageCardRules.Beat(lines.StoryPlace, to?.Blurb, to?.Name),
+                new VoyageCardRules.Beat(lines.StoryCrew, person?.Story, TemplateText.Fill(lines.StoryCrewBy, "pilot", person?.Name)),
+                new VoyageCardRules.Beat(lines.StoryWater,
+                    voyage != null ? TemplateText.Fill(lines.StoryWaterLine, "years", ly, "to", to?.Name, "minutes", minutes) : null,
+                    voyage != null ? TemplateText.Fill(lines.StoryWaterBy, "sea", SeaName(lines, voyage.ThickestSea)) : null)));
+            m.SetSail = setSail;
+            return m;
         }
 
         /// <summary><paramref name="count"/> cards showing (the template first, then copies after it, in its grid), the

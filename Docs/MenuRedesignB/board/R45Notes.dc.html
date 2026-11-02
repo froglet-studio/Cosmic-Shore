@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 45 - Fleet Codex notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;family=IBM+Plex+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A1318}
+.app{font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#E2EBEE;font-size:16px;line-height:1.55}
+.disp{font-family:'Oxanium',system-ui,sans-serif}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-size:14px}
+.lab{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8EA2AB}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:#C4D2D8}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:900px;position:relative;overflow:hidden;background:#0A1318;box-sizing:border-box;padding:48px 56px;display:flex;flex-direction:column;gap:28px">
+  <div class="col" style="gap:6px">
+    <span class="lab">Rev 45 · Fleet Codex · notes</span>
+    <span class="disp" style="font-size:36px;font-weight:700">A vessel in tabs, two ways</span>
+    <span style="color:#C4D2D8;max-width:120ch">Asked (Shombith, 2026-11-02): "Inside the details of the vessels we need to categorize and not mix up everything. There should be specific tabs for elements, game modes and controls for each mobile and PC and Controller controls." Both options show the same vessel (the Brittle Star) with the same real data as the live codex.</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;flex:1">
+    <div class="col">
+      <span class="disp" style="font-size:22px;font-weight:600">A · Tabs (recommended)</span>
+      <ul>
+        <li>The vessel's identity (hangar render, description, flight numbers) stays on the left; everything else is one of four tabs: Elements, Game Modes, Controls, Docs and changes.</li>
+        <li>Elements shows ONE element at a time (Charge, Mass, Space, Time chips): the ability, its button on all three devices, the full text, what the element scales and the level 5.</li>
+        <li>Controls has three device tabs, Controller, PC, Mobile, each grouped Fly, Modes, Weapons.</li>
+        <li>Why recommended: it answers "not mix up everything" most directly. Only one subject is on screen, and every subject has room for its full text.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <span class="disp" style="font-size:22px;font-weight:600">B · Rail</span>
+      <ul>
+        <li>A section rail on the left (Elements, Game Modes, Controls, Docs and changes) under a compact identity header.</li>
+        <li>Elements puts all four side by side, so the kit reads at a glance; each text is shortened to fit.</li>
+        <li>Controls is one table: actions down, devices across, with All devices / Controller / PC / Mobile to narrow it to one device.</li>
+        <li>Better for comparing devices or elements; the full ability text does not fit the four columns.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <span class="disp" style="font-size:22px;font-weight:600">What the build needs</span>
+      <ul>
+        <li>The page: <span class="mono">Docs/FleetCodex/index.html</span> gets the picked layout; the fleet matrix stays as it is.</li>
+        <li>New data in <span class="mono">Tools/Build/fleet_codex.py</span>: the Mobile tab needs each hull's touch scheme and buttons (<span class="mono">author_touch_profiles.py</span> / TouchControlProfiles); the Fly rows (steer, aim) come from the input strategies, per one-stick or two-stick hull. Today the codex only knows each ability's pad and key.</li>
+        <li>The level-5 proposals shown in A live only in vessel docs; the build either reads them from a marked table or drops the line.</li>
+        <li>Game Modes ladders exist only for course-based modes; other cards show the card text alone.</li>
+      </ul>
+    </div>
+  </div>
+  <span style="font-size:14px;color:#8EA2AB">Live codex: https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8 · skill /fleet-codex · awaiting a pick.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

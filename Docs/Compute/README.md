@@ -349,9 +349,14 @@ notices it is on a hub (`api/status`), shows **LIVE** in the title bar and refre
 **Nobody types a command to join or to update** (Shombith, 2026-11-01: "every time I have to paste a command, and restart
 the VM"): the live console's Add a computer offers **one file to double-click** (`/install/windows.bat`, `mac.sh`,
 `linux.sh`, served only with the team key, the address and key written in; saved into the Cosmic-Shore folder, or
-it asks for the folder), which joins the computer; and **the VM updates itself**: the hub looks at its branch every
-10 minutes and, when `Tools/Compute` moved, pulls and exits so systemd restarts it on the new code; the VM's worker
-(the agent, running from the checkout) does the same. The SSH restart is history. The installer (and the paste line under it) asks **when the computer should work**:
+it asks for the folder), which joins the computer, and **one team link**, `<console>/install?key=<team key>` (the
+sheet's Copy button), that picks the file from the browser's operating system, so one link in one email serves
+every computer (it carries the key: email only, never a public channel); and **the VM updates itself**: the hub looks at its branch every
+minute (a fetch is cheap), pulls when `Tools/Compute` moved, and exits whenever the checkout's `Tools/Compute` is no
+longer the one it loaded, so systemd restarts it on the new code (`/api/status` says which `code` it runs, and
+`code_update` when a look failed); the VM's worker (the agent, running from the checkout) only follows: on a checkout
+that also runs a hub it never pulls (the agent pulling first once left the hub comparing a current checkout with the
+branch and never restarting), it restarts when it sees the checkout move. Every PC's agent pulls its own copy. The SSH restart is history. The installer (and the paste line under it) asks **when the computer should work**:
 whenever its person is away (the default), only at night, every day between two hours (`--between`), only when
 someone sends a run from the console (`--only-sent`: it stays free and never picks queue work), or all the time; and
 whether a sent run may start at once while the person is at the computer. Weekly schedules are not there yet.
@@ -367,10 +372,28 @@ the outbox, from a checkout `forget.py machine <user>/<host> --push` or `forget.
 
 **The installer is a window** (`setup.py --gui`; Shombith, 2026-11-01: "still I had to add the path in the terminal"):
 the file the console serves (`/install/windows.bat`, `mac.sh`, `linux.sh`) downloads `setup.py` from the hub
-(`/install/setup.py`, with the key) and opens the setup window with no terminal: it finds the Cosmic-Shore folder by
-itself (the current folder, then home, Documents, Desktop, source, GitHub, Projects and every drive root two levels
-deep, a folder named *cosmic* with `.git` and `Assets/_Scripts`) or takes one from Browse, asks when the computer may
-work and whether a sent run may start at once, installs with a log, and ends in the tray. The paste line still works.
+(`/install/setup.py`, with the key) and opens the setup window with no terminal: the person **browses to their
+Cosmic-Shore folder** (never searched for, Shombith 2026-11-01; the current folder is offered when it is a checkout),
+picks when the computer may work and whether a sent run may start at once, installs with a log, and ends in the tray.
+The paste line still works. **A failure is never silent** (Shombith, 2026-11-02: "something opens and closes"): the `.bat`
+runs `setup.py --gui-check` in its console first (Python, git, a working tkinter) and stays open with the reason; the
+window then runs under the console python (never `pythonw`, which swallowed its errors) and hides that console once
+it is up, so an error before that is printed and the `.bat` pauses on it; a later error is a message box; both and the
+window's opening go to `~/.froglet-compute/setup.log`. **The AI plan page** (Shombith, 2026-11-02): the console shows Garrett's `Docs/AI_SYSTEM/AI_PLAN.md` to anyone, with its
+steps from `ai_plan.json` (the file every worker holds jobs to), the searches serving each step and any job off the
+plan; the hub serves the doc raw at `/ai_plan.md`. Froglet Compute is the project's default way to train an AI
+(CLAUDE.md). **An install copies the NEWEST Tools/Compute** of bleeding-edge and the compute branch (the ref whose `Tools/Compute`
+changed last, `setup.newest_compute_ref`; the hub's installers use the same rule): after #1659 merged, bleeding-edge had
+an older copy than the branch carrying the installer fixes, and an install took it. **The window wears the console's dark theme** (Shombith, 2026-11-02: "the website theme with movie poster text"): the
+console's tokens (black, cyan accent, Impact for Bebas Neue), Cosmic Shore's own card art (`console/stills/setup-banner.png`,
+from Bloomrush's card) behind the wordmark and the title, served by the hub with the key, a progress bar over the six
+install steps, and **Uninstall in the window** (run the installer again: it says "installed on this computer" and offers it;
+the console's Remove this computer is the other way). A `.bat` cannot carry an icon (Windows draws its gears on every
+`.bat`); the Froglet logo on the file is the `.exe` follow-up (§19). The tray keeps Quit only, and its icon is the Froglet logo with the status as a dot.
+**One tray per computer** (`tray.lock`: the installer's and the login entry's second tray
+leaves at once) and **Uninstall stops everything**: `compute.py uninstall` stops every agent (the launcher, a
+checkout's `compute.py run`, the handover copy) and every tray, removes the task and login entries, and the tray quits.
+A `.exe` instead of the `.bat`: not yet (it has to be built on Windows and, unsigned, SmartScreen warns on it; see §19).
 
 **The tray** (`Tools/Compute/tray.py`, `compute.py tray`; Shombith, 2026-11-01: "build the tray app ... with uninstall
 option ... after install users can do the configuration"): the installer's last step puts a small icon on the
@@ -686,6 +709,13 @@ line to paste. **The app** is the live console (the hub, section 15) on your own
 
 ## 19. Follow-ups (debt this work created or saw; measured, not fixed here)
 
+- **A Windows `.exe` installer instead of the `.bat`** (Shombith, 2026-11-01: "why a bat file not exe"). The `.bat` is
+  a text file the hub writes per link (the address, the key and the schedule go in it); an `.exe` is a binary that has
+  to be BUILT on Windows (PyInstaller over `setup.py --gui`, a `windows-latest` GitHub Actions job can), cannot carry
+  the key, so it would read it from its own file name (`FrogletCompute-<key>.exe`, the hub serving the built binary
+  under that name), and unsigned it trips SmartScreen ("Windows protected your PC", a Run anyway click) on every PC,
+  which is a worse first impression than the `.bat`'s one prompt; signing needs a code-signing certificate (a few
+  hundred dollars a year, and an EV one to skip the reputation wait). Build it when the team wants the certificate.
 - **`unity-train` publishes no replay or still**: `_save_unit` keeps top-level files under `max_mb` 8 only
   (`worker.py`), so `<out>/replays` and `<out>/stills` stay on the computer that played; `recordings.json` lists them
   (section 16). A viewer on the console needs a store the files can go to (the VM's disk, or the artifact's assets).

@@ -313,12 +313,16 @@ namespace CosmicShore.Core
             "plays one per prism from BOTH Explode and Implode, so a blast through a " +
             "forest or a creature grazing a canopy queues thousands of FMOD instances " +
             "in a single frame - which shows up as native time inside " +
-            "RuntimeManager.Update(), not in the prism code that caused it.")]
+            "RuntimeManager.Update(), not in the prism code that caused it. " +
+            "ProjectileLaunch belongs here for the same reason: Projectile.LaunchProjectile " +
+            "plays one per ROUND, and a held full-auto fires 180 rounds/s (Sparrow) to " +
+            "450 rounds/s (Brittle Star, five guns).")]
         GameplaySFXCategory[] throttledCategories =
         {
             GameplaySFXCategory.BlockDestroy,
             GameplaySFXCategory.FloraCollision,
             GameplaySFXCategory.CreatureBlockHit,
+            GameplaySFXCategory.ProjectileLaunch,
         };
 
         [FormerlySerializedAs("blockDestroyMaxPerWindow")]

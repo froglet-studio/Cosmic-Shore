@@ -107,6 +107,28 @@ Accretion steals prisms into the held pair's attractor, +4% ripple reach each to
 - [ ] Space 10: the orbit is wider and never touches the repulsor.
 - [ ] The Mass card keeps its icon (no mode swap); the Space card shows the orbit icon.
 
+### 🔴 Arcade launch panel: each ability row draws its element's Codex shape, not the HUD petal (`claude/optimistic-allen-jxrbrw`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselControlsPanel` (the controls on an arcade or arena card's launch screen) drew each ability row's
+element mark with `ElementalBarsConfigSO.GetPetalSprite`, the solid HUD petal. Shombith, 2026-11-02: "use the correct
+icons for elements, check codex for that ... cards in arcade have these, please fix that too". It now draws a new
+`elementShapes` list (Charge, Mass, Space, Time: `Assets/_Graphics/ElementShapes/*_label.png`, the Codex's and the arcade
+grid card's `GameCard.GenreShapes`), the petal only as the fallback for an empty slot. `Tools/Build/author_menu_configure.py`
+writes the list on `ConfigureView.prefab` and `ConfigureArenaView.prefab` and `--check` fails when it is not the four shapes
+(negative control "the controls' element marks back to the petal" fires). The arcade GRID cards already drew the shapes
+(section 90, 2026-10-28). Affects: Shombith's configure screens.
+
+**Verified without the editor:** `author_menu_configure.py --check` and `--self-test` (every negative control fires),
+`.claude/skills/ship/gates.sh` (ALL OK). **Not run:** `Tools/Build/unity_refcompile` (no .NET SDK in the session; installing
+one was not permitted), so this C# is checked by eye only: one serialized `Sprite[]` and one private method.
+
+**Verify in the editor:**
+1. Open Menu_Main, Play, open any arcade card (Brittle Star Time is quick): the controls list each ability with the
+   OUTLINED Codex shape beside it (Charge a pentagon gem, Mass a downward triangle, Space a kite, Time a diamond), not a
+   solid petal. Same on an arena card's launch screen.
+2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
+3. Console clean.
+
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the
@@ -20903,3 +20925,88 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I3 or I4 race.
 - [ ] The AIs do not weave on the long legs, and Soar there (the speed readout near 650 at I4).
 - [ ] Headlong is unchanged (it keeps the old steering).
+
+## 🔴 Galaxy map deep zoom: the board's stars, clusters, landmarks, tiers and cards in the Voyage window (2026-11-02, Garrett, NOT RUN IN EDITOR)
+`VoyageMapGraphic` + `VoyageMapSky` + `HyperSeaSky` (Docs/Voyages/VOYAGE_BOARD.md §4b). Verified: `unity_refcompile` player and editor configs show only the 21 errors `origin/bleeding-edge` already has (FactionChat / PlayerReports, packages the gate cannot fetch), none in changed files; the model reproduces the board's `sky_golden.js` star for star in a .NET harness, and `HyperSeaSkyTests` 6/6 passed there (a broken tile seed fails `ModelTiles_MatchThePage`). Not run in Unity, not played.
+- [ ] The project compiles in the editor; `HyperSeaSkyTests` and `HyperSeaTests` pass.
+- [ ] Voyage window: the map loads with no hitch you can feel (the 4.7 MB sky table is read 6,000 lines a frame).
+- [ ] The ladder on the map's left (GALAXY ... SYSTEM, then SOL, TUMULT): the tier on show is lit; each press dives there; SOL and TUMULT fly from wherever you are down to a 12 ly view.
+- [ ] Zoom by wheel or pinch from the whole galaxy to 4 ly: about a thousand stars at every zoom, never empty, never a wall; from Neighbourhood down the readout names the slice's height.
+- [ ] Near Sol the named stars (Sirius, Vega, Deneb ...) and clusters (Hyades, Pleiades as a landmark, Jewel Box) are labelled; near Tumult the bright stars carry invented names in amber.
+- [ ] Tap a star, a cluster or a landmark: a card opens bottom-right with what it is, its line, its source tag and its distances from Sol, Tumult and the squad; a tap on open water closes it. Tapping a voyage's place still opens that voyage.
+- [ ] The edge view under the map shows the stars at their heights.
+- [ ] Frame rate while dragging at the Region and Galaxy tiers on a phone (new tiles are made 3 a frame; a Galaxy-tier tile is the costliest).
+
+## 🔴 Honeyguide AI: unstuck slips, a freestyle hunt, the symbolic strip (2026-11-02, NOT COMPILED, NOT RUN IN EDITOR)
+`HoneyguideCrew.Hunt.cs` (new), `HoneyguideCrew.Pilot.cs`/`Zip.cs`/`Triggers.cs`/`Hive.cs`, `HoneyguideDynamoView.Strip`, `HoneyguideConfigSO` (+ asset), `AIPilot.ExternalTargetProvider`. Record: `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md` § The AI's hunt. Not compiled: the cloud session could not install a .NET SDK (dot.net blocked), so `unity_refcompile` was skipped; `gates.sh` otherwise all OK.
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Freestyle, play the Ratel (the AI flies): over a minute or two the AI goes after creatures, rivals and opposing prism masses, not only omnicrystals, and still takes one now and then.
+- [ ] The AI slips along trails toward where it is going and does not ping-pong on one trail.
+- [ ] The strip shows the goal's glyph, the hull closing on it, slips/darts, strikes, breaks and pickups.
+- [ ] A match with its own AI objective (Regatta, Astro League): the Honeyguide AI still plays the match's objective.
+
+## 🔴 Galaxy map: readable names at every zoom, and the 20 ly cells (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Ran here: `unity_refcompile` player and editor (0 errors in changed files; the 21 baseline errors are the unfetchable
+Vivox/Moderation packages), `check_console_logging.py`, `export_sky.js --check`, `author_voyage_assets.py --check`.
+The hex corners were checked against `HyperSea.CellOf` (a point 95% of the way to each corner stays in its cell). No
+Unity editor ran, so nothing below was seen.
+
+- [ ] The project compiles in the editor with no new errors.
+- [ ] Menu_Main, Voyage window, the galaxy map at every ladder tier: every name (places, landmarks, stars, clusters),
+  the ladder and the readout read easily at phone and PC sizes, each on a dark plate; nothing overlaps.
+- [ ] Zoom from Region toward Neighbourhood: the hexagon grid fades in and stays faint under the stars.
+- [ ] Zoom to the Cell tier: one hexagon fills the view and names itself ("WATER 3, -2" and so on); tapping open water
+  opens the cell's card and outlines the hexagon in white; tapping the same cell again closes it; a star tap still
+  opens the star.
+- [ ] The edge view's caption under the map still fits its strip.
+
+## 🔴 Held-gun cost (Sparrow full-auto, Brittle Star turrets) and the Sparrow round's visibility (2026-11-02, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/festive-ptolemy-gsap7o`. Verified offline only: `unity_refcompile` player + editor 0 errors,
+`ProjectileFireCostTests` written (not run: no Unity here), console-logging and conditional-compilation gates clean.
+
+1. **Profile a held trigger.** Fly the Sparrow, hold full-auto 10 s; then the Brittle Star in Space (Destruction)
+   mode with all five guns. In the Profiler, `LOD.Sweep` / `LOD.Drain` should no longer grow with the trigger
+   (swept rounds are not collider-LOD foci any more), and `RuntimeManager.Update` should stay flat (the
+   per-round `ProjectileLaunch` one-shot is burst-throttled to 4 per 0.1 s).
+2. **Haptics with a pad.** Hold the Sparrow's guns with a gamepad: the spray buzz still climbs with the cone.
+   `Haptics.MotorWrite` shows at most one sample per frame. For an A/B, turn Haptics off in Settings and
+   compare the frame time; with no pad (phone) haptics cost nothing.
+3. **The Sparrow round is visible.** It is now drawn 1.65 u wide (its hit width, `_Spread` 0.45 on
+   `SparrowProjectileMaterial`) and brighter. Check it reads from the chase camera and that the Brittle
+   Star's rounds (same prefab) do not look too heavy.
+4. **Rounds still hit.** The round's Rigidbody is now kinematic: bullets still damage prisms, score on
+   pilots, and set off mines/crystals as before.
+
+## 🔴 Batched round sweeps (`ProjectileSweepBatch`) for the held guns (2026-11-02, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `unity_refcompile` (player + editor), not run.
+
+1. **Run the edit-mode tests** `PrismSpatialIndexTests.SegmentsOccupied_AgreesWithQuerySegment` and
+   `PrismSpatialIndexTests.WriteStamp_MovesOnAddAndMove_NotOnDestroy`: both pass.
+2. **Profile the Brittle Star holding all five guns** (Destruction mode, open space, Release): `Projectile.SweepVessels`
+   plus `Projectile.SweepPrisms` should drop from several ms to well under 1 ms, with one `Projectile.SweepBatch` a frame.
+   Repeat with the Sparrow's full-auto.
+3. **Hits are unchanged.** Shoot a prism wall and an enemy pilot with each vessel: prisms break, the pilot is scored, and
+   (below Space 5) a Sparrow round still stops on the first prism it meets.
+4. **No new console errors.** A `[ProjectileSweepBatch] build failed` error means the batch fell back to per-round
+   queries (correct, but the speed-up is lost): send it.
+
+## 🔴 Voyage window: four tabs, the HyperSea map left, the open voyage card (Rev 49 C) (2026-11-02, Shombith, NOT RUN IN EDITOR)
+`VoyageWindowTabs`, `HubShoulders`, `VoyageOpenCard`, `VoyageRoutePoster`, `VoyageCardRules` (new), `VoyageJobsView`, `MissionView.prefab` (by `author_voyage_window.py`), `VoyageLines` (+ `VoyageContent.asset`); `VoyageWindowModals` retired. Record: `Docs/MENU_REDESIGN_B.md` section 119. Ran here: `unity_refcompile` player and editor, `gates.sh` ALL OK, the generators' `--check` / `--self-test`, and `VoyageCardRulesTests` outside Unity. No Unity editor ran, so nothing below was seen.
+- [ ] The project compiles in the editor; `VoyageCardRulesTests` pass.
+- [ ] Menu_Main > Voyage: the window opens on VOYAGES; the tabs read VOYAGES | SAGA | QUESTS | EPISODES, Episodes locked and "Coming soon".
+- [ ] LB / RB step the tabs and stop at Voyages and Episodes; while the window is open they do not slide the hub; after it closes they slide the hub again.
+- [ ] Saga shows Tandava and its Severing; Quests shows Episode 1's quests (the quest tracker); nothing of the old modals or their dims remains.
+- [ ] The HyperSea map fills the left column, opaque, with the edge view under it; pan / zoom / place taps still work.
+- [ ] The voyage cards stand two across on the right; pressing one, or its place on the map, slides the open voyage in over them; Back slides it out.
+- [ ] The open voyage's ground is the course on the map's water (amber Ark end, lime destination), and it follows the map as it is panned.
+- [ ] The pager (< >) goes round the voyages; the map frames each voyage's course.
+- [ ] The squad presets beside the formation switch the active squad (and it is still active after reopening the menu); Configure the squad opens Ark crew.
+- [ ] Ark crew: each seat's vessel / pilot / element / artifact cycle on press; in a joined squad only your own seat changes; Save squad keeps it (reopen to check); closing the card without Save squad leaves the squad as it was.
+- [ ] Story: one beat at a time, the dots and < > step them, an empty beat is skipped.
+- [ ] Set sail from the open voyage sails that voyage, as the small card's did.
+- [ ] Gamepad: every control on the open card is reachable with the D-pad and A.
+- [ ] Sliding the hub onto the Voyage window with RB opens it on VOYAGES (that RB is not also a tab step).
+- [ ] Profiler: with the open card shut, `VoyageRoutePoster` rebuilds no mesh per frame (it redraws only when the map repaints).

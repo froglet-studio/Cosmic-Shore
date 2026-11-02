@@ -99,8 +99,12 @@ Three properties of that player are load-bearing and should not be "simplified" 
   slow frame *skips* the segments it slept through instead of stretching them. Measured: a 250 ms hitch
   mid-alert lands on the segment that owns t=250 ms; the alert ends at 1.067 s at 30 fps against its
   1.060 s of authored segments.
-* **The motors are written once per SEGMENT, not once per frame** — every `SetMotorSpeeds` is a command
-  to the device.
+* **The motors are written once per SEGMENT, not once per frame, and never more than once a frame**:
+  every `SetMotorSpeeds` is a command to the device, and on HID pads (DualShock / DualSense, Bluetooth above
+  all) a blocking one. One `Flush` sends every command: it skips speeds the pad already holds, holds a
+  second change in a frame for the driver's `LateUpdate`, and defers a pattern's end-of-clip silence there
+  so the spray's next pulse overwrites the zero instead of paying a command for it (2026-11-02). Every
+  command is inside the `Haptics.MotorWrite` profiler marker.
 
 It also stops the motors on every way the game can go quiet (play-mode exit, scene teardown, quit,
 pause, focus loss, and a pad unplugged mid-pattern). A sound left playing is something you can hear; a

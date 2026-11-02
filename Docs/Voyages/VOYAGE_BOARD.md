@@ -53,19 +53,29 @@ closed to every Ark (proposed).
   voyages are ... arranged in a matrix like the different arcade games. Then the episodes and saga are top level above
   the fold modals that contain their own content"; "the map divides them as a fun interactive galaxy explorer deciding
   where you want your voyages to take you"). Laid out by `Tools/Build/author_voyage_window.py`:
-  - **SAGA | EPISODES** at the top (`VoyageWindowModals`): SAGA opens Tandava and its Severing, EPISODES opens Episode 1's
-    quests and Episode 2, each in a modal over the window; a press outside it closes it.
-  - **The galaxy map** (`VoyageMapGraphic`, stood by `VoyageJobsView` before the cards): the sea around the places,
+  - **Four tabs at the top, VOYAGES | SAGA | QUESTS | EPISODES** (`VoyageWindowTabs`, rebuilt 2026-11-02 to Shombith's
+    pick, `Docs/MENU_REDESIGN_B.md` section 119; `VoyageWindowModals` and its modals retired). Voyages opens first.
+    Saga holds Tandava and its Severing, Quests holds Episode 1's quests, and Episodes is locked ("coming soon", Episode
+    2). LB / RB step through the tabs and stop at either end; while the window is open it holds the bumpers
+    (`HubShoulders`), so they do not slide the hub as well.
+  - **The galaxy map** (`VoyageMapGraphic`), named HyperSea map in the window, fills the left column (`mapColumn`) over
+    the edge view. It shows the sea around the places,
     painted from the density field, the galaxy in a corner with Sol and where you are looking. It is an explorer: drag
     to pan, pinch or wheel to zoom (120 to 20,000 ly across), tap a place to open the voyage that sails there, or, if
     none does, to read its line (`MapPlace`).
   - **The edge view** under it (`VoyageEdgeGraphic`): the disk edge-on at the map's own scale both ways, as the board's
     side view (true 1,000 ly thickness, a depth gauge, the places and the course at their heights, `EdgeCaption`).
-  - **The voyage cards**, three across in a grid: closed, route and pilot, title and the course line `CardCourse`
-    (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`). OPEN (or a press on the card) expands it over the others
-    to its brief (`CardDetails`, or `CardHomeDetails` for the way home: the mission, the place, the squad's seats, the
-    intensity, the pay, who brought it) with Set sail, and the map frames that job's course. One is open at a time;
-    closing it gives the map back every place. The Ark escort's card opens the same way to its difficulty stepper.
+  - **The voyage cards**, small and two across in the right column: route and pilot, title and the course line
+    `CardCourse` (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`). OPEN (a press on the card, or on its place on
+    the map) slides the **open voyage** (`VoyageOpenCard`) over the cards, and the map frames that job's course. Its
+    ground is the course on the map's own painted water (`VoyageRoutePoster`). It has three levels:
+    - the voyage: the pager (< >, going round), title, three numbers, the route's two ends, and the squad with its
+      presets beside it (`SquadBook`). It also has Configure the squad, Set sail, Ark crew and Story.
+    - Ark crew: three seats, each with its vessel, pilot, element and artifact, under the Ark's own edit rules, on a copy of
+      the squad. Save squad writes it back; closing the card drops an unsaved change.
+    - Story: one beat at a time (the news, the place, who brought it, the water).
+    Its words are `VoyageLines` (`Card*`, `Story*`, `Element*`). The Ark escort's card still opens in place to its
+    difficulty stepper.
   Uncharted content draws the old flat chart, with no edge view.
 - The lanes' `cells` still set how long a leg sails in the Arkway; the card shows the real distance (§5 decision 8).
 - **The Ark escort** sails between charted places too (`ARK_ESCORT.md` §5): `VoyageRules.EscortRoute` picks the
@@ -111,6 +121,47 @@ embeds the catalogue. `deepzoom/build_data.py <downloads> realsky.json` rebuilds
   members, age) and the data must be re-pulled from CDS before shipping.
 - Gaia DR3 is CC BY-NC 3.0 IGO, not usable in a paid game without ESA's terms; nothing here uses it.
 - NASA Exoplanet Archive (not used yet): acknowledgement only.
+
+## 4b. Deep zoom in the game (2026-11-02)
+
+Garrett, 2026-11-02: "i was expecting to be able to browse the vicinity and preserve all the ability to zoom into the
+points of interest etc. but when i zoomed in on bleeding edge it had none of the detail i saw in the artifact." The
+Voyage window's map now zooms as the board does: from the whole galaxy (140,000 ly) down to a 4 ly star system.
+
+- **`HyperSeaSky`** (`Assets/_Scripts/Data/Voyages/HyperSeaSky.cs`): `deepzoom.js` ported line for line in doubles: the
+  quadtree, the luminosity function, the star column, star colours, the model's stars per tile from the board's own
+  seeds (mulberry32, bit for bit), Tumult's invented names, the seven tiers, the view state (`Lcut`, the height slab and
+  the height it slices at) and the opacity, size and label rules. **`HyperSeaSkyCatalog`** reads the sky table a slice
+  per frame; **`HyperSeaSkyField`** collects what a view draws, making at most 3 new tiles a frame and keeping 600.
+- **The sky table** (`Assets/Resources/Voyages/HyperSeaSky.txt`, 4.7 MB, plain tab-separated text): the board's 97,293
+  catalogue stars, 5,799 clusters and 48 landmarks with the drawing level the board gives each, the kinds of place and
+  the syllables of Tumult's names. Written by `node Docs/Voyages/VoyageBoard/export_sky.js` (`--check` is the drift
+  gate), which runs the board's own model and `deepzoom.js`, so the place filter and the famous cluster names are the
+  board's. Greek letters are spelled out ("Tau Ori") and the middle dot becomes a dash, for the game's fonts. The table
+  is adapted from HYG and so stays CC BY-SA 4.0: it ships as a plain text asset (no DRM on it) and carries the credit in
+  its header and in every catalogue star's card.
+- **`VoyageMapSky`** (`Assets/_Scripts/UI/Views/VoyageMapSky.cs`), owned by `VoyageMapGraphic`: the stars (glow over
+  3.2 levels deep), globular clusters as warm glows, open clusters as dashed rings, the landmarks the content does not
+  already draw, up to 48 names placed most important first without overlapping, the ladder (the seven tiers, then SOL
+  and TUMULT dives with the board's flight: log-width easing, the centre moving with one over the width on a long
+  zoom), the readout (`{tier}: {what} - {width} across`, plus the slice from Neighbourhood down) and the card a tapped
+  star, cluster or landmark opens (what it is, its line, its source tag, its height and distances from Sol, Tumult and
+  the squad, and the minutes by Ark). A tapped voyage place still opens its voyage. The edge view stands the stars and
+  landmarks at their heights.
+- **Readable names and the cells** (Garrett, 2026-11-02: "the words are not readable even when zoomed in, but words
+  should be readable at all semantic zoom levels. at the deepest levels we should see the hexagons and you should zoom
+  into the hexagons to see cells"). The map's text had copied the card eyebrow's 14 px and drawn a share of it; every
+  map text now has its own size (`VoyageMapText`: places 22 px, landmarks 20, stars, clusters and cells 18, ladder and
+  readout 17, caption 18, card 19, at the 1920x1080 reference) and sits on a dark plate. The 20 ly cells' outlines
+  (`HyperSea.CellCentre`, pointy-top) fade in as a cell grows from 16 to 36 px across (the Region tier into the
+  Neighbourhood); a cell names itself (`MapCellLabel`, its sea and coordinates) from 150 px, and from 40 px a tap on
+  open water opens its card (sea, perceived density, danger, the place whose berth holds it) and outlines it; a second
+  tap closes it. The Cell tier puts one cell across the view and the System tier is inside it.
+- Every word is authored: the `Map*` lines of `VoyageLines` (`voyage_slice.json` `hud`, written by
+  `author_voyage_assets.py`); star and cluster names, landmark lines and kind labels are the table's.
+- **Goldens:** `node Docs/Voyages/VoyageBoard/sky_golden.js` prints what `HyperSeaSkyTests` holds (the luminosity
+  function, the column, colours, seven tiles star by star, five views).
+- Not ported: lanes by heading and the course profile (§5 decision 9, pending), crew's-eye units, pre-cut tiles on R2.
 
 ## 5. Open decisions (Garrett)
 

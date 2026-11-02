@@ -425,6 +425,58 @@ namespace CosmicShore.Gameplay
         [Tooltip("The AI pilot holds a trigger this long between its pull and its release (it pulls, as a person does).")]
         [SerializeField, Min(0f)] float aiPreviewSeconds = 0.17f;
 
+        [Header("The AI pilot's hunt (Garrett 2026-11-02: in freestyle it hunts fauna, rival vessels and opposing prisms)")]
+        [Tooltip("An AI-flown Honeyguide picks its own goal: a creature, a rival vessel, an opposing prism mass, the Mass hive or " +
+                 "an omnicrystal, and uses its triggers on it (HoneyguideCrew.Hunt.cs). Off: it chases omnicrystals as every " +
+                 "hull's autopilot does.")]
+        [SerializeField] bool aiHunts = true;
+        [Tooltip("The hunt runs only outside a match, or in freestyle: a match's own objective (its steering hook) is never touched.")]
+        [SerializeField] bool aiHuntFreestyleOnly = true;
+        [Tooltip("Seconds between the AI's looks at what to go after.")]
+        [SerializeField, Min(0.1f)] float aiHuntThink = 0.75f;
+        [Tooltip("Seconds the AI keeps a goal before a better one may take its place (a goal that dies is dropped at once).")]
+        [SerializeField, Min(0f)] float aiHuntCommit = 4f;
+        [Tooltip("A new goal must want this many times the current one's pull to take its place after the commit (no flapping).")]
+        [SerializeField, Min(1f)] float aiHuntSwitch = 1.3f;
+        [Tooltip("Farthest a creature, rival vessel or opposing prism mass the AI hunts (u).")]
+        [SerializeField, Min(10f)] float aiHuntReach = 900f;
+        [Tooltip("A goal's pull halves at this distance (u): nearer things win.")]
+        [SerializeField, Min(1f)] float aiHuntFalloff = 250f;
+        [Tooltip("How much the AI wants a creature (LT strikes it).")]
+        [SerializeField, Min(0f)] float aiWantFauna = 1f;
+        [Tooltip("How much the AI wants a rival vessel (LT strikes it).")]
+        [SerializeField, Min(0f)] float aiWantVessel = 1.2f;
+        [Tooltip("How much the AI wants an opposing prism mass (RT pecks it).")]
+        [SerializeField, Min(0f)] float aiWantPrisms = 0.8f;
+        [Tooltip("How much the AI wants an omnicrystal (while it is not resting from one).")]
+        [SerializeField, Min(0f)] float aiWantCrystal = 0.6f;
+        [Tooltip("How much the AI wants the Mass hive (a human Ratel's hull: the AI flies it there).")]
+        [SerializeField, Min(0f)] float aiWantHive = 1.5f;
+        [Tooltip("After an omnicrystal or a hive the AI leaves omnicrystals alone this long, unless one is within aiCrystalSnatch (s).")]
+        [SerializeField, Min(0f)] float aiCrystalRest = 40f;
+        [Tooltip("An omnicrystal this near is taken even while the AI rests from them (u).")]
+        [SerializeField, Min(0f)] float aiCrystalSnatch = 80f;
+        [Tooltip("An opposing prism mass is a goal only with at least this many hostile prisms within aiPrismMassRadius of its centre.")]
+        [SerializeField, Min(1)] int aiPrismMassMin = 8;
+        [Tooltip("The radius the opposing prism mass is counted in (u).")]
+        [SerializeField, Min(1f)] float aiPrismMassRadius = 30f;
+        [Tooltip("Seconds between the AI's looks for the densest opposing prism mass (the cell's own density grid).")]
+        [SerializeField, Min(0.5f)] float aiPrismMassScan = 3f;
+        [Tooltip("The AI slips only when the landing brings it at least this much nearer its goal (u). Garrett 2026-11-02: the AI " +
+                 "got stuck slipping, riding trails that carried it away from where it was going and turning back onto them.")]
+        [SerializeField, Min(0f)] float aiSlipMinGain = 40f;
+        [Tooltip("A trail the AI turned down is ignored this long (s).")]
+        [SerializeField, Min(0f)] float aiSlipSkipSeconds = 3f;
+        [Tooltip("This many AI slips inside aiSlipLoopWindow seconds is a loop: the AI leaves slips alone aiSlipRest seconds.")]
+        [SerializeField, Min(2)] int aiSlipLoopCount = 4;
+        [Tooltip("The window the AI's slips are counted in for the loop guard (s).")]
+        [SerializeField, Min(0.5f)] float aiSlipLoopWindow = 8f;
+        [Tooltip("Seconds the AI leaves slips alone after a loop.")]
+        [SerializeField, Min(0f)] float aiSlipRest = 5f;
+        [Tooltip("A ride (slip, jet or reel) ends where it is after its path at its top speed would take this many times as long, " +
+                 "plus a second: a watchdog, so no ride can hold the hull.")]
+        [SerializeField, Min(1f)] float rideWatchdog = 2f;
+
         [Header("The trigger previews (drawn in the world for the pilot on this screen)")]
         [Tooltip("The previews' line material. Empty: an unlit sprite material is made at run time.")]
         [SerializeField] Material previewMaterial;
@@ -533,6 +585,25 @@ namespace CosmicShore.Gameplay
         [SerializeField] string stripOmniTemplate = "Omnicrystal {distance} u";
         [Tooltip("The strip while no omnicrystal is out. Empty = no line.")]
         [SerializeField] string stripNoTargetLine = "No omnicrystal in sight";
+        [Tooltip("The strip while the AI hunts a creature. Tokens: {distance} (u).")]
+        [SerializeField] string stripFaunaTemplate = "Hunting fauna {distance} u";
+        [Tooltip("The strip while the AI chases a rival vessel. Tokens: {distance} (u).")]
+        [SerializeField] string stripVesselTemplate = "Chasing a rival {distance} u";
+        [Tooltip("The strip while the AI goes for an opposing prism mass. Tokens: {colour} (its colour name, or stripOpposingWord), " +
+                 "{distance} (u).")]
+        [SerializeField] string stripPrismsTemplate = "Breaking {colour} prisms {distance} u";
+        [Tooltip("The {colour} of a prism mass with no Ruby, Jade or Gold name.")]
+        [SerializeField] string stripOpposingWord = "opposing";
+        [Tooltip("The strip while the hull flies to the Mass hive. Tokens: {distance} (u).")]
+        [SerializeField] string stripHiveTemplate = "Mass hive {distance} u";
+        [Tooltip("The strip while the hull rides a slip.")]
+        [SerializeField] string stripSlipLine = "Slipping";
+        [Tooltip("The strip while the hull darts (Flit, Eyelet Jet, Thruster Swarm).")]
+        [SerializeField] string stripJetLine = "Darting";
+        [Tooltip("The strip while the Hard Light Lasso reels the hull in.")]
+        [SerializeField] string stripReelLine = "Reeling in";
+        [Tooltip("Seconds a strike, a break or a pickup flashes on the strip.")]
+        [SerializeField, Min(0.05f)] float stripHitSeconds = 0.6f;
         [Tooltip("The toast when a pattern is made (the game's toast, top right under Settings). Tokens: {name}, {level} (empty for " +
                  "a one-off), {text} (the card's effect).")]
         [SerializeField] string madeToastTemplate = "{name} {level}: {text}";
@@ -657,6 +728,29 @@ namespace CosmicShore.Gameplay
         public int MonteHops => monteHops;
         public float AITriggerThink => aiTriggerThink;
         public float AIPreviewSeconds => aiPreviewSeconds;
+        public bool AIHunts => aiHunts;
+        public bool AIHuntFreestyleOnly => aiHuntFreestyleOnly;
+        public float AIHuntThink => aiHuntThink;
+        public float AIHuntCommit => aiHuntCommit;
+        public float AIHuntSwitch => aiHuntSwitch;
+        public float AIHuntReach => aiHuntReach;
+        public float AIHuntFalloff => aiHuntFalloff;
+        public float AIWantFauna => aiWantFauna;
+        public float AIWantVessel => aiWantVessel;
+        public float AIWantPrisms => aiWantPrisms;
+        public float AIWantCrystal => aiWantCrystal;
+        public float AIWantHive => aiWantHive;
+        public float AICrystalRest => aiCrystalRest;
+        public float AICrystalSnatch => aiCrystalSnatch;
+        public int AIPrismMassMin => aiPrismMassMin;
+        public float AIPrismMassRadius => aiPrismMassRadius;
+        public float AIPrismMassScan => aiPrismMassScan;
+        public float AISlipMinGain => aiSlipMinGain;
+        public float AISlipSkipSeconds => aiSlipSkipSeconds;
+        public int AISlipLoopCount => aiSlipLoopCount;
+        public float AISlipLoopWindow => aiSlipLoopWindow;
+        public float AISlipRest => aiSlipRest;
+        public float RideWatchdog => rideWatchdog;
         public Material PreviewMaterial => previewMaterial;
         public float PreviewWidth => previewWidth;
         public Color PreviewColour => previewColour;
@@ -739,6 +833,15 @@ namespace CosmicShore.Gameplay
         public string HiveNoRewardsLine => hiveNoRewardsLine;
         public string StripOmniTemplate => stripOmniTemplate;
         public string StripNoTargetLine => stripNoTargetLine;
+        public string StripFaunaTemplate => stripFaunaTemplate;
+        public string StripVesselTemplate => stripVesselTemplate;
+        public string StripPrismsTemplate => stripPrismsTemplate;
+        public string StripOpposingWord => stripOpposingWord;
+        public string StripHiveTemplate => stripHiveTemplate;
+        public string StripSlipLine => stripSlipLine;
+        public string StripJetLine => stripJetLine;
+        public string StripReelLine => stripReelLine;
+        public float StripHitSeconds => stripHitSeconds;
 
         /// <summary>The hive core's settings from this asset (the Ratel Raid Lab's SHIPPED).</summary>
         public HiveSettings ToHiveSettings() => new()

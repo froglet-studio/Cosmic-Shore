@@ -24,6 +24,7 @@ namespace CosmicShore.UI
         const float RepaintEvery = 0.12f;
         const float PlaceSize = 7f, HereSize = 12f, CourseWidth = 2.5f, RuleWidth = 1f;
         const string CaptionName = "Caption";
+        const int MaxSideStars = 3000;
 
         static readonly Color SeaTint = new(1f, 1f, 1f, 0.92f);
         static readonly Color Midplane = new(0.84f, 0.88f, 0.94f, 0.3f);
@@ -31,6 +32,7 @@ namespace CosmicShore.UI
         static readonly Color GaugeBack = new(0.02f, 0.035f, 0.07f, 0.8f);
         static readonly Color GaugeDisk = new(0.16f, 0.41f, 0.72f, 0.35f);
         static readonly Color GaugeWindow = new(0.89f, 0.92f, 0.96f, 0.9f);
+        static readonly Color LandmarkTint = new(0.84f, 0.88f, 0.94f, 0.75f);
 
         VoyageMapGraphic _map;
         TMP_Text _caption;
@@ -161,6 +163,30 @@ namespace CosmicShore.UI
             Rule(vh, r, r.center.y + (-(float)HyperSea.DiskHalf - zc) * s, DiskFace, white);
             Rule(vh, r, r.center.y - zc * s, Midplane, white);
 
+            // The deep zoom's stars and landmarks at their heights, as the board's side view stands them.
+            var sky = _map.Sky;
+            if (sky != null)
+            {
+                int n = 0;
+                foreach (var m in sky.Stars)
+                {
+                    if (m.Alpha <= .2f) continue;
+                    if (++n > MaxSideStars) break;
+                    var o = m.Object;
+                    var at = ToRect((float)o.X, (float)o.Z, s, zc);
+                    if (!r.Contains(at)) continue;
+                    float rad = Mathf.Max(.5f, (float)HyperSeaSky.StarRadius(m.Rel) * .75f);
+                    var col = new Color32(o.R, o.G, o.B, (byte)Mathf.RoundToInt(255f * m.Alpha * .75f));
+                    VoyageMapGraphic.Quad(vh, at + new Vector2(-rad, -rad), at + new Vector2(-rad, rad),
+                        at + new Vector2(rad, rad), at + new Vector2(rad, -rad), col, white, white, white, white);
+                }
+                foreach (var p in sky.Landmarks)
+                {
+                    var at = ToRect((float)p.X, (float)p.Z, s, zc);
+                    if (r.Contains(at)) VoyageMapGraphic.Diamond(vh, at, PlaceSize * .7f, LandmarkTint, white);
+                }
+            }
+
             var content = _map.Content;
             foreach (var l in content.Locations)
             {
@@ -240,7 +266,7 @@ namespace CosmicShore.UI
                 {
                     t.font = template.font;
                     t.fontSharedMaterial = template.fontSharedMaterial;
-                    t.fontSize = template.fontSize * 0.55f;
+                    t.fontSize = VoyageMapText.Caption;
                     t.color = template.color;
                 }
                 t.textWrappingMode = TextWrappingModes.NoWrap;
@@ -251,7 +277,7 @@ namespace CosmicShore.UI
                 rt.anchorMin = new Vector2(0f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(0f, 1f);
-                rt.sizeDelta = new Vector2(-GaugeWidth - 12f, 20f);
+                rt.sizeDelta = new Vector2(-GaugeWidth - 12f, VoyageMapText.Caption * 1.4f);
                 rt.anchoredPosition = new Vector2(GaugeWidth + 6f, -4f);
                 _caption = t;
             }

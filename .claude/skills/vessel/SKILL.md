@@ -1494,7 +1494,8 @@ but not CLAUDE.md — don't repeat that), the map asset's `UpgradeLabel`/`Upgrad
 a co-located design doc `Assets/_Scripts/Controller/Vessel/R_VesselActions/{FEATURE}.md`
 (overview + Files table + tuning-knobs table + "## In-editor verification" + "## Follow-ups";
 `RHINO_SHIELD_SWIPE.md` is the exemplar). Delete stale serialized blocks left by script-field
-renames, and use `[FormerlySerializedAs]` when renaming container fields.
+renames, and use `[FormerlySerializedAs]` when renaming container fields. Once it lands on bleeding-edge, refresh the
+**Fleet Codex** artifact with `/fleet-codex` §1 (the daily refresh catches it otherwise); never edit the codex by hand.
 
 ## 7. Growing the contract (how a vessel requirement becomes enforced)
 
