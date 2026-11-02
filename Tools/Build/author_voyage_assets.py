@@ -49,7 +49,17 @@ LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "H
                 "ChooseNext", "CardRoute", "CardHomeRoute", "CardUnderway", "CardCourse",
                 "SeaSpray", "SeaFroth", "SeaWater", "SeaThick", "SeaReef", "CardOpen", "CardClose", "CardDetails",
                 "CardHomeDetails", "CardSquadSeat", "CardSquadSeparator", "MapPlace", "EdgeCaption",
-                "EdgeAbove", "EdgeBelow", "EdgeMidplane"]
+                "EdgeAbove", "EdgeBelow", "EdgeMidplane",
+                "MapTierGalaxy", "MapTierArm", "MapTierSector", "MapTierRegion", "MapTierNeighbourhood",
+                "MapTierCell", "MapTierSystem", "MapTierGalaxyWhat", "MapTierArmWhat", "MapTierSectorWhat",
+                "MapTierRegionWhat", "MapTierNeighbourhoodWhat", "MapTierCellWhat", "MapTierSystemWhat",
+                "MapDiveSol", "MapDiveTumult", "MapReadout", "MapReadoutSlab", "MapLy", "MapAbove", "MapBelow",
+                "MapMidplane", "MapInspect", "MapWhere", "MapMinutes", "MapHours", "MapKindStar", "MapKindModelStar",
+                "MapKindTumultStar", "MapKindGlobular", "MapKindOpen", "MapUnnamedStar", "MapUnchartedStar",
+                "MapStarBody", "MapStarAlso", "MapLight", "MapTypeOB", "MapTypeB", "MapTypeA", "MapTypeF",
+                "MapTypeG", "MapTypeK", "MapTypeM", "MapTypeRedSupergiant", "MapTypeGiant", "MapGlobularBody",
+                "MapOpenBody", "MapOpenBodyYoung", "MapOpenAge", "MapAgeBillion", "MapAgeMillion",
+                "MapSourceCatalog", "MapSourceModel", "MapSourceTumult", "MapSourceReal", "MapSourceProposed"]
 
 
 def guid_for(name):

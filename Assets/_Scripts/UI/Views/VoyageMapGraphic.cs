@@ -24,6 +24,11 @@ namespace CosmicShore.UI
     /// <para>It is a galaxy explorer (Garrett, 2026-11-01: "the map divides them as a fun interactive galaxy explorer
     /// deciding where you want your voyages to take you"): drag to pan, pinch or scroll to zoom, tap a place
     /// (<see cref="PlaceTapped"/>). The window's edge view follows it (<see cref="ViewChanged"/>).</para>
+    ///
+    /// <para>It zooms as deep as the Voyage Board does (Garrett, 2026-11-02: "browse the vicinity and preserve all the
+    /// ability to zoom into the points of interest"): from the whole galaxy down to a 4 ly star system, with the board's
+    /// stars, clusters and landmarks, the seven-tier ladder and the Sol and Tumult dives, and a card for whatever is tapped
+    /// (<see cref="VoyageMapSky"/>, Docs/Voyages/VOYAGE_BOARD.md §4b).</para>
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public class VoyageMapGraphic : MaskableGraphic, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler,
@@ -43,7 +48,7 @@ namespace CosmicShore.UI
         // The explorer: how far it zooms (the view's width, light years on a charted map, the framed width's share on
         // an uncharted one), how far a wheel notch zooms, how near a tap must land on a place, how often a moving view
         // repaints its sea.
-        const float MinViewLy = 120f, MaxViewLy = 20000f;
+        const float MinViewLy = (float)HyperSeaSky.MinWidth, MaxViewLy = (float)HyperSeaSky.MaxWidth;
         const float MinZoom = 0.5f, MaxZoom = 8f;
         const float WheelZoom = 1.15f;
         const float TapReach = 28f;
@@ -90,6 +95,13 @@ namespace CosmicShore.UI
         bool _insetPainted;
         bool _paintedCoarse;
 
+        // The deep zoom's sky, and a dive in flight (the board's flyTo: the width eases in log space and, on a long
+        // zoom, the centre moves with one over the width, so the target stays steady on screen).
+        VoyageMapSky _sky;
+        bool _flying;
+        Vector2 _flyFromC, _flyToC;
+        float _flyFromW, _flyToW, _flyT0, _flyMs;
+
         /// <summary>A place was tapped: its location id.</summary>
         public event Action<string> PlaceTapped;
         /// <summary>The view moved or zoomed, or the map was redrawn (the edge view follows it).</summary>
@@ -110,6 +122,9 @@ namespace CosmicShore.UI
         public Vector2 ViewCentre => Centre;
         /// <summary>A map x (light years on a charted map) as an x from the rect's centre.</summary>
         public float OffsetX(float mapX) => (mapX - Centre.x) * Scale();
+        /// <summary>The deep zoom's sky on a charted map (its stars, landmarks and labels), or null.</summary>
+        public VoyageMapSky Sky => _chart != null ? _sky : null;
+        VoyageMapSky SkyOf => _sky ??= new VoyageMapSky(this);
 
         static Texture2D s_Atlas;
         static string s_AtlasKey;
@@ -120,7 +135,14 @@ namespace CosmicShore.UI
         public override Texture mainTexture => _painted && _chart != null && s_Atlas ? s_Atlas : s_WhiteTexture;
 
         /// <summary>The text whose font, size and colour every location's label copies.</summary>
-        public void SetLabelTemplate(TMP_Text template) => _labelTemplate = template;
+        public void SetLabelTemplate(TMP_Text template)
+        {
+            _labelTemplate = template;
+            SkyOf.SetTemplate(template);
+        }
+
+        /// <summary>The content's lines the deep zoom writes with (its ladder, readout and cards).</summary>
+        public void SetLines(VoyageLines lines) => SkyOf.SetLines(lines);
 
         /// <summary>Draw <paramref name="content"/>'s map with the squad at <paramref name="here"/> and
         /// <paramref name="route"/> (location ids, in order) as the course. Null route: no course.</summary>
@@ -143,6 +165,8 @@ namespace CosmicShore.UI
             if (route != null) _route.AddRange(route);
             _chart = VoyageChart.For(content);
             _voyage = _chart?.Along(_route);
+            if (_chart != null) SkyOf.ContentChanged();
+            else _sky?.Hide();
             raycastTarget = true;
             // A new frame (another course, or none) starts the explorer over; a redraw of the same one keeps where the
             // player has looked.
@@ -152,6 +176,7 @@ namespace CosmicShore.UI
                 _frameKey = key;
                 _pan = Vector2.zero;
                 _zoom = 1f;
+                _flying = false;
             }
             Bounds();
             Label();
@@ -227,6 +252,8 @@ namespace CosmicShore.UI
                 Relayout();
                 return;
             }
+            if (_chart != null && SkyOf.Tick()) _viewDirty = true;
+            if (_flying) StepFlight();
             if (!_viewDirty) return;
             _viewDirty = false;
             // A moving view slides over the water already painted, and repaints a few times a second at most (until
@@ -241,8 +268,16 @@ namespace CosmicShore.UI
                 else _viewDirty = true;
             }
             PlaceLabels();
+            CollectSky();
             SetVerticesDirty();
             ViewChanged?.Invoke();
+        }
+
+        /// <summary>Work out the sky the view draws; tiles still being made keep the view dirty for the next frame.</summary>
+        void CollectSky()
+        {
+            if (_chart == null || float.IsInfinity(_minX)) return;
+            if (SkyOf.Collect()) _viewDirty = true;
         }
 
         void Relayout()
@@ -251,6 +286,7 @@ namespace CosmicShore.UI
             _insetPainted = false;
             PaintSea();
             PlaceLabels();
+            CollectSky();
             SetVerticesDirty();
             SetMaterialDirty();
             ViewChanged?.Invoke();
@@ -266,7 +302,11 @@ namespace CosmicShore.UI
 
         public void OnPointerDown(PointerEventData e) => _pointers[e.pointerId] = Local(e, e.position);
         public void OnPointerUp(PointerEventData e) => _pointers.Remove(e.pointerId);
-        public void OnBeginDrag(PointerEventData e) => _pointers[e.pointerId] = Local(e, e.position);
+        public void OnBeginDrag(PointerEventData e)
+        {
+            _flying = false;
+            _pointers[e.pointerId] = Local(e, e.position);
+        }
 
         public void OnDrag(PointerEventData e)
         {
@@ -298,6 +338,7 @@ namespace CosmicShore.UI
         public void OnScroll(PointerEventData e)
         {
             if (float.IsInfinity(_minX) || Mathf.Approximately(e.scrollDelta.y, 0f)) return;
+            _flying = false;
             ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
         }
 
@@ -305,6 +346,18 @@ namespace CosmicShore.UI
         {
             if (_content?.Locations == null || float.IsInfinity(_minX)) return;
             var at = Local(e, e.position);
+            if (_chart != null)
+            {
+                // The ladder first: a tier, or the Sol and Tumult dives.
+                int row = SkyOf.LadderAt(at);
+                if (row >= 0)
+                {
+                    var r = rectTransform.rect;
+                    var (centre, width) = SkyOf.Dive(row, r.height / Mathf.Max(1f, r.width));
+                    FlyTo(centre ?? Centre, width);
+                    return;
+                }
+            }
             string best = null;
             float bestD = TapReach * TapReach;
             foreach (var l in _content.Locations)
@@ -313,7 +366,84 @@ namespace CosmicShore.UI
                 float d = (At(l) - at).sqrMagnitude;
                 if (d < bestD) { bestD = d; best = l.Id; }
             }
-            if (best != null) PlaceTapped?.Invoke(best);
+            if (best != null)
+            {
+                PlaceTapped?.Invoke(best);
+                return;
+            }
+            if (_chart == null) return;
+            // A star, a cluster or a landmark opens its card; a tap on open water closes it.
+            var hit = SkyOf.HitAt(at);
+            if (hit == null && SkyOf.Selected == null) return;
+            SkyOf.Select(hit);
+            _viewDirty = true;
+        }
+
+        /// <summary>The rects the deep zoom's labels keep clear of: the galaxy corner, the caption and the places' names.</summary>
+        internal void ReservedBoxes(List<Rect> boxes)
+        {
+            if (_chart != null) boxes.Add(InsetRect());
+            if (_captionText && _captionText.gameObject.activeSelf)
+            {
+                var r = rectTransform.rect;
+                boxes.Add(new Rect(r.xMin, r.yMin, r.width, 24f + InsetMargin));
+            }
+            foreach (var t in _labels)
+            {
+                if (!t || !t.gameObject.activeSelf) continue;
+                var rt = (RectTransform)t.transform;
+                var p = rt.anchoredPosition + rectTransform.rect.center;
+                // A place's name is centred under its marker, at the top of its box.
+                float w = Mathf.Max(24f, t.text.Length * t.fontSize * .55f), h = rt.sizeDelta.y;
+                boxes.Add(new Rect(p.x - w * .5f, p.y - h * .5f, w, h));
+            }
+        }
+
+        // ── Dives ────────────────────────────────────────────────────────────
+
+        float ViewWidth => Mathf.Max(1f, rectTransform.rect.width) / Scale();
+
+        /// <summary>Fly to a view <paramref name="width"/> ly across centred on <paramref name="centre"/> (map units), as
+        /// the board's dive does: longer the further it goes, at most 5.2 s.</summary>
+        void FlyTo(Vector2 centre, float width)
+        {
+            width = Mathf.Clamp(width, MinViewLy, MaxViewLy);
+            float w0 = ViewWidth;
+            float ratio = Mathf.Abs(Mathf.Log(w0 / width)) + Vector2.Distance(Centre, centre) / w0 * .3f;
+            _flyFromC = Centre;
+            _flyFromW = w0;
+            _flyToC = centre;
+            _flyToW = width;
+            _flyT0 = Time.unscaledTime;
+            _flyMs = Mathf.Min(5200f, 700f + 380f * ratio);
+            _flying = true;
+        }
+
+        void StepFlight()
+        {
+            float t = _flyMs > 0f ? Mathf.Min(1f, (Time.unscaledTime - _flyT0) * 1000f / _flyMs) : 1f;
+            float e = t < .5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
+            float w0 = _flyFromW, w1 = _flyToW;
+            float wt = Mathf.Exp(Mathf.Log(w0) + (Mathf.Log(w1) - Mathf.Log(w0)) * e);
+            bool far = Mathf.Max(w0 / w1, w1 / w0) > 6f;
+            float ce = !far ? e : w1 < w0 ? (1f / wt - 1f / w0) / (1f / w1 - 1f / w0) : (wt - w0) / (w1 - w0);
+            SetView(_flyFromC + (_flyToC - _flyFromC) * ce, wt);
+            if (t >= 1f)
+            {
+                _flying = false;
+                // Arrived: paint the water the view now shows, in full.
+                _lastPaint = float.NegativeInfinity;
+            }
+        }
+
+        /// <summary>Show a view <paramref name="width"/> ly across centred on <paramref name="centre"/> (map units).</summary>
+        void SetView(Vector2 centre, float width)
+        {
+            float frame = FrameScale();
+            _zoom = Mathf.Max(1f, rectTransform.rect.width) / Mathf.Clamp(width, MinViewLy, MaxViewLy) / frame;
+            _pan = centre - FrameCentre;
+            ClampView();
+            _viewDirty = true;
         }
 
         /// <summary>Move the view by <paramref name="delta"/> pixels (the map follows the finger).</summary>
@@ -359,7 +489,7 @@ namespace CosmicShore.UI
         bool NeedsPaint()
         {
             if (!_painted) return _chart != null;
-            if (_paintedCoarse && _pointers.Count == 0) return true;
+            if (_paintedCoarse && _pointers.Count == 0 && !_flying) return true;
             var r = rectTransform.rect;
             var lo = FromRect(r.min);
             var hi = FromRect(r.max);
@@ -387,7 +517,8 @@ namespace CosmicShore.UI
             hi += span * PaintMargin;
             _paintLo = lo;
             _paintHi = hi;
-            int coarse = _pointers.Count > 0 ? 2 : 1;
+            bool moving = _pointers.Count > 0 || _flying;
+            int coarse = moving ? 2 : 1;
             string key = $"{_content.GetHashCode()}:{w}x{h}:{lo.x:F0},{lo.y:F0},{hi.x:F0},{hi.y:F0}:{coarse}";
             _painted = true;
             _paintedCoarse = coarse > 1;
@@ -408,7 +539,7 @@ namespace CosmicShore.UI
             // The inset and the white strip are painted once per texture; a repaint redraws only the water.
             var px = _insetPainted ? s_Atlas.GetPixels32() : new Color32[w * h];
             // The framed water: each texel the column density at its point (a 2x2 block per sample while dragging).
-            int step = _pointers.Count > 0 ? 2 : 1;
+            int step = coarse;
             for (int y = 0; y < _seaTexHeight; y += step)
             for (int x = 0; x < SeaTexWidth; x += step)
             {
@@ -481,6 +612,8 @@ namespace CosmicShore.UI
                 var hi = SeaUv(FromRect(r.max));
                 Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
                     new Vector2(r.xMax, r.yMin), SeaTint, lo, new Vector2(lo.x, hi.y), hi, new Vector2(hi.x, lo.y));
+                // The stars, clusters and landmarks over the water, under the corner, the lanes and the places.
+                SkyOf.Populate(vh, white, _style);
                 // Under the lanes and places, so a place in the corner still shows over it.
                 Inset(vh, white);
             }
