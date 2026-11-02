@@ -1066,8 +1066,10 @@ namespace CosmicShore.Gameplay
                 Mathf.Clamp01(Time.deltaTime * feedingBrakeSharpness));
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Boid.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // A puppet's pose belongs to its server-authoritative NetworkTransform; integrating
             // a local velocity on top would fight the replicated stream. The MOVERS CONTRACT
             // still applies on every peer — the body prism is registered, moving mass, so its

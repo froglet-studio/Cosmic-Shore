@@ -416,8 +416,10 @@ public class VesselTransformer : MonoBehaviour
         public bool HoldsSpeedWhileDrifting => holdSpeedWhileDrifting;
 
         // ----------------------------- Update Loop -----------------------------
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Vessel.Transformer.Update");
         protected virtual void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (!isActive || VesselStatus == null || VesselStatus.IsStationary)
                 return;
 

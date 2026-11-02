@@ -264,6 +264,7 @@ namespace CosmicShore.Gameplay
             return SwitchbackPrismAvoidance.LaneOffset(st.Seed ^ (uint)(ring * 7919), gate.Axis, gate.Radius, _avoidFor(p).LaneShare);
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmSense = new("Switchback.AI.Sense");
         /// <summary>
         /// SERVER ONLY. The any-prism sense: every <see cref="SwitchbackAvoidSkill.ReactionSeconds"/> (staggered per
         /// pilot) one non-alloc capsule overlap down the line to <paramref name="goal"/> on the TrailBlocks layer - course
@@ -272,6 +273,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool Sense(IPlayer p, Pilot st, Transform tf, Vector3 self, Vector3 goal, int ring, out Vector3 aim)
         {
+            using var __pm = s_pmSense.Auto();
             aim = default;
             var skill = _avoidFor(p);
             if (st.Avoid == SwitchbackAvoidAction.Blast)
@@ -528,10 +530,12 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmSweep = new("Switchback.AI.Sweep");
         /// <summary>The nearest TrailBlocks hit down <paramref name="dir"/> (start-overlaps skipped: the hull's own fresh trail).</summary>
         static bool Sweep(Vector3 pos, Vector3 dir, float radius, float dist, out float hitDist, out Vector3 centre, out Vector3 normal,
                           SwitchbackBlastAI filter = null)
         {
+            using var __pm = s_pmSweep.Auto();
             hitDist = float.MaxValue; centre = default; normal = default;
             if (dist <= 0.5f) return false;
             int n = Physics.SphereCastNonAlloc(pos, radius, dir, s_rayHits, dist, s_prismMask, QueryTriggerInteraction.Collide);
