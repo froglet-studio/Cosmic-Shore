@@ -21010,3 +21010,13 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
 - [ ] Gamepad: every control on the open card is reachable with the D-pad and A.
 - [ ] Sliding the hub onto the Voyage window with RB opens it on VOYAGES (that RB is not also a tab step).
 - [ ] Profiler: with the open card shut, `VoyageRoutePoster` rebuilds no mesh per frame (it redraws only when the map repaints).
+
+## 🟡 Stoat: an easier slingshot - rings further apart, a wider window (2026-11-03, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The easier sling". `StoatSlingConfig` and the AI's
+`StoatSlingConfig_Slingshot`: catchReach 1.5 → 2, catchDegrees 50 → 40, orbitRadiusTight 40 → 55, innerOrbitShare 0.6 → 0.75,
+innerPullRate 1.5 → 1, sweetSpotHalfWidth 15 → 30, sweetSpotFalloff 30 → 40, missKickShare 0.2 → 0.35. Assets only; the model
+says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
+- [ ] The faint detection ring is visibly wider than before and the orbit ring sits further inside it; catching a pair as you pass it is easier.
+- [ ] Caught, the orbit turns more slowly, and the ring stays lime long enough to release in it most times (60-120 deg round).
+- [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
+- [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).

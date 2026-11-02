@@ -374,7 +374,7 @@ namespace CosmicShore.Tests
             StringAssert.Contains("  catchWarpShare: 1.15\n", text, "studio dpWarp");
             StringAssert.Contains("  catchWarpFromPress: 1\n", text, "studio dpWarpHeld");
             StringAssert.Contains("  sweetSpotDegrees: 90\n", text, "studio dpSweetDeg");
-            StringAssert.Contains("  missKickShare: 0.2\n", text, "studio dpMissShare");
+            StringAssert.Contains("  missKickShare: 0.35\n", text, "studio dpMissShare");
         }
 
         [Test]
@@ -590,7 +590,7 @@ namespace CosmicShore.Tests
         public void SlingConfig_ShipsTheInnerOrbit()
         {
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
-            foreach (var row in new[] { "innerOrbitShare: 0.6\n", "innerPullRate: 1.5\n", "orbitSpeedBonus: 0.15\n", "launchConeDegrees: 60\n",
+            foreach (var row in new[] { "innerOrbitShare: 0.75\n", "innerPullRate: 1\n", "orbitSpeedBonus: 0.15\n", "launchConeDegrees: 60\n",
                          "flickStick: 0.8\n", "flickSeconds: 0.15\n" })
                 StringAssert.Contains("  " + row, text);
         }
