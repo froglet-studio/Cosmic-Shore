@@ -58,6 +58,16 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   captures by itself; the badge counts down), then stop Play (it goes to Claude by itself; the file
   lands on their `bugledger/<user>` branch). Say that in one line. Never ask for pasted JSON when the pipe exists;
   accept a paste when they offer one.
+- **A person whose `bugledger/<user>` branch has load, crash and net reports but NO `perf/` folder is almost
+  certainly playing in Debug code optimization**, which `PerfAutoCapture` refuses to capture. Debug makes every
+  scene's C# ~5x slower, so "everything is slow in the editor" plus no captures points there first (2026-11-02:
+  Shombith, 126 load reports, 0 captures, while Yash's same-day captures of the same code ran 66-96 fps). Hand them
+  `Docs/PERFORMANCE_OPTIMIZATION.md` §4.2a before reading any code.
+- **"It lags while I hold the trigger" is a per-ROUND cost, so count rounds in flight first** (rate x muzzles x flight
+  time, and the pool's prewarm says what the author expected: the Brittle Star prewarms 1,400). Then list everything
+  `Gun.FireSingle` / `Projectile.LaunchProjectile` / `OnEnable` does per round: on 2026-11-02 two of them scaled with
+  the trigger and were nobody's design - every round was a `PrismColliderLodManager` focus (the manager loops foci
+  per prism) and every round started an unthrottled FMOD `ProjectileLaunch` one-shot.
 
 - **A load is not a frame: capture it with Load Time Insights**, and a Cell Selector world swap now records like a
   game launch (arm Record Insight Mode in FrogletTools > Performance > Performance Benchmark > Load Time Insights,
