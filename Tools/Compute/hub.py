@@ -504,6 +504,9 @@ def handler(hub, page):
                 return self._send_installer(installer_for(self.headers.get("User-Agent")))
             if path.startswith("/install/"):
                 return self._send_installer(path[9:])
+            if path in ("/ai_plan.md", "/AI_PLAN.md"):            # Garrett's AI plan, raw, for anyone (and any tool)
+                plan = (hub.snapshot() or {}).get("ai_plan") or {}
+                return self._send(200, (plan.get("doc") or "the AI plan is not on the queue refs yet").encode("utf-8"), "text/markdown; charset=utf-8")
             if path.startswith("/stills/") and re.fullmatch(r"[a-z0-9-]+\.jpg", path[8:]):
                 still = os.path.join(os.path.dirname(C.PAGE), "stills", path[8:])
                 if os.path.isfile(still):

@@ -218,6 +218,10 @@ only AI skill: fold new AI guidance in here (studio-page rules stay in `/vessel-
 
 ## 7. Self-play where nobody plays: the compute queue
 
+**Froglet Compute is the default for any AI training** (CLAUDE.md, Shombith 2026-11-02): queue a search with
+`/compute-job`, send a Unity trainer run from the console's New run, and read the steps on its AI plan page. Never
+run a training sweep or a trainer session by hand except to prove an evaluator before queueing it.
+
 People's races teach the AI wherever people play (the hourly AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`).
 An intensity or a minigame nobody plays never gets a race to imitate; there, an offline race model plus a search is
 the only teacher. `/compute` runs those searches on the team's idle machines (`drive_fit`: a drive's asset fields x

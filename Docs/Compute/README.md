@@ -377,7 +377,10 @@ The paste line still works. **A failure is never silent** (Shombith, 2026-11-02:
 runs `setup.py --gui-check` in its console first (Python, git, a working tkinter) and stays open with the reason; the
 window then runs under the console python (never `pythonw`, which swallowed its errors) and hides that console once
 it is up, so an error before that is printed and the `.bat` pauses on it; a later error is a message box; both and the
-window's opening go to `~/.froglet-compute/setup.log`. **An install copies the NEWEST Tools/Compute** of bleeding-edge and the compute branch (the ref whose `Tools/Compute`
+window's opening go to `~/.froglet-compute/setup.log`. **The AI plan page** (Shombith, 2026-11-02): the console shows Garrett's `Docs/AI_SYSTEM/AI_PLAN.md` to anyone, with its
+steps from `ai_plan.json` (the file every worker holds jobs to), the searches serving each step and any job off the
+plan; the hub serves the doc raw at `/ai_plan.md`. Froglet Compute is the project's default way to train an AI
+(CLAUDE.md). **An install copies the NEWEST Tools/Compute** of bleeding-edge and the compute branch (the ref whose `Tools/Compute`
 changed last, `setup.newest_compute_ref`; the hub's installers use the same rule): after #1659 merged, bleeding-edge had
 an older copy than the branch carrying the installer fixes, and an install took it. **The window wears the console's dark theme** (Shombith, 2026-11-02: "the website theme with movie poster text"): the
 console's tokens (black, cyan accent, Impact for Bebas Neue), Cosmic Shore's own card art (`console/stills/setup-banner.png`,

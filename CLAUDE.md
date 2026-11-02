@@ -202,6 +202,14 @@ The ladder is the element's arcade intensities, then its arena game balanced aga
 
 A new round grows from every genome that exists. No AI is trained inside an arena game.
 
+**Froglet Compute is the default way to train an AI** (Shombith, 2026-11-02). A search, a Unity trainer run or a
+re-run of a learner goes on the team's machines through Compute, never as a sweep a session runs by hand or a trainer
+session in one person's editor: a new search is a `/compute-job` (its job names its plan step), a Unity trainer run
+is the console's **New run** (`compute.py request` from a terminal), and the console's **AI plan** page
+(https://130-210-34-146.sslip.io/#plan; the raw doc at `/ai_plan.md`) shows each step and the searches serving it.
+Run something by hand only to prove an evaluator before queueing it (`/compute-job` §4). The hourly AI learning sweep
+(`ai_learn.py`) stays as it is.
+
 ## A game mode never changes the vessel (LOCKED rule, Shombith, 2026-10-31)
 
 "The vessel kit as designed always stays the same, we just make the game mode interesting." A mode makes itself
