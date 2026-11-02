@@ -253,6 +253,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheSquirrelCarvesWithThePhoneWhileOneThumbFlies()
+        {
+            // Yash, 2026-11-02 (prototype, Garrett's sign-off pending): the Dolphin's 1:1 roll on the Squirrel's drift.
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            var squirrel = library.Find(VesselClassType.Squirrel);
+            Assert.That(squirrel.scheme, Is.EqualTo(TouchScheme.ThumbLifts));
+            Assert.That(squirrel.tiltRollOnOneThumb, Is.True);
+        }
+
+        [Test]
         public void TheDolphinsOneThumbCurveSoftensHomeAndKeepsTheRim()
         {
             // Garrett, 2026-10-25: "too sensitive around the home... I like that it can turn sharp".

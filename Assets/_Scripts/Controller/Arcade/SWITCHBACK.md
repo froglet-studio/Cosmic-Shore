@@ -931,6 +931,13 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 
 ## Offline: the Blast Run simulator (2026-11-01)
 
+**Also the Dolphin's compute search (2026-11-02).** `run.sh races` prints one line per race (`RACE I level seed FIN|DNF
+seconds gates/total cruise-seconds`), and `drive.<field>=` (the `ChargeBoostAIPolicySO` field names: `alignDegrees`,
+`engageRunwaySeconds`, `spendAtCharge01`, `peakMarginUnits`, `minDischargeSeconds`, `minPulseGainUnits`,
+`maxHoldOffSeconds`) races ONE drive at every intensity. Froglet Compute's `switchback-dolphin-time` job
+(`Tools/Compute/evaluators/switchback_fit.py`, `AI_PLAN.md` step `time-arcade`) searches that drive with the four
+shipped Switchback drives as its first generation; `MINIGAME_TRAINING_PLAN.md` §9.1 has its first result.
+
 `Tools/Build/switchback_sim_harness/run.sh` (eval / trace / selftest) compiles the SHIPPED `SwitchbackCourse`,
 `SwitchbackBlastRun` (keys, doors, block fields, movers posed off the clock), `SwitchbackBlastPlanner` and
 `SwitchbackPrismAvoidance` against the Skim Race harness's Unity shim, and races one AI Dolphin through them with the

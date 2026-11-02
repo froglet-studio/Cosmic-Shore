@@ -449,6 +449,18 @@ per-AI flight stats at race end (speed, drift share, taps/min, tap length) to co
 soak (`SwitchbackSoakRunner` + `SwitchbackSoakLauncher`, `-sbSoak "I:D:races"`, offline host), the AI Diagnose panel's
 Switchback overlays, and profiler markers (`Switchback.AI.Sense`, `Switchback.AI.Sweep`, `Switchback.SenseBatch.*`).
 
+**The universal search (2026-11-02, Yash: "do the recommended ones").** People's races keep teaching the sweep, and
+its per-intensity files are now the SEEDS of one Dolphin search, never its result (`AI_PLAN.md` decision 1). The
+Froglet Compute job `switchback-dolphin-time` (evaluator `switchback_fit`) searches ONE charge drive for I1-I4 at
+every difficulty level, its first generation the four shipped drives. A first local run (260 evaluations, this
+session) found a drive that, on 8 FRESH courses per intensity, beats what the game flies today at every level
+(composite Easy 1.63 vs 1.73, Medium 1.49 vs 1.52, Hard 1.36 vs 1.39, Legendary 1.22 vs 1.29; all 144 races
+finished); I4 medians Easy 140 / Medium 128 / Hard 116 / Legendary 102 s against today's 147 / 134 / 120 / 115. It is
+NOT promoted: the team's idle machines now run the job longer, and promotion is Yash's (the job's `promote`). Two things
+to know first: Medium's I1 median got slower (92 s vs 79 s) while its composite improved, and a new drive moves the
+difficulty bands, so `aiNoseFollowByIntensity` is re-measured with it before shipping. A first try raced Hard only and
+lost I4 at Easy; that is why the job races every level.
+
 **Next:** the Unity soak of steps 1-4 and the difficulty table at I1-I4 (each level should step ~10 s; real races ran
 ~1.6x the model in the step 1 soak, so the rows may need scaling), then drift-spam from Yash's Blast Run races (§9: his
 press period and length are recorded in every race's `buttonEvents`).

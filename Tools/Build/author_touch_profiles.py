@@ -58,7 +58,9 @@ def profile(vessel, scheme, **kw):
 
 PROFILES = [
     # ---- Thumb lifts: lift the RIGHT thumb = the pad's LT, the LEFT = RT, both = IdleAction.
-    profile("Squirrel", "ThumbLifts",
+    # Carve (prototype, 2026-11-02, Yash; needs Garrett's sign-off): while one thumb flies (the drift's right lift, the
+    # tube's left lift) the phone rolls the hull 1:1 like the Dolphin's (TouchAttitudeRoll -> VesselTransformer.ApplyHeldRoll).
+    profile("Squirrel", "ThumbLifts", tiltRoll=True,
             glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
     # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); the phone rolls
     # the hull one to one while that thumb aims (TouchAttitudeRoll). One-thumb flight is softened at home and

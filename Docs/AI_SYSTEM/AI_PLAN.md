@@ -122,8 +122,9 @@ the AI, the same callsign weights its targets.
 | Squirrel | Skim Race | `skimrace-squirrel-time`: one policy for I1-I4 with the composite loss, its first generation grown from the three shipped genomes (the general `SkimRaceAIConfig`, `_I1`, `_I2`) | ready (see the measurements below) |
 | Rhino | Headlong | `drive-rhino-headlong` (mean ln seconds over I1-I4) | ready |
 | Manta | Redline | `drive-manta-redline` (mean ln seconds over I1-I4) | ready |
-| Dolphin | Switchback | Yash's learner writes a drive per intensity (`_Switchback_I<n>`, `AUTO_LEARNING.md` section 7). The Blast Run AI was rebuilt in four steps on 2026-11-02 (Yash, `MINIGAME_TRAINING_PLAN.md` section 9.1). A Switchback course port now exists: `Tools/Build/switchback_sim_harness` compiles the shipped course, Blast Run layout, planner and avoidance and races a kinematic Dolphin over I1-I4 | build: a `drive_fit` evaluator on that harness (`REGATTA_BALANCE_PLAN.md` stage 1) |
+| Dolphin | Switchback | Yash's learner writes a drive per intensity (`_Switchback_I<n>`, `AUTO_LEARNING.md` section 7). The Blast Run AI was rebuilt in four steps on 2026-11-02 (Yash, `MINIGAME_TRAINING_PLAN.md` section 9.1). Its universal search is `switchback-dolphin-time` (2026-11-02): one charge drive for I1-I4 with the composite loss, its first generation grown from the four shipped genomes (the mode-wide drive, `_I1`, `_I2`, `_I4`), raced on `Tools/Build/switchback_sim_harness` (the shipped course, Blast Run layout, planner and avoidance) by the `switchback_fit` evaluator | ready |
 | Urchin | Skein | none | build: a rail-ride model of Skein |
+| Thresher | Thresher Time | Claude sessions with Yash (`MINIGAME_TRAINING_PLAN.md` section 12): the sweep's `ThresherAIBoostPolicy_ThresherTime` from people's races, the aimed launch (2026-11-02); no offline model, so no search yet | build: a Thresher Time model (added to this table 2026-11-02 by Yash's session; the Thresher is next after the Stoat in Yash's order) |
 | Stoat | Slingshot | Claude sessions with Yash (`MINIGAME_TRAINING_PLAN.md` section 8) | held for the Stoat's configuration |
 | Meerkat | Warpline | Claude sessions with Yash (section 8) | building |
 
@@ -155,7 +156,10 @@ trainer (studyholic, Garrett, Shombith). Decision 2 below proposes the same gate
 
 ## 7. Decisions waiting
 
-1. **Per-intensity files** (Yash). Under rule 2 they are seeds. Should they be retired once the universal genome beats
+1. **Per-intensity files** (Yash). **Answered in part (Yash, 2026-11-02): the sweep keeps learning them from people's
+   races, and they are the seeds of the vessel's universal search, never its result** (`switchback-dolphin-time` is the
+   first such search). Still open: retiring each one once the universal genome beats it on its own track, which Yash
+   decides from the promotion re-race. Under rule 2 they are seeds. Should they be retired once the universal genome beats
    each one on its own track? And should the sweep keep writing `_I<n>` files, or feed the vessel's universal search
    instead?
 2. **A step for every learner** (Yash, Shombith). Each learner in `ai_learn.py` would declare the step it serves, and
@@ -180,5 +184,6 @@ trainer (studyholic, Garrett, Shombith). Decision 2 below proposes the same gate
 
 | Date | What moved |
 |---|---|
+| 2026-11-02 | Dolphin (`time-arcade`, Yash): the universal search `switchback-dolphin-time` is queued (Yash's answer to decision 1: the learned files seed it). A first local run beat today's drives at every difficulty on fresh courses (composite at Hard 1.36 vs 1.39); not promoted (`MINIGAME_TRAINING_PLAN.md` section 9.1) |
 | 2026-11-02 | Dolphin (`time-arcade`, Yash): the Switchback Blast Run AI rebuilt in four steps and its difficulty set by AI nose lag (offline I4 140 / 129 / 120 / 112 s, Easy to Legendary); `switchback_sim_harness` is the Switchback course port the Dolphin's row asked for. The question it raises is decision 7 |
 | 2026-11-02 | Plan set (Garrett). `ai_plan.json` and the compute gate built. `skimrace-squirrel-time` (Squirrel, I1-I4 composite, seeded from three genomes) replaces the two one-intensity Squirrel searches. The three Regatta-trained drive searches are retired. The Regatta course searches now wait on the Squirrel, Rhino and Manta Time genomes |

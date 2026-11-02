@@ -298,6 +298,34 @@ birth, and the meeting draws this ripple alone, toned down: `bend` 0.025 → **0
 `rimGlow` 1.6 → **0.15**, `bandWidth` 0.12 → **0.08** (`author_stoat_assets.py` owns `StoatRippleConfig.asset`). Its
 REACH (what it strips and kills) is unchanged.
 
+**The death waves are back, the birth wave stays off (2026-10-28).** Root cause of the "far too big and bright" flash:
+the studio (three r128) adds a light shell's glow (0.35 × its envelope) and its screen wash (≤ 0.3) to its FINAL picture
+in display values — an 8-bit target, no bloom, no tonemapping. Unity added them in `BlackHoleLensPass`, BEFORE
+post-processing, as linear HDR light; the gameplay profile's bloom (threshold 0.2, intensity 2.5) then blew them into a
+screen-filling white flash. The waves' light is now its own shader pass (`BlackHoleWaveLight`, pass 1 of
+`BlackHoleLens.shader`), drawn at `AfterRenderingPostProcessing` and added in sRGB: the two passes sum to the studio's
+composite (`Tools/Shaders/verify_black_hole_lens.py`, 1b). Every studio wave value is unchanged (`gwAmp` 12, `gwSpeed`
+120, `gwPeriod` 0.35, `gwRingdown` 1, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1, `whInFrom` 700, `whOutSpeed` 450,
+`whOutFade` 1.6, `shellBend` 6, `dieS` 0.7). `annihilationWaves` is **on**: a meeting throws the gravitational wave
+(with its camera shake) and the outgoing shell, alongside the Charge ripple (kept: the ripple is the gameplay strike and
+the waves are the studio's look; they do not duplicate). The CREATION wave (`Kind.In`) has its own switch,
+`StoatDipoleConfigSO.birthWave`, **off** (the studio always fires it and has no switch, so `stoat.json` maps nothing).
+Note: a fresh press over a live pair annihilates the old pair (0.3 s collapse), so its death waves leave near the new
+pair just after it appears — the old pair's annihilation, not a birth flash. Stated limit: a hole's own ring glow and
+core are still drawn before post-processing, so they still bloom.
+
+**The Mobile look — the ripple finally shows, nothing warps (2026-10-29).** Yash: *"make sure we are not warping space
+… make the shaders mobile friendly … the same [as the Meerkat] with these black / white hole pair."* The sphere above
+was never drawn: its only pass is `LightMode = BlackHoleLens`, and no renderer list draws that LightMode (the lens pass
+draws its own full-screen material, not the ripple's). With `BlackHoleConfig.look` = `Mobile` (the default,
+`Docs/BLACK_HOLE.md` §5.4) the ripple draws its front as a thin soft light ring in the owner domain's colour
+(`BlackHoleGlow.DrawRing`: brightness `rimGlow` 0.15, half width ½ · front · `bandWidth` 0.08, at least 0.5 u, faded by
+the ripple's own strength), once a frame, with no copy and no depth texture. `bend` and `chromaticSplit` are kept for
+the Studio lens look and unused by Mobile (their tooltips say so). The pair itself is a dark core with a thin photon
+ring (black) and a bright soft core (white); the annihilation throws a faint local ripple (the gravitational wave's
+own waveform, gone by `mobileWaveReach` 220 u) instead of bending the view; the hull no longer stretches near a hole,
+and `gwShake` stretches nothing. The REACH, the strip and the kill are unchanged.
+
 ## 1d. The HUD — four cards, four gauges
 
 `StoatHUDVariant.prefab` (a true variant of `VesselHUDPrefab`, copied once from the Thresher's: authored petal bars, a
@@ -645,6 +673,34 @@ before the split. Two small fixes came with it:
 - The decision log tags new entries `studio: 'stoat'` and shows only the Stoat's, the older untagged ones included,
   because the Meerkat writes to the same shared collection.
 
+## 1q. Time mode is the SKIM SLING (2026-10-29: first playable slice, then skip chaining)
+
+Yash's decisions (design plan: "Stoat Skim Sling: design plan"): the Skim Sling **replaces** Time mode's catch; it is
+built straight in Unity (no Vessel Studio round first); rivals may **opt in** to riding it (`Docs/ELEMENTAL_ECONOMY.md`
+§9b, flagged for Garrett, not wired). Names: the **Skimshell** (sphere of radius R round the pair's midpoint), the
+**Skimline** (its equator, square to the spin axis), the **Tidepool** (the capture zone, `tidepoolScale` × R), a **Skip**
+(one launch).
+
+| Step | What happens | Where |
+|---|---|---|
+| Press | A light pair is laid `layAhead` ahead and `laySide` toward the pressed side, its axis the hull's up, poles at ±`poleHalfGap`·R. It spins the trigger's way (spin axis up for RT, down for LT), so the prisms' frame drag shows the spin | `StoatSlingExecutor.LaySkim` |
+| Capture | Inside the Tidepool, as you pass (centre ≥ `catchDegrees` off the nose; inside R always). Entry angle θ against the surface sets the kept speed `lerp(plunkCarry, 1, cos²θ)`: flat keeps it all, straight in **plunks**. θ is the flatter of the capture point's angle and the LINE's, acos(b/R) for a line passing the centre at b, so a tangent pass is truly flat (0°) | `StoatSkimMath.Captures / EntryIncidenceDegrees / EntryCarry` |
+| Ride | Pinned to R at `captureRate`; the nose eases onto the surface (`settleRate`) and follows a great circle (ω = v/R), drawn onto the Skimline at `precess`. The squeeze sets the spin `spinSpeedMax·s^spinExponent`; the ride's extra speed eases toward the spin's flow along your heading at `spinGrip` (with the spin gains, against it bleeds) | `StepSkim`, `StoatSkimMath.SpinFlow / SpinTarget / Precess` |
+| Release | Launch along the surface at `min(capCruises × cruise, v_ride × (1 + G·Q'·rate·skipDecay^n))`, G = lerp(`launchGainMin`, `launchGainMax`, deepest squeeze), Q' = lerp(`missShare`, 1, the sweet spot on the angle ridden: `sweetSpotDegrees` ± `sweetSpotHalfWidth`, `sweetSpotFalloff`) | `LaunchSkim`, `StoatSkimMath.LaunchSpeed` |
+| Hook | For `curveSeconds` after launch the course keeps turning about the spin axis at `curve` × spin/R, fading to 0 | `StepHook` |
+| Chain | A press within `skipWindow` (1.2 s) of a launch, with skips left (`maxSkips` 5), **chains**: the next pair is laid on the PREDICTED launch line (the hook integrated over `layAhead` of path, `predictSteps`), R to the pressed side square to the predicted heading, so the line passes the Skimshell tangent and is caught flat. Its capture is skip n+1 (decided at the press, so a pair laid far ahead still counts); each pays `skipDecay^n` of the gain, the cap unchanged. A later press starts a fresh run, laid as the first throw. Pressing the other trigger while riding launches and chains in one (a perfect skip). A chained pair laid during the hook no longer stops it (a capture does) | `LaySkim`, `StoatSkimMath.Chains / PredictLine / ChainCentre` |
+| Perfect | A chained press within `perfectWindow` (0.4 s) of the launch pays `perfectBonus` (+10%) more of that skip's gain | `StoatSkimMath.Perfect`, `LaunchSpeed(bonus)` |
+| Break | A chained skip captured with carry under `chainBreakCarry` (0.7) **plunks**: the run breaks, that ride is a fresh throw (`chainBreakEvent`) | `StepSkim` |
+| Graze | Let go of a pair before it catches you and it stays up as a **graze shell** (no capture, Skimline faint). With no trigger held, crossing it inward flatter than `grazeAngle` (20°) **bounces**: normal speed reflected at `grazeRestitution` (0.9), tangent kept, `grazeGain` (8%) added under the cap; it counts as the run's next skip and reopens the window. Steeper passes through. Passed (out of the Tidepool, moving away) or at `holdMax` it is let go | `BecomeGrazeShell / StepGrazeShell`, `StoatSkimMath.Grazes / GrazeReflect / GrazeKick` |
+| Juice | Each skip (chained capture or graze): a world-dot **ripple ring** in the Skimline's plane growing from R at `skipRippleGrowth` and fading over `skipRippleSeconds` (lime when perfect); **SKIP ×N** on the Time card (a TMP label generated on its icon, held while riding the skip, faded over `skipCounterSeconds`); the shared Skim **haptic** pulse (`HapticController.PlaySkim`, `skipHaptic`, local human pilot only); `skipEvent` / `grazeEvent` (shipped empty) | `Skipped`, `AddSkimRings`, `StoatHUDView.SetSkip` |
+| Limits | `maxRideDegrees` ridden, or `holdMax` seconds held, launches you on your own; the let-go pair closes at `driftSpeed` and annihilates (the Charge ripple as before) | |
+| Drawn | World dots only (no screen-space warp): a faint camera-facing **Tidepool** ring until captured, and the **Skimline** whose dots scroll with the spin, brighter once riding and lime in the sweet window. The catch warp is off in skim | `StoatPathfinderExecutor.AddSkimRings` |
+| AI | Unchanged verbs: presses toward its turn, lets go when the target is in its cone (or wider in the sweet window), gives up an uncaptured shell after `aiCatchGiveUpSeconds`. Inside the skip window it may press at once (no `aiSlingIntervalSeconds` wait), still only toward a turn it wants, so it chains on twisty lines and flies straight ones; a graze shell it left behind does not block its next press | `AutopilotSling` |
+| Multiplayer | The press and release are replicated; every peer lays its own pair. The launch, hook and skip count are the simulating machine's, so a peer's copy of a CHAINED pair is laid off the straight line (it only draws there), and a graze shell let go after a bounce lingers on peers until `holdMax` | |
+
+Config: `StoatSkimConfigSO` (`Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset`), referenced by
+`StoatSlingConfigSO.skim`. Empty it to fall back to the catch (§1b). Tests: `StoatSkimTests`.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
@@ -875,7 +931,7 @@ a negative control); the real-URP DXC compile was not available. **Not opened in
 | D10 | debt this branch widened | **The Stoat's sim-authority test lives on another vessel's executor.** Every Stoat executor asks `MantaStingActionExecutor.IsSimAuthority(status)` whether it is the simulating machine — a general rule (the owner; the host for an AI) homed on the Manta's sting. This branch added a fourth caller (`StoatModeExecutor`). Shape: a helper on the wrong class (`/refactor` §3). Move it to a vessel-level home (`IVesselStatus` / a static `VesselAuthority`) and repoint every caller. | `grep -rln "MantaStingActionExecutor.IsSimAuthority" Assets/_Scripts --include=*.cs` → 4 files, all four Stoat executors (the Manta's own uses are unqualified) |
 | D11 | walked past | **`check_enum_member_references.py` is red on bleeding-edge**, not on this branch: `GameCanvasUnifier.cs(920): 'Placement' has no member 'Capture'`, the enum it resolved being `CrystalFlipWaveBenchmarkWindow.cs`'s — likely two same-named enums rather than a missing member. Confirmed identical on `390c2467` (exit 1) before any Stoat change. | `python3 Tools/Build/check_enum_member_references.py; echo $?` → 1 on base and branch |
 | D12 | walked past, FIXED here | `Tools/Build/peer_press_harness` could not compile on bleeding-edge: its `UnityEngine` stub had no `Vector4`, which the Stoat port's `NetStoatDipoleSink/Source` added to `R_VesselActionHandler`. One stub line; the harness now runs (1050 + 1050 presses, 0 divergences). | `python3 Tools/Build/peer_press_harness/run.py --self-test` → was COMPILE FAILED, now passes |
-| D13 | debt this branch created | **`BlackHoleWaves` has no caller by default.** Its only producer (`StoatDipoleExecutor`) now spawns it behind `StoatDipoleConfig.annihilationWaves`, OFF (2026-10-14), so the wave pipeline (`BlackHoleWaves`, the lens shader's wave loop, `PrismGravityWarp.hlsl`'s strain, ~11 `BlackHoleConfig` wave fields) runs for nobody, and `studio_to_unity/stoat.json` still clones the studio's wave keys into it. Decide: keep as an opt-in look (and say so on the studio page), or retire the pipeline with its studio rows. | `grep -rn "BlackHoleWaves.Spawn" Assets --include=*.cs` → 3 sites, all inside `if (config.AnnihilationWaves)` |
+| D13 | resolved 2026-10-28 (`stoat/annihilation-waves`): the death waves are on again, their light after post-processing; the birth wave is behind `birthWave`, off | **`BlackHoleWaves` had no caller by default.** Its only producer (`StoatDipoleExecutor`) now spawns it behind `StoatDipoleConfig.annihilationWaves`, OFF (2026-10-14), so the wave pipeline (`BlackHoleWaves`, the lens shader's wave loop, `PrismGravityWarp.hlsl`'s strain, ~11 `BlackHoleConfig` wave fields) runs for nobody, and `studio_to_unity/stoat.json` still clones the studio's wave keys into it. Decide: keep as an opt-in look (and say so on the studio page), or retire the pipeline with its studio rows. | `grep -rn "BlackHoleWaves.Spawn" Assets --include=*.cs` → 3 sites, all inside `if (config.AnnihilationWaves)` |
 | D14 | walked past | **`Tools/Shaders/verify_stoat_ripple.py` FAILS on bleeding-edge** under glslang 15.1 (`lens_vert.hlsl:9: 'declaration' : Expected`, both stages, before any change here); its negative control still "fires", so the harness reports FAIL while looking like it runs. The lens verifier's URP mock likely needs updating for this glslang. | `git stash; python3 Tools/Shaders/verify_stoat_ripple.py` → FAIL on `b645b9d3` |
 | D15 | report (port) | **Amoebius's shim lacks** `Graphics.RenderMesh`, `Mesh.Clear(bool)`, `Mesh.SetColors(Color[], int, int)`, `Mesh.SetIndices(int[], int, int, …)`, `RenderParams.camera` and `Vector3.RotateTowards`; this branch wrote around them (vessel skill rule 51). A port-branch row, not a game change. | `dotnet build Port/src/CosmicShore.Live` on the first cut of this branch → 6 errors, all of these |
 | D16 | report | **`STOAT.md` §1–§2 describe the round-4 orbit**, which no longer ships (Time mode is the catch-sling, §1b). The banner says so; the sections stay as the orbit's record. Fold them into a short history paragraph when the catch-sling settles in play. | `STOAT.md` banner, 2026-10-14 |

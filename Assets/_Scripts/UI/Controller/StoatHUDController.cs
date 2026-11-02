@@ -63,6 +63,17 @@ namespace CosmicShore.UI
             // Time: progress to the sweet spot while the orbit holds the hull, lime in the window.
             if (sling && sling.IsOrbiting) view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
             else view.SetTime(0f, false);
+
+            // The Skim Sling's run: SKIP ×N after each skip, held while that skip is ridden, then faded.
+            if (sling && sling.UsesSkim && sling.Config && sling.Config.Skim)
+            {
+                float hold = sling.Config.Skim.SkipCounterSeconds;
+                float age = sling.SkipFxAge;
+                bool riding = sling.IsOrbiting && sling.SkipCount > 0;
+                float alpha = riding ? 1f : age >= 0f && age < hold ? 1f - Mathf.Clamp01((age - 0.5f * hold) / (0.5f * hold)) : 0f;
+                view.SetSkip(riding ? sling.SkipCount : sling.SkipFxCount, alpha, sling.SkipFxPerfect);
+            }
+            else view.SetSkip(0, 0f, false);
         }
     }
 }

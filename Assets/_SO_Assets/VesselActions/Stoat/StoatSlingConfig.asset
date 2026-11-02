@@ -15,6 +15,7 @@ MonoBehaviour:
   holdExponent: 1.5
   holdRampSeconds: 1
   autopilotHold01: 1
+  skim: {fileID: 0}
   catchAhead: 150
   catchSide: 45
   catchReach: 1.5
