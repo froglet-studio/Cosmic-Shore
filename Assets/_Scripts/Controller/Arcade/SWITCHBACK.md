@@ -1079,7 +1079,7 @@ turn into a short leg that the stick's 110 deg/s cannot make at 68-107 u/s (a 35
 loops back and often misses again. A person carves those with drift taps (Yash's drift-spam), which is the next step.
 The simulator's trace now logs each miss (`MISS gate ... by ... u`).
 
-### Step 4: drift carving - measured, NOT shipped (2026-11-02): it needs a decision on the AI's nose lag
+### Step 4: drift carving - measured, NOT shipped (2026-11-02); the nose lag it hinged on is now set per difficulty (next section)
 
 Yash: "go ahead with step 4" (carve the I4 hairpins with drift taps, as a person spams drift). Measured offline; no
 game code changed. Two facts from the code decide it:

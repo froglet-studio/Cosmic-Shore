@@ -419,7 +419,9 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
   carries a pitch sign of its own; `InputInversionTests` scans for one.
 - **A human pilot's nose has no lag (2026-10-21).** Every transformer's `RotateShip` goes through
   `VesselTransformer.NoseFollowFraction`: the local human's nose is the commanded rotation each frame on every device;
-  AI, autopilot and remote hulls keep the fleet's 1.5/s, which the autopilots model. Predict a hull with its
+  AI, autopilot and remote hulls keep the fleet's 1.5/s, which the autopilots model. One exception: a mode may set an AI
+  pilot's own rate (`VesselTransformer.AINoseFollowPerSecond`, default unset = the fleet lag); only Switchback does, by
+  intensity and difficulty (`SWITCHBACK.md` "Lag by difficulty", Yash 2026-11-02). Predict a hull with its
   `NoseFollowRate`, never the static `RotationFollowRate`.
 - **The nose lag is one dial per device, never per hull (Garrett, 2026-10-23).** For a local human,
   `NoseFollowFraction` closes `1 - e^(-rate·dt)` of the gap at the device's rate (`PilotNoseFollowPerSecond`, which

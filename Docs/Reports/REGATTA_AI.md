@@ -9,6 +9,13 @@ up to the learned Squirrel by PRs #1150, #1154 and #1165, the rest by the `Ys-bl
 Dolphin and Manta drives). The Manta, Rhino and Dolphin now carry numbers taken from Yash's own flights. **None of the
 AI changes has been played in the Unity editor.** That is the next step (section 5).
 
+**Since 2026-11-02 two plans govern this work, and they come before this report.** Garrett's one AI plan
+(`Docs/AI_SYSTEM/AI_PLAN.md`, LOCKED) and Yash's minigame plan (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`) say no AI is
+trained inside Regatta. Each vessel trains in its own Time game at I1-I4, and Regatta's course is then searched against
+those fixed AIs (step `time-arena-course`). The per-mode Regatta variants below stay until that step promotes
+(AI_PLAN §7, decision 6). The work on the Time games is in `MINIGAME_TRAINING_PLAN.md` §9.1 (the Dolphin in Switchback),
+§11 (the Stoat) and §12 (the Thresher).
+
 ## 1. In one minute
 
 - **Regatta now races five different hulls at once.** The host picks the hull of every AI seat: Squirrel, Manta, Rhino,
