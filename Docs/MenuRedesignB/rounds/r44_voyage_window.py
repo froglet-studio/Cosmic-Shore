@@ -29,7 +29,7 @@ _spec.loader.exec_module(r43)
 from r43 import (CTA, INACT, LIGHT, LOCK, NEUT, NEUT_D, NEUT_L, PILOT_ART, QUESTS, QUEST_ART, SEATS, SUB, TANDAVA,  # noqa: E402
                  V, VDARK, HULL, PRESETS, DOM, OTHERS, e, kc, nav, mapview, head_block, crew_chip, stats_row, sea_bar,
                  waypoints, preset_rows, actions, setting, seat_card, seat_row, crew_head, preset_tabs, story_blocks,
-                 story_head, level_crumbs)
+                 story_head, level_crumbs, route_glow, voyage_pager, with_glow)
 
 # The approved sea lines (R40E): the ground gradient, the glow and three slow layers of lines, masked top and bottom.
 _src = (HERE.parent / "board" / "R40E.dc.html").read_text(encoding="utf-8")
@@ -127,8 +127,9 @@ def frame(style, x, y, w, h, inner, label="Voyage card", pad="26px 28px", gap=16
 MAP_Y, MAP_H, EDGE_H = 172, 640, 216
 
 
-def left_map(w=1080, strip=True, pos="38% 45%"):
-    return mapview(40, MAP_Y, w, MAP_H, EDGE_H, pos, list_strip=strip)
+def left_map(w=1080, strip=True, pos="38% 45%", glow=False):
+    """At level 1 the pager in the card is how you change voyage, so the map drops its strip and lights the route."""
+    return mapview(40, MAP_Y, w, MAP_H, EDGE_H, pos, list_strip=strip and not glow, glow=glow)
 
 
 # ------------------------------------------------------------------------------------------------ G - Crew's hand
@@ -142,12 +143,10 @@ def crew_back(level):
 def screen_G(level):
     """G - Crew's hand: each voyage is a card a crew member hands you; the open one is in front, the others behind it.
     Level 2 and 3 are the BACK of the same card, turned over."""
-    body = [nav(), tabrow("G", "Voyages"), left_map(1060)]
+    body = [nav(), tabrow("G", "Voyages"), left_map(1060, glow=level == 1)]
     x, y, w, h = 1180, 196, 660, 844
     if level == 1:
-        hand = (f'<div style="display:flex;align-items:center;justify-content:space-between"><span class="lab">From your crew - card 2 of 4</span>'
-                f'<span style="display:flex;gap:6px">{kc("LT")}{kc("RT")}</span></div>')
-        inner = (f'{hand}{crew_chip()}{head_block(30, False)}{stats_row(3)}{waypoints(compact=True)}{preset_rows(dense=True)}'
+        inner = (f'{voyage_pager()}{crew_chip()}{head_block(28, False)}{stats_row(3)}{route_glow(compact=True)}{preset_rows(dense=True)}'
                  f'<div style="flex:1"></div>{actions(1)}')
     elif level == 2:
         inner = (f'{crew_back(2)}{crew_head()}{preset_tabs()}<div style="display:flex;gap:10px">'
@@ -183,13 +182,13 @@ def manifest():
 
 def screen_H(level):
     """H - Logbook: the voyage is a page of the Ark's log; deeper levels are the next pages, turned in from the right."""
-    body = [nav(), tabrow("H", "Voyages"), left_map(1060)]
+    body = [nav(), tabrow("H", "Voyages"), left_map(1060, glow=level == 1)]
     x, w = 1120, 760
     if level == 1:
-        inner = (f'<div style="display:flex;justify-content:space-between"><span class="lab">Log - voyage 2 of 4</span>'
-                 f'<span class="lab">Found by {V["callsign"]}</span></div>{head_block(30, False)}'
+        inner = (f'{voyage_pager()}<div style="display:flex;justify-content:space-between"><span class="lab">Log - voyage 2 of 4</span>'
+                 f'<span class="lab">Found by {V["callsign"]}</span></div>{head_block(28, False)}'
                  f'<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));column-gap:28px">'
-                 f'{ledger(r43.STATS[:3])}{ledger(r43.STATS[3:])}</div>{sea_bar()}{waypoints(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
+                 f'{ledger(r43.STATS[:3])}{ledger(r43.STATS[3:])}</div>{route_glow(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
         body.append(frame("H", x, MAP_Y, w, 868, inner, pad="26px 32px", gap=14))
     else:
         # the first page stays as a strip behind the turned page
@@ -222,20 +221,22 @@ def formation(scale=1.0, labels=False):
 def ark_switch():
     name, dom = PRESETS[0][0], PRESETS[0][1]
     c, cl = DOM[dom]
-    return (f'<div style="display:flex;align-items:center;justify-content:space-between">{kc("LT")}'
+    up = '<span class="kc" aria-label="D-pad up"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5L5 3l3.5 3.5"></path></svg></span>'
+    down = '<span class="kc" aria-label="D-pad down"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 3.5L5 7l3.5-3.5"></path></svg></span>'
+    return (f'<div style="display:flex;align-items:center;justify-content:space-between">{up}'
             f'<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span class="lab" style="font-size:11px">Your Ark - 1 of 2</span>'
             f'<span style="display:flex;align-items:center;gap:10px;font-size:24px"><span style="width:10px;height:10px;transform:rotate(45deg);background:{c}"></span>{name}'
-            f'<span class="cap" style="font-size:12px;color:{cl}">{dom}</span></span></div>{kc("RT")}</div>')
+            f'<span class="cap" style="font-size:12px;color:{cl}">{dom}</span></span></div>{down}</div>')
 
 
 def screen_I(level):
     """I - Formation: the Ark you sail with is the hero of the card - its three hulls in formation - and the voyage sits
     under it. Ark crew opens the formation into its three seats; Story takes the formation's place."""
-    body = [nav(), tabrow("I", "Voyages"), left_map(1060)]
+    body = [nav(), tabrow("I", "Voyages"), left_map(1060, glow=level == 1)]
     x, w = 1120, 760
     if level == 1:
-        inner = (f'{ark_switch()}{formation(1.0)}<div style="display:flex;gap:10px"><button class="btn gho sls" type="button" style="flex:1;height:40px">{kc("X")}<span>Configure the Ark</span></button></div>'
-                 f'<div class="rule"></div>{head_block(28)}{crew_chip()}{stats_row(6)}{sea_bar()}{waypoints(compact=True)}<div style="flex:1"></div>'
+        inner = (f'{voyage_pager()}{ark_switch()}{formation(.82)}<div style="display:flex;gap:10px"><button class="btn gho sls" type="button" style="flex:1;height:40px">{kc("X")}<span>Configure the Ark</span></button></div>'
+                 f'<div class="rule"></div>{head_block(26)}{stats_row(6)}{route_glow(compact=True)}<div style="flex:1"></div>'
                  f'<div style="display:flex;gap:10px"><button class="btn cta sl" type="button" style="flex:1.6">{kc("A")}<span>Set sail</span></button>'
                  f'<button class="btn gho sl" type="button" style="flex:1">{kc("Y")}<span>Story</span></button></div>')
     elif level == 2:
@@ -255,9 +256,9 @@ def screen_I(level):
 def screen_J(level):
     """J - On the sea: no card box at all. The levels are columns standing on the sea lines; a deeper level pushes the
     voyage into a slim column beside it. The map keeps its place."""
-    body = [nav(), tabrow("J", "Voyages"), left_map(1040, pos="40% 45%")]
+    body = [nav(), tabrow("J", "Voyages"), left_map(1040, pos="40% 45%", glow=level == 1)]
     if level == 1:
-        inner = (f'{head_block(34)}{crew_chip()}{stats_row(6)}{sea_bar()}{waypoints(compact=False)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
+        inner = (f'{voyage_pager()}{head_block(32)}{crew_chip()}{stats_row(6)}{route_glow()}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
         body.append(frame("J", 1120, 176, 760, 864, inner, gap=18))
         return "\n".join(body)
     slim = (f'<span class="lab">1 Voyage</span><span style="font-size:22px;line-height:1.15">{V["title"]}</span>'
@@ -365,7 +366,7 @@ def screen_episodes(opt):
 OPTS = {
     "G": ("Crew's hand", "Each voyage is a card a crew member hands you; the open one in front, the others behind it. Ark crew and Story are the back of the same card, turned over (Y)."),
     "H": ("Logbook", "The voyage is a page of the Ark's log: ruled, a ledger of the numbers. Ark crew is the next page (a crew manifest table), Story the page after."),
-    "I": ("Formation (recommended)", "Your Ark leads the card: its three hulls in formation, LT / RT through your Arks. Ark crew opens the formation into its three seats."),
+    "I": ("Formation (recommended)", "Your Ark leads the card: its three hulls in formation, D-pad up / down through your Arks. Ark crew opens the formation into its three seats."),
     "J": ("On the sea", "No card box: the levels are columns standing on the sea lines. A deeper level pushes the voyage into a slim column beside it."),
 }
 
@@ -398,7 +399,7 @@ def notes():
     ])
     right = "".join([
         '<span class="lab">Recommendation: I, Formation</span>',
-        para("It makes the preset the thing you see: the Ark you sail with stands in formation at the top of the card, LT / RT steps through your Arks, and Configure is one press. "
+        para("It makes the preset the thing you see: the Ark you sail with stands in formation at the top of the card, D-pad up / down steps through your Arks (LT / RT stay with the menu), and Configure is one press. "
              "Ark crew grows the same formation into its three seats, so level 2 reads as the Ark opening up rather than a new form. "
              "G is the most playful and keeps the crew handing you the voyage; H is the calmest to read; J shows the most sea but asks the most of the text."),
         '<span class="lab" style="margin-top:10px">Saga, Quests, Episodes</span>',
@@ -422,7 +423,8 @@ def main():
                 body = SCREENS[k](lv)
             else:
                 body = {"Saga": screen_saga, "Quests": screen_quests, "Episodes": screen_episodes}[key](k)
-            files[f"R{REV}{k}{key}.dc.html"] = board(f"Rev {REV} {k} - {OPTS[k][0]} - {key}", body)
+            page = board(f"Rev {REV} {k} - {OPTS[k][0]} - {key}", body)
+            files[f"R{REV}{k}{key}.dc.html"] = with_glow(page) if key == "Voyage" else page
     files[f"R{REV}Notes.dc.html"] = board(f"Rev {REV} - notes", notes())
     for n, s in files.items():
         (ROOT / n).write_text(s, encoding="utf-8")

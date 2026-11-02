@@ -5336,3 +5336,25 @@ per option, six screens each: **Voyage** (level 1), **Crew** (level 2), **Story*
 
 **Differs from the build:** as section 113, plus a fourth tab: the quest tracker leaves the Episodes modal for its own
 Quests tab, and Episodes becomes a locked tab until episodes ship.
+
+### 114.1 Edit on the Rev 43 and Rev 44 boards: the route lit, and how you move between voyages (2026-11-02)
+
+**Asked (Shombith):** "Can we show the waypoints in the UI in a better animated glowy way and how do we navigate
+between actual voyage cards? Please show that edit on the old mockups." So the existing boards were edited in place
+(the skill's rule: a board is changed only when the person asks for it), canvas version `1793649920-b902`.
+
+- **Edited:** the level-1 Voyage board of every option, R43AVoyage-R43FVoyage and R44GVoyage-R44JVoyage, plus
+  R44ICrew, R44Compare and R44Notes (I's Ark switch moved off LT / RT). Generators: `r43_voyage_window.py`
+  (`route_glow`, `map_glow`, `voyage_pager`, `GLOW_CSS`) and `r44_voyage_window.py`.
+- **The waypoints, lit:** the route on the card is drawn in the map's own course colour (`#C8FF5A`). A light sweeps
+  from the Ark (Tumult, ringed in the Ark's amber) to the destination every 4.2 s, each waypoint flares as the sweep
+  passes and stays softly lit, and the destination pulses a ring. The same waypoints light on the map at the same
+  moments (their positions measured on the render), so the card and the map read as one route.
+- **Moving between voyages:** one answer in every option. A pager of the four voyages the crew found heads the card
+  (number, place, minutes, intensity, who found it; the open one outlined with a route-coloured line under it).
+  D-pad left / right steps through them, a click picks one, a swipe on the card turns it, and the map follows the open
+  voyage. LT / RT stay with the menu's screens and LB / RB with the window's tabs. The voyage strip that sat on the map
+  in A, B, E, G, H and I is gone at level 1, so there is one list, not two. In I the Ark switch moved from LT / RT to
+  D-pad up / down for the same reason.
+- This lifts the quiet rule's "no idle motion" for the route only, because it was asked for; nothing else on the
+  boards moves except the sea lines.

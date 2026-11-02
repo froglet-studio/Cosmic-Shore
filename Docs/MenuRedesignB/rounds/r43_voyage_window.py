@@ -203,7 +203,7 @@ def tabrow(style, active):
 
 # ------------------------------------------------------------------------------------------------ map and edge
 
-def mapview(x, y, w, hm, he, pos="50% 40%", gap=12, ladder=True, list_strip=False):
+def mapview(x, y, w, hm, he, pos="50% 40%", gap=12, ladder=True, list_strip=False, glow=False):
     """The galaxy map (opaque, the Voyage Board's own render) with the edge view under it at the same width."""
     tiers = ["Galaxy", "Arm", "Sector", "Region", "Neighbourhood"]
     lad = ""
@@ -228,12 +228,136 @@ def mapview(x, y, w, hm, he, pos="50% 40%", gap=12, ladder=True, list_strip=Fals
                                  f'<span class="lab" style="font-size:10px">Galaxy map</span><span style="font-size:15px">Tumult to Lantern Reach</span></div>')
     return (f'<figure style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{hm}px;margin:0;overflow:hidden;background:{BLACK};box-shadow:inset 0 0 0 1px {NEUT_D}">'
             f'<img src="{MAP}" alt="Galaxy map at the Neighbourhood tier: the course from Tumult to Lantern Reach across the 20 ly cells" '
-            f'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{pos}">{cap}{strip}{lad}{key}</figure>'
+            f'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{pos}">{cap}{strip}{lad}{key}{map_glow(w, hm, pos) if glow else ""}</figure>'
             f'<figure style="position:absolute;left:{x}px;top:{y + hm + gap}px;width:{w}px;height:{he}px;margin:0;overflow:hidden;background:{BLACK};box-shadow:inset 0 0 0 1px {NEUT_D}">'
             f'<img src="{EDGE}" alt="Edge-on view at true scale: the course from Tumult, 30 ly above the midplane, down the core lane to Lantern Reach, 34 ly below" '
             f'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{pos.split()[0]} 60%">'
             f'<span class="abs cap" style="left:12px;top:8px;font-size:11px;padding:3px 8px;background:rgba(0,1,10,.82);color:{SUB}">'
             f'Edge on, true scale - disk 1,000 ly - Lantern Reach 34 ly below</span></figure>')
+
+
+# ------------------------------------------------------------------------------------------------ the route, lit (edit, 2026-11-02)
+# Shombith: "show the waypoints in a better animated glowy way, and how do we navigate between voyage cards". The level-1
+# Voyage boards of Rev 43 and Rev 44 were edited in place for it: the route sweeps from the Ark to the destination,
+# each waypoint lights as the sweep passes, the destination pulses, the same waypoints light on the map in step, and
+# a pager of the four voyages heads the card (D-pad, click or swipe).
+
+ROUTE = "#C8FF5A"          # the map's own course colour, so card and map read as one route
+ARK_AMBER = "#FFC740"      # the Voyage Board's Ark marker
+CYCLE = 4.2                # one sweep, seconds
+SWEEP = 2.9                # the part of it the sweep spends crossing
+GLOW_CSS = ("@keyframes wpLit{0%{background:#0B1038;box-shadow:inset 0 0 0 1.5px rgba(200,255,90,.55),0 0 0 0 rgba(200,255,90,0)}"
+            "5%{background:#C8FF5A;box-shadow:inset 0 0 0 1.5px #C8FF5A,0 0 16px 5px rgba(200,255,90,.8)}"
+            "45%{background:#C8FF5A;box-shadow:inset 0 0 0 1.5px #C8FF5A,0 0 7px 2px rgba(200,255,90,.35)}"
+            "100%{background:rgba(200,255,90,.35);box-shadow:inset 0 0 0 1.5px #C8FF5A,0 0 0 0 rgba(200,255,90,0)}}\n"
+            "@keyframes wpRing{0%{transform:scale(1);opacity:.85}100%{transform:scale(2.8);opacity:0}}\n"
+            "@keyframes wpBeam{0%{left:0;opacity:0}4%{opacity:1}69%{opacity:1}72%{left:100%;opacity:0}100%{left:100%;opacity:0}}\n"
+            "@keyframes wpBeamV{0%{top:0;opacity:0}4%{opacity:1}69%{opacity:1}72%{top:100%;opacity:0}100%{top:100%;opacity:0}}\n"
+            ".wpn{display:block;transform:rotate(45deg);animation:wpLit 4.2s ease-out infinite}\n"
+            ".wpr{position:absolute;border:1.5px solid #C8FF5A;border-radius:50%;animation:wpRing 2.1s ease-out infinite}\n"
+            ".wpb{position:absolute;width:110px;height:10px;margin-left:-55px;border-radius:5px;"
+            "background:radial-gradient(ellipse at center,rgba(200,255,90,.95),rgba(200,255,90,.35) 45%,rgba(200,255,90,0) 72%);animation:wpBeam 4.2s linear infinite}\n"
+            ".wpbv{position:absolute;width:10px;height:90px;margin-top:-45px;border-radius:5px;"
+            "background:radial-gradient(ellipse at center,rgba(200,255,90,.95),rgba(200,255,90,.35) 45%,rgba(200,255,90,0) 72%);animation:wpBeamV 4.2s linear infinite}\n")
+
+
+def with_glow(page):
+    """A board that draws the lit route carries its keyframes in its helmet."""
+    return page.replace("</style>", GLOW_CSS + "</style>", 1)
+
+
+def _node(i, n, size, end_lit=False):
+    delay = SWEEP * i / (n - 1)
+    if end_lit:
+        return (f'<span class="wpn" style="width:{size}px;height:{size}px;background:{ROUTE};animation:none;'
+                f'box-shadow:0 0 12px 3px rgba(200,255,90,.6)"></span>')
+    return f'<span class="wpn" style="width:{size}px;height:{size}px;animation-delay:{delay:.2f}s"></span>'
+
+
+def route_glow(compact=False, vertical=False):
+    """The waypoints as a lit route: Tumult (lit, the Ark is there) to Lantern Reach (lit, pulsing), the sweep between."""
+    pts = WAYPOINTS if not compact else [WAYPOINTS[0], WAYPOINTS[2], WAYPOINTS[3], WAYPOINTS[5], WAYPOINTS[-1]]
+    n = len(pts)
+    head = (f'<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lab" style="font-size:11px">Waypoints</span>'
+            f'<span class="cap num" style="font-size:11px;color:{SUB}">{len(WAYPOINTS)} on the course - 29 min</span></div>')
+    if vertical:
+        rows = []
+        for i, (name, tag) in enumerate(pts):
+            end = i in (0, n - 1)
+            node = _node(i, n, 12 if end else 9, end_lit=(i == 0))
+            ring = (f'<span class="wpr" style="left:-4px;top:-4px;width:20px;height:20px"></span>') if i == n - 1 else ""
+            rows.append(f'<div style="display:flex;align-items:center;gap:14px;height:28px"><span style="position:relative;width:12px;display:grid;place-items:center">{node}{ring}</span>'
+                        f'<span style="font-size:{16 if end else 14}px;color:{LIGHT if end else "#C9CDEA"}">{name}</span>'
+                        + (f'<span class="cap" style="font-size:11px;color:{NEUT_L}">{tag}</span>' if tag else "") + '</div>')
+        return (f'<div style="display:flex;flex-direction:column;gap:6px">{head}<div style="position:relative;display:flex;flex-direction:column;gap:4px">'
+                f'<span class="abs" style="left:5px;top:14px;bottom:14px;width:2px;background:linear-gradient(180deg,{ROUTE},rgba(200,255,90,.25))"></span>'
+                f'<span class="abs" style="left:1px;top:14px;bottom:14px;width:10px;overflow:visible"><span class="wpbv" style="left:0"></span></span>'
+                f'{"".join(rows)}</div></div>')
+    items = []
+    for i, (name, tag) in enumerate(pts):
+        end = i in (0, n - 1)
+        node = _node(i, n, 13 if end else 9, end_lit=(i == 0))
+        ring = (f'<span class="wpr" style="left:50%;top:6px;width:22px;height:22px;margin:-11px 0 0 -11px"></span>') if i == n - 1 else ""
+        items.append(f'<div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;min-width:0">{ring}'
+                     f'<span style="height:13px;display:grid;place-items:center">{node}</span>'
+                     f'<span class="ell" style="max-width:100%;font-size:12px;color:{LIGHT if end else SUB}">{name}</span>'
+                     + (f'<span class="cap" style="font-size:10px;color:{ROUTE if i == n - 1 else ARK_AMBER}">{"Destination" if i == n - 1 else "Your Ark"}</span>' if end else "")
+                     + '</div>')
+    lo, hi = 50 / n, 100 - 50 / n
+    return (f'<div style="display:flex;flex-direction:column;gap:10px">{head}<div style="position:relative;display:flex">'
+            f'<span class="abs" style="left:{lo:.1f}%;right:{100 - hi:.1f}%;top:5px;height:2px;background:linear-gradient(90deg,{ROUTE},rgba(200,255,90,.22))"></span>'
+            f'<span class="abs" style="left:{lo:.1f}%;right:{100 - hi:.1f}%;top:1px;height:10px"><span class="wpb" style="top:0"></span></span>'
+            f'{"".join(items)}</div></div>')
+
+
+# The course on the map render (map1.jpg, 2196 x 1358 px): the Ark at Tumult, the waypoints, Lantern Reach.
+MAP_PX = (2196, 1358)
+MAP_ROUTE = [(1510, 1180), (1511, 1125), (1312, 1038), (1085, 909), (933, 650), (711, 264), (660, 157)]
+
+
+def map_glow(w, h, pos):
+    """The waypoints lit on the map itself, in step with the card: the same delays, the Ark ringed in amber at Tumult."""
+    fx, fy = (float(v.strip("%")) / 100 for v in pos.split())
+    s = max(w / MAP_PX[0], h / MAP_PX[1])
+    ox, oy = (w - MAP_PX[0] * s) * fx, (h - MAP_PX[1] * s) * fy
+    n = len(MAP_ROUTE)
+    out = []
+    for i, (px, py) in enumerate(MAP_ROUTE):
+        x, y = ox + px * s, oy + py * s
+        if not (0 <= x <= w and 0 <= y <= h):
+            continue
+        if i == 0:
+            out.append(f'<span class="wpr" style="left:{x - 14:.0f}px;top:{y - 14:.0f}px;width:28px;height:28px;border-color:{ARK_AMBER}"></span>')
+            continue
+        size = 14 if i == n - 1 else 10
+        out.append(f'<span class="abs" style="left:{x - size / 2:.0f}px;top:{y - size / 2:.0f}px">{_node(i, n, size)}</span>')
+        if i == n - 1:
+            out.append(f'<span class="wpr" style="left:{x - 16:.0f}px;top:{y - 16:.0f}px;width:32px;height:32px"></span>')
+    return "".join(out)
+
+
+DPAD_L = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.5 1.5L3 5l3.5 3.5"></path></svg>'
+DPAD_R = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3.5 1.5L7 5 3.5 8.5"></path></svg>'
+PAGER = [("1", "Tollmoor", "27 min - I1", "VOLT"), ("2", "Lantern Reach", "29 min - I2", "CITADEL"),
+         ("3", "Gallowglass", "47 min - I2", "GALLEON"), ("4", "The Maw", "49 min - I3", "TALON")]
+
+
+def voyage_pager(sel="2"):
+    """How you move between the voyages your crew found: the four as chips, D-pad left / right (or a click, or a
+    swipe on the card) steps through them; the map follows the open one."""
+    chips = "".join(
+        f'<button class="pick sls" type="button" aria-pressed="{"true" if n == sel else "false"}" style="position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;'
+        f'padding:7px 10px;background:{"#0E1646" if n == sel else "rgba(8,12,40,.6)"};box-shadow:inset 0 0 0 1px {LIGHT if n == sel else NEUT_D}">'
+        + (f'<span class="abs" style="left:10px;right:10px;bottom:0;height:2px;background:{ROUTE}"></span>' if n == sel else "")
+        + f'<span style="display:flex;align-items:baseline;gap:6px"><span class="num" style="font-size:13px;color:{LIGHT if n == sel else INACT}">{n}</span>'
+        f'<span class="ell" style="font-size:14px;color:{LIGHT if n == sel else SUB}">{place}</span></span>'
+        f'<span class="cap ell" style="font-size:10px;color:{NEUT_L}">{meta} - {cs}</span></button>'
+        for n, place, meta, cs in PAGER)
+    key = lambda svg, lab: f'<button class="pick" type="button" aria-label="{lab}" style="display:grid;place-items:center"><span class="kc" style="height:40px;min-width:30px">{svg}</span></button>'
+    return (f'<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;align-items:baseline">'
+            f'<span class="lab" style="font-size:11px">Voyages your crew found</span>'
+            f'<span class="cap" style="font-size:10px;color:{NEUT_L}">D-pad, click or swipe - the map follows</span></div>'
+            f'<div style="display:flex;align-items:center;gap:6px">{key(DPAD_L, "Previous voyage")}{chips}{key(DPAD_R, "Next voyage")}</div></div>')
 
 
 # ------------------------------------------------------------------------------------------------ voyage card pieces
@@ -396,7 +520,7 @@ def level_crumbs(level, style="line"):
 
 def screen_A(level):
     """A - Drawer: the card slides in from the right; deeper levels slide over it and leave its edge as a spine."""
-    body = [nav(), tabrow("A", "Voyages"), mapview(40, 172, 1080, 640, 216, "38% 45%", list_strip=True)]
+    body = [nav(), tabrow("A", "Voyages"), mapview(40, 172, 1080, 640, 216, "38% 45%", list_strip=level > 1, glow=level == 1)]
     x0, w0 = 1140, 740
     spines = []
     if level >= 2:
@@ -410,7 +534,7 @@ def screen_A(level):
     x = x0 + 56 * len(spines)
     w = w0 - 56 * len(spines)
     if level == 1:
-        inner = (f'{head_block()}{crew_chip()}{stats_row(6)}{sea_bar()}{waypoints(compact=False)}'
+        inner = (f'{voyage_pager()}{head_block(30)}{crew_chip()}{stats_row(6)}{route_glow()}'
                  f'{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
     elif level == 2:
         inner = (f'{level_crumbs(2)}{crew_head()}{preset_tabs()}<div style="display:flex;gap:10px">'
@@ -426,8 +550,8 @@ def screen_B(level):
     """B - Tray: the arena preview's tray. Level 1 is a narrow card; deeper levels widen it over the map, which stays."""
     body = [nav(), tabrow("B", "Voyages")]
     if level == 1:
-        body.append(mapview(40, 168, 1220, 660, 212, "45% 45%", list_strip=True))
-        inner = (f'{head_block(30)}{crew_chip()}{stats_row(3)}{sea_bar()}{waypoints(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
+        body.append(mapview(40, 168, 1220, 660, 212, "45% 45%", glow=True))
+        inner = (f'{voyage_pager()}{head_block(28)}{stats_row(3)}{route_glow(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}')
         x, w = 1280, 600
     else:
         body.append(mapview(40, 168, 540, 660, 212, "30% 45%"))
@@ -444,7 +568,7 @@ def screen_B(level):
 
 def screen_C(level):
     """C - Level tabs: one card; its three levels are tabs at its top (D-pad), the window's tabs stay on LB / RB."""
-    body = [nav(), tabrow("C", "Voyages"), mapview(40, 168, 1100, 660, 212, "40% 45%")]
+    body = [nav(), tabrow("C", "Voyages"), mapview(40, 168, 1100, 660, 212, "40% 45%", glow=level == 1)]
     names = ["Voyage", "Ark crew", "Story"]
     tabs = "".join(f'<button class="tab" type="button" style="flex:1;height:52px;display:flex;align-items:center;justify-content:center;gap:8px;'
                    + (f'box-shadow:inset 0 -2px 0 {LIGHT};background:#0E1646' if i == level else f'box-shadow:inset 0 -1px 0 {NEUT_D}')
@@ -456,7 +580,7 @@ def screen_C(level):
         f'<span class="ell" style="flex:1;font-size:14px;color:{LIGHT if n == "2" else SUB}">{e(t)}</span><span class="cap num" style="font-size:11px;color:{NEUT_L}">{m} - {i}</span></button>'
         for n, t, c, m, i in OTHERS) + '</div>')
     if level == 1:
-        inner = f'{list_}<div class="rule"></div>{head_block(28, False)}{crew_chip()}{stats_row(6)}{waypoints(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}'
+        inner = f'{voyage_pager()}{head_block(28, False)}{crew_chip()}{stats_row(6)}{route_glow(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}'
     elif level == 2:
         inner = (f'{crew_head()}{preset_tabs()}<div style="display:flex;flex-direction:column;gap:8px">'
                  + "".join(seat_row(i) for i in range(3)) + f'</div><div style="flex:1"></div>{actions(2)}')
@@ -481,9 +605,9 @@ def seat_row(i):
 
 def screen_D(level):
     """D - Rising sheet: level 1 is a card at the right; deeper levels rise from the bottom over the edge view."""
-    body = [nav(), tabrow("D", "Voyages"), mapview(40, 172, 1160, 640, 216, "40% 45%")]
+    body = [nav(), tabrow("D", "Voyages"), mapview(40, 172, 1160, 640, 216, "40% 45%", glow=level == 1)]
     if level == 1:
-        inner = f'{head_block(30)}{crew_chip()}{stats_row(3)}{waypoints(vertical=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}'
+        inner = f'{voyage_pager()}{head_block(26)}{stats_row(3)}{route_glow(vertical=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}'
         body.append(f'<section aria-label="Voyage card" class="sl" style="position:absolute;left:1220px;top:172px;width:660px;height:868px;box-sizing:border-box;'
                     f'padding:20px 26px;background:#080C28;box-shadow:inset 0 0 0 1px #2B3266;display:flex;flex-direction:column;gap:11px">{inner}</section>')
         return "\n".join(body)
@@ -508,7 +632,7 @@ def screen_D(level):
 
 def screen_E(level):
     """E - Dossier: one card with the three levels as numbered steps down a spine; the open step fills the card."""
-    body = [nav(), tabrow("E", "Voyages"), mapview(40, 172, 1100, 640, 216, "40% 45%", list_strip=True)]
+    body = [nav(), tabrow("E", "Voyages"), mapview(40, 172, 1100, 640, 216, "40% 45%", list_strip=level > 1, glow=level == 1)]
     names = ["Voyage", "Ark crew", "Story"]
     summary = {1: "Lantern Reach - 580 ly - 29 min - I2", 2: "Skim Wing - Sparrow, Dolphin, Squirrel", 3: "Who brought it, the place, the news, the water"}
     parts = []
@@ -523,7 +647,7 @@ def screen_E(level):
                      + f'{key}</button>')
         if on:
             if i == 1:
-                content = f'{head_block(28, False)}{crew_chip()}{stats_row(6)}{sea_bar()}{waypoints(compact=True)}{preset_rows(dense=True)}'
+                content = f'{voyage_pager()}{head_block(26, False)}{stats_row(6)}{route_glow(compact=True)}{preset_rows(dense=True)}'
             elif i == 2:
                 content = f'{preset_tabs()}<div style="display:flex;flex-direction:column;gap:8px">' + "".join(seat_row(k) for k in range(3)) + '</div>'
             else:
@@ -540,8 +664,8 @@ def screen_F(level):
     """F - Two cards: deeper levels slide in as a second card between the map and the voyage card; the map narrows."""
     body = [nav(), tabrow("F", "Voyages")]
     if level == 1:
-        body.append(mapview(40, 172, 1100, 640, 216, "40% 45%"))
-        inner = f'{head_block(30)}{crew_chip()}{stats_row(3)}{sea_bar()}{waypoints(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}'
+        body.append(mapview(40, 172, 1100, 640, 216, "40% 45%", glow=True))
+        inner = f'{voyage_pager()}{head_block(28)}{crew_chip()}{stats_row(3)}{route_glow(compact=True)}{preset_rows(dense=True)}<div style="flex:1"></div>{actions(1)}'
         body.append(f'<section aria-label="Voyage card" class="sl" style="position:absolute;left:1160px;top:172px;width:720px;height:868px;box-sizing:border-box;'
                     f'padding:24px 26px;background:#080C28;box-shadow:inset 0 0 0 1px #2B3266;display:flex;flex-direction:column;gap:16px">{inner}</section>')
         return "\n".join(body)
@@ -815,7 +939,8 @@ def main():
     files[f"R{REV}Compare.dc.html"] = board(f"Rev {REV} - compare", compare())
     for k in OPTS:
         for lv, key in ((1, "Voyage"), (2, "Crew"), (3, "Story")):
-            files[f"R{REV}{k}{key}.dc.html"] = board(f"Rev {REV} {k} - {OPTS[k][0]} - level {lv}", SCREENS[k](lv))
+            page = board(f"Rev {REV} {k} - {OPTS[k][0]} - level {lv}", SCREENS[k](lv))
+            files[f"R{REV}{k}{key}.dc.html"] = with_glow(page) if lv == 1 else page
         files[f"R{REV}{k}Saga.dc.html"] = board(f"Rev {REV} {k} - {OPTS[k][0]} - Saga", screen_tabs(k, "Saga"))
         files[f"R{REV}{k}Episodes.dc.html"] = board(f"Rev {REV} {k} - {OPTS[k][0]} - Episodes", screen_tabs(k, "Episodes"))
     files[f"R{REV}Notes.dc.html"] = board(f"Rev {REV} - notes", notes())
