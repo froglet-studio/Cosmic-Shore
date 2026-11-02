@@ -28,6 +28,10 @@ namespace CosmicShore.Gameplay
         public float Radius;
         /// <summary>Stable per vessel across ticks (a bite cooldown is per pilot).</summary>
         public int Id;
+        /// <summary>1 = a hull only a CLINGING species sees (the Ark escort's Ark, SubstrateCellHost.SenseVessels): a
+        /// leech latches onto it and sips its plates; no other species hunts, rings, dives at or engages it, so it is
+        /// never an "attack the Ark" weighting - the riders reach it the way they reach a vessel. 0 = a vessel.</summary>
+        public byte ClingOnly;
     }
 
     public enum SubstrateEventKind
@@ -1148,7 +1152,7 @@ namespace CosmicShore.Gameplay
             {
                 int i = pop.Live[q];
                 if (Host[i] != 0 || Rest[i] > 0f) continue;
-                int j = NearestPilot(Pos[i], out float d);
+                int j = NearestHost(Pos[i], out float d);   // a cling-only hull (the Ark) is a host too
                 if (j < 0 || _load[j] >= P.ClingMax) continue;
                 var pil = _pilots[j];
                 if (d >= P.BiteR + pil.Radius) continue;
@@ -1418,12 +1422,19 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        internal int NearestPilot(Vector3 p, out float dist)
+        /// <summary>The nearest VESSEL (a cling-only hull, the Ark, is not a pilot to the pack, the ramp or the ring).</summary>
+        internal int NearestPilot(Vector3 p, out float dist) => NearestPilot(p, false, out dist);
+
+        /// <summary>The nearest hull a rider may latch onto: vessels and cling-only hulls alike.</summary>
+        internal int NearestHost(Vector3 p, out float dist) => NearestPilot(p, true, out dist);
+
+        int NearestPilot(Vector3 p, bool includeClingOnly, out float dist)
         {
             dist = 1e9f;
             int best = -1;
             for (int j = 0; j < _npil; j++)
             {
+                if (!includeClingOnly && _pilots[j].ClingOnly != 0) continue;
                 float d = Vector3.Distance(p, _pilots[j].Pos);
                 if (d < dist) { dist = d; best = j; }
             }

@@ -15,38 +15,38 @@ MonoBehaviour:
   vesselClass: 23
   entries:
   - Element: 1
-    AbilityLabel: 'Peck'
-    AbilityDescription: 'Hold RT for a weak shot, two and a half a second, out to 45 u. When the Ratel makes an attack card (Hard Light Lasso, Genesis Lance, Little Bang Grenade, Sepia Drone, Particle Harmonizer, Fugacity Discharger) RT is that card''s for 20 s, then Peck comes back.'
-    Input: 1
-    UnlockLevel: 5
-    RelockBelowLevel: 4
-    LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
-  - Element: 2
     AbilityLabel: 'Flit'
-    AbilityDescription: 'Press LT for a short thrust 18 u ahead, every 2 s. When the Ratel makes a move card (Hexapod Eyelet Jet, Thruster Swarm, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) LT is that card''s for 20 s, then Flit comes back.'
+    AbilityDescription: 'Hold LT to see the dart, let go to fly it: 18 u ahead, striking every rival vessel and creature within 8 u of its lane, every 2 s. Each Charge card the Ratel makes (Hard Light Lasso, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 
     UpgradeDescription: 
-  - Element: 3
-    AbilityLabel: 'Slip'
-    AbilityDescription: 'Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the charge is spent. The Ratel charges the battery by making patterns on the Dynamo.'
+  - Element: 2
+    AbilityLabel: 'Hive'
+    AbilityDescription: 'Every 45 s (sooner as Mass rises) a hive appears somewhere in the cell. Fly to it to open hive mode.'
     Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: 'Peck'
+    AbilityDescription: 'Hold RT to see the aim line, let go for three quick shots, every 1 s. Each Space card the Ratel makes (Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, Hexapod Eyelet Jet) banks three uses on RT; the newest fires first. Hold both triggers to cancel.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Piercing Pecks'
     UpgradeDescription: 'Pecks pierce through prisms instead of stopping at the first.'
   - Element: 4
-    AbilityLabel: 'Afterburner'
-    AbilityDescription: 'Hold to boost indefinitely - there is no heat and no meter. Boosting at full stick deflection performs one strafing roll per press (base, no unlock). Time raises the boost speed; at level 5 boosting also makes you immune to elemental debuffs.'
-    Input: 7
+    AbilityLabel: 'Slip'
+    AbilityDescription: 'Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the charge is spent. The Ratel charges the battery by making patterns on the Dynamo.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Elemental Ward'
-    UpgradeDescription: 'While boosting, elemental debuffs cannot land - danger prisms and skimmer overtakes leave your levels untouched. Buffs still apply.'
+    UpgradeLabel: 
+    UpgradeDescription: 

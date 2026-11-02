@@ -27,5 +27,15 @@ namespace CosmicShore.ScriptableObjects
 
         public float RegrowSeconds => regrowSeconds;
         public EventReference RegrowSound => regrowSound;
+
+        /// <summary>A runtime copy of this reactor at another fixed rate (an Ark escort's difficulty), its sound kept.
+        /// The caller owns the copy and destroys it.</summary>
+        public ArkReactorSO WithRegrowSeconds(float seconds)
+        {
+            var copy = Instantiate(this);
+            copy.name = $"{name} ({seconds:0.##}s)";
+            copy.regrowSeconds = Mathf.Max(0.05f, seconds);
+            return copy;
+        }
     }
 }

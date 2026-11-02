@@ -103,6 +103,7 @@ CAMERA_GUID = guid_for("ShrikeCameraSettingsSO.asset")
 VESSEL_CONTAINER_GUID = guid_for("ShrikeImpactorDataContainer.asset")
 SKIMMER_CONTAINER_GUID = guid_for("ShrikeSkimmerImpactorDataContainer.asset")
 CRYSTAL_EFFECT_GUID = guid_for("ShrikeCrystalEffect.asset")
+CRYSTAL_MORPH_GUID = guid_for("ShrikeCrystalMorphByCrystal.asset")   # the omni retirement (SHRIKE_CRYSTAL_MORPH.md)
 ACTIONS_FOLDER_GUID = guid_for("VesselActions/Shrike")
 DOC_GUID = guid_for("SHRIKE.md")
 CARD_ACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike.png").hexdigest()            # the card PNGs; rendered from the model by vessel_model/render_cards.py
@@ -558,7 +559,8 @@ def vessel_container_asset() -> str:
             "  vesselSpaceCrystalEffects:\n" + crystal +
             "  vesselTimeCrystalEffects:\n" + crystal +
             "  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            # The omni crystal folds into the nest flora it grows instead of the shared husk spray.
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {CRYSTAL_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:

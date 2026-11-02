@@ -9,7 +9,7 @@ every Assets/Resources/ElementalAbilityMaps/*.asset, prints the table and assert
   - every designed ability gets a kind (no designed ability falls to Passive);
   - the fleet shows real variety (at least seven different kinds);
   - the spot checks the owner can recognise (Afterburner boosts, Pulsefire shoots, Scope senses, Fold phases,
-    Seed Wall builds, Dig In settles, Field Dipole pulls, Wrecking Ball strikes, Kabloom bursts...).
+    Seed Wall builds, Dig In settles, Catch Orbit pulls, Wrecking Ball strikes, Kabloom bursts...).
 
     python3 Tools/Build/check_hangar_ability_kinds.py              # table + checks
     python3 Tools/Build/check_hangar_ability_kinds.py --self-test  # planted defects must all be caught
@@ -32,10 +32,10 @@ SPOT = {
     ("Sparrow", "Pulsefire Cannons"): "Shot", ("Sparrow", "Afterburner"): "Boost", ("Sparrow", "Turret Stance"): "Stance",
     ("Sparrow", "Skyburst Rockets"): "Shot", ("Serpent", "Scope"): "Sense", ("Serpent", "Seed Wall"): "Build",
     ("Serpent", "Sniper Shot"): "Shot", ("TigerMoth", "Drop"): "Phase", ("Grizzly", "Dig In"): "Stance",
-    ("Grizzly", "Rush"): "Boost", ("Stoat", "Field Dipole"): "Pull", ("Thresher", "Wrecking Ball"): "Strike",
+    ("Grizzly", "Rush"): "Boost", ("Stoat", "Catch Orbit"): "Pull", ("Stoat", "Timed Slingshot"): "Boost", ("Thresher", "Wrecking Ball"): "Strike",
     ("Thresher", "Mass Mode"): "Stance", ("Manta", "Kabloom"): "Burst", ("Urchin", "Slip"): "Phase",
     ("Urchin", "Track Projector"): "Build", ("Dolphin", "Echo Sight"): "Sense", ("Squirrel", "Boost Ring"): "Build",
-    ("TigerMoth", "Mass / Dust Mode"): "Stance", ("Stoat", "Mass / Time Mode"): "Stance",
+    ("TigerMoth", "Mass / Dust Mode"): "Stance", ("Stoat", "Orbit Mode"): "Stance",
     ("BrittleStar", "Charge Mode"): "Strike", ("BrittleStar", "Space Mode"): "Shot", ("BrittleStar", "Speed Mode"): "Boost",
 }
 

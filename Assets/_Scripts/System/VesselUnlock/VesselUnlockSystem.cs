@@ -54,20 +54,22 @@ namespace CosmicShore.Core
             if (vessel == null || !vessel.IsLockedByEntitlement)
                 return false;
 
-            if (vessel.UnlockCost > 0)
+            if (vessel.UnlockCost > 0 || ServerEconomyGate.Enabled)
             {
                 // The crystal wallet always persists, but the UNLOCK only persists while the
                 // progression backend gate is open (PersistUnlockToCloud returns early, and
                 // ApplyStarterUnlocks re-locks the hull on the next launch). Spending here with
                 // the gate closed took the crystals for good and gave the vessel for one session.
-                if (!ProgressionBackendGate.CloudEnabled)
+                if (vessel.UnlockCost > 0 && !ProgressionBackendGate.CloudEnabled)
                 {
                     CSDebug.LogWarning($"[VesselUnlockSystem] Purchase of {vessel.Name} refused: the progression backend gate is closed, so the unlock could not be saved but the crystals would be.");
                     return false;
                 }
 
+                // With the server wallet on, the server sells the vessel and records it (fair play T3); the local unlock
+                // below is the display, and the server's answer confirms or undoes it (ApplyServerOwnership).
                 var service = PlayerDataService.Instance;
-                if (service == null || !service.TrySpendCrystals(vessel.UnlockCost, "vessel_unlock"))
+                if (service == null || !service.TryBuyVessel(vessel.Name, vessel.UnlockCost))
                     return false;
             }
 
@@ -122,6 +124,38 @@ namespace CosmicShore.Core
             }
 
             OnUnlockStateChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// The server's list of bought vessels is the truth (fair play T3; <c>economy.js</c>): every shipped vessel it
+        /// lists, or that every account owns from the start, is unlocked; any other is locked again, which undoes an
+        /// unlock written into a save by hand. Editor debug unlocks (the Froglet Toolbox) are undone too while the
+        /// server wallet is on. A no-op until the vessel list is loaded.
+        /// </summary>
+        public static void ApplyServerOwnership(IReadOnlyCollection<string> boughtVesselNames)
+        {
+            var list = UGSDataService.Instance != null ? UGSDataService.Instance.VesselList : null;
+            if (list == null || boughtVesselNames == null) return;
+            var bought = new HashSet<string>(boughtVesselNames);
+            foreach (var vessel in list.VesselList)
+            {
+                if (vessel == null || string.IsNullOrWhiteSpace(vessel.Name)) continue;
+                bool owned = vessel.OwnedFromStart || bought.Contains(vessel.Name);
+                if (owned && vessel.IsLockedByEntitlement) UnlockVessel(vessel);
+                else if (!owned && !vessel.IsLockedByEntitlement) LockVessel(vessel);
+            }
+        }
+
+        /// <summary>The vessels this client records as bought (not starters): what an account brings across once.</summary>
+        public static List<string> LocallyBoughtVesselNames()
+        {
+            var names = new List<string>();
+            var list = UGSDataService.Instance != null ? UGSDataService.Instance.VesselList : null;
+            if (list == null) return names;
+            foreach (var vessel in list.VesselList)
+                if (vessel != null && !vessel.OwnedFromStart && !vessel.IsLockedByEntitlement && !string.IsNullOrWhiteSpace(vessel.Name))
+                    names.Add(vessel.Name);
+            return names;
         }
 
         static void PersistUnlockToCloud(string vesselName, bool unlocked)

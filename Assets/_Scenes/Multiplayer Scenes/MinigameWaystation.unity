@@ -831,6 +831,7 @@ MonoBehaviour:
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 1000
   reportResyncSeconds: 3
+  wallPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

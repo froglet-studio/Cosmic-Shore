@@ -82,7 +82,8 @@ registration; take the class id only after checking `bleeding-edge` and every in
    - The vessel's generator `--check` (e.g. `author_stoat_assets.py --check`).
    - `bash Tools/Build/unity_refcompile/run.sh` (player) and `--config editor`: 0 errors in project code.
    - The repo's C# gates (`check_conditional_compilation`, `check_console_logging`, `check_using_directives`, …).
-   - `/verify-unity` if the CLI is available; otherwise say so in the commit and add a precise test entry to
+   - The verify rule (`CLAUDE.md` § "Unity CLI verification": `unity_refcompile`, the `/ship` gates, the `unity` CLI
+     when an editor is open); if neither ran, say so in the commit and add a precise test entry to
      `Docs/UNITY_VERIFICATION_CHECKLIST.md`: the scene or mode to open, what to press, and what the artifact shows
      that Unity must now match.
 7. **Record and report.**

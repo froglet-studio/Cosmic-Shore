@@ -21,7 +21,7 @@ is stamped in here from the file the game ships, never typed into the page.
   explosion mesh Assets/_Models/Testing/Prism.asset (the 72 vertices, decoded from the mesh bytes)
   the grade      Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float, the steal's
                  colour lerp) -> GLSL, mechanically; MaterialPropertyAnimator.DefaultTransitionSeconds
-  the cut         Assets/_Scripts/Utility/PrismSierpinskiTiling.cs — its depth cap; the page's port of the
+  the cut         Assets/_Scripts/Utility/Foundation/PrismSierpinskiTiling.cs — its depth cap; the page's port of the
                  recursion is held to the C# (compiled with the .NET SDK) triangle for triangle by parity.py
   detail config  Assets/Resources/PrismInteractionLodConfig.asset (the detail levels' lines, the shape, the
                  shed weights) and Assets/Resources/PrismMotionConfig.asset (the motion ladder)
@@ -56,14 +56,14 @@ PRISM_MESH = os.path.join(ROOT, "Assets/_Models/Testing/Prism.asset")
 CONFIG = os.path.join(ROOT, "Assets/Resources/PrismMotionConfig.asset")
 LOD_CONFIG = os.path.join(ROOT, "Assets/Resources/PrismInteractionLodConfig.asset")
 CLOCK_HLSL = os.path.join(GRAPHS, "PrismClockAnimation.hlsl")
-TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismSierpinskiTiling.cs")
+TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/Foundation/PrismSierpinskiTiling.cs")
 ANIMATOR_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Environment/Prisms/MaterialPropertyAnimator.cs")
 BURST_MAT = os.path.join(ROOT, "Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat")
 COLORSET = os.path.join(ROOT, "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset")
 MOTION_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Prisms/PrismMotion.cs")
 
 
-SILVER_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismSilverGnomonTiling.cs")
+SILVER_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/Foundation/PrismSilverGnomonTiling.cs")
 
 
 def read(p):

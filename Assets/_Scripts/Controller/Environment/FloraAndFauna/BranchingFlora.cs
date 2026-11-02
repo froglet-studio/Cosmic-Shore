@@ -143,7 +143,7 @@ namespace CosmicShore.Gameplay
             var leaves = GetComponentsInChildren<HealthPrism>(true);
             if (leaves != null && leaves.Length != 0) yield break;
             CSDebug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
-            Die();
+            DieOnce();
         }
         void SeedBranches()
         {

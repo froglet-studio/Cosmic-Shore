@@ -9,6 +9,37 @@ namespace CosmicShore.Gameplay
 {
     public class SnowChanger : MonoBehaviour
     {
+        /// <summary>
+        /// A mode's own answer to "which way does the cytoplasm point?", in place of the crystal: Serpent Time's race
+        /// line, so the whole cell reads as a current flowing round its circuit (Shombith, 2026-10-31: "show the track
+        /// ... not by making a track"). Set with <see cref="SetFlow"/>; null (the default, every other mode) keeps the
+        /// shipped law, every shard pointing at the local crystal. Asked once per shard per reorientation pass, so an
+        /// implementation must be cheap and allocation-free.
+        /// </summary>
+        public interface IFlow
+        {
+            /// <param name="position">The shard's world position.</param>
+            /// <param name="direction">Where the shard points (need not be unit length).</param>
+            /// <param name="stretch01">How long the shard is drawn, 0 (a small mote) to 1 (the longest streak), in
+            /// place of the crystal law's distance.</param>
+            /// <returns>False to leave this shard to the shipped law.</returns>
+            bool TryFlow(Vector3 position, out Vector3 direction, out float stretch01);
+        }
+
+        IFlow _flow;
+
+        /// <summary>
+        /// Point the cytoplasm along <paramref name="flow"/> instead of at the crystal (null restores the crystal law),
+        /// and reorient once. A cell with no crystal never built its field (<see cref="Initialize"/> is gated on one,
+        /// because the shards are how a pilot finds it), so a flow builds it here.
+        /// </summary>
+        public void SetFlow(IFlow flow)
+        {
+            _flow = flow;
+            if (flow != null && ShardCount == 0) Initialize();
+            ChangeSnowOrientation();
+        }
+
         [SerializeField]
         CellRuntimeDataSO cellData;
 
@@ -102,18 +133,44 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
-            cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
+            if (cellData) cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
         }
 
         void OnDisable()
         {
-            cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
+            if (cellData) cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
         }
+
+        // A satellite's field (Cell.SatelliteCytoplasmEnabled): bound to the satellite's OWN runtime data rather than the
+        // scene asset the prefab names, thinned by a spacing scale, and built on the crystal's arrival when the cell has
+        // none yet (a traversal cell's core crystal is handed to it just after its bootstrap).
+        bool _initWhenCrystal;
+        float _spacingScale = 1f;
+
+        /// <summary>Point the field at <paramref name="data"/> (a satellite cell's own runtime) instead of the prefab's
+        /// asset: its crystal is the one the shards point at, and its cell-items event re-aims them.</summary>
+        public void Rebind(CellRuntimeDataSO data)
+        {
+            if (!data || data == cellData) return;
+            if (isActiveAndEnabled && cellData) cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
+            cellData = data;
+            if (isActiveAndEnabled) cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
+        }
+
+        /// <summary>Spread the shards this much wider than the config says (a satellite's field: fewer shards).</summary>
+        public float SpacingScale { get => _spacingScale; set => _spacingScale = Mathf.Max(1f, value); }
+
+        /// <summary>When the cell has no crystal yet, build the field when one arrives instead of never.</summary>
+        public bool InitializeWhenCrystalArrives { get => _initWhenCrystal; set => _initWhenCrystal = value; }
 
         public void Initialize()
         {
-            if (!cellData.TryGetLocalCrystal(out Crystal crystal))
+            if (!cellData.TryGetLocalCrystal(out Crystal crystal) && _flow == null)
+            {
+                _pendingInit = _initWhenCrystal;
                 return;
+            }
+            _pendingInit = false;
 
             _condensing.Clear();
             _morphedShards = 0;
@@ -130,6 +187,7 @@ namespace CosmicShore.Gameplay
             // a cell config may space its motes wider than the prefab does (a big arena: the count is a CUBE of the radius)
             var config = cellData.Cell != null ? cellData.Cell.Config : null;
             float spacing = config != null && config.CytoplasmShardDistance > 0 ? config.CytoplasmShardDistance : shardDistance;
+            spacing *= _spacingScale;
             float cellVolume = spacing * spacing * spacing;
 
             // Uniform density throughout the full sphere (0 → membrane)
@@ -233,8 +291,15 @@ namespace CosmicShore.Gameplay
         /// O(shardCount) loop inline.</summary>
         public void ChangeSnowOrientation()
         {
+            if (_pendingInit)
+            {
+                if (cellData && cellData.TryGetLocalCrystal(out _)) Initialize();
+                return;
+            }
             _reorientCursor = 0;
         }
+
+        bool _pendingInit;
 
         int ShardCount => _instanced ? _count : shards?.Count ?? 0;
 
@@ -391,8 +456,9 @@ namespace CosmicShore.Gameplay
 
         void ReorientSlice()
         {
+            Crystal crystal = null;
             if (cellData == null || membraneRadius <= 0f ||
-                !cellData.TryGetLocalCrystal(out Crystal crystal))
+                (!cellData.TryGetLocalCrystal(out crystal) && _flow == null))
             {
                 _reorientCursor = int.MaxValue;
                 return;
@@ -411,7 +477,12 @@ namespace CosmicShore.Gameplay
             {
                 var shard = shards[i];
                 float normalizedDistance;
-                if (crystal)
+                if (_flow != null && _flow.TryFlow(shard.transform.position, out Vector3 flowDir, out float stretch))
+                {
+                    normalizedDistance = Mathf.Clamp01(stretch);
+                    SafeLookRotation.TrySet(shard.transform, flowDir, shard);
+                }
+                else if (crystal)
                 {
                     float clampedDistance =
                         Mathf.Clamp((shard.transform.position - crystal.transform.position).magnitude, 0,
@@ -456,7 +527,12 @@ namespace CosmicShore.Gameplay
         {
             rotation = current;
             float normalizedDistance;
-            if (crystal)
+            if (_flow != null && _flow.TryFlow(p, out Vector3 flowDir, out float stretch))
+            {
+                normalizedDistance = Mathf.Clamp01(stretch);
+                if (SafeLookRotation.TryGet(flowDir, out var flowRot, this, logError: false)) rotation = flowRot;
+            }
+            else if (crystal)
             {
                 Vector3 to = crystal.transform.position - p;
                 normalizedDistance = Mathf.Clamp(to.magnitude, 0, membraneRadius) / membraneRadius;

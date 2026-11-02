@@ -17,12 +17,11 @@ namespace CosmicShore.Gameplay
     /// every Butterfly has been COUNTED dusting rivals in every mode; this rule is the one that
     /// PAYS for it. Counted everywhere, scored once - the Dog Fight / Bends / Broadside split.</para>
     ///
-    /// <para><b>One per PASS, not per second.</b> A skimmer dispatches its vessel effects on ENTRY
-    /// (<c>SkimmerImpactor</c>'s stay handler runs no effects), so hovering over a rival scores the
-    /// pass that caught them and nothing after it - you have to break off and come round again,
-    /// which on the fleet's slowest-turning hull is the whole skill. The shared
-    /// <c>VesselCombatHitLatch</c> window (1 s on the Butterfly's reporter) absorbs a rival
-    /// bouncing in and out of the capsule's edge.</para>
+    /// <para><b>One per 3.2 PETALS, not per pass</b> (since 2026-10-31). The dust shreds one petal of one
+    /// random element on a Charge-scaled clock for as long as a rival stays inside it (1 s at rest, 0.1 s
+    /// at Charge 10), and its reporter scores one Strike per 3.2 petals, a Strike's fleet price, so the
+    /// score stays proportional to the petals taken. Hovering over a rival now pays; it used to score
+    /// the pass that caught them and nothing after it.</para>
     ///
     /// Golf-timed like Undertow: the winning domain's pilots carry their finish time, losers a
     /// sentinel encoding their domain's deficit.
@@ -32,7 +31,8 @@ namespace CosmicShore.Gameplay
     {
         [Header("Point values")]
         [Tooltip("Points for one DUSTING - an opposing Butterfly passing through your Scale Dust. " +
-                 "Paid into CombatPoints by CombatHitScoring.Credit once per pass per victim.")]
+                 "Paid into CombatPoints by CombatHitScoring.Credit once per 3.2 petals the dust shreds off a " +
+                 "victim (one petal of one random element, every 1 s at Charge 0 to 0.1 s at Charge 10).")]
         [Min(0)] [SerializeField] int dustPoints = 1;
 
         [Tooltip("Points for any OTHER combat hit class. Zero on purpose: the Butterfly carries no " +

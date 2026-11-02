@@ -28,6 +28,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("The map, crew, jobs and lines. Empty = the shipped Resources/Voyages/VoyageContent.")]
         VoyageContentSO content;
 
+        [SerializeField, Tooltip("The Ark escort: its worlds, its 1-9 difficulty tiers and its lines. Empty = no escort card.")]
+        ArkEscortSO arkEscort;
+
         [Header("Voyage - the squad")]
         [SerializeField, Range(0f, 1f), Tooltip("Element level a seat starts in its slot's element (normalized: 0.1 is one " +
                                                 "petal, 0.5 the level-5 twist). Raised to, never lowered.")]
@@ -78,6 +81,7 @@ namespace CosmicShore.ScriptableObjects
 
         public ArkwaySettingsSO WithArk => withArk;
         public VoyageContentSO Content => content ? content : VoyageContentSO.Load();
+        public ArkEscortSO ArkEscort => arkEscort;
         public Color RouteColor => routeColor;
         public Color HereColor => hereColor;
         public float SeedElementLevel => seedElementLevel;

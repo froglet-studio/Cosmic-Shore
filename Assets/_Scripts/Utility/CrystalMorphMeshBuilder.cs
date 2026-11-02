@@ -182,6 +182,27 @@ namespace CosmicShore.Utility
         /// <param name="phaseEnd">Phase of the solid furthest from it. Author below
         /// <paramref name="phaseStart"/> to invert the cascade.</param>
         public static Mesh TryBuild(Mesh source, in ConvexHullTarget target,
+                                    float phaseStart, float phaseEnd, out string diagnosis) =>
+            TryBuild(source, in target, target.Centre, phaseStart, phaseEnd, out diagnosis);
+
+        /// <summary>
+        /// The same hull cast, for a target that does NOT surround the crystal — the Dolphin's blast
+        /// cone, which opens from the hull's nose hundreds of units down-range of the crystal it
+        /// replaces. Each source vertex keeps its DIRECTION from <paramref name="sourceCentre"/> (the
+        /// crystal's own middle) and is cast along that direction from the hull's centre, so the cage
+        /// opens out onto the target the way it faces: its front plates land on the front of the
+        /// shape, its back plates on the back.
+        ///
+        /// Casting from the hull's centre toward the source points instead would be wrong for any
+        /// target that is far away: every point of a small, distant crystal lies in nearly the same
+        /// direction from that centre, so the whole cage would land on one small patch of the hull.
+        /// When <paramref name="sourceCentre"/> IS the hull's centre (the Scarab's ball, forged at
+        /// the crystal), the two readings are the same cast, bit for bit.
+        ///
+        /// The phase cascade ranks solids by their distance from <paramref name="sourceCentre"/>, so
+        /// "near" still means "near the middle of the crystal".
+        /// </summary>
+        public static Mesh TryBuild(Mesh source, in ConvexHullTarget target, Vector3 sourceCentre,
                                     float phaseStart, float phaseEnd, out string diagnosis)
         {
             diagnosis = null;
@@ -240,7 +261,7 @@ namespace CosmicShore.Utility
                     solidCount.Add(0);
                 }
                 vertSolid[i] = id;
-                solidSumR[id] += (srcVerts[i] - target.Centre).magnitude;
+                solidSumR[id] += (srcVerts[i] - sourceCentre).magnitude;
                 solidCount[id]++;
             }
 
@@ -280,7 +301,7 @@ namespace CosmicShore.Utility
                 int w = weld[i];
                 if (!landed[w])
                 {
-                    LandOnHull(srcVerts[w], in target, faceCentroidDir,
+                    LandOnHull(srcVerts[w] - sourceCentre, in target, faceCentroidDir,
                                out landedPos[w], out landedNrm[w]);
                     landed[w] = true;
                 }
@@ -969,17 +990,19 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Slides one point along its own ray from the hull's centre until it meets the hull.
+        /// Casts from the hull's centre along <paramref name="offset"/> (a source point's offset from
+        /// the centre it is read around) until the ray meets the hull. For a hull that surrounds the
+        /// source and shares its centre, that is the point sliding along its own ray onto the hull.
         ///
         /// The facet is picked by best angular fit (max dot against the facet centroids' directions)
         /// and then VERIFIED by barycentric containment, falling back to an exhaustive ray test when
         /// the cheap pick misses — which it can near a vertex of an irregular hull. The verify is
         /// what makes the fast path safe rather than merely usual.
         /// </summary>
-        static void LandOnHull(Vector3 point, in ConvexHullTarget target, Vector3[] faceCentroidDir,
+        static void LandOnHull(Vector3 offset, in ConvexHullTarget target, Vector3[] faceCentroidDir,
                                out Vector3 position, out Vector3 normal)
         {
-            Vector3 d = point - target.Centre;
+            Vector3 d = offset;
             float len = d.magnitude;
             if (len < 1e-6f)
             {

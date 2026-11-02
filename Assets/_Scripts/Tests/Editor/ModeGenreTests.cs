@@ -82,7 +82,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.Crystals,          Element.Time)]   // Skim Race
         [TestCase(ScoringMetric.OmniCrystals,      Element.Time)]
         [TestCase(ScoringMetric.ElementalCrystals, Element.Time)]
-        [TestCase(ScoringMetric.Goals,             Element.Time)]   // Astro League, Scarab Scramble
+        [TestCase(ScoringMetric.Goals,             Element.Time)]   // Astro League
         [TestCase(ScoringMetric.SwitchesThreaded,  Element.Time)]   // Switchback, Headlong, Skein, Regatta, Redline, Breakwater, Grizzly Time
         [TestCase(ScoringMetric.PrismsRemaining,   Element.Mass)]
         [TestCase(ScoringMetric.PrismsStolen,      Element.Mass)]   // Hijack - nothing is destroyed to score it
@@ -118,6 +118,7 @@ namespace CosmicShore.Tests
         [Test]
         [TestCase(GameModes.Scurry,    ScoringMetric.Crystals, Element.Mass,  Element.None)]
         [TestCase(GameModes.Tollway,   ScoringMetric.Goals,    Element.Mass,  Element.None)]
+        [TestCase(GameModes.ScarabScramble, ScoringMetric.Goals, Element.Mass, Element.None)]
         [TestCase(GameModes.BroodRush, ScoringMetric.Goals,    Element.Mass,  Element.Space)]
         public void Mode_OverridesItsMetricsGenre(GameModes mode, ScoringMetric metric,
                                                   Element expectedPrimary, Element expectedSecondary)
@@ -163,6 +164,7 @@ namespace CosmicShore.Tests
                 Assert.That(mode,
                     Is.EqualTo(GameModes.Scurry)
                       .Or.EqualTo(GameModes.Tollway)
+                      .Or.EqualTo(GameModes.ScarabScramble)
                       .Or.EqualTo(GameModes.BroodRush),
                     $"GameModes.{mode} answers with no metric, so it has a row in ModeGenre that " +
                     "is not in this list. Add it here and to Mode_OverridesItsMetricsGenre, so a " +

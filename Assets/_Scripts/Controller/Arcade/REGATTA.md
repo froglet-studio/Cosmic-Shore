@@ -40,10 +40,10 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
 | **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 840 u/s (1200 before the 2026-09-25 retune) | none, **by design** — the hull ploughs prisms aside (`RhinoPloughPrismEffect`) and ramming costs no speed ("the bulldozer ignores mass", recorded in the Time row's description since 2026-10-16) |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
-| **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
+| **Serpent** | flies beside it | 4 charges × 6 s at 160 u/s, no clock regen (refills only while its wall eats its trail, 2026-10-31) | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
 | **Scarab** | flies beside it | 216 u/s ceiling, ×1.5 at Time 10 | none wired |
-| **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the pathfinder's WARP: the flight clock ×2.5 while its pair bends the path (Time → ×5); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
+| **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the WARP of a held pair (orbit only since 2026-11-02): the flight clock ×2.7 (Time → ×5.6); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
 
 Three rails, one per domain, because `TrailFollower` keys friendly terrain on **domain**: a
 neutral rail would be hostile to every rider. In a two-domain lobby the third rail is hostile to
@@ -75,7 +75,7 @@ line, intensity 1; re-run 2026-10-17):
 | Squirrel | none (rail) | 48.5 s | 48.5 s | — |
 | Serpent | Time → boost ×1.6, duration ×1.6 | 100.9 s | 58.1 s | Time 10 |
 | Sparrow | Time → boost ×1.5 | 107.5 s | 73.6 s | Time 10 |
-| Stoat | Time → warp ×2.5..5 | 96.8 s | 48.5 s | Time 10 |
+| Stoat | Time → warp ×2.7..5.6 | 98.1 s | 49.4 s | Time 10 |
 
 **Spread 6.03× at rest → 4.13× tuned at intensity 1** (I2 3.80×, I3 3.50×, I4 3.46×; `python3
 Tools/Build/regatta_balance.py`). That residual is the finding, not
@@ -143,14 +143,15 @@ corner it did not ask for.
 
 ## 6. AI
 
-**The Stoat (on the card 2026-10-17, Yash).** It flies the same gate steering; its own autopilot is three executors,
-unchanged: `StoatModeExecutor` switches to Time mode when the ring is ≥ 70° off the nose (back within half of it),
-`StoatDipoleExecutor` flies Mass mode's field dipole (path-watching, one-lap cap), and `StoatSlingExecutor` slings in
-Time mode (ring ≥ 30° off, ≥ 120 u away, every 3 s). In Regatta each reads its AUTOPILOT numbers through
-`AIModeTuning` (`StoatModeAction_Regatta`, `StoatDipoleConfig_Regatta`, `StoatSlingConfig_Regatta`), which
-`Tools/Build/learn_drives_from_flights.py` writes from people's editor flights; none exists yet, so it flies its shipped
-numbers. A person flying the Stoat reads the hull's own configs. Opponent AI stay pinned to the Squirrel
-(`OpponentAIVessel`); a Stoat AI is an ally pick (the launch panel's ally chip) or your own hull on the Third Eye's AI.
+**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`).** It flies the same gate
+steering, and its autopilot is `StoatSlingExecutor`: it slings to turn (ring ≥ 7.84° off, ≥ 123 u away, every 0.94 s) and presses for
+the warp alone while its ring is ≥ 280 u away (`aiWarpMinDistance`). In Regatta it reads those numbers through `AIModeTuning`
+(`StoatSlingConfig_Regatta`, which `Tools/Build/learn_drives_from_flights.py` would write; none exists, so it flies the hull's own row). A
+person flying the Stoat reads the same config. In the offline model (`Tools/Build/stoat_orbit_sim.py`, gate steering only, no race line or
+rails) an AI Stoat at the card's Time 10 runs 59.5 / 60.6 / 65.3 / 93.6 s at I1-I4, among the Dolphin and the Squirrel (54-72 s and
+48.5-59.5 s, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) and behind them at I4. Opponent AI stay pinned to the Squirrel
+(`OpponentAIVessel`); to race an AI Stoat, tap an AI chip in the launch panel (the host can pick any seat, an opponent's too), or fly your own
+hull on the Third Eye's AI.
 
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
 hull that ATTACHES: an AI **Urchin** flies its kit through the shared `UrchinAutopilotDriver`
@@ -274,7 +275,7 @@ raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). S
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
 
-**Watching them:** FrogletTools ▸ AI ▸ Third Eye. Every pilot now leaves a **trail** of its last seconds of flight
+**Watching them:** the in-game AI Diagnose panel (F2; until 2026-11-01 the FrogletTools ▸ AI ▸ Third Eye window). Every pilot now leaves a **trail** of its last seconds of flight
 (toolbar *Trails*, length in Settings), and each AI's readout names its phase (Approach / Through ring N, Crystal on
 the way, Not noticed yet, Misjudged, Riding the rail, Heading for its own rail, Finished), its lap, the ring it is
 after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolphin's charge).

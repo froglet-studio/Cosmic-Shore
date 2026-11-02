@@ -360,9 +360,22 @@ namespace CosmicShore.Gameplay
         {
             if (!config) return;
             _slingCd = 0f;
-            AddFlora(at, Vector3.up, 0, null);
+            var flora = AddFlora(at, Vector3.up, 0, null);
             PlayAt(config.CrystalEvent, at);
+
+            // ISOLATED: a listener is a VISUAL (the omni-crystal morph, SHRIKE_CRYSTAL_MORPH.md) and must never be
+            // able to stop the pickup it watches.
+            try { FloraGrownFromCrystal?.Invoke(_status, flora); }
+            catch (System.Exception e) { CSDebug.LogError($"[ShrikeExecutor] a FloraGrownFromCrystal listener threw; the flora is unaffected. {e}"); }
         }
+
+        /// <summary>A collected crystal just grew a nest flora (<see cref="CollectCrystal"/>), raised with the hull's
+        /// status. The Shrike's omni-crystal morph (<see cref="ShrikeCrystalMorph"/>) lands the spent crystal on it.
+        /// Listeners may hold the flora's photons, nothing else.</summary>
+        public static event System.Action<IVesselStatus, ShrikeNestFlora> FloraGrownFromCrystal;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetFloraStatics() => FloraGrownFromCrystal = null;
 
         /// <summary>The Void Sling: only with something to anchor to (Garrett, 2026-10-16: "when there is no target for
         /// void sling it should not use the ability and it should not go on cooldown"). The anchor is found at the press
@@ -839,7 +852,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void AddFlora(Vector3 at, Vector3 up, int ready, Nest nest)
+        ShrikeNestFlora AddFlora(Vector3 at, Vector3 up, int ready, Nest nest)
         {
             // The oldest withers when there are too many.
             int live = 0;
@@ -851,6 +864,7 @@ namespace CosmicShore.Gameplay
 
             var view = ShrikeNestFlora.Create(at, up, config.FloraMissileMax, config.MissileLength, DomainMaterial());
             _flora.Add(new Flora { View = view, Nest = nest, Ready = Mathf.Min(ready, config.FloraMissileMax) });
+            return view;
         }
 
         void KillFlora(Flora flora)

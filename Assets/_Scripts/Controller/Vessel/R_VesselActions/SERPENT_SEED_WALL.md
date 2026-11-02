@@ -64,6 +64,7 @@ The Serpent's trail is laid UNSHIELDED (Garrett, 2026-10-10; `Serpent.prefab` `V
 | Growth | The wall STEALS FROM ITS EDGE (Garrett, 2026-10-13, restoring the legacy wall's behaviour): only an open site next to a brick (the seed included) can take a prism, and only one within the steal radius of that site. So the wall grows toward the mass beside it and creeps along a trail it is eating, not as a uniform disc. Every `stealSweepInterval` (0.3 s), for as long as the wall is active (see Ends), one sweep (`SerpentWallStealPlanner`) does a single spatial query, then up to `stealWavesPerSweep` (4) waves: each pairs every edge site with its nearest free prism in reach, grants nearest-first (one prism per site, one site per prism), and the new bricks open the next wave's edge, up to `maxStealsPerSweep` (48) per sweep. Per frame, only prisms still in flight are moved; standing bricks are checked once a sweep. There is no brick limit (Garrett, 2026-10-10): a brick that is shot out reopens its site as edge. With the Serpent stopped on its own trail, which runs back from the seed along the wall's normal, the edge only reaches the first prisms of it (about two rings at rest); after that the wall grows where loose mass passes its edge. |
 | Steal radius | `stealRadius` (40) x the Mass multiplier (the whole wall scales with Mass) x the owner's live Space multiplier (`spaceStealRadiusMultiplierAtFull`, x1 at rest to x2 at Space 10, floored at x0.5). Space is the wall's reach. |
 | Stealing | The Serpent's own prisms fly in at `ownPullSpeed` (20 u/s), an opponent's at `opponentPullSpeed` (6 u/s), and an opponent's prism is stolen when it lands. An opponent's SHIELDED prism is taken only while the Serpent's Space upgrade (Deep Focus) is active, read live each sweep; without it they are left alone. Super-shielded prisms, other seeds, another wall's bricks and creature bodies (`HealthPrism`) are never taken. |
+| Refuel | The wall eating the Serpent's OWN trail is the only refill of its fuel pellets (Garrett, 2026-10-31): each of the owner's own trail prisms that lands is reported to its `ConsumeBoostActionExecutor`, one pellet per 2 s of building (`SERPENT_FUEL_PELLETS.md`). Flying out at cruise in the wall's plane pulls the trail in. |
 | Ends | A cloak wall: never on its own, the cloak ending does not stop growth; it stops growing and answering crystals when its seed loses its super-shield. A stance wall: when the Serpent flies again (see "The stance's wall"). Either kind also ends when the vessel that laid it is gone (despawn, disconnect): its Space level can no longer be read. An ended wall still reopens the sites of bricks that are shot out, so they do not stay claimed. Either kind lets its bricks go as ordinary prisms when the seed is destroyed. |
 
 ### MASS sets size and spacing, at placement
@@ -88,12 +89,16 @@ crystal:
 2. A shield ripples through each wall from the seed outward, one ring per `shieldRippleStep`
    (0.08 s). Bricks the Serpent no longer owns are skipped.
 
-## Level 5: Lockdown (gated on `IsUpgradeActive(Mass)` when the crystal is collected)
+## Level 5: Lockdown (gated on `IsUpgradeActive(Mass)`, sealed as a hole's four bricks close)
 
-When the Serpent collects a crystal while its Mass upgrade is active, every active wall it owns
-locks up, however old the wall is. (It was decided at placement until 2026-10-10, so a wall laid
-before the upgrade never locked; the replicated unlock bit is read at crystal time instead, so
-every peer still agrees.)
+**Recut 2026-10-29 (Garrett):** "lets have mass L5 put the exact same danger prisms in the exact same
+spot, but instead of triggering on omnicrystal collection (lets leave the shielding to that) lets
+have it trigger on all four surrounding wall bricks closing." While the Mass upgrade is active, a
+hole is sealed the moment its fourth brick lands; holes already closed when the upgrade comes on are
+sealed at the next steal sweep (`stealSweepInterval`). Crystals only shield. The replicated unlock
+bit is read at each sweep, so every peer agrees and a wall laid before the upgrade still locks.
+(Until 2026-10-29 a crystal collected under the upgrade locked the wall; until 2026-10-10 it was
+decided at placement.)
 
 1. Every square hole whose four corner bricks are standing is sealed with a flat DANGER panel
    (`lockPanelThickness` 0.15), laid through `EventOnSpawnPrismAndReturn` in the Serpent's domain.
@@ -104,8 +109,8 @@ every peer still agrees.)
    runs between the panel and every shielded brick around it; the wall reads as tiles with
    cracks. `SerpentWallLatticeTests` checks the crack on all four sides and that a brute-force
    search finds no bigger square.
-3. Later crystals re-shield the wall and replace any panel that was shot out. A locked wall keeps
-   growing, and each hole is sealed as soon as its fourth brick lands.
+3. A locked wall keeps growing, and each hole is sealed as soon as its fourth brick lands. A panel
+   that was shot out comes back the next time a brick lands. Crystals re-shield the wall only.
 
 Until 2026-10-13 Lockdown first TWISTED every brick 15 degrees, which closed half the holes and
 opened the other half, and panelled only the open half. Garrett dropped the twist for one panel
@@ -127,7 +132,7 @@ returns early on any peer without authority over the vessel (it keeps the replic
 `n_IsTranslationRestricted` single-writer), so the STANCE's seed and wall are built only on the
 owner and the server, and a third peer does not see that wall form (inferred from the gate; not
 yet observed in a three-player session). The cloak's wall has no such gate. Follow-up: drive the stance's seed from
-`stationaryModeChanged` on every peer rather than from the press. The Lockdown decision reads the replicated unlock bit at crystal time. The
+`stationaryModeChanged` on every peer rather than from the press. The Lockdown decision reads the replicated unlock bit at each steal sweep. The
 cloak's pilot view is decided per machine (`IsLocalUser`). Recruitment reads
 each peer's own prism set, so two peers can pull different loose prisms into the same site, as
 the legacy wall could.

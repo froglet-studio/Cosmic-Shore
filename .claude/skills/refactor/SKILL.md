@@ -265,8 +265,8 @@ that grows a second subject cannot be reviewed as either one.**
 
 ## 5. Prove it without a compiler
 
-**There is no compiler and no CI in this environment** unless you install one, and `/ship` §0.05
-says so. Depth does not buy an exception. What you CAN do, in ascending cost:
+**There is usually no Unity Editor and no Unity CI runner in this environment**; `/ship` §0.05
+has the verify rule (`unity_refcompile` + the `/ship` gates) and what to do when it cannot run. Depth does not buy an exception. What you CAN do, in ascending cost:
 
 **(a) The five standing textual gates.** They do not share a command line — a wrong flag exits 2
 with `usage:`, which reads exactly like a finding:

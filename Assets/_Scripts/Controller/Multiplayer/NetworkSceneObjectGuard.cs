@@ -31,7 +31,8 @@ namespace CosmicShore.Gameplay
     /// guest could ever complete synchronization again. The guest's log showed only the far end
     /// of it: deferred spawn messages for objects it never received, then the 30s connect
     /// timeout and a bounce. "Restart the game" worked because it restored the cold-boot order.
-    /// See Docs/PartySystem/BUGS.md B16.</para>
+    /// See Docs/PartySystem/BUGS.md B16. Since 2026-11-01 the cold boot loads Menu_Main first too
+    /// (B36: a Relay host must not be live during that load), so every host start now needs the sweep.</para>
     ///
     /// <para><b>The rule.</b> A prefab instance is not an in-scene object, so it must never be
     /// adopted as one. Where the creating code knows it will never spawn the thing (the fauna

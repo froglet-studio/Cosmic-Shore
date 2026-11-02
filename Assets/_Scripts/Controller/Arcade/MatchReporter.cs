@@ -20,6 +20,10 @@ namespace CosmicShore.Gameplay
     /// (<see cref="GameDataSO.MatchId"/>, which every player receives from the host) and records a signal against
     /// the host when they disagree.</para>
     ///
+    /// <para><b>Host observations (T5, T6).</b> On the host, the fair-play signals its movement monitor raises during the
+    /// match are sent with its <c>end</c> report, keyed by each guest's UGS id. The server files them on the guest and
+    /// counts them only once a second host reported the same account, so one lying host cannot flag anyone.</para>
+    ///
     /// <para>AI pilots have no UGS id and are left out. Attached by <see cref="MultiplayerMiniGameControllerBase"/>
     /// on every peer, only while <see cref="MatchReportGate.Enabled"/>.</para>
     /// </summary>
@@ -30,6 +34,8 @@ namespace CosmicShore.Gameplay
         bool _open;
         string _matchId, _mode, _hostId;
         readonly List<string> _players = new();
+        readonly List<FairPlaySignal> _observed = new();
+        bool _listening;
 
         public static void Attach(GameObject host, GameDataSO gameData)
         {
@@ -50,6 +56,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            StopListening();
             if (!_subscribed) return;
             _gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
             _gameData.OnWinnerCalculated.OnRaised -= HandleWinnerCalculated;
@@ -57,7 +64,29 @@ namespace CosmicShore.Gameplay
             _subscribed = false;
         }
 
-        void HandleResetForReplay() => _open = false;
+        void HandleResetForReplay()
+        {
+            _open = false;
+            StopListening();
+        }
+
+        void StartListening()
+        {
+            _observed.Clear();
+            var nm = NetworkManager.Singleton;
+            if (_listening || nm == null || !nm.IsServer) return;     // only the host measures its guests
+            FairPlaySignals.OnSignal += HandleSignal;
+            _listening = true;
+        }
+
+        void StopListening()
+        {
+            if (!_listening) return;
+            FairPlaySignals.OnSignal -= HandleSignal;
+            _listening = false;
+        }
+
+        void HandleSignal(FairPlaySignal signal) => _observed.Add(signal);
 
         void HandleTurnStarted()
         {
@@ -75,6 +104,7 @@ namespace CosmicShore.Gameplay
                     _players.Add(np.UgsPlayerId);
 
             _open = true;
+            StartListening();
             ServerMatchReports.StartAsync(_matchId, _mode, _hostId, new List<string>(_players)).Forget();
         }
 
@@ -91,8 +121,39 @@ namespace CosmicShore.Gameplay
                     scores.Add(new ServerMatchReports.Score { id = id, score = stats.Score });
             }
 
+            var observed = BuildObserved();
+            StopListening();
             ServerMatchReports.EndAsync(_matchId, _mode, _hostId, new List<string>(_players), scores,
-                UgsIdForName(_gameData.WinnerName)).Forget();
+                UgsIdForName(_gameData.WinnerName), observed).Forget();
+        }
+
+        /// <summary>The host's signals this match, as the server reads them: the guest's UGS id and a kind name.</summary>
+        List<ServerMatchReports.Observed> BuildObserved()
+        {
+            if (_observed.Count == 0) return null;
+            var list = new List<ServerMatchReports.Observed>(_observed.Count);
+            foreach (var s in _observed)
+            {
+                string kind = s.Kind switch
+                {
+                    FairPlaySignalKind.SustainedSpeed => "speed",
+                    FairPlaySignalKind.JumpRate => "jumps",
+                    FairPlaySignalKind.AiLikeSteering => "steering",
+                    _ => null,
+                };
+                string id = UgsIdForClient(s.OwnerClientId);
+                if (kind == null || string.IsNullOrEmpty(id)) continue;
+                list.Add(new ServerMatchReports.Observed { id = id, kind = kind, measured = s.Measured, limit = s.Limit });
+            }
+            return list;
+        }
+
+        string UgsIdForClient(ulong clientId)
+        {
+            foreach (var p in _gameData.Players)
+                if (p is Player np && !np.NetIsAI.Value && np.OwnerClientId == clientId)
+                    return np.UgsPlayerId;
+            return null;
         }
 
         string HostUgsId()

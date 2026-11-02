@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Serpent Gulag Cell Config 1
+  m_EditorClassIdentifier:
+  CellName: Serpent Gulag
+  Description: 'Open Ground - intensity 1 of Serpent Gulag: no environment - open space, far spawns and
+    the crystal field alone. 0 prisms, all neutral. Membrane radius 3600 (Cleave''s x3
+    shell), spawn ring 2200, the crystal field (radius 380) laid by the controller at every
+    rung. NO NUCLEUS, no flora, no fauna. Authored by
+    Tools/Build/author_serpent_gulag_assets.py - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 1
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6eb45784f9024cbb879f94c23ae46bd9, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 360
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 4274990af07285946858242555f45bfb, type: 2}
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 1
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 700
+    RestlessExit: 500
+    FrenzyEnter: 3600
+    FrenzyExit: 3000
+    RestlessEnterVolume: 11200
+    RestlessExitVolume: 8000
+    FrenzyEnterVolume: 57600
+    FrenzyExitVolume: 48000

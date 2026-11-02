@@ -267,7 +267,7 @@ compiler and no Unity ran on this branch**; every runtime claim below is the hum
 ## The ride scale (2026-10-27, the Meerkat's wormhole)
 
 The one sanctioned way to make the push-in DEEPER, in the same shape as the scope's home-FOV override: while a tunnel flies
-the Meerkat (`MeerkatWormholeExecutor`), `VesselSpeedTunnel.SetEffectScale(rideSpeedTunnelScale, hull)` multiplies the
+the Meerkat (`MeerkatSolitonExecutor`), `VesselSpeedTunnel.SetEffectScale(rideSpeedTunnelScale, hull)` multiplies the
 effect, 5x by default (Yash: "use 5x the normal value when going through the wormhole"):
 - The drive is still `config.Effect01(_target.Speed / warp)`, the absolute law, so the same speed on any vessel still
   looks the same outside a ride. The scale only says how far the optics go for the seconds a tunnel flies the hull.

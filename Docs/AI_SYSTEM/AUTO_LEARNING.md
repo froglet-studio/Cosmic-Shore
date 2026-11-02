@@ -19,7 +19,7 @@ or leaves it to the sweep below.
 | A person plays any mode in the Unity editor | the person | - |
 | The race is recorded | `HumanFlightRecorder` (every mode, every match) | `flight_<Mode>_<Vessel>_<time>.json` |
 | It is sent, with no question | `BugHuntAutoSend` after Play | `origin/bugledger/<user>`, `BugLedger/shared/reports/<user>/flights/` |
-| New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, every hour | `Tools/Build/ai_learn.py --run` |
+| New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, once a day | `Tools/Build/ai_learn.py --run` |
 | The AI's numbers change for that mode only | the learners (`<asset>_<Mode>` variants) | `Assets/Resources/AIBoostPolicies/`, `Assets/Resources/RaceLines/`, `SkimRaceAIConfig_Regatta` |
 | What changed, and whether the AI now races like the person | the sweep | `Docs/Reports/AI_LEARNING.md` |
 | It reaches the person's editor | `Ys-bleeding-edge` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
@@ -32,8 +32,8 @@ hold lifts, a vessel gains a learner), and one whose learner failed is tried aga
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
 
-The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, every hour at :20 UTC, created 2026-10-25 on
-Yash's request) wakes the session "AI learning sweep (hourly)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
+The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, once a day at 03:47 IST (22:17 UTC) since 2026-11-02, hourly before that; created 2026-10-25 on
+Yash's request) wakes the session "AI learning sweep (daily)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
 sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARNING.md".
 
 
@@ -79,7 +79,7 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 | Recording every race | yes | `HumanFlightRecorder` |
 | Sending races and console errors | yes | `BugHuntAutoSend` |
 | Fixing the console errors people hit | yes, daily | the "Bug Hunt daily sweep" scheduled task (`/bug-ledger` §6) |
-| Relearning the AI from new races | yes, hourly | this document |
+| Relearning the AI from new races | yes, daily | this document |
 | Judging and fixing an AI that cannot race | yes, in the same sweep | §2 step 4 |
 | Offline checks (gates, generators, harnesses) | in every sweep that changes code | §2 step 4 |
 | Unity EditMode / PlayMode tests | **no** | no Unity runner is attached to CI (`unity-ci.yml`, since 2026-10-13); they need an editor |
@@ -138,3 +138,28 @@ In a `PER_INTENSITY_MODES` mode (Switchback) each intensity of a policy hull lea
 - **The mode-wide variant learns from every intensity**: the fastest race of each first (`fastest_each_intensity`),
   because it is what the intensities without their own fly, and the three fastest overall are always the easiest
   intensity's. Every other mode learns exactly as before.
+
+## 8. Every flight says who flew it; the AI never learns from the AI (Shombith, 2026-10-29)
+
+The AI trainer (an AI Training run, Froglet Compute's Unity runs) switches a hull's AIPilot off and writes the sticks
+itself, so the recorder took a trainer match for a person's: Compute's first Unity run (Switchback I2 on Shombith's PC,
+2026-10-28) stored seven of them as hand-flown and sent them. They changed no learned number (all unfinished, and the
+Switchback learner takes finished Blast Run races only), but they could have. Now:
+- `PilotControl.IsHeldByAI` counts the trainer (`IsHeldByTrainer`): its samples carry `held = 1`, and a match the
+  trainer flew alone is never stored (a verbose line on the AITraining channel, no warning).
+- Every record says who flew it: `"pilot": "human"`, or `"mixed"` when the AI held the hull for part of it.
+- `learn_from_flights.not_a_person` is the one gate every learner reads through (`flights_on_branches`,
+  `flights_in_dir`): a record whose `pilot` is anything else, and the seven named records from before the field, are
+  left out. `ai_learn.py` lists them as waiting, "not a person's flight", so the board says why.
+- The Third Eye refuses its You / AI toggle and a take-over on a trainer-held hull (the AIPilot would fight the
+  trainer every frame), reads the trainer's aim (`ThirdEyePilots.Read`: its target, range, threats, genome), and has
+  `ThirdEyeWindow.WatchPilot(match)` and `SaveView(path)` (the view with trails and aim lines drawn in) for tools;
+  Compute's watched runs save a still every minute and when the AI improves (`Docs/Compute/README.md` section 16).
+Changing the learners' code makes the next sweep learn every flight again (`learners_fingerprint`); that is by design.
+
+**2026-11-01, the two paths joined (Shombith; `Docs/Compute/README.md` section 20):** a Unity trainer run on Froglet
+Compute now starts from the people's races too. `Tools/Compute/people_seed.py` reads the same flight records this sweep
+learns from (and skips the same AI-flown ones) and seeds the trainer's first population with the throttle and boost
+habits they show; the sweep itself and the drive numbers it writes are unchanged. The other way round, the console's
+Update AI writes a run's best genome into the game's archive on `ai` with a core-four approval (`archive_update.py`).
+

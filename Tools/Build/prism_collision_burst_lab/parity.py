@@ -437,8 +437,8 @@ def compare_explosion(page, cases, rotation_scale=1.0):
 
 MESH = None
 
-TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismSierpinskiTiling.cs")
-SILVER_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismSilverGnomonTiling.cs")
+TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/Foundation/PrismSierpinskiTiling.cs")
+SILVER_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/Foundation/PrismSilverGnomonTiling.cs")
 TILING_MAIN = r"""
 using System.Collections.Generic;
 using System.Globalization;

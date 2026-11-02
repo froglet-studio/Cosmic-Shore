@@ -362,6 +362,8 @@ namespace CosmicShore.Core
 
             if (dropped > 0) WarnIfBoardNotResetting(id, dropped, period);
 
+            await SpliceShadowRowAsync(id, scope, limit, localId, period, rows, ct);
+
             return rows;
         }
 
@@ -494,6 +496,37 @@ namespace CosmicShore.Core
             }
 
             return dropped;
+        }
+
+        /// <summary>
+        /// Fair play, phase B: an account the server put in the Undertow has its times on the twin board
+        /// (<c>&lt;id&gt;</c> + <see cref="FairPlayTrust.BoardSuffix"/>), not on this one, so its own row is read from
+        /// there and spliced into the page (<see cref="WeeklyChallengeRanking.SpliceOwnRow"/>). Nothing happens for
+        /// anyone else, or while the trust gate is off. A missing twin row (no time this week) leaves the page as it is.
+        /// </summary>
+        async UniTask SpliceShadowRowAsync(string id, LeaderboardScope scope, int limit, string localId, string period,
+            List<WeeklyChallengeRanking> rows, CancellationToken ct)
+        {
+            string suffix = FairPlayTrust.BoardSuffix;
+            if (string.IsNullOrEmpty(suffix) || string.IsNullOrEmpty(localId)) return;
+            try
+            {
+                var entry = await LeaderboardsService.Instance
+                    .GetPlayerScoreAsync(id + suffix, new GetPlayerScoreOptions { IncludeMetadata = true })
+                    .AsMainThread();
+                ct.ThrowIfCancellationRequested();
+                if (entry == null) return;
+                var own = ToRanking(entry, localId);
+                if (!WeeklyChallengeRanking.IsForPeriod(own.PeriodKey, period)) return;
+                WeeklyChallengeRanking.SpliceOwnRow(rows, own, limit);
+                if (scope == LeaderboardScope.Friends) WeeklyChallengeRanking.Renumber(rows);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                // No time on the twin board yet reads as an error from UGS; the page simply has no own row.
+                CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge, $"[WeeklyChallengeLeaderboard] No own row on '{id + suffix}': {ex.Message}");
+            }
         }
 
         static WeeklyChallengeRanking ToRanking(UgsLeaderboardEntry entry, string localId) =>

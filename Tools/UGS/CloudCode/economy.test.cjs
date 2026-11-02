@@ -33,7 +33,7 @@ Module._load = function (req, parent, isMain) {
   return realLoad.apply(this, arguments);
 };
 const economy = require(path.join(__dirname, "economy.js"));
-const { apply, migrate, emptyEconomy } = economy._test;
+const { apply, migrate, emptyEconomy, view, CATALOG } = economy._test;
 
 const logger = { info() {}, warning() {}, error() {} };
 const ctx = (player, env = "production") => ({ projectId: "p", playerId: player, environmentName: env });
@@ -119,6 +119,60 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
 
   await test("a client cannot write the wallet key: only the protected API stores it", () => {
     assert.ok(!store.default.has("c/PLAYER_ECONOMY"));
+  });
+
+  // ---- Unlock records (T3) ----
+  const T = Date.UTC(2026, 9, 26, 12);
+  const funded = (n) => { const e = emptyEconomy(); e.crystalBalance = n; return e; };
+
+  await test("a vessel is bought at its catalog price and recorded in the same write", () => {
+    const e = funded(5000);
+    const r = apply(e, { action: "unlockVessel", vessel: "Dolphin" }, T, "production");
+    assert.equal(r.ok, true); assert.equal(e.crystalBalance, 5000 - CATALOG.vessels.Dolphin.cost);
+    assert.deepEqual(e.vessels, ["Dolphin"]); assert.equal(e.spendLog.at(-1).item, "vessel:Dolphin");
+    assert.equal(apply(e, { action: "unlockVessel", vessel: "Dolphin" }, T, "production").reason, "already_owned");
+    assert.equal(e.crystalBalance, 1000, "never charged twice");
+  });
+
+  await test("an unknown vessel, a starter and an unaffordable vessel", () => {
+    const e = funded(50);
+    assert.equal(apply(e, { action: "unlockVessel", vessel: "NotAShip" }, T, "production").reason, "unknown_vessel");
+    const s = apply(e, { action: "unlockVessel", vessel: "Squirrel" }, T, "production");
+    assert.equal(s.ok, true); assert.equal(s.changed, false); assert.equal(e.crystalBalance, 50, "a starter costs nothing");
+    assert.equal(apply(e, { action: "unlockVessel", vessel: "Angler" }, T, "production").reason, "insufficient");
+    assert.deepEqual(e.vessels, []);
+  });
+
+  await test("a Hangar level costs 100 x the next level, up to the maximum", () => {
+    const e = funded(100000);
+    for (let i = 1; i <= CATALOG.hangar.maxLevel; i++)
+      assert.equal(apply(e, { action: "upgradeHangar", vessel: 3, element: 1 }, T, "production").ok, true);
+    const max = CATALOG.hangar.maxLevel, per = CATALOG.hangar.perLevel;
+    assert.equal(e.hangar["3:1"], max);
+    assert.equal(e.crystalBalance, 100000 - per * max * (max + 1) / 2);
+    assert.equal(apply(e, { action: "upgradeHangar", vessel: 3, element: 1 }, T, "production").reason, "max_level");
+    assert.equal(apply(e, { action: "upgradeHangar", vessel: -1, element: 1 }, T, "production").reason, "bad_slot");
+    assert.deepEqual(view(e, true).hangar, [{ vessel: 3, element: 1, level: max }]);
+  });
+
+  await test("old unlocks come across once, capped by their value; starters and unknown names are skipped", () => {
+    const e = funded(0);
+    const r = apply(e, { action: "migrateUnlocks",
+      vessels: ["Dolphin", "Manta", "Rhino", "Serpent", "Sparrow", "Urchin", "Squirrel", "Fake"],
+      hangar: [{ vessel: 1, element: 0, level: 3 }] }, T, "production");
+    assert.equal(r.ok, true); assert.equal(e.unlocksMigrated, true);
+    assert.deepEqual(e.vessels, ["Dolphin", "Manta", "Rhino", "Serpent", "Sparrow"], "20000 of value: five 4000 vessels, then the cap");
+    assert.equal(e.hangar["1:0"], undefined, "the cap is spent, so no Hangar levels either");
+    assert.equal(e.crystalBalance, 0, "migrating costs no crystals");
+    assert.equal(apply(e, { action: "migrateUnlocks", vessels: ["Urchin"] }, T, "production").reason, "already_migrated");
+  });
+
+  await test("the whole script: a schema-1 wallet gains the unlock fields; the answer carries the records", async () => {
+    store.protected.set("u/PLAYER_ECONOMY", { key: "PLAYER_ECONOMY", value: { schema: 1, crystalBalance: 4200, lifetimeCrystalsEarned: 0, lifetimeCrystalsSpent: 0, unlockedRewardIds: [], spendLog: [], earnedToday: {}, lastEarnAt: {}, day: "" }, writeLock: "w0" });
+    const r = await call("u", { action: "unlockVessel", vessel: "Urchin" }, "production");
+    assert.equal(r.ok, true); assert.deepEqual(r.vessels, ["Urchin"]); assert.equal(r.crystalBalance, 200);
+    assert.equal(r.unlocksMigrated, false, "the client still owes its one-time migration");
+    assert.equal(store.protected.get("u/PLAYER_ECONOMY").value.schema, 2);
   });
 
   console.log(`\n${passed} passed`);

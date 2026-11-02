@@ -92,7 +92,7 @@
      "name": "Serpent",
      "value": 7,
      "hasClass": true,
-     "studio": null,
+     "studio": "serpent",
      "games": [
       "Brood Rush",
       "Regatta"

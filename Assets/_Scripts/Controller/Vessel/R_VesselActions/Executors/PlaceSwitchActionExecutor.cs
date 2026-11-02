@@ -62,12 +62,11 @@ namespace CosmicShore.Gameplay
         /// A MODE's veto on where a switch may be planted. Returns false to refuse the placement
         /// outright, or true having (optionally) moved the ring's centre somewhere legal.
         /// </summary>
-        /// <param name="requested">The centre the vessel resolved: a plant's heart when the press
-        /// anchored (<see cref="ScarabSwitchAnchors"/>), otherwise the free point ahead of the
-        /// nose.</param>
-        /// <param name="anchored">Whether that centre is a living plant's heart. A mode whose
-        /// design depends on rings landing at fixed points (Tollway) refuses on false; a mode that
-        /// treats the snap as an assist ignores it.</param>
+        /// <param name="requested">The centre the vessel resolved: always an elemental crystal's
+        /// position (<see cref="ScarabSwitchAnchors"/>) - a press with none in reach never reaches
+        /// a resolver.</param>
+        /// <param name="anchored">Always true since 2026-10-27, when anchoring became part of the
+        /// kit. Kept so a resolver's signature did not change.</param>
         public delegate bool SwitchPlacementResolver(IVesselStatus status, Vector3 requested,
                                                      bool anchored, out Vector3 resolved);
 
@@ -207,14 +206,20 @@ namespace CosmicShore.Gameplay
             float radius = so.RingRadius * so.SwitchScale.EvaluateLive(status); // MASS, live
             Vector3 center = ship.position + course * distance;
 
-            // THE VESSEL'S OWN RULE: a switch grafts onto a LIVING PLANT'S HEART when one lies on
-            // the flight path (ScarabSwitchAnchors). Not a mode rule and not wired by anything -
-            // every Scarab in every arena snaps, so the ring's position is a read of the world
-            // rather than a free choice. An arena with no flora in reach places free, exactly as
-            // before, so nothing that shipped without plants changes.
+            // THE VESSEL'S OWN RULE: a switch is placed AROUND AN ELEMENTAL CRYSTAL on the flight
+            // path, in any state - free, a flora heart, or inside a living fauna
+            // (ScarabSwitchAnchors). Part of the kit in every game, never a mode rule, and there is
+            // no free placement: a press with no crystal in reach is refused before anything is
+            // spent, exactly as a press with no charge is.
             bool anchored = ScarabSwitchAnchors.TryResolve(ship.position, center, so.AnchorReach,
                                                            out Vector3 anchorCentre);
-            if (anchored) center = anchorCentre;
+            if (!anchored)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
+                    "[PlaceSwitch] Refused - no elemental crystal on the flight path.");
+                return;
+            }
+            center = anchorCentre;
 
             // The mode's veto on WHERE (see PlacementResolver). Ahead of the spend, so a refused
             // press costs the pilot nothing but the press - the same shape as the charge refusal
@@ -240,7 +245,7 @@ namespace CosmicShore.Gameplay
             resources.ChangeResourceAmount(so.ResourceIndex, -cost);
             CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
                 $"[PlaceSwitch] Switch ring r={radius:F0} placed " +
-                $"{(anchored ? "on a plant's heart" : $"{distance:F0}u ahead")} " +
+                $"around an elemental crystal " +
                 $"({_live.Count}/{so.MaxLiveSwitches} standing, recharge {so.RechargeSecondsPerCharge:F0}s/charge).");
         }
 

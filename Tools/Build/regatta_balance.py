@@ -170,6 +170,7 @@ def read_constants():
     c["stoat_boost_min"] = _nested_key(dipole, "boost", "Min", "StoatDipoleConfig")     # the warp at rest (Time 0)
     c["stoat_boost_max"] = _nested_key(dipole, "boost", "Max", "StoatDipoleConfig")     # ...at Time 10
     c["stoat_boost_floor"] = _nested_key(dipole, "boost", "Floor", "StoatDipoleConfig")
+    c["stoat_catch_share"] = _key(_read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"), "catchWarpShare", "StoatSlingConfig")
 
     scarab = _read("Assets/_Scripts/Controller/Vessel/ScarabVesselTransformer.cs")
     c["scarab_top"] = float(re.search(r"baseTopSpeed = ([0-9.]+)f", scarab).group(1))
@@ -285,8 +286,14 @@ def serpent_model(c, level):
     cruise = v["ts"] + v["ms"]
     boosted = v["ts"] * c["serpent_boost"] * mul + v["ms"]
     duration = c["serpent_duration"] * mul
-    per_charge = c["serpent_cost"] / c["serpent_regen"]
-    duty = min(1.0, duration / per_charge)             # sustained, ignoring the 4-charge opening bank
+    # Sustained, ignoring the 4-pellet opening bank. Since 2026-10-31 the tank has no clock refill
+    # (resourceGainRate 0): a pellet comes back only while the Serpent's wall eats its own trail,
+    # which a racing line never does, so a sustained race runs at cruise.
+    if c["serpent_regen"] > 0:
+        per_charge = c["serpent_cost"] / c["serpent_regen"]
+        duty = min(1.0, duration / per_charge)
+    else:
+        duty = 0.0
     top = duty * boosted + (1 - duty) * cruise
     turn = min(v["pitch"], v["yaw"])
     return dict(top=top, corner=lambda r: corner_speed_simple(r, v["rts"], turn, top),
@@ -316,16 +323,21 @@ def squirrel_model(c, level):
                 accel=("lerp", LERP_AMOUNT))
 
 
+# How much of the warp the orbit-only Stoat keeps over a race: its flight clock averages 2.47 x cruise against a 2.725 x top
+# (a pair cannot be held for a whole lap: it catches you), measured over Slingshot's courses by stoat_orbit_sim.py.
+STOAT_WARP_KEPT = 0.85
+
+
 def stoat_model(c, level):
-    """The Stoat (added to the card 2026-10-17, Yash): its speed is the pathfinder's WARP - while its pair bends the
-    path the hull's own flight clock runs at `boost` x (StoatDipoleConfig: x2.5 at rest, Time -> x5, floored at 1).
-    A warp of the CLOCK scales the turn rate with the speed, so the turning circle stays cruise / turn (72 u) at any
-    warp, and every Regatta corner (104 u and up) is taken at the warped speed. A competent pilot on the best line
-    holds a warping pair the whole lap - the same idealisation as every other row (the Squirrel saturated, the Manta
-    in Soar). The residual it hides: the Stoat Flight Studio's AI, on its own circuit, averaged 131 u/s on a x3 field
-    (warped ~60% of the time), STOAT_DIPOLE.md §1b; record it against the editor once Stoat flights exist."""
+    """The Stoat (added to the card 2026-10-17, Yash; orbit-only since 2026-11-02, Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md):
+    its speed is the WARP of a held pair - the hull's own flight clock runs at 1 + (boost - 1) x catchWarpShare (StoatDipoleConfig's
+    boost x2.5 at rest, Time -> x5, floored at 1; StoatSlingConfig's share 1.15), so x2.725 -> x5.6. A warp of the CLOCK scales the
+    turn rate with the speed, so the turning circle stays cruise / turn (72 u) at any warp, and every Regatta corner (104 u and up)
+    is taken at the warped speed. A competent pilot re-presses so the warp barely falls (STOAT_WARP_KEPT). The kick is not counted.
+    Record it against the editor once orbit-only Stoat flights exist."""
     v = c["vessels"]["Stoat"]
-    warp = max(c["stoat_boost_floor"], elemental_float(level, c["stoat_boost_min"], c["stoat_boost_max"]))
+    boost = max(c["stoat_boost_floor"], elemental_float(level, c["stoat_boost_min"], c["stoat_boost_max"]))
+    warp = 1.0 + (boost - 1.0) * c["stoat_catch_share"] * STOAT_WARP_KEPT
     top = (v["ts"] + v["ms"]) * warp
     turn = min(v["pitch"], v["yaw"]) * warp
     return dict(top=top, corner=lambda r: corner_speed_simple(r, v["rts"], turn, top), accel=("lerp", LERP_AMOUNT))
@@ -393,6 +405,13 @@ def lap_time(hull, model, course):
 
 # ── the solve ────────────────────────────────────────────────────────────────
 
+# Hulls no element can make boost on a racing line, so they neither set the pace the others are tuned to nor count
+# in the spread gate (author_regatta_assets.py). The Serpent since 2026-10-31 (b941eb90): its pellets refill only
+# while its wall eats its own trail, so it races at cruise whatever Regatta authors, and a mode never changes the
+# vessel (CLAUDE.md, LOCKED); they start at the top Time rung. author_regatta_assets.py fails the day a listed hull boosts on a racing line again.
+CRUISE_ONLY = ("Serpent",)
+
+
 def solve(constants=None, course_data=None, laps=LAPS):
     """Per intensity: {hull: (level, lapTime)} plus the fleet's spread. Deterministic."""
     c = constants or read_constants()
@@ -408,8 +427,14 @@ def solve(constants=None, course_data=None, laps=LAPS):
 
         chosen = {h: 0 for h in HULLS}
         for _ in range(12):
-            target = math.exp(sum(math.log(table[h][chosen[h]]) for h in HULLS) / len(HULLS))
+            paced = [h for h in HULLS if h not in CRUISE_ONLY]
+            target = math.exp(sum(math.log(table[h][chosen[h]]) for h in paced) / len(paced))
             for h in TUNABLE:
+                if h in CRUISE_ONLY:
+                    # Every rung races the same in the model, so give the most help there is: Time
+                    # still lengthens the burns of the opening pellet bank, which the model ignores.
+                    chosen[h] = MAX_LEVEL
+                    continue
                 # Closest to the target in log time; on a tie the level nearest REST wins, so a
                 # hull whose lever is inert at some rung is not handed a pointless handicap.
                 chosen[h] = min(table[h], key=lambda lv: (round(abs(math.log(table[h][lv]) - math.log(target)), 4), abs(lv)))

@@ -1,7 +1,9 @@
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 namespace CosmicShore.UI
 {
     public class SerpentHUDController : VesselHUDController
@@ -18,9 +20,16 @@ namespace CosmicShore.UI
         [SerializeField] private int shieldResourceIndex;
 
         [Header("Sniper")]
-        [Tooltip("Drives the CHARGE card's cooldown veil. Resolved from the registry when left " +
-                 "empty; a Serpent without the ability simply shows no veil.")]
+        [Tooltip("Drives the SPACE card's cooldown veil (the sniper rides the cloak's trigger, scoped). " +
+                 "Resolved from the registry when left empty; a Serpent without the ability simply " +
+                 "shows no veil.")]
         [SerializeField] private SniperShotActionExecutor sniperShotExecutor;
+
+        [Tooltip("Whether the scope is held, which swaps the SPACE card between cloak and sniper. " +
+                 "Resolved from the registry when left empty.")]
+        [SerializeField] private SniperScopeActionExecutor sniperScopeExecutor;
+
+        [Inject] GameDataSO _gameData;
 
         IVesselStatus  _status;
         ResourceSystem _rs;
@@ -48,7 +57,7 @@ namespace CosmicShore.UI
 
             if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
             
-            if (consumeBoostExecutor == null || sniperShotExecutor == null)
+            if (consumeBoostExecutor == null || sniperShotExecutor == null || sniperScopeExecutor == null)
             {
                 var registry = _status?.ShipTransform
                     ? _status.ShipTransform.GetComponentInChildren<ActionExecutorRegistry>(true)
@@ -60,8 +69,13 @@ namespace CosmicShore.UI
                         consumeBoostExecutor = registry.Get<ConsumeBoostActionExecutor>();
                     if (sniperShotExecutor == null)
                         sniperShotExecutor = registry.Get<SniperShotActionExecutor>();
+                    if (sniperScopeExecutor == null)
+                        sniperScopeExecutor = registry.Get<SniperScopeActionExecutor>();
                 }
             }
+
+            view.SetSeedWallColor(ResolveDomainSignalColor());
+            view.SetCloakSniperColors(ResolveDomainSignalColor(), ResolveShieldedColor());
 
             _rs = _status?.ResourceSystem;
             if (_rs != null)
@@ -71,6 +85,24 @@ namespace CosmicShore.UI
             }
 
             PushPelletFuel();
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Scarab's and
+        /// the Rhino's cards read it.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_status.Domain);
+        }
+
+        // The pilot's SHIELDED colour for the Space card's seed and prism; alpha 0 until the palette resolves (the view
+        // keeps the parts' authored colour), never a plausible stand-in - as the Rhino's Space card.
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _status == null || _status.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_status.Domain);
         }
 
         void OnDisable()
@@ -143,7 +175,7 @@ namespace CosmicShore.UI
         bool DrivesThisHud =>
             _status != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
 
-        // ---------- Sniper cooldown ----------
+        // ---------- Sniper cooldown and the cloak / sniper swap (SPACE card) ----------
 
         /// <summary>
         /// Push the sniper's recovery onto the CHARGE card's veil.
@@ -159,10 +191,13 @@ namespace CosmicShore.UI
         /// </summary>
         void Update()
         {
-            if (!view || sniperShotExecutor == null || _status == null) return;
+            if (!view || _status == null) return;
             if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
 
-            view.SetAbilityCooldown(Element.Charge, sniperShotExecutor.CooldownRemaining01);
+            if (sniperShotExecutor != null)
+                view.SetAbilityCooldown(Element.Space, sniperShotExecutor.CooldownRemaining01);
+            if (sniperScopeExecutor != null)
+                view.SetScoped(sniperScopeExecutor.IsScoped);
         }
     }
 }

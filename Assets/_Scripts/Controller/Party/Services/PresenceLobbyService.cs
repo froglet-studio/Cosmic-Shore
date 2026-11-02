@@ -65,6 +65,13 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
+
+        /// <summary>
+        /// The game mode this account's presence lobby is found and created under: <c>PRESENCE_LOBBY</c> on the shore,
+        /// with the fair-play pool's suffix appended when the server put the account in the Undertow or the quitters'
+        /// pool (<see cref="CosmicShore.Core.FairPlayTrust"/>, phase B). With the trust gate off it is always the shore.
+        /// </summary>
+        private static string PresenceGameMode => CosmicShore.Core.FairPlayTrust.PresenceGameMode(PRESENCE_LOBBY_GAME_MODE);
         private const string DISPLAY_NAME_KEY         = "displayName";
         private const string AVATAR_ID_KEY            = "avatarId";
         private const string PARTY_COUNT_KEY          = "partyCount";
@@ -212,13 +219,32 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] JoinOrCreateAsync complete - lobby: {_activeLobby?.Id ?? "NULL"}");
         }
 
+        /// <summary>Outcome of the last converge, for the multiplayer debug overlay: "on canonical",
+        /// "migrated", "deferred (hosting N)", "query failed", "join failed". Null before the first.</summary>
+        public string LastConvergeStatus { get; private set; }
+
+        /// <summary><c>Time.realtimeSinceStartup</c> of the last converge outcome (0 before the first).</summary>
+        public float LastConvergeAtRealtime { get; private set; }
+
+        /// <summary>How many presence lobbies the last converge query saw (more than 1 = a split).</summary>
+        public int LastConvergeVisibleLobbies { get; private set; }
+
+        void NoteConverge(string status)
+        {
+            LastConvergeStatus     = status;
+            LastConvergeAtRealtime = UnityEngine.Time.realtimeSinceStartup;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[PresenceLobbyService] Converge: {status} - lobby {_activeLobby?.Id ?? "(none)"}, " +
+                $"{LastConvergeVisibleLobbies} presence lobbies visible.");
+        }
+
         /// <inheritdoc/>
         public async UniTask ConvergeToCanonicalAsync(int maxPlayers)
         {
             // Query the full presence-lobby set (rate-limit aware, like the join path).
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
 
             IList<ISessionInfo> sessions;
             try
@@ -230,12 +256,14 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                NoteConverge("query failed");
                 return;
             }
 
             // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
             // The smallest-id holder is the single point everyone migrates toward.
             string canonicalId = _activeLobby?.Id;
+            LastConvergeVisibleLobbies = sessions?.Count ?? 0;
             if (sessions != null)
             {
                 foreach (var s in sessions)
@@ -247,8 +275,8 @@ namespace CosmicShore.Gameplay
             }
 
             // Nothing to converge to, or we already hold the canonical lobby.
-            if (canonicalId == null) return;
-            if (_activeLobby != null && _activeLobby.Id == canonicalId) return;
+            if (canonicalId == null) { NoteConverge("no lobby"); return; }
+            if (_activeLobby != null && _activeLobby.Id == canonicalId) { NoteConverge("on canonical"); return; }
 
             // A lobby we HOST and other people are sitting in is not ours to tear down.
             // The release below is DeleteOwnLobbyQuietlyAsync, which DELETES when we are the
@@ -275,6 +303,7 @@ namespace CosmicShore.Gameplay
                     $"[PresenceLobbyService] Deferring converge to {canonicalId}: we host " +
                     $"{_activeLobby.Id} with {_activeLobby.Players.Count} players in it - " +
                     "migrating now would delete it under them. Retrying once they have moved.");
+                NoteConverge($"deferred (hosting {_activeLobby.Players.Count})");
                 return;
             }
 
@@ -286,20 +315,26 @@ namespace CosmicShore.Gameplay
                 // in the ugs[...] telemetry, held to the retry budget, and single-flight on the same
                 // "presence:join:{id}" key, so a converge and a JoinOrCreate racing to the canonical
                 // lobby send one join between them.
-                var joined = await _policy.ExecuteAsync($"presence:join:{canonicalId}",
-                    async () => await _multiplayerService.JoinSessionByIdAsync(
-                        canonicalId,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
+                // A membership left by an earlier Play makes this join "already a member" forever (Caleb's converge
+                // failed every ~22 s for nine minutes on 2026-10-30): StaleLobbyMembership clears it and joins again.
+                var joined = await StaleLobbyMembership.JoinAsync(_policy, canonicalId,
+                    () => _policy.ExecuteAsync($"presence:join:{canonicalId}",
+                        async () => await _multiplayerService.JoinSessionByIdAsync(
+                            canonicalId,
+                            new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread()),
+                    leaveOnFailure: false, tag: "PresenceLobbyService");
 
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
                 SetActiveLobby(joined);
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
+                NoteConverge("migrated");
             }
             catch (Exception e)
             {
                 // Canonical lobby may have died between query and join - keep our
                 // current lobby; the next periodic converge retries.
                 CSDebug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+                NoteConverge("join failed");
             }
         }
 
@@ -405,7 +440,7 @@ namespace CosmicShore.Gameplay
         /// Builds the standard player-property dictionary used when joining or
         /// creating UGS sessions (both presence lobby and party session).
         ///
-        /// All 8 properties are always present so no key is missing on the first
+        /// All 9 properties are always present so no key is missing on the first
         /// refresh; absent keys in UGS look the same as empty-value keys, which
         /// causes "invite_payloads not found" false negatives.
         /// </summary>
@@ -428,6 +463,9 @@ namespace CosmicShore.Gameplay
                 // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
                 // Seeded empty like every stateful key; the live overlay below fills it in.
                 { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                // "1" once the lava lamp is up (HostConnectionService.READY_KEY): a booting player is not listed
+                // online. Seeded empty; the live overlay below fills it in on a rejoin.
+                { HostConnectionService.READY_KEY, new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public) },
             };
 
             // State-preserving rejoin (Docs/PresenceSystem/BUGS.md B4): a lobby
@@ -465,7 +503,7 @@ namespace CosmicShore.Gameplay
         {
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
 
             var results = await _policy.ExecuteAsync("presence:query",
                 async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
@@ -486,10 +524,13 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    var joined = await _policy.ExecuteAsync($"presence:join:{session.Id}",
-                        async () => await _multiplayerService.JoinSessionByIdAsync(
-                            session.Id,
-                            new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
+                    // The previous Play's membership (Stop without a leave) is cleared and the join made again.
+                    var joined = await StaleLobbyMembership.JoinAsync(_policy, session.Id,
+                        () => _policy.ExecuteAsync($"presence:join:{session.Id}",
+                            async () => await _multiplayerService.JoinSessionByIdAsync(
+                                session.Id,
+                                new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread()),
+                        leaveOnFailure: false, tag: "PresenceLobbyService");
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
                     return joined;
                 }
@@ -522,7 +563,7 @@ namespace CosmicShore.Gameplay
                         {
                             "gameMode",
                             new SessionProperty(
-                                PRESENCE_LOBBY_GAME_MODE,
+                                PresenceGameMode,
                                 VisibilityPropertyOptions.Public,
                                 PropertyIndex.String1)
                         }

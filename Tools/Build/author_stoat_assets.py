@@ -164,6 +164,11 @@ DIPOLE_RIGHT = "62ce60a32bef4c70b42fd1f7cd9896ff"
 
 
 # ----------------------------------------------------------------------------- Netcode's hash
+# The omni crystal folds into the hull (R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md): a placeholder until this hull's
+# omni ability puts something in the world to land on. Shared asset, not generated here.
+VESSEL_ABSORB_MORPH_GUID = "9a40b3a2720043cd86332dbf7e16dd8d"   # VesselAbsorbCrystalMorphByCrystal.asset
+
+
 def xxhash32(data: bytes, seed: int = 0) -> int:
     """XXHash32 - what Netcode's `string.Hash32()` computes over the UTF-8 GlobalObjectId."""
     p1, p2, p3, p4, p5 = 2654435761, 2246822519, 3266489917, 668265263, 374761393
@@ -910,6 +915,9 @@ BARS_VIEW_SCRIPT = "5f380cf9710e6ec478121956993a387e"
 MODE_ACTION = "f05e7ded817a4670bb78832c9c879566"
 RIPPLE_CONFIG = "da077e9619f845c388ad5b7baf8da948"
 OVERCLOCK_EFFECT = "6b508a166e124e95a6490871697185de"
+# The omni crystal's effect on the Stoat: Fulmen (FulmenByCrystalEffectSO), which replaced Overclock (Yash, cbd0ae2268).
+# The Overclock asset is still authored below; the container just no longer lists it.
+FULMEN_EFFECT = "a45807f7b21b4c898e6646a9865c0bba"
 CAMERA_SETTINGS = "2fb2a0bb0eaf4bd1863fdf55490fa869"
 VESSEL_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"
 SKIMMER_CONTAINER = "ffdd072d412946c6ad6adf899a6ef7a6"
@@ -1433,6 +1441,7 @@ def apply_own_vessel(text: str) -> str:
 # --- the files stage 6 owns ---------------------------------------------------------------------
 def mode_action_asset() -> str:
     return (so_header(MODE_ACTION_SCRIPT, "StoatModeAction") +
+            "  orbitOnly: 1\n"
             "  massModeThickness:\n" + elemental(3, 3, 6, 2, 1) +
             "  blendSeconds: 0.8\n"
             "  massUpgradeShieldsInMassMode: 1\n"
@@ -1489,10 +1498,10 @@ def vessel_container_asset() -> str:
             "  vesselPrismEffects:\n" + g("243d6d82ba7f20146a70bdc112b9a278") + g("4da62d4eefe03594ba35027dd537aff0") +
             g("04f85a1f6b06b9248827bf8740168b2b") + g("6c233c580949b13419f068454c74a110") +
             g("c7ccaca885824b24b716b12148d77ce1") + g("ca2d1be3880b82941a0465a1f7e45280") +
-            "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(OVERCLOCK_EFFECT) +
+            "  vesselCrystalEffects:\n" + g("8de915fb00503344ca89a92a0a127b00") + g(FULMEN_EFFECT) +
             "  vesselMassCrystalEffects: []\n  vesselChargeCrystalEffects: []\n  vesselSpaceCrystalEffects: []\n"
             "  vesselTimeCrystalEffects: []\n  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {VESSEL_ABSORB_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
@@ -1750,14 +1759,14 @@ def check(files: "dict[str, str]") -> "list[str]":
     else:
         if f"  vesselClass: {STOAT_CLASS_ID}\n" not in mp:
             errors.append(f"{rel_map}: vesselClass is not {STOAT_CLASS_ID}")
-        if "    AbilityLabel: Field Dipole\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
-            errors.append(f"{rel_map}: Space must be the Field Dipole on the triggers (Input 2)")
-        if "    AbilityLabel: Pathfinder / Time Mode\n" not in mp:
-            errors.append(f"{rel_map}: Time must be the Pathfinder / Time Mode")
+        if "    AbilityLabel: Catch Orbit\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
+            errors.append(f"{rel_map}: Space must be the Catch Orbit on the triggers (Input 2)")
+        if "    AbilityLabel: Timed Slingshot\n" not in mp:
+            errors.append(f"{rel_map}: Time must be the Timed Slingshot")
         if "    AbilityLabel: Ripple\n" not in mp or "    UpgradeLabel: Siphon\n" not in mp:
             errors.append(f"{rel_map}: Charge must be the Ripple (level 5 Siphon)")
-        if "    AbilityLabel: Mass / Time Mode\n" not in mp or "    Input: 7\n" not in mp:
-            errors.append(f"{rel_map}: Mass must be the Mass / Time Mode switch on B (Input 7)")
+        if "    AbilityLabel: Orbit Mode\n" not in mp or "    Input: 7\n" not in mp:
+            errors.append(f"{rel_map}: Mass must be the parked Orbit Mode on B (Input 7)")
         for label in ("Accretion", "Foresight", "Armoured Wake"):
             if f"    UpgradeLabel: {label}\n" not in mp:
                 errors.append(f"{rel_map}: the level-5 '{label}' is not declared")

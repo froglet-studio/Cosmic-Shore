@@ -53,25 +53,38 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// How a Tiny Wings player dives (1) or lets go (0). On the ground: dive down every slope, let go up every slope, so
         /// the valley's speed carries it up and the crest throws it. In the air: dive only if falling faster lands it at a
-        /// smaller angle to the ground (the back of a hill: a smooth slide) than falling as it is.
+        /// smaller angle to the ground (the back of a hill: a smooth slide) than falling as it is; over a broken trail
+        /// (<see cref="PistolGround"/>) whichever of the two lands on ground at all comes first, so it floats across a hole
+        /// it can clear and dives past one it would otherwise drop into.
         /// </summary>
         public static float TinyWingsDive(PistolBodyMath.State p, in PistolPlane.Frame f, in PistolBodyMath.Settings body)
         {
             if (p.grounded) { PistolPlane.Ground(f, p.x, out float slope); return slope < -0.02f ? 1f : 0f; }
             float diving = PistolBodyMath.AirGravity(body, 1f), floating = PistolBodyMath.AirGravity(body, 0f);
-            return LandingAngle(f, p.x, p.y, p.vx, p.vy, diving) < LandingAngle(f, p.x, p.y, p.vx, p.vy, floating) ? 1f : 0f;
+            float dive = LandingAngle(f, p.x, p.y, p.vx, p.vy, diving, body.pEdgeGrace, out bool diveLands);
+            float flt = LandingAngle(f, p.x, p.y, p.vx, p.vy, floating, body.pEdgeGrace, out bool floatLands);
+            if (diveLands != floatLands) return diveLands ? 1f : 0f;
+            return dive < flt ? 1f : 0f;
         }
 
         /// <summary>The angle, degrees, between the velocity and the ground where a fall from (x, y) at (vx, vy) under
-        /// <paramref name="gravity"/> lands (90 if it does not land within six seconds).</summary>
-        static float LandingAngle(in PistolPlane.Frame f, float x, float y, float vx, float vy, float gravity)
+        /// <paramref name="gravity"/> lands (90 if it does not land within six seconds). <paramref name="lands"/> is false
+        /// when it falls into a hole in the trail instead (sinks <paramref name="edgeGrace"/> under the line over one).</summary>
+        static float LandingAngle(in PistolPlane.Frame f, float x, float y, float vx, float vy, float gravity, float edgeGrace, out bool lands)
         {
             const float h = 1f / 60f;
+            lands = false;
             for (int i = 0; i < 360; i++)
             {
                 vy -= gravity * h; x += vx * h; y += vy * h;
                 float yg = PistolPlane.Ground(f, x, out float m);
                 if (y > yg) continue;
+                if (!PistolPlane.SolidAt(f, x))
+                {
+                    if (yg - y > edgeGrace) return 90f;
+                    continue;
+                }
+                lands = true;
                 float c = 1f / Mathf.Sqrt(1f + m * m), sp = Mathf.Sqrt(vx * vx + vy * vy), vt = vx * c + vy * m * c;
                 return sp > 1e-6f ? Mathf.Acos(Mathf.Clamp(vt / sp, -1f, 1f)) * Mathf.Rad2Deg : 0f;
             }

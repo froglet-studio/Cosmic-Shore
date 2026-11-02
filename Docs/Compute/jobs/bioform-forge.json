@@ -1,0 +1,217 @@
+{
+ "after": [],
+ "algorithm": {
+  "batch": 24,
+  "descriptors": [
+   {
+    "bins": 6,
+    "hi": 7.0,
+    "lo": 1.0,
+    "name": "elongation"
+   },
+   {
+    "bins": 5,
+    "hi": 0.7,
+    "lo": 0.0,
+    "name": "appendages"
+   },
+   {
+    "bins": 4,
+    "hi": 4,
+    "lo": 0,
+    "name": "major"
+   }
+  ],
+  "init_random": 96,
+  "name": "map-elites",
+  "worst": 1.0
+ },
+ "area_owner": "Garrett (swarm fauna); Shombith and Yash for Tandava's forms",
+ "asked_by": "Garrett 2026-10-26",
+ "convergence": {
+  "min_evals": 20000,
+  "min_improvement": 0.01,
+  "window_evals": 10000
+ },
+ "evaluator": {
+  "args": {},
+  "module": "bioform_forms",
+  "timeout": 300
+ },
+ "goal": "More diversity in the animated bioforms swarms switch between: a quality-diversity archive of valid, lively, one-animal swarm bodies across body shapes, appendage counts and majority elements.",
+ "id": "bioform-forge",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/"
+ ],
+ "plan": "bioforms",
+ "promote": "`compute.py promote bioform-forge --out <dir>` bakes the best elites as SwarmPlan_forge_*.json (the schema SwarmPlanLibrary loads) and <kind>.prisms.json (an NCA training target). Wiring one into a swarm config's ScriptedPlans, or a new swarm, is the swarm owner's call (/bioform-forge); the NCA training job takes the prisms.",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 80.0,
+   "init": 40.0,
+   "lo": 16.0,
+   "name": "length"
+  },
+  {
+   "hi": 9.0,
+   "init": 5.0,
+   "lo": 2.0,
+   "name": "radius"
+  },
+  {
+   "hi": 0.9,
+   "init": 0.6,
+   "lo": 0.0,
+   "name": "taper"
+  },
+  {
+   "hi": 0.4,
+   "init": 0.05,
+   "lo": -0.4,
+   "name": "arch"
+  },
+  {
+   "hi": 12,
+   "init": 7,
+   "lo": 3,
+   "name": "ring_units",
+   "type": "int"
+  },
+  {
+   "choices": [
+    "lateral",
+    "vertical",
+    "helical",
+    "pulse"
+   ],
+   "init": "vertical",
+   "name": "swim",
+   "type": "choice"
+  },
+  {
+   "hi": 0.25,
+   "init": 0.08,
+   "lo": 0.0,
+   "name": "wave_amp"
+  },
+  {
+   "hi": 3,
+   "init": 1,
+   "lo": 1,
+   "name": "wave_count",
+   "type": "int"
+  },
+  {
+   "hi": 6,
+   "init": 1,
+   "lo": 0,
+   "name": "limb_pairs",
+   "type": "int"
+  },
+  {
+   "hi": 30.0,
+   "init": 8.0,
+   "lo": 3.0,
+   "name": "limb_len"
+  },
+  {
+   "hi": 0.7,
+   "init": 0.3,
+   "lo": 0.05,
+   "name": "limb_start"
+  },
+  {
+   "hi": 0.8,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "limb_spread"
+  },
+  {
+   "hi": 160.0,
+   "init": 80.0,
+   "lo": 20.0,
+   "name": "limb_angle"
+  },
+  {
+   "hi": 60.0,
+   "init": 25.0,
+   "lo": 0.0,
+   "name": "limb_sweep"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.3,
+   "lo": 0.0,
+   "name": "limb_lag"
+  },
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": 0,
+   "name": "arms",
+   "type": "int"
+  },
+  {
+   "hi": 30.0,
+   "init": 6.0,
+   "lo": 3.0,
+   "name": "arm_len"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.6,
+   "lo": 0.0,
+   "name": "arm_flare"
+  },
+  {
+   "hi": 12.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "crest"
+  },
+  {
+   "choices": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "init": 1,
+   "name": "head_elem",
+   "type": "choice"
+  },
+  {
+   "choices": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "init": 1,
+   "name": "body_elem",
+   "type": "choice"
+  },
+  {
+   "choices": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "init": 0,
+   "name": "limb_elem",
+   "type": "choice"
+  }
+ ],
+ "stage": 1,
+ "status": "ready",
+ "title": "Grow the swarm bestiary: new bodies a swarm can switch into",
+ "updated": "2026-10-26",
+ "value": 7
+}

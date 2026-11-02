@@ -275,16 +275,16 @@ jobs:
       # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six
       # of eight mode generators were red and nobody was reading them. The whole family runs in
       # about a minute. A generator that cannot --check is a bug in the generator.
+      # Tools/CI/check_generators.sh runs EVERY generator and names every red one (log, annotations,
+      # step summary, the `red` output); it no longer stops at the first, which hid three of the four
+      # red generators on 2026-11-01 (Docs/Reports/CI.md).
       - name: Check every asset generator against disk
-        run: |
-          set -euo pipefail
-          python3 Tools/Build/arcade_mode_lib.py --self-test
-          for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do
-            echo "== $f"
-            python3 "$f" --check
-          done
+        id: generators
+        run: bash Tools/CI/check_generators.sh
 
       - name: Check prism shader wiring
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           python3 Tools/Shaders/wire_prism_backface_fade.py --check

@@ -13,13 +13,14 @@ namespace CosmicShore.Gameplay
     /// (<c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4), because a magnified view
     /// multiplies every motion the pilot did not ask for as faithfully as the one they did.</para>
     ///
-    /// <para>Element → parameter: <b>SPACE</b> owns this ability, and the parameter is the
-    /// MAGNIFICATION — how far down-range the scope can see. Space is reach/presence fleet-wide,
-    /// and a scope's whole claim is reach, so the element and the mechanic are the same
-    /// statement. Its level-5 upgrade, <b>Deep Focus</b>, is one more magnification step:
-    /// <see cref="UpgradeZoomDepthMultiplier"/> multiplies the depth and divides the floor by the
-    /// same number, so the whole zoom range moves together rather than running into a wall the
-    /// upgrade cannot pass.</para>
+    /// <para><b>The scope has NO element parameter</b> (Garrett, 2026-10-30: "lets not have the
+    /// scope have its own parameters. lets just have a good scope to begin with"). It is the
+    /// Serpent's CHARGE card, and Charge's number is the sniper's recovery
+    /// (<see cref="SniperShotActionSO"/>); the zoom is one authored magnification at every level.
+    /// Its level-5 upgrade is <b>Hunter's Sight</b>: while scoped, every rival in range leaves
+    /// short-lived AFTERIMAGES, and a round through an afterimage strips the real pilot
+    /// (<see cref="ScopeAfterimages"/>). Space 5's old Deep Focus zoom step is retired with
+    /// the Space scaling.</para>
     ///
     /// <para><b>The zoom is a pure function of the trigger's own depth and NOTHING ELSE</b> —
     /// not the stick, not the vessel's speed, not the camera the pilot is flying with. An earlier
@@ -44,26 +45,10 @@ namespace CosmicShore.Gameplay
                  "would make the scope's magnification a function of how fast the pilot is going.")]
         [SerializeField, Range(20f, 110f)] private float unscopedFieldOfView = 60f;
 
-        [Tooltip("Field of view in degrees at FULL zoom, at the resting Space level. Lower is " +
-                 "more magnified. The unscoped end is the player's own FOV setting, read live, " +
-                 "so the scope narrows from wherever they play rather than from a constant.")]
-        [SerializeField, Range(1f, 80f)] private float fieldOfViewAtFullZoom = 22f;
-
-        [Tooltip("Multiplier on the zoom DEPTH at Space level 10. Above 1 the scope reaches " +
-                 "further (a NARROWER field of view at full zoom); at the resting level the " +
-                 "authored value above is used exactly, per the anchored-at-1 elemental contract.")]
-        [SerializeField, Min(1f)] private float zoomDepthAtFullSpace = 2f;
-
-        [Tooltip("Floor on the magnified field of view, in degrees, whatever Space says. A scope " +
-                 "narrower than this stops being an aiming aid and becomes a soda straw the " +
-                 "pilot cannot read. Deep Focus divides it by the upgrade multiplier below, so " +
-                 "the upgrade moves the ceiling as well as the dial.")]
-        [SerializeField, Range(1f, 40f)] private float minFieldOfView = 8f;
-
-        [Tooltip("Space 5 \"Deep Focus\": one more magnification step. Multiplies the zoom depth " +
-                 "AND divides the floor by the same number, so the extra reach is actually " +
-                 "reachable. 1 disables the upgrade's effect.")]
-        [SerializeField, Min(1f)] private float upgradeZoomDepthMultiplier = 1.6f;
+        [Tooltip("Field of view in degrees at FULL zoom - the scope's one magnification, the same at " +
+                 "every element level. Lower is more magnified. 12 sits between the old resting 22 " +
+                 "and the old Space 10 + Deep Focus 6.9, which is the reach the upgrades used to buy.")]
+        [SerializeField, Range(1f, 80f)] private float fieldOfViewAtFullZoom = 12f;
 
         [Header("Feel")]
         [Tooltip("How fast the applied zoom chases the trigger, in units of zoom per second. " +
@@ -77,13 +62,32 @@ namespace CosmicShore.Gameplay
                  "the trigger's travel is dead and a resting pad cannot creep the view in.")]
         [SerializeField, Range(0f, 0.5f)] private float zoomDeadzone = 0.08f;
 
+        [Header("Hunter's Sight (Charge 5)")]
+        [Tooltip("Seconds between afterimages of each rival while the scope is up. Each one is the " +
+                 "rival's hull frozen where it stood.")]
+        [SerializeField, Min(0.05f)] private float afterimageInterval = 0.25f;
+
+        [Tooltip("Seconds an afterimage stands before it fades. A round through it inside this " +
+                 "window strips the pilot it was taken from.")]
+        [SerializeField, Min(0.05f)] private float afterimageLifetime = 1f;
+
+        [Tooltip("Rivals farther than this are not traced. Matches the sniper's range by default, " +
+                 "so every afterimage can be shot.")]
+        [SerializeField, Min(1f)] private float afterimageRange = 3000f;
+
+        [Tooltip("The afterimage's look: CloakGhost.mat (CosmicShore/CloakGhost, an additive Fresnel " +
+                 "outline), tinted with the RIVAL's domain colour at runtime. Empty = afterimages are " +
+                 "still recorded and shootable, but not drawn.")]
+        [SerializeField] private Material afterimageMaterial;
+
         public float UnscopedFieldOfView => unscopedFieldOfView;
         public float FieldOfViewAtFullZoom => fieldOfViewAtFullZoom;
-        public float ZoomDepthAtFullSpace => zoomDepthAtFullSpace;
-        public float MinFieldOfView => minFieldOfView;
-        public float UpgradeZoomDepthMultiplier => upgradeZoomDepthMultiplier;
         public float ZoomResponse => zoomResponse;
         public float ZoomDeadzone => zoomDeadzone;
+        public float AfterimageInterval => afterimageInterval;
+        public float AfterimageLifetime => afterimageLifetime;
+        public float AfterimageRange => afterimageRange;
+        public Material AfterimageMaterial => afterimageMaterial;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<SniperScopeActionExecutor>()?.Engage(this, vesselStatus);

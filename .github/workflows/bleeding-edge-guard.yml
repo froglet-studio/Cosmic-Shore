@@ -93,6 +93,9 @@ jobs:
       # about. Read by the unity job to skip the expensive stage on pushes that
       # cannot affect a build.
       unity_relevant: ${{ steps.scope.outputs.unity_relevant }}
+      # Every generator whose --check failed (basenames, space-separated); empty when all match.
+      # Read by the report job so the tracking issue names each one.
+      red_generators: ${{ steps.generators.outputs.red }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -188,6 +191,14 @@ jobs:
           python3 Tools/Build/check_fairplay_device_reads.py --self-test
           python3 Tools/Build/check_fairplay_device_reads.py
 
+      # The server sells vessels and Hangar levels at the prices authored in Unity (economy.js CATALOG, written by
+      # author_economy_catalog.py). A price changed in an asset without re-running it would be charged the old price.
+      - name: Check the server's shop prices match the shipped assets
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/author_economy_catalog.py --self-test
+          python3 Tools/Build/author_economy_catalog.py --check
+
       # Every arcade card in every SO_GameList must name a scene that exists AND
       # is enabled in the build settings. A card that fails this renders normally
       # and dies at the moment a player commits to it, and nothing in the Editor
@@ -230,24 +241,26 @@ jobs:
       # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six
       # of eight mode generators were red and nobody was reading them. The whole family runs in
       # about a minute. A generator that cannot --check is a bug in the generator.
+      # Tools/CI/check_generators.sh runs EVERY generator and names every red one (log, annotations,
+      # step summary, the `red` output); it no longer stops at the first, which hid three of the four
+      # red generators on 2026-11-01 (Docs/Reports/CI.md).
       - name: Check every asset generator against disk
-        run: |
-          set -euo pipefail
-          python3 Tools/Build/arcade_mode_lib.py --self-test
-          for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do
-            echo "== $f"
-            python3 "$f" --check
-          done
+        id: generators
+        run: bash Tools/CI/check_generators.sh
 
       # The call-to-action badge surface is retired (F7). This fails if any of it comes
       # back - the components, the indicator objects, or the two prefabs.
       - name: Check the call-to-action surface stays retired
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: python3 Tools/Build/retire_call_to_action.py --check
 
       # JetBrains Junie reads skills only from .junie/skills, which is a symlink to
       # .claude/skills. A real directory there is a second hand-maintained copy, and
       # the last one drifted 3,920 diff lines before anybody noticed. See AGENTS.md.
       - name: Check .junie/skills is a link, not a copy
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: python3 Tools/Build/check_junie_skills.py
 
       # Authoritative --check gates for shader families the C# clock validator
@@ -257,6 +270,8 @@ jobs:
       # No Unity licence; seconds. A graph revert that the edit-mode suite would
       # also catch still fails here on a machine with no Editor.
       - name: Check prism shader wiring
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
           python3 Tools/Shaders/wire_prism_backface_fade.py --check
@@ -440,6 +455,7 @@ jobs:
           VALIDATE: ${{ needs.validate.result }}
           UNITY: ${{ needs.unity.result }}
           KIND: ${{ needs.unity.outputs.failure_kind }}
+          RED_GENERATORS: ${{ needs.validate.outputs.red_generators }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
@@ -455,6 +471,9 @@ jobs:
           if [ "$VALIDATE" = "failure" ]; then
             broken=true
             summary="Static validation failed."
+            if [ -n "$RED_GENERATORS" ]; then
+              summary="$summary Generators whose \`--check\` is red: $(printf '`%s` ' $RED_GENERATORS)"
+            fi
           elif [ "$UNITY" = "failure" ]; then
             broken=true
             case "$KIND" in
@@ -607,14 +626,14 @@ jobs:
               python3 Tools/Build/check_fairplay_paid_content.py
               python3 Tools/Build/check_fairplay_device_reads.py --self-test
               python3 Tools/Build/check_fairplay_device_reads.py
+              python3 Tools/Build/author_economy_catalog.py --check
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
               python3 Tools/Build/audit_vessel_skimmers.py --self-test
               python3 Tools/Build/audit_lifeform_crystals.py --self-test
               python3 Tools/Build/check_ai_no_state_writes.py --self-test
               python3 Tools/Build/check_ai_no_state_writes.py --check
-              python3 Tools/Build/arcade_mode_lib.py --self-test
-              for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do python3 "$f" --check || echo "GENERATOR RED: $f"; done
+              bash Tools/CI/check_generators.sh
               python3 Tools/Build/retire_call_to_action.py --check
               python3 Tools/Build/check_junie_skills.py
               python3 Tools/Shaders/wire_prism_backface_fade.py --check

@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
@@ -29,6 +30,11 @@ namespace CosmicShore.UI
     /// <para>Each gauge (one filled Image per card) is what you hold of that element out of the 15 a card can reach, and
     /// turns READY while the hand offers that card. Colour here is a GAUGE channel; the upgrade lives on the lockup's
     /// card, so this view only re-anchors its rest scales in <see cref="SetAbilityUpgraded"/> (vessel rule 9).</para>
+    ///
+    /// <para><b>The element hand</b> (Garrett, 2026-11-01): once a draw element is set, a hand is up to five cards of that
+    /// element, shown as a row of cards above the icon row on the root canvas, the highlighted one raised and edged in
+    /// the element's colour. A tap on a card raises <see cref="HandCardTapped"/>. With no hand up, the icon of the element
+    /// the next hand is drawn from carries <see cref="NextDrawLabel"/>.</para>
     /// </summary>
     public class StarlingHUDView : VesselHUDView
     {
@@ -58,6 +64,25 @@ namespace CosmicShore.UI
         [SerializeField] string cardLevelUpTemplate = "Lv {from} \u2192 {to}";
         [Tooltip("Under a card with no hand dealt: the levels you hold of the element. Tokens: {level}.")]
         [SerializeField] string heldTemplate = "{level}";
+
+        [Header("Element hand (Garrett, 2026-11-01): up to five cards of the draw element")]
+        [Tooltip("Over the icon of the element the next hand is drawn from, while no spread hand is up.")]
+        [SerializeField] string nextDrawLabel = "Next draw";
+        [Tooltip("Under the element hand's row: how to take a card.")]
+        [SerializeField] string handHint = "X / B to move  \u00b7  A to take  \u00b7  hold for details";
+        [Tooltip("One card of the row (canvas units).")]
+        [SerializeField] Vector2 handCardSize = new(190f, 96f);
+        [Tooltip("The gap between two cards of the row (canvas units).")]
+        [SerializeField, Min(0f)] float handCardGap = 14f;
+        [Tooltip("The row's centre above the bottom of the screen (canvas units), clear of the icon row.")]
+        [SerializeField] float handRowHeight = 300f;
+        [Tooltip("How far the highlighted card rises (canvas units), and its scale.")]
+        [SerializeField] float handFocusLift = 18f;
+        [SerializeField, Min(1f)] float handFocusScale = 1.1f;
+        [Tooltip("A card's face.")]
+        [SerializeField] Color handCardBacking = new(0.03f, 0.05f, 0.12f, 0.92f);
+        [Tooltip("A card that is not highlighted (its alpha dims the edge).")]
+        [SerializeField] Color handIdleEdge = new(1f, 1f, 1f, 0.25f);
 
         [Header("Objective card (the core card left of the omnicrystal's)")]
         [Tooltip("The phase's target, in the cycle's order: Omnicrystal, Elemental crystals, Opposing vessels, Opposing mass.")]
@@ -143,6 +168,25 @@ namespace CosmicShore.UI
         readonly string[] _nameShown = new string[4], _levelShown = new string[4];
         string _phaseShown, _swarmShown;
 
+        public string NextDrawLabel => nextDrawLabel;
+        public string HandHint => handHint;
+
+        /// <summary>Raised when the pilot taps card <c>index</c> of the element hand's row.</summary>
+        public event System.Action<int> HandCardTapped;
+
+        const string HandRowName = "StarlingElementHand";
+        RectTransform _handRow;
+        readonly RectTransform[] _handCards = new RectTransform[StarlingRules.ElementHandSize];
+        readonly Outline[] _handEdges = new Outline[StarlingRules.ElementHandSize];
+        readonly TextMeshProUGUI[] _handNames = new TextMeshProUGUI[StarlingRules.ElementHandSize];
+        readonly TextMeshProUGUI[] _handLevels = new TextMeshProUGUI[StarlingRules.ElementHandSize];
+        readonly string[] _handNameShown = new string[StarlingRules.ElementHandSize];
+        readonly string[] _handLevelShown = new string[StarlingRules.ElementHandSize];
+        TextMeshProUGUI _handHintText;
+        int _handCountShown = -1, _handFocusShown = -1;
+        Element _handElementShown = Element.None;
+        string _handHintShown;
+
         public string PhaseTemplate => phaseTemplate;
         public string SwarmTemplate => swarmTemplate;
         public string CardNameTemplate => cardNameTemplate;
@@ -177,6 +221,10 @@ namespace CosmicShore.UI
             _phaseShown = _swarmShown = null;
             _objectiveShown = -1;
             _detailsShown = null;
+            _handCountShown = _handFocusShown = -1;
+            _handElementShown = Element.None;
+            _handHintShown = null;
+            for (int i = 0; i < _handNameShown.Length; i++) _handNameShown[i] = _handLevelShown[i] = null;
         }
 
         void Seat(Image gauge)
@@ -300,6 +348,98 @@ namespace CosmicShore.UI
             _detailsText.text = body ?? string.Empty;
         }
 
+        /// <summary>
+        /// The element hand's row: <paramref name="count"/> cards of <paramref name="element"/> (0 hides it), card
+        /// <paramref name="focus"/> highlighted, and the hint under it. The cards' words come from <see cref="SetHandCard"/>.
+        /// </summary>
+        public void SetHandRow(int count, int focus, Element element, string hint)
+        {
+            count = Mathf.Clamp(count, 0, _handCards.Length);
+            if (count == _handCountShown && focus == _handFocusShown && element == _handElementShown && hint == _handHintShown) return;
+            if (count > 0 && !_handRow) BuildHandRow();
+            if (!_handRow) return;
+            _handCountShown = count;
+            _handFocusShown = focus;
+            _handElementShown = element;
+            _handHintShown = hint;
+            _handRow.gameObject.SetActive(count > 0);
+            if (count == 0) return;
+
+            _handRow.SetAsLastSibling();
+            Color accent = Accent(element);
+            float pitch = handCardSize.x + handCardGap, left = -0.5f * pitch * (count - 1);
+            for (int i = 0; i < _handCards.Length; i++)
+            {
+                var card = _handCards[i];
+                bool on = i < count;
+                card.gameObject.SetActive(on);
+                if (!on) continue;
+                bool focused = i == focus;
+                card.anchoredPosition = new Vector2(left + i * pitch, focused ? handFocusLift : 0f);
+                card.localScale = Vector3.one * (focused ? handFocusScale : 1f);
+                _handEdges[i].effectColor = focused ? accent : handIdleEdge;
+                _handEdges[i].effectDistance = focused ? new Vector2(4f, -4f) : new Vector2(2f, -2f);
+                _handLevels[i].color = accent;
+            }
+            _handHintText.text = hint ?? string.Empty;
+        }
+
+        /// <summary>Card <paramref name="index"/> of the element hand's row: its name and level line, already filled.</summary>
+        public void SetHandCard(int index, string cardName, string level)
+        {
+            if (index < 0 || index >= _handCards.Length || !_handRow) return;
+            cardName ??= string.Empty;
+            level ??= string.Empty;
+            if (cardName != _handNameShown[index]) { _handNameShown[index] = cardName; _handNames[index].text = cardName; }
+            if (level != _handLevelShown[index]) { _handLevelShown[index] = level; _handLevels[index].text = level; }
+        }
+
+        /// <summary>Builds the hand row on the ROOT canvas, bottom centre, so no HUD layout moves it. Idempotent by name.</summary>
+        void BuildHandRow()
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas.transform as RectTransform : transform as RectTransform;
+            if (!root) return;
+            _handRow = root.Find(HandRowName) as RectTransform;
+            if (!_handRow)
+            {
+                _handRow = new GameObject(HandRowName, typeof(RectTransform)).GetComponent<RectTransform>();
+                _handRow.SetParent(root, false);
+            }
+            _handRow.anchorMin = _handRow.anchorMax = new Vector2(0.5f, 0f);
+            _handRow.pivot = new Vector2(0.5f, 0.5f);
+            _handRow.anchoredPosition = new Vector2(0f, handRowHeight);
+            _handRow.sizeDelta = new Vector2(_handCards.Length * (handCardSize.x + handCardGap), handCardSize.y);
+
+            for (int i = 0; i < _handCards.Length; i++)
+            {
+                var face = ResolveGeneratedChild<Image>(_handRow, "Card" + i);
+                face.color = handCardBacking;
+                face.raycastTarget = true;
+                var rt = face.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = handCardSize;
+                _handCards[i] = rt;
+                if (!face.TryGetComponent(out _handEdges[i])) _handEdges[i] = face.gameObject.AddComponent<Outline>();
+                if (!face.TryGetComponent<Button>(out var button)) button = face.gameObject.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+                button.navigation = new Navigation { mode = Navigation.Mode.None };   // the pad drives the highlight, not UI navigation
+                int index = i;
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => HandCardTapped?.Invoke(index));
+                _handNames[i] = Label(rt, "Name", cardFontSize, new Vector2(0.5f, 0.5f), new Vector2(0f, 16f), TextAlignmentOptions.Center);
+                _handNames[i].rectTransform.sizeDelta = new Vector2(handCardSize.x - 16f, 30f);
+                _handNames[i].fontStyle = FontStyles.Bold;
+                _handLevels[i] = Label(rt, "Level", cardFontSize, new Vector2(0.5f, 0.5f), new Vector2(0f, -18f), TextAlignmentOptions.Center);
+                _handLevels[i].rectTransform.sizeDelta = new Vector2(handCardSize.x - 16f, 30f);
+                _handNameShown[i] = _handLevelShown[i] = null;
+            }
+            _handHintText = Label(_handRow, "Hint", cardFontSize, new Vector2(0.5f, 0f), new Vector2(0f, -handFocusLift - 8f), TextAlignmentOptions.Top);
+            _handHintText.rectTransform.pivot = new Vector2(0.5f, 1f);
+            _handHintText.rectTransform.sizeDelta = new Vector2(_handRow.sizeDelta.x, 30f);
+            _handRow.gameObject.SetActive(false);
+        }
+
         Color Accent(Element element)
         {
             if (!_style) _style = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
@@ -372,8 +512,9 @@ namespace CosmicShore.UI
 
         protected override void OnDestroy()
         {
-            // The card lives on the root canvas, outside this view, so it goes with the view.
+            // The card and the hand row live on the root canvas, outside this view, so they go with the view.
             if (_details) Destroy(_details.gameObject);
+            if (_handRow) Destroy(_handRow.gameObject);
             base.OnDestroy();
         }
 

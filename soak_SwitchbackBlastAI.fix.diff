@@ -1,0 +1,100 @@
+--- /tmp/log_only.cs	2026-11-02 04:27:58.759590499 +0530
++++ /workspace/sb_soak/SwitchbackBlastAI.fix.cs	2026-11-02 04:27:58.731590499 +0530
+@@ -274,8 +274,13 @@
+             for (int i = 0; i < n; i++)
+             {
+                 var b = s_hits[i].bounds;
+-                s_pts[i] = b.center;
+-                s_radii[i] = Mathf.Min(b.extents.magnitude, 12f);
++                // Long rods (3x3x40-55) are not spheres at their centre: take the point of the collider nearest the
++                // look line (the soak's per-hit log showed side-swipes on rods whose centre looked clear).
++                float t = Mathf.Clamp(Vector3.Dot(b.center - self, dir), SenseStart, range);
++                Vector3 q = self + dir * t;
++                Vector3 cp = SafeClosest(s_hits[i], q, b);
++                s_pts[i] = cp;
++                s_radii[i] = Mathf.Min(Mathf.Min(b.extents.x, Mathf.Min(b.extents.y, b.extents.z)) + 1f, 6f);
+             }
+             var prev = st.Avoid;
+             st.SenseFrom = self + dir * SenseStart; st.SenseTo = self + dir * range; st.SenseRadius = probe;
+@@ -353,6 +358,8 @@
+             bool hit = Sweep(pos, dir, radius, limit, out float hitDist, out Vector3 hitAt, out Vector3 normal);
+             if (!hit && Vector3.Angle(dir, fwd) > 8f)
+                 hit = Sweep(pos, fwd, radius, limit * 0.6f, out hitDist, out hitAt, out normal);
++            // Side-swipes: a prism already beside the hull is a start-overlap the sweep skips. Push off it.
++            if (!hit && Beside(p, pos, radius + 1.5f, out Vector3 near)) { hit = true; hitDist = 0f; hitAt = near; normal = pos - near; }
+ 
+             st.SweepFrom = pos; st.SweepTo = pos + dir * Mathf.Max(limit, 0f); st.SweepRadius = radius;
+             st.SweepHitAny = hit; st.SweepHit = hitAt;
+@@ -365,7 +372,7 @@
+ 
+             float urgency = 1f - hitDist / Mathf.Max(limit, 1f);
+             Vector3 up = Vector3.Cross(dir, Vector3.Cross(fwd, dir)).sqrMagnitude > 0.01f ? fwd : Vector3.up;
+-            st.EmergSteer = SwitchbackPrismAvoidance.EscapeDirection(dir, pos - hitAt, normal, up, urgency);
++            st.EmergSteer = ClearEscape(pos, dir, radius, limit, SwitchbackPrismAvoidance.EscapeDirection(dir, pos - hitAt, normal, up, urgency));
+             st.HotUntil = now + HotSeconds;
+             st.EmergHoldUntil = now + EmergHoldSeconds;
+             if (!st.EmergOn)
+@@ -395,7 +402,7 @@
+             {
+                 ref RaycastHit h = ref s_rayHits[i];
+                 if (h.distance <= 0f || h.distance >= hitDist || h.collider == null) continue;
+-                hitDist = h.distance; centre = h.collider.bounds.center; normal = h.normal; any = true;
++                hitDist = h.distance; centre = h.point; normal = h.normal; any = true;   // the contact, not a rod's far centre
+             }
+             return any;
+         }
+@@ -420,6 +427,54 @@
+                    $"plan={st.D.Plan} phase={st.Phase} angle={ang} dist={dist} scale={size} level={_levelFor(p)}";
+         }
+ 
++        static Vector3 SafeClosest(Collider c, Vector3 q, Bounds b)
++        {
++            if (c is BoxCollider || c is SphereCollider || c is CapsuleCollider || (c is MeshCollider m && m.convex)) return c.ClosestPoint(q);
++            return b.ClosestPoint(q);
++        }
++
++        static readonly Collider[] s_beside = new Collider[16];
++
++        /// <summary>The nearest non-own prism surface within <paramref name="r"/> of the hull (own trail spawns there).</summary>
++        static bool Beside(IPlayer p, Vector3 pos, float r, out Vector3 near)
++        {
++            near = default;
++            int n = Physics.OverlapSphereNonAlloc(pos, r, s_beside, s_prismMask, QueryTriggerInteraction.Collide);
++            float best = float.MaxValue; bool any = false;
++            for (int i = 0; i < n; i++)
++            {
++                var c = s_beside[i];
++                if (c == null) continue;
++                var pr = c.GetComponentInParent<Prism>();
++                if (pr != null && !pr.IsEnvironmentOwned && pr.PlayerName == p.Name) continue;
++                Vector3 cp = SafeClosest(c, pos, c.bounds);
++                float d = (cp - pos).sqrMagnitude;
++                if (d < 0.01f || d >= best) continue;
++                best = d; near = cp; any = true;
++            }
++            return any;
++        }
++
++        static readonly Vector3[] s_esc = new Vector3[6];
++
++        /// <summary>The escape the sweep proposes if it is clear, else the clearest of a few around the travel line.</summary>
++        static Vector3 ClearEscape(Vector3 pos, Vector3 dir, float radius, float limit, Vector3 proposed)
++        {
++            float len = Mathf.Max(limit * 0.7f, 15f);
++            if (!Sweep(pos, proposed, radius, len, out float bestD, out _, out _)) return proposed;
++            Vector3 best = proposed;
++            Vector3 a = Vector3.Cross(dir, Mathf.Abs(Vector3.Dot(dir, Vector3.up)) > 0.9f ? Vector3.right : Vector3.up).normalized;
++            Vector3 b = Vector3.Cross(dir, a);
++            for (int k = 0; k < 6; k++)
++            {
++                float az = k * Mathf.PI / 3f;
++                Vector3 cand = (dir * 0.5f + (a * Mathf.Cos(az) + b * Mathf.Sin(az)) * 0.85f).normalized;
++                if (!Sweep(pos, cand, radius, len, out float d, out _, out _)) return cand;
++                if (d > bestD) { bestD = d; best = cand; }
++            }
++            return best;
++        }
++
+         static int ManagedCrystals()
+         {
+             var crystals = Crystal.Active;

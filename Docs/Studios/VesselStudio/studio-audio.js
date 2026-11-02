@@ -150,7 +150,7 @@
     how: 'a deep sub swell rising under an airy reverse-whoosh',
     fn: function (t, out, P) { sub(40 * P.pitch, 70 * P.pitch, t, P.len, out, 0.5, P.len * 0.5); air(t, P.len, out, 0.35, 300 * P.pitch, 2200 * P.pitch, 0.6, P.len * 0.7); } });
   def('rideRush', { label: 'Ride rush (inside the tunnel)', group: 'Wormhole', loop: true, len: 1, wet: 0.35,
-    what: 'Inside a tunnel or the roots: deep bass that swells with the ride, and a rare high glint (one every 3-7 s; Length spaces them out).',
+    what: 'Inside a wormhole or the network: deep bass that swells with the ride, and a rare high glint (one every 3-7 s; Length spaces them out).',
     how: 'a 42 Hz sub and its fifth with a slow throb, low rumble under 220 Hz, seeded soft bell glints 2.5-4 kHz',
     loopFn: function (out, P) {
       var t = ctx.currentTime;
@@ -277,32 +277,32 @@
     } });
 
   // The omnicrystal.
-  def('omniPickup', { label: 'Omnicrystal collected', group: 'Omnicrystal: roots', len: 2.0, wet: 0.75,
+  def('omniPickup', { label: 'Omnicrystal collected', group: 'Omnicrystal: network', len: 2.0, wet: 0.75,
     what: 'Picking up an omnicrystal: the four elements at once.',
     how: 'a bright four-voice pad bloom with a bell',
     fn: function (t, out, P) { pad([262 * P.pitch, 330 * P.pitch, 392 * P.pitch, 523 * P.pitch], t, P.len, out, 0.3, 0.08); bell(1046 * P.pitch, t, P.len, out, 0.04, 0.6); } });
-  def('trunkTeleport', { label: 'Roots armed', group: 'Omnicrystal: roots', len: 1.2, wet: 0.7,
-    what: 'The omnicrystal arms the roots.',
+  def('trunkTeleport', { label: 'Network armed', group: 'Omnicrystal: network', len: 1.2, wet: 0.7,
+    what: 'The omnicrystal arms the network: the next RT forms it.',
     how: 'a low resonant swell, down then up',
     fn: function (t, out, P) { sub(60 * P.pitch, 45 * P.pitch, t, P.len * 0.5, out, 0.3, 0.1); sub(45 * P.pitch, 70 * P.pitch, t + P.len * 0.5, P.len * 0.5, out, 0.25, 0.05); air(t, P.len, out, 0.08, 300, 900, 1, P.len * 0.5); } });
-  def('burrowGrow', { label: 'Roots dig', group: 'Omnicrystal: roots', len: 2.0, wet: 0.5,
-    what: 'The roots dig themselves out through the soil.',
+  def('burrowGrow', { label: 'Network forms', group: 'Omnicrystal: network', len: 2.0, wet: 0.5,
+    what: 'RT: the network of wormholes forms round you.',
     how: 'a low rumble with soft grains of earth',
     fn: function (t, out, P) { air(t, P.len, out, 0.35, 220 * P.pitch, 110 * P.pitch, 0.6, 0.2, 'lowpass'); sub(48 * P.pitch, 40 * P.pitch, t, P.len, out, 0.25, 0.2); for (var i = 0; i < 7; i++) air(t + (i / 7) * P.len * 0.85, 0.12, out, 0.06, 900 * P.pitch, 500 * P.pitch, 2); } });
-  def('burrowEnter', { label: 'Slide into the roots', group: 'Omnicrystal: roots', len: 0.7, wet: 0.5,
-    what: 'Diving into the roots.',
+  def('burrowEnter', { label: 'Slide into the network', group: 'Omnicrystal: network', len: 0.7, wet: 0.5,
+    what: 'Diving into the network.',
     how: 'a falling whoosh into a sub',
     fn: function (t, out, P) { air(t, P.len, out, 0.25, 2500 * P.pitch, 300 * P.pitch, 0.8, 0.02); sub(70 * P.pitch, 40 * P.pitch, t + 0.2, P.len, out, 0.3, 0.05); } });
-  def('forkTake', { label: 'Take a fork', group: 'Omnicrystal: roots', len: 0.4, wet: 0.4,
+  def('forkTake', { label: 'Take a fork', group: 'Omnicrystal: network', len: 0.4, wet: 0.4,
     what: 'Leaning through a fork (panned to the side taken).',
     how: 'a short soft whoosh past you',
     fn: function (t, out, P) { air(t, P.len, out, 0.4, 600 * P.pitch, 1500 * P.pitch, 1, P.len * 0.4); } });
-  def('burrowExit', { label: 'Out of the roots', group: 'Omnicrystal: roots', len: 0.8, wet: 0.5,
-    what: 'Leaving the roots by any opening.',
+  def('burrowExit', { label: 'Out of the network', group: 'Omnicrystal: network', len: 0.8, wet: 0.5,
+    what: 'Leaving the network by any opening.',
     how: 'a sub thump with soil air falling away',
     fn: function (t, out, P) { sub(85 * P.pitch, 38 * P.pitch, t, P.len, out, 0.5); air(t, P.len * 0.6, out, 0.2, 1200 * P.pitch, 200 * P.pitch, 0.6, 0.01, 'lowpass'); } });
-  def('burrowCollapse', { label: 'Roots fall in', group: 'Omnicrystal: roots', len: 1.8, wet: 0.6,
-    what: 'The roots fall in when their time is up.',
+  def('burrowCollapse', { label: 'Network collapses', group: 'Omnicrystal: network', len: 1.8, wet: 0.6,
+    what: 'The network collapses when its time is up.',
     how: 'a long low crumble into the reverb',
     fn: function (t, out, P) { air(t, P.len, out, 0.3, 500 * P.pitch, 70 * P.pitch, 0.6, 0.05, 'lowpass'); sub(50 * P.pitch, 30 * P.pitch, t, P.len, out, 0.2, 0.1); } });
 

@@ -1,3 +1,5 @@
+> **2026-11-02 - ORBIT ONLY (Yash).** The shipped Stoat flies Time mode alone (`STOAT_DIPOLE.md` §1b): `StoatModeActionSO.orbitOnly` starts every copy in Time mode and B switches nothing. Mass mode (the field dipole and its predicted path) and Gate mode are parked with their code intact; what they were, what that costs and how to bring them back: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are now named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Orbit Mode (Mass, parked).
+>
 > **2026-10-14 — TIME MODE IS THE CATCH, NOT THIS ORBIT.** Played, the orbit below put the attractor square beside the
 > hull (off the chase camera) and started circling on the press, so the pilot "couldn't see the poles at all and was just
 > pulled right or left". Time mode is now the studio's round-6 dipole sling: a LIGHT pair laid ahead, two rings

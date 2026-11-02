@@ -313,16 +313,16 @@ namespace CosmicShore.Tests
             StringAssert.Contains($"  vesselClass: {StoatClass}\n", text);
             string Entry(int element) => Regex.Match(text, $@"  - Element: {element}\n(?:    .*\n)*?    UpgradeDescription: .*\n").Value;
             string charge = Entry(1), mass = Entry(2), space = Entry(3), time = Entry(4);
-            StringAssert.StartsWith("  - Element: 3\n    AbilityLabel: Field Dipole\n", space);
-            StringAssert.Contains("    Input: 2\n", space, "the dipole is on the triggers (LT; RT mirrors)");
+            StringAssert.StartsWith("  - Element: 3\n    AbilityLabel: Catch Orbit\n", space);
+            StringAssert.Contains("    Input: 2\n", space, "the catch is on the triggers (LT; RT mirrors)");
             StringAssert.Contains("    UpgradeLabel: Accretion\n", space);
-            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Pathfinder / Time Mode\n", time);
-            StringAssert.Contains("    Input: 0\n", time, "the pathfinder is passive; X's hold sits outside the four abilities");
+            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Timed Slingshot\n", time);
+            StringAssert.Contains("    Input: 0\n", time, "the warp is passive; X's hold sits outside the four abilities");
             StringAssert.Contains("    UpgradeLabel: Foresight\n", time);
             StringAssert.StartsWith("  - Element: 1\n    AbilityLabel: Ripple\n", charge);
             StringAssert.Contains("    UpgradeLabel: Siphon\n", charge);
-            StringAssert.StartsWith("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", mass);
-            StringAssert.Contains("    Input: 7\n", mass, "B switches the mode");
+            StringAssert.StartsWith("  - Element: 2\n    AbilityLabel: Orbit Mode\n", mass);
+            StringAssert.Contains("    Input: 7\n", mass, "B is the parked mode switch");
             StringAssert.Contains("    UpgradeLabel: Armoured Wake\n", mass);
             Assert.AreEqual(4, Regex.Matches(text, @"  - Element: \d\n").Count, "one entry per element");
             StringAssert.DoesNotContain("open design slot", text, "every slot is designed");
@@ -385,7 +385,7 @@ namespace CosmicShore.Tests
                 StringAssert.DoesNotContain("rKey", src, $"{path}: Button2 left R");
                 StringAssert.Contains("tKey", src, $"{path}: Button2 is T");
             }
-            StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
+            StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    padLabel: B\n    keyboardLabel: T\n",
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
 
@@ -507,7 +507,7 @@ namespace CosmicShore.Tests
             // On a phone the Mass card is a button that raises its control's input (Button2Action, B); the prefab's touch
             // overrides must route that input to the mode switch, or the three modes are pad-only.
             var map = Read(Map);
-            StringAssert.Contains("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", map);
+            StringAssert.Contains("  - Element: 2\n    AbilityLabel: Orbit Mode\n", map);
             StringAssert.Contains("    Input: 7\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: Armoured Wake\n", map);
             var prefab = Read(Prefab);
             int touch = prefab.IndexOf("  _touchActionOverrides:\n", System.StringComparison.Ordinal);
@@ -528,6 +528,42 @@ namespace CosmicShore.Tests
             StringAssert.Contains("gateModeEvent:", text);
             StringAssert.DoesNotContain("drive", text);
             StringAssert.DoesNotContain("hybrid", text);
+        }
+
+        // ------------------------------------------------------------------ the orbit-only kit (2026-11-02)
+
+        [Test]
+        public void OrbitOnly_StartsInTimeMode_ElseInMass()
+        {
+            Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.StartMode(true));
+            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.StartMode(false), "the parked kit's default, restored by the flag");
+        }
+
+        [Test]
+        public void ModeAction_ShipsOrbitOnly()
+        {
+            // Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md: 0 here brings Mass and Gate mode back.
+            StringAssert.Contains("  orbitOnly: 1\n", Read("Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset"));
+        }
+
+        [Test]
+        public void WantsWarp_ALongLegAtAnyBearing_NeverAShortOneOrWithTheRuleOff()
+        {
+            Assert.IsTrue(StoatSlingMath.WantsWarp(new Vector3(0f, 0f, 280f), 280f), "dead ahead, far enough");
+            Assert.IsFalse(StoatSlingMath.WantsWarp(new Vector3(0f, 0f, 279f), 280f), "too near the ring");
+            Assert.IsFalse(StoatSlingMath.WantsWarp(new Vector3(0f, 0f, 9000f), 0f), "0 turns the rule off");
+            Assert.IsFalse(StoatSlingMath.TryAutopilotSide(new Vector3(0f, 0f, 9000f), 7.84f, 120f, out _),
+                "dead ahead the turn press never fires: the hole the warp press closes");
+        }
+
+        [Test]
+        public void EveryAIStoat_PressesForTheWarp()
+        {
+            // With the dipole parked a held pair is the hull's only speed; without this rule an AI crawls down a straight at
+            // cruise (Tools/Build/stoat_orbit_sim.py).
+            foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
+                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
+                StringAssert.Contains("  aiWarpMinDistance: 280\n", Read(path), path);
         }
     }
 }

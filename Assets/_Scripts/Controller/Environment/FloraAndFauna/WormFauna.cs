@@ -43,13 +43,24 @@ namespace CosmicShore.Gameplay
     /// a kaiju), and <see cref="Predated"/> is sealed off — the segments are the
     /// killable surface.
     /// </summary>
-    public class WormFauna : Fauna
+    public class WormFauna : Fauna, ISpeciesDataOverride
     {
         const string PLAYER_NAME = "WormColony";
         const string MouthName = "Mouth";
 
         [Header("Worm Colony")]
         [SerializeField] WormColonyConfigSO config;
+
+        /// <summary>
+        /// A per-world colony config (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the chain is built, so one world's kaiju can hunt from further and more often
+        /// (The Maw) without the shared WormColonyConfig changing under every other biome. The
+        /// swap is on this instance's field only (a split-born half clones the root and inherits it).
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is WormColonyConfigSO worldConfig) config = worldConfig;
+        }
         [Tooltip("The three colony member types. Head and Tail author danger prisms + " +
                  "an elemental heart; Body is the splittable connective tissue.")]
         [SerializeField] WormSegmentFauna headPrefab;
@@ -208,6 +219,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            config ? (superShielded ? config.SuperShieldBite : config.ShieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            config = tuning.ResolveWormConfig(config, species);   // the run's copy, never the asset
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell); // record the explicit host cell
@@ -359,8 +379,10 @@ namespace CosmicShore.Gameplay
         //  a head-driven slither wave; the body propagates it naturally).
         // -------------------------------------------------------------------
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Worm.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // Defensive sweep: segments can be destroyed outside the death path
             // (scene teardown, turn-end cleanup) — a null in the chain is fatal to
             // the follow pass, and an emptied colony must die, not idle.
@@ -406,9 +428,13 @@ namespace CosmicShore.Gameplay
 
         void SetState(AttackState state)
         {
+            if (state == AttackState.Lunge && _state != AttackState.Lunge) Lunges++;
             _state = state;
             _stateSince = Time.time;
         }
+
+        /// <summary>Sim telemetry: lunges at vessels this session, every colony (read by the Ark escort's metrics).</summary>
+        public static int Lunges;
 
         void UpdateAttackState()
         {
@@ -740,9 +766,9 @@ namespace CosmicShore.Gameplay
                 var prism = PrismScratch[i];
                 if (!IsEdiblePrism(prism)) continue;
                 float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                prism.Consume(head, domain, PLAYER_NAME, true, true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(prism, head, domain, PLAYER_NAME, true);
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                if (result != BiteResult.None) bites++;
             }
         }
 

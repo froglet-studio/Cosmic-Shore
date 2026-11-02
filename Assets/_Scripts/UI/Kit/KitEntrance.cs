@@ -129,9 +129,17 @@ namespace CosmicShore.UI
         {
             if (!IsPlaying || !_rect) return;
             _clock = -1f;
-            if (mode == KitEntranceMode.Rise || mode == KitEntranceMode.Drop)
+            // Only an entrance that MOVES the object puts it back. A Pop / Grow / Fade never wrote the
+            // position, so writing it here would only overwrite whatever placed the object since Play()
+            // captured it - which, inside a layout group, is the layout itself: the in-game score column
+            // (DomainScorePanel, a Pop) was snapped back to its pre-layout (0,0) under the anchors the
+            // bar's HorizontalLayoutGroup had just given it, so its CENTRE sat on the bar's top-left
+            // corner, half off the top of the screen, in every mode (2026-10-31).
+            if (MovesPosition(mode))
+            {
                 _restPosition = ReconcileRest(_rect.anchoredPosition, _lastWritten, _restPosition);
-            _rect.anchoredPosition = _restPosition;
+                _rect.anchoredPosition = _restPosition;
+            }
             _rect.localScale = _restScale;
             if (_group) _group.alpha = _restAlpha = ReconcileAlpha(_group.alpha, _lastAlpha, _restAlpha);
         }
@@ -147,6 +155,12 @@ namespace CosmicShore.UI
             if (t >= 1f) { Finish(); return; }
             Apply(Mathf.Max(0f, t));
         }
+
+        /// <summary>True for the entrances that offset the object's position (Rise, Drop) - the only ones
+        /// that may write it, while playing or when they finish. Every other mode leaves the position to
+        /// whatever owns it (a layout group, a view).</summary>
+        public static bool MovesPosition(KitEntranceMode mode) =>
+            mode == KitEntranceMode.Rise || mode == KitEntranceMode.Drop;
 
         /// <summary>
         /// Where the object should come to rest, given where it is now and where this entrance last

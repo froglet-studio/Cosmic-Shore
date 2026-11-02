@@ -527,7 +527,7 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | `GoalsScored` stat (+ event, Cleanup, NetworkVariable) | `_Scripts/Data/Enums/IRoundStats.cs`, `RoundStats.cs` |
 | `GameDataSO.GoalTargetCount` | `_Scripts/Utility/DataContainers/GameDataSO.cs` |
 | `AIPilot.SetExternalTargetProvider` | `_Scripts/Controller/AI/AIPilot.cs` |
-| `IcosphereMeshGenerator` (runtime faceted icosphere for the ball mesh) | `_Scripts/Utility/IcosphereMeshGenerator.cs` |
+| `IcosphereMeshGenerator` (runtime faceted icosphere for the ball mesh) | `_Scripts/Utility/Foundation/IcosphereMeshGenerator.cs` |
 | `CustomCameraController.Shake` | `_Scripts/Controller/Camera/CustomCameraController.cs` |
 | `SO_ArcadeGame.Min/MaxDomainsAllowed` (+ modal DC bounds) | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs`, `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` |
 | the rule's `DomainValue` (`Goals`) | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |

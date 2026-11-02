@@ -82,6 +82,23 @@ namespace CosmicShore.Gameplay
             if (head.Segment >= segs) into.Add(head);
         }
 
+        /// <summary>
+        /// The HALF PLANE a choice rides (Garrett, 2026-10-29: "it should show one side of the trail when traveling one way
+        /// and pass on the other side when traveling the other direction"): riding island k ahead (A to B) plays the side its
+        /// frame calls +z (the far side from the camera, <see cref="PistolPlane.Frame.M"/>); riding it back, the frame turns
+        /// round and so does its +z, so it plays the other side. 2 k ahead, 2 k + 1 back: the index a choice's score is kept at.
+        /// </summary>
+        public static int Half(PathChoice c) => Half(c.Segment, c.Dir);
+
+        public static int Half(int segment, int dir) => segment * 2 + (dir > 0 ? 0 : 1);
+
+        /// <summary>Mass this close to the plane (pulled into it) lies in both halves.</summary>
+        public const float PlaneSlack = 1f;
+
+        /// <summary><see cref="InBand"/>, on the half the frame rides (+z, within <see cref="PlaneSlack"/> of the plane).</summary>
+        public static bool InHalf(Vector3 fr, float endX, float ground, float reach, float band)
+            => fr.z >= -PlaneSlack && InBand(fr, endX, ground, reach, band);
+
         /// <summary>True when the choice has an island to ride (the head's "ahead" waits for one).</summary>
         public static bool Ready(PathChoice c, int segments) => c.Segment >= 0 && c.Segment < segments;
 
@@ -115,19 +132,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The ready option whose island holds the most opposing prisms (<paramref name="scores"/>, one per segment); on a
-        /// tie the one setting off nearest <paramref name="fromPerch"/>. -1 when every island is empty, so the caller keeps
-        /// its own way.
+        /// The ready option whose half plane holds the most opposing mass (<paramref name="scores"/>, one per half plane,
+        /// <see cref="Half(PathChoice)"/>); on a tie the one setting off nearest <paramref name="fromPerch"/>. -1 when every
+        /// half is empty, so the caller keeps its own way.
         /// </summary>
-        public static int Best(List<PathChoice> options, IReadOnlyList<int> scores, int segments, int fromPerch)
+        public static int Best(List<PathChoice> options, IReadOnlyList<float> scores, int segments, int fromPerch)
         {
-            int best = -1, bestScore = 0, bestD = int.MaxValue;
+            int best = -1, bestD = int.MaxValue;
+            float bestScore = 0f;
             for (int i = 0; i < options.Count; i++)
             {
                 var c = options[i];
-                if (!Ready(c, segments) || c.Segment >= scores.Count) continue;
-                int s = scores[c.Segment], d = Mathf.Abs(c.Perch - fromPerch);
-                if (s > bestScore || (s == bestScore && s > 0 && d < bestD)) { best = i; bestScore = s; bestD = d; }
+                if (!Ready(c, segments) || Half(c) >= scores.Count) continue;
+                float s = scores[Half(c)]; int d = Mathf.Abs(c.Perch - fromPerch);
+                if (s > bestScore || (s == bestScore && s > 0f && d < bestD)) { best = i; bestScore = s; bestD = d; }
             }
             return best;
         }

@@ -1,62 +1,39 @@
 #!/usr/bin/env python3
-"""kite_mote_colors - the Wrasse's four lasso elements as four shades of LIME, chosen geometrically.
+"""kite_mote_colors - the four elements' shades of LIME: one lime at four lightnesses.
 
-    python3 Tools/Build/kite_mote_colors.py              # derive, print the report, write the asset and the lab
-    python3 Tools/Build/kite_mote_colors.py --check      # exit 1 if the asset or the lab drifted from the derivation
-    python3 Tools/Build/kite_mote_colors.py --self-test  # prove the boundary and the checks fire
+    python3 Tools/Build/kite_mote_colors.py              # print the ladder, write the asset, the lab and the palette
+    python3 Tools/Build/kite_mote_colors.py --check      # exit 1 if any of the three drifted from the ladder
+    python3 Tools/Build/kite_mote_colors.py --self-test  # prove the checks fire
 
-Garrett, 2026-10-21: "make all four of the lasso elements different hues, saturations and values within the lime green
-color family (lime). make a 3d boundary that defines the space as distinct from jade, ruby, gold, blue (neutral), and
-fire (danger). form the largest tetrahedron within that space that makes four distinct values within that boundary and
-assign them to each element."
+THE LADDER (Garrett, 2026-10-31, picked in the Lime Element Shades page, https://claude.ai/artifact/9EiMAiant8FR6wXbtesyTP):
+"keep them similar hues so they don't have the ugly multitone interactions when grouped. also our eyes process lightness
+faster than frequency ... so we might get more ability to distinguish them quickly, especially the wrasse, if they are
+different lightnesses ... make charge the darkest because its plasma lights it up. lets distribute the other three
+along a lightness axis within a yellow-green hue within the LIME family."
 
-THE SPACE is OKLab (L = value, a/b = hue and saturation as an angle and a radius), the perceptual space in which a
-Euclidean distance is a visible difference (~0.02 is a just-noticeable one).
+  - ONE lime: red and green only (no blue, no orange), red:green fixed at an HSV hue of LADDER_HSV_HUE (84). Scaling a
+    colour's linear RGB keeps its OKLab hue exactly and scales its OKLab L by the cube root, so the four shades are that
+    one lime at four brightnesses: one hue, no multitone clash when they are grouped.
+  - FOUR lightnesses, evenly spaced in OKLab L from LADDER_L[0] (0.40) to LADDER_L[1] (0.902, the top of that lime),
+    about 8.4 just-noticeable differences apart.
+  - THE ORDER, darkest first: LADDER_ORDER = Charge, Mass, Space, Time. Charge is the darkest (its plasma lights it up).
+  - IN LIME: every shade must rest in Lime in the colour source of truth (Docs/VesselModels/colour_domains.json,
+    Tools/Build/colour_domains.py), clear of the band. Charge sits 0.2 JND inside it.
 
-THE FAMILIES are anchored on the colours the game already draws (Docs/VesselModels/COLOR.md, Docs/PALETTE.md), read
-live from the assets so the boundary follows the palette:
-    lime  the CTA signal (OriginalColorSetSO DarkCTA, brightest channel at 1), BrightCTA (= the HUD ladder's lime),
-          and the kite view's own Lime (KiteNavigatorView)
-    jade / ruby / gold   each domain's UI colour (TrailHighlightColor) and its signal colour (domain_colors.py)
-    blue  the Blue domain's colour, the HUD ladder's blue, the vessel body and glass (vessel_colors.py) - AND every grey:
-          "grey (desaturated or valued down) belongs to it alone", so Blue's distance is also a colour's chroma
-    fire  the danger signal (OriginalColorSetSO Danger), the HUD ladder's fire, the engine ember (vessel_colors.py)
+It writes KiteNavigatorConfig.asset's `elementColors` (the Wrasse's kite view motes; sRGB, Charge, Mass, Space, Time -
+index = Element - 1), the Wrasse Lasso Lab's LIME_E line, and the palette's `EnvironmentColors.ElementalCrystalColors`
+(OriginalColorSetSO.asset), which every other lime element reads: the four elemental crystals
+(author_elemental_crystal_colors.py, author_mass_crystal_look.py), the omni crystal's element shapes
+(author_omni_crystal_triangles.py, Docs/PALETTE.md §2.12) and the elemental converter's animation
+(author_elemental_converter.py). Run those after this. The tail, the saved-boost dots and every other CTA lime stay
+the palette's lime.
 
-THE BOUNDARY is every sRGB colour whose distance to the nearest lime anchor, plus MARGIN, is no more than its distance
-to the nearest anchor of every other family: lime's cell of the families' Voronoi partition, shrunk by MARGIN (0.05,
-about 2.5 just-noticeable differences) so nothing on its edge could be mistaken for a neighbour, and clipped to what a
-screen can show (the sRGB cube). Inside that, a lime is GREEN-YELLOW (Garrett, 2026-10-21, after the first cut: "pull
-time [and] space away from jade and charge away from gold" - "it has to have green in the yellow and yellow in the
-green. it can not have any blue or orange at all"): red and green only, blue 0; green leading red; red between a
-quarter and three quarters of green, i.e. an HSV hue of 75-105 degrees, a quarter of the way in from pure yellow and
-from pure green (GREEN_YELLOW_HUES). With blue at 0 the space is a curved SHEET (hue x value) in OKLab, not a volume:
-saturation still differs from corner to corner, but only as hue and value carry it.
-
-THE TETRAHEDRON is the largest-volume one (OKLab volume) with its four corners in the boundary AND four distinct
-hues, saturations and values: every pair of corners differs by APART in value (L), in saturation (chroma) and in hue
-(the arc between them at their mean chroma). Without that rule the largest one can put two corners at one hue
-(#00ff00 and #a5ff95, 142 and 141 degrees, in the first cut). APART is the largest of APART_STEPS that fits: on the
-green-yellow sheet value, saturation and hue move together, and 0.02 (one just-noticeable difference) is what fits.
-On a sheet the tetrahedron is nearly flat; its corners are the sheet's most spread four.
-Searched over the boundary's surface on a 1/64 sRGB grid (the maximum of a volume, linear in each corner, sits on the
-surface), from seeded restarts, then each corner climbed continuously to 1/1536. Its corners are the four colours.
-
-THE ASSIGNMENT reads each corner's character: the lowest value is Mass (weight), the highest is Charge (the bright
-spark), and of the other two the cooler hue (toward Jade) is Space and the warmer is Time.
-
-It writes KiteNavigatorConfig.asset's `elementColors` (sRGB, Charge, Mass, Space, Time - index = Element - 1), the
-Wrasse Lasso Lab's LIME_E line, and the palette's `EnvironmentColors.ElementalCrystalColors` (OriginalColorSetSO.asset):
-the four elemental CRYSTALS wear the same four shades (Garrett, 2026-10-27: "the mass crystals and omnicrystals are the
-hardest to distinguish. shift the colors on each element to match the color shifts we used for the wrasse's 2d
-elements"). The Mass shade is the darkest corner, so Mass and the omni's lime differ in value as well as hue; since
-2026-10-28 the omni itself wears all four shades, each on its element's shapes (Docs/PALETTE.md §2.12,
-author_omni_crystal_triangles.py). Tools/Build/author_elemental_crystal_colors.py carries them onto the crystals' own
-materials. The tail,
-the saved-boost dots and every other CTA lime stay the palette's lime.
+HISTORY: from 2026-10-21 to 2026-10-31 the shades were the corners of the largest tetrahedron in a nearest-anchor lime
+boundary, four hues 15 degrees apart with Charge the LIGHTEST; COLOR.md §5b records that rule. The boundary helpers
+below (families, in_lime, apart) remain for crystal_bloom_preview.py --propose.
 """
 import math
 import os
-import random
 import re
 import sys
 
@@ -80,9 +57,10 @@ MARGIN = 0.05          # OKLab: a corner is at least this much nearer lime than 
 GREEN_YELLOW_HUES = (75.0, 105.0)
 APART_STEPS = (0.03, 0.025, 0.02)   # OKLab: the most distinct that fits - every pair of corners differs by APART
 APART = APART_STEPS[0]               # in value, in saturation AND in hue (derive() sets it)
-GRID = 64              # the search grid, steps per sRGB channel (only the blue-0 face is searched)
-RESTARTS = 64
-SEED = 7
+LADDER_HSV_HUE = 84                      # the one lime: red = (120 - 84) / 60 = 0.6 of green, blue 0 (sRGB)
+LADDER_L = (0.40, 0.902)                 # OKLab L of the darkest and the lightest rung, evenly spaced between
+LADDER_ORDER = ("Charge", "Mass", "Space", "Time")   # darkest to lightest
+PICKED = {"Charge": "#2E5300", "Mass": "#508900", "Space": "#73C200", "Time": "#99FF00"}   # as the page saved it
 ELEMENTS = ("Charge", "Mass", "Space", "Time")   # index = Element - 1, the HUD's order
 NUM = r"(-?[\d.]+(?:e-?\d+)?)"
 
@@ -177,143 +155,37 @@ def in_lime(rgb, fam, margin=MARGIN):
     return all(d["lime"] + margin <= d[k] for k in d if k != "lime")
 
 
-# ----------------------------------------------------------------------------- the tetrahedron
-def volume(p):
-    (ax, ay, az), (bx, by, bz), (cx, cy, cz), (dx, dy, dz) = p
-    ux, uy, uz = bx - ax, by - ay, bz - az
-    vx, vy, vz = cx - ax, cy - ay, cz - az
-    wx, wy, wz = dx - ax, dy - ay, dz - az
-    return abs(ux * (vy * wz - vz * wy) - uy * (vx * wz - vz * wx) + uz * (vx * wy - vy * wx)) / 6.0
-
-
+# ----------------------------------------------------------------------------- boundary helpers (crystal_bloom_preview)
 def apart(lab_a, lab_b):
-    """Two colours differ by APART in value, in saturation and in hue."""
+    """Two colours differ by APART in value, in saturation and in hue (the retired rule; crystal_bloom_preview --propose)."""
     la, ca, ha = lch(lab_a)
     lb, cb, hb = lch(lab_b)
     dh = abs((ha - hb + 180) % 360 - 180)
     return abs(la - lb) >= APART and abs(ca - cb) >= APART and 0.5 * (ca + cb) * math.radians(dh) >= APART
 
 
-def distinct(labs):
-    return all(apart(labs[i], labs[j]) for i in range(len(labs)) for j in range(i + 1, len(labs)))
+# ----------------------------------------------------------------------------- the ladder
+def gamma(v):
+    v = max(0.0, min(1.0, v))
+    return 12.92 * v if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
 
 
-def region(fam):
-    """The grid points inside the boundary, and the ones on its surface (a neighbour outside, or the screen's edge)."""
-    n = GRID
-    inside = {}
-    for i in range(n + 1):
-        for j in range(n + 1):
-            for k in range(n + 1):
-                c = (i / n, j / n, k / n)
-                if green_yellow(c):
-                    inside[(i, j, k)] = in_lime(c, fam)
-    pts = [key for key, ok in inside.items() if ok]
-    surface = [key for key in pts
-               if any(not inside.get((key[0] + dx, key[1] + dy, key[2] + dz), False)
-                      for dx, dy, dz in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)))]
-    return pts, surface
-
-
-def largest_tetrahedron(fam):
-    """Coordinate ascent from seeded restarts: each corner in turn moves to the surface point that first removes the
-    pairs' shortfall from APART, then most grows the volume. The constrained problem has several local optima, hence the
-    restarts; the best distinct one is refined."""
-    n = GRID
-    pts, surface = region(fam)
-    rgb = [(i / n, j / n, k / n) for i, j, k in surface]
-    lab = [oklab(c) for c in rgb]
-    pol = [lch(c) for c in lab]
-    count = len(lab)
-
-    def shortfall(q, others):
-        lq, cq, hq = pol[q]
-        out = 0.0
-        for o in others:
-            lo, co, ho = pol[o]
-            dh = abs((hq - ho + 180) % 360 - 180)
-            out += (max(0.0, APART - abs(lq - lo)) + max(0.0, APART - abs(cq - co))
-                    + max(0.0, APART - 0.5 * (cq + co) * math.radians(dh)))
-        return out
-
-    rng = random.Random(SEED)
-    best_v, best = -1.0, None
-    for _ in range(RESTARTS):
-        idx = rng.sample(range(count), 4)
-        for _ in range(40):
-            moved = False
-            for slot in range(4):
-                others = [idx[j] for j in range(4) if j != slot]
-                (ax, ay, az), b, c = (lab[o] for o in others)
-                ux, uy, uz = b[0] - ax, b[1] - ay, b[2] - az
-                vx, vy, vz = c[0] - ax, c[1] - ay, c[2] - az
-                nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
-
-                def score(q):
-                    x, y, z = lab[q]
-                    return -1e3 * shortfall(q, others) + abs((x - ax) * nx + (y - ay) * ny + (z - az) * nz)
-
-                cur = score(idx[slot])
-                k = max(range(count), key=score)
-                if score(k) > cur + 1e-12:
-                    idx[slot], moved = k, True
-            if not moved:
-                break
-        labs = [lab[i] for i in idx]
-        if not distinct(labs):
-            continue
-        v = volume(labs)
-        if v > best_v:
-            best_v, best = v, [rgb[i] for i in idx]
-    if best is None:
-        raise SystemExit("kite_mote_colors: no four distinct corners fit in the boundary")
-    return refine(best, fam), len(pts), len(surface)
-
-
-def refine(corners, fam):
-    """Climb each corner continuously (26 directions, halving steps) while it stays in the boundary."""
-    corners = [list(c) for c in corners]
-    dirs = [(dx, dy, dz) for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dy, dz) != (0, 0, 0)]
-    step = 1.0 / (2 * GRID)
-    while step >= 1.0 / 1536:
-        improved = True
-        while improved:
-            improved = False
-            for slot in range(4):
-                labs = [oklab(c) for c in corners]
-                cur = volume(labs)
-                for d in dirs:
-                    cand = [min(1.0, max(0.0, corners[slot][a] + d[a] * step)) for a in range(3)]
-                    if not in_lime(cand, fam):
-                        continue
-                    trial = labs[:slot] + [oklab(cand)] + labs[slot + 1:]
-                    if volume(trial) > cur + 1e-12 and distinct(trial):
-                        corners[slot], cur, labs, improved = cand, volume(trial), trial, True
-        step /= 2
-    return [tuple(round(v, 4) for v in c) for c in corners]
-
-
-def assign(corners):
-    """Mass the lowest value, Charge the highest; of the other two, Space the cooler hue (toward Jade), Time the warmer."""
-    by_l = sorted(corners, key=lambda c: oklab(c)[0])
-    mass, charge = by_l[0], by_l[-1]
-    a, b = by_l[1], by_l[2]
-    space, time = (a, b) if lch(oklab(a))[2] > lch(oklab(b))[2] else (b, a)
-    return [charge, mass, space, time]   # index = Element - 1
+def ladder():
+    """The four colours, index = Element - 1 (Charge, Mass, Space, Time), each rounded to 4 places."""
+    base = (to_linear((120.0 - LADDER_HSV_HUE) / 60.0), 1.0, 0.0)
+    top = oklab(tuple(gamma(v) for v in base))[0]
+    lo, hi = LADDER_L
+    hi = min(hi, top)
+    by_name = {}
+    for rung, name in enumerate(LADDER_ORDER):
+        L = lo + (hi - lo) * rung / 3
+        k = (L / top) ** 3                         # OKLab L scales with the cube root of linear RGB
+        by_name[name] = tuple(round(gamma(k * v), 4) for v in base)
+    return [by_name[e] for e in ELEMENTS]
 
 
 def derive():
-    """The four colours, at the most distinct APART that fits."""
-    global APART
-    fam, _ = families()
-    for step in APART_STEPS:
-        APART = step
-        try:
-            corners, n_in, n_surface = largest_tetrahedron(fam)
-        except SystemExit:
-            continue
-        return fam, assign(corners), n_in, n_surface
-    raise SystemExit("kite_mote_colors: no four distinct corners fit at any of %s" % (APART_STEPS,))
+    return ladder()
 
 
 # ----------------------------------------------------------------------------- where they land
@@ -402,72 +274,70 @@ def check(asset_text, lab_text, colors, fam, palette_text=None):
                 errs.append("KiteNavigatorConfig.asset %s is %s, the derivation says %s" % (e, hexof(h), hexof(w)))
     if lab_line(colors) not in lab_text:
         errs.append("WrasseLassoLab.html's LIME_E is not the derivation's (run Tools/Build/kite_mote_colors.py)")
-    for e, c in zip(ELEMENTS, colors):
-        if not in_lime(c, fam, MARGIN - 1e-6):
-            errs.append("%s %s lies outside the lime boundary" % (e, hexof(c)))
-    labs = [oklab(c) for c in colors]
-    for i in range(4):
-        for j in range(i + 1, 4):
-            if not apart(labs[i], labs[j]):
-                errs.append("%s and %s are not %.2f apart in value, saturation and hue" % (ELEMENTS[i], ELEMENTS[j], APART))
+    errs += ladder_errors(colors)
     return errs
 
 
-def report(fam, colors, n_in, n_surface):
-    print("kite_mote_colors: the lime boundary holds %d of %d grid colours (%d on its surface), margin %.2f OKLab"
-          % (n_in, (GRID + 1) ** 3, n_surface, MARGIN))
-    labs = [oklab(c) for c in colors]
-    print("  largest tetrahedron: OKLab volume %.3g, every pair %.3f apart in value, saturation and hue" % (volume(labs), APART))
-    for e, c, lab in zip(ELEMENTS, colors, labs):
-        L, C, h = lch(lab)
-        d = family_distances(lab, fam)
-        near = min((k for k in d if k != "lime"), key=lambda k: d[k])
-        print("  %-6s %s  sRGB (%.4f, %.4f, %.4f)  L %.3f  C %.3f  hue %3.0f  (lime %.3f, nearest other %s %.3f)"
-              % (e, hexof(c), c[0], c[1], c[2], L, C, h, d["lime"], near, d[near]))
-    pairs = [(math.dist(labs[i], labs[j]), ELEMENTS[i], ELEMENTS[j]) for i in range(4) for j in range(i + 1, 4)]
-    d, a, b = min(pairs)
-    print("  closest pair: %s / %s, %.3f OKLab apart" % (a, b, d))
+def ladder_errors(colors):
+    """The ladder's own promises: in Lime (the source of truth), one hue, evenly spaced lightness, the picked order."""
+    import colour_domains   # here, not at the top: colour_domains imports this module
+    errs, defs = [], colour_domains.load()
+    for e, c in zip(ELEMENTS, colors):
+        fam, top, dist = colour_domains.classify(defs, c)
+        if fam != "lime":
+            errs.append("%s %s is not in Lime (%s) in the colour source of truth" % (e, hexof(c),
+                        "in the band" if top == "lime" else "in " + top))
+    labs = {e: lch(oklab(c)) for e, c in zip(ELEMENTS, colors)}
+    hues = [labs[e][2] for e in ELEMENTS]
+    if max(hues) - min(hues) > 0.5:
+        errs.append("the four shades are not one hue (%.1f to %.1f degrees)" % (min(hues), max(hues)))
+    ls = [labs[e][0] for e in LADDER_ORDER]
+    if any(b <= a for a, b in zip(ls, ls[1:])):
+        errs.append("the shades are not darkest to lightest in the order %s" % ", ".join(LADDER_ORDER))
+    steps = [b - a for a, b in zip(ls, ls[1:])]
+    if max(steps) - min(steps) > 0.003:
+        errs.append("the lightness steps are not even (%s)" % ", ".join("%.3f" % v for v in steps))
+    return errs
+
+
+def report(colors):
+    import colour_domains
+    defs = colour_domains.load()
+    print("kite_mote_colors: one lime (HSV hue %d), OKLab L %.3f to %.3f, darkest to lightest %s"
+          % (LADDER_HSV_HUE, LADDER_L[0], LADDER_L[1], ", ".join(LADDER_ORDER)))
+    for e, c in zip(ELEMENTS, colors):
+        L, C, h = lch(oklab(c))
+        fam, top, dist = colour_domains.classify(defs, c)
+        print("  %-6s %s  sRGB (%.4f, %.4f, %.4f)  L %.3f  C %.3f  hue %3.0f  %s"
+              % (e, hexof(c).upper(), c[0], c[1], c[2], L, C, h,
+                 ("in Lime, %.1f JND inside its border" % ((dist - defs["margin"] / 2) / 0.02)) if fam == "lime" else "NOT IN LIME"))
 
 
 def self_test():
-    fam, raw = families()
     bad = []
-    for name, c in (("half red, full green", (0.5, 1.0, 0.0)), ("a darker green-yellow", (0.45, 0.85, 0.0))):
-        if not in_lime(c, fam):
-            bad.append("%s %s is not lime" % (name, hexof(c)))
-    for name, c in (("Jade", raw["jade"][1]), ("Ruby", raw["ruby"][1]), ("Gold", raw["gold"][1]),
-                    ("the Blue domain", raw["blue"][1]), ("the danger red", raw["fire"][0]), ("mid grey", (0.5, 0.5, 0.5)),
-                    ("white", (1.0, 1.0, 1.0)), ("dark olive (DarkCTA raw)", (0.28125, 0.5, 0.078125)),
-                    ("pure yellow (no green in it)", (1.0, 1.0, 0.0)), ("pure green (no yellow in it)", (0.0, 1.0, 0.0)),
-                    ("the first cut's mint (blue in it)", (0.7539, 0.9844, 0.5781)), ("orange", (1.0, 0.6, 0.0)),
-                    ("the CTA lime (a touch of blue)", raw["lime"][0])):
-        if in_lime(c, fam):
-            bad.append("%s %s is inside the lime boundary" % (name, hexof(c)))
-    _, colors, _, _ = derive()
+    colors = ladder()
+    for e, c in zip(ELEMENTS, colors):
+        if hexof(c).upper() != PICKED[e]:
+            bad.append("the ladder's %s is %s, the page saved %s" % (e, hexof(c).upper(), PICKED[e]))
     asset, lab = write_asset(read(ASSET), colors), write_lab(read(LAB), colors)
     palette = write_palette(read(PALETTE), colors)
-    if check(asset, lab, colors, fam, palette):
-        bad.append("a freshly written asset, lab and palette fail the check: %s" % check(asset, lab, colors, fam, palette))
+    if check(asset, lab, colors, None, palette):
+        bad.append("a freshly written asset, lab and palette fail the check: %s" % check(asset, lab, colors, None, palette))
     if write_asset(asset, colors) != asset or write_lab(lab, colors) != lab or write_palette(palette, colors) != palette:
         bad.append("writing is not idempotent")
-    if not check(asset, lab, colors, fam, PALETTE_RE.sub(lambda _: palette_block([(0.4862745, 0.9882354, 0.0)] + colors[1:]),
-                                                         palette, count=1)):
-        bad.append("a palette crystal colour set to the omni's lime passes")
-    if not check(asset, lab, colors, fam, PALETTE_RE.sub("", palette, count=1)):
-        bad.append("a palette with no crystal colours passes")
-    tampered = ASSET_RE.sub(lambda _: asset_block([(0.6, 0.2, 0.2)] + colors[1:]), asset, count=1)
-    if not check(tampered, lab, colors, fam):
-        bad.append("a tampered asset colour passes")
-    if not check(asset, lab.replace(hexof(colors[0]), "#ffffff", 1), colors, fam):
-        bad.append("a tampered lab colour passes")
-    if not check(asset, lab, [(0.5, 0.5, 0.5)] + colors[1:], fam):
-        bad.append("a grey element colour passes the boundary check")
-    if not any("apart" in e for e in check(asset, lab, [colors[0], colors[0]] + colors[2:], fam)):
-        bad.append("two equal element colours pass the distinctness check")
-    if distinct([oklab(c) for c in ((0.0, 1.0, 0.0), (0.6484, 1.0, 0.5833))]):
-        bad.append("#00ff00 and #a5ff95 (one hue) count as distinct")
-    if assign(list(reversed(colors))) != colors:
-        bad.append("the assignment depends on the order the corners were found in")
+    planted = [
+        ("a palette crystal colour set to the omni's lime", (asset, lab, colors, PALETTE_RE.sub(lambda _: palette_block([(0.4862745, 0.9882354, 0.0)] + colors[1:]), palette, count=1))),
+        ("a palette with no crystal colours", (asset, lab, colors, PALETTE_RE.sub("", palette, count=1))),
+        ("a tampered asset colour", (ASSET_RE.sub(lambda _: asset_block([(0.6, 0.2, 0.2)] + colors[1:]), asset, count=1), lab, colors, None)),
+        ("a tampered lab colour", (asset, lab.replace(hexof(colors[0]), "#ffffff", 1), colors, None)),
+        ("a grey element colour (not in Lime)", (asset, lab, [(0.5, 0.5, 0.5)] + colors[1:], None)),
+        ("two shades of different hue", (asset, lab, [colors[0], (0.25, 1.0, 0.0)] + colors[2:], None)),
+        ("Charge lighter than Mass", (asset, lab, [colors[1], colors[0]] + colors[2:], None)),
+        ("uneven lightness steps", (asset, lab, colors[:3] + [(0.5, 0.8333, 0.0)], None)),
+    ]
+    for label, (a, l, c, pal) in planted:
+        if not check(a, l, c, None, pal):
+            bad.append("%s passes the check" % label)
     print("kite_mote_colors self-test: " + ("ok" if not bad else "FAILED"))
     for b in bad:
         print("  -", b)
@@ -477,10 +347,10 @@ def self_test():
 def main(argv):
     if "--self-test" in argv:
         return self_test()
-    fam, colors, n_in, n_surface = derive()
-    report(fam, colors, n_in, n_surface)
+    colors = derive()
+    report(colors)
     if "--check" in argv:
-        errs = check(read(ASSET), read(LAB), colors, fam, read(PALETTE))
+        errs = check(read(ASSET), read(LAB), colors, None, read(PALETTE))
         for e in errs:
             print("FAIL:", e)
         print("kite_mote_colors --check:", "ok" if not errs else "%d problem(s)" % len(errs))

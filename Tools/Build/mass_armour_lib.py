@@ -33,7 +33,7 @@ assert (ROOT / "Assets").is_dir(), ROOT
 FORM_CS = ROOT / "Assets/_Scripts/Utility/DataContainers/FloraElementalForm.cs"
 CRYSTAL_SET_CS = ROOT / "Assets/_Scripts/ScriptableObjects/ElementalCrystalSetSO.cs"
 DEPTH_MAT = ROOT / "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrisms.mat"
-OCTAHEDRON_CS = ROOT / "Assets/_Scripts/Utility/OctahedronMeshGenerator.cs"
+OCTAHEDRON_CS = ROOT / "Assets/_Scripts/Utility/Foundation/OctahedronMeshGenerator.cs"
 
 SWING_RADIUS = 11.85
 SWING_MARGIN = 1.05

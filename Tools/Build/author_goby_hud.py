@@ -18,9 +18,10 @@ written (author_urchin_hud.py, whose YAML pieces this imports):
 
 2. `GobyHUDVariant.prefab`, a Prefab VARIANT of `VesselHUDPrefab.prefab` (never a copy): the base root's dead
    missing-script component removed, `GobyPistolHUDView` on the root with BOTH seats' icons per card, and per element
-   a bare host + icon (authored at the lockup's icon box, so the derived scale is 1), plus two gauges, each under the
+   a bare host + icon (authored at the lockup's icon box, so the derived scale is 1), plus three gauges, each under the
    card it reports on and bound twice (the view writes, the lockup adopts):
 
+     Mass card   gauge = massGauge    the Pistol's energy (Garrett, 2026-10-29: "the energy should be shown on its mass icon")
      Time card   gauge = timeGauge    the Goby's dart charge, or the Pistol's speed
      Space card  gauge = spaceGauge   how far the undertow reaches (both seats)
 
@@ -212,7 +213,9 @@ V_VIEW = 7881000000000000002
 V_BASE = 7881000000000001000
 TIME_GAUGE = dict(go=V_BASE + 200, rt=V_BASE + 201, cr=V_BASE + 202, img=V_BASE + 203)
 SPACE_GAUGE = dict(go=V_BASE + 210, rt=V_BASE + 211, cr=V_BASE + 212, img=V_BASE + 213)
-GAUGE_ON = {"Time": ("DartAndSpeedGauge", TIME_GAUGE), "Space": ("UndertowReachGauge", SPACE_GAUGE)}
+MASS_GAUGE = dict(go=V_BASE + 220, rt=V_BASE + 221, cr=V_BASE + 222, img=V_BASE + 223)
+GAUGE_ON = {"Time": ("DartAndSpeedGauge", TIME_GAUGE), "Space": ("UndertowReachGauge", SPACE_GAUGE),
+            "Mass": ("PistolEnergyGauge", MASS_GAUGE)}
 GAUGE_FILL = "{r: 0.22, g: 0.51, b: 1, a: 0.55}"
 READY = "{r: 0.96, g: 0.96, b: 1, a: 0.5}"
 
@@ -320,6 +323,7 @@ MonoBehaviour:
   seatIcons:
 {"".join(seat_icons)}  timeGauge: {{fileID: {TIME_GAUGE['img']}}}
   spaceGauge: {{fileID: {SPACE_GAUGE['img']}}}
+  massGauge: {{fileID: {MASS_GAUGE['img']}}}
   gaugeColor: {GAUGE_FILL}
   gaugeFullColor: {READY}
 """
@@ -527,6 +531,13 @@ def check_variant(text: str):
             errs.append(f"GobyHUDVariant: the {name} card does not carry both seats' icons ({gpng}, {ppng})")
     if len(set(guid_for(p) for p, _ in icons())) != 8:
         errs.append("GobyHUDVariant: two cards share an icon")
+    for name, (_, g) in GAUGE_ON.items():
+        element = next(e for e, n, _, _ in CARDS if n == name)
+        if f"  - element: {element}\n    icon: {{fileID: {host_ids([n for _, n, _, _ in CARDS].index(name))['icon_img']}}}\n" \
+                f"    upgradedSprite: {{fileID: 0}}\n    gauge: {{fileID: {g['img']}}}\n" not in text:
+            errs.append(f"GobyHUDVariant: the {name} card does not bind its gauge")
+    if f"  massGauge: {{fileID: {MASS_GAUGE['img']}}}\n" not in text:
+        errs.append("GobyHUDVariant: the view does not write the Mass card's energy gauge")
     return errs
 
 
@@ -579,6 +590,10 @@ def self_test() -> int:
         fails.append(f"the variant fails: {check_variant(v)}")
     if not check_variant(v.replace(sprite_ref("Pistol_Dive.png"), sprite_ref("Goby_Dart.png"))):
         fails.append("check_variant did not fire on a card with one seat's icon")
+    if not check_variant(v.replace(f"  massGauge: {{fileID: {MASS_GAUGE['img']}}}\n", "  massGauge: {fileID: 0}\n")):
+        fails.append("check_variant did not fire on the energy gauge unwritten")
+    if not check_variant(v.replace(f"    gauge: {{fileID: {MASS_GAUGE['img']}}}\n", "    gauge: {fileID: 0}\n")):
+        fails.append("check_variant did not fire on the Mass card's gauge unbound")
     for f in fails:
         print("SELF-TEST FAIL:", f)
     print("author_goby_hud self-test:", "ok" if not fails else f"{len(fails)} failure(s)")

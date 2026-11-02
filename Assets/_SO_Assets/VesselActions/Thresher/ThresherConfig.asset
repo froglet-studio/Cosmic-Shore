@@ -107,6 +107,8 @@ MonoBehaviour:
   magnetRange: 150
   magnetAcceleration: 220
   launchBoost: 4.8
+  launchExitSpeedMultiplier: 2
+  launchExitSeconds: 8
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
   hitStopMinSeconds: 0.03
@@ -139,6 +141,7 @@ MonoBehaviour:
   spectateBlendSeconds: 0.05
   aimYawRate: 180
   aimPitchRate: 120
+  aimStickEaseSeconds: 0.3
   fullPull: 0.97
   letGoBelow: 0.9
   hullFollowsPlantedVelocity: 1
@@ -146,6 +149,9 @@ MonoBehaviour:
   releaseSpinDownMaxDegrees: 30
   spectateCarrySeconds: 0.35
   cameraMaxFollowAngularAcceleration: 1500
+  snapAimSeconds: 0.25
+  snapAimRestDepth: 0.1
+  snapAimHoldSeconds: 1.5
   sightWideFieldOfView: 50
   sightZoomFieldOfView: 6
   sightZoomDeadzone: 0.25

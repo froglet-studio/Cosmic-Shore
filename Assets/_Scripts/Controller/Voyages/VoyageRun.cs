@@ -245,11 +245,18 @@ namespace CosmicShore.Gameplay
             // Every other seat is an AI wingmate, released by the host (a party client's voyage waits for step 5).
             if (!swapper || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
             var t = local.Transform;
+            var prefabs = swapper.VesselPrefabContainer;
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
                 if (seat == mySeat) continue;
                 var slot = _squad.GetSlot(seat);
                 if (!VesselRequirement.IsConcrete(slot.Vessel)) continue;
+                // A hull with no registered prefab (Falcon, Termite, Shrike) cannot be released: the seat sails empty.
+                if (prefabs && !prefabs.TryGetShipPrefab(slot.Vessel, out _, reportMissing: false))
+                {
+                    CSDebug.LogWarning($"[Voyage] Seat {seat + 1} names {slot.Vessel}, which has no vessel prefab - it sails empty.");
+                    continue;
+                }
                 int seated = seat;
                 var pose = new Pose(t.position + t.right * (WingmateAbeam * (seat < mySeat ? -1f : 1f)) - t.forward * 60f,
                     t.rotation);

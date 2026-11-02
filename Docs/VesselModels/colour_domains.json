@@ -1,0 +1,471 @@
+{
+  "format": "cosmic-shore-colour-domains/4",
+  "status": "SOURCE OF TRUTH for the six colour domains: which family a colour belongs to, and where the forbidden band lies",
+  "name": "shaped by eye",
+  "adopted": "2026-10-31",
+  "by": "Garrett",
+  "artifact": "https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh",
+  "checker": "python3 Tools/Build/colour_domains.py --check",
+  "space": "OKLab, x = [L, a, b] of the sRGB colour (Bjorn Ottosson 2020)",
+  "rule": "Each family f has a score A_f(x) = n_f . x + c_f. A colour belongs to the family with the highest score, unless it lies within margin/2 (OKLab distance) of that family cell border with any other family, A_f(x) - A_g(x) < (margin/2) |n_f - n_g|: then it is in the forbidden band. The cells are convex, fill OKLab with no gaps, and the band is the same thickness on every border.",
+  "margin": 0.05,
+  "cells": {
+    "fire": {
+      "n": [
+        0.001287,
+        0.317596,
+        0.046646
+      ],
+      "c": 0.032165
+    },
+    "gold": {
+      "n": [
+        0.019962,
+        0.16431,
+        0.229468
+      ],
+      "c": 0.007794
+    },
+    "lime": {
+      "n": [
+        -0.016072,
+        -0.152405,
+        0.311618
+      ],
+      "c": 0.017049
+    },
+    "jade": {
+      "n": [
+        0.000796,
+        -0.23786,
+        -0.030262
+      ],
+      "c": 0.021545
+    },
+    "blue": {
+      "n": [
+        0.00415,
+        0.11425,
+        -0.072808
+      ],
+      "c": 0.040834
+    },
+    "ruby": {
+      "n": [
+        0.074667,
+        0.616661,
+        -0.484357
+      ],
+      "c": -0.119387
+    }
+  },
+  "families": {
+    "fire": {
+      "meaning": "Danger: bad, avoid it or deal with it",
+      "signal": "fire-0",
+      "anchors": [
+        {
+          "id": "fire-0",
+          "name": "Danger signal",
+          "hex": "#FF0101",
+          "rgb": [
+            1,
+            0.0039,
+            0.0046
+          ],
+          "source": "OriginalColorSetSO · EnvironmentColors.Danger, brightest channel 1"
+        },
+        {
+          "id": "fire-1",
+          "name": "HUD fire",
+          "hex": "#FF541A",
+          "rgb": [
+            1,
+            0.33,
+            0.1
+          ],
+          "source": "ElementalBarsConfig · fireColor"
+        },
+        {
+          "id": "fire-2",
+          "name": "Engine ember rim",
+          "hex": "#6B1C0A",
+          "rgb": [
+            0.42,
+            0.11,
+            0.04
+          ],
+          "source": "vessel_colors.py · engine rim (EngineVesselMaterial _Color1)"
+        },
+        {
+          "id": "fire-3",
+          "name": "Engine ember face",
+          "hex": "#300A05",
+          "rgb": [
+            0.19,
+            0.04,
+            0.02
+          ],
+          "source": "vessel_colors.py · engine face (EngineVesselMaterial _Color2)"
+        }
+      ],
+      "shaping": {
+        "taken": [
+          "#F78068",
+          "#EF8068",
+          "#400858",
+          "#480070",
+          "#480068",
+          "#480070",
+          "#480080",
+          "#480087",
+          "#400087",
+          "#580080"
+        ]
+      }
+    },
+    "gold": {
+      "meaning": "Commerce: Team 3",
+      "signal": "gold-0",
+      "anchors": [
+        {
+          "id": "gold-0",
+          "name": "Gold UI = signal",
+          "hex": "#FFA700",
+          "rgb": [
+            1,
+            0.6565,
+            0
+          ],
+          "source": "OriginalColorSetSO · GoldColors.TrailHighlightColor"
+        }
+      ],
+      "shaping": {
+        "taken": [
+          "#FFFF60",
+          "#C7B700",
+          "#F7D797",
+          "#FFDF97",
+          "#F7F7C7",
+          "#FFF700",
+          "#FFF700",
+          "#E7F700",
+          "#DFEF18",
+          "#FFEF00",
+          "#FFEF00"
+        ]
+      }
+    },
+    "lime": {
+      "meaning": "Call to action: a categorically good thing to collect or click",
+      "signal": "lime-0",
+      "anchors": [
+        {
+          "id": "lime-0",
+          "name": "CTA signal",
+          "hex": "#8FFF28",
+          "rgb": [
+            0.5625,
+            1,
+            0.1562
+          ],
+          "source": "OriginalColorSetSO · DarkCTA, brightest channel 1"
+        },
+        {
+          "id": "lime-1",
+          "name": "BrightCTA = HUD lime",
+          "hex": "#96EB29",
+          "rgb": [
+            0.59,
+            0.92,
+            0.16
+          ],
+          "source": "OriginalColorSetSO · BrightCTA; ElementalBarsConfig · limeColor"
+        },
+        {
+          "id": "lime-2",
+          "name": "Kite view lime",
+          "hex": "#A8FF2E",
+          "rgb": [
+            0.66,
+            1,
+            0.18
+          ],
+          "source": "KiteNavigatorView.cs · Lime"
+        }
+      ],
+      "shaping": {
+        "taken": [
+          "#FFFF28",
+          "#EFFF30",
+          "#FFFF20",
+          "#EFF700",
+          "#DFDF40",
+          "#204800",
+          "#204808",
+          "#205000",
+          "#205808",
+          "#406028",
+          "#406030",
+          "#406830",
+          "#407030",
+          "#EFEF20",
+          "#EFEF28",
+          "#EFEF30",
+          "#F7FF30",
+          "#FFFF10",
+          "#FFFF18",
+          "#FFFF20",
+          "#FFFF00"
+        ]
+      }
+    },
+    "jade": {
+      "meaning": "Order: Team 1",
+      "signal": "jade-1",
+      "anchors": [
+        {
+          "id": "jade-0",
+          "name": "Jade UI",
+          "hex": "#0EC0B6",
+          "rgb": [
+            0.0549,
+            0.7529,
+            0.7137
+          ],
+          "source": "OriginalColorSetSO · JadeColors.TrailHighlightColor"
+        },
+        {
+          "id": "jade-1",
+          "name": "Jade signal",
+          "hex": "#13FFF2",
+          "rgb": [
+            0.0729,
+            1,
+            0.9479
+          ],
+          "source": "GetDomainSignalColor(Jade): the UI colour at brightest channel 1"
+        }
+      ],
+      "shaping": {
+        "taken": [
+          "#00FF8F",
+          "#508F70",
+          "#307860",
+          "#60B750",
+          "#088068",
+          "#088F68",
+          "#308060",
+          "#508760",
+          "#488068",
+          "#008FFF",
+          "#0087F7",
+          "#0087FF",
+          "#0080EF",
+          "#0887FF",
+          "#1080EF",
+          "#1078DF",
+          "#0878EF",
+          "#0858AF"
+        ]
+      }
+    },
+    "blue": {
+      "meaning": "Neutral: no team, and every grey",
+      "signal": "blue-0",
+      "anchors": [
+        {
+          "id": "blue-0",
+          "name": "Blue UI = signal",
+          "hex": "#6680FF",
+          "rgb": [
+            0.4,
+            0.5,
+            1
+          ],
+          "source": "OriginalColorSetSO · BlueColors.TrailHighlightColor"
+        },
+        {
+          "id": "blue-1",
+          "name": "HUD blue",
+          "hex": "#3882FF",
+          "rgb": [
+            0.22,
+            0.51,
+            1
+          ],
+          "source": "ElementalBarsConfig · blueColor"
+        },
+        {
+          "id": "blue-2",
+          "name": "Hull body rim",
+          "hex": "#2E3654",
+          "rgb": [
+            0.18,
+            0.21,
+            0.33
+          ],
+          "source": "vessel_colors.py · body rim (BlueBaseVesselMaterial _Color1)"
+        },
+        {
+          "id": "blue-3",
+          "name": "Hull body face",
+          "hex": "#070811",
+          "rgb": [
+            0.028,
+            0.033,
+            0.065
+          ],
+          "source": "vessel_colors.py · body face (BlueBaseVesselMaterial _Color2)"
+        },
+        {
+          "id": "blue-4",
+          "name": "Glass rim",
+          "hex": "#B3CCFF",
+          "rgb": [
+            0.7,
+            0.8,
+            1
+          ],
+          "source": "vessel_colors.py · window rim (ScreenVesselMaterial _Color1)"
+        },
+        {
+          "id": "blue-5",
+          "name": "Glass face",
+          "hex": "#0F299E",
+          "rgb": [
+            0.06,
+            0.16,
+            0.62
+          ],
+          "source": "vessel_colors.py · window face (ScreenVesselMaterial _Color2)"
+        },
+        {
+          "id": "blue-6",
+          "name": "Black (every grey)",
+          "hex": "#000000",
+          "rgb": [
+            0,
+            0,
+            0
+          ],
+          "source": "COLOR.md rule 1: every grey is Blue's"
+        },
+        {
+          "id": "blue-7",
+          "name": "White (every grey)",
+          "hex": "#FFFFFF",
+          "rgb": [
+            1,
+            1,
+            1
+          ],
+          "source": "COLOR.md rule 1: every grey is Blue's"
+        }
+      ],
+      "shaping": {
+        "taken": [
+          "#380818",
+          "#CFCFA7",
+          "#EFDFB7",
+          "#E7EFC7",
+          "#DFE7BF",
+          "#4000F7",
+          "#4000FF",
+          "#E78FBF",
+          "#F79FCF",
+          "#C770AF",
+          "#700880",
+          "#680078",
+          "#FFA7EF"
+        ]
+      }
+    },
+    "ruby": {
+      "meaning": "Freedom: Team 2",
+      "signal": "ruby-1",
+      "anchors": [
+        {
+          "id": "ruby-0",
+          "name": "Ruby UI",
+          "hex": "#C800C3",
+          "rgb": [
+            0.7843,
+            0,
+            0.7647
+          ],
+          "source": "OriginalColorSetSO · RubyColors.TrailHighlightColor"
+        },
+        {
+          "id": "ruby-1",
+          "name": "Ruby signal",
+          "hex": "#FF00F9",
+          "rgb": [
+            1,
+            0,
+            0.975
+          ],
+          "source": "GetDomainSignalColor(Ruby): the UI colour at brightest channel 1"
+        }
+      ],
+      "shaping": {
+        "taken": [
+          "#60009F",
+          "#6800EF",
+          "#6800F7",
+          "#6800FF",
+          "#6808FF",
+          "#6810FF",
+          "#6818FF",
+          "#6820FF",
+          "#6828FF",
+          "#6830EF",
+          "#6830F7",
+          "#7018FF",
+          "#7020FF",
+          "#7028FF",
+          "#7030FF",
+          "#7038F7",
+          "#7830FF"
+        ]
+      }
+    }
+  },
+  "exceptions": [
+    {
+      "anchor": "fire-3",
+      "reason": "The engine ember face (#300A05) is within one band of black, and every grey is Blue's, so no convex border can give it full clearance. It sits 0.0007 OKLab inside the band edge."
+    },
+    {
+      "anchor": "ui:selection",
+      "reason": "OPEN DECISION: the UI's selection blue #3DB2FF sits in the band, 0.0077 OKLab from Blue's border with Jade (needs 0.025). Either move the selection colour into Blue or reshape Blue in the lab; until then it is listed here so any NEW drift still fails."
+    }
+  ],
+  "measured": {
+    "tool": "python3 Tools/Build/colour_domains.py --report",
+    "grid": "25^3 sRGB",
+    "shares": {
+      "fire": 16.91,
+      "gold": 1.6,
+      "lime": 14.2,
+      "jade": 7.67,
+      "blue": 18.1,
+      "ruby": 5.52
+    },
+    "band": 36.01
+  },
+  "history": [
+    "2026-10-31 shaped by eye in the artifact (proposal tymgckn91vbfk8hlro2y); the boundaries are frozen exactly as the page fitted them while Garrett shaped. Two anchors (engine ember rim, Jade UI) had been dragged by accident and are restored to their game values here; under the frozen boundaries both rest inside their own family."
+  ],
+  "ui_tokens": {
+    "source": "Assets/_SO_Assets/UI/UITheme.asset (Docs/UI_COLOR_RULES.md)",
+    "tokens": {
+      "cta": "lime",
+      "danger": "fire",
+      "controlActive": "jade",
+      "purchase": "gold",
+      "tooltip": "ruby",
+      "selection": "blue"
+    }
+  }
+}

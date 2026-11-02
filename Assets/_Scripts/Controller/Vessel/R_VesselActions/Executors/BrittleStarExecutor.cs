@@ -156,6 +156,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Eased 0..1: Charge Mode's cords from whip (0) toward rigid (1), following the RT pull. A full pull
         /// reaches <c>cordMaxRigidity</c>, never 1.</summary>
         public float CordRigidity01 => config ? _cordPull01 * config.CordMaxRigidity : _cordPull01;
+        /// <summary>Eased 0..1: the RT pull itself (0 = whips, 1 = a full pull), before the rigidity cap. The Charge card
+        /// crossfades its whips into sabers on it.</summary>
+        public float CordPull01 => _cordPull01;
         /// <summary>The ring's firing rotation about the nose axis, radians. The animation draws it.</summary>
         public float RingPhase => _ringPhase;
         public bool IsFiring => _firing;
@@ -175,6 +178,20 @@ namespace CosmicShore.Gameplay
         public bool Aiming => _aiming;
         /// <summary>Eased 0..1: how far Charge Mode's five cords are grown out of their muzzles.</summary>
         public float CordsOut01 => _cordsOut01;
+
+        /// <summary>How far Mass has widened the blocks, 0 at x1 to 1 at x2 (the Mass card's fat-block crossfade).</summary>
+        public float BlockGirth01 => config ? Mathf.InverseLerp(1f, 2f, BlockGirth()) : 0f;
+
+        /// <summary>How far the aim stick splays the guns, 0 = meeting ahead (centred) to 1 = splayed (the Space card).</summary>
+        public float Splay01 => config ? BrittleStarRules.Spread01(AimStick(), config.AimDeadzone) : 0f;
+
+        /// <summary>How far Space has stretched every gun's range, 0 at x1 to 1 at x2 (the Space card's far rounds).</summary>
+        public float Range01 => config && _status != null
+            ? Mathf.InverseLerp(1f, 2f, config.RangeMultiplier.EvaluateReplicated(_status)) : 0f;
+
+        /// <summary>How far Time has raised Speed Mode, 0 at x6 to 1 at x8 (the Time card's longer blocks).</summary>
+        public float SpeedBoost01 => config && _status != null
+            ? Mathf.InverseLerp(6f, 8f, config.SpeedModeMultiplier.EvaluateReplicated(_status)) : 0f;
         public BrittleStarConfigSO Config => config;
 
         // ------------------------------------------------------------------ lifecycle

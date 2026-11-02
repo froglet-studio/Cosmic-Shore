@@ -1,5 +1,15 @@
 # Tollway — Technical Documentation
 
+> **2026-10-27 (Garrett): the Scarab's switch is always placed around an ELEMENTAL CRYSTAL, in every game.** This is
+> part of the Scarab's kit (`ScarabSwitchAnchors`, called by `PlaceSwitchActionExecutor` before any mode's
+> resolver). It is no longer a flora-heart assist that falls back to free placement. Any Charge, Mass, Space or
+> Time crystal anchors a ring, in any state: a free pickup, a flora heart, or a heart still embedded in a living
+> fauna. Omni crystals never do. With no elemental crystal on the flight path (within `anchorReach`, floored at
+> 10 u), the press is refused and nothing is spent. The ring is placed where the crystal is at the press and does
+> not follow a fauna that carries it away.
+
+> For Tollway this widens the anchor set: the 14 NetworkSynced flora still anchor (each flora heart is an elemental crystal), and so do any elemental crystals and fauna hearts in the court.
+
 ## Overview
 
 **Tollway** is the Scarab-only **ring race**, and the mode built on the one idea the vessel's

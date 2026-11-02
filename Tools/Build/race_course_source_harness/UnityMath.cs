@@ -11,6 +11,7 @@ namespace UnityEngine
         public static Vector3 zero => new(0,0,0);
         public static Vector3 one => new(1,1,1);
         public static Vector3 up => new(0,1,0);
+        public static Vector3 down => new(0,-1,0);
         public static Vector3 forward => new(0,0,1);
         public static Vector3 right => new(1,0,0);
         public static Vector3 back => new(0,0,-1);
@@ -64,6 +65,13 @@ namespace UnityEngine
             else if (m11 > m22) { float s = Mathf.Sqrt(1f+m11-m00-m22)*2f; q = new((m01+m10)/s,0.25f*s,(m12+m21)/s,(m02-m20)/s); }
             else { float s = Mathf.Sqrt(1f+m22-m00-m11)*2f; q = new((m02+m20)/s,(m12+m21)/s,0.25f*s,(m10-m01)/s); }
             return q;
+        }
+        // TigerMothDropMath.CameraFrame only has to compile here (WaystationTower reads Ease01 alone): a normalised lerp.
+        public static Quaternion Slerp(Quaternion a, Quaternion b, float t)
+        {
+            float d = a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; float sg = d < 0f ? -1f : 1f;
+            var q = new Quaternion(a.x + (sg*b.x - a.x)*t, a.y + (sg*b.y - a.y)*t, a.z + (sg*b.z - a.z)*t, a.w + (sg*b.w - a.w)*t);
+            float m = Mathf.Sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w); return new(q.x/m, q.y/m, q.z/m, q.w/m);
         }
         public static Quaternion AngleAxis(float deg, Vector3 axis) { axis = axis.normalized; float h = deg*Mathf.Deg2Rad*0.5f; float s = Mathf.Sin(h); return new(axis.x*s, axis.y*s, axis.z*s, Mathf.Cos(h)); }
         public static Quaternion FromToRotation(Vector3 from, Vector3 to)

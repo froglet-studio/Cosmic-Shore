@@ -47,26 +47,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Triggers_ArePeckAndFlit_UpgradedByThirteenCards()
+        public void Triggers_ArePeckAndFlit_UpgradedByThirteenBankedCards()
         {
-            // Garrett 2026-10-21: "the right trigger should always be a weak attack power that gets upgraded sometimes. the
-            // left should be a movement power that works similar. the 39 patterns should still be unique."
+            // Lab round 8 (Garrett 2026-11-01): RT is a Space active, LT a Charge active, pull to preview and release to fire;
+            // "the three uses per card is good. each completion of a pattern should be a stored use of the ability".
             var c = Load();
-            Assert.AreEqual(13, c.Upgrades.Count, "the lab's ACTIVES");
-            Assert.AreEqual(6, c.Upgrades.Count(u => u.trigger == 0), "six attack upgrades take RT");
-            Assert.AreEqual(7, c.Upgrades.Count(u => u.trigger == 1), "seven move upgrades take LT");
+            Assert.AreEqual(13, c.Upgrades.Count, "the lab's ACTIVES8");
+            Assert.AreEqual(7, c.Upgrades.Count(u => u.trigger == 0), "seven Space upgrades bank on RT");
+            Assert.AreEqual(6, c.Upgrades.Count(u => u.trigger == 1), "six Charge upgrades bank on LT");
             Assert.AreEqual(13, c.Upgrades.Select(u => u.effect).Distinct().Count(), "one upgrade per card");
             foreach (var u in c.Upgrades)
                 Assert.AreEqual(1, c.Patterns.Count(p => p.effect == u.effect), $"{u.effect} is exactly one card's effect");
             Assert.AreEqual(39, c.Patterns.Select(p => p.effect).Distinct().Count(), "the 39 patterns are still unique");
-            Assert.AreEqual(20f, c.ActiveSeconds, "an upgrade holds its trigger 20 s");
-            Assert.AreEqual(HoneyguideTriggerUse.Hold, c.UpgradeFor(HoneyguideEffect.Harmonizer).use);
-            Assert.AreEqual(HoneyguideTriggerUse.Charge, c.UpgradeFor(HoneyguideEffect.Fugacity).use);
+            Assert.AreEqual(3, c.UsesPerCard, "every make of an upgrade card banks three uses");
+            Assert.AreEqual(1, c.UpgradeFor(HoneyguideEffect.Lasso).trigger, "the lasso strikes: it is a Charge (LT) upgrade");
+            Assert.AreEqual(0, c.UpgradeFor(HoneyguideEffect.Eyelet).trigger, "the Eyelet Jet cuts prisms: a Space (RT) upgrade");
+            Assert.AreEqual(HoneyguidePreview.Hook, c.UpgradeFor(HoneyguideEffect.Lasso).preview);
+            Assert.AreEqual(HoneyguidePreview.Hops, c.UpgradeFor(HoneyguideEffect.Monte).preview);
             Assert.IsNull(c.UpgradeFor(HoneyguideEffect.Plow), "a passive card is not an upgrade");
 
             var peck = c.PeckAction as FullAutoActionSO;
             Assert.IsNotNull(peck, "RT's Peck is a FullAutoActionSO through the hull's own gun");
-            Assert.AreEqual(2.5f, peck.FiringRate, 1e-4f, "lab peckRate");
+            Assert.AreEqual(10f, peck.FiringRate, 1e-4f, "a Peck release's burst, 0.1 s apart");
+            Assert.AreEqual(3, c.PeckBurst, "lab peckBurst");
             float range = peck.ResolveSpeed(null) * 2f * peck.ProjectileTime / Mathf.PI;
             Assert.AreEqual(c.PeckRange, range, 0.5f, "lab peckRange: range = speed x 2T / pi");
             Assert.IsFalse(peck.Spread.Enabled, "a Peck does not spray");
@@ -91,11 +94,11 @@ namespace CosmicShore.Tests
                 }
             }
             Assert.IsTrue(found.TryGetValue((int)InputEvents.RightStickAction, out var rt) && rt is HoneyguideTriggerActionSO { Trigger: 0 },
-                "RT is not the Honeyguide's trigger 0 (Peck and the attack upgrades)");
+                "RT is not the Honeyguide's trigger 0 (Peck and the Space upgrades)");
             Assert.IsTrue(found.TryGetValue((int)InputEvents.LeftStickAction, out var lt) && lt is HoneyguideTriggerActionSO { Trigger: 1 },
-                "LT is not the Honeyguide's trigger 1 (Flit and the move upgrades)");
+                "LT is not the Honeyguide's trigger 1 (Flit and the Charge upgrades)");
             Assert.IsFalse(found.ContainsKey((int)InputEvents.Button1Action), "the Sparrow's turret-stance toggle is gone");
-            Assert.IsTrue(found.ContainsKey((int)InputEvents.Button2Action), "the boost stays");
+            Assert.IsFalse(found.ContainsKey((int)InputEvents.Button2Action), "round 8 has no boost button");
         }
 
         [Test]
@@ -167,6 +170,110 @@ namespace CosmicShore.Tests
                 var cut = state.GetRange(0, state.Count - 3).ToArray();
                 Assert.IsFalse(new DynamoCore(s, 3).ReadState(cut), $"step {k}: a cut-short board was read");
             }
+        }
+
+        [Test]
+        public void Config_CarriesRound7_ApBankSix_AndAPickOfThree()
+        {
+            // Garrett 2026-10-29: "lets have the ap cap go to 6. lets do the 3 ability pick as well"
+            var s = Load().ToSettings();
+            Assert.AreEqual(6, s.ApBank, "what a spin does not use is kept, up to 6");
+            Assert.AreEqual(3, s.ApPerTick, "a spin still gives 3");
+            Assert.AreEqual(3, s.AbilityChoices, "three abilities are offered and the Ratel picks one");
+            Assert.IsFalse(string.IsNullOrEmpty(Load().PickAbilityTitle), "the pick's heading is authored");
+        }
+
+        // Plays the AI until the draw offers abilities; the AI's own pick is not applied.
+        static DynamoCore UntilOffered(DynamoSettings s, int seed)
+        {
+            var core = new DynamoCore(s, seed);
+            var memo = new DynamoCore.AIMemo();
+            for (int k = 0; k < 4000 && core.RevealState?.Offers == null; k++)
+            {
+                if (k % 2 == 0) { core.Advance(s, 1.0); continue; }
+                var inp = core.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(seed * 7 + k), memo);
+                if (inp != null && inp.Value.Kind == DynamoInputKind.Activate) memo.Key = "";
+                if (inp != null && inp.Value.Kind != DynamoInputKind.Pick) core.Apply(s, inp.Value);
+            }
+            return core;
+        }
+
+        [Test]
+        public void Ratel_IsOfferedThreeAbilities_TheClockWaitsForItsPick_AndItGetsTheOneItPicked()
+        {
+            var s = Load().ToSettings();
+            s.PatternsPerShuffle = 1;
+            s.PickSeconds = 0;   // no time limit: only the pick moves on
+            for (int seed = 1; seed <= 20; seed++)
+            {
+                var core = UntilOffered(s, seed);
+                var offers = core.RevealState?.Offers;
+                Assert.IsNotNull(offers, $"seed {seed}: the draw never offered abilities");
+                Assert.AreEqual(3, offers.Length, $"seed {seed}: three offered");
+                Assert.AreEqual(3, offers.Distinct().Count(), $"seed {seed}: the offers repeat");
+                CollectionAssert.DoesNotContain(offers, core.Ability, $"seed {seed}: the held ability was offered again");
+                CollectionAssert.DoesNotContain(offers, DynamoAbility.Printer, $"seed {seed}: the retired Printer was offered");
+                Assert.IsTrue(core.Events.Any(e => e.Kind == DynamoEventKind.Offer), $"seed {seed}: no Offer event");
+                core.Events.Clear();
+
+                int ticks = core.Ticks;
+                double clock = core.Clock;
+                core.Advance(s, 120.0);
+                Assert.AreEqual(ticks, core.Ticks, $"seed {seed}: the ports spun while the Ratel was picking");
+                Assert.AreEqual(clock, core.Clock, $"seed {seed}: the spin clock ran while the Ratel was picking");
+                Assert.IsFalse(core.Apply(s, DynamoInput.Activate(0)), $"seed {seed}: a card was made mid-pick");
+                Assert.IsFalse(core.Apply(s, DynamoInput.Pick(3)), $"seed {seed}: a fourth offer was taken");
+
+                var want = offers[seed % 3];
+                Assert.IsTrue(core.Apply(s, DynamoInput.Pick(seed % 3)), $"seed {seed}: the pick was refused");
+                Assert.AreEqual(want, core.Ability, $"seed {seed}: the Ratel did not get the ability it picked");
+                Assert.IsTrue(core.Events.Any(e => e.Kind == DynamoEventKind.Shuffle && e.Ability == want), $"seed {seed}: the pick was not announced");
+                Assert.IsTrue(core.RevealState == null || (core.RevealState.Stage == 2 && core.RevealState.Offers == null),
+                              $"seed {seed}: after the pick the new ports are shown");
+                Assert.IsFalse(core.Apply(s, DynamoInput.Pick(0)), $"seed {seed}: a second pick was taken");
+            }
+        }
+
+        [Test]
+        public void Ratel_WhoDoesNotPickInTime_GetsTheFirstOffer()
+        {
+            var s = Load().ToSettings();
+            s.PatternsPerShuffle = 1;
+            s.PickSeconds = 2;
+            var core = UntilOffered(s, 5);
+            var offers = core.RevealState.Offers;
+            core.Advance(s, 1.9);
+            Assert.IsNotNull(core.RevealState?.Offers, "the pick was taken before its time ran out");
+            core.Advance(s, 0.2);
+            Assert.AreEqual(offers[0], core.Ability, "a pick that runs out of time takes the first offer");
+        }
+
+        [Test]
+        public void TheAIRatel_PicksByItsOrder()
+        {
+            Assert.AreEqual(1, DynamoCore.AIPick(new[] { DynamoAbility.Mirror, DynamoAbility.Overclock, DynamoAbility.Swap }));
+            Assert.AreEqual(2, DynamoCore.AIPick(new[] { DynamoAbility.Mirror, DynamoAbility.Swap, DynamoAbility.LongReach }));
+            var s = Load().ToSettings();
+            s.PatternsPerShuffle = 1;
+            var core = UntilOffered(s, 9);
+            var inp = core.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(1), new DynamoCore.AIMemo());
+            Assert.IsNotNull(inp, "the AI does not answer an offer");
+            Assert.AreEqual(DynamoInputKind.Pick, inp.Value.Kind);
+            Assert.AreEqual(DynamoCore.AIPick(core.RevealState.Offers), inp.Value.Slot);
+        }
+
+        [Test]
+        public void TheBank_KeepsUnspentAP_UpToSix()
+        {
+            var s = Load().ToSettings();
+            var core = new DynamoCore(s, 11);
+            Assert.AreEqual(3, core.Ap, "a fresh board starts with one spin's AP");
+            core.Advance(s, s.TickSeconds + 0.01);
+            Assert.AreEqual(6, core.Ap, "an unspent spin is kept");
+            Assert.AreEqual(0, core.Wasted);
+            core.Advance(s, s.TickSeconds);
+            Assert.AreEqual(6, core.Ap, "the bank holds 6");
+            Assert.AreEqual(3, core.Wasted, "past 6 a spin's AP are wasted");
         }
 
         [Test]

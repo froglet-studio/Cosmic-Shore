@@ -51,7 +51,17 @@ DEVICE_RE = re.compile("|".join("(?:%s)" % p for p in DEVICE_READS))
 # Example for when Play Integrity is built:
 #   ("Assets/_Scripts/System/FairPlay/PlayIntegrityAttestation.cs", "AndroidJavaClass",
 #    "Google Play Integrity API: the platform's own verdict, the one device signal fair play uses (R16)"),
-ALLOW = []
+ALLOW = [
+    ("Assets/_Scripts/System/PlatformSignIn/GameCenterPlatform.cs", "DllImport",
+     "Game Center sign-in (T1): the native half asks GameKit only for the local player's identity-verification "
+     "signature, which Apple issues for signing in to a game server (Assets/Plugins/iOS/GameCenter/GameCenterSignIn.mm)"),
+    ("Assets/_Scripts/System/PlatformSignIn/PlayGamesPlatform.cs", "AndroidJavaClass",
+     "Play Games sign-in (T1): calls only the Java bridge in Assets/Plugins/Android/PlayGamesSignIn.androidlib, which asks Play Games whether its own sign-in succeeded and for a server auth code"),
+    ("Assets/_Scripts/System/PlatformSignIn/PlayGamesPlatform.cs", "AndroidJavaObject",
+     "Play Games sign-in (T1): calls only the Java bridge in Assets/Plugins/Android/PlayGamesSignIn.androidlib, which asks Play Games whether its own sign-in succeeded and for a server auth code"),
+    ("Assets/_Scripts/System/PlatformSignIn/PlayGamesPlatform.cs", "AndroidJavaProxy",
+     "Play Games sign-in (T1): calls only the Java bridge in Assets/Plugins/Android/PlayGamesSignIn.androidlib, which asks Play Games whether its own sign-in succeeded and for a server auth code"),
+]
 
 INSTALLED_APPS = re.compile(r"getInstalledApplications|getInstalledPackages|queryIntentActivities|QUERY_ALL_PACKAGES")
 

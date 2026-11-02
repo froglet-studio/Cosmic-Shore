@@ -279,6 +279,9 @@ namespace CosmicShore.UI
 
             var hcs = HostConnectionService.Instance;
             if (hcs == null || PartyInviteController.Instance == null || _gameData == null || _gameData.IsOfflineSession) return;
+            // Not while the bounce that brought us here is still running: a Rejoin pressed then was ignored
+            // ("Already transitioning", 2026-10-30). The offer comes on the first check after it ends.
+            if (PartyInviteController.Instance.IsTransitioning) return;
             // Already in that match (this client never left it, or it just rejoined).
             if (_gameData.ActiveSession != null && _gameData.ActiveSession.Id == record.sessionId) return;
 

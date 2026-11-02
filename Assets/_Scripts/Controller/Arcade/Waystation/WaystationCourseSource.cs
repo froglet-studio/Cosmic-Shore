@@ -6,27 +6,38 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Waystation's course: an open chain of ring clusters. It CANNOT fail - a cluster is a
-    /// capped-turn walk from its own centre and a hop is clamped back into the shell.
+    /// Waystation's course: Garrett's chain of ring clusters (<see cref="WaystationCourse"/>) with a Drop Tower in
+    /// every gap but the last (<see cref="WaystationTower"/>, Docs/Studios/TIGER_MOTH_TIME.md). The authored target
+    /// is a number of CLUSTERS; the finish line is every ring the course lays, towers included, because a tower's
+    /// length depends on its gap. Was Waystation Prototype's source (GameModes 76) until the prototype replaced
+    /// Waystation's course (Shombith, 2026-11-01).
     /// </summary>
     public sealed class WaystationCourseSource : RaceCourseSource
     {
         public override GameModes Mode => GameModes.Waystation;
 
+        int _laidIntensity = -1;
+        int _laidRings;
+
+        /// <summary>Clusters a race lays, from the End Game Conditions window.</summary>
+        public static int ClusterTarget()
+        {
+            var overrides = EndConditionOverridesSO.Instance;
+            return Mathf.Max(2, overrides != null
+                ? overrides.GetWaystationClusterTarget()
+                : EndConditionOverridesSO.DefaultWaystationClusterTarget);
+        }
+
         /// <summary>
-        /// ROUNDED UP to whole clusters, here rather than in the course: this is the number the
-        /// turn monitor publishes as the finish line before a course exists, so the two have to
-        /// agree from the first frame.
+        /// The rings the last course built at this intensity laid, which is the finish line; before any course exists,
+        /// the cluster rings alone. <c>RaceGateTurnMonitor</c> reads the laid course in any case
+        /// (<c>GateRaceController.AuthoritativeGateCount</c>); answering the same number here keeps it from warning that
+        /// the two disagree.
         /// </summary>
         public override int AuthoredGateTarget(int intensity)
         {
-            var overrides = EndConditionOverridesSO.Instance;
-            int asked = overrides != null
-                ? overrides.GetWaystationRingTarget()
-                : EndConditionOverridesSO.DefaultWaystationRingTarget;
-
-            int per = WaystationCourseSettings.ForIntensity(intensity).RingsPerCluster;
-            return WaystationCourse.ClusterCount(asked, per) * Mathf.Max(1, per);
+            if (intensity == _laidIntensity && _laidRings > 0) return _laidRings;
+            return ClusterTarget() * Mathf.Max(1, WaystationCourseSettings.ForIntensity(intensity).RingsPerCluster);
         }
 
         public override List<RaceGate> Build(in RaceCourseRequest request, out string failure)
@@ -34,20 +45,24 @@ namespace CosmicShore.Gameplay
             var settings = WaystationCourseSettings.ForIntensity(request.Intensity);
             settings.InnerRadius = request.Inner;
             settings.OuterRadius = request.Outer;
-            settings.RingTarget = Mathf.Max(settings.RingsPerCluster, request.GateCount);
+            // CLUSTER rings, from the window - never request.GateCount, which is this source's own answer and includes
+            // the towers once a course has been laid.
+            settings.RingTarget = ClusterTarget() * Mathf.Max(1, settings.RingsPerCluster);
             settings.FirstClusterDirection = Vector3.up;   // the equatorial spawn ring's pole
 
-            var course = WaystationCourse.Generate(request.Seed, settings);
+            var course = WaystationTower.Build(request.Seed, settings, request.Intensity, out _);
             if (course != null && course.Count > 0)
             {
+                _laidIntensity = request.Intensity;
+                _laidRings = course.Count;
                 failure = null;
                 return course;
             }
 
             failure =
-                $"WaystationCourse returned nothing for {settings.RingTarget} rings in shell " +
-                $"{request.Inner:F0}..{request.Outer:F0} - it has no failure path, so this is a " +
-                "settings fault (RingsPerCluster or RingTarget at zero).";
+                $"WaystationTower returned nothing for {settings.RingTarget} cluster rings in shell " +
+                $"{request.Inner:F0}..{request.Outer:F0} - the clusters have no failure path, so this is a " +
+                "settings fault (RingsPerCluster or the cluster target at zero).";
             return null;
         }
     }

@@ -143,8 +143,9 @@ namespace CosmicShore.Gameplay
             // Apply analog boost
             if (boostIntensity > 0.01f)
             {
-                if (!_wasBoosting && audioSystem != null)
-                    audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+                // Held for the overlap, not a one-shot: Boost Activate loops (see HeldVesselSfx).
+                if (!_wasBoosting)
+                    HeldVesselSfx.Begin(audioSystem, GameplaySFXCategory.BoostActivate, this, _status);
 
                 _status.IsBoosting = true;
                 _status.IsStationary = false;
@@ -153,6 +154,7 @@ namespace CosmicShore.Gameplay
             }
             else if (_wasBoosting)
             {
+                HeldVesselSfx.End(audioSystem, GameplaySFXCategory.BoostActivate, this);
                 _status.IsBoosting = false;
                 _status.BoostMultiplier = _baseBoostMultiplier;
                 _wasBoosting = false;
@@ -215,6 +217,7 @@ namespace CosmicShore.Gameplay
 
         private void OnDisable()
         {
+            HeldVesselSfx.End(audioSystem, GameplaySFXCategory.BoostActivate, this);
             if (_wasBoosting && _status != null)
             {
                 _status.IsBoosting = false;

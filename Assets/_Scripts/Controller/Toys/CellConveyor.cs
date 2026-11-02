@@ -114,6 +114,29 @@ namespace CosmicShore.Gameplay
 
         public bool HasCells => _cells.Count > 0;
 
+        // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
+        // cell-aware speed profile. None before the first advance (the voyage opens in open water).
+        Cell _departedCell;
+        Vector3 _departedCentre;
+        bool _hasDeparture;
+
+        /// <summary>True once there is a cell behind the Ark (each world whose core it has reached).</summary>
+        public bool HasDeparture => _hasDeparture;
+
+        /// <summary>Centre of the cell the Ark is leaving.</summary>
+        public Vector3 DepartureCentre => _departedCentre;
+
+        /// <summary>Membrane radius of the cell the Ark is leaving, with the same fallback as <see cref="CurrentCellRadius"/>
+        /// (a struck or unbuilt membrane reads 0).</summary>
+        public float DepartureRadius
+        {
+            get
+            {
+                float r = _departedCell ? _departedCell.MembraneRadius : 0f;
+                return r > 1f ? r : _cfg?.LeashRadiusFallback ?? 1200f;
+            }
+        }
+
         /// <summary>
         /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
         /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
@@ -123,6 +146,13 @@ namespace CosmicShore.Gameplay
         /// unbounded ribbon behind it.
         /// </summary>
         public event System.Action CellRetired;
+
+        /// <summary>
+        /// Called for each traversal cell just before it initializes (its spawners start inside that), with the cell and
+        /// its position on the route (-1 off a route): where a route tunes its own worlds, such as an Ark escort raising a
+        /// cell's population past the corridor's cap or starting it hostile. Unset, every cell is the corridor's own.
+        /// </summary>
+        public System.Action<Cell, int> PrepareCell;
 
         /// <summary>True while the corridor sails an ordered ROUTE (a voyage leg) instead of the shuffle-bag.</summary>
         public bool HasRoute => _route.Count > 0;
@@ -210,6 +240,10 @@ namespace CosmicShore.Gameplay
             // corridor back onto itself.
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
             Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
+            // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
+            _departedCell = null;
+            _hasDeparture = false;
 
             if (!StandCell(first))
             {
@@ -252,6 +286,9 @@ namespace CosmicShore.Gameplay
                     return false;
             }
 
+            _departedCell = _cells[_targetIndex].Cell;
+            _departedCentre = _cells[_targetIndex].Centre;
+            _hasDeparture = true;
             _targetIndex++;
 
             // Stand the new NEXT beyond the new current, so the corridor always reaches one
@@ -298,8 +335,11 @@ namespace CosmicShore.Gameplay
 
         bool StandCell(Vector3 centre)
         {
+            // A failed stand must not cost the route its world: NextConfig has consumed the index, and the retry
+            // (StandAhead / AdvancePastTarget) would otherwise stand the NEXT world and silently skip this one.
+            int routeBefore = _routeNext;
             var config = NextConfig();
-            if (!config || !_template || !_template.RuntimeData) return false;
+            if (!config || !_template || !_template.RuntimeData) { UnconsumeRoute(routeBefore, config); return false; }
 
             // The mode preview's satellite recipe, verbatim: instantiate under an INACTIVE root
             // so the cell's OnEnable cannot wipe the shared runtime asset's config before it has
@@ -330,6 +370,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError("[Arkway] The cloned cell carries no Cell component - stand aborted.");
                 Destroy(root);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -351,12 +392,17 @@ namespace CosmicShore.Gameplay
             // made the whole cell legacy opposing-domain territory, which is what left the Ark
             // untouchable by any swarm wearing its own colour.
 
+            // A route's own tuning for this world (an Ark escort's per-cell threat), after the voyage's and before the
+            // spawner starts. -1 when the corridor sails the shuffle-bag.
+            PrepareCell?.Invoke(cell, _route.Count > 0 ? _routeNext - 1 : -1);
+
             if (!cell.InitializeSatellite(config))
             {
                 CSDebug.LogWarning($"[Arkway] Traversal cell '{config.CellName}' refused " +
                                    "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -480,7 +526,22 @@ namespace CosmicShore.Gameplay
             crystal.gameObject.SetActive(true);
             crystal.enabled = true;
             crystal.DeactivateModels();                        // the crystal's own fade-in bloom
-            if (runtime) runtime.AddCrystalToList(crystal);
+            if (!runtime) return;
+            // AddCrystalToList raises the shared OnCellItemsUpdated event: every AI pilot's handler runs inside this
+            // call. A listener's exception must not abort the STAND (it did: a pilot reading a destroyed crystal from
+            // another runtime's list threw here, and the escort skipped the world).
+            try { runtime.AddCrystalToList(crystal); }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[Arkway] A cell-items listener threw while the core crystal was registered " +
+                                   $"({e.GetType().Name}: {e.Message}) - the cell stands regardless.");
+            }
+        }
+
+        /// <summary>Give a failed stand's world back to the route (the retry stands the same world, not the next).</summary>
+        void UnconsumeRoute(int routeBefore, CellConfigDataSO consumed)
+        {
+            if (_route.Count > 0 && consumed && _routeNext > routeBefore) _routeNext = routeBefore;
         }
 
         /// <summary>
@@ -516,7 +577,13 @@ namespace CosmicShore.Gameplay
             {
                 // A voyage leg: the next world in order, and nothing once the route is spent.
                 if (_routeNext >= _route.Count) return null;
-                if (_worlds.Count == 0) TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                if (_worlds.Count == 0)
+                {
+                    // An Ark escort names its worlds exactly, environment or not (a bare world's flora and fauna are
+                    // the whole of it); every other route keeps the traversal filter.
+                    if (_cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) _worlds.AddRange(_cfg.Cells);
+                    else TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                }
                 if (_worlds.Count == 0) return null;
                 int index = _route[_routeNext++] % _worlds.Count;
                 return _worlds[index < 0 ? index + _worlds.Count : index];

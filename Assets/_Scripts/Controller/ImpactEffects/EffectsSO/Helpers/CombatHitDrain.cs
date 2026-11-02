@@ -146,18 +146,43 @@ namespace CosmicShore.Gameplay
                                     float cooldownSeconds, ElementalDebuffSources source,
                                     out int supersededRank)
         {
-            supersededRank = 0;
-            if (victim == null || attacker == null) return false;
-            if (VesselSilence.IsSilenced(attacker)) return false;
-            if (victim.IsImmuneToElementalDebuff(source)) return false;
-            if (!VesselCombatHitLatch.TryAdmit(attacker.PlayerName, victim.PlayerName, hitClass,
-                                               cooldownSeconds, out supersededRank))
+            if (!Admits(victim, attacker, hitClass, cooldownSeconds, source, out supersededRank))
                 return false;
 
             int points = PointsFor(hitClass);
             if (supersededRank > 0) points -= PointsFor(ClassForMissileRank(supersededRank));
             VesselSilence.OnHitAdmitted(victim, points, source);
             return true;
+        }
+
+        /// <summary>
+        /// <see cref="TryAdmit"/> for a take priced in PETALS instead of its class's points: the same
+        /// gate (a silenced attacker, a warded victim, the latch window), and a silence worth
+        /// <paramref name="petals"/>. The Tiger Moth's shred is the caller: one petal off one
+        /// element, on a window its Charge sets (<see cref="IPacedContactPetalTake"/>).
+        /// </summary>
+        public static bool TryAdmitPetals(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
+                                          float cooldownSeconds, ElementalDebuffSources source, float petals)
+        {
+            if (!Admits(victim, attacker, hitClass, cooldownSeconds, source, out _)) return false;
+            VesselSilence.OnPetalsAdmitted(victim, petals, source);
+            return true;
+        }
+
+        /// <summary>What <paramref name="hitClass"/> is worth in petals at its fleet price (ten points
+        /// to the petal, on four elements): a Strike is 3.2. A take priced in petals scores one hit of
+        /// its class per this many petals, so its score stays in step with its silence.</summary>
+        public static float PetalsFor(CombatHitClass hitClass) => VesselSilence.PetalsForPoints(PointsFor(hitClass));
+
+        static bool Admits(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
+                           float cooldownSeconds, ElementalDebuffSources source, out int supersededRank)
+        {
+            supersededRank = 0;
+            if (victim == null || attacker == null) return false;
+            if (VesselSilence.IsSilenced(attacker)) return false;
+            if (victim.IsImmuneToElementalDebuff(source)) return false;
+            return VesselCombatHitLatch.TryAdmit(attacker.PlayerName, victim.PlayerName, hitClass,
+                                                 cooldownSeconds, out supersededRank);
         }
 
         /// <summary>

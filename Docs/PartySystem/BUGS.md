@@ -1,5 +1,7 @@
 # Party System — Open Bugs
 
+> One-line status of every multiplayer bug: [`Docs/Multiplayer/BUGS.md`](../Multiplayer/BUGS.md). Full entries stay here.
+
 Living tracker for party-side issues found in MPPM testing. Companion
 to `ARCHITECTURE.md` (locked design), `REFACTOR.md` (active refactor
 queue), and `../NetworkDiagnostics/ARCHITECTURE.md` (catch-block diagnostics).
@@ -43,9 +45,18 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
-| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile. Measured since: the boot's menu load (10-62 s frames on three machines) and a menu Cell swap (24.2 s returning 76,115 trail prisms; fixed 2026-10-29). **Boot drop fixed 2026-11-01:** the boot loads Menu_Main before its Relay host starts (the bounce paths' order), so that load no longer runs with a live Relay. Drops after a freeze in a match, a Cell swap or a return to the menu remain | 🟠 |
 | B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
 | B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
+| B39 | The ONLINE list shows a player who has only pressed Play: they sit in the presence lobby 7-24 s before their menu is up (the four-player test of 2026-10-30), and an invite or join sent then goes nowhere | Fixed 2026-10-31: a player publishes `ready` the first time their lava lamp is shown (`LavaLampPresence`), and only players with it are listed. Needs a two-machine retest | 🟡 |
+| B40 | A failed join leaves the joiner LISTED in the lobby: a Relay step that fails ("join code not found") skips the SDK's own leave, and a Play stopped without a leave keeps the old membership; every later join answers "player is already a member of the lobby" (Caleb's three joins; his presence converge failed every ~22 s for nine minutes) | Fixed 2026-10-31: `StaleLobbyMembership` removes us after a failed party join and, on "already a member", removes the stale membership and joins once more (party and presence joins). Needs a two-machine retest | 🟡 |
+| B41 | Every machine keeps offering JOIN / SPECTATE / REJOIN into a host that froze past Relay's limit: five joins into Garrett's dead session over 4.5 min each tore down the joiner's party and bounced | Fixed 2026-10-31: "join code not found" / "allocation ID not found" classify as Gone ("That party has ended."), and a session a join found Gone is offered to nobody on that machine for 5 min (`DeadPartySessions`), the Rejoin offer included | 🟡 |
+| B42 | Pressing REJOIN right after a bounce does nothing ("Already transitioning - ignoring rejoin"), and a host loss reported during a recovery is dropped, leaving the player in a dead party that reads `InParty` (Garrett's re-host died "server didn't answer any BIND message" inside his bounce) | Fixed 2026-10-31: the Rejoin offer waits for the bounce to end, a join pressed during a transition waits for it (20 s), and a host loss during a transition is acted on when it ends if the link is still down (at most 3 recoveries in 90 s) | 🟡 |
+| B43 | A HOST with others in its party who presses Join or Spectate ends the party for all of them without a word (Caleb's spectate bounced Shombith; his join bounced Yash and Shombith) | Fixed 2026-10-31: refused before teardown with an authored toast (`PartyInviteController.leavePartyFirstToast`); accepting an invite is unchanged | 🟡 |
+| B44 | `NullReferenceException` in `PartyMemberService.SyncFromSession` 0.1 s after a join starts (belac x2, 2026-10-30) | Fixed 2026-10-31: the refresh reads the session after its await and stops when a transition has let it go | 🟡 |
+| B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
+| B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
+| B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2394,6 +2405,59 @@ there it is likely far shorter, but no build has been measured yet. The real fix
 the boot: start the Relay host after the menu is up, so no long load runs with a live Relay. Until then a cold first
 Play in the Editor costs a bounce and a re-host (about 17 s).
 
+**Not only the cold first Play, and a second freeze found (2026-10-29 sweep, `gradi-20261029_015022`, on
+`cece/eloquent-franklin-2b67vp` `855e4b3867`, which carries all of Block 5).** Garrett's boot dropped the Relay the same
+way: hosting at 16.9 s, `InParty` at 23.3 s, the menu load began, one frame of **10.1 s** ended at 34.3 s, no BIND
+answer, the host shut down, bounced and re-hosted by 47.3 s. This boot shows none of the cold-Play warnings (no Burst
+"Synchronous compilation", no "assembly reload locked"), so the 28 Oct reading above is too narrow. Garrett's 19 boot
+reports since 26 Oct put the menu load's worst frame at 1.8-3.3 s in 13 boots, 4.5-5.6 s in 5, and 10.1 s in this one:
+the boot routinely spends half of Relay's ~10 s margin in one frame, and an unlucky boot goes past it. The boot-order
+change (host after the menu is up) stays the real fix and stays the boot owner's call.
+
+The same reports name a second, larger freeze on the menu, where the player is also hosting over Relay: a **Cell swap**
+(the Cell Selector toy) to Barren on `bleeding-edge` (29 Oct 00:26) froze one frame for **24.2 s** while
+**76,115 pooled trail prisms** went back to their pool, and the frame before it for 14.1 s while the world was
+gathered to suction away. Garrett's other ten swaps returned 464-16,619 prisms in 15-956 ms, and the cost per prism
+climbs with the count (0.03 ms at a few hundred, 0.06 ms at 16,619, 0.17 ms at 76,115): the loop detached the prisms
+from the FRONT of the retiring root, and each detach shifts every later sibling. **Fixed on `Ys-bleeding-edge`:**
+`Cell.ReturnRetiredTrailToPool` returns them newest first (each detach from the back is constant) in 12 ms slices, the
+same slice `ReleaseRetiredWorld` uses since `911c8c2b78`, and `RetireWorldIntoSuctionRoot` gathers them newest first
+so their trail containers are also emptied from the back. The 14 s gathering frame is one move by design and is not
+sliced; the next long swap's report (under "Loads" in `net_logs.py show`, or `bugledger/<user>/load/`) says how much
+of it the order change took off.
+
+**The boot drop, fixed (2026-11-01, Shombith's decision as the boot's owner).** Measured again on Garrett's machine
+the same day (`gradi-20261101_191458`, `gradi-20261101_183654`, on `be1f4d5821`): the boot's menu load froze one frame
+for **22.1 s, 51.9 s and 62.3 s** (Load Time Insights: "Unattributed (engine & other)" 48-144 s of the load), with
+`stallContext focused yes`, 2.3 GB reserved of 32 GB RAM and no prism clones waiting, so neither focus nor memory nor the
+pool. Each was followed by the three red lines `Failed to establish connection with the Relay server (server didn't
+answer any BIND message)`, `Transport failure! Relay allocation needs to be recreated` and `Host is shutting down due
+to network transport failure` (Bug Ledger `E-a2a3f23a3c`/`E-ced2f8d740`, `E-e5ff2abb8c`, `E-e6054bc064`), then a
+bounce. Shombith saw the same three after one game on 1 Nov.
+
+What changed: the boot now uses the order the leave-party, bounce and recovery paths already used (load the menu
+with Unity's SceneManager, then `EnsurePartySessionAsync`), so no load runs with a live Relay host on the way in.
+- `AuthenticationSceneController.LoadMainMenuNetworkedAsync`: on the Relay path with no host listening yet
+  (`LoadsMenuBeforeHost`), it loads Menu_Main locally FIRST, then walks the same three Relay attempts and the same
+  offline fallback. The load destroys the controller, so the rest runs on `Application.exitCancellationToken`
+  (cancelled when Play stops, B38). Without Relay attempts (offline chosen, no network, the browser Toybox) nothing
+  changed: a loopback host starts first and the menu loads through Netcode, since a loopback host cannot time out.
+  A host already listening also keeps the Netcode load.
+- `HostConnectionService`: the presence join no longer starts the party session while the boot has not loaded
+  Menu_Main (`HoldsPartySessionForBootMenu`: not since the last Bootstrap/Authentication load, and the active scene
+  is one of those two); `OnSceneLoaded(Menu_Main)` starts it. `EnsurePartySessionAsync` already sweeps the menu's
+  stray NetworkObjects before the host starts (B16), as on every re-host.
+- Held by `BootMenuBeforeRelayTests` (12 cases).
+
+**Hand test (Editor, cold first Play after a pull):** Play from Bootstrap online. Expected: no `BIND`, transport
+failure or host-shutdown lines, no "Connection lost" bounce; the splash stays up until the menu vessel spawns, as
+before. `net_logs.py show` should list the boot's load and, if a frame still passes 9 s, no `relayDrop` after it.
+Also: Play with the offline toggle on (unchanged path), and Play with UGS unreachable but the network up (the three
+attempts now run with the menu loaded behind the splash, then the offline notice and the loopback host).
+
+**Still open:** a 10 s freeze during a match or on the return to the menu (B45) still drops a live Relay host; this
+change only takes the boot out of that window. The boot's long frame itself is unexplained (engine-side, unattributed; cold and warm boots, per the 29 Oct section above).
+
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 
 **Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same
@@ -2452,4 +2516,121 @@ button and has no report; it is unchanged.
 joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
 Play stops.
 Ticket: T-20261025-6541 (#1527).
+
+## B46-B47 and B36 again - the tests of 2026-10-31 and 2026-11-01 (multiplayer sweep, 2026-11-01)
+
+Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Thresher and Serpent time trials),
+`shombith+gradi-20261031_180511` (two, Grizzly and Serpent), `gradi-20261101_033303` and `gradi-20261101_183654` (solo).
+
+- **The recovery work holds.** Joins, invites and returns to the menu worked on every machine; one config hash on
+  all of them (`1b02b809ee878c3d`); 1-9 rate-limited reads per test. Garrett's presence lobby dropped him once
+  (1 Nov 03:33, 474 s) and he was back in his party within 9 s; a host leaving bounced him and he re-hosted in 3 s.
+- **A rejoin worked, with two faults.** Yash's client lost its connection mid-Serpent (window unfocused, "Baselib
+  failed to send" for 6 s before the bounce: his network, not the game). He pressed REJOIN, Shombith's host gave him
+  his seat back, and then B47 and B46 above.
+- **B36 at boot, a fourth time.** Garrett, 1 Nov 18:36 on `bleeding-edge` `be1f4d5821`: the boot's menu load froze
+  one frame for 21.75 s, Relay answered no BIND, bounce. His 03:33 boot also reached a 13.2 s frame. The fix is still
+  the boot-order decision (host after the menu is up).
+- **The Amoebius edit-mode suite no longer builds**: code merged since 29 Oct (Third Eye HUD, Game Center and Play
+  Games sign-in, Fulmen, the multiplayer debug overlay) uses 102 engine APIs the port lacks. Not filled in this sweep.
+
+### B47 investigated (2026-11-01, remote fix session, `claude/mp-rejoin-b47`): the double initialization
+
+**Not reproduced and not run in the editor.** Read from the code and the test log above
+(`net_logs.py show gradi+shombith+yskha-20261031_173835 --lines`).
+
+**What happened on the rejoiner (Yash, client 4).** The claim (`ClientPlayerVesselInitializer.ClaimReclaimedSeatAsync`)
+waits until the Player is ours, is human and has a vessel. `Player.Vessel` is set only by `InitializePair`
+(`Player.InitializeForMultiplayerMode`), so **the roster has always initialised the pair before the claim runs**: there is
+no order in which the claim comes first; it simply waits. The claim then called `ReInitializePair`, which calls
+`vessel.Initialize(player)` on that same vessel. `VesselController.Initialize` sees `VesselStatus.Player` set, logs
+`Double initialization not allowed!` and returns. Two orders reach it:
+- The roster pairs land before the ownership and the human flag (the likely one here: the host hands the seat back 2 s after
+  approval, and the roster reply follows at once): `Initialize` ran with `IsLocalUser` false, so the guard skipped the
+  local user's bindings (`ActionHandler.ToggleSubscription`, `VesselCameraCustomizer.Initialize`, the HUD's
+  `SubscribeToEvents`) and the local pilot's platform laws. The log agrees: 1.8 s after the error, on Yash's machine,
+  `[SerpentScope] The scope window is NOT being drawn: this vessel is an AI or a remote replica`, which means
+  `IsLocalPilot` answered false for his own ship. He had a ship he could not fly. He dropped again 20 s later, after
+  "Baselib failed to send" warnings, so the second leave looks like his network again, not this bug.
+- Ownership and the flag land first: `InitializePair` set the pair up as his own, and the claim's second `Initialize` was a
+  harmless error line.
+
+**The fix.** The claim no longer calls `Initialize` on a live vessel. `ClaimReclaimedPair` does nothing when the roster
+already set the pair up as this machine's own (it remembers the vessel it initialised as the local user's), and otherwise
+hands the live hull to the local pilot through `VesselController.ChangePlayer`, the path the arena pilot swap uses
+(`PilotSwap.ApplyLocal`): it stops a local autopilot if one runs, re-binds input, HUD, camera and the platform laws, and
+`AdoptCurrentMotion` so the local transformer takes over from the replicated kinematics. The claim now also waits for the
+VESSEL's ownership, not only the Player's. A vessel nobody initialised still takes the full `Initialize` path. The
+double-initialization guard is unchanged for every caller, and the vessel swap path (`ReInitializePair` on a fresh vessel)
+is unchanged.
+
+**The missing name (B46) is not explained.** What is proven: the Bug Ledger stack (`E-376e5a6f8d`) runs
+`MultiplayerHUD.OnMiniGameTurnStarted` > `RebuildDomainPanels` > `CreateDomainPanel` > `ResolveAIAvatarSprite`, and that call
+reads `Player.Name` from `gameData.Players`, not `RoundStats.Name`. The key was `null`, not empty: `NetName.ToString()` is
+never null, so this Player was never named on Garrett's machine at all. `Player.Name` is set only by pair-init and by a
+`NetName` change; a Player joins `gameData.Players` in its `OnNetworkSpawn` (and in `ReRegisterPersistentPlayers`) before
+either. So it was a Player in Garrett's roster that was never paired there and whose `NetName` arrived with its spawn.
+What is not proven: which pilot it was, or that the rejoin caused it. `NetName` survives `ConvertPlayerToAI` and
+`TryReclaimSeat` on the host (ownership changes do not write it, and nothing in either writes it), and the rejoin makes no
+new Player (`CreatePlayerObject = !rejoin`). The timing does not settle it either: the console times put Garrett's first
+exception at 1298.8 s, after the rejoin, but the Bug Ledger's `createdUtc` (17:59:26) matches the host's turn start at
+1251 s, before it. **Next time:** `MultiplayerHUD` now logs one warning per unnamed pilot (net id, AI flag, hull, domain);
+the next test log names it. A candidate fix if it proves to be the spawn gap: mirror `Name` from `NetName` in
+`Player.OnNetworkSpawn`, as `PrepareForNewScene` already does on the server. Not made, because the cause is not proven.
+
+## B39-B45 - the four-player session of 2026-10-30 (Yash, Caleb, Shombith, Garrett)
+
+**Seen in.** `net_logs.py show` of `yskha+belac+shombith+gradi-20261030_234256` (8 logs; gradi's first Play has load
+reports only). Kyoki = Garrett, RedshirtBrownpants = Caleb, Dragon = Shombith, ys1 = Yash.
+
+**What happened.**
+- ThresherTime (host Garrett) ended cleanly; everyone came back to the menu as a client.
+- Maelstrom (host Garrett, four humans): after round 1 the cell swap to Skein froze Garrett's machine for one 82.6 s
+  frame (B45). Relay dropped him; Caleb and Shombith bounced "Host disconnected" about 13 s in and were offered REJOIN.
+  Shombith's press was ignored because his bounce was still running (B42); Caleb's failed "join code not found" because
+  the host's allocation was gone but every online row still advertised it (B41). Garrett's own host died with a
+  transport failure and Skein ran with one human and three AI, so the shuffle was lost for everyone.
+- 00:00-00:04: joins into Kyoki kept failing (B41), each one also leaving the joiner listed in the dead lobby so the
+  next join said "already a member" (B40); Caleb, hosting, pressed Spectate and Join and ended his own party twice
+  (B43), with a NullReferenceException each time (B44).
+- Regatta (host Caleb, four humans) ended cleanly. Back on the menu Garrett froze 39.6 s (B45), Relay dropped him,
+  his re-host froze 14.6 s and died, and the drop was ignored inside his own bounce (B42), so he sat in a dead party
+  and the replay never formed.
+- Throughout: each player showed as online 7-24 s before their menu was up (B39).
+
+**What was fixed (2026-10-31, `claude/intelligent-turing-aw29so`).** The rows above. None of these is proven on two
+machines yet; `Docs/UNITY_VERIFICATION_CHECKLIST.md` holds the steps.
+
+**What was not.** The freezes (B45). Every drop in this session followed one on Garrett's machine, so B39-B44 make the
+game recover from a drop; they do not stop it. The boot-order decision (start the Relay host after the menu is up, B36)
+also stays open.
+
+### B45 investigated (2026-10-31): what the freezes are not, and what the next one will say
+
+Read from Garrett's load reports (`origin/bugledger/gradi:BugLedger/shared/reports/gradi/load/`) and the merged console.
+
+- **82.6 s, Maelstrom cell swap to Skein** (`load_Maelstrom_20261031_000016`). Rails RAIL000-RAIL014 laid in 23-161 ms
+  each. RAIL015 (464 prisms, one async clone batch) began at 1.22 s; the frame that froze began at 1.59 s and ended at
+  84.18 s. The pool's clone watchdog forces completion only after 4 s of waiting, so it could not have fired 0.4 s in:
+  the batch's forced completion did not cause this frame, and neither did the lay's per-prism work (5,104 prisms cost
+  0.4 s in total across the whole load). Load Insights pins a frame to whatever span is open, so "Streamed prism lay"
+  is where the frame was, not proof of what it spent.
+- **6.0 s, Regatta to menu** (`load_Menu_Main_20261031_000906`). The frame came FIRST and the watchdog's "not
+  integrated after 4s - forcing WaitForCompletion" warning AFTER it: the long frame used up the watchdog's 4 s. The
+  warning is a symptom of a freeze, not its cause. (A 4.3 s frame in the client scene load came 7 s earlier.)
+- **39.6 s on the menu, 14.6 s during the re-host.** No load ran. The console is silent from a crystal collect at
+  1610 s to the stall at 1652 s; nothing recorded what ran.
+- **Ruled out:** the "Unity Remote requirements check failed" (adb) errors on that machine come only at Play start
+  (1267 s, 1876 s), never beside a freeze.
+- **Not ruled out, and now recorded:** the Editor losing focus or being minimised (all four played in the Editor while
+  on a call), memory pressure paging the machine (one host holding the server, a 5,000-prism arena and the Editor), and
+  Editor-side work in the frame (asset import, shader or Burst compilation). Every stall is now followed by a
+  `stallContext` mark: `focused yes/no; Unity reserved N MB, managed N MB, of N MB RAM; async prism clones waiting N`
+  (`FrameStallWatch.DescribeContext`; the pool counts its batches). `net_logs.py show` prints it beside the stall.
+
+**Next:** the next multiplayer test sends the context by itself. If it says `focused no`, the fix is the Editor's
+run-in-background behaviour (or testing in a player build); if reserved memory is near the RAM, it is memory; if
+clones are waiting and neither of those, a Profiler capture of that swap on that machine (Garrett, Editor, Deep Profile
+off) is what decides it. Changing the prism pool or the lay budgets before that is guessing (CLAUDE.md, Debugging
+Methodology); that work is Yash's (`EnvironmentPrismPool`) and the perf branch's.
 

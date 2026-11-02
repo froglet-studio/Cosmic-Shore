@@ -28,8 +28,15 @@
 // route; people vary by far more than RULES.repeatMaxDurationCv), gets a signal in their own FAIRPLAY_SIGNALS with
 // the numbers. Not for minors: it is a behaviour profile (R13). The human-versus-AI flight classifier is phase C.
 //
+// Host-observed signals (T5 speed / jumps, T6 AI-like steering; measured by the host's MovementPlausibilityMonitor):
+// the HOST's own `end` report may carry `observed`, a list of { id, kind, measured, limit } about its guests. They are
+// filed on each guest as `host_observed` signals naming the host. A host can lie, so trust.js counts them only when two
+// different hosts reported the same account (trust.js RULES.hostObservedMinReporters). AI-like steering is a behaviour
+// profile, so it is never filed on a minor (R13); speed and jumps are security checks and are.
+//
 // Params: action ("start" | "end"), matchId, mode, hostId, players (JSON array of UGS ids),
-//         scores (JSON array of { id, score }; end only), winner (end only), birthYear (start only; 0 = unknown)
+//         scores (JSON array of { id, score }; end only), winner (end only), birthYear (start only; 0 = unknown),
+//         observed (JSON array of { id, kind: "speed" | "jumps" | "steering", measured, limit }; the host's end only)
 // Returns: { ok, reason, matchesStarted, matchesLeft, leaveRate }
 //
 // Tests: node Tools/UGS/CloudCode/match-report.test.cjs
@@ -39,6 +46,7 @@ const { DataApi } = require("@unity-services/cloud-save-1.4");
 const CONDUCT_KEY = "FAIRPLAY_CONDUCT";
 const SIGNALS_KEY = "FAIRPLAY_SIGNALS";
 const AGE_KEY = "FAIRPLAY_AGE";
+const TRUST_KEY = "trust";      // trust.js's record, private custom data "fp-" + player id (phase B)
 
 const RULES = {
   recentMatches: 20,          // matches kept per player, for the leave rate and for comparing reports
@@ -57,6 +65,9 @@ const RULES = {
   repeatMinSeconds: 30,        // shorter matches are ignored (a quick quit-and-retry is not a route)
   repeatMaxDurationCv: 0.02,   // standard deviation / mean of their durations
   repeatSignalCooldownHours: 6,
+  // Host-observed signals
+  observedKinds: ["speed", "jumps", "steering"],
+  observedMax: 16,
 };
 
 const HOUR_MS = 3600000;
@@ -180,6 +191,23 @@ function apply(c, params, nowMs, trackConduct = true, playerId = "") {
   return { ok: false, reason: "unknown_action" };
 }
 
+// Pure: the host-observed signals a host's end report may file, one per guest and kind (the largest measurement).
+function observedSignals(params, report, playerId, nowMs) {
+  if (playerId !== report.hostId || !Array.isArray(params.observed)) return [];
+  const byKey = new Map();
+  for (const o of params.observed.slice(0, RULES.observedMax * 4)) {
+    if (!o || !isId(o.id) || o.id === playerId || !report.players.includes(o.id)) continue;
+    if (!RULES.observedKinds.includes(o.kind)) continue;
+    if (typeof o.measured !== "number" || !Number.isFinite(o.measured) || typeof o.limit !== "number" || !Number.isFinite(o.limit)) continue;
+    const key = o.id + "/" + o.kind;
+    const cur = byKey.get(key);
+    if (!cur || o.measured > cur.measured) byKey.set(key, { id: o.id, sub: o.kind, measured: o.measured, limit: o.limit });
+  }
+  return [...byKey.values()].slice(0, RULES.observedMax).map((o) => ({
+    id: o.id, signal: { kind: "host_observed", sub: o.sub, measured: o.measured, limit: o.limit, reporter: playerId,
+                        mode: report.mode, matchId: report.matchId, at: nowMs } }));
+}
+
 // Pure: the other player's report of the same match, if they made one.
 function findSameMatch(otherConduct, report) {
   if (!otherConduct || !Array.isArray(otherConduct.recent)) return null;
@@ -239,6 +267,17 @@ module.exports = async ({ params, context, logger }) => {
     }
 
     if (result.report) {
+      for (const o of observedSignals(params, result.report, playerId, nowMs)) {
+        try {
+          if (o.signal.sub === "steering") {
+            const age = await loadProtected(api, projectId, o.id, AGE_KEY);
+            if (treatAsMinor(age.value && age.value.birthYear, nowYear)) continue;   // no behaviour profile of a minor
+          }
+          await appendSignals(api, projectId, o.id, [o.signal]);
+        } catch (e) { logger.warning(`host-observed signal not filed: ${e.message}`); }
+      }
+      try { await countPoolMatch(api, projectId, playerId); }
+      catch (e) { logger.warning(`match report saved; pool match not counted: ${e.message}`); }
       try { await compareWithOthers(api, projectId, playerId, result.report, logger); }
       catch (e) { logger.warning(`match report saved; comparison skipped: ${e.message}`); }
     }
@@ -257,6 +296,18 @@ async function updateBirthYear(api, projectId, playerId, params, nowYear) {
     catch (e) { if (!(e && e.response && e.response.status === 409)) throw e; } // a parallel start wrote it
   }
   return merged;
+}
+
+// A finished match in the Undertow or the quitters' pool counts toward the notice (trust.js RULES.noticeAfterMatches).
+async function countPoolMatch(api, projectId, playerId) {
+  const id = "fp-" + playerId;
+  const res = await api.getPrivateCustomItems(projectId, id, [TRUST_KEY]);
+  const row = res && res.data && res.data.results ? res.data.results.find((r) => r.key === TRUST_KEY) : null;
+  if (!row || !row.value) return;
+  const t = row.value;
+  if (t.stage !== "undertow" && t.stage !== "quitters" && t.stage !== "restricted") return;
+  t.matches = (t.matches || 0) + 1;
+  await api.setPrivateCustomItem(projectId, id, { key: TRUST_KEY, value: t, writeLock: row.writeLock });
 }
 
 async function appendSignals(api, projectId, playerId, added) {
@@ -293,7 +344,8 @@ module.exports.params = {
   scores: { type: "JSON", required: false },
   winner: { type: "String", required: false },
   birthYear: { type: "Numeric", required: false },
+  observed: { type: "JSON", required: false },
 };
 
 module.exports._test = { apply, findSameMatch, disagreements, leaveRate, emptyConduct, mergeBirthYear, treatAsMinor, reviewFor,
-  clockSignal, repeatSignal, RULES };
+  clockSignal, repeatSignal, observedSignals, RULES };

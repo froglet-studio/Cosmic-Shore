@@ -39,6 +39,7 @@
           new("Obvious.Soap", "CosmicShore.Engine.Soap"),
           new("Unity.Netcode", "CosmicShore.Engine.Networking"),
           new("Unity.Services.Multiplayer", "CosmicShore.Engine.Networking"),
+          new("Unity.Services.Lobbies", "CosmicShore.Engine.Networking"),
           new("Reflex.Attributes", "CosmicShore.Engine.Injection"),
           new("Reflex.Core", "CosmicShore.Engine.Injection"),
           new("Reflex.Injectors", "CosmicShore.Engine.Injection"),

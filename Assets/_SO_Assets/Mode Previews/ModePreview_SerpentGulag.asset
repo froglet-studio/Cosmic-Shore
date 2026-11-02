@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_SerpentGulag
+  m_EditorClassIdentifier:
+  Mode: 77
+  Notes: 'The Gulag cell at each intensity - open ground, then nests, then cell blocks. OPEN-ENDED -
+    it scores on sniping rival pilots and a solo preview has none; what it teaches is the scope, the
+    rifle and the crystal field. Vessel pinned to Serpent(7).'
+  PreviewCell: {fileID: 11400000, guid: 0671a75e0167cea84762526319bcda14, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 0671a75e0167cea84762526319bcda14, type: 2}
+  - {fileID: 11400000, guid: 5c6261666d65d6fc161b9c18e116523c, type: 2}
+  - {fileID: 11400000, guid: 42e9a6a211f3c77f818c621305df5ce4, type: 2}
+  - {fileID: 11400000, guid: 400f348b3f5fd593f823c779f29bfed2, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 7
+  ObjectiveText: Scope with LT, fire with RT - snipe a rival pilot
+  ObjectiveMetric: 8
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 2200
+  SpawnFormation: 0
+  SpawnPoints: []

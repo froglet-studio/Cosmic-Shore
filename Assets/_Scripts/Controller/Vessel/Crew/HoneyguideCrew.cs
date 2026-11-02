@@ -134,6 +134,7 @@ namespace CosmicShore.Gameplay
             _humanEngineers = _weTookHull = _remoteRatel = false;
             _startSeatPending = !_aiCrew && !_rider;
             _stateSendAt = 0f;
+            BindHive();
             ResetPilotSide();
             _execs = null;
             // a rider's copy flies nothing: the trail it would watch is the hull machine's
@@ -160,6 +161,7 @@ namespace CosmicShore.Gameplay
             if (_humanEngineers && !_rider) SetHumanEngineers(false);
             _humanEngineers = false;
             if (!_rider) EndPilotSide();
+            UnbindHive();
             if (_laidBy) _laidBy.OnBlockSpawned -= OnTrailPrismLaid;
             _laidBy = null;
             _view?.Dispose();
@@ -192,8 +194,10 @@ namespace CosmicShore.Gameplay
                 // the copy: the person's moves are applied here at once and sent on; the hull's machine answers with the
                 // real board, which overwrites this one (OnCrewState). It advances so the board keeps turning between.
                 if (_view != null) _view.ReadEngineerInput(_core, _s);
-                _core.Advance(_s, dt);
+                if (_hive == null) _core.Advance(_s, dt);
+                else { _hiveT += dt; HiveCore.Tick(_hive, dt); }   // the hull's machine decides when hive mode ends
                 DrainEvents();
+                ScanStrip();
                 _view?.Frame(dt);
                 return;
             }
@@ -202,9 +206,15 @@ namespace CosmicShore.Gameplay
             _remoteRatel = CrewStations.HeldByRemoteHuman(this, 1);
             if (_remoteRatel && _humanEngineers) SetHumanEngineers(false);
             if (_humanEngineers && _view != null) _view.ReadEngineerInput(_core, _s);
-            else if (!_remoteRatel) StepEngineerAI(dt);
-            _core.Advance(_s, dt);
+            else if (!_remoteRatel)
+            {
+                if (_hive != null) StepHiveAI(dt);
+                else StepEngineerAI(dt);
+            }
+            if (_hive == null) _core.Advance(_s, dt);   // the Dynamo's clock holds in hive mode
+            StepHive(dt);
             DrainEvents();
+            if (!_aiCrew) ScanStrip();
             if (_remoteRatel && Time.time >= _stateSendAt) SendState();
 
             StepPilotSide(dt);
@@ -248,6 +258,13 @@ namespace CosmicShore.Gameplay
         {
             if (seat != 1 || _core == null || _rider || data == null || data.Length < 6) return;
             if (!CrewStations.HeldByRemoteHuman(this, 1)) return;
+            if (data[0] >= HiveInputBase)   // a hive move (HiveInput)
+            {
+                ApplyHiveInput(data[0] - HiveInputBase, data[3]);
+                DrainEvents();
+                SendState();
+                return;
+            }
             var inp = new DynamoInput
             {
                 Kind = (DynamoInputKind)data[0], From = data[1], To = data[2], Cell = data[3], Colour = data[4], Slot = data[5],
@@ -262,8 +279,9 @@ namespace CosmicShore.Gameplay
             if (!_rider || _core == null) return;
             int ticks = _core.Ticks, portSet = _core.PortSet;
             var ability = _core.Ability;
-            if (!_core.ReadState(data)) return;
+            if (!_core.ReadState(data, out int end)) return;
             _core.Events.Clear();
+            ReadHiveState(data, end);
             // the view's stamps follow what changed, as the hull machine's events would have moved them
             if (_core.Ticks != ticks) SpinAt = Time.time;
             if (_core.PortSet != portSet) PortsAt = Time.time;
@@ -275,6 +293,7 @@ namespace CosmicShore.Gameplay
         {
             _stateSendAt = Time.time + 0.2f;
             _core.WriteState(_stateScratch);
+            WriteHiveState(_stateScratch);
             CrewRelay.SendState(this, _stateScratch.ToArray());
         }
 
@@ -395,6 +414,10 @@ namespace CosmicShore.Gameplay
                     Play(_cfg.RevealSfx);
                     var ab = _cfg.AbilityText(e.Ability);   // both seats read what the Ratel's new ability does
                     if (ab != null) Toast(TemplateText.Fill(_cfg.AbilityToastTemplate, "name", ab.name, "text", ab.text));
+                    break;
+                case DynamoEventKind.Offer:   // round 7: the abilities on offer; the Shuffle that follows the pick toasts the one taken
+                    AbilityAt = Time.time;
+                    Play(_cfg.RevealSfx);
                     break;
                 case DynamoEventKind.Ports:
                     PortsAt = Time.time;

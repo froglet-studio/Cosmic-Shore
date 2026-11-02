@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Bee Fauna Mass
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 5945480239701989318, guid: 6cda8370f473d7bc146c1181cd3eda8d, type: 3}
+  InitialSpawnCount: 0
+  PopulationSize: 1
+  SpawnProbability: 1
+  FeedsPerOffspring: 0
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 0
+  Element: 2
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 0
+    BaseBodyScale: 3.82
+    BodyPrismScale: {x: 0, y: 0, z: 0}
+    BodyMaterial: {fileID: 0}
+    StarvationSeconds: 0
+    Forager: 2
+    CohesionRadius: 90
+    BehaviorUpdateRate: 0.6
+    TrailBlockInteractionRadius: -1
+    SeparationRadius: 40
+    FeedingClusterRadius: -1
+    GoalWeight: 6
+    MinSpeed: 14
+    MaxSpeed: 26
+    OverrideAudio: 1
+    AudioLoopEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    AudioMinDistance: -1
+    AudioMaxDistance: -1
