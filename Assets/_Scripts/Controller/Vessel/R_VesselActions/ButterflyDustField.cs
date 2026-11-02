@@ -41,8 +41,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Material particleMaterial;
 
         [Tooltip("FALLBACK mote colour, used only while the vessel has no playable domain or no " +
-                 "palette is reachable. In play the motes wear the SHIELDED tier of the vessel's " +
-                 "own domain (see ResolveMoteColour). Alpha is shaped over each mote's life (in, " +
+                 "palette is reachable. In play each mote wears one of THREE colours of the vessel's " +
+                 "own domain - danger, plain and shielded (see ResolveMotePalette). Alpha is shaped over each mote's life (in, " +
                  "hold, out) and this alpha is the peak in both cases.")]
         [SerializeField] Color dustColor = new(1f, 0.86f, 0.52f, 0.9f);
 
@@ -175,7 +175,15 @@ namespace CosmicShore.Gameplay
         // ── audio — called by the dust's effect SOs, which find this component on the skimmer ──
 
         /// <summary>Scale Dust bit an opposing pilot. Empty slot = silence.</summary>
-        public void PlayScaleDustBite(Vector3 position) => Play(scaleDustBiteEvent, position);
+        public void PlayScaleDustBite(Vector3 position)
+        {
+            LastBiteTime = Time.time;
+            Play(scaleDustBiteEvent, position);
+        }
+
+        /// <summary>When the dust last bit an opposing pilot (<see cref="Time.time"/>), on this peer; negative infinity
+        /// until it has. The Tiger Moth's HUD turns its Charge card's rival red on it.</summary>
+        public float LastBiteTime { get; private set; } = float.NegativeInfinity;
 
         /// <summary>Dust Reach touched a prism: <paramref name="ownMass"/> = tended (own domain),
         /// otherwise blighted. Throttled per kind; empty slot = silence.</summary>
@@ -297,34 +305,55 @@ namespace CosmicShore.Gameplay
             _paintedDomain = domain;
 
             var main = _particles.main;
-            main.startColor = ResolveMoteColour(domain);
+            ResolveMotePalette(_gameData, domain, dustColor, _palette);
+            main.startColor = MotePaletteGradient(_palette);
         }
 
-        /// <summary>
-        /// The SHIELDED tier's rim colour for <paramref name="domain"/> - the frosty, bright colour
-        /// that says "shielded" on a prism - through <c>SO_ColorSet.TryGetPrismKindColors</c>, the
-        /// single source every prism tier is painted from, so the dust can never drift from the
-        /// shielded mass it sits beside. The rim rather than the base face because a mote is a
-        /// point of light: the base is the darker half of the pair and reads as dim smoke.
-        /// Blue (no team) and a missing palette fall back to the authored dust colour.
-        /// </summary>
-        Color ResolveMoteColour(Domains domain) => ResolveMoteColour(_gameData, domain, dustColor);
+        readonly Color[] _palette = new Color[MotePaletteSize];
+
+        /// <summary>How many colours the dust is made of: danger, plain (the domain) and shielded.</summary>
+        internal const int MotePaletteSize = 3;
 
         /// <summary>
-        /// The one mote colour rule, shared with the omni-crystal bloom's dust
-        /// (<see cref="ButterflyBloomDust"/>) so the two read as the same dust: the shielded rim of
-        /// <paramref name="domain"/>, at <paramref name="fallback"/>'s alpha; Blue or no palette
-        /// returns <paramref name="fallback"/>.
+        /// The one mote colour rule, shared with the omni-crystal bloom's dust (<see cref="ButterflyBloomDust"/>) and the
+        /// HUD's ability icons, so all three read as the same dust. Garrett, 2026-11-01: "make a dust made of danger
+        /// color, team domain color, team shielded domain color". Each mote wears ONE of the three prism tiers of
+        /// <paramref name="domain"/> (the DANGER, PLAIN and SHIELDED tiers' bright rims, through
+        /// <c>SO_ColorSet.TryGetPrismKindColors</c>, the single source every prism tier is painted from), so the dust is
+        /// the three things it turns your mass into. The rim rather than the base face because a mote is a point of light.
+        /// Blue (no team) or no palette: every entry is <paramref name="fallback"/>. Alpha is
+        /// <paramref name="fallback"/>'s throughout.
         /// </summary>
-        internal static Color ResolveMoteColour(GameDataSO gameData, Domains domain, Color fallback)
+        internal static void ResolveMotePalette(GameDataSO gameData, Domains domain, Color fallback, Color[] into)
         {
             var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
-            if (domain == Domains.Blue || colorSet == null ||
-                !colorSet.TryGetPrismKindColors(domain, PrismKind.Shielded, out var rim, out _))
-                return fallback;
+            Fill(PrismKind.Danger, 0);
+            Fill(PrismKind.Plain, 1);
+            Fill(PrismKind.Shielded, 2);
 
-            rim.a = fallback.a;
-            return rim;
+            void Fill(PrismKind kind, int i)
+            {
+                if (domain == Domains.Blue || colorSet == null ||
+                    !colorSet.TryGetPrismKindColors(domain, kind, out var rim, out _))
+                {
+                    into[i] = fallback;
+                    return;
+                }
+                rim.a = fallback.a;
+                into[i] = rim;
+            }
+        }
+
+        /// <summary>A start colour that gives each new mote one of <paramref name="palette"/>'s colours at random (a
+        /// FIXED-mode gradient read at a random point: three equal steps, no blends between them).</summary>
+        internal static ParticleSystem.MinMaxGradient MotePaletteGradient(Color[] palette)
+        {
+            int n = palette.Length;
+            var colours = new GradientColorKey[n];
+            for (int i = 0; i < n; i++) colours[i] = new GradientColorKey(palette[i], (i + 1f) / n);
+            var g = new Gradient { mode = GradientMode.Fixed };
+            g.SetKeys(colours, new[] { new GradientAlphaKey(palette[0].a, 0f), new GradientAlphaKey(palette[0].a, 1f) });
+            return new ParticleSystem.MinMaxGradient(g) { mode = ParticleSystemGradientMode.RandomColor };
         }
 
         /// <summary>The capsule's world length and radius, read the way PhysX sizes it.</summary>

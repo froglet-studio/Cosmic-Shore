@@ -130,3 +130,62 @@ its last three escorts were rerun.
   AI companion.
 - The Voyage window card and its stepper were compiled and wired but not looked at on screen (no screen access while
   the sim ran).
+
+### 4.1 Since pass 9: the voyage-night passes (2026-10-30 to 11-01)
+
+The tables above are the October tuning. The overnight passes on `claude/voyage-night` changed the escort under them,
+and each pass's write-up is in [`night/`](night/) (`*_DONE.md`). In short:
+
+- **Plates are food, and the Ark can truly fall** (`night/ark_core_DONE.md`): creatures gnaw armour in escort worlds
+  (an `ECOSYSTEM.md` §0.x carve-out), so every tier's `BreachHull` is now **0**. The breach line in §2 is kept as an
+  optional field; an escort is lost when the last plate goes.
+- **The chaos ladder** (`night/chaos_DONE.md`) replaced the pass-9 tiers: regrowth only in a held nucleus
+  (`Ark.RegrowAllowed`), the feeding lure (`Cell.SetFeedingLure`, an `ECOSYSTEM.md` §0.z carve-out), faster waves,
+  armour bites for every escort creature, and every world hostile from d1. Its final table is the shipped
+  `ArkEscort.asset`; in sims d4 won 8/8, d7 1/8 and d9 0/4.
+- **Variety, roles, pacification, fauna threats, the Ark's feel**: `night/variety_DONE.md`,
+  `night/escort_roles_DONE.md`, `night/pacify_DONE.md`, `night/fauna_threats_DONE.md`, `night/ark_feel_DONE.md`.
+
+## 5. On the galactic map (the HyperSea)
+
+**Status: wired, minimal** (`claude/voyage-ship`, 2026-11-01). Garrett asked for the escort to "integrate with the
+galactic map work as best we can". The map is the Voyage Board's HyperSea (`Docs/Voyages/VOYAGE_BOARD.md`,
+`HyperSea.cs`, `VoyageChart.cs`) and the slice's places (`voyage_slice.json`). The escort now starts and stops at
+real places on it; its worlds and its tuning are unchanged.
+
+### What is wired
+
+| Piece | Where | What it does |
+|---|---|---|
+| The course | `VoyageRules.EscortRoute` | From where the squad's Ark lies (`VoyageState.At`, the same saved galaxy the jobs use) to the nearest place it can berth that is not here, by lanes: a **port**, or the squad's **own harbour**. Never a rival domain's harbour (VOYAGES.md §6.7 rule 2). Ties go to the location listed first. Null at sea, or when nothing qualifies. |
+| Arriving | `VoyageRules.EscortArrived` | An escort that **made it through** berths the Ark at its destination: `At` and `LastPort` move there and a day passes, so the next board is drawn from the port it reached. An **overrun** (or abandoned) escort moves nothing: the Ark limps back to where it set out. It never moves an Ark that is out on a job. |
+| The run | `ArkEscortRun.Course.cs` | Plans the course at Set sail, names it under the departure banner (`ArkEscortSO.courseLine`, `{from} TO {to}`) and the made-it banner (`berthedLine`, `BERTHED AT {to}`), and saves the arrival. **The escort sim never saves** (every seat AI), so every sim run sets out from the same place. |
+| The report | `ArkEscortReport.From`, `To`, `CourseLightYears`, `CourseCells`, `CourseIntensity` | Where each run sailed, measured on the real sea. The summary line reads `(loc.harbour.jade > loc.tollmoor, N ly)`. |
+| The card | `VoyageJobsView.ShowEscort` | Names the route with the jobs' own authored `CardHomeRoute` (`{from} TO {to}`), and its course line is the real sea's (`CardCourse`: light years, the thickest water). While the escort is out, the window's one galaxy map frames the escort's course, as it does a job's. |
+| Tests | `VoyageRulesTests` (two), `VoyageShellTests.ShippedContent_GivesTheArkEscortACourseOnTheRealSea` | The berth rule, the arrival rule, and the shipped content: every domain's harbour sails to Tollmoor on a course the chart can measure, and back home from there. |
+
+With the shipped slice that means: from any harbour the escort sails to **Tollmoor** (the one port; every harbour has
+a lane to it), and from Tollmoor it sails **home**. From a vault field or a core it sails to the nearest berth.
+
+### What it does not do yet (the plan)
+
+These stay inside what both designs already say; none of them is built.
+
+1. **Worlds from the course.** The escort still sails its own rolled worlds (`ArkEscortVariety`), 4-5 of them,
+   whatever the lane. The real sea puts the slice's places 27-62 cells apart (VOYAGE_BOARD.md §5 decision 8). The
+   seam is `HyperSeaCourse.Steps` (each cell's density and danger): pick each escort world by the sea it crosses
+   (spray and froth the gentle worlds, thick water The Maw and Scarab Reef), and set the leg count from the course's
+   cells. It waits on decision 8 (short legs for play, or real lengths).
+2. **Difficulty from the course.** `VoyageChart` gives each course an intensity, I1 to I4. It could set the stepper's
+   default, or the ladder's floor. That is Garrett's call: today difficulty is the player's own choice, 1 to 9.
+3. **The escort as a job.** VOYAGES.md §6.2 says a Jade defence job "can also name a moving thing (a courier's
+   Ark)". That job, with the squad's own Ark as its target, is the natural home for the escort on the board: its pay,
+   its faction and its news. Today the escort is a card beside the jobs, with no pay and no news written.
+4. **A fall on the map.** The escort carries nothing aboard, so an overrun leaves no wreck. Once an escort carries
+   artifacts (`VoyageState.Aboard`), an overrun should call `VoyageRules.ArkLost` at the location it was bound for,
+   which leaves the wreck and its news.
+5. **Party.** A friend's machine follows the host's job voyages through `VoyageCourseLink`. The escort's course is not
+   sent, so only the host's card names it.
+6. **The sky.** `HyperSeaSkybox.shader` already draws a galactic plane (`_GalacticNormal`). It could be tilted by the
+   Ark's height above the midplane (`VoyageLocation.GalaxyZ`) and tinted by `HyperSea.SeaColor` of the water the Ark is
+   in. That needs a per-run material copy, never a write to the shared skybox asset.

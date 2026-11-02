@@ -6,7 +6,9 @@ function, what it is in the game, and the rule for using it.
 
 | Motif | Function | In the game | Rule |
 |---|---|---|---|
-| Prism | `prism(cx, cy, s)` / `prism_lit` (one face cut) | a trail block, mass | corner-on diamond; the lit cut only at s ≥ 11 (it vanishes smaller) |
+| Prism | `prism_halves(cx, cy, s)` (two close triangles) or `prism_square_x(cx, cy, s)` (a square with a negative-space X) | a trail block, mass | **never the rhombus** (Garrett, 2026-11-01: "that shape is owned by the time petal"): the diamond cut in half into two close triangles, or a square with an X cut out "when it feels right". `prism` / `prism_lit` are LEGACY, kept only for the cards already shipped with them |
+| Mote | `specs/tigermoth.py mote(x, y, s)` | dust, spores, any fine particle | a little circle or ellipse, never a diamond (Garrett, 2026-11-01) |
+| Super-shield | `specs/rhino.py stella(cx, cy, r)` | a super-shielded prism | the flat stella octangula seen down a body diagonal; the Rhino and the Tiger Moth use it |
 | Hull | `hull(cx, cy, s, heading)` | the generic vessel | a notched chevron; use when the act is "ahead of you" (Track Projector), never as the subject |
 | Arrowhead | `arrowhead(tip, dir, size)` | direction | one weight, one shape, sparingly (an arrow is failure shape 2) |
 | Burst | `burst(cx, cy, r, spikes, inner, rot)` | a detonation | ONE jagged polygon, spike lengths varied; a hollow core for "where" |

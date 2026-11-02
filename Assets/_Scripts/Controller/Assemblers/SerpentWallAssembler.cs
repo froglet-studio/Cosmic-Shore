@@ -388,6 +388,10 @@ namespace CosmicShore.Gameplay
             // A creature's body is not loose mass: pulling it into a wall would dismember a
             // lifeform, which the ecology law forbids a vessel to do by accident.
             if (p is HealthPrism) return false;
+            // An Ark's hull is a ship, not loose mass: a wall seeded beside one would strip its plating (the hull is
+            // own-domain, unshielded prism mass, which is exactly what the wall recruits). Hull prisms ride the Ark's
+            // transform (or its model's), so the parent chain names it.
+            if (p.transform.parent && p.GetComponentInParent<Ark>()) return false;
             var props = p.prismProperties;
             if (props == null || props.IsSuperShielded) return false;   // seeds and armour stay put
             if (props.IsShielded && !takeShielded && p.Domain != _shape.Domain) return false;

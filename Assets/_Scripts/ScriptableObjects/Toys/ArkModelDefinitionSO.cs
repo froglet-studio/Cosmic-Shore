@@ -31,6 +31,21 @@ namespace CosmicShore.ScriptableObjects
                                  "GreenAccentVesselMaterial) - the vessels' identity list, so the hull's trim wears the owner's colour.")]
         List<Material> domainReplacesMaterials = new();
 
+        [Header("Look - how bright each slot is drawn (the Ark's own copies; the shared vessel materials are untouched)")]
+        [SerializeField, Range(0f, 2f), Tooltip("The Domain slot (the domain's neon seams). Below 1 so a 196-unit ship reads as a hull, " +
+                                                "not a lamp; the domain's colour still reads (owner, 2026-11-01: 'the ark is far too bright').")]
+        float domainBrightness = 0.45f;
+
+        [SerializeField, Range(0f, 2f), Tooltip("The Body slot (the gunmetal hull). At 1 the hull's rim colour reads pale, nearly " +
+                                                "white, at escort range; 0.45 reads as a dark hull (checked on the escort sim's renders).")]
+        float bodyBrightness = 0.45f;
+
+        [SerializeField, Range(0f, 2f), Tooltip("The Window slot (port slits, the bridge visor, the lights).")]
+        float windowBrightness = 0.55f;
+
+        [SerializeField, Range(0f, 2f), Tooltip("The Engine slot (the jets' ember, clamp pads, running lights).")]
+        float engineBrightness = 0.6f;
+
         [Header("Puppetry - how hard a turn plays a take in full")]
         [SerializeField, Min(1f), Tooltip("Yaw rate, degrees per second, that plays the yaw take in full (the Ark turns at up to 40).")]
         float yawRateFull = 40f;
@@ -84,5 +99,9 @@ namespace CosmicShore.ScriptableObjects
         public float ActionResponse => actionResponse;
         public float CollarSpinIdle => collarSpinIdle;
         public float CollarSpinRegrowing => collarSpinRegrowing;
+        public float DomainBrightness => domainBrightness;
+        public float BodyBrightness => bodyBrightness;
+        public float WindowBrightness => windowBrightness;
+        public float EngineBrightness => engineBrightness;
     }
 }

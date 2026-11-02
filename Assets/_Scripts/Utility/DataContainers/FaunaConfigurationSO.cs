@@ -62,6 +62,37 @@ namespace CosmicShore.Utility
                  "Gating PRODUCTION is allowed by the conserved-mass law; culling is not.")]
         [Min(0)] public int ReleaseTier = 0;
 
+        [Header("Per-world species data (Docs/Voyages/ARK_ESCORT.md, fauna threats)")]
+        [Tooltip("A per-CONFIG copy of the species data asset the prefab carries: a LightFaunaDataSO " +
+                 "(LightFauna), a WormColonyConfigSO (worm colony), a SubstrateSpeciesSO (substrate " +
+                 "bestiary) or a BuilderColonyConfigSO (builders). None (the default, every shipped " +
+                 "biome) = the prefab's own asset. Set it to a copy kept under the cell's own " +
+                 "Cell Configs/ folder so one world's grazers can be faster, slower, hungrier or " +
+                 "more aggressive than the same species elsewhere WITHOUT a prefab variant and " +
+                 "without touching the shared asset every other mode reads (ecology skill, the " +
+                 "shared-asset trap). The creature class reads only the type it understands; a " +
+                 "mismatched asset is ignored. Bound by CellLifeSpawnerBase.SpawnFaunaWithDomain " +
+                 "before Initialize (ISpeciesDataOverride), and re-read by LightFauna at " +
+                 "AssignLineage so offspring inherit it.")]
+        public ScriptableObject SpeciesDataOverride;
+
+        [Header("Plate latch - a forager Boid that hangs on to MOVING mass (Scarab Reef piranha)")]
+        [Tooltip("Seconds a forager rides a plate it bit while that plate was MOVING under it (the " +
+                 "Ark's hull, any towed mass; still mass is eaten the ordinary way). 0 = never " +
+                 "latches (every shipped biome). While latched it takes a mouthful of the plates " +
+                 "around its grip every consumeHoldSeconds and never eats the grip itself; it lets " +
+                 "go when the ride is over, when the grip is gone, when the ring around it is " +
+                 "stripped, or when a vessel passes inside PlateLatchScareRadius - so a latched " +
+                 "school is pulled off by flying through it, or shot off one body prism at a " +
+                 "time. No Ark seek: the plate is found through the ordinary densest-mass goal.")]
+        [Min(0f)] public float PlateLatchSeconds = 0f;
+        [Tooltip("Speed (u/s) a released rider is flung away from its grip at (the substrate leech's " +
+                 "FlingSpeed, 90).")]
+        [Min(0f)] public float PlateLatchFlingSpeed = 90f;
+        [Tooltip("A vessel inside this radius of a latched rider shakes it off (checked on the " +
+                 "behaviour tick, one physics overlap). 0 = vessels cannot shake it off.")]
+        [Min(0f)] public float PlateLatchScareRadius = 60f;
+
         [Header("Spatial band - this species' own pen (0 = unpenned, every shipped biome)")]
         [Tooltip("INNER radius (world units from the cell centre) of the annulus this species " +
                  "is penned to. 0 = no inner wall. See BandOuterRadius.")]

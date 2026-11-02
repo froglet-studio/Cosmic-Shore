@@ -105,6 +105,18 @@ namespace CosmicShore.Gameplay
 
         public bool IsReady => Time.time >= _cooldownUntil;
 
+        /// <summary>When a rival last paid the toll through either mouth of the standing pair (<see cref="Time.time"/>);
+        /// negative infinity while no pair stands or nobody has paid.</summary>
+        public float LastTollTime
+        {
+            get
+            {
+                float a = _gateA ? _gateA.LastTollTime : float.NegativeInfinity;
+                float b = _gateB ? _gateB.LastTollTime : float.NegativeInfinity;
+                return Mathf.Max(a, b);
+            }
+        }
+
         /// <summary>Recharge for the HUD's Time card: 1 = just spent, 0 = ready. Relative to the recharge THIS drop
         /// paid, so a hop's short wait sweeps the whole card as a full drop's does.</summary>
         public float CooldownRemaining01

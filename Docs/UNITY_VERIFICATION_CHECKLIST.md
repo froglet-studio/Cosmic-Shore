@@ -76,6 +76,33 @@ dissolves it there. Record: `R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md`. He
 - [ ] Each of the five: no husk spray; the crystal wraps the hull and sinks into it while flying (it rides the hull).
 - [ ] Each hull's omni ability still happens (spare ring, ward, Fulmen charge, magazine, board motes).
 - [ ] Decide per hull whether this reads right or the hull should get a target of its own.
+### 🔴 Tiger Moth Time, Charge, Mass, Space and omni cards, and the three-colour dust (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
+
+**What landed:** kit parts under the Time icon (`TigerMoth_Drop*`) and the Charge icon (`TigerMoth_ScaleDust*`) in
+`ButterflyHUDVariant.prefab`; `ButterflyHUDView.SetDrop` / `SetScaleDust` / `SetPilotColors`, driven by
+`ButterflyHUDController` from `TigerMothDropExecutor` (`IsDropping`, `IsReady`, new `LastTollTime`),
+`SpreadWingsActionExecutor` (`IsDustMode`, new `DustField`), `ButterflyDustField.LastBiteTime` (new) and
+`WormholeMouth.LastTollTime` (new). No Unity and no .NET: not compiled.
+
+- [ ] Compiles; the variant opens with the view's four `scaleDust*Icon`, three `drop*Icon` and four `mass*Icon`, five `dustReach*Icon` and two more `scaleDustMotes*Icon` fields
+  wired, and `omniAbilitySprite` set to `TigerMoth_Bloom`.
+- [ ] Time: the moth in your colour, streaks dim; hold LT: streaks full; while the veil sweeps every part dims. No
+  wormhole before Charge 5.
+- [ ] Charge: Mass mode dims the card; Dust mode shows the dust in your shielded colour and a grey rival; fly the dust
+  over a rival: the card's rival turns red for about 0.6 s on each bite.
+- [ ] Reach Charge 5 (Toll Gate): both cards show the wormhole ring in your colour; a rival flying through your
+  wormhole turns both rings red for a beat.
+- [ ] Mass: the moth from above over three wide keys, plate full; RT into Dust mode: the plate empties and the keys'
+  ends fade to the bare keys; back to Mass mode they return. At Mass 5 (Gilded Wake) the keys turn your shielded colour
+  in Mass mode.
+- [ ] Mass keys are square with a square cut; at Mass 5 their outer ends reach further and taper to a point, the inner
+  edge stays square.
+- [ ] Space: the moth over a long rain of round motes in three colours; at Space 5 a super-shielded star in your colour
+  appears at the bottom of the rain. Dims in Mass mode.
+- [ ] The dust in play (Dust mode capsule and the omni-crystal bloom) shows three colours of your domain: danger,
+  plain and shielded motes; the Charge and Space cards' motes match.
+- [ ] The omni crystal card (left of Charge) shows the bloom: a small moth inside a ring of dust motes, white; it is no
+  longer locked.
 
 ### 🔴 Honeyguide playtest fixes: omnicrystal opens hive mode, the strip, the pick of three (`cece/honeyguide-playtest-fixes`, 2026-11-02) — NOT EDITOR-VERIFIED
 
