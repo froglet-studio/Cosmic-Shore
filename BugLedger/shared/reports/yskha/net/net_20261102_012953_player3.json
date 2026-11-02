@@ -1,0 +1,56 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "Player3",
+  "isVirtualPlayer": true,
+  "why": "MPPM virtual player",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "2e7472eb7d",
+  "playStartedUtc": "2026-11-02T01:29:53.8413240Z",
+  "playEndedUtc": "2026-11-02T01:29:54.0836002Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-02T01:29:53.9009766Z",
+    "durationSeconds": 0.0,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "unknown",
+    "counters": {
+        "requests": 0,
+        "lobbyReads": 0,
+        "retries": 0,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 0,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 0,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 0,
+        "presencePush": 0,
+        "lobbyReadsPerSecond": 0.0
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 0
+    },
+    "lifecycle": [],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 0,
+    "warnings": 0,
+    "dropped": 0,
+    "lines": [
+    ]
+  }
+}
