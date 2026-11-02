@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Brittle Star, Sparrow, Stoat, Orca and Wrasse omni-crystal morph: the crystal folds into the vessel (`claude/hull-fusion-omni-morph`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+A PLACEHOLDER target for the hulls whose omni ability puts nothing in the world: one retirement
+(`VesselAbsorbCrystalMorphByCrystal.asset`) in all five containers folds the crystal onto a shell just inside the hull and
+dissolves it there. Record: `R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md`. Headless harness and `unity_refcompile`
+(player and editor) ran; no editor.
+
+- [ ] Compiles; `VesselAbsorbCrystalMorphGeometryTests` green.
+- [ ] Each of the five: no husk spray; the crystal wraps the hull and sinks into it while flying (it rides the hull).
+- [ ] Each hull's omni ability still happens (spare ring, ward, Fulmen charge, magazine, board motes).
+- [ ] Decide per hull whether this reads right or the hull should get a target of its own.
 ### 🔴 Tiger Moth Time, Charge, Mass, Space and omni cards, and the three-colour dust (`claude/tigermoth-drop-icon`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 **What landed:** kit parts under the Time icon (`TigerMoth_Drop*`) and the Charge icon (`TigerMoth_ScaleDust*`) in

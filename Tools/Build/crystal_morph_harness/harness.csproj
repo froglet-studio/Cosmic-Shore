@@ -33,6 +33,8 @@
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/FaunaBirthCrystalMorphGeometryTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/HiveCombMorphGeometry.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/HoneyguideCrystalMorphGeometryTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/VesselAbsorbMorphGeometry.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VesselAbsorbCrystalMorphGeometryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.14.0" />
