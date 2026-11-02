@@ -12,7 +12,7 @@ namespace CosmicShore.Tests
     /// WHY THIS MATTERS:
     /// Relay drops a host it has not heard from for about 10 s, and the transport only talks to it from
     /// the main thread. The boot used to start the Relay host in the Authentication scene and then load
-    /// the menu through Netcode, and that load froze a cold first Play for 10-62 s (measured on three
+    /// the menu through Netcode, and that load froze one frame for 10-62 s (cold and warm boots, three
     /// machines, 26 Oct - 1 Nov), so the host was dropped on its way to the menu: "Failed to establish
     /// connection with the Relay server (server didn't answer any BIND message)", a transport failure, a
     /// bounce and a re-host. The leave-party and bounce paths already loaded the menu first and started

@@ -86,8 +86,9 @@ the inviter also gets from the session member sync, and carrying it
 across rejoins would make stale signals permanent.
 
 With the rejoin state-safe, the convergence pause is **removed** —
-`ConvergeToCanonicalAsync` runs on its normal throttle
-(`PRESENCE_CONVERGE_INTERVAL_SECONDS`) even mid-invite / mid-party, so
+`ConvergeToCanonicalAsync` runs on every safety-poll fetch tick
+(`LobbyRefreshScheduler`; the old `PRESENCE_CONVERGE_INTERVAL_SECONDS` timer
+is gone since Block 5 step 8) even mid-invite / mid-party, so
 splits self-heal in every phase. Single-writer is preserved: HCS
 remains the sole author of the values; `PresenceLobbyService` only
 carries them.
@@ -237,3 +238,16 @@ block (companion to the existing entry guard at the top of
 - `TODOS.md` — minor parking-lot items
 - `../PartySystem/ARCHITECTURE.md` — party (Relay) layer
 - `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by presence catches
+
+## Freshness fixes (2026-10-31 / 11-01, "friends panel shows stale players")
+
+These are the current timings. They supersede any older poll numbers in this folder:
+
+- **Safety poll:** `LobbyRefreshScheduler.SAFETY_POLL_SECONDS = 20` under the push events. It drops to `WATCHED_POLL_SECONDS = 8` while an online list is on screen (`PresenceWatchDemand`), with ±10 % jitter. Two absent server reads remove a row (absence strikes).
+- **Join converge:** after joining the presence lobby, converge runs at **+2 s** (`FIRST_POLL_AFTER_JOIN_SECONDS`) and again at **+7 s** (+`FOLLOW_UP_POLL_AFTER_JOIN_SECONDS` 5). A simultaneous-create split heals in about 7 s instead of a whole safety poll.
+- **Leaving promptly:** in the editor, `HostConnectionService` leaves the presence lobby on `ExitingPlayMode`, so a stopped MPPM player's row goes at once. Quitting also sets UGS Friends availability to **Offline** (`FriendsInitializer`).
+- **Friends panel:** `FriendsListPanel` re-reads UGS Friends every 15 s while open (`FRIENDS_REFRESH_SECONDS`).
+- **Diagnostics:** the multiplayer debug overlay (Ctrl+Shift+M, `Utility/Diagnostics/MultiplayerDebugOverlay.cs`) shows lobby id, converge outcome, lobbies visible, strikes, the poll timer and watchers, Friends presence, the arcade `LobbySnapshot`, and per-player RTT.
+- **Tests:** `Tests/Editor/MultiplayerBugHuntTests.cs`. Manual: [MULTIPLAYER_TEST_CHECKLIST.md](MULTIPLAYER_TEST_CHECKLIST.md).
+
+Guest arcade AI rosters (game config) are drawn from the host's replicated `ArcadeConfigSyncManager.LobbySnapshot`, not from local edits. `ArcadeGameConfigureModal.ClientRosterDrifted` redraws a guest whose roster drifts from the snapshot. See [Docs/Multiplayer/README.md](../Multiplayer/README.md).

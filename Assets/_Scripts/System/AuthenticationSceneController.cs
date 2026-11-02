@@ -875,8 +875,8 @@ namespace CosmicShore.Core
         /// <summary>
         /// Brings the player into Menu_Main with a session. Online (the Relay path), the menu loads
         /// FIRST, locally, and the Relay host starts after it (B36, Docs/PartySystem/BUGS.md): Relay
-        /// drops a host it has not heard from for about 10 s, and this load froze a cold first Play
-        /// for 10-62 s. That is the order the leave-party and bounce paths already use. Then it waits
+        /// drops a host it has not heard from for about 10 s, and this load froze one frame for
+        /// 10-62 s (cold and warm boots). That is the order the leave-party and bounce paths already use. Then it waits
         /// for HostConnectionService to confirm a live Relay session (state InParty), up to 3 attempts
         /// of <see cref="networkHostTimeout"/> seconds each, and falls back to the offline local host.
         /// Without Relay attempts (offline chosen, no network, the browser Toybox) it starts the

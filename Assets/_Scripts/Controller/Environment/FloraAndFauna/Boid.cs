@@ -111,6 +111,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] float feedingClusterRadius = 10f;
         [Tooltip("Cap on prisms consumed per mouthful — bounds the implosion-VFX burst.")]
         [SerializeField] int maxClusterBites = 6;
+        [Tooltip("Armour points this species wears off a SHIELDED prism per bite (a shield cracks at 1). 0 = never " +
+                 "gnaws shields. Only in a cell that lets armour be food (Cell.ArmourIsFood: the Ark escort's worlds).")]
+        [SerializeField, Min(0f)] float shieldBite;
+        [Tooltip("Armour points this species wears off a SUPER-SHIELDED prism per bite (cracks at " +
+                 "Prism.SuperArmourPoints). 0 = never gnaws super-shields. Only where Cell.ArmourIsFood is set.")]
+        [SerializeField, Min(0f)] float superShieldBite;
         [Tooltip("Rotation-speed multiplier while feeding, so the slow boid turn can " +
                  "actually reach the facing angle before the swarm drifts it away.")]
         [SerializeField] float feedingTurnBoost = 4f;
@@ -124,6 +130,16 @@ namespace CosmicShore.Gameplay
         Prism _feedTarget;
         Vector3 _feedFocusPoint;
         float _feedHoldUntil = -1f;
+        // Where the feed target was when the tick chose it: a target that has moved by the time
+        // the mouth reaches it is MOVING mass, which a plate-latching forager hangs on to.
+        Vector3 _feedTargetChosenAt;
+
+        // --- Plate latch (FaunaConfigurationSO.PlateLatchSeconds; Scarab Reef's piranha) -----
+        // Added at runtime from the config, so no prefab carries it and every other deployment
+        // of this prefab is untouched. See PlateLatch.
+        PlateLatch _latch;
+        bool _latchResolved;
+        public bool IsLatched => _latch && _latch.IsLatched;
 
         [Header("Grazing Pacing (drone combat path)")]
         [Tooltip("Upper bound on prisms a DRONE boid (non-forager) damages per FRAME. The " +
@@ -286,6 +302,14 @@ namespace CosmicShore.Gameplay
 
         void CalculateBehavior()
         {
+            // A rider holds its plate between ticks: no flocking, no new meal. The tick's one job
+            // for it is the scare check (one physics overlap, never per frame).
+            if (IsLatched)
+            {
+                if (_latch.IsScared(transform.position) || Leash != null) ReleaseLatch();
+                return;
+            }
+
             if (isAttached)
             {
                 Vector3 toTarget = target - transform.position;
@@ -455,7 +479,10 @@ namespace CosmicShore.Gameplay
                 // Leashed: only the holder's order, re-checked by this forager's own diet; unordered, it does not graze.
                 if (Leash != null) feedCandidate = LeashedMeal();
                 if (!IsFeedingHold)
+                {
                     _feedTarget = feedCandidate;
+                    if (feedCandidate) _feedTargetChosenAt = feedCandidate.transform.position;
+                }
                 if (IsFeedingEngaged)
                     return;
             }
@@ -539,8 +566,8 @@ namespace CosmicShore.Gameplay
                 // through (IsInedibleShield: a Frenzy, or a herd upgrade), so that shield is eaten
                 // with its prism rather than shed.
                 float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                prism.Consume(transform, embeddedHealthPrism.Domain, _consumerName, IsShieldedMass(prism), true);
-                NotifyFed(meal);
+                if (BiteMass(prism, transform, embeddedHealthPrism.Domain, _consumerName, IsShieldedMass(prism)) == BiteResult.Ate)
+                    NotifyFed(meal);
             }
             else
             {
@@ -558,6 +585,8 @@ namespace CosmicShore.Gameplay
         {
             if (isKilled) return;
             isKilled = true;
+            // A rider shot off its plate just lets go where it is (its skeleton stays on the hull).
+            if (_latch && _latch.IsLatched) _latch.Drop();
             // Uneaten queued prey stays in the world (mass conserved) - a dead
             // boid just stops being its eater.
             _pendingMeals.Clear();
@@ -720,6 +749,8 @@ namespace CosmicShore.Gameplay
             if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             if (cell == null) return true;
+            // A pacified world's fauna leave their own domain's mass alone (Cell.SparedDomain).
+            if (cell.SparesOwnMass(domain, prism.Domain)) return false;
             // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
             // is not food (Fauna.IsInsideBand). A forager's diet is otherwise any-domain, so
             // it does not go through IsPreyForMe's domain leg.
@@ -762,8 +793,96 @@ namespace CosmicShore.Gameplay
             FaceFeedFocus();
             BrakeToHover();
             if (Vector3.Angle(transform.forward, toTarget) <= feedingFacingAngle)
-                ConsumeMouthful(feedTarget);
+            {
+                // A plate that moved since the tick chose it is riding something: a latcher
+                // takes hold of it and eats the plates AROUND it instead of this one bite.
+                if (_latch && _latch.CanLatch(feedTarget, _feedTargetChosenAt))
+                {
+                    _latch.Latch(feedTarget, transform);
+                    _feedTarget = null;
+                    currentVelocity = Vector3.zero;
+                    _feedHoldUntil = Time.time + consumeHoldSeconds; // first mouthful after it is seated
+                }
+                else
+                    ConsumeMouthful(feedTarget);
+            }
             return true;
+        }
+
+        // --- Plate latch (per-frame while riding) ---------------------------
+
+        void ResolveLatch()
+        {
+            if (_latchResolved) return;
+            var cfg = SourceConfig;
+            if (!cfg) return;
+            _latchResolved = true;
+            if (!forager || cfg.PlateLatchSeconds <= 0f) return;
+            if (!TryGetComponent(out _latch)) _latch = gameObject.AddComponent<PlateLatch>();
+            _latch.Configure(cfg.PlateLatchSeconds, cfg.PlateLatchFlingSpeed, cfg.PlateLatchScareRadius);
+        }
+
+        /// <summary>
+        /// One frame of riding: seat the body on its grip, face it, and between holds take a mouthful of
+        /// the plates around the grip. Returns false once the rider has let go (ride over, grip gone,
+        /// ring stripped) - the release flings it and ordinary flocking resumes next tick.
+        /// </summary>
+        bool UpdateLatched()
+        {
+            if (!_latch.Ride(transform, Time.deltaTime, out var facing))
+            {
+                ReleaseLatch();
+                return false;
+            }
+            desiredRotation = facing;
+            currentVelocity = Vector3.zero;
+            if (!IsFeedingHold && !LatchedMouthful())
+            {
+                ReleaseLatch(); // nothing edible left around the grip: the ring is stripped, move on
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>A mouthful of the edible plates around the grip, never the grip itself. False = nothing to eat.</summary>
+        bool LatchedMouthful()
+        {
+            var grip = _latch.Grip;
+            if (!grip) return false;
+            _feedFocusPoint = grip.transform.position;
+            _feedHoldUntil = Time.time + consumeHoldSeconds;
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            if (spatialIndex == null || !spatialIndex.IsAvailable || feedingClusterRadius <= 0f) return false;
+
+            Domains eaterDomain = embeddedHealthPrism ? embeddedHealthPrism.Domain : domain;
+            int found = spatialIndex.QuerySphere(_feedFocusPoint, feedingClusterRadius, FeedScratch);
+            int bites = 0;
+            for (int i = 0; i < found && bites < maxClusterBites; i++)
+            {
+                var prism = FeedScratch[i];
+                if (prism == grip || !IsEdibleForForager(prism)) continue;
+                float bite = Mathf.Max(0f, prism.Volume);
+                // Through the plate-eating path: an armoured plate takes a bite of wear (a gnaw keeps the rider on),
+                // a plain or cracked one is eaten.
+                var result = BiteMass(prism, transform, eaterDomain, _consumerName, IsShieldedMass(prism));
+                if (result == BiteResult.Ate) NotifyFed(bite);
+                if (result != BiteResult.None) bites++;
+            }
+            return bites > 0;
+        }
+
+        void ReleaseLatch()
+        {
+            if (!_latch || !_latch.IsLatched) return;
+            var fling = _latch.Release(transform);
+            _feedHoldUntil = 0f;
+            _feedTarget = null;
+            if (fling.sqrMagnitude > 1e-6f)
+            {
+                currentVelocity = fling;
+                if (SafeLookRotation.TryGet(fling, out var rotation, this)) desiredRotation = rotation;
+            }
         }
 
         /// <summary>
@@ -811,12 +930,14 @@ namespace CosmicShore.Gameplay
             string eaterName = _consumerName; // cached at Initialize (no per-mouthful concat garbage)
 
             int bites = 0;
+            Prism gnawed = null;
             if (IsEdibleForForager(feedTarget))
             {
                 float meal = Mathf.Max(0f, feedTarget.Volume);
-                feedTarget.Consume(transform, eaterDomain, eaterName, IsShieldedMass(feedTarget), true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(feedTarget, transform, eaterDomain, eaterName, IsShieldedMass(feedTarget));
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                else if (result == BiteResult.Gnawed) gnawed = feedTarget;
+                if (result != BiteResult.None) bites++;
             }
 
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
@@ -828,10 +949,13 @@ namespace CosmicShore.Gameplay
                 var prism = FeedScratch[i];
                 if (prism == feedTarget || !IsEdibleForForager(prism)) continue;
                 float bite = Mathf.Max(0f, prism.Volume);
-                prism.Consume(transform, eaterDomain, eaterName, IsShieldedMass(prism), true);
-                NotifyFed(bite);
-                bites++;
+                var result = BiteMass(prism, transform, eaterDomain, eaterName, IsShieldedMass(prism));
+                if (result == BiteResult.Ate) NotifyFed(bite);
+                if (result != BiteResult.None) bites++;
             }
+
+            // Armour still standing after a bite of wear: come back to it once this hold ends.
+            if (gnawed && !gnawed.destroyed) _feedTarget = gnawed;
 
             // Someone else got the whole mouthful first — nothing to watch, resume roaming.
             if (bites == 0)
@@ -841,6 +965,28 @@ namespace CosmicShore.Gameplay
         // --- The leash (Fauna.Leash, per-frame) ------------------------------
 
         protected override bool CanBeLeashed => forager && base.CanBeLeashed;
+
+        float _scaledMinSpeed = float.NaN, _scaledMaxSpeed = float.NaN;
+
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            forager ? (superShielded ? superShieldBite : shieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            if (tuning.TryGet(species, "minSpeed", out float v)) minSpeed = Mathf.Max(0f, v);
+            if (tuning.TryGet(species, "maxSpeed", out v)) maxSpeed = Mathf.Max(minSpeed, v);
+            if (tuning.TryGet(species, "huntSpeed", out v)) huntSpeedMultiplier = Mathf.Max(1f, v);
+            // A multiplier, applied once to whatever the speeds are now (this runs again after the variant tuning, which
+            // may rewrite them): values this method already scaled are recognised and left alone.
+            if (tuning.TryGet(species, "speedScale", out v))
+            {
+                float k = Mathf.Max(0f, v);
+                if (!Mathf.Approximately(minSpeed, _scaledMinSpeed)) _scaledMinSpeed = minSpeed *= k;
+                if (!Mathf.Approximately(maxSpeed, _scaledMaxSpeed)) _scaledMaxSpeed = maxSpeed *= k;
+            }
+            if (tuning.TryGet(species, "feedingClusterRadius", out v)) feedingClusterRadius = Mathf.Max(0f, v);
+        }
 
         public override bool LeashCanEat(Prism prism) => IsEdibleForForager(prism);
 
@@ -916,6 +1062,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            ResolveLatch();
+            // A rider's position is its seat on the grip (PlateLatch writes this transform only;
+            // the body prism follows its parent and the movers contract below still files it).
+            bool riding = !isKilled && IsLatched && UpdateLatched();
+
             transform.position += currentVelocity * Time.deltaTime;
             // Movers contract: the body prism is registered mass - keep its stored
             // index position tracking the swimming boid.
@@ -925,7 +1076,9 @@ namespace CosmicShore.Gameplay
             // hold), with a turn boost while it owns the body so the slow boid turn can
             // reach the facing angle. Drones skip it (they graze via the paced queue below).
             float turnRate = 1f;
-            if (forager && !isKilled && UpdateFeeding())
+            if (riding)
+                turnRate = Mathf.Max(1f, feedingTurnBoost);
+            else if (forager && !isKilled && UpdateFeeding())
                 turnRate = Mathf.Max(1f, feedingTurnBoost);
             else if (Leash != null && !isKilled)
                 turnRate = SteerOnLeash(turnRate);

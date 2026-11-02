@@ -32,11 +32,22 @@ namespace CosmicShore.Gameplay
     /// Its colour is the domain the cell spawned it in (the controlling domain) and stays its own - the colony's
     /// stolen walls and hoard are its history, so a cell's one-colour re-colour does not repaint it.
     /// </summary>
-    public class BuilderColonyFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation
+    public class BuilderColonyFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation,
+        ISpeciesDataOverride
     {
         [Header("Builder Colony")]
         [Tooltip("Species, numbers and look (Docs/BUILDERS_AND_THIEVES.md). Authored by Tools/Build/author_builders.py.")]
         [SerializeField] BuilderColonyConfigSO config;
+
+        /// <summary>
+        /// A per-world colony config (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the colony seeds - the Swarm world's fortress cements a wider shell with more
+        /// workers while the shared Builder Colonies assets stay as authored.
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is BuilderColonyConfigSO worldConfig) config = worldConfig;
+        }
 
         static readonly ProfilerMarker s_mTick = new("BuilderColonyFauna.Tick");
         static readonly ProfilerMarker s_mSense = new("BuilderColonyFauna.Tick.SenseVessels");

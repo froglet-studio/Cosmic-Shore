@@ -601,19 +601,19 @@ order (the cost estimates are from this record and `Docs/SKIM_RACE_AI.md` §14.4
 | 1 | **Code Optimization = Release** (bug icon, bottom right; the badge's Release button). Unity starts in Debug unless Preferences > General > Code Optimization On Startup says Release. | About 5x on the AI planner and on every game C# path, URP's own C# included |
 | 2 | **Profiler: Deep Profile off, target Play Mode, recording off while just testing.** The badge's Capture button opens the Profiler for `prof`. | Deep profile is about 10x; editor profiling adds the windows' cost |
 | 3 | **No visible Scene view while playing** (a tab behind the Game view is fine) | It renders the world again every Play frame |
-| 4 | **The Third Eye: open only while watching, Resolution 0.5, Trails off unless needed** | A second full render (post, shadows, AA) at window pixels x display scale |
+| 4 | **The AI Diagnose panel (Third Eye) closed** *(until 2026-11-01 the Third Eye was an editor window with a second render; it now drives the main camera, so only its overlays and trails cost)* | Overlay lines, trails, labels |
 | 5 | **Game view no larger than 1440p**; Burst on; Game view focused | GPU pixels; managed jobs (10-20x); an unfocused editor throttles |
 
 **To find out which it is, measure, do not guess:** play two sessions past the auto-capture time (90 s for a scene with no
-scenario), once with the Third Eye closed and once with it open, each goes to Claude by itself after Play.
+scenario), once with the AI Diagnose panel closed and once with it open, each goes to Claude by itself after Play.
 A capture now records the editor's own state (`editor`: Scene views open, Game view size, deep profiling, editor
 profiling) beside the camera list, and `perf_capture_report.py` flags each one.
 
 **When the editor cannot go faster, test in slow motion:** HUD console (F7) `timescale 0.25`. At 10 fps a hull
 at 300 u/s moves 30 u per frame and overshoots its line, so AI (and hand) testing at a low frame rate is not
 representative (`Docs/SKIM_RACE_AI.md` §8.0c). At 0.25x each frame steps what 40 fps does. `timescale off` resets
-it; a scene change releases it. A development player build is the other honest frame rate (the HUD console and
-`capture` work there; the Third Eye does not).
+it; a scene change releases it. A development player build is the other honest frame rate (the HUD console,
+`capture` and the AI Diagnose panel work there).
 
 ### 4.3 The same-state rule (why the spindle test failed)
 

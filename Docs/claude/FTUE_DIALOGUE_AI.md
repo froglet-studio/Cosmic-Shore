@@ -131,6 +131,11 @@ The host picks the AI difficulty - Easy, Medium, Hard or Legendary - on **every*
 Yash 2026-10-26: "a generic rule"; `AIDifficulty`, replicated in `LobbySnapshot.AIDifficulty`). Each AI reads it through one
 handicap: the Skim Race pilot's, a gate race's ring handicap, or the platform autopilot's `AIPilotBelief`; AI seats are placed per `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
 (fewest pilots first) and the host moves them with **Add AI** (`Docs/SKIM_RACE_AI.md` §13 lists every 4-seat shape).
+**Each AI can also carry its own level** (Shombith and Yash, 2026-10-27): on every card with the AI row, Arcade and Arena,
+the host presses an AI's podium and the row then sets that AI only; with no AI selected it sets every AI. Each level
+rides the roster (`LobbySnapshot.AiD0..AiD5`, protocol 19) and reaches the AI as it spawns (`GameDataSO.AIDifficultyFor`).
+Design and code map: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3. Not yet run in the Unity editor: the hand test is the
+2026-10-27 "Each AI seat its own difficulty" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
 than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn

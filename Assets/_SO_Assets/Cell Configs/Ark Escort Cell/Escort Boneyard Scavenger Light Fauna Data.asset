@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34ff5921d2e247ff9716e66242269962, type: 3}
+  m_Name: Boneyard Scavenger Light Fauna Data
+  m_EditorClassIdentifier:
+  detectionRadius: 82.14
+  separationRadius: 60.86
+  consumeRadius: 40
+  behaviorUpdateRate: 2
+  separationWeight: 8
+  goalWeight: 1.5
+  minSpeed: 10
+  maxSpeed: 16
+  rotationLerpSpeed: 6
+  feedingFacingAngle: 25
+  consumeHoldSeconds: 2
+  feedingClusterRadius: 24.34
+  maxClusterBites: 4
+  feedingBrakeSharpness: 4
+  pursuitSpeedMultiplier: 1.5
+  pursuitAgility: 2.5
+  attackRange: 30.43
+  territoryRadius: 600
+  territoryAnchorDistance: 400
+  huntIntervalSeconds: 20
+  huntDurationSeconds: 10
+  witherRingInterval: 0.25

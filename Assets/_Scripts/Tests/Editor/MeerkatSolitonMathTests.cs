@@ -11,7 +11,7 @@ namespace CosmicShore.Tests
     /// number came from running the page's OWN <c>lerpLv</c>, <c>perpBasis</c> and <c>kitPortal</c> arithmetic in node on
     /// the same inputs, at the page's shipped numbers (2026-10-28: zap 0.1 to 0.25 of a petal by Charge, portal 1.5 × the exit
     /// radius). A page change that moves one of these is a port to redo, not a test to loosen. The surface area's goldens are
-    /// round 23's, in <c>MeerkatWormholeMathTests.SurfaceAreaThroat_MatchesThePage</c>. Runs outside Unity too:
+    /// round 23's, in <c>SolitonTunnelShapeMathTests.SurfaceAreaThroat_MatchesThePage</c>. Runs outside Unity too:
     /// <c>Tools/Build/meerkat_kit_harness/run.sh</c>.
     /// </summary>
     [TestFixture]

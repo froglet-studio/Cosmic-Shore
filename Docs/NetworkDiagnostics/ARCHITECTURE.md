@@ -238,6 +238,9 @@ No injection needed — `NetworkDiagnostics` is a static helper. See
 
 ## Related docs
 
+- `../PresenceSystem/MULTIPLAYER_TEST_CHECKLIST.md` — the separate **multiplayer debug overlay** (Ctrl+Shift+M, Editor/Development builds: presence, Friends, arcade snapshot, per-player RTT) and the release-build **poor-connection badge** (`Utility/Network/ConnectionWarningBadge.cs`, thresholds in `ConnectionQuality`)
+- `../Multiplayer/README.md` — index of all multiplayer docs
+
 - `TESTS.md` — Tests A-E for verifying the diagnostic accuracy
 - `TODOS.md` — `BoostPolling`, active probing, baseline-entry log,
   broader adoption

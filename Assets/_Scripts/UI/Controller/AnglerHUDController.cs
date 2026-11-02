@@ -74,8 +74,6 @@ namespace CosmicShore.UI
             view.SetDash(hasSchool ? angler.DashGroup : 0, hasSchool, angler.Dashing);
         }
 
-        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Serpent's and the
-        /// Rhino's cards read it; alpha 0 until the palette resolves, so the view keeps the colour it has.</summary>
         /// <summary>The pilot's SHIELDED colour (Space 5's prism shield); alpha 0 until the palette resolves, as the Serpent's.</summary>
         Color ResolveShieldedColor()
         {
@@ -84,6 +82,8 @@ namespace CosmicShore.UI
             return theme.GetShieldedSignalColor(_status.Domain);
         }
 
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Serpent's and the
+        /// Rhino's cards read it; alpha 0 until the palette resolves, so the view keeps the colour it has.</summary>
         Color ResolveDomainSignalColor()
         {
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;

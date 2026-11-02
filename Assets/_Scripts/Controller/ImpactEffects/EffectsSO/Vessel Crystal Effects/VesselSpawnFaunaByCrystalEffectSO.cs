@@ -30,14 +30,21 @@ namespace CosmicShore.Gameplay
         {
             var status = vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;
             if (status == null || !status.Transform || !fauna || !fauna.FaunaPrefab) return;
-            if (fauna.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return;
+            if (fauna.NetworkSynced && !FaunaNetworkSync.IsSimAuthority)
+            {
+                CrystalFaunaBirth.Decline(status, $"'{fauna.name}' is replicated and born on the ecology's peer");
+                return;
+            }
 
             var t = status.Transform;
             Vector3 at = t.position - t.forward * spawnBehind;
             var cell = Cell.FindNearestActiveCell(at);
             if (!cell) return;
             if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
-            CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, fauna.FaunaPrefab, at, status.Domain, at, fauna);
+            var born = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, fauna.FaunaPrefab, at, status.Domain, at, fauna);
+            // The omni crystal folds into the newborn's heart when the vessel wears that retirement
+            // (R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md); nothing listens otherwise.
+            if (born) CrystalFaunaBirth.Announce(status, born);
         }
     }
 }

@@ -112,8 +112,8 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// FLUME: every soliton, whoever made it, traced along its length so you see where it is and where it leads
-    /// (Docs/Pilots/CALLSIGNS.md §2, row 18). The Meerkat's tunnels are the only solitons so far
-    /// (<see cref="MeerkatWormholeExecutor.Live"/>, read only). Marked white: a soliton belongs to no one.
+    /// (Docs/Pilots/CALLSIGNS.md §2, row 18). Every Soliton Tunnel, made or placed
+    /// (<see cref="SolitonTunnel.Live"/>, read only). Marked white: a soliton belongs to no one.
     /// </summary>
     public sealed class FlumeSight : PilotSightProvider
     {
@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
             float minRadius = set ? set.CrystalMarkRadius : 6f;
             var color = set ? set.CrystalMarkColor : Color.white;
             float intensity = (set ? set.MarkIntensity : 1f) * ctx.Strength;
-            var live = MeerkatWormholeExecutor.Live;
+            var live = SolitonTunnel.Live;
             for (int i = 0; i < live.Count; i++)
             {
                 var tunnel = live[i];

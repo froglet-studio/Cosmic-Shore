@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
         public int Standing { get; private set; }
 
         /// <summary>Lays <paramref name="t"/>'s exit portal. False when nothing could be laid (no prism channel).</summary>
-        public bool Lay(MeerkatSolitonKit kit, MeerkatWormholeExecutor.Tunnel t)
+        public bool Lay(MeerkatSolitonKit kit, SolitonTunnel t)
         {
             var status = kit.Status;
             var prisms = status?.VesselPrismController;

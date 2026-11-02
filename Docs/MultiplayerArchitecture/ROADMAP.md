@@ -7,6 +7,8 @@ system's strengths as **invariants to preserve** (regression guardrails) and (2)
 as a prioritized next-work queue. Granular, already-sequenced items live in the per-layer trackers
 (linked at the bottom) — this file does not duplicate them.
 
+> **2026-11-02:** netcode concepts, verdicts and the shipped steps (RTT, transform tuning, time resync, `HitReportGuard`, the rejoin audit) are in [`Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md`](../Multiplayer/MULTIPLAYER_ARCHITECTURE.md) §5. The index is [`Docs/Multiplayer/README.md`](../Multiplayer/README.md).
+
 Companion to the PDF dossier in `Docs/MultiplayerArchitecture/`
 (Part II → “Future improvements & roadmap”).
 

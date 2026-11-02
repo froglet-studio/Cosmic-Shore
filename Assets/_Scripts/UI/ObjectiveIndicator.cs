@@ -60,6 +60,13 @@ namespace CosmicShore.UI
         /// </summary>
         public float HideOnScreenWithin { get; set; } = float.PositiveInfinity;
 
+        /// <summary>
+        /// While true the arrow never hides: an on-screen target is MARKED where it is however close it is, and an
+        /// off-screen one keeps its edge arrow. For an alarm on the objective itself (the Ark losing hull), where the
+        /// marker over the target is the message.
+        /// </summary>
+        public bool ShowWhenOnScreen { get; set; }
+
         IObjectiveProvider _providerCached;
         RectTransform _parentRect;
         Canvas _canvas;
@@ -171,7 +178,7 @@ namespace CosmicShore.UI
                     screenPos.x >= 0f && screenPos.x <= screenW &&
                     screenPos.y >= 0f && screenPos.y <= screenH;
 
-                if (onScreen &&
+                if (onScreen && !ShowWhenOnScreen &&
                     (float.IsPositiveInfinity(HideOnScreenWithin) ||
                      (targetPos - cam.transform.position).sqrMagnitude <= HideOnScreenWithin * HideOnScreenWithin))
                 {
@@ -337,6 +344,12 @@ namespace CosmicShore.UI
         {
             if (icon && icon.TryGetComponent(out ObjectiveArrowGraphic arrow)) arrow.SetAccent(accent);
             if (distanceText) distanceText.color = accent;
+        }
+
+        /// <summary>Back to the arrow's own colours after <see cref="SetAccent"/>.</summary>
+        public void ClearAccent()
+        {
+            if (icon && icon.TryGetComponent(out ObjectiveArrowGraphic arrow)) arrow.ClearAccent();
         }
 
         /// <summary>

@@ -1,5 +1,7 @@
 # Multiplayer / Netcode / UGS Architecture — PDF dossier
 
+> The PDFs are a snapshot. Current netcode settings and status (RTT, transform tuning, time resync, score guard, rejoin) are in [`../Multiplayer/MULTIPLAYER_ARCHITECTURE.md`](../Multiplayer/MULTIPLAYER_ARCHITECTURE.md), and the index of every multiplayer doc is [`../Multiplayer/README.md`](../Multiplayer/README.md).
+
 A branded technical PDF documenting Cosmic Shore's entire online stack: Unity Netcode for
 GameObjects, Unity Gaming Services (Auth · Sessions · Lobby · Relay · Friends), the two-level
 Presence Lobby + Party Session model, server-authoritative vessel spawning, the `.AsMainThread()`

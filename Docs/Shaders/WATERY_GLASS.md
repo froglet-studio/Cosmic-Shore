@@ -13,14 +13,14 @@ for line to URP HLSL.
 
 | Shader | What it draws | The look, in one line | Blend |
 |---|---|---|---|
-| `MeerkatWormholeLens.shader` (+ `MeerkatWormholeLensPass.cs`) | **The water pipe** (Garrett's Tube Lens Lab, Yash's round-11 numbers): every tunnel as bent space only | Each pixel's ray is marched through a thin shell on the tube's wall and turned by a field along the tube's contours; the pixel shows where the turned ray lands. The tube is measured along its centreline: 25 points uploaded per tube, joined by circle arcs from each point's heading to the next (straight chords cut inside a curve: 1.4 u out against 0.07 u) | Full-screen pass, after transparents |
+| `SolitonTunnel.shader` (+ `SolitonTunnelLensPass.cs`) | **The water pipe** (Garrett's Tube Lens Lab, Yash's round-11 numbers): every tunnel as bent space only | Each pixel's ray is marched through a thin shell on the tube's wall and turned by a field along the tube's contours; the pixel shows where the turned ray lands. The tube is measured along its centreline: 25 points uploaded per tube, joined by circle arcs from each point's heading to the next (straight chords cut inside a curve: 1.4 u out against 0.07 u) | Full-screen pass, after transparents |
 | `MeerkatWormholeWarp.shader` | The tube's wall as a screen-space offset, for the same lens pass | `normal.xy * sin(pi * rim)`: zero at the centre line AND at the silhouette, so there is no seam | Additive, into a half-float target |
 | `MeerkatWormholeGlass.shader` | The bridge's glass (with `formedLook` Bridge) | Fresnel only: `0.05 + 0.55 * rim^3` | Additive |
 | `MeerkatTree.shader` | **The tree** round every tunnel, and the **roots'** bark | Fresnel glass + bark fissures (fading within 15-90 u of the camera) + tree rings on the cut faces + a slow flow; the bore (the tube you ride) a smooth sheen with no lines; shows only the tunnel's live window; branches grow out of their roots in the vertex shader | Additive |
 | `MeerkatRootInside.shader` | The roots **from inside** | A soft, smooth inner tube: one slow warm tone, a little dense, denser at its silhouette, lit by the rider's lamp, fading to CLEAR with distance (never to black); its ends stay open | Alpha |
 | `MeerkatWaterTube.shader` (+ `MeerkatWaterTubeView.cs`) | **The cheap mobile water pipe**, A/B candidate (2026-10-28), drawn only when `MeerkatTubeLook.Mode` is WaterOnly or WaterAndLens | Near-white, mostly clear: fresnel rim `abs(n.v)`, slow flow bands along the tube, two crossed sines of caustic shimmer, optional twist; fades near the camera (`_NearFade`) and outside the live window. No grab pass, no screen copy, one draw per tube. Compare against the lens in `Assets/_Scenes/Game_TestDesign/LavalampWormholeLab.unity` | Alpha, ZWrite Off, `Cull [_Cull]` (default Off) |
 
-**2026-10-29:** only `MeerkatWormholeLens.shader` is left of the Meerkat rows above (one look, its layer always on).
+**2026-10-29:** only `SolitonTunnel.shader` is left of the Meerkat rows above (one look, its layer always on).
 The others were deleted; `WORMHOLE_SHADERS.md` §12 has each one's restore commit and steps. Later the same day the
 water itself went too (Yash: "I dont want any water shader, or underwater look"): the lens is now a clear, calm jelly
 hollow with no tint, absorption or dispersion. This page stays as the recipe for the watery-glass family;

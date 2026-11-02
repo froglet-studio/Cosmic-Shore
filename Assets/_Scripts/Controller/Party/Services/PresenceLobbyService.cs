@@ -219,6 +219,25 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] JoinOrCreateAsync complete - lobby: {_activeLobby?.Id ?? "NULL"}");
         }
 
+        /// <summary>Outcome of the last converge, for the multiplayer debug overlay: "on canonical",
+        /// "migrated", "deferred (hosting N)", "query failed", "join failed". Null before the first.</summary>
+        public string LastConvergeStatus { get; private set; }
+
+        /// <summary><c>Time.realtimeSinceStartup</c> of the last converge outcome (0 before the first).</summary>
+        public float LastConvergeAtRealtime { get; private set; }
+
+        /// <summary>How many presence lobbies the last converge query saw (more than 1 = a split).</summary>
+        public int LastConvergeVisibleLobbies { get; private set; }
+
+        void NoteConverge(string status)
+        {
+            LastConvergeStatus     = status;
+            LastConvergeAtRealtime = UnityEngine.Time.realtimeSinceStartup;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[PresenceLobbyService] Converge: {status} - lobby {_activeLobby?.Id ?? "(none)"}, " +
+                $"{LastConvergeVisibleLobbies} presence lobbies visible.");
+        }
+
         /// <inheritdoc/>
         public async UniTask ConvergeToCanonicalAsync(int maxPlayers)
         {
@@ -237,12 +256,14 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                NoteConverge("query failed");
                 return;
             }
 
             // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
             // The smallest-id holder is the single point everyone migrates toward.
             string canonicalId = _activeLobby?.Id;
+            LastConvergeVisibleLobbies = sessions?.Count ?? 0;
             if (sessions != null)
             {
                 foreach (var s in sessions)
@@ -254,8 +275,8 @@ namespace CosmicShore.Gameplay
             }
 
             // Nothing to converge to, or we already hold the canonical lobby.
-            if (canonicalId == null) return;
-            if (_activeLobby != null && _activeLobby.Id == canonicalId) return;
+            if (canonicalId == null) { NoteConverge("no lobby"); return; }
+            if (_activeLobby != null && _activeLobby.Id == canonicalId) { NoteConverge("on canonical"); return; }
 
             // A lobby we HOST and other people are sitting in is not ours to tear down.
             // The release below is DeleteOwnLobbyQuietlyAsync, which DELETES when we are the
@@ -282,6 +303,7 @@ namespace CosmicShore.Gameplay
                     $"[PresenceLobbyService] Deferring converge to {canonicalId}: we host " +
                     $"{_activeLobby.Id} with {_activeLobby.Players.Count} players in it - " +
                     "migrating now would delete it under them. Retrying once they have moved.");
+                NoteConverge($"deferred (hosting {_activeLobby.Players.Count})");
                 return;
             }
 
@@ -305,12 +327,14 @@ namespace CosmicShore.Gameplay
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
                 SetActiveLobby(joined);
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
+                NoteConverge("migrated");
             }
             catch (Exception e)
             {
                 // Canonical lobby may have died between query and join - keep our
                 // current lobby; the next periodic converge retries.
                 CSDebug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+                NoteConverge("join failed");
             }
         }
 

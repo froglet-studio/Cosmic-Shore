@@ -32,7 +32,7 @@ namespace CosmicShore.UI
             if (gameData.SelectedPlayerCount)
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;
 
-            SyncSwitchbackFunType();
+            SyncSwitchbackSeedMode();
         }
 
         void SyncGameDataShip(SO_Vessel ship)

@@ -186,6 +186,11 @@ namespace CosmicShore.Gameplay
                 AiD4 == o.AiD4 && AiD5 == o.AiD5;
 
             /// <summary>The placed AI domains as the modal consumes them (Domains as ints, placement order).</summary>
+            /// <summary>One-line summary for logs and the multiplayer debug overlay.</summary>
+            public override string ToString() =>
+                $"gen={Generation} open={IsOpen} mode={GameMode} pc={PlayerCount} humans={HumanCount} " +
+                $"domains={DomainCount} ai={AiCount}[{string.Join(",", PlacedAiDomains())}]";
+
             public int[] PlacedAiDomains()
             {
                 int n = Mathf.Clamp(AiCount, 0, MaxAiSlots);
@@ -704,6 +709,8 @@ namespace CosmicShore.Gameplay
         void HandleLobbyChanged(LobbySnapshot previous, LobbySnapshot next)
         {
             if (IsServer) return; // The host drew all of it locally
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[ArcadeConfigSync] t={Time.realtimeSinceStartup:F1} client lobby {previous} -> {next}");
             ApplyLobbyDelta(previous, next);
         }
 
@@ -812,6 +819,8 @@ namespace CosmicShore.Gameplay
             snapshot.SetPlacedAiVessels(placedAiVessels);
             snapshot.SetPlacedAiDifficulties(placedAiDifficulties);
             if (snapshot.Equals(_lobby.Value)) return;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[ArcadeConfigSync] t={Time.realtimeSinceStartup:F1} host roster {_lobby.Value} -> {snapshot}");
             _lobby.Value = snapshot;
         }
 
