@@ -268,6 +268,9 @@ namespace CosmicShore.Utility
             b.Root.SetPositionAndRotation(position, rotation);
             b.Status.Speed = speed;
             b.Status.Course = rotation * Vector3.forward;
+            // Trail prisms lay along blockRotation, which the (switched off) transformer writes every frame;
+            // without this every prism kept the hull's spawn facing.
+            b.Status.blockRotation = rotation;
             Puppeteer(b, transformer, rotation, speed, t);
         }
 
