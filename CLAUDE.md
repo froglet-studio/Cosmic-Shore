@@ -51,9 +51,11 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
 - [`Docs/MENU_REDESIGN_B.md`](Docs/MENU_REDESIGN_B.md): **The UI redesign and its design board.** Every menu, HUD, start-flow and
-  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Menu Redesign B"
-  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2) before it is built; the **`/design-board`** skill brings the board into a
-  session, compares a new design against the board and the build, and adds it as a new round (never a second canvas); the copy of
+  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Froglet Design Board"
+  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2; "Menu Redesign B" until 2026-11-02) before it is built. The canvas is in tabs
+  ("Menu Redesign" is the master tab of every earlier round, "Compute Console", "Menu Redesign C", ...): **`/design-board-new`** opens a
+  new tab and asks its name; the **`/design-board`** skill brings the board into a
+  session, compares a new design against the board and the build, and adds it as a new round on a tab (never a second canvas); the copy of
   every board is `Docs/MenuRedesignB/board/`; `/ui-redesign-tracker` verifies a build against the picked board. Read before touching
   Menu_Main, GameCanvas's look or any `Tools/Build/author_menu_*.py`.
   Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)
