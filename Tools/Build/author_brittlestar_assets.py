@@ -85,6 +85,11 @@ CLASS_ID = 16
 STOAT_CLASS_ID = 15
 
 
+# The omni crystal folds into the hull (R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md): a placeholder until this hull's
+# omni ability puts something in the world to land on. Shared asset, not generated here.
+VESSEL_ABSORB_MORPH_GUID = "9a40b3a2720043cd86332dbf7e16dd8d"   # VesselAbsorbCrystalMorphByCrystal.asset
+
+
 def guid_for(name: str) -> str:
     return hashlib.md5(f"CosmicShore/BrittleStar/{name}".encode()).hexdigest()
 
@@ -595,7 +600,7 @@ def vessel_container_asset() -> str:
             "  vesselSpaceCrystalEffects:\n" + crystal +
             "  vesselTimeCrystalEffects:\n" + crystal +
             "  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {VESSEL_ABSORB_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
