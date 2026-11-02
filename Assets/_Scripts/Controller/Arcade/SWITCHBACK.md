@@ -926,6 +926,7 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 | `aiSenseDebug` | off | Sense / sweep / dodge lines and Info-level dodge logs |
 | `aiDodgeDangerOnly` | on | Dodge only Danger prisms; plain ones are flown through (Step 1) |
 | `aiNoDodgeNearRing` | 200 | u from the ring inside which nothing is dodged (Step 1); 0 = dodge up to the ring |
+| `aiStrikeSetupLeg` | off | Before a blast, fly to a point behind the key onto the fire line (the old strike, Step 2) |
 
 ## Offline: the Blast Run simulator (2026-11-01)
 
@@ -1028,6 +1029,36 @@ Not done yet (the pt21u spec):
   (the existing Blast plan and its strike aim are unchanged);
 - no human play data exists on the box, since every recording is from a soak.
 - Winners are slower by about 0-14% for now.
+
+### Step 2: the strike without a setup leg (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 2". Before, a blast whose key lay more than 25 deg off the fire line first flew to a point up
+to 120 u behind the key and turned the COURSE onto the fire line (`SwitchbackBlastAI.GateBlastAim`'s Setup phase). Now
+the hull flies straight at the key and the drift look swings the NOSE onto the obstacle in the last `LookRange` (160 u),
+which is what aims the blast: Yash's "drift towards the crystal while aiming at the obstacle". The old strike is
+`SwitchbackController.aiStrikeSetupLeg` (off). The planner and its costs are unchanged.
+
+Offline (`switchback_sim_harness`, 24 courses a cell, 26 gates, one AI alone, step 1 in both), median seconds:
+
+| | I3 Medium | I3 Hard | I3 Legendary | I4 Hard | I4 Legendary |
+|---|---|---|---|---|---|
+| Setup leg (before) | 175 | 173 | 189 | 195 | 205 |
+| No setup leg (now) | 165 | 161 | **156** | 171 | 175 |
+| No blast planner at all | 178 | 177 | 176 | 172 | 175 |
+
+Easy (which never blasts), I1 and I2 are unchanged to within a few seconds. At I3 the blasting levels are now
+faster than not blasting, and the levels finally order (Easy 177, Medium 165, Hard 161, Legendary 156); at I4 they
+break even. What the measurements say about WHY:
+- **Most of the gain is the line, not the blast.** With blasts that destroy nothing (`blastHarmless=1`) I3 Legendary
+  runs 162 s: flying at the key puts the hull on the leg's line straight into the gate. The blast itself is worth
+  about 6 s a race at I3.
+- **The AI still takes fewer than half its keys** (I3 Legendary: 159 of 360 planned): the commit drift locks the course
+  once the aim is within 26 deg, so the hull slides past the key while the nose swings. Aiming at the key itself
+  (`strikeAtKey=1`) doubles the keys taken but is SLOWER (171 s, the line after the key leaves the leg); a tight commit
+  on the strike (`strikeCommit=0.995`) slower still (198 s). Not shipped; a better strike line is the next lever.
+- Charging the planner nothing for the old alignment turn changes nothing measurable, so its costs stay.
+
+Test: `SwitchbackAISteeringTests.Switchback_BlastAI_Defaults_AreSteps1And2`.
 
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 

@@ -119,6 +119,10 @@ namespace CosmicShore.Gameplay
 
         public SwitchbackBlastPlanner Planner => _planner;
 
+        /// <summary>Fly a setup leg behind the key onto the fire line before the strike (the pre-2026-11-02 strike); off,
+        /// the hull flies straight at the key and the drift look aims the blast. Set by the controller.</summary>
+        public bool StrikeSetupLeg { get; set; }
+
         /// <summary>Dodge only Danger prisms (<see cref="SwitchbackPrismAvoidance.Dodges"/>); set by the controller.</summary>
         public bool DodgeDangerOnly { get; set; }
 
@@ -233,7 +237,10 @@ namespace CosmicShore.Gameplay
             float dist = toKey.magnitude;
             if (Vector3.Dot(-toKey, fire) > 5f) { st.Phase = Phase.Done; return false; }   // past the key's plane
             float off = dist > 1f ? Vector3.Angle(toKey, fire) : 0f;
-            if (dist > 60f && off > SetupAngle)
+            // Step 2 (2026-11-02): no setup leg behind the key by default. The hull flies straight at the key and the
+            // drift look swings the nose onto the obstacle in the last LookRange u, which is what aims the blast; turning
+            // the COURSE onto the fire line first cost about as much time as the blast saved (switchback_sim_harness).
+            if (StrikeSetupLeg && dist > 60f && off > SetupAngle)
             {
                 st.Phase = Phase.Setup;
                 aim = key - fire * Mathf.Min(SetupBack, 0.5f * dist);
