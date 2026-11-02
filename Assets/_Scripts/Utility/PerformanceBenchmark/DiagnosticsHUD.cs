@@ -179,7 +179,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             get
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                // A phone has no user Documents folder: Android hands back a path on a read-only volume, so
+                // every report failed with "Read-only file system" and no diag ever left a phone.
+                string docs = Application.isMobilePlatform
+                    ? null
+                    : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
                 return Path.Combine(docs, OutputFolderName);
             }
@@ -715,9 +719,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             try
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
-                string dir = Path.Combine(docs, OutputFolderName);
+                string dir = OutputDirectory;
                 Directory.CreateDirectory(dir);
 
                 string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
@@ -1307,9 +1309,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             try
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
-                string dir = Path.Combine(docs, OutputFolderName);
+                string dir = OutputDirectory;
                 Directory.CreateDirectory(dir);
 
                 string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
@@ -1581,7 +1581,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (string.IsNullOrWhiteSpace(raw)) return null;
             string result = Dispatch(raw);
             SetStat("Console", "›", result);
-            Debug.Log($"[DiagnosticsHUD] {raw} → {result}");
+            Debug.Log($"[DiagnosticsHUD] {DeviceLogFormat.MaskTokens(raw)} → {result}");
             if (_visible) RefreshText();
             return result;
         }

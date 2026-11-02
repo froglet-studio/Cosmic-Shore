@@ -5,22 +5,30 @@
       "topGameAllocators": [
         [
           "PoolRefill.Squirrel Prism",
-          8.908
+          9.715
+        ],
+        [
+          "PoolMiss.Squirrel Prism",
+          7.539
         ],
         [
           "VesselImpactor.AcceptImpactee",
-          3.412
-        ],
-        [
-          "PoolActivate.Squirrel Prism",
-          0.726
+          4.635
         ],
         [
           "PoolRefill.FastGrowPrism",
-          0.693
+          0.963
+        ],
+        [
+          "PoolActivate.Squirrel Prism",
+          0.824
+        ],
+        [
+          "LOD.Sweep",
+          0.643
         ]
       ],
-      "verdict": "within baseline"
+      "verdict": "REGRESSION"
     }
   ],
   "baselines": [
@@ -59,20 +67,14 @@
     }
   ],
   "bugs": {
-    "open": 254,
-    "source": "554 branch(es)",
+    "open": 266,
+    "source": "616 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
         "state": "open",
         "testers": 6,
         "title": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti"
-      },
-      {
-        "id": "E-8cd155dc89",
-        "state": "open",
-        "testers": 6,
-        "title": "[BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me."
       },
       {
         "id": "E-0a098d80df",
@@ -91,82 +93,130 @@
         "state": "open",
         "testers": 5,
         "title": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.On"
+      },
+      {
+        "id": "E-e6054bc064",
+        "state": "open",
+        "testers": 5,
+        "title": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!"
       }
     ],
-    "validating": 63
+    "validating": 15
   },
   "captures": [
     {
-      "cpuBusyMs": 14.254095077514648,
-      "gcKB": 23.82266616821289,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-26 00:27:27",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 12.06631088256836,
-      "gcKB": 43.353912353515625,
-      "key": "MinigameSwitchback|MinigameSwitchback",
-      "timestamp": "2026-10-26 00:29:49",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "within baseline"
-    },
-    {
-      "cpuBusyMs": 15.477563858032227,
-      "gcKB": 38.94325637817383,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-26 00:44:28",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 16.049108505249023,
-      "gcKB": 39.15462875366211,
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active",
+        "Game view unfocused"
+      ],
+      "cpuBusyMs": 10.17245101928711,
+      "gcKB": 51.5711669921875,
       "key": "Menu_Main|Garland",
-      "timestamp": "2026-10-26 00:48:30",
-      "user": "yskha",
+      "timestamp": "2026-10-31 13:50:03",
+      "user": "owner",
       "valid": true,
-      "verdict": "REGRESSION"
+      "verdict": "REGRESSION (WARN contaminated: frame cap active, Game view unfocused)"
     },
     {
-      "cpuBusyMs": 10.26502513885498,
-      "gcKB": 79.47058868408203,
-      "key": "MinigameSwitchback|MinigameSwitchback",
-      "timestamp": "2026-10-26 01:40:04",
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 11.916385650634766,
+      "gcKB": 44.717464447021484,
+      "key": "MinigameThresherTime|MinigameThresherTime",
+      "timestamp": "2026-10-31 23:23:30",
       "user": "yskha",
       "valid": true,
-      "verdict": "REGRESSION"
+      "verdict": "not adopted as a baseline (frame cap active)"
     },
     {
-      "cpuBusyMs": 14.47546100616455,
-      "gcKB": 32.66828536987305,
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active",
+        "Game view unfocused"
+      ],
+      "cpuBusyMs": 8.744303703308105,
+      "gcKB": 19.895732879638672,
       "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-26 02:10:35",
+      "timestamp": "2026-10-31 23:57:57",
       "user": "yskha",
       "valid": true,
-      "verdict": "REGRESSION"
+      "verdict": "improved (WARN contaminated: frame cap active, Game view unfocused)"
     },
     {
-      "cpuBusyMs": 14.7449312210083,
-      "gcKB": 20.416521072387695,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-26 02:23:36",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 12.217754364013672,
-      "gcKB": 19.629592895507812,
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.994444847106934,
+      "gcKB": 20.812030792236328,
       "key": "Menu_Main|Garland",
-      "timestamp": "2026-10-26 02:27:37",
+      "timestamp": "2026-11-01 00:01:58",
       "user": "yskha",
       "valid": true,
-      "verdict": "REGRESSION"
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 5.793318748474121,
+      "gcKB": 102.5220947265625,
+      "key": "MinigameTapestry|MinigameTapestry",
+      "timestamp": "2026-11-01 17:39:16",
+      "user": "owner",
+      "valid": true,
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "8b8ac67622",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 8.021550178527832,
+      "gcKB": 37.71286392211914,
+      "key": "MinigameSwitchback|MinigameSwitchback",
+      "timestamp": "2026-11-01 17:39:53",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "improved (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 8.221084594726562,
+      "gcKB": 74.62781524658203,
+      "key": "MinigameWaystation|MinigameWaystation",
+      "timestamp": "2026-11-01 17:44:33",
+      "user": "owner",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": null,
+      "commit": null,
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.16506290435791,
+      "gcKB": 73.08143615722656,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-11-01 17:58:18",
+      "user": "owner",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
     }
   ],
   "gates": [
@@ -192,24 +242,26 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-25T22:09:00Z",
+  "generatedUtc": "2026-11-02T03:31:40Z",
   "next": [
-    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): gcKB 47.01902389526367 -> 61.291324615478516 (+30%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker Inl_UniversalRenderTotal 0.9318 -> 1.5055 ms/frame (+62%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker LateBehaviourUpdate 0.1986 -> 1.202 ms/frame (+505%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker UGUI.Rendering.UpdateBatches 0.2623 -> 0.4665 ms/frame (+78%)",
     "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): cpuBusyMs 6.47861385345459 -> 8.757814407348633 (+35%)",
     "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): p95Ms 19.186302185058594 -> 23.271499633789062 (+21%)",
     "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): marker LateBehaviourUpdate 0.3973 -> 2.44 ms/frame (+514%)",
-    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-26 02:27:37): marker UGUI.Rendering.UpdateBatches 0.8188 -> 4.6481 ms/frame (+468%)",
-    "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-22 15:46:15): marker BehaviourUpdate 1.5177 -> 2.0018 ms/frame (+32%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): cpuBusyMs 10.338772773742676 -> 26.555517196655273 (+157%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): p95Ms 22.80489730834961 -> 42.69499588012695 (+87%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker PlayerLoop 12.32 -> 26.4649 ms/frame (+115%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker UGUI.Rendering.UpdateBatches 3.5317 -> 8.6272 ms/frame (+144%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker BehaviourUpdate 1.7693 -> 4.157 ms/frame (+135%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Inl_UniversalRenderTotal 2.0078 -> 3.5404 ms/frame (+76%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker LateBehaviourUpdate 0.8621 -> 2.0219 ms/frame (+135%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Animators.Update 0.3682 -> 0.6937 ms/frame (+88%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker CoroutinesDelayedCalls 0.1594 -> 0.5622 ms/frame (+253%)",
-    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Physics.Simulate 0.0989 -> 0.3397 ms/frame (+243%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker UGUI.Rendering.UpdateBatches 0.8188 -> 1.5682 ms/frame (+92%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker CoroutinesDelayedCalls 0.2016 -> 0.4896 ms/frame (+143%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker LightFauna.Tick.PrismScan 0.1389 -> 0.4153 ms/frame (+199%)",
+    "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker BehaviourUpdate 1.5177 -> 2.5941 ms/frame (+71%)",
+    "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker Inl_UniversalRenderTotal 1.6261 -> 2.4198 ms/frame (+49%)",
+    "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker CoroutinesDelayedCalls 0.0084 -> 0.6112 ms/frame (+7176%)",
+    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): cpuBusyMs 4.477152347564697 -> 5.779377460479736 (+29%)",
+    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker BehaviourUpdate 1.083 -> 1.5775 ms/frame (+46%)",
+    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker LateBehaviourUpdate 0.2424 -> 0.4651 ms/frame (+92%)",
+    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker Fauna.BodySync 0.1876 -> 0.4483 ms/frame (+139%)",
+    "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-31 13:50:03): marker LateBehaviourUpdate 0.8621 -> 2.1781 ms/frame (+153%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): cpuBusyMs 130.13706970214844 -> 220.8030242919922 (+70%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): p95Ms 201.87890625 -> 304.6697998046875 (+51%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): gcKB 123.43673706054688 -> 190.07241821289062 (+54%)",
@@ -219,31 +271,38 @@
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): marker Physics.Simulate 1.4195 -> 2.5316 ms/frame (+78%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): marker UGUI.Rendering.UpdateBatches 1.0869 -> 1.6051 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): marker LightFauna.Hunt 0.016 -> 0.858 ms/frame (+5262%)",
+    "Resolve: Performance regression in MinigameWaystation|MinigameWaystation (belac, 2026-10-29 14:58:54): marker BehaviourUpdate 0.6375 -> 1.2 ms/frame (+88%)",
+    "Resolve: Performance regression in MinigameWaystation|MinigameWaystation (belac, 2026-10-29 14:58:54): marker Fauna.BodySync 0.0623 -> 0.3553 ms/frame (+470%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (owner, 2026-10-23 00:24:45): gcKB 38.86630630493164 -> 61.10776138305664 (+57%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): cpuBusyMs 11.583251953125 -> 14.7449312210083 (+27%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): p95Ms 15.22900390625 -> 19.803499221801758 (+30%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): marker LateBehaviourUpdate 0.7454 -> 2.6696 ms/frame (+258%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): marker BlackHole.Tick 0.0099 -> 2.0564 ms/frame (+20672%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): marker BlackHole.Field 0.0025 -> 2.0219 ms/frame (+80776%)",
+    "Resolve: Performance regression in MinigameWrasseRun|MinigameWrasseRun (owner, 2026-10-31 13:26:13): gcKB 21.30614471435547 -> 62.80649948120117 (+195%)",
+    "Resolve: Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
+    "Resolve: Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
+    "Resolve: Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
-    "Resolve: Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-26 01:40:04): gcKB 43.353912353515625 -> 79.47058868408203 (+83%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.412 -> 4.635 KB/frame (+36%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolMiss.Squirrel Prism: 7.539 KB/frame",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolActivate.Squirrel Prism allocates 0.726 -> 0.824 KB/frame (+13%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: SkimmerImpactor.AcceptImpactee allocates 0.069 -> 0.126 KB/frame (+83%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: LOD.Sweep allocates 0.493 -> 0.643 KB/frame (+30%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.Destroy.EffectRequest: 0.245 KB/frame",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.693 -> 0.963 KB/frame (+39%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SOAPRaise allocates 0.278 -> 0.474 KB/frame (+71%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SpatialBind allocates 0.159 -> 0.25 KB/frame (+57%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.CreationQueue.Drain: 0.102 KB/frame",
     "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261020-fb02]",
-    "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
-    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
-    "254 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
+    "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix",
+    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go",
+    "Capture Switchback I2 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped: the editor captures it by itself",
+    "Capture Switchback Blast Run I4 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped",
+    "266 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [
     {
       "id": "T-20261024-0212",
       "kind": "test",
       "task": "Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Pla"
-    },
-    {
-      "id": "T-20261024-803f",
-      "kind": "test",
-      "task": "Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-ca"
     },
     {
       "id": "T-20261021-b133",
@@ -264,105 +323,27 @@
       "id": "T-20261020-fb02",
       "kind": "test",
       "task": "Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; co"
-    },
-    {
-      "id": "T-20261020-86b5",
-      "kind": "test",
-      "task": "Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile"
-    },
-    {
-      "id": "T-20261017-7647",
-      "kind": "test",
-      "task": "Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt"
-    },
-    {
-      "id": "T-20261017-9990",
-      "kind": "dev",
-      "task": "Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-"
-    },
-    {
-      "id": "T-20261017-3d13",
-      "kind": "test",
-      "task": "Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The ves"
-    },
-    {
-      "id": "T-20261017-2215",
-      "kind": "test",
-      "task": "Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went t"
-    },
-    {
-      "id": "T-20261017-19f0",
-      "kind": "dev",
-      "task": "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
-    },
-    {
-      "id": "T-20261017-2129",
-      "kind": "dev",
-      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)"
-    },
-    {
-      "id": "T-20261017-c82c",
-      "kind": "test",
-      "task": "Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at"
-    },
-    {
-      "id": "T-20261015-1551",
-      "kind": "test",
-      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
-    },
-    {
-      "id": "T-20261015-7edd",
-      "kind": "test",
-      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude"
-    },
-    {
-      "id": "T-20261015-7d29",
-      "kind": "test",
-      "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
-    },
-    {
-      "id": "T-20261015-f106",
-      "kind": "setup",
-      "task": "Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged i"
-    },
-    {
-      "id": "T-20261015-72e1",
-      "kind": "dev",
-      "task": "Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a"
-    },
-    {
-      "id": "T-20261015-3972",
-      "kind": "test",
-      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go fo"
-    },
-    {
-      "id": "T-20261015-3e0b",
-      "kind": "test",
-      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 f"
-    },
-    {
-      "id": "T-20261015-56dd",
-      "kind": "test",
-      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itse"
     }
   ],
   "regressions": [
-    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): gcKB 47.01902389526367 -> 61.291324615478516 (+30%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker Inl_UniversalRenderTotal 0.9318 -> 1.5055 ms/frame (+62%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker LateBehaviourUpdate 0.1986 -> 1.202 ms/frame (+505%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker UGUI.Rendering.UpdateBatches 0.2623 -> 0.4665 ms/frame (+78%)",
     "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): cpuBusyMs 6.47861385345459 -> 8.757814407348633 (+35%)",
     "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): p95Ms 19.186302185058594 -> 23.271499633789062 (+21%)",
     "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): marker LateBehaviourUpdate 0.3973 -> 2.44 ms/frame (+514%)",
-    "Performance regression in Menu_Main|Garland (yskha, 2026-10-26 02:27:37): marker UGUI.Rendering.UpdateBatches 0.8188 -> 4.6481 ms/frame (+468%)",
-    "Performance regression in Menu_Main|Garland (belac, 2026-10-22 15:46:15): marker BehaviourUpdate 1.5177 -> 2.0018 ms/frame (+32%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): cpuBusyMs 10.338772773742676 -> 26.555517196655273 (+157%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): p95Ms 22.80489730834961 -> 42.69499588012695 (+87%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker PlayerLoop 12.32 -> 26.4649 ms/frame (+115%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker UGUI.Rendering.UpdateBatches 3.5317 -> 8.6272 ms/frame (+144%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker BehaviourUpdate 1.7693 -> 4.157 ms/frame (+135%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Inl_UniversalRenderTotal 2.0078 -> 3.5404 ms/frame (+76%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker LateBehaviourUpdate 0.8621 -> 2.0219 ms/frame (+135%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Animators.Update 0.3682 -> 0.6937 ms/frame (+88%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker CoroutinesDelayedCalls 0.1594 -> 0.5622 ms/frame (+253%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Physics.Simulate 0.0989 -> 0.3397 ms/frame (+243%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker UGUI.Rendering.UpdateBatches 0.8188 -> 1.5682 ms/frame (+92%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker CoroutinesDelayedCalls 0.2016 -> 0.4896 ms/frame (+143%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker LightFauna.Tick.PrismScan 0.1389 -> 0.4153 ms/frame (+199%)",
+    "Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker BehaviourUpdate 1.5177 -> 2.5941 ms/frame (+71%)",
+    "Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker Inl_UniversalRenderTotal 1.6261 -> 2.4198 ms/frame (+49%)",
+    "Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker CoroutinesDelayedCalls 0.0084 -> 0.6112 ms/frame (+7176%)",
+    "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): cpuBusyMs 4.477152347564697 -> 5.779377460479736 (+29%)",
+    "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker BehaviourUpdate 1.083 -> 1.5775 ms/frame (+46%)",
+    "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker LateBehaviourUpdate 0.2424 -> 0.4651 ms/frame (+92%)",
+    "Performance regression in MinigameSwitchback|MinigameSwitchback (belac, 2026-10-29 15:11:52): marker Fauna.BodySync 0.1876 -> 0.4483 ms/frame (+139%)",
+    "Performance regression in Menu_Main|Garland (owner, 2026-10-31 13:50:03): marker LateBehaviourUpdate 0.8621 -> 2.1781 ms/frame (+153%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): cpuBusyMs 130.13706970214844 -> 220.8030242919922 (+70%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): p95Ms 201.87890625 -> 304.6697998046875 (+51%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): gcKB 123.43673706054688 -> 190.07241821289062 (+54%)",
@@ -372,16 +353,26 @@
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): marker Physics.Simulate 1.4195 -> 2.5316 ms/frame (+78%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): marker UGUI.Rendering.UpdateBatches 1.0869 -> 1.6051 ms/frame (+48%)",
     "Performance regression in MinigameBloomrush|MinigameBloomrush (owner, 2026-10-20 16:02:48): marker LightFauna.Hunt 0.016 -> 0.858 ms/frame (+5262%)",
+    "Performance regression in MinigameWaystation|MinigameWaystation (belac, 2026-10-29 14:58:54): marker BehaviourUpdate 0.6375 -> 1.2 ms/frame (+88%)",
+    "Performance regression in MinigameWaystation|MinigameWaystation (belac, 2026-10-29 14:58:54): marker Fauna.BodySync 0.0623 -> 0.3553 ms/frame (+470%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (owner, 2026-10-23 00:24:45): gcKB 38.86630630493164 -> 61.10776138305664 (+57%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): cpuBusyMs 11.583251953125 -> 14.7449312210083 (+27%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): p95Ms 15.22900390625 -> 19.803499221801758 (+30%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): marker LateBehaviourUpdate 0.7454 -> 2.6696 ms/frame (+258%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): marker BlackHole.Tick 0.0099 -> 2.0564 ms/frame (+20672%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-10-26 02:23:36): marker BlackHole.Field 0.0025 -> 2.0219 ms/frame (+80776%)",
+    "Performance regression in MinigameWrasseRun|MinigameWrasseRun (owner, 2026-10-31 13:26:13): gcKB 21.30614471435547 -> 62.80649948120117 (+195%)",
+    "Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
+    "Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
+    "Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
-    "Performance regression in MinigameSwitchback|MinigameSwitchback (yskha, 2026-10-26 01:40:04): gcKB 43.353912353515625 -> 79.47058868408203 (+83%)"
+    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.412 -> 4.635 KB/frame (+36%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolMiss.Squirrel Prism: 7.539 KB/frame",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolActivate.Squirrel Prism allocates 0.726 -> 0.824 KB/frame (+13%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: SkimmerImpactor.AcceptImpactee allocates 0.069 -> 0.126 KB/frame (+83%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: LOD.Sweep allocates 0.493 -> 0.643 KB/frame (+30%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.Destroy.EffectRequest: 0.245 KB/frame",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.693 -> 0.963 KB/frame (+39%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SOAPRaise allocates 0.278 -> 0.474 KB/frame (+71%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: Prism.Create.SpatialBind allocates 0.159 -> 0.25 KB/frame (+57%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker Prism.CreationQueue.Drain: 0.102 KB/frame"
   ],
   "scenarios": [
     {
@@ -404,6 +395,20 @@
       "owed": true,
       "scene": "MinigameWildlifeLiberation",
       "title": "S5 Wildlife Liberation"
+    },
+    {
+      "afterSeconds": 90,
+      "label": "Switchback",
+      "owed": true,
+      "scene": "MinigameSwitchback",
+      "title": "Switchback I2"
+    },
+    {
+      "afterSeconds": 90,
+      "label": "SwitchbackBlast",
+      "owed": true,
+      "scene": "MinigameSwitchback",
+      "title": "Switchback Blast Run I4"
     }
   ]
 }

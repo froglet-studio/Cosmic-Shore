@@ -217,6 +217,14 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
             opt.seeds = [space.encode(s) for s in job["seeds"]]
     elif isinstance(opt, O.MapElites) and not saved and job.get("seeds"):
         opt.seeds = [space.encode(s) for s in job["seeds"]]
+    elif isinstance(opt, O.SepCMAES) and not saved:
+        # Several genomes to grow from (the evaluator reads them from the shipped assets, or the job lists them),
+        # plus whatever the team has found: the first generation is every one of them and mutations of each.
+        seeds = module.seeds(ev_args, root) if hasattr(module, "seeds") else job.get("seeds") or []
+        if seeds:
+            opt.seed([space.encode(s) for s in seeds] + ([gbest] if gbest else []))
+            L.log(f"{job['id']}: the first generation grows from {len(seeds)} genome(s)" +
+                  (" and the team's best" if gbest else ""), quiet)
 
     fixed = dict(job.get("fixed") or {})                  # a manual run's settings held at a value
     pool = Pool(cores, root, job)
@@ -470,11 +478,15 @@ def _pull_unit_files(job, epoch, unit_id, theirs, run_dir, machines):
 
 # ── choosing ─────────────────────────────────────────────────────────────────
 
-def ranked(jobs, machines, caps):
-    """Every job with its priority and, when it cannot run here, why not."""
+def ranked(jobs, machines, caps, plan=None):
+    """Every job with its priority and, when it cannot run here, why not. A job off the AI plan is never run
+    (Docs/AI_SYSTEM/AI_PLAN.md): the plan is read from the same place as the jobs."""
     rows = []
+    if plan is None:
+        plan = L.load_ai_plan(local=all(j.get("_ref") is None for j in jobs.values()))
     for j in jobs.values():
         problems = L.validate_job(j)
+        off = L.plan_problem(j, plan)
         epochs = L.merged_job(machines, j["id"])
         ek, e = L.current_epoch(epochs)
         score, why = L.priority(j, machines, jobs, e)
@@ -482,6 +494,8 @@ def ranked(jobs, machines, caps):
         distrust = L.untrusted(j)
         if problems:
             reason = "invalid: " + "; ".join(problems)
+        elif off:
+            reason = "off the AI plan: " + off
         elif distrust:
             reason = "not run: " + distrust
         elif j["status"] not in L.RUNNABLE:

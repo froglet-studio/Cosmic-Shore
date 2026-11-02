@@ -1012,8 +1012,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual void OnServerTick() { }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Race.GateRace.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (IsServer) OnServerTick();
 
             // Ahead of every guard below: the course is built while the turn has NOT started
@@ -1241,10 +1243,15 @@ namespace CosmicShore.Gameplay
             p.Vessel?.VesselStatus is Component status && status &&
             status.TryGetComponent(out AIPilot autopilot) && autopilot.AutoPilotEnabled;
 
+        /// <summary>A mode's per-pilot set-up as each AI racer is armed (server): Switchback sets its AI's nose follow
+        /// rate by difficulty here. Default: nothing.</summary>
+        protected virtual void OnRacerArmed(IPlayer pilot) { }
+
         void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
         {
             var pilot = p.Vessel?.VesselStatus?.AIPilot;
             if (pilot == null) return;
+            OnRacerArmed(p);
 
             var captured = p;
             int lockedIndex = -1;

@@ -30,11 +30,12 @@ static class Program
         Console.WriteLine($"# Switchback Blast Run offline: {o.Gates} gates, seeds {string.Join(",", o.Seeds)}; " +
                           $"planner={(o.Planner ? "on" : "off")} sense={(o.Sense ? "on" : "off")} emergency={(o.Emergency ? "on" : "off")} " +
                           $"hit={o.Hit.Describe()} blast={(o.RealCone ? "asset cone" : "planner slot")} roll={(o.FlyRoll ? "flown" : "free")}");
-        Console.WriteLine("I  level      races finished  median_s  p90_s  rings/min  blasts thread direct  keys  hits(danger)  emerg  misses");
+        Console.WriteLine("I  level      races finished  median_s  p90_s  rings/min  blasts thread direct  keys  hits(danger)  emerg  misses  taps/min  tap_s");
         foreach (int i in o.Intensities)
         foreach (int lvl in o.Levels)
         {
             var times = new List<float>();
+            int carves = 0; float carveSecs = 0f, raceSecs = 0f;
             int fin = 0, races = 0, blast = 0, thread = 0, direct = 0, keys = 0, hits = 0, dhits = 0, emerg = 0, misses = 0;
             float ringsPerMin = 0f;
             foreach (int seed in o.Seeds)
@@ -45,12 +46,14 @@ static class Program
                 ringsPerMin += r.Rings / Mathf.Max(r.Time / 60f, 1e-3f);
                 blast += r.Blast; thread += r.Thread; direct += r.Direct; keys += r.Keys;
                 hits += r.Hits; dhits += r.DangerHits; emerg += r.Emergencies; misses += r.Misses;
+                carves += r.Carves; carveSecs += r.CarveSeconds; raceSecs += r.Time;
             }
             times.Sort();
             string med = times.Count > 0 ? times[times.Count / 2].ToString("F1") : "-";
             string p90 = times.Count > 0 ? times[Math.Min(times.Count - 1, (int)(0.9f * times.Count))].ToString("F1") : "-";
             Console.WriteLine($"{i}  {LevelName(lvl),-9} {races,6} {fin,8} {med,9} {p90,6} {ringsPerMin / races,10:F1} " +
-                              $"{blast,7} {thread,6} {direct,6} {keys,5} {hits,7}({dhits}) {emerg,6} {misses,7}");
+                              $"{blast,7} {thread,6} {direct,6} {keys,5} {hits,7}({dhits}) {emerg,6} {misses,7} " +
+                              $"{carves * 60f / Mathf.Max(raceSecs, 1f),9:F1} {(carves > 0 ? carveSecs / carves : 0f),6:F2}");
         }
     }
 
@@ -104,11 +107,35 @@ sealed class Opts
     public int[] Intensities = { 1, 2, 3, 4 };
     public int[] Levels = { 1, 2, 3, 4 };
     public int[] Seeds = { 45501, 45502, 45503, 45504, 1, 2, 3, 4, 5, 6, 7, 8 };
-    public int Gates = 20;
+    public int Gates = 26;          // EndConditionOverrides.switchbackGateTarget (2026-11-01)
     public float Dt = 1f / 60f;
     public float MaxSeconds = 600f;
     public bool Planner = true, Sense = true, Emergency = true, Drive = true, NoLayout, RealCone, FlyRoll;
-    public bool DangerOnly;   // a what-if: the sense and the emergency sweep see only Danger prisms (plain hits are cheap)
+    // SwitchbackController.aiDodgeDangerOnly / aiNoDodgeNearRing, decided by SwitchbackPrismAvoidance.Dodges (shipped 2026-11-02)
+    public bool Setup;   // SwitchbackController.aiStrikeSetupLeg (off since 2026-11-02, step 2); setup=1 = the old strike
+    public bool StrikeAtKey;          // what-if B: the strike aims at the key itself (not 40 u past it on the fire line)
+    public float StrikeCommitCos = 0.9f; // what-if C: the commit drift's alignment on a strike (AIPilot: 0.9 = 26 deg)
+    public bool PassedByTravel;
+    public bool BlastHarmless;
+    public float DriftTurnMult = 1.5f;  // DolphinDriftAction.Mult: the turn rate while drifting (BeginDrift); grip 0 freezes the course
+    public float CarveDegrees;         // step 4 what-if: drift-carve when the aim is this far off the course (0 = off)
+    public float CarveDoneDegrees = 8f;  // ...let go once the nose is this close to the aim
+    public float CarveMaxSeconds = 1.2f; // ...or after this long
+    // VesselTransformer.NoseFollowFraction: an AI hull's nose follows its commanded rotation at LERP_AMOUNT 1.5/s ALWAYS,
+    // drifting included (only a local human pilot has no lag, Garrett 2026-10-21). The game: driftLag on, noseLag on.
+    public bool DriftLag = true;
+    public bool NoseLag = true;
+    // The AI nose's follow rate per second, one row per intensity (I1..I4), each Easy, Medium, Hard, Legendary: 1.5 = the
+    // fleet lag, 0 = no lag. noseFollow=e,m,h,l sets every row (1.5,1.5,1.5,1.5 = the fleet lag, as before 2026-11-02);
+    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity.
+    public float[][] NoseFollowTable =
+    {
+        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.8f, 2.2f, 3.5f, 6f },
+    };
+    public bool CmdSteer;              // what-if: the AI judges its stick from its COMMANDED heading, not the lagging nose
+    public float CmdLead;              // ...and leads the command past the aim by this share of the nose's lag        // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose
+    public bool DangerOnly = true;
+    public float NoDodgeNear = 200f;
     public HitModel Hit = HitModel.Default;
     public float PickupRadius = 12f;     // Dolphin EnergySkimmer: radius 0.5 x scale 20 = 10 u, plus the crystal's own
     public float HullRadius = 3f;        // SwitchbackPrismAvoidance.ShipRadius
@@ -143,6 +170,23 @@ sealed class Opts
                 case "cone": o.RealCone = v != "0"; break;
                 case "roll": o.FlyRoll = v != "0"; break;
                 case "dangerOnly": o.DangerOnly = v != "0"; break;
+                case "setup": o.Setup = v != "0"; break;
+                case "strikeAtKey": o.StrikeAtKey = v != "0"; break;
+                case "strikeCommit": o.StrikeCommitCos = float.Parse(v); break;
+                case "passedByTravel": o.PassedByTravel = v != "0"; break;
+                case "blastHarmless": o.BlastHarmless = v != "0"; break;
+                case "driftMult": o.DriftTurnMult = float.Parse(v); break;
+                case "carve": o.CarveDegrees = float.Parse(v); break;
+                case "carveDone": o.CarveDoneDegrees = float.Parse(v); break;
+                case "carveMax": o.CarveMaxSeconds = float.Parse(v); break;
+                case "driftLag": o.DriftLag = v != "0"; break;
+                case "noseLag": o.NoseLag = v != "0"; break;
+                case "noseFollow": for (int r = 0; r < 4; r++) o.NoseFollowTable[r] = Array.ConvertAll(v.Split(','), float.Parse); break;
+                case "noseFollowI1": case "noseFollowI2": case "noseFollowI3": case "noseFollowI4":
+                    o.NoseFollowTable[key[^1] - '1'] = Array.ConvertAll(v.Split(','), float.Parse); break;
+                case "cmdSteer": o.CmdSteer = v != "0"; break;
+                case "cmdLead": o.CmdLead = float.Parse(v); break;
+                case "noDodgeNear": o.NoDodgeNear = float.Parse(v); break;
                 case "pickup": o.PickupRadius = float.Parse(v); break;
                 case "hull": o.HullRadius = float.Parse(v); break;
                 case "hit.slow": o.Hit.SlowFactor = float.Parse(v); break;
@@ -296,6 +340,7 @@ sealed class World : ISwitchbackAIWorld
 // ---------------------------------------------------------------- one race
 sealed class Race
 {
+    public float CarveSeconds; public int Carves;
     public bool Finished; public float Time; public int Rings, Blast, Thread, Direct, Keys, Hits, DangerHits, Emergencies, Misses;
 
     // AIPilot / GateRaceController / MinigameSwitchback.unity
@@ -352,6 +397,7 @@ sealed class Race
         float v = Cruise, t = 0f;
         int idx = 0, locked = -1; float side = 1f, lead = ApproachLead;
         bool drifting = false, extending = false; float extT = 0f;
+        bool carving = false; float carveStart = 0f;
         float meter = 0f, pinned = 1f; bool discharging = false, hold = false, wasDis = false; float heldAt = -1e9f;
         var slows = new List<Vector3>();   // (factor, start, duration): VesselTransformer's throttle modifiers
         var orbit = new Orbit();
@@ -360,6 +406,7 @@ sealed class Race
         // the executor's per-pilot state (SwitchbackBlastAI.Pilot)
         var d = default(SwitchbackAIDecision); d.Station = -1;
         Phase phase = Phase.None; int planned = -1, plans = 0; float nextPlan = 0f;
+        float keyClosest = float.MaxValue; bool keyClosestDrift = false; Phase keyClosestPhase = Phase.None;
         float nextSense = 0f; var avoidAct = SwitchbackAvoidAction.Clear; Vector3 avoidAim = default, blastCrystal = default, blastLook = default;
         bool emergOn = false; float emergHoldUntil = 0f, hotUntil = 0f; Vector3 emergSteer = default; int frame = 0;
         var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[32];
@@ -391,7 +438,9 @@ sealed class Race
             {
                 if (idx != planned)
                 {
-                    if (planned >= 0 && log != null) log.Add($"{t,6:F1} gate {planned} done plan={d.Plan} keys={Keys}");
+                    if (planned >= 0 && log != null) log.Add($"{t,6:F1} gate {planned} done plan={d.Plan} keys={Keys}" +
+                        (d.Plan == SwitchbackAIPlan.Blast ? $" closest to key {keyClosest:F0} u (drifting there {keyClosestDrift}, phase {keyClosestPhase})" : ""));
+                    keyClosest = float.MaxValue;
                     planned = idx; plans = 0;
                     Plan();
                 }
@@ -406,7 +455,9 @@ sealed class Race
                 else
                 {
                     Vector3 goal = gateAim ? gAim : ringAt;
-                    if (o.Sense && SenseAim(goal, out Vector3 sAim)) aim = sAim;
+                    bool closeToRing = !SwitchbackPrismAvoidance.Dodges(true, Vector3.Distance(pos, ring), false, o.NoDodgeNear);
+                    if (closeToRing) avoidAct = SwitchbackAvoidAction.Clear;
+                    if (o.Sense && !closeToRing && SenseAim(goal, out Vector3 sAim)) aim = sAim;
                     else if (gateAim) aim = gAim;
                 }
             }
@@ -416,7 +467,8 @@ sealed class Race
 
             // ---- the emergency sweep (every frame hot, every other frame cold), down the real velocity
             bool emerg = false;
-            if (o.Emergency && !o.NoLayout && EmergencyCheck(out Vector3 eSteer))
+            bool nearRing = !SwitchbackPrismAvoidance.Dodges(true, Vector3.Distance(pos, ring), false, o.NoDodgeNear);
+            if (o.Emergency && !o.NoLayout && !nearRing && EmergencyCheck(out Vector3 eSteer))
             {
                 emerg = true; desired = (eSteer - pos).normalized; drifting = false; extending = false;
             }
@@ -460,9 +512,24 @@ sealed class Race
             }
             // ---- the commit drift (held off while a discharge climbs; never under 0.9 of the throttle target)
             bool canCommit = !o.Drive || (!hold && v >= UpToSpeed * targetSpeed);
-            if (!extending && !emerg)
+            if (carving)
             {
-                if (!drifting && canCommit && Vector3.Dot(desired, travel) >= CommitCos) { drifting = true; travel = desired; discharging = false; }
+                // the carve: course frozen, the nose swinging onto the aim; let go and the course snaps to the nose
+                if (emerg || extending || Ang(fwd, desired) <= o.CarveDoneDegrees || t - carveStart >= o.CarveMaxSeconds)
+                {
+                    carving = false; drifting = false; travel = fwd; CarveSeconds += t - carveStart;
+                    if (o.Drive) discharging = meter > 0f;
+                }
+            }
+            else if (o.CarveDegrees > 0f && !drifting && !extending && !emerg && !hold && Ang(travel, desired) > o.CarveDegrees)
+            {
+                carving = true; drifting = true; carveStart = t; Carves++; discharging = false;
+            }
+            else if (!extending && !emerg)
+            {
+                bool strikeNow = d.Plan == SwitchbackAIPlan.Blast && phase == Phase.Strike;
+                float commitCos = strikeNow ? o.StrikeCommitCos : CommitCos;
+                if (!drifting && canCommit && Vector3.Dot(desired, travel) >= commitCos) { drifting = true; travel = desired; discharging = false; }
                 else if (drifting && Vector3.Dot(desired, travel) < CommitCos)
                 {
                     drifting = false;
@@ -493,18 +560,35 @@ sealed class Race
             {
                 Vector3 look = desired;
                 if (DriftLook(out Vector3 lk)) look = (lk - pos).normalized;
-                fwd = RotateToward(fwd, look, Turn * Mathf.Deg2Rad * dt); cmd = fwd;
+                if (o.DriftLag)
+                {
+                    cmd = RotateToward(cmd, look, Turn * o.DriftTurnMult * Stick(Ang(fwd, look)) * Mathf.Deg2Rad * dt);
+                    fwd = NoseFollowTo(fwd, cmd);
+                }
+                else { fwd = RotateToward(fwd, look, Turn * o.DriftTurnMult * Mathf.Deg2Rad * dt); cmd = fwd; }
             }
             else
             {
                 Vector3 steer = extending ? (fwd + desired * -0.35f) : desired;
-                float s = emerg ? 1f : Stick(Ang(fwd, steer));
+                if (o.CmdSteer && o.CmdLead > 0f && Ang(fwd, steer) > 1f)
+                {
+                    // lead: aim the command past the target by a share of the nose's remaining gap to it
+                    Vector3 axis = Vector3.Cross(fwd, steer);
+                    if (axis.sqrMagnitude > 1e-8f)
+                        steer = Quaternion.AngleAxis(Mathf.Min(Ang(fwd, steer) * o.CmdLead, 60f), axis.normalized) * steer;
+                }
+                float s = emerg ? 1f : Stick(Ang(o.CmdSteer ? cmd : fwd, steer));
                 cmd = RotateToward(cmd, steer, Turn * s * Mathf.Deg2Rad * dt);
-                fwd = RotateToward(fwd, cmd, Ang(fwd, cmd) * Mathf.Deg2Rad * Mathf.Min(1f, NoseFollow * dt));
+                fwd = NoseFollowTo(fwd, cmd);
                 travel = fwd;
             }
             up = Vector3.ProjectOnPlane(up, fwd).sqrMagnitude > 1e-4f ? Vector3.ProjectOnPlane(up, fwd).normalized : Vector3.Cross(fwd, Vector3.right).normalized;
             Vector3 newPos = pos + travel * vEff * dt;
+            if (log != null && d.Plan == SwitchbackAIPlan.Blast)
+            {
+                float kd = SegPointDist(pos, newPos, d.Key);
+                if (kd < keyClosest) { keyClosest = kd; keyClosestDrift = drifting; keyClosestPhase = phase; }
+            }
 
             // ---- keys: the skimmer takes a key it passes within the pickup radius; its blast fires down the nose
             if (!o.NoLayout)
@@ -514,7 +598,7 @@ sealed class Race
                     if (SegPointDist(pos, newPos, w.L.Stations[s].Key) > o.PickupRadius) continue;
                     w.Key[s] = false; Keys++;
                     Vector3 gape = o.FlyRoll && d.Plan == SwitchbackAIPlan.Blast && d.Station == s ? d.FireUp : up;
-                    int removed = w.Blast(w.L.Stations[s].Key, fwd, gape, t, o);
+                    int removed = o.BlastHarmless ? 0 : w.Blast(w.L.Stations[s].Key, fwd, gape, t, o);
                     if (log != null) log.Add($"{t,6:F1} key {s} (gate {w.L.Stations[s].Gate}) taken, nose {Ang(fwd, w.L.Stations[s].Door - w.L.Stations[s].Key):F0} deg off the door, blasted {removed}");
                 }
 
@@ -540,7 +624,17 @@ sealed class Race
             {
                 float kk = a0 / (a0 - a1); Vector3 hit = pos + (newPos - pos) * kk;
                 if ((hit - ring).magnitude <= g.Radius) { idx++; Rings++; }
-                else { Misses++; locked = -1; drifting = false; extending = true; extT = 0f; }
+                else
+                {
+                    Misses++;
+                    if (log != null)
+                    {
+                        int st = w.Planner.StationFor(idx);
+                        log.Add($"{t,6:F1} MISS gate {idx} {(st >= 0 ? "blocked (eye " + w.L.Stations[st].Port.ToString("F0") + " u)" : "open (r " + g.Radius.ToString("F0") + " u)")} " +
+                                $"by {(hit - ring).magnitude:F0} u at {vEff:F0} u/s, drifting {drifting}, plan {d.Plan}, emerg {emergOn}");
+                    }
+                    locked = -1; drifting = false; extending = true; extT = 0f;
+                }
             }
             pos = newPos; t += dt; frame++;
         }
@@ -562,16 +656,24 @@ sealed class Race
                 log.Add($"{t,6:F1} gate {idx} plan={d.Plan} why={d.Why} cost thread={d.CostThread:F1} blast={d.CostBlast:F1} standing={d.Standing} cover={d.Coverage:P0}");
         }
 
+        // VesselTransformer.NoseFollowFraction for an AI hull: the fleet's LERP_AMOUNT 1.5/s, or this level's rate; 0 = none
+        Vector3 NoseFollowTo(Vector3 nose, Vector3 command)
+        {
+            var row = o.NoseFollowTable[Mathf.Clamp(intensity - 1, 0, 3)];
+            float rate = o.NoseLag ? row[Mathf.Clamp(level - 1, 0, row.Length - 1)] : 0f;
+            return rate <= 0f ? command : RotateToward(nose, command, Ang(nose, command) * Mathf.Deg2Rad * Mathf.Min(1f, rate * dt));
+        }
+
         bool GateBlastAim(out Vector3 a)
         {
             a = default;
             if (d.Plan != SwitchbackAIPlan.Blast || phase == Phase.Done) return false;
             Vector3 key = d.Key, fire = d.FireForward, toKey = key - pos;
             float dist = toKey.magnitude;
-            if (Vector3.Dot(-toKey, fire) > 5f) { phase = Phase.Done; return false; }
+            if (o.PassedByTravel ? (Vector3.Dot(toKey, travel) < 0f && dist > o.PickupRadius) : Vector3.Dot(-toKey, fire) > 5f) { phase = Phase.Done; return false; }
             float off = dist > 1f ? Ang(toKey, fire) : 0f;
-            if (dist > 60f && off > SetupAngle) { phase = Phase.Setup; a = key - fire * Mathf.Min(SetupBack, 0.5f * dist); }
-            else { phase = Phase.Strike; a = key + fire * StrikeThrough; }
+            if (o.Setup && dist > 60f && off > SetupAngle) { phase = Phase.Setup; a = key - fire * Mathf.Min(SetupBack, 0.5f * dist); }
+            else { phase = Phase.Strike; a = o.StrikeAtKey ? key + (dist > 1f ? toKey / dist : fire) * StrikeThrough : key + fire * StrikeThrough; }
             return true;
         }
 
@@ -616,7 +718,7 @@ sealed class Race
             foreach (int k in w.Query)
             {
                 if (n >= pts.Length) break;
-                if (o.DangerOnly && w.L.Prisms[k].Kind != PrismKind.Danger) continue;
+                if (!SwitchbackPrismAvoidance.Dodges(w.L.Prisms[k].Kind == PrismKind.Danger, float.MaxValue, o.DangerOnly, 0f)) continue;
                 w.Pose(k, t, out Vector3 c, out _);
                 if (SegPointDist(s0, s1, c) - w.Extent(k) > probe) continue;
                 pts[n] = c; radii[n] = w.Extent(k); n++;
@@ -689,7 +791,7 @@ sealed class Race
             bool any = false;
             foreach (int k in w.Query)
             {
-                if (o.DangerOnly && w.L.Prisms[k].Kind != PrismKind.Danger) continue;
+                if (!SwitchbackPrismAvoidance.Dodges(w.L.Prisms[k].Kind == PrismKind.Danger, float.MaxValue, o.DangerOnly, 0f)) continue;
                 w.Pose(k, t, out Vector3 c, out _);
                 float along = Vector3.Dot(c - p0, dir);
                 if (along < 0f || along > dist + w.Extent(k)) continue;

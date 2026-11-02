@@ -924,6 +924,10 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 | `aiSkillOverride` + `aiSkills` | off | Replace the intensity-to-skill mapping with four hand-set skills (I1-I4) |
 | `aiPlanGizmos` | on | Scene-view plan lines (select the controller) |
 | `aiSenseDebug` | off | Sense / sweep / dodge lines and Info-level dodge logs |
+| `aiDodgeDangerOnly` | on | Dodge only Danger prisms; plain ones are flown through (Step 1) |
+| `aiNoDodgeNearRing` | 200 | u from the ring inside which nothing is dodged (Step 1); 0 = dodge up to the ring |
+| `aiStrikeSetupLeg` | off | Before a blast, fly to a point behind the key onto the fire line (the old strike, Step 2) |
+| `aiNoseFollowByIntensity` | I1 1.9/2.2/3/5, I2 2/2.4/3/5, I3 2.1/2.2/2.8/6, I4 1.8/2.2/3.5/6 | The AI nose's follow rate per second, per intensity, Easy/Medium/Hard/Legendary: 1.5 = the fleet lag, 0 = none ("Lag by difficulty") |
 
 ## Offline: the Blast Run simulator (2026-11-01)
 
@@ -940,7 +944,8 @@ flown). 20 gates on the shipped shell; seeds 45501-45504 (the fixed seeds) and 1
 
 **Not modelled:** rivals and trails (the AI is alone), the danger prism's elemental debuff, the asset's real cone (the
 planner's narrower slot is used; `cone=1` widens it), physics contact shapes (a 3 u hull sphere against each prism's box).
-It is a model: Unity decides.
+It is a model: Unity decides. Since 2026-11-02 (step 4) the drift is modelled as the game flies it: the Dolphin's 1.5x drift turn
+rate, the course frozen while drifting, and the AI's 1.5/s nose lag on the drift too (`driftLag`, `noseLag`).
 
 **What it found (one AI alone, median seconds over 12 courses; 2026-11-01, the AI as shipped that day):**
 
@@ -960,6 +965,197 @@ It is a model: Unity decides.
    of each other: the blasts remove prisms (fewer hits), and the setup turn behind the key costs about as much. The
    planner's `HitPenalty` (0.6 s a prism) is over twice the measured plain-hit cost, which makes it blast and dodge more
    than it should.
+
+### Step 1: dodge only what costs (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead, start with step 1". `SwitchbackPrismAvoidance.Dodges(isDanger, distanceToRing, dangerOnly,
+noDodgeNear)` decides, for the sense and for the emergency sweep alike, whether a prism is dodged. With the
+controller's defaults (`aiDodgeDangerOnly` on, `aiNoDodgeNearRing` 200 u) the AI dodges only Danger prisms, and nothing
+at all in the last 200 u to its ring: there the line to the mouth (a blocked gate's eye, ringed by Danger rakes) is the
+line. It flies straight through plain prisms, which cost it about 0.25 s each. Untick `aiDodgeDangerOnly` and set
+`aiNoDodgeNearRing` to 0 for the old dodge-everything AI. Gate blasts (the planner) are unchanged; the sense's crystal
+blast now fires only at Danger obstacles. Rival and own trails are plain prisms, so they are flown through too; the
+per-AI lanes at open rings still keep the AIs off each other's lines.
+
+Why: in the real soak (`soak_results.md`, I1, Unity) 35 of the 38 course hits were side-swipes taken WHILE dodging,
+and Legendary raced slower than Easy. Offline (24 courses a cell, 26 gates, one AI alone), median seconds:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Before (Easy / Legendary) | 126 / 136 | 198 / 225 | 269 / 326 | 288 / never finishes (0 of 24) |
+| Step 1 (Easy / Legendary) | 96 / 94 | 168 / 175 | 177 / 189 | 172 / 205 (24 of 24) |
+
+Every intensity and level now finishes all 24 courses; ring misses at I4 Legendary fell from 1,299 to 200, emergency
+dodges from 2,247 to 112. The AI hits more plain prisms (at I3 about 30-40 a race), which is the trade.
+`soak_SwitchbackBlastAI.fix.diff` (Yash's session, not applied) makes each dodge more accurate and is compatible.
+Tests: `SwitchbackPrismAvoidanceTests.Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing`.
+
+### Step 2: the lane fan, batched on Jobs + Burst (2026-11-02) - real Unity soak
+
+Step 1 stopped the Dolphins dodging plain prisms, so they ploughed through rival trails (85 of 108 hits at I1 D1).
+`SwitchbackBlastAI.Emergency` now runs the Danger sweep first (step 1, unchanged) and then, if that has nothing,
+the **lane fan** (`SwitchbackSenseBatch`):
+
+- Every AI writes its pose in its Update. At LateUpdate (`SwitchbackBlastRunRuntime.LateTick`), one Burst
+  `IJobParallelFor` builds 11 `SpherecastCommand`s per AI: straight down the velocity, short taps of 8 deg and
+  16 deg right/left/up/down, and two 6 u flank casts (pure right and left). It runs as one `ScheduleBatch`, and a
+  Burst pick job then chooses each AI's answer on the workers. The next frame's first read completes the batch,
+  so the answer is one frame old. The NativeArrays are persistent and there is no GC after construction.
+- When something (rival or own trail, plain prism) is on the line within 0.8 s (radius ship + 1 u), the AI makes
+  a short tap (held for 0.12 s, then re-judged) to the clear tap that is innermost and closest to the nose. It
+  avoids a tap toward a flank that already has a trail within 4.5 u.
+- If the line ahead is clear but a trail runs alongside within 4.5 u, the AI makes a short tap away from it.
+- If no tap is clear, the AI takes the farthest tap only if it reaches 1.5x further than the straight line;
+  otherwise it holds the line. Big swerves into the next trail were fix 2's failure.
+- In the last 200 u before a ring, it reacts only to a hit closer than 0.35 s. It never nudges while striking a
+  crystal.
+- Editor only: `SB_NOFAN=1` turns the fan off, for A/B soaks on one build.
+- `SwitchbackAIClock` times the AI hooks on the main thread. It adds the Profiler marker `Switchback.AI` and appends
+  `aiMs/frame=` to the race summary.
+
+Soak (headless Unity, 3 AIs, totals over 2 races per cell; "before" is step 1 with `SB_NOFAN=1`):
+
+| Cell | Before: course/rival/own = total | After: course/rival/own = total | Winner time (s), before -> after |
+|---|---|---|---|
+| I1 D1 | 19/85/4 = 108 | 21/34/0 = 55 | 153, 166 -> 172, 176 |
+| I1 D4 | 27/120/1 = 148 | 13/56/3 = 72 | 166, 157 -> 165, 172 |
+| I3 D4 | 79/185/5 = 271 (mover 2) | 51/118/2 = 173 (mover 2) | 209, 216 -> 237, 228 |
+
+Across all three cells, hits went from 527 to 300 (-43%), and every race finished. AI main-thread cost went from
+0.037-0.051 ms per frame to 0.039-0.064 ms per frame (all AIs together; the casts run on workers).
+
+Not done yet (the pt21u spec):
+- human-style left/right drift-tap spamming toward the ring (the taps are stick steering; the emergency hook still
+  releases the commit drift);
+- a crystal detour that blasts a blocker found near the next ring, with a forward-simulated drift arc and timed aim
+  (the existing Blast plan and its strike aim are unchanged);
+- no human play data exists on the box, since every recording is from a soak.
+- Winners are slower by about 0-14% for now.
+
+### Step 2: the strike without a setup leg (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 2". Before, a blast whose key lay more than 25 deg off the fire line first flew to a point up
+to 120 u behind the key and turned the COURSE onto the fire line (`SwitchbackBlastAI.GateBlastAim`'s Setup phase). Now
+the hull flies straight at the key and the drift look swings the NOSE onto the obstacle in the last `LookRange` (160 u),
+which is what aims the blast: Yash's "drift towards the crystal while aiming at the obstacle". The old strike is
+`SwitchbackController.aiStrikeSetupLeg` (off). The planner and its costs are unchanged.
+
+Offline (`switchback_sim_harness`, 24 courses a cell, 26 gates, one AI alone, step 1 in both), median seconds:
+
+| | I3 Medium | I3 Hard | I3 Legendary | I4 Hard | I4 Legendary |
+|---|---|---|---|---|---|
+| Setup leg (before) | 175 | 173 | 189 | 195 | 205 |
+| No setup leg (now) | 165 | 161 | **156** | 171 | 175 |
+| No blast planner at all | 178 | 177 | 176 | 172 | 175 |
+
+Easy (which never blasts), I1 and I2 are unchanged to within a few seconds. At I3 the blasting levels are now
+faster than not blasting, and the levels finally order (Easy 177, Medium 165, Hard 161, Legendary 156); at I4 they
+break even. What the measurements say about WHY:
+- **Most of the gain is the line, not the blast.** With blasts that destroy nothing (`blastHarmless=1`) I3 Legendary
+  runs 162 s: flying at the key puts the hull on the leg's line straight into the gate. The blast itself is worth
+  about 6 s a race at I3.
+- **The AI still takes fewer than half its keys** (I3 Legendary: 159 of 360 planned): the commit drift locks the course
+  once the aim is within 26 deg, so the hull slides past the key while the nose swings. Aiming at the key itself
+  (`strikeAtKey=1`) doubles the keys taken but is SLOWER (171 s, the line after the key leaves the leg); a tight commit
+  on the strike (`strikeCommit=0.995`) slower still (198 s). Not shipped; a better strike line is the next lever.
+- Charging the planner nothing for the old alignment turn changes nothing measurable, so its costs stay.
+
+Test: `SwitchbackAISteeringTests.Switchback_BlastAI_Defaults_AreSteps1And2`.
+
+### Step 3: the planner's hit costs from the measured ones (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 3". `SwitchbackBlastPlanner.HitPenalty` (seconds a standing prism in the lane costs) is now
+0.25 (was 0.6): what `DolphinVesselChangeSpeedByPrism` does to the Dolphin, x0.5 speed easing back over 1 s. The Danger
+cost was already right (1.5 s: a dead stop easing back over 3 s).
+
+**It changes nothing measurable.** Offline (24 courses a cell, levels Medium to Legendary) every cell's median stays
+within about 2 s for any value from 0.1 to 0.6, and the plans barely change: the thread line runs down the bore, which
+the layout keeps clear, and the blast lane's prisms are mostly covered by the blast. It ships because the planner's costs
+should be the game's, not because it is faster.
+
+**Where the time is (I4):** about 8 missed rings a race, 53 of 54 of them at OPEN gates (20 u radius at I4), not at
+the blocked gates' eyes, and repeatedly at the same few hairpins (gate 1 at every level, then 22 and 25): a 90-150 deg
+turn into a short leg that the stick's 110 deg/s cannot make at 68-107 u/s (a 35-56 u circle), so the AI overshoots,
+loops back and often misses again. A person carves those with drift taps (Yash's drift-spam), which is the next step.
+The simulator's trace now logs each miss (`MISS gate ... by ... u`).
+
+### Step 4: drift carving - measured, NOT shipped (2026-11-02): it needs a decision on the AI's nose lag
+
+Yash: "go ahead with step 4" (carve the I4 hairpins with drift taps, as a person spams drift). Measured offline; no
+game code changed. Two facts from the code decide it:
+- **The drift:** `DolphinDriftAction` multiplies the turn rate by 1.5 (165 deg/s) and its grip is 0, so the course is
+  frozen while the nose swings, and on release the course snaps to the nose (`VesselTransformer.EndDrift`).
+- **The AI's nose lags its command at 1.5/s ALWAYS, drifting included** (`VesselTransformer.NoseFollowFraction`): only a
+  local human pilot has no lag (Garrett, 2026-10-21, "get rid of all steering lag"; AI, autopilot and remote hulls kept it
+  because the autopilots were trained against it). That is why drift-spam is fast for a person and not for the AI.
+
+The simulator now models the lag in the drift too (`driftLag`, on by default as in the game; before 2026-11-02 its drift
+swung the nose with no lag). Re-measured, steps 1 and 2 hold: I3 Legendary 334 s before step 1 -> 156 s, I4 Legendary
+never finishing -> 172 s, and the step 2 strike is still 27-28 s faster than the setup leg at Legendary.
+
+Median seconds, 24 courses a cell (steps 1-3 shipped in every row):
+
+| | I1 | I3 | I4 |
+|---|---|---|---|
+| Today (the AI's nose lags) | 94-103 | 156-175 | 169-172 |
+| + drift carving (25 deg in, 15 deg out, 0.8 s max) | 187-235 | 268-329 | 254-366 (hundreds of missed rings) |
+| AI nose with no lag (`noseLag=0`) | 51-53 | 82-92 | 93-104 |
+| No lag + drift carving | 52-53 | 80-81 | 83-86 |
+
+AI-side ways round the lag were tried and lose: judging the stick from the COMMANDED heading
+(`VesselTransformer.CommandedRotation`) instead of the nose (I4 236-260 s), and leading the command past the aim
+(most races never finish). The AI's nose-judged stick already gets the most out of the lag.
+
+**The decision (not a Switchback change: a game mode never changes the vessel, LOCKED):** whether AI hulls keep the
+fleet nose lag. Removing it halves every Switchback time in the model and makes drift carving worth another ~10 %; it
+also changes every AI in every mode, and `SkimRacePilot` was trained against the lag. Owners: Garrett's 2026-10-21
+steering-lag rule, `VesselTransformer` (`who_works_where.py`). The simulator's `noseLag=0`, `carve=...`, `cmdSteer=1`
+and `cmdLead=...` reproduce every row.
+
+### Lag by difficulty (2026-11-02): option 2 of step 4, shipped, then set to Yash's time bands
+
+Yash: "go with option 2, lag by difficulty". Switchback's AI nose follows its command at a rate set per intensity and
+difficulty, `SwitchbackController.aiNoseFollowByIntensity` (rates per second; 1.5 = the fleet lag every AI has elsewhere,
+higher = faster, 0 = none):
+
+| | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 | 1.9 | 2.2 | 3 | 5 |
+| I2 | 2 | 2.4 | 3 | 5 |
+| I3 | 2.1 | 2.2 | 2.8 | 6 |
+| I4 | 1.8 | 2.2 | 3.5 | 6 |
+
+**The bands (Yash, 2026-11-02):** "difference should be 20 seconds max ... I4, easy 150 - 130, medium 140 - 120, hard
+130 - 110, legendary 120 - 100. Other intensities should also be grouped in similar differences." So each level sits
+about 10 s from the next, in a 20 s band, at every intensity. The first ladder (1.5 / 2 / 3 / 0 for every intensity)
+spread I4 from 172 s to 100 s and was replaced the same day.
+
+Why the nose rate is the lever: at the SAME rate the four levels finish within a few seconds of each other (at I4,
+3/s gives 118 / 119 / 125 / 124 s), so the lag, not the rest of the skill, sets the time. One ladder for every intensity
+could not hold the bands (1.8 / 2.2 / 3 / 5 fits I4 but spreads I3 from 149 s to 103 s), hence a row per intensity.
+
+Median seconds offline (48 courses a cell; slowest 10 % in brackets) and the bands they sit in:
+
+| | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 (bands 80-100 / 70-90 / 60-80 / 50-70) | 88 (102) | 82 (101) | 69 (83) | 61 (72) |
+| I2 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (143) | 117 (131) | 109 (118) | 99 (105) |
+| I3 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (148) | 120 (136) | 111 (125) | 101 (109) |
+| I4 (Yash's bands 130-150 / 120-140 / 110-130 / 100-120) | 140 (149) | 129 (138) | 120 (127) | 112 (119) |
+
+The I1-I3 bands are this doc's reading of "similar differences" (10 s steps, 20 s wide); retune a row with
+`noseFollowI<n>=e,m,h,l` in the simulator. All 768 races finished. **These are simulator seconds:** in the step 1 soak
+real races ran about 1.6x the model's times, so the soak decides whether the rows need scaling for the real game.
+
+How it reaches the hull, without changing the vessel:
+- `VesselTransformer.AINoseFollowPerSecond` (new, default -1): unset = the fleet lag (`LERP_AMOUNT` 1.5/s), exactly as
+  before for every AI in every mode; a positive rate; 0 = no lag (the human's catch-up-capped follow). Only AI hulls read
+  it. A local human pilot is unchanged.
+- `GateRaceController.OnRacerArmed` (new, empty) runs for every racer it arms; Switchback overrides it and writes the
+  pilot's rate from the selected intensity and `AIDifficultyFor`. The AI flies on the server only, so the rate is set there.
+- Every other mode never sets it, so `SkimRacePilot` and the other trained autopilots keep the lag they were trained
+  against. This is the AI's skill (how well it steers), not a vessel change: the hull's turn rate, drift and abilities
+  are the same for every pilot.
 
 ## Watching the AI: the AI Diagnose panel (2026-11-01)
 

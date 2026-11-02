@@ -10,7 +10,11 @@
 #
 # Flags: planner=0 (the plain gate AI: no blast planner), sense=0, emergency=0, drive=0 (no charge drive),
 #        cone=1 (blast with a cone nearer the asset's than the planner's under-promising slot), roll=1 (the gape
-#        flown as planned; the game does not fly roll), pickup=<u>, hull=<u>, dangerOnly=1 (sense and sweep see only Danger prisms), gates=<n>, dt=<s>,
+#        flown as planned; the game does not fly roll), pickup=<u>, hull=<u>, dangerOnly=0|1 and noDodgeNear=<u> (the shipped SwitchbackController.aiDodgeDangerOnly 1 / aiNoDodgeNearRing 200; 0 0 = the old dodge-everything AI), setup=1 (the old strike's setup leg; shipped off), strikeAtKey / strikeCommit=<cos> / passedByTravel / blastHarmless
+#        (step 2's what-ifs and control), driftMult=<x> (the drift's turn multiplier, 1.5), driftLag=0|1 and
+#        noseLag=0|1 (the AI nose lag, both on as in the game), noseFollow=e,m,h,l (the nose follow rate by level for every
+#        intensity; 1.5,1.5,1.5,1.5 = the fleet lag for all) and noseFollowI<n>=e,m,h,l (one intensity; shipped table in Sim.cs), carve=<deg> / carveDone=<deg> / carveMax=<s> (step 4's
+#        drift-carve what-if), gates=<n>, dt=<s>,
 #        hit.slow / hit.secs / hit.dangerSlow / hit.dangerSecs / hit.meter / hit.destroys=0|1 (what a prism does).
 # Levels: 1 Easy, 2 Medium, 3 Hard, 4 Legendary (SwitchbackAISkill.ForLevel, SwitchbackAvoidSkill.ForLevel).
 #

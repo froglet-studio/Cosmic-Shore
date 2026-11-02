@@ -22,6 +22,7 @@ The lenses:
     by-hand      numbers the docs say were set by hand, by eye or reasoned-not-measured: someone's problem a search
                  could answer, though they may never have thought of it as one
     plans        every arena card is a mixed fleet to balance: is its plan (Regatta's, Broadside's in SILENCE.md 6) queued?
+    ai-plan      Docs/AI_SYSTEM/AI_PLAN.md: jobs off the plan (a fix), live or next steps no search serves (a build)
     board        converged-not-promoted, broken evaluators, top jobs no machine is on
 
 Writes Docs/Compute/OPPORTUNITIES.md and Docs/Compute/opportunities.json (generated; never hand-edit).
@@ -145,8 +146,8 @@ def lens_coverage(jobs):
                    "queued": _queued(jobs, hull=hull, mode=mode)}
             matrix.append(row)
             missing = [i for i in (1, 2, 3, 4) if i not in played]
-            if row["held"] or hull in HELD_HULLS:
-                continue
+            if row["held"] or hull in HELD_HULLS or "ArenaGames" in card.get("lists", []):
+                continue        # no AI trains inside an arena game (Docs/AI_SYSTEM/AI_PLAN.md rule 4)
             if model and not row["queued"]:
                 value = 5 + (2 if hull in REGATTA_SIX else 0) + (2 if not played else 1 if missing else 0)
                 opps.append({"lens": "coverage", "kind": "job", "value": min(10, value),
@@ -330,6 +331,30 @@ def lens_plans(jobs):
     return opps
 
 
+def lens_ai_plan(jobs):
+    """The AI plan (Docs/AI_SYSTEM/AI_PLAN.md, ai_plan.json): a job off it is a fix (retire it or bring it onto a step
+    with its owner), and a live or next step no job serves is the top build."""
+    plan = L.load_ai_plan(local=True)
+    if not plan:
+        return [{"lens": "ai-plan", "kind": "fix", "value": 9, "id": "ai-plan-missing",
+                 "title": f"{L.AI_PLAN} is missing", "why": "every AI search is held to it; nothing is checked without it"}]
+    opps, served = [], {}
+    for j in jobs.values():
+        off = L.plan_problem(j, plan)
+        if off:
+            opps.append({"lens": "ai-plan", "kind": "fix", "value": 8, "id": "off-plan-" + j["id"],
+                         "title": f"{j['id']} is off the AI plan", "why": off + " - retire it, or bring it onto a step with its owner"})
+        step = L.plan_step(j, plan)
+        if step and j.get("status") not in ("retired",):
+            served.setdefault(step, []).append(j["id"])
+    for s in plan.get("steps", []):
+        if s.get("status") in ("live", "next") and not served.get(s["id"]):
+            opps.append({"lens": "ai-plan", "kind": "build", "value": 9 if s["status"] == "live" else 7,
+                         "id": "plan-step-" + s["id"], "title": f"AI plan step {s['id']} has no search",
+                         "why": s["title"] + " (Docs/AI_SYSTEM/AI_PLAN.md section 4)"})
+    return opps
+
+
 def lens_board(board):
     opps = []
     for j in (board or {}).get("jobs", []):
@@ -354,7 +379,7 @@ def run(args):
     for name, fn in (("coverage", lambda: lens_coverage(jobs)), ("regatta", lambda: lens_regatta(jobs, board)),
                      ("bioforms", lambda: lens_bioforms(jobs)), ("sweeps", lambda: lens_sweeps(jobs)),
                      ("labs", lens_labs), ("by-hand", lens_by_hand), ("plans", lambda: lens_plans(jobs)),
-                     ("board", lambda: lens_board(board))):
+                     ("ai-plan", lambda: lens_ai_plan(jobs)), ("board", lambda: lens_board(board))):
         try:
             r = fn()
             if isinstance(r, tuple):

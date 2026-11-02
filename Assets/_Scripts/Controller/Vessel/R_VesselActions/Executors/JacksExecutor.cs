@@ -1119,7 +1119,7 @@ namespace CosmicShore.Gameplay
             int i = _herd.Count;
             float th = i * 2.39996323f, rad = Ring * 0.6f * Mathf.Sqrt((i + 1f) / Mathf.Max(1f, config.MinHerd));
             Vector3 at = OnPlane(JacksCentre - _f * Ring + (_r * Mathf.Cos(th) + _f * Mathf.Sin(th)) * rad);
-            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
             if (f) Join(f);   // born wild if it cannot be leashed: an ordinary creature of the cell from here on
         }

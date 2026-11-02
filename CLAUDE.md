@@ -40,7 +40,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
 - [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
-- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
+- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session. **The one AI plan every AI effort serves is [`Docs/AI_SYSTEM/AI_PLAN.md`](Docs/AI_SYSTEM/AI_PLAN.md)** (LOCKED, Garrett 2026-11-02).
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/Compute/README.md`](Docs/Compute/README.md): **Froglet Compute, the team's idle hardware searching for the game** (Garrett, 2026-10-26): a queue of learning searches (AI drives per vessel x Time game x intensity, the Regatta course and elemental balance plan, swarm bioforms, NCA creature trainings) every collaborator's computer works through when idle (`compute.py install`: set and forget, any OS; never touches the checkout; publishes only to `compute/<user>/<host>`), one merged board, and a scout that finds what to search next. A result is a proposal: its area's owner promotes it. Skills: `/compute`, `/compute-job`, `/compute-scout`, `/regatta-balance` (`Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`), `/bioform-forge`.
   Sections: Start; What it does on your computer; The pieces; A job; How the search is shared; An evaluator; The queue refs; Promotion; The scout sweep; Its sibling in Unity; What this is not; Verification status; The Compute Console; Manual runs; The live console and the always-on VM; Runs in the real game (the Unity trainer, and what a run records with the game's own tools); The mothership (every computer live, runs sent to one); The app (Froglet Compute on your own computer); Follow-ups
@@ -178,12 +178,29 @@ when a prompt is about vessel work. Studio domain colours come from the game's p
 ## AI learning is automatic (LOCKED rule, Yash, 2026-10-26)
 
 "I don't wanna click any commands or anything. Never." Every race played in the editor is recorded and sent on its own
-(`HumanFlightRecorder`, `BugHuntAutoSend`), and the hourly **AI learning sweep** relearns the AIs from it
+(`HumanFlightRecorder`, `BugHuntAutoSend`), and the daily **AI learning sweep** relearns the AIs from it
 (`Tools/Build/ai_learn.py --run`), judges whether they now race like the person, fixes what numbers cannot, and pushes
 to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
 to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
 first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
 `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
+
+## AI training serves one plan (LOCKED rule, Garrett, 2026-11-02)
+
+**Read [`Docs/AI_SYSTEM/AI_PLAN.md`](Docs/AI_SYSTEM/AI_PLAN.md) before any AI training, tuning or learner work.** In
+a voyage, a squad seat's AI is chosen by its cards:
+- the **vessel and element** choose the genome (one universal AI per vessel per element, trained on that element's
+  arcade game and scored on I1-I4 together);
+- the **pilot** biases its choices toward what its callsign sees;
+- the artifact comes later.
+
+The ladder is the element's arcade intensities, then its arena game balanced against those FIXED AIs, then voyages.
+**Every AI effort names the plan step it serves** (`Docs/AI_SYSTEM/ai_plan.json`):
+- a compute job off the plan is never run, and `compute.py validate` fails on it;
+- a commit that trains or tunes an AI says `Plan step: <id>`;
+- work that serves no step is a proposal to Garrett first.
+
+A new round grows from every genome that exists. No AI is trained inside an arena game.
 
 ## A game mode never changes the vessel (LOCKED rule, Shombith, 2026-10-31)
 
@@ -232,6 +249,7 @@ troubleshooting: `Docs/unity-cli-setup.md`. The CLI is experimental and changes 
 or from another machine.
 
 - **The verify rule (Shombith's decision, 2026-10-29): every C# commit passes `Tools/Build/unity_refcompile` (`bash Tools/Build/unity_refcompile/run.sh`) plus whatever `/ship` already gates on (`bash .claude/skills/ship/gates.sh`). When a Unity editor is open, also run the `unity` CLI. If neither ran, say so in the commit/PR and add an entry to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.** Never claim a verification that didn't run. `/verify-unity` is not required until that skill merges.
+- **Headless real-editor check: `bash Tools/Build/verify_unity.sh --project <full worktree> [--commit <sha>]`** compiles with the real Unity editor in batchmode and runs the EditMode tests; it prints compile errors as `file:line` and exits non-zero (1 compile, 2 tests, 3 setup, 4 no verdict). This is the runnable `/verify-unity` until that skill merges. It needs a full (non-sparse, imported) checkout, refuses when another Unity has the project open, and restores the previous HEAD after `--commit`. `--no-tests` compiles only; `--filter` narrows the tests.
 - **`[CliCommand]` wrappers** are the editor methods exposed to the CLI's `unity command` surface —
   the sanctioned way to give the CLI a repo-specific operation. They are editor tooling: they live
   under an `Editor/` folder (Assembly-CSharp-Editor), never in runtime code.

@@ -2,9 +2,7 @@
  "after": [
   "drive-rhino-headlong",
   "drive-manta-redline",
-  "drive-rhino-regatta",
-  "drive-manta-regatta",
-  "drive-dolphin-regatta"
+  "skimrace-squirrel-time"
  ],
  "algorithm": {
   "name": "sep-cmaes",
@@ -171,6 +169,6 @@
  "stage": 2,
  "status": "blocked",
  "title": "The Regatta I4 circuit that levels the field",
- "updated": "2026-10-28",
+ "updated": "2026-11-02",
  "value": 9
 }

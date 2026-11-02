@@ -616,6 +616,49 @@ namespace CosmicShore.Tests
             Assert.AreSame(prism, _index.ResolvePrism(prism.SpatialIndexId, materialise: true));
         }
 
+        /// <summary>
+        /// The wide-radius queries run as one Burst pass (LinearCapsuleScanJob). Both QuerySphere and QuerySegment must
+        /// return exactly the brute-force set on BOTH paths, and the linear path in slot order (what the managed scan it
+        /// replaced produced). A destroyed prism inside the radius must stay out.
+        /// </summary>
+        [Test]
+        public void WideAndTightQueries_MatchBruteForce_OnBothPaths()
+        {
+            var rng = new System.Random(20261102);
+            var prisms = new List<Prism>();
+            for (int i = 0; i < 300; i++)
+                prisms.Add(SpawnRegisteredPrism(new Vector3(
+                    (float)rng.NextDouble() * 120f - 60f,
+                    (float)rng.NextDouble() * 120f - 60f,
+                    (float)rng.NextDouble() * 120f - 60f)));
+            _index.MarkDestroyed(prisms[7].SpatialIndexId);
+
+            Vector3 a = new(-20f, 5f, 3f), b = new(25f, -10f, 12f);
+            // 200 u (Fulmen's burn) takes the linear path; 6 u takes the bucket walk at this high-water mark.
+            foreach (float radius in new[] { 200f, 40f, 6f })
+            {
+                var expectSphere = new List<Prism>();
+                var expectSegment = new List<Prism>();
+                foreach (var p in prisms)
+                {
+                    if (p == prisms[7]) continue;
+                    Vector3 at = p.transform.position;
+                    if ((at - a).sqrMagnitude <= radius * radius) expectSphere.Add(p);
+                    Vector3 ab = b - a;
+                    float t = Mathf.Clamp01(Vector3.Dot(at - a, ab) / ab.sqrMagnitude);
+                    if ((a + ab * t - at).sqrMagnitude <= radius * radius) expectSegment.Add(p);
+                }
+
+                _index.QuerySphere(a, radius, _results);
+                CollectionAssert.AreEquivalent(expectSphere, _results, $"QuerySphere r={radius}");
+                if (radius >= 40f) CollectionAssert.AreEqual(expectSphere, _results, $"QuerySphere r={radius}: slot order");
+
+                _index.QuerySegment(a, b, radius, _results);
+                CollectionAssert.AreEquivalent(expectSegment, _results, $"QuerySegment r={radius}");
+                if (radius >= 40f) CollectionAssert.AreEqual(expectSegment, _results, $"QuerySegment r={radius}: slot order");
+            }
+        }
+
         [Test]
         public void Virtual_NullOwner_IsRejected()
         {
