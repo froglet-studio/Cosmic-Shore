@@ -30,7 +30,27 @@ frame time is *not* a valid measurement): `prismPath ON · ents=4558 meshes=7 ma
   (default 220 u for I1–I4; 0 disables). Cleared on despawn.
 - ProfilerMarkers: `Fauna.Corridor.PushOut`, `Switchback.Features.Spawn`.
 
-## Budget per intensity (ESTIMATES — verify with a soak)
+## Measured (2026-11-02, headless soak, CPU only)
+
+Unity 6000.3.17f1 editor, `-batchmode -nographics`, `SwitchbackSoakLauncher -sbSoak 4:4:1` (I4, fixed seed, 3 AI),
+`-sbSoakFps 1000`, race-end quit; frame stats after an 8 s warm-up. **No GPU** — rendering/fill cost is not measured here;
+a GPU capture on a real device/PC is still needed. Stress prisms: 6 u Plain prisms placed by an out-of-repo probe through
+`featuresPrefab` (walls/lattices/mazes), none within 120 u of the path, ≤ 80 within 200 u.
+
+| Run (ms) | p50 | p95 | p99 | avg | max | GC KB/frame | fauna near path |
+|---|---|---|---|---|---|---|---|
+| Baseline (today's perf fixes + corridor reverted) | 3.16 | 6.74 | 16.46 | 5.57 | 2,172 | 207 | 50.7 |
+| Latest (9a130d9f7) | 2.16 | 3.24 | 10.19 | 5.62 | 9,837 | 349 | 10.5 |
+| Latest + 1,500 static prisms (80 within 200 u) | 2.11 | 2.96 | 7.36 | 5.42 | 2,559 | 361 | 10.1 |
+| Latest + 3,000 static prisms (80 within 200 u) | 2.58 | 4.26 | 14.26 | 5.50 | 10,946 | 260 | 14.2 |
+
+- **+1,500 at I4 is within noise** of latest on CPU. **+3,000** costs ~+0.4 ms p50 / +1 ms p95; part of that is more
+  fauna (19 vs 12 total; `Fauna.Light.Update` 0.02 → 0.07 ms, `Animators` 0.13 → 0.25 ms), so it is not pure prism cost.
+- avg is dominated by a few multi-second hitch frames (max column) inside `BehaviourUpdate` that no named marker owns —
+  open item, not prism-related (present without stress).
+- GC/frame includes the probe's own allocations; compare runs, not absolutes.
+
+## Budget per intensity (I4 row measured on CPU; I1–I3 still estimates)
 
 Headroom = extra static prisms on top of today's `TotalCap`, keeping colliders near the path within `ColliderCap`.
 

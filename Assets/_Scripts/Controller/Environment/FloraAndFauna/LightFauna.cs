@@ -1202,8 +1202,10 @@ namespace CosmicShore.Gameplay
 
         static readonly List<Fauna> s_swarmPrey = new(16);
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Light.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // A puppet's pose belongs to its server-authoritative NetworkTransform: integrating
             // a local velocity on top would fight the replicated stream. The MOVERS CONTRACT
             // still applies on every peer though — the body prisms are registered, moving mass,

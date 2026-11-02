@@ -1012,8 +1012,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual void OnServerTick() { }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Race.GateRace.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (IsServer) OnServerTick();
 
             // Ahead of every guard below: the course is built while the turn has NOT started

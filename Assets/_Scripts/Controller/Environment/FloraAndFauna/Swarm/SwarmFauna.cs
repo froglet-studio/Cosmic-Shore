@@ -852,8 +852,10 @@ namespace CosmicShore.Gameplay
             base.OnDestroy();
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Swarm.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             if (_job == null) return;
             if (_job.Error != null) { ReportWorkerError(); return; }
             _lod?.Advance();   // the cell's LOD: may expand this swarm (a pilot approaches) or tick it (collapsed)

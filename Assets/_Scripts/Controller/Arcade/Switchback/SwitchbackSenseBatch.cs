@@ -77,8 +77,10 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmComplete = new("Switchback.SenseBatch.Complete");
         void Complete()
         {
+            using var __pm = s_pmComplete.Auto();
             if (!_scheduled) return;
             _handle.Complete();
             _scheduled = false;
@@ -87,9 +89,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _cap; i++) _radReach[i] = float2.zero; // a slot not written this frame stays idle
         }
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmSchedule = new("Switchback.SenseBatch.Schedule");
         /// <summary>LateUpdate: cast this frame's fans on the job workers.</summary>
         public void Schedule()
         {
+            using var __pm = s_pmSchedule.Auto();
             if (_disposed) return;
             Complete();
             var qp = new QueryParameters(_mask, false, QueryTriggerInteraction.Collide, false);

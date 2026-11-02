@@ -6,14 +6,16 @@ The one live list. Updated 2026-11-02 from the code on `Ys-bleeding-edge`. Per-s
 
 1. **Run [`TEST_CHECKLIST.md`](TEST_CHECKLIST.md) in MPPM with 4 players** (not run yet). It covers the four lobby fixes, RTT, transform tuning, the score guard and rejoin.
 2. **Fix or triage `OfflineSessionTests.Case4`** (the one failing multiplayer EditMode test, [`TESTS.md`](TESTS.md)).
-3. **Two-machine retest of B39-B44** and the B46 / B47 rejoin faults ([`BUGS.md`](BUGS.md)).
+3. **Two-machine retest of B39-B44** and the B46 / B47 rejoin faults (B47 fix `b6c5ad826` landed; needs the retest) ([`BUGS.md`](BUGS.md)).
 4. **B36 / B45 boot order**: owner decision to start the Relay host after the menu is up.
 
 ## Next: test automation
 
 5. **MPPM play-mode scenarios** (4 virtual players, scripted) so the checklist runs without a person.
 6. **Auto host/join harness**: a dev build or MPPM entry point that hosts or joins from the command line and logs presence, converge, ready, RTT and roster drift, so a multi-instance smoke test can run headless.
-7. Rebuild the Amoebius edit-mode suite (fill the 102 engine APIs).
+7. **Two-client party accept play-mode test**: `PartyAcceptFlowPlayModeTests` is a placeholder (TODO at line 83) until a two-NetworkManager or MPPM harness exists; same dependency as item 6.
+8. **`NetworkMonitor.BoostPolling`**: `PartyInviteController.cs:182` TODO, poll faster right after an invite; not built.
+9. Rebuild the Amoebius edit-mode suite (fill the 102 engine APIs).
 
 ## Then: netcode roadmap ([`MULTIPLAYER_ARCHITECTURE.md`](MULTIPLAYER_ARCHITECTURE.md) §4 / §5)
 
@@ -24,10 +26,11 @@ The one live list. Updated 2026-11-02 from the code on `Ys-bleeding-edge`. Per-s
 | NetworkTransform tuning, time resync | ✅ Done (needs the simulator check, checklist §5) |
 | `HitReportGuard` on prism reports | ✅ Done |
 | `ServerScoreGate` / Cloud Code `weekly-score` | 🟡 Built, gated off until the script and Access Control policy are deployed ([`../../Tools/UGS/README.md`](../../Tools/UGS/README.md)) |
-| Mid-match rejoin | ✅ Exists; B46 / B47 open |
+| Mid-match rejoin | ✅ Exists; B47 double init fixed `b6c5ad826`; B46 missing name open |
 | Party-level reconnection grace period | ⬜ Not started |
 | Host migration | ⬜ Not started (listen server; a host loss ends the match) |
 | Party-wide Relay region selection | ⬜ Not started |
+| NGO message/profiling metrics off on release builds | ✅ Done `d731a3142` (~1.7 KB GC/frame saved) |
 | Packed inputs / bandwidth beyond transform settings | ⏸ Skipped, not needed at 4 players |
 | Movement anti-cheat beyond observe-only | ⏸ Later ([`../AntiCheat/README.md`](../AntiCheat/README.md)) |
 
