@@ -1,26 +1,37 @@
 #!/usr/bin/env python3
-"""design_board.py - the /design-board skill's helper for the Menu Redesign B canvas (the design board).
+"""design_board.py - the /design-board skill's helper for the Froglet Design Board canvas (the design board).
 
-The design board is ONE claude.ai Design canvas, https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2. Its index is
-`project/canvas.json` (pages = rounds, boards = artboards) and every board is a `project/<Name>.dc.html` file. A copy
-of every board lives in `Docs/MenuRedesignB/board/` so a session can read designs without the canvas. This script
-never talks to claude.ai: the Artifact tool reads and publishes; this script works on the files it saved.
+The design board is ONE claude.ai Design canvas, https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2 ("Froglet Design
+Board"; it was "Menu Redesign B" until 2026-11-02). Its index is `project/canvas.json` and every board is a
+`project/<Name>.dc.html` file. The canvas's pages are TABS (at most 40): "Menu Redesign" (the master tab every menu,
+HUD and start-flow round lives in), "Compute Console", and one tab per new area (`new-tab`, the /design-board-new skill).
+A ROUND is a titled section on a tab: its boards `R<N><Key>.dc.html` under a title note `rev<N>` ("Rev N - ..."), so a
+round no longer costs a page. A copy of every board lives in `Docs/MenuRedesignB/board/` so a session can read designs
+without the canvas. This script never talks to claude.ai: the Artifact tool reads and publishes; this script works on
+the files it saved.
 
     design_board.py status   [--live <canvas.json>] [--version V]   what the board holds, what is new, what waits on a pick
     design_board.py find     <words...> [--live <canvas.json>]      boards and doc sections about a screen, newest first
-    design_board.py next-rev [--live <canvas.json>]                 the first free round number (page id AND board prefix)
-    design_board.py plan     --live <canvas.json> --root <dir> --name "<page name>"
+    design_board.py tabs     [--live <canvas.json>]                 the tabs, their rounds and board counts
+    design_board.py next-rev [--live <canvas.json>]                 the first free round number (note/page id AND board prefix)
+    design_board.py plan     --live <canvas.json> --root <dir> --name "<round name>" (--tab <tab id> | --new-tab "<name>")
                              --board KEY="<title>" [...] [--interactive A,B] [--compare "<title>"]
                              [--notes "<title>" | --no-notes] [--notes-h 900] [--size 1920x1080] [--skeletons]
                                                                     writes <root>/project/canvas.json: the live index plus
-                                                                    ONE new page and its boards; prints the files to write
+                                                                    ONE new round (a titled section under the tab's last
+                                                                    row) and its boards; prints the files to write
+    design_board.py new-tab  --live <canvas.json> --root <dir> --name "<tab name>" [--id <id>]
+                                                                    adds an empty tab and opens the canvas on it
+    design_board.py fold     --live <canvas.json> --root <dir> --into <tab id> --name "<tab name>" --pages a,b,c
+                             [--title "<canvas title>"]             moves whole pages into one tab as titled sections
+                                                                    (frees pages when the canvas nears 40)
     design_board.py check    <dir> [--only R34] [--strict]          the offline gate on the boards in <dir> (holds canvas.json)
     design_board.py pull     --src <dir> [--version V] [--date D]   copy the boards and index saved from the canvas into the
                                                                     repo copy and regenerate its README
     design_board.py readme                                          regenerate the repo copy's README from its canvas.json
     design_board.py --self-test
 
-A READER except for `plan` (writes under --root), `pull` and `readme` (write Docs/MenuRedesignB/board/). Exit 0 = ok,
+A READER except for `plan`, `new-tab` and `fold` (write under --root), `pull` and `readme` (write Docs/MenuRedesignB/board/). Exit 0 = ok,
 1 = a check failed (each one named), 2 = it could not run.
 """
 from __future__ import annotations
@@ -40,6 +51,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 BOARD_URL = "https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2"
+BOARD_TITLE = "Froglet Design Board"
+MAX_TABS = 40
 COPY_DIR = REPO / "Docs" / "MenuRedesignB" / "board"
 DOC = REPO / "Docs" / "MENU_REDESIGN_B.md"
 README_START = "<!-- design_board.py readme: generated below, edit the text above -->"
@@ -49,6 +62,11 @@ README_END = "<!-- design_board.py readme: end -->"
 GAP_X = 180
 GAP_Y = 180
 PER_ROW = 3
+TITLE_ABOVE = 400      # a round's or section's title note sits this far above its first row (the canvas wants >= 223)
+ROUND_GAP = 900        # space between the tab's last row and the next round's title
+SHELF_W = 36000        # fold packs sections left to right up to this width, then starts a shelf below
+SHELF_GAP_X = 1200
+SHELF_GAP_Y = 1400
 DRAFT_MARK = "[DRAFT BOARD - not written yet]"
 
 PAGE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
@@ -86,24 +104,98 @@ def rev_of_board(name: str) -> int | None:
 
 
 def next_rev(index: dict) -> int:
-    """The first round number no page id and no board prefix has claimed. R3 and R30 are different rounds."""
+    """The first round number no page id, no title note id and no board prefix has claimed. R3 and R30 differ."""
     taken = {rev_of_page(p.get("id", "")) for p in index.get("pages", [])}
+    taken |= {rev_of_page(k) for k in index.get("notes", {})}
     taken |= {rev_of_board(b) for b in index.get("boards", {})}
     taken.discard(None)
     return (max(taken) + 1) if taken else 3
+
+
+def first_page(index: dict) -> str | None:
+    pages = index.get("pages", [])
+    return pages[0].get("id") if pages else None
+
+
+def tab_of(index: dict, entry: dict) -> str | None:
+    """The tab a board or note shows on: its `page`, or the first page when it names none (the canvas's rule)."""
+    return entry.get("page") or first_page(index)
 
 
 def page_name(index: dict, page_id: str | None) -> str:
     for p in index.get("pages", []):
         if p.get("id") == page_id:
             return p.get("name", page_id)
-    return "Item boards (no page)" if page_id is None else page_id
+    return "(no tab)" if page_id is None else page_id
+
+
+def title_notes(index: dict) -> list[tuple[str, dict]]:
+    return [(k, n) for k, n in index.get("notes", {}).items() if n.get("kind") == "title1"]
+
+
+def section_of(index: dict, name: str) -> tuple[str, str]:
+    """(note id, label) of the section a board belongs to: its round's `rev<N>` title note when there is one, else the
+    nearest title note above the board on its tab whose span covers the board's left edge."""
+    b = index.get("boards", {}).get(name, {})
+    rev = rev_of_board(name)
+    notes = index.get("notes", {})
+    if rev is not None and f"rev{rev}" in notes:
+        return f"rev{rev}", notes[f"rev{rev}"].get("text", f"Rev {rev}")
+    tab = tab_of(index, b)
+    best = None
+    for k, n in title_notes(index):
+        if tab_of(index, n) != tab:
+            continue
+        span = n.get("maxW", n.get("w", 1920))
+        if n.get("y", 0) <= b.get("y", 0) and n.get("x", 0) - 1 <= b.get("x", 0) < n.get("x", 0) + max(span, 1920):
+            key = (n.get("y", 0), n.get("x", 0))
+            if best is None or key > best[0]:
+                best = (key, k, n.get("text", k))
+    if best:
+        return best[1], best[2]
+    return "", page_name(index, tab)
+
+
+def round_label(index: dict, rev: int) -> str:
+    """'Rev N - name' from the round's title note, else from a page of that id (rounds before tabs), else 'Rev N'."""
+    n = index.get("notes", {}).get(f"rev{rev}")
+    if n:
+        return n.get("text", f"Rev {rev}")
+    for p in index.get("pages", []):
+        if p.get("id") == f"rev{rev}":
+            return p.get("name", f"Rev {rev}")
+    names = [k for k in index.get("boards", {}) if rev_of_board(k) == rev]
+    return section_of(index, names[0])[1] if names else f"Rev {rev}"
+
+
+def rounds(index: dict) -> list[tuple[int, str | None, list[str]]]:
+    """Every round on the canvas, newest first: (number, tab id, board names)."""
+    out: dict = {}
+    for name, b in index.get("boards", {}).items():
+        r = rev_of_board(name)
+        if r is not None:
+            out.setdefault(r, [None, []])[1].append(name)
+            out[r][0] = tab_of(index, b)
+    return [(r, v[0], sorted(v[1])) for r, v in sorted(out.items(), reverse=True)]
+
+
+def tab_bottom(index: dict, tab: str | None) -> int | None:
+    """The lowest edge of anything on a tab (boards and notes), or None for an empty tab."""
+    ys = [b["y"] + b["h"] for b in index.get("boards", {}).values() if tab_of(index, b) == tab]
+    ys += [n["y"] + (120 if n.get("kind") == "title1" else int(n.get("w", 300) * 4 / 3))
+           for n in index.get("notes", {}).values() if tab_of(index, n) == tab and "y" in n]
+    return max(ys) if ys else None
+
+
+def slug(name: str) -> str:
+    out = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return (out or "tab")[:40]
 
 
 def boards_by_page(index: dict) -> dict:
     out: dict = {}
     for name, b in index.get("boards", {}).items():
-        out.setdefault(b.get("page"), []).append((b.get("y", 0), b.get("x", 0), name, b))
+        out.setdefault(tab_of(index, b), []).append((b.get("y", 0), b.get("x", 0), name, b))
     for v in out.values():
         v.sort()
     return out
@@ -126,26 +218,38 @@ def open_rounds() -> list[str]:
 
 # ----------------------------------------------------------------------------------------------- status / find
 
+def print_tabs(idx: dict) -> None:
+    per_tab: dict = {}
+    for name, b in idx.get("boards", {}).items():
+        per_tab[tab_of(idx, b)] = per_tab.get(tab_of(idx, b), 0) + 1
+    rs = rounds(idx)
+    for p in idx.get("pages", []):
+        mine = [r for r, t, _ in rs if t == p["id"]]
+        latest = f"  latest: {round_label(idx, mine[0])}" if mine else ""
+        print(f"    {p['id']:>16}  {p['name']}  ({per_tab.get(p['id'], 0)} boards, {len(mine)} rounds){latest}")
+
+
 def cmd_status(args) -> int:
     repo_idx = load_index(COPY_DIR / "canvas.json") if (COPY_DIR / "canvas.json").exists() else {"boards": {}, "pages": []}
     live_idx = load_index(Path(args.live)) if args.live else None
     idx = live_idx or repo_idx
     print(f"Design board: {BOARD_URL}")
-    print(f"  title: {idx.get('title')}   launch page: {idx.get('launch', {}).get('page', '(canvas)')}")
-    print(f"  pages: {len(idx.get('pages', []))}   boards: {len(idx.get('boards', {}))}   next free round: Rev {next_rev(idx)}")
+    print(f"  title: {idx.get('title')}   launch tab: {idx.get('launch', {}).get('page', '(canvas)')}")
+    print(f"  tabs: {len(idx.get('pages', []))} of {MAX_TABS}   boards: {len(idx.get('boards', {}))}   next free round: Rev {next_rev(idx)}")
     if args.version:
         print(f"  live version read: {args.version}")
+    print("  tabs:")
+    print_tabs(idx)
     print("  latest rounds:")
-    for p in idx.get("pages", [])[-4:]:
-        n = sum(1 for b in idx["boards"].values() if b.get("page") == p["id"])
-        print(f"    {p['id']:>6}  {p['name']}  ({n} boards)")
+    for r, t, names in rounds(idx)[:4]:
+        print(f"    Rev {r:<3} on {page_name(idx, t)!r}: {round_label(idx, r)}  ({len(names)} boards)")
     if live_idx is not None:
         new_pages = [p for p in live_idx.get("pages", []) if p["id"] not in {q["id"] for q in repo_idx.get("pages", [])}]
         new_boards = sorted(set(live_idx.get("boards", {})) - set(repo_idx.get("boards", {})))
         gone = sorted(set(repo_idx.get("boards", {})) - set(live_idx.get("boards", {})))
         moved = sorted(k for k in live_idx.get("boards", {}) if k in repo_idx.get("boards", {}) and live_idx["boards"][k] != repo_idx["boards"][k])
         print(f"  live vs repo copy ({rel(COPY_DIR)}):")
-        print(f"    new pages: {[p['id'] for p in new_pages] or 'none'}")
+        print(f"    new tabs: {[p['id'] for p in new_pages] or 'none'}")
         print(f"    new boards: {len(new_boards)} {new_boards[:12]}{' ...' if len(new_boards) > 12 else ''}")
         print(f"    boards removed on the canvas: {gone or 'none'}   entries moved or retitled: {len(moved)}")
         missing_files = [b for b in live_idx.get("boards", {}) if not (COPY_DIR / b).exists()]
@@ -155,27 +259,34 @@ def cmd_status(args) -> int:
                 print(f"      project/{b}")
         else:
             print("    every board file on the canvas is in the repo copy")
-    rounds = open_rounds()
-    print(f"  rounds waiting on a pick or approval, from {rel(DOC)} ({len(rounds)}):")
-    for h in rounds[-8:]:
+    rounds_open = open_rounds()
+    print(f"  rounds waiting on a pick or approval, from {rel(DOC)} ({len(rounds_open)}):")
+    for h in rounds_open[-8:]:
         print(f"    {h}")
+    return 0
+
+
+def cmd_tabs(args) -> int:
+    idx = load_index(Path(args.live)) if args.live else load_index(COPY_DIR / "canvas.json")
+    print(f"{idx.get('title')}: {len(idx.get('pages', []))} of {MAX_TABS} tabs, launch tab {idx.get('launch', {}).get('page', '(canvas)')}")
+    print_tabs(idx)
     return 0
 
 
 def cmd_find(args) -> int:
     idx = load_index(Path(args.live)) if args.live else load_index(COPY_DIR / "canvas.json")
     words = [w.lower() for w in args.words]
-    page_rank = {p["id"]: i for i, p in enumerate(idx.get("pages", []))}
     hits = []
     for name, b in idx.get("boards", {}).items():
         hay = f"{name} {b.get('title', '')}".lower()
         if all(w in hay for w in words):
-            hits.append((page_rank.get(b.get("page"), -1), b.get("y", 0), b.get("x", 0), name, b))
+            r = rev_of_board(name)
+            hits.append((r if r is not None else -1, b.get("y", 0), b.get("x", 0), name, b))
     hits.sort(key=lambda h: (-h[0], h[1], h[2]))
     print(f"boards about {' '.join(args.words)!r} ({len(hits)}), newest round first:")
     for _, _, _, name, b in hits:
         tag = " [interactive]" if b.get("is_interactive") else ""
-        print(f"  {page_name(idx, b.get('page'))} | {name}{tag}\n      {b.get('title', '')}")
+        print(f"  {page_name(idx, tab_of(idx, b))} > {section_of(idx, name)[1]} | {name}{tag}\n      {b.get('title', '')}")
     doc_hits = [(i, h) for i, h in doc_headings() if all(w in h.lower() for w in words)]
     print(f"sections of {rel(DOC)} ({len(doc_hits)}), newest first:")
     for i, h in reversed(doc_hits):
@@ -187,7 +298,7 @@ def cmd_next_rev(args) -> int:
     idx = load_index(Path(args.live)) if args.live else load_index(COPY_DIR / "canvas.json")
     n = next_rev(idx)
     src = "the live index" if args.live else "the REPO COPY (re-read the live index right before publishing)"
-    print(f"Rev {n}  (page id rev{n}, board files R{n}<Key>.dc.html) - from {src}")
+    print(f"Rev {n}  (title note rev{n}, board files R{n}<Key>.dc.html) - from {src}")
     return 0
 
 
@@ -232,16 +343,79 @@ return {{}};
 """
 
 
+def add_tab(live: dict, name: str, tab_id: str | None = None, at: int | None = None) -> tuple[str | None, str]:
+    """Adds a tab to the index in place. Returns (tab id, '') or (None, why it was refused)."""
+    pages = live.setdefault("pages", [])
+    name = name.strip()
+    if not name:
+        return None, "a tab needs a name"
+    if any(p.get("name", "").strip().lower() == name.lower() for p in pages):
+        return None, f"a tab named {name!r} exists already"
+    if len(pages) >= MAX_TABS:
+        return None, f"the canvas holds {len(pages)} tabs, its limit; fold old ones together first (`fold`)"
+    tid = tab_id or slug(name)
+    if not PAGE_ID_RE.match(tid):
+        return None, f"tab id {tid!r} is not [A-Za-z0-9_-]{{1,40}}"
+    taken = {p.get("id") for p in pages} | set(live.get("notes", {}))
+    base, n = tid, 2
+    while tid in taken:
+        tid = f"{base[:36]}-{n}"
+        n += 1
+    entry = {"id": tid, "name": name}
+    if at is None:
+        pages.append(entry)
+    else:
+        pages.insert(at, entry)
+    return tid, ""
+
+
+def write_index(root: Path, live: dict) -> Path:
+    (root / "project").mkdir(parents=True, exist_ok=True)
+    out = root / "project" / "canvas.json"
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(live, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return out
+
+
+def only_ours_changed(original: dict, live: dict, boards: list[str], notes: list[str], tab: str | None, new_tab: bool) -> bool:
+    check = json.loads(json.dumps(live))
+    for f in boards:
+        del check["boards"][f]
+        check["order"].remove(f)
+    for n in notes:
+        del check["notes"][n]
+    if new_tab:
+        check["pages"] = [p for p in check["pages"] if p["id"] != tab]
+    check["launch"] = original.get("launch", {})
+    return check == original
+
+
 def cmd_plan(args) -> int:
     live = load_index(Path(args.live))
     original = json.loads(json.dumps(live))
     rev = args.rev or next_rev(live)
-    page_id = f"rev{rev}"
-    if any(p.get("id") == page_id for p in live.get("pages", [])) or any(rev_of_board(b) == rev for b in live.get("boards", {})):
-        print(f"ERROR: Rev {rev} is already taken on the canvas (page or board prefix). Next free: Rev {next_rev(live)}", file=sys.stderr)
+    note_id = f"rev{rev}"
+    if (any(p.get("id") == note_id for p in live.get("pages", [])) or note_id in live.get("notes", {})
+            or any(rev_of_board(b) == rev for b in live.get("boards", {}))):
+        print(f"ERROR: Rev {rev} is already taken on the canvas (page, title note or board prefix). Next free: Rev {next_rev(live)}", file=sys.stderr)
         return 1
-    if not PAGE_ID_RE.match(page_id):
-        print(f"ERROR: page id {page_id!r} is not [A-Za-z0-9_-]{{1,40}}", file=sys.stderr)
+    tab_ids = [p.get("id") for p in live.get("pages", [])]
+    new_tab = False
+    if args.new_tab:
+        tab, why = add_tab(live, args.new_tab)
+        if tab is None:
+            print(f"ERROR: {why}", file=sys.stderr)
+            return 1
+        new_tab = True
+    elif args.tab:
+        tab = args.tab
+        if tab not in tab_ids:
+            listing = ", ".join(f"{q['id']} ({q.get('name', '')})" for q in live.get("pages", []))
+            print(f"ERROR: no tab {tab!r}; tabs: {listing}", file=sys.stderr)
+            return 1
+    else:
+        print("ERROR: say which tab the round goes on: --tab <id> (see `tabs`), or --new-tab \"<name>\"", file=sys.stderr)
         return 1
     w, h = (int(v) for v in args.size.lower().split("x"))
     interactive = {k.strip() for k in (args.interactive or "").split(",") if k.strip()}
@@ -278,14 +452,19 @@ def cmd_plan(args) -> int:
             print(f"ERROR: {file} already exists on the canvas", file=sys.stderr)
             return 1
 
+    # The round is a titled section under everything already on the tab.
+    bottom = tab_bottom(live, tab)
+    top = 0 if bottom is None else bottom + ROUND_GAP + TITLE_ABOVE
     boards = live.setdefault("boards", {})
     order = live.setdefault("order", [])
-    pages = live.setdefault("pages", [])
-    pages.append({"id": page_id, "name": args.name if args.name.lower().startswith("rev") else f"Rev {rev} - {args.name}"})
+    label = args.name if args.name.lower().startswith("rev") else f"Rev {rev} - {args.name}"
+    row_w = PER_ROW * w + (PER_ROW - 1) * GAP_X
+    live.setdefault("notes", {})[note_id] = {"kind": "title1", "text": label, "x": 0, "y": top - TITLE_ABOVE,
+                                             "w": 240, "maxW": row_w, "page": tab}
     placed = []
     for i, (file, title, is_i, bh) in enumerate(specs):
         col, row = i % PER_ROW, i // PER_ROW
-        entry = {"x": col * (w + GAP_X), "y": row * (h + GAP_Y), "w": w, "h": bh, "page": page_id, "title": title}
+        entry = {"x": col * (w + GAP_X), "y": top + row * (h + GAP_Y), "w": w, "h": bh, "page": tab, "title": title}
         if is_i:
             entry["is_interactive"] = True
         boards[file] = entry
@@ -294,33 +473,24 @@ def cmd_plan(args) -> int:
     if notes_spec:
         file, title, _, nh = notes_spec
         rows = (len(specs) + PER_ROW - 1) // PER_ROW
-        entry = {"x": 0, "y": rows * (h + GAP_Y), "w": w, "h": nh, "page": page_id, "title": title}
+        entry = {"x": 0, "y": top + rows * (h + GAP_Y), "w": w, "h": nh, "page": tab, "title": title}
         boards[file] = entry
         order.append(file)
         placed.append((file, entry))
     live.setdefault("launch", {})["view"] = "canvas"
-    live["launch"]["page"] = page_id
+    live["launch"]["page"] = tab
 
-    # Everything that was there is still there, unchanged.
-    check = json.loads(json.dumps(live))
-    for file, _ in placed:
-        del check["boards"][file]
-        check["order"].remove(file)
-    check["pages"] = [p for p in check["pages"] if p["id"] != page_id]
-    check["launch"] = original.get("launch", {})
-    if check != original:
+    if not only_ours_changed(original, live, [f for f, _ in placed], [note_id], tab, new_tab):
         print("ERROR: the plan changed a key that is not ours; refusing to write", file=sys.stderr)
         return 1
 
     root = Path(args.root)
-    (root / "project").mkdir(parents=True, exist_ok=True)
-    with open(root / "project" / "canvas.json", "w", encoding="utf-8") as f:
-        json.dump(live, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    print(f"Rev {rev}: page {page_id!r} {pages[-1]['name']!r}; launch opens on it. Index written to {root / 'project' / 'canvas.json'}")
+    out = write_index(root, live)
+    print(f"Rev {rev}: {label!r} on tab {tab!r} ({page_name(live, tab)}){' (new tab)' if new_tab else ''}, "
+          f"title note {note_id!r} at y={top - TITLE_ABOVE}; launch opens on the tab. Index written to {out}")
     print("Boards to write (each its WHOLE .dc.html; $preview and the root's size must equal w x h):")
     for file, e in placed:
-        print(f"  project/{file:<28} x={e['x']:<5} y={e['y']:<5} {e['w']}x{e['h']}{'  interactive' if e.get('is_interactive') else ''}\n      {e['title']}")
+        print(f"  project/{file:<28} x={e['x']:<5} y={e['y']:<6} {e['w']}x{e['h']}{'  interactive' if e.get('is_interactive') else ''}\n      {e['title']}")
         if args.skeletons:
             target = root / "project" / file
             if not target.exists():
@@ -328,7 +498,114 @@ def cmd_plan(args) -> int:
     if args.skeletons:
         print(f"Skeletons written under {root / 'project'} (each carries {DRAFT_MARK!r}; `check` fails until it is replaced).")
     print("Publish: Artifact publish  url=<board>  root=<root>  file_path=<root>/project/canvas.json  files={\"project/<file>\": \"project/<file>\", ...}")
-    print("         Re-read the live index right before publishing and re-run plan if another session took this round.")
+    return 0
+
+
+def cmd_new_tab(args) -> int:
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    tab, why = add_tab(live, args.name, args.id)
+    if tab is None:
+        print(f"ERROR: {why}", file=sys.stderr)
+        return 1
+    live.setdefault("launch", {})["view"] = "canvas"
+    live["launch"]["page"] = tab
+    if not only_ours_changed(original, live, [], [], tab, True):
+        print("ERROR: adding the tab changed a key that is not ours; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Tab {tab!r} ({args.name.strip()!r}) added as tab {len(live['pages'])} of {MAX_TABS}; the canvas opens on it. Index written to {out}")
+    print("Publish ONLY the index: Artifact publish  url=<board>  root=<root>  file_path=<root>/project/canvas.json")
+    print(f"Its first round: plan --tab {tab} ...")
+    return 0
+
+
+def cmd_fold(args) -> int:
+    """Moves whole pages into one tab, each as a titled section, packed newest-first on shelves, and drops the pages.
+    Boards and notes keep their files, titles and relative layout; only x, y and page change."""
+    live = load_index(Path(args.live))
+    pages = live.get("pages", [])
+    ids = [p.get("id") for p in pages]
+    want = [x.strip() for x in args.pages.split(",") if x.strip()]
+    missing = [x for x in want if x not in ids]
+    if missing or not want:
+        print(f"ERROR: no such pages {missing}; pages: {ids}", file=sys.stderr)
+        return 1
+    if len(set(want)) != len(want):
+        print("ERROR: a page is named twice", file=sys.stderr)
+        return 1
+    first = first_page(live)
+    names = {p["id"]: p.get("name", p["id"]) for p in pages}
+    target = args.into
+    existing_target = target in ids and target not in want
+    if not PAGE_ID_RE.match(target):
+        print(f"ERROR: tab id {target!r} is not [A-Za-z0-9_-]{{1,40}}", file=sys.stderr)
+        return 1
+    # Measure each page's content (page-less boards and notes belong to the first page).
+    sections = []
+    for pid in want:
+        bs = [k for k, b in live.get("boards", {}).items() if (b.get("page") or first) == pid]
+        ns = [k for k, n in live.get("notes", {}).items() if (n.get("page") or first) == pid and "x" in n and "y" in n]
+        xs = [live["boards"][k]["x"] for k in bs] + [live["notes"][k]["x"] for k in ns]
+        ys = [live["boards"][k]["y"] for k in bs] + [live["notes"][k]["y"] for k in ns]
+        x2 = [live["boards"][k]["x"] + live["boards"][k]["w"] for k in bs] + [live["notes"][k]["x"] + live["notes"][k].get("maxW", live["notes"][k].get("w", 300)) for k in ns]
+        y2 = [live["boards"][k]["y"] + live["boards"][k]["h"] for k in bs] + [live["notes"][k]["y"] + 120 for k in ns]
+        if not xs:
+            sections.append((pid, bs, ns, 0, 0, 0, 0))
+            continue
+        sections.append((pid, bs, ns, min(xs), min(ys), max(x2) - min(xs), max(y2) - min(ys)))
+    # Pack the sections on shelves under whatever the target tab already holds.
+    bottom = tab_bottom(live, target) if existing_target else None
+    cur_y = 0 if bottom is None else bottom + SHELF_GAP_Y
+    cur_x, shelf_h = 0, 0
+    moves = {}
+    for pid, bs, ns, x0, y0, w, h in sections:
+        if cur_x and cur_x + w > SHELF_W:
+            cur_x, cur_y, shelf_h = 0, cur_y + shelf_h + SHELF_GAP_Y, 0
+        moves[pid] = (cur_x - x0, cur_y + TITLE_ABOVE - y0, cur_x, cur_y, w)
+        cur_x += w + SHELF_GAP_X
+        shelf_h = max(shelf_h, h + TITLE_ABOVE)
+    for pid, bs, ns, *_ in sections:
+        dx, dy, sx, sy, w = moves[pid]
+        for k in bs:
+            e = live["boards"][k]
+            e["x"], e["y"], e["page"] = e["x"] + dx, e["y"] + dy, target
+        for k in ns:
+            e = live["notes"][k]
+            e["x"], e["y"], e["page"] = e["x"] + dx, e["y"] + dy, target
+        nid = pid if pid not in live.get("notes", {}) else f"sec-{pid}"[:40]
+        live.setdefault("notes", {})[nid] = {"kind": "title1", "text": names[pid], "x": sx, "y": sy,
+                                            "w": 240, "maxW": max(1920, w), "size": "xxl", "page": target}
+    # The pages go; the target tab takes the place of the earliest one folded (or keeps its own).
+    at = min(ids.index(x) for x in want)
+    live["pages"] = [p for p in pages if p.get("id") not in want]
+    if not existing_target:
+        if target in [p.get("id") for p in live["pages"]]:
+            print(f"ERROR: tab id {target!r} is taken", file=sys.stderr)
+            return 1
+        at = min(at, len(live["pages"]))
+        live["pages"].insert(at, {"id": target, "name": args.name})
+    elif args.name:
+        for p in live["pages"]:
+            if p["id"] == target:
+                p["name"] = args.name
+    lp = live.get("launch", {}).get("page")
+    if lp in want:
+        live["launch"]["page"] = target
+    # Nothing on another page may still name a folded page, and nothing may be lost.
+    left = [k for k, b in {**live.get("boards", {}), **live.get("notes", {})}.items() if b.get("page") in want]
+    if left:
+        print(f"ERROR: still on a folded page: {left[:5]}", file=sys.stderr)
+        return 1
+    if args.title:
+        live["title"] = args.title
+    out = write_index(Path(args.root), live)
+    print(f"Folded {len(want)} page(s) into tab {target!r} ({page_name(live, target)}): "
+          f"{sum(len(s[1]) for s in sections)} boards, {sum(len(s[2]) for s in sections)} notes moved; "
+          f"{len(live['pages'])} of {MAX_TABS} tabs now. Index written to {out}")
+    for pid, *_ in sections:
+        dx, dy, sx, sy, w = moves[pid]
+        print(f"  {pid:>10}  {names[pid]!r}  section at x={sx} y={sy} (width {w})")
     return 0
 
 
@@ -648,8 +925,8 @@ def check_index(dir_: Path, idx: dict, only: str | None, rep: Report) -> None:
             rep.err(where, f"page {pid!r} has no name")
     if len(set(page_ids)) != len(page_ids):
         rep.err(where, "a page id repeats")
-    if len(page_ids) > 40:
-        rep.err(where, f"{len(page_ids)} pages; the canvas allows 40")
+    if len(page_ids) > MAX_TABS:
+        rep.err(where, f"{len(page_ids)} tabs (pages); the canvas allows {MAX_TABS}: fold old ones together (`fold`)")
     lp = idx.get("launch", {}).get("page")
     if lp and lp not in page_ids:
         rep.err(where, f"launch.page {lp!r} is not a page")
@@ -737,34 +1014,42 @@ def cmd_check(args) -> int:
 # ----------------------------------------------------------------------------------------------- pull / readme
 
 def render_readme(idx: dict, copy_dir: Path, version: str | None, date: str) -> str:
-    by_page = boards_by_page(idx)
     lines = [README_START, ""]
-    revs = [p for p in idx.get("pages", []) if rev_of_page(p["id"]) is not None]
     ver = f"canvas version `{version}`" if version else "the canvas"
-    first = min((rev_of_page(p["id"]) for p in revs), default=None)
-    last = max((rev_of_page(p["id"]) for p in revs), default=None)
-    span = f"Rev {first} to Rev {last}, " if first is not None else ""
-    lines.append(f"Copied on {date} from {ver}: {span}{len(idx.get('boards', {}))} boards on {len(idx.get('pages', []))} pages. "
-                 f"The canvas's launch page is `{idx.get('launch', {}).get('page', 'canvas')}`. Refresh with "
-                 "`python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.")
+    rs = rounds(idx)
+    span = f"Rev {rs[-1][0]} to Rev {rs[0][0]}, " if rs else ""
+    lines.append(f"Copied on {date} from {ver} of **{idx.get('title', '')}**: {span}{len(idx.get('boards', {}))} boards on "
+                 f"{len(idx.get('pages', []))} tabs. The canvas opens on the tab `{idx.get('launch', {}).get('page', 'canvas')}`. "
+                 "Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.")
     lines.append("")
-    lines.append("## Rounds and boards (newest first)")
+    lines.append("## Tabs, rounds and boards (newest first)")
     lines.append("")
-    ordered_pages = list(reversed(idx.get("pages", []))) + [None]
-    for p in ordered_pages:
-        pid = p["id"] if p else None
-        entries = by_page.get(pid)
-        if not entries:
+    for p in idx.get("pages", []):
+        pid = p["id"]
+        groups: dict = {}
+        for name, b in idx.get("boards", {}).items():
+            if tab_of(idx, b) != pid:
+                continue
+            sid, label = section_of(idx, name)
+            g = groups.setdefault(sid or label, {"label": label, "rev": -1, "entries": []})
+            r = rev_of_board(name)
+            g["rev"] = max(g["rev"], r if r is not None else -1)
+            g["entries"].append((b.get("y", 0), b.get("x", 0), name, b))
+        lines.append(f"### Tab: {p['name']}  (`{pid}`)")
+        lines.append("")
+        if not groups:
+            lines.append("No boards yet.")
+            lines.append("")
             continue
-        head = f"{p['name']}  (page `{pid}`)" if p else "Item boards (before the paged rounds; no page)"
-        lines.append(f"### {head}")
-        lines.append("")
-        for _, _, name, b in entries:
-            exists = (copy_dir / name).exists()
-            link = f"[`{name}`]({name})" if exists else f"`{name}` (not copied yet)"
-            tag = " - interactive" if b.get("is_interactive") and "interactive" not in b.get("title", "").lower() else ""
-            lines.append(f"- {link} - {b.get('title', '').strip() or name}{tag}")
-        lines.append("")
+        for g in sorted(groups.values(), key=lambda g: (-g["rev"], min(e[0] for e in g["entries"]), min(e[1] for e in g["entries"]))):
+            lines.append(f"#### {g['label']}")
+            lines.append("")
+            for _, _, name, b in sorted(g["entries"]):
+                exists = (copy_dir / name).exists()
+                link = f"[`{name}`]({name})" if exists else f"`{name}` (not copied yet)"
+                tag = " - interactive" if b.get("is_interactive") and "interactive" not in b.get("title", "").lower() else ""
+                lines.append(f"- {link} - {b.get('title', '').strip() or name}{tag}")
+            lines.append("")
     lines.append(README_END)
     return "\n".join(lines) + "\n"
 
@@ -815,7 +1100,7 @@ def cmd_pull(args) -> int:
     old_idx = load_index(COPY_DIR / "canvas.json") if (COPY_DIR / "canvas.json").exists() else {"boards": {}, "pages": []}
     shutil.copyfile(src_idx, COPY_DIR / "canvas.json")
     new_pages = [p["id"] for p in idx.get("pages", []) if p["id"] not in {q["id"] for q in old_idx.get("pages", [])}]
-    print(f"boards: {new} new, {changed} changed, {same} unchanged; index: {len(idx.get('boards', {}))} boards, new pages {new_pages or 'none'}")
+    print(f"boards: {new} new, {changed} changed, {same} unchanged; index: {len(idx.get('boards', {}))} boards, new tabs {new_pages or 'none'}")
     missing = [b for b in idx.get("boards", {}) if not (COPY_DIR / b).exists()]
     date = args.date or _dt.date.today().isoformat()
     readme = write_readme(idx, args.version, date)
@@ -888,18 +1173,61 @@ def self_test() -> int:
         expect(next_rev(live2) == 32, "next-rev: a board prefix claims a round even without its page")
         root = td / "root"
         ns = argparse.Namespace(live=str(lp), root=str(root), name="Squads, three ways", board=['A=Hangar bay', 'B=Formation', 'C=The deck', 'D=Dossier'],
-                                interactive="C", compare="the four side by side", notes=None, no_notes=False, notes_h="900", size="1920x1080", rev=None, skeletons=True)
-        rc = cmd_plan(ns)
+                                interactive="C", compare="the four side by side", notes=None, no_notes=False, notes_h="900", size="1920x1080", rev=None,
+                                skeletons=True, tab=None, new_tab=None)
+        expect(cmd_plan(ns) == 1, "plan: refuses a round that names no tab")
+        expect(cmd_plan(argparse.Namespace(**{**vars(ns), "tab": "nope"})) == 1, "plan: refuses a tab that does not exist")
+        rc = cmd_plan(argparse.Namespace(**{**vars(ns), "tab": "rev30"}))
         planned = load_index(root / "project" / "canvas.json")
-        expect(rc == 0 and planned["pages"][-1] == {"id": "rev31", "name": "Rev 31 - Squads, three ways"}, "plan: adds page rev31 with the Rev prefix")
-        expect(planned["launch"]["page"] == "rev31", "plan: launch opens on the new page")
+        top = 1080 + ROUND_GAP + TITLE_ABOVE
+        expect(rc == 0 and len(planned["pages"]) == 3 and planned["notes"]["rev31"]["text"] == "Rev 31 - Squads, three ways"
+               and planned["notes"]["rev31"]["page"] == "rev30" and planned["notes"]["rev31"]["y"] == top - TITLE_ABOVE,
+               "plan: a round is a titled section on its tab (no new page), titled under the tab's last row")
+        expect(planned["launch"]["page"] == "rev30", "plan: launch opens on the round's tab")
         expect(planned["boards"]["R31Compare.dc.html"]["x"] == 0 and planned["boards"]["R31A.dc.html"]["x"] == 2100
-               and planned["boards"]["R31B.dc.html"]["x"] == 4200 and planned["boards"]["R31C.dc.html"] == {"x": 0, "y": 1260, "w": 1920, "h": 1080, "page": "rev31", "title": "Rev 31 C - The deck - interactive", "is_interactive": True}
-               and planned["boards"]["R31Notes.dc.html"]["y"] == 2520, "plan: compare first, three to a row, 180 apart, notes under the last row")
+               and planned["boards"]["R31B.dc.html"]["x"] == 4200 and planned["boards"]["R31C.dc.html"] == {"x": 0, "y": top + 1260, "w": 1920, "h": 1080, "page": "rev30", "title": "Rev 31 C - The deck - interactive", "is_interactive": True}
+               and planned["boards"]["R31Notes.dc.html"]["y"] == top + 2520, "plan: compare first, three to a row, 180 apart, notes under the last row")
         expect(all(k in planned["boards"] for k in live["boards"]) and planned["order"][:3] == live["order"] and planned["attachments"] == {},
                "plan: every key that was there is still there")
-        rc2 = cmd_plan(argparse.Namespace(**{**vars(ns), "rev": 30, "root": str(td / "r2")}))
+        expect(next_rev(planned) == 32 and round_label(planned, 31) == "Rev 31 - Squads, three ways" and round_label(planned, 30) == "Rev 30 - X",
+               "next-rev and round labels read title notes as well as old pages")
+        rc2 = cmd_plan(argparse.Namespace(**{**vars(ns), "rev": 30, "tab": "rev30", "root": str(td / "r2")}))
         expect(rc2 == 1, "plan: refuses a taken round")
+        rc3 = cmd_plan(argparse.Namespace(**{**vars(ns), "new_tab": "Voyage Redesign", "root": str(td / "r3"), "skeletons": False}))
+        p3 = load_index(td / "r3" / "project" / "canvas.json")
+        expect(rc3 == 0 and p3["pages"][-1] == {"id": "voyage-redesign", "name": "Voyage Redesign"} and p3["boards"]["R31A.dc.html"]["y"] == 0
+               and p3["notes"]["rev31"]["y"] == -TITLE_ABOVE and p3["launch"]["page"] == "voyage-redesign", "plan --new-tab: the round opens a new tab at its top")
+        # new-tab and fold.
+        rc = cmd_new_tab(argparse.Namespace(live=str(lp), root=str(td / "nt"), name="Menu Redesign C", id=None))
+        nt = load_index(td / "nt" / "project" / "canvas.json")
+        expect(rc == 0 and nt["pages"][-1] == {"id": "menu-redesign-c", "name": "Menu Redesign C"} and nt["launch"]["page"] == "menu-redesign-c"
+               and nt["boards"] == live["boards"], "new-tab: adds the tab, opens on it, touches no board")
+        expect(cmd_new_tab(argparse.Namespace(live=str(td / "nt" / "project" / "canvas.json"), root=str(td / "nt2"), name="menu redesign c", id=None)) == 1,
+               "new-tab: refuses a name that exists")
+        full = json.loads(json.dumps(live))
+        full["pages"] = [{"id": f"p{i}", "name": f"P{i}"} for i in range(MAX_TABS)]
+        fp = td / "full.json"
+        fp.write_text(json.dumps(full), encoding="utf-8")
+        expect(cmd_new_tab(argparse.Namespace(live=str(fp), root=str(td / "nt3"), name="One more", id=None)) == 1, "new-tab: refuses a 41st tab")
+        live_n = json.loads(json.dumps(live))
+        live_n["notes"]["item1"] = {"kind": "title1", "text": "Item 1", "x": 0, "y": -300, "w": 240, "maxW": 1920}
+        lnp = td / "live_n.json"
+        lnp.write_text(json.dumps(live_n), encoding="utf-8")
+        rc = cmd_fold(argparse.Namespace(live=str(lnp), root=str(td / "fo"), into="menu-redesign", name="Menu Redesign", pages="rev30,rev3,menu", title="Froglet Design Board"))
+        fo = load_index(td / "fo" / "project" / "canvas.json")
+        expect(rc == 0 and fo["pages"] == [{"id": "menu-redesign", "name": "Menu Redesign"}] and fo["title"] == "Froglet Design Board"
+               and all(b["page"] == "menu-redesign" for b in fo["boards"].values()) and fo["launch"]["page"] == "menu-redesign",
+               "fold: three pages (and the page-less boards of the first) become one tab")
+        expect(fo["notes"]["rev30"]["text"] == "Rev 30 - X" and fo["notes"]["menu"]["text"] == "Menu"
+               and fo["boards"]["R30CodexVault.dc.html"]["y"] - fo["notes"]["rev30"]["y"] == TITLE_ABOVE
+               and fo["notes"]["item1"]["y"] < fo["boards"]["Main.dc.html"]["y"] and fo["notes"]["menu"]["y"] < fo["notes"]["item1"]["y"],
+               "fold: each page is a titled section, its own notes kept above its boards")
+        rep = Report()
+        check_index(td / "fo" / "project", fo, None, rep)
+        expect(not rep.errors and not any("overlaps" in w for w in rep.warnings), "fold: the folded index passes the index gate, no frame overlaps")
+        expect(section_of(fo, "R3Home.dc.html")[1] == "Rev 3" and section_of(fo, "Main.dc.html")[1] == "Item 1",
+               "section_of: a board reads its round's or nearest title")
+        expect(next_rev(fo) == 31, "fold: the round numbers stay claimed after their pages go")
         # The gate: skeletons fail, a good board passes, a bad board names its faults.
         rep = Report()
         check_board(root / "project", "R31A.dc.html", planned["boards"]["R31A.dc.html"], rep, run_node=False)
@@ -946,9 +1274,10 @@ def self_test() -> int:
             rc = cmd_pull(argparse.Namespace(src=str(root), version="v-test", date="2026-10-28"))
             readme = (COPY_DIR / "README.md").read_text(encoding="utf-8")
             expect(rc == 1 and (COPY_DIR / "R31A.dc.html").exists() and (COPY_DIR / "canvas.json").exists(), "pull: copies boards and the index, exit 1 while index boards lack files (Main, R3Home, R30)")
-            expect("Intro kept, every round,\ncopied here so" in readme and "- old hand list" not in readme and "### Rev 31 - Squads, three ways  (page `rev31`)" in readme
-                   and readme.index("page `rev31`") < readme.index("page `rev30`") and "`Main.dc.html` (not copied yet)" in readme and "canvas version `v-test`" in readme,
-                   "readme: intro kept, the hand list replaced, newest round first, uncopied boards marked")
+            expect("Intro kept, every round,\ncopied here so" in readme and "- old hand list" not in readme and "#### Rev 31 - Squads, three ways" in readme
+                   and "### Tab: Rev 30 - X  (`rev30`)" in readme and readme.index("#### Rev 31 - Squads") < readme.index("#### Rev 30 - X")
+                   and "`Main.dc.html` (not copied yet)" in readme and "canvas version `v-test`" in readme,
+                   "readme: intro kept, the hand list replaced, by tab, newest round first, uncopied boards marked")
             for n in ("Main.dc.html", "R3Home.dc.html", "R30CodexVault.dc.html"):
                 (root / "project" / n).write_text(good_board(1920, 1080), encoding="utf-8")
             rc = cmd_pull(argparse.Namespace(src=str(root), version="v-test2", date="2026-10-28"))
@@ -968,12 +1297,19 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd")
     s = sub.add_parser("status"); s.add_argument("--live"); s.add_argument("--version")
     s = sub.add_parser("find"); s.add_argument("words", nargs="+"); s.add_argument("--live")
+    s = sub.add_parser("tabs"); s.add_argument("--live")
     s = sub.add_parser("next-rev"); s.add_argument("--live")
     s = sub.add_parser("plan")
     s.add_argument("--live", required=True); s.add_argument("--root", required=True); s.add_argument("--name", required=True)
+    s.add_argument("--tab"); s.add_argument("--new-tab")
     s.add_argument("--board", action="append"); s.add_argument("--interactive"); s.add_argument("--compare")
     s.add_argument("--notes"); s.add_argument("--no-notes", action="store_true"); s.add_argument("--notes-h", default="900")
     s.add_argument("--size", default="1920x1080"); s.add_argument("--rev", type=int); s.add_argument("--skeletons", action="store_true")
+    s = sub.add_parser("new-tab"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s.add_argument("--name", required=True); s.add_argument("--id")
+    s = sub.add_parser("fold"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s.add_argument("--into", required=True); s.add_argument("--name", required=True); s.add_argument("--pages", required=True)
+    s.add_argument("--title")
     s = sub.add_parser("check"); s.add_argument("dir"); s.add_argument("--only"); s.add_argument("--strict", action="store_true"); s.add_argument("--no-node", action="store_true")
     s = sub.add_parser("pull"); s.add_argument("--src", required=True); s.add_argument("--version"); s.add_argument("--date")
     s = sub.add_parser("readme"); s.add_argument("--version"); s.add_argument("--date")
@@ -983,7 +1319,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.cmd:
         ap.print_help()
         return 2
-    return {"status": cmd_status, "find": cmd_find, "next-rev": cmd_next_rev, "plan": cmd_plan, "check": cmd_check, "pull": cmd_pull, "readme": cmd_readme}[args.cmd](args)
+    return {"status": cmd_status, "tabs": cmd_tabs, "find": cmd_find, "next-rev": cmd_next_rev, "plan": cmd_plan,
+            "new-tab": cmd_new_tab, "fold": cmd_fold, "check": cmd_check, "pull": cmd_pull, "readme": cmd_readme}[args.cmd](args)
 
 
 if __name__ == "__main__":

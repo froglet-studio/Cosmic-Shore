@@ -9,7 +9,7 @@ Maintains `Docs/UI_REDESIGN_TASKS.md` for the Cosmic Shore UI overhaul. Runs **b
 
 The point of this skill is not bookkeeping. It is to catch the gap between what a task specified and what actually landed, while that gap is still cheap to close.
 
-The BOARD side is `/design-board` (`.claude/skills/design-board/`): opening the Menu Redesign B canvas in a session,
+The BOARD side is `/design-board` (`.claude/skills/design-board/`): opening the Froglet Design Board canvas (formerly Menu Redesign B) in a session,
 comparing a new design against the board and the build, planning and publishing a round, refreshing the repo copy, and
 the offline board check of T16 as a tool (`design_board.py check <root> --only R<N>`). This skill verifies the BUILD
 against the board the doc names as picked.
@@ -119,7 +119,7 @@ drifts. Take a place relative to something only you own: the Port takes the old 
 and anchors its documents after that panel's transform. Run the whole `author_menu_*.py --check` sweep (T9) after adding
 a screen.
 
-**T13 — the Menu Redesign B canvas is shared, so a round's number is claimed when you publish, not when you plan it**
+**T13 — the Froglet Design Board canvas (formerly Menu Redesign B) is shared, so a round's number is claimed when you publish, not when you plan it**
 (claude/affectionate-bardeen-pzh99d, 2026-10-27). Rev 28 was free at noon; by the time the Port's looks were drawn,
 another session had published Rev 28 to 31 (Ark tabs, Squads, the Codex rethought). Re-read `project/canvas.json`
 right before the publish, take the first free `rev<N>` page id AND board prefix (`R<N>*.dc.html`), and keep every
