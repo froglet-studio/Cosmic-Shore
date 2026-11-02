@@ -35,6 +35,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import tarfile
 
 APP_REF = "claude/eager-franklin-e6g77h"     # the compute branch, until Froglet Compute is on bleeding-edge
@@ -184,10 +185,60 @@ def copy_app(ref):
             fh.write(tree + "\n")
 
 
+SETUP_LOG = os.path.join(os.path.expanduser("~"), ".froglet-compute", "setup.log")
+
+
+def alert(text):
+    """Show `text` to the person even with no console (the .bat starts the window under pythonw): a Windows message
+    box, else stderr; and the setup log. Shombith, 2026-11-02: "something opens and closes" - a silent failure."""
+    try:
+        os.makedirs(os.path.dirname(SETUP_LOG), exist_ok=True)
+        with open(SETUP_LOG, "a", encoding="utf-8") as fh:
+            fh.write(time.strftime("%Y-%m-%d %H:%M:%S ") + text.rstrip() + "\n")
+    except OSError:
+        pass
+    if os.name == "nt":
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(0, text + "\n\nThis is also in " + SETUP_LOG, "Froglet Compute Setup", 0x10)
+            return
+        except Exception:
+            pass
+    sys.stderr.write(text + "\n")
+
+
+def gui_check():
+    """What the .bat runs in its console before starting the window: Python and tkinter must work, or it says why
+    and stays open."""
+    print(f"python {sys.version.split()[0]} at {sys.executable}")
+    if sys.version_info < (3, 8):
+        print("stopped: Python 3.8 or newer is needed"); return 1
+    try:
+        import tkinter
+        from tkinter import ttk  # noqa: F401
+        tkinter.Tcl()
+    except Exception as e:
+        print(f"stopped: this Python has no working tkinter ({e}). Install Python 3 from python.org and tick "
+              "\"tcl/tk and IDLE\", then run this again."); return 1
+    if not shutil.which("git"):
+        print("stopped: git is not on this computer's PATH"); return 1
+    print("ok: the setup window can open")
+    return 0
+
+
 def main(argv):
     opts = set(argv)
+    if "--gui-check" in opts:
+        return gui_check()
     if "--gui" in opts:
-        return gui(argv)
+        try:
+            return gui(argv)
+        except SystemExit:
+            raise
+        except BaseException as e:               # pythonw has nowhere to print: show it
+            import traceback
+            alert("The setup window could not open:\n" + "".join(traceback.format_exception(type(e), e, e.__traceback__))[-1500:])
+            return 1
     if "--repo" in argv and argv.index("--repo") + 1 < len(argv):
         os.chdir(argv[argv.index("--repo") + 1])
     if ("--hub" in opts) != ("--hub-key" in opts):

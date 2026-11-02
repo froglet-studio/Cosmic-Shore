@@ -68,15 +68,21 @@ def installer(name, url, key, flags):
             return fh.read(), "text/x-python", "froglet-compute-setup.py"
     if name == "windows.bat":
         # The window does the rest: it finds the Cosmic-Shore folder (or Browse), asks the schedule, installs, starts the tray.
+        # Every step says what it did, and a failure keeps the window open (Shombith, 2026-11-02: "something opens
+        # and closes"): the console checks Python, git and tkinter with `--gui-check` before the window starts.
         text = "\r\n".join([
             "@echo off", "setlocal",
-            "where python >nul 2>&1 || (echo Python is not installed. Install Python 3 from python.org (tick \"Add to PATH\"), then run this again. & pause & exit /b 1)",
-            "where git >nul 2>&1 || (echo Git is not installed. Install Git for Windows, then run this again. & pause & exit /b 1)",
+            "title Froglet Compute Setup",
+            "echo Froglet Compute: checking this PC...",
+            "where python >nul 2>&1 || (echo. & echo Python is not installed. Install Python 3 from python.org and tick \"Add python.exe to PATH\", then run this file again. & pause & exit /b 1)",
+            "where git >nul 2>&1 || (echo. & echo Git is not installed. Install Git for Windows, then run this file again. & pause & exit /b 1)",
             'set "SETUP=%TEMP%\\froglet-compute-setup.py"',
-            f'curl -fsSL "{url}/install/setup.py?key={key}" -o "%SETUP%" || (echo Could not reach the console at {url}. & pause & exit /b 1)',
+            f'curl -fsSL "{url}/install/setup.py?key={key}" -o "%SETUP%" || (echo. & echo Could not download the setup from {url} - is this PC online? & pause & exit /b 1)',
             'for /f "delims=" %%p in (\'where python\') do (set "PY=%%p" & goto :found)',
             ":found",
+            '"%PY%" "%SETUP%" --gui-check || (echo. & echo The setup window cannot open on this PC (the reason is above). & pause & exit /b 1)',
             'set "PYW=%PY:python.exe=pythonw.exe%"',
+            "echo Opening the setup window...",
             f'if exist "%PYW%" (start "" "%PYW%" "%SETUP%" --gui {opts}) else (start "" "%PY%" "%SETUP%" --gui {opts})',
             "exit /b 0", ""])
         return text, "application/x-bat", "froglet-compute-setup.bat"
