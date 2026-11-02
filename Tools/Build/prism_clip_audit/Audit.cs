@@ -307,10 +307,9 @@ static class ClipAudit
         if (course.TryGetProperty("switchback", out var sb))
         {
             // SpawnableSwitchbackFeatures: SwitchbackController generates the Switchback course and hands the
-            // generator the fun type's closed-form layout (SetLayout). Posed on the shipped shell the EditMode
-            // tests use, at the picker's fixed world seed.
-            var funType = (SwitchbackFunType)sb.GetProperty("funType").GetInt32();
-            var cs = SwitchbackCourseSettings.ForIntensity(intensity, funType);
+            // generator Blast Run's closed-form layout (SetLayout). Posed on the shipped shell the EditMode
+            // tests use, at the launch panel's fixed seed.
+            var cs = SwitchbackCourseSettings.ForIntensity(intensity);
             cs.GateCount = sb.GetProperty("gates").GetInt32();
             cs.InnerRadius = (float)sb.GetProperty("inner").GetDouble();
             cs.OuterRadius = (float)sb.GetProperty("outer").GetDouble();
@@ -319,7 +318,7 @@ static class ClipAudit
             float clear = (float)sb.GetProperty("clearRadius").GetDouble();
             var gates = SwitchbackCourse.Generate(seed, cs);
             var layout = SwitchbackBlastRun.Layout(gates, intensity, Vector3.zero, clear);
-            type.GetMethod("SetLayout").Invoke(gen, new object[] { gates, intensity, funType, layout, Vector3.zero, clear });
+            type.GetMethod("SetLayout").Invoke(gen, new object[] { gates, intensity, layout, Vector3.zero, clear });
             gen.GenerateForHarness();
             foreach (var lay in ((CellEnvironmentSpawnableBase)gen).CachedLays)
                 sink.Add((new SpawnPoint(lay.Point.Position, lay.Point.Rotation, Clamp(lay.Point.Scale)), lay.Domain, lay.Kind));

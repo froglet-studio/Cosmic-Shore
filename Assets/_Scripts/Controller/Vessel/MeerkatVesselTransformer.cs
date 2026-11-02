@@ -5,28 +5,25 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Meerkat's flight (<c>R_VesselActions/MEERKAT.md</c>): one thumb, as every one-thumb hull
     /// (<see cref="SingleStickVesselTransformer"/>: the left stick's Ease(2 × stick) yaws and pitches at full throttle and
-    /// banks into the turn), so the right thumb is always free to shape the wormhole. The Vessel Studio's numbers live on
+    /// banks into the turn), so the right thumb is always free to shape the Soliton Tunnel. The Vessel Studio's numbers live on
     /// the prefab: <c>pitchYaw</c> 120 °/s is <c>PitchScaler</c> = <c>YawScaler</c>, the bank <c>bankShare</c> × <c>roll</c>
     /// (0.12 × 130 = 15.6 °/s) is <c>RollScaler</c>, <c>cruise</c> 60 is <c>DefaultThrottleScaler</c>.
     ///
-    /// <para><b>The slide.</b> Inside a tunnel (<see cref="MeerkatWormholeExecutor.StepRide"/>; round 24, the same flight
-    /// as the roots) it replaces both the turn and the move: the left stick moves the hull round the tube, RT pushes it
-    /// faster, the wall bounces it; on the way out it leaves at the speed it went in with × <c>rideExitMultiplier</c> (the
-    /// page's <c>gateOut</c>), and the turn picks up from the tunnel's last heading.</para>
-    ///
-    /// <para><b>The roots</b> (<c>MEERKAT.md</c> §7): inside the roots an omnicrystal grew, the roots' flight
-    /// (<see cref="MeerkatWormholeExecutor.StepRoots"/>) replaces the turn and the move the same way: the left stick moves the
-    /// hull round the root, RT pushes it faster, and it leaves at the speed it went in with × <c>rideExitMultiplier</c>.</para>
+    /// <para><b>The slip-and-slide.</b> Inside a Soliton Tunnel (<see cref="MeerkatSolitonExecutor.StepRide"/>) or a Soliton
+    /// Network (<see cref="MeerkatSolitonExecutor.StepNetwork"/>) the slide replaces both the turn and the move: radial
+    /// gravity presses the hull to the inner wall, it slides and now and then bounces, RT gives a small push, and the left
+    /// stick does nothing; on the way out it leaves with the velocity it had × the exit multiplier (the slingshot), and the
+    /// turn picks up from that heading.</para>
     ///
     /// <para><b>The AI shaping its reticle</b> holds its line (the page's left stick at rest while the right one bends):
-    /// <see cref="MeerkatWormholeExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
+    /// <see cref="MeerkatSolitonExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
     /// </summary>
     public class MeerkatVesselTransformer : SingleStickVesselTransformer, IHullContactGate
     {
         /// <summary>
         /// Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... It's
         /// like going through another dimension ... When it comes out of the hole, then it interactable again"): while a tunnel
-        /// or the roots fly this hull it is PHASED - its touch meets no prism and takes no crystal, and no prism or crystal
+        /// or a Soliton Network flies this hull it is PHASED - its touch meets no prism and takes no crystal, and no prism or crystal
         /// touches it (<see cref="IHullContactGate"/>, read by both halves of every contact, the skimmer's too). A race ring
         /// threaded inside still counts (it is a sweep, not a touch).
         /// </summary>
@@ -35,14 +32,14 @@ namespace CosmicShore.Gameplay
             get
             {
                 var wormhole = Wormhole;
-                return wormhole && (wormhole.IsRiding || wormhole.IsInRoots);
+                return wormhole && (wormhole.IsRiding || wormhole.IsInNetwork);
             }
         }
 
         public bool TakesCrystalsByContact => !Phased;
         public bool TakesPrismsByContact => !Phased;
 
-        MeerkatWormholeExecutor _wormhole;
+        MeerkatSolitonExecutor _wormhole;
         bool _resolved;
         bool _rodeLastFrame;
 
@@ -53,12 +50,12 @@ namespace CosmicShore.Gameplay
             _rodeLastFrame = false;
         }
 
-        MeerkatWormholeExecutor Wormhole
+        MeerkatSolitonExecutor Wormhole
         {
             get
             {
                 if (_resolved && _wormhole) return _wormhole;
-                _wormhole = GetComponentInChildren<MeerkatWormholeExecutor>(true);
+                _wormhole = GetComponentInChildren<MeerkatSolitonExecutor>(true);
                 _resolved = _wormhole;
                 return _wormhole;
             }
@@ -67,7 +64,7 @@ namespace CosmicShore.Gameplay
         protected override void RotateShip()
         {
             var wormhole = Wormhole;
-            if (wormhole && (wormhole.IsRiding || wormhole.IsInRoots)) return;   // MoveShip flies the ride (or the roots), facing and all
+            if (wormhole && (wormhole.IsRiding || wormhole.IsInNetwork)) return;   // MoveShip flies the slide (tunnel or network), facing and all
             if (wormhole && wormhole.AIHoldsLine)
             {
                 VesselStatus.Course = transform.forward;
@@ -90,14 +87,14 @@ namespace CosmicShore.Gameplay
                 if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));
                 return;
             }
-            if (wormhole && wormhole.StepRoots(Time.deltaTime, out position, out rotation, out rideSpeed, out heading, out cameOut))
+            if (wormhole && wormhole.StepNetwork(Time.deltaTime, out position, out rotation, out rideSpeed, out heading, out cameOut))
             {
                 transform.SetPositionAndRotation(position, rotation);
                 accumulatedRotation = rotation;
                 VesselStatus.Course = heading;
                 VesselStatus.Speed = rideSpeed;
                 _rodeLastFrame = true;
-                if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));   // the roots' way out is published too
+                if (cameOut) LeaveRide(TrackedExitSpeed(rideSpeed, wormhole.RideExitMultiplier));   // the network's way out is published too
                 return;
             }
             if (_rodeLastFrame) LeaveRide(speed);

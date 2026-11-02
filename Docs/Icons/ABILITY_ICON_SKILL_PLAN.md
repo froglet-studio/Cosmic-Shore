@@ -357,6 +357,40 @@ Sparrow's shielded stance rounds, Squirrel's drift trail and Sharp Drift), plus 
 Shield omni card) and the Squirrel's shielded-ring card (`author_squirrel_shielded_ring_icon.py`). No C# changed. The
 Rhino's super-shielded prism stays the stella octangula (its own shape, not a rhombus).
 
+**The Tiger Moth** (round 4, 2026-10-31; `specs/tigermoth.py`). The vessel the round-4 list calls the Butterfly is the
+Tiger Moth now (the Butterfly retired 2026-10-29, `TIGER_MOTH.md`; a Butterfly may return as its own hull one day). It
+flies `ButterflyHUDVariant` / `ButterflyHUDView`, whose shipped sprites keep their `Butterfly_*` names; new parts are
+`TigerMoth_*` under `AbilityIcons/TigerMoth/`. The **Time card, the Drop**, went first (it still showed the retired
+Fold): Garrett picked A of A/B/C ("the fall"): the airframe side on with its wings shut (`Butterfly.fbx`, take
+`rig|fold`, pitch -90) in the domain colour, three fall streaks above. On the built card: "the portal should only appear
+once the upgrade comes", as "a colored ring", "red" when an enemy goes through it - so the wormhole mouth shows only at
+Charge 5 Toll Gate, in the domain colour, danger for a beat on a toll (`WormholeMouth.LastTollTime`). The **Charge card,
+Scale Dust**: A of A/B/C ("the shred"), without the petal ("Show a grey ship and turn it Red when you hit then it will
+look different then space"): the moth over its dust (shielded), the rival grey, danger for a beat on a bite
+(`ButterflyDustField.LastBiteTime`); at Charge 5 the same wormhole ring, red on a toll. Both in `ButterflyHUDView`
+(`SetDrop`, `SetScaleDust`, `SetPilotColors`). The kit now draws the omni card left of Charge in every lockup sheet ("you are
+still forgetting to show the omnicrystal totem"). The **omni crystal card, the bloom**: A of A/B/C, "but make the moth
+to scale in the explosion": the moth small at the heart of a sphere of dust motes on a golden-angle spiral
+(`Core/TigerMoth_Bloom`, set as the view's `omniAbilitySprite`). True scale (span 21.35 in a 900-unit bloom) is about
+1.5 px, so the moth is drawn at the smallest size that still reads (box 24). The **Mass card, Mass / Dust mode**: A of A/B/C ("the wide
+wake"; Garrett first said C, then "actually. i like mass a"): seen from above so the wake's width shows, the moth with
+its wings spread over three piano keys; the keys' ends fade with the eased mode to the bare keys in Dust mode, and Gilded
+Wake (Mass 5) turns the keys shielded (`ButterflyHUDView.SetMassMode(mode, gildedWake)`); the plate keeps its mode fill.
+On the built card: "make the base have more square edges. including the cut out. once gilded then
+change them to octahedrons on the outside but keep them square edge on the interior": the keys are rectangles with a
+straight cut, and Gilded Wake swaps in ends pointed on the outside (`TigerMoth_MassKeyEndsGilded`). **The dust** in
+three colours ("make a dust made of danger color, team domain color, team shielded domain color. use this in the icon
+and for the actual dust on the ability and omnicrystal dust effects"): the Charge and Space cards' motes are three parts
+(danger, domain, shielded), and the game's capsule and bloom motes take the same three
+(`ButterflyDustField.ResolveMotePalette`). The **Space card, Dust Reach**: first drawn as A (the dust on mass, with a
+tended prism and a broken rival one); "too busy", so it is the moth and its rain of three-colour motes, and at Space 5
+Diamond Dust a bigger super-shielded prism (the Rhino's flat stella octangula) in the domain colour at the bottom of the
+rain. Gilded Wake's keys go wider and taper sooner. The same round set a FLEET rule: no rhombus for a prism or a mote
+("that shape is owned by the time petal"): prisms are two close triangles (`motifs.prism_halves`) or a square with a
+negative-space X (`motifs.prism_square_x`), motes are little circles. Cards already shipped with the rhombus (Angler,
+Manta, Rhino, Scarab, Sparrow, Squirrel) are a later recut. The omni card stays one white sprite. Next: the Brittle
+Star.
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |

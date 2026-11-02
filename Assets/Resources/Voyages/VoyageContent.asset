@@ -436,3 +436,8 @@ MonoBehaviour:
     CardHomeDetails: '{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}'
     CardSquadSeat: '{vessel} ({pilot})'
     CardSquadSeparator: ', '
+    MapPlace: '{name} - {blurb}'
+    EdgeCaption: 'EDGE ON, TRUE SCALE - DISK 1,000 LY - {place} {height}'
+    EdgeAbove: '{ly} LY ABOVE THE MIDPLANE'
+    EdgeBelow: '{ly} LY BELOW THE MIDPLANE'
+    EdgeMidplane: ON THE MIDPLANE

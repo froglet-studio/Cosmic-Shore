@@ -41,7 +41,6 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 printf '%s\n' "$HERE/UnityMath.cs" "$HERE/Platform.cs" "$HERE/Driver.cs" "$OUT/Generated.cs" \
   "$A/Data/Enums/Domains.cs" \
   "$A/Data/Enums/GameModes.cs" \
-  "$A/Data/Enums/SwitchbackFunType.cs" \
   "$A/Data/Enums/PrismKind.cs" \
   "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
   "$A/Controller/Arcade/Racing/RaceCourseSource.cs" \

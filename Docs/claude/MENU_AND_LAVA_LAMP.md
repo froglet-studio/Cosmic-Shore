@@ -243,6 +243,8 @@ this vessel's ability, I just need a god mode, with which I can fly smoothly in 
 have an eye on everything while the Vessel is flown by AI"). This replaces the wormhole lab as the way to watch a hull's
 ability; the lab scene was left in place, but nothing needs it any more.
 
+**Shared flight (2026-11-01):** the flight model and its defaults now live in `Controller/Camera/FreeFlyCamera.cs` (a serializable class, field `flight` on `MenuGodModeCamera`). Switchback's AI Diagnose Free fly uses the same class, so both fly identically. Menu_Main serialized no flight values, so nothing was lost.
+
 | Input | Keyboard / mouse | Gamepad |
 |---|---|---|
 | Toggle god mode | **F2** | **L3** (left-stick click) |

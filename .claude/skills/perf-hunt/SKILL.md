@@ -46,7 +46,7 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
 ```
 
 - **Validity first.** A capture taken in Debug code optimization, with Deep Profile, under a frame cap, with Burst
-  off, with managed job time, or with a second camera enabled (the Third Eye window) is NOT a number. The reader says
+  off, with managed job time, or with a second camera enabled (the old Third Eye window; since 2026-11-01 the Third Eye drives the main camera, so only its overlays cost) is NOT a number. The reader says
   so in its first section; the sweep refuses to compare it. Ask for a clean one (the team task template is in
   `Docs/TEAM_TASKS.md`, area Performance) rather than reading a tainted one.
 - **An Amoebius allocation is the game's only when the engine API does not copy.** Before filing a game task from the

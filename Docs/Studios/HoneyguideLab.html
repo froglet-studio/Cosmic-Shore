@@ -591,7 +591,7 @@
     apPerTick: 3,          // proposal: action points each spin
     apBank: 6,             // Garrett 2026-10-29: most AP held (round 7; was 3): what a spin does not use is kept
     abilityChoices: 3,     // Garrett 2026-10-29: abilities offered every patternsPerShuffle patterns; the Ratel picks one (1 = the old random draw)
-    pickSeconds: 10,       // proposal: seconds the Ratel has to pick before the first offer is taken (0 = no limit)
+    pickSeconds: 20,       // Garrett 2026-11-02 ("it should take more time"; was 10): seconds the Ratel has to pick before the first offer is taken (0 = no limit)
     bonusApCap: 2,         // proposal: banked extra AP (the Refund ability)
     batteryCap: 3,         // proposal: battery charges held
     revealAbility: 3.5,    // proposal: seconds the spin clock stops to show the Ratel's new ability (Garrett: time to read it)
@@ -2277,9 +2277,10 @@
       ctx.fillStyle = 'rgba(6,9,14,.78)'; ctx.fillRect(L.x, top, L.w, h);
       const n = rv.offers.length, cw = Math.min(L.w - 24, 360), head = small ? 14 : 26, gap = small ? 4 : 8;
       const ch = Math.min(small ? 26 : 96, (h - head - 10 - gap * (n - 1)) / n), big = small ? 10 : Math.max(14, Math.min(20, cw / 18)), body = Math.max(11, big * 0.66);
-      ctx.fillStyle = '#9fe6ff'; ctx.font = '700 ' + (small ? 9 : 12) + 'px system-ui, sans-serif'; ctx.fillText('PICK THE RATEL\'S NEXT ABILITY', G.cx, top + head / 2 + 2);
+      const oy = top + Math.max(0, (h - (head + 6 + n * ch + (n - 1) * gap + 8)) / 2);   // centred (Garrett 2026-11-02: "more vertically centered")
+      ctx.fillStyle = '#9fe6ff'; ctx.font = '700 ' + (small ? 9 : 12) + 'px system-ui, sans-serif'; ctx.fillText('PICK THE RATEL\'S NEXT ABILITY', G.cx, oy + head / 2 + 2);
       for (let k = 0; k < n; k++) {
-        const ab = ABILITY_TEXT[rv.offers[k]] || [rv.offers[k], ''], x = G.cx - cw / 2, y = top + head + 6 + k * (ch + gap);
+        const ab = ABILITY_TEXT[rv.offers[k]] || [rv.offers[k], ''], x = G.cx - cw / 2, y = oy + head + 6 + k * (ch + gap);
         const hot = st.ability === rv.offers[k];
         ctx.fillStyle = '#0e1620'; ctx.fillRect(x, y, cw, ch);
         ctx.strokeStyle = hot ? '#ffffff' : '#9fe6ff'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, cw - 2, ch - 2);
@@ -2291,7 +2292,7 @@
         }
         ui.offerRects.push({ x, y, w: cw, h: ch });
       }
-      if (tot > 0) { ctx.fillStyle = '#9fe6ff'; ctx.fillRect(G.cx - cw / 2, top + head + 6 + n * (ch + gap), cw * prog, 2); }
+      if (tot > 0) { ctx.fillStyle = '#9fe6ff'; ctx.fillRect(G.cx - cw / 2, oy + head + 6 + n * (ch + gap), cw * prog, 2); }
     } else if (rv.stage === 1) {
       ctx.fillStyle = 'rgba(6,9,14,.72)'; ctx.fillRect(L.x, L.y + 48, L.w, G.slots.y - L.y - 52);
       const ab = ABILITY_TEXT[st.ability] || ['', ''], cw = Math.min(L.w - 24, 340), big = small ? 13 : Math.max(18, Math.min(26, L.w / 16)), body = small ? 0 : Math.max(12, big * 0.6);

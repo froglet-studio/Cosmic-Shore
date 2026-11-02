@@ -179,6 +179,9 @@ namespace CosmicShore.Gameplay
             return line;
         }
 
+        // Only reached when the config has no previewMaterial (HoneyguideConfig.asset ships HoneyguidePreview.mat, the same
+        // Sprites/Default material, so Release builds never depend on Shader.Find). Sprites/Default is also an Always
+        // Included shader, so this fallback still resolves in a player.
         static Material PreviewFallbackMaterial()
         {
             if (s_previewFallback) return s_previewFallback;

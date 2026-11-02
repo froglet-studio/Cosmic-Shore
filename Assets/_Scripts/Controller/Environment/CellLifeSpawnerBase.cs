@@ -333,6 +333,13 @@ namespace CosmicShore.Gameplay
             pop.domain = domain;
             pop.Goal = goal;
 
+            // Per-world species data (FaunaConfigurationSO.SpeciesDataOverride) is bound BEFORE
+            // Initialize: a colony builds its chain, a substrate claims its block and a builder
+            // seeds its lattice in there, all off the data asset. Same seam argument as the
+            // lineage bind below - this is the one Instantiate every producer reaches.
+            if (cfg && pop is ISpeciesDataOverride speciesData)
+                speciesData.BindSpeciesData(cfg);
+
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);

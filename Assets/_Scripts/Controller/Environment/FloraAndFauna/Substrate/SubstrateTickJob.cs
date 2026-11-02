@@ -380,6 +380,7 @@ namespace CosmicShore.Gameplay
                     var ahead = Core.Pos[i] + Core.Vel[i] * Core.Dt;
                     for (int k = 0; k < PilotCount; k++)
                     {
+                        if (Pilots[k].ClingOnly != 0) continue;   // a cling-only hull (the Ark) engages no proxies
                         best = MathF.Min(best, Vector3.DistanceSquared(Core.Pos[i], Pilots[k].Pos));
                         soon = MathF.Min(soon, Vector3.DistanceSquared(ahead, Pilots[k].Pos + Pilots[k].Vel * Core.Dt));
                     }

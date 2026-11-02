@@ -20,7 +20,7 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
     fires that card's own effect.
   - A pattern made three times is replaced.
   - Every 4 patterns the Ratel is **offered three abilities and picks one** (round 7, Garrett 2026-10-29), then sees the
-    new port pattern. The clock stays stopped while it picks; after `pickSeconds` (10 s) the first offer is taken. The AI
+    new port pattern. The clock stays stopped while it picks; after `pickSeconds` (20 s; 10 until Garrett's 2026-11-02 playtest) the first offer is taken. The AI
     Ratel picks by `DynamoCore.AIPickOrder` (Overclock, Refund, Free Fire, Long Reach, Capacitor, Wild Core, Swap, Mirror:
     a proposal). `abilityChoices` 1 brings back the random draw.
   - **Printer is retired from the draw, for now** (Garrett 2026-10-22: its free prism at the start of every spin "is too
@@ -76,8 +76,9 @@ decided in the Ratel Raid Lab (`Docs/Studios/HoneyguideRaidLab.html`, record `Do
 `hive-core` block is the record, `HiveCore.cs` is its port, held to it by `Tools/Build/hive_lab/parity.cjs`.
 
 - **Opening it.** An Omni crystal the hull collects (`HoneyguideOmniCrystalEffectSO`, in the omni list of the hull's own
-  `HoneyguideImpactorDataContainer`) opens hive mode on the machine that runs the Dynamo, once any pick of three in progress
-  is done. The current spin completes at once (`hiveCompletesSpin`; `DynamoCore.SpinNow`), and the Dynamo's clock holds.
+  `HoneyguideImpactorDataContainer`), or the crystal's own `OmniCrystalImpactor.CollectedByVessel` signal for this hull
+  (added after Garrett's 2026-11-02 playtest, where a collected omnicrystal opened none), opens hive mode on the machine
+  that runs the Dynamo, once any pick of three in progress is done. The current spin completes at once (`hiveCompletesSpin`; `DynamoCore.SpinNow`), and the Dynamo's clock holds.
   One hive at a time: an omnicrystal taken in hive mode opens none.
 - **The hive in the world.** The omnicrystal becomes a flat hex comb of real prisms, `hiveOffset` (40 u) behind where it was
   taken, square to the hull's flight, `hiveCellSpacing` apart: each cell's domain, every prism super-shielded while hive

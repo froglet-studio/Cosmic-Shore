@@ -44,6 +44,86 @@ namespace CosmicShore.Gameplay
         /// gape axis, re-orthogonalised against the cone axis at Initialize.</summary>
         private Vector3 _gapeAxisWorld = Vector3.up;
 
+        /// <summary>
+        /// Raised at the end of <see cref="Initialize"/> — after the cone's container is posed and
+        /// before it detonates — for every conic blast (the Dolphin's Echo Obliteration, and the
+        /// Sparrow skyburst that inherits this Initialize). The Dolphin's omni-crystal morph listens
+        /// for the blast its own pickup fires and lands the spent crystal on it
+        /// (<see cref="DolphinCrystalMorph"/>).
+        ///
+        /// Listeners are visuals: they may hold the cone's PHOTONS
+        /// (<see cref="SetMorphStandIn"/>), never its sweep. Invoked isolated, so a throwing
+        /// listener cannot unwind into the impact dispatch that fired the blast.
+        /// </summary>
+        public static event Action<AOEConicExplosion> Initialized;
+
+        // Fast enter-play-mode keeps statics: a listener stranded by a stopped session must not be
+        // called into the next one.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => Initialized = null;
+
+        /// <summary>The cone's apex in world space — the spawn point the blast radiates from.</summary>
+        public Vector3 ApexPosition => coneContainer ? coneContainer.transform.position : transform.position;
+
+        /// <summary>The mesh the blast draws (PrimitiveCone: apex +Y, base −Y, unit height and
+        /// diameter), or null when the prefab authors none.</summary>
+        public Mesh ConeMesh => TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
+
+        /// <summary>
+        /// The cone mesh's object-to-world matrix as the blast will draw it
+        /// <paramref name="secondsSinceInitialize"/> seconds after <see cref="Initialize"/>, read off
+        /// the SAME growth curve <see cref="ExplodeAsync"/> runs (ExplosionDelay, then
+        /// <c>sin(t·π/2)</c> of <see cref="MaxScaleVector"/> over ExplosionDuration). The container
+        /// is static in the world for the blast's whole life, so the pose is exact and only the
+        /// scale moves. False before Initialize has posed a container.
+        /// </summary>
+        public bool TryGetConeLocalToWorldAt(float secondsSinceInitialize, out Matrix4x4 localToWorld)
+        {
+            localToWorld = Matrix4x4.identity;
+            if (!coneContainer) return false;
+
+            float grown = Mathf.Max(0f, secondsSinceInitialize - ExplosionDelay);
+            float t = ExplosionDuration > 0f ? Mathf.Min(grown / ExplosionDuration, 1f) : 1f;
+            Vector3 scale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin(t * PI_OVER_TWO));
+
+            var container = coneContainer.transform;
+            localToWorld = Matrix4x4.TRS(container.position, container.rotation, scale) *
+                           Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
+            return true;
+        }
+
+        /// <summary>
+        /// The colour pair the cone draws, under the morph's names: <c>_Color</c> (the body, read as
+        /// DARK) and <c>_EdgeColor</c> (the Fresnel rim, read as BRIGHT) off this blast's own material
+        /// clone — the domain tint <c>ThemeManager</c> wrote is already on it. Alpha is forced to 1:
+        /// the cone's opacity is its own <c>_Opacity</c>, not its colours'.
+        /// </summary>
+        public bool TryGetConeColours(out Color dark, out Color bright)
+        {
+            dark = bright = default;
+            var mat = Material;
+            if (!mat || !mat.HasProperty(ColorId) || !mat.HasProperty(EdgeColorId)) return false;
+            dark = mat.GetColor(ColorId);
+            bright = mat.GetColor(EdgeColorId);
+            dark.a = bright.a = 1f;
+            return true;
+        }
+
+        /// <summary>
+        /// Holds the cone's PHOTONS while a morph draws in its place — nothing else. The sweep, the
+        /// trigger and the prism damage all run from the frame the blast detonates, exactly as
+        /// without a morph; only the drawing waits. Uses <see cref="Renderer.forceRenderingOff"/>,
+        /// so it composes with the renderer's own enabled state (which retires the visual at the
+        /// end of the sweep). Cleared by every <see cref="Initialize"/>.
+        /// </summary>
+        public void SetMorphStandIn(bool standIn)
+        {
+            if (meshRenderer) meshRenderer.forceRenderingOff = standIn;
+        }
+
+        static readonly int ColorId = Shader.PropertyToID("_Color");
+        static readonly int EdgeColorId = Shader.PropertyToID("_EdgeColor");
+
         /// <summary>The trigger collider as a capsule, when the prefab authors one. Null on a
         /// prefab that still carries a sphere (or none), which simply keeps the old envelope.</summary>
         private CapsuleCollider _triggerCapsule;
@@ -124,6 +204,20 @@ namespace CosmicShore.Gameplay
             // destroying prisms for its whole duration after OnMiniGameTurnEnd, and survived
             // OnResetForReplay.
             SubscribeToGameEvents();
+
+            // A hold left by a morph on a previous life of this object never carries over.
+            SetMorphStandIn(false);
+
+            // ISOLATED: a listener is a VISUAL and must never be able to stop the blast it watches.
+            try
+            {
+                Initialized?.Invoke(this);
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[AOEConicExplosion] an Initialized listener threw; the blast is " +
+                                 $"unaffected. {e}");
+            }
         }
 
         // Initialize always clones the material for this instance; a runtime material is not freed

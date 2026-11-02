@@ -310,7 +310,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 42 | `Bends` | MP | MinigameBends | `BendsController` ("The Bends" — Dolphin debuff duel, see `BENDS.md`) |
 | 43 | `ScarabScramble` | MP | MinigameScarabScramble | `ScarabScrambleController` (Scarab hoop-court party game — see `SCARABSCRAMBLE.md`) |
 | 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
-| 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race — see `SWITCHBACK.md`) |
+| 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race, Blast Run only since 2026-10-29 — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
 | 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
 | 54 | `WreckingBall` | MP | MinigameWreckingBall | `WreckingBallController` ("Wrecking Ball" — Scarab demolition race, see `WRECKING_BALL.md`) |

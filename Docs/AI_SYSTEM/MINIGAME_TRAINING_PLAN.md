@@ -1,6 +1,6 @@
 # Training the AIs through each vessel's own minigames
 
-**Decided by Yash, 2026-10-26, restated 2026-10-27.** **Focus since 2026-10-27: the Stoat (Slingshot) and the Meerkat (Warpline), §8.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
+**Decided by Yash, 2026-10-26, restated 2026-10-27 and 2026-11-01.** **Focus since 2026-11-01 (§10): no new vessels; each existing vessel's Time minigame, then the arena games. Yash flies the Dolphin in Switchback (§9) himself; the Stoat (Slingshot) and the Meerkat (Warpline) are the vessels Claude sessions build with him (§8).** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
 
 **The plan in one paragraph (2026-10-27).** The AIs are not trained in Regatta. Each vessel is trained in its OWN
 minigames: first its **Time minigame** (the card whose genre petal is Time, usually its race: the Stoat's is Warpline),
@@ -381,3 +381,70 @@ the Stoat's other race, keeps its scene steering until its own races show the sa
   only in its `PER_INTENSITY_MODES` (Switchback, §3.7), and Slingshot and Warpline are not in it yet.
 - **Their four abilities** are prototyped in the Vessel Studio first (the Stoat studio round 28, the Meerkat studio round
   6) and reach Unity only on Yash's say-so (`/vessel` §3).
+
+## 9. Next: the Switchback Dolphin, Yash's brief (2026-11-01)
+
+The next AI session works on the Dolphin in Switchback alone. Yash's words:
+
+> "I want a very good switchback AI where the dolphins will actually drift towards the crystal while aiming at the
+> obstacles in switchback's intensities. And then while hitting the crystal, it will just blow with its own dolphin
+> blast. It will blow the obstacles. Then it will go towards the target ring in either little bit drifting and going
+> faster or directly straight. As a user, I can tell you that when I am spamming my drift little bit in few intervals,
+> then I can actually go drifting towards the target, which is faster than just using the thumbstick to go forward. And
+> yeah, so generally dolphin users, they in 1 second or 0.5 seconds, they keep spamming the triggers."
+
+**What already exists (read first).** Switchback is Blast Run since 2026-10-29 (`SWITCHBACK.md` "Switchback is Blast
+Run", "Blast Run", "AI: the blast planner", "AI: any prism in the way", "AI: the emergency sweep", "Watching the AI").
+`SwitchbackBlastPlanner` picks Direct / Thread / Blast at each blocked gate; `SwitchbackBlastAI` (server only) flies a
+Blast to the gate's key crystal with the nose held on the obstacle (`TryOverrideAim`, `TryOverrideDriftLook`), so the
+crystal's blast clears it. Switchback opts back in to crystals (`SwitchbackController.AIDetoursForCrystals` = true),
+the one exception to §6.1, because its key crystals are part of the course. The charge drive is
+`DolphinAIBoostPolicy_Switchback[_I<n>]` (§3.6-3.7).
+
+**What is new in the brief:**
+1. **Drift into the crystal with the nose on the obstacle**, at every intensity (the planner may still choose Thread or
+   Direct where no blast pays).
+2. **Drift-spam as the way to fly fast toward the target**: short drift presses every 0.5-1 s, which Yash says beats
+   holding the stick forward. Nothing in the AI does this today: the AI holds one commit drift per gate and discharges
+   on a straight (`ChargeBoostAIPolicySO`, `AIPilot` commit drift). Neither the learner nor any doc measures it.
+3. **After the blast, to the ring** by drift-spam or straight, whichever is faster there.
+
+**How to measure Yash's drift-spam (no new recording needed).** Every Switchback race already records each drift
+press and release at its exact time (`buttonEvents`: `[t, InputEvent, pressed]`, the input names in `buttonNames`) and
+the drifting state bit per 10 Hz sample (`state`, `stateBits.drifting`), plus speed, the next ring and crystals. The
+first step is a measure of the press period, the press length, the speed gained against holding straight, and where
+in a leg people spam; then a model of it in `switchback_dolphin_sim.py` before any AI change. Yash plays Switchback at
+each intensity as usual; the races reach the learner on their own (`AUTO_LEARNING.md`).
+
+**Measured offline (2026-11-01, `SWITCHBACK.md` "Offline: the Blast Run simulator").** The shipped AI, alone, median of
+12 courses: I1 about 90-100 s, I2 145-185 s, I3 200-255 s, I4 210-540 s (Hard and Legendary do not always finish I4).
+A harder level is slower: its prism dodging pulls it off line and it loops back for missed rings. With dodging off it
+finishes I4 in about 120-145 s at every level. Blasting as flown today saves about as much as its setup turn costs. The
+plan that follows from it, in order: dodge only what costs (Danger prisms, never inside the last stretch to a ring);
+make the blast free (fly THROUGH the key on the racing line with the nose drifted onto the door, no setup turn behind
+it); set the planner's hit costs from the measured ones; then drift-spam, from Yash's Blast Run races.
+
+## 10. The order of work from 2026-11-01: minigames first, no new vessels (Yash)
+
+> "For now we won't be making any more new vessels. We will be focusing on making the mini games. The time mini games,
+> all our existing vessels, awesome. And then finally we will make arena games such as regattas. So for now you can for
+> me focus on stoat and meerkat. But other than that, I'm totally focused on dolphins, switchback, time game, where I'm
+> making awesome AI so the game feels hard to play as well as challenging." (Yash, 2026-11-01)
+
+1. **No new vessels.** Every prototype (the concept ten, the Siphonophore, the Omega crews, the calm three, the Orca's
+   play styles) is parked and catalogued in `Docs/Studios/CONCEPT_FLEET.md` §13. A session brings one back only when
+   Yash asks for it by name.
+2. **The Time minigames of the existing vessels, made awesome.** One per vessel (§2), four intensities that teach then
+   test (§1), and an AI that makes it hard and challenging to win: rivals of the same hull, learned from people's races
+   (`AUTO_LEARNING.md`), at every intensity.
+3. **Then the arena games**, Regatta first, rebuilt from the skills the vessels learned in their own minigames (§4).
+
+**Who is on what.**
+
+| Work | Who | Where it is written |
+|---|---|---|
+| The Dolphin in **Switchback** (Blast Run): an AI that drifts into the key crystal with the nose on the obstacle, blasts it and drift-spams to the ring, so the race is hard to win | **Yash** plays it at every intensity; the AI sessions build from his races | §9; `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md` |
+| The **Stoat** in **Slingshot** and the **Meerkat** in **Warpline**: the kit, the race and the AI | Claude sessions with Yash | §7, §8; `Docs/Studios/STOAT_PLAY_STYLES.md`, `Docs/Studios/MEERKAT.md` |
+| The other vessels' Time minigames | later, one vessel at a time, in the §2 order | §2 |
+| The arena games (Regatta and the rest) | after the Time minigames | §4; `REGATTA_AI_ROADMAP.md` (on hold) |
+

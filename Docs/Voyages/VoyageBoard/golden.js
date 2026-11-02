@@ -1,13 +1,15 @@
 // Prints the Voyage Board's own numbers that HyperSeaTests holds as goldens (Docs/Voyages/VOYAGE_BOARD.md §4).
 // Usage: node Docs/Voyages/VoyageBoard/golden.js
-// It runs the page's sea model (from "Canon numbers" to "Crew") unchanged, with only the six places around Tumult as
+// It runs the page's sea model (from "Canon numbers" to "Crew") unchanged except for the lanes switch, with only the six places around Tumult as
 // berths, the way the game's VoyageChart charts the slice's locations.
 "use strict";
 const fs = require("fs"), path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "voyage-board.html"), "utf8");
 const from = html.indexOf("// ── Canon numbers"), to = html.indexOf("// ── Crew (voyage_slice.json)");
 if (from < 0 || to < 0) throw new Error("the board's model markers moved: update golden.js");
-const m = new Function(html.slice(from, to) +
+// The lanes by heading are a proposal [A] the game does not fly yet: run the model with them off.
+const model = html.slice(from, to).replace("const LANES_ON = true;", "const LANES_ON = false;");
+const m = new Function(model +
   "\nreturn { P, BY, dens, danger, seaName, seaRGB, hash, vnoise, armProfile, fromLD, zOf, hexOf, KEY, unKEY, hexDist, search, trace, measure, quickCost, safeCost, berths };")();
 const f = v => Number(v).toPrecision(15);
 console.log("hash", f(m.hash(3, 7)), f(m.hash(-5, 12)), f(m.hash(100000, -3)));

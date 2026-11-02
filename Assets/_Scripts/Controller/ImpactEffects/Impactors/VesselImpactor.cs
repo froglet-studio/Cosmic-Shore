@@ -14,6 +14,10 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(NetworkVesselImpactor))]
     public class VesselImpactor : ImpactorBase
     {
+        /// <summary>Raised on every hull-to-prism contact that reaches the prism effects (after the self-trail grace
+        /// and the shell guard), on the peer that runs the contact. A diagnostic hook: listeners only read.</summary>
+        public static event System.Action<IVesselStatus, Prism> PrismHullContact;
+
         // Vessels can carry more than one hull collider (the Squirrel has two
         // BoxColliders), so a single crystal pass raises OnTriggerEnter once per
         // collider pair and the whole crystal effect chain used to run twice.
@@ -139,6 +143,9 @@ namespace CosmicShore.Gameplay
                     if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prismImpactee.Prism))
                         return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
+                    // A real hull contact (past the self-trail and shell guards): modes that count hits listen
+                    // (Switchback's SwitchbackHitStats). Null when nobody listens; reads only.
+                    PrismHullContact?.Invoke(Vessel?.VesselStatus, prismImpactee.Prism);
                     // SkimRace's track is built from indestructible, environment-owned prisms
                     // (no player name) rather than destructible player trails. Hitting the
                     // track gets its own SFX in SkimRace; every other prism collision (and all

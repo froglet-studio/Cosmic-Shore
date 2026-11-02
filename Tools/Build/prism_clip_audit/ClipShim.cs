@@ -57,6 +57,14 @@ namespace UnityEngine
         public static Vector3 negativeInfinity => new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
     }
 
+    /// <summary>Blast Run's field context keeps per-station bounding spheres as Vector4 (centre, radius).</summary>
+    public struct Vector4
+    {
+        public float x, y, z, w;
+        public Vector4(float x, float y, float z, float w) { this.x = x; this.y = y; this.z = z; this.w = w; }
+        public static Vector4 zero => default;
+    }
+
     public class Collider : Component { public bool isTrigger; }
     public class SphereCollider : Collider { public float radius; }
     public class Rigidbody : Component { public bool isKinematic, useGravity; }

@@ -22,7 +22,7 @@ its callsign (`Pilot_<Word>`, id `pilot.callsign.<word>`) and seated by any vess
 (`PilotLoadoutStore`, read in a match through `VesselPilotLoadout`) is that vessel's sight; an empty seat has none, and
 the set's Unassigned Sight is now only a tester's override for an empty seat. The Hangar PILOTS tab lists them all
 in a scrolled column. FLUME (18) has its sight too: `FlumeSight` traces every live Meerkat tunnel mouth to mouth
-(`MeerkatWormholeExecutor.Live`, read only). Hand tests: "The callsign pilots" in the checklist.
+(`MeerkatSolitonExecutor.Live`, read only). Hand tests: "The callsign pilots" in the checklist.
 
 **Decided since (Garrett, 2026-10-28): a pilot is a person layered on a callsign.** The eighteen `PilotSO`s above are
 the **callsigns**: the ability and the sight, shared by every crew. A pilot in your Ark crew is a unique person (name,
@@ -95,7 +95,7 @@ Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movem
 | 15 | Vessels: opponents | **BANDIT** | every opposing vessel, through mass | the vessel list, by domain |
 | 16 | Switch | **NEEDLE** | every ring that activates something: gates, Scarab switches, goals | `ScarabSwitch`, `RingThreadProbe`, `AstroLeagueGoal` |
 | 17 | Ark | **GALLEON** | the Arks, and the payload aboard | `Ark` |
-| 18 | Soliton | **FLUME** | every soliton, whoever made it: where it is, where it leads and how long it is (otherwise only seen by its lensing) | `MeerkatWormholeExecutor.Live`: the Meerkat's tunnels are the first (Garrett, 2026-10-27; `Docs/Studios/MEERKAT.md`) |
+| 18 | Soliton | **FLUME** | every soliton, whoever made it: where it is, where it leads and how long it is (otherwise only seen by its lensing) | `MeerkatSolitonExecutor.Live`: the Meerkat's tunnels are the first (Garrett, 2026-10-27; `Docs/Studios/MEERKAT.md`) |
 
 A crystal sight includes **every crystal of that element**: field crystals, ejected crystals (`EjectedCrystal`), and
 the hearts lifeforms carry (`LifeFormCrystal`). So VOLT also shows which creatures and plants are carrying Charge.

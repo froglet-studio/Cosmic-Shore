@@ -40,11 +40,34 @@ namespace CosmicShore.Gameplay
             _phase = (GetInstanceID() & 1023) * 0.0061f;
         }
 
+        // One tick for the whole swarm (perf pass 2026-11-02): every driver stays a component, but the first Update of a
+        // frame beats every enabled bee and the rest return at a frame compare, so N bees cost one script call's overhead
+        // plus the vane writes. Same order of execution (all at -1), same pose per frame.
+        static readonly System.Collections.Generic.List<BeeVaneDriver> s_all = new();
+        static int s_tickedFrame = -1;
+
+        void OnEnable() => s_all.Add(this);
+        void OnDisable() => s_all.Remove(this);
+
         void Update()
+        {
+            int frame = Time.frameCount;
+            if (s_tickedFrame == frame) return;
+            s_tickedFrame = frame;
+            float time = Time.time;
+            for (int k = s_all.Count - 1; k >= 0; k--)
+            {
+                var d = s_all[k];
+                if (d) d.Beat(time);
+                else s_all.RemoveAt(k);
+            }
+        }
+
+        void Beat(float time)
         {
             int n = _vanes.Length;
             if (n == 0) return;
-            float t = (Time.time * beatsPerSecond + _phase) * 6.2831853f;
+            float t = (time * beatsPerSecond + _phase) * 6.2831853f;
             for (int i = 0; i < n; i++)
             {
                 if (!_vanes[i]) continue;

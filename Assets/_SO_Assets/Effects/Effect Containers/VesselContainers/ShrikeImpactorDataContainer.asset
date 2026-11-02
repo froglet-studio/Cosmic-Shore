@@ -28,4 +28,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 247d947b964ecd87dde3088ac86a7d92, type: 2}
   vesselSkimmerEffects: []
   vesselLifeformCrystalEffects: []
-  omniCrystalRetirement: {fileID: 0}
+  omniCrystalRetirement: {fileID: 11400000, guid: 665c88ec94664594bd4f548994d30447, type: 2}

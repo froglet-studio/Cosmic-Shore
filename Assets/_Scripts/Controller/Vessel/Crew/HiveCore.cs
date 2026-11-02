@@ -63,7 +63,10 @@ namespace CosmicShore.Gameplay
             return c;
         }
 
-        public static int[] OthersOf(int own) => new[] { 1, 2, 3 }.Where(c => c != own).ToArray();
+        // Cached (perf pass 2026-11-02): same contents and order as { 1, 2, 3 } minus own; callers only read them.
+        static readonly int[][] s_others = { null, new[] { 2, 3 }, new[] { 1, 3 }, new[] { 1, 2 } };
+        static readonly int[] s_othersAll = { 1, 2, 3 };
+        public static int[] OthersOf(int own) => own >= 1 && own <= 3 ? s_others[own] : s_othersAll;
 
         // JavaScript's Math.round (half up), not .NET's banker's rounding.
         static int JsRound(double v) => (int)Math.Floor(v + 0.5);
@@ -336,6 +339,7 @@ namespace CosmicShore.Gameplay
         {
             int budget = 300000;
             var all = new List<int[]>();
+            var keyBuf = new System.Text.StringBuilder(64);
             foreach (int c in OthersOf(own))
             {
                 var idxs = new List<int>();
@@ -345,9 +349,12 @@ namespace CosmicShore.Gameplay
                 var memo = new Dictionary<string, List<int[]>>();
                 List<int[]> Solve()
                 {
-                    var standing = idxs.Where(i => hits[i] > 0).ToList();
+                    var standing = new List<int>(idxs.Count);
+                    foreach (int i in idxs) if (hits[i] > 0) standing.Add(i);
                     if (standing.Count == 0) return new List<int[]>();
-                    string key = string.Concat(idxs.Select(i => hits[i]));
+                    keyBuf.Clear();
+                    foreach (int i in idxs) keyBuf.Append(hits[i]);
+                    string key = keyBuf.ToString();
                     if (memo.TryGetValue(key, out var known)) return known;
                     if (--budget < 0) return null;
                     var set = new HashSet<int>(standing);
@@ -423,7 +430,18 @@ namespace CosmicShore.Gameplay
                     outList.AddRange(PathsThrough(comp, -1, minChain, maxLen));
                 }
             }
-            return outList.OrderByDescending(p => p.Length).ThenBy(p => p[0]).ToList();
+            // Stable sort, longest first then by first cell, ties keep found order (exactly OrderByDescending.ThenBy).
+            var order = new int[outList.Count];
+            for (int i = 0; i < order.Length; i++) order[i] = i;
+            Array.Sort(order, (a, b) =>
+            {
+                int c = outList[b].Length.CompareTo(outList[a].Length);
+                if (c == 0) c = outList[a][0].CompareTo(outList[b][0]);
+                return c != 0 ? c : a.CompareTo(b);
+            });
+            var sorted = new List<int[]>(order.Length);
+            foreach (int i in order) sorted.Add(outList[i]);
+            return sorted;
         }
 
         // ------------------------------------------------------------------ hive mode's rules on a hive
@@ -560,7 +578,11 @@ namespace CosmicShore.Gameplay
         {
             int[] path = null;
             var cells = hive.Cells;
-            bool Standing(int[] q) => q.All(i => Live(cells[i], cells[q[0]].Dom));
+            bool Standing(int[] q)
+            {
+                foreach (int i in q) if (!Live(cells[i], cells[q[0]].Dom)) return false;
+                return true;
+            }
             if (solver)
             {
                 ai.Plan ??= hive.Solution != null ? new List<int[]>(hive.Solution) : new List<int[]>();
@@ -573,12 +595,16 @@ namespace CosmicShore.Gameplay
                 if (all.Count == 0) return null;
                 path = all[Floor(rnd() * Math.Min(4, all.Count))];
                 if (!solver && path.Length > p.MinChain && rnd() < 0.5)
-                    path = path.Take(p.MinChain + Floor(rnd() * (path.Length - p.MinChain))).ToArray();
+                {
+                    var cut = new int[p.MinChain + Floor(rnd() * (path.Length - p.MinChain))];
+                    Array.Copy(path, cut, cut.Length);
+                    path = cut;
+                }
                 if (sloppy > 0 && rnd() < sloppy)
                 {
                     int d = -1;
                     foreach (int n in DynamoCore.Neighbours[path[path.Length - 1]]) if (cells[n].Danger && cells[n].Dom != 0) { d = n; break; }
-                    if (d >= 0) path = path.Concat(new[] { d }).ToArray();
+                    if (d >= 0) { var slid = new int[path.Length + 1]; Array.Copy(path, slid, path.Length); slid[path.Length] = d; path = slid; }
                 }
             }
             return path;

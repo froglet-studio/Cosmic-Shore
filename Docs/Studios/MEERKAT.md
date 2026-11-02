@@ -4,7 +4,7 @@
 for the trunk (a formed tunnel) and the root (an omnicrystal network's channel), each with its own numbers. It is a clear,
 calm, slightly jelly-like hollow in space: bent space, a slow breath and a faint white rim, with no water and no tint.
 Comfort settings keep the ride calm. The config's look groups are Comfort, Trunk Look / Shape / Ride, Root Look / Shape /
-Ride, Kit, and Miscellaneous (`MeerkatWormholeLook.cs`, `MeerkatWormholeLens.shader`). The contour-field knobs, YASH'S /
+Ride, Kit, and Miscellaneous (`SolitonTunnelLook.cs`, `SolitonTunnel.shader`). The contour-field knobs, YASH'S /
 GARRETT'S presets (`MeerkatWormholeHQ`), and the earlier bridge, warp, calm wall, water pipe, tree and root inside are all
 gone. Sections below that mention them are history. Every field, default and comfort tip:
 `Docs/Shaders/WORMHOLE_SHADERS.md` §14. Restore steps: §13 (from `0c8c5218c`) and §12.
@@ -13,38 +13,56 @@ gone. Sections below that mention them are history. Every field, default and com
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
 **Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
 
-## Where it stands now (2026-10-28, Ys-bleeding-edge; the artifact at version 89+)
+## Where it stands now (updated 2026-11-01, Ys-bleeding-edge)
 
-The round notes below are newest first. In one place, what the Meerkat is today, in the artifact and in Unity:
+The round notes below are newest first. Rounds 1-26 were designed here in the artifact; since 2026-10-29 Yash has
+changed the Meerkat further in Unity, so the game and this page now differ in the ride, the look and some numbers.
+
+**In both the artifact and the game:**
 - **A wormhole** (RT): its centreline is one oval arc that bends round its middle, more oval as it gets longer (round
-  22).
-  - Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round 23).
-  - Yash's Unity tuning is the shipped shape: bend radius 10, throat 20, mouth 40 (round 26).
-- **Slid, not carried** (round 24): inside any wormhole you cruise at `rootCruise`, RT pushes you faster up to
-  `rootMaxSpeed`, the left stick moves you round the tube and its wall bounces you. You come out at `rideExitMultiplier`
-  × your speed before it. The old automatic ride's `rideEntryMultiplier` and `rideMidMultiplier` are retired.
-- **The network** (the omnicrystal; round 26): a network of wormholes flown the same way.
-  - Its size is set by Mass, from half the cell at Mass 0 to the whole cell at Mass 10.
-  - It looks like the wormhole: no tree, roots or soil (they ship off).
-  - Any omni crystal the Meerkat collects grows it, the game's own included (round 25, Unity).
-- **Another dimension** (round 25): a hull inside a tube is phased. Nothing outside touches it, it collects nothing,
-  and it is solid again when it comes out.
+  22). Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round 23).
+- **The network** (the omnicrystal, round 26) is sized by Mass, from half the cell at Mass 0 to the whole cell at Mass
+  10. It has no tree, roots or soil.
 - **The swallow** (rounds 23 and 25):
-  - prisms and crystals within `suckRadius` of a standing wormhole's way in are pulled in;
-  - they are carried through stretched and twisted, at the slide's top speed, first in first out behind any rider;
+  - prisms and crystals near a standing wormhole's way in are pulled in;
+  - they are carried through stretched and twisted, first in first out behind any rider;
   - they are fired out of the far mouth as moving prisms (`Docs/PRISM_MOTION.md`).
-- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28; Unity `R_VesselActions/MEERKAT.md` §10):
+- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28):
   - Space: the Soliton (RT);
   - Time: Faster Ride (passive);
   - Charge: Sentinel Mode (Y);
   - Mass: Exit Portal (passive).
-- **Open:**
-  - none of the Unity work is editor-verified yet (the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`);
-  - the slide is slower than round 23's automatic ride (Garrett's kit, Hard, Warpline I1-I4: about 78 / 78 / 99 / 78 s
-    against 68 / 67 / 88 / 69 s); the lever is `rootMaxSpeed`;
-  - the Mix's Space L5 Burial no longer lands, because a rider is phased;
-  - a real Meerkat hull and its four icons are still to be made.
-- **Report:** `Docs/Reports/MEERKAT.md`.
+
+**In the game only (Unity, Yash, 2026-10-29 to 11-01; `R_VesselActions/MEERKAT.md`):**
+- **Soliton Tunnels.** The wormhole is a **Soliton Tunnel** and the network a **Soliton Network**, an environmental
+  fundamental any vessel or scene can use (`Controller/Environment/SolitonTunnel/`). Each kind has its own
+  `SolitonTunnelConfigSO`, edited in FrogletTools > Environment > Environmental Fundamentals.
+- **The ride is a slip-and-slide** (`SolitonTunnelRider`):
+  - radial gravity presses you to the inner wall and you slide along it, bouncing now and then;
+  - there is no left stick;
+  - RT gives a small push;
+  - you leave at the speed you carry × `exitMultiplier`.
+
+  This replaced round 24's left-stick slide; the page's `root*` flight keys are marked retired.
+- **The look is a plain wormhole** (2026-11-01, `Docs/Shaders/WORMHOLE_SHADERS.md` §16): bent space, a lensing mouth
+  with an Einstein ring, and a stretch inside. The earlier looks are deleted, with restore steps in §12-§15.
+- **Phased** (round 25, game only): a hull inside a tube touches nothing and is touched by nothing until it is out. Any
+  omni crystal the Meerkat takes grows its Soliton Network, the game's own included (the Soliton Network omni ability,
+  2026-10-29).
+- **Yash's Unity tuning.** 14 numbers differ from this page (`studio_to_unity.py --check`, 2026-11-01):
+  - the tunnel's throat (7.1) and mouth (44);
+  - the network's forks, openings, radius, spread, diameters (10.5 and 18), tip and gnarl;
+  - its top speed (119);
+  - `suckRadius` (40).
+
+**Open:**
+- None of the Unity work is editor-verified yet (the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of
+  them are marked SUPERSEDED).
+- Bring the slip-and-slide and Yash's 14 numbers back into this page, or leave the page as the round-26 record.
+- The Mix's Space L5 Burial no longer lands, because a rider is phased.
+- A real Meerkat hull and its four icons are still to be made.
+
+**Report:** `Docs/Reports/MEERKAT.md`.
 
 ## Where it came from
 
@@ -66,7 +84,7 @@ The same request changed three things on the way over:
   over the forming time and the tunnel has no grid. Round 2 gave the formed tunnel a geometry of its own, which
   everyone sees: the spindle bridge (below).
 - **Simpler parameters, named as the game will name them.** Every key is its future field on
-  `MeerkatWormholeConfig` (below). The round-18 gate keys, the warp-boost option, the dent width, the dent's camera fade,
+  `MeerkatSolitonConfig` (below). The round-18 gate keys, the warp-boost option, the dent width, the dent's camera fade,
   the grid sheets and the grid-on-ride switch are gone.
 
 ## How it flies
@@ -121,7 +139,7 @@ alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple)
 abilities ... the abilities I wanna test first in artifact rather than inside game directly ... then we will see whether
 to add them or not in Unity"): the full four-ability kit, as PROPOSALS.** Nothing in this round is approved for Unity
 (`/vessel` §3's design gate is Yash's call): every new key is lab-only, tagged "lab" under its slider, and is not in
-`MeerkatWormholeConfig` or `Tools/Build/studio_to_unity/meerkat.json`. The kit follows the fleet's element language
+`MeerkatSolitonConfig` or `Tools/Build/studio_to_unity/meerkat.json`. The kit follows the fleet's element language
 (Time = speed, Mass = making, Space = destroying, Charge = pilots and crystals) and PvP-is-petals-only: no ability moves
 or damages an opposing vessel.
 
@@ -239,9 +257,9 @@ other"). Artifact and Unity.**
   and I4 Medium 97.5 → 127.1 s, the others unchanged. An AI that takes an omnicrystal flies a large network and loses time
   in it; on I3 Hard is the slowest level and on I4 Medium is. A finding for Yash, not tuned away.
 - **Unity** (`R_VesselActions/MEERKAT.md` §7a): the tree, bark and old inside wall off; every channel drawn by the
-  wormhole's own code (`MeerkatWormholeView.Tube`, the contour field's `MWChannel`, `MeerkatTubeWallView`); the network
-  sized by `MeerkatWormholeConfig.networkReach` (an `ElementalFloat` on Mass, read with `EvaluateLive` when the omnicrystal
-  is taken) and the cell (`MeerkatRootNetwork.ResolveCell`); `MeerkatRootMath.BuildNetwork` / `NetworkSize`, held to the
+  wormhole's own code (`SolitonTunnelView.Tube`, the contour field's `MWChannel`, `MeerkatTubeWallView`); the network
+  sized by `MeerkatSolitonConfig.networkReach` (an `ElementalFloat` on Mass, read with `EvaluateLive` when the omnicrystal
+  is taken) and the cell (`SolitonNetwork.ResolveCell`); `SolitonTunnelMath.BuildNetwork` / `NetworkSize`, held to the
   page by 4 golden tests.
 
 **Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... like going
@@ -258,14 +276,14 @@ the vessels both travel in the same speed variations"). Artifact and Unity.**
 - **Measured** (seed 11, Hard I1-I4; all four kits finish, mass conserved): Garrett's kit 79.6 / 77.3 / 90.7 / 78.1 s,
   about 3,970 prisms swallowed a field race; the Mix 85.8 / 83.2 / 92.4 / 89.8 s.
 - **In Unity:** the hull's `IHullContactGate` (`MeerkatVesselTransformer.Phased`), which the skimmer's prism skim now
-  honours too; `MeerkatWormholeMath.TubeAdvance`; and any omni crystal the Meerkat collects grows its roots
+  honours too; `SolitonTunnelShapeMath.TubeAdvance`; and any omni crystal the Meerkat collects grows its roots
   (`OmniCrystalImpactor.CollectedByVessel`). `MEERKAT.md` §9.
 
 **Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather than
 making it an automated special move ... once we create the tube, main tube, we can also slide through it using our left
 thumbstick, just like how we do that in the root ... Both are same things. One single, one a network"). Artifact and Unity.**
 - **One flight for every tube.** The tunnel is flown by the roots' own flight (the page's `labTransit`, Unity's
-  `MeerkatRootMath.Step`). It is a network of one channel: its centreline the conic arc (round 22), its wall the
+  `SolitonTunnelMath.Step`). It is a network of one channel: its centreline the conic arc (round 22), its wall the
   hyperboloid at Garrett's surface area (round 23).
   - You dive to the mouth and carry your speed in, then cruise at `rootCruise` (45 u/s).
   - RT pushes you faster up to `rootMaxSpeed` (90 u/s).
@@ -293,8 +311,8 @@ thumbstick, just like how we do that in the root ... Both are same things. One s
   `rootMaxSpeed`, which the roots share.
 - **To judge:** a long tunnel is thin at Garrett's area (537 u: a 3.6 u throat), so the left stick has little room
   there; a short one is fat (85 u: 23 u).
-- **In Unity** (the same day): `MeerkatRootMath.ITubePath` / `Single`, `MeerkatWormholeMath.NearestAlong`,
-  `MeerkatWormholeExecutor.StepRide` and `SlideAutopilot`. Details: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §1.
+- **In Unity** (the same day): `SolitonTunnelMath.ITubePath` / `Single`, `SolitonTunnelShapeMath.NearestAlong`,
+  `MeerkatSolitonExecutor.StepRide` and `SlideAutopilot`. Details: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §1.
 
 **Round 23 (Yash, 2026-10-28: "first we're gonna revert the mass ability as Garrett has said. So the width of the tubes
 shell will be dependent on this mass ability. The longer the tube, the thinner ... Or whatever Garrett has said ... the prism
@@ -305,7 +323,7 @@ From a certain radius"). Artifact and Unity.**
   exit portal. So in Garrett's kit and the Mix, Mass no longer sizes the trunk: round 17's `massLengthAtZero` /
   `massDiameterAtZero` now act only in Off and Round 8. The HUD's tunnel line shows the Space level and the area in the
   kits. Yash asked for Mass, "or whatever Garrett has said"; Garrett's rule puts the area on Space, so that is what is built.
-  Moving it to Mass is one line on the page and one in `MeerkatWormholeExecutor.SpaceLevel`.
+  Moving it to Mass is one line on the page and one in `MeerkatSolitonExecutor.SpaceLevel`.
 - **The pull** (`suckRadius` 90 u, `suckSpeed` 30 u/s). Every prism (shielded too, never super-shielded) and every race
   crystal within `suckRadius` of a standing soliton's way in is drawn to it, faster as it nears (`suckSpeed` × `suckRadius` /
   distance, up to `carrySpeed`), swirling round the axis. It is swallowed within `swallowShare` × the opening radius. A pulled
@@ -324,7 +342,7 @@ From a certain radius"). Artifact and Unity.**
 - **Race times.** The AI now digs the whole LT range, so its tunnels are longer and thinner. Hard I1-I4 was 70.8 / 62.7 /
   78.7 / 67.9 s and is now 67.9 / 66.9 / 87.8 / 68.5 s; Easy was 89.4 / 67.5 / 83.1 / 76.9 s and is now 77.3 / 73.6 /
   96.9 / 85.1 s. Warpline I3 is the slow one, a finding left for Yash to judge rather than tuned away.
-- **In Unity** (cloned the same day): `MeerkatWormholeMath.SurfaceAreaThroat` / `PullVelocity` / `CarryDistortion` and
+- **In Unity** (cloned the same day): `SolitonTunnelShapeMath.SurfaceAreaThroat` / `PullVelocity` / `CarryDistortion` and
   `MeerkatSwallow`. Details: `Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md` §8.
 
 **Round 22 (Yash, 2026-10-28: "Make sure the reticle or the path of this trunk or simple watery effect always follows the
@@ -350,7 +368,7 @@ always bend from the center rather than bending from one of the ends to a small 
   - AI scorecard (seed 11), every level finishing every ladder: Hard 70.0 / 63.0 / 71.7 / 68.2 s (round 21:
     77.8 / 78.9 / 81.2 / 82.7 s). Tunnels that turn round their middle reach the rings sooner.
 - **Unity**:
-  - `MeerkatWormholeMath.Conic` is the same arc, used by the view, the ride, the AI's plan and the tree.
+  - `SolitonTunnelShapeMath.Conic` is the same arc, used by the view, the ride, the AI's plan and the tree.
   - The water pipe's lens shader measures 25 points along it, joined by circle arcs: within 0.07 u of the exact arc,
     checked against brute force over 400 random tubes. Plain chords between 17 points were 1.4 u out.
   - 3 new keys mapped (94 in all), 0 drift. 48/48 math tests pass against the page's numbers.
@@ -370,7 +388,7 @@ thumbstick"), and the clone to Unity.**
   second fork; RT takes you to 90 u/s.
 - **Cloned to Unity** (`/artifact-to-unity`, `R_VesselActions/MEERKAT.md` §7): the tree round every tunnel and the
   Omnicrystal's roots, flown on the left stick, with the contour-field water pipe kept. 49 keys mapped (91 in all), 0 drift.
-  The page's root functions are held by 6 golden tests (`MeerkatRootMathTests`). Not ported: `trunkWarp`, `omniAtOnce` 0,
+  The page's root functions are held by 6 golden tests (`SolitonTunnelMathTests`). Not ported: `trunkWarp`, `omniAtOnce` 0,
   the soil, the labyrinth wireframe keys, `forkHintSeconds`. The shaders are a recipe: `Docs/Shaders/WATERY_GLASS.md`.
   - The calm ride (the other session's round, below: a soft inner tube with no black, `tubeInner`, the bark's lines fading
     up close) is cloned too: 91 keys mapped, 0 drift.
@@ -732,7 +750,7 @@ configurable at edit time ... the entrance and the exit of the wormhole need to 
 wireframe version of the actual wormhole look ... the reticles and the bridges geometry need to be same, and the same
 position same way ... The reticle is the silhouette of the geometry"):** one geometry. The bridge's rings, spindles per
 ring, ribs, thickness and shimmer (`bridge*`) draw both the formed tunnel and your reticle (the page's `drawFrame`, the
-game's `MeerkatWormholeView.BridgeFrame`): the same rings at the same places along the tunnel, condensing out of its
+game's `SolitonTunnelView.BridgeFrame`): the same rings at the same places along the tunnel, condensing out of its
 centre the same way. The reticle is that frame bare, with no glass and no path. It keeps its own brightness
 (`reticleIdleAlpha`) and its own colour, your domain colour toward white by `reticleWhite`; the bridge's spindles take
 `bridgeWhite` the same way. Retired: `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
@@ -740,7 +758,7 @@ centre the same way. The reticle is that frame bare, with no glass and no path. 
 Measured on the page: the shaped reticle and the formed tunnel are the same 931 spindles (36 × 21 rings, 5 ribs).
 
 **Round 8 (Yash, 2026-10-28: "the updated look I want. By merging Garrett's look with my reticles ... I don't want any
-camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatWormholeConfig` is
+camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatSolitonConfig` is
 the studio's SHIPPED look now. Before RT the reticle draws as Garrett's bridge (`reticleLook` Bridge), with the bridge
 spindles tuned to the reticle's: 36 rings × 21 spindles, 5 ribs, 0.25 u thick, `bridgeVisibility` 0.163, glass 0.15.
 The reticle keys are 30 × 21, 5 ribs, 0.25 u, idle 0.053, glass 0.048, path 0.333, smoothing 0.123 s, and `rippleEdge`
@@ -788,7 +806,7 @@ just spindles. Tiny thinning spindles"):**
 
 ## The parameters (the artifact's keys ARE the game's fields)
 
-| Group | Key = `MeerkatWormholeConfig` field | Shipped | What it does |
+| Group | Key = `MeerkatSolitonConfig` field | Shipped | What it does |
 |---|---|---|---|
 | shape | `reticleAhead` | 30 u | The reticle rides this far ahead of the nose |
 | shape | `bendMaxDegrees` | 150° | The sharpest bend (right stick fully over) |
@@ -861,9 +879,9 @@ at strength 1, at full strength within 300 u of the collapse.
 The Meerkat is in Unity as `VesselClassType.Meerkat = 28` (`Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md`):
 - **Where:** flown from the Toybox's Vessel Changer, and raced in its Time mini-game **Burrow Run**
   (`GameModes.BurrowRun = 71`, eight rings, two laps).
-- **Numbers:** every key in the table above is a `MeerkatWormholeConfig` field at its shipped value.
+- **Numbers:** every key in the table above is a `MeerkatSolitonConfig` field at its shipped value.
   `studio_to_unity/meerkat.json` maps 36 keys, 0 drift.
-- **The port:** the page's arithmetic, ported line for line and held to its numbers (`MeerkatWormholeMathTests`).
+- **The port:** the page's arithmetic, ported line for line and held to its numbers (`SolitonTunnelShapeMathTests`).
 - **Lab-only:** `aiTau`, `roll` (the one-thumb hull only banks: `bankShare` × `roll` is the prefab's `RollScaler`) and
   the `lope*` keys.
 - **Verification:** not yet verified in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
@@ -994,7 +1012,7 @@ options"*):
   - **The old flyer becomes a sentinel** wherever it was, often where the AI had taken it, perched in front of a **new
     soliton** made there at once. Whoever was flying, a person or the AI, now sits in that sentinel. **The flyer's AI
     shapes that soliton** (Garrett: *"let the flyer ai decide effectively"*): its own tunnel planner (`aiGatePlan`,
-    `MeerkatWormholeExecutor.Autopilot`) picks the bend and shaft, as it would for its next tunnel.
+    `MeerkatSolitonExecutor.Autopilot`) picks the bend and shaft, as it would for its next tunnel.
   - The soliton the hopper rode lasts as long as its sentinel, so it collapses once the hopper is out.
   - **The seat count does not change**: one sentinel left and one was made, so the pool is untouched.
   - **With no flyer** (Garrett: *"the next hop makes the hopper the flyer with no sentinel left behind"*): when the flyer
@@ -1116,6 +1134,10 @@ animation at beginning of travel)"*):
 
 ## Two kits: Garrett's and the Mix (round 18, 2026-10-28, for Yash to judge)
 
+> **Since 2026-10-28 Garrett's element definition is LOCKED** (§ "Garrett's direction" above) and is the one built in
+> Unity (`R_VesselActions/MEERKAT.md` §10). The Mix's level-5 swaps (Chain Dig on Time, Cave-in on Space) gave way to it;
+> both kits stay in the studio's Kit dropdown as the record of the comparison.
+
 > **Since 2026-10-28 the element definition is locked to Garrett's** (§ Garrett's direction). In the table below, D1's
 > Chain Dig and D4's Cave-in give way to it: Time L5 is Boost out, and Space L5 is **Steal** (§ "Space L5, Steal", a
 > later message of 2026-10-27 that this table predates; it reads the slot as "L5 open"). D2, D5, D6, the roots and every number are not element
@@ -1140,7 +1162,7 @@ section profiles:
 Round 8's Lookout and Hardened Bridge are not in Garrett's kit or the Mix: his Sentinel mode and exit portal cover them.
 
 **These are prototypes for Yash to fly and judge.**
-- Every kit number is lab-only. No `MeerkatWormholeConfig` field holds any of them, and none is in
+- Every kit number is lab-only. No `MeerkatSolitonConfig` field holds any of them, and none is in
   `Tools/Build/studio_to_unity/meerkat.json`.
 - Nothing reaches Unity without Yash's say-so.
 - Garrett's design is his to change.
@@ -1313,7 +1335,7 @@ high glint. Each sound keeps its Play, On, Volume, Pitch, Length, Brightness and
 | Group | Sounds | Wired in the page |
 |---|---|---|
 | Wormhole | reticle hum (loop, rises with the bend), tunnel forms, ride rush (loop, follows the ride speed), out of the tunnel, tunnel collapses | yes (rivals' tunnels by distance and side) |
-| Omnicrystal: labyrinth | collected, armed, digs, slide in, take a fork (panned to the side), out of an opening, falls in | yes |
+| Omnicrystal: network | collected, armed, forms, slide in, take a fork (panned to the side), out of an opening, collapses | yes |
 | Space: soliton | swallow, fire, annihilate, shielded bounce, surface area, Cave-in | yes, at the kit's own events (`kitSnd`: `sndAt`'s pan and distance) |
 | Time | Boost out, Chain Dig | yes, at the kit's own events |
 | Charge: sentinel | stands up, zap (rate-limited for ~5 a second), shields a prism, lost, alarm call, hop, seat swap | yes, at the kit's own events |
@@ -1321,7 +1343,7 @@ high glint. Each sound keeps its Play, On, Volume, Pitch, Length, Brightness and
 | Pilot | FLUME sight (loop while LB is held) | yes, at the kit's own events |
 
 The sounds watch the sim and never change it. They are the brief for the game's FMOD events, which ship empty until
-sound design makes them (`MeerkatWormholeConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
+sound design makes them (`MeerkatSolitonConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
 Measured headless: every recipe renders (none silent, none clipping), and an AI race with an omnicrystal fires every
 wired sound with no page error.
 

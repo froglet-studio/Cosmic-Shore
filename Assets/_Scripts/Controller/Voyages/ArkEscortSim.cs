@@ -16,13 +16,20 @@ namespace CosmicShore.Gameplay
     /// started with <c>-arkEscortSim</c>, which the editor launcher (<c>ArkEscortSimLauncher</c>) passes.
     ///
     /// <para>Arguments: <c>-arkEscortSim "5:Sparrow,Rhino,Manta;3:Squirrel,Dolphin,Serpent"</c> (difficulty:three vessels,
-    /// runs separated by ';'), <c>-arkEscortOut path.jsonl</c>, <c>-arkEscortTimeScale 3</c>.</para>
+    /// runs separated by ';'), <c>-arkEscortOut path.jsonl</c>, <c>-arkEscortTimeScale 3</c>, and
+    /// <c>-arkEscortParams path.json</c>: a flat JSON object of named overrides (<c>{"ark.crawlSpeed": 18,
+    /// "tier.4.population": 0.7}</c>) every run applies to its runtime copy of the escort (<see cref="ArkEscortParams"/>);
+    /// each run's JSON line echoes them (<c>Params</c>) and lists the accepted key patterns (<c>ParamKeys</c>).</para>
     /// </summary>
     public sealed class ArkEscortSim : MonoBehaviour
     {
         const string PlanArg = "-arkEscortSim";
         const string OutArg = "-arkEscortOut";
         const string ScaleArg = "-arkEscortTimeScale";
+        const string ParamsArg = "-arkEscortParams";
+        /// <summary><c>-arkEscortVerbose</c>: the ToyBox verbose channel into the editor log, so a run's END REASON
+        /// ("[ArkEscort] Ended: ...", "[Arkway] Voyage ended: ...") is in the sim log instead of silent.</summary>
+        const string VerboseArg = "-arkEscortVerbose";
         const float ReadyTimeoutSeconds = 600f;
         const float RunTimeoutSeconds = 1800f;
 
@@ -44,6 +51,9 @@ namespace CosmicShore.Gameplay
             var args = Environment.GetCommandLineArgs();
             string plan = Arg(args, PlanArg);
             if (string.IsNullOrEmpty(plan)) return;
+            // A sim is never listened to: silence it before anything plays (farm players run several at once).
+            AudioListener.volume = 0f;
+            AudioListener.pause = true;
             var go = new GameObject("ArkEscortSim");
             DontDestroyOnLoad(go);
             var sim = go.AddComponent<ArkEscortSim>();
@@ -51,7 +61,12 @@ namespace CosmicShore.Gameplay
             if (float.TryParse(Arg(args, ScaleArg), System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out float s)) sim._scale = Mathf.Clamp(s, 0.25f, 8f);
             sim.Parse(plan);
+            sim.LoadParams(Arg(args, ParamsArg));
+            if (Array.IndexOf(args, VerboseArg) >= 0) CSDebug.VerboseChannels |= CSLogChannel.ToyBox;
             IsRunning = true;
+            string shots = Arg(args, ArkEscortShots.ShotsArg);
+            if (!string.IsNullOrEmpty(shots))
+                ArkEscortShots.Install(shots, Array.IndexOf(args, ArkEscortShots.ShotsOnlyArg) >= 0);
             sim.RunAsync(sim.GetCancellationTokenOnDestroy()).Forget();
         }
 
@@ -60,6 +75,19 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < args.Length - 1; i++)
                 if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase)) return args[i + 1];
             return null;
+        }
+
+        void LoadParams(string path)
+        {
+            ArkEscortParams.Pending = null;
+            if (string.IsNullOrEmpty(path)) return;
+            try
+            {
+                var values = ArkEscortParams.ParseFlatJson(File.ReadAllText(path));
+                ArkEscortParams.Pending = values;
+                Log($"params: {values.Count} overrides from {path}");
+            }
+            catch (Exception e) { Log($"could not read params {path}: {e.Message}"); }
         }
 
         void Parse(string plan)
@@ -74,7 +102,10 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; ok && i < slots.Length; i++)
                 {
                     ok = Enum.TryParse(vessels[i].Trim(), true, out VesselClassType v);
-                    slots[i] = new SquadSlot(v, Element.None);
+                    // A real element, not None: the run seeds seats to level 5 in their slot's element, and None seeds
+                    // nothing - so the kits' level-5 safeties (Domain-Safe Skybursts, Clean Blast, Shield Steal) were
+                    // off and the squad chewed the Ark's own hull. Each hull takes the element its safety lives in.
+                    slots[i] = new SquadSlot(v, ArkEscortRoles.DefaultElement(v));
                 }
                 if (!ok) { Log($"bad squad '{parts[1]}'"); continue; }
                 _plan.Add((d, new SavedSquad("escort sim", slots[0], slots[1], slots[2]), parts[1]));
@@ -137,6 +168,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 ArkEscortRun.Finished -= OnFinished;
+                ArkEscortParams.Pending = null;
                 Time.timeScale = 1f;
                 IsRunning = false;
                 Log(ok ? "done" : "stopped");
@@ -149,8 +181,19 @@ namespace CosmicShore.Gameplay
         {
             float deadline = Time.unscaledTime + ReadyTimeoutSeconds;
             bool asked = false;
+            bool dismissed = false;
             while (Time.unscaledTime < deadline)
             {
+                // The first-run privacy overlay (age gate, consent) holds the boot until a person answers it, and a sim
+                // has no person. It is closed UNANSWERED: nothing is granted, analytics stays off (the safe default),
+                // and the overlay asks again on the next ordinary launch.
+                var privacy = CosmicShore.UI.PrivacyConsentOverlay.Current;
+                if (privacy && !dismissed)
+                {
+                    dismissed = true;
+                    Log("the privacy overlay is up - closing it unanswered (nothing granted; analytics stays off)");
+                    Destroy(privacy.gameObject);
+                }
                 var freestyle = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
                 var harbour = VoyageHarbour.Current;
                 if (harbour && freestyle)

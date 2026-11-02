@@ -84,6 +84,12 @@ namespace CosmicShore.Tests
                 throw new InvalidOperationException("unreachable");
             }
 
+            // NoInlining: the rule matches the "UnsubscribeAsync" FRAME in the stack trace. Mono may
+            // inline a one-line thrower into Throw(), and then the trace names only
+            // "LobbyChannel.Throw" - the test failed that way in Unity 6000.3.17f1 (B47 batch,
+            // Docs/PartySystem/BUGS.md). The SDK's real UnsubscribeAsync is an async state machine
+            // and is never inlined, so this pins the fake to the shape the rule sees in production.
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
             private static void UnsubscribeAsync() => throw new ObjectDisposedException("$lobby!!!x");
         }
 

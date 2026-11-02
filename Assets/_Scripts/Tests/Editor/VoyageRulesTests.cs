@@ -326,6 +326,42 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AnEscortSailsFromWhereTheArkLiesToTheNearestBerth()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            CollectionAssert.AreEqual(new[] { "jade", "port" }, VoyageRules.EscortRoute(s, c), "home: out to the port");
+            s.At = "port";
+            CollectionAssert.AreEqual(new[] { "port", "jade" }, VoyageRules.EscortRoute(s, c),
+                "the port: home, never a rival domain's harbour one lane away");
+            s.At = "vaults";
+            CollectionAssert.AreEqual(new[] { "vaults", "jade" }, VoyageRules.EscortRoute(s, c), "a vault field: the nearest berth");
+            s.At = "vaults2";
+            CollectionAssert.AreEqual(new[] { "vaults2", "core", "port" }, VoyageRules.EscortRoute(s, c), "the route by lanes");
+            s.AtSea = true;
+            Assert.IsNull(VoyageRules.EscortRoute(s, c), "no escort sets out from the open sea");
+        }
+
+        [Test]
+        public void AnEscortThatMakesItThroughBerthsTheArkAtItsDestination()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            int day = s.Day;
+            Assert.IsTrue(VoyageRules.EscortArrived(s, c, "port"));
+            Assert.AreEqual("port", s.At);
+            Assert.AreEqual("port", s.LastPort, "the crew reads the port's news now");
+            Assert.AreEqual(day + 1, s.Day);
+            Assert.IsTrue(VoyageRules.Board(s, c, new[] { Hunter }).Any(j => j.IsReturn && j.From == "port"),
+                "the board is drawn from the destination, with the way home");
+
+            Assert.IsFalse(VoyageRules.EscortArrived(s, c, "nowhere"), "an unknown place moves nothing");
+            Assert.IsTrue(VoyageRules.Take(s, c, VoyageRules.Board(s, c, new[] { Hunter }).First(j => j.IsReturn)));
+            Assert.IsFalse(VoyageRules.EscortArrived(s, c, "jade"), "an escort never moves an Ark that is out on a job");
+            Assert.AreEqual("port", s.At);
+        }
+
+        [Test]
         public void ARecordFromAPartialSaveIsRepaired()
         {
             var s = new VoyageState { Aboard = null, Ledgers = null, Wrecks = new List<WreckRecord> { null }, Current = new VoyageJob(), AtSea = true };

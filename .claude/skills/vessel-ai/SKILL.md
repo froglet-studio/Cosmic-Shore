@@ -1,6 +1,6 @@
 ---
 name: vessel-ai
-description: The rules and the test kit for ANY vessel AI in Cosmic Shore - making a new AI for a vessel, changing how an existing one flies, adding or tuning difficulty levels (Easy / Medium / Hard), setting or checking finish / place times, wiring an AI into a mode (backfill seats, GateRaceController steering, a replacement pilot), and testing an AI by WATCHING it from a third eye - the Unity editor's Third Eye window (FrogletTools > AI > Third Eye: Chase / Follow / Free cameras on any pilot while you play, with each AI's aim drawn over the view) and the Vessel Studio artifact (the same cameras and AI-thinking colours in a browser). Loads the non-negotiables (input-only, difficulty edits belief never the stick, the AIPilot getter trap), the common requirements every new AI owes, the testing ladder from unit test to user playtest, and the shared colour vocabulary. Trigger on Assets/_Scripts/Controller/AI/**, AIPilot, SkimRacePilot / SkimRaceDriver, an IsAutopilotDriven / AutoPilotEnabled branch in an executor, AIDifficulty / AIDifficultyRules, a *DifficultySO or *Handicap, ServerPlayerVesselInitializerWithAI, a mode's SetExternalTargetProvider, Assets/_Scripts/Editor/AI/** (ThirdEye*), Docs/AI_SYSTEM/**, or "the AI flies wrong / is too easy / too hard / test the AI / watch the AI".
+description: The rules and the test kit for ANY vessel AI in Cosmic Shore - making a new AI for a vessel, changing how an existing one flies, adding or tuning difficulty levels (Easy / Medium / Hard), setting or checking finish / place times, wiring an AI into a mode (backfill seats, GateRaceController steering, a replacement pilot), and testing an AI by WATCHING it from a third eye - the in-game AI Diagnose panel (F2 opens/closes it; buttons take the main camera, editor and development builds: Chase / Follow / Free cameras on any pilot while you play, with each AI's aim and mode gizmos drawn in the Game view) and the Vessel Studio artifact (the same cameras and AI-thinking colours in a browser). Loads the non-negotiables (input-only, difficulty edits belief never the stick, the AIPilot getter trap), the common requirements every new AI owes, the testing ladder from unit test to user playtest, and the shared colour vocabulary. Trigger on Assets/_Scripts/Controller/AI/**, AIPilot, SkimRacePilot / SkimRaceDriver, an IsAutopilotDriven / AutoPilotEnabled branch in an executor, AIDifficulty / AIDifficultyRules, a *DifficultySO or *Handicap, ServerPlayerVesselInitializerWithAI, a mode's SetExternalTargetProvider, Assets/_Scripts/Controller/Camera/ThirdEye/**, Docs/AI_SYSTEM/**, or "the AI flies wrong / is too easy / too hard / test the AI / watch the AI".
 ---
 
 # Vessel AI: the rules every AI follows, and how to test one
@@ -134,35 +134,38 @@ Climb it in order; each rung catches what the one below cannot.
 | 5 | Profile (`diag` / `prof` console, the AI's markers) | What it costs per frame, per seat |
 | 6 | The user's playtest script (`UNITY_VERIFICATION_CHECKLIST.md`) | Does it feel right against a human |
 
-### 4.1 The Third Eye window (Unity)
+### 4.1 The AI Diagnose panel (code name Third Eye; in the game scene, editor + development builds)
 
-**FrogletTools > AI > Third Eye** (`Assets/_Scripts/Editor/AI/ThirdEyeWindow.cs`). Open it, dock it beside the
-Game view, enter Play mode and play normally: the window shows the same match from a camera of its own.
+The Third Eye is a camera tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
+the old `FrogletTools > AI > Third Eye` window and its second render are gone). It drives the MAIN camera, so
+nothing is rendered twice. Compiled only into the editor and development builds; a release build has none of it.
 
-- **Pilot**: the dropdown, `<` `>`, `[` `]` or Tab. You first, then other humans, then the AI.
-- **Camera**: Chase (behind the hull, rolls with it), Follow (wider, world-up), Free: **Fly** (drag to look,
-  I J K L or W A S D, U O or Q E down / up, Shift fast, wheel = speed) or **Orbit** (drag round the pilot,
-  wheel = distance). C cycles. F frames the pilot. These are the studio's cameras (`/vessel-studio` D16).
-- **AI thinking**: a line from each AI hull to the point it is steering for, and a cyan ring on the
-  crystal it is really after. The bottom strip reads the watched AI's state, heading error, recoveries
-  and its difficulty's mistakes.
-- **Skim readout** (the Skim Race pilot, third line): gap to its own course's contact shell (skims under 7.5, strikes
-  at 0), distance off its skim line, boost, the rival mass the guard is steering round, the course's skim lift and
-  whether direct flight is on. Tune Regatta's Squirrel live in `Resources/SkimRaceAIConfig_Regatta.asset`, then
-  record the numbers in `author_skimrace_ai_config.py` (`SKIM_RACE_AI.md` §15.1).
-- **Labels**: each pilot's name, hull and speed; off-screen pilots pinned to the edge you would turn to.
-- **Paused** (the editor's pause button), it keeps rendering on demand: fly round a frozen frame.
-- **Pilots** (toolbar, on by default): every pilot with a **You / AI** toggle. On your own hull, **AI** hands it to the
-  AI (input paused, the mode's AI steering armed through `IAIPilotArming`) and **You** takes it back; on an AI's hull,
-  **You** takes it over on either team and the AI flies the hull you left (the arena `PilotSwap`, without its
-  same-team rule). Leave your own hull on AI and every hull is AI-flown. Host / solo only (`PilotControl`).
-- Settings (distances, smoothing, FOV, resolution) live in `UserSettings/ThirdEyeSettings.asset`, per machine.
-- **Cost**: it is a second full render (post, shadows, AA) at the window's pixels times the display scale. Its
-  trails are batched and it repaints at most once per game frame. On a slow editor, lower **Resolution**, turn
-  Trails off, close it when not watching, and test in slow motion (HUD console `timescale 0.25`):
-  `Docs/PERFORMANCE_OPTIMIZATION.md` §4.2a.
-- **Known limit**: the occlusion corridor follows the GAMEPLAY camera, so prisms between that camera and your
-  hull may look dithered from the Third Eye. Lower Resolution if the second render costs too much.
+| Control | Does |
+|---|---|
+| **F2** | Open / close the **AI Diagnose** panel (the ONLY hotkey; ignored while the menu's god-mode camera is up or a text field has focus) |
+| Panel: Camera | Take / Release camera; Chase, Follow, Free fly, Orbit; Prev / Next / Frame pilot; Fly speed slider |
+| Panel: Pilots / Overlays / Settings | You / AI per pilot; AI thinking, trails, labels, mode gizmos |
+| Panel: Command + Send | Any DiagnosticsHUD console command (Enter also sends; `help` lists them), e.g. `aidiag cam on`, `aidiag fly`, `aidiag next`, `aidiag thinking on`, `aidiag overlay trails off`, `timescale 0.5` |
+| Free fly | Lavalamp's `FreeFlyCamera` (shared with `MenuGodModeCamera`): RMB look, WASD, E/Space up, Q/Ctrl down, Shift fast, Alt slow, wheel speed, gamepad. Your hull's input is paused while it flies. |
+| Orbit | Drag RMB round the watched pilot |
+
+- **AI thinking** (overlay): a line from each AI hull to its aim point, coloured by state, a ring on the crystal
+  it is really after; the bottom strip reads the watched AI's state, heading error, recoveries, difficulty mistakes
+  and (Skim Race pilot) the skim readout (`SKIM_RACE_AI.md` §15.1).
+- **Trails** and **Labels** (overlays): each pilot's last seconds of flight; name, hull, speed, off-screen pilots
+  pinned to the screen edge.
+- **Mode gizmos** (overlays a mode registers through `ThirdEyeOverlays.Register`): Switchback adds *AI plan* and
+  *AI sense*, drawn in the Game view by the same code as its scene gizmos (`IDebugLineSink`).
+- **Pilots**: every pilot with **You / AI** (host / solo only, `PilotControl`). Same rules as before: your hull on AI
+  hands it to the mode's AI; You on an AI's hull takes it over and the AI flies the hull you left.
+- **The default cameras are untouched.** The game starts on its own camera (gameplay chase, Lavalamp follow); the
+  panel never opens or takes the camera by itself. Diagnose cameras and overlays exist ONLY while the panel is open:
+  closing it (F2, `aidiag panel off`, a scene unloading at match end, quit, editor Play stop) releases the camera
+  (its driver and FOV restored) and turns every overlay off. Any `aidiag` camera/overlay command opens the panel.
+- With the panel closed it costs nothing (HUD disabled, no scan). Works while paused (unscaled time).
+- Only slider tuning (FOV, distances, smoothing, look, trail length) is saved (PlayerPrefs `CosmicShore.ThirdEye.Settings`);
+  camera mode, open state and overlay toggles are session-only and reset on every Play / domain reload.
+- F2 is ignored while Lavalamp god mode (`MenuGodModeCamera`) is up or a text field has focus.
 
 **What to look for** (each one has been a real defect somewhere):
 - The aim point **behind** the hull, or jumping between two points every frame: the planner is flip-flopping.

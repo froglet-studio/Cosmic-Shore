@@ -114,6 +114,29 @@ namespace CosmicShore.Gameplay
 
         public bool HasCells => _cells.Count > 0;
 
+        // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
+        // cell-aware speed profile. None before the first advance (the voyage opens in open water).
+        Cell _departedCell;
+        Vector3 _departedCentre;
+        bool _hasDeparture;
+
+        /// <summary>True once there is a cell behind the Ark (each world whose core it has reached).</summary>
+        public bool HasDeparture => _hasDeparture;
+
+        /// <summary>Centre of the cell the Ark is leaving.</summary>
+        public Vector3 DepartureCentre => _departedCentre;
+
+        /// <summary>Membrane radius of the cell the Ark is leaving, with the same fallback as <see cref="CurrentCellRadius"/>
+        /// (a struck or unbuilt membrane reads 0).</summary>
+        public float DepartureRadius
+        {
+            get
+            {
+                float r = _departedCell ? _departedCell.MembraneRadius : 0f;
+                return r > 1f ? r : _cfg?.LeashRadiusFallback ?? 1200f;
+            }
+        }
+
         /// <summary>
         /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
         /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
@@ -217,6 +240,10 @@ namespace CosmicShore.Gameplay
             // corridor back onto itself.
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
             Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
+            // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
+            _departedCell = null;
+            _hasDeparture = false;
 
             if (!StandCell(first))
             {
@@ -259,6 +286,9 @@ namespace CosmicShore.Gameplay
                     return false;
             }
 
+            _departedCell = _cells[_targetIndex].Cell;
+            _departedCentre = _cells[_targetIndex].Centre;
+            _hasDeparture = true;
             _targetIndex++;
 
             // Stand the new NEXT beyond the new current, so the corridor always reaches one
@@ -305,8 +335,11 @@ namespace CosmicShore.Gameplay
 
         bool StandCell(Vector3 centre)
         {
+            // A failed stand must not cost the route its world: NextConfig has consumed the index, and the retry
+            // (StandAhead / AdvancePastTarget) would otherwise stand the NEXT world and silently skip this one.
+            int routeBefore = _routeNext;
             var config = NextConfig();
-            if (!config || !_template || !_template.RuntimeData) return false;
+            if (!config || !_template || !_template.RuntimeData) { UnconsumeRoute(routeBefore, config); return false; }
 
             // The mode preview's satellite recipe, verbatim: instantiate under an INACTIVE root
             // so the cell's OnEnable cannot wipe the shared runtime asset's config before it has
@@ -337,6 +370,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError("[Arkway] The cloned cell carries no Cell component - stand aborted.");
                 Destroy(root);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -368,6 +402,7 @@ namespace CosmicShore.Gameplay
                                    "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -491,7 +526,22 @@ namespace CosmicShore.Gameplay
             crystal.gameObject.SetActive(true);
             crystal.enabled = true;
             crystal.DeactivateModels();                        // the crystal's own fade-in bloom
-            if (runtime) runtime.AddCrystalToList(crystal);
+            if (!runtime) return;
+            // AddCrystalToList raises the shared OnCellItemsUpdated event: every AI pilot's handler runs inside this
+            // call. A listener's exception must not abort the STAND (it did: a pilot reading a destroyed crystal from
+            // another runtime's list threw here, and the escort skipped the world).
+            try { runtime.AddCrystalToList(crystal); }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[Arkway] A cell-items listener threw while the core crystal was registered " +
+                                   $"({e.GetType().Name}: {e.Message}) - the cell stands regardless.");
+            }
+        }
+
+        /// <summary>Give a failed stand's world back to the route (the retry stands the same world, not the next).</summary>
+        void UnconsumeRoute(int routeBefore, CellConfigDataSO consumed)
+        {
+            if (_route.Count > 0 && consumed && _routeNext > routeBefore) _routeNext = routeBefore;
         }
 
         /// <summary>

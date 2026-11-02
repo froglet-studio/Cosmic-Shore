@@ -207,6 +207,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Does this mouth charge pilots of other domains a petal toll?</summary>
         public bool DomainTolled => _settings.DomainTolled;
 
+        /// <summary>When a pilot who owes the toll last went through this mouth (<see cref="Time.time"/>), on this
+        /// peer; negative infinity until one does. The Tiger Moth's HUD flashes its wormhole on it.</summary>
+        public float LastTollTime { get; private set; } = float.NegativeInfinity;
+
         /// <summary>
         /// Switch a standing mouth's toll on or off. An OWNED mouth wears its owner's domain hue only
         /// while it tolls and the material's neutral rim otherwise, so the colour always says whether
@@ -366,6 +370,7 @@ namespace CosmicShore.Gameplay
         public int LevyToll(IVesselStatus status, Vector3 entryPoint)
         {
             if (!OwesToll(status)) return 0;
+            LastTollTime = Time.time;
             var resources = status.ResourceSystem;
             if (resources == null) return 0;
 

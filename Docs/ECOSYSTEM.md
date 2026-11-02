@@ -179,6 +179,59 @@ homeostasis the food web is meant to produce, both now gone:
 
 ---
 
+### 0.x Granted carve-out: armour wears under creature bites in the Ark escort's worlds (2026-10-31)
+
+Resembles the rejected "make the Ark's plates edible by special-casing" and is NOT that. Asked for by Garrett
+(2026-10-31, via the voyage coordinator: "fauna should attack and actually eat the Ark's shielded and super-shielded
+plates, giving real hull loss", so the escort's artificial `BreachHull` line can go to 0). What it does: a cell with
+`Cell.ArmourIsFood` files armoured mass in its targeting grids and lets a species whose config authors a
+`shieldBite` / `superShieldBite` above 0 (`LightFaunaDataSO`, `Boid`) take armour off a bite at a time
+(`Prism.GnawArmour`: a shield cracks at 1 armour point, a super-shield at `Prism.SuperArmourPoints` = 2; the cracking bite
+eats the now-plain prism). The fence: `Cell.ArmourIsFood` has one setter call site, `ArkEscortRun.PrepareCellMetrics`
+(the escort's own worlds, cleared at its finish); `Prism.GnawArmour` has one caller, `Fauna.BiteMass`; nothing is
+Ark-specific (all armoured mass in such a cell wears the same, so no Ark weighting enters steering); vessels, explosions
+and abilities still meet `Prism.AbsorbSuperShieldHit` unchanged; wear runs only on the simulation authority
+(`Fauna.IsSimAuthority`), and the crack replicates as an ordinary shield drop. Mass conservation and continuity are not
+waived (a cracked plate is consumed through the normal implosion, and the Ark's reactor regrows the slot armoured).
+Side effect, accepted: armoured mass counts as an intruder for a pen's containment Frenzy in those worlds. This is an
+exception, not a precedent: the next one needs its own sign-off.
+
+### 0.y Granted carve-out: a pacified escort world spares its controller's own mass (2026-10-31)
+
+Asked for by Garrett (via the voyage coordinator): a squad that takes a world's territory pacifies it, and its fauna then
+help protect the Ark. Mechanism, all existing platform except one diet clause: when the squad holds
+`ArkEscortSO.pacifyShare` (default 0.6) of a world's CONTROL volume, `ArkEscortRun.TryPacify` calls
+`Cell.SetModeControlOverride(squad)` (the sanctioned controller re-colour: the live swarm takes the squad's colour, nothing
+dies, every later creature spawns in it) and sets `Cell.SparedDomain = squad`: in that cell, fauna of that domain do not
+graze that domain's mass anywhere, the nucleus exterior included (`Cell.SparesOwnMass`, read by
+`Cell.IsPreyForHerbivore` and the Boid forager's diet). That clause is the exception: it overrides "the nucleus exterior is
+voraciously edible regardless of domain" in pacified escort worlds only. Fence: one setter call site
+(`ArkEscortRun.TryPacify`, escort worlds, server only); it names a domain, not the Ark (no Ark weighting, no asymmetry: the
+cell still has one fauna colour, its controller's); mass is conserved and no creature is culled (a pacified world whose
+remaining food is its own domain's mass starves its fauna down through the ordinary starvation clock). An exception, not a
+precedent.
+
+### 0.z Granted carve-out: the Ark escort's feeding lure (2026-10-31)
+
+This is the scripted Ark seek that §0 and the design principles reject ("not to weight the Ark"), and it is granted
+here on purpose. The owner, after playing d8-d9: "we need way more fauna relentlessly attacking our Ark ... mad never-ending
+chaos", with the difficulty ladder 4 achievable, 7 barely beatable, 9 unbeatable. The food web alone (plates as food,
+wake, populations) left multiple worlds with no pressure on the Ark.
+
+What it does: `Cell.SetFeedingLure(lure, ownDomain, share)`. A `share` of the cell's goal picks, the densest-region
+queries (`GetExplosionTarget`, `GetDensestRegionAnyDomain`) that every grazer steers by, return the lure's position,
+jittered, instead of the densest mass. Fauna of `ownDomain` are never lured.
+
+The fence:
+- One caller, `ArkEscortRun.TickChaos`, on the escort's own worlds, with the Ark as the lure. Pacified or held worlds are
+  cleared, and everything is cleared at the escort's end.
+- The share is the tier's `LureShare`, from 0.1 at d1 to 0.9 at d9.
+- It changes steering only: diets, edibility, deaths and populations are untouched, so a lured creature eats only what
+  its own diet allows when it arrives. Mass conservation, continuity, one fauna colour per cell and the no-cull rule all
+  still hold.
+
+This is an exception, not a precedent: the next one needs its own sign-off.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count
@@ -7883,7 +7936,8 @@ three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its la
 TMP text — plus its WAKE, one prism per 45 units of travel bounded by `arkWakeBudget` (400) and
 ordinarily retired with the cell it was laid in, so ~150 standing in steady state. One crystal
 (one always-on trigger) per traversal cell, three standing. Satellite cells run no cytoplasm
-(4k shard motes each stays preview-suppressed). (They also used to be barred from
+(4k shard motes each stays preview-suppressed), except an Ark escort's worlds, which opt in
+thinned (§41.6). (They also used to be barred from
 `DomainFaunaBuffSystem.EnsureExists`, whose runtime rebinding a satellite strike could leave
 holding a dead SO; that system is removed — §15 — so the hazard and its guard are both gone.)
 
@@ -7932,6 +7986,26 @@ holding a dead SO; that system is removed — §15 — so the hazard and its gua
   controlling colour is whatever domain dominates its authored environment's volume. The
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
+
+### 41.6 The Ark's feel: a solid hull, an escort world's own shards (2026-11-01)
+
+Garrett's playtest of the escort. Two recorded exceptions to the satellite and Ark rules above.
+Neither touches §0: no prism is created, removed or weighted by them, and no creature's
+steering, diet or reach changes.
+
+- **The Ark is solid to VESSELS only** (`ArkHullSolid`). A signed distance over the modelled
+  hull's envelope (ported from `ark_reverse.py`), with the hangar and the ring tunnel carved out
+  as the one passage. A vessel inside it is set back on the surface and its nose turned along
+  it. Creatures, rounds, blasts and abilities are untouched, so every hull prism is still shot
+  and grazed exactly as before (§0.x armour wear, plates as food, the reactor's regrowth and the
+  super-shield absorb all unchanged). Fence: one component, on a modelled Ark, acting on
+  `VesselStatus.Live` within the hull's reach, on the vessel's authority only.
+- **An escort world runs its own cytoplasm** (`Cell.SatelliteCytoplasmEnabled`). The field is
+  bound to the satellite's own runtime, so its shards point at that world's crystal, built when
+  the crystal is handed to the cell, and thinned (`SatelliteCytoplasmSpacingScale`, 1.5 from the
+  escort = about 30% of the authored count) because three worlds stand at once. Shards are
+  visuals, not mass. One setter call site: `ArkEscortRun.PrepareCell`. Dying limbs in those
+  worlds now condense into their shards (bounded by `maxMorphedShards`, as in a scene cell).
 
 ---
 

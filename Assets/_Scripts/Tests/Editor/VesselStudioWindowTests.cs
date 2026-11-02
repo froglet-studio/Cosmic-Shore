@@ -104,11 +104,11 @@ namespace CosmicShore.Tests
         [Test]
         public void Configs_MapAssetsFirst_ThenThePrefab_ThenTheVesselsOwn_ThenItsElementMap()
         {
-            var map = new[] { "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-                              "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+            var map = new[] { "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
+                              "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
                               "Assets/_Prefabs/Spacevessels/Meerkat.prefab" };
-            var deps = new[] { "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeFormAction.asset",
-                               "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+            var deps = new[] { "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonFormAction.asset",
+                               "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
                                "Assets/_SO_Assets/VesselActions/Common Vessel Action/Boost.asset",   // shared: not the Meerkat's
                                "Assets/_SO_Assets/VesselActions/Meerkat/Meerkat.mat",                // not an .asset
                                "Assets/_SO_Assets/Events/MeerkatFormed.asset" };                      // named after it, not an SO here
@@ -117,9 +117,9 @@ namespace CosmicShore.Tests
             var paths = list.ConvertAll(e => e.Path);
             CollectionAssert.AreEqual(new[]
             {
-                "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+                "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
                 "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
-                "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeFormAction.asset",
+                "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonFormAction.asset",
                 "Assets/Resources/ElementalAbilityMaps/Meerkat.asset",
             }, paths);
             Assert.AreEqual(2, list[0].ArtifactKeys, "two map rows land in the config");

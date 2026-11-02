@@ -6,12 +6,12 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One job on the Voyage window (<see cref="VoyageJobsView"/> stands one per job on offer). Closed, it is the course
-    /// and the pilot who brought it, the job's title and its course line; OPEN expands it in place to the brief, where the
-    /// player confirms the squad, the mission and its intensity and sets sail (Garrett, 2026-11-01: "drilling into a card
-    /// expands its information and causes the map to focus on that path, but the map remains. on the voyage card players
-    /// confirm their squad mission difficulty etc."). The one galaxy map stands beside the cards
-    /// (<see cref="VoyageMapGraphic"/>), so the card carries no art. Every word is the voyage content's
+    /// One job on the Voyage window (<see cref="VoyageJobsView"/> stands one per job on offer, in a grid like the arcade
+    /// games' tiles). Closed, it is the course and the pilot who brought it, the job's title and its course line; OPEN
+    /// expands it over the other cards (<see cref="Overlay"/>) to the brief, where the player confirms the squad, the
+    /// mission and its intensity and sets sail (Garrett, 2026-11-01: "clicking on a voyage expands it over the others";
+    /// "on the voyage card players confirm their squad mission difficulty etc."). The one galaxy map stands above the
+    /// cards (<see cref="VoyageMapGraphic"/>), so the card carries no art. Every word is the voyage content's
     /// (<c>VoyageContentSO</c>), never this class's.
     /// </summary>
     public class VoyageJobCard : MonoBehaviour
@@ -34,8 +34,10 @@ namespace CosmicShore.UI
         const string CourseName = "Course";
 
         // Heights and rows, from the card's foot (its children anchor to the bottom edge).
-        const float ClosedHeight = 176f;
-        const float OpenHeight = 560f;
+        /// <summary>A closed card's height: the grid's cell.</summary>
+        public const float ClosedHeight = 176f;
+        /// <summary>An open card's height, standing over the grid.</summary>
+        public const float OpenHeight = 560f;
         const float Inset = 24f;
         const float SailFoot = 22f;
         const float TitleHalf = 31f;
@@ -174,6 +176,24 @@ namespace CosmicShore.UI
             rt.anchorMax = new Vector2(1f, 0f);
             rt.pivot = new Vector2(0.5f, 0f);
             return t;
+        }
+
+        /// <summary>
+        /// Stand the card over the grid it sits in (the grid's whole width from its top, <see cref="OpenHeight"/> tall,
+        /// drawn last so it covers the others), or back in its cell.
+        /// </summary>
+        public void Overlay(bool over)
+        {
+            Build();
+            if (_layout) _layout.ignoreLayout = over;
+            if (!over) return;
+            var rt = (RectTransform)transform;
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(0f, OpenHeight);
+            transform.SetAsLastSibling();
         }
 
         /// <summary>Stand the parts for the card closed (title and course line) or open (the brief and Set sail).</summary>

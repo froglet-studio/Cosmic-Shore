@@ -14,95 +14,193 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   legs:
   - Name: Garland Shallows
-    World: {fileID: 11400000, guid: 3e8a0d5c71b24f96b8e3a4d70c519f2a, type: 2}
+    World: {fileID: 11400000, guid: 0e40ac329e124c40b59d544e65f09ca8, type: 2}
     Ladder: []
     Threat: 0.6
     Hostile: 1
     HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}"
   - Name: Scarab Reef
-    World: {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
+    World: {fileID: 11400000, guid: ffae2f41462941daac0123dbfd46c1a2, type: 2}
     Ladder: []
     Threat: 0.8
     Hostile: 1
-    HostileFrom: 2
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}"
   - Name: The Boneyard
-    World: {fileID: 11400000, guid: 5511269da8da60affaf693e51b8a60a1, type: 2}
+    World: {fileID: 11400000, guid: ec82f02b0dd547d7ab52d7d54b89983c, type: 2}
     Ladder:
-    - {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
-    - {fileID: 11400000, guid: 64160342670283d2a0c5088f1951295c, type: 2}
-    - {fileID: 11400000, guid: 7dc0173b8f31a743221e8f0bd3ec2d40, type: 2}
-    - {fileID: 11400000, guid: 5511269da8da60affaf693e51b8a60a1, type: 2}
+    - {fileID: 11400000, guid: 7aa60450a5424040ba5029ae7fce075e, type: 2}
+    - {fileID: 11400000, guid: 734467931eff4055bdb4340b4d6e4dd8, type: 2}
+    - {fileID: 11400000, guid: 863022f3301a49ca818602d751afb7f2, type: 2}
+    - {fileID: 11400000, guid: ec82f02b0dd547d7ab52d7d54b89983c, type: 2}
     Threat: 1
     Hostile: 1
-    HostileFrom: 6
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}. THE SCAVENGERS ARE STIRRING."
   - Name: The Swarm
-    World: {fileID: 11400000, guid: 9957d4442d4e51a04d915351be20b5c0, type: 2}
+    World: {fileID: 11400000, guid: 79ef8710fad245f6b201bc6f082669c0, type: 2}
     Ladder: []
     Threat: 1.1
     Hostile: 1
-    HostileFrom: 4
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}"
   - Name: The Maw
-    World: {fileID: 11400000, guid: e7542f2a8779d1328f8d3d88545eae03, type: 2}
+    World: {fileID: 11400000, guid: a36e4cce77294cdd8e0f7987a39d4778, type: 2}
     Ladder:
-    - {fileID: 11400000, guid: 2a3473b06ae520a967e964789f574d2a, type: 2}
-    - {fileID: 11400000, guid: e8501f315bd5e4617ef6c948e107488e, type: 2}
-    - {fileID: 11400000, guid: e6ae32678416e7c6390d5b0078ba2893, type: 2}
-    - {fileID: 11400000, guid: e7542f2a8779d1328f8d3d88545eae03, type: 2}
+    - {fileID: 11400000, guid: 50a95d6a1e36440b839796e9cded4c45, type: 2}
+    - {fileID: 11400000, guid: a2278b5fd8594f52b0def66ef44a1675, type: 2}
+    - {fileID: 11400000, guid: 0e6ad69e921f4a25adc6622bc0d03a93, type: 2}
+    - {fileID: 11400000, guid: a36e4cce77294cdd8e0f7987a39d4778, type: 2}
     Threat: 1.2
     Hostile: 1
-    HostileFrom: 2
+    HostileFrom: 1
     Arrival: "WORLD {leg} OF {legs}: {name}. EVERYTHING HERE IS HUNGRY. HOLD THE ARK."
   tiers:
-  - Population: 0.2
-    RegrowSeconds: 0.3
+  - Population: 0.35
+    RegrowSeconds: 0.5
     HostileShare: 1
     ArkSpeed: 1.3
     BreachHull: 0
-  - Population: 0.3
-    RegrowSeconds: 0.4
+    LureShare: 0.05
+    SpawnPeriodScale: 1.0
+    ShieldBiteMin: 0
+    SuperShieldBiteMin: 0
+    BiteScale: 1
+  - Population: 0.4
+    RegrowSeconds: 0.6
     HostileShare: 1
     ArkSpeed: 1.2
     BreachHull: 0
+    LureShare: 0.07
+    SpawnPeriodScale: 1.0
+    ShieldBiteMin: 0
+    SuperShieldBiteMin: 0
+    BiteScale: 1
   - Population: 0.45
-    RegrowSeconds: 0.6
+    RegrowSeconds: 0.8
     HostileShare: 1
     ArkSpeed: 1.1
-    BreachHull: 0.2
-  - Population: 0.6
-    RegrowSeconds: 0.9
+    BreachHull: 0
+    LureShare: 0.09
+    SpawnPeriodScale: 0.95
+    ShieldBiteMin: 0.02
+    SuperShieldBiteMin: 0
+    BiteScale: 1
+  - Population: 0.52
+    RegrowSeconds: 1.0
     HostileShare: 1
     ArkSpeed: 1
-    BreachHull: 0.3
-  - Population: 0.75
-    RegrowSeconds: 1.3
+    BreachHull: 0
+    LureShare: 0.12
+    SpawnPeriodScale: 0.9
+    ShieldBiteMin: 0.04
+    SuperShieldBiteMin: 0.02
+    BiteScale: 1.0
+  - Population: 0.6
+    RegrowSeconds: 1.4
     HostileShare: 1
     ArkSpeed: 0.95
-    BreachHull: 0.38
-  - Population: 0.9
-    RegrowSeconds: 1.9
+    BreachHull: 0
+    LureShare: 0.18
+    SpawnPeriodScale: 0.82
+    ShieldBiteMin: 0.07
+    SuperShieldBiteMin: 0.03
+    BiteScale: 1.1
+  - Population: 0.72
+    RegrowSeconds: 2.0
     HostileShare: 1
     ArkSpeed: 0.9
-    BreachHull: 0.45
-  - Population: 1.05
-    RegrowSeconds: 2.8
+    BreachHull: 0
+    LureShare: 0.26
+    SpawnPeriodScale: 0.74
+    ShieldBiteMin: 0.1
+    SuperShieldBiteMin: 0.05
+    BiteScale: 1.25
+  - Population: 0.85
+    RegrowSeconds: 3.0
     HostileShare: 1
     ArkSpeed: 0.85
-    BreachHull: 0.5
-  - Population: 1.2
-    RegrowSeconds: 4
+    BreachHull: 0
+    LureShare: 0.35
+    SpawnPeriodScale: 0.66
+    ShieldBiteMin: 0.13
+    SuperShieldBiteMin: 0.06
+    BiteScale: 1.4
+  - Population: 1.1
+    RegrowSeconds: 4.5
     HostileShare: 1
     ArkSpeed: 0.8
-    BreachHull: 0.58
+    BreachHull: 0
+    LureShare: 0.55
+    SpawnPeriodScale: 0.5
+    ShieldBiteMin: 0.2
+    SuperShieldBiteMin: 0.1
+    BiteScale: 1.8
   - Population: 1.4
-    RegrowSeconds: 6
+    RegrowSeconds: 7.0
     HostileShare: 1
     ArkSpeed: 0.75
-    BreachHull: 0.72
+    BreachHull: 0
+    LureShare: 0.8
+    SpawnPeriodScale: 0.4
+    ShieldBiteMin: 0.3
+    SuperShieldBiteMin: 0.15
+    BiteScale: 2.4
   maxPopulation: 2
+  arkPacing:
+    Cruise: 45
+    Entry: 22
+    Crawl: 14
+    MembraneBand: 400
+    HullHalfLength: 60
+    Ceiling: 50
+  cellSpacing: 2800
+  platesAreFood: 1
+  worldsPerVoyage: 4
+  rampJitter: 0.15
+  modifierCountWeights: {x: 0.3, y: 0.45, z: 0.25}
+  modifiers:
+  - Name: SWARMING SEAS
+    Kind: 0
+    Factor: 1.3
+    Weight: 1
+    MinDifficulty: 1
+  - Name: SWIFT FAUNA
+    Kind: 2
+    Factor: 1.25
+    Weight: 1
+    MinDifficulty: 1
+  - Name: THIN REACTOR
+    Kind: 1
+    Factor: 1.6
+    Weight: 1
+    MinDifficulty: 2
+  - Name: RAVENOUS
+    Kind: 3
+    Factor: 2.0
+    Weight: 1
+    MinDifficulty: 3
+  - Name: RED TIDE
+    Kind: 4
+    Factor: 1.0
+    Weight: 0.7
+    MinDifficulty: 2
+  - Name: BECALMED
+    Kind: 5
+    Factor: 0.75
+    Weight: 1
+    MinDifficulty: 1
+  - Name: FERTILE WORLDS
+    Kind: 6
+    Factor: 0.85
+    Weight: 0.8
+    MinDifficulty: 1
+  - Name: CALM WATERS
+    Kind: 0
+    Factor: 0.8
+    Weight: 0.8
+    MinDifficulty: 1
   voyageName: ARK ESCORT
   cardTitle: Escort the Ark
   cardLine: Difficulty {difficulty}, {legs} worlds
@@ -110,5 +208,7 @@ MonoBehaviour:
   survivedLine: THE ARK MADE IT THROUGH
   fallenLine: THE ARK FELL IN {name}
   overrunLine: THE ARK IS OVERRUN IN {name}
+  courseLine: '{from} TO {to}'
+  berthedLine: BERTHED AT {to}
   lowerLabel: '<'
   raiseLabel: '>'

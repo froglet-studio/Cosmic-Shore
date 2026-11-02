@@ -35,5 +35,9 @@ MonoBehaviour:
   coreWidth: 0.012
   writheSpeed: 3
   flickerSpeed: 4
-  sleepBelowScreenRadiusPixels: 24
+  sleepBelowScreenRadiusPixels: 32
   halfRateBelowScreenRadiusPixels: 64
+  quarterRateBelowScreenRadiusPixels: 40
+  maxRebuildsPerFrame: 8
+  rebuildBudgetMs: 0.75
+  maxWakesPerFrame: 2

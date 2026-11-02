@@ -18,15 +18,15 @@ WHAT IT MAKES (R_VesselActions/MEERKAT.md)
         - ONE THUMB: the transformer is MeerkatVesselTransformer (a SingleStickVesselTransformer that lets the tunnel fly
           the hull), at the studio's flight: PitchScaler = YawScaler = 120 (pitchYaw), RollScaler 15.6 (bankShare 0.12 x
           roll 130), cruise 60 (the Stoat's DefaultThrottleScaler, kept)
-        - ONE ABILITY: StoatSlingExecutor's slot becomes MeerkatWormholeExecutor (MeerkatWormholeConfig, Runtime GameData);
+        - ONE ABILITY: StoatSlingExecutor's slot becomes MeerkatSolitonExecutor (MeerkatSolitonConfig, Runtime GameData);
           the Stoat's dipole, pathfinder, mode switch and ripple executors are removed (the Stoat keeps them)
-        - the bindings, every device: RT (InputEvents 1) -> MeerkatWormholeFormAction, LT (2) -> MeerkatWormholeShortenAction,
+        - the bindings, every device: RT (InputEvents 1) -> MeerkatSolitonFormAction, LT (2) -> MeerkatSolitonShortenAction,
           X (6) -> StoatHoldAction (the stance, which the studio's Meerkat keeps); no per-device overrides
-        - MeerkatWormholeNetworkRelay on the root (every peer sees every tunnel)
+        - MeerkatSolitonNetworkRelay on the root (every peer sees every tunnel)
         - StoatHUDController -> MeerkatHUDController (the Stoat's HUD view as a stand-in; the Time card shows the reticle)
       Everything else is the Stoat's: the studio flies the Stoat's model and lope as the Meerkat's stand-in hull.
-    Assets/_SO_Assets/VesselActions/Meerkat/: MeerkatWormholeConfig.asset (every studio key at its SHIPPED value - a
-      one-shot: after it exists only studio_to_unity.py writes its numbers), MeerkatWormholeFormAction / ShortenAction.
+    Assets/_SO_Assets/VesselActions/Meerkat/: MeerkatSolitonConfig.asset (every studio key at its SHIPPED value - a
+      one-shot: after it exists only studio_to_unity.py writes its numbers), MeerkatSolitonFormAction / ShortenAction.
     SO_Class_Meerkat (the Stoat's icons as placeholders, owned from the start) + its entry in SO_Classlist_All / _Classes;
     one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and `DefaultNetworkPrefabs.asset` (the root
     GAMEOBJECT); Resources/ElementalAbilityMaps/Meerkat.asset (four OPEN design slots: which element the wormhole is, and
@@ -73,9 +73,9 @@ DONOR_MAP = os.path.join(MAPS, "Stoat.asset")
 MAP = os.path.join(MAPS, "Meerkat.asset")
 FUSION = os.path.join(ROOT, "Assets", "Resources", "CrystalHullFusionConfig.asset")
 ACTIONS = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Meerkat")
-CONFIG = os.path.join(ACTIONS, "MeerkatWormholeConfig.asset")
-FORM = os.path.join(ACTIONS, "MeerkatWormholeFormAction.asset")
-SHORTEN = os.path.join(ACTIONS, "MeerkatWormholeShortenAction.asset")
+CONFIG = os.path.join(ACTIONS, "MeerkatSolitonConfig.asset")
+FORM = os.path.join(ACTIONS, "MeerkatSolitonFormAction.asset")
+SHORTEN = os.path.join(ACTIONS, "MeerkatSolitonShortenAction.asset")
 SENTINEL = os.path.join(ACTIONS, "MeerkatSentinelModeAction.asset")
 STUDIO = os.path.join(ROOT, "Docs", "Studios", "VesselStudio", "meerkat.html")
 CAMERAS = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
@@ -104,13 +104,13 @@ ROOT_GO = "6417075533431866457"              # the Stoat's root GameObject
 ROOT_TRANSFORM_ID = "5928382658856804067"
 NETWORK_OBJECT_ID = "1733035045152327888"    # the NetworkObject component on it
 REGISTRY_ID = "9105512684531825410"          # ActionExecutorRegistry
-WORMHOLE_ID = "5137264980012345601"          # StoatSlingExecutor's slot -> MeerkatWormholeExecutor
+WORMHOLE_ID = "5137264980012345601"          # StoatSlingExecutor's slot -> MeerkatSolitonExecutor
 STANCE_ID = "5137264980012345602"            # ToggleTranslationModeActionExecutor (kept)
 STOAT_ONLY = ["5137264980012345603", "5137264980012345604", "5137264980012345605", "5137264980012345606"]
 HUD_ID = "5649393235309590662"               # StoatHUDController -> MeerkatHUDController
 HUD_VIEW_ID = "5137264980012345622"          # StoatHUDView in the nested StoatHUDVariant
 TRANSFORMER_ID = "7686683633640807837"
-RELAY_ID = "2828000000000000001"             # MeerkatWormholeNetworkRelay on the root
+RELAY_ID = "2828000000000000001"             # MeerkatSolitonNetworkRelay on the root
 ACTIONS_GO = "7850473780452578400"           # ShipActions: the registry and the executors
 KIT_ID = "2828000000000000002"               # MeerkatSolitonKit (Garrett's kit), beside the wormhole executor
 
@@ -119,11 +119,11 @@ TURN = {"PitchScaler": "120", "YawScaler": "120", "RollScaler": "15.6"}   # the 
 STOAT_TURN = {"PitchScaler": "48", "YawScaler": "48", "RollScaler": "52"}
 
 SCRIPTS = {   # script name -> its .cs.meta (the guids every prefab and asset here names)
-    "MeerkatWormholeExecutor": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.cs.meta",
-    "MeerkatWormholeConfigSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatWormholeConfigSO.cs.meta",
-    "MeerkatWormholeActionSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatWormholeActionSO.cs.meta",
+    "MeerkatSolitonExecutor": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs.meta",
+    "MeerkatSolitonConfigSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonConfigSO.cs.meta",
+    "MeerkatSolitonActionSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonActionSO.cs.meta",
     "MeerkatVesselTransformer": "Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs.meta",
-    "MeerkatWormholeNetworkRelay": "Assets/_Scripts/Controller/Vessel/MeerkatWormholeNetworkRelay.cs.meta",
+    "MeerkatSolitonNetworkRelay": "Assets/_Scripts/Controller/Vessel/MeerkatSolitonNetworkRelay.cs.meta",
     "MeerkatHUDController": "Assets/_Scripts/UI/Controller/MeerkatHUDController.cs.meta",
     "MeerkatSolitonKit": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonKit.cs.meta",
     "MeerkatSentinelModeActionSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSentinelModeActionSO.cs.meta",
@@ -135,17 +135,16 @@ def script_guid(name: str) -> str:
 
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
-CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "ovalShortest", "ovalLongest", "ovalMaxSharpness", "throatDiameter", "mouthDiameter",
-               "keyRampSeconds", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
-               "collapseSeconds", "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeRings", "bridgeSpindlesPerRing",
-               "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "aiWormhole", "aiStraightMinDistance",
+# 2026-10-29 (Yash: Soliton Tunnels, an environmental fundamental): the tube's own numbers (shape, life, bridge, the
+# slip-and-slide ride, the network's layout) live on the two SolitonTunnelConfigSO assets the config references
+# (tunnelConfig, networkConfig; Assets/_SO_Assets/Environment/SolitonTunnel/), written by studio_to_unity.py; this config
+# keeps the vessel's own keys.
+CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax",
+               "keyRampSeconds", "reticleDelaySeconds", "reticleGrowSeconds",
+               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "aiWormhole", "aiStraightMinDistance",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise",
-               # the roots (MEERKAT.md section 7, the artifact's rounds 13-21): an omnicrystal's network
-               "omniOn", "omniCount", "labyrinthBranchPointsMin", "labyrinthBranchPointsMax", "labyrinthOpeningsMin",
-               "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
-               "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl",
-               "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
-               "rootGravity",
+               # an omnicrystal's Soliton Network (MEERKAT.md section 7, the artifact's rounds 13-21)
+               "omniOn", "omniCount",
                # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
                "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 
@@ -194,19 +193,19 @@ def check_kit_config(cfg: str, values: dict):
     errs = []
     for k in KIT_KEYS + list(KIT_UNITY):
         if not re.search(r"^  %s: -?[\d.]+\n" % k, cfg, re.M):
-            errs.append(f"MeerkatWormholeConfig.asset: no Garrett's kit `{k}`")
+            errs.append(f"MeerkatSolitonConfig.asset: no Garrett's kit `{k}`")
     for field, lo, hi, element, floor in KIT_FLOATS:
         m = re.search(r"^  %s:\n    Enabled: (\d)\n    Value: [-\d.]+\n    Min: ([-\d.]+)\n    Max: ([-\d.]+)\n    element: (\d+)\n" % field, cfg, re.M)
         if not m:
-            errs.append(f"MeerkatWormholeConfig.asset: no ElementalFloat block `{field}`")
+            errs.append(f"MeerkatSolitonConfig.asset: no ElementalFloat block `{field}`")
         elif m.group(1) != "1" or int(m.group(4)) != element:
-            errs.append(f"MeerkatWormholeConfig.asset: `{field}` is not enabled on element {element}")
+            errs.append(f"MeerkatSolitonConfig.asset: `{field}` is not enabled on element {element}")
     if f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_GUID}, type: 2}}" not in cfg:
-        errs.append("MeerkatWormholeConfig.asset: onCombatHitLanded is not Event_CombatHitStats (a zap would score nowhere)")
+        errs.append("MeerkatSolitonConfig.asset: onCombatHitLanded is not Event_CombatHitStats (a zap would score nowhere)")
     for e in KIT_EVENTS:
         m = re.search(r"^  %s:\n    Guid:\n      Data1: (-?\d+)\n" % e, cfg, re.M)
         if not m:
-            errs.append(f"MeerkatWormholeConfig.asset: no FMOD slot `{e}`")
+            errs.append(f"MeerkatSolitonConfig.asset: no FMOD slot `{e}`")
     return errs
 
 
@@ -235,15 +234,21 @@ def config_asset(values: dict) -> str:
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
-            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3}}\n"
-            "  m_Name: MeerkatWormholeConfig\n  m_EditorClassIdentifier: \n" + body +
-            empty_event("formEvent") + empty_event("collapseEvent") + empty_event("rootsEvent"))
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatSolitonConfigSO')}, type: 3}}\n"
+            "  m_Name: MeerkatSolitonConfig\n  m_EditorClassIdentifier: \n" + TUNNEL_REFS + body +
+            empty_event("formEvent") + empty_event("collapseEvent") + empty_event("networkEvent"))
+
+
+TUNNEL_GUID = "56ab244df5a04290bdece10a4cc41f35"    # SolitonTunnel.asset (RT's single tunnel)
+NETWORK_GUID = "987e30bc0fb54422a2aef022a04bd2b4"   # SolitonNetwork.asset (an omnicrystal's network)
+TUNNEL_REFS = (f"  tunnelConfig: {{fileID: 11400000, guid: {TUNNEL_GUID}, type: 2}}\n"
+               f"  networkConfig: {{fileID: 11400000, guid: {NETWORK_GUID}, type: 2}}\n")
 
 
 # Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
 RENAMED = {"throatSpeed": "rideMidMultiplier"}
 # Studio keys retired (from round 7, the umbrella handle: a fixed narrow throat and mouth, LT sets the shaft before a
-# bend of fixed radius). Their lines leave the asset; the field is gone from MeerkatWormholeConfigSO.
+# bend of fixed radius). Their lines leave the asset; the field is gone from MeerkatSolitonConfigSO.
 RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
            # round 9 (Yash, 2026-10-28: "the reticle is the silhouette of the geometry"): the reticle is the bridge's wireframe,
            # so its own geometry, glass and path go, and Garrett's reticleLook switch with them (one reticle now)
@@ -259,10 +264,19 @@ RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mout
            "trunkRim", "trunkFresnel", "trunkRings", "trunkGrain", "trunkGrainLines", "branchCount", "branchLength",
            "branchThickness", "branchUp", "branchZone", "branchSymmetry", "branchForks", "branchGrowSeconds",
            "rootBarkVisibility", "rootGlass", "rootRim", "rootGrain", "rootOpacity", "tubeInner", "rootLamp", "rootFog",
-           # and the Tube Lens Lab's contour field, Unity-only, folded into MeerkatWormholeLook
+           # and the Tube Lens Lab's contour field, Unity-only, folded into SolitonTunnelLook
            "fieldStrength", "fieldPitch", "fieldDrag", "fieldTwist", "fieldGlass", "fieldGlassIndex", "fieldGrazing",
            "fieldFlow", "fieldInner", "fieldOuter", "fieldProfile", "fieldRibs", "fieldRibSharpness", "fieldRibTravel",
-           "fieldRibRings", "fieldRibLines"]
+           "fieldRibRings", "fieldRibLines",
+           # 2026-10-29 (Yash: Soliton Tunnels): moved onto the SolitonTunnelConfigSO assets (studio_to_unity.py maps them there)
+           "bendRadius", "ovalShortest", "ovalLongest", "ovalMaxSharpness", "throatDiameter", "mouthDiameter", "rideExitMultiplier",
+           "rideSpeedTunnelScale", "formSeconds", "staySeconds", "collapseSeconds", "bridgeRings", "bridgeSpindlesPerRing",
+           "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "labyrinthBranchPointsMin", "labyrinthBranchPointsMax",
+           "labyrinthOpeningsMin", "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread",
+           "labyrinthRandomness", "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "labyrinthFormSeconds",
+           "rootMaxSpeed", "rootBounce",
+           # and the old flight, retired for the slip-and-slide (wall gravity, a small RT push, no stick)
+           "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootGravity"]
 
 
 def config_retrofit(cfg: str, values: dict) -> str:
@@ -279,8 +293,14 @@ def config_retrofit(cfg: str, values: dict) -> str:
         prev = next((m for m in (re.search(r"^  %s: .*\n" % q, cfg, re.M) for q in reversed(CONFIG_KEYS[:i])) if m), None)
         at = prev.end() if prev else cfg.index("  formEvent:\n")
         cfg = cfg[:at] + f"  {k}: {num(values[k])}\n" + cfg[at:]
-    if not re.search(r"^  rootsEvent:\n", cfg, re.M):   # the roots' sound (MEERKAT.md section 7), shipped empty
-        cfg = cfg.rstrip("\n") + "\n" + empty_event("rootsEvent")
+    if not re.search(r"^  networkEvent:\n", cfg, re.M):   # the network's sound (MEERKAT.md section 7), shipped empty
+        if re.search(r"^  rootsEvent:\n", cfg, re.M):          # its old name (FormerlySerializedAs("rootsEvent"))
+            cfg = re.sub(r"^  rootsEvent:\n", "  networkEvent:\n", cfg, count=1, flags=re.M)
+        else:
+            cfg = cfg.rstrip("\n") + "\n" + empty_event("networkEvent")
+    if not re.search(r"^  tunnelConfig: ", cfg, re.M):   # the Soliton Tunnel configs, first after the header
+        at = cfg.index("  m_EditorClassIdentifier: \n") + len("  m_EditorClassIdentifier: \n")
+        cfg = cfg[:at] + TUNNEL_REFS + cfg[at:]
     return cfg
 
 
@@ -296,7 +316,7 @@ def action_asset(name: str, trigger: int) -> str:
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
-            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeActionSO')}, type: 3}}\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatSolitonActionSO')}, type: 3}}\n"
             f"  m_Name: {name}\n  m_EditorClassIdentifier: \n  trigger: {trigger}\n")
 
 
@@ -353,7 +373,7 @@ def relay_block() -> str:
     return (f"--- !u!114 &{RELAY_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n"
             f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
-            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeNetworkRelay')}, type: 3}}\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatSolitonNetworkRelay')}, type: 3}}\n"
             "  m_Name: \n  m_EditorClassIdentifier: \n  ShowTopMostFoldoutHeaderGroup: 1\n")
 
 
@@ -396,8 +416,8 @@ def retrofit(text: str) -> str:
             d = re.sub(r"^  - component: \{fileID: %s\}\n" % r, "", d, flags=re.M)
             d = re.sub(r"^  - \{fileID: %s\}\n" % r, "", d, flags=re.M)
             d = re.sub(r"\{fileID: %s\}" % r, "{fileID: 0}", d)
-        if anchor == WORMHOLE_ID and f"guid: {script_guid('MeerkatWormholeExecutor')}" not in d:
-            d = re.sub(r"  m_Script: \{[^}]*\}\n", f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeExecutor')}, type: 3}}\n", d)
+        if anchor == WORMHOLE_ID and f"guid: {script_guid('MeerkatSolitonExecutor')}" not in d:
+            d = re.sub(r"  m_Script: \{[^}]*\}\n", f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatSolitonExecutor')}, type: 3}}\n", d)
             d = re.sub(r"  config: \{[^}]*\}\n",
                        f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}\n"
                        f"  gameData: {{fileID: 11400000, guid: {GAME_DATA_GUID}, type: 2}}\n", d)
@@ -583,8 +603,8 @@ def check_prefab(text: str):
     want("  InScenePlacedSourceGlobalObjectIdHash: 0\n" in doc_of(text, NETWORK_OBJECT_ID),
          "Meerkat.prefab: InScenePlacedSourceGlobalObjectIdHash is not cleared")
     w = doc_of(text, WORMHOLE_ID)
-    want(f"guid: {script_guid('MeerkatWormholeExecutor')}, type: 3" in w and f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}" in w,
-         "Meerkat.prefab: the wormhole executor is missing or not wired to MeerkatWormholeConfig (RT would form nothing)")
+    want(f"guid: {script_guid('MeerkatSolitonExecutor')}, type: 3" in w and f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}" in w,
+         "Meerkat.prefab: the wormhole executor is missing or not wired to MeerkatSolitonConfig (RT would form nothing)")
     reg = doc_of(text, REGISTRY_ID)
     want(f"  - {{fileID: {WORMHOLE_ID}}}\n" in reg and f"  - {{fileID: {STANCE_ID}}}\n" in reg,
          "Meerkat.prefab: the ActionExecutorRegistry does not list the wormhole and the stance executors")
@@ -600,20 +620,20 @@ def check_prefab(text: str):
          "Meerkat.prefab: the HUD is not MeerkatHUDController wired to the wormhole")
     m = re.search(r"  _inputEventShipActions:\n(?:  [- ] .*\n)*", text)
     want(m and m.group(0) == MEERKAT_BINDINGS,
-         "Meerkat.prefab: the bindings are not RT -> MeerkatWormholeFormAction, LT -> MeerkatWormholeShortenAction, X -> StoatHoldAction, "
+         "Meerkat.prefab: the bindings are not RT -> MeerkatSolitonFormAction, LT -> MeerkatSolitonShortenAction, X -> StoatHoldAction, "
          "Y -> MeerkatSentinelModeAction")
     want("  _touchActionOverrides: []\n" in text and "  _gamepadActionOverrides: []\n" in text,
          "Meerkat.prefab: a per-device override still binds the Stoat's actions")
     root = re.search(r"--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
     want(root and f"{{fileID: {RELAY_ID}}}" in root.group(1) and
-         f"guid: {script_guid('MeerkatWormholeNetworkRelay')}, type: 3" in doc_of(text, RELAY_ID),
-         "Meerkat.prefab: MeerkatWormholeNetworkRelay is not on the root (other players would not see the tunnels)")
+         f"guid: {script_guid('MeerkatSolitonNetworkRelay')}, type: 3" in doc_of(text, RELAY_ID),
+         "Meerkat.prefab: MeerkatSolitonNetworkRelay is not on the root (other players would not see the tunnels)")
     want(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}" in text and STOAT_CAMERA_GUID not in text,
          "Meerkat.prefab: the camera is not MeerkatCameraSettingsSO (the Stoat's camera sits above and behind the hull)")
     kit = doc_of(text, KIT_ID)
     want(f"guid: {script_guid('MeerkatSolitonKit')}, type: 3" in kit and f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}" in kit
          and f"  m_GameObject: {{fileID: {ACTIONS_GO}}}" in kit,
-         "Meerkat.prefab: MeerkatSolitonKit is missing, off the ShipActions object, or not wired to MeerkatWormholeConfig (Garrett's kit does nothing)")
+         "Meerkat.prefab: MeerkatSolitonKit is missing, off the ShipActions object, or not wired to MeerkatSolitonConfig (Garrett's kit does nothing)")
     want(f"  - {{fileID: {KIT_ID}}}\n" in reg, "Meerkat.prefab: the ActionExecutorRegistry does not list MeerkatSolitonKit (Y would find no kit)")
     want(f"  kit: {{fileID: {KIT_ID}}}\n" in hud, "Meerkat.prefab: the HUD's kit reference is not the hull's MeerkatSolitonKit")
     go = re.search(r"--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)" % ACTIONS_GO, text)
@@ -628,12 +648,14 @@ def check_config(cfg: str, values: dict):
     errs = []
     for k in CONFIG_KEYS:
         if not re.search(r"^  %s: -?[\d.]+\n" % k, cfg, re.M):
-            errs.append(f"MeerkatWormholeConfig.asset: no `{k}` (every studio key is a field, by the same name)")
+            errs.append(f"MeerkatSolitonConfig.asset: no `{k}` (every studio key is a field, by the same name)")
     for k in RETIRED:
         if re.search(r"^  %s: " % k, cfg, re.M):
-            errs.append(f"MeerkatWormholeConfig.asset: `{k}` is retired and still in the asset")
-    if f"guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3" not in cfg:
-        errs.append("MeerkatWormholeConfig.asset: does not name MeerkatWormholeConfigSO")
+            errs.append(f"MeerkatSolitonConfig.asset: `{k}` is retired and still in the asset")
+    if TUNNEL_REFS not in cfg:
+        errs.append("MeerkatSolitonConfig.asset: tunnelConfig / networkConfig are not SolitonTunnel.asset / SolitonNetwork.asset")
+    if f"guid: {script_guid('MeerkatSolitonConfigSO')}, type: 3" not in cfg:
+        errs.append("MeerkatSolitonConfig.asset: does not name MeerkatSolitonConfigSO")
     return errs
 
 
@@ -677,8 +699,8 @@ def check_all():
             or read(SENTINEL) != sentinel_action_asset():
         errs.append("MeerkatSentinelModeAction.asset: missing, or not the MeerkatSentinelModeActionSO the Y binding names")
     errs += check_camera(read(CAMERA))
-    if read(FORM) != action_asset("MeerkatWormholeFormAction", 0) or read(SHORTEN) != action_asset("MeerkatWormholeShortenAction", 1):
-        errs.append("MeerkatWormholeFormAction / ShortenAction: not the RT Form (0) and LT Shorten (1) triggers")
+    if read(FORM) != action_asset("MeerkatSolitonFormAction", 0) or read(SHORTEN) != action_asset("MeerkatSolitonShortenAction", 1):
+        errs.append("MeerkatSolitonFormAction / ShortenAction: not the RT Form (0) and LT Shorten (1) triggers")
     errs += check_registrations(read(CONTAINER), read(NETWORK_PREFABS), [(os.path.basename(p), read(p)) for p in CLASS_LISTS],
                                 read(CLASS_ASSET), read(MAP), read(FUSION))
     return errs
@@ -695,7 +717,7 @@ def author():
         old = read(CONFIG); new = kit_retrofit(config_retrofit(old, values), values)
         if new != old:
             write(CONFIG, new)
-    for path, guid, name, k in ((FORM, FORM_GUID, "MeerkatWormholeFormAction", 0), (SHORTEN, SHORTEN_GUID, "MeerkatWormholeShortenAction", 1)):
+    for path, guid, name, k in ((FORM, FORM_GUID, "MeerkatSolitonFormAction", 0), (SHORTEN, SHORTEN_GUID, "MeerkatSolitonShortenAction", 1)):
         if not os.path.exists(path) or read(path) != action_asset(name, k):
             write(path, action_asset(name, k)); write(path + ".meta", native_meta(guid))
     if not os.path.exists(SENTINEL) or read(SENTINEL) != sentinel_action_asset():
@@ -761,7 +783,7 @@ def self_test():
     cfg = config_asset(values)
     expect(check_config(cfg, values), 0, "a fresh config passes")
     expect(check_config(cfg.replace("  reticleAhead: 30\n", ""), values), 1, "a key missing")
-    old_cfg = cfg.replace(f"  reticleSmoothSeconds: {num(values['reticleSmoothSeconds'])}\n", "").replace(f"  bridgeRings: {num(values['bridgeRings'])}\n", "")
+    old_cfg = cfg.replace(f"  reticleSmoothSeconds: {num(values['reticleSmoothSeconds'])}\n", "").replace(f"  reticleNearLight: {num(values['reticleNearLight'])}\n", "")
     if config_retrofit(old_cfg, values) == old_cfg or check_config(config_retrofit(old_cfg, values), values):
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
@@ -779,7 +801,7 @@ def self_test():
     retired = cfg.replace("  shaftMin: 60\n", "  lengthStraight: 600\n  shaftMin: 60\n")
     if check_config(retired, values) == [] or "lengthStraight" in config_retrofit(retired, values):
         fails.append("a retired key is neither flagged nor removed by the retrofit")
-    pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatDiameter|mouthDiameter): .*\n", "", cfg)
+    pre7 = re.sub(r"  (shaftMin|shaftMax): .*\n", "", cfg)
     if config_retrofit(pre7, values) != cfg:
         fails.append("the config retrofit does not bring a round-6 asset to the round-7 one, in the page's order")
     kcfg = kit_retrofit(cfg, values)
@@ -792,7 +814,7 @@ def self_test():
     tuned_kit = kcfg.replace("  aiZapRate: 5\n", "  aiZapRate: 7\n")
     if kit_retrofit(tuned_kit, values) != tuned_kit:
         fails.append("the kit retrofit overwrote a value tuned after it")
-    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 0.25\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
+    if "  shaftMax: 600\n" not in cfg or TUNNEL_REFS not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]
