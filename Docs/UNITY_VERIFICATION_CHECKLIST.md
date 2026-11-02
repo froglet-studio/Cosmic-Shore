@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Boot: one set of DI singletons, not two; live SceneTransitionManager; startup log fixes (`fix/android-startup-logs`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `AppManager.InstallBindings` runs only for the prefab asset (the root scope). The Bootstrap scene's instance
+also installed, so every lazy singleton had a second copy in the Bootstrap scene's container: the second
+`ApplicationStateMachine` reset the state to None (`Invalid transition: None → MainMenu`), the second
+`AuthenticationServiceFacade` cleared the sign-in mirror, and party services in Bootstrap used different objects from later
+scenes. The root's `SceneTransitionManager` now resolves to the live object, not the prefab asset's component. Also:
+`VolumeDisplayShader` has `_MainTex`, `NetworkSceneObjectGuard` reports a prefab once, a doubled host spawn event is not a
+`[FLOW-5]` warning, a missing `Boost Amount` is reported once per event, and the prism managers' lazy creation is verbose.
+
+**Test (editor and phone):**
+1. Boot from Bootstrap to the menu. Expected: no `[AppState] Invalid transition`, and the fade into the menu still plays.
+2. Play a match and return to the menu, with a fade each way. Then open Maelstrom and play a round: it advances once per game.
+3. Finish a replay-recording mode, then open the replay browser. Expected: the match is listed.
+4. MPPM: 3-player party invite, accept, leave and rejoin, offline and reconnect. Expected: same as before this change or better.
+5. Open Friends. Expected: no `[FriendsInitializer] Friends service did not come up` once signed in.
+
 ### 🔴 Switchback AI step 1: dodge only Danger prisms, none in the last 200 u to the ring (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `SwitchbackPrismAvoidance.Dodges`, used by `SwitchbackBlastAI`'s sense and emergency sweep;
