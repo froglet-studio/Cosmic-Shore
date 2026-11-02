@@ -5242,3 +5242,59 @@ the next round goes on a new page called Menu Redesign C.
   and opens the board on the tab. The canvas's own page bar belongs to the Design type and cannot be changed from here,
   so the name is asked in the session, not by a prompt inside the canvas.
 - Doc references to a round's "page" now mean its section on the Menu Redesign tab (same title).
+
+## 113. Rev 43 mockups: the Voyage window - the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (2026-11-02, awaiting a pick)
+
+**Asked (Shombith, 2026-11-02):** "design the new voyage page after taking in garrett's new PR ... take inspiration from
+the arena preview slide in slide out ... On the left we can show the whole map preview and the edge on view below ...
+opaque no transparency ... high res ... each voyage is given to you by your crew and the card should show that new
+voyage ... 3 levels of details, first the voyage title and description and more things ... like the waypoint of that
+voyage etc. plus the preset ... 2nd level its the configuration the 12 settings that is the pilot, vessel artifact as
+present in the ark ... Preset is if you have a configured Ark then that shows up below that select amongst the
+following arks or go configure. 3rd will be the story about the voyage ... optional ... Saga and episodes no work we are
+doing inside it but still we want that to have the lb and rb support and follow the updated UI design rules." Done when
+six mockups of each UI are presented and picked; the build follows the pick.
+
+**Read first:** Garrett's Voyage window as built (`94c1050b`, `a1922d78`, open PR froglet-studio/Cosmic-Shore#1717:
+SAGA | EPISODES buttons opening modals, the galaxy explorer `VoyageMapGraphic` with the deep zoom and the 20 ly cells,
+the edge view `VoyageEdgeGraphic`, the job cards three across that open over each other), `Docs/Voyages/VOYAGE_BOARD.md`,
+the slice's words (`voyage_slice.json`), the Ark's squad deck (section 95: three seats x vessel, element, pilot,
+artifact = the 12 settings), the arena preview's tray (section 108) and the earlier voyage rounds (Rev 13-17, 25).
+
+**On the canvas:** tab **Menu Redesign C**, round title "Rev 43 - Voyage window ..." (version `1793648453-504c`).
+Copies: `Docs/MenuRedesignB/board/R43*.dc.html`; the generator: `Docs/MenuRedesignB/rounds/r43_voyage_window.py`.
+The map and the edge view are the Voyage Board itself rendered at 2x (Neighbourhood tier, the cells, the course from
+Tumult to Lantern Reach and its profile), uploaded as `/_blob/b96bc9ce...` and `/_blob/25c96499...`, drawn opaque.
+Laid out as one row per option, five screens each: **Voyage** (level 1), **Crew** (level 2), **Story** (level 3),
+**Saga**, **Episodes**; the Compare board and the notes on the first row.
+
+- **A - Drawer (recommended):** the card slides in from the right; Ark crew and Story slide over it and leave a spine
+  you press to go back. Saga and Episodes use the same frame (art or quest list left, the drawer right). Recommended
+  because the map and edge view never move or shrink at any level, the slide matches the arena preview's tray, and
+  each level is one press deeper (A Set sail, X Ark crew, Y Story, B back).
+- **B - Tray:** the arena preview's tray literally: a narrow card at level 1 that widens over the map at levels 2
+  and 3 (the map keeps its left third). Saga full width with the Severing as a strip; Episodes five tall cards.
+- **C - Level tabs:** one card, Voyage / Ark crew / Story as tabs on its top (D-pad), the voyage list inside the
+  card; the window's tabs a segmented bar. Saga as two equal part cards; Episodes as the old quest tracker.
+- **D - Rising sheet:** level 1 a card at the right with the waypoints listed; Ark crew and Story rise from the bottom
+  across the width (the 12 settings get the most room, the edge view is covered). Tabs with counts.
+- **E - Dossier:** the three levels as numbered steps down one card; the open step fills it. Saga and Episodes as
+  steps too.
+- **F - Two cards:** Ark crew or Story slides in as a second card between the map and the voyage card; the map narrows,
+  the brief stays. Headline tabs (the open tab is the screen's title).
+
+Shared by all six (same content, so the layouts are what differs): level 1 holds the title, the crew's summary, who
+found it (Oriel Vance, CITADEL, Hunter), course / sail / intensity / pays / finds / odds, the course cell by cell, the
+waypoints, and **Your Ark**: the configured Arks (Skim Wing, Breakers) to choose from, or Configure. Level 2 is the
+three seats x vessel, pilot, element, artifact with a preset switcher and Save as Ark. Level 3 (optional) is who brought
+it, the place, the news and the water. Saga (Tandava, the Severing) and Episodes (Episode 1's five quests, Episode 2
+locked) keep their content.
+
+**Differs from the build:** Saga | Voyages | Episodes become the window's tabs on LB / RB (today SAGA and EPISODES are
+buttons opening modals); the map and edge view take the left side, opaque; the three-across grid becomes the voyage
+list (a strip on the map or a list in the card); the open card gains the preset (an Ark), a level for the 12 settings
+and a story level. Garrett's map and edge graphics stay as they are; only where they sit changes. The words the card
+shows that are not authored lines yet (waypoints, odds, the cell-by-cell mix, the story headings) would be new
+`VoyageLines` through `voyage_slice.json`, Garrett's file.
+
+Affects: Garrett's Voyage window (`author_voyage_window.py`, `VoyageJobsView`, `VoyageWindowModals`) once a pick is built.
