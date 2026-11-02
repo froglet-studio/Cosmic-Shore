@@ -5300,7 +5300,7 @@ shows that are not authored lines yet (waypoints, odds, the cell-by-cell mix, th
 
 Affects: Garrett's Voyage window (`author_voyage_window.py`, `VoyageJobsView`, `VoyageWindowModals`) once a pick is built.
 
-## 114. Rev 45 mockups: the Fleet Codex, a vessel in tabs (2026-11-02, awaiting a pick)
+## 114. Rev 45 mockups: the Fleet Codex, a vessel in tabs (2026-11-02; Shombith picked B, built)
 
 **Asked (Shombith, 2026-11-02):** "Redo: inside the details of the vessels we need to categorize and not mix up
 everything. There should be specific tabs for elements, game modes and controls, for each mobile and PC and controller
@@ -5328,3 +5328,17 @@ games, docs, changes) with each ability's pad and key only. Either option needs 
 for the Mobile tab, and the flight rows (steer, aim) from the input strategies; the level-5 proposals A shows live only
 in vessel docs (read them from a marked table or drop the line); a ladder exists only for course-based modes. The fleet
 matrix stays as it is.
+
+**Picked (Shombith, 2026-11-02): "I like design B and also make the first page in that design and include. Make only
+one page, doesn't need two pages."** Built the same hour into the live codex (`Docs/FleetCodex/index.html`, version 2
+of https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8): ONE page. The rail now holds the fleet, **Fleet overview** first
+(the old first page: the totals and the vessel x element matrix, in B's look) and then every vessel with its L5 count;
+choosing one shows B's vessel view in the same page: the identity header, then Elements (all four side by side, long
+text behind Read all), Game Modes, Controls (one table, actions down and devices across, narrowed by All devices /
+Controller / PC / Mobile) and Docs and changes. Links: `#fleet`, `#<Vessel>`, `#<Vessel>-controls` (and `-modes`,
+`-docs`). B's section rail became tabs under the header, because the rail now lists the vessels. The Controls data is
+new in `Tools/Build/fleet_codex.py`: the steer row from the hull's transformer class (one stick when it descends from
+`SingleStickVesselTransformer`), each ability's pad and key from the ability table, other bound inputs from the
+prefab's `_inputEventShipActions`, and the phone column from `author_touch_profiles.py` (thumb lifts, cards, extra
+buttons, the slider, the tilt notes). Checked in Chromium at 1440 and 400 px, light and dark: no script errors, no
+sideways scroll.

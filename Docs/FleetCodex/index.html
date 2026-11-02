@@ -3,281 +3,329 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a ship register. Fleet view = one matrix row per hull, the four element columns in the HUD's
-   charge -> mass -> space -> time order. Vessel view = a spec sheet: hangar plate, flight strip, four element
-   cards, cards it flies, docs, recent changes. Data comes from fleet.json, generated from the shipped assets. */
+/* Layout: one page, design B of the board's Rev 45 (picked by Shombith, 2026-11-02). A rail on the left holds the
+   fleet: the overview first, then every vessel. The main area shows the fleet matrix, or one vessel: a compact
+   identity header, then four sections (Elements side by side, Game Modes, Controls as one table narrowed by device,
+   Docs and changes). Data comes from fleet.json, generated from the shipped assets (Tools/Build/fleet_codex.py). */
 :root{
-  --bg:#eceff0; --surface:#fbfcfc; --sunk:#e2e7e9; --ink:#10202a; --muted:#56676f; --line:#cdd6da;
-  --accent:#0c6b77; --accent-ink:#ffffff; --good:#2c7a4b; --warn:#9a5b0e; --bad:#a3352b; --open:#6a7880;
+  --bg:#eceff0; --rail:#e3e8ea; --surface:#fbfcfc; --sunk:#e2e7e9; --ink:#10202a; --muted:#56676f; --line:#cdd6da;
+  --accent:#0c6b77; --accent-soft:#d4ecee; --good:#2c7a4b; --warn:#9a5b0e; --open:#6a7880;
   --display:"Oxanium","Eurostile","Bank Gothic",system-ui,sans-serif;
   --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0a1318; --surface:#101c23; --sunk:#0d171d; --ink:#e2ebee; --muted:#8ea2ab; --line:#213039;
-  --accent:#5cc4cf; --accent-ink:#06252a; --good:#6cc18f; --warn:#e2a552; --bad:#ef8a7e; --open:#8d9ba3; color-scheme:dark}}
+  --bg:#0a1318; --rail:#081014; --surface:#101c23; --sunk:#0d171d; --ink:#e2ebee; --muted:#8ea2ab; --line:#213039;
+  --accent:#5cc4cf; --accent-soft:#0d2229; --good:#6cc18f; --warn:#e2a552; --open:#8d9ba3; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0a1318; --surface:#101c23; --sunk:#0d171d; --ink:#e2ebee; --muted:#8ea2ab; --line:#213039;
-  --accent:#5cc4cf; --accent-ink:#06252a; --good:#6cc18f; --warn:#e2a552; --bad:#ef8a7e; --open:#8d9ba3; color-scheme:dark}
+  --bg:#0a1318; --rail:#081014; --surface:#101c23; --sunk:#0d171d; --ink:#e2ebee; --muted:#8ea2ab; --line:#213039;
+  --accent:#5cc4cf; --accent-soft:#0d2229; --good:#6cc18f; --warn:#e2a552; --open:#8d9ba3; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;margin:0}
 a{color:var(--accent)}
-a:focus-visible,button:focus-visible,input:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{max-width:1180px;margin:0 auto}
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-block:28px 18px;border-bottom:1px solid var(--line)}
-.brand h1{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.02em;margin:0;line-height:1.1;text-wrap:balance}
-.brand p{margin:4px 0 0;color:var(--muted);max-width:62ch}
-.stamp{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
-.stamp b{color:var(--ink);font-weight:500}
-nav.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-block:14px}
-.search{flex:1 1 240px;min-width:0;font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
-.chip{font:600 12px/1 var(--body);letter-spacing:.04em;text-transform:uppercase;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-block:4px 18px}
-.tally div{background:var(--surface);padding:12px 14px;min-width:0}
-.tally .n{font-family:var(--display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
-.tally .l{font-size:12px;color:var(--muted);letter-spacing:.03em}
-.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-table.matrix{border-collapse:collapse;width:100%;min-width:860px}
-.matrix th{font:600 11px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--sunk);position:sticky;top:0}
-.matrix th small{display:block;text-transform:none;letter-spacing:0;font-weight:400;font-size:11px}
-.matrix td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-.matrix tr:last-child td{border-bottom:0}
-.matrix tbody tr{cursor:pointer}
-.matrix tbody tr:hover td{background:var(--sunk)}
-.hull{display:flex;gap:10px;align-items:center;min-width:170px}
-.hull img{width:64px;height:36px;object-fit:cover;border-radius:4px;background:var(--sunk);flex:none}
-.hull .nm{font-family:var(--display);font-weight:600;font-size:15px;line-height:1.2}
-.hull .id{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.ab{font-weight:700;font-size:13.5px;line-height:1.3}
-.ab.open{font-weight:400;font-style:italic;color:var(--open)}
-.row2{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;align-items:center}
-.key{font:500 11px/1 var(--mono);padding:3px 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;color:var(--ink);background:var(--bg)}
-.pill{font:700 10.5px/1 var(--body);letter-spacing:.05em;text-transform:uppercase;padding:4px 6px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
-.pill.wired{color:var(--good)} .pill.open{color:var(--open)} .pill.warn{color:var(--warn)}
-.muted{color:var(--muted)}
-.mono{font-family:var(--mono);font-size:12.5px}
-/* vessel sheet */
-.back{display:inline-block;margin-block:18px 6px;font-weight:700;text-decoration:none}
-.sheet-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:24px;align-items:center;padding-block:10px 22px;border-bottom:1px solid var(--line)}
-.sheet-head h2{font-family:var(--display);font-size:40px;font-weight:700;margin:0;line-height:1.05;letter-spacing:.01em;text-wrap:balance}
-.sheet-head .crew{font-family:var(--display);color:var(--accent);font-weight:600;margin-top:4px}
-.sheet-head p{max-width:64ch;margin:10px 0 0}
-.sheet-head .note{font-size:13px;color:var(--muted)}
-.plate{width:100%;max-width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:var(--sunk);border:1px solid var(--line)}
-.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.flight{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-block:22px}
-.flight div{background:var(--surface);padding:10px 14px;min-width:0}
-.flight .n{font-family:var(--display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
-.flight .n small{font-family:var(--body);font-size:12px;font-weight:400;color:var(--muted);margin-left:3px}
-.flight .l{font-size:12px;color:var(--muted)}
-h3.sec{font:600 13px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:30px 0 12px;display:flex;gap:10px;align-items:baseline}
-h3.sec span{text-transform:none;letter-spacing:0;font-weight:400}
-.elements{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:14px}
-.el{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;gap:12px}
-.el-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.el .elname{font:700 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.el .elname em{font-style:normal;letter-spacing:0;text-transform:none;font-weight:400}
-.el h4{font-family:var(--display);font-size:21px;font-weight:600;margin:6px 0 0;line-height:1.15}
-.el h4.open{font-style:italic;color:var(--open);font-weight:500}
-.el .desc{margin:0;font-size:14px;max-width:72ch}
-.desc.clamp{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
-.more{font:700 12px var(--body);background:none;border:0;color:var(--accent);padding:0;cursor:pointer;align-self:flex-start}
-.dials{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:10px}
-.dial{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline}
-.dial .f{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
-.dial .v{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.dial .src{grid-column:1/-1;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.shell{display:flex;min-height:100%}
+/* rail */
+.rail{width:280px;flex:none;background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;padding-block:20px 16px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:14px}
+.brand{font-family:var(--display);font-weight:700;font-size:22px;padding:0 10px}
+.stamp{font-family:var(--mono);font-size:11px;color:var(--muted);padding:2px 10px 12px}
+.stamp a{color:inherit}
+.search{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.list{flex:1;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:2px;min-height:0}
+.item{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-radius:6px;padding:6px 10px;text-align:left;cursor:pointer;color:var(--muted)}
+.item:hover{background:var(--surface)}
+.item[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:inset 2px 0 0 var(--accent)}
+.item img,.item .ph{width:48px;height:27px;object-fit:cover;border-radius:3px;background:var(--sunk);flex:none}
+.item .nm{font-weight:700;font-size:14px;color:var(--ink);line-height:1.2}
+.item .sub{font-family:var(--mono);font-size:11px}
+.item .fleet-ic{width:48px;height:27px;display:flex;align-items:center;justify-content:center;flex:none;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
+.sep{height:1px;background:var(--line);margin:8px 10px}
+/* main */
+.main{flex:1;min-width:0;padding-block:24px 48px;padding-left:32px;padding-right:max(32px,env(safe-area-inset-right,0px))}
+.head{display:flex;gap:24px;align-items:center;padding-bottom:20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.head .plate{width:228px;max-width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;border:1px solid var(--line);background:var(--sunk);flex:none}
+.who{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.who h1{font-family:var(--display);font-size:38px;font-weight:700;margin:0;line-height:1.05;text-wrap:balance}
+.who .crew{font-family:var(--display);color:var(--accent);font-weight:600}
+.who p{margin:0;color:var(--muted);max-width:90ch}
+.idline{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,auto));gap:4px 26px;flex:none}
+.stats .n{font-family:var(--display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.stats .l{font-size:12.5px;color:var(--muted)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:700 10.5px/1 var(--body);letter-spacing:.05em;text-transform:uppercase;padding:5px 7px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.good{color:var(--good)} .pill.open{color:var(--open)} .pill.warn{color:var(--warn)}
+.tabs{display:flex;gap:28px;border-bottom:1px solid var(--line);margin:18px 0 18px;overflow-x:auto}
+.tab{background:none;border:0;padding:10px 0;cursor:pointer;color:var(--muted);font-weight:700;white-space:nowrap;box-shadow:none}
+.tab[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.tab .c{font-weight:400;font-size:12.5px;margin-left:6px}
+.lab{font:700 11px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lab em{font-style:normal;letter-spacing:0;text-transform:none;font-weight:400}
+.key{display:inline-block;font:500 11.5px/1 var(--mono);padding:4px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:var(--bg);white-space:nowrap}
+.key.none{color:var(--open);border-style:dashed}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+/* elements: side by side */
+.els{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.el{padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.el h3{font-family:var(--display);font-size:22px;font-weight:600;margin:0;line-height:1.15}
+.el h3.open{font-style:italic;color:var(--open);font-weight:500}
+.el .desc{margin:0;font-size:14px}
+.desc.clamp{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.more{background:none;border:0;padding:0;color:var(--accent);font-weight:700;font-size:12.5px;cursor:pointer;align-self:flex-start}
+.dial{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--sunk);display:flex;flex-direction:column;min-width:0}
+.dial .top{display:flex;justify-content:space-between;gap:8px}
+.dial .f{font-family:var(--mono);font-size:12px;overflow-wrap:anywhere}
+.dial .v{font-family:var(--mono);font-size:12px;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.dial .src{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
 .dial.off .f,.dial.off .v{color:var(--open);text-decoration:line-through}
-.lvl5{border-radius:6px;padding:10px 12px;background:var(--sunk)}
-.lvl5 .t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:700}
-.lvl5 p{margin:6px 0 0;font-size:13.5px}
-.lvl5 .gate{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
-.card .cn{font-family:var(--display);font-weight:600;font-size:17px}
-.card p{font-size:13.5px;margin:8px 0 0}
-.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px}
-ul.list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-ul.list li{padding:9px 14px;border-bottom:1px solid var(--line);min-width:0;overflow-wrap:anywhere;font-size:13.5px}
-ul.list li:last-child{border-bottom:0}
-ul.list .d{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-right:8px;white-space:nowrap}
-.empty{padding:14px;color:var(--muted);font-style:italic}
-footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;max-width:80ch}
+.l5{padding:9px 11px;border:1px dashed var(--line);border-radius:6px;display:flex;flex-direction:column;gap:4px}
+.l5 .t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--display);font-weight:600}
+.l5 p{margin:0;font-size:13px}
+.l5 .gate{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+/* modes */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.card{padding:16px 18px;min-width:0}
+.card .cn{font-family:var(--display);font-size:20px;font-weight:600}
+.card p{margin:8px 0 0;font-size:14px}
+/* controls */
+.seg-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.seg{border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;font-weight:700;border-radius:6px;padding:7px 14px}
+.seg[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.scroll{overflow-x:auto}
+table.ctl{border-collapse:collapse;width:100%;min-width:640px}
+.ctl th{font:700 11px/1.2 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 14px;background:var(--sunk);border-bottom:1px solid var(--line)}
+.ctl td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.ctl tr:last-child td{border-bottom:0}
+.ctl .a{font-weight:700}
+.ctl .d{display:block;font-size:12.5px;color:var(--muted)}
+.notes{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+/* docs */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:20px}
+ul.list2{list-style:none;margin:8px 0 0;padding:0}
+ul.list2 li{padding:9px 0;border-top:1px solid var(--line);font-size:14px;overflow-wrap:anywhere}
+ul.list2 .dt{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-right:8px}
+/* fleet */
+.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:18px 0}
+.tally div{background:var(--surface);padding:12px 16px}
+.tally .n{font-family:var(--display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.tally .l{font-size:12.5px;color:var(--muted)}
+table.mx{border-collapse:collapse;width:100%;min-width:900px}
+.mx th{font:700 11px/1.2 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;background:var(--sunk);border-bottom:1px solid var(--line)}
+.mx th small{display:block;text-transform:none;letter-spacing:0;font-weight:400}
+.mx td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.mx tbody tr{cursor:pointer}
+.mx tbody tr:hover td{background:var(--sunk)}
+.mx .ab{font-weight:700;font-size:13.5px}
+.mx .ab.open{font-weight:400;font-style:italic;color:var(--open)}
+.mx .row2{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.hull{display:flex;gap:10px;align-items:center}
+.hull img{width:56px;height:32px;object-fit:cover;border-radius:3px;background:var(--sunk)}
+.hull .nm{font-family:var(--display);font-weight:600}
+.empty{color:var(--muted);font-style:italic;padding:12px 0}
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;max-width:90ch}
 footer code{font-family:var(--mono);font-size:12px}
-.load{padding:60px 0;color:var(--muted)}
-@media (max-width:760px){.sheet-head{grid-template-columns:1fr}.sheet-head h2{font-size:32px}.stamp{text-align:left}}
-@media (prefers-reduced-motion:no-preference){.el,.card{transition:border-color .15s}.el:hover,.card:hover{border-color:var(--muted)}}
+@media (max-width:860px){
+  .shell{flex-direction:column}
+  .rail{position:static;width:auto;height:auto;border-right:0;border-bottom:1px solid var(--line);padding-right:max(14px,env(safe-area-inset-right,0px))}
+  .list{max-height:38vh}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .who h1{font-size:30px}
+}
 </style>
 
-<div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <h1>Fleet Codex</h1>
-      <p>Every Cosmic Shore vessel: its four abilities, what each element scales, the level-5 upgrades, how it flies and the games it flies in. Read from the shipped assets, not from the docs.</p>
-    </div>
+<div class="shell">
+  <nav class="rail" aria-label="The fleet">
+    <div class="brand">Fleet Codex</div>
     <div class="stamp" id="stamp">Loading&hellip;</div>
-  </header>
-  <main id="app"><div class="load">Reading the fleet&hellip;</div></main>
-  <footer id="foot"></footer>
+    <input id="q" class="search" type="search" placeholder="Search vessels, abilities, games" aria-label="Search the fleet">
+    <div class="list" id="list"></div>
+  </nav>
+  <main class="main" id="app"><p class="empty">Reading the fleet&hellip;</p></main>
 </div>
 
 <script>
 (function(){
-  const EL_NOTE = {Charge:"threat &middot; energy", Mass:"size &middot; volume", Space:"reach &middot; presence", Time:"rate &middot; mobility"};
-  const STATUS = {
-    wired:["wired","L5 wired"], open:["open","L5 open"], off:["warn","L5 switched off"],
-    "label-only":["warn","L5 named, not gated"], "gate-only":["warn","L5 gated, not named"]
-  };
-  const app = document.getElementById("app");
-  let DATA = null, query = "", filter = "all";
+  var EL_NOTE = {Charge:"threat, energy", Mass:"size, volume", Space:"reach, presence", Time:"rate, mobility"};
+  var L5 = {wired:["good","L5 wired"], open:["open","L5 open"], off:["warn","L5 switched off"],
+            "label-only":["warn","L5 named, not gated"], "gate-only":["warn","L5 gated, not named"]};
+  var SECTIONS = [["elements","Elements"],["modes","Game Modes"],["controls","Controls"],["docs","Docs and changes"]];
+  var DEVICES = [["all","All devices"],["pad","Controller"],["pc","PC"],["touch","Mobile"]];
+  var D = null, query = "", section = "elements", device = "all";
+  var app = document.getElementById("app"), list = document.getElementById("list"), q = document.getElementById("q");
 
-  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const num = v => (v == null ? "&ndash;" : (Math.round(v * 100) / 100).toString());
-  const gh = p => DATA.github + p.split("/").map(encodeURIComponent).join("/");
-  const commit = sha => DATA.github.replace(/blob\/[^/]+\/$/, "commit/") + sha;
-  const file = p => (p || "").split("/").pop();
-
-  function keys(e){
-    if(!e || !e.pad && !e.key) return "";
-    return (e.pad ? `<span class="key" title="Gamepad">${esc(e.pad)}</span>` : "") +
-           (e.key ? `<span class="key" title="Keyboard">${esc(e.key)}</span>` : "");
-  }
-  function pill(status){ const s = STATUS[status] || STATUS.open; return `<span class="pill ${s[0]}">${s[1]}</span>`; }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function num(v){ return v == null ? "&ndash;" : String(Math.round(v * 100) / 100); }
+  function gh(p){ return D.github + p.split("/").map(encodeURIComponent).join("/"); }
+  function commit(sha){ return D.github.replace(/blob\/[^\/]+\/$/, "commit/") + sha; }
+  function file(p){ return (p || "").split("/").pop(); }
+  function pill(st){ var s = L5[st] || L5.open; return '<span class="pill ' + s[0] + '">' + s[1] + '</span>'; }
+  function key(k){ return !k || k === "no button" || k === "passive" ? '<span class="key none">' + esc(k || "none") + '</span>' : '<span class="key">' + esc(k) + '</span>'; }
 
   function matches(v){
-    if(filter === "open" && !Object.values(v.elements).some(e => e.upgrade.status !== "wired")) return false;
-    if(filter === "nocard" && v.cards.length) return false;
     if(!query) return true;
-    const hay = [v.name, v.key, v.crew.join(" "), v.description, ...Object.values(v.elements).flatMap(e => [e.ability, e.upgrade.label]),
-                 ...v.cards.map(c => c.name)].join(" ").toLowerCase();
-    return query.split(/\s+/).every(w => hay.includes(w));
+    var hay = [v.name, v.key, v.crew.join(" "), v.description].concat(
+      Object.keys(v.elements).map(function(n){ var e = v.elements[n]; return e.ability + " " + e.upgrade.label; }),
+      v.cards.map(function(c){ return c.name; })).join(" ").toLowerCase();
+    return query.split(/\s+/).every(function(w){ return hay.indexOf(w) >= 0; });
   }
 
-  function fleetView(){
-    const vs = DATA.vessels, els = DATA.elements;
-    const withMap = vs.filter(v => v.status.hasMap);
-    const slots = withMap.length * 4;
-    const wired = withMap.reduce((a, v) => a + v.status.upgradesWired, 0);
-    const scaled = withMap.reduce((a, v) => a + v.status.scaling, 0);
-    const cards = new Set(vs.flatMap(v => v.cards.map(c => c.name))).size;
-    const shown = vs.filter(matches);
-    app.innerHTML = `
-      <nav class="bar" aria-label="Filter the fleet">
-        <input id="q" class="search" type="search" placeholder="Search vessels, abilities, upgrades, games" value="${esc(query)}" aria-label="Search">
-        <button class="chip" data-f="all" aria-pressed="${filter==="all"}">All</button>
-        <button class="chip" data-f="open" aria-pressed="${filter==="open"}">Has an L5 to design</button>
-        <button class="chip" data-f="nocard" aria-pressed="${filter==="nocard"}">No game card</button>
-      </nav>
-      <div class="tally">
-        <div><div class="n">${withMap.length}</div><div class="l">vessels with an ability map</div></div>
-        <div><div class="n">${wired}<span class="muted" style="font-size:16px"> / ${slots}</span></div><div class="l">level-5 upgrades wired</div></div>
-        <div><div class="n">${scaled}<span class="muted" style="font-size:16px"> / ${slots}</span></div><div class="l">elements that scale a number</div></div>
-        <div><div class="n">${cards}</div><div class="l">game cards that seat them</div></div>
-      </div>
-      <div class="scroll"><table class="matrix">
-        <thead><tr><th>Vessel</th>${els.map(e => `<th>${e}<small>${EL_NOTE[e]}</small></th>`).join("")}<th>Games</th></tr></thead>
-        <tbody>${shown.map(v => `
-          <tr tabindex="0" data-k="${esc(v.key)}" aria-label="Open ${esc(v.name)}">
-            <td><div class="hull">${v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy">` : `<img alt="">`}
-              <div><div class="nm">${esc(v.name)}</div><div class="id">${esc(v.key)} &middot; ${v.id}${v.crew.length ? " &middot; crew of " + v.crew.length : ""}</div></div></div></td>
-            ${els.map(en => { const e = v.elements[en];
-              if(!e) return `<td class="muted">no map</td>`;
-              return `<td><div class="ab${e.open ? " open" : ""}">${esc(e.open ? "open slot" : e.ability)}</div>
-                <div class="row2">${keys(e)}${pill(e.upgrade.status)}</div></td>`; }).join("")}
-            <td>${v.cards.length ? v.cards.map(c => esc(c.name)).join(", ") : `<span class="muted">none</span>`}</td>
-          </tr>`).join("") || `<tr><td colspan="6" class="empty">No vessel matches that.</td></tr>`}
-        </tbody></table></div>`;
-    const q = document.getElementById("q");
-    q.addEventListener("input", () => { query = q.value.trim().toLowerCase(); const pos = q.selectionStart; fleetView(); const n = document.getElementById("q"); n.focus(); n.setSelectionRange(pos, pos); });
-    app.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { filter = b.dataset.f; fleetView(); }));
-    app.querySelectorAll("tbody tr[data-k]").forEach(tr => {
-      const go = () => { location.hash = tr.dataset.k; };
-      tr.addEventListener("click", go);
-      tr.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); go(); } });
+  function current(){ var h = decodeURIComponent(location.hash.slice(1)); var k = h.split("-")[0]; return D.vessels.filter(function(v){ return v.key === k; })[0] || null; }
+
+  function drawList(){
+    var cur = current();
+    var vs = D.vessels.filter(matches);
+    list.innerHTML =
+      '<button class="item" type="button" data-k="fleet"' + (cur ? "" : ' aria-current="page"') + '>' +
+        '<span class="fleet-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>' +
+        '<span><span class="nm">Fleet overview</span><br><span class="sub">' + D.vessels.length + ' vessels</span></span></button>' +
+      '<div class="sep" role="presentation"></div>' +
+      vs.map(function(v){
+        return '<button class="item" type="button" data-k="' + esc(v.key) + '"' + (cur && cur.key === v.key ? ' aria-current="page"' : "") + '>' +
+          (v.image ? '<img src="' + esc(v.image) + '" alt="" loading="lazy">' : '<span class="ph"></span>') +
+          '<span style="min-width:0"><span class="nm">' + esc(v.name) + '</span><br><span class="sub">' +
+          (v.status.hasMap ? v.status.upgradesWired + '/4 L5' : 'no map') + ' &middot; ' + v.id + '</span></span></button>';
+      }).join("") + (vs.length ? "" : '<p class="empty" style="padding:8px 10px">No vessel matches.</p>');
+    Array.prototype.forEach.call(list.querySelectorAll(".item"), function(b){
+      b.addEventListener("click", function(){ location.hash = b.dataset.k === "fleet" ? "fleet" : b.dataset.k; });
     });
   }
 
-  function elementCard(name, e){
-    if(!e) return `<section class="el"><div class="elname">${name}</div><p class="muted">No ability map for this element.</p></section>`;
-    const u = e.upgrade;
-    const live = e.scaling.filter(s => s.on), dead = e.scaling.filter(s => !s.on);
-    const dial = s => `<div class="dial${s.on ? "" : " off"}"><span class="f">${esc(s.field)}</span><span class="v">&times;${num(s.min)} &rarr; &times;${num(s.max)}</span>
-      <span class="src">${s.on ? "" : "switched off (" + esc(s.offBecause || "disabled") + ") &middot; "}${esc(file(s.asset || s.script) || s.where)}</span></div>`;
-    const gates = u.gates.map(g => `<div class="gate">gated at ${g.script ? `<a href="${gh(g.script)}">${esc(g.site)}</a>` : esc(g.site)}${g.offBecause ? " &middot; switched off: " + esc(g.offBecause) : ""}</div>`).join("");
-    return `<section class="el" aria-label="${name}">
-      <div class="el-top"><div><div class="elname">${name} <em>&middot; ${EL_NOTE[name]}</em></div>
-        <h4 class="${e.open ? "open" : ""}">${esc(e.open ? "Open design slot" : e.ability)}</h4></div>
-        <div class="row2">${keys(e)}</div></div>
-      ${e.description ? `<p class="desc${e.description.length > 360 ? " clamp" : ""}">${esc(e.description)}</p>${e.description.length > 360 ? `<button class="more" type="button">Read all</button>` : ""}` : ""}
-      <div class="dials"><div class="elname">What ${name} scales</div>
-        ${live.length ? live.map(dial).join("") : `<div class="muted" style="font-size:13px">Nothing: this element changes no number.</div>`}
-        ${dead.length ? dead.map(dial).join("") : ""}</div>
-      <div class="lvl5"><div class="t">Level 5 ${pill(u.status)}${u.label ? `<span>${esc(u.label)}</span>` : ""}</div>
-        ${u.description ? `<p>${esc(u.description)}</p>` : u.status === "open" ? `<p class="muted">Not designed yet. Unlocks at level ${u.unlockLevel}, relocks below ${u.relockBelow}.</p>` : ""}
-        ${gates}</div>
-    </section>`;
+  function fleetView(){
+    var vs = D.vessels.filter(matches), withMap = D.vessels.filter(function(v){ return v.status.hasMap; });
+    var slots = withMap.length * 4;
+    var wired = withMap.reduce(function(a, v){ return a + v.status.upgradesWired; }, 0);
+    var scaled = withMap.reduce(function(a, v){ return a + v.status.scaling; }, 0);
+    var cards = {}; D.vessels.forEach(function(v){ v.cards.forEach(function(c){ cards[c.name] = 1; }); });
+    app.innerHTML =
+      '<div class="who"><h1>The fleet</h1><p>Every vessel&rsquo;s four abilities, in the HUD&rsquo;s order, with its buttons and its level-5 upgrade. Pick a vessel in the rail or a row below for its sections.</p></div>' +
+      '<div class="tally">' +
+        '<div><div class="n">' + withMap.length + '</div><div class="l">vessels with an ability map</div></div>' +
+        '<div><div class="n">' + wired + ' <span class="l">/ ' + slots + '</span></div><div class="l">level-5 upgrades wired</div></div>' +
+        '<div><div class="n">' + scaled + ' <span class="l">/ ' + slots + '</span></div><div class="l">elements that scale a number</div></div>' +
+        '<div><div class="n">' + Object.keys(cards).length + '</div><div class="l">game cards that seat them</div></div></div>' +
+      '<div class="panel scroll"><table class="mx"><thead><tr><th>Vessel</th>' +
+        D.elements.map(function(e){ return '<th>' + e + '<small>' + EL_NOTE[e] + '</small></th>'; }).join("") + '<th>Games</th></tr></thead><tbody>' +
+        vs.map(function(v){
+          return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><div class="hull">' + (v.image ? '<img src="' + esc(v.image) + '" alt="" loading="lazy">' : '') +
+            '<div><div class="nm">' + esc(v.name) + '</div><div class="idline">' + esc(v.key) + ' &middot; ' + v.id + '</div></div></div></td>' +
+            D.elements.map(function(n){ var e = v.elements[n];
+              if(!e) return '<td class="idline">no map</td>';
+              return '<td><div class="ab' + (e.open ? ' open' : '') + '">' + esc(e.open ? "open slot" : e.ability) + '</div><div class="row2">' +
+                (e.pad ? key(e.pad) : '') + (e.key ? key(e.key) : '') + pill(e.upgrade.status) + '</div></td>'; }).join("") +
+            '<td>' + (v.cards.length ? v.cards.map(function(c){ return esc(c.name); }).join(", ") : '<span class="idline">none</span>') + '</td></tr>';
+        }).join("") + '</tbody></table></div>' + footer();
+    Array.prototype.forEach.call(app.querySelectorAll("tbody tr[data-k]"), function(tr){
+      function go(){ location.hash = tr.dataset.k; }
+      tr.addEventListener("click", go);
+      tr.addEventListener("keydown", function(ev){ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); go(); } });
+    });
+  }
+
+  function elementsSection(v){
+    return '<div class="els">' + D.elements.map(function(n){
+      var e = v.elements[n];
+      if(!e) return '<section class="panel el"><span class="lab">' + n + '</span><p class="empty">No ability map.</p></section>';
+      var u = e.upgrade, long = (e.description || "").length > 300;
+      var dial = function(s){ return '<div class="dial' + (s.on ? '' : ' off') + '"><span class="top"><span class="f">' + esc(s.field) + '</span><span class="v">&times;' + num(s.min) + ' &rarr; &times;' + num(s.max) + '</span></span>' +
+        '<span class="src">' + (s.on ? '' : 'switched off (' + esc(s.offBecause || 'disabled') + ') &middot; ') + esc(file(s.asset || s.script) || s.where) + '</span></div>'; };
+      var live = e.scaling.filter(function(s){ return s.on; }), dead = e.scaling.filter(function(s){ return !s.on; });
+      return '<section class="panel el" aria-label="' + n + '">' +
+        '<span class="lab">' + n + ' <em>&middot; ' + EL_NOTE[n] + '</em></span>' +
+        '<h3 class="' + (e.open ? 'open' : '') + '">' + esc(e.open ? "Open design slot" : e.ability) + '</h3>' +
+        '<div class="pills">' + key(e.pad || "no button") + (e.key ? key(e.key) : '') + '</div>' +
+        (e.description ? '<p class="desc' + (long ? ' clamp' : '') + '">' + esc(e.description) + '</p>' + (long ? '<button class="more" type="button">Read all</button>' : '') : '') +
+        '<span class="lab" style="margin-top:4px">What ' + n + ' scales</span>' +
+        (live.length ? live.map(dial).join("") : '<span class="idline">Nothing: this element changes no number.</span>') + dead.map(dial).join("") +
+        '<div class="l5"><div class="t">Level 5 ' + pill(u.status) + (u.label ? '<span>' + esc(u.label) + '</span>' : '') + '</div>' +
+          (u.description ? '<p>' + esc(u.description) + '</p>' : u.status === "open" ? '<p class="idline">Not designed yet. Unlocks at level ' + u.unlockLevel + ', relocks below ' + u.relockBelow + '.</p>' : '') +
+          u.gates.map(function(g){ return '<span class="gate">gated at ' + (g.script ? '<a href="' + gh(g.script) + '">' + esc(g.site) + '</a>' : esc(g.site)) + (g.offBecause ? ' &middot; switched off: ' + esc(g.offBecause) : '') + '</span>'; }).join("") +
+        '</div></section>';
+    }).join("") + '</div>';
+  }
+
+  function modesSection(v){
+    if(!v.cards.length) return '<p class="empty">No game card seats this vessel yet.</p>';
+    return '<div class="cards">' + v.cards.map(function(c){
+      return '<div class="panel card"><div class="cn">' + esc(c.name) + '</div><div class="pills" style="margin-top:6px">' +
+        '<span class="key">' + esc(c.mode) + '</span>' +
+        ((c.rosters || []).map(function(r){ return '<span class="pill good">' + esc(r.replace("Games", "")) + '</span>'; }).join("") || '<span class="pill open">on no roster</span>') +
+        (c.intensity ? '<span class="pill open">I' + c.intensity[0] + '&ndash;I' + c.intensity[1] + '</span>' : '') +
+        '<span class="pill open">' + (c.hullsOnCard > 1 ? c.hullsOnCard + ' hulls' : 'this hull only') + '</span></div>' +
+        (c.description ? '<p>' + esc(c.description) + '</p>' : '') + '</div>';
+    }).join("") + '</div>';
+  }
+
+  function controlsSection(v){
+    var c = v.controls;
+    if(!c) return '<p class="empty">No controls: this vessel has no ability map.</p>';
+    var show = {pad: device === "all" || device === "pad", pc: device === "all" || device === "pc", touch: device === "all" || device === "touch"};
+    return '<div class="seg-row"><span class="lab" style="margin-right:6px">Device</span>' + DEVICES.map(function(d){
+        return '<button class="seg" type="button" data-dev="' + d[0] + '" aria-pressed="' + (device === d[0]) + '">' + d[1] + '</button>'; }).join("") + '</div>' +
+      '<div class="panel scroll"><table class="ctl"><thead><tr><th>Action</th>' +
+        (show.pad ? '<th>Controller</th>' : '') + (show.pc ? '<th>PC &middot; keyboard</th>' : '') +
+        (show.touch ? '<th>Mobile' + (c.touchScheme === "TotemButtons" ? ' &middot; buttons' : c.touchScheme ? ' &middot; thumb lifts' : '') + '</th>' : '') +
+      '</tr></thead><tbody>' + c.rows.map(function(r){
+        return '<tr><td><span class="a">' + esc(r.action) + '</span><span class="d">' + esc(r.detail) + '</span></td>' +
+          (show.pad ? '<td>' + key(r.pad) + '</td>' : '') + (show.pc ? '<td>' + key(r.pc) + '</td>' : '') + (show.touch ? '<td>' + key(r.touch || "none") + '</td>' : '') + '</tr>';
+      }).join("") + '</tbody></table></div>' +
+      (c.notes.length ? '<ul class="notes">' + c.notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '');
+  }
+
+  function docsSection(v){
+    return '<div class="two"><section><span class="lab">Docs</span>' +
+      (v.docs.length ? '<ul class="list2">' + v.docs.map(function(d){ return '<li><a href="' + esc(d.url) + '">' + esc(file(d.path)) + '</a> <span class="idline">' + esc(d.path.split("/").slice(0, -1).join("/")) + '</span></li>'; }).join("") + '</ul>' : '<p class="empty">No doc found by name.</p>') +
+      '</section><section><span class="lab">Recent changes</span>' +
+      (v.changes.length ? '<ul class="list2">' + v.changes.map(function(c){ return '<li><span class="dt">' + esc(c.date) + '</span><a href="' + commit(c.sha) + '">' + esc(c.subject) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">No change in the history this was read from.</p>') +
+      '</section></div>';
   }
 
   function vesselView(v){
-    const f = v.flight, s = v.status;
-    const badges = [
-      s.hasMap ? `<span class="pill wired">${s.upgradesWired}/4 L5 wired</span>` : `<span class="pill open">no ability map</span>`,
-      s.hasMap ? `<span class="pill ${s.scaling === 4 ? "wired" : "warn"}">${s.scaling}/4 elements scale</span>` : "",
-      `<span class="pill ${s.inToybox ? "wired" : "open"}">${s.inToybox ? "in the Vessel Changer" : "not in the Vessel Changer"}</span>`,
-      s.retired ? `<span class="pill warn">retired</span>` : "",
-    ].join("");
-    app.innerHTML = `
-      <a class="back" href="#fleet">&larr; The whole fleet</a>
-      <div class="sheet-head">
-        <div><h2>${esc(v.name)}</h2>
-          ${v.crew.length ? `<div class="crew">${v.crew.map(esc).join(" and ")}</div>` : ""}
-          <div class="note mono">VesselClassType.${esc(v.key)} = ${v.id}</div>
-          ${v.description ? `<p>${esc(v.description)}</p>` : ""}
-          ${v.note ? `<p class="note">${esc(v.note)}</p>` : ""}
-          <div class="badges">${badges}</div></div>
-        ${v.image ? `<img class="plate" src="${esc(v.image)}" alt="${esc(v.name)} in the hangar">` : ""}
-      </div>
-      ${f ? `<div class="flight" aria-label="Flight numbers">
-        <div><div class="n">${num(f.cruise)}<small>u/s</small></div><div class="l">cruise (${num(f.minimum)} + ${num(f.throttle)})</div></div>
-        <div><div class="n">${num(f.pitch)} / ${num(f.yaw)}</div><div class="l">pitch / yaw scalers</div></div>
-        <div><div class="n">+${num(f.turnPerSpeed)}</div><div class="l">turn gained per u/s</div></div>
-        <div><div class="n">&times;${num(f.boost)}</div><div class="l">boost multiplier</div></div>
-      </div>` : ""}
-      <h3 class="sec">Abilities <span>in the HUD's order, each with its one element dial and its level-5 upgrade</span></h3>
-      <div class="elements">${DATA.elements.map(n => elementCard(n, v.elements[n])).join("")}</div>
-      <h3 class="sec">Games <span>${v.cards.length} card${v.cards.length === 1 ? "" : "s"} seat this vessel</span></h3>
-      ${v.cards.length ? `<div class="cards">${v.cards.map(c => `<div class="card">
-        <div class="cn">${esc(c.name)}</div>
-        <div class="row2"><span class="key">${esc(c.mode)}</span>${(c.rosters || []).map(r => `<span class="pill wired">${esc(r.replace("Games", ""))}</span>`).join("") || `<span class="pill open">on no roster</span>`}
-          ${c.intensity ? `<span class="pill open">I${c.intensity[0]}&ndash;I${c.intensity[1]}</span>` : ""}${c.hullsOnCard > 1 ? `<span class="pill open">${c.hullsOnCard} hulls</span>` : `<span class="pill open">this hull only</span>`}</div>
-        ${c.description ? `<p>${esc(c.description)}</p>` : ""}</div>`).join("")}</div>` : `<p class="empty">No game card seats this vessel yet.</p>`}
-      <div class="two">
-        <div><h3 class="sec">Docs</h3>
-          ${v.docs.length ? `<ul class="list">${v.docs.map(d => `<li><a href="${esc(d.url)}">${esc(file(d.path))}</a> <span class="muted mono">${esc(d.path.split("/").slice(0, -1).join("/"))}</span></li>`).join("")}</ul>` : `<p class="empty">No doc found by name.</p>`}</div>
-        <div><h3 class="sec">Recent changes <span>to this vessel's files</span></h3>
-          ${v.changes.length ? `<ul class="list">${v.changes.map(c => `<li><span class="d">${esc(c.date)}</span><a href="${commit(c.sha)}">${esc(c.subject)}</a></li>`).join("")}</ul>` : `<p class="empty">No change in the history this was read from.</p>`}</div>
-      </div>`;
-    app.querySelectorAll(".more").forEach(b => b.addEventListener("click", () => {
-      const p = b.previousElementSibling; const open = p.classList.toggle("clamp"); b.textContent = open ? "Read all" : "Show less"; }));
-    window.scrollTo(0, 0);
+    var f = v.flight, s = v.status;
+    var counts = {elements: Object.keys(v.elements).length, modes: v.cards.length, controls: v.controls ? v.controls.rows.length : 0, docs: v.docs.length + v.changes.length};
+    var body = section === "modes" ? modesSection(v) : section === "controls" ? controlsSection(v) : section === "docs" ? docsSection(v) : elementsSection(v);
+    app.innerHTML =
+      '<header class="head">' + (v.image ? '<img class="plate" src="' + esc(v.image) + '" alt="' + esc(v.name) + ' in the hangar">' : '') +
+        '<div class="who"><div style="display:flex;gap:14px;align-items:baseline;flex-wrap:wrap"><h1>' + esc(v.name) + '</h1><span class="idline">VesselClassType.' + esc(v.key) + ' = ' + v.id + '</span></div>' +
+          (v.crew.length ? '<span class="crew">' + v.crew.map(esc).join(" and ") + '</span>' : '') +
+          (v.description ? '<p>' + esc(v.description) + '</p>' : '') +
+          '<div class="pills">' +
+            (s.hasMap ? '<span class="pill ' + (s.upgradesWired === 4 ? 'good' : 'warn') + '">' + s.upgradesWired + '/4 L5 wired</span><span class="pill ' + (s.scaling === 4 ? 'good' : 'warn') + '">' + s.scaling + '/4 elements scale</span>' : '<span class="pill open">no ability map</span>') +
+            '<span class="pill ' + (s.inToybox ? 'good' : 'open') + '">' + (s.inToybox ? 'In the Vessel Changer' : 'Not in the Vessel Changer') + '</span>' + (s.retired ? '<span class="pill warn">retired</span>' : '') +
+          '</div></div>' +
+        (f ? '<div class="stats" aria-label="Flight numbers"><div><span class="n">' + num(f.cruise) + '</span> <span class="l">u/s cruise</span></div><div><span class="n">' + num(f.pitch) + '/' + num(f.yaw) + '</span> <span class="l">pitch/yaw</span></div>' +
+          '<div><span class="n">+' + num(f.turnPerSpeed) + '</span> <span class="l">turn per u/s</span></div><div><span class="n">&times;' + num(f.boost) + '</span> <span class="l">boost</span></div></div>' : '') +
+      '</header>' +
+      '<div class="tabs" role="tablist" aria-label="' + esc(v.name) + ' sections">' + SECTIONS.map(function(t){
+        return '<button class="tab" type="button" role="tab" data-sec="' + t[0] + '" aria-selected="' + (section === t[0]) + '">' + t[1] + '<span class="c">' + counts[t[0]] + '</span></button>'; }).join("") + '</div>' +
+      body + footer();
+    Array.prototype.forEach.call(app.querySelectorAll(".tab"), function(b){ b.addEventListener("click", function(){ section = b.dataset.sec; history.replaceState(null, "", "#" + v.key + (section === "elements" ? "" : "-" + section)); vesselView(v); }); });
+    Array.prototype.forEach.call(app.querySelectorAll(".seg"), function(b){ b.addEventListener("click", function(){ device = b.dataset.dev; vesselView(v); }); });
+    Array.prototype.forEach.call(app.querySelectorAll(".more"), function(b){ b.addEventListener("click", function(){
+      var p = b.previousElementSibling, closed = p.classList.toggle("clamp"); b.textContent = closed ? "Read all" : "Show less"; }); });
+  }
+
+  function footer(){
+    return '<footer>Nothing on this page is typed by hand. <code>python3 Tools/Build/fleet_codex.py</code> reads the ability maps, prefabs, class assets, touch profiles, game cards and git history, and a scheduled job republishes the page from bleeding-edge every day when anything changed. Abilities and upgrade labels come from <code>Assets/Resources/ElementalAbilityMaps</code>; whether an upgrade is really wired comes from the code it reaches. The skill: <code>/fleet-codex</code>.</footer>';
   }
 
   function route(){
-    if(!DATA) return;
-    const k = decodeURIComponent(location.hash.slice(1));
-    const v = DATA.vessels.find(x => x.key === k);
-    v ? vesselView(v) : fleetView();
-    document.title = v ? `${v.name} &middot; Fleet Codex` : "Fleet Codex";
+    if(!D) return;
+    var v = current(), h = decodeURIComponent(location.hash.slice(1)), sec = h.split("-")[1];
+    if(v && sec && SECTIONS.some(function(t){ return t[0] === sec; })) section = sec;
+    drawList();
+    if(v){ vesselView(v); document.title = v.name + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
+    window.scrollTo(0, 0);
   }
 
-  fetch("fleet.json", {cache: "no-store"}).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }).then(d => {
-    DATA = d;
-    document.getElementById("stamp").innerHTML = `Read from <b>${esc(d.branch)}</b> at <a href="${commit(d.commit)}">${esc(d.commit)}</a> (${esc(d.commitDate)})<br>generated ${esc(d.generated)}`;
-    document.getElementById("foot").innerHTML = `How this stays current: <code>python3 Tools/Build/fleet_codex.py</code> reads the ability maps, prefabs, class assets, game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. Nothing on this page is typed by hand. Abilities, prose and upgrade labels come from <code>Assets/Resources/ElementalAbilityMaps</code>; whether an upgrade is really wired comes from the code it reaches (<code>element_ability_table.py</code>). Docs: <code>Docs/FleetCodex/README.md</code>.`;
+  q.addEventListener("input", function(){ query = q.value.trim().toLowerCase(); drawList(); if(!current()) fleetView(); });
+  fetch("fleet.json", {cache: "no-store"}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
+    D = d;
+    document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a><br>' + esc(d.commitDate);
     route();
-  }).catch(err => { app.innerHTML = `<p class="empty">The fleet data did not load (${esc(err.message)}). Reload the page; if it persists, the data file is missing from this publish.</p>`; });
+  }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page; if it persists, the data file is missing from this publish.</p>'; });
   window.addEventListener("hashchange", route);
 })();
 </script>

@@ -11,7 +11,7 @@ menu). It is the ONLY codex: always republish to that URL, never create another.
 | Piece | Path |
 |---|---|
 | Generator (a READER: writes only its `--out`, touches no asset) | `Tools/Build/fleet_codex.py` |
-| The page (fetches `fleet.json` beside it; `#fleet` = matrix, `#<VesselKey>` = one vessel) | `Docs/FleetCodex/index.html` |
+| The page: ONE page in design B (Rev 45, picked 2026-11-02): a rail with the fleet overview and every vessel; a vessel's Elements / Game Modes / Controls / Docs and changes tabs. Links `#fleet`, `#<VesselKey>`, `#<VesselKey>-controls` (`-modes`, `-docs`) | `Docs/FleetCodex/index.html` |
 | Generated data, git-ignored | `Docs/FleetCodex/build/` (`fleet.json`, `img/<Key>.webp`) |
 | What it reads and why | `Docs/FleetCodex/README.md` |
 
@@ -26,6 +26,10 @@ Where each fact comes from (so a wrong fact is fixed at its source, never in the
 | Id and one-line note | `VesselClassType.cs` (value and line comment) |
 | In the Vessel Changer | `ToyVesselRoster.Default` |
 | Flight numbers | the prefab (`regatta_balance.read_vessel`: `Default*` throttle/minimum, turn scalers, boost) |
+| Controls: the Steer row | the prefab's transformer class: one stick when it descends from `SingleStickVesselTransformer` |
+| Controls: each ability's Controller and PC button | the ability map's `Input` (`element_ability_table.INPUT_EVENTS`: pad and keyboard labels) |
+| Controls: other bound actions (Fire, Ring, Bomb...) | the prefab's `_inputEventShipActions` (and `_touchActionOverrides`, listed as a note) |
+| Controls: the Mobile column and notes | `Tools/Build/author_touch_profiles.py` `PROFILES` (thumb lifts and glyphs, cards, extra buttons, slider, tilt); a hull with no row is the default thumb-lift profile |
 | Games | `Assets/_SO_Assets/Games/ArcadeGame*.asset` `Vessels` lists + the Arcade/Arena roster lists (`vessel_mode_chart.cards`) |
 | Docs | `.md` files named after the vessel (vessel docs, models, studios, its modes) + paths in its enum comment |
 | Recent changes | `git log` on the vessel's prefab, map, action assets, scripts named after it and its docs |

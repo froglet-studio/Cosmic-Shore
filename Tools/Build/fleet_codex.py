@@ -255,9 +255,178 @@ def write_image(guid, previews, key, out_dir):
     return rel
 
 
+# ---- Controls: one row per action, a column per device (Controller, PC, Mobile) ----------------------------------
+
+GLYPH_TEXT = {"LiftLeftThumb": "Lift left thumb", "LiftRightThumb": "Lift right thumb",
+              "LiftEitherThumb": "Lift either thumb", "LiftBothThumbs": "Lift both thumbs",
+              "ThumbsApart": "Thumbs apart"}
+# What a thumb lift raises on a thumb-lift hull (TouchInputStrategy): left thumb = RT's pair, right = LT's, both = Idle.
+LIFT_FOR_INPUT = {1: "Lift left thumb", 11: "Lift left thumb", 2: "Lift right thumb", 12: "Lift right thumb",
+                  4: "Lift both thumbs"}
+ONE_STICK_BASE = "SingleStickVesselTransformer"
+
+
+def script_classes():
+    """class name -> (base class, .cs path), and script guid -> class name, for the vessel scripts."""
+    bases, by_guid = {}, {}
+    for cs in glob.glob(os.path.join(REPO, "Assets", "_Scripts", "**", "*.cs"), recursive=True):
+        try:
+            text = open(cs, encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        for name, base in re.findall(r"\bclass\s+(\w+)\s*(?:<[^>]*>)?\s*:\s*([\w.]+)", text):
+            bases.setdefault(name, base.split(".")[-1])
+        meta = cs + ".meta"
+        if os.path.exists(meta):
+            m = re.search(r"^guid: (\w+)", open(meta).read(400), re.M)
+            if m:
+                by_guid[m.group(1)] = os.path.basename(cs)[:-3]
+    return bases, by_guid
+
+
+def is_one_stick(key, bases, by_guid):
+    path = os.path.join(REPO, f"Assets/_Prefabs/Spacevessels/{key}.prefab")
+    if not os.path.exists(path):
+        return None
+    for g in set(re.findall(r"m_Script: \{fileID: 11500000, guid: (\w+)", open(path, encoding="utf-8").read())):
+        name, seen = by_guid.get(g), set()
+        if not name or "Transformer" not in name:
+            continue
+        while name and name not in seen:
+            if name == ONE_STICK_BASE:
+                return True
+            seen.add(name)
+            name = bases.get(name)
+    return False
+
+
+def prefab_bindings(key, asset_names):
+    """InputEvent -> the action assets bound to it, for the shared list and the touch overrides."""
+    path = os.path.join(REPO, f"Assets/_Prefabs/Spacevessels/{key}.prefab")
+    out = {"shared": {}, "touch": {}}
+    if not os.path.exists(path):
+        return out
+    text = open(path, encoding="utf-8").read()
+    for field, slot in (("_inputEventShipActions", "shared"), ("_touchActionOverrides", "touch")):
+        m = re.search(r"\n  %s:(.*?)(?=\n  [A-Za-z_])" % field, text, re.S)
+        if not m:
+            continue
+        for entry in re.split(r"\n  - ", m.group(1)):
+            ie = re.search(r"InputEvent: (\d+)", entry)
+            names = [asset_names.get(g) for g in re.findall(r"guid: ([0-9a-f]{32})", entry)]
+            names = [n for n in names if n]
+            if ie and names:
+                out[slot].setdefault(int(ie.group(1)), []).extend(names)
+    return out
+
+
+def action_label(asset, key):
+    stem = os.path.basename(asset)[:-6] if asset.endswith(".asset") else asset
+    for prefix in (key, "Vessel", "Ship"):
+        if stem.startswith(prefix) and len(stem) > len(prefix):
+            stem = stem[len(prefix):]
+    stem = re.sub(r"(Action|ActionSO|SO)$", "", stem) or stem
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", stem).strip()
+
+
+def touch_profiles():
+    try:
+        import author_touch_profiles as atp
+    except Exception:   # the touch table is optional: say so on the page rather than guess
+        return None, {}
+    by_value = {v: k for k, v in atp.VESSEL.items()}
+    rows = {by_value[p["vessel"]]: p for p in atp.PROFILES if p["vessel"] in by_value}
+    return atp, rows
+
+
+def controls(key, elements, one_stick, bindings, atp, profile):
+    import element_ability_table as eat
+    names = eat.INPUT_EVENTS
+    scheme = ("TotemButtons" if profile and profile["scheme"] == atp.SCHEME["TotemButtons"] else "ThumbLifts") if atp else None
+    inv_input = {v: k for k, v in (atp.INPUT.items() if atp else [])}
+    inv_el = {v: k for k, v in (atp.ELEMENT.items() if atp else [])}
+
+    def touch_for(element, inp, label):
+        if not atp:
+            return ""
+        p = profile or {}
+        if inp is None:   # no button on any device: only a glyph the phone draws for a gesture says anything
+            for el, glyph in p.get("glyphs", []):
+                if el == element:
+                    return GLYPH_TEXT.get(glyph, glyph)
+            return "no button"
+        if scheme == "TotemButtons":
+            if element and element in p.get("displayOnly", []):
+                return "Throttle slider" if p.get("slider") else "Shown on its card, no press"
+            for b in p.get("extras", []):
+                if b["input"] == inp:
+                    icon = re.sub(r"^TouchIcon_", "", b["icon"])
+                    extra = " (drag aims)" if b.get("aims") else " (toggle)" if b.get("behaviour") == atp.TOGGLE else ""
+                    return f"{icon} button{extra}"
+            if element:
+                return f"{label} card" + (" (latches)" if element in p.get("toggles", []) else "")
+            return ""
+        for el, glyph in p.get("glyphs", []):
+            if el == element:
+                return GLYPH_TEXT.get(glyph, glyph)
+        if inp in LIFT_FOR_INPUT:
+            return LIFT_FOR_INPUT[inp]
+        if element and inp in (6, 7, 8, 14):
+            return f"{label} card"
+        return ""
+
+    rows = [{
+        "action": "Steer", "detail": "one-stick flight" if one_stick else "two-stick flight",
+        "pad": "Left stick" if one_stick else "Both sticks",
+        "pc": "W A S D" if one_stick else "W A S D + P ; L '",
+        "touch": "Either thumb" if one_stick else "Two thumbs",
+    }]
+    used = set()
+    for el in ELEMENTS:
+        e = elements.get(el)
+        if not e or e["open"]:
+            continue
+        inp = next((i for i, n in names.items() if n[0] == e["input"]), None)
+        if inp is not None and not names[inp][1]:
+            inp = None   # an input no device has a button for (0 = passive or a flight gesture)
+        if inp is not None:
+            used.add(inp)
+        rows.append({"action": e["ability"], "detail": el, "element": el, "pad": e["pad"] or "no button",
+                     "pc": e["key"] or "no button", "touch": touch_for(el, inp, e["ability"])})
+    for inp in sorted(bindings["shared"]):
+        if inp in used or inp not in names or not names[inp][1]:
+            continue
+        label = ", ".join(dict.fromkeys(action_label(a, key) for a in bindings["shared"][inp]))
+        rows.append({"action": label, "detail": names[inp][0].replace("Action", ""), "pad": names[inp][1],
+                     "pc": names[inp][2], "touch": touch_for(None, inp, label) or ""})
+        used.add(inp)
+    notes = []
+    p = profile or {}
+    if atp:
+        notes.append("Phone: buttons round the right thumb; lifting a thumb fires nothing." if scheme == "TotemButtons"
+                     else "Phone: abilities on thumb lifts (left thumb = RT, right thumb = LT, both = idle)."
+                     + ("" if profile else " No row of its own: the default thumb-lift profile."))
+    for flag, text in (("tiltSteer", "Tilt the phone to steer with no thumb down."),
+                       ("tiltRoll", "The phone rolls the hull one to one while the aiming thumb is down."),
+                       ("idleTriggers", "Both thumbs off pulls both triggers."),
+                       ("idleFull", "Both thumbs off flies at full throttle."),
+                       ("slider", "A set-and-hold throttle slider.")):
+        if p.get(flag):
+            notes.append(text)
+    if bindings["touch"]:
+        notes.append("Touch overrides on the prefab: " + ", ".join(
+            f"{names.get(i, (str(i),))[0].replace('Action', '')} = " + ", ".join(action_label(a, key) for a in acts)
+            for i, acts in sorted(bindings["touch"].items())) + ".")
+    notes.append("Only a controller has analog triggers: a key, a mouse button or a phone button is a full pull.")
+    return {"oneStick": one_stick, "touchScheme": scheme, "rows": rows, "notes": notes}
+
+
 def build(out_dir, images=True):
     enum, roster, cls, rows, cards = class_enum(), toy_roster(), classes(), ability_rows(), card_facts()
     previews = guid_paths(["Assets/_Graphics"], ".png") if images else {}
+    asset_names = guid_paths(["Assets/_SO_Assets", "Assets/Resources"], ".asset")
+    bases, by_guid = script_classes()
+    atp, touch_rows = touch_profiles()
     vessels = []
     for value in sorted(set(cls) | {v for v, (k, _) in enum.items() if k in rows}):
         key, note = enum.get(value, (str(value), ""))
@@ -265,6 +434,7 @@ def build(out_dir, images=True):
         name = c.get("name") or key
         maps = rows.get(key, {})
         elements = {e: element_entry(maps[e]) for e in ELEMENTS if e in maps}
+        one_stick = is_one_stick(key, bases, by_guid)
         retired = "RETIRED" in note.upper()
         vessels.append({
             "key": key, "id": value, "name": name, "crew": c.get("crew", []),
@@ -278,6 +448,8 @@ def build(out_dir, images=True):
             },
             "elements": elements,
             "flight": flight(key) if maps else None,
+            "controls": controls(key, elements, bool(one_stick), prefab_bindings(key, asset_names), atp,
+                                 touch_rows.get(key)) if maps else None,
             "cards": sorted(cards.get(name, []) + (cards.get(key, []) if key != name else []), key=lambda x: x["name"]),
             "docs": docs_for(key, name, note),
             "changes": changes(key),
