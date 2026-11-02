@@ -399,7 +399,7 @@ namespace CosmicShore.Gameplay
             _orbitRadius = Mathf.Lerp(_orbitRadius, want, 1f - Mathf.Exp(-follow * dt));
             var centre = _pair.Black.transform.position;
 
-            if (_grazeOnly) { StepGrazeShell(hull, transformer, centre, radius); return; }
+            if (_grazeOnly) { StepGrazeShell(hull, transformer, centre, _squeezeRadius); return; }
             if (!_caught)
             {
                 if (_status.IsTranslationRestricted) return;

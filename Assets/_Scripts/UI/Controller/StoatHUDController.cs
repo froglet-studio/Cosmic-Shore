@@ -61,7 +61,7 @@ namespace CosmicShore.UI
             else view.SetTime(0f, false);
 
             // The Skim Sling's run: SKIP ×N after each skip, held while that skip is ridden, then faded.
-            if (timeMode && sling && sling.UsesSkim && sling.Config && sling.Config.Skim)
+            if (sling && sling.UsesSkim && sling.Config && sling.Config.Skim)
             {
                 float hold = sling.Config.Skim.SkipCounterSeconds;
                 float age = sling.SkipFxAge;
