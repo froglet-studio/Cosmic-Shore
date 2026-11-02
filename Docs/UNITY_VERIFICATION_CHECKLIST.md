@@ -20853,3 +20853,14 @@ Verified (flick launch, Mass power, earned speed, window AI included): Unity 600
 - [ ] Phone: two orbit discs (left / right icons) round the right thumb; a thumb anywhere else steers; the Space and Mass cards press nothing.
 - [ ] AI rivals in Slingshot I1-I4 finish, hold the orbit to the window and launch at the next ring (model: 78-91 s, about 12 presses a minute).
 - [ ] Hangar: Heavy Launch (Mass) and Catch Orbit describe the launch, the spin and the inner orbit.
+
+## 🟡 Slingshot's Orrery: moons, belts, comet tails, shepherds (2026-11-03, Yash, NOT RUN IN EDITOR)
+`Assets/_Scripts/Controller/Arcade/SLINGSHOT.md` "The Orrery"; model: `Tools/Build/stoat_orbit_sim.py --orrery`, `Tools/Build/orrery_port.py`.
+- [ ] I1: a small faceted moon just inside every corner's ring, and three small cubes on the leg in (the beacon). Pressing at the beacon on the moon's side lays the pair on the moon; the orbit wraps it and threads the ring.
+- [ ] I2: a debris belt round each moon with a gap where the leg in and the leg out cross it; launching through the out gap reaches the next ring.
+- [ ] I3: two-row belts with some red (danger) cubes; debris tubes round the middle of each straight that the racing line flies through.
+- [ ] I4: three-row belts, tighter tubes, more danger; two small red moonlets circling outside some belts, the same on two machines (shared clock).
+- [ ] No prism ever sits in a ring's mouth or across another leg; nothing in the nucleus.
+- [ ] Frame rate at I4 holds (about 1,260 prisms a course, about 40 moving): Profiler `Slingshot.Orrery.Spawn`, `SwitchbackBlastRun` movers.
+- [ ] AI Stoats finish I1-I4 and do not crash into moons (model: 79-91 s, no moon hits, under 7 prisms touched a race).
+- [ ] Run `SlingshotOrreryTests`.

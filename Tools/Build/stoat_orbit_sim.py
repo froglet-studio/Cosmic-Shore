@@ -117,7 +117,7 @@ def sweet_spot(deg):
     return 1.0 - t * t * (3.0 - 2.0 * t)
 
 
-def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
+def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press."""
     n = len(gates); total = n * laps
     commit_r, lead_r, through_r = row.get("commit", COMMIT), row.get("lead", LEAD), row.get("through", THROUGH)
@@ -128,6 +128,13 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
     extending = False; ext_t = 0.0; breaks = 0; misses = 0; orbit = L.Orbit()
     laid = caught = False; attractor = None; orbit_side_left = False; radius = 0.0; swept = 0.0; last_radial = None; laid_at = 0.0
     steered_out = False
+    # The Orrery (orrery_port.layout): its static prisms in a 24 u hash for contacts, its moons the AI's anchors.
+    moons, hits, grid = [], set(), {}
+    if orrery is not None:
+        moons, prisms, _ = orrery
+        for k, pr in enumerate(prisms):
+            grid.setdefault(tuple(int(math.floor(c / 24.0)) for c in pr["p"]), []).append(k)
+    anchor_presses = 0
     momentum_clock, momentum_at = 1.0, -1e9
     earned = "press_share" in row
     last_press = -1e9; warped_t = 0.0; caught_t = 0.0; presses = 0; catches_n = 0; dist = 0.0; timed = 0
@@ -186,10 +193,32 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
                 ring_range = norm(sub(ring, pos))
                 f, up = fwd, [0.0, 1.0, 0.0]
                 right = unit(cross(up, f)) if abs(dot(up, f)) < 0.999 else [1.0, 0.0, 0.0]
+                # StoatSlingExecutor.AutopilotSling's ORBIT ANCHOR: the moon beside this ring; press only where the pair lands
+                anchor_state = None
+                if moons and row.get("anchor"):
+                    near = min(moons, key=lambda m: norm(sub(m["centre"], ring)))
+                    if norm(sub(near["centre"], ring)) <= row.get("anchor_reach", 120.0):
+                        rel = sub(near["centre"], pos)
+                        lz, lx = dot(rel, f), dot(rel, right)
+                        ly = dot(rel, unit(cross(f, right)))
+                        w = row["anchor"]
+                        if lz > CATCH_AHEAD + w: anchor_state = "wait"
+                        elif lz >= CATCH_AHEAD - w:
+                            ok = CATCH_SIDE - w <= abs(lx) <= CATCH_SIDE + w and abs(ly) <= w
+                            anchor_state = ("left" if lx < 0 else "right") if ok else "wait"
+                if anchor_state == "wait":
+                    pass
+                elif anchor_state in ("left", "right"):
+                    left = anchor_state == "left"
+                    last_press = t; presses += 1; anchor_presses += 1
+                    mid = add(pos, mul(f, CATCH_AHEAD))
+                    attractor = add(mid, mul(right, -CATCH_SIDE if left else CATCH_SIDE))
+                    laid = True; caught = False; orbit_side_left = left
+                    radius = orbit_radius(row["hold"]); swept = 0.0; laid_at = t
                 off_nose = math.degrees(math.atan2(dot(to, right), dot(to, f)))
                 turn = ring_range >= row["min_dist"] and abs(off_nose) >= row["min_turn"]
                 warp_press = row["warp_dist"] > 0 and ring_range >= row["warp_dist"]   # StoatSlingMath.WantsWarp
-                if norm(to) > 1e-3 and (turn or warp_press):
+                if anchor_state is None and norm(to) > 1e-3 and (turn or warp_press):
                     left = dot(to, right) < 0
                     last_press = t; presses += 1
                     mid = add(pos, mul(f, CATCH_AHEAD))
@@ -273,11 +302,21 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
                 idx += 1
             else:
                 misses += 1; locked = -1; extending = True; ext_t = 0.0   # re-latch, BreakOffNow
+        if grid:
+            cell = tuple(int(math.floor(c / 24.0)) for c in newpos)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for dz in (-1, 0, 1):
+                        for k in grid.get((cell[0] + dx, cell[1] + dy, cell[2] + dz), ()):
+                            pr = orrery[1][k]
+                            if k not in hits and norm(sub(newpos, pr["p"])) < pr["size"] * 0.5 + 3.0: hits.add(k)
         dist += norm(sub(newpos, pos))
         pos = newpos; t += dt
     return {"time": round(t, 1) if idx >= total else None, "rings": idx, "misses": misses, "breaks": breaks,
             "warped": round(warped_t / max(t, 1e-6), 2), "caught": round(caught_t / max(t, 1e-6), 2),
-            "speed": round(dist / max(t, 1e-6), 1), "presses": presses, "catches": catches_n, "timed": timed}
+            "speed": round(dist / max(t, 1e-6), 1), "presses": presses, "catches": catches_n, "timed": timed,
+            "hits": len(hits), "moon_hits": sum(1 for k in hits if orrery[1][k]["size"] < 5.0) if orrery else 0,
+            "anchor_presses": anchor_presses}
 
 
 def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
@@ -329,6 +368,29 @@ def grid(seeds=4):
         print("    " + line("", s))
 
 
+def score_orrery(row, seeds=8, intensities=(1, 2, 3, 4), dt=1 / 30):
+    """Slingshot with the Orrery laid (orrery_port.layout): race seconds, prisms hit, moons hit, anchor presses."""
+    import orrery_port as O
+    out = {}
+    for i in intensities:
+        rs = []
+        for s in range(seeds):
+            c = course(i, 20260000 + 97 * s + i)
+            rs.append(race(c, row, dt=dt, orrery=O.layout(c, i)))
+        out[i] = {"median": statistics.median(r["time"] if r["time"] else 300 + 10 * (16 - r["rings"]) for r in rs),
+                  "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
+                  "speed": statistics.mean(r["speed"] for r in rs), "ppm": statistics.mean(60 * r["presses"] / max(1.0, r["time"] or 300.0) for r in rs),
+                  "timed": statistics.mean(r["timed"] / max(1, r["catches"]) for r in rs), "n": len(rs),
+                  "hits": statistics.mean(r["hits"] for r in rs), "moon_hits": statistics.mean(r["moon_hits"] for r in rs),
+                  "anchor": statistics.mean(r["anchor_presses"] for r in rs)}
+    return out
+
+
+def line_orrery(name, s):
+    return f"{name:<30} " + " ".join(f"I{i} {v['median']:5.1f}s {v['finished']}/{v['n']} hit {v['hits']:4.1f} (moon {v['moon_hits']:3.1f}) "
+                                      f"anchor {v['anchor']:4.1f} {100 * v['timed']:3.0f}%t" for i, v in s.items())
+
+
 def grid_earned(seeds=4):
     rows = []
     for window_ai in (0, 120.0, 150.0):
@@ -374,10 +436,17 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid", action="store_true"); ap.add_argument("--self-test", action="store_true"); ap.add_argument("--seeds", type=int, default=12)
     ap.add_argument("--earned", action="store_true"); ap.add_argument("--grid-earned", action="store_true")
+    ap.add_argument("--orrery", action="store_true")
     a = ap.parse_args()
     if a.self_test: sys.exit(self_test())
     if a.grid: grid(); sys.exit(0)
     if a.grid_earned: grid_earned(); sys.exit(0)
+    if a.orrery:
+        print(line_orrery("no Orrery (the shipped AI)", score(SHIPPED_ROW, seeds=a.seeds) and score_orrery(SHIPPED_ROW, seeds=0) or {}) if False else "")
+        print(line_orrery("Orrery, the shipped AI", score_orrery(SHIPPED_ROW, seeds=a.seeds)))
+        for w in (15.0, 22.0, 30.0):
+            print(line_orrery(f"Orrery, anchor window {w:.0f} u", score_orrery(dict(SHIPPED_ROW, anchor=w), seeds=a.seeds)))
+        sys.exit(0)
     print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
     print(line("hull's own AI row (30 deg, 3 s)", score(HULL_ROW, seeds=a.seeds)))
     print(line("the learned variant, no warp press", score(VARIANT_ROW, seeds=a.seeds)))

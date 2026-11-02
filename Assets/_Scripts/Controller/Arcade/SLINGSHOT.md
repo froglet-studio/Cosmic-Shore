@@ -31,6 +31,42 @@
 > orbit's release is now TIMED (the whole kick a quarter-turn round). The AI below runs again, in Time mode, and the
 > autopilot switches modes itself (≥ 70° off the nose → Time, within 35° → Mass).
 
+## The Orrery (2026-11-03) - NOT editor-verified
+
+Yash: "we need to make better and more dense environments in higher intensities, with unique structures, we can't have
+always like ring and all like switchback of dolphin, we need unique environment for each vessels' time game ... something
+that resembles and can take opportunity from stoat's orbit mechanics." Slingshot's environment is now a planetary system:
+every corner is a body you whip round (`SlingshotOrrery`, laid by `SlingshotController.OnCourseRaised`).
+
+**The move.** A press lays the Stoat's black hole 150 u ahead and 45 u to that side. Every turning corner (15 deg or more)
+has a MOON just outside its ring, on the turn's inside (its surface 8 u from the rim), so pressing as the moon comes up on
+that side wraps the orbit round it, the ring sits on that orbit, and a release in the lime window threads the ring and
+launches you at the next moon. **The moons are only obstacles** (LOCKED: a game mode never changes the vessel): they pull
+nothing and never catch the pair. The skill is laying the pair where the moon is.
+
+| | What it adds | What it asks | Prisms a course (model, 8 seeds) |
+|---|---|---|---|
+| **I1 Moons** | a 9 u moon per corner (a lit voxel shell of 5 u cubes) and a BEACON - three small cubes - where a press lays the pair on it | press timing, wrapping a body | about 230 |
+| **I2 Belts** | a 10 u moon inside a debris belt (one row of 6 u cubes, 30 u outside the ring's far rim), open 70 deg round each leg that crosses it; no beacons | aim the launch through the gap | about 390 |
+| **I3 Comet tails** | belts of two rows, gaps 52 deg, 12% danger; debris tubes (radius 58 u, 55% full) round the middle of every straight | carry momentum through a corridor | about 760 |
+| **I4 Clockwork** | belts of three rows, gaps 40 deg, 18% danger; tighter tubes (46 u, 75% full); two SHEPHERD moonlets (2 x 2 danger cubes) circling outside every belt whose sweep is clear, a lap every 9 s on the shared clock | time the gap, risk against reward | about 1,260, of them about 40 moving |
+
+**Built from Blast Run's machinery**, nothing new to sync: the layout is a `SwitchbackFeatureLayout` laid by
+`SpawnableSwitchbackFeatures` (the same prefab, wired on the `SlingshotController`), and the shepherds are `BlastRunMover`
+spins posed by `SwitchbackBlastRunRuntime` off the server clock (its finish line now names its mode). Budgets: Blast Run's
+(`TotalCap` 900 / 1,600 / 2,400 / 3,000, at most 140 moving prisms). Every piece keeps 30 u off every other ring's mouth and
+40 u off every other leg's line, and out of the nucleus; a belt keeps them all. `SlingshotOrreryTests` holds it;
+`Tools/Build/orrery_port.py` ports it for the model.
+
+**The AI** flies it on its shipped sling rule. Measured in `Tools/Build/stoat_orbit_sim.py --orrery` (8 courses an
+intensity): 79 / 79 / 87 / 91 s at I1-I4, every race finished, no moon ever hit, 0 / 0.9 / 4.4 / 6.8 prisms touched a race.
+A moon-relative press rule was built and measured worse - the AI's line toward a ring's centre never brings a moon into the
+press window (under one such press a race) and waiting for it cost 10-18 s - so it was taken out. The model does not charge
+a prism contact any time, and it does not model the shepherds or a person's play.
+
+**Not done:** corners that alternate left-right (binary moons) need a course that alternates its turns: the solver decides
+that today. The course itself is unchanged (legs 340-660 u).
+
 The **Stoat-only circuit race**. A closed loop of eight switch rings is cut through the barren race
 cell; every pilot flies **two laps** of it in order, and the first **DOMAIN** whose **LEAD RUNNER**
 threads the last ring of the last lap wins (golf: finish time).
