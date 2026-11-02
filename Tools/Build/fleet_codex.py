@@ -568,10 +568,13 @@ def hud_of(key, prefabs):
     return None
 
 
+L5_SHIELDED = (104, 164, 255, 255)   # the HUD's shielded signal (states.SHIELDED["jade"]): an L5 that shields reads as one
+
+
 def lockup_cards(key):
     """The icon kit's resting cards (spec LOCKUP), rendered in silver: the HUD's card as it sits, parts and all."""
     spec_path = os.path.join(HERE, "icon_kit", "specs", key.lower() + ".py")
-    if not os.path.exists(spec_path) or "LOCKUP" not in open(spec_path).read():
+    if not os.path.exists(spec_path):
         return {}
     try:
         import importlib
@@ -585,9 +588,23 @@ def lockup_cards(key):
                 shielded[k] = (190, 190, 190, 255)
         out = {}
         for el in ELEMENTS + ["Omni"]:
-            sib = spec.LOCKUP.get(el)
+            sib = getattr(spec, "LOCKUP", {}).get(el)
             if sib:
                 out[el] = states.compose(sib["state"], sib["parts"], next(iter(silver)), silver)
+        # The level-5 card: the state the kit draws for "<Element> 5" on that element's own card (the picked card, not
+        # an options group) - what the HUD swaps the card's parts to when the upgrade comes on (the Tiger Moth's gilded
+        # keys, the Sparrow's shielded rounds). Shielded parts keep the HUD's shielded signal so the change reads.
+        signal = L5_SHIELDED
+        for c in getattr(spec, "CARDS", []):
+            el = c.get("element")
+            if c.get("group") or el not in ELEMENTS or f"{el}@L5" in out:
+                continue
+            for st in c.get("states", []):
+                if re.search(rf"(?<!\d){el} 5(?!\d)", st[0]):
+                    states.SHIELDED.update({k: signal for k in states.SHIELDED})
+                    out[f"{el}@L5"] = states.compose(st[1], c["parts"], next(iter(silver)), silver)
+                    states.SHIELDED.update({k: (190, 190, 190, 255) for k in states.SHIELDED})
+                    break
         return out
     except Exception as e:   # the kit is optional: the HUD's own sprites still answer
         print(f"  icon kit could not render {key}: {e}", file=sys.stderr)
@@ -618,7 +635,8 @@ def ability_art(key, art, prefabs, pngs, labels=None):
     out = {}
     labels = labels or {}
     for el, im in lockup_cards(key).items():
-        out[el] = art.save(im, f"img/ab/{key}_{el}.png") if art.enabled else None
+        name = el.replace("@L5", "_L5")
+        out[el] = art.save(im, f"img/ab/{key}_{name}.png") if art.enabled else None
     hud = hud_of(key, prefabs)
     if hud:
         path, guid, outer = hud
@@ -764,6 +782,8 @@ def ability_words(key, elements, omni):
 def upgrade_art(key, elements, art, pngs_by_dir):
     """A level-5 upgrade's own art, when the hull's icon folder has a file named after it (the Scarab's Snap Dash)."""
     for el, e in elements.items():
+        if e["upgrade"].get("icon"):
+            continue   # the icon kit's level-5 card already answered
         label = e["upgrade"]["label"]
         hit = named_icon(key, label, pngs_by_dir) if label else None
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
@@ -819,6 +839,7 @@ def build(out_dir, images=True):
         for el, e in elements.items():
             e["icon"] = icons.get(el)
             e["shape"] = ui.get("shape/" + el)
+            e["upgrade"]["icon"] = icons.get(el + "@L5")
         omni = dict(omni_entry(key, asset_names), icon=icons.get("Omni"), mark=ui.get("omni")) if maps else None
         ability_words(key, elements, omni)
         retired = "RETIRED" in note.upper()

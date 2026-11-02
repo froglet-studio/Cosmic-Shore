@@ -88,10 +88,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .poster{display:flex;flex-direction:column;gap:6px;flex:none;width:128px;text-decoration:none;color:var(--muted);font-size:12.5px;line-height:16px}
 .poster.crew{width:176px}
 .poster .ph{position:relative;display:block;height:72px;border-radius:calc(var(--radius) * .6);overflow:hidden;background:var(--surface)}
-.poster img{width:100%;height:100%;object-fit:cover;filter:var(--still);opacity:.55;display:block;transition:opacity .2s,transform .3s}
+.poster img{width:100%;height:100%;object-fit:cover;opacity:.72;display:block;transition:opacity .2s,transform .3s}
 .poster.crew .ph{box-shadow:inset 0 0 0 1px var(--edge)}
 .poster[aria-current="page"]{color:var(--ink)}
-.poster[aria-current="page"] img{filter:var(--still-on);opacity:1}
+.poster[aria-current="page"] img{opacity:1}
 .poster[aria-current="page"] .ph{box-shadow:0 0 0 2px var(--ink)}
 .poster:hover img{opacity:.85;transform:scale(1.05)}
 .seats{position:absolute;right:6px;top:6px;font-family:var(--mono);font-size:9.5px;color:#ECECEC;background:rgba(5,5,5,.8);border:1px solid #555;border-radius:8px;padding:0 6px}
@@ -102,7 +102,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pad{padding:18px 20px}
 .span5{grid-column:span 5}.span7{grid-column:span 7}.span9{grid-column:span 9}.span3{grid-column:span 3}.span12{grid-column:span 12}
 .hero{min-height:400px;display:flex;align-items:flex-end}
-.hero .still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--still);opacity:var(--still-op)}
+.hero .still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero.wide{min-height:340px}.hero.wide .still{object-position:center 40%;left:28%;width:72%}
+.hero.wide::after{background:linear-gradient(90deg,var(--surface) 30%,color-mix(in srgb,var(--surface) 55%,transparent) 48%,transparent 78%)}
+.hero.wide .copy{max-width:min(760px,62%)}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--surface) 16%,transparent 72%)}
 .hero .copy{position:relative;z-index:1;padding:22px 24px;display:flex;flex-direction:column;gap:8px;width:100%}
 .hero h1{font-size:calc(clamp(52px,6vw,88px) * var(--dscale));margin:0}
@@ -110,7 +113,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .stats{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:6px}
 .stats .n{font-family:var(--display);font-size:calc(28px * var(--dscale))}
 /* the kit: ability cards that flip to their level-5 face */
-.kit{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-content:start}
+.kit{min-width:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-content:start}
 .ab{perspective:1100px;min-width:0;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
 @keyframes rise{from{opacity:.25;transform:translateY(14px)}to{opacity:1;transform:none}}
 .ab .inner{display:grid;transition:transform .6s cubic-bezier(.3,.9,.25,1);transform-style:preserve-3d;height:100%}
@@ -133,9 +136,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ab.sel .icontile img{animation:float 3.2s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 .icontile .bloom{position:absolute;inset:-26px;width:auto;height:auto;opacity:0;transition:opacity .5s;pointer-events:none}
-.ab.flip .icontile .bloom{opacity:.85;animation:pulse 2.6s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.6;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
-.name{font-family:var(--display);font-weight:600;font-size:calc(30px * var(--dscale));line-height:1;letter-spacing:var(--dtrack);text-transform:var(--dcase);overflow-wrap:anywhere}
+.ab.flip .icontile .bloom{opacity:.45;animation:pulse 2.6s ease-in-out infinite;mix-blend-mode:screen}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.96)}50%{opacity:.55;transform:scale(1.04)}}
+.name{font-family:var(--display);font-weight:600;font-size:calc(30px * var(--dscale) * var(--fit,1));line-height:1;letter-spacing:var(--dtrack);text-transform:var(--dcase);overflow-wrap:break-word;hyphens:manual}
 :root:not([data-skin]) .name,:root[data-skin="silver"] .name,:root[data-skin="gargantua"] .name{font-weight:400}
 .sum{width:100%;font-size:12.5px;line-height:18px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;color:var(--ink);overflow-wrap:anywhere}
 .face .mo{overflow-wrap:anywhere}
@@ -147,6 +150,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .l5t{display:flex;gap:7px;align-items:baseline;width:100%;font-size:12px;color:var(--ink)}
 .l5t b{font-family:var(--display);font-size:calc(17px * var(--dscale));letter-spacing:var(--dtrack)}
 .l5t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.l5t img{width:20px;height:20px;object-fit:contain;align-self:center;background:#15191D;border-radius:5px;padding:1px}
 .detail .what{border-left:2px solid var(--edge);padding-left:14px;margin:10px 0 16px}
 .detail .big{font-size:16px;line-height:24px;color:var(--ink);max-width:75ch}
 :root[data-skin="endurance"] .hero::after{background:linear-gradient(to top,var(--surface) 36%,transparent 92%)}
@@ -248,7 +252,7 @@ table.mx{border-collapse:collapse;width:100%;min-width:1100px}
 .cell .nm{font-weight:600;font-size:13px;line-height:16px}
 .cell .gl{height:18px;width:auto;vertical-align:middle;margin-right:4px}
 .hull{display:flex;gap:10px;align-items:center}
-.hull img{width:64px;height:36px;object-fit:cover;border-radius:6px;filter:var(--still)}
+.hull img{width:64px;height:36px;object-fit:cover;border-radius:6px}
 .hull .nm{font-family:var(--display);font-size:calc(22px * var(--dscale));letter-spacing:var(--dtrack);text-transform:var(--dcase)}
 footer{padding-block:6px 40px;color:var(--muted);font-size:12.5px;max-width:110ch}
 footer code{font-family:var(--mono);font-size:11.5px}
@@ -378,6 +382,10 @@ footer code{font-family:var(--mono);font-size:11.5px}
     for(var k = 0; k < D.elements.length; k++) if(v.elements[D.elements[k]]) return "el:" + D.elements[k];
     return v.omni ? "omni" : null;
   }
+  function fit(name){   /* shrink a name whose longest word would not fit the card at the theme's display size */
+    var w = String(name || "").split(/\s+/).reduce(function(m, x){ return Math.max(m, x.length); }, 0);
+    return w > 8 ? ' style="--fit:' + (8 / w).toFixed(2) + '"' : '';
+  }
   function howLine(v, el, w){
     var r = v.controls ? v.controls.rows.filter(function(x){ return x.element === el; })[0] : null;
     var btn = r && r.pad && r.pad !== "no button" ? padGlyph(r.pad) : "";
@@ -396,11 +404,11 @@ footer code{font-family:var(--mono);font-size:11.5px}
         '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' +
           '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + '</span>' +
           '<span class="icontile' + (e.icon ? '' : ' none') + '">' + img(icon, name) + '</span>' +
-          '<span class="name">' + esc(nameOverride || name) + '</span>' + howLine(v, el, w) +
+          '<span class="name"' + fit(nameOverride || name) + '>' + esc(nameOverride || name) + '</span>' + howLine(v, el, w) +
           '<span class="sum">' + esc(w.does || e.description) + '</span>' +
           (w.scales ? '<span class="scl"><span class="chip">' + img(e.shape, "") + '</span><span>' + esc(w.scales) + '</span></span>' : '<span class="mo">' + scales + '</span>') +
           '<span class="grow"></span>' +
-          '<span class="l5t"><b>L5</b><span>' + esc(u.label || (u.status === "open" ? "not designed yet" : "unnamed")) + '</span></span></button>' +
+          '<span class="l5t"><b>L5</b>' + (u.icon ? img(u.icon, "") : '') + '<span>' + esc(u.label || (u.status === "open" ? "not designed yet" : "unnamed")) + '</span></span></button>' +
         '<span class="foot">' + pill(u.status) + '<span class="sp"></span><button class="l5" type="button" data-flip="' + key + '" aria-label="Show the level 5 upgrade of ' + esc(name) + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' + FLIP_ICON + 'L5</button></span>' +
       '</div>' +
       '<div class="face back" aria-hidden="' + !isFlip + '">' +
@@ -422,7 +430,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
       '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="omni">' +
         '<span class="el"><span class="chip">' + img(o.mark, "") + '</span>OMNI CRYSTAL</span>' +
         '<span class="icontile' + (o.icon ? '' : ' none') + '">' + img(o.icon || o.mark, name) + '</span>' +
-        '<span class="name">' + esc(name) + '</span><span class="how"><span>' + esc(ow.trigger || "Fly into an omni crystal") + '</span></span><span class="sum">' + esc(sum) + '</span><span class="grow"></span></button>' +
+        '<span class="name"' + fit(name) + '>' + esc(name) + '</span><span class="how"><span>' + esc(ow.trigger || "Fly into an omni crystal") + '</span></span><span class="sum">' + esc(sum) + '</span><span class="grow"></span></button>' +
       '<span class="foot"><span class="pill">no level 5</span></span></div></div></article>';
   }
   function docCard(v, si, ai, a, delay){
@@ -430,13 +438,13 @@ footer code{font-family:var(--mono);font-size:11.5px}
     return '<article class="ab doc' + (isSel ? ' sel' : '') + '" data-k="' + key + '" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
       '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '">' +
         '<span class="el"><span class="chip">' + img(shape, "") + '</span>' + esc(a.element.toUpperCase()) + '</span>' +
-        '<span class="name" style="margin-top:10px">' + esc(a.name) + '</span><span class="sum">' + esc(a.text) + '</span></button>' +
+        '<span class="name"' + (fit(a.name) ? fit(a.name).replace('"--fit', '"margin-top:10px;--fit') : ' style="margin-top:10px"') + '>' + esc(a.name) + '</span><span class="sum">' + esc(a.text) + '</span></button>' +
       '<span class="foot"><span class="pill">seat control</span></span></div></div></article>';
   }
   function kitTile(v){
     var d = 0;
     if(v.seats){
-      return '<div class="kit crew span7" role="group" aria-label="The crew">' + v.seats.list.map(function(s, si){
+      return '<div class="kit crew span12" role="group" aria-label="The crew">' + v.seats.list.map(function(s, si){
         return '<section class="seat" style="--d:' + (si * 90) + 'ms;--n:' + s.abilities.length + '" aria-label="' + esc(s.name) + '"><div class="seat-head"><span class="hd">' + esc(s.name) + '</span><span class="mo">' + (s.seats > 1 ? s.seats + ' SEATS' : 'SEAT ' + (si + 1)) + '</span><p>' + esc(s.role) + '</p></div><div class="seat-kit">' +
           s.abilities.map(function(a, ai){ d += 50; return a.linked ? elementCard(v, a.element, d, a.name) : docCard(v, si, ai, a, d); }).join("") + '</div></section>';
       }).join("") + (v.omni ? '<section class="seat" style="--d:' + (v.seats.list.length * 90) + 'ms" aria-label="The hull"><div class="seat-head"><span class="hd">The hull</span><span class="mo">EVERY SEAT</span><p>Shared by the whole crew.</p></div><div class="hullrow">' + omniCard(v, d + 50) + '</div></section>' : '') +
@@ -540,7 +548,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     if(!resolve(v, pick)) pick = firstKey(v);
     var sel = resolve(v, pick), f = v.flight, s = v.status;
     app.innerHTML = '<div class="bento">' +
-      '<section class="tile hero span5" aria-label="' + esc(crewName(v)) + '">' + img(v.image, "", "still") +
+      '<section class="tile hero ' + (v.seats ? 'span12 wide' : 'span5') + '" aria-label="' + esc(crewName(v)) + '">' + img(v.image, "", "still") +
         '<div class="copy"><span class="mo" style="letter-spacing:.12em">VESSEL ' + v.id + (isCrew(v) ? ' &middot; CREW VESSEL &middot; ' + v.crew.seats + ' SEATS' : v.controls ? (v.controls.oneStick ? ' &middot; ONE-STICK FLYER' : ' &middot; TWO-STICK FLYER') : '') + (s.inToybox ? ' &middot; IN THE VESSEL CHANGER' : '') + '</span>' +
         '<h1 class="hd">' + esc(isCrew(v) && v.crew.names.length ? v.crew.names.join(" & ") : v.name) + '</h1>' +
         (isCrew(v) && !v.crew.names.length ? '<span class="crewline">' + v.crew.seats + ' seats on one hull</span>' : '') +
