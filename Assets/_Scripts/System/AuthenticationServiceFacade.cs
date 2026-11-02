@@ -421,6 +421,20 @@ namespace CosmicShore.Core
         /// </summary>
         void SwitchMppmProfileIfNeeded()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // A standalone development player launched with -csMpProfile (MultiplayerAutoArgs) names its own
+            // profile, so two players on one PC are two UGS players. It wins over the MPPM tags below.
+            var autoArgs = CosmicShore.Gameplay.MultiplayerAutoPilot.Args;
+            if (autoArgs != null && !string.IsNullOrEmpty(autoArgs.Profile))
+            {
+                if (TryGetAuthService(out var autoSvc))
+                {
+                    autoSvc.SwitchProfile(autoArgs.Profile);
+                    Log($"Command line: switched to auth profile '{autoArgs.Profile}'.");
+                }
+                return;
+            }
+#endif
 #if UNITY_EDITOR
             if (CurrentPlayer.IsMainEditor)
                 return;

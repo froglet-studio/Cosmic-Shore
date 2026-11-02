@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Automatic host and join with built development players: -csMpAutoHost / -csMpAutoJoin (`claude/mp-plan-p0`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `MultiplayerAutoArgs` (the arguments, pure), `MultiplayerAutoPilot` (development builds and the editor
+only; hosts or presses JOIN through `PartyInviteController.JoinPartyAsync` and writes a result JSON), a `-csMpProfile`
+switch in `AuthenticationServiceFacade.SwitchMppmProfileIfNeeded` (development builds and the editor only),
+`Tools/Build/mp_auto.py` (launches 2-4 built players), and a real `PartyAcceptFlowPlayModeTests` test that runs two
+built players (skipped without `CS_MP_PLAYER`). `MultiplayerAutoArgsTests` covers the parsing. Procedure:
+`Docs/PartySystem/TESTS.md` § Automatic runs.
+
+**Verified without the editor:** `unity_refcompile` player, player-dev, editor and webgl configs: 0 errors in project
+code (the code is compiled out of the player config and in for player-dev and editor). `mp_auto.py --self-test`,
+`check_conditional_compilation.py`, `check_console_logging.py`, ship gates: all OK. **Not run anywhere**: no edit-mode
+test, no built player, no UGS sign-in.
+
+**Test:**
+1. EditMode: `MultiplayerAutoArgsTests` all pass; the existing multiplayer set still passes.
+2. Make a Windows **development** build pointed at a development UGS environment. Run
+   `python3 Tools/Build/mp_auto.py run --player <exe> --players 2`. Expected: two windows, the joiner lands in the host's
+   party within about a minute, both close, `PASS host` and `PASS join1`, exit code 0.
+3. Same with `--players 4`. Expected: four PASS lines, and the run fits in memory alongside one open Editor (note the
+   peak commit).
+4. Set `CS_MP_PLAYER` to the exe and run `TwoStandalonePlayers_HostAndJoin_BothReachTheParty` in the Test Runner.
+   Expected: pass. Unset it: the test shows as skipped.
+5. Negative: run the joiner alone (`--players 2`, then close the host window early). Expected: `FAIL join1` naming the
+   step it stopped at, exit code 1.
+6. A release (non-development) build launched with the same arguments does nothing different from a normal launch.
+
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the
