@@ -43,6 +43,11 @@ namespace CosmicShore.Gameplay
                  "220 sits just past PrismColliderLodManager's 200 u collider radius. Docs/perf/SWITCHBACK_PRISM_BUDGET.md.")]
         [SerializeField] float[] faunaCorridorRadiusByIntensity = { 220f, 220f, 220f, 220f };
 
+        [Tooltip("u past the corridor wall that a fauna goal or birth pushed out of the corridor lands (FaunaCorridor.GoalStandoff). " +
+                 "A goal parked on the wall itself is crossed by every creature overshooting it between steering ticks; the " +
+                 "2026-11-02 playtest found light fauna 139-190 u from the path inside a 220 u corridor. 0 = on the wall.")]
+        [SerializeField, Min(0f)] float faunaCorridorGoalStandoff = 50f;
+
         [Header("Blast Run AI")]
         [Tooltip("The AI's blast planner (SWITCHBACK.md \"AI: the blast planner\"): at each blocked gate an AI chooses to thread " +
                  "the eye or take the key crystal and blast the door, by its difficulty. Off = the old crystal detour.")]
@@ -407,7 +412,7 @@ namespace CosmicShore.Gameplay
             float radius = CorridorRadiusFor(faunaCorridorRadiusByIntensity, intensity);
             _corridorPath.Clear();
             for (int i = 0; i < _course.Count; i++) _corridorPath.Add(_course[i].Position);
-            cell.SetFaunaPathCorridor(_corridorPath, radius, closed: false);
+            cell.SetFaunaPathCorridor(_corridorPath, radius, closed: false, faunaCorridorGoalStandoff);
             _corridorCell = radius > 0f ? cell : null;
             if (radius > 0f)
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,

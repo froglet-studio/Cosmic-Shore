@@ -20,13 +20,19 @@ namespace CosmicShore.Gameplay
         Vector3 _boundsMin, _boundsMax;
 
         public float Radius { get; private set; }
+
+        /// <summary>How far past the wall <see cref="PushOut"/> parks a point (0 = on the wall). A goal parked ON the wall is
+        /// crossed by every creature that overshoots it between steering ticks, which is how the 2026-11-02 PC playtest
+        /// found light fauna 139-190 u inside a 220 u corridor; a standoff keeps the overshoot outside.</summary>
+        public float GoalStandoff { get; private set; }
         public int PointCount => _points.Count;
         public bool IsActive => Radius > 0f && _points.Count > 0;
 
-        public void Set(IReadOnlyList<Vector3> path, float radius, bool closed)
+        public void Set(IReadOnlyList<Vector3> path, float radius, bool closed, float goalStandoff = 0f)
         {
             _points.Clear();
             Radius = Mathf.Max(0f, radius);
+            GoalStandoff = Mathf.Max(0f, goalStandoff);
             if (path == null || path.Count == 0 || Radius <= 0f) { Radius = 0f; return; }
             for (int i = 0; i < path.Count; i++) _points.Add(path[i]);
             if (closed && path.Count > 2) _points.Add(path[0]);
@@ -45,6 +51,7 @@ namespace CosmicShore.Gameplay
         {
             _points.Clear();
             Radius = 0f;
+            GoalStandoff = 0f;
         }
 
         bool InBounds(Vector3 p) =>
@@ -76,7 +83,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// <paramref name="p"/> unchanged when it is outside the tube; otherwise pushed radially out to the tube's wall
-        /// (a hair past it). A point ON the path has no radial, so <paramref name="selfPosition"/> (the creature) gives the
+        /// (a hair past it), plus <see cref="GoalStandoff"/>. A point ON the path has no radial, so <paramref name="selfPosition"/> (the creature) gives the
         /// side, else a fixed perpendicular. Up to four passes, for a point pushed out of one leg into a neighbour.
         /// </summary>
         public Vector3 PushOut(Vector3 p, Vector3? selfPosition = null)
@@ -84,7 +91,7 @@ namespace CosmicShore.Gameplay
             if (!Contains(p)) return p;
             using (s_pushMarker.Auto())
             {
-                float wall = Radius * 1.001f + 0.01f;
+                float wall = Radius * 1.001f + 0.01f + GoalStandoff;
                 for (int pass = 0; pass < 4; pass++)
                 {
                     float d2 = ClosestSqr(p, out var c);

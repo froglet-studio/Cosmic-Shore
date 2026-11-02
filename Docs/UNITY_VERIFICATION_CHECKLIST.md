@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
+markers `DiagnosticsHUD.Capture.Burst / .Describe / .DiagStart`. Verified offline only (refcompile player, player-dev, editor; gates).
+
+1. Play any mode past 90 s with the Profiler on. **Pass:** the frame the auto-capture starts no longer stalls 50-70 ms; the three markers name what is left.
+2. Open the saved `capture_*.json`. **Pass:** its `burst` line still ends with the `log: ...` part, as before.
+3. HUD console (F7) `burst`. **Pass:** prints the full line, log included.
+
+### 🔴 Switchback fauna corridor: corridor mass out of the targeting grids, goals parked past the wall (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `Cell.IsTargetable` / `RefileForCorridor`, `FaunaCorridor.GoalStandoff`, `SwitchbackController.faunaCorridorGoalStandoff` (50 u).
+Docs/ECOSYSTEM.md section 67. Verified offline only (refcompile player + editor).
+
+1. EditMode: `FaunaCorridorTests` (incl. `PushOut_WithAStandoff_ParksPastTheWall`). **Pass:** all green.
+2. Switchback I4, 3 AI, full race; look from above (Third Eye Free camera). **Pass:** no fauna within 220 u of the path; the
+   flocks spread through the cell away from the course instead of lining the corridor's wall at ~220 u.
+3. Any other mode (lava lamp, Regatta). **Pass:** fauna behave as before (no corridor there, nothing re-filed).
+
+### 🔴 Charge light: one crystal's strikes no longer take a whole frame (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `ChargeArcs.StrikeAlong` measures a Mass column only against the strand pieces that can reach it (exact),
+and `CrystalChargeArcs.StrikePrisms` tests its columns in budget-sized slices across rebuilds. Markers
+`CrystalChargeArcs.Rebuild.Arcs / .Strikes / .Upload`. Verified offline only (refcompile player + editor, gates, an
+old-vs-new harness: identical strikes).
+
+1. Lava lamp (Menu_Main, Release) for 2 minutes with omni crystals on screen. **Pass:** no `CrystalChargeArcs.Rebuild` frame over ~3 ms (was 17-67 ms).
+2. Look at an omni with raised Mass columns while its arcs leap. **Pass:** a column still lights when an arc runs through it, with no visible lag or flicker.
+3. Switchback I4 full race. **Pass:** the charge arcs look as smooth as before.
+
 
 ### 🔴 Stoat completion: gap scaling, Accretion on the orbit, warp × kick cap, HUD (`stoat/complete`, 2026-11-02) — NOT EDITOR-VERIFIED
 
