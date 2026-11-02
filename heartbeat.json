@@ -14,22 +14,41 @@
   "torch": true,
   "unity": true
  },
+ "cores": 15,
  "current": {},
  "host": "gbox",
  "idle_seconds": 0.0,
  "remote_start": true,
+ "runs": [
+  {
+   "best_end": 4.2518455148831595,
+   "best_start": null,
+   "end": 1793592425,
+   "epoch": "27006061487c",
+   "evals": 210,
+   "job": "skimrace-squirrel-i3",
+   "request": null,
+   "start": 1793592152,
+   "stopped": "max evals",
+   "unit": null
+  }
+ ],
  "specs": {
   "cores": 16,
-  "disk_free_gb": 90.2,
+  "disk_free_gb": 84.0,
   "os": "windows",
   "os_name": "Windows 10",
   "python": "3.10.8",
-  "ram_free_gb": 2.1,
+  "ram_free_gb": 16.8,
   "ram_gb": 31.9,
   "unity": true,
   "unity_open": true
  },
  "status": "in use",
- "updated": 1793590862,
- "user": "gradies"
+ "totals": {
+  "sessions": 1
+ },
+ "updated": 1793592685,
+ "user": "gradies",
+ "version": "1"
 }

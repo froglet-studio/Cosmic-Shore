@@ -1,0 +1,97 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 4.565853658536586,
+  "metrics": {
+   "fingerprint": "3122789c",
+   "finished": "8/8",
+   "ideal_s": 32.8,
+   "limits": "offline sim of the shipped Skim Race pilot core on the scene's track, calibrated against the editor (Docs/SKIM_RACE_AI.md 6-8); 2 AI seats, no people; fixed seeds - promotion re-races fresh ones",
+   "race_median_s": 94.85,
+   "score": 4.5659,
+   "winner_median_s": 89.5
+  },
+  "params": {
+   "ChordClearance": 0.766,
+   "CrossingHeightFraction": 0.292,
+   "CrossingLeadSeconds": 0.0,
+   "CrossingLookaheadScale": 0.7609999999999999,
+   "CrossingSlowDistance": 121.55,
+   "CrossingThrottle": 0.944,
+   "CrystalBumpHalfWidth": 181.107,
+   "CrystalDirectDistance": 165.032,
+   "DirectBoost": 3.138,
+   "DirectBoostHysteresis": 1.507,
+   "DirectViaClearance": 2.0,
+   "DirectViaLateral": 18.61,
+   "DirectViaLift": 22.338,
+   "LaneHeightStep": 2.992,
+   "LeadGain": 2.832,
+   "LookaheadMax": 544.911,
+   "LookaheadMin": 26.806,
+   "LookaheadSeconds": 1.016,
+   "LowBoostApproachScale": 0.7969999999999999,
+   "LowBoostFull": 2.383,
+   "MassGuardMargin": 1.298,
+   "MassGuardSeconds": 0.7049999999999998,
+   "MassGuardSegment": 0.274,
+   "MaxLeadDegrees": 19.738,
+   "MinThrottle": 0.1,
+   "PassMargin": 3.01,
+   "ReachabilityMargin": 0.955,
+   "RecoveryThrottle": 0.167,
+   "RibbonClearHeight": 5.159,
+   "RibbonClearLateral": 28.981,
+   "SkimHeight": 4.346,
+   "StallSeconds": 5.579,
+   "StickGainPerDegree": 0.041,
+   "TerminalCentreBias": 0.004,
+   "TerminalChordClearance": 2.345,
+   "TrackGuardMargin": 1.642
+  }
+ },
+ "errors": {},
+ "evals": 210,
+ "history": [
+  [
+   14,
+   4.667884827450524,
+   1793592182,
+   "gradies/gbox"
+  ],
+  [
+   42,
+   4.569605802627998,
+   1793592220,
+   "gradies/gbox"
+  ],
+  [
+   56,
+   4.510716425328838,
+   1793592240,
+   "gradies/gbox"
+  ],
+  [
+   70,
+   4.458448020962062,
+   1793592260,
+   "gradies/gbox"
+  ],
+  [
+   126,
+   4.44215140742761,
+   1793592327,
+   "gradies/gbox"
+  ],
+  [
+   168,
+   4.2518455148831595,
+   1793592379,
+   "gradies/gbox"
+  ]
+ ],
+ "restarts": 0,
+ "seconds": 273.6,
+ "sha": "79e748718f8e8ed32c9baeb00f983bc1733173eb",
+ "updated": 1793592425
+}
