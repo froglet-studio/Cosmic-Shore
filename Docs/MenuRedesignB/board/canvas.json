@@ -2801,7 +2801,8 @@
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from the right, deeper levels slide over it and leave a spine (recommended)"
+      "title": "Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from the right, deeper levels slide over it and leave a spine (recommended) - interactive (zoom the HyperSea map)",
+      "is_interactive": true
     },
     "R43ACrew.dc.html": {
       "x": 2100,
@@ -2841,7 +2842,8 @@
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, a narrow card that widens over the map at levels 2 and 3"
+      "title": "Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, a narrow card that widens over the map at levels 2 and 3 - interactive (zoom the HyperSea map)",
+      "is_interactive": true
     },
     "R43BCrew.dc.html": {
       "x": 2100,
@@ -2881,7 +2883,8 @@
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / Ark crew / Story as tabs on its top"
+      "title": "Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / Ark crew / Story as tabs on its top - interactive (zoom the HyperSea map)",
+      "is_interactive": true
     },
     "R43CCrew.dc.html": {
       "x": 2100,
@@ -2921,7 +2924,8 @@
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 rise from the bottom across the width"
+      "title": "Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 rise from the bottom across the width - interactive (zoom the HyperSea map)",
+      "is_interactive": true
     },
     "R43DCrew.dc.html": {
       "x": 2100,
@@ -2961,7 +2965,8 @@
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as numbered steps down one card"
+      "title": "Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as numbered steps down one card - interactive (zoom the HyperSea map)",
+      "is_interactive": true
     },
     "R43ECrew.dc.html": {
       "x": 2100,
@@ -3001,7 +3006,8 @@
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide in between the map and the voyage card"
+      "title": "Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide in between the map and the voyage card - interactive (zoom the HyperSea map)",
+      "is_interactive": true
     },
     "R43FCrew.dc.html": {
       "x": 2100,
@@ -3042,6 +3048,376 @@
       "h": 1080,
       "page": "menu-redesign-c",
       "title": "Rev 43 - notes: what was asked, what all six share, the recommendation, what differs from the build"
+    },
+    "R44Compare.dc.html": {
+      "x": 0,
+      "y": 9940,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 - the four options and their tab rows side by side"
+    },
+    "R44GVoyage.dc.html": {
+      "x": 0,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 GVoyage - Crew's hand, level 1, the voyage card - each voyage a card your crew hands you, levels 2 and 3 its back - interactive (zoom the HyperSea map)",
+      "is_interactive": true
+    },
+    "R44GCrew.dc.html": {
+      "x": 2100,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 GCrew - Crew's hand, level 2, Ark crew (the 12 settings)"
+    },
+    "R44GStory.dc.html": {
+      "x": 4200,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 GStory - Crew's hand, level 3, the story (optional)"
+    },
+    "R44GSaga.dc.html": {
+      "x": 6300,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 GSaga - Crew's hand, the Saga tab"
+    },
+    "R44GQuests.dc.html": {
+      "x": 8400,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 GQuests - Crew's hand, the Quests tab (the quest tracker)"
+    },
+    "R44GEpisodes.dc.html": {
+      "x": 10500,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 GEpisodes - Crew's hand, the Episodes tab, locked: coming soon"
+    },
+    "R44HVoyage.dc.html": {
+      "x": 0,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 HVoyage - Logbook, level 1, the voyage card - the voyage a page of the Ark's log, levels 2 and 3 the next pages - interactive (zoom the HyperSea map)",
+      "is_interactive": true
+    },
+    "R44HCrew.dc.html": {
+      "x": 2100,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 HCrew - Logbook, level 2, Ark crew (the 12 settings)"
+    },
+    "R44HStory.dc.html": {
+      "x": 4200,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 HStory - Logbook, level 3, the story (optional)"
+    },
+    "R44HSaga.dc.html": {
+      "x": 6300,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 HSaga - Logbook, the Saga tab"
+    },
+    "R44HQuests.dc.html": {
+      "x": 8400,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 HQuests - Logbook, the Quests tab (the quest tracker)"
+    },
+    "R44HEpisodes.dc.html": {
+      "x": 10500,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 HEpisodes - Logbook, the Episodes tab, locked: coming soon"
+    },
+    "R44IVoyage.dc.html": {
+      "x": 0,
+      "y": 13720,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 IVoyage - Formation, level 1, the voyage card - your Ark's three hulls lead the card, Ark crew opens the formation (recommended) - interactive (zoom the HyperSea map)",
+      "is_interactive": true
+    },
+    "R44ICrew.dc.html": {
+      "x": 2100,
+      "y": 13720,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 ICrew - Formation, level 2, Ark crew (the 12 settings)"
+    },
+    "R44IStory.dc.html": {
+      "x": 4200,
+      "y": 13720,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 IStory - Formation, level 3, the story (optional)"
+    },
+    "R44ISaga.dc.html": {
+      "x": 6300,
+      "y": 13720,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 ISaga - Formation, the Saga tab"
+    },
+    "R44IQuests.dc.html": {
+      "x": 8400,
+      "y": 13720,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 IQuests - Formation, the Quests tab (the quest tracker)"
+    },
+    "R44IEpisodes.dc.html": {
+      "x": 10500,
+      "y": 13720,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 IEpisodes - Formation, the Episodes tab, locked: coming soon"
+    },
+    "R44JVoyage.dc.html": {
+      "x": 0,
+      "y": 14980,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 JVoyage - On the sea, level 1, the voyage card - no card box, the levels are columns standing on the sea lines - interactive (zoom the HyperSea map)",
+      "is_interactive": true
+    },
+    "R44JCrew.dc.html": {
+      "x": 2100,
+      "y": 14980,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 JCrew - On the sea, level 2, Ark crew (the 12 settings)"
+    },
+    "R44JStory.dc.html": {
+      "x": 4200,
+      "y": 14980,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 JStory - On the sea, level 3, the story (optional)"
+    },
+    "R44JSaga.dc.html": {
+      "x": 6300,
+      "y": 14980,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 JSaga - On the sea, the Saga tab"
+    },
+    "R44JQuests.dc.html": {
+      "x": 8400,
+      "y": 14980,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 JQuests - On the sea, the Quests tab (the quest tracker)"
+    },
+    "R44JEpisodes.dc.html": {
+      "x": 10500,
+      "y": 14980,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 JEpisodes - On the sea, the Episodes tab, locked: coming soon"
+    },
+    "R44Notes.dc.html": {
+      "x": 2100,
+      "y": 9940,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 44 - notes: what changed from Rev 43, the recommendation"
+    },
+    "R45A.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "fleet-codex",
+      "title": "Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as device tabs (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R45B.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "fleet-codex",
+      "title": "Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Controls table - interactive",
+      "is_interactive": true
+    },
+    "R45Notes.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 900,
+      "page": "fleet-codex",
+      "title": "Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes"
+    },
+    "R46Prototype.dc.html": {
+      "x": 0,
+      "y": 17360,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Prototype - the prototype: press a card or a pin, zoom the map, step the levels - interactive",
+      "is_interactive": true
+    },
+    "R46Cards.dc.html": {
+      "x": 2100,
+      "y": 17360,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Cards - the voyages as four small cards, the HyperSea map at Sector with their pins - interactive",
+      "is_interactive": true
+    },
+    "R46Open.dc.html": {
+      "x": 4200,
+      "y": 17360,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Open - a card slid open: Lantern Reach at level 1, the map on its course - interactive",
+      "is_interactive": true
+    },
+    "R46FromMap.dc.html": {
+      "x": 0,
+      "y": 18620,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 FromMap - opened from the map: The Maw's pin pressed at Sector, its card slid open - interactive",
+      "is_interactive": true
+    },
+    "R46Crew.dc.html": {
+      "x": 2100,
+      "y": 18620,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Crew - the open voyage at level 2, Ark crew: the 12 settings - interactive",
+      "is_interactive": true
+    },
+    "R46Story.dc.html": {
+      "x": 4200,
+      "y": 18620,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 Story - the open voyage at level 3, its story (optional) - interactive",
+      "is_interactive": true
+    },
+    "R46Notes.dc.html": {
+      "x": 0,
+      "y": 19880,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 46 - notes: what was asked, what it is, what the build changes"
+    },
+    "R47Compare.dc.html": {
+      "x": 0,
+      "y": 22260,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 - The colour fix (built tint against ship colours, per hull and domain) and the two domain changes frame by frame"
+    },
+    "R47A.dc.html": {
+      "x": 2100,
+      "y": 22260,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 A - Escort: the Ark centre stage, its three escorts round it, seats along the bottom - nanobot swap (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R47B.dc.html": {
+      "x": 4200,
+      "y": 22260,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 B - Hangar: seats stacked left, the Ark large right - Meerkat warp - interactive",
+      "is_interactive": true
+    },
+    "R47C.dc.html": {
+      "x": 0,
+      "y": 23520,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 C - The deck, kept: the built deck, the Ark turning above it - nanobot swap - interactive",
+      "is_interactive": true
+    },
+    "R47D.dc.html": {
+      "x": 2100,
+      "y": 23520,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 D - Bays: the Ark over three launch bays, an escort in each - Meerkat warp - interactive",
+      "is_interactive": true
+    },
+    "R47E.dc.html": {
+      "x": 4200,
+      "y": 23520,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 E - Dossier: the Ark on the left half, three seat rows right - nanobot swap - interactive",
+      "is_interactive": true
+    },
+    "R47F.dc.html": {
+      "x": 0,
+      "y": 24780,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 F - Cinema: the Ark fills the screen, the squad floats over it - Meerkat warp - interactive",
+      "is_interactive": true
+    },
+    "R47Notes.dc.html": {
+      "x": 0,
+      "y": 26040,
+      "w": 1920,
+      "h": 900,
+      "page": "menu-redesign-c",
+      "title": "Rev 47 - notes: what was wrong with the colours, the Ark render, the recommendation"
     }
   },
   "createdOnFiles": {
@@ -3597,6 +3973,42 @@
       "w": 240,
       "maxW": 10320,
       "page": "menu-redesign-c"
+    },
+    "rev44": {
+      "kind": "title1",
+      "text": "Rev 44 - Voyage window, four more: four tabs (Voyages, Saga, Quests, Episodes locked) on the sea lines",
+      "x": 0,
+      "y": 9540,
+      "w": 240,
+      "maxW": 12420,
+      "page": "menu-redesign-c"
+    },
+    "rev45": {
+      "kind": "title1",
+      "text": "Rev 45 - Fleet Codex - a vessel in tabs",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "fleet-codex"
+    },
+    "rev46": {
+      "kind": "title1",
+      "text": "Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)",
+      "x": 0,
+      "y": 16960,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
+    },
+    "rev47": {
+      "kind": "title1",
+      "text": "Rev 47 - Ark Squads: real domain colours, the Ark in 3D, nanobots or the Meerkat warp (six ways)",
+      "x": 0,
+      "y": 21860,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
     }
   },
   "order": [
@@ -3972,7 +4384,51 @@
     "R43FStory.dc.html",
     "R43FSaga.dc.html",
     "R43FEpisodes.dc.html",
-    "R43Notes.dc.html"
+    "R43Notes.dc.html",
+    "R44Compare.dc.html",
+    "R44GVoyage.dc.html",
+    "R44GCrew.dc.html",
+    "R44GStory.dc.html",
+    "R44GSaga.dc.html",
+    "R44GQuests.dc.html",
+    "R44GEpisodes.dc.html",
+    "R44HVoyage.dc.html",
+    "R44HCrew.dc.html",
+    "R44HStory.dc.html",
+    "R44HSaga.dc.html",
+    "R44HQuests.dc.html",
+    "R44HEpisodes.dc.html",
+    "R44IVoyage.dc.html",
+    "R44ICrew.dc.html",
+    "R44IStory.dc.html",
+    "R44ISaga.dc.html",
+    "R44IQuests.dc.html",
+    "R44IEpisodes.dc.html",
+    "R44JVoyage.dc.html",
+    "R44JCrew.dc.html",
+    "R44JStory.dc.html",
+    "R44JSaga.dc.html",
+    "R44JQuests.dc.html",
+    "R44JEpisodes.dc.html",
+    "R44Notes.dc.html",
+    "R45A.dc.html",
+    "R45B.dc.html",
+    "R45Notes.dc.html",
+    "R46Prototype.dc.html",
+    "R46Cards.dc.html",
+    "R46Open.dc.html",
+    "R46FromMap.dc.html",
+    "R46Crew.dc.html",
+    "R46Story.dc.html",
+    "R46Notes.dc.html",
+    "R47Compare.dc.html",
+    "R47A.dc.html",
+    "R47B.dc.html",
+    "R47C.dc.html",
+    "R47D.dc.html",
+    "R47E.dc.html",
+    "R47F.dc.html",
+    "R47Notes.dc.html"
   ],
   "pages": [
     {
@@ -3986,6 +4442,10 @@
     {
       "id": "menu-redesign-c",
       "name": "Menu Redesign C"
+    },
+    {
+      "id": "fleet-codex",
+      "name": "Fleet Codex"
     }
   ],
   "title": "Froglet Design Board"
