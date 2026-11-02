@@ -36,6 +36,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lays Blast Run's doors and block fields along the course (SwitchbackBlastRun) on every peer.")]
         [SerializeField] SpawnableSwitchbackFeatures featuresPrefab;
 
+        [Header("Fauna corridor")]
+        [Tooltip("Per intensity (I1..I4): u round the gate-to-gate path no fauna is born in, steers into or eats in " +
+                 "(Cell.SetFaunaPathCorridor - a diet + steering pen, never a wall). Keeps the path free for prism " +
+                 "obstacles and takes fauna body-sync / animator cost off where pilots fly. 0 = no corridor (fauna as before). " +
+                 "220 sits just past PrismColliderLodManager's 200 u collider radius. Docs/perf/SWITCHBACK_PRISM_BUDGET.md.")]
+        [SerializeField] float[] faunaCorridorRadiusByIntensity = { 220f, 220f, 220f, 220f };
+
         [Header("Blast Run AI")]
         [Tooltip("The AI's blast planner (SWITCHBACK.md \"AI: the blast planner\"): at each blocked gate an AI chooses to thread " +
                  "the eye or take the key crystal and blast the door, by its difficulty. Off = the old crystal detour.")]
@@ -47,6 +54,27 @@ namespace CosmicShore.Gameplay
         {
             SwitchbackAISkill.ForLevel(1), SwitchbackAISkill.ForLevel(2), SwitchbackAISkill.ForLevel(3), SwitchbackAISkill.ForLevel(4),
         };
+        [Tooltip("The AI dodges only Danger prisms and flies straight through plain ones (SwitchbackPrismAvoidance.Dodges). " +
+                 "A plain hit costs ~0.25 s, a dodge more: in the soak 35 of 38 course hits came while dodging. Off = dodge any prism.")]
+        [SerializeField] bool aiDodgeDangerOnly = true;
+        [Tooltip("u from the ring inside which the AI does not dodge at all: the line to the mouth (a blocked gate's eye, ringed " +
+                 "by Danger rakes) is the line. 0 = dodge up to the ring. 200 measured best offline (switchback_sim_harness).")]
+        [SerializeField, Min(0f)] float aiNoDodgeNearRing = 200f;
+        [Tooltip("Before a blast the AI first flies to a point behind the key and turns onto the fire line (the old strike). " +
+                 "Off: it flies straight at the key and the drift swings the nose onto the obstacle; offline the setup turn " +
+                 "cost about as much as the blast saved (SWITCHBACK.md \"Step 2\").")]
+        [SerializeField] bool aiStrikeSetupLeg;
+        [Tooltip("The AI nose's follow rate per second, one row per intensity (I1..I4), by difficulty: 1.5 = the fleet lag every " +
+                 "AI flies with elsewhere, higher = faster, 0 = no lag (as a human). The lag is the AI's biggest handicap in " +
+                 "Switchback, so these rows set each level's race time: offline, I4 lands Easy ~140 s, Medium ~130, Hard " +
+                 "~120, Legendary ~112 (SWITCHBACK.md \"Lag by difficulty\"). A negative entry leaves that level on the fleet lag.")]
+        [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
+        {
+            new(1.9f, 2.2f, 3f, 5f),     // I1
+            new(2f, 2.4f, 3f, 5f),       // I2
+            new(2.1f, 2.2f, 2.8f, 6f),   // I3
+            new(1.8f, 2.2f, 3.5f, 6f),   // I4
+        };
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -56,6 +84,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>u a course feature keeps outside the nucleus.</summary>
         const float NucleusMargin = 30f;
+
+        static readonly Unity.Profiling.ProfilerMarker s_featuresSpawnMarker = new("Switchback.Features.Spawn");
 
         protected override string ModeName => "Switchback";
 
@@ -80,13 +110,21 @@ namespace CosmicShore.Gameplay
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
-            return IsServer && _blastAI != null && _blastAI.TryAim(pilot, out target);
+            if (!IsServer || _blastAI == null) return false;
+            long t = SwitchbackAIClock.Begin();
+            bool r = _blastAI.TryAim(pilot, out target);
+            SwitchbackAIClock.End(t);
+            return r;
         }
 
         protected override bool TryOverrideDriftLook(IPlayer pilot, out Vector3 look)
         {
             look = default;
-            return IsServer && _blastAI != null && _blastAI.TryDriftLook(pilot, out look);
+            if (!IsServer || _blastAI == null) return false;
+            long t = SwitchbackAIClock.Begin();
+            bool r = _blastAI.TryDriftLook(pilot, out look);
+            SwitchbackAIClock.End(t);
+            return r;
         }
 
         /// <summary>Each AI's own lane through an open ring, so no two AIs fly one line (and its fresh trail).</summary>
@@ -95,11 +133,34 @@ namespace CosmicShore.Gameplay
             {
                 steerTo = default;
                 if (aiSenseDebug) SwitchbackBlastAI.DebugSense = true;
-                return IsServer && _blastAI != null && _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
+                if (!IsServer || _blastAI == null) return false;
+                long t = SwitchbackAIClock.Begin();
+                bool r = _blastAI.Emergency(pilot, position, velocity, forward, out steerTo);
+                SwitchbackAIClock.End(t);
+                return r;
             };
 
-        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) =>
-            IsServer && _blastAI != null ? _blastAI.LaneOffset(pilot, ringNo, gate) : Vector3.zero;
+        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate)
+        {
+            if (!IsServer || _blastAI == null) return Vector3.zero;
+            long t = SwitchbackAIClock.Begin();
+            var r = _blastAI.LaneOffset(pilot, ringNo, gate);
+            SwitchbackAIClock.End(t);
+            return r;
+        }
+
+        /// <summary>The AI nose follow rate for an intensity (1..4) and a difficulty level (1 Easy .. 4 Legendary):
+        /// <see cref="aiNoseFollowByIntensity"/>, or -1 (the fleet lag) for an intensity or level the table does not cover.</summary>
+        public static float NoseFollowFor(SwitchbackNoseFollow[] byIntensity, int intensity, int level) =>
+            byIntensity != null && intensity >= 1 && intensity <= byIntensity.Length ? byIntensity[intensity - 1].For(level) : -1f;
+
+        protected override void OnRacerArmed(IPlayer pilot)
+        {
+            var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
+            if (transformer == null) return;
+            transformer.AINoseFollowPerSecond =
+                NoseFollowFor(aiNoseFollowByIntensity, Intensity, (int)gameData.AIDifficultyFor(pilot));
+        }
 
         SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));
 
@@ -194,7 +255,12 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p == null) continue;
-                bool ai = p.IsInitializedAsAI || (p is Player human && PilotControl.IsHeldByAI(human));
+                bool ai = p.IsInitializedAsAI;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // PilotControl (the AI-flies switch) exists only in editor and development builds; in a release build
+                // no human's hull can be handed to the AI, so the AI flag alone is the whole answer.
+                if (!ai && p is Player human) ai = PilotControl.IsHeldByAI(human);
+#endif
                 int avoids = 0, blasts = 0, emerg = 0;
                 _blastAI?.TryCounts(p, out avoids, out blasts, out emerg);
                 int threaded = 0;
@@ -211,6 +277,7 @@ namespace CosmicShore.Gameplay
             if (!IsServer || _hits == null || !_hits.Running) return;
             NoteHits();
             _hits.EndRace(Intensity, CourseSeedUsed);
+            _blastAI?.LogFlightStats();
         }
 
         // ── Blast Run (SWITCHBACK.md "Blast Run") ──────────────────────
@@ -235,6 +302,7 @@ namespace CosmicShore.Gameplay
 
             var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius);
             RaiseBlastRun(layout);
+            ApplyFaunaCorridor(intensity);
 
             Transform container = null;
             if (layout.Prisms.Count > 0)
@@ -247,7 +315,8 @@ namespace CosmicShore.Gameplay
                     var features = Instantiate(featuresPrefab, transform);
                     features.name = "SwitchbackFeatures";
                     features.SetLayout(_course, intensity, layout, centre, clearRadius);
-                    var go = features.Spawn(intensity);
+                    GameObject go;
+                    using (s_featuresSpawnMarker.Auto()) go = features.Spawn(intensity);
                     if (go)
                     {
                         go.name = "SwitchbackFeatures (prisms)";
@@ -270,12 +339,29 @@ namespace CosmicShore.Gameplay
                 _hits?.Dispose();
                 var rt = _runtime;
                 _hits = new SwitchbackHitStats(pr => rt && rt.IsMover(pr));
+                SwitchbackAIClock.Reset();
             }
+            _blastAI?.Dispose();
             _blastAI = planAI
                 ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
                                         RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
                                         p => (int)gameData.AIDifficultyFor(p))
+                {
+                    DodgeDangerOnly = aiDodgeDangerOnly,
+                    NoDodgeNearRing = aiNoDodgeNearRing,
+                    StrikeSetupLeg = aiStrikeSetupLeg,
+                }
                 : null;
+            if (_blastAI != null)
+            {
+                var ai = _blastAI;
+                _runtime.LateTick += () =>
+                {
+                    long t = SwitchbackAIClock.Begin();
+                    ai.LateTick();
+                    SwitchbackAIClock.End(t);
+                };
+            }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback] BLAST RUN intensity {intensity}: {_course.Count} gates, {layout.Stations.Count} blocked gates, " +
@@ -303,8 +389,35 @@ namespace CosmicShore.Gameplay
                                  " key crystals are not laid, and the doors can only be blasted with other crystals.");
         }
 
+        /// <summary>Per-intensity corridor radius from <see cref="faunaCorridorRadiusByIntensity"/> (clamped index; 0 when unset).</summary>
+        public static float CorridorRadiusFor(float[] byIntensity, int intensity)
+        {
+            if (byIntensity == null || byIntensity.Length == 0) return 0f;
+            return Mathf.Max(0f, byIntensity[Mathf.Clamp(intensity - 1, 0, byIntensity.Length - 1)]);
+        }
+
+        readonly List<Vector3> _corridorPath = new(32);
+        Cell _corridorCell;
+
+        /// <summary>Every peer: fence the course path off from the cell's fauna (an open chain, so not closed).</summary>
+        void ApplyFaunaCorridor(int intensity)
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            if (!cell) return;
+            float radius = CorridorRadiusFor(faunaCorridorRadiusByIntensity, intensity);
+            _corridorPath.Clear();
+            for (int i = 0; i < _course.Count; i++) _corridorPath.Add(_course[i].Position);
+            cell.SetFaunaPathCorridor(_corridorPath, radius, closed: false);
+            _corridorCell = radius > 0f ? cell : null;
+            if (radius > 0f)
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[Switchback] fauna corridor {radius:0} u round {_course.Count} gates (intensity {intensity}).");
+        }
+
         public override void OnNetworkDespawn()
         {
+            if (_corridorCell) _corridorCell.ClearFaunaPathCorridor();
+            _corridorCell = null;
             _hits?.Dispose();
             _hits = null;
             if (_blastLayout != null)
@@ -313,10 +426,30 @@ namespace CosmicShore.Gameplay
                 if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
                 _keyManager = null;
                 _blastLayout = null;
+                _blastAI?.Dispose();
                 _blastAI = null;
             }
             UnregisterThirdEyeOverlays();
             base.OnNetworkDespawn();
         }
+    }
+
+    /// <summary>One intensity's AI nose follow rates per second, by difficulty (SWITCHBACK.md "Lag by difficulty"):
+    /// 1.5 = the fleet lag, higher = faster, 0 = no lag, negative = leave that level on the fleet lag.</summary>
+    [System.Serializable]
+    public struct SwitchbackNoseFollow
+    {
+        [Tooltip("Easy's nose follow rate per second.")] public float easy;
+        [Tooltip("Medium's nose follow rate per second.")] public float medium;
+        [Tooltip("Hard's nose follow rate per second.")] public float hard;
+        [Tooltip("Legendary's nose follow rate per second (0 = no lag).")] public float legendary;
+
+        public SwitchbackNoseFollow(float easy, float medium, float hard, float legendary)
+        {
+            this.easy = easy; this.medium = medium; this.hard = hard; this.legendary = legendary;
+        }
+
+        /// <summary>The rate for a level (1 Easy .. 4 Legendary), or -1 (the fleet lag) for any other.</summary>
+        public float For(int level) => level switch { 1 => easy, 2 => medium, 3 => hard, 4 => legendary, _ => -1f };
     }
 }

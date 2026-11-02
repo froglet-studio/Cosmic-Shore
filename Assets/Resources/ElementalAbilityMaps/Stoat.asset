@@ -15,53 +15,40 @@ MonoBehaviour:
   vesselClass: 15
   entries:
   - Element: 3
-    AbilityLabel: Field Dipole
-    AbilityDescription: 'MASS MODE triggers. Squeeze a trigger and a sink-source pair (a black hole and a
-      white hole, joined as a wormhole) is laid 250 u ahead, the poles together, in the
-      frame you had then. The triggers'' DIFFERENCE pulls the poles apart sideways - the
-      sink on the deeper trigger''s side - and their SUM pulls them apart lengthways, the
-      sink always the nearer. Let go and the pair slams together and annihilates (throwing
-      the Charge ripple); every press lays a fresh pair. The field bends your flight and
-      anything that crosses the sink''s horizon goes through it: you come out of the
-      source; a rival vessel comes out stripped of its crystals, left on the sink''s side;
-      a creature is swallowed (killed); a prism vanishes. Space is the pair''s reach - one
-      dial, read live: both poles'' horizon and pull x1 -> x2 at level 10
-      (StoatDipoleConfigSO.poleSize), and in Time mode the orbit''s radius x1 -> x1.4
-      (StoatSlingConfigSO.orbitReach). R_VesselActions/STOAT_DIPOLE.md.'
+    AbilityLabel: Catch Orbit
+    AbilityDescription: 'Triggers. Press LT or RT and a light black hole and its white hole are laid ahead of you,
+      the black hole on the pressed side. Fly past it and it catches you onto an orbit: hold to go
+      round it, squeeze harder for a tighter circle, and let go to fly out along the tangent. The
+      pair then falls together and annihilates, throwing the Charge ripple. A pair you own never
+      pulls you in. Space is the pair''s reach - one dial, read live: the orbit''s radius x1 ->
+      x1.4 at level 10 (StoatSlingConfigSO.orbitReach). R_VesselActions/STOAT_DIPOLE.md section
+      1b.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Accretion
-    UpgradeDescription: 'What the sink swallows is YOURS. Prisms it takes are STOLEN instead of destroyed -
-      they come out of the source in your domain (Prism.Steal, a super-steal: a shield is
-      no answer to a horizon) - and every one swallowed GROWS both poles, +4% each up to
-      twice their size, until the pair annihilates (StoatDipoleConfigSO.accretionPerPrism
-      / accretionMax). Gated on IsUpgradeActive(Space), replicated: every peer steals the
-      same prisms, and the grown size reaches peers as the published horizon. (Theft, the
-      earlier Space 5, is fused in - one element, one level-5.)'
+    UpgradeDescription: 'Parked with the field dipole: no effect while the Stoat flies the orbit alone. With the
+      dipole back, what its sink swallows is yours and grows both poles
+      (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md).'
   - Element: 4
-    AbilityLabel: Pathfinder / Time Mode
-    AbilityDescription: 'Passive. The path your hull will fly on the inputs you hold right now, run 1200 u
-      ahead through your dipole''s field and drawn as dots from the nose (blue-grey). When
-      your poles WARP that path at all - it bends 3 degrees or more, or it goes through
-      the wormhole - it turns lime and you fly down it faster: a warp of the hull''s own
-      flight clock. TIME MODE (B): the triggers lay an attractor beside you and the hull
-      ORBITS it; release a quarter-turn round (90 deg +- 15) for the whole slingshot kick,
-      a fifth of it outside the window - the line becomes the rest of the orbit and turns
-      lime inside the window. Time is rate - one dial, the Stoat''s boost: the warp x2.5
-      at rest -> x5 at level 10 (StoatDipoleConfigSO.boost), and the slingshot''s kick by
-      the same ratio (BoostRatio, x1 -> x2).'
+    AbilityLabel: Timed Slingshot
+    AbilityDescription: 'Passive speed. While a pair is held your flight clock warps and you fly faster: x2.7 at
+      rest. Let go a quarter-turn after the catch (90 deg +- 15) for the whole slingshot kick, a
+      fifth of it outside that window; the orbit''s dotted circle turns lime inside it. Time is
+      rate - one dial, the Stoat''s boost: the warp x2.7 at rest -> x5.6 at level 10
+      (StoatDipoleConfigSO.boost x StoatSlingConfigSO.catchWarpShare), and the slingshot''s kick
+      by the same ratio (BoostRatio, x1 -> x2).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Foresight
-    UpgradeDescription: 'The pathfinder also draws the predicted paths of the three nearest rivals within
-      1500 u, in their domain colours - each flown 500 u forward on the turn and speed it
-      is holding right now, measured from its pose (no input needed). Read a rival''s line
-      and lay your sink across it. Gated on IsUpgradeActive(Time), replicated; drawn for
-      the local pilot only (StoatPathfinderExecutor.Foresight).'
+    UpgradeDescription: 'You also see the predicted paths of the three nearest rivals within 1500 u, in their domain
+      colours - each flown 500 u forward on the turn and speed it is holding right now, measured
+      from its pose (no input needed). Read a rival''s line and lay your pair across it. Gated on
+      IsUpgradeActive(Time), replicated; drawn for the local pilot only
+      (StoatPathfinderExecutor.Foresight).'
   - Element: 1
     AbilityLabel: Ripple
     AbilityDescription: 'Passive, anti-vessel and anti-creature. Every pair of yours that annihilates - a
@@ -82,24 +69,15 @@ MonoBehaviour:
       - a rival''s level becomes yours. Gated on IsUpgradeActive(Charge), replicated, so
       every peer moves the same petals (StoatRippleConfigSO.siphonOnChargeUpgrade).'
   - Element: 2
-    AbilityLabel: Mass / Time Mode
-    AbilityDescription: 'B (on a phone, this card) steps the Stoat through its three modes, Mass -> Time ->
-      Gate -> Mass, and a switch lets go of whatever the triggers held; the card''s icon
-      shows the mode. MASS MODE (the default): the triggers lay the Field Dipole and the
-      trail is laid THICK - the prism''s height x3 at Mass 0 -> x6 at level 10
-      (StoatModeActionSO.massModeThickness, read at the replicated level so every peer
-      lays the same trail). TIME MODE: the triggers fly the orbit slingshot (see Time) and
-      the trail is laid at its own thickness. GATE MODE: a warp gate. Squeeze a trigger
-      and a black hole opens ahead of your nose, its white hole further along the same
-      line; squeeze deeper to stretch it. Fly into the black hole and you come out of the
-      white hole warped - most for a long gate entered straight down its line. Let go and
-      it falls together in under a second. One gate at a time.'
+    AbilityLabel: Orbit Mode
+    AbilityDescription: 'Parked: the Stoat flies the orbit alone, so B switches nothing and your trail is laid at its
+      own thickness at every Mass level. Mass mode''s thick trail and Gate mode''s warp gate come
+      back with the field trajectory (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md).'
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Armoured Wake
-    UpgradeDescription: 'Every prism laid in MASS MODE arrives SHIELDED. Gated on IsUpgradeActive(Mass),
-      replicated, per lay - so every peer lays the same tier
-      (StoatModeActionSO.massUpgradeShieldsInMassMode).'
+    UpgradeDescription: 'Parked with Mass mode: no effect while the Stoat flies the orbit alone. With Mass mode back,
+      every prism laid in it arrives shielded (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md).'
   omniAbilityLabel: Overclock

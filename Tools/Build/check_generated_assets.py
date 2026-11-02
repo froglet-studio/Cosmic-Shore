@@ -654,6 +654,9 @@ def changed_assets(base):
     added, modified, deleted = [], [], []
     for r in rows:
         st, path = r.split("\t", 1)
+        # Unity never imports a folder/file whose name ends in "~" or starts with "." (no .meta needed)
+        if any(seg.endswith("~") or seg.startswith(".") for seg in path.split("/")):
+            continue
         if path.endswith(".meta"):
             if st == "D":
                 deleted.append(path)

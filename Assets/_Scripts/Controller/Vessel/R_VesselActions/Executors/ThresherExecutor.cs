@@ -228,8 +228,9 @@ namespace CosmicShore.Gameplay
                 return cap > 1f ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (cap - 1f)) : 0f;
             }
         }
-        /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
-        public bool IsAiming => _spectating;
+        /// <summary>The release is being aimed, so the sticks do not lean the orbit: the local pilot is spectating a
+        /// planted spin, or the autopilot is aiming one (<see cref="AimAutopilotLaunch"/>).</summary>
+        public bool IsAiming => _spectating || _autoAimUp.sqrMagnitude > 0.5f;
         /// <summary>
         /// The launch view is up: a planted orbit spinning at <c>spectateSpinRate</c> or faster for
         /// <c>spectateEngageSeconds</c>, with (analog) LT and the chain's rigidity at a full pull; it
@@ -262,6 +263,7 @@ namespace CosmicShore.Gameplay
             _plantHeld = false;
             _touchLaunch.Clear();
             _snap.Clear();
+            ClearAutopilotAim();
             _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
@@ -405,6 +407,13 @@ namespace CosmicShore.Gameplay
                 _solver.ArmLaunch(_aimDir, config ? config.LaunchBoost : 1f);
                 return;   // the yank plays when the launch happens (StepChain)
             }
+            // The AUTOPILOT's aimed release: the same armed launch and boost, along the objective its driver handed
+            // over (AimAutopilotLaunch), under the same launch view. Without the view an AI's let-go is the plain one.
+            if (wasPivot && !_spectating && LaunchViewUp && AutopilotAimFresh && _autoAimDir.sqrMagnitude > 0.5f)
+            {
+                _solver.ArmLaunch(_autoAimDir, config ? config.LaunchBoost : 1f);
+                return;
+            }
             _solver.Release(_lastShipVelocity);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
         }
@@ -455,6 +464,7 @@ namespace CosmicShore.Gameplay
             _snap.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
             _releaseDirection = null;
+            ClearAutopilotAim();
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
             _ackAny = false;
@@ -515,6 +525,7 @@ namespace CosmicShore.Gameplay
             PublishAcknowledged();
 
             UpdateLaunchView(dt);
+            UpdateAutopilotAim(shipPosition, dt);
             UpdateCombo(dt);
             return result.ShipVelocity;
         }
@@ -537,6 +548,63 @@ namespace CosmicShore.Gameplay
             SweepBall(from, _solver.BallPosition);
             if (_massMode) LayBallTrail(from, _solver.BallPosition, _lastShipPosition);
             HitVesselsAlong(from, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
+        }
+
+        // ------------------------------------------------------------------ the autopilot's aimed launch
+
+        // The AI's crosshair (ThresherSlingAIPolicySO, 2026-11-02: in Garrett's Thresher Time races 85% of his planted
+        // time is the aimed launch, and the autopilot could only let go along the tangent). A pilot aims an armed
+        // launch in the launch view with the sticks; an AI has no camera, so its boost driver hands over its objective
+        // each tick instead. While the launch view is up - the rule that puts up a pilot's crosshair: both triggers
+        // full on a fast enough spin - the orbit plane is laid onto the objective at the pilot's own aimPitchRate, and
+        // the let-go ARMS the same launch, with the same boost, along it (LetGo). A local pilot's own aim always wins.
+        const int AutoAimFreshFrames = 2;
+        const int NoAutoAim = -1000;
+        Vector3 _autoAimTarget, _autoAimUp, _autoAimDir;
+        int _autoAimFrame = NoAutoAim;
+
+        /// <summary>
+        /// The autopilot aims the pending launch at <paramref name="toTarget"/> (a world offset from the hull). Called
+        /// every tick the aim is wanted: an aim not renewed within <c>AutoAimFreshFrames</c> frames lapses. It acts only
+        /// while the launch view is up, and never on a hull a local pilot is aiming.
+        /// </summary>
+        public void AimAutopilotLaunch(Vector3 toTarget)
+        {
+            _autoAimTarget = toTarget;
+            _autoAimFrame = Time.frameCount;
+        }
+
+        /// <summary>Degrees between the launch the autopilot's aim would arm and its objective: what is left of the
+        /// plane's tilt onto it. 180 while no aim is laid.</summary>
+        public float AutopilotAimErrorDegrees => _autoAimDir.sqrMagnitude > 0.5f && _autoAimTarget.sqrMagnitude > 1e-6f
+            ? Vector3.Angle(_autoAimDir, _autoAimTarget) : 180f;
+
+        bool AutopilotAimFresh => Time.frameCount - _autoAimFrame <= AutoAimFreshFrames && _autoAimTarget.sqrMagnitude > 1e-6f;
+
+        /// <summary>Once per chain step, after the launch view: lay the planted orbit onto the autopilot's objective,
+        /// hold it once a launch is armed (the point is chosen), and hand the plane back when the aim lapses.</summary>
+        void UpdateAutopilotAim(Vector3 shipPosition, float dt)
+        {
+            if (_autoAimUp.sqrMagnitude > 0.5f && IsPivoting && _solver.LaunchArmed) return;
+            bool aiming = config && !_spectating && IsPivoting && LaunchViewUp && AutopilotAimFresh;
+            if (!aiming)
+            {
+                // (a launch or a release already handed the plane back inside the solver)
+                if (_autoAimUp.sqrMagnitude > 0.5f && IsPivoting && !_spectating) _solver.SteerOrbitPlane(Vector3.zero);
+                ClearAutopilotAim();
+                return;
+            }
+            if (_autoAimUp.sqrMagnitude < 0.5f) _autoAimUp = _solver.OrbitNormal(shipPosition);
+            if (_autoAimUp.sqrMagnitude < 0.5f) return;
+            _autoAimDir = ThresherCameraFraming.LayAimTowards(ref _autoAimUp, _autoAimTarget,
+                config.AimPitchRate * Mathf.Deg2Rad * dt);
+            _solver.SteerOrbitPlane(_autoAimUp);
+        }
+
+        void ClearAutopilotAim()
+        {
+            _autoAimUp = Vector3.zero;
+            _autoAimDir = Vector3.zero;
         }
 
         // ------------------------------------------------------------------ the launch view

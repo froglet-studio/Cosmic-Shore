@@ -165,8 +165,13 @@ namespace CosmicShore.Gameplay
 
                 // Every seat AI: hand the host's hull to the AI (the panel's AI-flies switch).
                 yield return null;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 if (_gameData.LocalPlayer is Player host && !PilotControl.TrySetAIFlies(host, true, _gameData, out var refusal))
                     CSDebug.LogError("[SwitchbackSoak] host seat not handed to the AI: " + refusal);
+#else
+                // PilotControl exists only in editor and development builds; a release player cannot run an all-AI soak.
+                CSDebug.LogError("[SwitchbackSoak] host seat not handed to the AI: PilotControl is not in a release build");
+#endif
                 Time.timeScale = _s.TimeScale;
 
                 _raceEnded = false;

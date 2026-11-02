@@ -9,6 +9,22 @@ Read `Docs/Compute/README.md` sections 4-6 (the job file, how search is shared, 
 worth the team's hardware when three things are true: **the goal is ambitious and clear, the space is the real set of
 choices someone would otherwise make by hand, and the loss is cheap to compute and honest about what it cannot see.**
 
+## 0. AI work: name the plan step first (LOCKED, Garrett 2026-11-02)
+
+An AI search serves a step of `Docs/AI_SYSTEM/AI_PLAN.md`, and its job says which one: `plan` and `stage` (for example
+`regatta-balance` and 1), or `plan_step` (for example `time-arcade`), checked against `Docs/AI_SYSTEM/ai_plan.json`.
+A job that names no plan, or names a plan that is neither an AI plan nor in `other_plans`, fails `compute.py validate`,
+and no worker runs it. Two of the plan's rules shape the search itself:
+- **One genome per vessel and element**, scored on all four intensities of the element's arcade game at once (the mean
+  plus 0.5 x the worst), never one file per intensity or per mode.
+- **Grow from every genome that exists.** Give the evaluator a `seeds(args, root)` that reads each genome from its
+  shipped asset; the first generation is all of them plus mutations of each (`SepCMAES.seed`). When the genomes differ
+  in fields the search does not move, put a `genome` choice first in the space, so the genome's own values lie
+  underneath (`skimrace_fit` is the pattern).
+
+An AI is never trained inside an arena game; an arena search holds the promoted AIs fixed. Work no step covers is a
+proposal to Garrett, not a job.
+
 ## 1. The goal first (one sentence, someone's)
 
 Write the `goal` as what the GAME gains, in the words of whoever wants it: "an AI that races the Manta's own game well

@@ -379,8 +379,10 @@ namespace CosmicShore.Gameplay
         //  a head-driven slither wave; the body propagates it naturally).
         // -------------------------------------------------------------------
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Worm.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // Defensive sweep: segments can be destroyed outside the death path
             // (scene teardown, turn-end cleanup) — a null in the chain is fatal to
             // the follow pass, and an emptied colony must die, not idle.

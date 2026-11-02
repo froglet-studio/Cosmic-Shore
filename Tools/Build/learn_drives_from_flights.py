@@ -118,11 +118,13 @@ POLICY_CLASSES = {
     "SkimRingAIPolicySO": {"verb": "boost ring", "signal": ("press", "SquirrelTubeActionSO"), "drives": "SquirrelTubeActionSO",
                            "fields": {"ringAlignDegrees": "alignDegrees", "ringStickBand": "stickBand"}},
     # The Thresher's sling (2026-10-26): a press of its PLANT trigger (a ThresherActionSO whose asset is the Plant one).
+    # "aimed" (2026-11-02): each plant is also read for the AIMED launch (aimed_launch), which people mostly fly it with.
     "ThresherSlingAIPolicySO": {"verb": "sling (plant)", "signal": ("press", "ThresherActionSO", "Plant"),
-                                "drives": "ThresherActionSO",
+                                "drives": "ThresherActionSO", "aimed": True,
                                 "fields": {"plantMinTurnDegrees": "engageAngleLow", "plantMinDistance": "engageDistanceLow",
                                            "releaseConeDegrees": "releaseAngleMedian", "maxPlantSeconds": "holdHigh",
-                                           "slingIntervalSeconds": "minRestSeconds"}},
+                                           "slingIntervalSeconds": "minRestSeconds", "aimedLaunch": "aimedLaunch",
+                                           "aimedHoldSeconds": "aimedHoldMedian"}},
     # ChargeBoost (Dolphin) and RampBoost (Rhino) are HULLS entries above, with their own extra measures.
 }
 PREFAB_DIR = os.path.join(REPO, "Assets", "_Prefabs", "Spacevessels")
@@ -306,6 +308,7 @@ RANGES = {
     "dashCooldownSeconds": (0.2, 10.0),
     "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 2000.0), "releaseConeDegrees": (1.0, 90.0),
     "maxPlantSeconds": (0.2, 20.0), "slingIntervalSeconds": (0.0, 20.0),
+    "aimedLaunch": (0, 1), "aimedHoldSeconds": (0.0, 20.0),   # ints keep the bool a 0 / 1 in the YAML
     "rocketMinRange": (0.0, 2000.0), "rocketMaxRange": (1.0, 2000.0), "rocketAimDegrees": (0.0, 45.0),
 }
 
@@ -548,14 +551,40 @@ def verb_episodes(f, S, spec, held=False):
     return eps, rests
 
 
+# The Thresher's AIMED launch (ThresherSlingAIPolicySO.aimedLaunch, 2026-11-02): both triggers full as the plant lets go,
+# then the armed launch leaves within AIMED_WAIT s at the launch boost (ThresherConfig launchBoost x4.8); an unaimed let-go
+# leaves at the orbit's own speed. In Garrett's Thresher Time races the jump was x2.6-x25 within 0.05-1.35 s.
+FULL_PULL = 0.97            # ThresherConfig fullPull
+AIMED_JUMP, AIMED_JUMP_MIN, AIMED_WAIT = 2.5, 150.0, 3.0
+AIMED_SHARE = 0.5           # the person launches aimed on at least this share of plants: the AI does too
+
+
+def aimed_launch(S, ep):
+    """Did this plant episode (verb_episodes' shape) end in an AIMED launch?"""
+    rel, a, b = ep[1], ep[3], ep[4]
+    if S[max(a, b - 1)]["rt"] < FULL_PULL:
+        return False
+    v0 = rel["speed"]
+    for s in S[b:]:
+        if s["t"] - rel["t"] > AIMED_WAIT:
+            break
+        if s["speed"] >= max(AIMED_JUMP * v0, v0 + AIMED_JUMP_MIN):
+            return True
+    return False
+
+
 def measure_generic(flights, spec, held=False):
     """measure_policy's numbers for a generic hull, the verb found per flight (presses are events, not samples)."""
     eps, rests, within = [], [], []
+    aimed_eps, plain_eps = [], []
     for f, S in flights:
         e, r = verb_episodes(f, S, spec, held)
         eps += e
         rests += r
         within += [x["steer"] for ep in e for x in S[ep[3]:ep[4] + 1]]
+        if spec.get("aimed"):
+            for ep in e:
+                (aimed_eps if aimed_launch(S, ep) else plain_eps).append(ep)
     m = {"episodes": len(eps), "seconds": round(sum(e[2] for e in eps), 1)}
     if len(eps) < MIN_EPISODES:
         return m
@@ -574,6 +603,18 @@ def measure_generic(flights, spec, held=False):
     m["engageDistanceLow"] = pct([x["dist"] for x in eng], 0.2)
     m["releaseAngleMedian"] = pct([x["angle"] for x in rel], 0.5)
     m["holdHigh"] = pct([e[2] for e in eps], 0.95)
+    if spec.get("aimed"):
+        m["aimedShare"] = round(len(aimed_eps) / len(eps), 2)
+        m["aimedLaunch"] = 1 if m["aimedShare"] >= AIMED_SHARE else 0
+        if len(aimed_eps) >= 3:
+            m["aimedHoldMedian"] = pct([e[2] for e in aimed_eps], 0.5)
+        if m["aimedLaunch"]:
+            # An aimed let-go ARMS the launch (the solver leaves later, from the point facing the aim), so its angle is
+            # not where the hull leaves, and a person who launches aimed lets go plain only to brake or to abort (Garrett's
+            # six in Thresher Time: a 103 degree median, LT taps with the winch slack). Neither is the plain sling's cone,
+            # so it is not learned from them: the variant keeps the one it has (the 62.8 learned before 2026-11-02 came
+            # from his arms and was reset to the base's 15).
+            m["releaseAngleMedian"] = None
     return m
 
 
@@ -1208,6 +1249,42 @@ def self_test_rocket_and_rings():
     assert m["pressNoseMedian"] == 0.0, m
     few = measure_presses([({"buttonEvents": events[:6]}, S)], extra)
     assert "pressDistHigh" not in few, "under MIN_EPISODES presses nothing is learned"
+    self_test_aimed_launch()
+
+
+def self_test_aimed_launch():
+    """The Thresher's aimed launch (2026-11-02): found from the let-go's triggers and the boost's jump, and learned."""
+    S = [{"t": i * 0.1, "rt": 1.0, "speed": 200.0} for i in range(80)]
+    for s in S[25:35]:
+        s["speed"] = 900.0                       # the launch, 0.5 s after the let-go at sample 20
+    ep = (S[10], S[20], 1.0, 10, 20)
+    assert aimed_launch(S, ep), "both triggers full at the let-go, then the launch boost's jump: aimed"
+    assert not aimed_launch([dict(s, rt=0.0) for s in S], ep), "negative control: the winch not full is never aimed"
+    assert not aimed_launch([dict(s, speed=200.0) for s in S], ep), "negative control: no jump is a plain let-go"
+    late = [dict(s, speed=900.0 if s["t"] > 2.0 + AIMED_WAIT + 0.5 else 200.0) for s in S]
+    assert not aimed_launch(late, ep), "negative control: a jump long after the let-go is not this plant's"
+
+    def flight(aimed):
+        """Eight plants of 1.2 s every 5 s; the first `aimed` of them end in a launch 0.5 s after the let-go."""
+        S = [{"t": i * 0.1, "rt": 1.0, "speed": 200.0, "angle": 30.0, "stick": 0.2, "runway": 2.0, "dist": 400.0,
+              "steer": 0.2, "held": False} for i in range(420)]
+        events = []
+        for k in range(8):
+            events += [[5.0 * k, 2, 1], [5.0 * k + 1.2, 2, 0]]
+            if k < aimed:
+                for s in S[int(50 * k + 17):int(50 * k + 27)]:
+                    s["speed"] = 1000.0
+        return {"buttonEvents": events}, S
+
+    spec = {"signal": ("press", "ThresherActionSO", "Plant"), "input": 2, "aimed": True}
+    m = measure_generic([flight(7)], spec)
+    assert m["aimedLaunch"] == 1 and m["aimedShare"] == 0.88, m
+    assert abs(m["aimedHoldMedian"] - 1.2) < 1e-6, m
+    assert m["releaseAngleMedian"] is None, "an aimed launcher's let-gos are arms: the plain cone is not learned from them"
+    m = measure_generic([flight(0)], spec)
+    assert m["aimedLaunch"] == 0 and m["aimedShare"] == 0.0 and "aimedHoldMedian" not in m, m
+    assert m["releaseAngleMedian"] == 30.0, "negative control: a person who never aims keeps the plain cone"
+    assert clamp("aimedLaunch", m["aimedLaunch"]) == 0 and clamp("aimedLaunch", 1) == 1, "the bool stays a 0 / 1"
 
 
 def self_test():

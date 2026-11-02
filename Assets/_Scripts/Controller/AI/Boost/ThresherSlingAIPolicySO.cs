@@ -19,6 +19,15 @@ namespace CosmicShore.Gameplay
     /// every peer from the presses. The inputs are found by <see cref="ThresherActionSO.Control"/> and resolved again
     /// until the binding maps have filled (vessel contract rule 6). Before 2026-10-26 the prefab named the Squirrel's
     /// SkimRingAIPolicySO, inherited with the hull clone, which binds nothing on a Thresher.</para>
+    ///
+    /// <para><b>The aimed launch</b> (<see cref="aimedLaunch"/>, 2026-11-02, from Garrett's Thresher Time races: 85% of
+    /// his planted time is it, launches within a few degrees of the ring at up to 4,600 u/s). Once the launch view is up
+    /// (both triggers full on a fast enough spin, <c>ThresherExecutor.LaunchViewUp</c>) the driver hands the executor
+    /// its objective every tick (<c>ThresherExecutor.AimAutopilotLaunch</c>) and lets go after
+    /// <see cref="aimedHoldSeconds"/>; the executor arms the launch along the objective, so the ship leaves from the
+    /// point of the circle whose tangent faces it, at the pilot's launch boost. Below the view the let-go is the plain
+    /// one above. Off by default: a mode's learned variant turns it on when its people launch that way
+    /// (<c>Tools/Build/learn_drives_from_flights.py</c>).</para>
     /// </summary>
     [CreateAssetMenu(fileName = "ThresherSlingAIPolicy", menuName = "ScriptableObjects/AI/Boost Policy/Thresher Sling")]
     public sealed class ThresherSlingAIPolicySO : AIBoostPolicySO
@@ -44,6 +53,29 @@ namespace CosmicShore.Gameplay
                  "leaves faster. Off, the ship swings round the ball on a slack chain.")]
         [SerializeField] bool windWhilePlanted = true;
 
+        [Header("The aimed launch")]
+        [Tooltip("Aim the let-go: once the launch view is up (both triggers full on a fast enough spin), aim at the " +
+                 "objective and let go after aimedHoldSeconds, so the ship leaves from the point of the circle whose " +
+                 "tangent faces it at the launch boost - a pilot's crosshair launch. Off, every let-go is the plain one. " +
+                 "Needs windWhilePlanted (the winch is the second full trigger).")]
+        [SerializeField] bool aimedLaunch;
+        [Tooltip("Seconds planted before an aimed let-go: the spin-up, since the launch leaves at the boost times the " +
+                 "orbit's speed. Learned from people's aimed launches (the median plant).")]
+        [SerializeField, Min(0f)] float aimedHoldSeconds = 1.5f;
+        [Tooltip("Let go of an aimed launch only once its aim is within this many degrees of the objective: the orbit " +
+                 "plane tilts onto the objective at the pilot's aimPitchRate, so a let-go before it has would launch off " +
+                 "the ring. maxPlantSeconds still ends every plant.")]
+        [SerializeField, Range(0.5f, 45f)] float aimToleranceDegrees = 3f;
+
+        /// <summary>The aimed launch is on (and can come up: it needs the winch as its second full trigger).</summary>
+        public bool AimsLaunch => aimedLaunch && windWhilePlanted;
+
+        /// <summary>Let go of an AIMED launch now? <paramref name="plantedSeconds"/> planted under the launch view, its
+        /// aim <paramref name="aimErrorDegrees"/> off the objective.</summary>
+        public bool WantsAimedLetGo(float plantedSeconds, float aimErrorDegrees) =>
+            plantedSeconds >= maxPlantSeconds
+            || (plantedSeconds >= aimedHoldSeconds && aimErrorDegrees <= aimToleranceDegrees);
+
         /// <summary>Plant now? The objective <paramref name="offDegrees"/> off the course, <paramref name="distance"/> away,
         /// <paramref name="sinceLetGo"/> seconds after the last let-go.</summary>
         public bool WantsPlant(float offDegrees, float distance, float sinceLetGo) =>
@@ -54,32 +86,43 @@ namespace CosmicShore.Gameplay
         public bool WantsLetGo(float offDegrees, float plantedSeconds) =>
             offDegrees <= releaseConeDegrees || plantedSeconds >= maxPlantSeconds;
 
+        /// <summary>Let go now, with the launch view NOT up? <see cref="WantsLetGo"/>, except that an aimed launcher first
+        /// gives the spin <see cref="aimedHoldSeconds"/> to bring the view up: it plants with the ring nearly ahead (Garrett:
+        /// 4-20° off), where the cone alone would let go on the plant's first tick.</summary>
+        public bool WantsUnaimedLetGo(float offDegrees, float plantedSeconds) =>
+            AimsLaunch
+                ? plantedSeconds >= maxPlantSeconds || (plantedSeconds >= aimedHoldSeconds && offDegrees <= releaseConeDegrees)
+                : WantsLetGo(offDegrees, plantedSeconds);
+
         public override AIBoostDriver CreateDriver(IVesselStatus status, ActionExecutorRegistry executors)
         {
             var thresher = executors ? executors.Get<ThresherExecutor>() : null;
-            return thresher && status?.ActionHandler != null ? new Driver(this, status) : null;
+            return thresher && status?.ActionHandler != null ? new Driver(this, status, thresher) : null;
         }
 
         sealed class Driver : AIBoostDriver
         {
             readonly ThresherSlingAIPolicySO _policy;
             readonly IVesselStatus _status;
+            readonly ThresherExecutor _thresher;
             readonly List<ShipActionSO> _scratch = new(4);
             InputEvents? _plant, _winch;
-            bool _planted, _winding;
+            bool _planted, _winding, _aiming;
             float _plantedAt, _letGoAt = float.NegativeInfinity;
 
-            public Driver(ThresherSlingAIPolicySO policy, IVesselStatus status)
+            public Driver(ThresherSlingAIPolicySO policy, IVesselStatus status, ThresherExecutor thresher)
             {
                 _policy = policy;
                 _status = status;
+                _thresher = thresher;
             }
 
             public override bool Drives(ShipActionSO action) =>
                 action is ThresherActionSO t && t.Control is ThresherActionSO.ThresherControl.Plant
                     or ThresherActionSO.ThresherControl.Winch;
 
-            public override string Status => _planted ? "planted: swinging round the ball" : "waiting for a corner";
+            public override string Status => !_planted ? "waiting for a corner"
+                : _aiming ? "planted: aiming the launch" : "planted: swinging round the ball";
 
             public override void Tick(in AIBoostContext c)
             {
@@ -90,7 +133,18 @@ namespace CosmicShore.Gameplay
 
                 if (_planted)
                 {
-                    if (c.Restricted || _policy.WantsLetGo(off, now - _plantedAt)) LetGo(handler, now);
+                    float planted = now - _plantedAt;
+                    if (c.Restricted) { LetGo(handler, now); return; }
+                    // The aimed launch: under the launch view, aim at the objective every tick (the aim the let-go arms)
+                    // and let go after the spin-up. Below the view, the plain let-go.
+                    if (_policy.AimsLaunch && _winding && _thresher && _thresher.LaunchViewUp)
+                    {
+                        _aiming = true;
+                        _thresher.AimAutopilotLaunch(c.ToTarget);
+                        if (_policy.WantsAimedLetGo(planted, _thresher.AutopilotAimErrorDegrees)) LetGo(handler, now);
+                        return;
+                    }
+                    if (_policy.WantsUnaimedLetGo(off, planted)) LetGo(handler, now);
                     return;
                 }
 
@@ -117,7 +171,7 @@ namespace CosmicShore.Gameplay
             {
                 if (_planted && _plant.HasValue) handler.StopShipControllerActionsReplicated(_plant.Value);
                 if (_winding && _winch.HasValue) handler.StopShipControllerActionsReplicated(_winch.Value);
-                _planted = _winding = false;
+                _planted = _winding = _aiming = false;
                 _letGoAt = now;
             }
 

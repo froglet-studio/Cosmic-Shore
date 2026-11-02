@@ -1,0 +1,315 @@
+#!/usr/bin/env python3
+"""The AI Stoat on the orbit alone (2026-11-02, Yash): how fast it races Slingshot with only Time mode's catch.
+
+Since the field dipole was parked (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md) the catch sling is the Stoat's only
+speed: the hull's flight clock warps only while a pair is held (StoatSlingExecutor.WarpsFlight, from the press). So the
+AI's press rule decides its pace, and this model picks its numbers (StoatSlingConfig's ai* rows and autopilotHold01).
+
+Ported line for line: StoatSlingExecutor.AutopilotSling and StepOrbit, StoatSlingMath (CatchPair, Catches, OrbitRadius,
+ClearOfRepulsor, OrbitHeading, SettleHeading, RadialCorrection, SlingBoost, SweetSpot, TimedKick),
+StoatDipoleMath.StepBoost and AutopilotGauge, GateRaceController's gate steering with AICommitFromApproachPoint on
+(through switchback_dolphin_sim's constants), SlingshotCourse.ForIntensity through the shared HeadlongCircuit port
+(Tools/Compute/evaluators/course_port.py). The clock warp scales the hull's turn with its speed
+(VesselTransformer.FlightDeltaTime), so the 72 u turning circle holds at any warp.
+
+NOT modelled: rivals, prisms, the look of the catch, the human. It is a model: the editor race is the measurement.
+
+    py -3 Tools/Build/stoat_orbit_sim.py               # the table of the shipped and tuned rows
+    py -3 Tools/Build/stoat_orbit_sim.py --grid        # the search that chose the tuned row
+    py -3 Tools/Build/stoat_orbit_sim.py --self-test
+"""
+import argparse, math, os, statistics, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
+from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
+from scarab_drive_sim import ai_stick
+import regatta_line_sim as L
+import course_port as CP
+
+CRUISE, TURN = 60.0, 48.0                       # Stoat.prefab DefaultThrottleScaler, Pitch/Yaw
+COMMIT, LEAD, THROUGH = 160.0, 180.0, 120.0     # MinigameSlingshot.unity aiCommitDistance, aiApproachLead, aiThroughDistance
+LEAD_SHARE, LEAD_INSIDE_SHARE = 0.4, 0.8        # GateRaceController.ApproachLeadShareOfLeg, the approach-point cap
+LAPS = 2                                        # EndConditionOverridesSO.slingshotGateTarget 16 = 2 x 8
+# StoatSlingConfig.asset
+CATCH_AHEAD, CATCH_SIDE, CATCH_REACH, CATCH_DEGREES = 150.0, 45.0, 1.5, 50.0
+WIDE, TIGHT, HOLD_EXP, WHITE_CLEAR = 150.0, 40.0, 1.5, 0.8
+FOLLOW_RATE, EASE_RATE, RADIAL_RATE, SETTLE_RATE, MAX_ORBIT = 3.0, 0.8, 5.0, 3.0, 360.0
+BOOST_MIN, BOOST_MAX, BOOST_SECONDS, MISS_SHARE = 0.25, 0.9, 1.5, 0.2
+SWEET, SWEET_HALF, SWEET_FALL = 90.0, 15.0, 30.0
+CATCH_WARP_SHARE = 1.15
+# StoatDipoleConfig.asset: the boost at Time 0 (x2.5) and its rise and fade
+BOOST_TOP, BOOST_RISE, BOOST_FADE = 2.5, 20.0, 0.6
+WARP_TOP = 1.0 + (BOOST_TOP - 1.0) * CATCH_WARP_SHARE   # StoatSlingConfigSO.CatchWarpTarget
+
+# The rows as they shipped before the orbit-only kit: nothing presses for the warp, Mass mode's dipole did that job.
+HULL_ROW = {"hold": 0.5, "min_turn": 30.0, "cone": 20.0, "give_up": 4.0, "interval": 3.0, "min_dist": 120.0, "warp_dist": 0.0}
+VARIANT_ROW = {"hold": 1.0, "min_turn": 7.84, "cone": 15.999, "give_up": 4.0, "interval": 0.941, "min_dist": 123.282, "warp_dist": 0.0}
+# What ships since: those numbers (learned from Yash's races) plus the warp press, chosen by --grid (2026-11-02). The hull's
+# StoatSlingConfig and StoatSlingConfig_Slingshot both carry it.
+TUNED_ROW = dict(VARIANT_ROW, warp_dist=280.0)
+# Regatta (MinigameRegatta.unity's approach numbers, three laps of RegattaCourse): the race line and the rails are not
+# modelled, so this is the gate steering only. Time 10 is the level regatta_balance.py gives the Stoat on the card.
+REGATTA_STEER = {"commit": 420.0, "lead": 480.0, "through": 320.0}
+
+
+def slingshot_settings(intensity):
+    """SlingshotCourse.ForIntensity: 600 u base circle, floors 2 / 1.6 / 1.3 / 1.2 x the 179 u slung circle."""
+    i = min(max(int(intensity), 1), 4) - 1
+    full = 179.0
+    return {
+        "GateCount": 8, "BaseRadius": 600.0,
+        "CornerProfile": [[90, 72, 58, 48, 38, 28, 16, 10], [110, 90, 60, 40, 25, 18, 12, 5],
+                          [150, 135, 60, 6, 4, 3, 2, 1], [140, 135, 70, 6, 4, 3, 2, 1]][i],
+        "CornerRadiusFactor": 0.0, "CornerFloorRadius": max(2 * CRUISE / math.radians(TURN), [2.0, 1.6, 1.3, 1.2][i] * full),
+        "RadialSwing": 0.42, "AngularSpread": [1.2, 3.0, 2.0, 4.0][i],
+        "LateralPerturbation": [80.0, 120.0, 160.0, 200.0][i], "RingRadius": [48.0, 40.0, 32.0, 26.0][i],
+        "AxisJitterDegrees": [20.0, 28.0, 36.0, 44.0][i], "MaxPresentDegrees": [50.0, 60.0, 76.0, 76.0][i],
+        "InnerRadius": 480.0, "OuterRadius": 1080.0, "FirstGateDirection": (0.0, 1.0, 0.0),
+    }
+
+
+def course(intensity, seed):
+    gates = CP.generate(seed, slingshot_settings(intensity))
+    return [{"p": [float(x) for x in g["p"]], "a": unit([float(x) for x in g["a"]]), "r": float(g["r"])} for g in gates]
+
+
+def cross(a, b):
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+
+def rotate_about(v, axis, rad):
+    """Rodrigues: v turned rad about the unit axis (Quaternion.AngleAxis * v)."""
+    c, s = math.cos(rad), math.sin(rad)
+    return add(add(mul(v, c), mul(cross(axis, v), s)), mul(axis, dot(axis, v) * (1 - c)))
+
+
+def orbit_radius(hold):
+    t = max(0.0, min(1.0, hold)) ** max(0.01, HOLD_EXP)
+    r = WIDE + (min(max(TIGHT, 1.0), WIDE) - WIDE) * t
+    return min(r, max(1.0, WHITE_CLEAR * 2.0 * CATCH_SIDE))     # ClearOfRepulsor at the poles' distance
+
+
+def catches(pos, fwd, attractor, r):
+    to = sub(attractor, pos); d = norm(to)
+    if d <= r: return True
+    if d > r * CATCH_REACH: return False
+    return ang(fwd, to) >= CATCH_DEGREES
+
+
+def sweet_spot(deg):
+    off = abs(abs(deg) - SWEET)
+    if off <= SWEET_HALF: return 1.0
+    t = min(1.0, (off - SWEET_HALF) / SWEET_FALL)
+    return 1.0 - t * t * (3.0 - 2.0 * t)
+
+
+def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
+    """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press."""
+    n = len(gates); total = n * laps
+    commit_r, lead_r, through_r = row.get("commit", COMMIT), row.get("lead", LEAD), row.get("through", THROUGH)
+    warp_top, kick_rate = row.get("warp_top", WARP_TOP), row.get("kick_rate", 1.0)
+    fwd = unit(gates[0]["p"]); pos = [0.0, 0.0, 0.0]; cmd = list(fwd)   # the hull starts inside the shell, heading to gate 0
+    clock = 1.0; R = CRUISE / math.radians(TURN); run = max(max(0.0, 2 * R - 18), CRUISE * 1.5)
+    idx = 0; locked = -1; side = 1.0; lead = LEAD; t = 0.0
+    extending = False; ext_t = 0.0; breaks = 0; misses = 0; orbit = L.Orbit()
+    laid = caught = False; attractor = None; orbit_side_left = False; radius = 0.0; swept = 0.0; last_radial = None; laid_at = 0.0
+    last_press = -1e9; warped_t = 0.0; caught_t = 0.0; presses = 0; catches_n = 0; dist = 0.0; timed = 0
+    kick = None
+    while t < T and idx < total:
+        g = gates[idx % n]; ring, ax = g["p"], g["a"]
+        if idx != locked:
+            locked = idx
+            side = 1.0 if dot(sub(pos, ring), ax) >= 0 else -1.0
+            leg_from = gates[(idx - 1) % n]["p"] if idx > 0 else pos
+            lead = min(lead_r, LEAD_SHARE * norm(sub(leg_from, ring)), LEAD_INSIDE_SHARE * commit_r)
+        commit = min(commit_r, lead + 0.5 * R)
+        approaching = norm(sub(ring, pos)) > commit
+        through = add(ring, mul(unit(sub(ring, pos)), through_r))
+        aim = add(ring, mul(ax, side * lead)) if approaching else through
+        to = sub(aim, pos)
+        desired = unit(to) if norm(to) > 1.0 else list(fwd)
+        # AIPilot.UpdateOrbitBreak
+        if extending:
+            ext_t += dt
+            if (norm(to) >= run and ext_t >= 0.6) or ext_t >= 6: extending = False
+        elif (dot(desired, fwd) <= 0.5 and L.inside_turning_circle(to, fwd, R)) or orbit.tick(to):
+            extending = True; ext_t = 0.0; breaks += 1; orbit.reset()
+        # StoatSlingExecutor.AutopilotSling
+        if warp:
+            if laid:
+                if not caught:
+                    let_go = t - laid_at >= row["give_up"]
+                else:
+                    off = ang(fwd, to)
+                    let_go = off <= row["cone"] or (sweet_spot(math.degrees(swept)) >= 0.999 and off <= 3 * row["cone"])
+                if let_go:
+                    if caught:
+                        timing = sweet_spot(math.degrees(swept))
+                        timed += timing >= 0.999
+                        amount = CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * (MISS_SHARE + (1 - MISS_SHARE) * timing) * kick_rate
+                        if amount > 0: kick = (list(fwd), amount, t)
+                    laid = caught = False
+            elif row["min_turn"] > 0 and t - last_press >= row["interval"]:
+                ring_range = norm(sub(ring, pos))
+                f, up = fwd, [0.0, 1.0, 0.0]
+                right = unit(cross(up, f)) if abs(dot(up, f)) < 0.999 else [1.0, 0.0, 0.0]
+                off_nose = math.degrees(math.atan2(dot(to, right), dot(to, f)))
+                turn = ring_range >= row["min_dist"] and abs(off_nose) >= row["min_turn"]
+                warp_press = row["warp_dist"] > 0 and ring_range >= row["warp_dist"]   # StoatSlingMath.WantsWarp
+                if norm(to) > 1e-3 and (turn or warp_press):
+                    left = dot(to, right) < 0
+                    last_press = t; presses += 1
+                    mid = add(pos, mul(f, CATCH_AHEAD))
+                    attractor = add(mid, mul(right, -CATCH_SIDE if left else CATCH_SIDE))
+                    laid = True; caught = False; orbit_side_left = left
+                    radius = orbit_radius(row["hold"]); swept = 0.0; laid_at = t
+        # the flight clock (StoatPathfinderExecutor, StoatDipoleMath.StepBoost): warped while a pair is held, from the press
+        if laid:
+            clock += (warp_top - clock) * (1 - math.exp(-BOOST_RISE * dt)); warped_t += dt
+        else:
+            clock = 1.0 + (clock - 1.0) * math.exp(-dt / BOOST_FADE)
+        dtf = dt * clock
+        v = CRUISE * clock
+        # StoatSlingExecutor.StepOrbit
+        correction = [0.0, 0.0, 0.0]
+        if laid:
+            follow = EASE_RATE if caught else FOLLOW_RATE
+            radius += (orbit_radius(row["hold"]) - radius) * (1 - math.exp(-follow * dt))
+            if not caught and catches(pos, fwd, attractor, radius):
+                caught = True; catches_n += 1; swept = 0.0; last_radial = sub(pos, attractor); radius = norm(last_radial)
+            if caught:
+                caught_t += dt
+                to_c = sub(attractor, pos); d = norm(to_c)
+                if d > 1e-3:
+                    correction = mul(to_c, (d - radius) * (1 - math.exp(-RADIAL_RATE * dt)) / d)
+                step = v / max(1.0, radius) * dt
+                u = unit(to_c)
+                tangent = sub(fwd, mul(u, dot(fwd, u)))
+                if norm(tangent) > 1e-4:
+                    tangent = unit(tangent)
+                    axis = unit(cross(tangent, u))
+                    tangent = rotate_about(tangent, axis, step)
+                    miss = ang(fwd, tangent)
+                    settle = 1 - math.exp(-SETTLE_RATE * dt)
+                    deg = min(miss, max(math.degrees(step), miss * settle))
+                    if miss > 1e-4:
+                        before = list(fwd)
+                        fwd = tangent if deg >= miss else rotate_toward(fwd, tangent, math.radians(deg))
+                        applied = ang(before, fwd)
+                        ax2 = cross(before, fwd)
+                        if norm(ax2) > 1e-6 and applied > 1e-5:
+                            cmd = rotate_about(cmd, unit(ax2), math.radians(applied))
+                radial = sub(pos, attractor)
+                swept += math.radians(ang(last_radial, radial)); last_radial = radial
+                if math.degrees(swept) >= MAX_ORBIT:
+                    laid = caught = False
+        # the stick (AIPilot on the flight clock: the turn scales with the warp)
+        steer = add(fwd, mul(desired, -0.35)) if extending else to
+        s = ai_stick(ang(fwd, steer))
+        fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(TURN * s) * dtf, dtf, True)
+        shift = [0.0, 0.0, 0.0]
+        if kick is not None:
+            age = (t - kick[2]) / BOOST_SECONDS
+            if age >= 1: kick = None
+            else: shift = mul(kick[0], kick[1] * (1 - age) * dt)
+        newpos = add(add(add(pos, mul(fwd, v * dt)), correction), shift)
+        a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
+        if a0 * a1 <= 0 and a0 != a1:
+            k = a0 / (a0 - a1); hit = add(pos, mul(sub(newpos, pos), k))
+            if norm(sub(hit, ring)) <= g["r"]:
+                idx += 1
+            else:
+                misses += 1; locked = -1; extending = True; ext_t = 0.0   # re-latch, BreakOffNow
+        dist += norm(sub(newpos, pos))
+        pos = newpos; t += dt
+    return {"time": round(t, 1) if idx >= total else None, "rings": idx, "misses": misses, "breaks": breaks,
+            "warped": round(warped_t / max(t, 1e-6), 2), "caught": round(caught_t / max(t, 1e-6), 2),
+            "speed": round(dist / max(t, 1e-6), 1), "presses": presses, "catches": catches_n, "timed": timed}
+
+
+def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
+    """Median race seconds per intensity (an unfinished race counts 300 s + 10 per ring left), misses, finishes."""
+    out = {}
+    for i in intensities:
+        rs = [race(course(i, 20260000 + 97 * s + i), row, dt=dt, warp=warp) for s in range(seeds)]
+        out[i] = {"median": statistics.median(r["time"] if r["time"] else 300 + 10 * (16 - r["rings"]) for r in rs),
+                  "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
+                  "speed": statistics.mean(r["speed"] for r in rs), "warped": statistics.mean(r["warped"] for r in rs),
+                  "n": len(rs)}
+    return out
+
+
+def score_regatta(row, intensities=(1, 2, 3, 4), dt=1 / 30):
+    """One race per intensity on the shipped Regatta course (three laps), as regatta_balance.py measures it."""
+    out = {}
+    for i in intensities:
+        gates = [{"p": g["p"], "a": unit(g["a"]), "r": g["r"]} for g in CP.regatta_course(i, rails=False)["gates"]]
+        r = race(gates, dict(row, **REGATTA_STEER), laps=3, dt=dt)
+        out[i] = {"median": r["time"] if r["time"] else 300.0 + 10 * (3 * len(gates) - r["rings"]), "finished": int(bool(r["time"])),
+                  "misses": r["misses"], "speed": r["speed"], "warped": r["warped"], "n": 1}
+    return out
+
+
+def line(name, s):
+    cells = " ".join(f"I{i} {v['median']:6.1f}s {v['finished']}/{v['n']} {v['misses']:4.1f}m {v['speed']:5.0f}u/s" for i, v in s.items())
+    return f"{name:<34} {cells}"
+
+
+def grid(seeds=4):
+    rows = []
+    for warp_dist in (160.0, 220.0, 280.0, 360.0):
+        for min_turn in (7.84, 15.0, 30.0):
+            for interval in (0.7, 0.941):
+                for min_dist in (123.282, 200.0):
+                    for cone in (16.0, 30.0):
+                        row = {"hold": 1.0, "min_turn": min_turn, "cone": cone, "give_up": 4.0, "interval": interval,
+                               "min_dist": min_dist, "warp_dist": warp_dist}
+                        s = score(row, seeds=seeds)
+                        loss = sum(math.log(v["median"]) for v in s.values()) / len(s) + 0.05 * sum(v["misses"] for v in s.values()) / len(s)
+                        rows.append((loss, row, s))
+    rows.sort(key=lambda r: r[0])
+    for loss, row, s in rows[:10]:
+        print(f"{loss:.3f} {row}")
+        print("    " + line("", s))
+
+
+def self_test():
+    bad = []
+    # the geometry: the circle stays clear of the repulsor, a press catches a straight pass at every squeeze
+    if abs(orbit_radius(1.0) - 40.0) > 1e-6 or abs(orbit_radius(0.0) - 72.0) > 1e-6: bad.append(f"radius {orbit_radius(1.0)}, {orbit_radius(0.0)}")
+    if abs(WARP_TOP - 2.725) > 1e-6: bad.append(f"warp top {WARP_TOP}")
+    if abs(sweet_spot(90) - 1) > 1e-9 or sweet_spot(0) > 1e-9 or sweet_spot(180) > 1e-9: bad.append("sweet spot")
+    # the course port against SLINGSHOT.md section 2's harness numbers: eight gates, the mouths, a lap near 3700 u
+    for i, mouth in zip((1, 2, 3, 4), (48, 40, 32, 26)):
+        g = course(i, 20260000 + i)
+        lap = sum(norm(sub(g[(k + 1) % 8]["p"], g[k]["p"])) for k in range(8))
+        if len(g) != 8 or abs(g[0]["r"] - mouth) > 1e-3 or not 3000 < lap < 4600: bad.append(f"course I{i}: {len(g)} gates, lap {lap:.0f}")
+    # negative control: a hull that never presses cruises at 60 u/s, and pressing makes it faster
+    wide = [{"p": [0.0, 0.0, 400.0 * (k + 1)], "a": [0.0, 0.0, 1.0], "r": 60.0} for k in range(8)]
+    floor = race(wide, HULL_ROW, laps=1, warp=False)
+    if not floor["time"] or abs(floor["speed"] - CRUISE) > 3: bad.append(f"the floor is not cruise: {floor}")
+    # a press rule that needs a turn never fires dead ahead: that is the hole the warp press closes
+    still = race(wide, VARIANT_ROW, laps=1)
+    if still["presses"] != 0: bad.append(f"a straight course should not need a turn press: {still}")
+    fast = race(wide, dict(VARIANT_ROW, warp_dist=220.0), laps=1)
+    if not fast["time"] or fast["time"] >= floor["time"]: bad.append(f"pressing did not beat cruising: {fast} vs {floor}")
+    print("stoat_orbit_sim self-test:", "FAIL " + "; ".join(bad) if bad else "ok")
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--grid", action="store_true"); ap.add_argument("--self-test", action="store_true"); ap.add_argument("--seeds", type=int, default=12)
+    a = ap.parse_args()
+    if a.self_test: sys.exit(self_test())
+    if a.grid: grid(); sys.exit(0)
+    print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
+    print(line("hull's own AI row (30 deg, 3 s)", score(HULL_ROW, seeds=a.seeds)))
+    print(line("the learned variant, no warp press", score(VARIANT_ROW, seeds=a.seeds)))
+    tuned = score(TUNED_ROW, seeds=a.seeds, dt=1 / 60)
+    print(line("SHIPPED: + warp press at 280 u", tuned))
+    print("  share of the race with a pair held:", {i: round(v["warped"], 2) for i, v in tuned.items()})
+    print(line("Regatta at rest (Time 0)", score_regatta(TUNED_ROW, dt=1 / 60)))
+    print(line("Regatta at Time 10 (the card)", score_regatta(dict(TUNED_ROW, warp_top=5.6, kick_rate=2.0), dt=1 / 60)))

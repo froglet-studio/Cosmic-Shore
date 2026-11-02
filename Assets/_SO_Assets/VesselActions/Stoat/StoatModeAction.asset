@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a205d398502473897ba2c04e8c4955e, type: 3}
   m_Name: StoatModeAction
   m_EditorClassIdentifier: 
+  orbitOnly: 1
   massModeThickness:
     Enabled: 1
     Value: 3

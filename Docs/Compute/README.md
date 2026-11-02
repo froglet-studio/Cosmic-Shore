@@ -91,7 +91,9 @@ One JSON file per job in `Docs/Compute/jobs/<id>.json` (`compute.py new <id> --e
 |---|---|
 | `id`, `title`, `goal` | lower-kebab id; one line; the ambitious goal it serves (the board shows it) |
 | `asked_by`, `area_owner` | who asked (raises priority x1.3) and whose area its RESULT changes (told when it is promoted, section 8) |
-| `plan`, `stage` | a multi-stage plan it belongs to (`regatta-balance`, `bioforms`) and its stage |
+| `plan`, `stage` | a multi-stage plan it belongs to (`regatta-balance`, `bioforms`) and its stage. **Required** (LOCKED, Garrett 2026-11-02): an AI job serves a step of `Docs/AI_SYSTEM/AI_PLAN.md`, by `plan` + `stage` or by `plan_step`, checked against `Docs/AI_SYSTEM/ai_plan.json`; a non-AI job names a plan its `other_plans` list. A job off the plan, or one in its `retired_jobs`, is never run, and `validate` / `self-test` fail on it |
+| `plan_step` | the AI plan step it serves when its plan and stage do not say (`time-arcade`) |
+| `seeds` | parameter sets the first generation starts from (MAP-Elites, and sep-CMA-ES: every seed plus mutations of each). An evaluator with `seeds(args, root)` supplies them itself, read from the shipped assets |
 | `kind` | `search` (an evaluator scores points the searcher proposes) or `command` (a long training run in exclusive units) |
 | `status` | `ready` (runnable), `proposed` (needs a person's or session's yes), `blocked` (waits; `blocked_reason` says on what), `paused`, `converged`, `promoted`, `retired` |
 | `value` | 0-10: what a converged answer is worth to the game |
@@ -152,6 +154,7 @@ The evaluators today:
 | Module | Loss | Notes |
 |---|---|---|
 | `drive_fit` | mean ln(race seconds) over I1-I4 (x course seeds) for a hull's AI drive, + a pull toward the shipped values | stage 1 of `/regatta-balance`; models: `rhino_drive`, `manta_drive`, `dolphin_drive` |
+| `skimrace_fit` | tuneall's own score per Skim Race track (time / ideal, a DNF priced above any finish, mean + half the worst race), combined over the intensities raced (mean + half the worst intensity), + a pull toward the chosen genome's values | the Squirrel's universal Time genome (`time-arcade`); builds `skimrace_sim_harness` (the shipped pilot core) in Python on any OS, needs a dotnet 8+ SDK; the space is a `genome` choice (which shipped asset lies underneath) plus the stated pursuit fields inside Sim.cs's Ranges (`only=stated`); `seeds()` is the shipped genomes |
 | `regatta_course` | ln(slowest / fastest AI) on one intensity's Regatta circuit + rail, length and character penalties | stage 2; the circuit is `course_port.py` (gated against the C# harness) |
 | `regatta_elements` | mean over intensities of ln(slowest / fastest) + minimality x mean level | stage 3; regatta_balance.py's competent-pilot model |
 | `bioform_forms` | what a swarm needs from a body (size, integrity, one animal, keepable, lively, loops) | MAP-Elites over 22 genome numbers; bakes SwarmPlanJson + NCA prisms targets |

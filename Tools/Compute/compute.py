@@ -411,9 +411,16 @@ def cmd_new(args):
 
 def cmd_validate(args):
     jobs = L.load_jobs(local=True)
+    plan = L.load_ai_plan(local=True)
     bad = 0
+    if not plan:
+        bad += 1
+        print(f"{L.AI_PLAN} is missing or unreadable: every job is checked against the AI plan")
     for jid, j in sorted(jobs.items()):
         p = L.validate_job(j)
+        off = L.plan_problem(j, plan)
+        if off:
+            p.append("off the AI plan: " + off)
         if j.get("kind") == "search" and not p:
             try:
                 import importlib

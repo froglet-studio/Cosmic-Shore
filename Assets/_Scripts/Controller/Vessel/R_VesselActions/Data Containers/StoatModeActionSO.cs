@@ -25,10 +25,20 @@ namespace CosmicShore.ScriptableObjects
     /// <para>A press with no release semantics (vessel rule 37): <see cref="StopAction"/> is a no-op, so the AI's
     /// Start → Stop pair and a human's release never undo the switch. Shared and stateless: the mode lives on
     /// <see cref="StoatModeExecutor"/>, which also reads this asset directly (rule 20).</para>
+    ///
+    /// <para><b>Orbit only (2026-11-02, Yash; <see cref="OrbitOnly"/>).</b> The shipped Stoat flies Time mode alone: B
+    /// switches nothing, and Mass mode (the field dipole and its predicted path) and Gate mode are parked, their code and
+    /// numbers kept. Turning this off restores all three: <c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "StoatModeAction", menuName = "ScriptableObjects/Vessel Actions/Stoat Mode")]
     public sealed class StoatModeActionSO : ShipActionSO
     {
+        [Header("The kit")]
+        [Tooltip("ON: the Stoat flies the orbit slingshot only. It starts in Time mode, B switches nothing and the AI stays " +
+                 "there too. OFF: B steps Mass → Time → Gate again, the field trajectory back as the default. Read on every " +
+                 "peer, so every copy of the hull agrees. Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md.")]
+        [SerializeField] bool orbitOnly = true;
+
         [Header("Mass mode — the thick trail")]
         [Tooltip("MASS's one dial: how many times THICKER (the prism's height) a Mass-mode trail is laid — ×3 at rest, " +
                  "×6 at level 10, floored at 1 so the deficit band never thins it. Read at the REPLICATED level, so " +
@@ -113,6 +123,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Played on every peer when the hull switches INTO Gate mode. Empty = silent.")]
         [SerializeField] EventReference gateModeEvent;
 
+        /// <summary>True while the kit is the orbit slingshot alone (no Mass or Gate mode, nothing on B).</summary>
+        public bool OrbitOnly => orbitOnly;
         public float BlendSeconds => Mathf.Max(0.05f, blendSeconds);
         public float AutopilotTimeModeDegrees => Mathf.Clamp(autopilotTimeModeDegrees, 0f, 180f);
         public float AutopilotModeIntervalSeconds => Mathf.Clamp(autopilotModeIntervalSeconds, 0.5f, 20f);

@@ -94,7 +94,19 @@ class SepCMAES:
         self.sigma0 = sigma0
         self.restarts = 0
         self.best = None                       # (loss, u)
+        self.seeds = []                        # genomes to grow from (seed()); empty = one start point
+        self.seeded = False                    # the first generation was drawn around them
         self._reset(x0 or [0.5] * n, self.base_pop)
+
+    def seed(self, us):
+        """Start from SEVERAL genomes, not one point: the first generation holds every seed as it is and mutations of
+        each (round robin, at sigma0), so selection recombines the best of them; a restart that would start at random
+        starts from one of them instead. The AI plan's rule: a new round grows from every genome that exists
+        (Docs/AI_SYSTEM/AI_PLAN.md)."""
+        self.seeds = [[min(1.0, max(0.0, x)) for x in u] for u in us if u]
+        self.seeded = not self.seeds
+        if self.seeds and self.lam < 2 * len(self.seeds):
+            self._reset(self.m, 2 * len(self.seeds))
 
     def _reset(self, x0, lam):
         n = self.space.n
@@ -127,6 +139,14 @@ class SepCMAES:
         n = self.space.n
         floor = self.space.min_step()
         out = []
+        if self.seeds and not self.seeded:
+            self.seeded = True
+            k = len(self.seeds)
+            out = [list(s) for s in self.seeds]
+            for j in range(max(0, (count or self.lam) - k)):
+                s = self.seeds[j % k]
+                out.append([_mirror(s[i] + max(self.sigma0, floor[i]) * self.rng.gauss(0, 1)) for i in range(n)])
+            return out
         for _ in range(count or self.lam):
             z = [self.rng.gauss(0, 1) for _ in range(n)]
             u = []
@@ -181,6 +201,8 @@ class SepCMAES:
                 x0 = list(global_best_u)          # exploit what the whole team found
             elif self.best is not None and self.rng.random() < 0.3:
                 x0 = list(self.best[1])
+            elif self.seeds:
+                x0 = list(self.rng.choice(self.seeds))   # never a cold start while genomes exist
             else:
                 x0 = [self.rng.random() for _ in range(n)]
             self._reset(x0, lam)
@@ -190,12 +212,14 @@ class SepCMAES:
     def state(self):
         return {"name": self.name, "rng": _rng_state(self.rng), "base_pop": self.base_pop, "sigma0": self.sigma0,
                 "restarts": self.restarts, "best": self.best, "lam": self.lam, "m": self.m, "sigma": self.sigma,
-                "C": self.C, "pc": self.pc, "ps": self.ps, "gen": self.gen, "gen_best": self.gen_best[-400:]}
+                "C": self.C, "pc": self.pc, "ps": self.ps, "gen": self.gen, "gen_best": self.gen_best[-400:],
+                "seeds": self.seeds, "seeded": self.seeded}
 
     @classmethod
     def from_state(cls, space, s):
         o = cls(space, popsize=s["base_pop"], sigma0=s["sigma0"], x0=s["m"])
         o._reset(s["m"], s["lam"])
+        o.seeds, o.seeded = s.get("seeds") or [], s.get("seeded", True)
         o.rng = _rng_load(s["rng"])
         o.restarts, o.best = s["restarts"], (tuple(s["best"]) if s.get("best") else None)
         o.sigma, o.C, o.pc, o.ps, o.gen, o.gen_best = s["sigma"], s["C"], s["pc"], s["ps"], s["gen"], s["gen_best"]
@@ -403,6 +427,24 @@ def self_test():
         es2.tell(us, [abs(sp2.decode(u)["k"] - 7) + (0 if sp2.decode(u)["c"] == "b" else 1) for u in us])
     if sp2.decode(es2.best[1]) != {"k": 7, "c": "b"}:
         bad.append(f"sep-cmaes: int/choice best {sp2.decode(es2.best[1])}")
+    # seeded from several genomes: the first generation holds each seed and mutations of each, so a search that
+    # starts beside the best seed beats an unseeded one in the same budget (negative control: unseeded)
+    seeds = [sp.encode({f"x{i}": target[i] + off for i in range(8)}) for off in (3.0, 0.4, -2.5)]
+    sd = SepCMAES(sp, seed=9, sigma0=0.05)
+    sd.seed(seeds)
+    first = sd.ask()
+    if not all(s in first for s in seeds) or len(first) < 2 * len(seeds):
+        bad.append("sep-cmaes: a seeded first generation does not hold every seed and mutations of each")
+    sd.tell(first, [sphere(u) for u in first])
+    cold = SepCMAES(sp, seed=9, sigma0=0.05)
+    for es_ in (sd, cold):
+        for _ in range(12):
+            us = es_.ask()
+            es_.tell(us, [sphere(u) for u in us])
+    if not sd.best[0] < cold.best[0]:
+        bad.append(f"sep-cmaes: seeding did not help ({sd.best[0]:.3g} vs unseeded {cold.best[0]:.3g})")
+    if SepCMAES.from_state(sp, sd.state()).seeds != sd.seeds:
+        bad.append("sep-cmaes: a restored state lost its seeds")
     # MAP-Elites fills a grid
     sp3 = Space([{"name": "a", "lo": 0.0, "hi": 1.0}, {"name": "b", "lo": 0.0, "hi": 1.0}, {"name": "c", "lo": 0.0, "hi": 1.0}])
     me = MapElites(sp3, [{"name": "a", "lo": 0, "hi": 1, "bins": 8}, {"name": "b", "lo": 0, "hi": 1, "bins": 8}], seed=5)

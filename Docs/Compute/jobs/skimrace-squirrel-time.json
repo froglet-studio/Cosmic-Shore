@@ -1,0 +1,281 @@
+{
+  "after": [],
+  "algorithm": {
+    "name": "sep-cmaes",
+    "sigma0": 0.15
+  },
+  "area_owner": "Yash (vessel AI; the Skim Race AI harness is studyholic's)",
+  "asked_by": "Garrett 2026-11-02: \"the next round of training should have a composite loss based on all four intensity levels, and mutated from all 3 existing genomes seeding its initial population. that will train the ai that gets taken to regatta.\"",
+  "convergence": {
+    "min_evals": 1500,
+    "min_improvement": 0.002,
+    "window_evals": 1200
+  },
+  "evaluator": {
+    "args": {
+      "intensities": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "seeds": 6,
+      "seedbase": 5000,
+      "policy": "Assets/Resources/SkimRaceAIConfig.asset",
+      "genomes": [
+        "Assets/Resources/SkimRaceAIConfig.asset",
+        "Assets/Resources/SkimRaceAIConfig_I1.asset",
+        "Assets/Resources/SkimRaceAIConfig_I2.asset"
+      ],
+      "stay_near_shipped": 0.01
+    },
+    "module": "skimrace_fit",
+    "timeout": 1200
+  },
+  "goal": "The Squirrel's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE Skim Race policy that races all four intensities well, instead of a file per track. Its first generation is the three genomes the game ships (the general policy, the I1 file, the I2 file) and mutations of each; the loss is the four tracks' tuneall scores together (mean + 0.5 x the worst). Measured 2026-11-02, 6 races a track: the general policy scores 5.46 (I1 2.47, I2 2.89, I3 4.56, I4 2.79; I3 is raced at 2.7x ideal), the I1 file 8.36, the I2 file 7.40, and what the game flies today (each intensity's file where it fits) 5.47. The winner is the Squirrel Regatta is searched against (step time-arena-course).",
+  "id": "skimrace-squirrel-time",
+  "kind": "search",
+  "paths": [],
+  "plan": "regatta-balance",
+  "plan_step": "time-arcade",
+  "promote": "A PROPOSAL for the AI owner (Yash), any of the core four approving: race the team's best against each shipped genome on 20 FRESH races per intensity (seedbase 99000, tuneall's conditions); keep it only if it finishes as many as the best of them on every intensity and its composite is lower. Then it becomes the general policy: its genome's POLICIES block in Tools/Build/author_skimrace_ai_config.py with the searched fields over it and a bumped PolicyVersion, regenerated with that script and both --checks, never by hand. The per-intensity files stay until it beats each one on its own track; retiring them is Yash's call (AI_PLAN.md decision 1). It is then the Squirrel in the Regatta course searches (their `after`), and the editor check goes in Docs/UNITY_VERIFICATION_CHECKLIST.md.",
+  "ref": "origin/ai",
+  "requires": [
+    "python3",
+    "dotnet8"
+  ],
+  "schema": "froglet-compute/job/1",
+  "space": [
+    {
+      "name": "genome",
+      "type": "choice",
+      "choices": [
+        "SkimRaceAIConfig",
+        "SkimRaceAIConfig_I1",
+        "SkimRaceAIConfig_I2"
+      ],
+      "init": "SkimRaceAIConfig"
+    },
+    {
+      "name": "LookaheadSeconds",
+      "lo": 0.2,
+      "hi": 2.0,
+      "init": 1.016
+    },
+    {
+      "name": "LookaheadMin",
+      "lo": 20.0,
+      "hi": 200.0,
+      "init": 26.806
+    },
+    {
+      "name": "LookaheadMax",
+      "lo": 120.0,
+      "hi": 700.0,
+      "init": 544.911
+    },
+    {
+      "name": "SkimHeight",
+      "lo": 3.0,
+      "hi": 9.0,
+      "init": 4.346
+    },
+    {
+      "name": "CrystalBumpHalfWidth",
+      "lo": 150.0,
+      "hi": 900.0,
+      "init": 181.107
+    },
+    {
+      "name": "CrystalDirectDistance",
+      "lo": 60.0,
+      "hi": 500.0,
+      "init": 165.032
+    },
+    {
+      "name": "LeadGain",
+      "lo": 1.0,
+      "hi": 3.0,
+      "init": 2.832
+    },
+    {
+      "name": "MaxLeadDegrees",
+      "lo": 10.0,
+      "hi": 90.0,
+      "init": 19.738
+    },
+    {
+      "name": "StickGainPerDegree",
+      "lo": 0.02,
+      "hi": 0.5,
+      "init": 0.041
+    },
+    {
+      "name": "MinThrottle",
+      "lo": 0.1,
+      "hi": 1.0,
+      "init": 0.1
+    },
+    {
+      "name": "ReachabilityMargin",
+      "lo": 0.0,
+      "hi": 2.0,
+      "init": 0.955
+    },
+    {
+      "name": "PassMargin",
+      "lo": 0.0,
+      "hi": 16.0,
+      "init": 3.01
+    },
+    {
+      "name": "CrossingHeightFraction",
+      "lo": 0.1,
+      "hi": 0.9,
+      "init": 0.292
+    },
+    {
+      "name": "RibbonClearHeight",
+      "lo": 2.5,
+      "hi": 7.0,
+      "init": 5.159
+    },
+    {
+      "name": "RibbonClearLateral",
+      "lo": 17.0,
+      "hi": 40.0,
+      "init": 28.981
+    },
+    {
+      "name": "TerminalCentreBias",
+      "lo": 0.0,
+      "hi": 1.0,
+      "init": 0.004
+    },
+    {
+      "name": "StallSeconds",
+      "lo": 1.0,
+      "hi": 8.0,
+      "init": 5.579
+    },
+    {
+      "name": "RecoveryThrottle",
+      "lo": 0.1,
+      "hi": 1.0,
+      "init": 0.167
+    },
+    {
+      "name": "MassGuardSeconds",
+      "lo": 0.2,
+      "hi": 1.0,
+      "init": 0.705
+    },
+    {
+      "name": "MassGuardMargin",
+      "lo": 0.2,
+      "hi": 3.0,
+      "init": 1.298
+    },
+    {
+      "name": "MassGuardSegment",
+      "lo": 0.08,
+      "hi": 0.5,
+      "init": 0.274
+    },
+    {
+      "name": "LowBoostApproachScale",
+      "lo": 0.3,
+      "hi": 1.0,
+      "init": 0.797
+    },
+    {
+      "name": "LowBoostFull",
+      "lo": 1.5,
+      "hi": 5.0,
+      "init": 2.383
+    },
+    {
+      "name": "TrackGuardMargin",
+      "lo": 0.2,
+      "hi": 3.0,
+      "init": 1.642
+    },
+    {
+      "name": "DirectBoost",
+      "lo": 2.5,
+      "hi": 5.0,
+      "init": 3.138
+    },
+    {
+      "name": "DirectBoostHysteresis",
+      "lo": 0.2,
+      "hi": 2.5,
+      "init": 1.507
+    },
+    {
+      "name": "DirectViaClearance",
+      "lo": 2.0,
+      "hi": 10.0,
+      "init": 2.0
+    },
+    {
+      "name": "DirectViaLift",
+      "lo": 6.0,
+      "hi": 40.0,
+      "init": 22.338
+    },
+    {
+      "name": "DirectViaLateral",
+      "lo": 18.0,
+      "hi": 50.0,
+      "init": 18.61
+    },
+    {
+      "name": "TerminalChordClearance",
+      "lo": 0.5,
+      "hi": 5.0,
+      "init": 2.345
+    },
+    {
+      "name": "ChordClearance",
+      "lo": 0.0,
+      "hi": 6.0,
+      "init": 0.766
+    },
+    {
+      "name": "CrossingLeadSeconds",
+      "lo": 0.0,
+      "hi": 1.5,
+      "init": 0.0
+    },
+    {
+      "name": "CrossingLookaheadScale",
+      "lo": 0.2,
+      "hi": 1.0,
+      "init": 0.761
+    },
+    {
+      "name": "CrossingThrottle",
+      "lo": 0.3,
+      "hi": 1.0,
+      "init": 0.944
+    },
+    {
+      "name": "CrossingSlowDistance",
+      "lo": 30.0,
+      "hi": 400.0,
+      "init": 121.55
+    },
+    {
+      "name": "LaneHeightStep",
+      "lo": 0.8,
+      "hi": 3.0,
+      "init": 2.992
+    }
+  ],
+  "stage": 1,
+  "status": "ready",
+  "title": "The Squirrel's universal Time AI: one Skim Race policy for I1-I4, grown from all three genomes",
+  "updated": "2026-11-02",
+  "value": 9
+}

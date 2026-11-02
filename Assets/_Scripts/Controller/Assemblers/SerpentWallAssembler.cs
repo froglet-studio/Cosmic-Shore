@@ -318,9 +318,13 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n; i++)
             {
                 var p = s_scratch[i];
-                if (!IsRecruitable(p, takeShielded)) continue;
+                if (!p) continue;
+                // The plane test first: the query sphere grows with the wall, so most hits lie off the wall's
+                // slab, and IsRecruitable's component lookups were the sweep's cost (4.1 ms a frame, Serpent
+                // Time 2026-10-29). Same answer either way: every test is a pure read.
                 Vector3 local = _toWall * (p.transform.position - _origin);
                 if (Mathf.Abs(local.z) > radius) continue;
+                if (!IsRecruitable(p, takeShielded)) continue;
                 _candidates.Add(p);
                 _candidateLocal.Add(local);
             }
@@ -380,6 +384,7 @@ namespace CosmicShore.Gameplay
         /// Loose mass the wall may take: not a seed or anyone's super-shielded armour, not a
         /// creature, not already another wall's. An opponent's SHIELDED prism only with the Space
         /// upgrade (<paramref name="takeShielded"/>); the Serpent's own shielded prisms are its own.
+        /// Cheap field tests first, the component lookups last: this runs on every prism a sweep's query finds.
         /// </summary>
         bool IsRecruitable(Prism p, bool takeShielded)
         {
@@ -388,13 +393,14 @@ namespace CosmicShore.Gameplay
             // A creature's body is not loose mass: pulling it into a wall would dismember a
             // lifeform, which the ecology law forbids a vessel to do by accident.
             if (p is HealthPrism) return false;
-            // An Ark's hull is a ship, not loose mass: a wall seeded beside one would strip its plating (the hull is
-            // own-domain, unshielded prism mass, which is exactly what the wall recruits). Hull prisms ride the Ark's
-            // transform (or its model's), so the parent chain names it.
-            if (p.transform.parent && p.GetComponentInParent<Ark>()) return false;
             var props = p.prismProperties;
             if (props == null || props.IsSuperShielded) return false;   // seeds and armour stay put
             if (props.IsShielded && !takeShielded && p.Domain != _shape.Domain) return false;
+            // An Ark's hull is a ship, not loose mass: a wall seeded beside one would strip its plating (the hull is
+            // own-domain, unshielded prism mass, which is exactly what the wall recruits). Hull prisms ride the Ark's
+            // transform (or its model's), so the parent chain names it. No Ark enabled, no walk: Ark.Live holds
+            // every enabled one.
+            if (Ark.Live.Count > 0 && p.transform.parent && p.GetComponentInParent<Ark>()) return false;
             if (p.TryGetComponent<SerpentWallAssembler>(out var wall) && wall.IsActive) return false;
             return true;
         }

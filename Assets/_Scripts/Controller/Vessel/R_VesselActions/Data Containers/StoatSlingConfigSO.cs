@@ -181,6 +181,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("An autopilot does not sling at a target closer than this (world units) — a turn that short is the stick's.")]
         [SerializeField, Min(0f)] float aiSlingMinDistance = 120f;
 
+        [Tooltip("An autopilot also presses for the WARP alone, its target dead ahead, while its ring is at least this far " +
+                 "away: on the orbit-only Stoat a held pair is the hull's only speed (Tools/Build/stoat_orbit_sim.py, " +
+                 "2026-11-02). 0 = it presses only to turn.")]
+        [SerializeField, Min(0f)] float aiWarpMinDistance = 280f;
+
         [Header("Audio (FMOD) — slots shipped EMPTY, wire in the inspector")]
         [Tooltip("Played once when a squeeze begins (the wind-up). Empty = silent.")]
         [SerializeField] EventReference holdStartEvent;
@@ -225,6 +230,7 @@ namespace CosmicShore.ScriptableObjects
         public float AiSlingMinTurnDegrees => Mathf.Clamp(aiSlingMinTurnDegrees, 0f, 180f);
         public float AiSlingIntervalSeconds => Mathf.Clamp(aiSlingIntervalSeconds, 0.5f, 20f);
         public float AiSlingMinDistance => Mathf.Max(0f, aiSlingMinDistance);
+        public float AiWarpMinDistance => Mathf.Max(0f, aiWarpMinDistance);
         public EventReference HoldStartEvent => holdStartEvent;
         public EventReference SlingEvent => slingEvent;
         public float SweetSpotDegrees => Mathf.Clamp(sweetSpotDegrees, 10f, 360f);

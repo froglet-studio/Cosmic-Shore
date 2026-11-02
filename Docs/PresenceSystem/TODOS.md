@@ -1,5 +1,7 @@
 # Presence System — TODOs
 
+> The prioritised multiplayer list is [`Docs/Multiplayer/TODO.md`](../Multiplayer/TODO.md). This file holds the detail for this system's items.
+
 Parking lot for minor improvements that don't rise to a refactor
 commit or a bug. Each entry has enough context that it can be picked
 up cold.

@@ -118,8 +118,11 @@ namespace CosmicShore.Gameplay
         public const float MinSpeed = 40f;              // u/s floor for every time estimate
         public const float ThreadSlowAtEye18 = 0.35f;   // threading an 18 u eye costs this share of the leg's time again
         public const float DoubleDoorSlow = 0.15f;      // I4's second door
-        public const float HitPenalty = 0.6f;           // s per standing prism in the lane (a bump, a lost line)
-        public const float DangerHitPenalty = 1.5f;     // s per standing DANGER prism in the lane
+        // s per standing prism in the lane: what a hit costs the Dolphin (DolphinVesselChangeSpeedByPrism: a plain prism
+        // x0.5 easing back to x1 over 1 s = 0.25 s of lost distance; a Danger prism a dead stop easing back over 3 s =
+        // 1.5 s). Was 0.6 before 2026-11-02 (step 3); offline the race times are the same from 0.1 to 0.6.
+        public const float HitPenalty = 0.25f;
+        public const float DangerHitPenalty = 1.5f;     // s per standing DANGER prism in the lane (measured, see above)
         public const float KeyContactSeconds = 0.2f;    // the blast itself
         public const float DriftFreeDegrees = 15f;      // a turn this small onto the fire line costs nothing
         public const float DriftTurnRate = 110f;        // deg/s, the Dolphin's turn (SWITCHBACK.md)

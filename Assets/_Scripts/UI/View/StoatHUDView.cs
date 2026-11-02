@@ -7,7 +7,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Stoat's HUD readouts (design: <c>R_VesselActions/STOAT_DIPOLE.md</c> §1d). The row order IS the element map:
-    /// <b>Ripple (charge) · Mass / Time Mode (mass) · Field Dipole (space) · Pathfinder (time)</b>.
+    /// <b>Ripple (charge) · Orbit Mode (mass) · Catch Orbit (space) · Timed Slingshot (time)</b>.
     ///
     /// <para>One gauge per card, each answering the one question its element poses:</para>
     /// <list type="number">
