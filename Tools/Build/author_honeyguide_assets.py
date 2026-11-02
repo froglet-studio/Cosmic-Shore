@@ -685,12 +685,19 @@ def retarget_container(text: str) -> str:
     return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {HONEYGUIDE_CONTAINER_GUID},")
 
 
+# The omni crystal breaks into the hive comb's heart (R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md).
+HIVE_MORPH_GUID = "4db7ae5535d24e6eac9db5e1cd906a75"   # HoneyguideCrystalMorphByCrystal.asset
+HIVE_MORPH_LINE = f"  omniCrystalRetirement: {{fileID: 11400000, guid: {HIVE_MORPH_GUID}, type: 2}}\n"
+
+
 def container_asset(donor: str) -> str:
     text = replace_once(donor, "  m_Name: SparrowImpactorDataContainer\n", "  m_Name: HoneyguideImpactorDataContainer\n", "container name")
     m = re.search(r"  vesselCrystalEffects:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)*)", text)
     if not m:
         raise RuntimeError("donor drifted: the Sparrow container's vesselCrystalEffects list was not found")
-    return text[:m.end(1)] + f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" + text[m.end(1):]
+    text = text[:m.end(1)] + f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" + text[m.end(1):]
+    text = re.sub(r"^  omniCrystalRetirement: .*\n", "", text, flags=re.M)
+    return text.rstrip("\n") + "\n" + HIVE_MORPH_LINE
 
 
 def hive_effect_asset(script_guid: str) -> str:
@@ -706,6 +713,9 @@ def check_container(container: str, effect: str, hive_script_guid: str):
     if f"  - {{fileID: 11400000, guid: {HIVE_EFFECT_GUID}, type: 2}}\n" not in container.split("  vesselElementalCrystalEffects:")[0]:
         errs.append("HoneyguideImpactorDataContainer: HoneyguideOmniCrystalEffect is not in its omni (vesselCrystalEffects) list "
                     "(an Omni crystal would not open hive mode)")
+    if HIVE_MORPH_LINE not in container:
+        errs.append("HoneyguideImpactorDataContainer: the omni crystal does not break into the hive comb "
+                    "(omniCrystalRetirement is not HoneyguideCrystalMorphByCrystal)")
     if "  m_Name: HoneyguideImpactorDataContainer\n" not in container:
         errs.append("HoneyguideImpactorDataContainer: is not named HoneyguideImpactorDataContainer")
     if f"guid: {hive_script_guid}, type: 3" not in effect:

@@ -83,6 +83,19 @@ generator `--check`/`--self-test`, console-logging and conditional-compilation g
    open), the "hive" toast shows, the strip shows the hex. Also as the pilot seat: the small board turns into the comb.
 4. Make 4 patterns. **Pass:** the three ability cards sit centred between the card row and the spin bar; 20 s to pick.
 
+### 🔴 Angler and Jacks omni-crystal morph: the crystal folds into the newborn creature's heart (`claude/fauna-birth-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+One retirement (`FaunaBirthCrystalMorphByCrystal.asset`) wired into the Angler container and, through
+`author_jacks_assets.py`, the Jacks container replaces the husk spray: the cage folds into the heart crystal of the
+creature the pickup is born as, and rides it while the body blooms. Record: `R_VesselActions/FAUNA_BIRTH_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `FaunaBirthCrystalMorphGeometryTests` green.
+- [ ] Angler: no husk spray; the crystal folds into the new creature's heart where it was collected, and the creature joins the school.
+- [ ] Jacks: the crystal flies about 30 u back into the heart of the worm segment nearest it.
+- [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
+- [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
+- [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -147,6 +160,19 @@ on the class name alone (`LobbyPatcher`) passed, which fits that reading.
 2. Run the whole multiplayer edit-mode set again. Expected: 164 of 164.
 3. If step 1 still fails, the inlining reading is wrong: put a breakpoint in the test, read `LobbyChannel.Throw().StackTrace`
    and paste it back. Do not loosen the rule in `UgsRequestPolicy.cs`.
+
+### 🔴 Honeyguide omni-crystal morph: the crystal breaks into the hive comb (`claude/honeyguide-hive-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
+
+`HoneyguideCrystalMorphByCrystal.asset` in `HoneyguideImpactorDataContainer` replaces the husk spray: the crystal's 64
+panels land on the eight cells at the heart of the comb the pickup lays. Record: `R_VesselActions/HONEYGUIDE_CRYSTAL_MORPH.md`.
+Headless harness and `unity_refcompile` (player and editor) ran; no editor.
+
+- [ ] Compiles; `HoneyguideCrystalMorphGeometryTests` green.
+- [ ] Omni crystal: no husk spray; the crystal flies back about 40 u and breaks into the middle of the comb; the rest of the comb blooms as before.
+- [ ] The eight heart cells' spikes sprouting at the hand-off reads acceptably (if not, see the doc's §2).
+- [ ] The hive works as before: super shields, chains, debuff immunity, the reward.
+- [ ] An omni crystal taken while a hive is open: no second hive, the crystal fades with no warning.
+- [ ] During a pick of three: the hive opens when the pick ends; if that is over 1.5 s, the crystal fades with a warning.
 
 ### 🔴 Shrike omni-crystal morph: the crystal folds into its nest flora (`claude/shrike-crystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
