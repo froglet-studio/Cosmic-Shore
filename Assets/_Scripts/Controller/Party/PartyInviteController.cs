@@ -54,6 +54,7 @@ namespace CosmicShore.Gameplay
         [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private SceneLoader _sceneLoader;
         [Inject] private SceneNameListSO _sceneNames;
+        [Inject] private OfflineModeService _offlineMode;
 
         // ─────────────────────────────────────────────────────────────────────
         // State
@@ -500,6 +501,38 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogError($"[PartyInviteController] Recovery failed ({e.GetType().Name}): {e}");
                 CosmicShore.Utility.CSDebug.Log($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+            }
+
+            await EnsureHostAfterRecoveryAsync();
+        }
+
+        /// <summary>
+        /// A recovery that could not bring a Relay host back leaves the menu with NO host at all:
+        /// every server-routed action (the arcade modal's ready-up most visibly) then sends into
+        /// nothing and the player sits on "Waiting for others..." forever. Fall back to the offline
+        /// loopback host - the same fallback boot uses when Relay is unreachable - so the menu and
+        /// solo play keep working; the player reconnects from the menu once the network is back.
+        /// </summary>
+        private async UniTask EnsureHostAfterRecoveryAsync()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.IsListening) return;
+
+            if (_offlineMode == null)
+            {
+                Debug.LogError("[PartyInviteController] Recovery left no host and OfflineModeService is not injected - games cannot launch until restart.");
+                return;
+            }
+
+            Debug.LogWarning("[PartyInviteController] Recovery left no host running - falling back to the offline local host.");
+            try
+            {
+                if (!await _offlineMode.EnterOfflineSessionAsync())
+                    Debug.LogError("[PartyInviteController] Offline fallback could not start a host - games cannot launch until restart.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[PartyInviteController] Offline fallback failed ({e.GetType().Name}): {e}");
             }
         }
     }
