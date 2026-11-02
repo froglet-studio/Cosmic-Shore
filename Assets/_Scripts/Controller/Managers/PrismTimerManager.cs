@@ -63,8 +63,7 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("[PrismTimerManager]");
             go.AddComponent<PrismTimerManager>();
-            Debug.LogWarning("[PrismTimerManager] No instance found in scene - auto-created. " +
-                             "Consider adding one to the scene to avoid this overhead.");
+            CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismTimerManager] Created on first use.");
             return Instance;
         }
 

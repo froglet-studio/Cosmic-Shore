@@ -35,8 +35,7 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
-            Debug.LogWarning("[PrismEffectsManager] No instance found in scene - auto-created. " +
-                             "Consider adding one to the scene to avoid this overhead.");
+            CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismEffectsManager] Created on first use.");
             return Instance;
         }
 

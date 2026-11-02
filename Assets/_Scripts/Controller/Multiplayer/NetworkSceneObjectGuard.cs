@@ -95,9 +95,13 @@ namespace CosmicShore.Gameplay
             }
             _behaviourScratch.Clear();
 
+            // Read before destroying: TryGetHash answers false for a destroyed NetworkObject, which
+            // reported every birth instead of once per prefab.
+            bool hasHash = TryGetHash(netObj, out uint hash);
+
             UnityEngine.Object.DestroyImmediate(netObj);
 
-            if (TryGetHash(netObj, out uint hash) && !_reported.Add(hash))
+            if (hasHash && !_reported.Add(hash))
                 return true;   // already reported this prefab once
 
             CSDebug.LogWarning(

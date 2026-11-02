@@ -308,6 +308,13 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                         $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
                         "resolved to an already-claimed server-owned player - nothing to do.");
+                else if (IsOwnersPlayerAlreadyProcessed(ownerClientId))
+                    // ProcessPreExistingPlayers can raise the same human twice: stage 1 from
+                    // gameData.Players, stage 2 from ConnectedClients, both before the delay above
+                    // lets the first one mark the player processed. The first did the work.
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                        $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
+                        "resolved to a player already processed - nothing to do.");
                 else
                     CSDebug.LogWarning($"[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL");
                 return;
@@ -1096,6 +1103,15 @@ namespace CosmicShore.Gameplay
                 return null;
 
             return player;
+        }
+
+        bool IsOwnersPlayerAlreadyProcessed(ulong ownerClientId)
+        {
+            var nm = NetworkManager.Singleton;
+            return nm != null
+                   && nm.ConnectedClients.TryGetValue(ownerClientId, out var client)
+                   && client.PlayerObject != null
+                   && _processedPlayers.Contains(client.PlayerObject.NetworkObjectId);
         }
 
         /// <summary>
