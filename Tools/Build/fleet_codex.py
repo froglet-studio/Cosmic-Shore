@@ -779,11 +779,46 @@ def ability_words(key, elements, omni):
         e["words"] = {k: words.get(k, "") for k in ("does", "trigger", "scales", "source")}
 
 
-def upgrade_art(key, elements, art, pngs_by_dir):
-    """A level-5 upgrade's own art, when the hull's icon folder has a file named after it (the Scarab's Snap Dash)."""
+def hud_l5_fields():
+    """{field: element} for every Sprite a vessel HUD view serializes under a "(<ELEMENT> 5)" header - the art the HUD
+    script swaps in itself when that upgrade comes on (the Serpent's five-row pellet slots, "Fifth pellet (TIME 5)")."""
+    out = {}
+    for path in glob.glob(os.path.join(REPO, "Assets/_Scripts/UI/View/*.cs")):
+        el = None
+        for line in open(path, encoding="utf-8", errors="replace"):
+            h = re.search(r'\[Header\("[^"]*\((Charge|Mass|Space|Time) 5\)"\)\]', line, re.I)
+            if h:
+                el = h.group(1).capitalize()
+                continue
+            if "[Header(" in line:
+                el = None
+            f = re.search(r"\bSprite\s+(\w+)\s*[;=]", line)
+            if el and f:
+                out[f.group(1)] = el
+    return out
+
+
+def upgrade_art(key, elements, art, pngs_by_dir, png_index=None, l5_fields=None):
+    """A level-5 upgrade's own art: the HUD script's level-5 sprite on the vessel prefab, else a file in the hull's
+    icon folder named after the upgrade (the Scarab's Snap Dash)."""
+    prefab = os.path.join(REPO, f"Assets/_Prefabs/Spacevessels/{key}.prefab")
+    text = open(prefab, encoding="utf-8", errors="replace").read() if l5_fields and os.path.exists(prefab) else ""
+    for field, el in (l5_fields or {}).items():
+        e = elements.get(el)
+        m = re.search(rf"^  {field}: \{{fileID: \d+, guid: (\w+)", text, re.M)
+        if e and m and not e["upgrade"].get("icon") and png_index and m.group(1) in png_index and art.enabled:
+            # the sprite is the card's unlit layout (the HUD lights its pips over it): drawn lit, in the codex's silver,
+            # so it reads like the resting icon beside it
+            from PIL import Image
+            im = Image.open(png_index[m.group(1)]).convert("RGBA")
+            im.thumbnail((128, 128), Image.LANCZOS)
+            lit = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+            a = im.split()[3]
+            lit.paste(Image.merge("RGBA", (a.point(lambda _: 236),) * 3 + (a,)), ((128 - im.width) // 2, (128 - im.height) // 2))
+            e["upgrade"]["icon"] = art.save(lit, f"img/ab/{key}_{el}_L5.png")
     for el, e in elements.items():
         if e["upgrade"].get("icon"):
-            continue   # the icon kit's level-5 card already answered
+            continue   # the icon kit's level-5 card or the HUD's own level-5 sprite already answered
         label = e["upgrade"]["label"]
         hit = named_icon(key, label, pngs_by_dir) if label else None
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
@@ -824,6 +859,7 @@ def build(out_dir, images=True):
         if m:
             pngs_by_dir.setdefault(m.group(1), []).append(path)
     ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 96) for k, v in UI_ART.items()}
+    l5_fields = hud_l5_fields()
     bases, by_guid = script_classes()
     atp, touch_rows = touch_profiles()
     vessels = []
@@ -872,7 +908,7 @@ def build(out_dir, images=True):
             control_art(v["controls"]["rows"], v["elements"], icons, art)
             # the omni crystal's control: whatever the omni ability fires on, when the hull binds one (the Ring on LT)
         if v["elements"]:
-            upgrade_art(v["key"], v["elements"], art, pngs_by_dir)
+            upgrade_art(v["key"], v["elements"], art, pngs_by_dir, png_index, l5_fields)
         for card in v["cards"]:
             card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
     data = {
