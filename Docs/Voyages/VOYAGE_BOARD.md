@@ -75,6 +75,39 @@ closed to every Ark (proposed).
 `HyperSeaTests` holds as goldens (hash, noise, density at nine points, positions, sea names and colours, cells, and nine
 courses round the reefs with their measures). Change the board's sea, then rerun it and update the test.
 
+## 4a. Deep zoom, the real sky and the lanes (2026-11-02)
+
+Garrett, 2026-11-01: "lets start by building up a reasonable region around sol and tumult. give us enough semantic zoom
+levels that it feels good to go from the full galaxy into either of those two locations"; 2026-11-02: "the side view
+... should be showing a view that makes sense of how vessel paths are using the galactic depth to have few crossings".
+
+- **Seven tiers** (Galaxy, Arm, Sector, Region, Neighbourhood, Cell, System) down to a 4 ly view, on a quadtree of
+  140,000 ly whose levels admit stars by brightness (about 900 on screen at any zoom), with a height slab from
+  Neighbourhood down. Real objects: 97,296 HYG stars, 157 Harris globulars, 5,647 Hunt & Reffert open clusters; between
+  them, procedural stars seeded per tile. The tiers are a ladder on the left; Sol and Tumult dive.
+- **Lanes by heading [A]** (proposed, not canon): a course cruises at a height set by its heading against the local
+  coreward direction, 8 lanes 20 ly apart, climbing over the first and last 40% so the climb costs no time. Courses that
+  cross in plan then pass at different depths; a course heading the same way joins a lane rather than crossing it.
+  Short courses cannot always reach their lane, so some crossings stay under a cell apart. `LANES_ON` in `lanes.js`.
+  The game does not fly lanes: `golden.js` runs the model with them off, so `HyperSeaTests`' goldens are unchanged.
+- **The side view is the course profile**: the selected or sailing course across, its height up, the stars near it,
+  every lane it crosses with the depth gap, a minutes axis. With nothing selected it shows the old x-aligned slice.
+
+**Building it.** `voyage-board.html` is generated, never hand-edited: `python3 deepzoom/assemble.py voyage-board.html`
+patches `deepzoom/voyage-board.before-deepzoom.html` (the board before deep zoom) with `deepzoom.js` and `lanes.js` and
+embeds the catalogue. `deepzoom/build_data.py <downloads> realsky.json` rebuilds the catalogue; without a fresh
+`realsky.json` beside it, `assemble.py` reuses the one already embedded in `voyage-board.html`.
+
+**Licences** (read 2026-11-02; not legal advice, check before a paid release):
+- HYG v4.1 (David Nash, astronexus): CC BY-SA 4.0. Usable commercially with credit; the board's star table is adapted
+  from it, so that table stays CC BY-SA and ships as plain data, never under DRM. Game code is unaffected.
+- Harris 1996 (2010 edition, McMaster): free with credit; no fee may be charged for the catalogue itself.
+- Hunt & Reffert 2024 (A&A 686, A42, CDS VizieR): VizieR's terms could not be read from this session. The copy used came
+  from a mirror whose packaging is All Rights Reserved, so only upstream columns are kept (name, position, distance,
+  members, age) and the data must be re-pulled from CDS before shipping.
+- Gaia DR3 is CC BY-NC 3.0 IGO, not usable in a paid game without ESA's terms; nothing here uses it.
+- NASA Exoplanet Archive (not used yet): acknowledgement only.
+
 ## 5. Open decisions (Garrett)
 
 1. Tumult 2,300 ly from the galactic centre toward Sol (23,900 ly from Sol).
@@ -86,3 +119,5 @@ courses round the reefs with their measures). Change the board's sea, then rerun
 7. Voyages of 8 to 55 minutes.
 8. **New with the port:** the slice's lanes sail 1-2 cells while the real sea puts the same places 27-62 cells apart.
    Keep the short legs for play and show the real distance (as now), or make a leg's length its real cells.
+9. **New with the lanes:** courses fly lanes by heading (§4a), a law of the sea or a custom crews keep. It changes
+   course heights and so their danger; the game does not fly it yet.
