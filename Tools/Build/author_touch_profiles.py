@@ -58,7 +58,9 @@ def profile(vessel, scheme, **kw):
 
 PROFILES = [
     # ---- Thumb lifts: lift the RIGHT thumb = the pad's LT, the LEFT = RT, both = IdleAction.
-    profile("Squirrel", "ThumbLifts",
+    # Carve (prototype, 2026-11-02, Yash; needs Garrett's sign-off): while one thumb flies (the drift's right lift, the
+    # tube's left lift) the phone rolls the hull 1:1 like the Dolphin's (TouchAttitudeRoll -> VesselTransformer.ApplyHeldRoll).
+    profile("Squirrel", "ThumbLifts", tiltRoll=True,
             glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
     # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); the phone rolls
     # the hull one to one while that thumb aims (TouchAttitudeRoll). One-thumb flight is softened at home and
@@ -97,6 +99,14 @@ PROFILES = [
     # (Peck and the Space upgrades); lift a thumb to preview, touch it back down to fire, lift both to cancel. No boost.
     profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Space", "LiftRightThumb")]),
 
+    # Keep a thumb down to orbit (prototype, 2026-11-02, Yash; needs Garrett's sign-off; STOAT.md §4a): lift the RIGHT thumb
+    # = LT = the left catch pair, the LEFT = RT = the right one; the held orbit tightens by hold time (Hold01), putting the
+    # thumb back slings. Hold (X) is the one button, so a lift waits 0.12 s and is dropped if the finger lands on it. The
+    # Mass (Mode) card is display-only: the kit is orbit-only and B switches nothing.
+    profile("Stoat", "ThumbLifts", liftDefer=0.12, displayOnly=["Mass"],
+            glyphs=[("Space", "LiftEitherThumb"), ("Time", "LiftEitherThumb")], extras=[
+        button("A", "TouchIcon_Hold", tint="Mass")]),
+
     # ---- Totem buttons: no thumb-lift abilities; cards (and extras) round the right thumb.
     profile("Urchin", "TotemButtons"),
     profile("Sparrow", "TotemButtons"),
@@ -112,9 +122,6 @@ PROFILES = [
     profile("BrittleStar", "TotemButtons", extras=[
         button("RightStick", "TouchIcon_Fire", aims=True, primary=True, tint="Space"),
         button("LeftStick", "TouchIcon_Ring", aims=True, primary=True, tint="Charge")]),
-    profile("Stoat", "TotemButtons", extras=[
-        button("RightStick", "TouchIcon_Dipole", primary=True, tint="Space"),
-        button("A", "TouchIcon_Hold", tint="Mass")]),
     # The Angler's squad pick and recall were retired on 2026-10-21 (two alternating groups, ANGLER.md §1m): its four cards
     # are everything, so it takes no extra buttons.
     profile("Angler", "TotemButtons"),

@@ -253,6 +253,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheStoatOrbitsOnAThumbLift_HoldIsItsOnlyButton_AndTheModeCardOnlyShows()
+        {
+            // Yash, 2026-11-02 (prototype, Garrett's sign-off pending): keep a thumb down to orbit. The right lift is the
+            // pad's LT (the left pair), the left lift RT; the lift waits for the Hold button; the orbit-only kit's B does nothing.
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            var stoat = library.Find(VesselClassType.Stoat);
+            Assert.That(stoat.scheme, Is.EqualTo(TouchScheme.ThumbLifts));
+            Assert.That(stoat.liftDeferSeconds, Is.GreaterThan(0f));
+            Assert.That(stoat.extraButtons.Count, Is.EqualTo(1));
+            Assert.That(stoat.extraButtons[0].input, Is.EqualTo(InputEvents.Button1Action));
+            Assert.That(stoat.IsDisplayOnly(Element.Mass), Is.True);
+            Assert.That(stoat.GlyphFor(Element.Space), Is.EqualTo(TouchGlyph.LiftEitherThumb));
+        }
+
+        [Test]
+        public void TheSquirrelCarvesWithThePhoneWhileOneThumbFlies()
+        {
+            // Yash, 2026-11-02 (prototype, Garrett's sign-off pending): the Dolphin's 1:1 roll on the Squirrel's drift.
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            var squirrel = library.Find(VesselClassType.Squirrel);
+            Assert.That(squirrel.scheme, Is.EqualTo(TouchScheme.ThumbLifts));
+            Assert.That(squirrel.tiltRollOnOneThumb, Is.True);
+        }
+
+        [Test]
         public void TheDolphinsOneThumbCurveSoftensHomeAndKeepsTheRim()
         {
             // Garrett, 2026-10-25: "too sensitive around the home... I like that it can turn sharp".
