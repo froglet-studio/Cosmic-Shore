@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback AI step 2: the strike without a setup leg (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackBlastAI.GateBlastAim` no longer flies a setup leg behind the key by default
+(`SwitchbackController.aiStrikeSetupLeg`, off): the AI flies straight at the key and the drift look swings the nose onto
+the obstacle to aim the blast.
+
+**Verified without the editor:** reference compile (editor, player-dev); console-logging, using-directive and
+conditional-compilation gates; `switchback_sim_harness` selftest and eval (I3 Legendary 189 -> 156 s, now faster than
+not blasting; I4 Legendary 205 -> 175 s; `SWITCHBACK.md` "Step 2"). NOT run: the tests in Unity, the real soak.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): `Switchback_BlastAI_Defaults_AreSteps1And2` passes.
+2. The soak (`SwitchbackSoakRunner`, I3 and I4 at D3/D4), against the step 1 soak in `soak_results.md`: winner times
+   fall at I3 D4, and the `[Switchback AI] ... plan=Blast` lines show `blasted standing N->M` more often than
+   `missed-key`. A/B on one build by ticking `aiStrikeSetupLeg`.
+3. Switchback I3 with AI Dolphins (AI Diagnose panel, "AI plan" overlay): a blasting AI flies at its key without
+   swinging out behind it, and its nose turns onto the door as it reaches the key.
+
 ### 🔴 Wide-radius prism queries run as one Burst pass - Fulmen's burn freeze (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PrismSpatialIndex.QuerySphere` / `QuerySegment` take `LinearCapsuleScanJob` (Burst, `.Run()`, marker

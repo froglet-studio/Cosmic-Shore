@@ -60,6 +60,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("u from the ring inside which the AI does not dodge at all: the line to the mouth (a blocked gate's eye, ringed " +
                  "by Danger rakes) is the line. 0 = dodge up to the ring. 200 measured best offline (switchback_sim_harness).")]
         [SerializeField, Min(0f)] float aiNoDodgeNearRing = 200f;
+        [Tooltip("Before a blast the AI first flies to a point behind the key and turns onto the fire line (the old strike). " +
+                 "Off: it flies straight at the key and the drift swings the nose onto the obstacle; offline the setup turn " +
+                 "cost about as much as the blast saved (SWITCHBACK.md \"Step 2\").")]
+        [SerializeField] bool aiStrikeSetupLeg;
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -321,6 +325,7 @@ namespace CosmicShore.Gameplay
                 {
                     DodgeDangerOnly = aiDodgeDangerOnly,
                     NoDodgeNearRing = aiNoDodgeNearRing,
+                    StrikeSetupLeg = aiStrikeSetupLeg,
                 }
                 : null;
             if (_blastAI != null)
