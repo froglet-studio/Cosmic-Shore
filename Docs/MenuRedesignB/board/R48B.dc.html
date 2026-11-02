@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 48 B - Fleet Codex, Bento</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Bebas+Neue&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050505}
+.app{font-family:'Inter',system-ui,sans-serif;color:#ECECEC;font-size:14px;line-height:20px;position:relative;overflow:hidden;background:#050505}
+.hd{font-family:'Bebas Neue','Arial Narrow',Impact,sans-serif;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+.mo{font-family:'Space Mono',ui-monospace,Menlo,monospace;font-size:11.5px;color:#A6A6A6}
+.num{font-variant-numeric:tabular-nums}
+.tile{position:absolute;background:#0C0C0C;border:1px solid #222;border-radius:14px;box-sizing:border-box;overflow:hidden}
+.still{filter:grayscale(1) contrast(1.1)}
+.cap{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 8px;box-sizing:border-box;border:1px solid #4A4A4A;border-bottom-width:3px;border-radius:6px;font-family:'Space Mono',monospace;font-size:11px;color:#ECECEC;background:#151515;white-space:nowrap}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #ECECEC;outline-offset:2px}
+.lbl{font-family:'Space Mono',monospace;font-size:10.5px;color:#A6A6A6;white-space:nowrap}
+.ctl{position:absolute;display:flex;align-items:center;gap:6px;transition:opacity .15s}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px">
+
+<header style="position:absolute;left:0;right:0;top:0;height:64px;box-sizing:border-box;padding:0 40px;display:flex;align-items:center;gap:36px;border-bottom:1px solid #1C1C1C">
+  <span style="display:flex;align-items:center;gap:10px"><img src="/_blob/ef6b3eba67683e1f949ec76faceb1fb0" alt="" style="width:22px;height:22px"><span class="hd" style="font-size:26px">Fleet Codex</span></span>
+  <nav aria-label="Sections" style="display:flex;gap:26px"><a href="#fleet" style="color:#ECECEC;text-decoration:none;font-weight:500">Fleet</a><a href="#elements" style="color:#A6A6A6;text-decoration:none">Elements</a><a href="#modes" style="color:#A6A6A6;text-decoration:none">Game modes</a></nav>
+  <span style="flex:1"></span>
+  <label style="display:flex;align-items:center;gap:8px;height:36px;width:300px;padding:0 14px;border:1px solid #2A2A2A;border-radius:18px;background:#0C0C0C;box-sizing:border-box"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7F7F7F" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input aria-label="Search the fleet" placeholder="Search vessels, abilities, games" style="all:unset;font-size:13px;color:#ECECEC;width:100%"></label>
+  <span class="mo">bleeding-edge · f438303108</span>
+</header>
+
+<div aria-label="The fleet" style="position:absolute;left:40px;right:40px;top:80px;height:112px;display:flex;gap:12px;overflow:hidden">
+  <sc-for list="{{fleet}}" as="v" hint-placeholder-count="13">
+    <a href="#vessel" style="{{v.style}}"><span style="position:relative;display:block"><img src="{{v.img}}" alt="" style="{{v.imgStyle}}"><sc-if value="{{v.isCrew}}" hint-placeholder-val="{{false}}"><span class="mo" style="position:absolute;right:6px;top:6px;font-size:9.5px;color:#ECECEC;background:rgba(5,5,5,.8);border:1px solid #555;border-radius:8px;padding:0 6px">{{v.seats}}</span></sc-if></span><span style="font-size:12.5px;line-height:16px">{{v.name}}</span></a>
+  </sc-for>
+  <div style="position:absolute;right:0;top:0;bottom:0;width:120px;background:linear-gradient(90deg,rgba(5,5,5,0),#050505)"></div>
+</div>
+
+<section class="tile" aria-label="Brittle Star" style="left:40px;top:212px;width:580px;height:404px">
+  <img src="/_blob/c84bea63aca36f0395c8a771b975039e" alt="" class="still" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.7">
+  <div style="position:absolute;inset:0;background:linear-gradient(to top,#0C0C0C 18%,rgba(12,12,12,0) 70%)"></div>
+  <div style="position:absolute;left:24px;right:24px;bottom:20px;display:flex;flex-direction:column;gap:8px">
+    <span class="mo" style="letter-spacing:.12em">VESSEL 16 · ONE-STICK FLYER</span>
+    <span class="hd" style="font-size:84px;line-height:.85">Brittle Star</span>
+    <div style="display:flex;gap:22px;margin-top:6px">
+      <span><span class="hd num" style="font-size:28px">45</span> <span class="mo">u/s cruise</span></span>
+      <span><span class="hd num" style="font-size:28px">270</span> <span class="mo">u/s speed mode</span></span>
+      <span><span class="hd num" style="font-size:28px">0/5</span> <span class="mo">level 5 wired</span></span>
+    </div>
+  </div>
+</section>
+
+<div style="position:absolute;left:640px;right:40px;top:212px;height:404px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px">
+  <sc-for list="{{kit}}" as="k" hint-placeholder-count="5">
+    <button class="pick" type="button" onClick="{{k.pick}}" style="{{k.style}}">
+      <span style="display:flex;align-items:center;gap:8px"><img src="{{k.mark}}" alt="" style="width:18px;height:18px;object-fit:contain"><span class="mo" style="letter-spacing:.12em;color:#D0D0D0">{{k.element}}</span></span>
+      <img src="{{k.icon}}" alt="" style="width:84px;height:84px;object-fit:contain;margin:18px 0 10px">
+      <span class="hd" style="font-size:30px;line-height:1">{{k.name}}</span>
+      <span style="font-size:12.5px;line-height:18px;color:#BDBDBD;margin-top:6px">{{k.summary}}</span>
+      <span style="flex:1"></span>
+      <span class="mo" style="color:#D0D0D0">{{k.scales}}</span>
+      <span class="mo" style="margin-top:8px;border:1px solid #333;border-radius:10px;padding:1px 8px;font-size:10px">{{k.l5}}</span>
+    </button>
+  </sc-for>
+</div>
+
+<section class="tile" aria-label="Controls on every device" style="left:40px;top:632px;width:1340px;height:420px">
+  <div style="position:absolute;left:24px;top:18px;display:flex;align-items:baseline;gap:12px"><span class="hd" style="font-size:26px">Controls</span><span class="mo">{{selName}} lit on the controller, the keyboard and the phone</span></div>
+
+  <div aria-label="Controller" style="position:absolute;left:24px;top:64px;width:470px;height:330px">
+    <span class="lbl" style="position:absolute;left:0;top:0">CONTROLLER</span>
+    <div style="position:absolute;left:70px;top:70px;width:330px;height:190px;border:2px solid #333;border-radius:90px 90px 110px 110px"></div>
+    <div class="ctl" style="left:58px;top:26px;{{hl.lt}}"><img src="/_blob/878f20c2fd5584d694da93570b98557f" alt="LT" style="width:34px;height:34px"><span class="lbl">Ring</span></div>
+    <div class="ctl" style="left:344px;top:26px;{{hl.rt}}"><span class="lbl">Fire</span><img src="/_blob/8f66fc8db175fc9dad110dc28c1d1a04" alt="RT" style="width:34px;height:34px"></div>
+    <div class="ctl" style="left:96px;top:106px"><img src="/_blob/796be3e3ceba8832a696a5c193f97459" alt="Left stick" style="width:44px;height:44px"></div>
+    <span class="lbl" style="position:absolute;left:0;top:120px">Steer</span>
+    <div class="ctl" style="left:236px;top:176px;{{hl.aim}}"><img src="/_blob/1176bbf07b07210e24879436bcfddf49" alt="Right stick" style="width:44px;height:44px"></div>
+    <span class="lbl" style="position:absolute;left:226px;top:272px">Aim the ring</span>
+    <div class="ctl" style="left:322px;top:92px;{{hl.y}}"><img src="/_blob/6289c201c33069e59ed27cf4ebc43183" alt="Y" style="width:30px;height:30px"></div>
+    <div class="ctl" style="left:296px;top:118px;{{hl.x}}"><img src="/_blob/3c599d50ebee9808268bd94461b7bdb8" alt="X" style="width:30px;height:30px"></div>
+    <div class="ctl" style="left:348px;top:118px;{{hl.b}}"><img src="/_blob/195dc0210411ddfb88bbdf6dfa3ef678" alt="B" style="width:30px;height:30px"></div>
+    <div class="ctl" style="left:322px;top:144px;{{hl.a}}"><img src="/_blob/af32a060cfd796ebea9c75336c0d8640" alt="A" style="width:30px;height:30px"></div>
+    <div style="position:absolute;left:410px;top:86px;display:flex;flex-direction:column;gap:6px">
+      <span class="lbl" style="{{hl.y}}">Y Charge</span><span class="lbl" style="{{hl.b}}">B Creation</span><span class="lbl" style="{{hl.x}}">X Space</span><span class="lbl" style="{{hl.a}}">A Speed</span>
+    </div>
+  </div>
+
+  <div aria-label="Keyboard" style="position:absolute;left:520px;top:64px;width:380px;height:330px">
+    <span class="lbl" style="position:absolute;left:0;top:0">KEYBOARD</span>
+    <div style="position:absolute;left:0;top:40px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 14px;width:380px">
+      <div style="display:flex;flex-direction:column;gap:5px"><span style="display:flex;gap:4px"><span class="cap">W</span><span class="cap">A</span><span class="cap">S</span><span class="cap">D</span></span><span class="lbl">Steer</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px"></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.aim}}"><span style="display:flex;gap:4px"><span class="cap">P</span><span class="cap">;</span><span class="cap">L</span><span class="cap">'</span></span><span class="lbl">Aim</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.y}}"><span class="cap" style="align-self:flex-start">F</span><span class="lbl">Charge Mode</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.b}}"><span class="cap" style="align-self:flex-start">T</span><span class="lbl">Creation Mode</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.x}}"><span class="cap" style="align-self:flex-start">Q</span><span class="lbl">Space Mode</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.a}}"><span class="cap" style="align-self:flex-start;min-width:110px">SPACE</span><span class="lbl">Speed Mode</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.lt}}"><span class="cap" style="align-self:flex-start;min-width:70px">LSHIFT</span><span class="lbl">Ring</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;{{hl.rt}}"><span class="cap" style="align-self:flex-start;min-width:70px">RSHIFT</span><span class="lbl">Fire</span></div>
+    </div>
+    <span class="lbl" style="position:absolute;left:0;bottom:6px;white-space:normal;max-width:360px">A key is a full pull: only a controller's RT fires at part rate.</span>
+  </div>
+
+  <div aria-label="Phone" style="position:absolute;left:930px;top:64px;width:390px;height:330px">
+    <span class="lbl" style="position:absolute;left:0;top:0">PHONE · BUTTONS ROUND THE RIGHT THUMB</span>
+    <div style="position:absolute;left:0;top:36px;width:388px;height:214px;border:2px solid #3A3A3A;border-radius:28px;box-sizing:border-box;background:#080808">
+      <div style="position:absolute;left:30px;top:58px;width:96px;height:96px;border-radius:50%;border:1px dashed #444;display:flex;align-items:center;justify-content:center"><span class="lbl">Steer</span></div>
+      <div class="ctl" style="left:188px;top:20px;{{hl.y}}"><span style="width:42px;height:42px;border-radius:10px;background:#1A1A1A;border:1px solid #444;display:flex;align-items:center;justify-content:center"><img src="/_blob/6765374ab30e26e1c28e76ce2996b4b4" alt="Charge card" style="width:32px;height:32px"></span></div>
+      <div class="ctl" style="left:236px;top:20px;{{hl.b}}"><span style="width:42px;height:42px;border-radius:10px;background:#1A1A1A;border:1px solid #444;display:flex;align-items:center;justify-content:center"><img src="/_blob/c18b72a161afeb8dc00f0aa413963515" alt="Creation card" style="width:32px;height:32px"></span></div>
+      <div class="ctl" style="left:284px;top:20px;{{hl.x}}"><span style="width:42px;height:42px;border-radius:10px;background:#1A1A1A;border:1px solid #444;display:flex;align-items:center;justify-content:center"><img src="/_blob/08bc6e56a67715808b99c72b777fb3cd" alt="Space card" style="width:32px;height:32px"></span></div>
+      <div class="ctl" style="left:332px;top:20px;{{hl.a}}"><span style="width:42px;height:42px;border-radius:10px;background:#1A1A1A;border:1px solid #444;display:flex;align-items:center;justify-content:center"><img src="/_blob/c108fbe6c1debeb3814467220aeef479" alt="Speed card" style="width:32px;height:32px"></span></div>
+      <div class="ctl" style="left:290px;top:96px;{{hl.rt}}"><span style="width:76px;height:76px;border-radius:50%;background:#1A1A1A;border:1px solid #555;display:flex;align-items:center;justify-content:center"><img src="/_blob/4d48b726cdb4f10e1b0cd26543b259c3" alt="Fire button" style="width:40px;height:40px"></span></div>
+      <div class="ctl" style="left:206px;top:120px;{{hl.lt}}"><span style="width:60px;height:60px;border-radius:50%;background:#1A1A1A;border:1px solid #555;display:flex;align-items:center;justify-content:center"><img src="/_blob/6a9b009f37ab9a4db850193ff0137214" alt="Ring button" style="width:32px;height:32px"></span></div>
+    </div>
+    <span class="lbl" style="position:absolute;left:0;top:262px;white-space:normal;max-width:380px;line-height:16px">Tap a card for its mode. Fire fires while held and its drag aims the ring; Ring throws on press. Lifting a thumb fires nothing.</span>
+  </div>
+</section>
+
+<section class="tile" aria-label="Brittle Star Time" style="left:1400px;top:632px;width:480px;height:420px">
+  <img src="/_blob/b6613dd7af3b52561c77c4bdfdb52634" alt="" class="still" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5">
+  <div style="position:absolute;inset:0;background:linear-gradient(to top,#0C0C0C 25%,rgba(12,12,12,0) 75%)"></div>
+  <div style="position:absolute;left:24px;right:24px;bottom:22px;display:flex;flex-direction:column;gap:6px">
+    <span class="mo" style="letter-spacing:.12em">PLAYS IN · ARCADE · TIME</span>
+    <span class="hd" style="font-size:44px;line-height:.95">Brittle Star Time</span>
+    <span style="font-size:13px;color:#BDBDBD">Brittle Stars only, against the clock. Speed Mode down the straights, Cruise for the tight corners. Two laps, fastest domain home.</span>
+    <span style="display:flex;gap:6px;margin-top:4px"><span class="mo" style="border:1px solid #333;border-radius:10px;padding:1px 8px">I1</span><span class="mo" style="border:1px solid #333;border-radius:10px;padding:1px 8px">I2</span><span class="mo" style="border:1px solid #333;border-radius:10px;padding:1px 8px">I3</span><span class="mo" style="border:1px solid #333;border-radius:10px;padding:1px 8px">I4</span></span>
+  </div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 0 };
+  }
+  renderVals() {
+    const names = [['Manta','d346b934e7f0d19e11d7c250c106c7f4'],['Dolphin','4eb99676ce7aa7e3ed9a8165fa88ca84'],['Rhino','76c0f1408425ae1aff5636a859805bcb'],['Urchin','70c1c97a7276255867d3461867d59156'],['Squirrel','625d97cc2039e398b0fb4d7536435010'],['Sparrow','d5e4c33628b0646f1a24cbeec97f1233'],['Serpent','5b73d16df15a929c669b88b13598d781'],['Brittle Star','084c7c4071cb193fa640dd0cd4744398'],
+      ['Wrasse and Grouper','b51c37814149e7ee2d183852ac1e46ea','2 SEATS'],['Goby and Pistol','9375b2e9e83ff379bd68914d44483f3f','2 SEATS'],['Honeyguide and Ratel','a581d2f59a3d95d100fab1044bbaa3fb','2 SEATS'],['Orca','893da0e33fd2685ea288cd11c3160782','4 SEATS'],
+      ['Stoat','dc3b5e5b2db12920ed9df5d6aebba0a4'],['Thresher','26a70daff8fe220d955c1970a7dde531']];
+    const fleet = names.map(([n, b, seats]) => {
+      const w = seats ? 168 : 124;
+      const base = 'display:flex;flex-direction:column;gap:6px;flex:none;color:#A6A6A6;text-decoration:none;width:' + w + 'px';
+      return { name: n, img: '/_blob/' + b, isCrew: !!seats, seats: seats || '',
+        style: n === 'Brittle Star' ? base + ';color:#ECECEC' : base,
+        imgStyle: 'display:block;width:' + w + 'px;height:70px;object-fit:cover;border-radius:8px;' +
+          (n === 'Brittle Star' ? 'box-shadow:0 0 0 2px #ECECEC' : seats ? 'filter:grayscale(1);opacity:.6;box-shadow:inset 0 0 0 1px #555' : 'filter:grayscale(1);opacity:.5') };
+    });
+    const K = [
+      { element: 'CHARGE', mark: '/_blob/5e320705da242326bd1f14d57cb94875', icon: '/_blob/6765374ab30e26e1c28e76ce2996b4b4', name: 'Charge Mode', ctl: 'y',
+        summary: 'Five cords that slice prisms. RT loose: whips. RT pulled: sabers. They cool the guns.', scales: 'cord width x1 - x1.8', l5: 'L5 OPEN' },
+      { element: 'MASS', mark: '/_blob/a94b4259b11be12ae624a402365e488f', icon: '/_blob/c18b72a161afeb8dc00f0aa413963515', name: 'Creation Mode', ctl: 'b',
+        summary: 'A trail behind each of the ring’s five corners. The slowest mode, half cruise.', scales: 'block width x1 - x2', l5: 'L5 OPEN' },
+      { element: 'SPACE', mark: '/_blob/407c65dfa28d85aa1ea8e411299436b0', icon: '/_blob/08bc6e56a67715808b99c72b777fb3cd', name: 'Space Mode', ctl: 'x',
+        summary: 'Five guns on RT, the pull setting the rate. Overheated, your trail turns to danger.', scales: 'range 387 - 774 u', l5: 'L5 OPEN' },
+      { element: 'TIME', mark: '/_blob/34fa9e05d3c3263f8a856df7bfd0062a', icon: '/_blob/c108fbe6c1debeb3814467220aeef479', name: 'Speed Mode', ctl: 'a',
+        summary: 'Every thruster lit, six times cruise. It turns wide: a 145 u circle.', scales: 'speed x6 - x8', l5: 'L5 OPEN' },
+      { element: 'OMNI CRYSTAL', mark: '/_blob/ef6b3eba67683e1f949ec76faceb1fb0', icon: '/_blob/5d7f106739f3fefd69c2c702b070a980', name: 'Spare Ring', ctl: 'lt',
+        summary: 'Any crystal stores a spare ring, two at most. Throw it: a nucleus-wide disk breaks every prism in its plane.', scales: 'Charge: blast x1 - x4', l5: 'NO LEVEL 5' },
+    ];
+    const on = 'display:flex;flex-direction:column;align-items:flex-start;height:404px;box-sizing:border-box;padding:18px;border-radius:14px;background:#141414;border:1px solid #ECECEC';
+    const off = 'display:flex;flex-direction:column;align-items:flex-start;height:404px;box-sizing:border-box;padding:18px;border-radius:14px;background:#0C0C0C;border:1px solid #222';
+    const lit = K[this.state.sel].ctl;
+    const hl = {};
+    ['y', 'b', 'x', 'a', 'lt', 'rt', 'aim'].forEach(c => { hl[c] = c === lit || (lit === 'y' && c === 'rt') || (lit === 'x' && c === 'rt') ? 'opacity:1' : 'opacity:.32'; });
+    return {
+      fleet,
+      kit: K.map((k, i) => Object.assign({}, k, { style: this.state.sel === i ? on : off, pick: () => this.setState({ sel: i }) })),
+      hl,
+      selName: K[this.state.sel].name,
+    };
+  }
+}
+</script>
+</body>
+</html>

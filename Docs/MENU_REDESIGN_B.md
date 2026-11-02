@@ -5342,3 +5342,45 @@ new in `Tools/Build/fleet_codex.py`: the steer row from the hull's transformer c
 prefab's `_inputEventShipActions`, and the phone column from `author_touch_profiles.py` (thumb lifts, cards, extra
 buttons, the slider, the tilt notes). Checked in Chromium at 1440 and 400 px, light and dark: no script errors, no
 sideways scroll.
+
+## 115. Rev 48 mockups: the Fleet Codex, modern - one page, the kit with its controls, the game's icons (2026-11-02, awaiting a pick)
+
+**Asked (Shombith, 2026-11-02), on the built design B:** "I don't like the design, make it modern, take inspiration from
+website, shouldn't separate tabs like this for controls, also omni crystal ability is not shown, use the correct
+iconography for everything and give me 3 mockups first"; then "do not use these icons, use the correct icons for elements,
+check codex for that; also cards in arcade have these, please fix that too"; then "multi user vessels should show
+differently, like wrasse and grouper".
+
+**On the canvas:** the **Fleet Codex** tab, the round titled "Rev 48 - Fleet Codex, modern: one page, the kit with its
+controls, the omni crystal" (Rev 46 and 47 were taken on other tabs while it was drawn). Copies:
+`Docs/MenuRedesignB/board/R48*.dc.html`. Drawn in the website's Silver Screen look (the Compute console's, section 111:
+black and white stills, Bebas Neue headings, Space Mono labels, Inter body), with the game's own art uploaded to the
+canvas: each ability's HUD card (the Brittle Star's parts composited as its HUD draws them), the Codex's element shapes
+(`Assets/_Graphics/ElementShapes`), the omni crystal and the spare-ring stock icon, the Xbox face-button glyphs and the
+LT / RT trigger art, the phone's touch icons, every hull's hangar render and the Brittle Star Time card art.
+- **R48A · Marquee (recommended), interactive:** the fleet in a rail (crew vessels grouped apart with both names and their
+  seats); the hull as a film still with its numbers; the five abilities (four elements and the omni crystal) as cards,
+  each carrying its controller button, keyboard key and phone control; pick one for its full text and level 5; fly and
+  fire and the game it plays in below. Recommended because everything about an ability sits in one place and it is the
+  website's own hero pattern.
+- **R48B · Bento, interactive:** a fleet filmstrip (crew vessels as wider posters with a seat badge); the vessel as tiles;
+  ONE control map drawing the controller, keyboard and phone together, the picked ability lit on all three.
+- **R48C · Ledger:** the light edition; the kit as one table with controller, keyboard and phone as columns of every row;
+  the fleet as an index line, the crews on a line of their own.
+- **R48Notes:** what changed from Rev 45, the crew-vessel rule, what the build reads.
+
+**Crew vessels** (Goby and Pistol, Wrasse and Grouper, Honeyguide and Ratel: `SO_Vessel.CrewNames`; the Orca's four seats
+are in `ORCA_CREW.md` only, its class asset names no crew): listed apart and named as crews; a crew's page splits its kit and
+controls by seat.
+
+**Fixed in the game in the same branch:** the arcade launch panel's ability rows drew the HUD petal for the element; they
+now draw the Codex's shape (`VesselControlsPanel.elementShapes`, written by `author_menu_configure.py`). The arcade grid
+cards already did (`GameCard.GenreShapes`, section 90). Verification: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Found, not changed:** `Resources/ControlGlyphSet.asset` draws LT with the PlayStation `L1.png` and RT with the Xbox
+`R1.png`; the boards use `Trigger_LT` / `Trigger_RT`. The input layer's to fix.
+
+**Differs from the build:** the live codex (version 2, design B) has tabs and draws keycaps as text and no art; any pick
+replaces the page, and the generator gains the HUD icons, the omni ability (`ElementalAbilityMapSO.omniAbilityLabel`, empty
+on the Brittle Star, so its words come from its crystal effect) and the crews.
+
