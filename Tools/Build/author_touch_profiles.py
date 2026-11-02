@@ -112,9 +112,12 @@ PROFILES = [
     profile("BrittleStar", "TotemButtons", extras=[
         button("RightStick", "TouchIcon_Fire", aims=True, primary=True, tint="Space"),
         button("LeftStick", "TouchIcon_Ring", aims=True, primary=True, tint="Charge")]),
-    profile("Stoat", "TotemButtons", extras=[
-        button("RightStick", "TouchIcon_Dipole", primary=True, tint="Space"),
-        button("A", "TouchIcon_Hold", tint="Mass")]),
+    # Two orbit buttons and nothing else (Yash, 2026-11-02): LT the left orbit (anti-clockwise), RT the right (clockwise);
+    # a thumb anywhere else steers, as in every TotemButtons hull. The Space card shows the orbit's reach but presses
+    # nothing (LT is its disc); the Mass card is passive since Mass mode was removed. The pad's A hold has no phone button.
+    profile("Stoat", "TotemButtons", displayOnly=["Space"], extras=[
+        button("LeftStick", "TouchIcon_OrbitLeft", primary=True, tint="Space"),
+        button("RightStick", "TouchIcon_OrbitRight", primary=True, tint="Space")]),
     # The Angler's squad pick and recall were retired on 2026-10-21 (two alternating groups, ANGLER.md §1m): its four cards
     # are everything, so it takes no extra buttons.
     profile("Angler", "TotemButtons"),

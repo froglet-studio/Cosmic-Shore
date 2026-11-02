@@ -73,7 +73,8 @@ MonoBehaviour:
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941
   aiSlingMinDistance: 123.282
-  aiWarpMinDistance: 280
+  aiWarpMinDistance: 0
+  aiHoldForWindowDegrees: 120
   holdStartEvent:
     Guid:
       Data1: 0

@@ -6,7 +6,7 @@ The round-15 Stoat, ported from the Stoat Flight Studio's field trajectory
 Squirrel it was cloned from left on the prefab (§1a–§1e, §4). **Time mode** (2026-10-14) is the studio's
 round-6 dipole sling: a light pole laid ahead that CATCHES you onto an orbit, drawn as two rings (§1b).
 
-> **2026-11-02 - ORBIT ONLY (Yash).** The shipped Stoat flies Time mode alone (`STOAT_DIPOLE.md` §1b): `StoatModeActionSO.orbitOnly` starts every copy in Time mode and B switches nothing. Mass mode (the field dipole and its predicted path) and Gate mode are parked with their code intact; what they were, what that costs and how to bring them back: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are now named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Orbit Mode (Mass, parked). Everything below about Mass and Gate mode is the parked kit's record.
+> **2026-11-02 - TIME MODE ONLY (Yash).** The Stoat flies the orbit alone (§1b): Mass mode (§1, the field dipole and its predicted path) and Gate mode (§1f) are removed from the kit, and nothing is on B; what they were and how to make them again: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Heavy Launch (Mass, the launch's power). After the play test the orbit spins by side (right clockwise, left anti-clockwise), draws you in to an inner orbit a little faster, and launches where you flick or steer (§1b, "The orbit after the 2026-11-02 play test"). Everything below about Mass and Gate mode is the removed kit's record.
 
 **Quick read — the four abilities.**
 
@@ -226,6 +226,34 @@ fire dead ahead, so without this a lined-up AI sat at cruise (`Tools/Build/stoat
 
 **Where it runs.** The press and release replicate: every peer lays its own copy of the pair at the replicated pose and
 lets it go on the release. The catch and the orbit fly on the simulating machine; the rings are the local pilot's.
+
+**The orbit after the 2026-11-02 play test** (Yash; `StoatSlingConfigSO`'s orbit rows, Unity-first):
+- **Spin by side.** RT lays the right orbit, spinning clockwise seen from above the hull; LT the left, anti-clockwise
+  (`StoatSlingMath.SpinAxis` sets the pair's frame dragging). A pair catches only a hull that passes it on its own side
+  (`OnSpinSide`), so the orbit always turns the way its button says.
+- **The inner orbit.** Caught at the detection ring, the hull is drawn in to `innerOrbitShare` 0.6 of the squeeze's circle
+  at `innerPullRate` 1.5 /s (a light squeeze 43 u, buried 24 u; the 1.6 u horizon is 15 horizons in at the tightest). The
+  detection ring stays where it was, so catching is as easy as before.
+- **A little faster round it.** While the orbit holds the hull its warp is `orbitSpeedBonus` 15% more.
+- **The launch** (Yash: "swing my thumb finger, like kicking a football"). A release launches the hull toward where the stick
+  points, up to `launchConeDegrees` 60° off the orbit's tangent, in proportion to the stick (`StoatSlingMath.LaunchAim`); below
+  `aimMinStick` 0.3 it goes along the tangent. A **flick** - the stick swung from rest (under `flickRestStick` 0.3) to
+  `flickStick` 0.8 within `flickSeconds` 0.15 s - launches at once, through the replicated release (`IsFlick`). On a phone that
+  is the steering thumb swiped across the glass; on a pad, the stick snapped over; a slower push steers. The flick is a
+  person's gesture: the AI lets go by its cone and aims with its stick the same way. It replaced the steer-out exit.
+- **Mass is the launch's power** (`launchPower` ×1 → ×2.5, the kick × it); Time keeps the warp and no longer scales the kick.
+  **Mass 5, Armoured Wake**: the prisms laid while a launch's kick lasts (1.5 s) arrive shielded, on every peer.
+- **Earned speed** (Grok's review, 2026-11-02: holding a pair must not be the speed). Before a catch a held pair warps the
+  flight to only `pressWarpShare` 0.5 of the catch's warp; the orbit gives all of it (+15%); a launch keeps the orbit's warp ×
+  its timing as momentum, fading over `momentumSeconds` 6 s. The flight runs at the LARGEST of the three, never their sum. A
+  release before `minSweepDegrees` 30° pays nothing (no kick, no momentum), and a kick never takes the hull past
+  `speedCapShare` 1.6 × its speed at the release (`StoatSlingMath.CappedKick`, `MomentumWarp`). A haptic tick marks entering
+  the window for a local pilot, and a key or touch press reaches a full squeeze in `holdRampSeconds` 1 s (was 3).
+- **The AI earns it too.** It no longer presses for the warp alone (`aiWarpMinDistance` 0): once caught it holds for the
+  window and launches there whenever its aim reaches the target, letting go anyway at `aiHoldForWindowDegrees` 120°. In the
+  model (`stoat_orbit_sim.py --earned`): 78-91 s a Slingshot race at 11-12 presses a minute with 63-78% of releases timed,
+  where the press-spam AI ran 55-58 s at 19-28 a minute with almost none timed before, and 80-85 s under earned speed.
+- **On a phone** two orbit discs (LT left, RT right) sit round the right thumb; a thumb anywhere else steers.
 
 ## 1c. The Ripple — Charge, passive
 

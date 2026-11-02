@@ -617,7 +617,7 @@ lifeform wither, danger skim bonus). The Thresher runs forked containers
 
 ### Stoat — the field dipole + pathfinder (round 15) — ALL FOUR APPROVED + SHIPPED (2026-10-13)
 
-> **Parked 2026-11-02 (Yash): the shipped Stoat flies the orbit alone** (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Today's labels: Space = Catch Orbit, Time = Timed Slingshot, Charge = Ripple, Mass = Orbit Mode. Mass's dial and the Accretion and Armoured Wake level-5s have nothing to act on until the kit is decided; Space, Time, Charge, Foresight and Siphon still work. This section is the parked kit's record.
+> **Removed 2026-11-02 (Yash): the Stoat flies the orbit alone; Mass and Gate mode are gone from the kit** (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Today's map: Space = Catch Orbit (orbit radius ×1 → ×1.4), Time = Timed Slingshot (the warp ×2.7 → ×5.6), Charge = Ripple (reach ×1 → ×2), Mass = **Heavy Launch** (the launch's kick ×1 → ×2.5; L5 Armoured Wake shields the launch's trail). Space's L5 Accretion has nothing to act on (an open call). This section is the removed kit's record.
 
 Approved 2026-10-09: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **Time = Pathfinder**
 (passive; Time scales the warp boost ×2.5 → ×5). The rest was decided by Garrett on 2026-10-13 against the
