@@ -20676,3 +20676,16 @@ Refcompile (player) error set identical to base; perf_hunt gates OK; EditMode te
 - [ ] Corridor cleared after leaving the match (other modes in the same cell unaffected).
 - [ ] Profiler: `Fauna.Corridor.PushOut`, `Switchback.Features.Spawn` present; `Fauna.BodySync` lower near the path.
 - [ ] Run `FaunaCorridorTests`. See Docs/perf/SWITCHBACK_PRISM_BUDGET.md.
+
+## 🟡 Stoat orbit only: the field trajectory parked, the AI presses for the warp (2026-11-02, Yash, NOT PLAYED IN EDITOR)
+Affects: Garrett's Stoat kit (not yet asked), `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. Model only so far: `Tools/Build/stoat_orbit_sim.py`.
+Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; EditMode `StoatSling|StoatDipole` 64/64 pass (the B-chip test's expected text updated for `padLabel`). Wider filter: Rhino's `HangarAbilityKindsTests` (Energize has no stage move) and Manta's `RegattaDriveTuningTests.MantaRegattaTuning_*` fail, outside this change. `unity_refcompile` cannot run on Windows (fetch.py read-only delete, fcntl, WinError 206). Not played.
+- [ ] Arcade > Slingshot at I1: the hull starts in Time mode (the Time icon on the Mass card), with no predicted line of dots ahead at any time.
+- [ ] B (T on a keyboard) does nothing, and LT / RT never lay the field dipole. On a phone, the Mass card does nothing.
+- [ ] Press and hold: the pair is laid ahead on that side, the two rings show, and the hull visibly speeds up (60 -> about 160 u/s).
+- [ ] Fly past it: it catches you. Release when the orbit ring is lime: the whole kick. A fresh press out of an orbit keeps the warp up.
+- [ ] The AI rivals at I1-I4: they keep pace on the straights (about 150 u/s), finish, and do not wobble off line at each press. The model says 56-62 s a race and at most half a missed ring. Compare with what you see.
+- [ ] Annihilations: an AI pressing about once a second throws a Charge ripple each time. Watch the frame rate and whether rivals are stripped too often.
+- [ ] Hangar: the Stoat reads Catch Orbit, Timed Slingshot, Ripple and Orbit Mode, and each plays a fitting move.
+- [ ] Regatta: pick a Stoat on an AI chip (the host can pick any seat). It finishes all four intensities among the Dolphin and Squirrel.
+- [ ] Restore test: set `orbitOnly` off on `StoatModeAction.asset`: B steps Mass -> Time -> Gate and the field trajectory flies as before. Set it back.

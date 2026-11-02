@@ -58,7 +58,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 |---|---|---|---|
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
-| **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, field pairs and the catch sling | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
+| **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, the catch orbit alone since 2026-11-02 (§11) | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
 | **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
@@ -448,3 +448,30 @@ it); set the planner's hit costs from the measured ones; then drift-spam, from Y
 | The other vessels' Time minigames | later, one vessel at a time, in the §2 order | §2 |
 | The arena games (Regatta and the rest) | after the Time minigames | §4; `REGATTA_AI_ROADMAP.md` (on hold) |
 
+## 11. The next vessel: the Stoat, on the orbit alone (Yash, 2026-11-02)
+
+> "We have made the AIs of dolphin of switchback amazing, now let's move to another vessel [...] I think we keep only the orbit
+> effect of stoat, and remove the pathfinding field trajectory effect [...] if you think stoat is the next best vessel to go to
+> Ragatta, then add it." (Yash, 2026-11-02)
+
+**Decision: the Stoat is next, and it was never off Regatta's card** (on it since 2026-10-17; `author_regatta_assets.py`
+`HULL_ORDER`). Its kit is the orbit alone (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Its Time game is **Slingshot**.
+
+**Why it is not because it is fast.** Raw speed says the opposite:
+
+| Hull | Cruise / top, u/s | Own Time game, flights (finished) | Regatta, modelled seconds I1-I4 | For | Against |
+|---|---:|---|---|---|---|
+| **Stoat** | 60 / 164 warped (336 at Time 10) | Slingshot 4 (1), Warpline 15 | 60 / 61 / 65 / 94 AI at Time 10 (gate steering only) | In the pack with the Dolphin and Squirrel; Yash's own vessel (§8); the steering fix, a learner and starting numbers exist; the race asks a skill (where to turn, a timed release) | Hairpins cost it about twice the field trajectory's time; Mass and two level-5s have nothing to act on while parked; Yash's `stoat/skim-sling` branch rebuilds the same Time mode |
+| Manta | 180 / 720 | Redline 0 | 25 / 31 / 35 / 35 | The fastest hull, a learner and a drive model; tops the compute queue | Already twice the field: the plan's job is closing that gap, so more speed widens it. No races, and Redline lacks the Regatta steering |
+| Rhino | 50 / 840 | Headlong 0 | 51 / 63 / 75 / 61 | The highest top speed, a learner and a drive model | No element reaches it, so the balance stage cannot level it. No races, and Headlong lacks the Regatta steering |
+| Sparrow | 35 / 135 | Breakwater 12 (9) | 74-90 at Time 10 (competent-pilot model) | The most proven remaining game | The slowest modelled hull on the card; no drive model |
+
+Dolphin 54-72 s and Squirrel 48.5-59.5 s are the marks to race (`REGATTA_BALANCE_PLAN.md`). So the Stoat is the one hull that
+can already meet them at the card's Time level; **the Manta comes next**, and it is the choice if raw speed is what is wanted.
+
+**What changed for the AI.** A held pair is now the hull's only speed, so the AI also presses for the warp alone on a long leg
+(`aiWarpMinDistance`): 56-62 s a Slingshot race in the model against 70-82 s without it (`stoat_orbit_sim.py`; the table is in
+the parked doc). Every number here but the editor races is a model.
+
+**Next, in order.** Yash plays Slingshot at each intensity: the sweep relearns the sling rows on its own (`AUTO_LEARNING.md`).
+Then the Stoat's `drive_fit` model joins stage 1 of `REGATTA_BALANCE_PLAN.md`, and Regatta takes the trained numbers (§4).

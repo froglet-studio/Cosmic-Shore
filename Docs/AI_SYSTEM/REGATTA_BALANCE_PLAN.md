@@ -45,7 +45,7 @@ editor is the measurement.
 | Dolphin | Switchback | 6+ (Yash, I1-I2; the learner writes `_Switchback_I<n>`) | none as an evaluator: `switchback_dolphin_sim.py` races recorded courses | - | **build**: port `SwitchbackCourse` the way `course_port.py` ported Headlong, then a `drive_fit` mode |
 | Urchin | Skein | 1 | none | - | **build**: a rail-ride model of Skein |
 | Squirrel | Skim Race | 7 (learned per intensity, `SkimRaceAIConfig_I1-I4`) | `skimrace_sim_harness` (C#, its `tuneall` is a search) | - | **build**: wrap the harness as a command job (needs `dotnet8`) |
-| Stoat | Warpline, Slingshot | 4 | none | - | **held**: the Stoat's AI waits for Garrett's configuration (issue 1198) |
+| Stoat | Slingshot (Warpline seats the Meerkat since 2026-10-27) | 4 on Slingshot (1 finished), 15 on Warpline, none yet on the orbit-only kit | `Tools/Build/stoat_orbit_sim.py`, not yet a `drive_fit` mode | - | **next** (Yash, 2026-11-02; `MINIGAME_TRAINING_PLAN.md` §11): flies the orbit alone, AI 56-62 s in the model, races needed. The hold for Garrett's configuration (issue 1198) was lifted 2026-10-27; `.claude/skills/regatta-balance/SKILL.md` still says held |
 
 Regatta's own variants (`<policy>_Regatta`, the drive each hull flies IN Regatta, which stage 2 races):
 `drive-rhino-regatta`, `drive-manta-regatta`, `drive-dolphin-regatta` (ready).
@@ -83,10 +83,11 @@ weight (0.02 per level of mean) keeps the tuning as small as the gap allows. **P
 2. **Stage 3 at AI fidelity**: the race models do not take an element level yet, so stage 3 runs on the
    competent-pilot model. Teaching `race_models` the Time level (from `regatta_balance.MODELS`) is a build opportunity
    the scout lists; the plan can run stage 3 either way.
-3. **The Stoat** stays out of stages 1-3 until Garrett's configuration lands.
+3. **The Stoat** joins stage 1 on the orbit-only kit once its Slingshot races are in (`MINIGAME_TRAINING_PLAN.md` §11). Garrett has not been asked about parking the field trajectory (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`).
 
 ## Status log
 
 | Date | What moved |
 |---|---|
 | 2026-10-26 | Plan set (Garrett). Compute system, the three evaluators and the stage 1-3 jobs built (`Docs/Compute/README.md`); today's spread measured (2.05-2.18x) |
+| 2026-11-02 | The Stoat is the next hull, on the orbit alone (Yash). `regatta_balance.py`'s `stoat_model` follows the kit (its Time 10 race 48.5 → 49.4 s at I1; the card's level is unchanged). No compute job yet: it needs Slingshot races first, then a `drive_fit` model from `stoat_orbit_sim.py` |

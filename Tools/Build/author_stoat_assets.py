@@ -1441,6 +1441,7 @@ def apply_own_vessel(text: str) -> str:
 # --- the files stage 6 owns ---------------------------------------------------------------------
 def mode_action_asset() -> str:
     return (so_header(MODE_ACTION_SCRIPT, "StoatModeAction") +
+            "  orbitOnly: 1\n"
             "  massModeThickness:\n" + elemental(3, 3, 6, 2, 1) +
             "  blendSeconds: 0.8\n"
             "  massUpgradeShieldsInMassMode: 1\n"
@@ -1758,14 +1759,14 @@ def check(files: "dict[str, str]") -> "list[str]":
     else:
         if f"  vesselClass: {STOAT_CLASS_ID}\n" not in mp:
             errors.append(f"{rel_map}: vesselClass is not {STOAT_CLASS_ID}")
-        if "    AbilityLabel: Field Dipole\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
-            errors.append(f"{rel_map}: Space must be the Field Dipole on the triggers (Input 2)")
-        if "    AbilityLabel: Pathfinder / Time Mode\n" not in mp:
-            errors.append(f"{rel_map}: Time must be the Pathfinder / Time Mode")
+        if "    AbilityLabel: Catch Orbit\n    AbilityDescription" not in mp or "    Input: 2\n" not in mp:
+            errors.append(f"{rel_map}: Space must be the Catch Orbit on the triggers (Input 2)")
+        if "    AbilityLabel: Timed Slingshot\n" not in mp:
+            errors.append(f"{rel_map}: Time must be the Timed Slingshot")
         if "    AbilityLabel: Ripple\n" not in mp or "    UpgradeLabel: Siphon\n" not in mp:
             errors.append(f"{rel_map}: Charge must be the Ripple (level 5 Siphon)")
-        if "    AbilityLabel: Mass / Time Mode\n" not in mp or "    Input: 7\n" not in mp:
-            errors.append(f"{rel_map}: Mass must be the Mass / Time Mode switch on B (Input 7)")
+        if "    AbilityLabel: Orbit Mode\n" not in mp or "    Input: 7\n" not in mp:
+            errors.append(f"{rel_map}: Mass must be the parked Orbit Mode on B (Input 7)")
         for label in ("Accretion", "Foresight", "Armoured Wake"):
             if f"    UpgradeLabel: {label}\n" not in mp:
                 errors.append(f"{rel_map}: the level-5 '{label}' is not declared")
