@@ -22,3 +22,4 @@ MonoBehaviour:
   vesselCrystalEffects:
   - {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
   - {fileID: 11400000, guid: 8fdf52ab1fa182748bd5f3a54a309d64, type: 2}
+  omniCrystalRetirement: {fileID: 11400000, guid: 3d385b9bc4cc48e0af3f7929c11f363b, type: 2}
