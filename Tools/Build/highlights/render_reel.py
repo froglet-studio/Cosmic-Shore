@@ -105,15 +105,41 @@ def replay_clock(p):
 
 
 def hide_hud(p):
-    """Switch off every Canvas in the scene: the HUD, toasts and minimap are not the footage."""
-    out = p.cmd("find", "Canvas").get("output", "")
-    n = 0
+    """Switch off every Canvas in the scene (the HUD, toasts, minimap, the ships' ability panels) and the silence
+    screen effect: they are the pilot's instruments, not the footage. Canvases are found by component, not by name
+    (the ships' HUD canvas is 'ShipHUDContainer'), from a hierarchy dump; inactive ones too, as they may wake later."""
+    out = p.cmd("hierarchy", ":40").get("output", "")
+    stack, paths = [], set()
     for line in out.splitlines():
-        m = re.match(r"(\S.*?)  active=True  \[(.*)\]", line)
-        if m and re.search(r"\bCanvas\b", m.group(2)):
-            p.cmd("set", f'"{m.group(1)}" Canvas enabled False')
-            n += 1
-    return n
+        m = re.match(r"( *)(\S.*?)  \[(.*)\]", line)
+        if not m:
+            continue
+        level = len(m.group(1)) // 2
+        name = re.sub(r" \(inactive\)$", "", m.group(2))
+        del stack[level:]
+        stack.append(name)
+        if re.search(r"(^|, )Canvas(, |$)", m.group(3)):
+            paths.add("/".join(stack))
+    for path in sorted(paths):
+        p.cmd("set", f'"{path}" Canvas enabled False')
+    p.cmd("set", '"[Silence Screen Feedback]" SilenceScreenFeedback enabled False')
+    return len(paths)
+
+
+def follow_next_pilot(p):
+    """The replay's own Tab: from the recorded pilot's chase camera to the next pilot's (skipping the free camera,
+    which Tab passes through after the last pilot). True when the camera now follows another pilot."""
+    def follow():
+        m = re.search(r"_follow = (-?\d+)", p.cmd("get", f"{DIRECTOR} ReplayMatchDirector _follow").get("output", ""))
+        return int(m.group(1)) if m else None
+    start = follow()
+    for _ in range(2):
+        p.do("key Tab")
+        p.wait(3)
+        now = follow()
+        if now is not None and now >= 0 and now != start:
+            return True
+    return False
 
 
 def first_run(p, name):
@@ -177,8 +203,9 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
             raise SystemExit("the replay never started (no ReplayMatchDirector): see player.log")
         p.do("key F7")  # the development build's diagnostics overlay off
         print("   canvases off:", hide_hud(p))
-        if shot == "rival":
-            p.do("key Tab")  # the replay's own control: the next pilot's chase camera
+        if shot == "rival" and not follow_next_pilot(p):
+            print("   no other pilot to follow: filmed on the pilot")
+            shot = "pilot"
         target = max(0.0, m["start"])
         if clock < target - 2.5:
             p.do("timescale 8")
@@ -188,6 +215,7 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
         # each picture costs ~5 game frames in control round-trips, so film in slow motion; the replay clock beside
         # every frame puts it back to true speed (0.4 gives about 30 pictures a game second instead of 12)
         p.do(f"timescale {slow}")
+        hide_hud(p)  # again: a ship's HUD or a toast canvas built since the replay began
         while (clock or 0) < target:
             p.wait(1)
             clock = replay_clock(p) or clock
@@ -221,7 +249,7 @@ def film_moment(exe, m, flights_root, work, recordings, port, size, every, game=
     clip = os.path.join(work, "clip.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-r", "30",
                     "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", clip], check=True)
-    return clip, rows, rows[-1][1] - rows[0][1] + (rows[-1][1] - rows[-2][1])
+    return clip, rows, rows[-1][1] - rows[0][1] + (rows[-1][1] - rows[-2][1]), shot
 
 
 def _commit(repo):
@@ -270,7 +298,7 @@ def main():
               + ", ".join(e["type"] for e in m["events"]))
         with_rival = any(e["type"] in RIVAL_EVENTS for e in m["events"])
         shot = "rival" if with_rival and rng.random() < a.rival_shots else "pilot"
-        clip, rows, dur = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every, game, a.slow, shot)
+        clip, rows, dur, shot = film_moment(exe, m, a.flights, work, a.recordings, a.port, a.size, a.every, game, a.slow, shot)
         clips.append(clip)
         durs.append(dur)
         cuts.append({"index": i, "flight": m["flight"], "pilot": m["pilot"], "mode": m["mode"], "hull": m["hull"],
