@@ -11,8 +11,8 @@ it does: Pause and Resume (a `paused` file the agent honours: nothing starts, th
 progress finishes), Schedule... (whenever away / only at night / every day between two hours / only when someone sends
 a run / all the time, and whether a sent run may start at once: it re-registers the agent through `compute.py install`
 with the matching flags, so the choice is the same one the installer and the paste line take), Open the console,
-Uninstall... (asks, then `compute.py uninstall`, which stops every agent and tray, and the tray's own login entry; the tray
-quits), Quit (stops the agent until the next login). One tray per computer (`tray.lock`).
+Quit (stops the agent until the next login). Uninstall is not here: it is in the setup window (run the installer again)
+and on the console (Remove this computer); Shombith, 2026-11-02. One tray per computer (`tray.lock`).
 
 With `pystray` and `Pillow` installed (the installer tries `pip install --user pystray pillow`; both optional) it is a
 real tray icon with a menu; without them it is a small window with the same buttons, which the person may minimise.
@@ -275,6 +275,8 @@ def schedule_window(parent=None, on_done=None):
     sched = cfg.get("schedule") or {}
     win = tk.Toplevel(parent) if parent else tk.Tk()
     win.title("Froglet Compute: when may this computer work?")
+    if not parent:
+        _theme(win, tk, ttk)
     win.resizable(False, False)
     frame = ttk.Frame(win, padding=16)
     frame.grid()
@@ -370,11 +372,22 @@ def run_tray(configure=False):
     if pystray is None:
         return run_window(configure)
 
+    logo_path = os.path.join(HERE, "console", "stills", "froglet.png")
+
     def icon_image(color):
+        """The Froglet logo on a dark tile, the status as a dot in the corner (Shombith, 2026-11-02: the logo in the
+        app and the tray)."""
         im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
-        d.rounded_rectangle((6, 6, 58, 58), radius=14, fill=(11, 12, 16, 255))
-        d.ellipse((22, 22, 42, 42), fill=color)
+        d.rounded_rectangle((2, 2, 62, 62), radius=14, fill=(5, 6, 10, 255))
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo.thumbnail((52, 30), Image.LANCZOS)
+            im.alpha_composite(logo, ((64 - logo.width) // 2, (64 - logo.height) // 2 - 2))
+        except Exception:
+            d.ellipse((22, 22, 42, 42), fill=color)
+            return im
+        d.ellipse((46, 46, 60, 60), fill=color, outline=(5, 6, 10, 255), width=2)
         return im
     colors = {"working": (0, 212, 255, 255), "free": (76, 195, 138, 255), "paused": (232, 180, 76, 255), "off": (120, 120, 120, 255)}
 
@@ -395,16 +408,7 @@ def run_tray(configure=False):
             pystray.MenuItem("Schedule…", lambda: threading.Thread(target=lambda: schedule_window(), daemon=True).start()),
             pystray.MenuItem("Open the console", lambda: webbrowser.open(console_url())),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Uninstall…", lambda: uninstall()),
             pystray.MenuItem("Quit (stops the agent until the next login)", lambda: (stop_agent(), icon.stop())))
-
-    def uninstall():
-        tk, ttk, messagebox = _tk()
-        root = tk.Tk(); root.withdraw()
-        if do_uninstall(lambda q: messagebox.askyesno("Froglet Compute", q)):
-            root.destroy(); icon.stop(); os._exit(0)      # the tray is part of what was removed
-        else:
-            root.destroy()
 
     icon = pystray.Icon("froglet-compute", icon_image(colors["free"]), "Froglet Compute", menu())
 
@@ -424,11 +428,21 @@ def run_tray(configure=False):
     return 0
 
 
+def _theme(root, tk, ttk):
+    """Dark Gargantua, shared with the setup window (setup.py sits beside this file in the app copy)."""
+    try:
+        import setup
+        setup.theme(root, tk, ttk)
+    except Exception:
+        pass
+
+
 def run_window(configure=False):
     tk, ttk, messagebox = _tk()
     root = tk.Tk()
     root.title("Froglet Compute")
     root.resizable(False, False)
+    _theme(root, tk, ttk)
     frame = ttk.Frame(root, padding=16); frame.grid()
     status = ttk.Label(frame, text="", font=("", 11, "bold")); status.grid(column=0, row=0, columnspan=2, sticky="w")
     sub = ttk.Label(frame, text="This computer trains the team's AI while you are away.", foreground="#666"); sub.grid(column=0, row=1, columnspan=2, sticky="w", pady=(0, 10))
@@ -436,7 +450,6 @@ def run_window(configure=False):
     ttk.Button(frame, text="Quit (stops the agent until the next login)", command=lambda: (stop_agent(), root.destroy())).grid(column=0, row=5, columnspan=2, sticky="ew", pady=(8, 0))
     ttk.Button(frame, text="Schedule…", command=lambda: schedule_window(root, refresh)).grid(column=1, row=2, sticky="ew", pady=2, padx=(6, 0))
     ttk.Button(frame, text="Open the console", command=lambda: webbrowser.open(console_url())).grid(column=0, row=3, sticky="ew", pady=2)
-    ttk.Button(frame, text="Uninstall…", command=lambda: do_uninstall(lambda q: messagebox.askyesno("Froglet Compute", q)) and (root.destroy(), os._exit(0))).grid(column=1, row=3, sticky="ew", pady=2, padx=(6, 0))
     ttk.Label(frame, text="Closing this window keeps the computer working; Quit stops it.", foreground="#666").grid(column=0, row=4, columnspan=2, sticky="w", pady=(10, 0))
 
     def refresh():

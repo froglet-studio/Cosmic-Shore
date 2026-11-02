@@ -66,6 +66,9 @@ def installer(name, url, key, flags):
     if name == "setup.py":
         with open(os.path.join(HERE, "setup.py"), encoding="utf-8") as fh:
             return fh.read(), "text/x-python", "froglet-compute-setup.py"
+    if name in ("gargantua-banner.png", "froglet.png"):          # the setup window's art (the black hole, the logo)
+        with open(os.path.join(HERE, "console", "stills", name), "rb") as fh:
+            return fh.read(), "image/png", name
     if name == "windows.bat":
         # The window does the rest: it finds the Cosmic-Shore folder (or Browse), asks the schedule, installs, starts the tray.
         # Every step says what it did, and a failure keeps the window open (Shombith, 2026-11-02: "something opens
@@ -459,7 +462,7 @@ def handler(hub, page):
             text, ctype, fname = installer(name, hub.url or f"http://{self.headers.get('Host', '')}", hub.key, flags)
             if text is None:
                 return self._send(404, {"error": "no such installer"})
-            raw = text.encode("utf-8")
+            raw = text if isinstance(text, bytes) else text.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Disposition", f'attachment; filename="{fname}"')

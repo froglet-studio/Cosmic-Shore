@@ -374,7 +374,12 @@ The paste line still works. **A failure is never silent** (Shombith, 2026-11-02:
 runs `setup.py --gui-check` in its console first (Python, git, a working tkinter) and stays open with the reason; the
 window then runs under the console python (never `pythonw`, which swallowed its errors) and hides that console once
 it is up, so an error before that is printed and the `.bat` pauses on it; a later error is a message box; both and the
-window's opening go to `~/.froglet-compute/setup.log`. **One tray per computer** (`tray.lock`: the installer's and the login entry's second tray
+window's opening go to `~/.froglet-compute/setup.log`. **The window is Dark Gargantua** (Shombith, 2026-11-02): near-black, the accretion disk's amber as the one accent, NASA's
+black hole visualization (Goddard / Jeremy Schnittman, public domain, `console/stills/gargantua-banner.png`, served by the
+hub with the key) behind the Froglet logo and the title, a progress bar over the six install steps, and **Uninstall in
+the window** (run the installer again: it says "installed on this computer" and offers it; the console's Remove this
+computer is the other way). The tray keeps Quit only, and its icon is the Froglet logo with the status as a dot.
+**One tray per computer** (`tray.lock`: the installer's and the login entry's second tray
 leaves at once) and **Uninstall stops everything**: `compute.py uninstall` stops every agent (the launcher, a
 checkout's `compute.py run`, the handover copy) and every tray, removes the task and login entries, and the tray quits.
 A `.exe` instead of the `.bat`: not yet (it has to be built on Windows and, unsigned, SmartScreen warns on it; see §19).

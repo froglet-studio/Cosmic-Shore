@@ -67,55 +67,168 @@ def is_checkout(path):
     return os.path.isdir(os.path.join(path, ".git")) and os.path.isdir(os.path.join(path, "Assets", "_Scripts"))
 
 
+THEME = {"bg": "#05060a", "panel": "#0f1118", "field": "#161a24", "line": "#262b38", "text": "#f1eee6",
+         "dim": "#8a8f9c", "accent": "#f0a44a", "ok": "#9fd3a8", "bad": "#e39a9a"}
+# "Dark Gargantua" (Shombith, 2026-11-02): near-black ground, the accretion disk's amber as the one accent, NASA's
+# black hole visualization (Goddard / Jeremy Schnittman, public domain) behind the title, the Froglet logo on it.
+
+ART_DIR = os.path.join(os.path.dirname(APP), "art")
+
+
+def fetch_art(hub, key):
+    """The window's two images from the hub (the banner, the logo) into ~/.froglet-compute/art; what is there
+    already is kept. Never fatal: without them the window is plain."""
+    import urllib.request
+    out = {}
+    for name in ("gargantua-banner.png", "froglet.png"):
+        path = os.path.join(ART_DIR, name)
+        if not os.path.isfile(path) and hub and key:
+            try:
+                os.makedirs(ART_DIR, exist_ok=True)
+                with urllib.request.urlopen(f"{hub.rstrip('/')}/install/{name}?key={key}", timeout=6) as r, open(path + ".part", "wb") as fh:
+                    fh.write(r.read())
+                os.replace(path + ".part", path)
+            except Exception:
+                continue
+        if os.path.isfile(path):
+            out[name] = path
+    return out
+
+
+def theme(root, tk, ttk):
+    """Dark Gargantua on tkinter: near-black ground, warm white text, a marquee title (Impact stands in for Bebas
+    Neue, Consolas for Space Mono), the accretion disk's amber as the one accent. Shombith, 2026-11-02."""
+    T = THEME
+    root.configure(bg=T["bg"])
+    st = ttk.Style(root)
+    try:
+        st.theme_use("clam")
+    except Exception:
+        pass
+    body = ("Segoe UI", 10) if os.name == "nt" else ("Helvetica", 11)
+    st.configure(".", background=T["bg"], foreground=T["text"], font=body, bordercolor=T["line"], lightcolor=T["bg"], darkcolor=T["bg"])
+    st.configure("TFrame", background=T["bg"])
+    st.configure("Panel.TFrame", background=T["panel"])
+    st.configure("TLabel", background=T["bg"], foreground=T["text"])
+    st.configure("Dim.TLabel", foreground=T["dim"])
+    st.configure("Ok.TLabel", foreground=T["ok"])
+    st.configure("Bad.TLabel", foreground=T["bad"])
+    st.configure("Title.TLabel", font=("Impact", 30) if os.name == "nt" else ("Helvetica", 28, "bold"), foreground=T["text"])
+    st.configure("Banner.TFrame", background="#000000")
+    st.configure("Head.TLabel", font=("Impact", 13) if os.name == "nt" else ("Helvetica", 12, "bold"), foreground=T["accent"])
+    st.configure("TRadiobutton", background=T["bg"], foreground=T["text"], indicatorcolor=T["field"], indicatormargin=4)
+    st.map("TRadiobutton", background=[("active", T["bg"])], indicatorcolor=[("selected", T["accent"])])
+    st.configure("TCheckbutton", background=T["bg"], foreground=T["text"], indicatorcolor=T["field"])
+    st.map("TCheckbutton", background=[("active", T["bg"])], indicatorcolor=[("selected", T["accent"])])
+    st.configure("TEntry", fieldbackground=T["field"], foreground=T["text"], insertcolor=T["text"], bordercolor=T["line"])
+    st.configure("TButton", background=T["panel"], foreground=T["text"], bordercolor=T["line"], padding=(14, 6), font=body)
+    st.map("TButton", background=[("active", T["line"]), ("disabled", T["panel"])], foreground=[("disabled", T["dim"])])
+    st.configure("Accent.TButton", background=T["accent"], foreground=T["bg"], font=(body[0], body[1], "bold"))
+    st.map("Accent.TButton", background=[("active", "#f3ead0"), ("disabled", T["line"])], foreground=[("disabled", T["dim"])])
+    st.configure("Horizontal.TProgressbar", troughcolor=T["field"], background=T["accent"], bordercolor=T["bg"], lightcolor=T["accent"], darkcolor=T["accent"], thickness=6)
+
+
+def installed_app():
+    """The app copy's compute.py when Froglet Compute is installed on this computer, else None."""
+    path = os.path.join(APP, "Tools", "Compute", "compute.py")
+    return path if os.path.isfile(path) else None
+
+
 def gui(argv):
-    """The installer window: the folder (Browse; the current one when it is a checkout, never searched for), when the computer may work, Install with a log, then the
-    tray. No terminal: the .bat and .sh the console serves start this (Shombith, 2026-11-01: "why can't there be a
-    good looking installer").""" 
+    """The installer window in the console's Silver Screen look: the folder (Browse; the current one when it is a
+    checkout, never searched for), when the computer may work, Install with a progress bar and a log, Uninstall when
+    it is installed (the tray keeps Quit only: Shombith, 2026-11-02), then the tray. No terminal: the .bat and .sh
+    the console serves start this (Shombith, 2026-11-01: "why can't there be a good looking installer")."""
     global SINK
     import threading
     import tkinter as tk
     from tkinter import ttk, filedialog, messagebox
+    T = THEME
     root = tk.Tk()
     root.title("Froglet Compute Setup")
     root.resizable(False, False)
-    f = ttk.Frame(root, padding=18); f.grid()
-    ttk.Label(f, text="Froglet Compute", font=("", 15, "bold")).grid(column=0, row=0, columnspan=3, sticky="w")
-    ttk.Label(f, text="This computer trains the team's AI while you are away, steered from the console.", foreground="#666").grid(column=0, row=1, columnspan=3, sticky="w", pady=(0, 12))
-    ttk.Label(f, text="Your Cosmic-Shore folder").grid(column=0, row=2, sticky="w")
+    theme(root, tk, ttk)
+    hub = argv[argv.index("--hub") + 1] if "--hub" in argv and argv.index("--hub") + 1 < len(argv) else ""
+    key = argv[argv.index("--hub-key") + 1] if "--hub-key" in argv and argv.index("--hub-key") + 1 < len(argv) else ""
+    art = fetch_art(hub, key)
+    have = installed_app()
+    outer = ttk.Frame(root); outer.grid()
+    # The banner: NASA's black hole behind the Froglet logo and the title (a Canvas draws text over an image).
+    W, H = 860, 300
+    banner = tk.Canvas(outer, width=W, height=H, bg="#000000", highlightthickness=0, bd=0)
+    banner.grid(column=0, row=0, sticky="ew")
+    keep = []
+    if art.get("gargantua-banner.png"):
+        try:
+            img = tk.PhotoImage(file=art["gargantua-banner.png"]); keep.append(img)
+            banner.create_image(0, 0, image=img, anchor="nw")
+        except Exception:
+            pass
+    if art.get("froglet.png"):
+        try:
+            logo = tk.PhotoImage(file=art["froglet.png"]).subsample(2, 2); keep.append(logo)       # 360x179 -> 180x90
+            banner.create_image(26, 22, image=logo, anchor="nw")
+        except Exception:
+            pass
+    banner.create_text(28, H - 62, text="FROGLET COMPUTE", anchor="sw", fill=T["text"], font=("Impact", 40) if os.name == "nt" else ("Helvetica", 36, "bold"))
+    banner.create_text(30, H - 30, anchor="sw", fill=T["accent"], font=("Consolas", 10) if os.name == "nt" else ("Menlo", 10),
+                       text=("INSTALLED ON THIS COMPUTER  ·  " if have else "") + "THIS COMPUTER TRAINS THE TEAM'S AI WHILE YOU ARE AWAY")
+    banner.image_refs = keep
+    f = ttk.Frame(outer, padding=(26, 18, 26, 22)); f.grid(column=0, row=1, sticky="ew")
+    ttk.Label(f, text="YOUR COSMIC-SHORE FOLDER", style="Head.TLabel").grid(column=0, row=2, columnspan=3, sticky="w", pady=(0, 4))
     folder = tk.StringVar(value=os.getcwd() if is_checkout(os.getcwd()) else "")    # never searched for (Shombith, 2026-11-01)
-    ent = ttk.Entry(f, textvariable=folder, width=58); ent.grid(column=1, row=2, sticky="ew", padx=(8, 6))
+    ent = ttk.Entry(f, textvariable=folder, width=64); ent.grid(column=0, row=3, columnspan=2, sticky="ew", padx=(0, 8))
     def browse():
         d = filedialog.askdirectory(title="Your Cosmic-Shore folder (the one you open in Unity)")
         if d: folder.set(d)
-    ttk.Button(f, text="Browse…", command=browse).grid(column=2, row=2)
-    found = ttk.Label(f, text="this folder" if folder.get() else "press Browse and pick the folder you open in Unity", foreground="#2a7" if folder.get() else "#666")
-    found.grid(column=1, row=3, sticky="w", padx=(8, 0))
-    ttk.Label(f, text="When may it work?", font=("", 10, "bold")).grid(column=0, row=4, columnspan=3, sticky="w", pady=(14, 4))
+    ttk.Button(f, text="Browse…", command=browse).grid(column=2, row=3, sticky="ew")
+    found = ttk.Label(f, text="this folder" if folder.get() else "press Browse and pick the folder you open in Unity", style="Ok.TLabel" if folder.get() else "Dim.TLabel")
+    found.grid(column=0, row=4, columnspan=3, sticky="w")
+    ttk.Label(f, text="WHEN MAY IT WORK?", style="Head.TLabel").grid(column=0, row=5, columnspan=3, sticky="w", pady=(16, 4))
     whens = [("away", "Whenever I'm away (10 minutes idle, on mains power)"), ("nights", "Only at night (22:00 to 07:00)"),
              ("hours", "Every day between two hours"), ("sent", "Only when someone sends a run from the console"),
              ("always", "All the time (nobody uses this computer)")]
     when = tk.StringVar(value="away")
     for i, (k, lab) in enumerate(whens):
-        ttk.Radiobutton(f, text=lab, value=k, variable=when).grid(column=0, row=5 + i, columnspan=3, sticky="w", pady=1)
-    hrs = ttk.Frame(f); hrs.grid(column=0, row=10, columnspan=3, sticky="w", padx=(24, 0))
+        ttk.Radiobutton(f, text=lab, value=k, variable=when).grid(column=0, row=6 + i, columnspan=3, sticky="w", pady=1)
+    hrs = ttk.Frame(f); hrs.grid(column=0, row=11, columnspan=3, sticky="w", padx=(24, 0))
     frm, to = tk.StringVar(value="20:00"), tk.StringVar(value="06:00")
     ttk.Label(hrs, text="from").grid(column=0, row=0); ttk.Entry(hrs, textvariable=frm, width=6).grid(column=1, row=0, padx=4)
     ttk.Label(hrs, text="to").grid(column=2, row=0); ttk.Entry(hrs, textvariable=to, width=6).grid(column=3, row=0, padx=4)
-    ttk.Label(hrs, text="(only for \"every day between two hours\")", foreground="#666").grid(column=4, row=0, padx=(8, 0))
+    ttk.Label(hrs, text="(only for \"every day between two hours\")", style="Dim.TLabel").grid(column=4, row=0, padx=(8, 0))
     remote = tk.BooleanVar(value=True)
-    ttk.Checkbutton(f, text="A run sent from the console may start at once, even while I use this computer", variable=remote).grid(column=0, row=11, columnspan=3, sticky="w", pady=(8, 0))
-    log = tk.Text(f, height=9, width=80, state="disabled", font=("Consolas" if os.name == "nt" else "Menlo", 9))
-    log.grid(column=0, row=12, columnspan=3, sticky="ew", pady=(12, 0))
-    buttons = ttk.Frame(f); buttons.grid(column=0, row=13, columnspan=3, sticky="e", pady=(10, 0))
-    install_btn = ttk.Button(buttons, text="Install")
+    ttk.Checkbutton(f, text="A run sent from the console may start at once, even while I use this computer", variable=remote).grid(column=0, row=12, columnspan=3, sticky="w", pady=(8, 0))
+    STEPS = 6
+    bar = ttk.Progressbar(f, orient="horizontal", mode="determinate", maximum=STEPS, value=0)
+    bar.grid(column=0, row=13, columnspan=3, sticky="ew", pady=(16, 0))
+    stage = ttk.Label(f, text="", style="Dim.TLabel"); stage.grid(column=0, row=14, columnspan=3, sticky="w", pady=(4, 0))
+    log = tk.Text(f, height=7, width=84, state="disabled", font=("Consolas" if os.name == "nt" else "Menlo", 9),
+                  bg=T["panel"], fg=T["dim"], insertbackground=T["text"], relief="flat", highlightthickness=1, highlightbackground=T["line"], padx=10, pady=8)
+    log.grid(column=0, row=15, columnspan=3, sticky="ew", pady=(8, 0))
+    buttons = ttk.Frame(f); buttons.grid(column=0, row=16, columnspan=3, sticky="e", pady=(14, 0))
+    install_btn = ttk.Button(buttons, text="Install", style="Accent.TButton")
+    uninstall_btn = ttk.Button(buttons, text="Uninstall…")
     ttk.Button(buttons, text="Close", command=root.destroy).grid(column=0, row=0, padx=4)
-    install_btn.grid(column=1, row=0)
+    if have:
+        uninstall_btn.grid(column=1, row=0, padx=4)
+    install_btn.grid(column=2, row=0)
 
     def write(msg):
         def put():
             log.config(state="normal"); log.insert("end", msg + "\n"); log.see("end"); log.config(state="disabled")
+            head = msg.strip()[:2]
+            if len(head) == 2 and head[0].isdigit() and head[1] == ".":       # "3. registering the worker" -> step 3
+                bar.config(value=min(STEPS, int(head[0]))); stage.config(text=msg.strip()[3:80])
         root.after(0, put)
     SINK = write
+
+    def busy(on):
+        for b in (install_btn, uninstall_btn):
+            b.config(state="disabled" if on else "normal")
+        if on:
+            bar.config(mode="indeterminate"); bar.start(12)
+        else:
+            bar.stop(); bar.config(mode="determinate")
 
     def run():
         repo = folder.get().strip()
@@ -131,20 +244,62 @@ def gui(argv):
         elif w == "sent": args.append("--only-sent")
         elif w == "always": args.append("--always")
         if remote.get() and "--allow-remote-start" not in args: args.append("--allow-remote-start")
-        install_btn.config(state="disabled")
+        busy(True); stage.config(text="Installing…")
         def work():
             try:
                 rc = main(args)
+                root.after(0, lambda: busy(False))
                 write("" if rc == 0 else f"stopped ({rc})")
                 if rc == 0:
-                    write("Done. The tray icon is yours now: it shows what this computer does, pauses it, changes this schedule, opens the console and uninstalls.")
-                    root.after(0, lambda: install_btn.config(text="Done", command=root.destroy, state="normal"))
+                    write("Done. The tray icon is yours now: it shows what this computer does, pauses it, changes this schedule and opens the console.")
+                    root.after(0, lambda: (bar.config(value=STEPS), stage.config(text="Installed. This computer is on the console.", style="Ok.TLabel"),
+                                           install_btn.config(text="Done", style="Accent.TButton", command=root.destroy), uninstall_btn.grid(column=1, row=0, padx=4)))
+                else:
+                    root.after(0, lambda: stage.config(text=f"Stopped ({rc}): the log says why.", style="Bad.TLabel"))
             except SystemExit as e:
-                write(str(e)); root.after(0, lambda: install_btn.config(state="normal"))
+                write(str(e)); root.after(0, lambda: (busy(False), stage.config(text="Stopped: the log says why.", style="Bad.TLabel")))
             except Exception as e:
-                write(f"{type(e).__name__}: {e}"); root.after(0, lambda: install_btn.config(state="normal"))
+                write(f"{type(e).__name__}: {e}"); root.after(0, lambda: (busy(False), stage.config(text="Stopped: the log says why.", style="Bad.TLabel")))
         threading.Thread(target=work, daemon=True).start()
     install_btn.config(command=run)
+
+    def uninstall():
+        app = installed_app()
+        if not app:
+            messagebox.showinfo("Froglet Compute", "Froglet Compute is not installed on this computer."); return
+        if not messagebox.askyesno("Froglet Compute", "Remove Froglet Compute from this computer? The agent and the tray stop and leave the login "
+                                   "items. The console forgets the computer when its results branch is removed there (Remove this computer). "
+                                   "Your Cosmic-Shore folder is untouched."):
+            return
+        busy(True); stage.config(text="Uninstalling…", style="Dim.TLabel")
+        def work():
+            p = subprocess.run([sys.executable, app, "uninstall"], capture_output=True, text=True, **NO_WINDOW)
+            for line in (p.stdout + p.stderr).strip().splitlines():
+                write(line)
+            lock = os.path.join(os.path.dirname(APP), "agent.lock")
+            still = False
+            try:                                            # the agent's lock still held means an agent survived
+                fh = open(lock, "a+")
+                try:
+                    if os.name == "nt":
+                        import msvcrt
+                        fh.seek(0); msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1); msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB); fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+                except OSError:
+                    still = True
+                fh.close()
+            except OSError:
+                pass
+            ok = p.returncode == 0 and not still
+            write("Removed: the agent and the tray are stopped and will not start at login." if ok else
+                  ("An agent is still running; sign out and in, or restart this computer, and it is gone." if still else f"uninstall stopped ({p.returncode})"))
+            root.after(0, lambda: (busy(False), stage.config(text="Removed." if ok else "Not fully removed: the log says why.", style="Ok.TLabel" if ok else "Bad.TLabel"),
+                                   uninstall_btn.grid_remove() if ok else None))
+        threading.Thread(target=work, daemon=True).start()
+    uninstall_btn.config(command=uninstall)
+
     root.update()
     os.makedirs(os.path.dirname(SETUP_LOG), exist_ok=True)
     root.lift(); root.attributes("-topmost", True); root.after(300, lambda: root.attributes("-topmost", False))
