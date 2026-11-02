@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 45 B - Fleet Codex, a vessel on a rail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A1318}
+.app{font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#E2EBEE;font-size:15px;line-height:1.5}
+.disp{font-family:'Oxanium',system-ui,sans-serif}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+.lab{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8EA2AB}
+.key{display:inline-flex;align-items:center;height:24px;padding:0 7px;box-sizing:border-box;border:1px solid #2C3E49;border-bottom-width:2px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E2EBEE;background:#0A1318;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;border:1px solid currentColor;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.nav{background:none;border:0;cursor:pointer;font:inherit;color:#8EA2AB;display:flex;align-items:center;gap:12px;height:44px;padding:0 14px;border-radius:6px;text-align:left;width:100%;box-sizing:border-box}
+.nav:focus-visible,.seg:focus-visible,a:focus-visible{outline:2px solid #5CC4CF;outline-offset:2px}
+.seg{border:1px solid #213039;background:#101C23;color:#8EA2AB;cursor:pointer;font:inherit;font-weight:700;border-radius:6px;padding:0 14px;height:36px}
+.panel{background:#101C23;border:1px solid #213039;border-radius:8px}
+.cell{padding:11px 14px;border-top:1px solid #213039;min-width:0}
+a{color:#5CC4CF}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px;position:relative;overflow:hidden;background:#0A1318">
+
+<nav aria-label="Vessel sections" style="position:absolute;left:0;top:0;bottom:0;width:260px;box-sizing:border-box;padding:24px 16px;background:#081014;border-right:1px solid #213039;display:flex;flex-direction:column;gap:4px">
+  <span class="disp" style="font-size:22px;font-weight:700;padding:0 14px 6px">Fleet Codex</span>
+  <a href="#fleet" style="display:flex;align-items:center;gap:8px;padding:0 14px 18px;font-weight:700;text-decoration:none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>The whole fleet</a>
+  <sc-for list="{{sections}}" as="sec" hint-placeholder-count="4">
+    <button class="nav" type="button" onClick="{{sec.pick}}" style="{{sec.style}}"><span style="flex:1;font-weight:700">{{sec.label}}</span><span class="num" style="font-size:13px">{{sec.count}}</span></button>
+  </sc-for>
+  <span style="flex:1"></span>
+  <span class="mono" style="color:#8EA2AB;padding:0 14px;font-size:12px">bleeding-edge · d7481d2830<br>2026-11-02</span>
+</nav>
+
+<header style="position:absolute;left:260px;right:0;top:0;height:176px;box-sizing:border-box;padding:24px 40px;border-bottom:1px solid #213039;display:flex;gap:28px;align-items:center">
+  <img src="/_blob/c84bea63aca36f0395c8a771b975039e" alt="Brittle Star in the hangar" style="width:228px;height:128px;object-fit:cover;border-radius:6px;border:1px solid #213039;background:#101C23;flex:none">
+  <div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
+    <div style="display:flex;align-items:baseline;gap:16px"><span class="disp" style="font-size:40px;font-weight:700;line-height:1.05">Brittle Star</span><span class="mono" style="color:#8EA2AB">VesselClassType.BrittleStar = 16</span></div>
+    <span style="color:#C4D2D8;max-width:90ch">A one-touch flyer built round a cockpit and a five-pointed support ring: four modes, five guns that overheat or five cords that whip and stiffen, and spare rings thrown as bombs.</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill" style="color:#E2A552">0/4 L5 wired</span><span class="pill" style="color:#6CC18F">4/4 elements scale</span><span class="pill" style="color:#6CC18F">In the Vessel Changer</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 28px;flex:none">
+    <div><span class="disp num" style="font-size:22px;font-weight:600">45</span><span style="font-size:12.5px;color:#8EA2AB"> u/s cruise</span></div>
+    <div><span class="disp num" style="font-size:22px;font-weight:600">80/80</span><span style="font-size:12.5px;color:#8EA2AB"> pitch/yaw</span></div>
+    <div><span class="disp num" style="font-size:22px;font-weight:600">+0.1</span><span style="font-size:12.5px;color:#8EA2AB"> turn per u/s</span></div>
+    <div><span class="disp num" style="font-size:22px;font-weight:600">x1</span><span style="font-size:12.5px;color:#8EA2AB"> boost</span></div>
+  </div>
+</header>
+
+<main style="position:absolute;left:300px;right:40px;top:200px;bottom:32px;display:flex;flex-direction:column;gap:16px;min-width:0">
+  <sc-if value="{{isElements}}" hint-placeholder-val="{{true}}">
+    <span class="lab">Elements, in the HUD's order · charge, mass, space, time</span>
+    <div style="flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;min-height:0">
+      <sc-for list="{{elements}}" as="e" hint-placeholder-count="4">
+        <section class="panel" aria-label="{{e.name}}" style="padding:18px 18px;display:flex;flex-direction:column;gap:12px;min-width:0">
+          <span class="lab">{{e.name}} · {{e.note}}</span>
+          <span class="disp" style="font-size:24px;font-weight:600;line-height:1.1">{{e.ability}}</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="key">{{e.pad}}</span><span class="key">{{e.key}}</span><span class="key">{{e.touch}}</span></div>
+          <p style="margin:0;font-size:14px;color:#C4D2D8">{{e.desc}}</p>
+          <span style="flex:1"></span>
+          <span class="lab" style="font-size:10.5px">Scales</span>
+          <sc-for list="{{e.dials}}" as="d" hint-placeholder-count="1">
+            <div style="display:flex;flex-direction:column;padding:8px 10px;border:1px solid #213039;border-radius:6px;background:#0D171D"><span style="display:flex;justify-content:space-between;gap:8px"><span class="mono" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">{{d.field}}</span><span class="mono num" style="font-size:12px;color:#5CC4CF;white-space:nowrap">{{d.range}}</span></span><span style="font-size:12px;color:#8EA2AB">{{d.what}}</span></div>
+          </sc-for>
+          <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:6px;border:1px dashed #2C3E49"><span class="disp" style="font-weight:600">Level 5</span><span class="pill" style="color:#8D9BA3">Open</span></div>
+        </section>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isModes}}" hint-placeholder-val="{{false}}">
+    <span class="lab">Game modes · 1 card seats this vessel</span>
+    <section class="panel" aria-label="Brittle Star Time" style="padding:22px 26px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="disp" style="font-size:30px;font-weight:600">Brittle Star Time</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill" style="color:#6CC18F">Arcade</span><span class="pill" style="color:#8D9BA3">Time card</span><span class="pill" style="color:#8D9BA3">I1-I4</span><span class="pill" style="color:#8D9BA3">This hull only</span></div>
+        <p style="margin:0;color:#C4D2D8">Brittle Stars only, against the clock. Speed Mode runs you at six times cruise but turns wide: hold it through the corners you can, drop to Cruise for the ones you cannot. Two laps, fastest domain home.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr));border:1px solid #213039;border-radius:6px;overflow:hidden;align-self:start">
+        <span class="cell" style="border-top:0;background:#0D171D"></span><span class="cell disp" style="border-top:0;background:#0D171D;font-weight:600">I1</span><span class="cell disp" style="border-top:0;background:#0D171D;font-weight:600">I2</span><span class="cell disp" style="border-top:0;background:#0D171D;font-weight:600">I3</span><span class="cell disp" style="border-top:0;background:#0D171D;font-weight:600">I4</span>
+        <span class="cell" style="font-size:13.5px">Corners Speed Mode cannot hold</span><span class="cell num">0</span><span class="cell num">1</span><span class="cell num">2</span><span class="cell num">3</span>
+        <span class="cell" style="font-size:13.5px">Ring mouth radius (u)</span><span class="cell num">90</span><span class="cell num">68</span><span class="cell num">54</span><span class="cell num">42</span>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isControls}}" hint-placeholder-val="{{false}}">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="lab" style="margin-right:8px">Controls</span>
+      <sc-for list="{{devices}}" as="dv" hint-placeholder-count="4">
+        <button class="seg" type="button" onClick="{{dv.pick}}" style="{{dv.style}}">{{dv.label}}</button>
+      </sc-for>
+    </div>
+    <section class="panel" aria-label="Controls by device" style="display:grid;grid-template-columns:{{cols}};overflow:hidden">
+      <span class="cell lab" style="border-top:0;background:#0D171D">Action</span>
+      <sc-if value="{{showPad}}" hint-placeholder-val="{{true}}"><span class="cell lab" style="border-top:0;background:#0D171D">Controller</span></sc-if>
+      <sc-if value="{{showPc}}" hint-placeholder-val="{{true}}"><span class="cell lab" style="border-top:0;background:#0D171D">PC · keyboard and mouse</span></sc-if>
+      <sc-if value="{{showTouch}}" hint-placeholder-val="{{true}}"><span class="cell lab" style="border-top:0;background:#0D171D">Mobile · six buttons</span></sc-if>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+        <span class="cell"><span style="font-weight:700">{{r.action}}</span><span style="display:block;font-size:12.5px;color:#8EA2AB">{{r.detail}}</span></span>
+        <sc-if value="{{showPad}}" hint-placeholder-val="{{true}}"><span class="cell"><span class="key">{{r.pad}}</span></span></sc-if>
+        <sc-if value="{{showPc}}" hint-placeholder-val="{{true}}"><span class="cell"><span class="key">{{r.pc}}</span></span></sc-if>
+        <sc-if value="{{showTouch}}" hint-placeholder-val="{{true}}"><span class="cell"><span class="key">{{r.touch}}</span></span></sc-if>
+      </sc-for>
+    </section>
+    <span style="font-size:13px;color:#8EA2AB">RT is analog on a controller only: a key, a mouse button and the Fire button are always a full pull.</span>
+  </sc-if>
+
+  <sc-if value="{{isDocs}}" hint-placeholder-val="{{false}}">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px">
+      <section class="panel" aria-label="Docs" style="padding:6px 22px 10px">
+        <span class="lab" style="display:block;padding:12px 0 4px">Docs</span>
+        <div class="cell" style="padding-left:0"><a href="#doc">BRITTLE_STAR.md</a> <span class="mono" style="color:#8EA2AB">Controller/Vessel/R_VesselActions</span></div>
+        <div class="cell" style="padding-left:0"><a href="#doc">BRITTLE_STAR.md</a> <span class="mono" style="color:#8EA2AB">Docs/Studios</span></div>
+        <div class="cell" style="padding-left:0"><a href="#doc">BRITTLESTARTIME.md</a> <span class="mono" style="color:#8EA2AB">Controller/Arcade</span></div>
+      </section>
+      <section class="panel" aria-label="Recent changes" style="padding:6px 22px 10px">
+        <span class="lab" style="display:block;padding:12px 0 4px">Recent changes</span>
+        <div class="cell" style="padding-left:0"><span class="mono" style="color:#8EA2AB">2026-11-01 </span><a href="#commit">Brittle Star omni card counts the spare rings</a></div>
+        <div class="cell" style="padding-left:0"><span class="mono" style="color:#8EA2AB">2026-11-01 </span><a href="#commit">Brittle Star Space and Time cards</a></div>
+        <div class="cell" style="padding-left:0"><span class="mono" style="color:#8EA2AB">2026-11-01 </span><a href="#commit">Brittle Star Charge card, whips to sabers on RT</a></div>
+      </section>
+    </div>
+  </sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { section: 'elements', device: 'all' };
+  }
+  renderVals() {
+    const s = this.state;
+    const navOn = 'background:#101C23;color:#E2EBEE;box-shadow:inset 2px 0 0 #5CC4CF';
+    const segOn = 'border-color:#5CC4CF;color:#5CC4CF;background:#0D2229';
+    const secs = [ ['elements', 'Elements', '4'], ['modes', 'Game Modes', '1'], ['controls', 'Controls', '8'], ['docs', 'Docs and changes', '9'] ];
+    const elements = [
+      { name: 'Charge', note: 'threat', ability: 'Charge Mode', pad: 'Y', key: 'F', touch: 'Charge card',
+        desc: 'Five cords that slice prisms and strike rivals for petals. RT released: long, loose whips. RT pulled: short sabers. They cool the guns. LT throws a spare ring.',
+        dials: [ { field: 'projectileScaleMultiplier', range: 'x1-x1.8', what: 'cord width, round size' }, { field: 'blastScale', range: 'x1-x4', what: 'ring blast thickness' } ] },
+      { name: 'Mass', note: 'size', ability: 'Creation Mode', pad: 'B', key: 'R', touch: 'Creation card',
+        desc: 'A trail behind each of the ring’s five corners, turning with the ring. The slowest mode, cruise x0.5.',
+        dials: [ { field: 'prismWidthScale', range: 'x1-x2', what: 'every block’s width and height' } ] },
+      { name: 'Space', note: 'reach', ability: 'Space Mode', pad: 'X', key: 'Q', touch: 'Space card',
+        desc: 'Five guns on RT, the pull setting the rate. The right stick meets them ahead or splays them. Overheated in Space Mode, your trail lays danger prisms.',
+        dials: [ { field: 'rangeMultiplier', range: 'x1-x2', what: 'gun range, 387 u to 774 u' }, { field: 'heatCapacity', range: 'x1-x3.33', what: 'burst 6 s to 20 s' } ] },
+      { name: 'Time', note: 'rate', ability: 'Speed Mode', pad: 'A', key: 'Space', touch: 'Speed card',
+        desc: 'Every thruster lit: cruise x6, 270 u/s, the trail stretched so output holds. Turns wide, a 145 u circle.',
+        dials: [ { field: 'speedModeMultiplier', range: 'x6-x8', what: 'Speed Mode’s multiplier' } ] },
+    ];
+    const rows = [
+      { action: 'Steer', detail: 'one-stick flight', pad: 'Left stick', pc: 'Mouse', touch: 'Left thumb' },
+      { action: 'Aim', detail: 'turns the ring; out splays the guns or cords', pad: 'Right stick', pc: 'P ; L ’', touch: 'Second finger' },
+      { action: 'Speed Mode', detail: 'Time; again for Cruise', pad: 'A', pc: 'Space', touch: 'Speed card' },
+      { action: 'Creation Mode', detail: 'Mass', pad: 'B', pc: 'R', touch: 'Creation card' },
+      { action: 'Space Mode', detail: 'Space', pad: 'X', pc: 'Q / middle mouse', touch: 'Space card' },
+      { action: 'Charge Mode', detail: 'Charge', pad: 'Y', pc: 'F', touch: 'Charge card' },
+      { action: 'Fire', detail: 'guns, cords, or the one turret', pad: 'RT (analog)', pc: 'Right Shift / left mouse', touch: 'Fire button, drag aims' },
+      { action: 'Ring Detonation', detail: 'needs a spare ring', pad: 'LT', pc: 'Left Shift / right mouse', touch: 'Ring button' },
+    ];
+    const devs = [ ['all', 'All devices'], ['pad', 'Controller'], ['pc', 'PC'], ['touch', 'Mobile'] ];
+    const d = s.device;
+    const showPad = d === 'all' || d === 'pad', showPc = d === 'all' || d === 'pc', showTouch = d === 'all' || d === 'touch';
+    const n = (showPad ? 1 : 0) + (showPc ? 1 : 0) + (showTouch ? 1 : 0);
+    return {
+      sections: secs.map(([id, label, count]) => ({ label, count, style: s.section === id ? navOn : '', pick: () => this.setState({ section: id }) })),
+      isElements: s.section === 'elements', isModes: s.section === 'modes', isControls: s.section === 'controls', isDocs: s.section === 'docs',
+      elements, rows,
+      devices: devs.map(([id, label]) => ({ label, style: d === id ? segOn : '', pick: () => this.setState({ device: id }) })),
+      showPad, showPc, showTouch,
+      cols: 'minmax(0,1.3fr) repeat(' + n + ',minmax(0,1fr))',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 48 A - Fleet Codex, Marquee</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Bebas+Neue&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050505}
+.app{font-family:'Inter',system-ui,sans-serif;color:#ECECEC;font-size:14px;line-height:20px;position:relative;overflow:hidden;background:#050505}
+.hd{font-family:'Bebas Neue','Arial Narrow',Impact,sans-serif;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+.mo{font-family:'Space Mono',ui-monospace,Menlo,monospace;font-size:11.5px;color:#A6A6A6}
+.num{font-variant-numeric:tabular-nums}
+.card{background:#0C0C0C;border:1px solid #222;border-radius:10px}
+.still{filter:grayscale(1) contrast(1.1)}
+.cap{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #444;border-bottom-width:3px;border-radius:5px;font-family:'Space Mono',monospace;font-size:11px;color:#ECECEC;background:#141414;white-space:nowrap}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #ECECEC;outline-offset:2px}
+.tile{width:28px;height:28px;border-radius:7px;background:#1A1A1A;border:1px solid #333;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px">
+
+<nav aria-label="The fleet" style="position:absolute;left:0;top:0;bottom:0;width:232px;box-sizing:border-box;background:#000;border-right:1px solid #222;padding:18px 12px;display:flex;flex-direction:column;gap:6px">
+  <div style="display:flex;align-items:center;gap:10px;padding:0 6px 8px"><img src="/_blob/ef6b3eba67683e1f949ec76faceb1fb0" alt="" style="width:20px;height:20px"><span class="hd" style="font-size:22px">Fleet Codex</span></div>
+  <label style="display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:1px solid #2A2A2A;border-radius:8px;background:#0C0C0C"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7F7F7F" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input aria-label="Search the fleet" placeholder="Search" style="all:unset;font-size:13px;color:#ECECEC;width:100%"></label>
+  <a href="#fleet" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:8px;color:#A6A6A6;text-decoration:none;margin-top:6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span style="flex:1">All vessels</span><span class="mo">23</span></a>
+  <div style="height:1px;background:#1E1E1E;margin:4px 6px"></div>
+  <div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;flex:1">
+    <sc-for list="{{fleet}}" as="v" hint-placeholder-count="18">
+      <a href="#vessel" style="{{v.style}}"><img src="{{v.img}}" alt="" class="still" style="{{v.imgStyle}}"><span style="flex:1;font-size:13.5px">{{v.name}}</span><span class="mo" style="font-size:10.5px">{{v.l5}}</span></a>
+    </sc-for>
+    <div class="mo" style="display:flex;align-items:center;gap:8px;padding:10px 10px 4px;letter-spacing:.12em;font-size:10.5px"><svg aria-hidden="true" width="18" height="12" viewBox="0 0 30 20" fill="none" stroke="#A6A6A6" stroke-width="2"><circle cx="9" cy="6" r="4"/><circle cx="21" cy="6" r="4"/><path d="M2 19c1-4 4-6 7-6s6 2 7 6M14 19c1-4 4-6 7-6s6 2 7 6"/></svg>CREW VESSELS</div>
+    <sc-for list="{{crew}}" as="c" hint-placeholder-count="4">
+      <a href="#vessel" style="display:flex;align-items:center;gap:10px;min-height:40px;padding:3px 10px;border-radius:8px;color:#A6A6A6;text-decoration:none"><img src="{{c.img}}" alt="" class="still" style="width:36px;height:20px;object-fit:cover;border-radius:3px;opacity:.55"><span style="flex:1;display:flex;flex-direction:column;line-height:15px"><span style="font-size:13px;color:#D0D0D0">{{c.name}}</span><span class="mo" style="font-size:10px">{{c.seats}}</span></span></a>
+    </sc-for>
+  </div>
+  <div class="mo" style="padding:10px 6px 0;border-top:1px solid #1E1E1E;font-size:10.5px">bleeding-edge · f438303108<br>read from the game daily</div>
+</nav>
+
+<main style="position:absolute;left:232px;right:0;top:0;bottom:0">
+  <div style="position:relative;height:318px;overflow:hidden">
+    <img src="/_blob/c84bea63aca36f0395c8a771b975039e" alt="" class="still" style="position:absolute;right:0;top:-40px;width:1100px;height:620px;object-fit:cover;opacity:.6">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,#050505 22%,rgba(5,5,5,.2) 70%),linear-gradient(to bottom,rgba(5,5,5,0) 40%,#050505 98%)"></div>
+    <div style="position:absolute;left:40px;top:40px;display:flex;flex-direction:column;gap:8px">
+      <span class="mo" style="letter-spacing:.12em">VESSEL 16 · ONE-STICK FLYER · IN THE VESSEL CHANGER</span>
+      <span class="hd" style="font-size:132px;line-height:.86">Brittle Star</span>
+      <span style="max-width:640px;color:#BDBDBD;font-size:15px;line-height:22px">A cockpit inside a five-pointed ring. Swap between four modes, turn the ring to bring a turret to bear, and throw spare rings as bombs.</span>
+    </div>
+  </div>
+  <div style="position:absolute;left:40px;right:40px;top:246px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px">
+    <div class="card" style="padding:14px 16px"><div class="mo">Cruise</div><div class="hd num" style="font-size:38px;line-height:1.05">45 <span class="mo">u/s</span></div></div>
+    <div class="card" style="padding:14px 16px"><div class="mo">Speed Mode</div><div class="hd num" style="font-size:38px;line-height:1.05">270 <span class="mo">u/s · x6</span></div></div>
+    <div class="card" style="padding:14px 16px"><div class="mo">Turn</div><div class="hd num" style="font-size:38px;line-height:1.05">80° <span class="mo">+0.1 per u/s</span></div></div>
+    <div class="card" style="padding:14px 16px"><div class="mo">Level 5 upgrades</div><div class="hd num" style="font-size:38px;line-height:1.05">0 / 5 <span class="mo">all open</span></div></div>
+    <div class="card" style="padding:14px 16px"><div class="mo">Plays in</div><div class="hd" style="font-size:30px;line-height:1.25">Brittle Star Time</div></div>
+  </div>
+
+  <div style="position:absolute;left:40px;right:40px;top:356px;display:flex;align-items:baseline;gap:14px"><span class="hd" style="font-size:26px">The kit</span><span class="mo">four elements and the omni crystal, in the HUD's order · each with its control on a controller, a keyboard and a phone</span></div>
+  <div style="position:absolute;left:40px;right:40px;top:392px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px">
+    <sc-for list="{{kit}}" as="k" hint-placeholder-count="5">
+      <button class="pick card" type="button" onClick="{{k.pick}}" style="{{k.style}}">
+        <span style="display:flex;align-items:center;gap:8px"><img src="{{k.mark}}" alt="" style="width:16px;height:16px;object-fit:contain"><span class="mo" style="letter-spacing:.12em;color:#D0D0D0">{{k.element}}</span><span style="flex:1"></span><span class="mo" style="font-size:10px;border:1px solid #3A3A3A;border-radius:9px;padding:0 7px">{{k.l5}}</span></span>
+        <img src="{{k.icon}}" alt="" style="width:92px;height:92px;object-fit:contain;margin:14px 0 6px">
+        <span class="hd" style="font-size:34px;line-height:1">{{k.name}}</span>
+        <span style="font-size:13px;line-height:19px;color:#BDBDBD;margin-top:6px;min-height:76px">{{k.summary}}</span>
+        <span class="mo" style="margin-top:8px;color:#D0D0D0">{{k.scales}}</span>
+        <span style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid #222;margin-top:12px;padding-top:12px;width:100%">
+          <span style="display:flex;flex-direction:column;gap:5px"><span class="mo" style="font-size:9.5px">CONTROLLER</span><img src="{{k.pad}}" alt="{{k.padLabel}}" style="height:26px;width:auto;max-width:44px;object-fit:contain;align-self:flex-start"></span>
+          <span style="display:flex;flex-direction:column;gap:5px"><span class="mo" style="font-size:9.5px">PC</span><span class="cap" style="align-self:flex-start">{{k.key}}</span></span>
+          <span style="display:flex;flex-direction:column;gap:5px"><span class="mo" style="font-size:9.5px">PHONE</span><span class="tile"><img src="{{k.touch}}" alt="{{k.touchLabel}}" style="width:20px;height:20px;object-fit:contain"></span></span>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;left:40px;right:40px;top:836px;bottom:28px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr);gap:16px">
+    <section class="card" aria-label="{{sel.name}}" style="padding:16px 18px;display:flex;flex-direction:column;gap:6px;overflow:hidden">
+      <span class="mo" style="letter-spacing:.12em">{{sel.element}} · {{sel.name}}</span>
+      <span style="font-size:13px;line-height:19px;color:#D0D0D0">{{sel.full}}</span>
+      <span class="mo" style="margin-top:auto">Level 5: {{sel.l5full}}</span>
+    </section>
+    <section class="card" aria-label="Flight controls" style="padding:14px 18px;display:flex;flex-direction:column;gap:9px">
+      <span class="mo" style="letter-spacing:.12em">FLY AND FIRE</span>
+      <span style="display:flex;align-items:center;gap:10px"><span style="width:78px;font-weight:600">Steer</span><img src="/_blob/796be3e3ceba8832a696a5c193f97459" alt="Left stick" style="width:24px;height:24px"><span class="cap">W A S D</span><span class="tile"><img src="/_blob/b65bf6053f42c80a1a4685599c3b5c4a" alt="Thumb" style="width:20px;height:20px"></span></span>
+      <span style="display:flex;align-items:center;gap:10px"><span style="width:78px;font-weight:600">Aim ring</span><img src="/_blob/1176bbf07b07210e24879436bcfddf49" alt="Right stick" style="width:24px;height:24px"><span class="cap">P ; L '</span><span class="mo">drag Fire</span></span>
+      <span style="display:flex;align-items:center;gap:10px"><span style="width:78px;font-weight:600">Fire</span><img src="/_blob/8f66fc8db175fc9dad110dc28c1d1a04" alt="RT" style="width:24px;height:24px"><span class="cap">RSHIFT</span><span class="tile"><img src="/_blob/4d48b726cdb4f10e1b0cd26543b259c3" alt="Fire button" style="width:20px;height:20px"></span></span>
+    </section>
+    <section class="card" aria-label="Brittle Star Time" style="position:relative;overflow:hidden">
+      <img src="/_blob/b6613dd7af3b52561c77c4bdfdb52634" alt="" class="still" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,#050505 15%,rgba(5,5,5,.1))"></div>
+      <div style="position:absolute;left:18px;bottom:14px;right:18px;display:flex;flex-direction:column;gap:2px"><span class="mo">ARCADE · TIME · I1-I4</span><span class="hd" style="font-size:30px">Brittle Star Time</span><span style="font-size:12.5px;color:#BDBDBD">Speed Mode down the straights, Cruise for the tight corners. Two laps.</span></div>
+    </section>
+  </div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 0 };
+  }
+  renderVals() {
+    const names = [['Manta','d346b934e7f0d19e11d7c250c106c7f4','3/4'],['Dolphin','4eb99676ce7aa7e3ed9a8165fa88ca84','4/4'],['Rhino','76c0f1408425ae1aff5636a859805bcb','4/4'],['Urchin','70c1c97a7276255867d3461867d59156','4/4'],['Grizzly','1e650d357e29175ccb652273017f3eb8','3/4'],['Squirrel','625d97cc2039e398b0fb4d7536435010','4/4'],['Serpent','5b73d16df15a929c669b88b13598d781','4/4'],['Shrike','ab7c5612ecf422c949e08abfe074dca4','1/4'],['Sparrow','d5e4c33628b0646f1a24cbeec97f1233','4/4'],['Scarab','098edf610cdae1bcd384e9e8c5d80436','4/4'],['Thresher','26a70daff8fe220d955c1970a7dde531','3/4'],['Stoat','dc3b5e5b2db12920ed9df5d6aebba0a4','4/4'],['Brittle Star','084c7c4071cb193fa640dd0cd4744398','0/4'],['Angler','dfdbe48a0cbc7819515eb6066d6e9cc8','2/4'],['Starlings','11401db6b1e0934eaa70b7a8c0c7fae4','0/4'],['Jacks','a195a990ea757a6f376fbc33257cfb77','4/4'],['Meerkat','22139372d544a235a649b1782d749f32','4/4'],['Tiger Moth','ca85586aeed01f8b51d46ec6331461a8','4/4']];
+    const rowOff = 'display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:8px;color:#A6A6A6;text-decoration:none';
+    const rowOn = rowOff + ';background:#141414;color:#ECECEC;box-shadow:inset 2px 0 0 #ECECEC';
+    const imgOff = 'width:36px;height:20px;object-fit:cover;border-radius:3px;opacity:.55';
+    const imgOn = 'width:36px;height:20px;object-fit:cover;border-radius:3px;filter:none';
+    const fleet = names.map(([n, b, l]) => ({ name: n, img: '/_blob/' + b, l5: l, style: n === 'Brittle Star' ? rowOn : rowOff, imgStyle: n === 'Brittle Star' ? imgOn : imgOff }));
+    const K = [
+      { element: 'CHARGE', mark: '/_blob/5e320705da242326bd1f14d57cb94875', icon: '/_blob/6765374ab30e26e1c28e76ce2996b4b4', name: 'Charge Mode', l5: 'L5 OPEN',
+        summary: 'Five cords that slice prisms and strike rivals for petals. RT loose: long whips. RT pulled: short sabers.',
+        scales: 'cord width x1 - x1.8 · blast x1 - x4', pad: '/_blob/6289c201c33069e59ed27cf4ebc43183', padLabel: 'Y', key: 'F', touch: '/_blob/6765374ab30e26e1c28e76ce2996b4b4', touchLabel: 'Charge card',
+        full: 'Five cords, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) and striking rival hulls for petals. Released, RT leaves them whips at 150% length that carry slow waves; pulled, RT shortens them into five sabers that keep 60% of the give. The right stick turns them with the ring. Using them cools the guns.',
+        l5full: 'not designed (proposals: Shielding Cords, or Domain-Safe Ring)' },
+      { element: 'MASS', mark: '/_blob/a94b4259b11be12ae624a402365e488f', icon: '/_blob/c18b72a161afeb8dc00f0aa413963515', name: 'Creation Mode', l5: 'L5 OPEN',
+        summary: 'A trail behind each of the ring’s five corners, turning with the ring. The slowest mode, half cruise.',
+        scales: 'block width x1 - x2', pad: '/_blob/195dc0210411ddfb88bbdf6dfa3ef678', padLabel: 'B', key: 'T', touch: '/_blob/c18b72a161afeb8dc00f0aa413963515', touchLabel: 'Creation card',
+        full: 'A trail behind each of the ring’s five corners instead of the single small block from the cockpit: the same small block, five lines that turn with the ring’s firing rotation, so aiming while building twists them round each other. The slowest mode: cruise x0.5. Mass widens and thickens every block you lay, never its length.',
+        l5full: 'not designed (proposals: Shielded Corners, or Webbing)' },
+      { element: 'SPACE', mark: '/_blob/407c65dfa28d85aa1ea8e411299436b0', icon: '/_blob/08bc6e56a67715808b99c72b777fb3cd', name: 'Space Mode', l5: 'L5 OPEN',
+        summary: 'Five guns on RT, the pull setting the rate. Overheated in Space Mode, your trail lays danger prisms.',
+        scales: 'range 387 - 774 u · heat 6 - 20 s', pad: '/_blob/3c599d50ebee9808268bd94461b7bdb8', padLabel: 'X', key: 'Q', touch: '/_blob/08bc6e56a67715808b99c72b777fb3cd', touchLabel: 'Space card',
+        full: 'Five guns: RT fires every turret, its pull setting the rate (up to 90 rounds/s each, 387 u reach). The right stick turns the ring and meets the guns 120 u ahead or splays them 25 degrees. Every round heats the guns; overheated they stop until they cool, and in Space Mode your trail lays danger prisms. In the other modes RT fires the one turret turned to the aim.',
+        l5full: 'not designed (proposals: Piercing Rounds, or Cold Barrels)' },
+      { element: 'TIME', mark: '/_blob/34fa9e05d3c3263f8a856df7bfd0062a', icon: '/_blob/c108fbe6c1debeb3814467220aeef479', name: 'Speed Mode', l5: 'L5 OPEN',
+        summary: 'Every thruster lit: six times cruise. The trail stretches so output holds. It turns wide.',
+        scales: 'speed x6 - x8', pad: '/_blob/af32a060cfd796ebea9c75336c0d8640', padLabel: 'A', key: 'SPACE', touch: '/_blob/c108fbe6c1debeb3814467220aeef479', touchLabel: 'Speed card',
+        full: 'Ignite every thruster: cruise x6, 45 to 270 u/s, the trail’s spacing stretched by the same ratio so production per second does not rise, and every prism stretched so the trail still joins up. It turns a 145 u circle against cruise’s 30 u: the corners decide when to drop it.',
+        l5full: 'not designed (proposals: Afterburner Ring, or Quick Build)' },
+      { element: 'OMNI CRYSTAL', mark: '/_blob/ef6b3eba67683e1f949ec76faceb1fb0', icon: '/_blob/5d7f106739f3fefd69c2c702b070a980', name: 'Spare Ring', l5: 'ANY CRYSTAL',
+        summary: 'Every crystal stores a spare ring, two at most. Throw it: a disk as wide as the nucleus breaks every prism in its plane.',
+        scales: 'Charge thickens the blast x1 - x4', pad: '/_blob/878f20c2fd5584d694da93570b98557f', padLabel: 'LT', key: 'LSHIFT', touch: '/_blob/6a9b009f37ab9a4db850193ff0137214', touchLabel: 'Ring button',
+        full: 'Any crystal adds one spare ring, up to two. With a spare, LT throws the ring forward at 240 u/s; it blows on touching mass or after 1.1 s in a flat disk as wide as the cell’s nucleus (about 780 u), breaking every prism in its plane, friendly or not, and taking petals from every rival it crosses. The mounted ring regrows over 3 s.',
+        l5full: 'the omni crystal has no level 5' },
+    ];
+    const on = 'padding:16px;display:flex;flex-direction:column;align-items:flex-start;height:420px;box-sizing:border-box;border-color:#ECECEC;background:#111';
+    const off = 'padding:16px;display:flex;flex-direction:column;align-items:flex-start;height:420px;box-sizing:border-box';
+    const crew = [
+      { name: 'Goby and Pistol', seats: '2 seats · a sidescroller seat', img: '/_blob/9375b2e9e83ff379bd68914d44483f3f' },
+      { name: 'Wrasse and Grouper', seats: '2 seats · a kite navigator', img: '/_blob/b51c37814149e7ee2d183852ac1e46ea' },
+      { name: 'Honeyguide and Ratel', seats: '2 seats · a dynamo seat', img: '/_blob/a581d2f59a3d95d100fab1044bbaa3fb' },
+      { name: 'Orca', seats: '4 seats · a helm, three gunners', img: '/_blob/893da0e33fd2685ea288cd11c3160782' },
+    ];
+    return {
+      fleet, crew,
+      kit: K.map((k, i) => Object.assign({}, k, { style: this.state.sel === i ? on : off, pick: () => this.setState({ sel: i }) })),
+      sel: K[this.state.sel],
+    };
+  }
+}
+</script>
+</body>
+</html>

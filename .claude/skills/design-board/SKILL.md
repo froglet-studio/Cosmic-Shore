@@ -176,3 +176,12 @@ for that board changed ("make D brighter") and say so in the doc.
   the same hull, card or avatar; upload only what is new, and never a `data:` URI.
 - **The person judges the full screen.** A fragment board of a card or a chat bubble was asked to be "shown in the
   board" as the real screen (Rev 28); the Compare board is for fragments, each option board is the whole screen.
+- **A publish can be refused with "you haven't viewed the latest version" when the index is unchanged** (Rev 45,
+  2026-11-02): reading only `project/canvas.json` by `path`, then uploading an image asset, did not count as viewing the
+  artifact; one plain `Artifact read url=<board>` (no `path`) and the same publish went through. A refusal that NAMES a
+  changed file is the real collision: re-read that file and merge.
+- **A round can be taken WHILE you draw it, and the merge hides it** (Rev 48, 2026-11-02: Rev 46 and 47 went to other
+  tabs in the hour the Fleet Codex boards were drawn). Re-reading the index right before publishing showed `R47*` boards
+  and the `rev47` note already there; copying your entries over that index would have REPLACED the other session's
+  boards. Re-run `plan` on the fresh index, rename your files to the new number
+  (`sed 's/Rev 47/Rev 48/g'` on the titles; the ids inside `/_blob/` ids are hex and need no change), `check`, publish.

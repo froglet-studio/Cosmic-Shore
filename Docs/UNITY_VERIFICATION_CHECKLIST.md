@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Arcade launch panel: each ability row draws its element's Codex shape, not the HUD petal (`claude/optimistic-allen-jxrbrw`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselControlsPanel` (the controls on an arcade or arena card's launch screen) drew each ability row's
+element mark with `ElementalBarsConfigSO.GetPetalSprite`, the solid HUD petal. Shombith, 2026-11-02: "use the correct
+icons for elements, check codex for that ... cards in arcade have these, please fix that too". It now draws a new
+`elementShapes` list (Charge, Mass, Space, Time: `Assets/_Graphics/ElementShapes/*_label.png`, the Codex's and the arcade
+grid card's `GameCard.GenreShapes`), the petal only as the fallback for an empty slot. `Tools/Build/author_menu_configure.py`
+writes the list on `ConfigureView.prefab` and `ConfigureArenaView.prefab` and `--check` fails when it is not the four shapes
+(negative control "the controls' element marks back to the petal" fires). The arcade GRID cards already drew the shapes
+(section 90, 2026-10-28). Affects: Shombith's configure screens.
+
+**Verified without the editor:** `author_menu_configure.py --check` and `--self-test` (every negative control fires),
+`.claude/skills/ship/gates.sh` (ALL OK). **Not run:** `Tools/Build/unity_refcompile` (no .NET SDK in the session; installing
+one was not permitted), so this C# is checked by eye only: one serialized `Sprite[]` and one private method.
+
+**Verify in the editor:**
+1. Open Menu_Main, Play, open any arcade card (Brittle Star Time is quick): the controls list each ability with the
+   OUTLINED Codex shape beside it (Charge a pentagon gem, Mass a downward triangle, Space a kite, Time a diamond), not a
+   solid petal. Same on an arena card's launch screen.
+2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
+3. Console clean.
+
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the
@@ -20796,3 +20818,35 @@ Unity editor ran, so nothing below was seen.
   opens the cell's card and outlines the hexagon in white; tapping the same cell again closes it; a star tap still
   opens the star.
 - [ ] The edge view's caption under the map still fits its strip.
+
+## 🔴 Held-gun cost (Sparrow full-auto, Brittle Star turrets) and the Sparrow round's visibility (2026-11-02, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/festive-ptolemy-gsap7o`. Verified offline only: `unity_refcompile` player + editor 0 errors,
+`ProjectileFireCostTests` written (not run: no Unity here), console-logging and conditional-compilation gates clean.
+
+1. **Profile a held trigger.** Fly the Sparrow, hold full-auto 10 s; then the Brittle Star in Space (Destruction)
+   mode with all five guns. In the Profiler, `LOD.Sweep` / `LOD.Drain` should no longer grow with the trigger
+   (swept rounds are not collider-LOD foci any more), and `RuntimeManager.Update` should stay flat (the
+   per-round `ProjectileLaunch` one-shot is burst-throttled to 4 per 0.1 s).
+2. **Haptics with a pad.** Hold the Sparrow's guns with a gamepad: the spray buzz still climbs with the cone.
+   `Haptics.MotorWrite` shows at most one sample per frame. For an A/B, turn Haptics off in Settings and
+   compare the frame time; with no pad (phone) haptics cost nothing.
+3. **The Sparrow round is visible.** It is now drawn 1.65 u wide (its hit width, `_Spread` 0.45 on
+   `SparrowProjectileMaterial`) and brighter. Check it reads from the chase camera and that the Brittle
+   Star's rounds (same prefab) do not look too heavy.
+4. **Rounds still hit.** The round's Rigidbody is now kinematic: bullets still damage prisms, score on
+   pilots, and set off mines/crystals as before.
+
+## 🔴 Batched round sweeps (`ProjectileSweepBatch`) for the held guns (2026-11-02, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `unity_refcompile` (player + editor), not run.
+
+1. **Run the edit-mode tests** `PrismSpatialIndexTests.SegmentsOccupied_AgreesWithQuerySegment` and
+   `PrismSpatialIndexTests.WriteStamp_MovesOnAddAndMove_NotOnDestroy`: both pass.
+2. **Profile the Brittle Star holding all five guns** (Destruction mode, open space, Release): `Projectile.SweepVessels`
+   plus `Projectile.SweepPrisms` should drop from several ms to well under 1 ms, with one `Projectile.SweepBatch` a frame.
+   Repeat with the Sparrow's full-auto.
+3. **Hits are unchanged.** Shoot a prism wall and an enemy pilot with each vessel: prisms break, the pilot is scored, and
+   (below Space 5) a Sparrow round still stops on the first prism it meets.
+4. **No new console errors.** A `[ProjectileSweepBatch] build failed` error means the batch fell back to per-round
+   queries (correct, but the speed-up is lost): send it.
