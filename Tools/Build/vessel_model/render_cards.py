@@ -91,6 +91,7 @@ VESSELS = {
     "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS},
     "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py"},
     "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py"},
+    "Meerkat": {"fbx": MODELS + "Meerkat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_meerkat_assets.py"},
     "Honeyguide": {"fbx": MODELS + "Honeyguide.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_honeyguide_assets.py"},
     "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS},
     "Grizzly": {"fbx": MODELS + "Grizzly.fbx", "roles": FLEET_SLOTS},

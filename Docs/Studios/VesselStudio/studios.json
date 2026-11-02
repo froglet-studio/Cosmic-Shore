@@ -89,25 +89,25 @@
       "id": "meerkat",
       "name": "Meerkat",
       "file": "meerkat.html",
-      "kind": "design studio - round 2",
-      "chip": "design studio · round 2",
-      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the formed tunnel as a bridge of spindles over glass and the space round it bent, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatSolitonConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
+      "kind": "design studio - round 27",
+      "chip": "design studio · round 27",
+      "summary": "The wormhole vessel, as the game now has it. One thumb flies; the spindle frame on your nose is the tunnel RT would form: one oval arc the right stick bends (up to 150°) and LT lengthens. RT forms it and you slip and slide through it, pressed to the wall, a small push on RT, out on the slingshot. Everyone sees a plain wormhole: space bent along the tube, mouths that lens the world into an Einstein ring. Garrett's four abilities, the omnicrystal's network sized by Mass, every parameter under its game name; AI rivals at Easy, Medium or Hard and a level scorecard.",
       "spec": [
         {
           "k": "Ability",
-          "v": "the wormhole, on one thumb"
-        },
-        {
-          "k": "Tunnel",
-          "v": "bends to 120° · 120–600 u"
+          "v": "the Soliton wormhole, on one thumb"
         },
         {
           "k": "Ride",
-          "v": "out at your entry speed"
+          "v": "slip-and-slide, out on the slingshot"
+        },
+        {
+          "k": "Look",
+          "v": "the plain wormhole: lens, Einstein ring"
         },
         {
           "k": "Status",
-          "v": "design only: no Meerkat in the game yet"
+          "v": "in the game on Ys-bleeding-edge; artifact and game agree (round 27)"
         }
       ],
       "preview": "previews/meerkat.png",

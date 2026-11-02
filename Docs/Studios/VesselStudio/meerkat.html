@@ -284,9 +284,9 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Meerkat Flight Studio</h1>
-    <span class="round">Round 26 · the network: wormhole tubes, sized by Mass up to the whole cell</span>
+    <span class="round">Round 27 · the game's slip-and-slide, the plain wormhole and Yash's Unity numbers</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
-    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatSolitonConfig</code>); save any section as a profile. Every setting has an ⓘ. <b>Round 26 (Yash, 2026-10-28: "We will use two terminology. One is wormhole, another is network"):</b> a <b>wormhole</b> is the simple tube RT forms; the <b>network</b> of wormholes opens when you take an omnicrystal, every one of its wormholes the same tube, inside and out. Your <b>Mass</b> sizes the network, from half the cell at Mass 0 to the whole cell at Mass 10, so you can travel from one side of the cell to the other through it on the left stick. The old outer layer, skin and ground are switched off, their sliders kept. <b>Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you recommend"):</b> the <b>Kit</b> dropdown at the top of <b>Play Style Config</b> picks what every Meerkat in the race flies. <b>Garrett's kit</b> is his design as written (his branch <code>origin/cece/lucid-brown-ykcmhu</code>, <code>Docs/Studios/MEERKAT.md</code>): Space is the <b>soliton</b> (the wormhole sized by its surface area, which <b>anyone rides</b>, swallowing prisms at its way in and firing them out of its way out as moving prisms), Charge is <b>Sentinel mode</b> on <kbd>Y</kbd> / <kbd>F</kbd> (a sentinel at each new tunnel's way in that zaps rivals in sub-petal ticks and shields your prisms), Mass a passive <b>exit portal</b>, Time a passive <b>rush</b> (L5 Boost out), and the <b>crew</b>: <kbd>[</kbd> <kbd>]</kbd> / D-pad take a sentinel seat (its perched view: click a prism to shield it, a rival to zap it), <kbd>Y</kbd> there <b>hops</b> you out as the flyer; the meerkat you sit in holds the elements and any other dies of an element hit. <b>The Mix</b> is Garrett's with one change per decision: Time L5 Chain Dig, sentinels without seats plus an alarm, Space L5 Cave-in on <kbd>B</kbd>, the throat held 3 to 25 u. In both, <kbd>LB</kbd> / <kbd>Q</kbd> held is the pilot sight, <b>FLUME</b>; the kit's Mass level is the Mass that sizes the network (round 26), and the Omnicrystal's wormhole network is the fifth card (anyone may fly into yours in Garrett's kit, your team only in the Mix). Every kit event has its sound (<b>Vessel Config</b> &gt; Sound): swallow, fire, shatter, bounce, Boost out, Chain Dig, the sentinel's stand-up, zap, shield, loss and alarm, the hop and the seat swap, the portal, Cave-in, and FLUME's loop while LB is held. <b>Score the kits</b> (AI Config) races all four. Prototypes for Yash to judge: nothing reaches Unity without his say-so, and Garrett's design is his to change. <b>Round 8 (archived, the Kit dropdown's "Round 8"; LB now conflicts with the pilot sight):</b> the full four-ability kit, one per element, in <b>Vessel Config</b> (its Section dropdown): <b>Charge · Lookout</b> (<kbd>Y</kbd>: marks crystals, shows every rival's reticle and next ring; L5 Alarm Call draws the crystals to you), <b>Mass · Hardened Bridge</b> (<kbd>LB</kbd> arms the next tunnel: its bridge becomes a lasting prism tube others cannot cross; L5 Shielded Bridge), <b>Space · Cave-in</b> (<kbd>B</kbd>: your standing tunnel collapses now, destroying every prism near it; L5 Burial costs a rival inside it a petal and silences it, never pushes it) and <b>Time · the wormhole</b> (L5 Chain Dig: <kbd>RT</kbd> late in a ride digs the next tunnel from the far mouth). Their numbers are lab-only. The race is now <b>Warpline</b>, the Meerkat's Time race: 5 rings a lap, 2 laps.</p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>Round 27 (Yash, 2026-11-03: bring the artifact up to the game, so it is the Meerkat's source of truth again):</b> three things the Unity game had and this page lacked, ported from the game's code. <b>The slip-and-slide</b> (the game's <code>SolitonTunnelRider</code>): inside a wormhole or the network, gravity presses you onto the inner wall and you slide along it, bouncing now and then; <b>there is no left stick inside</b>, <b>RT gives a small push</b>, and you leave on the <b>slingshot</b>, the speed you carry x <i>rideExitMultiplier</i>, the way you were going (<b>Wormhole · ride</b>). <b>The plain wormhole</b> (the game's <code>SolitonTunnel.shader</code>): no glass, no spindles over a formed tube; its wall bends space along it with a faint clear rim in its maker's colour, each mouth lenses the world into an Einstein ring round a hint of shadow, and riding, the view stretches toward the way out (<b>Wormhole · look</b>; as in the game only the four tubes nearest the camera are drawn). <b>Yash's Unity numbers</b>: throat 7.1, mouths 44, the network's 6-12 forks, 16-50 openings, 100-531 u reach, 273 deg spread, 10.5 u wormholes with 18 u mouths, tip 0.309, gnarl 0.779, top speed 119, and <i>suckRadius</i> 40. <code>studio_to_unity.py --check</code> reads no Meerkat drift. <b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, sliding it (round 27) and coming out on the slingshot. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre. Every parameter shows the game's name for it under its slider (<code>MeerkatSolitonConfig</code>); save any section as a profile. Every setting has an ⓘ. <b>Round 26 (Yash, 2026-10-28: "We will use two terminology. One is wormhole, another is network"):</b> a <b>wormhole</b> is the simple tube RT forms; the <b>network</b> of wormholes opens when you take an omnicrystal, every one of its wormholes the same tube, inside and out. Your <b>Mass</b> sizes the network, from half the cell at Mass 0 to the whole cell at Mass 10, so you can travel from one side of the cell to the other through it (round 27: sliding, no stick). The old outer layer, skin and ground are switched off, their sliders kept. <b>Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you recommend"):</b> the <b>Kit</b> dropdown at the top of <b>Play Style Config</b> picks what every Meerkat in the race flies. <b>Garrett's kit</b> is his design as written (his branch <code>origin/cece/lucid-brown-ykcmhu</code>, <code>Docs/Studios/MEERKAT.md</code>): Space is the <b>soliton</b> (the wormhole sized by its surface area, which <b>anyone rides</b>, swallowing prisms at its way in and firing them out of its way out as moving prisms), Charge is <b>Sentinel mode</b> on <kbd>Y</kbd> / <kbd>F</kbd> (a sentinel at each new tunnel's way in that zaps rivals in sub-petal ticks and shields your prisms), Mass a passive <b>exit portal</b>, Time a passive <b>rush</b> (L5 Boost out), and the <b>crew</b>: <kbd>[</kbd> <kbd>]</kbd> / D-pad take a sentinel seat (its perched view: click a prism to shield it, a rival to zap it), <kbd>Y</kbd> there <b>hops</b> you out as the flyer; the meerkat you sit in holds the elements and any other dies of an element hit. <b>The Mix</b> is Garrett's with one change per decision: Time L5 Chain Dig, sentinels without seats plus an alarm, Space L5 Cave-in on <kbd>B</kbd>, the throat held 3 to 25 u. In both, <kbd>LB</kbd> / <kbd>Q</kbd> held is the pilot sight, <b>FLUME</b>; the kit's Mass level is the Mass that sizes the network (round 26), and the Omnicrystal's wormhole network is the fifth card (anyone may fly into yours in Garrett's kit, your team only in the Mix). Every kit event has its sound (<b>Vessel Config</b> &gt; Sound): swallow, fire, shatter, bounce, Boost out, Chain Dig, the sentinel's stand-up, zap, shield, loss and alarm, the hop and the seat swap, the portal, Cave-in, and FLUME's loop while LB is held. <b>Score the kits</b> (AI Config) races all four. Prototypes for Yash to judge: nothing reaches Unity without his say-so, and Garrett's design is his to change. <b>Round 8 (archived, the Kit dropdown's "Round 8"; LB now conflicts with the pilot sight):</b> the full four-ability kit, one per element, in <b>Vessel Config</b> (its Section dropdown): <b>Charge · Lookout</b> (<kbd>Y</kbd>: marks crystals, shows every rival's reticle and next ring; L5 Alarm Call draws the crystals to you), <b>Mass · Hardened Bridge</b> (<kbd>LB</kbd> arms the next tunnel: its bridge becomes a lasting prism tube others cannot cross; L5 Shielded Bridge), <b>Space · Cave-in</b> (<kbd>B</kbd>: your standing tunnel collapses now, destroying every prism near it; L5 Burial costs a rival inside it a petal and silences it, never pushes it) and <b>Time · the wormhole</b> (L5 Chain Dig: <kbd>RT</kbd> late in a ride digs the next tunnel from the far mouth). Their numbers are lab-only. The race is now <b>Warpline</b>, the Meerkat's Time race: 5 rings a lap, 2 laps.</p>
   </header>
 
   <div class="stage">
@@ -316,7 +316,7 @@
           <tr><td>Left thumb</td><td>Fly: yaw and pitch, banking into turns, full throttle</td></tr>
           <tr><td>Right thumb</td><td>Bend the tunnel (the grid on your nose), any way; further = shorter and fatter</td></tr>
           <tr><td><b>LT</b> handle: drag down</td><td>Shorten the tunnel</td></tr>
-          <tr><td><b>RT</b> handle: tap</td><td>Form the tunnel and ride it; tapped late in a ride (Time L5), Chain Dig: the next tunnel from the far mouth</td></tr>
+          <tr><td><b>RT</b> handle: tap</td><td>Form the tunnel and slide it; held inside, a small push (the left thumb does nothing inside); tapped late in a ride (Time L5), Chain Dig: the next tunnel from the far mouth</td></tr>
           <tr class="kit-r8-row"><td><b>Y</b> button (right edge)</td><td>Lookout (Charge): mark crystals, see every rival's reticle and next ring</td></tr>
           <tr class="kit-r8-row"><td><b>LB</b> button</td><td>Hardened Bridge (Mass): arm the next tunnel to set as a prism tube (tap again to disarm)</td></tr>
           <tr class="kit-r8-row"><td><b>B</b> button</td><td>Cave-in (Space): collapse your standing tunnel now, destroying the prisms near it</td></tr>
@@ -336,14 +336,15 @@
           <tr><td>Left stick</td><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Fly: yaw and pitch (up = nose up; Invert Y flips it), banking into turns, full throttle</td></tr>
           <tr><td>Right stick</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Bend the tunnel any way: further over = more bend, shorter and fatter</td></tr>
           <tr><td><b>LT</b></td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Shorten the tunnel (a key ramps to full)</td></tr>
-          <tr><td><b>RT</b>: press</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>Form the tunnel (once the reticle is 60% grown) and ride it; out with the speed you went in with</td></tr>
+          <tr><td><b>RT</b>: press</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>Form the tunnel (once the reticle is 60% grown) and slide it: pressed to the wall, out on the slingshot</td></tr>
+          <tr><td><b>RT</b>: hold, inside</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>A small push along the tube (<i>thrust</i>); the left stick does nothing inside (round 27, the game's slip-and-slide)</td></tr>
           <tr class="kit-r8-row"><td><b>RT</b> late in a ride</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td><b>Chain Dig</b> (Time L5): from <i>chainShare</i> of the way through, the next tunnel forms from the far mouth and you go straight in at throat speed</td></tr>
           <tr class="kit-r8-row"><td><b>Y</b></td><td><kbd>E</kbd></td><td><b>Lookout</b> (Charge): for a few seconds, mark every crystal in reach and see every rival's reticle and next ring through anything; L5 Alarm Call draws the crystals to you</td></tr>
           <tr class="kit-r8-row"><td><b>LB</b></td><td><kbd>Q</kbd></td><td><b>Hardened Bridge</b> (Mass): arm the next tunnel (press again to disarm); its bridge sets as a prism tube others cannot cross. L5: shielded. <b>Conflicts</b>: LB is the pilot sight on every vessel now</td></tr>
           <tr class="kit-r8-row"><td><b>B</b></td><td><kbd>F</kbd></td><td><b>Cave-in</b> (Space): your standing tunnel collapses now and destroys every prism near it; L5 Burial: a rival inside it loses a petal and is silenced (never pushed)</td></tr>
           <tr class="kit-gm-row"><td><b>Y</b></td><td><kbd>F</kbd> (or <kbd>E</kbd>)</td><td><b>Sentinel mode</b> (Charge), on / off: each new tunnel leaves a sentinel at its way in (3 at once, 6 at L5; the oldest retires with its soliton). It zaps rivals in its guard and shields your own prisms there</td></tr>
           <tr class="kit-gm-row"><td><b>LB</b>: hold</td><td><kbd>Q</kbd>: hold</td><td><b>The pilot sight, FLUME</b>: every soliton, whoever made it, outlined through anything: its line, its two mouths, where it leads and how long it is</td></tr>
-          <tr class="kit-gm-row"><td>Fly into a mouth</td><td></td><td><b>Ride any soliton</b>, anyone's: in at its way in, along it, out on its last heading (Time: a faster ride)</td></tr>
+          <tr class="kit-gm-row"><td>Fly into a mouth</td><td></td><td><b>Ride any soliton</b>, anyone's: in at its way in, slide it, out on the slingshot (Time: a faster slide)</td></tr>
           <tr class="kit-m-row"><td><b>RT</b> late in a ride</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td><b>Chain Dig</b> (the Mix, Time L5): from <i>mixChainShare</i> of the way through, the next tunnel forms from the far mouth</td></tr>
           <tr class="kit-m-row"><td><b>B</b></td><td><kbd>B</kbd></td><td><b>Cave-in</b> (the Mix, Space L5): your nearest soliton fires out everything it holds at once and collapses (its sentinel with it); a rival riding it loses petals and is silenced (never pushed)</td></tr>
           <tr class="kit-g-row"><td><b>D-pad</b> left / right</td><td><kbd>[</kbd> <kbd>]</kbd></td><td><b>Swap seat</b> (Garrett's crew): the flyer, then each sentinel; in a sentinel the flyer's AI flies on (the arrows still bend the reticle when you fly)</td></tr>
@@ -383,7 +384,7 @@
     <aside class="rail" aria-label="Studio controls">
       <div class="card" id="mainCard">
         <h3 id="mainH">The wormhole</h3>
-        <p class="src" style="margin-top:4px" id="mainP">The Meerkat's one ability. The left stick flies; the spindle frame on your nose is the tunnel RT would form now - a straight shaft, then a bend: LT sets how long the shaft runs, the right stick which way and how far it bends, RT forms it and you ride it, out a little faster than you went in. Its settings: <b>Reticle</b>, <b>Wormhole · look</b>, <b>Space · look</b>, <b>Wormhole · shape</b> and <b>Wormhole · ride</b> below.</p>
+        <p class="src" style="margin-top:4px" id="mainP">The Meerkat's one ability. The left stick flies; the spindle frame on your nose is the tunnel RT would form now - one oval arc: LT sets how long it runs, the right stick which way and how far it bends, RT forms it and you dive in. Inside you slip and slide (round 27, the game's ride): pressed to the wall, a small push on RT, no stick, out on the slingshot. Its settings: <b>Reticle</b>, <b>Wormhole · look</b>, <b>Wormhole · shape</b> and <b>Wormhole · ride</b> below; the old look is kept, off, in <b>The old look</b>.</p>
         <div class="btns" style="margin-top:6px"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course. Add rivals with + in Players to see theirs too.">Watch the AI fly the wormhole</button></div>
       </div>
 
@@ -423,26 +424,26 @@
       <details class="card" id="grp-shape" open><summary>Wormhole · shape <small>MeerkatSolitonConfig</small></summary><div class="rows"></div>
         <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatDiameter</i> throat between <i>mouthDiameter</i> mouths, however it is shaped (set here, never by the sticks). <b>Round 26: Mass no longer sizes the wormhole</b> (round 17's Mass sizing went with the old outer layer: <i>massLengthAtZero</i> and <i>massDiameterAtZero</i> ship at 1). Your Mass (the HUD shows it: your Mass level plus <i>massPerCrystal</i> for every crystal you take this race, up to 10) sizes the <b>network</b> your next omnicrystal opens.</p>
         <div class="btns"><button class="pick" type="button" data-reset="shape">Reset</button></div></details>
-      <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>MeerkatSolitonConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>Round 24: you slide it, as you slide the roots</b> (Yash: "both are same things - one single, one a network"): you carry your speed in, cruise along it at <i>rootCruise</i>, <b>RT</b> pushes you faster up to <i>rootMaxSpeed</i>, the <b>left stick</b> moves you round it (<i>rootMove</i>), its wall bounces you, and you come out of the far mouth at <i>rideExitMultiplier</i> x your speed before the tunnel, on its last heading - or back out of the way you came in. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
+      <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>SolitonTunnel / SolitonNetwork · the slip-and-slide</small></summary><div class="rows"></div>
+        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>Round 27, the slip-and-slide</b> (the game's <code>SolitonTunnelRider</code>, Yash 2026-10-29: "a slip and slide, gravity toward the inner surface, momentum decides where you come out, like a slingshot"), the same in a wormhole and the network: you carry your speed in, and gravity pulls you <b>out onto the inner wall</b> (<i>wallGravity</i>; dead centre you fall to the floor first). A landing faster than 4 u/s <b>bounces</b> you back (<i>rootBounce</i>), so you mostly slide pressed to the wall and now and then hop; sliding costs a little (<i>wallFriction</i>). <b>RT gives a small push</b> along the tube (<i>thrust</i>, while <i>thrustOn</i>), never slower along it than <i>minSpeed</i>, never faster than <i>rootMaxSpeed</i>. <b>Nothing steers inside</b>: no left stick, your nose is your velocity and your belly faces the wall. You leave on the <b>slingshot</b>: out of the far mouth, or back out of the way in, along the velocity you carried, at <i>rideExitMultiplier</i> x its speed (never more than that x your cruise), easing back to cruise. Garrett's Time rush multiplies the push, the floor and the top speed in every soliton. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last. Round 24's left-stick slide is gone, as in the game.</p>
         <div class="btns"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole).">Watch the AI fly it</button><button class="pick" type="button" data-reset="ride">Reset</button></div></details>
       <details class="card" id="grp-reticle" open><summary>Reticle · feel &amp; look <small>MeerkatSolitonConfig · yours alone</small></summary><div class="rows"></div>
-        <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is <b>the wormhole's own wireframe</b>: the bridge's rings, spindles, ribs and thickness (Wormhole · look), in the same places, with no glass. Its colour is your domain colour toward white (<i>reticleWhite</i>); faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
+        <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is <b>a wireframe of spindles</b>: <i>bridgeRings</i> rings of <i>bridgeSpindlesPerRing</i> spindles, <i>bridgeRibs</i> ribs, <i>bridgeSpindleThickness</i> thick, a shimmer running through it (the game's <code>SolitonTunnelConfigSO</code> "Look: Aim Reticle Frame"). Its colour is your domain colour toward white (<i>reticleWhite</i>); faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
         <div class="btns"><button class="pick" type="button" data-reset="reticle">Reset</button></div></details>
-      <details class="card" id="grp-look" open><summary>Wormhole · look <small>MeerkatSolitonConfig · the bridge, everyone's</small></summary><div class="rows"></div>
-        <p class="src"><b>One geometry for the wormhole and your reticle</b>: your reticle is this frame, bare. <b>A formed wormhole is the simple tube</b> (round 26): its glass, its calm inner wall (<i>tubeInner</i>) and the bent space round it, in its maker's domain colour; the network's wormholes draw exactly the same. <i>formedLook</i> 0 adds this bridge to every tube: rings and ribs of spindles over the glass, toward white by <i>bridgeWhite</i> (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
+      <details class="card" id="grp-look" open><summary>Wormhole · look <small>SolitonTunnel / SolitonNetwork · the plain wormhole, everyone's</small></summary><div class="rows"></div>
+        <p class="src"><b>Round 27, the plain wormhole</b> (the game's look since 2026-11-01, Yash: "plain worm hole with wider mouth looking cool from outside and inside, bending and warping of space time"; <code>Docs/Shaders/WORMHOLE_SHADERS.md</code> section 16). A formed wormhole and every wormhole of the network is bent space, with no glass and no spindles: <b>its wall</b> bends what you see through it along the tube (<i>lookBend</i>, with a liquid edge, <i>lookLens</i>), breathing slowly (<i>lookWobble</i>), lit only by a faint clear rim, the sun's glint and a faint glow, in its maker's colour (<i>tintStrength</i>); <b>each live mouth</b> is a gravitational lens: the world round it curls into an <b>Einstein ring</b> round a hint of shadow (<i>lookMouthLens</i>, <i>lookMouthFlare</i>, <i>lookEinsteinRing</i>, <i>lookMouthShadow</i>; the network's mouths, only its source and openings, a little softer); <b>riding</b>, the view stretches out from where you head and streams toward the way out (<i>lookInsideStretch</i>, <i>lookInsideFlow</i>, <i>lookInsideSwirl</i>) while the middle of the screen stays still (<i>rideSteadyCentre</i>). The comfort master scales it all. As in the game, only the <b>four tubes nearest the camera</b> are drawn (a big network shows its nearest wormholes and their mouths). These numbers are the game's (<code>SolitonTunnel.asset</code>, <code>SolitonNetwork.asset</code>); <code>studio_to_unity.py</code> cannot write them (they sit in a nested struct), so they are matched by hand. What the page cannot show: a hull in front of a tube is bent with it; the bend's inner reach (<i>lookWallInside</i>); and the game's exact ray march through the shell, which the page draws as one bend per wall crossing.</p>
         <div class="btns"><button class="pick" type="button" data-reset="look">Reset</button></div></details>
       <details class="card" id="grp-tree" open><summary>Wormhole · the old outer layer (off) <small>MeerkatSolitonConfig · rounds 13-21; off since round 26</small></summary><div class="rows"></div>
         <p class="src"><b>Off since round 26</b> (Yash: a wormhole is the simple tube; <i>trunkVisibility</i> brings this back). Rounds 13-21 gave every formed wormhole an old outer layer, for everyone: a thick shell round it that <b>formed with the wormhole</b>, rippling out of its centre to both mouths, spines growing out of its top half, its cut ends ringed, in the <b>wall's own glass and bent space</b>. It grows with the wormhole (<i>throatDiameterMax</i>, <i>mouthDiameterMax</i>).</p>
         <div class="btns"><button class="pick" type="button" data-reset="tree">Reset</button></div></details>
       <details class="card" id="grp-omni" open><summary>Omnicrystal · the network <small>MeerkatSolitonConfig · rounds 16-26</small></summary><div class="rows"></div>
-        <p class="src"><b>The Meerkat's Omnicrystal ability: the network.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and a big <b>network of wormholes opens at once</b> from where you took it, spreading <b>every way</b> in 3D (<i>labyrinthSpread</i>), and you fly straight into it (<i>omniAtOnce</i>; 0: it arms your next RT instead). <b>Round 26 (Yash, 2026-10-28: "it will always be large, despite the last wormhole's length ... if it has full mass, then it will be the largest, covering the entire cell, and we can transport through those network of wormholes from one place to other"):</b> <b>your Mass sizes it</b>, never the last wormhole. Its reach is <i>networkReachAtZero</i> × the cell's radius at Mass 0 (half the cell) up to <i>networkReachAtFull</i> × at Mass 10 (the whole cell, its openings on the race shell), and never under <i>labyrinthRadiusMin</i>; it is centred that share of the way from you to the cell's centre, so it always lies inside the cell. Its forks and openings grow with its reach (<i>labyrinthBranchPointsMin</i> / <i>labyrinthOpeningsMin</i> at <i>labyrinthRadiusMin</i> to the <i>...Max</i> numbers at <i>labyrinthRadiusMax</i>): 30-40 wormholes at Mass 0, 78 at Mass 10. Its forks are laid for <b>transport</b>, after Garrett's Omnicrystal Network Lab: each fork lies on the straight line toward the openings it leads to, so the way to an opening runs close to the straight line (median 1.13-1.22 × it). <b>Every wormhole looks exactly like a wormhole</b>: its glass, its calm inner wall (<i>tubeInner</i>), the bent space round it. They taper to <i>rootTip</i> at the openings and wander (<i>rootGnarl</i>). <b>Inside, you fly yourself on the left stick</b> (rounds 20-21): you <b>cruise along the tube</b> on your own (<i>rootCruise</i>), your nose following it; the <b>left stick</b> moves you round the tube, left and right, up and down, the way it would turn your nose (<i>rootMove</i>, calmed by <i>rootDrag</i>); <b>RT</b> pushes you faster (<i>rootThrust</i>, up to <i>rootMaxSpeed</i>). <b>The walls bounce you off</b> (<i>rootBounce</i>). <b>Steer into a wormhole at a fork to go down it</b> (the one on your side is lit, <i>forkHintSeconds</i> before); fly back past a fork and you are in the one before it. Out of an opening you fly on along it. The old outer skin (<i>rootBarkVisibility</i>), the old inner wall (<i>rootOpacity</i>) and the old ground are off; their sliders stay.</p>
+        <p class="src"><b>The Meerkat's Omnicrystal ability: the network.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and a big <b>network of wormholes opens at once</b> from where you took it, spreading <b>every way</b> in 3D (<i>labyrinthSpread</i>), and you fly straight into it (<i>omniAtOnce</i>; 0: it arms your next RT instead). <b>Round 26 (Yash, 2026-10-28: "it will always be large, despite the last wormhole's length ... if it has full mass, then it will be the largest, covering the entire cell, and we can transport through those network of wormholes from one place to other"):</b> <b>your Mass sizes it</b>, never the last wormhole. Its reach is <i>networkReachAtZero</i> × the cell's radius at Mass 0 (half the cell) up to <i>networkReachAtFull</i> × at Mass 10 (the whole cell, its openings on the race shell), and never under <i>labyrinthRadiusMin</i>; it is centred that share of the way from you to the cell's centre, so it always lies inside the cell. Its forks and openings grow with its reach (<i>labyrinthBranchPointsMin</i> / <i>labyrinthOpeningsMin</i> at <i>labyrinthRadiusMin</i> to the <i>...Max</i> numbers at <i>labyrinthRadiusMax</i>). Its forks are laid for <b>transport</b>, after Garrett's Omnicrystal Network Lab: each fork lies on the straight line toward the openings it leads to, so the way to an opening runs close to the straight line (median 1.13-1.22 × it). <b>Every wormhole looks exactly like a wormhole</b>: the plain wormhole (Wormhole · look). They taper to <i>rootTip</i> at the openings and wander (<i>rootGnarl</i>). <b>Inside, you slip and slide</b> (round 27, the game's ride, Wormhole · ride): pressed to the wall, a small push on RT, no stick. <b>At a fork you go down the wormhole you slide into</b>, the one on your side of the tube (it is lit, <i>forkHintSeconds</i> before); slide back past a fork and you are in the one before it. Out of an opening you leave on the slingshot. <b>Round 27, Yash's Unity numbers</b>: 6-12 forks and 16-50 openings over a 100-531 u reach, spread over 273 deg, each wormhole 10.5 u wide with 18 u mouths. The old outer skin (<i>rootBarkVisibility</i>), the old inner wall (<i>rootOpacity</i>) and the old ground are off; their sliders stay.</p>
         <div class="btns"><button class="pick" type="button" id="omniGive" title="Open the network now, as if you had flown through an omnicrystal">Give me an omnicrystal</button><button class="pick" type="button" data-reset="omni">Reset</button></div></details>
       <details class="card" id="grp-soil" open><summary>Network · the old ground (off) <small>MeerkatSolitonConfig · rounds 16-21; off since round 26</small></summary><div class="rows"></div>
         <p class="src"><b>Off since round 26</b> (the network is wormhole tubes; <i>soilVisibility</i> brings this back). Rounds 16-21 laid the network in old ground: a <b>wall of layered earth</b> round every wormhole (<i>soilWall</i> × its radius), see-through face-on and bright where it turns away, in strata (<i>soilStrata</i>, <i>soilStrataThickness</i>) with grain and grit (<i>soilGrain</i>), <b>stones</b> round the walls (<i>soilPebbles</i>) and strands hanging onto the wormholes (<i>soilRoots</i>), opening and falling in with the network.</p>
         <div class="btns"><button class="pick" type="button" data-reset="soil">Reset</button></div></details>
-      <details class="card" id="grp-space" open><summary>Space · look <small>MeerkatSolitonConfig · the bent space, everyone's</small></summary><div class="rows"></div>
-        <p class="src"><b>Off by default</b> (round 4: all lensing off; the bridge is the tunnel's look). Raised, <b>everyone sees</b> a tunnel bend space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is.</p>
+      <details class="card" id="grp-space"><summary>The old look (off) <small>rounds 2-26 · the bridge, its glass, the calm wall, the old warp</small></summary><div class="rows"></div>
+        <p class="src"><b>Off since round 27</b> (the game draws only the plain wormhole: Wormhole · look). Kept, so any of it can come back in the studio: the old bridge over a formed tube (<i>bridgeVisibility</i>, its glass <i>bridgeGlass</i>, <i>formedLook</i> 0 for its spindles too, toward white by <i>bridgeWhite</i>), every tube's calm inner wall (<i>tubeInner</i>), and the old bent space (round 4 turned it off): the space round a tube bent out of its line (<i>warpStrength</i>), each mouth a dent (<i>dentStrength</i>), and the collapse's ripple at the screen's edges (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>).</p>
         <div class="btns"><button class="pick" type="button" data-reset="space">Reset</button></div></details>
       <details class="card" id="grp-flight"><summary>Flight & course</summary>
         <div class="intensity" role="group" aria-label="Course intensity" id="intensitySeg">
@@ -485,13 +486,13 @@
         <p class="src"><b>Y</b> toggles Sentinel mode. On, each tunnel you make leaves a <b>sentinel</b> at its way in: an afterimage of the Meerkat standing up on watch. Its soliton stands as long as it does. With the pool used up the oldest retires, and its soliton with it. In its <b>guard</b> (<i>guardShare</i> x the opening radius) it <b>zaps</b> rival vessels, knocking out <i>zapPetalsL0</i> to <i>zapPetalsL10</i> of a petal a zap by Charge (sub-petal ticks: whole petals leave as ejected crystals, and the hit silences its victim for what it is worth), and zaps your own domain's plain prisms <b>shielded</b>. An empty sentinel's AI zaps <i>aiZapRate</i> a second; in Garrett's kit you can sit in one and tap.</p>
         <div class="btns"><button class="pick" type="button" data-reset="kSentinel">Reset</button></div></details>
       <details class="card" id="grp-kSoliton" open><summary>Kit · Space · the soliton <small>RT · surface area, swallow and fire · lab</small></summary><div class="rows"></div>
-        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). <b>Round 23:</b> it <b>pulls</b> every prism and crystal within <i>suckRadius</i> of its way in (at <i>suckSpeed</i>, faster as they near), <b>swallows</b> them within <i>swallowShare</i> x the opening radius (shielded too, never super-shielded), carries them at the slide's top speed (<i>rootMaxSpeed</i>; round 25: the same speed as a rider, and never past one ahead of them), <b>stretched</b> along the tube (up to 1 + <i>carryStretch</i> at its middle, squeezed across, twisted <i>carryTwist</i> turns), and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>. Mass no longer sizes the tunnel here: only the surface area does (Garrett).</p>
+        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). <b>Round 23:</b> it <b>pulls</b> every prism and crystal within <i>suckRadius</i> of its way in (at <i>suckSpeed</i>, faster as they near), <b>swallows</b> them within <i>swallowShare</i> x the opening radius (shielded too, never super-shielded), carries them at the slide's top speed (<i>rootMaxSpeed</i>, Wormhole · ride; round 25: the same speed as a rider, and never past one ahead of them), <b>stretched</b> along the tube (up to 1 + <i>carryStretch</i> at its middle, squeezed across, twisted <i>carryTwist</i> turns), and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>. Mass no longer sizes the tunnel here: only the surface area does (Garrett).</p>
         <div class="btns"><button class="pick" type="button" data-reset="kSoliton">Reset</button></div></details>
       <details class="card" id="grp-kPortal" open><summary>Kit · Mass · exit portal <small>passive · lab</small></summary><div class="rows"></div>
         <p class="src">Once per soliton, as it forms: six small prisms of its maker's domain on a regular hexagon square to the way out, <i>portalShare</i> x the exit radius out, each laid along its edge. Mass sets their size; at Mass L5 they are <b>danger prisms</b> (a rival touching one loses <i>dangerPetals</i>). Mass is conserved, so the count is kept small.</p>
         <div class="btns"><button class="pick" type="button" data-reset="kPortal">Reset</button></div></details>
       <details class="card" id="grp-kTime" open><summary>Kit · Time · the rush <small>passive · lab</small></summary><div class="rows"></div>
-        <p class="src">Every Meerkat slides <b>every</b> soliton faster, its own or anyone's: the slide's cruise and top speed x <i>rushL0</i> to <i>rushL10</i> by Time (round 24). <b>Garrett's L5, Boost out</b>: out of every soliton at <i>boostOut</i> x the exit multiplier, easing back to cruise. (The Mix's Time L5 is Chain Dig instead.)</p>
+        <p class="src">Every Meerkat slides <b>every</b> soliton faster, its own or anyone's: the slide's push, floor and top speed x <i>rushL0</i> to <i>rushL10</i> by Time (round 24; round 27, the game's slip-and-slide). <b>Garrett's L5, Boost out</b>: out of every soliton at <i>boostOut</i> x the exit multiplier, easing back to cruise. (The Mix's Time L5 is Chain Dig instead.)</p>
         <div class="btns"><button class="pick" type="button" data-reset="kTime">Reset</button></div></details>
       <details class="card" id="grp-kMix" open><summary>Kit · the Mix's own <small>floor and ceiling, Chain Dig, Cave-in, alarm · lab</small></summary><div class="rows"></div>
         <p class="src">Only the Mix reads these. The throat is held between <i>throatFloorDiameter</i> and <i>throatCeilingDiameter</i>. <b>Time L5, Chain Dig</b> (round 8): RT from <i>mixChainShare</i> of a ride digs the next tunnel from the far mouth, at throat speed. <b>Space L5, Cave-in</b> on B (round 8): your nearest soliton fires out everything it holds at once and collapses; a rival riding it takes a scored hit (<i>mixBurialPetals</i>, never pushed). <b>The alarm</b> (round 8 Lookout's job): a rival entering any of your sentinels' guards is marked for you for <i>mixAlarmSeconds</i>.</p>
@@ -558,10 +559,13 @@
     massPerCrystal: 0.5, massLengthAtZero: 1, massDiameterAtZero: 1,
     // round 26: Yash's Unity tuning, 2026-10-28 (ce548fc092, MeerkatSolitonConfig in the Editor): bendRadius 10 (was 60),
     // throatDiameter 20 (was 8), mouthDiameter 40 (was 26), trunkVisibility 0. His Unity values win, so they ship here
-    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 10, bendMaxDegrees: 150, ovalShortest: 0.2, ovalLongest: 1.1, ovalMaxSharpness: 8, throatDiameter: 20, mouthDiameter: 40, keyRampSeconds: 0.5,
+    // round 27: Yash's Unity tuning, 2026-10-29 to 11-01 (SolitonTunnel.asset, read 2026-11-03): throatDiameter 7.1 (was 20),
+    // mouthDiameter 44 (was 40; the plain wormhole's wider mouths). In Garrett's kit the surface area sizes the throat and
+    // keeps the mouth at mouth / throat = 6.2 x it (kitThroat; the game's SolitonTunnelShapeMath.SurfaceAreaThroat)
+    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 10, bendMaxDegrees: 150, ovalShortest: 0.2, ovalLongest: 1.1, ovalMaxSharpness: 8, throatDiameter: 7.1, mouthDiameter: 44, keyRampSeconds: 0.5,
     // round 12: the size at the LONGEST tunnel (the two above are the shortest's); lengths between grow in between
     throatDiameterMax: 18, mouthDiameterMax: 56,
-    // ride and life: you slide the tunnel as you slide the roots (round 24; rootCruise, rootThrust, rootMaxSpeed) and come out
+    // ride and life: you slide the tunnel as you slide the roots (round 24; round 27: the game's slip-and-slide, below) and come out
     // at rideExitMultiplier x your speed before the tunnel (round 6: "exit at little bit boosted"; round 24 retired its
     // rideEntryMultiplier and rideMidMultiplier with the automatic ride); the reticle comes back reticleDelaySeconds
     // after you are out and ripples into shape over reticleGrowSeconds; a tunnel forms over formSeconds, stays staySeconds
@@ -586,13 +590,36 @@
     // spindles condense out of the tunnel's centre as it forms, evaporate back as it collapses, and a shimmer runs through
     // them from the way in to the way out. bridgeVisibility 0 hides it all (only the bent space is left).
     // round 9: this geometry is the reticle's too; the spindles are the maker's domain colour toward white by bridgeWhite
-    bridgeVisibility: 0.163, bridgeGlass: 0.15, bridgeRings: 36, bridgeSpindlesPerRing: 21, bridgeRibs: 5, bridgeSpindleThickness: 0.25, bridgeShimmer: 0.5,
+    // round 27 (the game, 2026-11-01: "Formed tubes draw no spindle bridge any more"): the bridge's glass ships off
+    // (bridgeGlass 0) and formedLook stays 1, so a formed tube draws none of the bridge; the frame numbers (bridgeRings to
+    // bridgeShimmer) are the reticle's, as in the game (SolitonTunnelConfigSO "Look: Aim Reticle Frame")
+    bridgeVisibility: 0.163, bridgeGlass: 0, bridgeRings: 36, bridgeSpindlesPerRing: 21, bridgeRibs: 5, bridgeSpindleThickness: 0.25, bridgeShimmer: 0.5,
     bridgeWhite: 0.45,
     // round 26: what a FORMED tube draws (the game's formedLook, its Inspector's YASH'S LOOK / GARRETT'S LOOK): 1 the water
     // pipe (the game ships it: no spindles, only bent space; this page, which has no contour field, draws the bridge's
     // glass and the calm inner wall in its place), 0 the bridge (its spindle frame over the glass). The reticle is the
     // spindle frame either way. Every tube takes it, a tunnel's and each channel of the network's
     formedLook: 1,
+    // round 27 (Yash, 2026-11-01, in the game: "plain worm hole with wider mouth looking cool from outside and inside, bending
+    // and warping of space time"; Docs/Shaders/WORMHOLE_SHADERS.md section 16): THE PLAIN WORMHOLE, read from the game's
+    // SolitonTunnel.asset (look / ride / comfort / tintStrength) and SolitonNetwork.asset (its softer mouths, network*):
+    //   the WALL bends space along the tube (lookBend, deg per wall crossing) with a little lens at its surface (lookLens),
+    //   reaching lookWallInside / lookWallOutside x the radius in and out of the wall, breathing slowly (lookWobble,
+    //   lookWobbleWaves swells along it, lookWobbleSpeed a second), a faint clear edge light (lookRim, lookRimTightness), the
+    //   sun's glint (lookGlint) and a faint glow (lookGlow), washed by its maker's domain colour (tintStrength);
+    //   each live MOUTH is a gravitational lens (lookMouthLens) out to lookMouthFlare x its radius: an Einstein ring
+    //   (lookEinsteinRing) and a hint of shadow in the throat (lookMouthShadow);
+    //   INSIDE, riding, the view stretches out from where you head (lookInsideStretch), streaming to the way out
+    //   (lookInsideFlow) with a twist (lookInsideSwirl); the wall bends rideInsideBend and breathes rideInsideWobble as much
+    //   and the middle rideSteadyCentre of the screen stays still; the comfort master scales it all
+    //   (comfortDistortionIntensity) and caps the speeds (comfortMaxWobbleSpeed, comfortMaxFlowSpeed)
+    lookBend: 3, lookLens: 0.139, lookWallInside: 0.1, lookWallOutside: 0.2, lookWobble: 0.15, lookWobbleWaves: 1.5, lookWobbleSpeed: 0.12,
+    lookRim: 0.04, lookRimTightness: 4, lookGlint: 0.2, lookGlow: 0.01, tintStrength: 0.35,
+    lookMouthLens: 0.6, lookMouthFlare: 2, lookEinsteinRing: 0.25, lookMouthShadow: 0.35,
+    lookInsideStretch: 0.12, lookInsideFlow: 0.6, lookInsideSwirl: 0.08,
+    rideInsideBend: 0.5, rideInsideWobble: 0.5, rideSteadyCentre: 0.2,
+    comfortDistortionIntensity: 1, comfortMaxWobbleSpeed: 0.25, comfortMaxFlowSpeed: 1,
+    networkMouthLens: 0.45, networkMouthFlare: 1.8, networkEinsteinRing: 0.2, networkMouthShadow: 0.3, networkInsideStretch: 0.1, networkInsideSwirl: 0.06,
     // rounds 13-14, the tree (the tunnel's outer layer, everyone's): a dead tree's trunk round the tunnel, trunkTop x the mouth
     // at the way in (its top cut) to trunkBase x at the way out (its bottom cut), ridged and gnarled, trunkRings tree rings
     // on the cut faces; branchCount bare branches out of its top branchZone, in pairs (branchSymmetry), forking branchForks
@@ -634,8 +661,11 @@
     // openings on the cell's race shell. It reaches at least labyrinthRadiusMin; its forks and openings grow with its reach,
     // from labyrinthBranchPointsMin / labyrinthOpeningsMin at labyrinthRadiusMin to the ...Max numbers at labyrinthRadiusMax
     networkReachAtZero: 0.5, networkReachAtFull: 1,
-    omniOn: 1, omniAtOnce: 1, omniCount: 3, labyrinthBranchPointsMin: 6, labyrinthBranchPointsMax: 22, labyrinthOpeningsMin: 12, labyrinthOpeningsMax: 56,
-    labyrinthRadiusMin: 240, labyrinthRadiusMax: 1080, labyrinthSpread: 360, labyrinthRandomness: 0.45,
+    // round 27: Yash's Unity tuning of the network (SolitonNetwork.asset, read 2026-11-03): forks 6-12 (were 6-22), openings
+    // 16-50 (12-56), its reach 100-531 u (240-1,080), its openings spread over 273 deg (360), each wormhole 10.5 u wide with
+    // 18 u mouths (40 / 46), tapering to 0.309 at the tips (0.6) and wandering 0.779 (0.3), below
+    omniOn: 1, omniAtOnce: 1, omniCount: 3, labyrinthBranchPointsMin: 6, labyrinthBranchPointsMax: 12, labyrinthOpeningsMin: 16, labyrinthOpeningsMax: 50,
+    labyrinthRadiusMin: 100, labyrinthRadiusMax: 531, labyrinthSpread: 273, labyrinthRandomness: 0.45,
     // round 20: inside the roots you fly free (labTransit): RT and the sticks push you, the walls bounce you off; from inside
     // the roots are a soft inner tube (rootOpacity, rootLamp, rootFog; never black, Yash 2026-10-28)
     // round 26 (Yash, 2026-10-28: "We can't make it a root, we need to make it smoother, like our tube, same visuals ... the
@@ -644,10 +674,16 @@
     // wall, tubeInner, replaces it) and soilVisibility 0 (the soil, its stones and its hanging roots). Their code and
     // sliders stay, so the look can come back
     rootBarkVisibility: 0,
-    rootCruise: 45, rootThrust: 90, rootMove: 55, rootDrag: 0.45, rootMaxSpeed: 90, rootBounce: 0.45, rootGravity: 0,
-    rootOpacity: 0, rootLamp: 1, rootFog: 240, tubeInner: 0.1,
-    rootTip: 0.6, rootGnarl: 0.3, rootGlass: 0.015, rootRim: 0.35, rootGrain: 0.35,
-    labyrinthDiameter: 40, labyrinthMouthDiameter: 46, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
+    // round 27 (Yash, 2026-10-29, in the game: SolitonTunnelRider): every tube, a wormhole or the network, is a SLIP AND
+    // SLIDE. Gravity pulls you out onto the inner wall (wallGravity), the wall bounces you a little (rootBounce, only off a real
+    // landing) and costs a little to slide on (wallFriction); RT pushes you along it (thrust, when thrustOn), never slower
+    // along it than minSpeed and never faster than rootMaxSpeed (119 in the game, both SolitonTunnel and SolitonNetwork);
+    // nothing steers inside. Round 24's rootCruise, rootThrust, rootMove, rootDrag and rootGravity are gone with the left stick
+    wallGravity: 60, rootBounce: 0.45, wallFriction: 0.05, thrustOn: 1, thrust: 25, minSpeed: 30, rootMaxSpeed: 119,
+    // round 27: tubeInner (the calm inner wall) ships off - the game draws no wall of its own, only bent space (the look below)
+    rootOpacity: 0, rootLamp: 1, rootFog: 240, tubeInner: 0,
+    rootTip: 0.309, rootGnarl: 0.779, rootGlass: 0.015, rootRim: 0.35, rootGrain: 0.35,
+    labyrinthDiameter: 10.5, labyrinthMouthDiameter: 18, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
     labyrinthRingSpacing: 12, labyrinthRingSides: 10, labyrinthRibs: 4, forkHintSeconds: 0.9,
     soilVisibility: 0, soilWall: 1.5, soilGlass: 0.025, soilRim: 0.45, soilFresnel: 2.2, soilStrata: 0.85, soilStrataThickness: 7,
     soilGrain: 0.55, soilPebbles: 700, soilPebbleSize: 1.3, soilRoots: 30,
@@ -703,7 +739,8 @@
     // suckRadius of a standing soliton's way in are PULLED to it, at suckSpeed at the edge of that reach, faster as they near
     // (up to the slide's top speed), swirling round its axis; inside the tube each is stretched along it up to 1 + carryStretch at the
     // middle (squeezed across to keep its volume) and turned carryTwist turns, and held to the wall's narrowing
-    suckRadius: 90, suckSpeed: 30, carryStretch: 2, carryTwist: 0.5,
+    // round 27: suckRadius 40 (was 90), Yash's Unity value (MeerkatSolitonConfig.asset, read 2026-11-03)
+    suckRadius: 40, suckSpeed: 30, carryStretch: 2, carryTwist: 0.5,
     // Mass, the exit portal: six prisms on a hexagon portalShare x the exit radius out, sized portalSizeL0 -> portalSizeL10;
     // at Mass L5 they are danger prisms (a rival touching one takes dangerPetals)
     portalShare: 1.5, portalSizeL0: 0.4, portalSizeL10: 0.9, dangerPetals: 0.5,
@@ -731,12 +768,19 @@
     ['shape', 'ovalShortest', 'The bend round the middle: how oval at the shortest tunnel (0 = a circle, 1 = a parabola)', 0, 1.5, 0.01],
     ['shape', 'ovalLongest', '...at the longest (over 1 = a hyperbola: straighter arms)', 0, 1.5, 0.01],
     ['shape', 'ovalMaxSharpness', '...but its middle turns at most this many times as sharply as its ends', 1, 40, 0.5],
-    ['shape', 'throatDiameter', 'Throat diameter, shortest tunnel (u)', 2, 60, 1],
+    ['shape', 'throatDiameter', 'Throat diameter, shortest tunnel (u)', 2, 60, 0.1],
     ['shape', 'mouthDiameter', 'Entry and exit diameter, shortest tunnel (u)', 4, 120, 1],
     ['shape', 'throatDiameterMax', 'Throat diameter, longest tunnel (u)', 2, 120, 1],
     ['shape', 'mouthDiameterMax', 'Entry and exit diameter, longest tunnel (u)', 4, 200, 1],
     ['shape', 'keyRampSeconds', 'LT on a key or touch: full after (s)', 0.05, 3, 0.05],
-    ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
+    ['ride', 'wallGravity', 'The slide: gravity out to the inner wall (u/s²)', 0, 400, 1],
+    ['ride', 'rootBounce', '...a landing bounces you back with (× your speed into the wall)', 0, 1, 0.05],
+    ['ride', 'wallFriction', '...sliding on the wall costs (per s; small = slippery)', 0, 2, 0.01],
+    ['ride', 'thrustOn', 'RT gives a small push along the tube', 0, 1, 1, 'toggle'],
+    ['ride', 'thrust', '...by (u/s² at full RT)', 0, 200, 1],
+    ['ride', 'minSpeed', 'Never slower along the tube than (u/s)', 0, 200, 1],
+    ['ride', 'rootMaxSpeed', 'Top speed inside (u/s; carried prisms move at it too)', 5, 400, 1],
+    ['ride', 'rideExitMultiplier', 'Out: × the speed you carry, the way you were going (the slingshot)', 0.5, 3, 0.05],
     ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
@@ -752,15 +796,46 @@
     ['reticle', 'reticleIdleAlpha', 'Your reticle, right stick centred (brightness)', 0, 1, 0.05],
     ['reticle', 'reticleWhite', 'Your reticle\'s colour: your domain colour toward white', 0, 1, 0.05],
     ['reticle', 'reticleNearLight', '...its brightness at the way in, against its far end (1 = even)', 0, 1, 0.05],
-    ['look', 'bridgeVisibility', 'The formed tunnel\'s bridge, for everyone (0 = hidden)', 0, 1, 0.05],
-    ['look', 'bridgeGlass', '...its glass surface (brightness)', 0, 2, 0.05],
-    ['look', 'formedLook', 'A formed tube: 1 the water pipe (no spindles, the game\'s GARRETT\'S LOOK), 0 the bridge\'s spindles too (YASH\'S LOOK)', 0, 1, 1],
-    ['look', 'bridgeRings', '...rings of spindles along it', 2, 40, 1],
-    ['look', 'bridgeSpindlesPerRing', '...spindles round each ring', 3, 32, 1],
-    ['look', 'bridgeRibs', '...ribs of spindles along it (0 = none)', 0, 16, 1],
-    ['look', 'bridgeSpindleThickness', '...spindle thickness (u)', 0.1, 6, 0.05],
-    ['look', 'bridgeShimmer', '...a shimmer running way in to way out', 0, 1, 0.05],
-    ['look', 'bridgeWhite', '...its spindles\' colour: the domain colour toward white', 0, 1, 0.05],
+    ['reticle', 'bridgeRings', 'Its frame: rings of spindles along it', 2, 40, 1],
+    ['reticle', 'bridgeSpindlesPerRing', '...spindles round each ring', 3, 32, 1],
+    ['reticle', 'bridgeRibs', '...ribs of spindles along it (0 = none)', 0, 16, 1],
+    ['reticle', 'bridgeSpindleThickness', '...spindle thickness (u)', 0.1, 6, 0.05],
+    ['reticle', 'bridgeShimmer', '...a shimmer running way in to way out', 0, 1, 0.05],
+    ['look', 'lookBend', 'The wall bends space along the tube (° per wall crossing)', 0, 12, 0.1],
+    ['look', 'lookLens', '...and lenses at its surface (the liquid edge)', 0, 1, 0.001],
+    ['look', 'lookWallInside', '...reaching into the hollow (× the radius)', 0.02, 0.5, 0.01],
+    ['look', 'lookWallOutside', '...and out round the tube (× the radius)', 0.02, 0.6, 0.01],
+    ['look', 'lookWobble', 'It breathes: how much the bend swells along it', 0, 1, 0.01],
+    ['look', 'lookWobbleWaves', '...swells along its length', 0.5, 6, 0.1],
+    ['look', 'lookWobbleSpeed', '...breaths a second', 0, 1, 0.01],
+    ['look', 'lookRim', 'A faint clear edge light where you graze the wall', 0, 0.5, 0.01],
+    ['look', 'lookRimTightness', '...how tight to the silhouette', 1, 8, 0.1],
+    ['look', 'lookGlint', 'The sun\'s glint off the wall', 0, 1, 0.01],
+    ['look', 'lookGlow', 'The wall\'s own faint glow', 0, 0.2, 0.005],
+    ['look', 'tintStrength', 'Its maker\'s domain colour through the wall and on its rings (0 = clear)', 0, 1, 0.01],
+    ['look', 'lookMouthLens', 'Each mouth bends the world round it like a gravitational lens', 0, 1, 0.01],
+    ['look', 'lookMouthFlare', '...out to (× the mouth\'s radius: its visible size)', 1, 4, 0.05],
+    ['look', 'lookEinsteinRing', '...a thin bright Einstein ring at its edge', 0, 1, 0.01],
+    ['look', 'lookMouthShadow', '...a hint of shadow in the throat (it reads as a hole)', 0, 1, 0.01],
+    ['look', 'networkMouthLens', 'The network\'s mouths: their lens', 0, 1, 0.01],
+    ['look', 'networkMouthFlare', '...out to (× the mouth\'s radius)', 1, 4, 0.05],
+    ['look', 'networkEinsteinRing', '...their Einstein ring', 0, 1, 0.01],
+    ['look', 'networkMouthShadow', '...their throat shadow', 0, 1, 0.01],
+    ['look', 'lookInsideStretch', 'Riding: the view stretches out from where you head', 0, 0.5, 0.01],
+    ['look', 'lookInsideFlow', '...streaming to the way out (a second)', 0, 2, 0.05],
+    ['look', 'lookInsideSwirl', '...and twisting round the throat', 0, 0.5, 0.01],
+    ['look', 'networkInsideStretch', 'Riding the network: its stretch', 0, 0.5, 0.01],
+    ['look', 'networkInsideSwirl', '...its twist', 0, 0.5, 0.01],
+    ['look', 'rideInsideBend', 'Inside: the wall\'s bend and lens × (calmer)', 0, 1, 0.01],
+    ['look', 'rideInsideWobble', 'Inside: its breathing ×', 0, 1, 0.01],
+    ['look', 'rideSteadyCentre', 'Inside: the middle of the screen stays still out to (× the screen\'s height)', 0, 0.5, 0.01],
+    ['look', 'comfortDistortionIntensity', 'Comfort: every bend, lens, breath and stretch × (0 = clear)', 0, 1, 0.01],
+    ['look', 'comfortMaxWobbleSpeed', 'Comfort: no tube breathes faster than (a second)', 0, 0.5, 0.01],
+    ['look', 'comfortMaxFlowSpeed', 'Comfort: the throat never streams faster than (a second)', 0, 2, 0.05],
+    ['space', 'bridgeVisibility', 'The old bridge over a formed tube (rounds 2-26; off: no glass, no spindles)', 0, 1, 0.05],
+    ['space', 'bridgeGlass', '...its glass surface (brightness; 0 since round 27)', 0, 2, 0.05],
+    ['space', 'formedLook', '...1 no spindles over a formed tube (the game), 0 the bridge\'s spindles too', 0, 1, 1],
+    ['space', 'bridgeWhite', '...its spindles\' colour: the domain colour toward white', 0, 1, 0.05],
     ['tree', 'trunkVisibility', 'The old outer layer round a wormhole (rounds 13-21), for everyone (0 = hidden; off since round 26)', 0, 1, 0.05],
     ['tree', 'trunkTop', '...its size at the way in (× the mouth\'s radius)', 1, 3, 0.05],
     ['tree', 'trunkBase', '...its size at the way out (× the mouth\'s radius)', 1, 3, 0.05],
@@ -787,18 +862,18 @@
     ['omni', 'omniCount', 'Omnicrystals on the course (a new course or reset places them)', 0, 12, 1],
     ['omni', 'networkReachAtZero', 'The network\'s reach at Mass 0 (× the cell\'s radius)', 0.1, 1.5, 0.05],
     ['omni', 'networkReachAtFull', '...at Mass 10 (× the cell\'s radius; 1 = the whole cell)', 0.1, 1.5, 0.05],
-    ['omni', 'labyrinthRadiusMin', '...it reaches at least (u), however low your Mass', 20, 900, 10],
-    ['omni', 'labyrinthRadiusMax', '...a network reaching this far (u) has its most forks and openings', 40, 1500, 10],
+    ['omni', 'labyrinthRadiusMin', '...it reaches at least (u), however low your Mass', 20, 900, 1],
+    ['omni', 'labyrinthRadiusMax', '...a network reaching this far (u) has its most forks and openings', 40, 1500, 1],
     ['omni', 'labyrinthBranchPointsMin', '...forks at its smallest (the least reach above)', 1, 16, 1],
     ['omni', 'labyrinthBranchPointsMax', '...forks at its largest (the reach above)', 1, 24, 1],
     ['omni', 'labyrinthOpeningsMin', '...openings at its smallest', 2, 48, 1],
     ['omni', 'labyrinthOpeningsMax', '...openings at its largest', 2, 72, 1],
-    ['omni', 'labyrinthSpread', '...its openings spread round it over (°, 360 = all round)', 20, 360, 5],
+    ['omni', 'labyrinthSpread', '...its openings spread round it over (°, 360 = all round)', 20, 360, 1],
     ['omni', 'labyrinthRandomness', '...randomness', 0, 1, 0.05],
-    ['omni', 'labyrinthDiameter', '...each wormhole\'s diameter (u)', 2, 60, 1],
+    ['omni', 'labyrinthDiameter', '...each wormhole\'s diameter (u)', 2, 60, 0.5],
     ['omni', 'labyrinthMouthDiameter', '...source and opening diameter (u)', 4, 120, 1],
-    ['omni', 'rootTip', 'The network\'s wormholes taper to (× the one at its source)', 0.1, 1, 0.05],
-    ['omni', 'rootGnarl', '...how much each wormhole wanders', 0, 1, 0.05],
+    ['omni', 'rootTip', 'The network\'s wormholes taper to (× the one at its source)', 0.05, 1, 0.001],
+    ['omni', 'rootGnarl', '...how much each wormhole wanders', 0, 1, 0.001],
     ['omni', 'rootBarkVisibility', 'The network\'s old outer skin, for everyone (0 = hidden: every tube is a wormhole; off since round 26)', 0, 1, 0.05],
     ['omni', 'rootGlass', '...that skin face-on', 0, 0.3, 0.005],
     ['omni', 'rootRim', '...that skin at the silhouette (Fresnel)', 0, 2, 0.05],
@@ -808,15 +883,8 @@
     ['omni', 'labyrinthRingSpacing', '...its wireframe: a ring every (u)', 3, 60, 1],
     ['omni', 'labyrinthRingSides', '...spindles round each ring', 3, 32, 1],
     ['omni', 'labyrinthRibs', '...ribs along each channel (0 = none)', 0, 16, 1],
-    ['omni', 'rootCruise', 'In a wormhole or the network: you cruise along it at (u/s)', 0, 200, 1],
-    ['omni', 'rootThrust', '...RT pushes you faster by (u/s²)', 0, 300, 1],
-    ['omni', 'rootMove', '...the left stick moves you round it by (u/s²)', 0, 200, 1],
-    ['omni', 'rootDrag', '...across it, your drift dies away at (per s)', 0, 3, 0.05],
-    ['omni', 'rootMaxSpeed', '...never faster than (u/s)', 10, 300, 1],
-    ['omni', 'rootBounce', '...a wall bounces you off with (× your speed into it)', 0, 1, 0.05],
-    ['omni', 'rootGravity', '...drawn to the tube\'s floor by (u/s², 0 = you float)', 0, 120, 1],
     ['omni', 'rootOpacity', 'From inside: the network\'s old inner wall (0 = off, the tube\'s calm wall instead; off since round 26)', 0, 1, 0.01],
-    ['omni', 'tubeInner', 'Every tube\'s calm inner wall (a wormhole\'s and each of the network\'s): a smooth sheen', 0, 0.6, 0.01],
+    ['space', 'tubeInner', 'The old calm inner wall of every tube (rounds 21-26; 0 since round 27)', 0, 0.6, 0.01],
     ['omni', 'rootLamp', '...your lamp on the walls round you', 0, 3, 0.05],
     ['omni', 'rootFog', '...far walls fade to clear this far off (u)', 20, 600, 5],
     ['omni', 'forkHintSeconds', '...the fork is called out this long before (s)', 0, 3, 0.05],
@@ -930,7 +998,7 @@
   // Time L5 is Boost out (out of every soliton at boostOut x the exit multiplier). The Mix keeps the rush; its Time L5 is
   // round 8's Chain Dig instead.
   function kitOverrides(o) {
-    const k = Math.round(o.kit || 0); if (k !== 1 && k !== 2) return o;
+    const k = Math.round(o.kit || 0); if (k !== 1 && k !== 2) { o.slideRush = 1; return o; }   // round 27: Off and Round 8 fly no rush (a stale one was kept)
     o.slideRush = Math.max(0.05, lerpLv(o.rushL0, o.rushL10, o.kTimeLevel));
     if (k === 1 && o.kTimeLevel >= 5) o.rideExitMultiplier = o.rideExitMultiplier * Math.max(1, o.boostOut);
     return o;
@@ -958,6 +1026,9 @@
   // round 26: a browser that saved its settings before Yash turned the tree, the roots' look and the soil off takes the
   // new shipped values for those keys once (save version 7); everything else it saved is kept
   if (!(saved.v >= 7) && saved.P) for (const k of ['trunkVisibility', 'soilVisibility', 'rootOpacity', 'massLengthAtZero', 'massDiameterAtZero', 'labyrinthBranchPointsMin', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax', 'bendRadius', 'throatDiameter', 'mouthDiameter']) delete saved.P[k];
+  // round 27: the game's numbers (Yash's Unity tuning), the slide's and the old look's switched off reach a browser that
+  // saved before them once (save version 8)
+  if (!(saved.v >= 8) && saved.P) for (const k of ['throatDiameter', 'mouthDiameter', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax', 'labyrinthSpread', 'labyrinthDiameter', 'labyrinthMouthDiameter', 'rootTip', 'rootGnarl', 'rootMaxSpeed', 'suckRadius', 'rootBounce', 'rideExitMultiplier', 'bridgeGlass', 'tubeInner', 'formedLook']) delete saved.P[k];
   const BP = Object.assign({}, SHIPPED); for (const k in (saved.P || {})) if (k in SHIPPED && Number.isFinite(saved.P[k])) BP[k] = saved.P[k];
   const P = Object.assign({}, BP);
   recomputeP();
@@ -967,7 +1038,7 @@
   let idleTakeover = saved.idleTakeover !== false;   // D31: on unless switched off
   let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.v >= 6 && COURSE_KINDS.includes(saved.courseKind) ? saved.courseKind : 'warpline';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { v: 7, P: BP, invertY, idleTakeover, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
+  function persist() { lsSet(LS_KEY, { v: 8, P: BP, invertY, idleTakeover, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
     rivals: typeof seatLv !== 'undefined' ? { v: 2, lv: seatLv, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel }); }
 
   // ================= renderer =================
@@ -1471,8 +1542,7 @@
     else { XSum = inp.kYaw; YSum = -inp.kPitch; TX = inp.kTx || 0; TY = inp.kTy || 0; }
     if (invertY) YSum = -YSum;
     ftLive.leanX = XSum;   // the left stick's lean (the fork sound's pan)
-    // round 21: in the roots the LEFT stick moves you round the root, the way it would turn your nose (Invert Y included)
-    ftLive.rootSide = XSum; ftLive.rootRise = -YSum;
+    // round 27 (the game's slip-and-slide): inside a tube the left stick does nothing (round 21's steering inside is gone)
     YDiff -= Math.max(0, P.bankShare) * XSum;   // the bank into the turn (the one-thumb hulls' RollScaler)
     const rad = Math.PI / 180;
     gateHold(dt);
@@ -1758,21 +1828,22 @@
   // Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather
   // than making it an automated special move ... once we create the tube, main tube, we can also slide through it using our
   // left thumbstick, just like how we do that in the root ... Both are same things. One single, one a network"): every
-  // tunnel is flown as the roots are (labTransit): you cruise along it at rootCruise, RT pushes you faster up to
-  // rootMaxSpeed, the left stick moves you round it, its wall bounces you, and you leave out of its far mouth (or back out
+  // tunnel is flown as the roots are (labTransit; round 27: the game's slip-and-slide - pressed to the wall, a small RT
+  // push, no stick), and you leave out of its far mouth (or back out
   // of its way in). The main tunnel is a network of one: its centreline the conic arc (round 22), its wall the hyperboloid.
   function gateTransit(dt) { labTransit(dt); }
-  // Out of the far mouth on the tunnel's last heading, at rideExitMultiplier x your speed before the tunnel (round 6: a little
-  // boost, which eases back to cruise as you fly on); the tunnel stays staySeconds, then goes back to its centre.
-  function gateOut(g) {
+  // Out of the far mouth (or back out of the way in) on the slingshot (round 27: the velocity you carried x
+  // rideExitMultiplier, capped at that x your cruise; slingshotOut), easing back to cruise as you fly on; the tunnel stays
+  // staySeconds, then goes back to its centre.
+  function gateOut(g, out) {
     const wh = g.pair.wh;
     g.state = 'done'; g.used = true;
     if (!g.kitRide) { wh.out = true; if (wh.phase === 'open') wh.phase = 'stay'; }   // round 18: a rider leaves a standing soliton as it was
     else kitRideOut(g);
-    speed = g.vIn * Math.max(0.05, P.rideExitMultiplier);
+    speed = out != null ? out : slingshotOut(g);
     if (isG() && kitLv('time') >= 5) kitSnd('boostOut', hull.position);   // round 18: Garrett's Time L5
     if (raceStats && race === 'running') raceStats.catches++;
-    lastGate = { len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI) }; slingFlash = 1.6;
+    lastGate = { len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI), out: Math.round(speed) }; slingFlash = 1.6;
   }
   let lastGate = null;
   let ftLive = newFtLive();   // per pilot
@@ -1987,7 +2058,8 @@
     if (!g.kitRide) { w1.out = true; if (w1.phase !== 'cavein' && !w1.held) { w1.phase = 'collapse'; w1.grow = 1; } }   // one tunnel at a time: the one behind you goes (round 18: not one a sentinel holds, nor one you only rode)
     else kitRideOut(g);
     basis(); whQ.setFromUnitVectors(fwd, wh.t0);
-    ftLive.gate = { pair: pr, state: 'tube', s: Math.max(0, g.s - w1.L), sIn: 0, oN: 0, oB: 0, vIn: g.vIn, startHigh: true, rIn: Math.max(1e-3, wh.M), q0: whQ.clone().multiply(hull.quaternion) };
+    // round 27: the next tube takes you in at the speed you carry (the slide's own entry), its up the one you had
+    ftLive.gate = { pair: pr, state: 'tube', s: Math.max(0, g.s - w1.L), sIn: 0, oN: 0, oB: 0, vIn: g.vel ? Math.max(1, g.vel.length()) : g.vIn, startHigh: true, rIn: Math.max(1e-3, wh.M), q0: whQ.clone().multiply(hull.quaternion), up0: g.up0 ? g.up0.clone() : null };
     if (raceStats && race === 'running') raceStats.catches++;
   }
   // ---- Charge: Lookout's pulse, drawn as a sphere opening out to its reach ----
@@ -2489,7 +2561,7 @@
     if (KIT.zaps.length) KIT.zaps = KIT.zaps.filter((z) => simT - z.t < 0.15);
   }
   // ---- anyone rides any soliton (Garrett): fly into a standing soliton's way in, along it, and it carries you, at the
-  // speed you went in with and the rush of your Time level, out on its last heading. The soliton is untouched by riders. ----
+  // speed you went in with and the rush of your Time level, out on the slingshot (round 27). The soliton is untouched by riders. ----
   const krA = new V3();
   function kitTryRide() {
     const g = ftLive.gate; if (g && g.state === 'tube') return;
@@ -3602,6 +3674,9 @@
     for (const pr of net.pairs) for (const k of pr.kids) k.parent = pr;   // round 20: you can fly back up a root
     seedNet(net);
     ftLive.lastNet = net; ftLive.ab.omni = false;
+    // round 27: in the network your reticle is gone (the game's StepReticle: no reticle while riding), so the RT the slide
+    // holds never forms a tunnel from a reticle shaped before the omnicrystal (it used to: the AI left the network at once)
+    ftLive.ret = null; ftLive.retAge = 0; ai.gShaping = false;
     myPair = net.pairs[built.entry];
     if (!r.noGhost) ftLive.retGhost = { view: r, a: 1, formT: T };
     const wh = myPair.wh;
@@ -3613,6 +3688,7 @@
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
+  // (History, rounds 20-24: the left-stick flight below was replaced in round 27 by the game's slip-and-slide, labTransit.)
   // Round 20 (Yash, 2026-10-28: "for the roots, we won't be traveling forward randomly. Rather, we will also control going
   // forward using our trigger inside the root. So once we are inside the root, then we can use the left thumbstick to go
   // forward, backward, left, right, and on hitting the surfaces, we will bounce off a little bit and move like that. Inside
@@ -3667,49 +3743,70 @@
     rnY.copy(u); rnZ.copy(h).negate(); rnX.crossVectors(rnY, rnZ).normalize(); rnY.crossVectors(rnZ, rnX).normalize();
     rnM.makeBasis(rnX, rnY, rnZ); hull.quaternion.setFromRotationMatrix(rnM);
   }
+  // Round 27 (the game's SolitonTunnelRider, Yash 2026-10-29): out on the SLINGSHOT - the velocity you carried, x the exit
+  // multiplier, the way you were going (SolitonTunnelMath.ExitVelocity), never more than the exit multiplier x your cruise
+  // (MeerkatVesselTransformer.TrackedExitSpeed: a ride never compounds). Your nose turns to that heading; up stays your
+  // belly-to-the-wall up. Round 24 left at your speed before the tunnel on the tube's last heading.
+  function slingshotOut(g) {
+    const exit = Math.max(0, P.rideExitMultiplier), v = g.vel ? g.vel.length() : g.vIn;
+    const cap = Math.max(0, P.cruise) * Math.max(1, exit);
+    return Math.max(0, Math.min(v * exit, cap));
+  }
   function rootLeave(g, nose) {
-    rnG.copy(g.upv).addScaledVector(nose, -g.upv.dot(nose)); if (rnG.lengthSq() < 1e-6) rnG.set(0, 1, 0).addScaledVector(nose, -nose.y); rootPose(nose, rnG.normalize());
-    if (!g.net) { velNow.copy(nose).multiplyScalar(g.vIn * Math.max(0.05, P.rideExitMultiplier)); gateOut(g); return; }   // round 24: out of the main tunnel
+    rnG.copy(g.upv || Y).addScaledVector(nose, -(g.upv || Y).dot(nose)); if (rnG.lengthSq() < 1e-6) rnG.set(0, 1, 0).addScaledVector(nose, -nose.y); rootPose(nose, rnG.normalize());
+    const out = slingshotOut(g);
+    if (!g.net) { velNow.copy(nose).multiplyScalar(out); gateOut(g, out); return; }   // round 24: out of the main tunnel
     g.state = 'done'; g.used = true;
     for (const pr of g.net.pairs) { pr.wh.out = true; if (pr.wh.phase === 'open') pr.wh.phase = 'stay'; }
-    speed = g.vIn * Math.max(0.05, P.rideExitMultiplier); velNow.copy(nose).multiplyScalar(speed);
+    speed = out; velNow.copy(nose).multiplyScalar(speed);
     if (raceStats && race === 'running') raceStats.catches++;
-    lastGate = { lab: true, len: Math.round(g.dist), forks: g.forks }; slingFlash = 1.6;
+    lastGate = { lab: true, len: Math.round(g.dist), forks: g.forks, out: Math.round(speed) }; slingFlash = 1.6;
   }
+  // Round 27 (Yash, 2026-10-29, in the game: "a slip and slide, gravity toward the inner surface, momentum decides where you
+  // come out, like a slingshot"): SolitonTunnelMath.Step, line for line, for a wormhole and the network alike (a wormhole is
+  // a network of one). A ball in a tube: gravity pulls you OUT from the axis onto the inner wall (wallGravity), the wall
+  // bounces you back a little (rootBounce, only off a real landing faster than 4 u/s) so you mostly slide pressed to it
+  // and now and then hop, and sliding on it costs a little (wallFriction). RT gives a small push along the tube the way you
+  // are going (thrust, if thrustOn), never slower along it than minSpeed, never faster than rootMaxSpeed (Garrett's Time rush
+  // scales all three, in every soliton). NOTHING steers: there is no left stick inside, your nose is your velocity, and your
+  // up turns toward the axis (your belly on the wall). Past a fork you are in whichever channel you slid into; back past a
+  // channel's start you are in its parent. Out of a tip, or back out of the source, you leave on the slingshot (rootLeave).
+  // Round 24's left-stick slide (rootCruise, rootThrust, rootMove, rootDrag, rootGravity) is gone, as in the game.
+  const slOff = new V3(), slEr = new V3(), slAlong = new V3(), slAcc = new V3(), slN = new V3(), slSlide = new V3(), slUp = new V3();
   function labTransit(dt) {
     const g = ftLive.gate; let wh = g.pair.wh;
-    if (!g.net && !g.up0) g.up0 = new V3(0, 1, 0).applyQuaternion(hull.quaternion);   // round 24: the main tunnel's up is the hull's as it went in
+    if (!g.net && !g.up0) g.up0 = new V3(0, 1, 0).applyQuaternion(hull.quaternion);   // a wormhole's up is the hull's as it went in (SolitonTunnelRider.Enter)
     const netUp = g.net ? g.net.up : g.up0;
-    const rush = g.net ? 1 : (P.slideRush || 1), vMax = Math.max(5, P.rootMaxSpeed) * rush;   // round 24: Garrett's Time rush, every soliton
-    if (!g.free && g.s < 0) {   // the dive to the source's mouth (roots dug by a reticle lie ahead of you)
+    const rush = P.slideRush || 1;   // SolitonTunnelConfigSO.Flight(rush): the rush scales the push, the floor and the cap, in a wormhole or the network
+    const vMax = Math.max(5, Math.max(5, P.rootMaxSpeed) * rush), vMin = Math.max(0, Math.min(Math.max(0, P.minSpeed) * rush, vMax));
+    const thrust = P.thrustOn > 0.5 ? Math.max(0, P.thrust) * rush : 0;
+    if (!g.free && g.s < 0) {   // the dive to the source's mouth (a tube formed ahead of you)
       g.s += g.vIn * dt; g.dist += g.vIn * dt;
       hull.position.copy(wh.A).addScaledVector(wh.t0, Math.min(0, g.s)); velNow.copy(wh.t0).multiplyScalar(g.vIn);
       if (g.s < 0) { rootPose(wh.t0, netUp); return; }
     }
-    if (!g.free) {   // in: you carry your speed in (up to rootMaxSpeed), along the root
+    if (!g.free) {   // in: you carry your speed in (between the floor and the cap), along the tube
       g.s = Math.max(0, slNear(wh, hull.position)); slAt(wh, Math.min(g.s, wh.L), rnC, rnT);
-      Object.assign(g, { free: true, h: rnT.clone(), vel: rnT.clone().multiplyScalar(Math.min(g.vIn, vMax)), upv: netUp.clone(), side: new V3(), dr: new V3(), er: null, bumps: 0, dist: g.dist || 0 });
+      Object.assign(g, { free: true, h: rnT.clone(), vel: rnT.clone().multiplyScalar(Math.max(vMin, Math.min(g.vIn, vMax))), upv: netUp.clone(), side: new V3(), dr: new V3(), er: null, onWall: false, bumps: 0, dist: g.dist || 0 });
     }
-    const th = holds.R.on ? holds.R.live : 0, mv = Math.max(0, P.rootMove);
+    const th = holds.R.on ? holds.R.live : 0;   // RT, analog on a pad (MeerkatSolitonExecutor.RtLive); the AI holds it
     const sc0 = Math.max(0, Math.min(wh.L, g.s)), r0 = slR(wh, sc0); slAt(wh, sc0, rnC, rnT);
-    // the nose follows the root, the way you face along it; up is the network's up, square to the nose
-    rnD.copy(rnT).multiplyScalar(g.h.dot(rnT) < 0 ? -1 : 1); g.h.lerp(rnD, 1 - Math.exp(-6 * dt)).normalize();
-    rnG.copy(netUp).addScaledVector(g.h, -netUp.dot(g.h));
-    if (rnG.lengthSq() > 0.06) g.upv.lerp(rnG.normalize(), 1 - Math.exp(-3 * dt));
-    g.upv.addScaledVector(g.h, -g.upv.dot(g.h)); if (g.upv.lengthSq() < 1e-6) g.upv.crossVectors(g.h, rnB.set(Math.abs(g.h.x) < 0.9 ? 1 : 0, Math.abs(g.h.x) < 0.9 ? 0 : 1, 0)); g.upv.normalize();
-    g.side.crossVectors(g.h, g.upv).normalize();
-    // along the root you cruise at rootCruise (easing to it), RT pushes you faster up to rootMaxSpeed; across it the left
-    // stick pushes you (rootMove), gravity (square to the root) draws you to its floor, and rootDrag calms you
-    let vf = g.vel.dot(g.h); rnB.copy(g.vel).addScaledVector(g.h, -vf);
-    if (th > 0.02) vf = Math.min(vMax, vf + Math.max(0, P.rootThrust) * th * dt);
-    else vf += (Math.min(vMax, Math.max(0, P.rootCruise) * rush) - vf) * (1 - Math.exp(-1.5 * dt));
-    rnA.copy(g.side).multiplyScalar(mv * (ftLive.rootSide || 0)).addScaledVector(g.upv, mv * (ftLive.rootRise || 0));
-    rnG.copy(netUp).addScaledVector(rnT, -netUp.dot(rnT)); rnA.addScaledVector(rnG, -Math.max(0, P.rootGravity));
-    rnB.addScaledVector(rnA, dt).multiplyScalar(Math.exp(-Math.max(0, P.rootDrag) * dt));
-    g.vel.copy(g.h).multiplyScalar(vf).add(rnB);
+    // out from the axis: your side of the tube; dead centre, the floor (you fall to the bottom first)
+    slOff.subVectors(hull.position, rnC); slOff.addScaledVector(rnT, -slOff.dot(rnT));
+    if (slOff.lengthSq() > 1e-6) slEr.copy(slOff).normalize();
+    else {
+      slEr.copy(netUp).addScaledVector(rnT, -netUp.dot(rnT)).negate();
+      if (slEr.lengthSq() > 1e-6) slEr.normalize(); else slEr.crossVectors(rnT, Y).normalize();
+    }
+    // which way along the tube you are going (RT pushes that way; the floor holds it)
+    slAlong.copy(rnT); if (g.vel.dot(rnT) < 0) slAlong.negate();
+    slAcc.copy(slEr).multiplyScalar(Math.max(0, P.wallGravity));
+    if (th > 0.02 && thrust > 0) slAcc.addScaledVector(slAlong, thrust * Math.min(1, th));
+    g.vel.addScaledVector(slAcc, dt);
+    const vAlong = g.vel.dot(slAlong); if (vAlong < vMin) g.vel.addScaledVector(slAlong, vMin - vAlong);
     const sp0 = g.vel.length(); if (sp0 > vMax) g.vel.multiplyScalar(vMax / sp0);
     hull.position.addScaledVector(g.vel, dt);
-    // which root you are in now: this one; past its end, one of its kids; back past its start, its parent or a sibling
+    // which channel you are in now: this one; past its end, one of its kids; back past its start, its parent or a sibling
     let best = rootScore(g.pair, hull.position);
     const cand = [];
     if (g.s > wh.L - 2.5 * r0) cand.push(...(g.pair.kids || []));
@@ -3718,23 +3815,44 @@
     if (best.pr !== g.pair) {
       const old = g.pair;
       if ((old.kids || []).includes(best.pr) && old.kids.length > 1) { g.forks++; if (!curPilot) forkFlash = 0.9; }
-      g.prev = old; g.pair = best.pr; wh = best.pr.wh; g.aiPick = null;
+      g.prev = old; g.pair = best.pr; wh = best.pr.wh;
     }
     g.s = best.s;
-    const sp = g.vel.length(); g.dist += sp * dt;
+    let sp = g.vel.length(); g.dist += sp * dt;
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, sp); raceStats.dist += sp * dt; }
-    if (g.s >= wh.L && !(g.pair.kids || []).length) { if (g.next) { chainOn(g); return; } slAt(wh, wh.L, rnC, rnT); rootLeave(g, rnT.clone()); return; }   // round 24: Chain Dig joins the next tunnel there   // out of a tip, on along it
-    if (g.s <= -HULL_R && !g.pair.parent) { rootLeave(g, wh.t0.clone().negate()); camTail = null; snapCam = true; return; }   // back out of the source
-    // the wall: you bounce off it
+    const heading = sp > 1e-6 ? g.vel.clone().multiplyScalar(1 / sp) : slAlong.clone();
+    if (g.s >= wh.L && !(g.pair.kids || []).length) { g.h.copy(heading); if (g.next) { chainOn(g); return; } rootLeave(g, heading); return; }   // the slingshot (round 24: Chain Dig joins the next tunnel there)
+    if (g.s <= -HULL_R && !g.pair.parent) { g.h.copy(heading); rootLeave(g, heading); camTail = null; snapCam = true; return; }   // back out of the source
+    // the wall: you land on it, bounce a little, and slide
     const sc = Math.max(0, Math.min(wh.L, g.s)); slAt(wh, sc, rnC, rnT);
     rnD.subVectors(hull.position, rnC); rnD.addScaledVector(rnT, -rnD.dot(rnT));
     const rIn = Math.max(1, slR(wh, sc) - HULL_R), off = rnD.length();
-    if (off > rIn) {
-      rnD.multiplyScalar(1 / off); hull.position.addScaledVector(rnD, rIn - off);
-      const vn = g.vel.dot(rnD); if (vn > 0) { g.vel.addScaledVector(rnD, -(1 + clamp01(P.rootBounce)) * vn); if (vn > 4) g.bumps++; }   // a bump, not a graze
-      g.dr.copy(rnD).multiplyScalar(rIn);
+    g.onWall = false;
+    if (off >= rIn - 0.05) {
+      if (off > 1e-6) slN.copy(rnD).multiplyScalar(1 / off); else slN.copy(slEr);
+      if (off > rIn) hull.position.addScaledVector(slN, rIn - off);
+      const vn = g.vel.dot(slN);
+      if (vn > 0) {   // a hop only off a real landing; a slide's own gravity just keeps it on the wall
+        const e = vn > 4 ? clamp01(P.rootBounce) : 0;
+        g.vel.addScaledVector(slN, -(1 + e) * vn);
+        if (vn > 4) g.bumps++;
+      }
+      slSlide.copy(g.vel).addScaledVector(slN, -g.vel.dot(slN));
+      g.vel.addScaledVector(slSlide, -(1 - Math.exp(-Math.max(0, P.wallFriction) * dt)));
+      g.onWall = true;
+      g.dr.copy(slN).multiplyScalar(Math.min(off, rIn));
     } else g.dr.copy(rnD);
-    g.er = off > 0.2 * rIn ? (g.er || new V3()).copy(g.dr).normalize() : null;   // your side of the root (forkPick: the root you would take)
+    g.er = off > 0.2 * rIn ? (g.er || new V3()).copy(g.dr).normalize() : null;   // your side of the tube (forkPick: the channel you would slide into)
+    // the pose: heading = your velocity; up = toward the axis (your belly on the wall), eased so a hop does not flip it
+    sp = g.vel.length();
+    if (sp > 1e-6) g.h.copy(g.vel).multiplyScalar(1 / sp); else g.h.copy(slAlong);
+    slUp.copy(g.er ? g.er : netUp); if (g.er) slUp.negate();
+    slUp.addScaledVector(g.h, -slUp.dot(g.h));
+    if (slUp.lengthSq() > 1e-4) g.upv.lerp(slUp.normalize(), 1 - Math.exp(-8 * dt));
+    g.upv.addScaledVector(g.h, -g.upv.dot(g.h));
+    if (g.upv.lengthSq() < 1e-6) g.upv.crossVectors(g.h, rnB.set(Math.abs(g.h.x) < 0.9 ? 1 : 0, Math.abs(g.h.x) < 0.9 ? 0 : 1, 0));
+    g.upv.normalize();
+    g.side.crossVectors(g.h, g.upv).normalize();
     rootPose(g.h, g.upv);
     velNow.copy(g.vel);
   }
@@ -3974,18 +4092,40 @@
     whGeo.attributes.position.needsUpdate = true; whGeo.attributes.color.needsUpdate = true;
   }
 
-  // ================= the tube's warp: what everyone sees of a wormhole (round 23, Garrett) =================
-  // "Only the wormhole-creating player should see the gridlines; everyone should see the visual warping that corresponds
-  // to the grid lines." Each live tunnel (every pilot's) draws its tube - the reticle's own surface, ring for ring - into a
-  // half-float buffer as a screen-space offset: the wall's view normal, strongest at the silhouette (a glass tube's
-  // edges), bending IN toward the entry and OUT toward the exit (cos of the way along). The lens pass adds it to its bend
-  // (tWarp), so the world behind a tunnel is bent exactly where the grid runs. The mouths keep their own dents (wells).
+  // ================= the tube's warp: what everyone sees of a wormhole (round 23, Garrett; round 27, the game's plain wormhole) =================
+  // Round 27 (Yash, 2026-11-01, in the game: SolitonTunnel.shader's WALL BEND, Docs/Shaders/WORMHOLE_SHADERS.md section 16):
+  // as in the game, only the LOOK_TUBES tubes nearest the camera bend space (SolitonTunnelLensPass.MaxTubes, bankTubes).
+  // Each draws its wall - inflated by lookWallOutside, the shell's outer reach - into a half-float buffer as a screen-space
+  // offset, both faces additively, so every wall crossing adds its share: the ray is pulled ALONG the tube (its tangent,
+  // square to the ray) by lookBend degrees a crossing (x Unity's graze, lerp(1, across, 0.9) / across, so a grazing ray
+  // bends a little more), breathing (lookWobble, lookWobbleWaves swells running along it at lookWobbleSpeed, never faster
+  // than comfortMaxWobbleSpeed), and a ray that only clips the outer shell is drawn in toward the axis (lookLens, the liquid
+  // edge). From inside the tube you ride the bend is rideInsideBend and the breath rideInsideWobble as strong; the comfort
+  // master scales it all. The lens pass adds it to its bend (tWarp), the mouths (mC) and the throat's stretch (hole). The old
+  // warp (rounds 23-26, warpStrength: out of the tube's line, in toward the entry, out toward the exit) rides on the same
+  // meshes, off as shipped.
   const TW_MAX = 40, TW_NV = WH_RINGS * (WH_SEG + 1), twClear = new THREE.Color();
+  const LOOK_TUBES = 4, LOOK_WELLS = 8;   // SolitonTunnelLensPass.MaxTubes, MaxWells
   const twScene = new THREE.Scene(), twMeshes = [];
   const twMat = new THREE.ShaderMaterial({
-    uniforms: { k: { value: 0 } },
-    vertexShader: 'attribute float aSign; varying vec3 vN; varying vec3 vV; varying float vS; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal); vS = aSign; gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'uniform float k; varying vec3 vN; varying vec3 vV; varying float vS; void main(){ vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n; float rim = 1.0 - abs(dot(n, normalize(vV))); gl_FragColor = vec4(n.xy * sin(3.14159 * rim) * k * vS, 0.0, 1.0); }',   // zero at the centre AND the silhouette: a smooth glass tube, no seam
+    uniforms: { k: { value: 0 }, bend: { value: 0 }, lens: { value: 0 }, wob: { value: 0 }, waves: { value: 1.5 }, phase: { value: 0 }, eye: { value: 0 }, inBend: { value: 0.5 }, inWob: { value: 0.5 }, fade: { value: 1 }, edgeAcross: { value: 0.55 } },
+    vertexShader: 'attribute float aSign; attribute vec3 aT; attribute float aU; attribute float aPhi; varying vec3 vN; varying vec3 vV; varying float vS; varying vec3 vT; varying float vU; varying float vPhi; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal); vT = normalMatrix * aT; vS = aSign; vU = aU; vPhi = aPhi; gl_Position = projectionMatrix * mv; }',
+    fragmentShader: [
+      'uniform float k; uniform float bend; uniform float lens; uniform float wob; uniform float waves; uniform float phase; uniform float eye; uniform float inBend; uniform float inWob; uniform float fade; uniform float edgeAcross;',
+      'varying vec3 vN; varying vec3 vV; varying float vS; varying vec3 vT; varying float vU; varying float vPhi;',
+      'void main(){',
+      '  vec3 n = normalize(vN), v = normalize(vV); float nv = dot(n, v); vec2 d = vec2(0.0);',
+      '  if (k > 0.0) { vec3 nf = gl_FrontFacing ? n : -n; float rim = 1.0 - abs(dot(nf, v)); d += nf.xy * sin(3.14159 * rim) * k * vS; }',   // the old warp: zero at the centre AND the silhouette
+      '  if (bend > 0.0 || lens > 0.0) {',
+      '    float across = max(abs(nv), 0.12), bK = mix(1.0, inBend, eye), wK = wob * mix(1.0, inWob, eye);',
+      '    float shape = max(0.0, 1.0 + wK * sin(6.2831853 * (vU * waves - phase) + 0.6 * sin(2.0 * vPhi))) * fade;',
+      '    float part = smoothstep(0.0, edgeAcross, abs(nv));',            // 1: the ray crosses the wall; less: it only clips the outer shell
+      '    vec3 dir = -v, T = normalize(vT), F = T - dot(T, dir) * dir;',  // the field along the tube, square to the ray
+      '    d += F.xy * (bend * (0.9 + 0.1 / across) * bK * shape * part);',
+      '    d -= n.xy * (lens * bK * shape * (1.0 - part) / across);',       // the liquid edge: drawn in toward the axis
+      '  }',
+      '  gl_FragColor = vec4(d, 0.0, 1.0);',
+      '}'].join('\n'),
     side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false,
   });
   function twMesh(i) {
@@ -3994,37 +4134,190 @@
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
     g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
     g.setAttribute('aSign', new THREE.BufferAttribute(new Float32Array(TW_NV), 1));
+    g.setAttribute('aT', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
+    g.setAttribute('aU', new THREE.BufferAttribute(new Float32Array(TW_NV), 1));
+    g.setAttribute('aPhi', new THREE.BufferAttribute(new Float32Array(TW_NV), 1));
     for (let r = 0; r < WH_RINGS - 1; r++) for (let j = 0; j < WH_SEG; j++) {
       const a = r * (WH_SEG + 1) + j, b = a + WH_SEG + 1;
       idx.push(a, b, a + 1, a + 1, b, b + 1);
     }
     g.setIndex(idx);
-    const m = new THREE.Mesh(g, twMat); m.frustumCulled = false; twScene.add(m);
+    const m = new THREE.Mesh(g, twMat.clone()); m.frustumCulled = false; twScene.add(m);   // a material each: its eye and fade are its own
     return (twMeshes[i] = m);
   }
-  function updateTubeWarp() {
-    let n = 0; const inNet = youInRoots();
-    twMat.uniforms.k.value = 0.05 * Math.max(0, P.warpStrength);
-    if (mode === 'fly' && P.warpStrength > 0) for (const pr of pairs) {
-      if (!pr.wh || !pr.alive || n >= TW_MAX) continue;
-      if (pr.wh.chan && pr.net === inNet && wrapped(pr.wh)) continue;   // round 20: from inside, roots in bark are earth, not bent space (round 26: a channel without its bark is a wormhole tube, bent space inside and out)
-      const wh = pr.wh, span = wh.s1 - wh.s0; if (span < 1) continue;
-      const fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1;
-      const m = twMesh(n++), pos = m.geometry.attributes.position, nor = m.geometry.attributes.normal, sg = m.geometry.attributes.aSign;
-      for (let r = 0; r < WH_RINGS; r++) {
-        const u = r / (WH_RINGS - 1), s = wh.s0 + span * u, rad = whRadius(wh, s), sign = Math.cos(Math.PI * u) * fade;
-        whAt(wh, s, wp1, wt1); whFrame(wh, s, wn1, wb1);
-        for (let j = 0; j <= WH_SEG; j++) {
-          const phi = j / WH_SEG * Math.PI * 2, c = Math.cos(phi), sn = Math.sin(phi), v = r * (WH_SEG + 1) + j;
-          wq1.copy(wn1).multiplyScalar(c).addScaledVector(wb1, sn);   // the wall's outward normal
-          pos.setXYZ(v, wp1.x + wq1.x * rad, wp1.y + wq1.y * rad, wp1.z + wq1.z * rad);
-          nor.setXYZ(v, wq1.x, wq1.y, wq1.z); sg.setX(v, sign);
-        }
+  // One tube's wall into a mesh: ring by ring over its live window, radius x inflate; aU its way along the window, aPhi
+  // round it, aT its tangent, aSign the old warp's sign. Shared by the warp and the film (the film at inflate 1).
+  function writeTubeMesh(m, pr, inflate, oldSign) {
+    const wh = pr.wh, span = wh.s1 - wh.s0, fade = tubeFade(pr);
+    const pos = m.geometry.attributes.position, nor = m.geometry.attributes.normal, at = m.geometry.attributes.aT, au = m.geometry.attributes.aU, aph = m.geometry.attributes.aPhi, sg = m.geometry.attributes.aSign;
+    for (let r = 0; r < WH_RINGS; r++) {
+      const u = r / (WH_RINGS - 1), s = wh.s0 + span * u, rad = whRadius(wh, s) * inflate, sign = Math.cos(Math.PI * u) * fade;
+      whAt(wh, s, wp1, wt1); whFrame(wh, s, wn1, wb1);
+      for (let j = 0; j <= WH_SEG; j++) {
+        const phi = j / WH_SEG * Math.PI * 2, c = Math.cos(phi), sn = Math.sin(phi), v = r * (WH_SEG + 1) + j;
+        wq1.copy(wn1).multiplyScalar(c).addScaledVector(wb1, sn);   // the wall's outward normal
+        pos.setXYZ(v, wp1.x + wq1.x * rad, wp1.y + wq1.y * rad, wp1.z + wq1.z * rad);
+        nor.setXYZ(v, wq1.x, wq1.y, wq1.z);
+        if (at) at.setXYZ(v, wt1.x, wt1.y, wt1.z);
+        if (au) au.setX(v, u);
+        if (aph) aph.setX(v, phi);
+        if (sg) sg.setX(v, oldSign ? sign : 0);
       }
-      pos.needsUpdate = nor.needsUpdate = sg.needsUpdate = true; m.visible = true;
+    }
+    for (const a of [pos, nor, at, au, aph, sg]) if (a) a.needsUpdate = true;
+  }
+  function updateTubeWarp(cam) {
+    let n = 0;
+    const I = clamp01(P.comfortDistortionIntensity), th2 = 2 * Math.tan(cam.fov * Math.PI / 360);
+    const bend = Math.max(0, P.lookBend) * Math.PI / 180 * I / th2, lens = Math.max(0, P.lookLens) * 0.05 * I / th2;   // SolitonTunnelLensPass.LensScale 0.05
+    const old = 0.05 * Math.max(0, P.warpStrength), inflate = 1 + Math.max(0.02, P.lookWallOutside);
+    const edgeAcross = Math.sqrt(Math.max(0, 1 - 1 / (inflate * inflate)));
+    const phase = (simT * Math.min(Math.max(0, P.lookWobbleSpeed), Math.max(0, P.comfortMaxWobbleSpeed))) % 1;
+    if (mode === 'fly' && (bend > 0 || lens > 0 || old > 0)) for (const nb of lookBank.tubes) {
+      const pr = nb.pr; if (n >= TW_MAX) break;
+      if (pr.wh.chan && wrapped(pr.wh)) continue;   // a channel still in its old bark (round 20) is earth, not bent space
+      const m = twMesh(n++), U = m.material.uniforms;
+      writeTubeMesh(m, pr, inflate, true);
+      U.k.value = old; U.bend.value = bend; U.lens.value = lens; U.wob.value = Math.min(1, Math.max(0, P.lookWobble) * I); U.waves.value = Math.max(0.5, P.lookWobbleWaves);
+      U.phase.value = phase; U.eye.value = nb.inside; U.inBend.value = clamp01(P.rideInsideBend); U.inWob.value = clamp01(P.rideInsideWobble); U.fade.value = tubeFade(pr); U.edgeAcross.value = edgeAcross;
+      m.visible = true;
     }
     for (let i = n; i < twMeshes.length; i++) twMeshes[i].visible = false;
     return n > 0 || treeWarpOn;   // round 14: a tree bends space as its tunnel's wall does (drawTrunk)
+  }
+
+  // ================= round 27: the plain wormhole's bank, film, mouths and throat (SolitonTunnelLensPass) =================
+  // The bank: the LOOK_TUBES tubes nearest the camera (a wormhole by the middle of its live window, a network channel by its
+  // dug window's nearest point less its radius), and how far the camera is inside each (InsideAmount: 1 well inside,
+  // fading to 0 at the wall). The game draws nothing of a tube beyond these four but the reticle.
+  const lookBank = { tubes: [], inside: 0, insideAt: -1 };
+  const lkP = new V3(), lkV = new V3();
+  function tubeFade(pr) { return pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1; }
+  function insideAmount(d, r) { return r <= 1e-3 ? 0 : 1 - smooth(0.75 * r, r, d); }
+  function lookVisible() {
+    const I = clamp01(P.comfortDistortionIntensity);
+    return (I > 0 && (P.lookBend > 0 || P.lookLens > 0 || P.lookMouthLens > 0 || P.networkMouthLens > 0 || P.lookInsideStretch > 0 || P.networkInsideStretch > 0))
+      || P.lookRim > 0 || P.lookGlint > 0 || P.lookGlow > 0 || P.lookEinsteinRing > 0 || P.networkEinsteinRing > 0;   // SolitonTunnelLook.Visible
+  }
+  function bankTubes(eye) {
+    const near = [];
+    if (mode === 'fly' && lookVisible()) for (const pr of pairs) {
+      if (!pr.alive || !pr.wh) continue;
+      const wh = pr.wh; if (wh.s1 - wh.s0 < 1 || tubeFade(pr) <= 0.004) continue;
+      let D;
+      if (wh.chan) { const s = Math.max(wh.s0, Math.min(wh.s1, chanNearest(wh, eye))); slAt(wh, s, lkP); D = Math.max(0, lkP.distanceTo(eye) - chanRadius(wh, s)); }
+      else D = whAt(wh, 0.5 * (wh.s0 + wh.s1), lkP).distanceTo(eye);
+      near.push({ pr, D, inside: 0 });
+    }
+    near.sort((a, b) => a.D - b.D); if (near.length > LOOK_TUBES) near.length = LOOK_TUBES;
+    let inside = 0, insideAt = -1;
+    near.forEach((nb, i) => {
+      const wh = nb.pr.wh, se = slNear(wh, eye);
+      if (se >= wh.s0 && se <= wh.s1) { slAt(wh, se, lkP); nb.inside = insideAmount(lkP.distanceTo(eye), whRadius(wh, se)); }
+      if (nb.inside > inside) { inside = nb.inside; insideAt = i; }
+    });
+    lookBank.tubes = near; lookBank.inside = inside; lookBank.insideAt = insideAt;
+    return near;
+  }
+  // The film (SolitonTunnel.shader's MWShade, per wall): the faint clear rim where your view grazes the wall (lookRim, to
+  // the lookRimTightness power), the sun's glint (lookGlint), the wall's own glow (lookGlow), and its maker's domain colour
+  // (tintStrength) washed through it - an additive pass for the light and a multiply pass for the tint, both faces, so
+  // a ray through the tube meets two walls as in the game. Only the banked tubes have one.
+  const FILM_VS = 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * mv; }';
+  const filmAddMat = new THREE.ShaderMaterial({
+    uniforms: { tint: { value: new THREE.Color() }, tintK: { value: 0 }, rim: { value: 0 }, rimT: { value: 4 }, glow: { value: 0 }, glint: { value: 0 }, light: { value: new V3(0, 1, 0) }, lightW: { value: 0.85 }, alpha: { value: 1 } },
+    vertexShader: FILM_VS,
+    fragmentShader: [
+      'uniform vec3 tint; uniform float tintK; uniform float rim; uniform float rimT; uniform float glow; uniform float glint; uniform vec3 light; uniform float lightW; uniform float alpha;',
+      'varying vec3 vN; varying vec3 vV;',
+      'void main(){',
+      '  vec3 n = normalize(vN), v = normalize(vV); float a = abs(dot(n, v)), across = max(a, 0.12), gr = 1.0 - a;',
+      '  float layer = 0.5 * (1.0 - exp(-2.0 / across)), rimL = 1.0 - exp(-pow(max(gr, 0.0), rimT) / across);',
+      '  float gl = 1.0 - exp(-pow(abs(dot(n, normalize(light + v))), 48.0) / across);',
+      '  vec3 film = mix(vec3(1.0), tint, tintK);',
+      '  vec3 col = film * (glow * layer + rim * rimL) + lightW * glint * gl * vec3(1.0, 0.98, 0.95) + tint * (0.03 * tintK * layer);',
+      '  gl_FragColor = vec4(col * alpha, 1.0);',
+      '}'].join('\n'),
+    side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const filmMulMat = new THREE.ShaderMaterial({
+    uniforms: { tint: { value: new THREE.Color() }, tintK: { value: 0 }, alpha: { value: 1 } },
+    vertexShader: FILM_VS,
+    fragmentShader: 'uniform vec3 tint; uniform float tintK; uniform float alpha; varying vec3 vN; varying vec3 vV; void main(){ float across = max(abs(dot(normalize(vN), normalize(vV))), 0.12); float kf = tintK * 0.5 * (1.0 - exp(-2.0 / across)) * alpha; vec3 m = mix(vec3(1.0), tint * 1.25, 0.6); gl_FragColor = vec4(mix(vec3(1.0), m, kf), 1.0); }',
+    side: THREE.DoubleSide, transparent: true, depthWrite: false,
+    blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.DstColorFactor, blendDst: THREE.ZeroFactor,
+  });
+  const filmMeshes = [];
+  function filmMesh(i) {
+    if (filmMeshes[i]) return filmMeshes[i];
+    const g = new THREE.BufferGeometry(), idx = [];
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
+    for (let r = 0; r < WH_RINGS - 1; r++) for (let j = 0; j < WH_SEG; j++) { const a = r * (WH_SEG + 1) + j, b = a + WH_SEG + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    g.setIndex(idx);
+    const mul = new THREE.Mesh(g, filmMulMat.clone()), add = new THREE.Mesh(g, filmAddMat.clone());
+    mul.frustumCulled = add.frustumCulled = false; mul.renderOrder = 3; add.renderOrder = 4; scene.add(mul); scene.add(add);
+    return (filmMeshes[i] = { mul, add });
+  }
+  const sunView = new V3();
+  function drawLookFilm(cam) {
+    let n = 0;
+    const tK = clamp01(P.tintStrength);
+    sunView.copy(sun.position).normalize().transformDirection(cam.matrixWorldInverse);
+    for (const nb of lookBank.tubes) {
+      const pr = nb.pr; if (pr.wh.chan && wrapped(pr.wh)) continue;
+      const f = filmMesh(n++), A = tubeFade(pr) * (pr.wh.cave != null ? clamp01(pr.wh.cave) : 1), tint = pilotColor(pr.pilot);
+      writeTubeMesh(f.add, pr, 1, false);
+      const UA = f.add.material.uniforms, UM = f.mul.material.uniforms;
+      UA.tint.value.copy(tint); UA.tintK.value = tK; UA.rim.value = Math.max(0, P.lookRim); UA.rimT.value = Math.max(1, P.lookRimTightness); UA.glow.value = Math.max(0, P.lookGlow);
+      UA.glint.value = Math.max(0, P.lookGlint); UA.light.value.copy(sunView); UA.lightW.value = Math.min(2, Math.max(0, sun.intensity)); UA.alpha.value = A;
+      UM.tint.value.copy(tint); UM.tintK.value = tK; UM.alpha.value = A;
+      f.add.visible = f.mul.visible = true;
+    }
+    for (let i = n; i < filmMeshes.length; i++) filmMeshes[i].add.visible = filmMeshes[i].mul.visible = false;
+  }
+  // The mouths (ScreenWells): each live end of a banked wormhole's window, and each true opening of a banked channel its dug
+  // window has reached, in front of the camera, is a point-mass lens - its Einstein angle the mouth's angular radius x
+  // lookMouthFlare, its strength lookMouthLens x the comfort master, fading with the tube and as the camera comes right up
+  // to the mouth, and to 0.3 for the tube you ride - with an Einstein ring (lookEinsteinRing) and a throat shadow
+  // (lookMouthShadow) in its tube's tint. The network's mouths take network*. The throat (the lens pass's hole): riding a
+  // tube, the view stretches out from where you head (lookInsideStretch / networkInsideStretch x how far inside you are),
+  // streaming to the way out (lookInsideFlow, never faster than comfortMaxFlowSpeed), twisted (lookInsideSwirl /
+  // networkInsideSwirl); the middle rideSteadyCentre of the screen stays still.
+  function setMouthUniforms(cam) {
+    const U = lensMat.uniforms, f = 0.5 / Math.tan(cam.fov * Math.PI / 360), I = clamp01(P.comfortDistortionIntensity);
+    const ang = (r, D) => f * Math.tan(Math.min(1.45, Math.asin(Math.min(0.999, r / Math.max(D, r * 1.001)))));
+    let n = 0;
+    for (const nb of lookBank.tubes) {
+      const pr = nb.pr, wh = pr.wh, net = !!wh.chan;
+      const mL = net ? P.networkMouthLens : P.lookMouthLens, mF = net ? P.networkMouthFlare : P.lookMouthFlare, mR = net ? P.networkEinsteinRing : P.lookEinsteinRing, mS = net ? P.networkMouthShadow : P.lookMouthShadow;
+      if (mL <= 0 && mR <= 0 && mS <= 0) continue;
+      const ride = 1 - 0.7 * nb.inside, tint = pilotColor(pr.pilot);
+      for (let end = 0; end < 2 && n < LOOK_WELLS; end++) {
+        if (net && (end === 0 ? !wh.mouthIn || wh.s0 > 0.5 : !wh.mouthOut || wh.s1 < wh.L - 0.5)) continue;   // only a channel's true openings
+        const s = end === 0 ? wh.s0 : wh.s1, rM = whRadius(wh, s);
+        whAt(wh, s, lkP);
+        lkV.copy(lkP).applyMatrix4(cam.matrixWorldInverse); const depth = -lkV.z;
+        if (depth <= cam.near + 1 || rM <= 1e-3) continue;
+        const D = cam.position.distanceTo(lkP), k = tubeFade(pr) * smooth(0.6 * rM, 2 * rM, D);
+        if (k <= 0.004) continue;
+        U.mC.value[n].set(f * lkV.x / depth, f * lkV.y / depth, depth, rM);
+        U.mP.value[n].set(ang(rM * Math.max(1, mF), D), clamp01(mL) * I * k * ride, clamp01(mR) * k, clamp01(mS) * k * ride);
+        U.mT.value[n].set(tint.r, tint.g, tint.b, clamp01(P.tintStrength));
+        n++;
+      }
+    }
+    for (let i = n; i < LOOK_WELLS; i++) { U.mC.value[i].set(0, 0, 0, 0); U.mP.value[i].set(0, 0, 0, 0); }
+    let stretch = 0, swirl = 0, flow = 0;
+    const ins = lookBank.insideAt >= 0 ? lookBank.tubes[lookBank.insideAt] : null;
+    if (ins && lookBank.inside > 0) {
+      const net = !!ins.pr.wh.chan;
+      stretch = Math.max(0, Math.min(0.5, net ? P.networkInsideStretch : P.lookInsideStretch)) * I * lookBank.inside;
+      swirl = Math.max(0, Math.min(0.5, net ? P.networkInsideSwirl : P.lookInsideSwirl)) * I * lookBank.inside;
+      flow = (simT * Math.min(Math.max(0, P.lookInsideFlow), Math.max(0, P.comfortMaxFlowSpeed))) % 1;
+    }
+    U.hole.value.set(stretch, flow, swirl, n);
+    U.steady.value.set(lookBank.inside, Math.max(0, P.rideSteadyCentre));
   }
 
 
@@ -4336,13 +4629,13 @@
     // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT lengthens its shaft
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
-    if (riding) {   // round 24: every tube is slid (round 20, the roots: it holds RT and steers across the root for the one that leads nearest its ring (a rookie sometimes picks wrong)
+    if (riding) {   // every tube is slid (round 27: the slip-and-slide, nothing to steer inside):
       // it holds RT. Chain Dig (the Mix's / Round 8's Time L5, an RT PRESS from chainShare of the way): a little before that
       // point it plans the next tunnel from the far mouth once; with a plan it lets go of RT and presses it again (bending the
       // right stick for it) once it is past that point; with none it keeps holding RT, so no straight chain is dug by
       // accident. Round 24: at most two chains in a row between rings.
       ai.gHold = 0; ai.gShaping = false; rt = 1;
-      const kids = gate.pair.kids || [], wh = gate.pair.wh;
+      const wh = gate.pair.wh;
       const relS = chainShareOf(P) * wh.L, relW = Math.max(2, (gate.vel ? gate.vel.length() : speed) * 0.05);
       if (!gate.net && aiChainOn() && !blind && !gate.next && !gate.aiChainTried && gate.s >= relS - relW
         && (ai.chainAt !== threaded || (ai.chainRun || 0) < 2)) {
@@ -4362,23 +4655,8 @@
           ai.chainRun++;
         }
       }
-      aiTo.set(0, 0, 0);   // where across the root it wants to be: the middle, or the fork's side
-      if (kids.length > 1 && !blind) {
-        if (!gate.aiPick || !kids.includes(gate.aiPick)) {
-          const ds = kids.map((k) => netReach(k, tgt)); let bi = ds.indexOf(Math.min(...ds));
-          if (aiRand() < 0.35 * clamp01(P.aiNoise)) bi = (bi + 1) % kids.length;
-          gate.aiPick = kids[bi];
-        }
-        whAt(wh, wh.L, fkP, fkT); forkSide(gate.aiPick, fkQ);
-        if (fkQ.lengthSq() > 1e-6) aiTo.copy(fkQ.normalize()).multiplyScalar(0.55 * slR(wh, wh.L));
-      }
-      if (gate.free) {   // a spring to it: the push across the root, into the left stick
-        const mv = Math.max(1, P.rootMove);
-        aiLoc2.copy(gate.vel).addScaledVector(gate.h, -gate.vel.dot(gate.h));
-        aiTo.sub(gate.dr).multiplyScalar(2.25).addScaledVector(aiLoc2, -2.1);
-        const sx = Math.max(-1, Math.min(1, aiTo.dot(gate.side) / mv)), sy = Math.max(-1, Math.min(1, aiTo.dot(gate.upv) / mv));
-        inp.L.x = easeInv(0.98 * sx) / 2; let pb = easeInv(0.98 * sy) / 2; if (invertY) pb = -pb; inp.L.y = pb;
-      }
+      // Round 27 (the game's slip-and-slide, MeerkatSolitonExecutor.Autopilot / RtLive): inside a wormhole or the network the
+      // AI holds RT and slides; nothing steers inside, so it touches no stick, and at a fork it goes where it slides.
     }
     else if (!blind && P.aiWormhole > 0.5 && ftLive.ab.omni && ftLive.ret && ftLive.ret.net && ftLive.ret.emerge >= 0.6 && loc.z < 0 && d > 0.5 * Math.max(40, P.labyrinthRadiusMax)) {
       rt = 1; ai.gShaping = false;   // round 16: an omnicrystal armed and the ring ahead: dig the labyrinth
@@ -4698,16 +4976,19 @@
     rtScene.depthTexture = new THREE.DepthTexture(w, h); rtScene.depthTexture.type = THREE.UnsignedIntType;
   }
   const vec4s = () => [0, 1, 2, 3].map(() => new THREE.Vector4());
+  const vec4s8 = () => [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector4());
   const DENT_NEAR = 3;   // a mouth's dent fades as the camera comes within this many mouth radii (round 24: no flipped view flying in)
   const lensMat = new THREE.ShaderMaterial({
     uniforms: { tScene: { value: null }, tDepth: { value: null }, tWarp: { value: null }, warpOn: { value: 0 }, aspect: { value: 1.6 }, camNear: { value: 0.5 }, camFar: { value: 9000 },
-      rip: { value: new THREE.Vector4() }, wC: { value: vec4s() }, wP: { value: vec4s() } },
+      rip: { value: new THREE.Vector4() }, wC: { value: vec4s() }, wP: { value: vec4s() },
+      mC: { value: vec4s8() }, mP: { value: vec4s8() }, mT: { value: vec4s8() }, hole: { value: new THREE.Vector4() }, steady: { value: new THREE.Vector2() } },   // round 27: the plain wormhole (setMouthUniforms)
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: [
       'uniform sampler2D tScene; uniform sampler2D tDepth; uniform sampler2D tWarp; uniform float warpOn;',
       'uniform float aspect; uniform float camNear; uniform float camFar;',
       'uniform vec4 rip;',                                                // the edge ripple: x strength, y its front (share of the half diagonal), z where it starts, w unused
       'uniform vec4 wC[4]; uniform vec4 wP[4];',
+      'uniform vec4 mC[8]; uniform vec4 mP[8]; uniform vec4 mT[8]; uniform vec4 hole; uniform vec2 steady;',   // round 27: the mouths (x y screen, depth, radius; thE, lens, ring, shadow; tint), the throat (stretch, flow, swirl, mouths), the steady centre (inside, radius)
       'varying vec2 vUv;',
       'float linDepth(float d){ float z = d * 2.0 - 1.0; return (2.0 * camNear * camFar) / (camFar + camNear - z * (camFar - camNear)); }',
       'void main(){',
@@ -4721,7 +5002,24 @@
       '    float rc = max(wP[i].y, 1e-6), u = th / rc, a = wP[i].z * rc * u * exp(-0.5 * u * u);',
       '    disp += (wP[i].x < 3.5 ? -1.0 : 1.0) * dir * a;',
       '  }',
-      '  if (warpOn > 0.5) disp += texture2D(tWarp, vUv).xy;',          // the tubes (updateTubeWarp): bent where the reticle ran
+      '  if (warpOn > 0.5) disp += texture2D(tWarp, vUv).xy;',          // the tubes (updateTubeWarp): the wall bend, along each banked tube
+      '  vec3 ring = vec3(0.0); float shadow = 0.0;',
+      '  for (int i = 0; i < 8; i++) {',                                // round 27: each mouth a point-mass lens (SolitonTunnel.shader MWWells)
+      '    if (float(i) >= hole.w) break;',
+      '    if (sceneZ < mC[i].z - mC[i].w) continue;',                    // something in front of the mouth is not bent
+      '    vec2 d = p - mC[i].xy; float r = length(d), te = max(mP[i].x, 1e-5), x = r / (3.0 * te);',
+      '    if (x >= 1.0) continue;',
+      '    float m = 1.0 - x * x; m *= m; vec2 dir = d / max(r, 1e-6); float soft = 0.15 * te;',
+      '    disp -= dir * (mP[i].y * te * te * r / (r * r + soft * soft)) * m;',
+      '    vec3 tc = mix(vec3(1.0), mT[i].rgb, clamp(mT[i].a, 0.0, 1.0)); float kk = (r - te) / (0.06 * te);',
+      '    ring += tc * (mP[i].z * exp(-kk * kk) * m);',
+      '    shadow = max(shadow, mP[i].w * (1.0 - smoothstep(0.15 * te, 0.6 * te, r)));',
+      '  }',
+      '  if (hole.x > 0.0 || hole.z > 0.0) {',                          // riding: the throat stretches out from where you head (MWStretch)
+      '    float r = length(p), wave = 0.6 + 0.4 * sin(6.2831853 * (log(max(r, 1e-3)) * 1.6 - hole.y));',
+      '    disp += (-p * hole.x + vec2(-p.y, p.x) * hole.z) * (smoothstep(0.05, 0.6, r) * wave);',
+      '  }',
+      '  if (steady.x > 0.0 && steady.y > 0.0) disp *= mix(1.0, smoothstep(0.4 * steady.y, steady.y, length(p)), steady.x);',   // the middle stays still
       '  if (rip.x > 0.0) {',                                           // the collapse's ripple: a ring running out past the corners, the centre never moved
       '    float hd = 0.5 * length(vec2(aspect, 1.0)), r = length(p) / hd;',
       '    float mask = smoothstep(rip.z, min(1.0, rip.z + 0.25), r), x = (r - rip.y) / 0.07;',
@@ -4730,7 +5028,7 @@
       '  vec2 s = p + disp;',
       '  vec2 suv = s / vec2(aspect, 1.0) + 0.5;',
       '  suv = 1.0 - abs(1.0 - abs(suv));',
-      '  gl_FragColor = vec4(texture2D(tScene, suv).rgb, 1.0);',
+      '  gl_FragColor = vec4(texture2D(tScene, suv).rgb * (1.0 - shadow) + ring, 1.0);',
       '}'].join('\n'),
     depthTest: false, depthWrite: false,
   });
@@ -4770,9 +5068,11 @@
     U.aspect.value = cam.aspect; U.camNear.value = cam.near; U.camFar.value = cam.far;
   }
   function renderView(cam, wells, vx, vw, vh) {
+    cam.updateMatrixWorld();
+    bankTubes(cam.position); drawLookFilm(cam); setMouthUniforms(cam);   // round 27: the plain wormhole, the four nearest tubes
     setLensUniforms(cam, wells);
     renderer.setRenderTarget(rtScene); renderer.render(scene, cam);
-    const tubes = updateTubeWarp();
+    const tubes = updateTubeWarp(cam);
     if (tubes) {
       renderer.getClearColor(twClear); const ca = renderer.getClearAlpha();
       renderer.setRenderTarget(rtWarp); renderer.setClearColor(0x000000, 0); renderer.render(twScene, cam); renderer.setClearColor(twClear, ca);
@@ -4840,12 +5140,12 @@
     if (race === 'running' && !stopped && !(isGM() && KIT.seat)) {   // round 18: in a sentinel seat the seat's lines replace the flyer's
       const g = ftLive.gate, ret = ftLive.ret;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE NETWORK · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u flown' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE NETWORK · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u flown' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · slingshot ' + (lastGate.out || 0) + ' u/s', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
       if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText(ftLive.gate && ftLive.gate.net && ftLive.gate.state === 'tube' ? 'OMNICRYSTAL! · the NETWORK opens from here' : 'OMNICRYSTAL! · your next RT opens the NETWORK', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
       if (ret && ret.net && ret.lay) {   // round 16: armed, the reticle is the labyrinth
         c.fillStyle = gold;
         c.fillText('NETWORK  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' openings  ·  ' + Math.round(2 * ret.lay.Rad) + ' u across  ·  MASS ' + (ret.lay.mass != null ? ret.lay.mass.toFixed(1) : '-'), cw / 2, tY + pad + 14 * sc);
-        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT opens it and you fly in  ·  inside you cruise on: the left stick moves you round the tube, RT goes faster  ·  the walls bounce you', cw / 2, tY + pad + 30 * sc);
+        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT opens it and you slide in  ·  pressed to the wall, no stick, RT a small push  ·  out on the slingshot', cw / 2, tY + pad + 30 * sc);
       } else if (g && g.net && g.pair.alive && g.state === 'tube') {
         const kids = g.pair.kids || [], left = Math.max(0, g.pair.wh.L - g.s) / Math.max(1, velNow.length());
         c.fillStyle = gold; c.fillText('IN THE NETWORK  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' wormholes ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
@@ -5061,7 +5361,7 @@
     if (race === 'ready') {
       box.innerHTML = '<h2>The wormhole · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the ' + NG + ' rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, and you can log it.</p>' +
-        '<p><b>One thumb flies</b>: the <b>left stick</b> (<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>). The grid on your nose is the tunnel <kbd>RT</kbd> would form: the <b>right stick</b> bends it (the arrows) - which way and how far, up to ' + P.bendMaxDegrees + '&deg;, at the end of a straight shaft <kbd>LT</kbd> lengthens (' + P.shaftMin + ' to ' + P.shaftMax + ' u). Pull <kbd>RT</kbd> (<kbd>L</kbd>) and ride it, out with the speed you went in with.</p>' +
+        '<p><b>One thumb flies</b>: the <b>left stick</b> (<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>). The grid on your nose is the tunnel <kbd>RT</kbd> would form: the <b>right stick</b> bends it (the arrows) - which way and how far, up to ' + P.bendMaxDegrees + '&deg;, at the end of a straight shaft <kbd>LT</kbd> lengthens (' + P.shaftMin + ' to ' + P.shaftMax + ' u). Pull <kbd>RT</kbd> (<kbd>L</kbd>) and slip and slide through it: pressed to the wall, a small push while you hold RT, no stick, out on the slingshot.</p>' +
         (layout === 'phone'
           ? ''
           : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
@@ -5512,15 +5812,15 @@
         foot(danger ? 'Mass L5: danger prisms, a rival touching one loses ' + Pv.dangerPetals + ' petal' : 'danger prisms at Mass L5');
         return;
       }
-      if (k === 'rush') {   // round 24: the slide's cruise and top speed, with the rush (and Garrett's Boost out)
+      if (k === 'rush') {   // round 27: the slide's floor and top speed, with the rush (and Garrett's Boost out)
         const x0 = 20, x1 = W - 20, y0 = H - 26, top = 22, rush = lerpLv(Pv.rushL0, Pv.rushL10, lv('time'));
-        const cr = Math.max(0, Pv.rootCruise) * rush, mx = Math.max(5, Pv.rootMaxSpeed) * rush, ex = Pv.cruise * Pv.rideExitMultiplier * (kitN === 1 && lv('time') >= 5 ? Math.max(1, Pv.boostOut) : 1), vmax = Math.max(cr, mx, ex, Pv.cruise) * 1.1;
+        const cr = Math.max(0, Pv.minSpeed) * rush, mx = Math.max(5, Pv.rootMaxSpeed) * rush, ex = Pv.cruise * Pv.rideExitMultiplier * (kitN === 1 && lv('time') >= 5 ? Math.max(1, Pv.boostOut) : 1), vmax = Math.max(cr, mx, ex, Pv.cruise) * 1.1;   // ex: the slingshot's cap
         const Yv = (v) => y0 - (y0 - top) * v / vmax;
         c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, Yv(Pv.cruise)); c.lineTo(x1, Yv(Pv.cruise)); c.stroke();
         c.strokeStyle = cyn; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, Yv(cr)); c.lineTo(x1, Yv(cr)); c.stroke();
         c.strokeStyle = '#9dff2e'; c.beginPath(); c.moveTo(x0, Yv(mx)); c.lineTo(x1, Yv(mx)); c.stroke(); c.lineWidth = 1;
         const u = (tt / 4.5) % 1; ship(c, x0 + (x1 - x0) * u, Yv(mx), 1, 0, '#9dff2e', 5);
-        txt(c, 'slide: cruise ' + Math.round(cr) + ' u/s, RT up to ' + Math.round(mx) + ' u/s (rush ' + rush.toFixed(2) + ' at Time L' + lv('time') + '), out at ' + Math.round(ex) + ' u/s from cruise', 6, 13, ink, 10);
+        txt(c, 'slide: never under ' + Math.round(cr) + ' u/s, up to ' + Math.round(mx) + ' u/s (rush ' + rush.toFixed(2) + ' at Time L' + lv('time') + '), out at most ' + Math.round(ex) + ' u/s', 6, 13, ink, 10);
         foot(kitN === 2 ? 'the Mix: Time L5 is Chain Dig, not Boost out' : lv('time') >= 5 ? "Garrett's L5 Boost out: out at " + Pv.boostOut + ' x the exit' : 'Boost out at Time L5');
         return;
       }
@@ -5570,6 +5870,127 @@
       ['Y once the race runs: Sentinel mode on', 'flies into a standing soliton that saves time', "Garrett's kit: hops when that saves " + Pv.aiHopGain + ' s', 'the Mix: B when a rival rides its soliton or it holds prisms'].forEach((s, i) => txt(c, s, 12, 38 + i * 18, dim, 10));
     },
   };
+  // ---------- round 27: the slip-and-slide, from the side: SolitonTunnelMath.Step on a straight 24 u tube, RT held ----------
+  SCENES.slide = {
+    make(Pv, cfg) {
+      const R = 12, rIn = Math.max(1, R - 2.5), L = 360, dt = 1 / 60, vIn = Math.max(1, Pv.cruise), rt = cfg.rt != null ? cfg.rt : 1;
+      const vMax = Math.max(5, Math.max(5, Pv.rootMaxSpeed)), vMin = Math.max(0, Math.min(Math.max(0, Pv.minSpeed), vMax));
+      const thrust = Pv.thrustOn > 0.5 ? Math.max(0, Pv.thrust) : 0;
+      let x = 0, y = 0, vx = Math.max(vMin, Math.min(vIn, vMax)), vy = 0, t = 0, hops = 0, top = vx;
+      const pts = [[0, 0, vx, 0]];
+      while (x < L && t < 30) {
+        const er = y > 1e-3 ? 1 : -1;   // out from the axis; dead centre: the floor
+        vy += er * Math.max(0, Pv.wallGravity) * dt;
+        if (rt > 0.02 && thrust > 0) vx += thrust * Math.min(1, rt) * dt;
+        if (vx < vMin) vx = vMin;
+        const sp = Math.hypot(vx, vy); if (sp > vMax) { vx *= vMax / sp; vy *= vMax / sp; }
+        x += vx * dt; y += vy * dt; t += dt;
+        if (Math.abs(y) >= rIn - 0.05) {
+          const n = y > 0 ? 1 : -1; if (Math.abs(y) > rIn) y = n * rIn;
+          const vn = vy * n;
+          if (vn > 0) { const e = vn > 4 ? clamp01(Pv.rootBounce) : 0; vy -= n * (1 + e) * vn; if (vn > 4) hops++; }
+          vx -= vx * (1 - Math.exp(-Math.max(0, Pv.wallFriction) * dt));
+        }
+        top = Math.max(top, Math.hypot(vx, vy));
+        pts.push([x, y, Math.hypot(vx, vy), t]);
+      }
+      const exit = Math.max(0, Pv.rideExitMultiplier), vEnd = Math.hypot(vx, vy);
+      return { pts, R, rIn, L, T: t, hops, top, vEnd, vIn, out: Math.min(vEnd * exit, Math.max(0, Pv.cruise) * Math.max(1, exit)), ang: Math.atan2(vy, vx) };
+    },
+    period: (st) => Math.min(8, st.T + 1.2),
+    draw(c, W, H, tt, st) {
+      previewBg(c, W, H, 61);
+      const x0 = 16, x1 = W - 34, yc = H * 0.52, sy = Math.min(3.2, (H * 0.3) / st.R), X = (x) => x0 + (x1 - x0) * x / st.L, Y = (y) => yc - y * sy;
+      c.fillStyle = 'rgba(79,216,255,0.07)'; c.fillRect(X(0), Y(st.R), X(st.L) - X(0), 2 * st.R * sy);
+      c.strokeStyle = 'rgba(79,216,255,0.6)'; c.lineWidth = 1;
+      for (const s of [-1, 1]) { c.beginPath(); c.moveTo(X(0), Y(s * st.R)); c.lineTo(X(st.L), Y(s * st.R)); c.stroke(); }
+      c.strokeStyle = 'rgba(157,255,46,0.45)'; c.beginPath();
+      st.pts.forEach((q, i) => (i ? c.lineTo(X(q[0]), Y(q[1])) : c.moveTo(X(q[0]), Y(q[1])))); c.stroke();
+      const u = Math.min(st.T, tt); let i = 1; while (i < st.pts.length - 1 && st.pts[i][3] < u) i++;
+      const q = st.pts[i]; c.fillStyle = '#9dff2e'; c.beginPath(); c.arc(X(q[0]), Y(q[1]), 3.5, 0, TAU); c.fill();
+      if (tt > st.T) {   // the slingshot: out along the way it was going
+        const ex = X(st.L), ey = Y(st.pts[st.pts.length - 1][1]), k = Math.min(1, (tt - st.T) / 1.2) * 26;
+        c.strokeStyle = '#ffd27a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex + Math.cos(st.ang) * k, ey - Math.sin(st.ang) * k * sy / 3); c.stroke(); c.lineWidth = 1;
+      }
+      txt(c, 'in at ' + Math.round(st.vIn) + ' u/s · top ' + Math.round(st.top) + ' · ' + st.hops + ' hops · ' + st.T.toFixed(1) + ' s for ' + st.L + ' u', 6, 13, '#e8ecff', 10);
+      txt(c, 'a 24 u tube from the side, RT held · out at ' + Math.round(st.out) + ' u/s (the slingshot)', 6, H - 6, '#9aa6d6', 9.5);
+    },
+  };
+  // ---------- round 27: the plain wormhole on screen (SolitonTunnel.shader's formulas on a small grid of the sky) ----------
+  // what: 'wall' (a tube across the view: its bend, liquid edge, rim, glow and tint), 'mouth' (a mouth face-on: the lens,
+  // the Einstein ring, the throat shadow), 'inside' (riding: the throat's stretch, flow, twist and the steady centre).
+  SCENES.wormLook = {
+    make(Pv, cfg) { return { what: cfg.what || 'mouth', net: !!cfg.net, inside: !!cfg.inside }; },
+    period: () => 6,
+    draw(c, W, H, tt, st, view, Pv) {
+      const w = Math.max(40, Math.round(W / 2)), h = Math.max(30, Math.round(H / 2)), asp = w / h;
+      const cv = SCENES.wormLook.buf || (SCENES.wormLook.buf = document.createElement('canvas'));
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      const g = cv.getContext('2d'), img = g.createImageData(w, h), D = img.data;
+      const I = clamp01(Pv.comfortDistortionIntensity), th2 = 2 * Math.tan(34 * Math.PI / 180), net = st.net, what = st.what;
+      const tc = new THREE.Color(DOMAIN[domainKey] != null ? DOMAIN[domainKey] : 0x13fff2), tK = clamp01(Pv.tintStrength);
+      const tint = [tc.r, tc.g, tc.b];
+      // the mouth: face-on at the centre, its apparent radius 0.05 screen heights
+      const mL = net ? Pv.networkMouthLens : Pv.lookMouthLens, mF = net ? Pv.networkMouthFlare : Pv.lookMouthFlare, mR = net ? Pv.networkEinsteinRing : Pv.lookEinsteinRing, mS = net ? Pv.networkMouthShadow : Pv.lookMouthShadow;
+      const te = 0.05 * Math.max(1, mF), str = clamp01(mL) * I;
+      // the wall: a tube across the view, its apparent radius 0.16 screen heights
+      const rb = 0.16, inflate = 1 + Math.max(0.02, Pv.lookWallOutside), rbI = rb * inflate, edgeA = Math.sqrt(Math.max(0, 1 - 1 / (inflate * inflate)));
+      const eye = st.inside ? 1 : 0, bK = 1 + (clamp01(Pv.rideInsideBend) - 1) * eye, wK = Math.min(1, Math.max(0, Pv.lookWobble) * I) * (1 + (clamp01(Pv.rideInsideWobble) - 1) * eye);
+      const bend = Math.max(0, Pv.lookBend) * Math.PI / 180 * I / th2, lens = Math.max(0, Pv.lookLens) * 0.05 * I / th2;
+      const phase = (tt * Math.min(Math.max(0, Pv.lookWobbleSpeed), Math.max(0, Pv.comfortMaxWobbleSpeed))) % 1, waves = Math.max(0.5, Pv.lookWobbleWaves);
+      // inside: the throat's stretch
+      const sStr = Math.max(0, Math.min(0.5, net ? Pv.networkInsideStretch : Pv.lookInsideStretch)) * I, sSw = Math.max(0, Math.min(0.5, net ? Pv.networkInsideSwirl : Pv.lookInsideSwirl)) * I;
+      const flow = (tt * Math.min(Math.max(0, Pv.lookInsideFlow), Math.max(0, Pv.comfortMaxFlowSpeed))) % 1, steady = Math.max(0, Pv.rideSteadyCentre);
+      const sky = (sx, sy) => {   // the scene behind: a grid of the sky and its stars
+        const fx = Math.abs(((sx / 0.08) % 1 + 1) % 1 - 0.5), fy = Math.abs(((sy / 0.08) % 1 + 1) % 1 - 0.5), line = Math.max(smooth(0.42, 0.5, fx), smooth(0.42, 0.5, fy));
+        const ix = Math.floor(sx / 0.035), iy = Math.floor(sy / 0.035); let hsh = Math.sin(ix * 127.1 + iy * 311.7) * 43758.5453; hsh -= Math.floor(hsh);
+        const star = hsh > 0.93 ? 0.9 : 0;
+        return [0.03 + 0.2 * line + star, 0.04 + 0.28 * line + star, 0.1 + 0.55 * line + star];
+      };
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+        const px = (i + 0.5) / h - asp / 2, py = 0.5 - (j + 0.5) / h;
+        let dx = 0, dy = 0, light = [0, 0, 0], shadow = 0, wash = 0;
+        if (what === 'mouth') {
+          const r = Math.hypot(px, py), x = r / (3 * te);
+          if (x < 1) {
+            const m = (1 - x * x) ** 2, soft = 0.15 * te, k = str * te * te * r / (r * r + soft * soft) * m;
+            dx -= px / Math.max(r, 1e-6) * k; dy -= py / Math.max(r, 1e-6) * k;
+            const kk = (r - te) / (0.06 * te), ring = clamp01(mR) * Math.exp(-kk * kk) * m;
+            for (let q = 0; q < 3; q++) light[q] += (1 + (tint[q] - 1) * tK) * ring;
+            shadow = Math.max(shadow, clamp01(mS) * (1 - smooth(0.15 * te, 0.6 * te, r)));
+          }
+        } else if (what === 'wall' && Math.abs(py) < rbI) {
+          const a = Math.sqrt(Math.max(0, 1 - (py / rbI) ** 2)), across = Math.max(a, 0.12), part = smooth(0, edgeA, a);
+          const shape = Math.max(0, 1 + wK * Math.sin(2 * Math.PI * ((px + asp / 2) / asp * waves - phase)));
+          const crossings = eye ? 1 : 2;   // from outside a ray meets the near wall and the far one; from inside, one
+          dx += crossings * bend * (0.9 + 0.1 / across) * bK * shape * part;
+          dy -= crossings * (py / rbI) * lens * bK * shape * (1 - part) / across;
+          if (Math.abs(py) < rb) {   // the wall's light: its rim, glow and the tint washed through it (SolitonTunnel.shader MWShade)
+            const aw = Math.sqrt(Math.max(0, 1 - (py / rb) ** 2)), acw = Math.max(aw, 0.12), layer = 1 - Math.exp(-crossings / acw), rim = 1 - Math.exp(-crossings * Math.pow(1 - aw, Math.max(1, Pv.lookRimTightness)) / acw);
+            for (let q = 0; q < 3; q++) light[q] += (1 + (tint[q] - 1) * tK) * (Math.max(0, Pv.lookGlow) * layer + Math.max(0, Pv.lookRim) * rim);
+            wash = tK * layer;
+          }
+        } else if (what === 'inside') {
+          const r = Math.hypot(px, py), wave = 0.6 + 0.4 * Math.sin(2 * Math.PI * (Math.log(Math.max(r, 1e-3)) * 1.6 - flow)), k = smooth(0.05, 0.6, r) * wave;
+          dx += (-px * sStr - py * sSw) * k; dy += (-py * sStr + px * sSw) * k;
+        }
+        if (what === 'inside' || eye) { const s = smooth(0.4 * steady, steady, Math.hypot(px, py)); if (steady > 0) { dx *= s; dy *= s; } }
+        const col = sky(px + dx, py + dy), o = (j * w + i) * 4;
+        for (let q = 0; q < 3; q++) {
+          let v = col[q];
+          if (wash > 0) v = v + (v * (1 + (tint[q] * 1.25 - 1) * 0.6) + tint[q] * 0.03 - v) * wash;
+          v = v * (1 - shadow) + light[q];
+          D[o + q] = Math.max(0, Math.min(255, Math.round(v * 255)));
+        }
+        D[o + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      c.imageSmoothingEnabled = true; c.drawImage(cv, 0, 0, W, H);
+      if (what === 'inside' && steady > 0) { c.strokeStyle = 'rgba(255,255,255,0.35)'; c.setLineDash([3, 5]); c.beginPath(); c.arc(W / 2, H / 2, steady * H, 0, TAU); c.stroke(); c.setLineDash([]); }
+      txt(c, what === 'mouth' ? (net ? 'a network mouth' : 'a wormhole mouth') + ' face-on: the world curls into an Einstein ring round it' : what === 'wall' ? (st.inside ? 'from inside: one wall, calmer' : 'a tube across the view: space bent along it, a faint rim') : 'riding: the view streams toward the way out', 6, 13, '#e8ecff', 10);
+      txt(c, 'the game\'s formulas (SolitonTunnel.shader) on a grid of the sky', 6, H - 6, '#9aa6d6', 9.5);
+    },
+  };
   const TIPS = {
     reticleAhead: { scene: 'tunnel', d: 'The reticle (yours alone) rides this far ahead of your nose; pull RT and the tunnel forms there, and you dive straight into its mouth. The game: MeerkatSolitonConfig.reticleAhead.', lo: 'Right on your nose.', hi: 'Further out: a longer dive in.' },
     bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far at the end of its shaft, any way; half over, half as far: 90, 120, 150 degrees.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
@@ -5583,7 +6004,7 @@
     mouthDiameter: { scene: 'tunnel', d: 'How wide the entry and the exit are at the SHORTEST tunnel; a longer one grows toward mouthDiameterMax. The tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
     rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
-    rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
+    rideExitMultiplier: { scene: 'slide', d: 'Round 27, the game\'s slingshot: you leave a wormhole or the network along the velocity you carry, at this many times its speed, never more than this many times your cruise (the game\'s TrackedExitSpeed: a ride never compounds), and ease back to cruise. A little over 1 = a small boost for taking the tube. Garrett\'s Time L5 Boost out multiplies it.', lo: 'Out at the speed you carried.', hi: 'A big boost out.' },
     reticleDelaySeconds: { scene: 'tunnelLife', d: 'Out of a tunnel (and at the start), your reticle comes back after this long, so you see the clean exit first.', lo: 'Back at once.', hi: 'A longer clean view.' },
     reticleGrowSeconds: { scene: 'tunnelLife', d: 'The reticle ripples out of its centre into the full tube over this long; you can reshape it meanwhile, and pull RT once it is 60% there.', lo: 'Pops back.', hi: 'Grows slowly.' },
     formSeconds: { scene: 'tunnelLife', d: 'Pull RT and the tunnel ripples out of its centre to both mouths over this long (never longer than your dive to it), while the reticle fades.', lo: 'Snaps open.', hi: 'Opens slowly.' },
@@ -5598,7 +6019,7 @@
     reticleIdleAlpha: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is always on your nose: the tunnel RT would form now. This is how bright its grid is with the right stick centred (bending it lights it up). Only you see it.', lo: 'Faint at rest.', hi: 'Always bright.' },
     bridgeVisibility: { scene: 'bridge', d: 'A formed tunnel shows its geometry to everyone: a bridge of spindles (rings round the throat, ribs along it) over a glass surface, in its maker\'s domain colour. The game will build it from its Spindle prefabs; the bent space round it stays the shader\'s. 0 hides the bridge and leaves only the bent space.', lo: 'A ghost of a bridge.', hi: 'The full structure.' },
     formedLook: { scene: 'bridge', d: 'What every formed tube draws after RT, a tunnel\'s and each channel of the network\'s (round 26). 1, the water pipe: no spindles. The game ships it (formedLook ContourField, the Inspector\'s GARRETT\'S LOOK) as bent space only; this page has no contour field, so it draws the bridge\'s glass and the calm inner wall (tubeInner) in its place. 0, the bridge: its spindle frame over the glass too (YASH\'S LOOK). The reticle is the spindle frame either way. The game keeps this switch in the config\'s own Inspector, so it is not cloned.', lo: 'The bridge.', hi: 'The water pipe.' },
-    bridgeGlass: { scene: 'bridge', d: 'The glass surface under the bridge\'s spindles, brightest at its silhouette, so the tube reads as a solid body. 0 = spindles only.', lo: 'A faint skin.', hi: 'A glowing glass tube.' },
+    bridgeGlass: { scene: 'bridge', d: 'The old bridge\'s glass surface (rounds 2-26). Off since round 27: in the game a formed tube draws no bridge any more, only the plain wormhole (Wormhole · look). Raise it to bring the glass back in the studio.', lo: 'Off.', hi: 'A glass skin.' },
     bridgeRings: { scene: 'bridge', d: 'How many rings of spindles stand round the throat along the tunnel, evenly spaced mouth to mouth.', lo: 'A few hoops.', hi: 'A dense ribcage.' },
     bridgeSpindlesPerRing: { scene: 'bridge', d: 'How many spindles make each ring (each spindle is one edge of the ring\'s polygon).', lo: 'Angular rings.', hi: 'Round rings.' },
     bridgeRibs: { scene: 'bridge', d: 'How many lines of spindles run along the tunnel from ring to ring, mouth to mouth. 0 = rings only.', lo: 'Few ribs.', hi: 'A lattice.' },
@@ -5665,7 +6086,7 @@
     timeLevel: { scene: 'ability', cfg: { ab: 'time' }, at: [0.3, 0.6], d: 'The Time element\'s level. Level 5 and up unlocks Chain Dig (a proposal): late in a ride, RT digs the next tunnel from the far mouth and you carry straight on at throat speed.', lo: 'One tunnel at a time.', hi: 'Chain Dig.' },
     chainShare: { scene: 'ability', cfg: { ab: 'time', over: { timeLevel: 5 } }, d: 'L5 Chain Dig: from this share of the way through a tunnel you ride, RT digs the next one (the amber tick).', lo: 'Early: lots of time to aim.', hi: 'Late: right at the far mouth.' },
     aiNewAbilities: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Whether the AI pilots use the round-8 abilities: Lookout when ready (with rivals or crystals near), Hardened Bridge with a rival within 600 u, Cave-in on a tunnel it has left with a rival in it (L5) or 6 prisms in reach, and Chain Dig when a tunnel from the far mouth fits the next leg. All by pressing the buttons a player has. Off: the AI flies as it did before round 8.', lo: 'Wormhole only.', hi: 'The whole kit.' },
-    omniOn: { scene: 'labyrinth', d: 'The Meerkat\'s Omnicrystal ability. Fly through an omnicrystal (gold, on the course line) and the network opens at once from where you took it: a big 3D network of wormhole tubes from one source, forks branching every way, openings all round, each tube looking exactly like a wormhole. You fly through it on the left stick and move into the wormhole you want at each fork. 0: omnicrystals do nothing.', lo: 'Off.', hi: 'On.' },
+    omniOn: { scene: 'labyrinth', d: 'The Meerkat\'s Omnicrystal ability. Fly through an omnicrystal (gold, on the course line) and the network opens at once from where you took it: a big 3D network of wormhole tubes from one source, forks branching every way, openings all round, each tube looking exactly like a wormhole. You slip and slide through it (round 27, the game\'s ride): at a fork you go down the wormhole you slide into, the one on your side of the tube. 0: omnicrystals do nothing.', lo: 'Off.', hi: 'On.' },
     omniCount: { scene: 'labyrinth', d: 'How many omnicrystals sit on the course line, half way between rings. A new course, or a reset, places them.', lo: 'None.', hi: 'Plenty.' },
     labyrinthBranchPointsMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How many forks the network has at its largest (a reach of labyrinthRadiusMax or more). Forks grow with the network\'s reach, from labyrinthBranchPointsMin at labyrinthRadiusMin, so a whole-cell network still reads as a network, not a few long tubes.', lo: 'A few forks.', hi: 'A maze.' },
     labyrinthOpeningsMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How many openings (ways out) the network has at its largest, spread round it. A fork splits two to four ways, so there are at most 3 x forks + 1 openings (and at least forks + 1). Its wormholes number forks + openings.', lo: 'A few holes.', hi: 'Holes everywhere.' },
@@ -5717,7 +6138,7 @@
     portalSizeL0: { scene: 'kit', cfg: { k: 'portal' }, d: 'The portal\'s prism size at Mass L0, as a share of a field prism ("go minimal").', lo: 'Tiny.', hi: 'Big.' },
     portalSizeL10: { scene: 'kit', cfg: { k: 'portal' }, d: 'The portal\'s prism size at Mass L10.', lo: 'Tiny.', hi: 'Big.' },
     dangerPetals: { scene: 'kit', cfg: { k: 'portal' }, d: 'At Mass L5 the portal\'s prisms are danger prisms: a rival hull touching one takes a hit of this much of a petal (once per prism). The amount is the studio\'s reading, open in Garrett\'s design.', lo: 'A scratch.', hi: 'A real cost.' },
-    rushL0: { scene: 'kit', cfg: { k: 'rush' }, d: 'Time is a passive faster slide through every soliton, its own or anyone\'s: the slide\'s cruise and top speed (rootCruise, rootMaxSpeed) times this at Time L0.', lo: 'No rush.', hi: 'A rush.' },
+    rushL0: { scene: 'kit', cfg: { k: 'rush' }, d: 'Time is a passive faster slide through every soliton, its own or anyone\'s: the slide\'s push, floor and top speed (thrust, minSpeed, rootMaxSpeed) times this at Time L0.', lo: 'No rush.', hi: 'A rush.' },
     rushL10: { scene: 'kit', cfg: { k: 'rush' }, d: 'The rush at Time L10; levels between are in between.', lo: 'A small rush at the top.', hi: 'A big rush at the top.' },
     boostOut: { scene: 'kit', cfg: { k: 'rush' }, d: 'Garrett\'s Time L5, Boost out: the Meerkat leaves every soliton at this many times the exit multiplier, easing back to cruise. (The Mix has Chain Dig at Time L5 instead.)', lo: 'Barely a boost.', hi: 'A big boost out.' },
     throatFloorDiameter: { scene: 'kit', cfg: { k: 'mix' }, d: 'The Mix: the throat\'s diameter never goes below this, so a long tunnel is not a pinhole. (Garrett\'s kit keeps only a 0.5 u safety floor.)', lo: 'A thin floor.', hi: 'A fat floor.' },
@@ -5746,16 +6167,47 @@
     rootGlass: { scene: 'labyrinth', d: 'The network\'s skin where you look straight at it: keep it low, so a big network stays quiet on screen.', lo: 'Clear.', hi: 'Milky.' },
     rootRim: { scene: 'labyrinth', d: 'The network\'s skin where it turns away from you (Fresnel): their outline.', lo: 'Faint.', hi: 'Bright.' },
     rootGrain: { scene: 'labyrinth', d: 'The skin grain along the network.', lo: 'Smooth.', hi: 'Deep grain.' },
-    rootThrust: { scene: 'labyrinth', d: 'Hold RT in a wormhole or the network and you go faster than your cruise, up to rootMaxSpeed; let go and you ease back to it.', lo: 'A drift.', hi: 'A rush.' },
-    rootCruise: { scene: 'labyrinth', d: 'Inside a wormhole or the network (round 24: one flight for both) you cruise along it on your own at this speed, your nose following it, so you only steer.', lo: 'A crawl.', hi: 'Brisk.' },
-    rootMove: { scene: 'labyrinth', d: 'How hard the left stick moves you round the tube: left and right, up and down, the way it would turn your nose. Move into a wormhole at a fork to go down it.', lo: 'A nudge.', hi: 'Darting about.' },
-    rootDrag: { scene: 'labyrinth', d: 'How fast your drift across the tube dies away once you let the stick go. Low: you glide on to the wall and bounce.', lo: 'Slippery.', hi: 'Stops at once.' },
-    rootMaxSpeed: { scene: 'labyrinth', d: 'The fastest you go inside a wormhole or the network, so you can always find your way.', lo: 'A crawl.', hi: 'A rush.' },
-    rootBounce: { scene: 'labyrinth', d: 'Hit a wall and you bounce off it with this share of your speed into it (the rest is lost). The speed along the wall is kept.', lo: 'Thud.', hi: 'Rubber.' },
-    rootGravity: { scene: 'labyrinth', d: 'Draws you to the floor of the tube (the network\'s down), square to the tube, so it never pulls you back down a climb. 0: you float.', lo: 'Float.', hi: 'Roll along the floor.' },
+    rootMaxSpeed: { scene: 'slide', d: 'The fastest you slide inside a wormhole or the network (the game: 119 on both SolitonTunnel and SolitonNetwork); the prisms and crystals a soliton carries move at it too, first in first out. Garrett\'s Time rush multiplies it. The AI plans its tunnels as if it slides at this speed.', lo: 'A crawl.', hi: 'A rush.' },
+    rootBounce: { scene: 'slide', d: 'Land on the wall faster than 4 u/s and it bounces you back with this share of your speed into it; slower, you just slide on (gravity keeps you there). The speed along the wall is kept.', lo: 'Lands and slides.', hi: 'Hops and hops.' },
+    wallGravity: { scene: 'slide', d: 'Round 27, the game\'s slip-and-slide: gravity pulls you OUT from the tube\'s axis onto its inner wall, whichever way the wall is (a ball in a tube). Dead centre you fall to the floor first. More: you land sooner and press harder; 0: you float down the middle.', lo: 'Floats.', hi: 'Pinned to the wall.' },
+    wallFriction: { scene: 'slide', d: 'What sliding on the wall costs you, a second: the speed along the wall times (1 - e^-friction). Small is slippery, the game\'s 0.05 barely slows you; RT\'s push and the floor (minSpeed) make up for it.', lo: 'Ice.', hi: 'Sticky.' },
+    thrustOn: { scene: 'slide', d: 'RT inside a tube gives a small push along it, the way you are going (a little agency). Off: a pure slide on the speed you carried in, never under minSpeed.', lo: 'Off: pure slide.', hi: 'On: RT pushes.' },
+    thrust: { scene: 'slide', d: 'How hard RT pushes you along the tube at full squeeze (an analog trigger in between); the AI holds RT all the way through. Garrett\'s Time rush multiplies it.', lo: 'A nudge.', hi: 'A shove.' },
+    minSpeed: { scene: 'slide', d: 'You never go slower than this ALONG the tube, so a rider never stalls inside (the game\'s floor). Garrett\'s Time rush multiplies it.', lo: 'Can crawl.', hi: 'Always brisk.' },
+    lookBend: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'Round 27, the game\'s plain wormhole: looking through a tube\'s wall bends what is behind it along the tube, this many degrees each time your view crosses the wall (a grazing look a little more). The main wormhole feel. Only the four tubes nearest the camera bend space, as in the game.', lo: 'A hint.', hi: 'Strongly bent.' },
+    lookLens: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'The jelly lens at the wall\'s surface: a look that only clips the shell round the wall is drawn in toward the tube\'s axis, the liquid edge.', lo: 'A clean edge.', hi: 'A liquid edge.' },
+    lookWallInside: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'How far the bending reaches inward from the wall, into the hollow (x the radius). The studio bends across the whole crossing, so this shows only in the game.', lo: 'Thin.', hi: 'Deep.' },
+    lookWallOutside: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'How far the bending reaches outward round the tube (x the radius): space just outside the silhouette is bent too, fading to nothing at this reach.', lo: 'Tight to the wall.', hi: 'A wide halo.' },
+    lookWobble: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'The jelly breathing: the bend swells and eases along the tube by this share (0 still, 1 from none to double).', lo: 'Still.', hi: 'Breathing.' },
+    lookWobbleWaves: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'How many swells run along the tube\'s visible length: fewer is calmer and broader.', lo: 'One long swell.', hi: 'Many ripples.' },
+    lookWobbleSpeed: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'Breaths a second, never faster than comfortMaxWobbleSpeed.', lo: 'Slow.', hi: 'Quick.' },
+    lookRim: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'A clear, faint edge light where your view grazes the wall (white toward the domain tint, never a colour of its own).', lo: 'None.', hi: 'A bright outline.' },
+    lookRimTightness: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'How tight the edge light hugs the silhouette: higher is thinner.', lo: 'Broad.', hi: 'A hairline.' },
+    lookGlint: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'The sun\'s glint off the jelly wall: a small bright highlight where the wall faces between you and the sun.', lo: 'Matte.', hi: 'Glossy.' },
+    lookGlow: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'A faint glow of the wall itself, by how much of it you look through (additive, white toward the tint).', lo: 'Clear.', hi: 'Glowing.' },
+    tintStrength: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'How strongly its maker\'s domain colour washes the world seen through the wall and colours its rim and its mouths\' Einstein rings (the game\'s Tint From Maker).', lo: 'Clear.', hi: 'Coloured glass.' },
+    lookMouthLens: { scene: 'wormLook', cfg: { what: 'mouth' }, d: 'Each live mouth of a wormhole is a gravitational lens: the world round it curls into an Einstein ring and, straight in, turns over and magnifies; it fades out by three times its reach, as you come right up to it, and to 0.3 for the tube you ride.', lo: 'A faint lens.', hi: 'A strong lens.' },
+    lookMouthFlare: { scene: 'wormLook', cfg: { what: 'mouth' }, d: 'The lens\'s reach, x the mouth\'s radius: the visible, flared size of the mouth (its Einstein angle).', lo: 'The mouth itself.', hi: 'A wide flare.' },
+    lookEinsteinRing: { scene: 'wormLook', cfg: { what: 'mouth' }, d: 'The thin bright ring at the lens\'s edge, in the tube\'s tint.', lo: 'None.', hi: 'A bright ring.' },
+    lookMouthShadow: { scene: 'wormLook', cfg: { what: 'mouth' }, d: 'A hint of darkness in the throat\'s core, so a mouth reads as a hole.', lo: 'Clear.', hi: 'A dark core.' },
+    networkMouthLens: { scene: 'wormLook', cfg: { what: 'mouth', net: true }, d: 'The network\'s mouths (only its source and its openings, never a junction): their lens, a little softer than a wormhole\'s (SolitonNetwork.asset).', lo: 'A faint lens.', hi: 'A strong lens.' },
+    networkMouthFlare: { scene: 'wormLook', cfg: { what: 'mouth', net: true }, d: 'The network mouths\' flare, x their radius.', lo: 'The mouth itself.', hi: 'A wide flare.' },
+    networkEinsteinRing: { scene: 'wormLook', cfg: { what: 'mouth', net: true }, d: 'The network mouths\' Einstein ring.', lo: 'None.', hi: 'A bright ring.' },
+    networkMouthShadow: { scene: 'wormLook', cfg: { what: 'mouth', net: true }, d: 'The network mouths\' throat shadow.', lo: 'Clear.', hi: 'A dark core.' },
+    lookInsideStretch: { scene: 'wormLook', cfg: { what: 'inside' }, d: 'Riding a wormhole, the view stretches out from where you are heading, by how far inside the tube you are. Keep it low for comfort.', lo: 'Calm.', hi: 'Stretched.' },
+    lookInsideFlow: { scene: 'wormLook', cfg: { what: 'inside' }, d: 'The stretch streams toward the way out at this speed (waves a second), never faster than comfortMaxFlowSpeed.', lo: 'Slow.', hi: 'Rushing.' },
+    lookInsideSwirl: { scene: 'wormLook', cfg: { what: 'inside' }, d: 'The stretch twists round the throat by this much.', lo: 'Straight.', hi: 'Twisting.' },
+    networkInsideStretch: { scene: 'wormLook', cfg: { what: 'inside', net: true }, d: 'Riding the network: its stretch (SolitonNetwork.asset, a little calmer).', lo: 'Calm.', hi: 'Stretched.' },
+    networkInsideSwirl: { scene: 'wormLook', cfg: { what: 'inside', net: true }, d: 'Riding the network: its twist.', lo: 'Straight.', hi: 'Twisting.' },
+    rideInsideBend: { scene: 'wormLook', cfg: { what: 'wall', inside: true }, d: 'From inside the tube you ride, the wall\'s bend and lens are this many times as strong as from outside (lower is calmer to ride).', lo: 'Calm inside.', hi: 'As outside.' },
+    rideInsideWobble: { scene: 'wormLook', cfg: { what: 'wall', inside: true }, d: 'From inside, its breathing is this many times as strong (lower is calmer).', lo: 'Still inside.', hi: 'As outside.' },
+    rideSteadyCentre: { scene: 'wormLook', cfg: { what: 'inside' }, d: 'Riding, the middle of the screen stays still out to this radius (x the screen\'s height; the dashed circle), so where you head never moves. 0 = off.', lo: 'Everything moves.', hi: 'A wide calm centre.' },
+    comfortDistortionIntensity: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'The comfort master: every bend, lens, breath and stretch times this. 0 = clear, nothing moves (the edge light and glint stay); 1 = the authored look.', lo: 'Calm.', hi: 'The full look.' },
+    comfortMaxWobbleSpeed: { scene: 'wormLook', cfg: { what: 'wall' }, d: 'No tube breathes faster than this (breaths a second), whatever its look says.', lo: 'Slow at most.', hi: 'As authored.' },
+    comfortMaxFlowSpeed: { scene: 'wormLook', cfg: { what: 'inside' }, d: 'The throat\'s stream never runs faster than this (a second), whatever its look says.', lo: 'Slow at most.', hi: 'As authored.' },
     rootOpacity: { scene: 'labyrinth', d: 'Inside the network (rounds 20-21): a soft, smooth inner wall, a little dense, the world outside still showing through it. It fades to clear with distance, never to black. The ends of every tube stay open. Yash turned it off on 2026-10-28 (round 26): inside the network you see the wormhole tube\'s own calm wall (tubeInner) instead.', lo: 'Clear.', hi: 'Solid.' },
     rootBarkVisibility: { scene: 'labyrinth', d: 'The network\'s skin round each channel of the network (rounds 17-21: rootGlass, rootRim, rootGrain, tapering with rootTip). Yash turned it off on 2026-10-28 (round 26: "We can\'t make it a strand, we need to make it smoother, like our tube, same visuals"): with it off every channel draws exactly as a formed tunnel does (the bridge, its glass, the calm inner wall, the warp). Bring it back here.', lo: 'Wormhole tubes.', hi: 'Skin strands.' },
-    tubeInner: { scene: 'labyrinth', d: 'The calm inner wall of every wormhole tube you ride (round 26: a formed tunnel\'s and every channel of the network\'s; it was the outer layer\'s bore): smooth, no lines, a gentle sheen, so the ride is calm.', lo: 'Clear.', hi: 'Milky.' },
+    tubeInner: { scene: 'labyrinth', d: 'The old calm inner wall of every tube (rounds 21-26): a smooth sheen. Off since round 27: the game draws no wall of its own, only the plain wormhole\'s bent space (Wormhole · look). Raise it to bring the old wall back in the studio.', lo: 'Clear.', hi: 'Milky.' },
     rootLamp: { scene: 'labyrinth', d: 'Your lamp: the walls near you are lit by you, and the rest are dim.', lo: 'Dark.', hi: 'Bright.' },
     rootFog: { scene: 'labyrinth', d: 'Inside the network, walls further off than this fade away to clear.', lo: 'Only the walls round you.', hi: 'See far.' },
   };
@@ -5953,45 +6405,45 @@
     formSeconds: ['SolitonTunnel.formSeconds', 'linked'],
     staySeconds: ['SolitonTunnel.staySeconds', 'linked'],
     collapseSeconds: ['SolitonTunnel.collapseSeconds', 'linked'],
-    warpStrength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    dentStrength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rippleStrength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rippleEdge: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rippleSeconds: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
+    warpStrength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    dentStrength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rippleStrength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rippleEdge: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rippleSeconds: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
     reticleIdleAlpha: ['MeerkatSolitonConfig.reticleIdleAlpha', 'linked'],
     reticleSmoothSeconds: ['MeerkatSolitonConfig.reticleSmoothSeconds', 'linked'],
-    bridgeVisibility: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    formedLook: ['MeerkatSolitonConfig.formedLook (0 Bridge, 1 ContourField; its Inspector\'s YASH\'S LOOK / GARRETT\'S LOOK)', 'field'],
-    bridgeGlass: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
+    bridgeVisibility: ['lab: retired 2026-11-01 - the game draws no bridge over a formed tube (the plain wormhole, round 27)', 'lab'],
+    formedLook: ['lab: retired 2026-10-29 - the game has one look, the plain wormhole (round 27)', 'lab'],
+    bridgeGlass: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
     bridgeRings: ['SolitonTunnel.bridgeRings', 'linked'],
     bridgeSpindlesPerRing: ['SolitonTunnel.bridgeSpindlesPerRing', 'linked'],
     bridgeRibs: ['SolitonTunnel.bridgeRibs', 'linked'],
     bridgeSpindleThickness: ['SolitonTunnel.bridgeSpindleThickness', 'linked'],
     bridgeShimmer: ['SolitonTunnel.bridgeShimmer', 'linked'],
-    bridgeWhite: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
+    bridgeWhite: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
     reticleWhite: ['MeerkatSolitonConfig.reticleWhite', 'linked'],
     reticleNearLight: ['MeerkatSolitonConfig.reticleNearLight', 'linked'],
-    trunkVisibility: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkTop: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkBase: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkBark: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkRidges: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkGnarl: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkGlass: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkRim: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkFresnel: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkRings: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
+    trunkVisibility: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkTop: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkBase: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkBark: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkRidges: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkGnarl: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkGlass: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkRim: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkFresnel: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkRings: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
     trunkWarp: ['MeerkatSolitonConfig.trunkWarp', 'new'],
-    trunkGrain: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    trunkGrainLines: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchCount: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchLength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchThickness: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchUp: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchGrowSeconds: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchZone: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchSymmetry: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    branchForks: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
+    trunkGrain: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    trunkGrainLines: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchCount: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchLength: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchThickness: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchUp: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchGrowSeconds: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchZone: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchSymmetry: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    branchForks: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
     throatDiameterMax: ['MeerkatSolitonConfig.throatDiameterMax', 'new'],
     mouthDiameterMax: ['MeerkatSolitonConfig.mouthDiameterMax', 'new'],
     aiWormhole: ['MeerkatSolitonConfig.aiWormhole', 'linked'],
@@ -6045,25 +6497,41 @@
     networkReachAtFull: ['MeerkatSolitonConfig.networkReach (ElementalFloat on Mass: its Max, at Mass 10)', 'field'],
     rootTip: ['SolitonNetwork.networkTip', 'linked'],
     rootGnarl: ['SolitonNetwork.networkGnarl', 'linked'],
-    rootGlass: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootRim: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootGrain: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootGravity: ['lab: retired 2026-10-29 - the slide is now a slip-and-slide (SolitonTunnelConfigSO wallGravity / thrust / minSpeed / wallFriction, set in Unity)', 'lab'],
-    rootThrust: ['lab: retired 2026-10-29 - the slide is now a slip-and-slide (SolitonTunnelConfigSO wallGravity / thrust / minSpeed / wallFriction, set in Unity)', 'lab'],
-    rootMove: ['lab: retired 2026-10-29 - the slide is now a slip-and-slide (SolitonTunnelConfigSO wallGravity / thrust / minSpeed / wallFriction, set in Unity)', 'lab'],
-    rootDrag: ['lab: retired 2026-10-29 - the slide is now a slip-and-slide (SolitonTunnelConfigSO wallGravity / thrust / minSpeed / wallFriction, set in Unity)', 'lab'],
-    rootMaxSpeed: ['SolitonNetwork.maxSpeed', 'linked'],
-    rootBounce: ['SolitonNetwork.bounce', 'linked'],
-    rootOpacity: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootBarkVisibility: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    tubeInner: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootLamp: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootFog: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab',
-    rootCruise: ['lab: retired 2026-10-29 - the slide is now a slip-and-slide (SolitonTunnelConfigSO wallGravity / thrust / minSpeed / wallFriction, set in Unity)', 'lab'],
+    rootGlass: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rootRim: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rootGrain: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rootMaxSpeed: ['SolitonNetwork.maxSpeed', 'linked'],   // and SolitonTunnel.maxSpeed (the map writes both)
+    rootBounce: ['SolitonNetwork.bounce', 'linked'],   // and SolitonTunnel.bounce
+    // round 27: the slip-and-slide, on both tube configs (the map writes SolitonTunnel's and SolitonNetwork's)
+    wallGravity: ['SolitonNetwork.wallGravity', 'linked'],
+    wallFriction: ['SolitonNetwork.wallFriction', 'linked'],
+    thrustOn: ['SolitonNetwork.thrustOn', 'linked'],
+    thrust: ['SolitonNetwork.thrust', 'linked'],
+    minSpeed: ['SolitonNetwork.minSpeed', 'linked'],
+    rootOpacity: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rootBarkVisibility: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    tubeInner: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rootLamp: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
+    rootFog: ['lab: retired 2026-10-29 - one clear jelly look, set in Unity (SolitonTunnelConfigSO Look / Spindle Bridge / Domain Tint)', 'lab'],
     ovalShortest: ['SolitonTunnel.ovalShortest', 'linked'],
     ovalLongest: ['SolitonTunnel.ovalLongest', 'linked'],
     ovalMaxSharpness: ['SolitonTunnel.ovalMaxSharpness', 'linked'],
   };
+  // round 27, the plain wormhole: the game's look is a nested struct on each SolitonTunnelConfigSO (look, ride, comfort), which
+  // studio_to_unity.py cannot write (it writes plain top-level fields only), so these are 'field': the game's own, matched
+  // by hand to SolitonTunnel.asset / SolitonNetwork.asset on 2026-11-03 (Docs/Studios/MEERKAT.md round 27)
+  for (const [k, f] of [['lookBend', 'look.Bend'], ['lookLens', 'look.Lens'], ['lookWallInside', 'look.WallInside'], ['lookWallOutside', 'look.WallOutside'],
+    ['lookWobble', 'look.Wobble'], ['lookWobbleWaves', 'look.WobbleWaves'], ['lookWobbleSpeed', 'look.WobbleSpeed'], ['lookRim', 'look.Rim'],
+    ['lookRimTightness', 'look.RimTightness'], ['lookGlint', 'look.Glint'], ['lookGlow', 'look.Glow'], ['tintStrength', 'tintStrength'],
+    ['rideInsideBend', 'ride.InsideBend'], ['rideInsideWobble', 'ride.InsideWobble'], ['rideSteadyCentre', 'ride.SteadyCentre'],
+    ['comfortDistortionIntensity', 'comfort.DistortionIntensity'], ['comfortMaxWobbleSpeed', 'comfort.MaxWobbleSpeed'], ['comfortMaxFlowSpeed', 'comfort.MaxFlowSpeed']])
+    GAME_NAMES[k] = ['SolitonTunnel.' + f + ' (and SolitonNetwork\'s)', 'field'];
+  for (const [k, f] of [['lookMouthLens', 'MouthLens'], ['lookMouthFlare', 'MouthFlare'], ['lookEinsteinRing', 'EinsteinRing'], ['lookMouthShadow', 'MouthShadow'],
+    ['lookInsideStretch', 'InsideStretch'], ['lookInsideFlow', 'InsideFlow'], ['lookInsideSwirl', 'InsideSwirl']])
+    GAME_NAMES[k] = ['SolitonTunnel.look.' + f, 'field'];
+  for (const [k, f] of [['networkMouthLens', 'MouthLens'], ['networkMouthFlare', 'MouthFlare'], ['networkEinsteinRing', 'EinsteinRing'], ['networkMouthShadow', 'MouthShadow'],
+    ['networkInsideStretch', 'InsideStretch'], ['networkInsideSwirl', 'InsideSwirl']])
+    GAME_NAMES[k] = ['SolitonNetwork.look.' + f, 'field'];
   // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatSolitonConfig field, no studio_to_unity map row).
   for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
   // round 18: the kits. Lab-only prototypes (no MeerkatSolitonConfig field, no studio_to_unity map row): nothing reaches Unity without Yash's say-so.
@@ -6091,7 +6559,7 @@
   }
   function refreshAllOuts() { for (const k in outputs) refreshOut(k); markAbilities(); kitSyncUi(); }
   function refreshOut(key) {
-    const o = outputs[key], b = BP[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2;
+    const o = outputs[key], b = BP[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : o.step >= 0.01 ? 2 : 3;
     if (o.sel) { o.inp.value = String(Math.round(b)); o.out.textContent = ''; o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + KIT_NAMES[SHIPPED[key]]; return; }
     if (o.tog) { o.inp.checked = b > 0.5; o.out.textContent = b > 0.5 ? 'on' : 'off'; o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + (SHIPPED[key] > 0.5 ? 'on' : 'off'); return; }
     if (document.activeElement !== o.inp && Math.abs(parseFloat(o.inp.value) - b) > 1e-9) o.inp.value = b;
