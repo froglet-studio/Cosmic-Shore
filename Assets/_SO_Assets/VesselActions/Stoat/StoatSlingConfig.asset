@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: StoatSlingConfig
   m_EditorClassIdentifier: 
   holdExponent: 1.5
-  holdRampSeconds: 3
+  holdRampSeconds: 1
   autopilotHold01: 1
+  skim: {fileID: 0}
   catchAhead: 150
   catchSide: 45
   catchReach: 1.5
@@ -36,6 +37,30 @@ MonoBehaviour:
   holdAtCatch: 1
   orbitEaseRate: 0.8
   whiteClear: 0.8
+  innerOrbitShare: 0.6
+  innerPullRate: 1.5
+  orbitSpeedBonus: 0.15
+  launchConeDegrees: 60
+  aimMinStick: 0.3
+  flickStick: 0.8
+  flickRestStick: 0.3
+  flickSeconds: 0.15
+  launchPower:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 2
+    UseFloor: 1
+    Floor: 1
+  massUpgradeShieldsLaunchTrail: 1
+  accretionPerPrism: 0.04
+  accretionMax: 0.4
+  pressWarpShare: 0.5
+  minSweepDegrees: 30
+  momentumSeconds: 6
+  speedCapShare: 1.6
+  warpKickCapCruise: 3
   poleHorizon: 1.6
   poleGM: 20000
   ringDotSpacing: 5
@@ -76,7 +101,8 @@ MonoBehaviour:
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941
   aiSlingMinDistance: 123.282
-  aiWarpMinDistance: 280
+  aiWarpMinDistance: 0
+  aiHoldForWindowDegrees: 120
   holdStartEvent:
     Guid:
       Data1: 0

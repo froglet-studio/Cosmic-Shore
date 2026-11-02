@@ -1,7 +1,7 @@
 {
  "after": [
   "drive-rhino-headlong",
-  "drive-manta-redline",
+  "redline-manta-time",
   "skimrace-squirrel-time"
  ],
  "algorithm": {
@@ -169,6 +169,6 @@
  "stage": 2,
  "status": "blocked",
  "title": "The Regatta I1 circuit that levels the field",
- "updated": "2026-11-02",
+ "updated": "2026-11-03",
  "value": 9
 }

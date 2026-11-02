@@ -58,7 +58,9 @@ def profile(vessel, scheme, **kw):
 
 PROFILES = [
     # ---- Thumb lifts: lift the RIGHT thumb = the pad's LT, the LEFT = RT, both = IdleAction.
-    profile("Squirrel", "ThumbLifts",
+    # Carve (prototype, 2026-11-02, Yash; needs Garrett's sign-off): while one thumb flies (the drift's right lift, the
+    # tube's left lift) the phone rolls the hull 1:1 like the Dolphin's (TouchAttitudeRoll -> VesselTransformer.ApplyHeldRoll).
+    profile("Squirrel", "ThumbLifts", tiltRoll=True,
             glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
     # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); the phone rolls
     # the hull one to one while that thumb aims (TouchAttitudeRoll). One-thumb flight is softened at home and
@@ -112,9 +114,12 @@ PROFILES = [
     profile("BrittleStar", "TotemButtons", extras=[
         button("RightStick", "TouchIcon_Fire", aims=True, primary=True, tint="Space"),
         button("LeftStick", "TouchIcon_Ring", aims=True, primary=True, tint="Charge")]),
-    profile("Stoat", "TotemButtons", extras=[
-        button("RightStick", "TouchIcon_Dipole", primary=True, tint="Space"),
-        button("A", "TouchIcon_Hold", tint="Mass")]),
+    # Two orbit buttons and nothing else (Yash, 2026-11-02): LT the left orbit (anti-clockwise), RT the right (clockwise);
+    # a thumb anywhere else steers, as in every TotemButtons hull. The Space card shows the orbit's reach but presses
+    # nothing (LT is its disc); the Mass card is passive since Mass mode was removed. The pad's A hold has no phone button.
+    profile("Stoat", "TotemButtons", displayOnly=["Space"], extras=[
+        button("LeftStick", "TouchIcon_OrbitLeft", primary=True, tint="Space"),
+        button("RightStick", "TouchIcon_OrbitRight", primary=True, tint="Space")]),
     # The Angler's squad pick and recall were retired on 2026-10-21 (two alternating groups, ANGLER.md §1m): its four cards
     # are everything, so it takes no extra buttons.
     profile("Angler", "TotemButtons"),

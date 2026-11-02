@@ -104,11 +104,16 @@ namespace CosmicShore.ScriptableObjects
                  "draws its core this much bigger or smaller.")]
         [SerializeField, Range(0.3f, 3f)] float sourceSizeX = 1f;
 
-        [Tooltip("The studio's birth and death LIGHT: the white hole's light converging on a fresh pair, and the outgoing " +
-                 "light shell + gravitational wave where a released pair meets (BlackHoleWaves). OFF since 2026-10-14 (play: " +
-                 "the flash fired at the pair's CREATION and was far too big and bright) - an annihilation is marked by the " +
-                 "Charge ripple alone (StoatRippleExecutor). On brings the studio's waves back.")]
-        [SerializeField] bool annihilationWaves;
+        [Tooltip("The studio's death LIGHT and wiggle: where a released pair meets, its mass leaves as a gravitational wave " +
+                 "and its light as an outgoing shell (BlackHoleWaves, the studio's startDying), with the Charge ripple " +
+                 "(StoatRippleExecutor). Off 2026-10-14..28: the shell's glow went on BEFORE bloom and blew into a white " +
+                 "flash; it is now added after post-processing, in display values, as the studio draws it (BlackHoleLensPass).")]
+        [SerializeField] bool annihilationWaves = true;
+
+        [Tooltip("The studio's BIRTH light: the white hole's light converging from far away onto a fresh pair (its " +
+                 "spawnWave('in'); the studio has no switch for it, it always fires). Off: in play (2026-10-14) a wave at a " +
+                 "pair's CREATION read as the annihilation flash firing at the wrong moment. On matches the studio.")]
+        [SerializeField] bool birthWave;
 
         [Header("Fly-through zone (the sink takes a hull that loops it)")]
         [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles; 90, " +
@@ -301,6 +306,7 @@ namespace CosmicShore.ScriptableObjects
         public float DieSeconds => dieSeconds;
         public float SourceSizeX => sourceSizeX;
         public bool AnnihilationWaves => annihilationWaves;
+        public bool BirthWave => birthWave;
         public float ThroughZoneRadius => throughZoneRadius;
         public float ThroughDegrees => throughDegrees;
         public float TurnCap => turnCap;

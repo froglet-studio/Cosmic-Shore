@@ -7,6 +7,9 @@
 #   bash Tools/Build/switchback_sim_harness/run.sh eval [i=1,2,3,4] [level=1,2,3,4] [nseeds=12 | seeds=...] [flags]
 #   bash Tools/Build/switchback_sim_harness/run.sh trace i=3 level=4 seeds=45503 [flags]
 #   bash Tools/Build/switchback_sim_harness/run.sh selftest
+#   bash Tools/Build/switchback_sim_harness/run.sh races i=1,2,3,4 level=3 seeds=45501,7000 [drive.<field>=v ...]
+#        (one line a race, for Tools/Compute/evaluators/switchback_fit.py; drive.<ChargeBoostAIPolicySO field> sets ONE
+#        drive for every intensity, maxSeconds=<s> cuts a race)
 #
 # Flags: planner=0 (the plain gate AI: no blast planner), sense=0, emergency=0, drive=0 (no charge drive),
 #        cone=1 (blast with a cone nearer the asset's than the planner's under-promising slot), roll=1 (the gape

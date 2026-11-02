@@ -10,6 +10,9 @@ namespace CosmicShore.ScriptableObjects
     /// an attractor–repulsor wormhole pair beside the hull. The pair itself is the black hole's
     /// (<c>Docs/BLACK_HOLE.md</c> §11) — this file only decides where, how big and how long.
     ///
+    /// <para><b>Time mode is the SKIM SLING</b> since 2026-10-29 whenever <see cref="Skim"/> is set
+    /// (<see cref="StoatSkimConfigSO"/>, <c>STOAT_DIPOLE.md</c> §1q); the catch below is its fallback.</para>
+    ///
     /// <para><b>Time mode — the catch</b> (2026-10-14, the studio's dipole sling: <c>STOAT_DIPOLE.md</c> §1b). PRESS lays a
     /// LIGHT attractor <see cref="CatchAhead"/> ahead and <see cref="CatchSide"/> to the trigger's side, the repulsor
     /// mirrored on the other — in front of the hull, where the camera sees it. Two rings are drawn round it: the ORBIT
@@ -35,6 +38,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("The autopilot writes no trigger; its every sling is this fraction of a full squeeze.")]
         [SerializeField, Range(0f, 1f)] float autopilotHold01 = 0.5f;
+
+        [Header("Time mode - the SKIM SLING (2026-10-29: replaces the catch below while set)")]
+        [Tooltip("The Skim Sling (STOAT_DIPOLE.md §1q): set, Time mode's triggers lay a Skimshell to ride and launch off; " +
+                 "empty, they fly the catch below (kept as the fallback).")]
+        [SerializeField] StoatSkimConfigSO skim;
 
         [Header("Time mode - the catch (press lays it ahead, fly past and it catches you, hold orbits, release slings)")]
         [Tooltip("How far AHEAD of the hull the pair is laid, world units (the studio's dpAhead) - in front, where you see it.")]
@@ -85,6 +93,67 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The orbit radius is at most this share of the distance between the poles (2 x catchSide): wider, the " +
                  "circle reaches round the repulsor and swings the hull past its side. 0 = no limit. Studio: dpWhiteClear.")]
         [SerializeField, Range(0f, 1.5f)] float whiteClear = 0.8f;
+
+        [Header("The orbit (Yash, 2026-11-02 play test; Unity-first, not in the studio yet)")]
+        [Tooltip("Once caught, the hull is drawn in toward the INNER orbit: this share of the squeeze's circle. 1 = held on " +
+                 "the squeeze's circle as before. The outer, detection ring is unchanged, so the catch is as easy.")]
+        [SerializeField, Range(0.2f, 1f)] float innerOrbitShare = 0.6f;
+
+        [Tooltip("How fast a caught hull is drawn in to the inner orbit, per second. 0 = orbitEaseRate (the studio's ease).")]
+        [SerializeField, Range(0f, 10f)] float innerPullRate = 1.5f;
+
+        [Tooltip("While the orbit holds the hull, it flies this much faster than the catch's warp alone (0.15 = 15% more).")]
+        [SerializeField, Range(0f, 1f)] float orbitSpeedBonus = 0.15f;
+
+        [Header("The launch (Yash, 2026-11-02: flick to aim it, Mass is its power)")]
+        [Tooltip("A release launches the hull toward where the stick points, at most this many degrees off the orbit's " +
+                 "tangent (the full cone at a full stick). 0 = always along the tangent, the round-6 slingshot.")]
+        [SerializeField, Range(0f, 90f)] float launchConeDegrees = 60f;
+
+        [Tooltip("Below this much stick at the release, the launch goes along the tangent.")]
+        [SerializeField, Range(0f, 1f)] float aimMinStick = 0.3f;
+
+        [Tooltip("A FLICK launches out of the orbit: the stick swung from rest (under flickRestStick) to at least this " +
+                 "within flickSeconds - a thumb swiped across a phone, or a stick snapped over. A slower push steers.")]
+        [SerializeField, Range(0.3f, 1f)] float flickStick = 0.8f;
+
+        [Tooltip("The stick counts as at rest under this.")]
+        [SerializeField, Range(0f, 0.6f)] float flickRestStick = 0.3f;
+
+        [Tooltip("...and a flick reaches flickStick within this many seconds of leaving rest.")]
+        [SerializeField, Range(0.03f, 0.5f)] float flickSeconds = 0.15f;
+
+        [Tooltip("MASS's one dial on the Stoat: how hard a launch kicks, × the timed kick. ×1 at rest → ×2.5 at level 10, " +
+                 "read live on the simulating machine.")]
+        [SerializeField] ElementalFloat launchPower = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 1f);
+
+        [Tooltip("MASS level 5, Armoured Wake: the prisms laid while a launch's kick lasts arrive SHIELDED. Gated on the " +
+                 "replicated unlock bit; every peer runs it from the replicated release.")]
+        [SerializeField] bool massUpgradeShieldsLaunchTrail = true;
+
+        [Header("Space 5 - Accretion on the orbit (2026-11-02)")]
+        [Tooltip("Each prism the held pair's attractor steals adds this share to the reach of the ripple that pair throws.")]
+        [SerializeField, Range(0f, 0.2f)] float accretionPerPrism = 0.04f;
+        [Tooltip("Accretion's ceiling on the ripple's reach bonus (0.4 = +40%).")]
+        [SerializeField, Range(0f, 1f)] float accretionMax = 0.4f;
+
+        [Header("Earned speed (Grok's review, 2026-11-02: holding a pair must not be the speed)")]
+        [Tooltip("Before a catch, a held pair warps the flight to only this share of the catch's warp (catchWarpFromPress " +
+                 "still gates it). The full warp is the orbit's, and after a good launch, its momentum.")]
+        [SerializeField, Range(0f, 1f)] float pressWarpShare = 0.5f;
+
+        [Tooltip("A release before the orbit has swept this many degrees pays NOTHING: no kick, no momentum.")]
+        [SerializeField, Range(0f, 90f)] float minSweepDegrees = 30f;
+
+        [Tooltip("A launch keeps the orbit's warp × its timing as MOMENTUM, fading to nothing over this many seconds. It " +
+                 "never stacks with a held pair's warp: the flight runs at the larger of the two.")]
+        [SerializeField, Range(0f, 10f)] float momentumSeconds = 6f;
+
+        [Tooltip("The hard cap: a launch's kick never takes the hull past this × its speed at the release (the orbit's).")]
+        [SerializeField, Range(1f, 3f)] float speedCapShare = 1.6f;
+
+        [Tooltip("The kick runs on the warped flight clock: warp × kick is never past this × cruise (the engine's speed).")]
+        [SerializeField, Range(1f, 6f)] float warpKickCapCruise = 3f;
 
         [Header("Time mode - the poles (LIGHTER than Mass mode's)")]
         [Tooltip("The attractor's (and repulsor's) horizon, world units. Mass mode's dipole poles are 2.1 u; Time mode's " +
@@ -183,8 +252,13 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("An autopilot also presses for the WARP alone, its target dead ahead, while its ring is at least this far " +
                  "away: on the orbit-only Stoat a held pair is the hull's only speed (Tools/Build/stoat_orbit_sim.py, " +
-                 "2026-11-02). 0 = it presses only to turn.")]
-        [SerializeField, Min(0f)] float aiWarpMinDistance = 280f;
+                 "2026-11-02). 0 = it presses only to turn (shipped since speed is earned by the orbit).")]
+        [SerializeField, Min(0f)] float aiWarpMinDistance = 0f;
+
+        [Tooltip("Once caught, the autopilot HOLDS for the sweet spot and launches there whenever its aim (launchConeDegrees) " +
+                 "reaches its target, letting go anyway at this many degrees of orbit. Speed is earned by timed launches since " +
+                 "2026-11-02 (Tools/Build/stoat_orbit_sim.py --grid-earned). 0 = the old rule: let go once the target is near the nose.")]
+        [SerializeField, Range(0f, 360f)] float aiHoldForWindowDegrees = 120f;
 
         [Header("Audio (FMOD) — slots shipped EMPTY, wire in the inspector")]
         [Tooltip("Played once when a squeeze begins (the wind-up). Empty = silent.")]
@@ -193,6 +267,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Played once when the pair is slung. Empty = silent.")]
         [SerializeField] EventReference slingEvent;
 
+        public StoatSkimConfigSO Skim => skim;
         public float MinStrength => Mathf.Max(0.01f, Mathf.Min(minStrength, maxStrength));
         public float MaxStrength => Mathf.Max(MinStrength, maxStrength);
         public float HoldExponent => Mathf.Clamp(holdExponent, 0.5f, 4f);
@@ -231,6 +306,7 @@ namespace CosmicShore.ScriptableObjects
         public float AiSlingIntervalSeconds => Mathf.Clamp(aiSlingIntervalSeconds, 0.5f, 20f);
         public float AiSlingMinDistance => Mathf.Max(0f, aiSlingMinDistance);
         public float AiWarpMinDistance => Mathf.Max(0f, aiWarpMinDistance);
+        public float AiHoldForWindowDegrees => Mathf.Clamp(aiHoldForWindowDegrees, 0f, 360f);
         public EventReference HoldStartEvent => holdStartEvent;
         public EventReference SlingEvent => slingEvent;
         public float SweetSpotDegrees => Mathf.Clamp(sweetSpotDegrees, 10f, 360f);
@@ -238,6 +314,30 @@ namespace CosmicShore.ScriptableObjects
         public float SweetSpotFalloff => Mathf.Clamp(sweetSpotFalloff, 1f, 180f);
         public float MissKickShare => Mathf.Clamp01(missKickShare);
         public EventReference SweetSpotEvent => sweetSpotEvent;
+        public float InnerOrbitShare => Mathf.Clamp(innerOrbitShare, 0.2f, 1f);
+        public float InnerPullRate => Mathf.Clamp(innerPullRate, 0f, 10f);
+        public float OrbitSpeedBonus => Mathf.Clamp01(orbitSpeedBonus);
+        public float LaunchConeDegrees => Mathf.Clamp(launchConeDegrees, 0f, 90f);
+        public float AimMinStick => Mathf.Clamp01(aimMinStick);
+        public float FlickStick => Mathf.Clamp(flickStick, 0.3f, 1f);
+        public float FlickRestStick => Mathf.Clamp(flickRestStick, 0f, 0.6f);
+        public float FlickSeconds => Mathf.Clamp(flickSeconds, 0.03f, 0.5f);
+        public ElementalFloat LaunchPower => launchPower;
+        public float PressWarpShare => Mathf.Clamp01(pressWarpShare);
+        public float MinSweepDegrees => Mathf.Clamp(minSweepDegrees, 0f, 90f);
+        public float MomentumSeconds => Mathf.Clamp(momentumSeconds, 0f, 10f);
+        public float AccretionPerPrism => Mathf.Clamp(accretionPerPrism, 0f, 0.2f);
+        public float AccretionMax => Mathf.Clamp01(accretionMax);
+        public float WarpKickCapCruise => Mathf.Clamp(warpKickCapCruise, 1f, 6f);
+        public float SpeedCapShare => Mathf.Clamp(speedCapShare, 1f, 3f);
+
+        /// <summary>Whether a launch's trail is laid shielded right now (Mass 5, the replicated unlock bit).</summary>
+        public bool ShieldsLaunchTrail(IVesselStatus status)
+        {
+            if (!massUpgradeShieldsLaunchTrail) return false;
+            var abilities = status?.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(Element.Mass);
+        }
         public float CatchWarpShare => Mathf.Clamp(catchWarpShare, 0f, 1.5f);
         public bool CatchWarpFromPress => catchWarpFromPress;
 

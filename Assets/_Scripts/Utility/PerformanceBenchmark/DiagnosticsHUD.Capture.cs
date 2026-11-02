@@ -39,6 +39,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static bool CaptureRunning => _instance != null && _instance._captureRunning;
 
         bool _captureRunning;
+        static readonly Unity.Profiling.ProfilerMarker s_captureBurst = new("DiagnosticsHUD.Capture.Burst");
+        static readonly Unity.Profiling.ProfilerMarker s_captureDescribe = new("DiagnosticsHUD.Capture.Describe");
+        static readonly Unity.Profiling.ProfilerMarker s_captureDiagStart = new("DiagnosticsHUD.Capture.DiagStart");
         readonly Dictionary<string, int> _captureLog = new(StringComparer.Ordinal);
         readonly List<string> _captureLogOrder = new();
 
@@ -85,17 +88,35 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string burst = "", diagPath = "", profPath = "", renderers = "", cells = "", prismPath = "", cameras = "", editor = "";
             try
             {
+                // Everything up to the first yield runs inside the call that started the capture (the editor's update
+                // for the auto-capture), so it is timed by marker; the Editor.log scan, the one slow step, runs on a
+                // worker and is joined after the diag window (BurstProbe.ScanLogAsync).
                 SetStat("Capture", "run", "burst");
-                burst = Safe(() => BurstProbe.Report(), notes, "burst");
-                prismPath = Safe(() => CosmicShore.ECS.PrismRenderService.StatusLine(), notes, "prismpath");
-                cameras = Safe(DescribeCameras, notes, "cameras");
-                editor = Safe(DescribeEditor, notes, "editor");
+                System.Threading.Tasks.Task<string> burstLog = null;
+                using (s_captureBurst.Auto())
+                {
+                    burst = Safe(BurstProbe.ReportWithoutLog, notes, "burst");
+                    try { burstLog = BurstProbe.ScanLogAsync(); }
+                    catch (Exception e) { notes.Add($"burst log failed: {e.GetType().Name}: {e.Message}"); }
+                }
+                using (s_captureDescribe.Auto())
+                {
+                    prismPath = Safe(() => CosmicShore.ECS.PrismRenderService.StatusLine(), notes, "prismpath");
+                    cameras = Safe(DescribeCameras, notes, "cameras");
+                    editor = Safe(DescribeEditor, notes, "editor");
+                }
 
                 SetStat("Capture", "run", $"diag {seconds}s");
-                string started = HandleDiagCommand(new[] { label, seconds.ToString(CultureInfo.InvariantCulture) });
+                string started;
+                using (s_captureDiagStart.Auto())
+                    started = HandleDiagCommand(new[] { label, seconds.ToString(CultureInfo.InvariantCulture) });
                 if (!_recording) { notes.Add("diag did not start: " + started); }
                 while (_recording) yield return null;
                 diagPath = _lastSavedPath;
+                while (burstLog != null && !burstLog.IsCompleted) yield return null;
+                burst += " | " + (burstLog == null ? "log: not read"
+                    : burstLog.IsFaulted ? $"log: unreadable ({burstLog.Exception?.GetBaseException().Message})"
+                    : burstLog.Result);
 
 #if UNITY_EDITOR
                 SetStat("Capture", "run", $"prof {CaptureProfFrames} frames");

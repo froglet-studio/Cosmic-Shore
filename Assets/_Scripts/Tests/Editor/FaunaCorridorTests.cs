@@ -47,6 +47,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void PushOut_WithAStandoff_ParksPastTheWall()
+        {
+            var c = new FaunaCorridor();
+            c.Set(new List<Vector3> { Vector3.zero, new Vector3(1000, 0, 0) }, 50f, false, goalStandoff: 30f);
+            Assert.IsFalse(c.Contains(new Vector3(300, 60, 0)), "the standoff moves where goals land, not the tube");
+            var p = c.PushOut(new Vector3(300, 10, 0));
+            Assert.AreEqual(300f, p.x, 1e-3f);
+            Assert.Greater(p.y, 79.9f);
+            Assert.Less(p.y, 81f);
+            c.Clear();
+            Assert.AreEqual(0f, c.GoalStandoff);
+        }
+
+        [Test]
         public void PushOut_OnThePath_UsesSelfSide()
         {
             var c = Make(50f, false, Vector3.zero, new Vector3(1000, 0, 0));

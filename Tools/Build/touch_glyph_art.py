@@ -7,7 +7,7 @@
 Thumb-lift glyphs name the touch gesture a card's ability is on (Docs/Reports/MOBILE_VESSELS.md):
 a landscape phone with two thumbs at its bottom corners; a lifted thumb is hollow with an arrow up.
 The button icons are for TouchControlProfile.extraButtons (fire, ring, zoom, drift, bomb, squad,
-recall, hold, dipole, missile) and the crew seats' own buttons (the Goby's dart and lock, the
+recall, hold, dipole, missile, the Stoat's two orbits) and the crew seats' own buttons (the Goby's dart and lock, the
 Pistol's ghost and snap) and the disc and rim every button is drawn on. GUIDs are derived from the file name, so a re-run never re-keys an asset.
 """
 import hashlib
@@ -275,6 +275,30 @@ def i_dipole(d):
         line(d, pts, 6)
 
 
+def i_orbit(clockwise):
+    """The Stoat's orbit buttons (2026-11-02): a solid black hole and the orbit round it, the arrow showing its spin -
+    clockwise for the right orbit, anti-clockwise for the left."""
+    def draw(d):
+        cx = cy = 128
+        r = 80
+        sign = 1 if clockwise else -1
+        circle(d, cx, cy, 30)
+        start, sweep, steps = -90 - sign * 30, 290, 58
+        pts = []
+        for k in range(steps + 1):
+            a = math.radians(start + sign * sweep * k / steps)
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        line(d, pts[:-6], 12)
+        a = math.radians(start + sign * sweep)
+        tip = (cx + r * math.cos(a), cy + r * math.sin(a))
+        tx, ty = -math.sin(a) * sign, math.cos(a) * sign      # the direction of travel at the arrow's tip
+        nx, ny = math.cos(a), math.sin(a)                     # the radius there
+        base = (tip[0] - tx * 34, tip[1] - ty * 34)
+        d.polygon([(s(tip[0] + tx * 6), s(tip[1] + ty * 6)), (s(base[0] + nx * 24), s(base[1] + ny * 24)),
+                   (s(base[0] - nx * 24), s(base[1] - ny * 24))], fill=(W, W, W, 255))
+    return draw
+
+
 def i_missile(d):
     # a rocket climbing up and to the right: body, nose cone, two swept fins at the tail, its plume behind
     k = math.sqrt(0.5)
@@ -347,6 +371,8 @@ ART = {
     "TouchIcon_Recall": i_recall,
     "TouchIcon_Hold": i_hold,
     "TouchIcon_Dipole": i_dipole,
+    "TouchIcon_OrbitLeft": i_orbit(clockwise=False),
+    "TouchIcon_OrbitRight": i_orbit(clockwise=True),
     "TouchIcon_Missile": i_missile,
     "TouchIcon_Dart": i_dart,
     "TouchIcon_Lock": i_lock,

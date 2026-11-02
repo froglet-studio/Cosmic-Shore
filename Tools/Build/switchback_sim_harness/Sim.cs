@@ -20,6 +20,7 @@ static class Program
         var opt = Opts.Parse(args, 1);
         if (mode == "selftest") return SelfTest(opt);
         if (mode == "trace") { Trace(opt); return 0; }
+        if (mode == "races") { Races(opt); return 0; }
         Eval(opt);
         return 0;
     }
@@ -54,6 +55,24 @@ static class Program
             Console.WriteLine($"{i}  {LevelName(lvl),-9} {races,6} {fin,8} {med,9} {p90,6} {ringsPerMin / races,10:F1} " +
                               $"{blast,7} {thread,6} {direct,6} {keys,5} {hits,7}({dhits}) {emerg,6} {misses,7} " +
                               $"{carves * 60f / Mathf.Max(raceSecs, 1f),9:F1} {(carves > 0 ? carveSecs / carves : 0f),6:F2}");
+        }
+    }
+
+    // races: one line per race, for the compute evaluator (Tools/Compute/evaluators/switchback_fit.py):
+    //   RACE <I> <level> <seed> FIN|DNF <seconds> <gates threaded>/<gates> <cruise seconds>
+    // <cruise seconds> = the gate-to-gate path from the start at the Dolphin's cruise, the race's yardstick.
+    static void Races(Opts o)
+    {
+        foreach (int i in o.Intensities)
+        foreach (int lvl in o.Levels)
+        foreach (int seed in o.Seeds)
+        {
+            var w = World.Build(i, seed, o.With(noLayout: true));
+            float path = 0f;
+            Vector3 at = Race.StartOf(w.Course);
+            foreach (var g in w.Course) { path += Vector3.Distance(at, g.Position); at = g.Position; }
+            var r = Race.Run(i, seed, lvl, o, null);
+            Console.WriteLine($"RACE {i} {lvl} {seed} {(r.Finished ? "FIN" : "DNF")} {r.Time:F3} {r.Rings}/{w.Course.Count} {path / Race.CruiseSpeed:F3}");
         }
     }
 
@@ -143,10 +162,13 @@ sealed class Opts
     public float[] DriveAlign = { 34.14f, 35.308f, 35.308f, 51.947f };
     public float[] DriveRunway = { 0.26f, 1.422f, 1.422f, 1.105f };
     public float[] DriveSpend = { 0.96f, 0.835f, 0.835f, 0.502f };
+    // The rest of the asset's charge-drive fields (every Switchback variant ships the class defaults)
+    public float DrivePeakMargin = 3f, DriveMinDischarge = 0.2f, DriveMinGain = 30f, DriveMaxHold = 4f;
 
     public Opts With(bool noLayout) { var c = (Opts)MemberwiseClone(); c.NoLayout = noLayout; return c; }
 
     static int[] Ints(string s) => Array.ConvertAll(s.Split(','), int.Parse);
+    static void Fill(float[] a, float v) { for (int k = 0; k < a.Length; k++) a[k] = v; }
 
     public static Opts Parse(string[] a, int from)
     {
@@ -181,6 +203,15 @@ sealed class Opts
                 case "carveMax": o.CarveMaxSeconds = float.Parse(v); break;
                 case "driftLag": o.DriftLag = v != "0"; break;
                 case "noseLag": o.NoseLag = v != "0"; break;
+                // One drive at every intensity, by the ChargeBoostAIPolicySO field names (the compute search's genome)
+                case "drive.alignDegrees": Fill(o.DriveAlign, float.Parse(v)); break;
+                case "drive.engageRunwaySeconds": Fill(o.DriveRunway, float.Parse(v)); break;
+                case "drive.spendAtCharge01": Fill(o.DriveSpend, float.Parse(v)); break;
+                case "drive.peakMarginUnits": o.DrivePeakMargin = float.Parse(v); break;
+                case "drive.minDischargeSeconds": o.DriveMinDischarge = float.Parse(v); break;
+                case "drive.minPulseGainUnits": o.DriveMinGain = float.Parse(v); break;
+                case "drive.maxHoldOffSeconds": o.DriveMaxHold = float.Parse(v); break;
+                case "maxSeconds": o.MaxSeconds = float.Parse(v); break;
                 case "noseFollow": for (int r = 0; r < 4; r++) o.NoseFollowTable[r] = Array.ConvertAll(v.Split(','), float.Parse); break;
                 case "noseFollowI1": case "noseFollowI2": case "noseFollowI3": case "noseFollowI4":
                     o.NoseFollowTable[key[^1] - '1'] = Array.ConvertAll(v.Split(','), float.Parse); break;
@@ -344,11 +375,12 @@ sealed class Race
     public bool Finished; public float Time; public int Rings, Blast, Thread, Direct, Keys, Hits, DangerHits, Emergencies, Misses;
 
     // AIPilot / GateRaceController / MinigameSwitchback.unity
-    const float Cruise = 68f, Turn = 110f;                    // Dolphin.prefab: ThrottleScaler 68, Pitch/Yaw 110
+    public const float CruiseSpeed = 68f;
+    const float Cruise = CruiseSpeed, Turn = 110f;                    // Dolphin.prefab: ThrottleScaler 68, Pitch/Yaw 110
     const float CommitDist = 260f, ApproachLead = 300f, Through = 220f, LeadShare = 0.4f, LeadInside = 0.8f, CommitCos = 0.9f;
     // dolphin_drive_sim.py / DOLPHIN_ENERGY_ECONOMY.md §2
     const float MaxM = 2.259f, Fill = 1f / 3.636f, Drain = 0.4f, Lerp = 1.5f;
-    const float PeakMargin = 3f, MinDis = 0.2f, MinGain = 30f, MaxHold = 4f, Grace = 0.25f, UpToSpeed = 0.9f;
+    const float Grace = 0.25f, UpToSpeed = 0.9f;   // ChargeBoostAIPolicySO's constants; its fields are Opts.Drive*
     const float NoseFollow = 1.5f;                             // VesselTransformer.LERP_AMOUNT for AI hulls
     // SwitchbackBlastAI
     const float SetupAngle = 25f, SetupBack = 120f, StrikeThrough = 40f, LookRange = 160f, SenseStart = 6f;
@@ -365,6 +397,7 @@ sealed class Race
     }
 
     static float Ang(Vector3 a, Vector3 b) => Vector3.Angle(a, b);
+    public static Vector3 StartOf(List<RaceGate> course) => course[0].Position - course[0].Axis * 400f;
 
     static Vector3 RotateToward(Vector3 from, Vector3 to, float maxRad)
     {
@@ -392,7 +425,7 @@ sealed class Race
         float dAlign = o.DriveAlign[ii], dRunway = o.DriveRunway[ii], dSpend = o.DriveSpend[ii];
 
         // spawn: 400 u short of gate 0 on its axis, facing it
-        Vector3 pos = course[0].Position - course[0].Axis * 400f;
+        Vector3 pos = StartOf(course);
         Vector3 fwd = course[0].Axis, cmd = fwd, travel = fwd, up = Mathf.Abs(fwd.y) < 0.9f ? Vector3.Cross(fwd, Vector3.Cross(Vector3.up, fwd)).normalized : Vector3.forward;
         float v = Cruise, t = 0f;
         int idx = 0, locked = -1; float side = 1f, lead = ApproachLead;
@@ -499,14 +532,14 @@ sealed class Race
                 if (hold)
                 {
                     float since = t - heldAt;
-                    if ((discharging && since >= MinDis && v >= targetSpeed - PeakMargin) || (!discharging && since > Grace) || since > MaxHold) hold = false;
+                    if ((discharging && since >= o.DriveMinDischarge && v >= targetSpeed - o.DrivePeakMargin) || (!discharging && since > Grace) || since > o.DriveMaxHold) hold = false;
                 }
                 else if (drifting && !extending)
                 {
                     Vector3 toRing = ring - pos;
                     float mm = 1f + (MaxM - 1f) * meter;
                     if (Ang(travel, toRing) <= dAlign && Ang(fwd, toRing) <= dAlign && toRing.magnitude / Mathf.Max(v, 1f) >= dRunway
-                        && meter >= dSpend && Cruise * mm * mm - v >= MinGain)
+                        && meter >= dSpend && Cruise * mm * mm - v >= o.DriveMinGain)
                     { drifting = false; hold = true; heldAt = t; discharging = meter > 0f; travel = fwd; }
                 }
             }

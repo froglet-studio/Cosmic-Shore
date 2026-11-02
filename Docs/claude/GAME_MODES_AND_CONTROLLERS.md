@@ -877,7 +877,7 @@ through the replicated press path (`StoatSlingExecutor.AutopilotSling`). Generat
 from `author_stoat_assets.py`. See `_Scripts/Controller/Arcade/SLINGSHOT.md`. Authored headless —
 not yet run in the editor. **Since 2026-10-09 the Stoat's triggers are the round-15 FIELD DIPOLE**
 (`R_VesselActions/STOAT_DIPOLE.md`) and its autopilot is `StoatDipoleExecutor.Autopilot`; the sling
-above is unbound, so Slingshot is now flown on the dipole too. **Orbit only since 2026-11-02**: the Stoat flies Time mode's catch alone
+above is unbound, so Slingshot is now flown on the dipole too. **Orbit only since 2026-11-02**: the Stoat flies Time mode's catch alone, Mass and Gate mode removed
 (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`), so Slingshot is flown on the orbit.
 
 `Warpline(65)` is the **Stoat's TIME race** — Slingshot's shape and Slingshot's cut
@@ -924,7 +924,7 @@ through the replicated press path (`StoatSlingExecutor.AutopilotSling`). Generat
 from `author_stoat_assets.py`. See `_Scripts/Controller/Arcade/SLINGSHOT.md`. Authored headless —
 not yet run in the editor. **Since 2026-10-09 the Stoat's triggers are the round-15 FIELD DIPOLE**
 (`R_VesselActions/STOAT_DIPOLE.md`) and its autopilot is `StoatDipoleExecutor.Autopilot`; the sling
-above is unbound, so Slingshot is now flown on the dipole too. **Orbit only since 2026-11-02**: the Stoat flies Time mode's catch alone
+above is unbound, so Slingshot is now flown on the dipole too. **Orbit only since 2026-11-02**: the Stoat flies Time mode's catch alone, Mass and Gate mode removed
 (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`), so Slingshot is flown on the orbit.
 
 `Warpline(65)` is the **Stoat's TIME race** — Slingshot's shape and Slingshot's cut

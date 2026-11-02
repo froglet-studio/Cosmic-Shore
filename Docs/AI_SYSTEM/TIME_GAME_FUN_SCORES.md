@@ -38,7 +38,7 @@ against a mode, not for it.
 
 1. **Design is mostly good. Proof is missing.** Verb scores 7-9 for nine of the twelve games. Most floors sit on Rivals and
    Fairness, because almost nobody has raced these modes. Flying each one at I1 and I4 with AI rivals is the cheapest way
-   to raise them. The races are recorded automatically and the hourly AI learning sweep learns from them
+   to raise them. The races are recorded automatically and the daily AI learning sweep learns from them
    (`AUTO_LEARNING.md`).
 2. **Feedback is a 3-5 everywhere.** No gate race had a sound for threading a ring.
    - **Done (this change):** `GateRaceController` now has two FMOD slots, `gateThreadedEvent` and `courseFinishedEvent`,

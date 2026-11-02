@@ -49,6 +49,18 @@ VARIANT_ROW = {"hold": 1.0, "min_turn": 7.84, "cone": 15.999, "give_up": 4.0, "i
 # What ships since: those numbers (learned from Yash's races) plus the warp press, chosen by --grid (2026-11-02). The hull's
 # StoatSlingConfig and StoatSlingConfig_Slingshot both carry it.
 TUNED_ROW = dict(VARIANT_ROW, warp_dist=280.0)
+# The orbit after Yash's 2026-11-02 play test (StoatSlingConfig's new rows): caught, the hull is drawn in to 0.6 of the
+# squeeze's circle at 1.5 /s and flies 15% faster round it; only its own side catches (right = clockwise). The flick launch is
+# a person's gesture (the AI lets go by its cone), and the launch's aim and Mass power are not modelled: the kick is x1 at rest.
+ORBIT_ROW = dict(TUNED_ROW, inner=0.6, pull=1.5, bonus=0.15, side=True)
+# EARNED speed (Grok's review, 2026-11-02, StoatSlingConfig's earned rows): a held pair alone warps to 0.2 of the catch's warp,
+# the orbit to all of it, a timed launch keeps it as momentum over 2.5 s (the larger wins, never the sum); a release before 30
+# degrees pays nothing; the kick never passes 1.6 x the release speed. The AI lets go in the window whenever its aim (the
+# launch's 60 degree cone) reaches the target, and the launch turns toward where its stick points.
+EARNED = dict(press_share=0.5, min_sweep=30.0, momentum_s=6.0, cap=1.6, aim_cone=60.0)
+EARNED_ROW = dict(ORBIT_ROW, **EARNED)
+# What ships (--grid-earned chose it): no warp-only presses, and the AI holds for the window (aiHoldForWindowDegrees 120).
+SHIPPED_ROW = dict(EARNED_ROW, warp_dist=0.0, window_ai=120.0)
 # Regatta (MinigameRegatta.unity's approach numbers, three laps of RegattaCourse): the race line and the rails are not
 # modelled, so this is the gate steering only. Time 10 is the level regatta_balance.py gives the Stoat on the card.
 REGATTA_STEER = {"commit": 420.0, "lead": 480.0, "through": 320.0}
@@ -105,7 +117,7 @@ def sweet_spot(deg):
     return 1.0 - t * t * (3.0 - 2.0 * t)
 
 
-def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
+def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press."""
     n = len(gates); total = n * laps
     commit_r, lead_r, through_r = row.get("commit", COMMIT), row.get("lead", LEAD), row.get("through", THROUGH)
@@ -115,6 +127,16 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
     idx = 0; locked = -1; side = 1.0; lead = LEAD; t = 0.0
     extending = False; ext_t = 0.0; breaks = 0; misses = 0; orbit = L.Orbit()
     laid = caught = False; attractor = None; orbit_side_left = False; radius = 0.0; swept = 0.0; last_radial = None; laid_at = 0.0
+    steered_out = False
+    # The Orrery (orrery_port.layout): its static prisms in a 24 u hash for contacts, its moons the AI's anchors.
+    moons, hits, grid = [], set(), {}
+    if orrery is not None:
+        moons, prisms, _ = orrery
+        for k, pr in enumerate(prisms):
+            grid.setdefault(tuple(int(math.floor(c / 24.0)) for c in pr["p"]), []).append(k)
+    anchor_presses = 0
+    momentum_clock, momentum_at = 1.0, -1e9
+    earned = "press_share" in row
     last_press = -1e9; warped_t = 0.0; caught_t = 0.0; presses = 0; catches_n = 0; dist = 0.0; timed = 0
     kick = None
     while t < T and idx < total:
@@ -143,22 +165,60 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
                     let_go = t - laid_at >= row["give_up"]
                 else:
                     off = ang(fwd, to)
-                    let_go = off <= row["cone"] or (sweet_spot(math.degrees(swept)) >= 0.999 and off <= 3 * row["cone"])
+                    wide = max(3 * row["cone"], row.get("aim_cone", 0.0))
+                    if row.get("window_ai"):
+                        # hold for the window, then launch whenever the aim can reach the target; past it, let go anyway
+                        let_go = (sweet_spot(math.degrees(swept)) >= 0.999 and off <= wide) or math.degrees(swept) >= row["window_ai"]
+                    else:
+                        let_go = steered_out or off <= row["cone"] or (sweet_spot(math.degrees(swept)) >= 0.999 and off <= wide)
+                    steered_out = False
                 if let_go:
                     if caught:
                         timing = sweet_spot(math.degrees(swept))
                         timed += timing >= 0.999
                         amount = CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * (MISS_SHARE + (1 - MISS_SHARE) * timing) * kick_rate
+                        if earned:
+                            # StoatSlingExecutor.Slingshot: aimed by the stick (toward the AI's aim), nothing before the minimum
+                            # sweep, momentum by the timing, the kick under the cap (StoatSlingMath.CappedKick)
+                            reach = min(ang(fwd, to), row["aim_cone"] * ai_stick(ang(fwd, to)))
+                            fwd = rotate_toward(fwd, unit(to), math.radians(reach)); cmd = list(fwd)
+                            if math.degrees(swept) < row["min_sweep"]:
+                                amount = 0.0
+                            else:
+                                amount = min(amount, (row["cap"] - 1) * CRUISE * clock)
+                                momentum_clock, momentum_at = 1 + (clock - 1) * timing, t
                         if amount > 0: kick = (list(fwd), amount, t)
                     laid = caught = False
             elif row["min_turn"] > 0 and t - last_press >= row["interval"]:
                 ring_range = norm(sub(ring, pos))
                 f, up = fwd, [0.0, 1.0, 0.0]
                 right = unit(cross(up, f)) if abs(dot(up, f)) < 0.999 else [1.0, 0.0, 0.0]
+                # StoatSlingExecutor.AutopilotSling's ORBIT ANCHOR: the moon beside this ring; press only where the pair lands
+                anchor_state = None
+                if moons and row.get("anchor"):
+                    near = min(moons, key=lambda m: norm(sub(m["centre"], ring)))
+                    if norm(sub(near["centre"], ring)) <= row.get("anchor_reach", 120.0):
+                        rel = sub(near["centre"], pos)
+                        lz, lx = dot(rel, f), dot(rel, right)
+                        ly = dot(rel, unit(cross(f, right)))
+                        w = row["anchor"]
+                        if lz > CATCH_AHEAD + w: anchor_state = "wait"
+                        elif lz >= CATCH_AHEAD - w:
+                            ok = CATCH_SIDE - w <= abs(lx) <= CATCH_SIDE + w and abs(ly) <= w
+                            anchor_state = ("left" if lx < 0 else "right") if ok else "wait"
+                if anchor_state == "wait":
+                    pass
+                elif anchor_state in ("left", "right"):
+                    left = anchor_state == "left"
+                    last_press = t; presses += 1; anchor_presses += 1
+                    mid = add(pos, mul(f, CATCH_AHEAD))
+                    attractor = add(mid, mul(right, -CATCH_SIDE if left else CATCH_SIDE))
+                    laid = True; caught = False; orbit_side_left = left
+                    radius = orbit_radius(row["hold"]); swept = 0.0; laid_at = t
                 off_nose = math.degrees(math.atan2(dot(to, right), dot(to, f)))
                 turn = ring_range >= row["min_dist"] and abs(off_nose) >= row["min_turn"]
                 warp_press = row["warp_dist"] > 0 and ring_range >= row["warp_dist"]   # StoatSlingMath.WantsWarp
-                if norm(to) > 1e-3 and (turn or warp_press):
+                if anchor_state is None and norm(to) > 1e-3 and (turn or warp_press):
                     left = dot(to, right) < 0
                     last_press = t; presses += 1
                     mid = add(pos, mul(f, CATCH_AHEAD))
@@ -166,8 +226,19 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
                     laid = True; caught = False; orbit_side_left = left
                     radius = orbit_radius(row["hold"]); swept = 0.0; laid_at = t
         # the flight clock (StoatPathfinderExecutor, StoatDipoleMath.StepBoost): warped while a pair is held, from the press
-        if laid:
-            clock += (warp_top - clock) * (1 - math.exp(-BOOST_RISE * dt)); warped_t += dt
+        if earned:
+            # StoatPathfinderExecutor: the press's small warp, the orbit's full one, the launch's momentum - the larger
+            held = warp_top * (1 + row.get("bonus", 0.0)) if caught else (1 + (warp_top - 1) * row["press_share"]) if laid else 1.0
+            age = t - momentum_at
+            mom = 1 + (momentum_clock - 1) * (1 - age / row["momentum_s"]) if 0 <= age < row["momentum_s"] else 1.0
+            target = max(held, mom)
+            if target > 1.001:
+                clock += (target - clock) * (1 - math.exp(-BOOST_RISE * dt)); warped_t += dt
+            else:
+                clock = 1.0 + (clock - 1.0) * math.exp(-dt / BOOST_FADE)
+        elif laid:
+            top = warp_top * (1 + row.get("bonus", 0.0) if caught else 1.0)
+            clock += (top - clock) * (1 - math.exp(-BOOST_RISE * dt)); warped_t += dt
         else:
             clock = 1.0 + (clock - 1.0) * math.exp(-dt / BOOST_FADE)
         dtf = dt * clock
@@ -175,13 +246,22 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
         # StoatSlingExecutor.StepOrbit
         correction = [0.0, 0.0, 0.0]
         if laid:
-            follow = EASE_RATE if caught else FOLLOW_RATE
-            radius += (orbit_radius(row["hold"]) - radius) * (1 - math.exp(-follow * dt))
-            if not caught and catches(pos, fwd, attractor, radius):
+            squeeze_r = orbit_radius(row["hold"])
+            want = squeeze_r * row.get("inner", 1.0) if caught else squeeze_r
+            follow = (row.get("pull", 0.0) or EASE_RATE) if caught else FOLLOW_RATE
+            radius += (want - radius) * (1 - math.exp(-follow * dt))
+            hull_right = unit(cross([0.0, 1.0, 0.0], fwd)) if abs(fwd[1]) < 0.999 else [1.0, 0.0, 0.0]
+            own_side = (dot(sub(attractor, pos), hull_right) < 0) == orbit_side_left       # StoatSlingMath.OnSpinSide
+            if not caught and (own_side or not row.get("side")) and catches(pos, fwd, attractor, radius):
                 caught = True; catches_n += 1; swept = 0.0; last_radial = sub(pos, attractor); radius = norm(last_radial)
             if caught:
                 caught_t += dt
                 to_c = sub(attractor, pos); d = norm(to_c)
+                if row.get("steer_out") and d > 1e-3:
+                    # StoatSlingMath.SteersOut: the AI's stick turns toward its aim; away from the hole by 90+ deg lets go
+                    inward = sub(to_c, mul(fwd, dot(to_c, fwd))); turn_dir = sub(to, mul(fwd, dot(to, fwd)))
+                    if norm(inward) > 1e-6 and norm(turn_dir) > 1e-6 and ai_stick(ang(fwd, to)) >= 0.5 and ang(turn_dir, inward) >= 90:
+                        steered_out = True
                 if d > 1e-3:
                     correction = mul(to_c, (d - radius) * (1 - math.exp(-RADIAL_RATE * dt)) / d)
                 step = v / max(1.0, radius) * dt
@@ -222,11 +302,21 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60):
                 idx += 1
             else:
                 misses += 1; locked = -1; extending = True; ext_t = 0.0   # re-latch, BreakOffNow
+        if grid:
+            cell = tuple(int(math.floor(c / 24.0)) for c in newpos)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for dz in (-1, 0, 1):
+                        for k in grid.get((cell[0] + dx, cell[1] + dy, cell[2] + dz), ()):
+                            pr = orrery[1][k]
+                            if k not in hits and norm(sub(newpos, pr["p"])) < pr["size"] * 0.5 + 3.0: hits.add(k)
         dist += norm(sub(newpos, pos))
         pos = newpos; t += dt
     return {"time": round(t, 1) if idx >= total else None, "rings": idx, "misses": misses, "breaks": breaks,
             "warped": round(warped_t / max(t, 1e-6), 2), "caught": round(caught_t / max(t, 1e-6), 2),
-            "speed": round(dist / max(t, 1e-6), 1), "presses": presses, "catches": catches_n, "timed": timed}
+            "speed": round(dist / max(t, 1e-6), 1), "presses": presses, "catches": catches_n, "timed": timed,
+            "hits": len(hits), "moon_hits": sum(1 for k in hits if orrery[1][k]["size"] < 5.0) if orrery else 0,
+            "anchor_presses": anchor_presses}
 
 
 def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
@@ -237,7 +327,8 @@ def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
         out[i] = {"median": statistics.median(r["time"] if r["time"] else 300 + 10 * (16 - r["rings"]) for r in rs),
                   "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
                   "speed": statistics.mean(r["speed"] for r in rs), "warped": statistics.mean(r["warped"] for r in rs),
-                  "n": len(rs)}
+                  "ppm": statistics.mean(60 * r["presses"] / max(1.0, r["time"] or 300.0) for r in rs),
+                  "timed": statistics.mean(r["timed"] / max(1, r["catches"]) for r in rs), "n": len(rs)}
     return out
 
 
@@ -248,12 +339,14 @@ def score_regatta(row, intensities=(1, 2, 3, 4), dt=1 / 30):
         gates = [{"p": g["p"], "a": unit(g["a"]), "r": g["r"]} for g in CP.regatta_course(i, rails=False)["gates"]]
         r = race(gates, dict(row, **REGATTA_STEER), laps=3, dt=dt)
         out[i] = {"median": r["time"] if r["time"] else 300.0 + 10 * (3 * len(gates) - r["rings"]), "finished": int(bool(r["time"])),
-                  "misses": r["misses"], "speed": r["speed"], "warped": r["warped"], "n": 1}
+                  "misses": r["misses"], "speed": r["speed"], "warped": r["warped"],
+                  "ppm": 60 * r["presses"] / max(1.0, r["time"] or 300.0), "timed": r["timed"] / max(1, r["catches"]), "n": 1}
     return out
 
 
 def line(name, s):
-    cells = " ".join(f"I{i} {v['median']:6.1f}s {v['finished']}/{v['n']} {v['misses']:4.1f}m {v['speed']:5.0f}u/s" for i, v in s.items())
+    cells = " ".join(f"I{i} {v['median']:6.1f}s {v['finished']}/{v['n']} {v['misses']:4.1f}m {v['speed']:4.0f}u/s "
+                     f"{v.get('ppm', 0):4.1f}/min {100 * v.get('timed', 0):3.0f}%t" for i, v in s.items())
     return f"{name:<34} {cells}"
 
 
@@ -273,6 +366,46 @@ def grid(seeds=4):
     for loss, row, s in rows[:10]:
         print(f"{loss:.3f} {row}")
         print("    " + line("", s))
+
+
+def score_orrery(row, seeds=8, intensities=(1, 2, 3, 4), dt=1 / 30):
+    """Slingshot with the Orrery laid (orrery_port.layout): race seconds, prisms hit, moons hit, anchor presses."""
+    import orrery_port as O
+    out = {}
+    for i in intensities:
+        rs = []
+        for s in range(seeds):
+            c = course(i, 20260000 + 97 * s + i)
+            rs.append(race(c, row, dt=dt, orrery=O.layout(c, i)))
+        out[i] = {"median": statistics.median(r["time"] if r["time"] else 300 + 10 * (16 - r["rings"]) for r in rs),
+                  "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
+                  "speed": statistics.mean(r["speed"] for r in rs), "ppm": statistics.mean(60 * r["presses"] / max(1.0, r["time"] or 300.0) for r in rs),
+                  "timed": statistics.mean(r["timed"] / max(1, r["catches"]) for r in rs), "n": len(rs),
+                  "hits": statistics.mean(r["hits"] for r in rs), "moon_hits": statistics.mean(r["moon_hits"] for r in rs),
+                  "anchor": statistics.mean(r["anchor_presses"] for r in rs)}
+    return out
+
+
+def line_orrery(name, s):
+    return f"{name:<30} " + " ".join(f"I{i} {v['median']:5.1f}s {v['finished']}/{v['n']} hit {v['hits']:4.1f} (moon {v['moon_hits']:3.1f}) "
+                                      f"anchor {v['anchor']:4.1f} {100 * v['timed']:3.0f}%t" for i, v in s.items())
+
+
+def grid_earned(seeds=4):
+    rows = []
+    for window_ai in (0, 120.0, 150.0):
+        for min_turn in (7.84, 30.0):
+            for press_share in (0.2, 0.4):
+                for momentum_s in (2.5, 4.0):
+                    row = dict(EARNED_ROW, warp_dist=0.0, min_turn=min_turn, press_share=press_share, momentum_s=momentum_s)
+                    if window_ai: row["window_ai"] = window_ai
+                    sc = score(row, seeds=seeds)
+                    loss = sum(math.log(v["median"]) for v in sc.values()) / len(sc) + 0.05 * sum(v["misses"] for v in sc.values()) / len(sc)
+                    rows.append((loss, {k: row[k] for k in ("min_turn", "press_share", "momentum_s")} | {"window_ai": window_ai}, sc))
+    rows.sort(key=lambda r: r[0])
+    for loss, row, sc in rows[:8]:
+        print(f"{loss:.3f} {row}")
+        print("    " + line("", sc))
 
 
 def self_test():
@@ -302,14 +435,28 @@ def self_test():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid", action="store_true"); ap.add_argument("--self-test", action="store_true"); ap.add_argument("--seeds", type=int, default=12)
+    ap.add_argument("--earned", action="store_true"); ap.add_argument("--grid-earned", action="store_true")
+    ap.add_argument("--orrery", action="store_true")
     a = ap.parse_args()
     if a.self_test: sys.exit(self_test())
     if a.grid: grid(); sys.exit(0)
+    if a.grid_earned: grid_earned(); sys.exit(0)
+    if a.orrery:
+        print(line_orrery("no Orrery (the shipped AI)", score(SHIPPED_ROW, seeds=a.seeds) and score_orrery(SHIPPED_ROW, seeds=0) or {}) if False else "")
+        print(line_orrery("Orrery, the shipped AI", score_orrery(SHIPPED_ROW, seeds=a.seeds)))
+        for w in (15.0, 22.0, 30.0):
+            print(line_orrery(f"Orrery, anchor window {w:.0f} u", score_orrery(dict(SHIPPED_ROW, anchor=w), seeds=a.seeds)))
+        sys.exit(0)
     print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
     print(line("hull's own AI row (30 deg, 3 s)", score(HULL_ROW, seeds=a.seeds)))
     print(line("the learned variant, no warp press", score(VARIANT_ROW, seeds=a.seeds)))
     tuned = score(TUNED_ROW, seeds=a.seeds, dt=1 / 60)
     print(line("SHIPPED: + warp press at 280 u", tuned))
     print("  share of the race with a pair held:", {i: round(v["warped"], 2) for i, v in tuned.items()})
-    print(line("Regatta at rest (Time 0)", score_regatta(TUNED_ROW, dt=1 / 60)))
-    print(line("Regatta at Time 10 (the card)", score_regatta(dict(TUNED_ROW, warp_top=5.6, kick_rate=2.0), dt=1 / 60)))
+    orbit = score(ORBIT_ROW, seeds=a.seeds, dt=1 / 60)
+    print(line("SHIPPED 11-02: + inner orbit, spin side, steer out", orbit))
+    print(line("Regatta at Time 10, the 11-02 orbit", score_regatta(dict(ORBIT_ROW, warp_top=5.6), dt=1 / 60)))
+    if a.earned:
+        for name, row in (("EARNED, the old AI (press spam)", EARNED_ROW), ("SHIPPED: EARNED, the window AI", SHIPPED_ROW)):
+            print(line(name, score(row, seeds=a.seeds, dt=1 / 60)))
+        print(line("Regatta Time 10, SHIPPED", score_regatta(dict(SHIPPED_ROW, warp_top=5.6), dt=1 / 60)))
