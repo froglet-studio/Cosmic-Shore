@@ -446,6 +446,57 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     serializes (an earlier part's `...Icon` reference is safe), and after a rebind grep the prefab for every new field.
     On the Time card Garrett took H, "the jump" (a ghost where the hull was, the hull where the dash puts it), over a
     dashed path or a speed wedge: the set distance is what the dash is, and only the before/after pair shows it.
+
+66. **Name the vessel the pilot flies, not the asset it inherited, and check every injected type's namespace.** The
+    Tiger Moth replaced the Butterfly and kept its HUD, so the files say Butterfly; the first Drop sheet went out as
+    "Butterfly", and Garrett: "the tigermoth is the new name for this vessel. you appear to be confused about that."
+    Read the vessel doc's header (a RETIRED line) before naming a spec, and name the spec, sheets and new parts for the
+    live vessel while leaving the inherited asset names alone. Separately, the Angler's controller injected
+    `GameDataSO` without `using CosmicShore.Utility`, a compile error someone else had to fix (#1651); with no compiler
+    in the session, grep the namespace of every type a C# change newly names.
+
+67. **Draw an upgrade's part only once the upgrade is live, and say who it hit by colour, not by what flew off.**
+    Garrett on the Tiger Moth: "the portal should only appear once the upgrade comes" (the Toll Gate wormhole had been
+    drawn at rest), and on Scale Dust: "we don't need the element to be seen coming out. Show a grey ship and turn it
+    Red when you hit then it will look different then space." A rival that turns from grey to danger on contact says
+    "hit" without a second object, and it keeps the Charge card apart from the Space card's own dust. An upgrade that
+    reaches two cards (Toll Gate is Charge's, its wormhole is the Time card's) shows on both, the same ring in the
+    domain colour, red as a rival pays.
+
+68. **The omni crystal card is part of every lockup.** "You are still forgetting to show the omnicrystal totem as part
+    of this exercise." Every vessel has the card left of Charge (`VesselHUDView.omniAbilitySprite`, locked when empty);
+    the kit's sheets now draw it (`states.ORDER`, `card.flower("Omni")`), and a hull's round is not done until its omni
+    card has been asked about.
+
+69. **"To scale" has a floor: the smallest size that still reads.** "Make the moth to scale in the explosion": the
+    Tiger Moth (span 21.35) in its 900-unit bloom is 1.2% of the sphere, about 1.5 px on the 128 canvas and nothing on a
+    40 px card. Draw the small thing as small as it still reads (box ~24, about 8 px on the HUD), let the big thing fill
+    the card to its rim, and say the true ratio in the spec. Scatter many small marks on a golden-angle spiral, not a
+    seeded random: random clumps, and a clump hides the small thing at the centre.
+
+70. **Re-read the whole view file after rewriting a section of it.** Wiring the Tiger Moth's Time card replaced a block
+    of `ButterflyHUDView` and took `SetMassMode` with it, while the controller and `Initialize` still called it: a
+    compile error nobody here could see. With no compiler in the session, grep every method the controller calls on
+    the view (`grep -o 'view\.[A-Za-z]*(' Controller.cs`) against the view after each edit.
+
+71. **One colour language for an effect, in the world and on its card.** "make a dust made of danger color, team domain
+    color, team shielded domain color. use this in the icon and for the actual dust". When a card draws a world effect
+    in several colours, each colour is its own part (the kit's `motes(tone=)` splits one scatter into thirds), and the
+    game's effect reads the same palette from one shared method, so the card and the world cannot drift.
+72. **Mass reads square; its upgrade sharpens the outside.** The Tiger Moth's keys: rectangles with a straight cut
+    ("more square edges. including the cut out"); Gilded Wake points their OUTER ends ("octahedrons on the outside but
+    keep them square edge on the interior"). An upgrade drawn as a swapped part, not a tint alone.
+
+73. **No rhombus for a prism or a mote: the Time petal owns that shape.** "you need to stop using the rhombuses for
+    shielded prisms, that shape is owned by the time petal, which is confusing. prisms are mass so cut the rhombus in half
+    when you can so it is two close triangles. you can also put a negative space x on square prisms ... for the motes make
+    them little circles or ellipses". Use `motifs.prism_halves` or `motifs.prism_square_x`, and round motes. Before
+    drawing any small mark, check it against the petal shapes on the plate above the card.
+74. **When a card is "too busy", cut to the one thing the dial changes plus the upgrade.** The Tiger Moth's Space card
+    lost its tended prism and its broken rival prism for "just the multicolor motes and ... a bigger domain color
+    supershielded prism at the bottom of the rain". And an upgrade that changes a shape can change its proportions too:
+    Gilded Wake's keys "go wider and start the taper sooner".
+
 75. **The CTA lime is never a card's "on" colour; the lit parts already say it.** The Brittle Star's four plates turned
     lime while each mode was on, and on the Charge card the lime plate under white whips was "too much" (Garrett,
     2026-11-01). The plate keeps its resting gauge colour whatever the mode does; only a warning state (overheat's hot
@@ -460,7 +511,7 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
 
 ## 2026-11-01 - the Honeyguide: seventeen icons in one round, for a trigger that swaps its ability
 
-66. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
+78. **A trigger whose ability is swapped needs a family, not four cards.** Garrett: "we will need an icon for each
     ability that can take over" - the Honeyguide's RT and LT each show whichever banked ability is current, so the
     thirteen upgrades are drawn as one family with the base icons (`Upgrades/` subfolder, still under the 24 px
     distinct gate, which holds them apart). Two things the first draft got wrong at 40 px: a loop with a straight tether

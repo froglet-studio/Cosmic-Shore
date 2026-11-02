@@ -54,6 +54,70 @@ namespace CosmicShore.UI
         [Tooltip("Gauge colour as it reaches Dust mode.")]
         [SerializeField] Color dustModeColor = new(1f, 0.82f, 0.45f, 1f);
 
+        [Header("Mass card: Mass / Dust mode (icon_kit specs/tigermoth.py, Garrett picked A 2026-10-31)")]
+        [Tooltip("The width Mass mode adds, each piano key's two ends (TigerMoth_MassKeyEnds): the domain colour, " +
+                 "shielded under Gilded Wake; fades to dustKeyEndsAlpha as the wake narrows into Dust mode.")]
+        [SerializeField] Image massKeyEndsIcon;
+        [Tooltip("Gilded Wake (Mass 5): the key ends pointed on the outside, square inside " +
+                 "(TigerMoth_MassKeyEndsGilded), the shielded colour. Shown in place of massKeyEndsIcon once upgraded.")]
+        [SerializeField] Image massKeyEndsGildedIcon;
+        [Tooltip("The bare keys every mode lays (TigerMoth_MassKeys): the domain colour, shielded under Gilded Wake.")]
+        [SerializeField] Image massKeysIcon;
+        [Tooltip("The Tiger Moth from above, wings spread (TigerMoth_MassMoth), the domain colour.")]
+        [SerializeField] Image massMothIcon;
+        [Tooltip("Alpha of the key ends in Dust mode (the narrow wake).")]
+        [SerializeField, Range(0f, 1f)] float dustKeyEndsAlpha = 0.2f;
+
+        [Header("Charge card: Scale Dust (icon_kit specs/tigermoth.py, Garrett picked A 2026-10-31)")]
+        [Tooltip("Charge 5 Toll Gate: the wormhole ring (TigerMoth_ScaleDustRing), the domain colour; danger as a " +
+                 "rival pays the toll. Hidden before the upgrade.")]
+        [SerializeField] Image scaleDustRingIcon;
+        [Tooltip("The dust (TigerMoth_ScaleDustMotes), the pilot's shielded colour; dim in Mass mode.")]
+        [SerializeField] Image scaleDustMotesIcon;
+        [Tooltip("The dust's danger third (TigerMoth_ScaleDustMotesDanger): the dust is made of three colours, danger, " +
+                 "domain and shielded, as the game's motes are (ButterflyDustField.ResolveMotePalette).")]
+        [SerializeField] Image scaleDustMotesDangerIcon;
+        [Tooltip("The dust's domain third (TigerMoth_ScaleDustMotesDomain).")]
+        [SerializeField] Image scaleDustMotesDomainIcon;
+        [Tooltip("A rival in the dust (TigerMoth_ScaleDustRival): grey, danger for a beat when the dust bites.")]
+        [SerializeField] Image scaleDustRivalIcon;
+        [Tooltip("The Tiger Moth, wings shut (TigerMoth_ScaleDustMoth), the domain colour.")]
+        [SerializeField] Image scaleDustMothIcon;
+        [Tooltip("The rival before the dust reaches it.")]
+        [SerializeField] Color rivalIdleColor = new(0.588f, 0.604f, 0.667f, 1f);
+        [Tooltip("A rival the dust is biting, and a wormhole a rival pays through.")]
+        [SerializeField] Color hitColor = new(1f, 0.3294f, 0.102f, 1f);
+        [Tooltip("How long a bite or a toll shows (seconds).")]
+        [SerializeField, Min(0f)] float hitFlashSeconds = 0.6f;
+        [Tooltip("Alpha of the Charge card's parts in Mass mode (no dust).")]
+        [SerializeField, Range(0f, 1f)] float noDustAlpha = 0.35f;
+
+        [Header("Space card: Dust Reach (icon_kit specs/tigermoth.py, A, 2026-11-01)")]
+        [Tooltip("The dust's danger third (TigerMoth_DustReachMotesDanger).")]
+        [SerializeField] Image dustReachMotesDangerIcon;
+        [Tooltip("The dust's domain third (TigerMoth_DustReachMotesDomain).")]
+        [SerializeField] Image dustReachMotesDomainIcon;
+        [Tooltip("The dust's shielded third (TigerMoth_DustReachMotes).")]
+        [SerializeField] Image dustReachMotesIcon;
+        [Tooltip("Space 5 Diamond Dust: a super-shielded prism at the bottom of the rain (TigerMoth_DustReachDiamond), " +
+                 "the domain colour. Hidden before the upgrade.")]
+        [SerializeField] Image dustReachDiamondIcon;
+        [Tooltip("The Tiger Moth, wings shut (TigerMoth_DustReachMoth), the domain colour.")]
+        [SerializeField] Image dustReachMothIcon;
+
+        [Header("Time card: the Tiger Moth's Drop (icon_kit specs/tigermoth.py, Garrett picked A 2026-10-31)")]
+        [Tooltip("Charge 5 Toll Gate: the wormhole the drop leaves (TigerMoth_DropMouth), the domain colour; danger as " +
+                 "a rival pays the toll. Hidden before the upgrade.")]
+        [SerializeField] Image dropMouthIcon;
+        [Tooltip("The fall streaks (TigerMoth_DropStreaks), white: full while dropping, dimmed otherwise.")]
+        [SerializeField] Image dropStreaksIcon;
+        [Tooltip("The Tiger Moth, wings shut (TigerMoth_DropMoth), the domain colour.")]
+        [SerializeField] Image dropMothIcon;
+        [Tooltip("Alpha of the streaks while the drop is ready but not held.")]
+        [SerializeField, Range(0f, 1f)] float dropIdleAlpha = 0.6f;
+        [Tooltip("Alpha every Time part dims to while the drop recharges (the fleet's veil sweeps over it).")]
+        [SerializeField, Range(0f, 1f)] float dropRechargingAlpha = 0.3f;
+
         /// <summary>
         /// Seat every readout at its resting value. Idempotent, because this re-runs on a vessel
         /// swap: the HUD component is not rebuilt, so a field left holding the previous pilot's
@@ -65,16 +129,126 @@ namespace CosmicShore.UI
         {
             SetMassMode(1f);
             SetAbilityCooldown(Element.Time, 0f);
+            _dropShown = _dustShown = -1;
+            SetDrop(false, true, false, false);
+            SetScaleDust(false, false, false, false);
+            _reachShown = -1;
+            SetDustReach(false, false);
         }
 
-        /// <summary>Push the mode, 1 = Mass mode, 0 = Dust mode, anything between = switching.</summary>
-        public void SetMassMode(float massMode01)
+        int _dropShown = -1, _dustShown = -1, _reachShown = -1;
+        Color _domain = Color.white, _shielded = Color.white, _danger = Color.white;
+
+        /// <summary>
+        /// Push the mode, 1 = Mass mode, 0 = Dust mode, anything between = switching
+        /// (<c>SpreadWingsActionExecutor.MassMode01</c>, eased). The plate fills with it; the card's key ends fade with
+        /// it to the bare keys. <paramref name="gildedWake"/> is Mass 5 (the replicated unlock bit): the keys turn the
+        /// shielded colour as the wake widens, which is when Mass mode lays shielded prisms.
+        /// </summary>
+        public void SetMassMode(float massMode01, bool gildedWake = false)
         {
-            if (!wingEnergyGauge) return;
             float value = Mathf.Clamp01(massMode01);
-            wingEnergyGauge.fillAmount = value;
-            wingEnergyGauge.color = Color.Lerp(dustModeColor, massModeColor, value);
+            if (wingEnergyGauge)
+            {
+                wingEnergyGauge.fillAmount = value;
+                wingEnergyGauge.color = Color.Lerp(dustModeColor, massModeColor, value);
+            }
+
+            var keys = gildedWake ? Color.Lerp(_domain, _shielded, value) : _domain;
+            float ends = Mathf.Lerp(dustKeyEndsAlpha, 1f, value);
+            if (massKeyEndsIcon)
+            {
+                massKeyEndsIcon.enabled = !gildedWake || !massKeyEndsGildedIcon;
+                massKeyEndsIcon.color = A(keys, ends);
+            }
+            if (massKeyEndsGildedIcon)
+            {
+                massKeyEndsGildedIcon.enabled = gildedWake;
+                massKeyEndsGildedIcon.color = A(keys, ends);
+            }
+            if (massKeysIcon) massKeysIcon.color = A(keys, 1f);
+            if (massMothIcon) massMothIcon.color = A(_domain, 1f);
         }
+
+        /// <summary>The pilot's domain, shielded and danger colours (alpha 0 = not resolved yet, keep the last).</summary>
+        public void SetPilotColors(Color domain, Color shielded, Color danger)
+        {
+            if (domain.a > 0f && domain != _domain) { _domain = domain; _dropShown = _dustShown = _reachShown = -1; }
+            if (shielded.a > 0f && shielded != _shielded) { _shielded = shielded; _dustShown = _reachShown = -1; }
+            if (danger.a > 0f && danger != _danger) { _danger = danger; _dustShown = _reachShown = -1; }
+        }
+
+        static Color A(Color c, float a) => new(c.r, c.g, c.b, a);
+
+        /// <summary>
+        /// The Drop on the Time card (<c>TigerMothDropExecutor.IsDropping</c> / <c>IsReady</c>): the moth in the domain
+        /// colour falling, the streaks full while the trigger holds it and dim while it waits, every part dim while it
+        /// recharges. The wormhole shows only at Charge 5 Toll Gate (<paramref name="tollGate"/>), in the domain colour,
+        /// and in <see cref="hitColor"/> while <paramref name="tolled"/> (a rival just paid through it).
+        /// </summary>
+        public void SetDrop(bool dropping, bool ready, bool tollGate, bool tolled)
+        {
+            int key = (dropping ? 1 : 0) | (ready ? 2 : 0) | (tollGate ? 4 : 0) | (tolled ? 8 : 0);
+            if (key == _dropShown) return;
+            _dropShown = key;
+            float live = dropping || ready ? 1f : dropRechargingAlpha;
+            float streaks = dropping ? 1f : ready ? dropIdleAlpha : dropRechargingAlpha;
+            if (dropMouthIcon)
+            {
+                dropMouthIcon.enabled = tollGate;
+                dropMouthIcon.color = A(tolled ? hitColor : _domain, live);
+            }
+            if (dropStreaksIcon) dropStreaksIcon.color = A(Color.white, streaks);
+            if (dropMothIcon) dropMothIcon.color = A(_domain, live);
+        }
+
+        /// <summary>
+        /// Scale Dust on the Charge card: the moth over its dust and a rival in it, grey until the dust bites
+        /// (<paramref name="hit"/>, from <c>ButterflyDustField.LastBiteTime</c>), <see cref="hitColor"/> then; all dim in
+        /// Mass mode. At Charge 5 Toll Gate the wormhole ring shows, in the domain colour, red while a rival pays.
+        /// </summary>
+        public void SetScaleDust(bool dustOn, bool hit, bool tollGate, bool tolled)
+        {
+            int key = (dustOn ? 1 : 0) | (hit ? 2 : 0) | (tollGate ? 4 : 0) | (tolled ? 8 : 0);
+            if (key == _dustShown) return;
+            _dustShown = key;
+            float a = dustOn ? 1f : noDustAlpha;
+            if (scaleDustRingIcon)
+            {
+                scaleDustRingIcon.enabled = tollGate;
+                scaleDustRingIcon.color = tolled ? hitColor : _domain;
+            }
+            if (scaleDustMotesIcon) scaleDustMotesIcon.color = A(_shielded, a);
+            if (scaleDustMotesDangerIcon) scaleDustMotesDangerIcon.color = A(_danger, a);
+            if (scaleDustMotesDomainIcon) scaleDustMotesDomainIcon.color = A(_domain, a);
+            if (scaleDustRivalIcon) scaleDustRivalIcon.color = A(hit && dustOn ? hitColor : rivalIdleColor, a);
+            if (scaleDustMothIcon) scaleDustMothIcon.color = A(_domain, dustOn ? 1f : noDustAlpha);
+        }
+
+        /// <summary>
+        /// Dust Reach on the Space card: the moth over its long rain of dust (danger, domain and shielded motes); all dim
+        /// in Mass mode. At Space 5 Diamond Dust (<paramref name="diamondDust"/>) a super-shielded prism comes in at the
+        /// bottom of the rain, in the domain colour.
+        /// </summary>
+        public void SetDustReach(bool dustOn, bool diamondDust)
+        {
+            int key = (dustOn ? 1 : 0) | (diamondDust ? 2 : 0);
+            if (key == _reachShown) return;
+            _reachShown = key;
+            float a = dustOn ? 1f : noDustAlpha;
+            if (dustReachMotesDangerIcon) dustReachMotesDangerIcon.color = A(_danger, a);
+            if (dustReachMotesDomainIcon) dustReachMotesDomainIcon.color = A(_domain, a);
+            if (dustReachMotesIcon) dustReachMotesIcon.color = A(_shielded, a);
+            if (dustReachDiamondIcon)
+            {
+                dustReachDiamondIcon.enabled = diamondDust;
+                dustReachDiamondIcon.color = A(_domain, a);
+            }
+            if (dustReachMothIcon) dustReachMothIcon.color = A(_domain, a);
+        }
+
+        /// <summary>How long a bite or a toll shows on the cards.</summary>
+        public float HitFlashSeconds => hitFlashSeconds;
 
         /// <summary>
         /// Re-anchor the captured rest scales after the base's upgrade handling, or this view's
