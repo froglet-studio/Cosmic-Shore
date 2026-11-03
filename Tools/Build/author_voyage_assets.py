@@ -60,7 +60,8 @@ LINES_FIELDS = ["VoyageName", "Depart", "Arrived", "Vaults", "Wreck", "Hold", "H
                 "MapTypeG", "MapTypeK", "MapTypeM", "MapTypeRedSupergiant", "MapTypeGiant", "MapGlobularBody",
                 "MapOpenBody", "MapOpenBodyYoung", "MapOpenAge", "MapAgeBillion", "MapAgeMillion",
                 "MapSourceCatalog", "MapSourceModel", "MapSourceTumult", "MapSourceReal", "MapSourceProposed",
-                "MapCellLabel", "MapKindCell", "MapCellName", "MapCellBody", "MapCellBerth", "MapSourceCell"]
+                "MapCellLabel", "MapKindCell", "MapCellName", "MapCellBody", "MapCellBerth", "MapSourceCell",
+                "CardBack", "CardPager", "CardPrevious", "CardNext", "CardLevelVoyage", "CardLevelCrew", "CardLevelStory", "CardCourseChip", "CardFoundBy", "CardKicker", "CardCourseLabel", "CardCourseValue", "CardSailLabel", "CardSailValue", "CardIntensityLabel", "CardIntensityValue", "CardCells", "CardYourArk", "CardDestination", "CardSquadLabel", "CardPresetsLabel", "CardNoSquad", "CardConfigure", "CardSetSail", "CardCrew", "CardStory", "CardVoyage", "CardCrewHead", "CardCrewNote", "CardCrewJoined", "CardSaveSquad", "CardSaved", "CardSeatLeader", "CardSeatRogueOne", "CardSeatRogueTwo", "CardSeatYou", "CardSeatAi", "CardSeatOpen", "CardSettingVessel", "CardSettingPilot", "CardSettingElement", "CardSettingArtifact", "CardNoArtifact", "ElementCharge", "ElementMass", "ElementSpace", "ElementTime", "CardStoryHead", "CardStoryOptional", "StoryNews", "StoryPlace", "StoryCrew", "StoryCrewBy", "StoryWater", "StoryWaterLine", "StoryWaterBy"]
 
 
 def guid_for(name):

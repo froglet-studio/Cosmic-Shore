@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
+markers `DiagnosticsHUD.Capture.Burst / .Describe / .DiagStart`. Verified offline only (refcompile player, player-dev, editor; gates).
+
+1. Play any mode past 90 s with the Profiler on. **Pass:** the frame the auto-capture starts no longer stalls 50-70 ms; the three markers name what is left.
+2. Open the saved `capture_*.json`. **Pass:** its `burst` line still ends with the `log: ...` part, as before.
+3. HUD console (F7) `burst`. **Pass:** prints the full line, log included.
+
+### 🔴 Switchback fauna corridor: corridor mass out of the targeting grids, goals parked past the wall (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `Cell.IsTargetable` / `RefileForCorridor`, `FaunaCorridor.GoalStandoff`, `SwitchbackController.faunaCorridorGoalStandoff` (50 u).
+Docs/ECOSYSTEM.md section 67. Verified offline only (refcompile player + editor).
+
+1. EditMode: `FaunaCorridorTests` (incl. `PushOut_WithAStandoff_ParksPastTheWall`). **Pass:** all green.
+2. Switchback I4, 3 AI, full race; look from above (Third Eye Free camera). **Pass:** no fauna within 220 u of the path; the
+   flocks spread through the cell away from the course instead of lining the corridor's wall at ~220 u.
+3. Any other mode (lava lamp, Regatta). **Pass:** fauna behave as before (no corridor there, nothing re-filed).
+
+### 🔴 Charge light: one crystal's strikes no longer take a whole frame (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** `ChargeArcs.StrikeAlong` measures a Mass column only against the strand pieces that can reach it (exact),
+and `CrystalChargeArcs.StrikePrisms` tests its columns in budget-sized slices across rebuilds. Markers
+`CrystalChargeArcs.Rebuild.Arcs / .Strikes / .Upload`. Verified offline only (refcompile player + editor, gates, an
+old-vs-new harness: identical strikes).
+
+1. Lava lamp (Menu_Main, Release) for 2 minutes with omni crystals on screen. **Pass:** no `CrystalChargeArcs.Rebuild` frame over ~3 ms (was 17-67 ms).
+2. Look at an omni with raised Mass columns while its arcs leap. **Pass:** a column still lights when an arc runs through it, with no visible lag or flicker.
+3. Switchback I4 full race. **Pass:** the charge arcs look as smooth as before.
+
+
+### 🔴 Stoat completion: gap scaling, Accretion on the orbit, warp × kick cap, HUD (`stoat/complete`, 2026-11-02) — NOT EDITOR-VERIFIED
+
+**What landed:** Space widens the catch pair's gap with the orbit (`orbitReach`, clear cap 72 → ~101 u); Space 5
+Accretion steals prisms into the held pair's attractor, +4% ripple reach each to +40%; warp × kick capped at 3× cruise
+(`warpKickCapCruise`); the HUD's Charge/Space gauges read the orbit, the Space card shows the orbit icon; omni label Fulmen.
+- [ ] With Space 5, orbit through rival prisms: they come out of the repulsor in your colour; the Space gauge fills; the ripple is wider.
+- [ ] The light pair actually draws prisms in (its pull is weak — if almost nothing falls in, Accretion needs a capture reach).
+- [ ] Time 10 sweet-spot launch: no speed spike past ~3× cruise; a release under 30° gives no kick and no momentum.
+- [ ] Space 10: the orbit is wider and never touches the repulsor.
+- [ ] The Mass card keeps its icon (no mode swap); the Space card shows the orbit icon.
+
 ### 🔴 Arcade launch panel: each ability row draws its element's Codex shape, not the HUD petal (`claude/optimistic-allen-jxrbrw`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `VesselControlsPanel` (the controls on an arcade or arena card's launch screen) drew each ability row's
@@ -1637,6 +1679,72 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
 
 ---
+### 🔴 Holes on mobile: no warped space, the Meerkat recipe, the Charge ripple shows (`stoat/annihilation-waves`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+`Docs/BLACK_HOLE.md` §5.4, `R_VesselActions/STOAT_DIPOLE.md` §1c. Yash: "make sure we are not warping space … mobile
+friendly … the same [as the Meerkat] with these black / white hole pair". New `BlackHoleConfig.look` = **Mobile** (default):
+every hole / wave / ripple is one camera-facing annulus drawn by `BlackHoleGlow.shader` (one UniversalForward pass, no
+copy, no depth or opaque texture, no textures, `target 3.0`); the lens, both lens passes, the prism / hull tides, the GW
+prism squeeze and `gwShake` are off. `StudioLens` restores the 2026-10-28 look below (its steps 2 and 4 apply only
+there). Physics unchanged. No editor in this session. Headless proof: `verify_black_hole_glow.py --require-real` (pixels on
+the CPU, the ripple vs `BlackHoleWaves.Strain` 2e-6, bloom bound, DXC D3D11 / Vulkan / Metal / GLES3 + ESSL 300 validation,
+negative controls, cost), `verify_black_hole_lens.py`, `verify_prism_gravity_warp.py`, `verify_vortex_ring_lens.py`,
+`verify_stoat_ripple.py`, `unity_refcompile` player-dev + editor (only the known FMOD / DOTween / services errors).
+`BlackHoleGlowTests` is new, not run.
+
+1. **On a phone (Android, mid-range; and an iPhone if available), Development Build + Profiler / GPU frame time.**
+   Fly the Stoat, lay pairs, let go repeatedly, with two AIs laying theirs. Frame time steady at the target; no spike
+   on a let-go. A/B the same flight with `look` = StudioLens: Mobile should be clearly cheaper (no `BlackHoleLens` copy).
+2. **Nothing warps.** Behind a hole, prisms and stars are NOT bent; prisms near a hole or crossed by a wave do not
+   stretch; the Stoat's / Angler's hull does not stretch near a hole; the view never stretches as a wave passes.
+3. **The look.** Black hole: a dark core with a thin warm ring and a faint dark halo. White hole: a bright soft core,
+   sky faintly through it. No hard disc edge, no flicker. Flying into a core it fades out smoothly; no clipping pop.
+4. **Let go.** A faint, local ripple (crests a touch lighter, troughs a touch darker) gone within ~220 u; NO flash, no
+   white bloom; the **Charge ripple is now visible** as a thin soft ring in the domain colour expanding to its reach.
+5. **Frame Debugger.** No `BlackHoleLens` / `BlackHoleWaveLight` passes, no depth copy because of holes; the glows are
+   in the transparent queue as `CosmicShore/BlackHoleGlow`.
+6. **Others unaffected.** Goby's vortex ring lens and the Meerkat's wormhole lens still bend (they share `CameraSupport`);
+   crystal pairs and Thresher / Angler smooth wells draw a faint ring instead of a bend.
+7. **Feel check.** Subtle, clean, refreshing? Tune `mobileHaloGlow` / `mobileWaveGlow` / `mobileWaveShade` / `mobileWaveReach`.
+
+| Knob | Where | Ships |
+|---|---|---|
+| Look | `BlackHoleConfig` `look` | 0 (Mobile) |
+| Mobile glows | `BlackHoleConfig` `mobileHaloGlow`, `mobileWaveGlow`, `mobileWaveShade`, `mobileWaveReach` | 0.06, 0.12, 0.06, 220 |
+| Ripple ring | `StoatRippleConfig` `rimGlow`, `bandWidth` | 0.15, 0.08 |
+
+### 🔴 Stoat annihilation waves back: the wiggle and the light shell, with no flash (`stoat/annihilation-waves`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+`Docs/BLACK_HOLE.md` §5.2, `R_VesselActions/STOAT_DIPOLE.md` §1c. Root cause of the 2026-10-14 "far too big and bright"
+flash: the studio adds a light shell's glow and screen wash to its final picture in display values (no bloom, no
+tonemapping); Unity added them before post-processing as HDR light, and the gameplay bloom (threshold 0.2, intensity 2.5)
+blew them into a white flash. The waves' light is now `BlackHoleLens.shader` pass 1 (`BlackHoleWaveLight`), drawn by a
+second `BlackHoleLensPass` at `AfterRenderingPostProcessing` and added in sRGB; pass 0 keeps the bend, the squeeze and
+the holes' own light. `StoatDipoleConfig.annihilationWaves` is ON again; the creation wave has its own switch,
+`birthWave`, OFF. Every studio wave value unchanged. No editor in this session. Headless proof:
+`verify_black_hole_lens.py --require-real` (1b: both passes vs the studio's GLSL, worst 1.2e-7; 5c negative control;
+B1 glslang + B2 DXC on D3D11 / Vulkan / Metal, both passes), `verify_prism_gravity_warp.py`, `studio_to_unity.py --vessel
+stoat --check`, `author_stoat_assets.py --check`, `unity_refcompile` player-dev. `BlackHoleTests` was edited, not run.
+
+1. **Mass mode, press a trigger.** NO shell converges on the new pair, nothing washes the screen, nothing blooms white.
+2. **Let go.** Where the poles meet: the Charge ripple's strike, plus a fast faint wiggle of the scene moving out
+   (the gravitational wave: crests a touch brighter, troughs a touch darker; prisms it crosses stretch and squeeze) and a
+   thin pale shell growing outward; as it passes you, a short gentle wash (at most ~0.3 in display value, NOT a
+   white-out) and a brief stretch / squeeze of the whole view (`gwShake`). Gone within a few seconds.
+3. **Press again while a pair is live.** The old pair collapses (0.3 s) and its waves leave near the new pair just
+   after it appears: this is the OLD pair's annihilation, not a birth flash. Report if it reads as a flash at creation.
+4. **Frame Debugger.** With a wave alive: `BlackHoleLens` after the transparents AND `BlackHoleWaveLight` after
+   post-processing; with no wave alive, no `BlackHoleWaveLight`. A hole with no wave: unchanged from before.
+5. **`birthWave` on (StoatDipoleConfig).** The studio's converging shell plays at a fresh pair, faint, no flash.
+6. **Known, fixed 2026-10-29 in the Mobile look (above):** the Charge ripple's PICTURE (`StoatRipple`, `LightMode = BlackHoleLens`) has not been
+   drawn since `BlackHoleLensPass` stopped drawing renderers (2026-10-10, one full-screen draw); its strike still works.
+
+| Knob | Where | Ships |
+|---|---|---|
+| Death waves (GW + outgoing shell) | `StoatDipoleConfig` `annihilationWaves` | 1 |
+| Birth wave (converging shell) | `StoatDipoleConfig` `birthWave` | 0 |
+| Wave look | `BlackHoleConfig` `gwAmp`, `gwSpeed`, `gwPeriod`, `gwRingdown`, `gwPrism`, `gwShake`, `gwGlow`, `whInFrom`, `whOutSpeed`, `whOutFade`, `shellBend` | 12, 120, 0.35, 1, 0.6, 1, 1, 700, 450, 1.6, 6 |
+| Poles sink | `StoatDipoleConfig` `dieSeconds` | 0.7 |
 
 ### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
 
@@ -20784,6 +20892,40 @@ Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; Edit
 - [ ] Voyage (an Ark present): a wall seeded beside the Ark does not strip its hull.
 - [ ] Profiler, Serpent Time with walls up: `SerpentWall.Sweep` well under the 4.1 ms a frame `SerpentWallAssembler.Update` took on 2026-10-29 (Andrew's capture).
 
+## 🟡 Stoat: Mass and Gate mode removed, the orbit by side, inner pull, steer out, two phone discs (2026-11-02, Yash, NOT PLAYED)
+Affects: Garrett's Stoat kit (not yet asked). `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`; model: `Tools/Build/stoat_orbit_sim.py`.
+Verified (flick launch, Mass power, earned speed, window AI included): Unity 6000.3.17f1 batch compile, no errors; EditMode StoatSling|StoatDipole|HangarAbilityKinds|TouchControl|SwitchbackAISteering 104/106 - the two failures (Rhino's Energize has no Hangar kind; the Brittle Star's six buttons on a 720p phone) are outside this change. `unity_refcompile` cannot run on Windows. Not played.
+- [ ] B (T on a keyboard) does nothing; LT and RT only ever lay the orbit; no line of dots ahead, ever.
+- [ ] RT: the pair to the right, and the orbit turns you clockwise (seen from above). LT: to the left, anti-clockwise. Passing a right orbit on its left side does not catch you.
+- [ ] Caught: you are drawn inward to a smaller circle than the ring you were caught on, and go round a little faster.
+- [ ] Flick the steering thumb (or snap the stick) while orbiting: you launch that way at once, up to 60° off the orbit. A slow push only steers. Releasing with the stick over launches that way too; at rest, along the orbit.
+- [ ] Mass: a Mass crystal or two makes the launch visibly harder. Mass 5: the trail laid during a launch is shielded.
+- [ ] Earned speed: pressing and releasing at once barely speeds you up; a launch in the lime window carries the orbit's speed for several seconds; no launch ever spikes past about 1.6× your orbit speed.
+- [ ] Phone: a buzz as the orbit enters the lime window; a held disc reaches a full (tight) squeeze in about 1 s.
+- [ ] Phone: two orbit discs (left / right icons) round the right thumb; a thumb anywhere else steers; the Space and Mass cards press nothing.
+- [ ] AI rivals in Slingshot I1-I4 finish, hold the orbit to the window and launch at the next ring (model: 78-91 s, about 12 presses a minute).
+- [ ] Hangar: Heavy Launch (Mass) and Catch Orbit describe the launch, the spin and the inner orbit.
+
+## 🟡 Slingshot's Orrery: moons, belts, comet tails, shepherds (2026-11-03, Yash, NOT RUN IN EDITOR)
+`Assets/_Scripts/Controller/Arcade/SLINGSHOT.md` "The Orrery"; model: `Tools/Build/stoat_orbit_sim.py --orrery`, `Tools/Build/orrery_port.py`.
+- [ ] I1: a small faceted moon just inside every corner's ring, and three small cubes on the leg in (the beacon). Pressing at the beacon on the moon's side lays the pair on the moon; the orbit wraps it and threads the ring.
+- [ ] I2: a debris belt round each moon with a gap where the leg in and the leg out cross it; launching through the out gap reaches the next ring.
+- [ ] I3: two-row belts with some red (danger) cubes; debris tubes round the middle of each straight that the racing line flies through.
+- [ ] I4: three-row belts, tighter tubes, more danger; two small red moonlets circling outside some belts, the same on two machines (shared clock).
+- [ ] No prism ever sits in a ring's mouth or across another leg; nothing in the nucleus.
+- [ ] Frame rate at I4 holds (about 1,260 prisms a course, about 40 moving): Profiler `Slingshot.Orrery.Spawn`, `SwitchbackBlastRun` movers.
+- [ ] AI Stoats finish I1-I4 and do not crash into moons (model: 79-91 s, no moon hits, under 7 prisms touched a race).
+- [ ] Run `SlingshotOrreryTests`.
+
+## 🟡 Redline: the AI Mantas fly the Regatta steering; the Manta's Time search on a new Redline model (2026-11-03, Yash, NOT PLAYED IN EDITOR)
+`RedlineController.AICommitFromApproachPoint => true` (new test `RedlineAISteeringTests`). Why and the measurements: `Assets/_Scripts/Controller/Arcade/REDLINE.md` §5.1, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §13. Model only: `Tools/Build/manta_redline_sim.py` (`--self-test` ok), compute job `redline-manta-time` (`redline_fit` self-test ok, `compute.py validate` and `compute.py self-test` ok). Plan step: time-arcade.
+Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; EditMode `RedlineAISteeringTests|SwitchbackAISteeringTests|MantaAutopilotDriveTests|RedlineCourseTests|MinigameAbilityAITests` 43/43 pass. `unity_refcompile` cannot run on Windows. Not played.
+- [x] The project compiles; EditMode `RedlineAISteeringTests` passes.
+- [ ] Arcade > Redline at I1 with three AI Mantas: every AI finishes the 24 rings. The model says about 110 s a race at I1-I3 (their throttle is the skill throttle, 37.5% at I1, so they are slow there) and about 330 s at I4. Note what you see.
+- [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I3 or I4 race.
+- [ ] The AIs do not weave on the long legs, and Soar there (the speed readout near 650 at I4).
+- [ ] Headlong is unchanged (it keeps the old steering).
+
 ## 🔴 Galaxy map deep zoom: the board's stars, clusters, landmarks, tiers and cards in the Voyage window (2026-11-02, Garrett, NOT RUN IN EDITOR)
 `VoyageMapGraphic` + `VoyageMapSky` + `HyperSeaSky` (Docs/Voyages/VOYAGE_BOARD.md §4b). Verified: `unity_refcompile` player and editor configs show only the 21 errors `origin/bleeding-edge` already has (FactionChat / PlayerReports, packages the gate cannot fetch), none in changed files; the model reproduces the board's `sky_golden.js` star for star in a .NET harness, and `HyperSeaSkyTests` 6/6 passed there (a broken tile seed fails `ModelTiles_MatchThePage`). Not run in Unity, not played.
 - [ ] The project compiles in the editor; `HyperSeaSkyTests` and `HyperSeaTests` pass.
@@ -20850,6 +20992,34 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
    (below Space 5) a Sparrow round still stops on the first prism it meets.
 4. **No new console errors.** A `[ProjectileSweepBatch] build failed` error means the batch fell back to per-round
    queries (correct, but the speed-up is lost): send it.
+
+## 🔴 Voyage window: four tabs, the HyperSea map left, the open voyage card (Rev 49 C) (2026-11-02, Shombith, NOT RUN IN EDITOR)
+`VoyageWindowTabs`, `HubShoulders`, `VoyageOpenCard`, `VoyageRoutePoster`, `VoyageCardRules` (new), `VoyageJobsView`, `MissionView.prefab` (by `author_voyage_window.py`), `VoyageLines` (+ `VoyageContent.asset`); `VoyageWindowModals` retired. Record: `Docs/MENU_REDESIGN_B.md` section 119. Ran here: `unity_refcompile` player and editor, `gates.sh` ALL OK, the generators' `--check` / `--self-test`, and `VoyageCardRulesTests` outside Unity. No Unity editor ran, so nothing below was seen.
+- [ ] The project compiles in the editor; `VoyageCardRulesTests` pass.
+- [ ] Menu_Main > Voyage: the window opens on VOYAGES; the tabs read VOYAGES | SAGA | QUESTS | EPISODES, Episodes locked and "Coming soon".
+- [ ] LB / RB step the tabs and stop at Voyages and Episodes; while the window is open they do not slide the hub; after it closes they slide the hub again.
+- [ ] Saga shows Tandava and its Severing; Quests shows Episode 1's quests (the quest tracker); nothing of the old modals or their dims remains.
+- [ ] The HyperSea map fills the left column, opaque, with the edge view under it; pan / zoom / place taps still work.
+- [ ] The voyage cards stand two across on the right; pressing one, or its place on the map, slides the open voyage in over them; Back slides it out.
+- [ ] The open voyage's ground is the course on the map's water (amber Ark end, lime destination), and it follows the map as it is panned.
+- [ ] The pager (< >) goes round the voyages; the map frames each voyage's course.
+- [ ] The squad presets beside the formation switch the active squad (and it is still active after reopening the menu); Configure the squad opens Ark crew.
+- [ ] Ark crew: each seat's vessel / pilot / element / artifact cycle on press; in a joined squad only your own seat changes; Save squad keeps it (reopen to check); closing the card without Save squad leaves the squad as it was.
+- [ ] Story: one beat at a time, the dots and < > step them, an empty beat is skipped.
+- [ ] Set sail from the open voyage sails that voyage, as the small card's did.
+- [ ] Gamepad: every control on the open card is reachable with the D-pad and A.
+- [ ] Sliding the hub onto the Voyage window with RB opens it on VOYAGES (that RB is not also a tab step).
+- [ ] Profiler: with the open card shut, `VoyageRoutePoster` rebuilds no mesh per frame (it redraws only when the map repaints).
+
+## 🟡 Stoat: an easier slingshot - rings further apart, a wider window (2026-11-03, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The easier sling". `StoatSlingConfig` and the AI's
+`StoatSlingConfig_Slingshot`: catchReach 1.5 → 2, catchDegrees 50 → 40, orbitRadiusTight 40 → 55, innerOrbitShare 0.6 → 0.75,
+innerPullRate 1.5 → 1, sweetSpotHalfWidth 15 → 30, sweetSpotFalloff 30 → 40, missKickShare 0.2 → 0.35. Assets only; the model
+says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
+- [ ] The faint detection ring is visibly wider than before and the orbit ring sits further inside it; catching a pair as you pass it is easier.
+- [ ] Caught, the orbit turns more slowly, and the ring stays lime long enough to release in it most times (60-120 deg round).
+- [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
+- [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).
 
 ## 🟡 No drift slide: a drift never moves the hull on screen (2026-11-02, Garrett, NOT RUN IN EDITOR)
 

@@ -75,6 +75,92 @@ namespace CosmicShore.Gameplay
         public static bool WantsWarp(Vector3 targetLocal, float warpDistance) =>
             warpDistance > 0f && targetLocal.magnitude >= warpDistance;
 
+        // ------------------------------------------------------------------ the orbit's spin and exit (2026-11-02)
+
+        /// <summary>
+        /// The pair's spin: the RIGHT orbit spins clockwise seen from above the hull, the LEFT anti-clockwise. A hole's frame
+        /// drags matter along cross(spin axis, offset) (<c>BlackHolePhysics</c>), so +up turns what is ahead of it to the right.
+        /// </summary>
+        public static Vector3 SpinAxis(bool attractorLeft, Vector3 up) => attractorLeft ? -up : up;
+
+        /// <summary>
+        /// Whether the attractor sits on its own side of the hull - the right orbit's to the right of the nose. Only then is a
+        /// catch the orbit's own spin (right = clockwise); a hull that flies past it on the other side is not caught.
+        /// </summary>
+        public static bool OnSpinSide(Vector3 hull, Vector3 right, Vector3 attractor, bool attractorLeft)
+        {
+            float lateral = Vector3.Dot(attractor - hull, right);
+            return attractorLeft ? lateral < 0f : lateral > 0f;
+        }
+
+        /// <summary>
+        /// The way the stick turns the nose, in world space: yaw (<paramref name="x"/>) toward <paramref name="right"/>, and
+        /// pitch (<paramref name="y"/>) down, as <c>VesselTransformer.Pitch</c> / <c>Yaw</c> rotate the command.
+        /// </summary>
+        public static Vector3 SteerDirection(Vector3 right, Vector3 up, float x, float y) => right * x - up * y;
+
+        /// <summary>
+        /// Where a release launches the hull: <paramref name="forward"/> (the orbit's tangent) turned toward the stick's turn by
+        /// up to <paramref name="coneDegrees"/>, in proportion to the stick; along the tangent below <paramref name="minStick"/>.
+        /// </summary>
+        public static Vector3 LaunchAim(Vector3 forward, Vector3 right, Vector3 up, float x, float y, float minStick, float coneDegrees)
+        {
+            x = Mathf.Clamp(x, -1f, 1f);
+            y = Mathf.Clamp(y, -1f, 1f);
+            float stick = Mathf.Clamp01(new Vector2(x, y).magnitude);
+            var turn = SteerDirection(right, up, x, y);
+            if (stick < Mathf.Max(1e-3f, minStick) || coneDegrees <= 0f || turn.sqrMagnitude < 1e-8f) return forward;
+            return Vector3.RotateTowards(forward, turn.normalized, stick * coneDegrees * Mathf.Deg2Rad, 0f).normalized;
+        }
+
+        /// <summary>
+        /// Whether the stick has been FLICKED: it reached <paramref name="flickStick"/> within <paramref name="flickSeconds"/> of
+        /// last being at rest (<paramref name="secondsSinceRest"/>). A slower push is steering.
+        /// </summary>
+        public static bool IsFlick(float stick, float secondsSinceRest, float flickStick, float flickSeconds) =>
+            stick >= flickStick && secondsSinceRest <= flickSeconds;
+
+        /// <summary>
+        /// The kick, capped so <paramref name="flightClock"/> × the kick (the speed the world sees it add) is never past
+        /// <paramref name="capCruise"/> × <paramref name="cruiseSpeed"/>. A clock below 1 does not raise the cap.
+        /// </summary>
+        public static float WarpCappedKick(float kick, float flightClock, float cruiseSpeed, float capCruise) =>
+            Mathf.Clamp(kick, 0f, Mathf.Max(0f, capCruise) * Mathf.Max(0f, cruiseSpeed) / Mathf.Max(1f, flightClock));
+
+        /// <summary>Space-5 Accretion: <paramref name="captured"/> × <paramref name="perPrism"/>, clamped to 0..<paramref name="max"/>.</summary>
+        public static float AccretionBonus(int captured, float perPrism, float max) =>
+            Mathf.Clamp(Mathf.Max(0, captured) * Mathf.Max(0f, perPrism), 0f, Mathf.Max(0f, max));
+
+        /// <summary>Space's reach as the pair's gap scale: never below 1 (a broken tier must not shrink the gap).</summary>
+        public static float GapScale(float reach) => Mathf.Max(1f, reach);
+
+        /// <summary>
+        /// The separation the Charge ripple reads: the pair's, back at the base gap — Space widens the gap, but the
+        /// ripple's reach is Charge's, so the Space scale is taken back out.
+        /// </summary>
+        public static float RippleSeparation(float separation, float gapScale) => Mathf.Max(0f, separation) / Mathf.Max(1f, gapScale);
+
+        /// <summary>
+        /// The kick a launch may add: <paramref name="kick"/>, but never past <paramref name="capShare"/> × the speed at the
+        /// release, and nothing for a release before <paramref name="minSweepDegrees"/> of orbit.
+        /// </summary>
+        public static float CappedKick(float kick, float releaseSpeed, float capShare, float sweptDegrees, float minSweepDegrees)
+        {
+            if (sweptDegrees < minSweepDegrees) return 0f;
+            return Mathf.Clamp(kick, 0f, Mathf.Max(0f, (capShare - 1f) * releaseSpeed));
+        }
+
+        /// <summary>
+        /// A launch's momentum as a flight-clock warp: the orbit's <paramref name="releaseClock"/> × the
+        /// <paramref name="timing01"/>, fading linearly to 1 over <paramref name="seconds"/>.
+        /// </summary>
+        public static float MomentumWarp(float releaseClock, float timing01, float age, float seconds)
+        {
+            if (seconds <= 0f || age >= seconds || age < 0f) return 1f;
+            float top = 1f + (Mathf.Max(1f, releaseClock) - 1f) * Mathf.Clamp01(timing01);
+            return 1f + (top - 1f) * (1f - age / seconds);
+        }
+
         // ------------------------------------------------------------------ the orbit (drift pair)
 
         /// <summary>

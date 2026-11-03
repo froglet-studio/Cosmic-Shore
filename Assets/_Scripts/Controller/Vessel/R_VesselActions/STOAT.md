@@ -1,4 +1,4 @@
-> **2026-11-02 - ORBIT ONLY (Yash).** The shipped Stoat flies Time mode alone (`STOAT_DIPOLE.md` §1b): `StoatModeActionSO.orbitOnly` starts every copy in Time mode and B switches nothing. Mass mode (the field dipole and its predicted path) and Gate mode are parked with their code intact; what they were, what that costs and how to bring them back: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are now named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Orbit Mode (Mass, parked).
+> **2026-11-02 - TIME MODE ONLY (Yash).** The Stoat flies the orbit alone (§1b): Mass mode (§1, the field dipole and its predicted path) and Gate mode (§1f) are removed from the kit, and nothing is on B; what they were and how to make them again: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Heavy Launch (Mass, the launch's power). After the play test the orbit spins by side (right clockwise, left anti-clockwise), draws you in to an inner orbit a little faster, and launches where you flick or steer (§1b, "The orbit after the 2026-11-02 play test").
 >
 > **2026-10-14 — TIME MODE IS THE CATCH, NOT THIS ORBIT.** Played, the orbit below put the attractor square beside the
 > hull (off the chase camera) and started circling on the press, so the pilot "couldn't see the poles at all and was just
@@ -322,6 +322,12 @@ overrides: the same entries, the same actions on every peer.
 the Time-mode orbit tightening over 3 s and slinging on release, the Hold tap, the mode switch from the Mass card,
 and the lava lamp's AI Stoat using its pairs on a phone and letting go when you take the hull.
 
+**Prototype, 2026-11-02 (Yash; NEEDS GARRETT'S SIGN-OFF; branch `touch/stoat-squirrel-proto`): keep a thumb down to orbit.**
+The profile is now ThumbLifts (lift defer 0.12 s). Lifting the RIGHT thumb raises `LeftStickAction`, the left pair, while the left
+thumb flies the orbit; lifting the LEFT thumb raises `RightStickAction`. Holding tightens the orbit over `holdRampSeconds`, and putting the thumb back
+slings. Hold is the one extra disc, and the Mass (Mode) card is display-only (orbit-only kit). The bindings above are unchanged, so touch still
+equals the pad. TODO: a haptic "now" at the 90 degree window. No allowed `HapticController` feel fits; it needs the "adding a feel" clause.
+
 ## 5. Proof (all offline — no `/verify-unity` in the session that built this)
 
 - `Tools/Build/author_stoat_assets.py --check` OK; `--self-test`: XXHash32 against the reference
@@ -345,7 +351,11 @@ and the lava lamp's AI Stoat using its pairs on a phone and letting go when you 
 
 ## 6. Design status — what is approved and what is not
 
-**All four abilities and all four level-5s are designed and shipped** (2026-10-13): Space = Field Dipole (L5
+**Today's kit (the orbit alone, 2026-11-02):** Space = Catch Orbit (orbit radius AND the pair's gap ×1 → ×1.4;
+L5 Accretion — stolen prisms +4% ripple reach each, to +40%), Time = Timed Slingshot (warp; L5 Foresight; the warped
+kick capped at 3× cruise), Charge = Ripple (L5 Siphon), Mass = Heavy Launch (kick ×1 → ×2.5; L5 Armoured Wake), omni =
+Fulmen. Awaiting Garrett's sign-off: the orbit-only cut, Heavy Launch, Accretion on the orbit, Fulmen.
+The original 2026-10-13 kit: Space = Field Dipole (L5
 Accretion), Time = Pathfinder / Time Mode (L5 Foresight), Charge = Ripple (L5 Siphon), Mass = Mass / Time Mode (L5
 Armoured Wake). The decisions and their wording are in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` ▸ Stoat; the
 mechanics in `STOAT_DIPOLE.md` §1a–§1e and §5.

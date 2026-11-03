@@ -17,12 +17,12 @@ MonoBehaviour:
   autopilotHold01: 1.0
   catchAhead: 150
   catchSide: 45
-  catchReach: 1.5
-  catchDegrees: 50
+  catchReach: 2
+  catchDegrees: 40
   settleRate: 3
   maxOrbitDegrees: 360
   orbitRadiusWide: 150
-  orbitRadiusTight: 40
+  orbitRadiusTight: 55
   orbitReach:
     Enabled: 1
     Value: 1
@@ -33,6 +33,8 @@ MonoBehaviour:
     Floor: 1
   radiusFollowRate: 3
   radialCorrectionRate: 5
+  innerPullRate: 1
+  innerOrbitShare: 0.75
   poleHorizon: 1.6
   poleGM: 20000
   ringDotSpacing: 5
@@ -43,9 +45,9 @@ MonoBehaviour:
   slingBoostMax: 0.9
   slingBoostSeconds: 1.5
   sweetSpotDegrees: 90
-  sweetSpotHalfWidth: 15
-  sweetSpotFalloff: 30
-  missKickShare: 0.2
+  sweetSpotHalfWidth: 30
+  sweetSpotFalloff: 40
+  missKickShare: 0.35
   sweetSpotEvent:
     Guid:
       Data1: 0
@@ -73,7 +75,8 @@ MonoBehaviour:
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941
   aiSlingMinDistance: 123.282
-  aiWarpMinDistance: 280
+  aiWarpMinDistance: 0
+  aiHoldForWindowDegrees: 120
   holdStartEvent:
     Guid:
       Data1: 0

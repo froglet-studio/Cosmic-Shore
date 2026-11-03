@@ -102,6 +102,15 @@ Copy this list into the AI's doc and tick it.
     Skim Race harness), on fresh seeds after the search.
   - Register the mode in `AIDifficultyRules.IsOfferedFor` + `AIDifficultyRulesTests`. The lobby row
     (`AIDifficultyPicker`) then appears on its card (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3).
+- **The one exception: Switchback's nose lag by difficulty** (Yash, 2026-11-02, `SWITCHBACK.md` "Lag by difficulty").
+  There the AI's nose lag (the fleet's 1.5/s, which every AI hull keeps) cost more than every other skill difference,
+  so the four levels finished together. Switchback writes each AI pilot's nose follow rate
+  (`VesselTransformer.AINoseFollowPerSecond`, from `GateRaceController.OnRacerArmed`) from a row per intensity
+  (`aiNoseFollowByIntensity`), set to Yash's time bands (I4: Easy 130-150 s ... Legendary 100-120 s, 10 s steps).
+  It breaks two rules above on purpose: Legendary is faster than the shipped pilot, and the setting is per intensity.
+  The hull's kit is unchanged (the nose rate is a per-pilot dial, as people's pad / touch / keyboard rates are), and
+  every other mode leaves it unset. Do not copy it to another mode without the AI owner's yes; `AI_PLAN.md` §7 holds
+  the question.
 - **Level colours**, the same in the game tools and the studios: Hard red, Medium amber, Easy green
   (`ai_race_panel.js` `data-lv`).
 
@@ -209,6 +218,13 @@ the same source as the studios' `studio-domains.js`): game Ruby is magenta, neve
 - **Never borrow the gameplay camera to watch** (`CameraManager.BeginWindowedPlayerCamera` lends the rig
   that IS the screen in a match). The Third Eye has its own.
 - **Editor benchmarks in a background editor are invalid** (throttled to ~8 fps).
+- **An offline model without the AI nose lag flatters every turn.** An AI hull's nose follows its command at 1.5/s,
+  drifting included (only a local human's has no lag), so a model that swings the nose freely makes drift tricks look
+  fast that lose in the game. The Switchback simulator's first drift was lag-free and had to be re-measured
+  (`SWITCHBACK.md` "Step 4"); model the lag (`VesselTransformer.NoseFollowFraction`) before trusting a turn.
+- **A difficulty ladder the lag flattens decides nothing.** Where the nose lag is the slowest thing in the race, levels
+  that differ only in judgement finish together (Switchback: I4 172 / 169 / 169 / 172 s). Measure the ladder before
+  shipping it (§3.1).
 
 ## 6. Keep it alive
 

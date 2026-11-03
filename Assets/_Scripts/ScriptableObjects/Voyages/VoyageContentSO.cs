@@ -204,5 +204,119 @@ namespace CosmicShore.ScriptableObjects
         public string MapCellBerth = " Inside the berth of {place}.";
         [Tooltip("{source} on a cell's card.")]
         public string MapSourceCell = "M - the sea model at the cell's centre";
+
+        // The open voyage card (Rev 49 C, Docs/MENU_REDESIGN_B.md section 119): three levels, the voyage, its Ark crew, its story.
+        [Tooltip("The open card's way back to the voyage cards (B).")]
+        public string CardBack = "VOYAGES";
+        [Tooltip("The open card's place among the voyages: {n} this one, {count} all of them.")]
+        public string CardPager = "VOYAGE {n} OF {count}";
+        [Tooltip("The open card's step to the previous voyage (D-pad left).")]
+        public string CardPrevious = "<";
+        [Tooltip("The open card's step to the next voyage (D-pad right).")]
+        public string CardNext = ">";
+        [Tooltip("The open card's first level, the voyage.")]
+        public string CardLevelVoyage = "1 VOYAGE";
+        [Tooltip("The open card's second level, the squad's twelve settings.")]
+        public string CardLevelCrew = "2 ARK CREW";
+        [Tooltip("The open card's third level, the story.")]
+        public string CardLevelStory = "3 STORY";
+        [Tooltip("The chip on the open card's course: {ly} light years.")]
+        public string CardCourseChip = "YOUR COURSE - {ly} LY";
+        [Tooltip("Who brought the voyage: {pilot} the crew member's name.")]
+        public string CardFoundBy = "FOUND BY {pilot}";
+        [Tooltip("Over the open card's title: {n} its number, {place} where it goes.")]
+        public string CardKicker = "VOYAGE {n} - {place}";
+        [Tooltip("Under the open card's course number.")]
+        public string CardCourseLabel = "COURSE";
+        [Tooltip("The open card's course number: {ly} light years.")]
+        public string CardCourseValue = "{ly} ly";
+        [Tooltip("Under the open card's sailing time.")]
+        public string CardSailLabel = "SAIL";
+        [Tooltip("The open card's sailing time: {minutes} minutes.")]
+        public string CardSailValue = "{minutes} min";
+        [Tooltip("Under the open card's intensity.")]
+        public string CardIntensityLabel = "INTENSITY";
+        [Tooltip("The open card's intensity: {intensity} 1-4.")]
+        public string CardIntensityValue = "I{intensity}";
+        [Tooltip("Between the course's two ends on the open card: {cells} 20 ly cells, {minutes} minutes.")]
+        public string CardCells = "{cells} CELLS - {minutes} MIN";
+        [Tooltip("Under the course's first end: where the Ark is.")]
+        public string CardYourArk = "YOUR ARK";
+        [Tooltip("Under the course's last end.")]
+        public string CardDestination = "DESTINATION";
+        [Tooltip("Over the squad's name on the open card.")]
+        public string CardSquadLabel = "YOUR SQUAD";
+        [Tooltip("Over the squads to pick from (the Ark's squads).")]
+        public string CardPresetsLabel = "SQUAD PRESETS";
+        [Tooltip("Where the squad presets stand when the player has made none.")]
+        public string CardNoSquad = "Make a squad in the Ark to sail with it.";
+        [Tooltip("Opens the open card's second level, the squad's settings.")]
+        public string CardConfigure = "CONFIGURE THE SQUAD";
+        [Tooltip("Sails the open voyage.")]
+        public string CardSetSail = "SET SAIL";
+        [Tooltip("Opens the open card's second level.")]
+        public string CardCrew = "ARK CREW";
+        [Tooltip("Opens the open card's third level.")]
+        public string CardStory = "STORY";
+        [Tooltip("Back to the open card's first level.")]
+        public string CardVoyage = "VOYAGE";
+        [Tooltip("Over the squad's name on the second level.")]
+        public string CardCrewHead = "ARK CREW - THREE SEATS, FOUR SETTINGS EACH";
+        [Tooltip("Under the squad's name on the second level.")]
+        public string CardCrewNote = "Press a setting to change it. Save squad keeps the change.";
+        [Tooltip("Under a joined squad's name on the second level: {owner} who made it.")]
+        public string CardCrewJoined = "{owner}'s squad - only your own seat changes here.";
+        [Tooltip("Saves the squad's settings.")]
+        public string CardSaveSquad = "SAVE SQUAD";
+        [Tooltip("Save squad's label once the squad is saved.")]
+        public string CardSaved = "SAVED";
+        [Tooltip("The first seat's name.")]
+        public string CardSeatLeader = "LEADER";
+        [Tooltip("The second seat's name.")]
+        public string CardSeatRogueOne = "ROGUE ONE";
+        [Tooltip("The third seat's name.")]
+        public string CardSeatRogueTwo = "ROGUE TWO";
+        [Tooltip("Who flies the player's own seat.")]
+        public string CardSeatYou = "You";
+        [Tooltip("Who flies an AI seat.")]
+        public string CardSeatAi = "AI wingmate";
+        [Tooltip("Who flies an open seat (a friend takes it).")]
+        public string CardSeatOpen = "Open seat";
+        [Tooltip("A seat's vessel setting.")]
+        public string CardSettingVessel = "VESSEL";
+        [Tooltip("A seat's pilot setting.")]
+        public string CardSettingPilot = "PILOT";
+        [Tooltip("A seat's element setting.")]
+        public string CardSettingElement = "ELEMENT";
+        [Tooltip("A seat's artifact setting.")]
+        public string CardSettingArtifact = "ARTIFACT";
+        [Tooltip("A seat that carries no artifact.")]
+        public string CardNoArtifact = "No artifact";
+        [Tooltip("The Charge element's name on a seat.")]
+        public string ElementCharge = "Charge";
+        [Tooltip("The Mass element's name on a seat.")]
+        public string ElementMass = "Mass";
+        [Tooltip("The Space element's name on a seat.")]
+        public string ElementSpace = "Space";
+        [Tooltip("The Time element's name on a seat.")]
+        public string ElementTime = "Time";
+        [Tooltip("Over the story's beats on the third level.")]
+        public string CardStoryHead = "STORY";
+        [Tooltip("Beside the story's head: the story can be skipped.")]
+        public string CardStoryOptional = "OPTIONAL";
+        [Tooltip("The story's beat about the news that brought the voyage.")]
+        public string StoryNews = "THE NEWS";
+        [Tooltip("The story's beat about where the voyage goes.")]
+        public string StoryPlace = "THE PLACE";
+        [Tooltip("The story's beat about the crew member who found it.")]
+        public string StoryCrew = "WHO BROUGHT IT";
+        [Tooltip("Under the crew beat: {pilot} the crew member's name.")]
+        public string StoryCrewBy = "{pilot}";
+        [Tooltip("The story's beat about the course.")]
+        public string StoryWater = "THE WATER";
+        [Tooltip("The water beat: {years} light's years, {to} the place, {minutes} the Ark's minutes.")]
+        public string StoryWaterLine = "Light takes {years} years to reach {to}. You take {minutes} minutes.";
+        [Tooltip("Under the water beat: {sea} the thickest water on the course.")]
+        public string StoryWaterBy = "{sea} on the way";
     }
 }

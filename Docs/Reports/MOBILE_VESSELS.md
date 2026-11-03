@@ -358,3 +358,15 @@ shader (§2 row 15).
 | Garrett | Built |
 |---|---|
 | "it should not have the squirrels abilities ... it should be a goby with its own kit" | **The Goby & Pistol's own kit** replaces the fourth round's Primer and Flares (`goby-and-pistol.md`, top section). On a phone the Goby perches and aims with one thumb and its seat shows **Dart** (hold to charge, let go) and **Lock**; the Pistol's seat shows **Ghost**, **Snap** and **Back** (`GobyPistolButtons`). Nothing is bound to the Goby's thumb lifts, so lifting a thumb while aiming fires nothing (its `TouchControlProfiles` row has no glyphs). Pad: RT dart, LT lock (X / Y too). Phone test: `T-20261021-52b0` and the kit's test task. |
+
+### Prototype (Yash, 2026-11-02) - NEEDS GARRETT'S SIGN-OFF
+Branch `touch/stoat-squirrel-proto`, local only. Profiles changed through `Tools/Build/author_touch_profiles.py`; no prefab
+binding and no pad or keyboard control changed.
+
+| Hull | Before | Prototype |
+|---|---|---|
+| Stoat | TotemButtons: Space card held = left sling, the "Dipole Right" disc = right sling, the Hold disc, the Mode card | **ThumbLifts, "keep a thumb down to orbit"**: lifting the right thumb raises `LeftStickAction` (the left catch pair), the left thumb `RightStickAction`; the held orbit tightens by hold time (`Hold01`); putting the thumb back slings (`StopStickEffects` releases). Swap thumbs to chain turns. Lift defer 0.12 s; Hold is the only disc; the Mass (Mode) card is display-only, because the kit is orbit-only. The Space card still presses LT. This reverses the D1 TotemButtons call for this hull. |
+| Squirrel | ThumbLifts, pitch/yaw only on one thumb | + `tiltRollOnOneThumb`: while one thumb flies (the drift, also the tube lift) the phone rolls the hull 1:1 (the Dolphin's `TouchAttitudeRoll`). The base `VesselTransformer.ApplyHeldRoll` already applies it, so there is no code change. |
+
+Open: no haptic for the Stoat's 90 degree window. None of the four allowed feels fits (`HapticController` two-feel policy), so it is a TODO for the "adding a feel" clause. Not yet flown on a phone.
+

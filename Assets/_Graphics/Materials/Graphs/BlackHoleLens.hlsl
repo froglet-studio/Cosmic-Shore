@@ -164,6 +164,22 @@ float3 BlackHoleLensComposite(float3 col, float shadow, float core, float coreGl
     return col;
 }
 
+// THE WAVES' LIGHT (pass 1, after post-processing; see BlackHoleLens.shader): the shells' and crests' glow and a passing
+// shell's wash, added to the finished picture in display values. With pass 0's composite this is the studio's
+//   col·(1 − min(0.6, squeeze)) + glow + (1, 0.96, 0.86)·shellWash, the shadow over all,
+// split where the studio's picture is final: pass 0 the scene's bend, squeeze and the holes' own light; this the rest.
+float3 BlackHoleLensWaveLight(float3 col, float3 waveGlow, float shellWash)
+{
+    return col + waveGlow + float3(1.0, 0.96, 0.86) * shellWash;
+}
+
+// Whether the waves' light changes this pixel: no crest or shell glows here, no shell washes over the camera, or the
+// pixel is a hole's shadow (drawn over every light in the studio).
+bool BlackHoleLensWaveLightUntouched(float shadow, float3 waveGlow, float shellWash)
+{
+    return shadow > 0.5 || (max(waveGlow.x, max(waveGlow.y, waveGlow.z)) < 1.0 / 1024.0 && shellWash < 1.0 / 1024.0);
+}
+
 // Whether the holes and waves changed this pixel at all. Far from every hole the bend is exactly zero (past its reach)
 // or far below a pixel (a smooth well's tail), the ring, core and crests are dark and no shell is washing over the
 // camera: such a pixel is left exactly as the camera drew it rather than re-sampled from the copy. disp here is the
