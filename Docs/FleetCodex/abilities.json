@@ -1,5 +1,5 @@
 {
- "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes.",
+ "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. An optional tint ({rest, l5}: domain or omni) records an icon the HUD paints other than the pilot's domain, with its source. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes.",
  "Angler": {
   "Charge": {
    "ability": "Erase / Lock-on",
@@ -85,7 +85,13 @@
    "does": "On a repeating timer the Dolphin drops a crystal somewhere in the open space of the cell - ammo for your next blast, but any pilot who reaches it first can take it.",
    "trigger": "Passive - on a timer",
    "scales": "More Mass seeds crystals more often.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md"
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md",
+   "tint": {
+    "rest": "omni",
+    "l5": "domain",
+    "source": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+    "why": "CrystalTierColor: a seeding wears the lime of a free-for-all crystal, and the pilot's domain once Mass 5 (Claimed Seed) locks it to them."
+   }
   },
   "Space": {
    "ability": "Echo Obliteration",

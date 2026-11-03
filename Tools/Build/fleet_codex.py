@@ -571,6 +571,105 @@ def hud_of(key, prefabs):
 L5_SHIELDED = (104, 164, 255, 255)   # the HUD's shielded signal (states.SHIELDED["jade"]): an L5 that shields reads as one
 
 
+KIT_LAYERS = {}   # published icon path -> its exact tint layers, for icons the kit composed
+DOMAINS = ("Jade", "Ruby", "Gold")   # the playable domains (Blue is the game's "no team", Docs/PALETTE.md 2.8)
+COLOR_SET = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes", "OriginalColorSetSO.asset")
+BARS_CONFIG = os.path.join(REPO, "Assets", "Resources", "ElementalBarsConfig.asset")
+
+
+def _hex(rgb):
+    return "#" + "".join("%02x" % max(0, min(255, round(c * 255))) for c in rgb[:3])
+
+
+def _linear_to_gamma(c):
+    """Unity's Mathf.LinearToGammaSpace (what Color.gamma does per channel)."""
+    if c <= 0.0:
+        return 0.0
+    if c <= 0.0031308:
+        return 12.92 * c
+    return 1.055 * (c ** (1 / 2.4)) - 0.055
+
+
+def palette():
+    """The colours the game tints a HUD with, read from the shipped palette and computed the way SO_ColorSet does:
+    signal = GetDomainSignalColor (TrailHighlightColor with its brightest channel driven to 1), shielded =
+    GetShieldedSignalColor (ShieldedOutsideBlockColor.gamma), omni = ElementalBarsConfigSO.LimeColor (the lime a
+    free-for-all crystal wears)."""
+    text = open(COLOR_SET, encoding="utf-8").read().replace("\n      ", " ")
+
+    def col(block, field):
+        m = re.search(rf"{field}: \{{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+), a: ([-\d.e]+)\}}", block)
+        return [float(x) for x in m.groups()]
+    out = {}
+    for d in DOMAINS:
+        block = re.search(rf"^  {d}Colors:\n((?:    .*\n)+)", text, re.M).group(1)
+        ui = col(block, "TrailHighlightColor")
+        peak = max(ui[:3]) or 1.0
+        sh = col(block, "ShieldedOutsideBlockColor")
+        out[d] = {"signal": _hex([c / peak for c in ui[:3]]), "shielded": _hex([_linear_to_gamma(c) for c in sh[:3]])}
+    lime = re.search(r"limeColor: \{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+)", open(BARS_CONFIG, encoding="utf-8").read())
+    return {"domains": out, "default": DOMAINS[0], "omni": _hex([float(x) for x in lime.groups()]),
+            "sources": [os.path.relpath(COLOR_SET, REPO), os.path.relpath(BARS_CONFIG, REPO)]}
+
+
+def kit_layers(entries, draws, states, silver_shielded=(190, 190, 190, 255)):
+    """A kit card state as a silver composite plus its tint layers: d = the parts the HUD paints in the pilot's domain,
+    s = the parts it paints in the domain's shielded signal (both white masks), f = the fixed-colour parts. A part laid
+    over earlier ones hides them in every layer, as it does on the card."""
+    from PIL import Image, ImageChops
+    size = (128, 128)
+    layers = {k: Image.new("RGBA", size, (0, 0, 0, 0)) for k in "dsf"}
+    silver = Image.new("RGBA", size, (0, 0, 0, 0))
+    for entry in entries:
+        name, colour = entry[0], entry[1]
+        alpha = entry[2] if len(entry) > 2 else 1.0
+        if colour == "domain":
+            k, rgba, sv = "d", (255, 255, 255, 255), (236, 236, 236, 255)
+        elif colour == "shielded":
+            k, rgba, sv = "s", (255, 255, 255, 255), silver_shielded
+        else:
+            k = "f"
+            rgba = colour if isinstance(colour, tuple) else states.FIXED[colour]
+            sv = rgba
+        part = states._colour(draws[name](), rgba, alpha)
+        cover = part.split()[3]
+        for other in "dsf":
+            if other != k:
+                r, g, b, a = layers[other].split()
+                layers[other] = Image.merge("RGBA", (r, g, b, ImageChops.multiply(a, ImageChops.invert(cover))))
+        layers[k].alpha_composite(part)
+        silver.alpha_composite(states._colour(draws[name](), sv, alpha))
+    return silver, {k: im for k, im in layers.items() if im.getbbox()}
+
+
+def split_layers(im):
+    """A HUD sprite's tint layers: its white and grey pixels are what the HUD's Image colour tints (the pilot's
+    domain), its coloured pixels keep their colour."""
+    from PIL import Image
+    im = im.convert("RGBA")
+    px = im.load()
+    d = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    f = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dp, fp = d.load(), f.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if not a:
+                continue
+            hi, lo = max(r, g, b), min(r, g, b)
+            if hi and (hi - lo) / hi >= 0.3:
+                fp[x, y] = (r, g, b, a)
+            else:
+                dp[x, y] = (255, 255, 255, a * hi // 255)
+    return {k: v for k, v in (("d", d), ("f", f)) if v.getbbox()}
+
+
+def save_layers(art, rel, layers):
+    """Writes img/ab/<name>.<d|s|f>.png beside the icon; returns {layer: published path}."""
+    stem = rel[:-4]
+    return {k: art.save(im, f"{stem}.{k}.png") for k, im in layers.items()}
+
+
 def lockup_cards(key):
     """The icon kit's resting cards (spec LOCKUP), rendered in silver: the HUD's card as it sits, parts and all."""
     spec_path = os.path.join(HERE, "icon_kit", "specs", key.lower() + ".py")
@@ -590,7 +689,7 @@ def lockup_cards(key):
         for el in ELEMENTS + ["Omni"]:
             sib = getattr(spec, "LOCKUP", {}).get(el)
             if sib:
-                out[el] = states.compose(sib["state"], sib["parts"], next(iter(silver)), silver)
+                out[el] = kit_layers(sib["state"], sib["parts"], states)
         # The level-5 card: the state the kit draws for "<Element> 5" on that element's own card (the picked card, not
         # an options group) - what the HUD swaps the card's parts to when the upgrade comes on (the Tiger Moth's gilded
         # keys, the Sparrow's shielded rounds). Shielded parts keep the HUD's shielded signal so the change reads.
@@ -601,9 +700,7 @@ def lockup_cards(key):
                 continue
             for st in c.get("states", []):
                 if re.search(rf"(?<!\d){el} 5(?!\d)", st[0]):
-                    states.SHIELDED.update({k: signal for k in states.SHIELDED})
-                    out[f"{el}@L5"] = states.compose(st[1], c["parts"], next(iter(silver)), silver)
-                    states.SHIELDED.update({k: (190, 190, 190, 255) for k in states.SHIELDED})
+                    out[f"{el}@L5"] = kit_layers(st[1], c["parts"], states, silver_shielded=signal)
                     break
         return out
     except Exception as e:   # the kit is optional: the HUD's own sprites still answer
@@ -632,11 +729,14 @@ def named_icon(key, label, pngs_by_dir):
 def ability_art(key, art, prefabs, pngs, labels=None):
     """element -> published icon path, plus 'Omni'. Kit card, else the HUD's sprite (own HUD or own art), else its
     visible parts, else the hull's own icon named after the ability."""
-    out = {}
+    out, layers = {}, {}
     labels = labels or {}
-    for el, im in lockup_cards(key).items():
+    for el, (im, lay) in lockup_cards(key).items():
         name = el.replace("@L5", "_L5")
         out[el] = art.save(im, f"img/ab/{key}_{name}.png") if art.enabled else None
+        if out[el]:
+            layers[out[el]] = save_layers(art, out[el], lay)
+    KIT_LAYERS.update(layers)
     hud = hud_of(key, prefabs)
     if hud:
         path, guid, outer = hud
@@ -777,6 +877,8 @@ def ability_words(key, elements, omni):
                   f"'{e['ability'] if e else None}': entry dropped, update the table", file=sys.stderr)
             continue
         e["words"] = {k: words.get(k, "") for k in ("does", "trigger", "scales", "source")}
+        if words.get("tint"):   # the HUD paints this icon something other than the pilot's domain (the Dolphin's seed)
+            e["words"]["tint"] = words["tint"]
 
 
 def hud_l5_fields():
@@ -824,6 +926,79 @@ def upgrade_art(key, elements, art, pngs_by_dir, png_index=None, l5_fields=None)
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
 
 
+def domain_images(vessels, preview_by_value, out_dir, render=False):
+    """{domain: img/dom/<model>_<Domain>_<hash>.webp} per vessel: the hangar preview rendered in that domain's livery
+    by Tools/Build/vessel_model/render_cards.py (its camera, look and the palette's domain colours), for the model the
+    class asset's PreviewImage was rendered from (the Orca and Wrasse ship the Sparrow's, the Meerkat the Stoat's). The
+    hash covers the FBX, the colour scheme and the renderer, so a changed model renders again. Without --render-domains
+    only cached renders are used; a vessel with none keeps its shipped preview for every domain."""
+    vm = os.path.join(HERE, "vessel_model")
+    sys.path.insert(0, vm)
+    try:
+        import render_cards as RC
+    except Exception as e:
+        print(f"  domain renders skipped: {e}", file=sys.stderr)
+        return
+    by_guid = {}
+    for name in RC.VESSELS:
+        hang = RC.outputs(name).get("hangar")
+        if hang and os.path.exists(hang + ".meta"):
+            g = re.search(r"guid: (\w+)", open(hang + ".meta").read())
+            if g:
+                by_guid[g.group(1)] = name
+    tool = hashlib.sha256()
+    for f in ("render_cards.py", "vessel_colors.py"):
+        tool.update(open(os.path.join(vm, f), "rb").read())
+    tool.update(open(COLOR_SET, "rb").read())
+    dom_dir = os.path.join(out_dir, "img", "dom")
+    os.makedirs(dom_dir, exist_ok=True)
+    keep = set()
+    for value, guid in preview_by_value.items():
+        v = next((x for x in vessels if x["id"] == value), None)
+        name = by_guid.get(guid)
+        if not v or not name:
+            continue
+        h = tool.copy()
+        h.update(open(os.path.join(REPO, RC.VESSELS[name]["fbx"]), "rb").read())
+        h = h.hexdigest()[:10]
+        found = {}
+        for d in DOMAINS:
+            rel = f"img/dom/{name}_{d}_{h}.webp"
+            path = os.path.join(out_dir, rel)
+            if not os.path.exists(path) and render:
+                try:
+                    render_domain(RC, name, d, path)
+                except Exception as e:
+                    print(f"  could not render {name} in {d}: {e}", file=sys.stderr)
+            if os.path.exists(path):
+                found[d] = rel
+                keep.add(os.path.basename(path))
+        v["domainImages"] = found or None
+    for f in os.listdir(dom_dir):   # a stale render (its model changed) is never republished
+        if f not in keep and f.endswith(".webp"):
+            os.remove(os.path.join(dom_dir, f))
+
+
+def render_domain(RC, name, domain, path):
+    """One hangar preview in a domain's livery, composed exactly as render_cards.compose composes the shipped one."""
+    import tempfile
+    from PIL import Image, ImageFilter
+    sys.path.insert(0, os.path.join(HERE, "vessel_model"))
+    import vessel_colors as VC
+    cfg = RC.VESSELS[name]
+    hw, hh = cfg.get("hangar_size", (960, 540))
+    with tempfile.TemporaryDirectory() as tmp:
+        files = RC.render_view(cfg, RC.colors_for(VC.scheme(), domain), tmp, {"hangar": (hw, hh, 0.62)},
+                               outline=cfg.get("outline", 0.006), samples=12)
+        hang = Image.open(files["hangar"]).convert("RGBA").resize((hw, hh), Image.LANCZOS)
+    bg = RC._hangar_background(hw, hh, int(RC._guid(name)[:6], 16))
+    glow = Image.new("RGBA", (hw, hh), RC.HANGAR_GLOW + (0,))
+    glow.putalpha(hang.split()[3].filter(ImageFilter.GaussianBlur(18 * hw / 960)).point(lambda v: int(v * 0.45)))
+    bg.alpha_composite(glow)
+    bg.alpha_composite(hang)
+    bg.convert("RGB").save(path, "WEBP", quality=80, method=6)
+
+
 def card_art(card_asset, art, pngs, name):
     if not card_asset:
         return None
@@ -843,10 +1018,13 @@ def card_art(card_asset, art, pngs, name):
     return rel
 
 
-def build(out_dir, images=True):
+def build(out_dir, images=True, render_domains=False):
     import shutil
     if images and os.path.isdir(os.path.join(out_dir, "img")):
-        shutil.rmtree(os.path.join(out_dir, "img"))   # a removed icon must not be republished
+        for entry in os.listdir(os.path.join(out_dir, "img")):   # a removed icon must not be republished;
+            if entry != "dom":                                   # img/dom is the domain renders' cache, keyed by hash
+                path = os.path.join(out_dir, "img", entry)
+                shutil.rmtree(path) if os.path.isdir(path) else os.remove(path)
     enum, roster, cls, rows, cards = class_enum(), toy_roster(), classes(), ability_rows(), card_facts()
     previews = guid_paths(["Assets/_Graphics"], ".png") if images else {}
     asset_names = guid_paths(["Assets/_SO_Assets", "Assets/Resources"], ".asset")
@@ -911,6 +1089,22 @@ def build(out_dir, images=True):
             upgrade_art(v["key"], v["elements"], art, pngs_by_dir, png_index, l5_fields)
         for card in v["cards"]:
             card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
+
+    def icon_layers(rel):
+        if not rel or not art.enabled:
+            return None
+        if rel in KIT_LAYERS:
+            return KIT_LAYERS[rel] or None
+        from PIL import Image
+        return save_layers(art, rel, split_layers(Image.open(os.path.join(out_dir, rel)))) or None
+    for v in vessels:
+        for e in v["elements"].values():
+            e["layers"] = icon_layers(e.get("icon"))
+            e["upgrade"]["layers"] = icon_layers(e["upgrade"].get("icon"))
+        if v["omni"]:
+            v["omni"]["layers"] = icon_layers(v["omni"].get("icon"))
+    if images:
+        domain_images(vessels, {value: c.get("previewGuid") for value, c in cls.items()}, out_dir, render_domains)
     data = {
         "schema": "cosmic-shore.fleet-codex/2",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
@@ -920,6 +1114,7 @@ def build(out_dir, images=True):
         "github": GITHUB,
         "elements": ELEMENTS,
         "ui": ui,
+        "palette": palette(),
         "vessels": vessels,
     }
     # The content hash ignores the stamp, so a run that found nothing new says so.
@@ -936,10 +1131,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--out", default=DEFAULT_OUT, help="where fleet.json and img/ go (default Docs/FleetCodex/build)")
     ap.add_argument("--no-images", action="store_true", help="skip the hangar previews")
+    ap.add_argument("--render-domains", action="store_true",
+                    help="render each hull in Jade, Ruby and Gold (render_cards.py's look; needs bpy, about 3 s a render, "
+                         "cached in <out>/img/dom by model hash)")
     ap.add_argument("--files-json", action="store_true",
                     help="after building, print the Artifact publish `files` list (paths relative to --out, the root)")
     a = ap.parse_args()
-    data = build(os.path.abspath(a.out), images=not a.no_images)
+    data = build(os.path.abspath(a.out), images=not a.no_images, render_domains=a.render_domains)
     v = data["vessels"]
     print(f"fleet.json: {len(v)} vessels, {sum(x['status']['abilities'] for x in v)} abilities, "
           f"{sum(x['status']['upgradesWired'] for x in v)} L5 upgrades wired, "

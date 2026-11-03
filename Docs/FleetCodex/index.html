@@ -73,6 +73,18 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .search{display:flex;align-items:center;gap:8px;height:36px;flex:0 1 300px;min-width:170px;padding:0 14px;border:1px solid var(--edge);border-radius:18px;background:var(--surface);margin-left:auto}
 .search input{all:unset;font-size:13px;color:var(--ink);width:100%}
 .themes{position:relative}
+.dompick{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+.dompick button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border-radius:14px;font-size:12.5px;color:var(--muted)}
+.dompick button i{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+.dompick button[aria-checked="true"]{background:var(--raise);color:var(--ink);box-shadow:0 0 0 1px var(--edge)}
+.dompick button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ico{position:relative;display:block;width:80px;height:80px;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.ico>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.ico .lay{-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;transition:background-color .35s}
+.l5t .ico{width:20px;height:20px;background:#15191D;border-radius:5px;align-self:center;flex:none}
+.l5t .ico>*{inset:1px;width:calc(100% - 2px);height:calc(100% - 2px)}
+.l5t .ico img{background:none;padding:0;border-radius:0}
+.cell .ic .ico{width:100%;height:100%}
 .tbtn{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--edge);border-radius:18px;background:var(--surface);cursor:pointer;font-size:13px}
 .tbtn:hover{border-color:var(--ink)}
 .sw{display:inline-flex;width:22px;height:14px;border-radius:7px;overflow:hidden;border:1px solid rgba(128,128,128,.5);flex:none}
@@ -131,9 +143,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .icontile{position:relative;width:96px;height:96px;border-radius:calc(var(--radius) + 2px);background:var(--tile);display:flex;align-items:center;justify-content:center;margin:14px 0 10px;transition:transform .25s cubic-bezier(.3,1.4,.5,1),box-shadow .25s}
 .icontile img{position:relative;width:80px;height:80px;object-fit:contain;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
 .icontile.none img{width:44px;height:44px;opacity:.6}
-.ab:hover .icontile img{transform:scale(1.08) rotate(-3deg)}
+.ab:hover .icontile img,.ab:hover .icontile .ico{transform:scale(1.08) rotate(-3deg)}
 .ab.sel .icontile{box-shadow:0 0 0 1px var(--edge),0 0 30px rgba(255,255,255,.07)}
-.ab.sel .icontile img{animation:float 3.2s ease-in-out infinite}
+.ab.sel .icontile img,.ab.sel .icontile .ico{animation:float 3.2s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 .icontile .bloom{position:absolute;inset:-26px;width:auto;height:auto;opacity:0;transition:opacity .5s;pointer-events:none}
 .icontile .bloom{display:none}
@@ -270,7 +282,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
   .face{min-height:0}
   .devices{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 }
-@media (max-width:640px){.top .stamp{display:none}.tmenu{position:fixed;left:12px;right:12px;width:auto;top:70px}}
+@media (max-width:640px){.top .stamp{display:none}.dompick button{padding:4px 6px}.dompick button span{display:none}.tmenu{position:fixed;left:12px;right:12px;width:auto;top:70px}}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   .ab.flip .inner{transform:none}.ab.flip .face.front{visibility:hidden}.face.back{transform:none}.ab:not(.flip) .face.back{visibility:hidden}
@@ -281,6 +293,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
   <a class="logo" href="#fleet"><img id="logo" alt=""><span class="hd">Fleet Codex</span></a>
   <nav aria-label="Sections"><a href="#fleet" id="navFleet">Fleet</a></nav>
   <label class="search"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" aria-label="Search the fleet" placeholder="Search vessels, abilities, games"></label>
+  <div class="dompick" id="dompick" role="radiogroup" aria-label="Domain"></div>
   <span class="mo stamp" id="stamp">Loading&hellip;</span>
   <div class="themes">
     <button class="tbtn" id="tbtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmenu"><span class="sw" id="tsw"></span><span id="tname">Silver Screen</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -300,7 +313,28 @@ footer code{font-family:var(--mono);font-size:11.5px}
     {id:"gargantua", name:"Gargantua", d:"Pure black under an accretion glow, warm whites.", sw:["#020100","#FF9F43","#F7EBDC"]},
     {id:"hypersea", name:"HyperSea", d:"The game's own menu: the deep blue, the domain cyan.", sw:["#00041F","#00D4FF","#E6E9FF"]}
   ];
-  var D = null, query = "", pick = null, flipped = {};
+  var D = null, query = "", pick = null, flipped = {}, dom = "Jade";
+  /* an icon as the HUD tints it: the parts the HUD paints in the pilot's domain (d) and in the domain's shielded
+     signal (s) are masks filled with the picked domain's colour; fixed-colour parts (f) keep theirs */
+  function ico(src, layers, alt, tint){
+    if(!layers) return img(src, alt);
+    var fill = tint === "omni" ? "var(--omni)" : "var(--dom)";
+    function lay(u, bg){ return u ? '<i class="lay" style="-webkit-mask-image:url(' + esc(u) + ');mask-image:url(' + esc(u) + ');background:' + bg + '"></i>' : ''; }
+    return '<span class="ico" role="img" aria-label="' + esc(alt || "") + '">' + lay(layers.d, fill) + lay(layers.s, "var(--dom-sh)") + (layers.f ? '<img src="' + esc(layers.f) + '" alt="">' : '') + '</span>';
+  }
+  function vimg(v){ return v.domainImages && v.domainImages[dom] || v.image; }
+  function applyDomain(name){
+    var P = D && D.palette; if(!P) return;
+    if(!P.domains[name]) name = P["default"];
+    dom = name;
+    var c = P.domains[name], root = document.documentElement.style;
+    root.setProperty("--dom", c.signal); root.setProperty("--dom-sh", c.shielded); root.setProperty("--omni", P.omni);
+    try { localStorage.setItem("fleetCodexDomain", name); } catch(e){}
+    var box = document.getElementById("dompick");
+    box.innerHTML = Object.keys(P.domains).map(function(k){
+      return '<button type="button" role="radio" aria-checked="' + (k === name) + '" data-dom="' + k + '" title="' + k + ': ' + P.domains[k].signal + '" style="--c:' + P.domains[k].signal + '"><i></i><span>' + k + '</span></button>'; }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll("[data-dom]"), function(b){ b.addEventListener("click", function(){ applyDomain(b.dataset.dom); route(true); }); });
+  }
   var EL_WORD = {Charge:"threat", Mass:"size", Space:"reach", Time:"rate"};
   var L5 = {wired:["good","L5 wired"], open:["","L5 open"], off:["warn","L5 switched off"], "label-only":["warn","L5 named, not gated"], "gate-only":["warn","L5 gated, not named"]};
   var app = document.getElementById("app"), strip = document.getElementById("strip"), q = document.getElementById("q");
@@ -379,7 +413,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     vs.sort(function(a, b){ return (isCrew(a) - isCrew(b)) || a.id - b.id; });
     strip.innerHTML = '<a class="poster all" href="#fleet"' + (cur ? '' : ' aria-current="page"') + '><span class="ph"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>The whole fleet</a>' +
       vs.map(function(v){
-        return '<a class="poster' + (isCrew(v) ? ' crew' : '') + '" href="#' + esc(v.key) + '"' + (cur && cur.key === v.key ? ' aria-current="page"' : '') + '><span class="ph">' + img(v.image, "") +
+        return '<a class="poster' + (isCrew(v) ? ' crew' : '') + '" href="#' + esc(v.key) + '"' + (cur && cur.key === v.key ? ' aria-current="page"' : '') + '><span class="ph">' + img(vimg(v), "") +
           (isCrew(v) ? '<span class="seats">' + v.crew.seats + ' SEATS</span>' : '') + '</span>' + esc(crewName(v)) + '</a>';
       }).join("") + (vs.length ? '' : '<span class="empty">No vessel matches.</span>');
     var sel = strip.querySelector('[aria-current="page"]');
@@ -418,22 +452,22 @@ footer code{font-family:var(--mono);font-size:11.5px}
     var name = e.open ? "Open slot" : e.ability;
     var live = e.scaling.filter(function(s){ return s.on; });
     var scales = live.length ? live[0].field + " &times;" + num(live[0].min) + " &ndash; &times;" + num(live[0].max) + (live.length > 1 ? " +" + (live.length - 1) : "") : "scales no number";
-    var icon = e.icon || e.shape, l5icon = u.icon || icon, w = e.words || {};
+    var icon = e.icon || e.shape, l5icon = u.icon || icon, w = e.words || {}, tint = w.tint || {};
     return '<article class="ab' + (isSel ? ' sel' : '') + (isFlip ? ' flip' : '') + '" data-k="' + key + '" style="--d:' + delay + 'ms"><div class="inner">' +
       '<div class="face front" aria-hidden="' + isFlip + '">' +
         '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' +
           '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + '</span>' +
-          '<span class="icontile' + (e.icon ? '' : ' none') + '">' + img(icon, name) + '</span>' +
+          '<span class="icontile' + (e.icon ? '' : ' none') + '">' + ico(icon, e.icon ? e.layers : null, name, tint.rest) + '</span>' +
           '<span class="name"' + fit(nameOverride || name) + '>' + esc(nameOverride || name) + '</span>' + howLine(v, el, w) +
           '<span class="sum">' + esc(w.does || e.description) + '</span>' +
           (w.scales ? '<span class="scl"><span class="chip">' + img(e.shape, "") + '</span><span>' + esc(w.scales) + '</span></span>' : '<span class="mo">' + scales + '</span>') +
           '<span class="grow"></span>' +
-          '<span class="l5t"><b>L5</b>' + (u.icon ? img(u.icon, "") : '') + '<span>' + esc(u.label || (u.status === "open" ? "not designed yet" : "unnamed")) + '</span></span></button>' +
+          '<span class="l5t"><b>L5</b>' + (u.icon ? ico(u.icon, u.layers, "", tint.l5) : '') + '<span>' + esc(u.label || (u.status === "open" ? "not designed yet" : "unnamed")) + '</span></span></button>' +
         '<span class="foot">' + pill(u.status) + '<span class="sp"></span><button class="l5" type="button" data-flip="' + key + '" aria-label="Show the level 5 upgrade of ' + esc(name) + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' + FLIP_ICON + 'L5</button></span>' +
       '</div>' +
       '<div class="face back" aria-hidden="' + !isFlip + '">' +
         '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + ' &middot; LEVEL 5</span>' +
-        '<span class="icontile' + (l5icon === e.shape ? ' none' : '') + '">' + img(D.ui.bloom, "", "bloom") + img(l5icon, (u.label || name) + " at level 5") + '</span>' +
+        '<span class="icontile' + (l5icon === e.shape ? ' none' : '') + '">' + img(D.ui.bloom, "", "bloom") + ico(l5icon, u.icon ? u.layers : (e.icon ? e.layers : null), (u.label || name) + " at level 5", tint.l5) + '</span>' +
         '<span class="lvl">L5</span>' +
         '<span class="ul">' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed upgrade")) + '</span>' +
         '<span class="sum" style="-webkit-line-clamp:6">' + esc(u.description || (u.status === "open" ? "No level-5 upgrade is designed for " + name + ". It unlocks at level " + u.unlockLevel + " and relocks below " + u.relockBelow + "." : "")) + '</span>' +
@@ -449,7 +483,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     return '<article class="ab' + (isSel ? ' sel' : '') + '" data-k="omni" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
       '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="omni">' +
         '<span class="el"><span class="chip">' + img(o.mark, "") + '</span>OMNI CRYSTAL</span>' +
-        '<span class="icontile' + (o.icon ? '' : ' none') + '">' + img(o.icon || o.mark, name) + '</span>' +
+        '<span class="icontile' + (o.icon ? '' : ' none') + '">' + (o.icon ? ico(o.icon, o.layers, name) : img(o.mark, name)) + '</span>' +
         '<span class="name"' + fit(name) + '>' + esc(name) + '</span><span class="how"><span>' + esc(ow.trigger || "Fly into an omni crystal") + '</span></span><span class="sum">' + esc(sum) + '</span><span class="grow"></span></button>' +
       '<span class="foot"><span class="pill">no level 5</span></span></div></div></article>';
   }
@@ -570,7 +604,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     if(!resolve(v, pick)) pick = firstKey(v);
     var sel = resolve(v, pick), f = v.flight, s = v.status;
     app.innerHTML = '<div class="bento">' +
-      '<section class="tile hero ' + (v.seats ? 'span12 wide' : 'span5') + '" aria-label="' + esc(crewName(v)) + '">' + img(v.image, "", "still") +
+      '<section class="tile hero ' + (v.seats ? 'span12 wide' : 'span5') + '" aria-label="' + esc(crewName(v)) + '">' + img(vimg(v), "", "still") +
         '<div class="copy"><span class="mo" style="letter-spacing:.12em">VESSEL ' + v.id + (isCrew(v) ? ' &middot; CREW VESSEL &middot; ' + v.crew.seats + ' SEATS' : v.controls ? (v.controls.oneStick ? ' &middot; ONE-STICK FLYER' : ' &middot; TWO-STICK FLYER') : '') + (s.inToybox ? ' &middot; IN THE VESSEL CHANGER' : '') + '</span>' +
         '<h1 class="hd">' + esc(isCrew(v) && v.crew.names.length ? v.crew.names.join(" & ") : v.name) + '</h1>' +
         (isCrew(v) && !v.crew.names.length ? '<span class="crewline">' + v.crew.seats + ' seats on one hull</span>' : '') +
@@ -611,7 +645,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     function cell(e){
       if(!e) return '<td class="mo">no map</td>';
       var pad = PADMAP[e.pad] || null;
-      return '<td><span class="cell"><span class="ic">' + img(e.icon || e.shape, "") + '</span><span style="min-width:0"><span class="nm">' + esc(e.open ? "open slot" : e.ability) + '</span><br>' +
+      return '<td><span class="cell"><span class="ic">' + (e.icon ? ico(e.icon, e.layers, "", (e.words && e.words.tint || {}).rest) : img(e.shape, "")) + '</span><span style="min-width:0"><span class="nm">' + esc(e.open ? "open slot" : e.ability) + '</span><br>' +
         (e.pad === "LT+RT" ? '<img class="gl" src="' + esc(PADMAP["LT"]) + '" alt="LT"><img class="gl" src="' + esc(PADMAP["RT"]) + '" alt="RT">' : pad ? '<img class="gl" src="' + esc(pad) + '" alt="' + esc(e.pad) + '">' : '') +
         (e.key ? '<span class="mo">' + esc(e.key) + '</span> ' : '') + pill(e.upgrade.status) + '</span></span></td>';
     }
@@ -623,9 +657,9 @@ footer code{font-family:var(--mono);font-size:11.5px}
         '<th><span class="chip">' + img(D.ui.omni, "") + '</span>OMNI CRYSTAL</th><th>GAMES</th></tr></thead><tbody>' +
         vs.map(function(v){
           var o = v.omni || {};
-          return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(v.image, "") + '<span><span class="nm">' + esc(crewName(v)) + '</span><br><span class="mo">' + (isCrew(v) ? v.crew.seats + ' seats' + (v.seats ? ': ' + esc(v.seats.list.map(function(s){ return s.name; }).join(", ")) : '') : 'vessel ' + v.id) + '</span></span></span></td>' +
+          return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(vimg(v), "") + '<span><span class="nm">' + esc(crewName(v)) + '</span><br><span class="mo">' + (isCrew(v) ? v.crew.seats + ' seats' + (v.seats ? ': ' + esc(v.seats.list.map(function(s){ return s.name; }).join(", ")) : '') : 'vessel ' + v.id) + '</span></span></span></td>' +
             D.elements.map(function(el){ return cell(v.elements[el]); }).join("") +
-            '<td><span class="cell"><span class="ic">' + img(o.icon || o.mark, "") + '</span><span class="nm">' + esc(o.label || (o.effects || [])[0] || "fly into it") + '</span></span></td>' +
+            '<td><span class="cell"><span class="ic">' + (o.icon ? ico(o.icon, o.layers, "") : img(o.mark, "")) + '</span><span class="nm">' + esc(o.label || (o.effects || [])[0] || "fly into it") + '</span></span></td>' +
             '<td class="mo">' + (v.cards.length ? v.cards.map(function(c){ return esc(c.name); }).join(", ") : "none") + '</td></tr>';
         }).join("") + '</tbody></table></section></div>';
     Array.prototype.forEach.call(app.querySelectorAll("tbody tr[data-k]"), function(tr){
@@ -635,17 +669,20 @@ footer code{font-family:var(--mono);font-size:11.5px}
     });
   }
 
-  function route(){
+  function route(keep){
     if(!D) return;
-    var v = current();
+    var v = current(), y = window.scrollY;
     drawStrip();
     document.getElementById("navFleet").setAttribute("aria-current", v ? "false" : "page");
-    if(v){ vesselView(v); document.title = crewName(v) + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
+    if(keep === true) setTimeout(function(){ window.scrollTo(0, y); }, 0);
+    if(v){ vesselView(v, keep === true); document.title = crewName(v) + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
   }
 
   q.addEventListener("input", function(){ query = q.value.trim().toLowerCase(); drawStrip(); if(!current()) fleetView(); });
   fetch("fleet.json", {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
     D = d;
+    var saved = null; try { saved = localStorage.getItem("fleetCodexDomain"); } catch(e){}
+    applyDomain(saved || (d.palette && d.palette["default"]));
     D.vessels.forEach(function(v){ if(v.controls) v.controls.rows.forEach(function(r){ if(r.padArt && !PADMAP[r.pad]) PADMAP[r.pad] = r.padArt; }); });
     document.getElementById("logo").src = d.ui.omni || "";
     document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a> &middot; ' + esc(d.commitDate);
