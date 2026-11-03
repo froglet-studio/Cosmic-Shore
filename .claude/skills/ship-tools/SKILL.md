@@ -155,10 +155,16 @@ After the last push of this run, dispatch `unity-ci.yml` with `mode: static` on 
 exactly as `/ship` §5.5 says. A `claude/**` branch fires no CI on its own push; this is the
 one dispatch. Fire-and-forget — do not wait on it. If nothing was pushed, fire nothing.
 
+## 7.6 Refresh the Fleet Codex (skipped by `check`)
+
+When the pushed output touches a vessel (a map, prefab, class asset, HUD or ability icon), refresh the codex as
+`/ship` §5.6 says: built on bleeding-edge with this branch merged on top (`--pending`), published to the one codex url.
+
 ## 8. Report
 
 - Every tool: name, menu path, READER/WRITER, and its state from §3.
 - Whether the §7.5 CI dispatch went out (or was refused, with the manual route).
+- The §7.6 Fleet Codex refresh (published hash and pending list), or "no codex surface touched".
 - Which commit carries the output, and what §5 checked on it.
 - What was retired, and what was kept with the reason.
 - Anything a human must still do (an unrun tool, an unsaved editor), stated as a blocker.
