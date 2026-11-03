@@ -65,6 +65,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by
+`author_meerkat_assets.py`) replace the Stoat's HUD on `Meerkat.prefab`; four ability icons and the omni card (Soliton
+Network) from `Tools/Build/icon_kit/specs/meerkat.py`; a ThumbLifts touch profile (`author_touch_profiles.py`). Verified
+offline only: the two C# files compiled with Unity 6000.3.17f1's Roslyn against `Library/ScriptAssemblies` (no errors);
+`author_meerkat_assets.py --check` / `--self-test`, `icon_kit/author.py meerkat --check`, `verify.py --self-test`,
+`author_touch_profiles.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`, `check_ui_colors.py`
+all green. No editor run: another session had Unity open on this checkout; `unity_refcompile` cannot run on Windows.
+
+1. The project compiles; open `MeerkatHUDVariant.prefab`. **Pass:** no missing-script or missing-sprite warnings; the view's
+   four gauges (Sentinel, Portal, Soliton, Ride) and its omni sprite are wired.
+2. Toybox, Vessel Changer: the Meerkat. **Pass:** the row shows Sentinel Mode, Exit Portal, Soliton, Faster Ride (not the
+   Stoat's Ripple / Modes / orbit / path) and the omni card shows the three-tunnel network, not LOCKED.
+3. Fly it. **Pass:** the Space plate fills as the reticle grows back and turns lime once RT would form; the Time plate is lime
+   and empties through a ride; Y lights the Charge plate (lime) even with no sentinel standing, and it fills as sentinels
+   stand; the Mass plate shows the last portal's prisms still standing.
+4. Phone (or the Device Simulator with touch): two thumbs down, the right thumb bends the reticle. Lift the left thumb: the
+   soliton forms (held while riding: the small push). Lift the right: the straight shaft lengthens. Tap the Charge card:
+   Sentinel Mode toggles and no lift fires. **Pass:** each as described. The profile is a prototype that needs Garrett's
+   sign-off.
+5. An AI Meerkat and a remote Meerkat. **Pass:** their HUD never drives yours.
+6. **Its own hull** (`Meerkat.fbx`, swapped into `Meerkat.prefab` by guid; the assimp reader did not run offline). Reimport,
+   then fly it in the Toybox. **Pass:** the Meerkat draws its own hull (raised head, visor band, ear dishes, claws), not the
+   Stoat's; it lopes and banks with `StoatAnimation` (no part left at rest, nothing detached); the four element morphs show
+   as elements level; the jets sit on its nacelles; the class card, hangar preview and squad image show the new hull.
+   Sentinels (Y, then form a soliton) read as the hull standing guard. Judge whether it reads as a meerkat in flight.
+7. **The Rift** (round 28b, `MEERKAT.md` §7b; compiled with Unity's Roslyn against the project's assemblies, the six
+   `MeerkatRiftTests` not run). Toybox, the Meerkat, fly into an omni crystal. **Pass:** you go into the void for about
+   5 s: faster (about 2x), steering freely, flying through prisms and crystals without touching them, the Time card
+   counting down in lime; RT ends the run early. A tube stands along the path you flew, a mouth at each end; fly into its
+   way in and you slide it to its way out; it collapses about 45 s after it was laid, with Sentinel mode on or off.
+   `MeerkatSolitonConfig` > Omnicrystal · the Rift > `omniMode` Network brings round 27's network back. Run
+   `MeerkatRiftTests`. Known gaps: no swallow, exit portal or sentinel on a rift yet; other players do not see rifts.
+
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 
 **What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
