@@ -321,7 +321,7 @@ namespace CosmicShore.Gameplay
             ApplyFaunaCorridor(intensity);
             // The I4 gauntlet's rays light the way through every blocked gate (empty below I4).
             if (_rays) Destroy(_rays.gameObject);
-            _rays = SwitchbackPathRays.Create(layout, _course, pathRayRadius);
+            _rays = SwitchbackPathRays.Create(layout, _course, pathRayRadius, gameObject.scene);
 
             Transform container = null;
             if (layout.Prisms.Count > 0)

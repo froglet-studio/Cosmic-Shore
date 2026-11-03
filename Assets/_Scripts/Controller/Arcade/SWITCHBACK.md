@@ -605,7 +605,7 @@ seeds a level):
 2. **A zig-zag of keys** (`GauntletKeys`): two keys a gate (first key under 300 u out) or three, upstream first. The
    last sits on the line `GauntletFinalLead` = 120 u out, aimed at the door; the others step off the line to a hashed
    side by `GauntletZigZag` = 40 u (two keys: +1.5 x; three: +1 x, -1 x) and are each aimed at the NEXT key. Each key is
-   its own `BlastRunStation` (`Stage`, `Stages`, `Target`), consecutive per gate. The turn at a key is 20-65 deg, so a
+   its own `BlastRunStation` (`Stage`, `Stages`, `Target`), consecutive per gate. The turn at a key is 16-66 deg (median 24, over 61 courses; every one past the planner's 15 deg drift-free turn), so a
    blast down the next segment needs the nose swung onto it as the key is taken - a DRIFT - and the drift's release
    snaps the course onto the lane the blast just cut. A pro times the swing so the nose arrives exactly at contact; a
    late swing cuts a lane beside the tunnel, an early one changes the course and misses the 12 u key.

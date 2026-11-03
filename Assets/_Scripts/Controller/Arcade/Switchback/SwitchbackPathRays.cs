@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
@@ -26,8 +27,10 @@ namespace CosmicShore.Gameplay
         Mesh _mesh;
 
         /// <summary>The rays of <paramref name="layout"/>'s gauntlet on <paramref name="course"/>, <paramref name="radius"/>
-        /// u thick, as a new root object; null (nothing drawn) below I4 or without the material.</summary>
-        public static SwitchbackPathRays Create(SwitchbackFeatureLayout layout, IReadOnlyList<RaceGate> course, float radius)
+        /// u thick, as a new root object in <paramref name="scene"/> (the mode's own, so it goes when the mode's scene does,
+        /// even when another scene is the active one); null (nothing drawn) below I4 or without the material.</summary>
+        public static SwitchbackPathRays Create(SwitchbackFeatureLayout layout, IReadOnlyList<RaceGate> course, float radius,
+                                                Scene scene = default)
         {
             var segments = new List<Vector3>(64);
             SwitchbackBlastRun.RaySegments(layout, course, segments);
@@ -43,6 +46,7 @@ namespace CosmicShore.Gameplay
             if (tris.Count == 0) return null;
 
             var go = new GameObject("SwitchbackPathRays");
+            if (scene.IsValid() && scene.isLoaded) SceneManager.MoveGameObjectToScene(go, scene);
             var rays = go.AddComponent<SwitchbackPathRays>();
             rays._mesh = new Mesh { name = "SwitchbackPathRays" };
             if (verts.Count > 65000) rays._mesh.indexFormat = IndexFormat.UInt32;
