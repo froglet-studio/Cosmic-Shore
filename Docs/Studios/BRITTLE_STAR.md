@@ -65,7 +65,8 @@ Concept art saved beside this file in `BrittleStar/`.
   with a charge the ring rebuilds at once; without, the vessel has **no ring and none of its three modes** until a crystal.
   A crystal taken while a charge is held activates **all three modes at once for a short time**. No cooldown: two rings in
   quick succession with a stored charge.
-- **Elements** (parameter + persona + AI behaviour; *no level-5 upgrades are designed*):
+- **Elements** (parameter + persona + AI behaviour; the level-5 upgrades were designed by Shombith on 2026-11-03 - see
+  "Level-5 upgrades" below):
   | Element | Persona | Parameter | Look | AI behaviour |
   |---|---|---|---|---|
   | Mass | Fabricator (robot) | larger blocks in Creation | larger cockpit | builds mass, clears enemy volume |
@@ -397,9 +398,30 @@ section planned, for the record:
   `GlobalObjectIdHash`).
 - **Abilities:** per-vessel stateless action SOs. The mode state lives in an executor, never on the SO.
 - **Ability map and HUD:** the design maps the four icons to the three modes and Ring Detonation, but **elements → abilities and the
-  level-5 upgrades are not designed** (vessel skill §3: do not invent them).
+  level-5 upgrades were not designed** at port time; Shombith designed them on 2026-11-03 ("Level-5 upgrades" below).
 - **Code to port:** `GunRingTransformer` (with the direct-children fix) and `FullAutoActionExecutor.SetGuns`. Its signature
   changed on HEAD, so merge by hand. `FullAutoActionSO.speedValue` is a plain float on HEAD now, so re-author the branch's
   ElementalFloat by hand.
 - **Registrations:** the class SO and class lists, `ToyVesselRoster`, Vessel Prefab Container, DefaultNetworkPrefabs, a camera asset, and the tests that enumerate `VesselClassType`.
 - **Hull model:** the studio's procedural pentagon hull is ready to port, or the fauna `Brittlestar_Export.fbx` with its damped arm rig could serve.
+
+## Level-5 upgrades (Shombith, 2026-11-03)
+
+Each is gated on its element's replicated unlock bit (`IsUpgradeActive(Element.X)` in `BrittleStarExecutor`), named in
+`Assets/Resources/ElementalAbilityMaps/BrittleStar.asset`, and tuned in `BrittleStarConfig.asset` ("Level-5 upgrades").
+
+| Element | Upgrade | What it does | Where |
+|---|---|---|---|
+| Mass | Shielded Trail | every ordinary prism the hull lays arrives shielded: the base trail (the spawner's `ForceShielded`) and Creation Mode's five corner trails (`IsShielded` at lay time); danger prisms stay danger prisms | `ApplyBlockGirth`, `LayCornerPrism` |
+| Space | Explosive Rounds | a round a prism stops bursts, destroying the prisms within `explosiveRoundRadius` (10 u); any domain, own fresh trail spared, a shield pops first; at most `explosiveRoundMaxPerFrame` bursts a frame; prisms only (the round's hull hit is the scored hit) | `FireAlong` (`Projectile.FlightEnded`), `UpdateRoundBursts` |
+| Charge | Thrown Sabers | with the cords held rigid (RT held, cords fully out) LT cuts all five off and throws them along their arm lines (the right stick aims them); each tumbles, cuts what it crosses and strikes rival hulls (the cords' Strike), for `thrownSaberSeconds`; new cords regrow after `thrownSaberRegrowSeconds`; the ring is thrown only when the sabers cannot be | `DetonateRing`, `ThrowSabers`, `UpdateSabers` |
+| Time | Speed Roll | in Speed Mode the right stick rolls the hull (x, `speedRollDegreesPerSecond`) and pulls the nose (y, `speedRollPullDegreesPerSecond`) instead of turning the ring, so it can change direction at speed | `ApplySpeedRoll`, `BrittleStarVesselTransformer.RotateShip` |
+
+**Ring explosion fix (same day):** the thrown ring's disk lies flat in the ring's plane and is only ~2-7 u thick, so it
+broke only the prisms lying in that plane; a trail met head-on lost a block or two and the blast read as doing nothing.
+The detonation now also has a CORE: every prism within `ringBlastCoreRadius` (40 u) of where the ring blows is destroyed
+at once, and every rival hull inside it is scored as the disk scores one (`BlastCore`).
+
+Untested in the Unity editor (no editor was open for the session that wrote them): the feel of the roll rates, the
+saber throw's speed and look, the burst and core radii.
+

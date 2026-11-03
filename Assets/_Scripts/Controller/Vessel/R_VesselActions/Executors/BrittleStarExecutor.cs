@@ -38,6 +38,18 @@ namespace CosmicShore.Gameplay
     /// <item><b>Crystals</b> (<see cref="BrittleStarRingChargeByCrystalEffectSO"/>): one spare ring each, up to two.</item>
     /// </list>
     ///
+    /// <para><b>Level-5 upgrades</b> (Shombith, 2026-11-03), each gated on its element's replicated unlock bit
+    /// (<c>IsUpgradeActive</c>):
+    /// <list type="bullet">
+    /// <item><b>Mass — Shielded Trail</b>: every ordinary prism the hull lays, the base trail's and Creation Mode's
+    /// corner trails', arrives shielded (danger prisms stay danger prisms).</item>
+    /// <item><b>Space — Explosive Rounds</b>: a round a prism stops bursts, destroying the prisms round it.</item>
+    /// <item><b>Charge — Thrown Sabers</b>: with the cords held rigid, LT cuts the five off and throws them along their
+    /// lines; they fly on, cutting what they cross, and new cords regrow.</item>
+    /// <item><b>Time — Speed Roll</b>: in Speed Mode the right stick rolls (x) and pulls (y) the hull instead of turning
+    /// the ring, so it can change direction at speed.</item>
+    /// </list></para>
+    ///
     /// <para><b>Simulated on EVERY peer.</b> Every input it reacts to is replicated — the presses round-trip through the
     /// server, crystal pickups run through <c>NetworkVesselImpactor</c>'s ClientRpc, and the right stick that aims is a
     /// replicated input NetworkVariable — so every machine's copy holds the same mode, the same ring and the same charge,
@@ -123,6 +135,24 @@ namespace CosmicShore.Gameplay
         readonly List<ShipActionSO> _bindScratch = new();
         readonly Dictionary<BrittleStarControl, InputEvents> _boundInputs = new();
 
+        // Level-5 upgrades.
+        readonly List<Vector3> _roundBursts = new();     // Space L5: where explosive rounds were stopped, resolved in Update
+        System.Action<Projectile, bool> _onRoundEnded;   // cached so a volley allocates no delegate
+        float _saberRegrowRemaining;                     // Charge L5: seconds before cords may grow back after a throw
+        bool _speedRolling;                              // Time L5: the right stick rolls the hull this frame
+
+        struct ThrownSaber
+        {
+            public Vector3 Centre;
+            public Vector3 Axis;          // unit: from the saber's middle toward its tip
+            public float HalfLength;
+            public Vector3 Velocity;
+            public Vector3 SpinAxis;      // unit: the saber tumbles about this, through its middle
+            public float Age;
+        }
+
+        readonly List<ThrownSaber> _sabers = new();
+
         // Autopilot.
         float _aiNextScan, _aiNextMode, _aiTriggerSince, _aiNextDetonate;
         int _aiTargetsAhead, _aiTargetsNear, _aiTargetsReach;
@@ -194,6 +224,21 @@ namespace CosmicShore.Gameplay
             ? Mathf.InverseLerp(6f, 8f, config.SpeedModeMultiplier.EvaluateReplicated(_status)) : 0f;
         public BrittleStarConfigSO Config => config;
 
+        /// <summary>CHARGE L5: would LT throw the five sabers right now (instead of the ring)?</summary>
+        public bool CanThrowSabers => config && _status != null
+            && BrittleStarRules.CanThrowSabers(ChargeUpgradeActive(), IsOn(Mode.Charge), _firing, _cordsOut01,
+                                               _saberRegrowRemaining)
+            && _cords != null && _cords[0].Seeded;
+        /// <summary>TIME L5: is the right stick rolling the hull (Speed Roll) this frame, instead of turning the ring?</summary>
+        public bool SpeedRolling => _speedRolling;
+
+        // One accessor per upgrade, each naming its element in the call (the element ability table finds a gate by
+        // the literal IsUpgradeActive(Element.X)).
+        bool MassUpgradeActive() => _status?.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true;
+        bool SpaceUpgradeActive() => _status?.ElementalAbilityHandler?.IsUpgradeActive(Element.Space) == true;
+        bool ChargeUpgradeActive() => _status?.ElementalAbilityHandler?.IsUpgradeActive(Element.Charge) == true;
+        bool TimeUpgradeActive() => _status?.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) == true;
+
         // ------------------------------------------------------------------ lifecycle
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -226,6 +271,10 @@ namespace CosmicShore.Gameplay
             _aiHoldingFire = false;
             _aiSpeedWish = null;
             _aiNextScan = _aiNextMode = _aiNextDetonate = 0f;
+            _roundBursts.Clear();
+            _sabers.Clear();
+            _saberRegrowRemaining = 0f;
+            _speedRolling = false;
 
             if (!config)
                 CSDebug.LogError($"[BrittleStar] {name}: BrittleStarExecutor has no BrittleStarConfig — the vessel has no " +
@@ -252,7 +301,12 @@ namespace CosmicShore.Gameplay
             ClearCords();
             ReleasePen();
             ReleaseDanger();
-            if (_status?.VesselTransformer is BrittleStarVesselTransformer transformer) transformer.SpeedModeMultiplier = 1f;
+            if (_status?.VesselTransformer is BrittleStarVesselTransformer transformer)
+            {
+                transformer.SpeedModeMultiplier = 1f;
+                transformer.SpeedRollDegreesPerSecond = Vector2.zero;
+            }
+            _speedRolling = false;
             if (_status?.VesselPrismController is BrittleStarPrismController prisms)
             {
                 prisms.SpacingMultiplier = 1f;
@@ -262,6 +316,7 @@ namespace CosmicShore.Gameplay
             {
                 spawner.WidthMultiplier = 1f;
                 spawner.ThicknessMultiplier = 1f;
+                spawner.ForceShielded = false;
             }
         }
 
@@ -269,6 +324,8 @@ namespace CosmicShore.Gameplay
         {
             if (_cordRoot) Destroy(_cordRoot);
             _cordRoot = null;
+            if (_saberRoot) Destroy(_saberRoot);
+            _saberRoot = null;
             for (int i = 0; i < _idleBodies.Count; i++)
                 if (_idleBodies[i]) Destroy(_idleBodies[i]);
             _idleBodies.Clear();
@@ -322,7 +379,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Ring Detonation: throw the ring — only with a spare in stock; the mounted ring then regrows on its own.</summary>
         public void DetonateRing()
         {
-            if (!config || !hull || !hull.Ring || _status == null) return;
+            if (!config || _status == null) return;
+            // CHARGE L5: with the cords held rigid, LT throws the five sabers instead of the ring.
+            if (CanThrowSabers)
+            {
+                ThrowSabers();
+                return;
+            }
+            if (!hull || !hull.Ring) return;
             if (!_ring.TryLaunch(config.RebuildSeconds)) return;
             Launch();
             PlayAt(config.RingRebuildEvent, HullPosition);
@@ -346,6 +410,7 @@ namespace CosmicShore.Gameplay
             _ring.Tick(dt);
             EaseModes(dt);
             ApplySpeedMode();
+            ApplySpeedRoll();
             ApplyBlockGirth();
             AimRing(dt);
             UpdateCreation();
@@ -355,6 +420,8 @@ namespace CosmicShore.Gameplay
             UpdateHeat(dt);
             UpdateFlights(dt);
             UpdateWaves();
+            UpdateRoundBursts();
+            UpdateSabers(dt);
 
             if (_status.AutoPilotEnabled && IsSimAuthority()) Autopilot();
         }
@@ -409,6 +476,28 @@ namespace CosmicShore.Gameplay
             float girth = BlockGirth();
             prisms.WidthMultiplier = girth;
             prisms.ThicknessMultiplier = girth;
+            // MASS L5, Shielded Trail: the base trail's ordinary prisms arrive shielded (this executor is the hull's
+            // single writer of ForceShielded; the corner trails are shielded at lay time, LayCornerPrism).
+            prisms.ForceShielded = MassUpgradeActive();
+        }
+
+        /// <summary>
+        /// TIME L5, Speed Roll (Shombith, 2026-11-03: in Speed Mode the hull "doesn't really have a manoeuvrable power,
+        /// so in L5 the right stick can do a roll to change directions"): while Speed Mode is on, the right stick's x
+        /// rolls the hull about its nose and its y pulls the nose, through the transformer (<see
+        /// cref="BrittleStarVesselTransformer.SpeedRollDegreesPerSecond"/>), and the ring holds its rotation. The stick
+        /// is the replicated input, so every peer rolls alike; the autopilot never rolls (it aims with its nose).
+        /// </summary>
+        void ApplySpeedRoll()
+        {
+            if (_status.VesselTransformer is not BrittleStarVesselTransformer transformer) return;
+            bool on = IsOn(Mode.Speed) && TimeUpgradeActive();
+            Vector2 rates = on
+                ? BrittleStarRules.SpeedRollRates(AimStick(), config.AimDeadzone, config.SpeedRollDegreesPerSecond,
+                                                  config.SpeedRollPullDegreesPerSecond) * _speed01
+                : Vector2.zero;
+            _speedRolling = on;
+            transformer.SpeedRollDegreesPerSecond = rates;
         }
 
         float BlockGirth() => Mathf.Max(0.1f, config.PrismWidthScale.EvaluateReplicated(_status));
@@ -428,7 +517,7 @@ namespace CosmicShore.Gameplay
             // The stick's DIRECTION turns the ring in every mode (in Space and Charge Mode it turns the five guns or cords
             // with it); its DEFLECTION moves those in and out (ArmDirection). The turret it brings round is RT's one gun
             // in every other mode, and it stays the gun when the stick centres - the ring holds its rotation.
-            float? aim = BrittleStarRules.AimAngle(stick, config.AimDeadzone);
+            float? aim = _speedRolling ? null : BrittleStarRules.AimAngle(stick, config.AimDeadzone);
             _aiming = aim != null;
             if (aim == null) return;   // the ring holds its last rotation, and its aimed turret
             _aimedPoint = BrittleStarRules.NearestPoint(aim.Value, _ringPhase);
@@ -531,6 +620,8 @@ namespace CosmicShore.Gameplay
             prism.ownerID = _status.PlayerName;
             prism.ChangeTeam(_status.Domain);
             prism.waitTime = config.CreationWaitTime;
+            // MASS L5, Shielded Trail: requested before Initialize, as the fleet spawner requests it.
+            if (MassUpgradeActive()) prism.prismProperties.IsShielded = true;
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)Mathf.Min(trail.TrailList.Count - 1, ushort.MaxValue);
             prism.Initialize(_status.PlayerName);
@@ -563,7 +654,8 @@ namespace CosmicShore.Gameplay
         void UpdateCords(float depth, float dt)
         {
             var prisms = _status.VesselPrismController;
-            bool want = IsOn(Mode.Charge) && hull && prisms && prisms.SpawnerEnabled;
+            if (_saberRegrowRemaining > 0f) _saberRegrowRemaining = Mathf.Max(0f, _saberRegrowRemaining - dt);
+            bool want = IsOn(Mode.Charge) && hull && prisms && prisms.SpawnerEnabled && _saberRegrowRemaining <= 0f;
             _cordsOut01 = Mathf.MoveTowards(_cordsOut01, want ? 1f : 0f, dt / config.ModeBlendSeconds);
             _cordPull01 += (depth - _cordPull01) * (1f - Mathf.Exp(-config.CordRigidityRate * dt));
             float length = config.CordLength * Mathf.Lerp(config.CordLooseLengthScale, 1f, _cordPull01)
@@ -630,7 +722,6 @@ namespace CosmicShore.Gameplay
         {
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
-            const float candidateExtent = 8f;
             _cutThisFrame.Clear();
             for (int c = 0; c < _cords.Length; c++)
             {
@@ -638,39 +729,45 @@ namespace CosmicShore.Gameplay
                 if (!cord.Seeded) continue;
                 var pts = cord.Points;
                 for (int s = 0; s < pts.Length - 1; s++)
-                {
-                    Vector3 a = pts[s], b = pts[s + 1];
-                    index.QuerySegment(a, b, cut + candidateExtent, _candidates);
-                    if (_candidates.Count == 0) continue;
-                    Vector3 ab = b - a;
-                    float abLenSq = ab.sqrMagnitude;
-                    for (int i = 0; i < _candidates.Count; i++)
-                    {
-                        var prism = _candidates[i];
-                        if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                        if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
-
-                        Vector3 centre = prism.transform.position;
-                        float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(centre - a, ab) / abLenSq) : 0f;
-                        float contact = cut + 0.5f * prism.transform.lossyScale.magnitude;
-                        Vector3 onCord = a + ab * t;
-                        if ((centre - onCord).sqrMagnitude > contact * contact) continue;
-
-                        _cutThisFrame.Add(prism);
-                        Vector3 v = Vector3.Lerp(cord.NodeVelocity(s), cord.NodeVelocity(s + 1), t);
-                        // Super-shielded mass refuses the cut, visibly: the deflection jiggle, never
-                        // a cord passing through armour in silence (Docs/LIT.md).
-                        if (prism.AbsorbSuperShieldHit(v.magnitude)) continue;
-                        Vector3 cutNormal = Vector3.Cross(ab, v);
-                        if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, _status.Transform.up);
-                        if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
-                        prism.Slice(v * config.CordDebrisRestitution, _status.Domain, _status.PlayerName,
-                                    onCord, cutNormal.normalized, debrisSpeedLimit: config.CordDebrisSpeedLimit);
-                        PlayAt(config.CordSliceEvent, onCord);
-                    }
-                }
+                    CutSegment(index, pts[s], pts[s + 1], cut, cord.NodeVelocity(s), cord.NodeVelocity(s + 1));
             }
             _candidates.Clear();
+        }
+
+        /// <summary>One blade segment's cut (the cords' links and the thrown sabers): every prism within
+        /// <paramref name="cut"/> of segment a-b is sliced along the plane the segment sweeps, its debris at the
+        /// segment's velocity there (<paramref name="va"/> at a to <paramref name="vb"/> at b). Each prism once a frame.</summary>
+        void CutSegment(PrismSpatialIndex index, Vector3 a, Vector3 b, float cut, Vector3 va, Vector3 vb)
+        {
+            const float candidateExtent = 8f;
+            index.QuerySegment(a, b, cut + candidateExtent, _candidates);
+            if (_candidates.Count == 0) return;
+            Vector3 ab = b - a;
+            float abLenSq = ab.sqrMagnitude;
+            for (int i = 0; i < _candidates.Count; i++)
+            {
+                var prism = _candidates[i];
+                if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
+                if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
+
+                Vector3 centre = prism.transform.position;
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(centre - a, ab) / abLenSq) : 0f;
+                float contact = cut + 0.5f * prism.transform.lossyScale.magnitude;
+                Vector3 onCord = a + ab * t;
+                if ((centre - onCord).sqrMagnitude > contact * contact) continue;
+
+                _cutThisFrame.Add(prism);
+                Vector3 v = Vector3.Lerp(va, vb, t);
+                // Super-shielded mass refuses the cut, visibly: the deflection jiggle, never
+                // a cord passing through armour in silence (Docs/LIT.md).
+                if (prism.AbsorbSuperShieldHit(v.magnitude)) continue;
+                Vector3 cutNormal = Vector3.Cross(ab, v);
+                if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, _status.Transform.up);
+                if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
+                prism.Slice(v * config.CordDebrisRestitution, _status.Domain, _status.PlayerName,
+                            onCord, cutNormal.normalized, debrisSpeedLimit: config.CordDebrisSpeedLimit);
+                PlayAt(config.CordSliceEvent, onCord);
+            }
         }
 
         /// <summary>A cord drawn across an enemy hull: a scored STRIKE (the contact verb: a blade, nothing fired) at the
@@ -907,6 +1004,64 @@ namespace CosmicShore.Gameplay
             gun.FireGun(muzzle, config.ProjectileSpeed, inherit, scale, true, time, 0f, FiringPatterns.Default, 0,
                         detachAfterSpawn: true, stopOnFirstPrismImpact: true, aimDirection: direction,
                         flightGrowthFactor: config.RoundGrowthFactor);
+            // SPACE L5, Explosive Rounds: hear where this flight ends (FlightEnded is per flight - Initialize clears it,
+            // so a pooled reissue never carries this handler on).
+            if (SpaceUpgradeActive() && gun.LastProjectile)
+            {
+                _onRoundEnded ??= OnRoundEnded;
+                gun.LastProjectile.FlightEnded += _onRoundEnded;
+            }
+        }
+
+        /// <summary>SPACE L5: a round a prism stopped is queued as a burst where it struck (resolved in Update, capped a
+        /// frame). A round that simply runs out of life does not burst.</summary>
+        void OnRoundEnded(Projectile round, bool stoppedByImpact)
+        {
+            if (!stoppedByImpact || !round) return;
+            _roundBursts.Add(round.transform.position);
+        }
+
+        /// <summary>
+        /// SPACE L5, Explosive Rounds (Shombith, 2026-11-03: "make the bullets explosive bullets"): every queued burst
+        /// destroys the prisms within <c>explosiveRoundRadius</c> of it - any domain, friendly fire as the rounds have
+        /// it, never this pilot's own fresh trail; a shield pops first and super-shielded mass refuses
+        /// (<see cref="Prism.Damage"/>). At most <c>explosiveRoundMaxPerFrame</c> a frame; the rest are dropped (rule 17).
+        /// Prism destruction is per peer by design: every peer's rounds burst on its own copy of the mass.
+        /// </summary>
+        void UpdateRoundBursts()
+        {
+            if (_roundBursts.Count == 0) return;
+            int count = Mathf.Min(_roundBursts.Count, config.ExplosiveRoundMaxPerFrame);
+            float radius = config.ExplosiveRoundRadius;
+            for (int b = 0; b < count; b++)
+            {
+                Vector3 at = _roundBursts[b];
+                BurstPrisms(at, radius, 40f);
+                PlayAt(config.ExplosiveRoundEvent, at);
+            }
+            _roundBursts.Clear();
+        }
+
+        /// <summary>Destroy every prism a sphere of <paramref name="radius"/> at <paramref name="at"/> reaches (any domain,
+        /// never this pilot's fresh trail; <see cref="Prism.Damage"/>'s shield gates), each pushed straight out from the
+        /// centre at <paramref name="push"/>. The ring explosion's core and Space L5's explosive rounds.</summary>
+        void BurstPrisms(Vector3 at, float radius, float push)
+        {
+            if (radius <= 0f) return;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            index.QuerySphere(at, radius, _candidates);
+            for (int i = 0; i < _candidates.Count; i++)
+            {
+                var prism = _candidates[i];
+                if (!prism || prism.destroyed) continue;
+                Vector3 d = prism.transform.position - at;
+                if (!BrittleStarRules.SphereReaches(d, radius, 0.5f * prism.transform.lossyScale.magnitude)) continue;
+                if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
+                Vector3 outward = d.sqrMagnitude > 1e-6f ? d.normalized : Random.onUnitSphere;
+                prism.Damage(outward * push, _status.Domain, _status.PlayerName);
+            }
+            _candidates.Clear();
         }
 
         /// <summary>
@@ -1063,6 +1218,32 @@ namespace CosmicShore.Gameplay
             wave.Band = TakeBand(out wave.BandMesh);
             if (wave.Band) wave.Band.transform.SetPositionAndRotation(at, ringRotation);
             _waves.Add(wave);
+            BlastCore(at);
+        }
+
+        /// <summary>
+        /// The ring explosion's CORE (Shombith, 2026-11-03: the thrown ring "should perform an explosion which blows up
+        /// nearby" mass, and it was not): the disk lies flat in the ring's plane, ~2 u thick, so on its own it broke only
+        /// what lay in that plane - a trail met head-on lost one block. The core breaks everything within
+        /// <c>ringBlastCoreRadius</c> of the blast at once, and scores every rival hull inside it as the disk scores a
+        /// hull (the hit cooldown keeps the disk from scoring that hull again).
+        /// </summary>
+        void BlastCore(Vector3 at)
+        {
+            float radius = config.RingBlastCoreRadius;
+            if (radius <= 0f) return;
+            BurstPrisms(at, radius, 60f);
+
+            if (_gameData == null || _gameData.Players == null || !ElementalTransfer.IsDecidedHere(_status)) return;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var victim = EnemyStatus(players[i]);
+                if (victim == null) continue;
+                Vector3 d = victim.Transform.position - at;
+                if (!BrittleStarRules.SphereReaches(d, radius, VesselHitRadius)) continue;
+                ScoreWaveHit(victim, d.sqrMagnitude > 1e-6f ? d : _status.Transform.forward);
+            }
         }
 
         /// <summary>The nucleus's geometric radius of the cell the ring blew in (or the nearest active one), else the
@@ -1244,6 +1425,164 @@ namespace CosmicShore.Gameplay
             _flights.Clear();
             for (int i = 0; i < _waves.Count; i++) ReturnBand(_waves[i].Band);
             _waves.Clear();
+            _sabers.Clear();
+            _roundBursts.Clear();
+            if (_saberRoot && _saberRoot.activeSelf) _saberRoot.SetActive(false);
+        }
+
+        // ------------------------------------------------------------------ Charge L5: Thrown Sabers
+
+        /// <summary>
+        /// CHARGE L5, Thrown Sabers (Shombith, 2026-11-03: "when the whips are in rigid position they can be cut off and
+        /// thrown in a direction"): each of the five cords becomes a straight saber from its muzzle to its tip, flying
+        /// along the line it pointed (the right stick aimed it: centred they converge ahead, pushed they fan out) at
+        /// <c>thrownSaberSpeed</c> plus the hull's own velocity, tumbling end over end. The cords are gone until
+        /// <c>thrownSaberRegrowSeconds</c> has passed, then grow back out as they do when the mode comes on. LT's press is
+        /// replicated and the rigid state reads the replicated RT press, so every peer throws the same five.
+        /// </summary>
+        void ThrowSabers()
+        {
+            if (_cords == null || !hull) return;
+            Vector3 inherit = _status.Course * _status.Speed;
+            float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
+            int thrown = 0;
+            for (int i = 0; i < _cords.Length; i++)
+            {
+                var cord = _cords[i];
+                if (!cord.Seeded) continue;
+                var pts = cord.Points;
+                Vector3 root = pts[0], tip = pts[pts.Length - 1];
+                Vector3 along = tip - root;
+                float length = along.magnitude;
+                if (length < 0.5f) continue;
+                var muzzle = hull.Muzzle(i);
+                Vector3 direction = muzzle ? ArmLine(muzzle, splay01) : along / length;
+                Vector3 spin = Vector3.Cross(along, direction);
+                if (spin.sqrMagnitude < 1e-6f) spin = Vector3.Cross(along, _status.Transform.up);
+                if (spin.sqrMagnitude < 1e-6f) spin = _status.Transform.right;
+                _sabers.Add(new ThrownSaber
+                {
+                    Centre = (root + tip) * 0.5f,
+                    Axis = along / length,
+                    HalfLength = length * 0.5f,
+                    Velocity = direction * config.ThrownSaberSpeed + inherit,
+                    SpinAxis = spin.normalized,
+                    Age = 0f,
+                });
+                thrown++;
+            }
+            if (thrown == 0) return;
+            ClearCords();
+            _cordsOut01 = 0f;
+            _saberRegrowRemaining = Mathf.Max(1e-4f, config.ThrownSaberRegrowSeconds);
+            PlayAt(config.SaberThrowEvent, HullPosition);
+        }
+
+        /// <summary>Fly, tumble, cut and strike with every thrown saber, at the cords' own cut width (Charge scales it);
+        /// each goes after <c>thrownSaberSeconds</c>.</summary>
+        void UpdateSabers(float dt)
+        {
+            if (_sabers.Count == 0)
+            {
+                if (_saberRoot && _saberRoot.activeSelf) _saberRoot.SetActive(false);
+                return;
+            }
+            float cut = config.CordCutRadius * Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status));
+            var index = PrismSpatialIndex.Instance;
+            bool canCut = index && index.IsAvailable;
+            if (canCut) _cutThisFrame.Clear();
+            bool decides = _gameData != null && _gameData.Players != null && ElementalTransfer.IsDecidedHere(_status);
+            float spinStep = config.ThrownSaberSpin * dt;
+            float spinRad = config.ThrownSaberSpin * Mathf.Deg2Rad;
+
+            for (int k = _sabers.Count - 1; k >= 0; k--)
+            {
+                var saber = _sabers[k];
+                saber.Age += dt;
+                if (saber.Age >= config.ThrownSaberSeconds)
+                {
+                    _sabers.RemoveAt(k);
+                    continue;
+                }
+                saber.Centre += saber.Velocity * dt;
+                saber.Axis = (Quaternion.AngleAxis(spinStep, saber.SpinAxis) * saber.Axis).normalized;
+                _sabers[k] = saber;
+
+                Vector3 a = saber.Centre - saber.Axis * saber.HalfLength;
+                Vector3 b = saber.Centre + saber.Axis * saber.HalfLength;
+                // Each end's velocity: the flight plus the tumble (ω × r), so debris flies off the way the blade swept.
+                Vector3 tumble = Vector3.Cross(saber.SpinAxis * spinRad, saber.Axis * saber.HalfLength);
+                if (canCut) CutSegment(index, a, b, cut, saber.Velocity - tumble, saber.Velocity + tumble);
+                if (decides) StrikeHullsWithSegment(a, b, cut, saber.Velocity);
+            }
+            _candidates.Clear();
+            DrawSabers(cut);
+        }
+
+        /// <summary>A thrown saber across an enemy hull: the cords' scored STRIKE, under the same per-victim cooldown.</summary>
+        void StrikeHullsWithSegment(Vector3 a, Vector3 b, float cut, Vector3 velocity)
+        {
+            float reach = cut + VesselHitRadius;
+            Vector3 ab = b - a;
+            float abLenSq = ab.sqrMagnitude;
+            var players = _gameData.Players;
+            for (int p = 0; p < players.Count; p++)
+            {
+                var victim = EnemyStatus(players[p]);
+                if (victim == null) continue;
+                Vector3 at = victim.Transform.position;
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(at - a, ab) / abLenSq) : 0f;
+                if ((at - (a + ab * t)).sqrMagnitude > reach * reach) continue;
+                ScoreCordHit(victim, velocity);
+            }
+        }
+
+        // ---- the thrown sabers' look: the cords' own chain material, one two-point LineRenderer each (cosmetic)
+
+        GameObject _saberRoot;
+        readonly List<LineRenderer> _saberLines = new();
+
+        void DrawSabers(float cut)
+        {
+            var material = cordMaterial ? cordMaterial : CordFallbackMaterial();
+            if (!material) return;   // headless: no graphics, no visuals
+            if (!_saberRoot) _saberRoot = new GameObject($"BrittleStarSabers::{(_status != null ? _status.PlayerName : name)}");
+            if (!_saberRoot.activeSelf) _saberRoot.SetActive(true);
+            while (_saberLines.Count < _sabers.Count)
+            {
+                var go = new GameObject($"Saber{_saberLines.Count}");
+                go.transform.SetParent(_saberRoot.transform, false);
+                var line = go.AddComponent<LineRenderer>();
+                line.sharedMaterial = material;
+                line.useWorldSpace = true;
+                line.alignment = LineAlignment.View;
+                line.numCapVertices = 2;
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                line.positionCount = 2;
+                _saberLines.Add(line);
+            }
+
+            _cordMpb ??= new MaterialPropertyBlock();
+            Color body = config.CordColor;
+            body.a = 1f;
+            Color rim = WithMaxChannel(CordRimHue(), config.CordRimBrightness);
+            _cordMpb.Clear();
+            _cordMpb.SetColor(DarkColorId, body);
+            _cordMpb.SetColor(BrightColorId, rim);
+            for (int i = 0; i < _saberLines.Count; i++)
+            {
+                var line = _saberLines[i];
+                bool live = i < _sabers.Count;
+                if (line.gameObject.activeSelf != live) line.gameObject.SetActive(live);
+                if (!live) continue;
+                var saber = _sabers[i];
+                line.startWidth = line.endWidth = 2f * cut;
+                line.SetPropertyBlock(_cordMpb);
+                line.startColor = line.endColor = rim;
+                line.SetPosition(0, saber.Centre - saber.Axis * saber.HalfLength);
+                line.SetPosition(1, saber.Centre + saber.Axis * saber.HalfLength);
+            }
         }
 
         /// <summary>The player's vessel status if it is a live ENEMY of this pilot (another pilot, another domain).</summary>
