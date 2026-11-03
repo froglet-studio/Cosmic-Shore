@@ -531,6 +531,10 @@ state, no physics and nothing reacts to players; a blasted mover prism simply st
 | I2 | 26 u | 7 x 7 x 6 | 40 % | + big spheres, panels | sliders (<= 10 groups / 40 prisms) |
 | I3 | 22 u | 9 x 9 x 7 | 50 % | + beams | + rotors (<= 20 / 100) |
 | I4 | 18 u | 9 x 9 x 8 | 60 % | (more beams and panels) | + opposed slider pairs (<= 28 / 140), double door |
+| I4 gauntlet (since 2026-11-03) | none | 11 x 11 x 12 (240 u across) | 70 % | + frames, jacks, hoops, ziggurats; tunnels on the route | <= 42 / 210; sealed double door; 2-3 keys a gate ("The I4 gauntlet" below) |
+
+The I4 row is now the field of a mode that turns the gauntlet off (Scarab Rally, `BlastRunGauntlet`); Switchback's own
+I4 is the gauntlet row and its section below.
 
 Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself).
 
@@ -539,10 +543,10 @@ in Unity; `BudgetsHold` asserts them on 60 seeds + the four fixed seeds per inte
 
 | | I1 | I2 | I3 | I4 | why |
 |---|---|---|---|---|---|
-| `ColliderCap` (prisms within 200 u of any prism) | 300 | 340 | 370 | 400 | the physics/trail-collision cost near a Dolphin; all under Breakwater I1's shipped worst 568 (Breakwater 568 / 464 / 322 / 276) |
-| `TotalCap` (prisms laid) | 1800 | 2400 | 3000 | 3400 | instanced draw + spatial index memory; below the old Blast Run caps (4600-3000) and `LayCapacity` 4096 |
-| `StationCap` (field prisms a gate) | 150 | 170 | 190 | 210 | one blast clears one station's mass |
-| `MovingPrismCap` / `MovingGroupCap` | 0 / 0 | 40 / 10 | 100 / 20 | 140 / 28 | per-frame CPU: one closed-form pose per group, then a transform write + `NotifyPositionChanged` (spatial index, shell, render matrix) per prism - ~140 cheap writes at most, no physics bodies, no allocation |
+| `ColliderCap` (prisms within 200 u of any prism) | 300 | 340 | 370 | 400 (gauntlet 600) | the physics/trail-collision cost near a Dolphin; all under Breakwater I1's shipped worst 568 (Breakwater 568 / 464 / 322 / 276); the gauntlet's 600 is about that worst and the one budget the soak must confirm |
+| `TotalCap` (prisms laid) | 1800 | 2400 | 3000 | 3400 (gauntlet 5100) | instanced draw + spatial index memory; below the old Blast Run caps (4600-3000) and `LayCapacity` (6144 since the gauntlet) |
+| `StationCap` (field prisms a gate) | 150 | 170 | 190 | 210 (gauntlet 315 a key) | one blast clears one station's mass |
+| `MovingPrismCap` / `MovingGroupCap` | 0 / 0 | 40 / 10 | 100 / 20 | 140 / 28 (gauntlet 210 / 42) | per-frame CPU: one closed-form pose per group, then a transform write + `NotifyPositionChanged` (spatial index, shell, render matrix) per prism - ~210 cheap writes at most, no physics bodies, no allocation |
 
 Network cost per frame: zero for the fields (static prisms are deterministic from the course seed; movers from the
 clock). Only the key crystals (existing `CrystalManager` path) and prism destruction (existing path) replicate.
@@ -558,16 +562,17 @@ headless):
 | 45_501 (I1) | 6 | 1173 | 597 | 9 | 250 | 0 | 0 |
 | 45_502 (I2) | 9 | 1998 | 1404 | 21 | 339 | 10 (10 / 0) | 40 |
 | 45_503 (I3) | 17 | 2988 | 2070 | 76 | 325 | 20 (12 / 8) | 88 |
-| 45_504 (I4) | 12 | 3349 | 2341 | 140 | 400 | 28 (16 / 12) | 124 |
+| 45_504 (I4, gauntlet off) | 12 | 3349 | 2341 | 140 | 400 | 28 (16 / 12) | 124 |
+| 45_504 (I4 gauntlet) | 12 gates, 26 keys | 5036 | 3812 (916 tunnel, 2896 field) | 242 | 600 | 42 (14 / 28) | 196 |
 
 Averages over seeds 1-60 + 45_501-45_504: stations 5.8 / 8.2 / 17.0 / 13.1, prisms 1226 / 1757 / 2990 / 3239,
-moving groups 0 / 9.9 / 20 / 27.9. I3 and I4 are `TotalCap`-bound; I4 trades a few gates (station spacing, double
+moving groups 0 / 9.9 / 20 / 27.9 (the I4 of before the gauntlet; the gauntlet's averages are in its section). I3 and I4 are `TotalCap`-bound; I4 trades a few gates (station spacing, double
 doors) for thicker fields.
 
 **Logs:** `[Switchback] BLAST RUN intensity N: G gates, S blocked gates, M movers, X prisms.` (verbose,
 ArcadeMatch), and the RUN line above. A scene with no
 CrystalManager logs `[Switchback] BLAST RUN: no CrystalManager in the scene ...` as an error and lays no keys.
-`SpawnableSwitchbackFeatures`' layout revision is 5 (it lays Blast Run only; older caches are invalid).
+`SpawnableSwitchbackFeatures`' layout revision is 6 since the I4 gauntlet (it lays Blast Run only; older caches are invalid).
 
 **Held headless:** `SwitchbackBlastRunTests` (EditMode; 60 seeds + the fixed seed per intensity, plus all four fixed
 seeds for budgets/clipping): Classic course, determinism (positions, scales, kinds, movers), the ladder (per station
@@ -581,6 +586,93 @@ times through the movers' cycle, the shape mix, the key multiplier. `audit_prism
 not aim its blast at doors (it takes the key and the blast fires down its heading); key crystals replace the passive
 crystal field for the match; the movers use `ServerTime.TimeAsFloat` (float precision is fine for hours, not days);
 nothing about frame time was measured in Unity.
+
+## The I4 gauntlet (2026-11-03) - NOT editor-verified
+
+Yash, 2026-11-03: "The intensity 4 of switchback is too empty, increase object counts by 50 percent, and make more object
+types, things need to be random, there can be tunnels pipe like, large 3D structures, different shapes, through which
+players have to pass, the pathway can be highlighted with some rays.. player should feel that they need to destroy a lot
+of objects in order to cross each ring, they cannot just simply fly into the rings, they have to use both drifting and
+blasting multiple times to pass the rings. Pro players can time their drifting and blasting to get a faster trajectory,
+but that need to be preety hard."
+
+**What a blocked I4 gate is now** (`SwitchbackBlastRun.HasGauntlet`; I1-I3 are bit-identical to before, checked over 64
+seeds a level):
+
+1. **No bore, sealed eyes.** The field fills the leg's line (`BoreRadius(4)` = 0), and each of the two doors' 18 u eyes
+   holds a SEAL: a 3 x 3 of 7 u cubes, its middle a Danger heart (`EmitSeal`; corner reach 16.3 u, clear of every bar).
+   Flying straight in means ramming the field and two dead stops at the seals.
+2. **A zig-zag of keys** (`GauntletKeys`): two keys a gate (first key under 300 u out) or three, upstream first. The
+   last sits on the line `GauntletFinalLead` = 120 u out, aimed at the door; the others step off the line to a hashed
+   side by `GauntletZigZag` = 40 u (two keys: +1.5 x; three: +1 x, -1 x) and are each aimed at the NEXT key. Each key is
+   its own `BlastRunStation` (`Stage`, `Stages`, `Target`), consecutive per gate. The turn at a key is 16-66 deg (median 24, over 61 courses; every one past the planner's 15 deg drift-free turn), so a
+   blast down the next segment needs the nose swung onto it as the key is taken - a DRIFT - and the drift's release
+   snaps the course onto the lane the blast just cut. A pro times the swing so the nose arrives exactly at contact; a
+   late swing cuts a lane beside the tunnel, an early one changes the course and misses the 12 u key.
+3. **A tunnel on every segment** (`EmitTunnel`, kind hashed per key, all five equally likely): **Pipe** (octagon of wall
+   tiles, every other 18 u section turned half a facet), **Duct** (square tube of slabs), **Hoops** (eight-tile rings every
+   20 u), **Helix** (a block every 30 deg round, 2.4 u along: a corkscrew), **Cage** (six rails). Walls stand outside
+   `TunnelRadius` = 15 u; inside, a **plug wall** every 22 u from 34 u past the key: a plus of five 6.5 u cubes, every
+   other wall turned 45 deg so no straight line threads two, a Danger heart on every second wall. The key's blast clears
+   the plugs (the cone is narrow near the key, so the first wall wants the aim dead on); ramming costs about a plain hit
+   a wall and a dead stop every second wall.
+4. **More shapes in the field** (I4's shape menu): frames (a hollow 46 u cube's twelve 4 u edges), jacks (an 8 u cube
+   with six 18 u arms), hoops (twelve tiles round a 16 u hole, facing down the leg) and ziggurats (four stacked slabs),
+   on top of every earlier shape. The field is 11 x 11 cells across (240 u), up to 12 deep, 70 % fill, and keeps
+   `RouteClearance` = 24 u off every route segment so the tunnels stay the way through.
+5. **Rays** (`SwitchbackPathRays`, from `SwitchbackBlastRun.RaySegments`): a 1.2 u lit, faceted hexagonal beam
+   (`Resources/SwitchbackPathRay.mat`: URP Lit with emission, #E8F6FF, the Blue family's white) down the leg to the
+   first key (90 u), key to key, the last key to the door, and on through the ring. One static mesh and one draw for the
+   course, no collider, built on every peer from the broadcast course. `pathRayRadius` on the controller (0 = none).
+
+**Counts** (+50 %, Yash's number): `TotalCap(4)` 3400 -> 5100, `ColliderCap(4)` 400 -> 600, `StationCap(4)` 210 -> 315
+(a key's tunnel; the last key's tunnel and the gate's field), movers 28 / 140 -> 42 / 210, `LayCapacity` 4096 -> 6144.
+Over seeds 1-60 and 45_504 an I4 course lays **4,933 prisms on average (3,231 before, +53 %)** on the same 13 gates with
+29 keys; the fixed seed 45_504 lays 5,036 (3,349 before), its field 2,896 prisms (2,341) plus 916 of tunnels.
+
+**Scarab Rally keeps the I4 of before.** It reuses Switchback's controller and course for the Scarab, which has no key
+blast, so `SwitchbackController.BlastRunGauntlet` (true) is overridden false in `ScarabRallyController`, and
+`SwitchbackBlastRun.Layout(..., gauntlet: false)` lays exactly the pre-gauntlet I4 (the table's I4 row; held bit for
+bit). Affects: Shombith's Scarab Rally (unchanged by design).
+
+**The AI** flies it with three changes, server only, nothing networked:
+- `SwitchbackBlastPlanner.StageFor(gate, self)`: the key a pilot works on is the first of its gate's keys it has not
+  passed (5 u past the key along its fire line); `Decide` plans that key, aimed at its `Target`. The executor
+  (`SwitchbackBlastAI.TryAim`) replans when the stage changes, and the drift look starts no more than 60 % of the way
+  from the previous key (`LookRangeFor`).
+- At a gauntlet key the strike flies THROUGH the key along its approach (a commit drift locks the course there) and the
+  drift look swings the nose onto the next segment; aiming past the key along the fire line passed the off-line keys
+  13-24 u wide offline.
+- Costs: threading at I4 pays every standing prism on the straight line to the ring (`PathPenalty`), and a gauntlet
+  key's blast plan pays the route through the gate's later keys and what still stands on the way to the key (no
+  "key-blocked" veto: the last blast should have opened it).
+
+**Offline** (`switchback_sim_harness`, one AI alone, 12 courses, 26 gates, median seconds; the planner's narrow slot,
+then `cone=1`, closer to the asset's cone):
+
+| I4 | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| Before the gauntlet | 140 | 129 | 122 | 112 |
+| Gauntlet, planner slot | 197 | 187 | 172 | 155 |
+| Gauntlet, `cone=1` | 193 | 179 | 159 | 132 |
+
+Every race finishes. Legendary takes about 33 keys a race and hits 50-100 prisms (4-12 Danger); Easy (decision quality
+0.30, its habit is to thread) rams the line and takes about 45 Danger hits. **The I4 nose-lag row was not retuned**:
+Yash's I4 bands (130-150 / 120-140 / 110-130 / 100-120 s) were set on the old I4, and the gauntlet is meant to be slower;
+`noseFollowI4=e,m,h,l` in the simulator retunes the row once new bands are chosen. These are model seconds (the step 1
+soak ran about 1.6x the model).
+
+**Tests** (headless: `bash Tools/Build/switchback_sim_harness/run.sh tests` runs the shipped `SwitchbackBlastRunTests`
+and `SwitchbackBlastPlannerTests` through `NUnitShim.cs` and `TestRunner.cs`, 76 cases): `TheGauntletZigZagsKeyToKeyToTheDoor`,
+`TheGauntletRouteIsPluggedNotFilled`, `TheEyesAreSealed`, `TheTunnelsMixKinds`, `TheRaysFollowTheRoute`,
+`ARayIsAFacetedVolumeFacingOut`, `WithoutTheGauntlet_I4IsTheFortressOfBefore`, `AtAGauntlet_TheKeysFollowOneAnother`;
+the budgets, clipping (laid and movers over a cycle), mouths and shape-mix tests cover I4 as before. Negative controls
+(the field ignoring the route, no seals, no zig-zag, plugs reaching the walls) each fail the test written for them.
+
+**Not done / to check in the editor:** nothing was run in Unity. The collider count near the path (600 within 200 u) is
+the budget a real soak must confirm (`SwitchbackSoakRunner` at I4, `Docs/perf/SWITCHBACK_PRISM_BUDGET.md`); the rays'
+brightness and thickness are a first pick; whether a person can thread a tunnel at full speed after a well-aimed blast
+is the feel the playtest decides.
 
 ## AI: the blast planner (2026-10-29) - NOT editor-verified
 
@@ -938,7 +1030,8 @@ seconds gates/total cruise-seconds`), and `drive.<field>=` (the `ChargeBoostAIPo
 (`Tools/Compute/evaluators/switchback_fit.py`, `AI_PLAN.md` step `time-arcade`) searches that drive with the four
 shipped Switchback drives as its first generation; `MINIGAME_TRAINING_PLAN.md` §9.1 has its first result.
 
-`Tools/Build/switchback_sim_harness/run.sh` (eval / trace / selftest) compiles the SHIPPED `SwitchbackCourse`,
+`Tools/Build/switchback_sim_harness/run.sh` (eval / trace / selftest, and `tests`: the shipped Blast Run and planner
+EditMode tests, headless) compiles the SHIPPED `SwitchbackCourse`,
 `SwitchbackBlastRun` (keys, doors, block fields, movers posed off the clock), `SwitchbackBlastPlanner` and
 `SwitchbackPrismAvoidance` against the Skim Race harness's Unity shim, and races one AI Dolphin through them with the
 executor ported from `SwitchbackBlastAI` (plan, setup / strike, drift look, the sense, the emergency sweep),
@@ -948,6 +1041,9 @@ executor ported from `SwitchbackBlastAI` (plan, setup / strike, drift look, the 
 over 3 s, the charge halved, the prism destroyed, no bounce. A key is taken within 12 u (the 10 u skimmer); its blast
 destroys what `SwitchbackBlastSlot.Default` covers from the key down the nose, gape along the hull's up (roll is not
 flown). 20 gates on the shipped shell; seeds 45501-45504 (the fixed seeds) and 1-8.
+
+`trace` prints a line per prism hit since 2026-11-03, naming what was hit (d door, s an I4 eye seal, t tunnel wall,
+p plug, f field, m mover), the plan and phase, and whether the hull was drifting.
 
 **Not modelled:** rivals and trails (the AI is alone), the danger prism's elemental debuff, the asset's real cone (the
 planner's narrower slot is used; `cone=1` widens it), physics contact shapes (a 3 u hull sphere against each prism's box).

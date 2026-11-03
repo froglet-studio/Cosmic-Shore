@@ -147,9 +147,9 @@ namespace CosmicShore.Gameplay
         public SwitchbackBlastSlot Slot => _slot;
         public float BoreRadius => _bore;
 
-        public SwitchbackBlastPlanner(SwitchbackFeatureLayout layout, int courseCount, int intensity)
-            : this(layout, courseCount, SwitchbackBlastRun.BoreRadius(intensity), SwitchbackBlastRun.PortFor(intensity),
-                   SwitchbackBlastRun.CellsHalf(intensity) * SwitchbackBlastRun.CellPitch, SwitchbackBlastSlot.Default) { }
+        public SwitchbackBlastPlanner(SwitchbackFeatureLayout layout, int courseCount, int intensity, bool gauntlet = true)
+            : this(layout, courseCount, SwitchbackBlastRun.BoreRadius(intensity, gauntlet), SwitchbackBlastRun.PortFor(intensity),
+                   SwitchbackBlastRun.CellsHalf(intensity, gauntlet) * SwitchbackBlastRun.CellPitch, SwitchbackBlastSlot.Default) { }
 
         public SwitchbackBlastPlanner(SwitchbackFeatureLayout layout, int courseCount, float boreRadius, float eyeRadius,
                                       float fieldHalfWidth, SwitchbackBlastSlot slot)
@@ -163,8 +163,9 @@ namespace CosmicShore.Gameplay
             for (int g = 0; g < _stationOfGate.Length; g++) _stationOfGate[g] = -1;
             for (int s = 0; s < _layout.Stations.Count; s++)
             {
+                // A gate's stations (an I4 gauntlet's keys) are consecutive, upstream first: the gate maps to its first.
                 int g = _layout.Stations[s].Gate;
-                if (g >= 0 && g < _stationOfGate.Length) _stationOfGate[g] = s;
+                if (g >= 0 && g < _stationOfGate.Length && _stationOfGate[g] < 0) _stationOfGate[g] = s;
             }
 
             int n = _layout.Prisms.Count;
@@ -183,7 +184,8 @@ namespace CosmicShore.Gameplay
                     if (mv.FirstPrism + j < n) _moverOf[mv.FirstPrism + j] = m;
             }
 
-            // Each station's obstacle: every prism in the box from just past the door to the key, as wide as its field.
+            // Each station's obstacle: every prism in the box from just past what its blast is aimed at (the door, or an
+            // I4 gauntlet's next key) to the key, as wide as its field.
             var flat = new List<int>(n);
             _start = new int[_layout.Stations.Count + 1];
             float half = fieldHalfWidth + FieldMargin;
@@ -191,14 +193,14 @@ namespace CosmicShore.Gameplay
             {
                 _start[s] = flat.Count;
                 var st = _layout.Stations[s];
-                Vector3 along = st.Key - st.Door;
+                Vector3 along = st.Key - st.Target;
                 float len = along.magnitude;
                 if (len < 1f) continue;
                 along /= len;
-                float back = st.DoubleDoor ? 2f * SwitchbackBlastRun.DoorSetback + 8f : 8f;
+                float back = !st.Final ? 0f : st.DoubleDoor ? 2f * SwitchbackBlastRun.DoorSetback + 8f : 8f;
                 for (int k = 0; k < n; k++)
                 {
-                    Vector3 w = _layout.Prisms[k].Position - st.Door;
+                    Vector3 w = _layout.Prisms[k].Position - st.Target;
                     float t = Vector3.Dot(w, along);
                     if (t < -back || t > len) continue;
                     if ((w - along * t).sqrMagnitude > half * half) continue;
@@ -209,8 +211,43 @@ namespace CosmicShore.Gameplay
             _obstacle = flat.ToArray();
         }
 
-        /// <summary>The station blocking course gate <paramref name="gate"/>, or -1.</summary>
+        /// <summary>The station blocking course gate <paramref name="gate"/> (an I4 gauntlet's first key), or -1.</summary>
         public int StationFor(int gate) => gate >= 0 && gate < _stationOfGate.Length ? _stationOfGate[gate] : -1;
+
+        /// <summary>u past a key's plane (along its fire line) at which a pilot has passed it - the executor's "done".</summary>
+        public const float PassedKeyDistance = 5f;
+
+        /// <summary>
+        /// The key a pilot at <paramref name="self"/> is working on at gate <paramref name="gate"/>: the first of the gate's
+        /// stations whose key it has not yet passed (along that key's fire line), or the gate's last. Below I4 this is
+        /// <see cref="StationFor"/>; at I4 the gauntlet's keys follow one another as the pilot flies past each. -1 at an
+        /// open gate.
+        /// </summary>
+        public int StageFor(int gate, Vector3 self)
+        {
+            int s = StationFor(gate);
+            if (s < 0) return -1;
+            var stations = _layout.Stations;
+            while (s + 1 < stations.Count && stations[s + 1].Gate == gate)
+            {
+                var st = stations[s];
+                Vector3 fire = st.Target - st.Key;
+                if (fire.sqrMagnitude < 1e-4f || Vector3.Dot(self - st.Key, fire.normalized) <= PassedKeyDistance) break;
+                s++;
+            }
+            return s;
+        }
+
+        /// <summary>u before station <paramref name="station"/>'s key the pilot starts holding its nose on the aim (the drift
+        /// look): at most <paramref name="lookRange"/>, and at a gauntlet's later key no more than 60 % of the way from the
+        /// key before it, so the previous strike is over first.</summary>
+        public float LookRangeFor(int station, float lookRange)
+        {
+            if (station <= 0 || station >= _layout.Stations.Count) return lookRange;
+            var st = _layout.Stations[station];
+            if (st.Stage == 0) return lookRange;
+            return Mathf.Min(lookRange, 0.6f * Vector3.Distance(st.Key, _layout.Stations[station - 1].Key));
+        }
 
         /// <summary>How many prisms make up station <paramref name="station"/>'s obstacle (door + field), as laid.</summary>
         public int ObstacleSize(int station) => station < 0 ? 0 : _start[station + 1] - _start[station];
@@ -278,6 +315,33 @@ namespace CosmicShore.Gameplay
             return hits;
         }
 
+        /// <summary>Seconds the standing prisms ANYWHERE in the layout within <paramref name="band"/> (+ their size) of a-b
+        /// cost a pilot who rams them (<see cref="HitPenalty"/>, <see cref="DangerHitPenalty"/>): an I4 gauntlet's way to its
+        /// next key runs through the tunnel the last blast should have opened, so a standing plug costs time there rather
+        /// than ruling the key out.</summary>
+        public float PathPenalty(ISwitchbackAIWorld world, Vector3 a, Vector3 b, float band, float t, out int hits)
+        {
+            float reach = band + SwitchbackBlastRun.CellPitch * 4f;
+            Vector3 lo = Vector3.Min(a, b) - Vector3.one * reach, hi = Vector3.Max(a, b) + Vector3.one * reach;
+            float pen = 0f;
+            hits = 0;
+            for (int k = 0, n = _layout.Prisms.Count; k < n; k++)
+            {
+                Vector3 p = _layout.Prisms[k].Position;
+                if (p.x < lo.x || p.y < lo.y || p.z < lo.z || p.x > hi.x || p.y > hi.y || p.z > hi.z) continue;
+                if (!world.PrismStanding(k)) continue;
+                if (_moverOf[k] >= 0) p = PositionAt(k, t);
+                if (SwitchbackFeatures.DistanceToSegment(p, a, b) > band + _pad[k]) continue;
+                hits++;
+                pen += _layout.Prisms[k].Kind == CosmicShore.Data.PrismKind.Danger ? DangerHitPenalty : HitPenalty;
+            }
+            return pen;
+        }
+
+        /// <summary>Whether station <paramref name="station"/> is an I4 gauntlet key (it has a tunnel).</summary>
+        public bool IsGauntlet(int station) =>
+            station >= 0 && station < _layout.Stations.Count && _layout.Stations[station].Tunnel != BlastRunTunnel.None;
+
         float LanePenalty(int station, ISwitchbackAIWorld world, Vector3 a, Vector3 b, float band, float t, float timingError,
                           in SwitchbackBlastSlot? slotNull, Vector3 o, Vector3 f, Vector3 u, out int hits, out int covered)
         {
@@ -310,7 +374,7 @@ namespace CosmicShore.Gameplay
         public void SolveAim(int station, ISwitchbackAIWorld world, float t, out Vector3 forward, out Vector3 up)
         {
             var st = _layout.Stations[station];
-            forward = (st.Door - st.Key).normalized;
+            forward = (st.Target - st.Key).normalized;
             if (forward.sqrMagnitude < 0.5f) forward = st.FlowAxis;
             SwitchbackBlastRun.DoorBasis(forward, out Vector3 u, out Vector3 v);
             float suu = 0f, svv = 0f, suv = 0f;
@@ -326,8 +390,9 @@ namespace CosmicShore.Gameplay
             up = (u * Mathf.Cos(theta) + v * Mathf.Sin(theta)).normalized;
         }
 
-        /// <summary>Share (0..1) of the standing prisms in the blast lane (<see cref="BlastLanePad"/> round the key-to-ring line)
-        /// that a slot fired from the key down <paramref name="forward"/> / <paramref name="up"/> covers. 1 when the lane is empty.</summary>
+        /// <summary>Share (0..1) of the standing prisms in the blast lane (<see cref="BlastLanePad"/> round the line from the key
+        /// to <paramref name="ring"/>: the ring, or an I4 gauntlet key's target) that a slot fired from the key down
+        /// <paramref name="forward"/> / <paramref name="up"/> covers. 1 when the lane is empty.</summary>
         public float LaneCoverage(int station, ISwitchbackAIWorld world, Vector3 ring, float t, Vector3 forward, Vector3 up)
         {
             var st = _layout.Stations[station];
@@ -339,14 +404,15 @@ namespace CosmicShore.Gameplay
         /// Plan gate <paramref name="gate"/> (course index) for a pilot at <paramref name="self"/> flying at
         /// <paramref name="speed"/>, with the ring at <paramref name="ring"/>, at shared time <paramref name="clock"/>.
         /// <paramref name="seed"/> drives the skill's mistakes (decision, aim, roll): the same inputs always give the same
-        /// decision. No allocation.
+        /// decision. No allocation. At an I4 gauntlet the plan is for the key the pilot is working on
+        /// (<see cref="StageFor"/>): a blast there is aimed at, and its lane runs to, the next key (the last at the door).
         /// </summary>
         public SwitchbackAIDecision Decide(int gate, Vector3 self, float speed, Vector3 ring, float clock,
                                           in SwitchbackAISkill skill, ISwitchbackAIWorld world, uint seed)
         {
             var d = new SwitchbackAIDecision
             {
-                Gate = gate, Station = StationFor(gate), Coverage = 1f,
+                Gate = gate, Station = StageFor(gate, self), Coverage = 1f,
                 CostDirect = float.PositiveInfinity, CostThread = float.PositiveInfinity, CostBlast = float.PositiveInfinity,
                 Optimal = true,
             };
@@ -369,24 +435,30 @@ namespace CosmicShore.Gameplay
             }
 
             var st = _layout.Stations[s];
-            uint rng = Hash(seed ^ (uint)(gate * 7919));
+            uint rng = Hash(seed ^ (uint)(gate * 7919) ^ (uint)(st.Stage * 104729));
 
-            // Thread: the bore, through the eye - always there (the layout keeps it clear), slowed by the eye and the lane.
+            // Thread: the bore, through the eye - slowed by the eye and the lane. At I4 there is no bore and the eye is
+            // sealed: threading means ramming the straight line to the ring, so EVERY standing prism on it is the cost,
+            // from whichever of the gate's keys the pilot is at (one station's box would undercount an early key's).
+            bool gauntlet = st.Tunnel != BlastRunTunnel.None;
             float slow = ThreadSlowAtEye18 * (18f / _eye) + (st.DoubleDoor ? DoubleDoorSlow : 0f);
-            float threadPen = LanePenalty(s, world, self, ring, ThreadLanePad, clock + 0.5f * eta, skill.TimingErrorSeconds,
-                                          null, default, default, default, out int laneHits, out _);
+            float threadPen;
+            int laneHits;
+            if (gauntlet) threadPen = PathPenalty(world, self, ring, ThreadLanePad, clock + 0.5f * eta, out laneHits);
+            else threadPen = LanePenalty(s, world, self, ring, ThreadLanePad, clock + 0.5f * eta, skill.TimingErrorSeconds,
+                                         null, default, default, default, out laneHits, out _);
             d.LaneHits = laneHits;
             d.CostThread = eta * (1f + slow) + threadPen;
 
             // Blast: the station's key, when it is there, near enough, still ahead, and the way to it is clear.
-            Vector3 fire = (st.Door - st.Key).normalized;
+            Vector3 fire = (st.Target - st.Key).normalized;
             float toKey = Vector3.Distance(self, st.Key);
             bool ahead = Vector3.Dot(st.Key - self, fire) > 0f;
             string why = null;
             if (!world.KeyAvailable(s)) why = "key-gone";
             else if (!ahead) why = "key-behind";
             else if (toKey > skill.CrystalSearchRadius) why = "key-far";
-            else if (PathHits(world, self, st.Key, BlockedLane, clock) >= BlockedHits) why = "key-blocked";
+            else if (!gauntlet && PathHits(world, self, st.Key, BlockedLane, clock) >= BlockedHits) why = "key-blocked";
 
             if (why == null)
             {
@@ -400,15 +472,28 @@ namespace CosmicShore.Gameplay
                 Vector3 u = (Quaternion.AngleAxis(rollErr, f) * Vector3.ProjectOnPlane(u0, f)).normalized;
 
                 float keyEta = toKey / v;
-                float blastPen = LanePenalty(s, world, st.Key, ring, BlastLanePad, clock + keyEta, skill.TimingErrorSeconds,
+                Vector3 laneEnd = st.Final ? ring : st.Target;
+                float blastPen = LanePenalty(s, world, st.Key, laneEnd, BlastLanePad, clock + keyEta, skill.TimingErrorSeconds,
                                              _slot, st.Key, f, u, out int hits, out int covered);
                 Vector3 approach = (st.Key - self).normalized;
                 float turn = Vector3.Angle(approach, fire);
                 float align = Mathf.Max(0f, turn - DriftFreeDegrees) / DriftTurnRate + (turn > 45f ? DriftSetupSeconds : 0f);
-                float detour = (toKey + Vector3.Distance(st.Key, ring) - l) / v;
-                d.CostBlast = (eta + Mathf.Max(detour, 0f) + align + KeyContactSeconds + blastPen) * Mathf.Max(skill.BlastBias, 0.01f);
+                // A gauntlet's blast plan flies the ROUTE: this key, then the gate's later keys (each its own blast), to the
+                // door; the way to this key costs what still stands on it (the last blast should have opened it).
+                float rest = 0f;
+                int laterKeys = 0;
+                if (gauntlet && !st.Final)
+                {
+                    for (int k = s + 1; k < _layout.Stations.Count && _layout.Stations[k].Gate == gate; k++, laterKeys++)
+                        rest += Vector3.Distance(_layout.Stations[k].Key, _layout.Stations[k].Target);
+                    rest += Vector3.Distance(st.Door, ring);
+                }
+                float detour = (toKey + Vector3.Distance(st.Key, laneEnd) + rest - l) / v;
+                float pathPen = gauntlet ? PathPenalty(world, self, st.Key, ThreadLanePad, clock, out _) : 0f;
+                d.CostBlast = (eta + Mathf.Max(detour, 0f) + align + KeyContactSeconds * (1 + laterKeys) + blastPen + pathPen)
+                              * Mathf.Max(skill.BlastBias, 0.01f);
                 d.Key = st.Key; d.FireForward = f; d.FireUp = u;
-                d.AimPoint = st.Key + f * Vector3.Distance(st.Key, st.Door);
+                d.AimPoint = st.Key + f * Vector3.Distance(st.Key, st.Target);
                 d.AimErrorDegrees = aimErr; d.RollErrorDegrees = rollErr;
                 d.Coverage = hits == 0 ? 1f : covered / (float)hits;
             }
