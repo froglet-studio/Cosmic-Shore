@@ -1,9 +1,31 @@
-# Changes to workflows, CI and this file need a review from one of these people. Workflow files can
-# hand repository secrets to whatever they run, so every change gets a second person.
+# Paths here need one approving review from a listed owner before a pull request into bleeding-edge
+# merges. Everything NOT listed needs no review, only the guard's checks. Docs/BRANCH_PROTECTION.md.
 #
-# GitHub never lets a PR's author approve it, so a change authored by any owner still needs one of
-# the others. Agent sessions currently act on GitHub as Shombith03; giving them their own account is
-# a planned follow-up, so a human owner's approval always means a human read the change.
+# Any ONE listed owner's approval is enough. GitHub never lets a PR's author approve it, so a change
+# authored by an owner still needs one of the others. The LAST matching line wins, so a later, narrower
+# line replaces an earlier one's owners rather than adding to them.
+#
+# Agent sessions still act on GitHub as Shombith03, so an approval from that account does not yet prove a
+# human read the change; Docs/BRANCH_PROTECTION.md section 4 moves agents to their own account, which
+# fixes that. Never list the agent account here: its approval would then count.
 #
 # This only blocks a merge while the "Protect trunks" ruleset requires review from Code Owners.
+
+# Workflows, CI and this file. Workflow files can hand repository secrets to whatever they run, so every
+# change gets a second person.
 /.github/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+
+# Amoebius, the engine port. Shombith drives the engine, Yash the launcher / studio server / artifact
+# library, Garrett the parity goldens (Docs/TEAM.json).
+/Port/ @Shombith03 @YsKhan61 @gradies
+
+# Scenes. Every mode, the menu and boot live here and a scene override always beats a prefab
+# (CLAUDE.md "Shared prefabs are single sources of truth"), so any of the core four may approve.
+/Assets/_Scenes/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+
+# Shared prefabs every mode instances (Docs/GAMECANVAS.md). A nulled reference here fails as "the feature
+# quietly does nothing" in every mode at once. The .meta carries the guid every scene points at.
+/Assets/_Prefabs/CORE/GameCanvas.prefab @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/Assets/_Prefabs/CORE/GameCanvas.prefab.meta @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/Assets/_Prefabs/ArcadeGameConfigureModal.prefab @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/Assets/_Prefabs/ArcadeGameConfigureModal.prefab.meta @Shombith03 @FenrysUnchained @gradies @YsKhan61
