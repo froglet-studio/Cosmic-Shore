@@ -36,8 +36,8 @@
     }
   ],
   "bugs": {
-    "open": 266,
-    "source": "611 branch(es)",
+    "open": 274,
+    "source": "617 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -70,19 +70,90 @@
         "title": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!"
       }
     ],
-    "validating": 15
+    "validating": 9
   },
   "captures": [
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "3e329c4f42",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 11.101351737976074,
+      "gcKB": 158.16810607910156,
+      "key": "MinigameSwitchback|Switchback",
+      "timestamp": "2026-11-02 23:08:28",
+      "user": "yskha",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "9f332918fa",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.415779113769531,
+      "gcKB": 146.02076721191406,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-11-03 00:56:06",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
     {
       "branch": null,
       "commit": null,
       "contaminated": [
         "frame cap active"
       ],
-      "cpuBusyMs": 11.916385650634766,
-      "gcKB": 44.717464447021484,
+      "cpuBusyMs": 8.652949333190918,
+      "gcKB": 35.590328216552734,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-11-03 01:14:06",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "9f332918fa",
+      "contaminated": [
+        "frame cap active",
+        "Game view unfocused"
+      ],
+      "cpuBusyMs": 8.37865161895752,
+      "gcKB": 22.748157501220703,
+      "key": "MinigameSwitchback|Switchback",
+      "timestamp": "2026-11-03 01:16:47",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active, Game view unfocused)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "9f332918fa",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 7.872576713562012,
+      "gcKB": 22.186058044433594,
+      "key": "MinigameSwitchback|Switchback",
+      "timestamp": "2026-11-03 01:22:10",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "9f332918fa",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.965092658996582,
+      "gcKB": 30.61622428894043,
       "key": "MinigameThresherTime|MinigameThresherTime",
-      "timestamp": "2026-10-31 23:23:30",
+      "timestamp": "2026-11-03 01:27:09",
       "user": "yskha",
       "valid": true,
       "verdict": "not adopted as a baseline (frame cap active)"
@@ -94,95 +165,25 @@
         "frame cap active",
         "Game view unfocused"
       ],
-      "cpuBusyMs": 8.744303703308105,
-      "gcKB": 19.895732879638672,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-31 23:57:57",
+      "cpuBusyMs": 9.326492309570312,
+      "gcKB": 108.42138671875,
+      "key": "MinigameSlingshot|MinigameSlingshot",
+      "timestamp": "2026-11-03 01:35:13",
       "user": "yskha",
       "valid": true,
-      "verdict": "improved (WARN contaminated: frame cap active, Game view unfocused)"
+      "verdict": "not adopted as a baseline (frame cap active, Game view unfocused)"
     },
     {
-      "branch": null,
-      "commit": null,
+      "branch": "bleeding-edge",
+      "commit": "b9823ab119",
       "contaminated": [
         "frame cap active"
       ],
-      "cpuBusyMs": 10.994444847106934,
-      "gcKB": 20.812030792236328,
-      "key": "Menu_Main|Garland",
-      "timestamp": "2026-11-01 00:01:58",
+      "cpuBusyMs": 11.84895133972168,
+      "gcKB": 71.99514770507812,
+      "key": "MinigameSlingshot|MinigameSlingshot",
+      "timestamp": "2026-11-03 05:37:15",
       "user": "yskha",
-      "valid": true,
-      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
-    },
-    {
-      "branch": null,
-      "commit": null,
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 5.793318748474121,
-      "gcKB": 102.5220947265625,
-      "key": "MinigameTapestry|MinigameTapestry",
-      "timestamp": "2026-11-01 17:39:16",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
-    },
-    {
-      "branch": "Ys-bleeding-edge",
-      "commit": "8b8ac67622",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 8.021550178527832,
-      "gcKB": 37.71286392211914,
-      "key": "MinigameSwitchback|MinigameSwitchback",
-      "timestamp": "2026-11-01 17:39:53",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "improved (WARN contaminated: frame cap active)"
-    },
-    {
-      "branch": null,
-      "commit": null,
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 8.221084594726562,
-      "gcKB": 74.62781524658203,
-      "key": "MinigameWaystation|MinigameWaystation",
-      "timestamp": "2026-11-01 17:44:33",
-      "user": "owner",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active)"
-    },
-    {
-      "branch": null,
-      "commit": null,
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 10.16506290435791,
-      "gcKB": 73.08143615722656,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-11-01 17:58:18",
-      "user": "owner",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active)"
-    },
-    {
-      "branch": "unknown",
-      "commit": "unknown",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 11.639899253845215,
-      "gcKB": 13.866352081298828,
-      "key": "Menu_Main|menu-main",
-      "timestamp": "2026-11-02 11:59:39",
-      "user": "yskha-phone",
       "valid": true,
       "verdict": "not adopted as a baseline (frame cap active)"
     }
@@ -210,7 +211,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-11-02T13:54:59Z",
+  "generatedUtc": "2026-11-03T13:02:33Z",
   "next": [
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): gcKB 47.01902389526367 -> 61.291324615478516 (+30%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker Inl_UniversalRenderTotal 0.9318 -> 1.5055 ms/frame (+62%)",
@@ -246,15 +247,17 @@
     "Resolve: Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
     "Resolve: Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
     "Resolve: Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): p95Ms 15.22900390625 -> 18.501296997070312 (+21%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): gcKB 20.374347686767578 -> 35.590328216552734 (+75%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
-    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261020-fb02]",
+    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go",
     "Capture Switchback I2 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped: the editor captures it by itself",
     "Capture Switchback Blast Run I4 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped",
-    "266 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
+    "274 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [
     {
@@ -271,16 +274,6 @@
       "id": "T-20261021-fa97",
       "kind": "test",
       "task": "Measure the new Medium / Low quality presets on an older phone (Mali-G52 / Adreno 610 class): F7 diag GPU ms at High, Medium, Low in the same scene, and run the"
-    },
-    {
-      "id": "T-20261020-09fe",
-      "kind": "decision",
-      "task": "Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far "
-    },
-    {
-      "id": "T-20261020-fb02",
-      "kind": "test",
-      "task": "Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; co"
     }
   ],
   "regressions": [
@@ -318,6 +311,8 @@
     "Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
     "Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
     "Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): p95Ms 15.22900390625 -> 18.501296997070312 (+21%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): gcKB 20.374347686767578 -> 35.590328216552734 (+75%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)"
