@@ -21029,3 +21029,38 @@ exit 30-45 deg, window 0.8-1.4 s; maxOrbitDegrees 720; the AI's aiSlingMinTurnDe
 - [ ] Stick toward the turn at the release: about 45 deg; away: about 30; stick at rest: about 37.5.
 - [ ] The snap from the orbit's heading onto the exit does not jar the camera.
 - [ ] Slingshot I1-I4: AI Stoats finish (model: 113-125 s, slower than before: a sling costs about a second of circling).
+
+## 🔴 Brittle Star level-5 upgrades and the ring explosion's core (2026-11-03, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `unity_refcompile` player + editor 0 errors in
+project code, `/ship` gates green (incl. `author_brittlestar_assets.py --check`), the element ability table reads
+`L5 gates wired 4/4`. `BrittleStarTests` gained three rule tests (written, not run: no Unity here). Give the hull level 5
+in an element (the Toybox's Vessel Changer, or a starting element) to try each:
+
+1. **Mass 5, Shielded Trail.** Cruise and Creation Mode: every block laid (base trail and the five corner trails) is
+   shielded; overheated in Space Mode the danger prisms are still danger prisms. Below Mass 4 the trail is plain again.
+2. **Space 5, Explosive Rounds.** Fire into a wall: each stopped round breaks the prisms within 10 u round it. Watch the
+   frame time with all five guns held into dense mass (bursts are capped at 12 a frame).
+3. **Charge 5, Thrown Sabers.** Charge Mode, hold RT (sabers), press LT: the five sabers fly off along their lines
+   (centred stick converges them, pushed fans them), tumbling, cutting prisms and striking rival hulls; new cords regrow
+   after ~1.5 s. With RT released (whips), LT throws the ring as before.
+4. **Time 5, Speed Roll.** Speed Mode: the right stick's x rolls the hull, its y pulls the nose; the ring stops turning
+   with the stick while in Speed Mode. Check the roll direction and the pull direction feel right (and Invert Y).
+5. **Ring explosion core (any level).** Throw the ring (LT with a spare) into a cluster: everything within 40 u of the
+   blast breaks at once, then the disk sweeps out in the ring's plane as before.
+6. **The level-5 card states (icon_kit, same branch).** With each upgrade live, its card changes: Charge, RT pulled, the
+   sabers drawn thrown out past their turrets, tumbling; Mass, the trail blocks drawn as shielded prisms (two close triangles);
+   Space, a burst where the rounds meet (the rounds swap to copies cleared round it); Time, in Speed Mode, the trail
+   swept round a turn under a roll arc. Below level 4 each card goes back to its plain state. Check that no new part
+   flashes at full alpha before the HUD's first frame, and that a vessel swap keeps a live upgrade's state.
+
+## 🟡 No drift slide: a drift never moves the hull on screen (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/no-drift-slide`. Compiled with `unity_refcompile` (player + editor, 0 project errors); the edit-mode
+tests were compiled, not run (the Prisma runner does not build on bleeding-edge today: 63 engine gaps in unrelated files).
+
+1. **Run the edit-mode tests** `CameraFeelTests` (all): `ADrift_NeverMovesTheHullOnScreen` and `ADrift_StillRumbles`
+   pass, and the rest still pass.
+2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
+   its end; only a faint rumble shows. Then a Dolphin drift: same.
+3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.

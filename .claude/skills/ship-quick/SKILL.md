@@ -56,6 +56,8 @@ one fired.
    watch CI.
 9. **Fire CI once** — `/ship` §5.5: dispatch `unity-ci.yml` with `mode: static` on the
    branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
+10. **Refresh the Fleet Codex** — `/ship` §5.6: when the branch touched a vessel, rebuild the codex on bleeding-edge
+   with this branch merged on top (`--pending`) and republish it. Not trimmed by fast mode.
 
 ## What you skip
 
