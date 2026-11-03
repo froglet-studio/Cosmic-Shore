@@ -41,12 +41,35 @@ Authored by `Tools/Build/author_thresher_time_assets.py` (the controller's targe
 preview text). Tests: `ThresherTimeNestTests` (core first, the armour ladder, the budget, closed form, the credit
 rule with a negative control).
 
-**Not built yet: plants and creatures as targets.** Yash asked for flora to destroy and fauna to kill as well. Two
-locked rules stand in the way (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`): fauna spawn in the cell's controlling
-colour and flora roll Jade / Ruby / Gold, while the Thresher's ball bounces off (and in Mass Mode shields) its own
-domain's prisms, so a pilot could not break a target in its own colour; and Thresher Time races in the SHARED Skim
-Race cell, which carries no flora, so the mode would need its own cell with networked species. Either needs a
-decision on the colour rule first (see the checklist entry).
+**Plants and creatures: each intensity is its own place, grown by the cell** (Yash, 2026-11-04: "some floras to
+destroy, some faunas to kill", and "never break Garrett's rule"). The mode lays no plant and no creature. It picks
+which cell each intensity races in, Serpentine's and Tollway's way, and that cell's own spawner grows them under the
+locked ecology law (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`):
+- plants roll Jade, Ruby or Gold;
+- creatures take the cell's controlling colour;
+- everything blooms in and withers out, and nothing has a timer.
+
+A pilot meets them with the kit as it is (a mode never changes the vessel). A **rival-coloured** plant or creature is
+a target: the ball, the chain or a blast takes it apart, and its heart is a crystal, which feeds the element bars. One
+in **your own colour** is a bumper your ball bounces off. So the gates never depend on a colour roll: the nests are the
+gates, and the living things are the hazards and the rewards along the line.
+
+| | I1 Shallows | I2 Kelp Line | I3 Hunting Grounds | I4 The Thicket |
+|---|---|---|---|---|
+| Plants | 8 Spire | 8 Spire, 4 Gyroid | 10 Cacti, 6 Gyroid | 14 Cacti, 8 Spire, 6 Gyroid |
+| Creatures (live cap) | tadpoles 10 | tadpoles 14, brittlestars 6 | sharks 3, piranha 10, tadpoles 10 | sharks 3, piranha 12, brittlestars 4, tadpoles 6 |
+
+The plants grow in the shell the course is cut through (480-1,080 u of the 1,200 u membrane), so they line the
+track. Every config is an existing one copied with only its name and numbers changed, re-read from its source on
+every run. No other mode's cell, plant or creature is touched:
+- the cell and spawn profile are Skim Race's;
+- the creatures are Serpentine's four;
+- the plants are Tollway's networked court species (Spire and Cacti at a 40-prism budget).
+
+The files are in `Assets/_SO_Assets/Cell Configs/Thresher Time Cell/`, and the scene's Cell is `IntensityWise`. The
+plants replicate (`NetworkSynced`). The creatures are as networked as every creature in the game today, which is not
+at all: no fauna config has `NetworkSynced` on yet. So each peer grows its own, as it already did in the Skim Race
+cell this mode used before.
 
 **AI.** No AI change: the gate-race steering already flies at the ring's centre, which is the core, and the hull's
 ram breaks it; the sling AI keeps slinging. Whether it breaks nests well is for the soak to measure

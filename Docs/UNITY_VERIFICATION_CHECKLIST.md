@@ -188,6 +188,27 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 Thresher Time: each intensity its own place, plants and creatures grown by the cell (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
+
+**What landed:** Thresher Time leaves the shared Skim Race cell for four cells of its own, picked by intensity
+(`IntensityWise`). Each cell grows plants (Spire, Gyroid, Cacti: 8 → 28 plants) and creatures (tadpoles up to sharks and
+piranha: 10 → 25 live), in the shell the course flies through. The mode lays nothing: every plant and creature comes
+from the cell's own spawner under the locked ecology rules, and the kit is unchanged. Rival-coloured ones are targets
+with crystal hearts; your own colour's are bumpers. Every config is copied from Skim Race, Serpentine's sources and
+Tollway, with only names and numbers changed; none of theirs is touched. `THRESHERTIME.md` §0.
+
+**Verified without the editor:** `author_thresher_time_assets.py --check` passes (the plants networked, the creature
+caps at 25 or under, the ladders rising, the band inside the course shell). NOT run: the editor import (the editor
+was in Play mode), any race.
+
+**Verify in editor:**
+1. Thresher Time I1 has a few Spires along the track and tadpoles. I4 is thick with Cacti, Spires and Gyroids, with
+   sharks and piranha. Plants come in all three colours.
+2. Smash a rival-coloured plant with the ball: it comes apart and its heart drops a crystal. A plant in your own
+   colour bounces the ball.
+3. Frame time at I4 with the nests stands up (Serpentine dropped Rampage's forests for frame time). Watch the profiler.
+4. The Test Flight preview shows each intensity's own place.
+
 ### 🔴 Thresher Time: a nest to break at every gate instead of a ring (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
 
 **What landed:** the rings are hidden and every gate is a nest (`ThresherTimeNest`): a core inside a cage armoured more
