@@ -7,7 +7,12 @@ shielded tiers. So the writer keeps everything the original tuned and takes only
 
   * every field wears one pigment of its domain (FIELD_ROLE: the prism rims and the bright, signal-like fields wear the
     rim; the prism faces and the dark fields wear the face);
-  * its brightness is the original field's (its brightest channel), and its alpha is the original's;
+  * a rim field keeps the original field's brightness (its brightest channel, HDR where the original is), so bloom
+    is unchanged; a face field takes its face pigment's own lightness (the pigment at its mid L), times the original
+    field's brightness over the original plain face's, so the tiers keep their steps. The face is most of a prism's
+    surface, so the set, not the original, decides how bright the body is (2026-11-03: Dart Frog's faces at the
+    original's brightness made each prism read as its face hue);
+  * its alpha is the original's;
   * its whiteness is the original's whiteness beyond its domain's plain tier (InsideBlockColor for rim fields,
     OutsideBlockColor for face fields), so a shielded rim is as much paler than a plain rim as it was before.
 
@@ -122,9 +127,15 @@ def palette(s, orig):
     out = {}
     for block, dom in DOMAIN_SETS:
         src, fields = orig[block], {}
+        face = s["domains"][dom]["face"]
+        face_peak = max(cs.linear_of(*cs.at(face, cs.mid(face))))
         for field, role in FIELD_ROLE.items():
             p = s["domains"][dom][role]
-            fields[field] = paint(src[field], src[PLAIN[role]], p, field in SRGB_FIELDS)
+            c = paint(src[field], src[PLAIN[role]], p, field in SRGB_FIELDS)
+            if role == "face" and field not in SRGB_FIELDS and max(c[:3]) > 1e-6:
+                k = face_peak / max(src[PLAIN["face"]][:3])
+                c = tuple(round(v * k, 6) for v in c[:3]) + (c[3],)
+            fields[field] = c
         out[block] = fields
     env = dict(orig["EnvironmentColors"])
     for field, (dom, role) in ENV_PAINTED.items():

@@ -114,16 +114,18 @@ Under the old rule it sat in the band (the lab's finding 02).
 ## Colour sets: unlockable palettes with two pigments per domain
 
 [`colour_sets.json`](colour_sets.json) holds the unlockable colour sets (first: **Dart Frog**, paid track, proposed
-2026-11-02). There a domain is two pigments, a bright rim and a dark face of a different hue, and a pigment is one paint
+2026-11-02; then **Nocturne**, 2026-11-03, a contender for the default palette: luminous rims in each family's hue over
+deep jewel faces of a different hue, every face in one night-dark band so the rim carries the domain). There a domain is two pigments, a bright rim and a dark face of a different hue, and a pigment is one paint
 from shadow to highlight: a cone segment around a ray from black in OKLab. Four rules hold every set (the band, no
 shared pigment under any light, rim/face contrast, each rim still reading as its family in this truth);
 `Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. Shaped in the Colour Sets lab
 (https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
 by them.
 
-`Tools/Build/author_colour_set_assets.py` writes each set as an `SO_ColorSet` asset (Dart Frog:
-`Assets/_SO_Assets/Color Palettes/DartFrogColorSetSO.asset`). Every field keeps `OriginalColorSetSO`'s brightness, alpha and
-tier whiteness and takes its hue from its domain's rim or face pigment; `--check` fails on drift or on a field in another
+`Tools/Build/author_colour_set_assets.py` writes each set as an `SO_ColorSet` asset (`DartFrogColorSetSO.asset`,
+`NocturneColorSetSO.asset` in `Assets/_SO_Assets/Color Palettes/`). Every field takes its hue from its domain's rim or face
+pigment and keeps `OriginalColorSetSO`'s alpha and tier whiteness; rims keep the original's HDR brightness and faces take
+their pigment's own lightness (the face is most of a prism, so it decides how the prism reads); `--check` fails on drift or on a field in another
 domain's pigment. To try a set in the editor, drop its asset into `ThemeManagerDataContainer.asset`'s `ColorSet` slot.
 
 ## What the truth does not change yet
