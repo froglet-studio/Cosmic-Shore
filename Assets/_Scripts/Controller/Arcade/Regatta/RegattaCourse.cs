@@ -167,6 +167,44 @@ namespace CosmicShore.Gameplay
         /// and 29 u inside the tightest mouth; 8 u spacing on an 8 u long prism, each length fitted
         /// flush to its neighbours (<see cref="FlushRailLengths"/>), is a continuous ribbon, which a
         /// super-shield's 1.5x reach fuses into one spiked cable per lane.</summary>
+        /// <summary>
+        /// The share of each leg, centred mid-leg, whose rail is laid in a colour no team rides (<see cref="NeutralDomain"/>).
+        /// It is the course's one lever on the rail RIDER alone: an Urchin rides its own colour at 300 u/s but crawls a
+        /// rail of any other colour and flies free at about 65 u/s, while the Squirrel skims rail of any colour and every
+        /// other hull only flies beside it. 0 (shipped) lays every lane in its team's colour the whole way round.
+        /// Measured 2026-11-03 (Regatta Hull Benchmark, I1): an AI Urchin finished in 51 s against 62-113 s for the
+        /// rest of the competent field. The ring mouths keep their colour, so a lane's first prism still names its team.
+        /// </summary>
+        public static float NeutralShareFor(int intensity) =>
+            RailNeutralShareOverride >= 0f ? RailNeutralShareOverride
+            : new[] { 0f, 0f, 0f, 0f }[Mathf.Clamp(intensity, 1, 4) - 1];
+
+        /// <summary>A benchmark's or a test's override of <see cref="NeutralShareFor"/> for every intensity, or -1 for none.
+        /// Read where the arena lays its rails, like <see cref="CourseSeedOverride"/>; nothing in a match sets it.</summary>
+        public static float RailNeutralShareOverride = -1f;
+
+        /// <summary>The colour of the neutral stretches: not one of <see cref="LaneDomains"/>, so it is no team's lane.</summary>
+        public const Domains NeutralDomain = Domains.Blue;
+
+        /// <summary>True when <paramref name="p"/> lies in the middle <paramref name="share"/> of the leg it is nearest to.</summary>
+        public static bool InNeutralStretch(Vector3 p, IReadOnlyList<RaceGate> gates, float share)
+        {
+            int n = gates?.Count ?? 0;
+            if (share <= 0f || n < 2) return false;
+            float best = float.MaxValue, bestT = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 a = gates[i].Position, b = gates[(i + 1) % n].Position;
+                Vector3 ab = b - a;
+                float len2 = ab.sqrMagnitude;
+                if (len2 < 1e-4f) continue;
+                float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / len2);
+                float d = (a + ab * t - p).sqrMagnitude;
+                if (d < best) { best = d; bestT = t; }
+            }
+            return Mathf.Abs(bestT - 0.5f) < 0.5f * Mathf.Clamp01(share);
+        }
+
         public static RegattaRailSettings DefaultRails => new()
         {
             LaneOffset = 22f,

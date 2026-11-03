@@ -281,12 +281,10 @@ for _i in range(1, 5):
 """ + "".join(f"    {k}: {v}\n" for k, v in t.items()))
 
 # ── 5. The arcade card: every playable hull, and the starting-element table ──
-# Every OPPONENT AI (a domain no human flies) flies this hull: the platform's gate-race AI holds
-# 0.6 throttle and drives no hull's speed ability but the Manta's, so a mixed opponent grid was
-# mostly hulls racing at cruise. The Squirrel skims the rails for its boost energy, which is the
-# one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
-# the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
-OPPONENT_AI_HULL = "Squirrel"
+# The opponent pin is retired (2026-11-03, Garrett: "a regatta with two AI allies against 3 opposing vessels ... all fly
+# different vessels"). It held every OPPONENT AI on the Squirrel while the racing AI could not drive the other hulls; the
+# Regatta Hull Benchmark now measures seven hulls finishing every race with no missed ring (Urchin, Manta, Squirrel, Rhino,
+# Dolphin, Serpent, Sparrow), so opponents draw from the card under arena seating like allies - one pilot per hull.
 HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
@@ -339,7 +337,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   PlayUserAction: 0
   StartingElements:
 {STARTING}  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}
-  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}
+  OpponentAIVessel: {{fileID: 0}}
 """)
 
 # ── 6. Toasts: two idle hints, the comeback line, and the shared race beats ──
@@ -578,10 +576,8 @@ card = g.files["Assets/_SO_Assets/Games/ArcadeGameRegatta.asset"]
 for h in HULL_ORDER:
     if card.count(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n") != 1:
         errors.append(f"card does not list {h} exactly once")
-if f"  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}\n" not in card:
-    errors.append(f"card does not pin the {OPPONENT_AI_HULL} as its OpponentAIVessel")
-if OPPONENT_AI_HULL not in HULL_ORDER:
-    errors.append(f"the opponent hull {OPPONENT_AI_HULL} is not on the card - ClampVesselToGame would move it")
+if "  OpponentAIVessel: {fileID: 0}\n" not in card:
+    errors.append("card pins an OpponentAIVessel - the pin is retired (opponents draw from the card, one pilot per hull)")
 rule = g.files["Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset"]
 if G_SCRIPT["RegattaScoringRuleSO"] not in rule or "  golfRules: 0\n" not in rule:
     errors.append("RegattaScoringRule.asset is not the points-rules RegattaScoringRuleSO")

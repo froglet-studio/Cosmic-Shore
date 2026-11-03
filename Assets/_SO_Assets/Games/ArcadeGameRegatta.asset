@@ -193,4 +193,4 @@ MonoBehaviour:
       Space: 0
       Time: 1
   ComebackRatePerScoreDeficit: 0.35
-  OpponentAIVessel: {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+  OpponentAIVessel: {fileID: 0}

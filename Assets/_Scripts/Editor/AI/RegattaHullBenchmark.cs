@@ -52,12 +52,15 @@ namespace CosmicShore.Editor.AI
             /// <summary>GRID mode: the AI seats' hulls in seat order, "Manta,Dolphin,Rhino,Urchin,Stoat" (a full Regatta: the
             /// idle host and these, two domains). Empty: the one-hull time trial.</summary>
             public string Grid = "";
+            /// <summary>Override of RegattaCourse.NeutralShareFor for this run, or -1 for the course's own.</summary>
+            public float Neutral = -1f;
         }
 
         [Serializable]
         class Record
         {
             public string session, commit, hull, hostHull, difficulty, outcome, timeLevels;
+            public float neutral = -1f;
             public int intensity, race, gatesTotal, gatesThreaded, courseSeed;
             public float finishSeconds;
             public List<float> gateSeconds = new();
@@ -66,6 +69,8 @@ namespace CosmicShore.Editor.AI
             public string traceColumns = "t,x,y,z,speed,phase,ring,range";
             /// <summary>The course's rings in scene order, 7 floats each: x, y, z, axis x, y, z, mouth radius.</summary>
             public List<float> rings = new();
+            /// <summary>Every 2 s, the hull's speed-ability state where the benchmark knows how to read it (the Stoat's sling).</summary>
+            public List<string> diag = new();
         }
 
         const float TraceInterval = 0.25f;
@@ -166,6 +171,8 @@ namespace CosmicShore.Editor.AI
             {
                 job.TimeLevels = Arg("-regattaTime") ?? "";
                 job.Grid = Arg("-regattaGrid") ?? "";
+                job.Neutral = float.TryParse(Arg("-regattaNeutral"), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out float neutral) ? neutral : -1f;
                 // A run tag names the file, so a driver launching one editor per hull can collect one run's files.
                 string tag = Arg("-regattaTag");
                 if (!string.IsNullOrEmpty(tag))
@@ -337,6 +344,7 @@ namespace CosmicShore.Editor.AI
             gameData.RequestedDomainCount = 2;
             gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(job.Difficulty);
             gameData.SetRequestedAIVessels(new[] { hull });
+            RegattaCourse.RailNeutralShareOverride = job.Neutral;
             gameData.InvokeGameLaunch();
 
             for (int race = 0; race < job.RacesPerHull; race++)
@@ -359,7 +367,7 @@ namespace CosmicShore.Editor.AI
                 {
                     session = job.Session, commit = job.Commit, hull = hull.ToString(), hostHull = hostHull.ToString(),
                     difficulty = job.Difficulty.ToString(), intensity = job.Intensity, race = race,
-                    timeLevels = job.TimeLevels,
+                    timeLevels = job.TimeLevels, neutral = job.Neutral,
                 };
                 if (controller == null || ai == null)
                 {
@@ -396,7 +404,7 @@ namespace CosmicShore.Editor.AI
                     rec.rings.AddRange(new[] { c.x, c.y, c.z, a.x, a.y, a.z, ring.Radius });
                 }
                 int last = 0;
-                float nextSample = 0f;
+                float nextSample = 0f, nextDiag = 0f;
                 var status = ai.Vessel.VesselStatus as Component;
                 AIPilot pilot = null;
                 if (status) status.TryGetComponent(out pilot);
@@ -416,6 +424,12 @@ namespace CosmicShore.Editor.AI
                             obj.Has ? (float)obj.Phase : -1f, obj.Has ? obj.Ring : -1f,
                             obj.Has ? Vector3.Distance(p, obj.Objective) : -1f,
                         });
+                    }
+                    if (Time.time - start >= nextDiag)
+                    {
+                        nextDiag = Time.time - start + 2f;
+                        string d = Diagnose(ai);
+                        if (d != null) rec.diag.Add($"{Time.time - start:F1} {d}");
                     }
                     if (now >= total) { rec.outcome = "finished"; break; }
                     if (!gameData.IsTurnRunning) { rec.outcome = "ended-early"; break; }
@@ -476,6 +490,7 @@ namespace CosmicShore.Editor.AI
             gameData.RequestedDomainCount = 2;
             gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(job.Difficulty);
             gameData.SetRequestedAIVessels(hulls);
+            RegattaCourse.RailNeutralShareOverride = job.Neutral;
             gameData.InvokeGameLaunch();
 
             for (int race = 0; race < job.RacesPerHull; race++)
@@ -566,6 +581,46 @@ namespace CosmicShore.Editor.AI
             Save(job);
             Status = "grid: done";
             EditorApplication.isPlaying = false;
+        }
+
+        /// <summary>A read-only look inside the hull's speed ability, by reflection (editor diagnostics; nothing is
+        /// written). The Stoat: is a pair laid, caught, alive, held, and is each trigger side held.</summary>
+        static System.Type _slingType;
+
+        static string Diagnose(IPlayer ai)
+        {
+            var go = (ai.Vessel?.VesselStatus as Component)?.gameObject;
+            if (!go) return null;
+            _slingType ??= AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("CosmicShore.Gameplay.StoatSlingExecutor")).FirstOrDefault(x => x != null);
+            if (_slingType == null) return null;
+            var sling = go.GetComponentInChildren(_slingType, true);
+            if (!sling) return null;
+            const System.Reflection.BindingFlags F = System.Reflection.BindingFlags.Instance |
+                                                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+            var t = sling.GetType();
+            object Get(string name) => t.GetField(name, F)?.GetValue(sling);
+            var holds = Get("_holds") as Array;
+            string Hold(int k)
+            {
+                if (holds == null || k >= holds.Length) return "?";
+                var h = holds.GetValue(k);
+                return h.GetType().GetField("Holding", F)?.GetValue(h) is true ? "H" : "-";
+            }
+            var pair = Get("_pair");
+            string pairState = "none";
+            if (pair != null)
+            {
+                var pt = pair.GetType();
+                bool alive = pt.GetProperty("IsAlive", F)?.GetValue(pair) is true;
+                bool held = pt.GetProperty("Held", F)?.GetValue(pair) is true;
+                pairState = $"{(alive ? "alive" : "dead")}/{(held ? "held" : "free")}";
+            }
+            float laidAt = Get("_laidAt") is float la ? la : 0f;
+            float lastSling = Get("_aiLastSlingTime") is float ls ? ls : 0f;
+            return $"laid={Get("_laid")} caught={Get("_caught")} graze={Get("_grazeOnly")} hold={Hold(0)}{Hold(1)} " +
+                   $"pair={pairState} laidAgo={Time.time - laidAt:F1} slingAgo={Time.time - lastSling:F1} " +
+                   $"auto={ai.Vessel.VesselStatus.AutoPilotEnabled}";
         }
 
         static void AppendLine(Job job, string json)

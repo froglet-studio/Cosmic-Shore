@@ -50,7 +50,10 @@ HULLS = {
     "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60},   # a 72 u turning circle at any warp
     "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50},
     "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50},
-    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45},   # cannot slow quickly: a little more care
+    # cannot slow quickly: a little more care. The Manta's longer look-ahead (2026-11-03): at the card's Time-10 324 u/s
+    # its nose lag carried it 60-100 u wide of the line at I1's rings - it missed 7-12 mouths a race (Regatta Hull Benchmark).
+    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45,
+                "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0},
 }
 
 

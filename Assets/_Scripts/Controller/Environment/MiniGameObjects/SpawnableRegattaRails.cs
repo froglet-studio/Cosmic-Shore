@@ -123,8 +123,13 @@ namespace CosmicShore.Gameplay
                 // window, only the length on a bend gives way. Same count, same poses.
                 var len = RegattaCourse.FlushRailLengths(pos, rot, prismScale);
                 int start = _cachedLays.Count;
+                // The middle of each leg in no team's colour (RegattaCourse.NeutralShareFor): the rider's lever.
+                float neutral = RegattaCourse.NeutralShareFor(courseIntensity);
                 for (int k = 0; k < pos.Length; k++)
-                    Emit(pos[k], rot[k], new Vector3(prismScale.x, prismScale.y, len[k]), dom, PrismKind.SuperShielded);
+                {
+                    var prismDomain = RegattaCourse.InNeutralStretch(pos[k], gates, neutral) ? RegattaCourse.NeutralDomain : dom;
+                    Emit(pos[k], rot[k], new Vector3(prismScale.x, prismScale.y, len[k]), prismDomain, PrismKind.SuperShielded);
+                }
                 _laneLayStart.Add(start);
                 _laneLayCount.Add(_cachedLays.Count - start);
             }
