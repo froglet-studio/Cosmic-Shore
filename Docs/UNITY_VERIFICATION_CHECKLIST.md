@@ -330,6 +330,24 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
+### 🔴 Dolphin omni-crystal morph made subtle: the blast is never covered (`claude/dolphin-morph-subtle`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's feedback on the morph above ("it occludes the explosion and destroying prism"). The cone is
+no longer hidden while the plates fly (`AOEConicExplosion.SetMorphStandIn` removed). The crystal body draws see-through
+(`CrystalMorphRunner.DrawsSeeThrough`: an alpha-blended, no-depth-write clone of its material via new
+`OmniCrystalFresnelShader` properties whose defaults are the old opaque pass) and thins as (1 − progress)^`fadePower`
+(new field on `DolphinCrystalMorphByCrystal.asset`, default 2). Record: `DOLPHIN_CRYSTAL_MORPH.md` §3a.
+
+**Verified without the editor:** see the PR (harness, `unity_refcompile`). The shader change has not been compiled by
+Unity.
+
+**Test:**
+1. Fly a Dolphin through an omni crystal. Expected: the blast cone and the prisms it breaks are visible from the first
+   frame; the crystal stretches faintly onto the cone and is gone well before ~0.4 s; no husk spray; the shader compiles
+   (no pink).
+2. Tune `fadePower` on the asset if it is still too visible (higher is subtler) or invisible.
+3. Regression: Squirrel, Scarab, Shrike and sphere-blast morphs look as before, and resting omni crystals are unchanged.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
