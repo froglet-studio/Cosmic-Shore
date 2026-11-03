@@ -130,6 +130,11 @@ and `Docs/Reports/AI_LEARNING.md` shows "You won N of M" per hull and intensity.
 
 ## 7. A drive per intensity: which races teach it (2026-10-26)
 
+**What these files are for since 2026-11-02 (Yash, `AI_PLAN.md` decision 1):** the sweep keeps learning them from
+people, and they are the SEEDS of the vessel's one universal Time search, never its result. For the Dolphin that is
+the compute job `switchback-dolphin-time` (`Tools/Compute/evaluators/switchback_fit.py`): its first generation is the
+mode-wide drive and every `_I<n>` file as shipped, plus mutations of each, scored on I1-I4 together.
+
 In a `PER_INTENSITY_MODES` mode (Switchback) each intensity of a policy hull learns its own `<policy>_<mode>_I<n>`
 (`MINIGAME_TRAINING_PLAN.md` §3.6). Two rules decide which races teach what (§3.7):
 - **Only the intensity's current course.** A flight records its rings; the newest flight's mouth radius decides the

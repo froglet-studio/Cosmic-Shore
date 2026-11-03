@@ -15,7 +15,8 @@ namespace CosmicShore.UI
     {
         /// <summary>The device is touch-first: a phone, a tablet, or a phone's browser.</summary>
         public static bool IsTouchPrimary =>
-            Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld;
+            Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld
+            || CosmicShore.Gameplay.EditorTouchOverride.IsForced; // Unity Remote / Editor toggle; false in builds
 
         /// <summary>True when keycaps and control chips should be drawn.</summary>
         public static bool ShowsControlHints => !IsTouchPrimary || Gamepad.current != null;

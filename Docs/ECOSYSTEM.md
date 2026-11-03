@@ -12947,3 +12947,26 @@ from all three, Hesperides stays the native cell. Open: the bee's COLOUR (one ma
 domain colour, so the stripes are grooves, not yellow and black; a second slot would need the spindle LOD to own two
 materials), whether a client's hive should replicate its three-domain comb (store-paid cells are laid where the bees
 sting, on the simulation's authority), and how the model reads at gameplay distance in the Editor.
+
+## 67. The path corridor keeps its mass out of the targeting grids (Nov 2026)
+
+**What the corridor was.** Switchback sets a fauna path corridor (`FaunaCorridor`, `Cell.SetFaunaPathCorridor`, 220 u
+round the gate-to-gate path at I1-I4): nothing is born in it, every goal is pushed out of it, and mass inside it is not
+prey (`Cell.IsPreyForHerbivore`). A diet + steering pen, never a wall.
+
+**What the 2026-11-02 PC playtest found.** The boids piled up on the corridor's skin, 207-222 u from the path, 2-3
+LightFauna sat inside it at 139-190 u, and all 16 fauna ended up within 256 u of the path, leaving the cell away from
+the course empty. The cause was the targeting grids: the race trail is the densest mass in a Switchback cell, so
+`GetDensestRegionAnyDomain` (every forager's, worm's and Frenzy goal) and `GetExplosionTarget` sat on the path, the
+corridor pushed every one of those goals to the same wall, and creatures overshooting a goal parked on the wall crossed
+into the tube between steering ticks.
+
+**The rule now.** Mass inside the corridor is kept out of the TARGETING grids exactly as nucleus-interior mass and inedible
+shields are (`Cell.IsTargetable`): the centroids never steer a swarm onto mass it may not eat. Setting or clearing the
+corridor re-files every tracked prism whose classification changed (`Cell.RefileForCorridor`). Volume, per-domain counts and
+the phase backstop are untouched - corridor mass is still mass. A goal that is still pushed out of the tube (a Calm
+creature's crystal on the course) lands `FaunaCorridor.GoalStandoff` past the wall (Switchback: 50 u), so an overshoot
+stays outside. Invariants: no culling, no teleport, no decay, no domain asymmetry - a diet and steering change only.
+
+**Side effect to know.** Anything else that reads the densest region in a corridor cell reads it without the corridor's
+mass: the spawner's fauna birth point (desired - nothing is born on the path) and the pilot-sight densest-mass hint.

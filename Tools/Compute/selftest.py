@@ -27,7 +27,8 @@ sys.path.insert(0, os.path.join(REPO, "Tools", "Build"))
 
 import compute_lib as L  # noqa: E402
 
-EVALUATORS = ("toy", "drive_fit", "regatta_course", "regatta_elements", "bioform_forms", "skimrace_fit")
+EVALUATORS = ("toy", "drive_fit", "regatta_course", "regatta_elements", "bioform_forms", "skimrace_fit", "switchback_fit",
+              "redline_fit")
 
 
 def _git(*a, cwd, env=None):

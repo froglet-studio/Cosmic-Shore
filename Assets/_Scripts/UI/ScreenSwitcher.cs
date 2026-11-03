@@ -892,8 +892,9 @@ namespace CosmicShore.UI
                 // preview holding the stick leaves the pad one way forward.
                 if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
                 {
-                    if (Gamepad.current.leftShoulder.wasPressedThisFrame) SlideHubWindow(-1);
-                    else if (Gamepad.current.rightShoulder.wasPressedThisFrame) SlideHubWindow(+1);
+                    // A window with tabs of its own (the Voyage window) holds LB / RB while it is open (HubShoulders).
+                    if (!HubShoulders.Claimed && Gamepad.current.leftShoulder.wasPressedThisFrame) SlideHubWindow(-1);
+                    else if (!HubShoulders.Claimed && Gamepad.current.rightShoulder.wasPressedThisFrame) SlideHubWindow(+1);
                     else if (Gamepad.current.leftTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateLeft(); }
                     else if (Gamepad.current.rightTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateRight(); }
                 }
