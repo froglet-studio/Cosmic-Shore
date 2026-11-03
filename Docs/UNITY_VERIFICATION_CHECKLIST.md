@@ -2539,7 +2539,7 @@ New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_m
 
 **Verify in editor:**
 1. Run `ElementalCrystalShadeTests` and `OmniCombineTests` (EditMode): all pass.
-2. Open `OriginalColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
+2. Open `PhoticColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
 3. Play any mode with free crystals (or kill a lifeform of each element): a free Mass crystal is a visibly darker,
    deeper green than the omni; Space reads cooler and Time warmer; Charge reads yellow-green. All still read as lime.
 4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
@@ -5155,7 +5155,7 @@ T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime je
   rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
   in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
 - **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
-  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  `PhoticColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
   right.
 
 Verify in the Editor:

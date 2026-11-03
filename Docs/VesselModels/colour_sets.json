@@ -1,6 +1,6 @@
 {
   "format": "cosmic-shore-colour-sets/1",
-  "status": "PROPOSED colour sets (unlockable palettes). Each set gives every domain its own regions of OKLab; the six-family truth in colour_domains.json is untouched and still governs the original palette.",
+  "status": "Colour sets. Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03.",
   "checker": "python3 Tools/Build/colour_sets.py --check",
   "lab": "Docs/Studios/ColourSetsLab.html",
   "artifact": "https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf",
@@ -11,7 +11,7 @@
     "face": "SO_ColorSet DomainColorSet.OutsideBlockColor and its shielded twins: the prism's base face (_DarkColor).",
     "fire": "Fire and Lime are not DomainColorSets: Fire is EnvironmentColors.Danger (the danger rim over the domain's shielded face), Lime is the CTA pair (BrightCTA rim, DarkCTA body). How a set paints them is an open decision (see open)."
   },
-  "unity": "Tools/Build/author_colour_set_assets.py writes each set as Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset (Dart Frog: DartFrogColorSetSO.asset). Every field takes its hue from one pigment of its domain and keeps OriginalColorSetSO's alpha and tier whiteness; rim fields keep the original's (HDR) brightness, face fields take their face pigment's own lightness, scaled by the original's step between tiers; Danger wears the Fire rim, BrightCTA and DarkCTA both wear the Lime rim, ElementalCrystalColors are copied. --check fails on drift or on any field that lands in another domain's pigment. To try a set, put its asset in ThemeManagerDataContainer.asset's ColorSet slot.",
+  "unity": "Tools/Build/author_colour_set_assets.py writes each set as Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset (Dart Frog: DartFrogColorSetSO.asset). Every field takes its hue from one pigment of its domain and keeps PhoticColorSetSO's alpha and tier whiteness; rim fields keep the original's (HDR) brightness, face fields take their face pigment's own lightness, scaled by the original's step between tiers; Danger wears the Fire rim, BrightCTA and DarkCTA both wear the Lime rim, ElementalCrystalColors are copied. --check fails on drift or on any field that lands in another domain's pigment. The default is the set named by ThemeManagerDataContainer.asset's ColorSet slot and by the prefabs that hold a palette directly (ThemeManager, ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal); PhoticColorSetSO is the palette every field's tuning comes from.",
   "sets": {
     "dart_frog": {
       "name": "Dart Frog",
@@ -59,9 +59,9 @@
     },
     "nocturne": {
       "name": "Nocturne",
-      "track": "default contender",
+      "track": "the default",
       "proposed": "2026-11-03",
-      "by": "Claude, asked by Garrett for the most beautiful set it could make, a contender for the default palette",
+      "by": "Claude, asked by Garrett for the most beautiful set it could make; Garrett made it the default on 2026-11-03 after playing it",
       "summary": "Every prism is a lantern. The rim glows in its family's own hue and carries the domain; the face is a deep jewel tone of a different hue, all six faces in one night-dark band (mid L 0.27 to 0.32) so no body outshines another and the bodies read as tinted glass. Rims sit at mid L 0.66 to 0.85.",
       "margin": 0.05,
       "pigment_gap": 0.05,
@@ -104,7 +104,6 @@
   "open": [
     "Lime as the CTA pair: DarkCTA paints about 93% of a free crystal, so a face pigment there makes free pickups read as oxblood. The Unity asset keeps the CTA lime on both halves for now; the Lime face (Oxblood) has no field.",
     "Fire as danger: danger is a shared rim over each domain's shielded face, so Fire's own face pigment (Denim) has nowhere to go in SO_ColorSet today. The Unity asset paints Danger with the Fire rim (Strawberry) only.",
-    "Nocturne as the default: it would replace OriginalColorSetSO in ThemeManagerDataContainer. Garrett decides after playing it.",
     "The free colour-blind sets (protan, deutan, tritan) need the same rules applied to the simulated colours; colour_sets.py --report already prints how each set fares under each."
   ]
 }

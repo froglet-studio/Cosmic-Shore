@@ -9933,7 +9933,7 @@ MonoBehaviour:
   vessels: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
   catalog: {fileID: 11400000, guid: 7dd1d2e8e9453236b7370f4895e4afca, type: 2}
   cardArt: {fileID: 11400000, guid: 95b8c3657701e162c43795a8e4769e47, type: 2}
-  colors: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
+  colors: {fileID: 11400000, guid: 116ff08ebc0c4e6db955bab003a86ce4, type: 2}
   squadRows:
   - {fileID: 1114577161959902744}
   - {fileID: 453993729164576032}

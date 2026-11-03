@@ -2,7 +2,7 @@
 """Writes each colour set of Docs/VesselModels/colour_sets.json as an SO_ColorSet palette asset Unity can load.
 
 A set (Tools/Build/colour_sets.py) gives every domain two pigments, a rim and a face. A palette asset has ~20 colours per
-domain, each tuned in OriginalColorSetSO for its own job: HDR rims sized for bloom, near-black crystal bodies, whitened
+domain, each tuned in PhoticColorSetSO for its own job: HDR rims sized for bloom, near-black crystal bodies, whitened
 shielded tiers. So the writer keeps everything the original tuned and takes only the HUE from the set:
 
   * every field wears one pigment of its domain (FIELD_ROLE: the prism rims and the bright, signal-like fields wear the
@@ -45,7 +45,7 @@ sys.path.insert(0, HERE)
 import colour_sets as cs  # noqa: E402
 
 PALETTES = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes")
-ORIGINAL = os.path.join(PALETTES, "OriginalColorSetSO.asset")
+PHOTIC = os.path.join(PALETTES, "PhoticColorSetSO.asset")
 SCRIPT_GUID = "a1c7edc523dbbef4bbe8c3e97ba840c7"   # SO_ColorSet.cs
 DOMAIN_SETS = (("JadeColors", "jade"), ("RubyColors", "ruby"), ("GoldColors", "gold"), ("BlueColors", "blue"))
 SRGB_FIELDS = {"UIAccentColor"}                    # not [ColorUsage(true, true)]: stored as sRGB
@@ -72,7 +72,7 @@ def asset_path(key):
 
 
 # ----------------------------------------------------------------------------- reading the original
-def read_original(path=ORIGINAL):
+def read_original(path=PHOTIC):
     with open(path, encoding="utf-8") as fh:
         return parse(fh.read())
 
