@@ -446,7 +446,12 @@ shipped rule as a control beside four candidate fixes, all fed one stick (auto s
 frame clock (display, 120, 60 or 30 fps), with a headless scorecard:
 - **Keep turning forward:** while the stick sweeps, the ring only hands over to the turret ahead.
 - **Faster ring:** `ringTurnRate` alone. At 1800°/s it fails again at 6 rev/s, where 60 fps strobes the pentagon.
-- **Forward + motion smear.**
+- **Forward + motion smear:** kept by Garrett (2026-11-03), with the smear normalized to add no brightness. The copies'
+  weights sum to one and are averaged in float (WebGL2, a float render target), so a smeared ring spreads the still
+  ring's light and never brightens it. Measured on the page's own canvas: the smeared ring is within −1.2%..−0.3% of
+  the still ring at 5-60° a frame. The first cut summed the copies with weights adding to 1.5 (+25..+58%), and plain 8-bit
+  canvas averaging still brightens (+9% at 15 copies, +18% at 24), because every small contribution rounds up. A Unity
+  port must average the same way: a rotational blur whose taps sum to 1, in a float or HDR target.
 - **Flywheel.**
 
 No Unity change yet: waiting on Garrett's pick.

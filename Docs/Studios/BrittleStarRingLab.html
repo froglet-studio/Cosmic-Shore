@@ -202,7 +202,7 @@ td.bad { color: var(--bad); }
       <ul>
         <li><b style="color:var(--v1)">Keep turning forward</b>: <code>AimRing</code> keeps the turret it committed to. While the stick sweeps, it only changes to the next turret <b>ahead</b> in the sweep direction, never one behind. Same 540°/s cap. About 20 lines in <code>BrittleStarRules</code>, no asset change.</li>
         <li><b style="color:var(--v2)">Faster ring</b>: keep the code and raise <code>ringTurnRate</code>. One number, but the same failure returns past the new limit. Near 2160°/s at 60 fps the pentagon moves exactly half a turret spacing per frame, which is true strobing.</li>
-        <li><b style="color:var(--v3)">Forward + motion smear</b>: the forward rule with a faster cap, and the drawn ring smeared across the angle it swept that frame (a rotational blur on the ring's material, or ghost copies). Hides display aliasing at any speed. Needs shader or mesh work in <code>BrittleStarAnimation</code>.</li>
+        <li><b style="color:var(--v3)">Forward + motion smear</b>: the forward rule with a faster cap, and the drawn ring smeared across the angle it swept that frame (a rotational blur on the ring's material, or ghost copies whose weights sum to one, so the smear spreads the ring's light without adding any). Hides display aliasing at any speed. Needs shader or mesh work in <code>BrittleStarAnimation</code>.</li>
         <li><b style="color:var(--v4)">Flywheel</b>: the ring has its own spin speed. It matches the stick's sweep rate up to a cap, accelerates with limited torque, and settles onto the committed turret when the stick stops. The ring then reads as heavy rather than glued to the stick.</li>
       </ul>
     </div>
@@ -334,7 +334,7 @@ const VARIANTS = [
   },
   {
     id: 'smear', name: 'Forward + motion smear', tag: 'logic + look', color: 'var(--v3)',
-    desc: 'The forward rule at a faster cap, and the ring drawn smeared over the angle it turned this frame.',
+    desc: 'The forward rule at a faster cap, and the ring drawn smeared over the angle it turned this frame: the copies are averaged, so the smear adds no brightness.',
     params: [{ k: 'rate', label: 'Turn rate', min: 180, max: 3600, step: 30, unit: '°/s' },
              { k: 'smear', label: 'Smear', min: 0, max: 1.5, step: 0.05, unit: '×' }], p: { rate: 1080, smear: 1, sweep: 90 },
     smearDraw: true,
@@ -551,12 +551,25 @@ function fitCanvas(c) {
   const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w, h };
 }
 
-function drawRing(ctx, view, phase, alpha, opts) {
+function ringPoints(phase) {
   const pts = [];
   for (let i = 0; i < POINTS; i++) {
     const a = pointAngle(i) + phase;
     pts.push({ x: Math.cos(a) * RING_R, y: Math.sin(a) * RING_R, a });
   }
+  return pts;
+}
+
+function drawMarkers(ctx, view, pts, opts) {
+  pts.forEach((p, i) => {
+    const tail = project({ x: p.x, y: p.y, z: POD_TAIL }, view), r = 0.36 * tail.s;
+    if (opts.mark && i === 0) { ctx.fillStyle = '#ff4fa3'; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 0.7, 0, TAU); ctx.fill(); }
+    if (opts.aimed === i) { ctx.strokeStyle = opts.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 1.7, 0, TAU); ctx.stroke(); }
+  });
+}
+
+function drawRing(ctx, view, phase, alpha, opts) {
+  const pts = ringPoints(phase);
   ctx.globalAlpha = alpha;
   // arms: hub to each point (thin)
   ctx.strokeStyle = COL.dim; ctx.lineWidth = Math.max(1, 0.18 * view.unit);
@@ -567,7 +580,7 @@ function drawRing(ctx, view, phase, alpha, opts) {
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (let pass = 0; pass < 2; pass++) {
     ctx.strokeStyle = pass ? '#cfeffa' : COL.ring; ctx.lineWidth = (pass ? 0.12 : 0.44) * view.unit;
-    if (!pass) { ctx.shadowColor = COL.ring; ctx.shadowBlur = 10 * alpha; }
+    if (!pass) { ctx.shadowColor = COL.ring; ctx.shadowBlur = alpha > 0 ? 10 : 0; }
     ctx.beginPath();
     pts.forEach((p, i) => { const q = project({ x: p.x, y: p.y, z: RING_Z }, view); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); });
     ctx.closePath(); ctx.stroke(); ctx.shadowBlur = 0;
@@ -583,9 +596,8 @@ function drawRing(ctx, view, phase, alpha, opts) {
     g.addColorStop(0, '#e9f3f8'); g.addColorStop(0.6, '#6f8597'); g.addColorStop(1, '#27323d');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(tail.x, tail.y, r, 0, TAU); ctx.fill();
     ctx.fillStyle = '#0a0f14'; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 0.45, 0, TAU); ctx.fill();
-    if (opts.mark && i === 0) { ctx.fillStyle = '#ff4fa3'; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 0.7, 0, TAU); ctx.fill(); }
-    if (opts.aimed === i) { ctx.strokeStyle = opts.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 1.7, 0, TAU); ctx.stroke(); }
   });
+  drawMarkers(ctx, view, pts, opts);
   ctx.globalAlpha = 1;
   return pts;
 }
@@ -612,6 +624,127 @@ function drawFlames(ctx, view, pts, lit, t) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
+// The smear's average, done in FLOAT. Summing the copies on a 2D canvas at weight 1/n rounds every small contribution
+// to 8 bits, and that rounding brightens: +9% at 15 copies, +18% at 24. So each copy is drawn whole on a scratch
+// canvas and added (premultiplied) into a float target at weight 1/n; the mean is quantized once, at the end.
+// GPU path: WebGL2 with a float render target. Fallback: the same sum on the CPU over the ring's box (slower).
+const SMEAR_VS = `#version 300 es
+out vec2 uv;
+void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); uv = p; gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const SMEAR_ADD = `#version 300 es
+precision highp float; in vec2 uv; uniform sampler2D t; uniform float wgt; out vec4 o;
+void main() { o = texture(t, vec2(uv.x, 1.0 - uv.y)) * wgt; }`;
+const SMEAR_OUT = `#version 300 es
+precision highp float; in vec2 uv; uniform sampler2D t; out vec4 o;
+void main() { o = texture(t, uv); }`;
+function smearGL(sc) {
+  if (sc.smearGL !== undefined) return sc.smearGL;
+  sc.smearGL = null;
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, alpha: true, antialias: false, depth: false, preserveDrawingBuffer: true });
+    if (!gl || !gl.getExtension('EXT_color_buffer_float')) return null;
+    const fmt = gl.getExtension('EXT_float_blend') ? gl.RGBA32F : gl.RGBA16F;
+    const prog = (fs) => {
+      const pr = gl.createProgram();
+      for (const [type, src] of [[gl.VERTEX_SHADER, SMEAR_VS], [gl.FRAGMENT_SHADER, fs]]) {
+        const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+        gl.attachShader(pr, sh);
+      }
+      gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+      return pr;
+    };
+    const tex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+      for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+      return t; };
+    const add = prog(SMEAR_ADD), out = prog(SMEAR_OUT);
+    sc.smearGL = { canvas, gl, fmt, add, out, wgt: gl.getUniformLocation(add, 'wgt'), copy: tex(), sum: tex(), fbo: gl.createFramebuffer(),
+                   one: document.createElement('canvas').getContext('2d'), W: 0, H: 0 };
+  } catch (_) { sc.smearGL = null; }
+  return sc.smearGL;
+}
+// The ring's box on the canvas, in device pixels: its corners at the pods' tails and the muzzles, plus the glow.
+function ringBox(view, W, H, sx, sy) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const e = RING_R + 0.6, m = 18;
+  for (const z of [POD_TAIL, MUZZLE_Z]) for (const x of [-e, e]) for (const y of [-e, e]) {
+    const q = project({ x, y, z }, view);
+    x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y);
+  }
+  const bx = clamp(Math.floor((x0 - m) * sx), 0, W), by = clamp(Math.floor((y0 - m) * sy), 0, H);
+  return { bx, by, bw: clamp(Math.ceil((x1 + m) * sx), 0, W) - bx, bh: clamp(Math.ceil((y1 + m) * sy), 0, H) - by };
+}
+function smearAverage(sc, target, w, h, view, phases) {
+  const G = smearGL(sc);
+  return G ? smearAverageGL(G, target, w, h, view, phases) : smearAverageCPU(sc, target, w, h, view, phases);
+}
+function smearAverageGL(G, target, w, h, view, phases) {
+  // Only the ring's box is drawn and uploaded: the copies are drawn on a box-sized canvas and summed into that
+  // window of the full-size float target.
+  const { gl, one } = G, W = target.width, H = target.height, sx = W / w, sy = H / h;
+  if (G.W !== W || G.H !== H) {
+    G.W = W; G.H = H; G.canvas.width = W; G.canvas.height = H;
+    gl.bindTexture(gl.TEXTURE_2D, G.sum); gl.texImage2D(gl.TEXTURE_2D, 0, G.fmt, W, H, 0, gl.RGBA, gl.FLOAT, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, G.sum, 0);
+  }
+  const { bx, by, bw, bh } = ringBox(view, W, H, sx, sy);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo); gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  if (bw <= 0 || bh <= 0) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.clear(gl.COLOR_BUFFER_BIT); return G.canvas; }
+  if (one.canvas.width !== bw || one.canvas.height !== bh) { one.canvas.width = bw; one.canvas.height = bh; }
+  gl.viewport(bx, H - by - bh, bw, bh);   // GL's origin is the bottom-left
+  gl.useProgram(G.add); gl.uniform1f(G.wgt, 1 / phases.length);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.copy);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  for (const phase of phases) {
+    one.setTransform(1, 0, 0, 1, 0, 0); one.clearRect(0, 0, bw, bh);
+    one.setTransform(sx, 0, 0, sy, -bx, -by);
+    drawRing(one, view, phase, 1, { mark: false, aimed: -1 });
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, one.canvas);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  gl.disable(gl.BLEND);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(G.out); gl.bindTexture(gl.TEXTURE_2D, G.sum); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  return G.canvas;
+}
+function smearAverageCPU(sc, target, w, h, view, phases) {
+  const W = target.width, H = target.height, sx = W / w, sy = H / h;
+  if (!sc.smear) sc.smear = {
+    one: document.createElement('canvas').getContext('2d', { willReadFrequently: true }),
+    out: document.createElement('canvas').getContext('2d'),
+  };
+  const { one, out } = sc.smear;
+  for (const l of [one, out]) if (l.canvas.width !== W || l.canvas.height !== H) { l.canvas.width = W; l.canvas.height = H; }
+  const { bx, by, bw, bh } = ringBox(view, W, H, sx, sy);
+  out.setTransform(1, 0, 0, 1, 0, 0); out.clearRect(0, 0, W, H);
+  if (bw <= 0 || bh <= 0) return out.canvas;
+  const len = bw * bh * 4;
+  if (!sc.smear.acc || sc.smear.acc.length !== len) sc.smear.acc = new Float32Array(len); else sc.smear.acc.fill(0);
+  const acc = sc.smear.acc;
+  for (const phase of phases) {
+    one.setTransform(1, 0, 0, 1, 0, 0); one.clearRect(bx, by, bw, bh);
+    one.setTransform(sx, 0, 0, sy, 0, 0);
+    drawRing(one, view, phase, 1, { mark: false, aimed: -1 });
+    const d = one.getImageData(bx, by, bw, bh).data;
+    for (let i = 0; i < len; i += 4) {
+      const a = d[i + 3];
+      if (!a) continue;
+      acc[i] += d[i] * a; acc[i + 1] += d[i + 1] * a; acc[i + 2] += d[i + 2] * a; acc[i + 3] += a;
+    }
+  }
+  const img = out.createImageData(bw, bh), o = img.data, n = phases.length;
+  for (let i = 0; i < len; i += 4) {
+    const a = acc[i + 3];
+    if (!a) continue;
+    o[i] = acc[i] / a; o[i + 1] = acc[i + 1] / a; o[i + 2] = acc[i + 2] / a; o[i + 3] = a / n;   // Uint8Clamped rounds
+  }
+  out.putImageData(img, bx, by);
+  return out.canvas;
+}
+
 function drawScope(sc) {
   const { ctx, w, h } = fitCanvas(sc.view);
   const view = { cx: w / 2, cy: h * 0.52, f: h * 1.05 / (2 * Math.tan(25 * DEG)) };
@@ -628,12 +761,13 @@ function drawScope(sc) {
   let pts;
   const sweptDeg = (st.phase - st.prevPhase) / DEG;
   if (sc.v.smearDraw && sc.v.p.smear > 0 && Math.abs(sweptDeg) > 1.5) {
-    // smear: the ring as exposed over the angle it turned this frame
-    const span = sweptDeg * sc.v.p.smear * DEG, n = clamp(Math.ceil(Math.abs(sweptDeg * sc.v.p.smear) / 2.5), 2, 30);
-    ctx.globalCompositeOperation = 'lighter';
-    for (let k = 0; k < n; k++) drawRing(ctx, view, st.phase - span * (k / (n - 1)), 1.25 / n + (k === 0 ? 0.25 : 0), { mark: opts.mark, aimed: -1 });
-    ctx.globalCompositeOperation = 'source-over';
-    pts = drawRing(ctx, view, st.phase, opts.aimed >= 0 || opts.mark ? 0.35 : 0.0, opts);
+    // smear: the ring as exposed over the angle it turned this frame (a box shutter), the copies AVERAGED so the
+    // smear adds no brightness: where every copy overlaps it is exactly the still ring, and nowhere brighter.
+    const span = sweptDeg * sc.v.p.smear * DEG, n = clamp(Math.ceil(Math.abs(sweptDeg * sc.v.p.smear) / 2.5), 2, 24);
+    const phases = Array.from({ length: n }, (_, k) => st.phase - span * (k / (n - 1)));
+    ctx.drawImage(smearAverage(sc, ctx.canvas, w, h, view, phases), 0, 0, w, h);
+    pts = ringPoints(st.phase);
+    drawMarkers(ctx, view, pts, opts);
   } else pts = drawRing(ctx, view, st.phase, 1, opts);
   // cockpit
   const hub = project({ x: 0, y: 0, z: -0.2 }, view), hr = 0.75 * hub.s;
@@ -811,7 +945,7 @@ function start() {
 }
 addEventListener('resize', () => { drawScore(); renderAll(); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawScore(); });
-window.__lab = { VARIANTS, runHeadless, shared, sim, input, scopes };
+window.__lab = { VARIANTS, runHeadless, shared, sim, input, scopes, drawScope, smearGL };
 start();
 })();
 </script>
