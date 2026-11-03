@@ -289,13 +289,21 @@ HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Spa
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
 
+# Time levels MEASURED in the real game, over the model's (2026-11-03, the Regatta Hull Benchmark: each hull's AI alone, I1,
+# Legendary, two races a level). The model has no Regatta race for these: it priced the Stoat before its AI pressed for the
+# warp on a race line (StoatSlingConfig_Regatta) and keeps the Squirrel off its tunable list though Time raises its skim
+# energy. Stoat: Time 10 -> 44 s, 3 -> 66-74 s, 0 -> 103-126 s (the competent field runs 60-100 s). Squirrel: Time 10 ->
+# 75 s against 77-81 at rest. Only I1 is measured; the other intensities keep the model's levels.
+MEASURED_TIME = {1: {"Stoat": 3, "Squirrel": 10}}
+
+
 def starting_element_rows() -> str:
     """One row per (hull, intensity) the model tunes off rest; a hull at rest everywhere gets no
     row (the platform default IS rest, and a row of zeros would say the card decided it)."""
     rows = []
     for i in range(1, 5):
         for h in HULL_ORDER:
-            lv = BALANCE[i]["levels"][h]
+            lv = MEASURED_TIME.get(i, {}).get(h, BALANCE[i]["levels"][h])
             if lv == 0:
                 continue
             rows.append(f"  - Class: {lib.VESSEL_CLASS_ID[h]}\n    Intensity: {i}\n    Levels:\n"

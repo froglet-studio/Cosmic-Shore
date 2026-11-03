@@ -561,7 +561,13 @@ namespace CosmicShore.Editor.AI
                     yield return null;
                 }
                 rec.seconds = Time.time - start;
-                for (int k = 0; k < ais.Count; k++) pilots[k].gates = last[k];
+                host = gameData.LocalPlayer;   // its domain is assigned at spawn, after the scene is first seen
+                rec.hostDomain = host != null ? host.Domain.ToString() : "";
+                for (int k = 0; k < ais.Count; k++)
+                {
+                    pilots[k].gates = last[k];
+                    pilots[k].ally = host != null && ais[k].Domain == host.Domain;
+                }
                 rec.pilots = pilots;
                 AppendLine(job, JsonUtility.ToJson(rec));
                 Debug.Log($"[RegattaHullBenchmark] grid race {race}: {rec.outcome} {rec.seconds:F1} s - " +

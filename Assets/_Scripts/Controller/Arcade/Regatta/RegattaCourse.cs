@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static float NeutralShareFor(int intensity) =>
             RailNeutralShareOverride >= 0f ? RailNeutralShareOverride
-            : new[] { 0f, 0f, 0f, 0f }[Mathf.Clamp(intensity, 1, 4) - 1];
+            : new[] { 0.3f, 0f, 0f, 0f }[Mathf.Clamp(intensity, 1, 4) - 1];   // I1 measured (Urchin 51 -> 73-76 s); I2-I4 not yet
 
         /// <summary>A benchmark's or a test's override of <see cref="NeutralShareFor"/> for every intensity, or -1 for none.
         /// Read where the arena lays its rails, like <see cref="CourseSeedOverride"/>; nothing in a match sets it.</summary>

@@ -9,6 +9,67 @@ up to the learned Squirrel by PRs #1150, #1154 and #1165, the rest by the `Ys-bl
 Dolphin and Manta drives). The Manta, Rhino and Dolphin now carry numbers taken from Yash's own flights. **None of the
 AI changes has been played in the Unity editor.** That is the next step (section 5).
 
+## 2026-11-03: measured in the real game (Garrett's balance pass, branch `claude/regatta-overnight-balance`)
+
+**The first Regatta numbers from the real game.** The Regatta Hull Benchmark (FrogletTools > AI > Regatta Hull Benchmark,
+or headless: `RegattaHullBenchmark.RunBatch`) races each hull's AI ALONE against an idle host through the normal launch,
+I1, Legendary, and records every gate, a 0.25 s flight trace, the rings and (for the Stoat) its sling state. Results in
+`BenchmarkResults/RegattaHulls/` (git-ignored). Seconds for three laps, two to three races each:
+
+| Hull | Shipped (11-02) | Now on the branch | What changed it |
+|---|---:|---:|---|
+| Urchin | 51 | 73-76 | the neutral rail stretch (below); its AI was already sound |
+| Manta | 63-131 | 62-72 | the AI line runs nearer the ring's centre: no missed mouth in 47 crossings |
+| Squirrel | 96-106 | 75 | Time 10 on the card (77-81 at rest) |
+| Rhino | 126-188 | 77-113 | the nearer line: no missed mouth |
+| Dolphin | 85-143 | 82-113 | the nearer line: no missed mouth |
+| Serpent | not measured | 98-102 | (cruise-only since 10-31, still finishes) |
+| Sparrow | not measured | 117-150 | slowest; no misses, slowed by rail rams and afterburner gaps |
+| Stoat | 202-224 | 66-74 | two fixes (below) and Time 3 on the card (Time 10: 44 s) |
+| Scarab | 110-175 | 67-122 | longer look-ahead; still misses 6-20 mouths a race |
+
+**Why the AIs were slow, from the traces.**
+1. **Missed mouths.** People cross the rings 0.68-0.81 of the way out and the AI lines were learned there; an AI tracking
+   a look-ahead point crossed the plane BESIDE the mouth and then lost 5-50 s extending and re-attacking. The AI line is
+   now capped at 0.35 of the way out (`author_race_lines.py` `AI_LANE_SHARE_CAP`; people's learned shares stay in
+   `race_lines_learned.json`). Lifting the throttle to turn back tighter was tried and reverted: a Scarab's speed is its
+   Time ceiling, not its throttle.
+2. **The AI Stoat stopped slinging.** (a) A pair that expired un-caught left that trigger side HELD for an autopilot,
+   so it never laid another on that side (`StoatSlingExecutor`, fixed). (b) Since 4c070c9689 the base config's
+   `aiWarpMinDistance` is 0 (speed is earned by timed launches out of turns), and Regatta's race line has almost no turn
+   to press for: 60 u/s cruise. `StoatSlingConfig_Regatta` (the learner's writer) presses for the warp on a 280 u leg, in
+   Regatta only. Yash's call.
+3. **The Scarab outruns its turn** at Time 10 (324 u/s): it tracks 60-100 u wide of its line at I1's rings. Time 5 or a
+   longer look-ahead halves the misses; a steering fix (lead the nose lag) is the open item.
+
+**The course.** `RegattaCourse.NeutralShareFor`: the middle share of every leg's rail is laid in Blue, no team's colour.
+An Urchin rides its own colour at 300 u/s and flies free at about 65, so this reaches the rail RIDER alone - the Squirrel
+skims any colour (measured unchanged) and every other hull only flies beside the rail. I1 ships 0.3 on the branch
+(Urchin 51 -> 60.5 s at 0.15 -> 73-76 s at 0.3); I2-I4 are 0 until measured.
+
+**The elements: insight for the last mile** (`/element-ability-table` and the measured races).
+- **Time is spent where the model put it.** The Sparrow, Scarab and Serpent already start at Time 10 and the Manta at -5
+  (its floor): no Time move is left on those four.
+- **Time reaches the Rhino (ramp wind-up x2.5) and the Squirrel (skim energy), which the model calls untunable.** The
+  Squirrel gains ~3% at Time 10. The Rhino at Time 10 got SLOWER (147-241 s): a faster ramp brings back the missed
+  mouths. Its Time is a lever only after its AI steers better at speed.
+- **The Stoat's Time is the strongest lever on the card**: 44 / 66-74 / 103-126 s at Time 10 / 3 / 0.
+- **The Dolphin's Time does nothing** at I1 in the model or the race; its gap is its drift drive, and in traffic it slows
+  further (112-134 s in a full grid against 82-113 alone).
+- **The Urchin has no element on speed** (Time is its ghost): the neutral rail is its only lever.
+- **What closes the last mile:** the Manta (60-72 s) is now the pace-setter at its Time floor, so either Regatta's I1
+  corners get tighter (stage 2's course search: corners cost the fast, straight-line hulls most), or the Time floor
+  (-5, `ElementalScaling` floor 0.7 on Soar) is lowered for it; the Sparrow (117-150 s) needs a non-Time lever - its
+  rail rams cost it to a near stop, so a line with more rail clearance for it is the first thing to try.
+
+**Seating.** The opponent pin (every opponent a Squirrel) is retired: opponents draw from the card under arena seating,
+so a 3v3 seats six different hulls. In a benchmark grid one seat's pick was refused on a first race (a Squirrel seated
+a Scarab or a Serpent), repeatably; the spawner's warning names why. Not yet traced.
+
+**Not done:** I2-I4 (nothing above was measured there), editor races with a person flying, the AI-plan step names
+(rule 4 says no AI is trained inside an arena game: nothing here was trained - these are bug fixes and card values, all
+proposals for Yash). Full results: the closing table of the 2026-11-03 session.
+
 **Since 2026-11-02 two plans govern this work, and they come before this report.** Garrett's one AI plan
 (`Docs/AI_SYSTEM/AI_PLAN.md`, LOCKED) and Yash's minigame plan (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`) say no AI is
 trained inside Regatta. Each vessel trains in its own Time game at I1-I4, and Regatta's course is then searched against
