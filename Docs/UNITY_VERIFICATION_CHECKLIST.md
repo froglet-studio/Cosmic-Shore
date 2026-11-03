@@ -21020,3 +21020,14 @@ says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
 - [ ] Caught, the orbit turns more slowly, and the ring stays lime long enough to release in it most times (60-120 deg round).
 - [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
 - [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).
+
+## 🟡 No drift slide: a drift never moves the hull on screen (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/no-drift-slide`. Compiled with `unity_refcompile` (player + editor, 0 project errors); the edit-mode
+tests were compiled, not run (the Prisma runner does not build on bleeding-edge today: 63 engine gaps in unrelated files).
+
+1. **Run the edit-mode tests** `CameraFeelTests` (all): `ADrift_NeverMovesTheHullOnScreen` and `ADrift_StillRumbles`
+   pass, and the rest still pass.
+2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
+   its end; only a faint rumble shows. Then a Dolphin drift: same.
+3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
