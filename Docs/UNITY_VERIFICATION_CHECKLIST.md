@@ -21020,3 +21020,22 @@ says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
 - [ ] Caught, the orbit turns more slowly, and the ring stays lime long enough to release in it most times (60-120 deg round).
 - [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
 - [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).
+
+## 🔴 Brittle Star level-5 upgrades and the ring explosion's core (2026-11-03, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `unity_refcompile` player + editor 0 errors in
+project code, `/ship` gates green (incl. `author_brittlestar_assets.py --check`), the element ability table reads
+`L5 gates wired 4/4`. `BrittleStarTests` gained three rule tests (written, not run: no Unity here). Give the hull level 5
+in an element (the Toybox's Vessel Changer, or a starting element) to try each:
+
+1. **Mass 5, Shielded Trail.** Cruise and Creation Mode: every block laid (base trail and the five corner trails) is
+   shielded; overheated in Space Mode the danger prisms are still danger prisms. Below Mass 4 the trail is plain again.
+2. **Space 5, Explosive Rounds.** Fire into a wall: each stopped round breaks the prisms within 10 u round it. Watch the
+   frame time with all five guns held into dense mass (bursts are capped at 12 a frame).
+3. **Charge 5, Thrown Sabers.** Charge Mode, hold RT (sabers), press LT: the five sabers fly off along their lines
+   (centred stick converges them, pushed fans them), tumbling, cutting prisms and striking rival hulls; new cords regrow
+   after ~1.5 s. With RT released (whips), LT throws the ring as before.
+4. **Time 5, Speed Roll.** Speed Mode: the right stick's x rolls the hull, its y pulls the nose; the ring stops turning
+   with the stick while in Speed Mode. Check the roll direction and the pull direction feel right (and Invert Y).
+5. **Ring explosion core (any level).** Throw the ring (LT with a spare) into a cluster: everything within 40 u of the
+   blast breaks at once, then the disk sweeps out in the ring's plane as before.
