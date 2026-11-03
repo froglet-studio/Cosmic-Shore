@@ -285,6 +285,14 @@ namespace CosmicShore.Gameplay
         public virtual void RemoveSpindle(Spindle spindle)
         {
             spindleTracker.Remove(spindle);
+
+            // Spindle.OnDisable skips ITS OWN CheckIfDead during scene unload "so the death
+            // cascade doesn't spawn GameObjects during teardown" - but this call ran it anyway,
+            // so unloading a scene killed every plant: explosions, SFX, and the lazily
+            // created [PrismTimerManager] / [PrismDebris] hosts that Unity then reports as
+            // "objects not cleaned up when closing the scene". Teardown is not a death.
+            if (!gameObject.scene.isLoaded) return;
+
             CheckIfDead();
         }
 
