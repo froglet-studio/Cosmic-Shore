@@ -586,7 +586,7 @@ namespace CosmicShore.Gameplay
         private float _shakeIntensity;
 
         // --- Camera feel (Docs/CAMERA_FEEL.md) ---
-        // Inertia, kicks, shake, rumble, drift lean and breathing, added on top of the settled pose and taken
+        // Inertia, kicks, shake, rumble and breathing, added on top of the settled pose and taken
         // off again at the top of the next frame (UndoFeel). The dynamic and eased rigs smooth FROM the camera's
         // current pose, so a feel offset left in it would be smoothed into the follow itself; taking it off first
         // means every pose, zoom, rear-view and portal line below only ever sees the clean pose.

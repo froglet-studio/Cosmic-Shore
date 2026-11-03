@@ -20850,3 +20850,14 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
    (below Space 5) a Sparrow round still stops on the first prism it meets.
 4. **No new console errors.** A `[ProjectileSweepBatch] build failed` error means the batch fell back to per-round
    queries (correct, but the speed-up is lost): send it.
+
+## 🟡 No drift slide: a drift never moves the hull on screen (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/no-drift-slide`. Compiled with `unity_refcompile` (player + editor, 0 project errors); the edit-mode
+tests were compiled, not run (the Prisma runner does not build on bleeding-edge today: 63 engine gaps in unrelated files).
+
+1. **Run the edit-mode tests** `CameraFeelTests` (all): `ADrift_NeverMovesTheHullOnScreen` and `ADrift_StillRumbles`
+   pass, and the rest still pass.
+2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
+   its end; only a faint rumble shows. Then a Dolphin drift: same.
+3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
