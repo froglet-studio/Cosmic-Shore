@@ -21027,8 +21027,8 @@ Verified (flick launch, Mass power, earned speed, window AI included): Unity 600
 `RedlineController.AICommitFromApproachPoint => true` (new test `RedlineAISteeringTests`). Why and the measurements: `Assets/_Scripts/Controller/Arcade/REDLINE.md` §5.1, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §13. Model only: `Tools/Build/manta_redline_sim.py` (`--self-test` ok), compute job `redline-manta-time` (`redline_fit` self-test ok, `compute.py validate` and `compute.py self-test` ok). Plan step: time-arcade.
 Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; EditMode `RedlineAISteeringTests|SwitchbackAISteeringTests|MantaAutopilotDriveTests|RedlineCourseTests|MinigameAbilityAITests` 43/43 pass. `unity_refcompile` cannot run on Windows. Not played.
 - [x] The project compiles; EditMode `RedlineAISteeringTests` passes.
-- [ ] Arcade > Redline at I1 with three AI Mantas: every AI finishes the 24 rings. The model says about 110 s a race at I1-I3 (their throttle is the skill throttle, 37.5% at I1, so they are slow there) and about 330 s at I4. Note what you see.
-- [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I3 or I4 race.
+- [ ] Arcade > Redline at I1 with three AI Mantas: every AI finishes the 40 rings (five laps; the times first written here were the model's three-lap times). The model says about 183 s a race at I1-I3 (their throttle is the skill throttle, 37.5% at I1, so they are slow there) and about 540 s at I4. Note what you see.
+- [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I4 race.
 - [ ] The AIs do not weave on the long legs, and Soar there (the speed readout near 650 at I4).
 - [ ] Headlong is unchanged (it keeps the old steering).
 
@@ -21182,3 +21182,16 @@ Stoat test 132/132, the five Trampoline* tests included; the Slingshot tests 19/
 - [ ] While you are in it the ball turns lime and the dent's ring shows; a lime ripple grows off it at the bounce. The camera does not jar.
 - [ ] Let go of the trigger before touching it: it stays up. Fly past it: it pops (the Charge ripple) and nothing happens to you.
 - [ ] Slingshot I1-I4: AI Stoats bounce off their own shells and finish (model: 111-125 s, 0-8 rings missed a race).
+
+## 🔴 Redline teaches Soar alone: the Soar-only ladder, Time crystals, no omni crystal (2026-11-04, Yash, NOT RUN IN EDITOR)
+`RedlineCourse.ForIntensity` (floors 178 / 205 / 175 / 160 u, I4 profile 125/120/115), `RedlineTimeCrystals` + `RedlineController` (Time crystals laid on every peer, `aiTimeCrystalSlack` 0), the scene's `CrystalManager` count 0 and the card copy (`author_redline_assets.py`), `Tips_Redline.asset`. Why: `Assets/_Scripts/Controller/Arcade/REDLINE.md` §1, §4a, §5.1; `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §13.1. Plan step: time-arcade.
+Verified: `Tools/Build/redline_course_harness/run.sh --self-test` compiles the shipped course, crystals and both test files out of Unity, 20/20 pass, both negative controls fire; `manta_redline_sim.py --self-test` (parity with the C# gates and crystals); `author_redline_assets.py`, `author_drill_assets.py` and `author_mode_previews.py --check`; `compute.py validate` and `self-test`; the console-logging, conditional-compilation, using-directive, switch-label and enum-reference gates. The Unity editor open on this checkout (6000.3.17f1) recompiled these files with no compile error in its log; an EditMode run in Unity was not started (the editor was in use for play tests). `unity_refcompile` does not run on Windows. The card art was re-rendered (`render_card_backgrounds.py Redline --check` OK) through a local native-path copy of `card_art_harness/run.sh`, which first reproduced the committed Lantern Run and Serpent Gulag cards byte for byte. Not played.
+- [ ] The Redline card in the Arcade grid shows the new course (a wider I2 circuit), in the same style as the other race cards.
+- [ ] The project compiles; EditMode `RedlineCourseTests` and `RedlineTimeCrystalsTests` pass.
+- [ ] I1: no crystal anywhere, no corner makes you lift. I2-I4: every corner can be made with BOTH triggers eased together and the stick hard over; you never need to hold one trigger alone.
+- [ ] I4: one corner wants the triggers nearly off, one about a third, and a third you can just hold flat out on a clean line.
+- [ ] Time crystals: none at I1, then 1 / 2 / 3 a lap (I2-I3 halfway down the leg into a corner, I4 just inside the corner exits). One raises the Time petal by one and Soar's top speed visibly (about 3%); it is back about 5 s after you take it. Your Mass, Charge and Space petals never fill, and no omni crystal ever appears.
+- [ ] Two clients (MPPM): both see the same crystals in the same places.
+- [ ] AI Mantas finish I1-I4 and fly past the crystals without swerving for them. The model says about 183 / 181 / 193 / 538 s on five laps. Note what you see.
+- [ ] Test Flight (the card's preview), Mentor: the Redline tips read "Keep (Soar) held...", "Too tight for full Soar? Ease both triggers together...", "Soar takes two seconds to wind back up...", "From intensity 2, Time crystals...".
+- [ ] The card description reads "...easing both triggers to make one... Time crystals make it faster still."
