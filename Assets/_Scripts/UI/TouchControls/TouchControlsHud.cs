@@ -39,6 +39,7 @@ namespace CosmicShore.UI
         readonly List<TouchButtonView> _extras = new();
         readonly List<float> _aspects = new();
         TouchThrottleSlider _slider;
+        IInputStatus _boundInput;
 
         bool _laidOut;
         bool _active;
@@ -72,7 +73,27 @@ namespace CosmicShore.UI
             ClearExtras();
         }
 
-        void Update() => Refresh(force: false);
+        void Update()
+        {
+            RebindInput();
+            Refresh(force: false);
+        }
+
+        /// <summary>The slider and the extra buttons are bound when the HUD is built, and the pilot's
+        /// <c>InputStatus</c> can still be null then (<c>Player.InputStatus</c> is null until its
+        /// InputController exists). Nothing re-laid the HUD when it arrived - the device reads Touch
+        /// either way - so a slider bound to null moved on screen and never wrote the throttle. Follow
+        /// the pilot's input instead of trusting the one seen at build time.</summary>
+        void RebindInput()
+        {
+            if (_status == null) return;
+            var input = _status.InputStatus;
+            if (input == null || ReferenceEquals(input, _boundInput)) return;
+            _boundInput = input;
+            for (int i = 0; i < _extras.Count; i++)
+                if (_extras[i]) _extras[i].Bind(input);
+            if (_slider) _slider.Bind(input, _slider.Value);
+        }
 
         void Refresh(bool force)
         {
@@ -107,6 +128,7 @@ namespace CosmicShore.UI
             var disc = _library ? _library.ButtonDisc : null;
             var rim = _library ? _library.ButtonRim : null;
             float size = _lockup.CardWidth;
+            _boundInput = _status.InputStatus;
 
             if (_profile.scheme == TouchScheme.TotemButtons)
             {

@@ -37,47 +37,60 @@ namespace CosmicShore.UI
 
         public float Value => _value;
 
+        // The bars take this middle share of the column's width; the column itself takes the touch.
+        const float BarLeft = 0.29f;
+        const float BarRight = 0.71f;
+
         public static TouchThrottleSlider Create(RectTransform parent, Sprite disc, Color tint, float width, float height)
         {
-            var go = new GameObject("TouchThrottleSlider", typeof(RectTransform));
+            var go = new GameObject("TouchThrottleSlider", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             var rt = (RectTransform)go.transform;
             rt.SetParent(parent, false);
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = new Vector2(width, height);
 
+            // The whole column takes the drag, however TouchControlsHud later sizes it: an invisible
+            // graphic on the root, not on a child sized once at build time. The old Track child kept the
+            // build-time size when LayOutSlider resized the root, so the drag area (a few millimetres
+            // wide) and the span the value was measured over disagreed.
+            var hit = go.GetComponent<Image>();
+            hit.color = Color.clear;
+            hit.raycastTarget = true;
+
             var slider = go.AddComponent<TouchThrottleSlider>();
             slider._region = rt;
 
-            var track = Bar(rt, "Track", width * 0.42f, height, new Color(tint.r * 0.25f, tint.g * 0.25f, tint.b * 0.25f, 0.55f));
-            track.raycastTarget = true;   // the whole column takes the drag
-            slider._fill = Bar(rt, "Fill", width * 0.42f, height, new Color(tint.r, tint.g, tint.b, 0.75f));
-            slider._fill.type = Image.Type.Filled;
-            slider._fill.fillMethod = Image.FillMethod.Vertical;
-            slider._fill.fillOrigin = (int)Image.OriginVertical.Bottom;
-            slider._fill.sprite = null;
+            Bar(rt, "Track", new Color(tint.r * 0.25f, tint.g * 0.25f, tint.b * 0.25f, 0.55f));
+            // The fill is the bar's lower part: its top anchor follows the value (SetValue). An Image set to
+            // Filled with no sprite draws as a plain quad and ignores fillAmount, so it never showed a level.
+            slider._fill = Bar(rt, "Fill", new Color(tint.r, tint.g, tint.b, 0.75f));
 
             var knobGo = new GameObject("Knob", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             slider._knob = knobGo.GetComponent<Image>();
             var krt = slider._knob.rectTransform;
             krt.SetParent(rt, false);
-            krt.anchorMin = krt.anchorMax = krt.pivot = new Vector2(0.5f, 0.5f);
-            krt.sizeDelta = new Vector2(width, width);
+            krt.pivot = new Vector2(0.5f, 0.5f);
+            krt.anchoredPosition = Vector2.zero;
             slider._knob.sprite = disc;
             slider._knob.color = Color.white;
             slider._knob.raycastTarget = false;
+            slider.OnRectTransformDimensionsChange();
+            slider.SetValue(slider._value);
             // AddComponent ran OnEnable before the region existed, so claim now.
             if (slider.isActiveAndEnabled) FlightTouchClaims.Add(rt);
             return slider;
         }
 
-        static Image Bar(RectTransform parent, string name, float width, float height, Color colour)
+        /// <summary>A bar that follows the column: stretched to its height, centred in its width.</summary>
+        static Image Bar(RectTransform parent, string name, Color colour)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             var image = go.GetComponent<Image>();
             var rt = image.rectTransform;
             rt.SetParent(parent, false);
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(width, height);
+            rt.anchorMin = new Vector2(BarLeft, 0f);
+            rt.anchorMax = new Vector2(BarRight, 1f);
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
             image.color = colour;
             image.raycastTarget = false;
             return image;
@@ -128,9 +141,21 @@ namespace CosmicShore.UI
         {
             _value = Mathf.Clamp01(value);
             if (_input != null) _input.Throttle = _value;
-            if (_fill) _fill.fillAmount = _value;
-            if (_knob && _region)
-                _knob.rectTransform.anchoredPosition = new Vector2(0f, (_value - 0.5f) * _region.rect.height);
+            if (_fill) _fill.rectTransform.anchorMax = new Vector2(BarRight, _value);
+            if (_knob)
+            {
+                var krt = _knob.rectTransform;
+                krt.anchorMin = krt.anchorMax = new Vector2(0.5f, _value);
+                krt.anchoredPosition = Vector2.zero;
+            }
+        }
+
+        // The knob is a disc as wide as the column, whatever size the HUD lays the column out at.
+        void OnRectTransformDimensionsChange()
+        {
+            if (!_knob || !_region) return;
+            float side = _region.rect.width;
+            _knob.rectTransform.sizeDelta = new Vector2(side, side);
         }
 
         void OnEnable()
