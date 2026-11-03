@@ -21020,3 +21020,12 @@ says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
 - [ ] Caught, the orbit turns more slowly, and the ring stays lime long enough to release in it most times (60-120 deg round).
 - [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
 - [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).
+
+## 🟡 Stoat: the aimed exit - a second in the orbit, out at 30-45 deg from your entry (2026-11-03, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The aimed exit". `StoatSlingConfig`: aimedExit on,
+exit 30-45 deg, window 0.8-1.4 s; maxOrbitDegrees 720; the AI's aiSlingMinTurnDegrees 20 (and its Slingshot copy).
+- [ ] Caught, the ring turns lime about a second in (0.8-1.4 s) and not before; a release in the first third of a second gives no kick.
+- [ ] Released in the lime, you leave on the heading you came in on turned 30-45 deg toward the orbit's side, wherever round the orbit you are.
+- [ ] Stick toward the turn at the release: about 45 deg; away: about 30; stick at rest: about 37.5.
+- [ ] The snap from the orbit's heading onto the exit does not jar the camera.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 113-125 s, slower than before: a sling costs about a second of circling).

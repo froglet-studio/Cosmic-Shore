@@ -114,6 +114,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The aimed exit (2026-11-03): the heading the hull came in on (<paramref name="entryHeading"/>), turned
+        /// <paramref name="degrees"/> the way the orbit turns. The orbit's own axis is <paramref name="radial"/> (centre to hull)
+        /// × <paramref name="tangent"/> (the hull's heading round it), so a right orbit turns it right and a left one left, in
+        /// whatever plane the orbit flies. A degenerate orbit keeps the entry heading.
+        /// </summary>
+        public static Vector3 AimedExit(Vector3 entryHeading, Vector3 radial, Vector3 tangent, float degrees)
+        {
+            var axis = Vector3.Cross(radial, tangent);
+            if (axis.sqrMagnitude < 1e-8f || entryHeading.sqrMagnitude < 1e-8f) return entryHeading.normalized;
+            return (Quaternion.AngleAxis(degrees, axis.normalized) * entryHeading).normalized;
+        }
+
+        /// <summary>
+        /// How far the aimed exit turns, from the stick's sideways throw <paramref name="stickX"/> (right positive): at rest
+        /// the middle of <paramref name="min"/>..<paramref name="max"/>, a full throw toward the orbit's turn
+        /// (<paramref name="turnsRight"/>) the most, away from it the least.
+        /// </summary>
+        public static float ExitDegrees(float stickX, bool turnsRight, float min, float max)
+        {
+            float toward = Mathf.Clamp(turnsRight ? stickX : -stickX, -1f, 1f);
+            return Mathf.Lerp(min, max, 0.5f + 0.5f * toward);
+        }
+
+        /// <summary>
         /// Whether the stick has been FLICKED: it reached <paramref name="flickStick"/> within <paramref name="flickSeconds"/> of
         /// last being at rest (<paramref name="secondsSinceRest"/>). A slower push is steering.
         /// </summary>

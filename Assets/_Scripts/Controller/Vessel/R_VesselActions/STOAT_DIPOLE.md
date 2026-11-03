@@ -254,6 +254,24 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
   model (`stoat_orbit_sim.py --earned`): 78-91 s a Slingshot race at 11-12 presses a minute with 63-78% of releases timed,
   where the press-spam AI ran 55-58 s at 19-28 a minute with almost none timed before, and 80-85 s under earned speed.
 - **On a phone** two orbit discs (LT left, RT right) sit round the right thumb; a thumb anywhere else steers.
+- **The aimed exit (Yash, 2026-11-03: "I want to get into the orbit, and then I want to be slingshot at 30-45degrees from angle
+  of entry after a second of orbiting").** The orbit swings the hull round about 200 deg a second, so a launch along the
+  tangent after a second left at about 200 deg from the entry. Now (`aimedExit` on, `StoatSlingConfigSO`'s aimed-exit rows):
+  - **The window is time, not degrees.** The whole kick is paid from 0.8 to 1.4 s of orbit (`exitWindowSeconds` 1.1 ±
+    `exitWindowHalfSeconds` 0.3), easing off over `exitWindowFalloffSeconds` 0.4 s either side to the miss share; a release
+    in the first third of a second times nothing. The ring is lime inside it, as before.
+  - **The launch turns the ENTRY heading** (the hull's heading at the catch) `exitMinDegrees` 30 to `exitMaxDegrees` 45 the way
+    the orbit turns (right orbit right, left orbit left, in the orbit's own plane: `StoatSlingMath.AimedExit`). The stick
+    picks where (`ExitDegrees`): at rest 37.5, toward the turn 45, away from it 30. However far round the orbit you are,
+    the exit is the same, so the launch's direction is known before you press. A flick still launches at once.
+    `launchConeDegrees` is not read while it is on.
+  - `maxOrbitDegrees` is 720 (was 360), so the longest orbit never ends before the window does.
+  - **The AI** lets go as the window opens (by 1.4 s at the latest), its stick picking the angle toward its target, and
+    slings only for a turn of 20 deg or more (`aiSlingMinTurnDegrees` 20, was 7.84: a 30-45 deg exit overshot every small
+    turn). Model (`stoat_orbit_sim.py`, 8 courses): 113 / 115 / 122 / 125 s at I1-I4, every release timed, 0.8 / 1.8 / 2.6 /
+    3.4 rings missed a race. Cruising with no press takes 140-148 s; the tangent launch took 66-90 s. **A sling now costs about
+    a second of circling**, so a race is slower than with the tangent launch.
+  - Off (`aimedExit` 0) is the tangent launch with the 60-120 deg window, as it shipped in PR #1723.
 - **The easier sling (Yash, 2026-11-03 play test on bleeding-edge: "the slingshot mechanic is little hard").** Caught,
   the orbit carries the hull round at about 188 u/s, so on the 0.6 circle the full-kick window (75-105 deg) lasted 0.1-0.2 s:
   under a person's reaction time. Now:
