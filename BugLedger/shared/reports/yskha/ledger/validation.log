@@ -376,3 +376,19 @@
 2026-11-03T19:45:57.312Z editor load: play=False capture=True minPlay=15s issues=51
 2026-11-03T19:49:31.496Z editor load: play=False capture=True minPlay=15s issues=51
 2026-11-03T20:09:53.070Z PlayMode session ended (900s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-03T20:28:23.661Z EditMode session ended (42min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-03T20:28:39.459Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T20:30:40.735Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T20:33:28.444Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T20:52:59.898Z EditMode session ended (24min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-03T20:53:10.659Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T20:57:29.166Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T21:06:31.032Z EditMode session ended (13min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-03T21:06:39.116Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T22:04:33.546Z PlayMode session ended (3368s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-03T22:05:14.146Z EditMode session ended (58min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-03T22:05:23.468Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T22:20:57.394Z EditMode session ended (15min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-03T22:21:07.331Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T22:24:08.732Z editor load: play=False capture=True minPlay=15s issues=51
+2026-11-03T22:50:44.621Z PlayMode session ended (1526s play run, exiting play mode): 0 fix(es) waiting; counted: none
