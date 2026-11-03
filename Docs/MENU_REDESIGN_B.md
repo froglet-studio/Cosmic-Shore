@@ -5713,4 +5713,9 @@ that make it a true design board like grouping and sectioning stuff."
 - **Not verified by eye.** The canvas type asks sessions not to render it; the frames were gated offline (`check`) and
   the person sees them on the canvas. Dragging a frame in the canvas moves only the frame; `frogma.py move` moves the
   boards with it.
-
+- **Comments become small agents** (Shombith, 2026-11-03: "leave a comment send to Claude and it quickly changes that
+  part, it comment can be a small agent so it happens quickly"). A comment sent to Claude wakes the watching session,
+  which only routes it: one background agent per board (`.claude/skills/frogma/comment_agent.md`) reads that board,
+  finds the commented element with `frogma.py anchor <board> "<tid>:<path>"` (the Design type's anchor numbering), edits
+  that element only, gates it (`check --only`), publishes that one file, replies in the thread and resolves it. Comments
+  on different boards run in parallel; the session records the changes in the repo once at the end (`/frogma` §4.5).

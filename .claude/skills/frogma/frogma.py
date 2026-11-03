@@ -41,6 +41,8 @@ the files it saved.
     frogma.py fit      <sec-/grp-id> --live .. --root ..            refits a frame to what it holds now
     frogma.py ungroup  <sec-/grp-id> --live .. --root ..            removes the frame and its own title; boards stay
     frogma.py outline  [--live <canvas.json>] [--tab <id>] [--brief] the layers panel: tab > section > group > board
+    frogma.py anchor   <board.dc.html> "<tid>:<path>"              the element a canvas comment is anchored to, with its
+                                                                    source lines (view-state.md's numbering)
     frogma.py retitle  --live <canvas.json> --root <dir> --name "<title>"
     frogma.py check    <dir> [--only R34] [--strict]          the offline gate on the boards in <dir> (holds canvas.json)
     frogma.py pull     --src <dir> [--version V] [--date D]   copy the boards and index saved from the canvas into the
@@ -57,6 +59,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import html
+from html.parser import HTMLParser
 import json
 import os
 import re
@@ -1317,6 +1320,100 @@ def cmd_retitle(args) -> int:
     return 0
 
 
+# ----------------------------------------------------------------------------------------------- comments (anchor)
+#
+# A comment sent to Claude on the canvas names its spot as "<File>.dc.html#<tid>:<path>" (its [anchor detail] row,
+# or a viewer's `selected`). The Design type's view-state.md defines both numbers on the template between <x-dc> and
+# the last </x-dc>: `tid` counts EVERY element depth-first from 0 (<helmet>, its <style>, <sc-for>, <sc-if>,
+# <dc-import> included; text and comments not), `path` is child positions from the top level down. `anchor` resolves
+# one to its source lines, so the small agent a comment is handed to edits that element and nothing else.
+
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
+
+class _AnchorParser(HTMLParser):
+    def __init__(self, line0: int):
+        super().__init__(convert_charrefs=True)
+        self.line0 = line0
+        self.nodes = []      # [tid, path tuple, tag, start line, end line]
+        self.stack = []      # indexes into nodes
+        self.child_count = [0]
+        self.raw_tags = set()
+
+    def handle_starttag(self, tag, attrs):
+        parent_path = self.nodes[self.stack[-1]][1] if self.stack else ()
+        idx = self.child_count[-1]
+        self.child_count[-1] += 1
+        line = self.getpos()[0] + self.line0 - 1
+        self.nodes.append([len(self.nodes), parent_path + (idx,), tag, line, line])
+        if tag not in VOID_TAGS:
+            self.stack.append(len(self.nodes) - 1)
+            self.child_count.append(0)
+
+    def handle_startendtag(self, tag, attrs):
+        parent_path = self.nodes[self.stack[-1]][1] if self.stack else ()
+        idx = self.child_count[-1]
+        self.child_count[-1] += 1
+        line = self.getpos()[0] + self.line0 - 1
+        self.nodes.append([len(self.nodes), parent_path + (idx,), tag, line, line])
+
+    def handle_endtag(self, tag):
+        line = self.getpos()[0] + self.line0 - 1
+        for k in range(len(self.stack) - 1, -1, -1):
+            if self.nodes[self.stack[k]][2] == tag:
+                for j in self.stack[k:]:
+                    self.nodes[j][4] = line
+                del self.stack[k:]
+                del self.child_count[k + 1:]
+                return
+
+
+def resolve_anchor(src: str, anchor: str) -> tuple[dict | None, str]:
+    """('#180:1/6' or 'File.dc.html#180:1/6' or '180:1/6') -> ({tid, path, tag, start, end}, '') or (None, why)."""
+    m = re.search(r"#?(\d{1,4}):(\d{1,2}(?:/\d{1,2}){0,8})(?:@\d+)?$", anchor.strip())
+    if not m:
+        return None, f"{anchor!r} is not <tid>:<path> (e.g. 180:1/6)"
+    tid, path = int(m.group(1)), tuple(int(v) for v in m.group(2).split("/"))
+    a = src.find("<x-dc>")
+    b = src.rfind("</x-dc>")
+    if a < 0 or b < 0:
+        return None, "no <x-dc> ... </x-dc> in the file"
+    start = a + len("<x-dc>")
+    p = _AnchorParser(src.count("\n", 0, start) + 1)
+    p.feed(src[start:b])
+    p.close()
+    by_tid = p.nodes[tid] if tid < len(p.nodes) else None
+    by_path = next((n for n in p.nodes if n[1] == path), None)
+    if by_tid is None or by_path is None or by_tid is not by_path:
+        return None, (f"tid {tid} and path {'/'.join(map(str, path))} do not name the same element in this copy "
+                      "(the viewer's copy differs: re-read the board from the canvas)")
+    return {"tid": tid, "path": path, "tag": by_tid[2], "start": by_tid[3], "end": by_tid[4]}, ""
+
+
+def cmd_anchor(args) -> int:
+    f = Path(args.file)
+    if not f.exists():
+        print(f"ERROR: {f} not found (read project/<board> from the canvas first)", file=sys.stderr)
+        return 2
+    src = f.read_text(encoding="utf-8")
+    node, why = resolve_anchor(src, args.anchor)
+    if node is None:
+        print(f"ERROR: {why}", file=sys.stderr)
+        return 1
+    lines = src.splitlines()
+    s, e = node["start"], node["end"]
+    print(f"{f.name}#{node['tid']}:{'/'.join(map(str, node['path']))} = <{node['tag']}> at lines {s}-{e}")
+    lo, hi = max(1, s - args.context), min(len(lines), e + args.context)
+    if hi - lo > args.max_lines:
+        hi = lo + args.max_lines
+        print(f"(showing {args.max_lines} lines; the element runs to line {e})")
+    for i in range(lo, hi + 1):
+        mark = ">" if s <= i <= e else " "
+        text = lines[i - 1]
+        print(f"{mark}{i:>5}  {text[:400]}{' ...' if len(text) > 400 else ''}")
+    return 0
+
+
 # ----------------------------------------------------------------------------------------------- check
 
 NODE_HARNESS = r"""
@@ -2076,6 +2173,15 @@ def self_test() -> int:
         check_index(sp / "project", bad_frame, None, rep)
         joined = "\n".join(rep.errors)
         expect("turns into a text note" in joined and "clamps a shape" in joined, "check: a frame with text, or bigger than 8000, is named")
+        # Comment anchors (view-state.md's worked example: helmet 0:0, style 1:0/0, div 2:1, h1 3:1/0, sc-for 4:1/1, div 5:1/1/0).
+        demo = ('<x-dc>\n<helmet>\n<style>body{}</style>\n</helmet>\n<div style="padding: 32px">\n<h1>{{title}}</h1>\n'
+                '<sc-for list="{{items}}" as="item">\n<div>{{item.label}}</div>\n</sc-for>\n</div>\n</x-dc>\n')
+        got = {a: resolve_anchor(demo, a)[0] for a in ("0:0", "1:0/0", "2:1", "3:1/0", "4:1/1", "5:1/1/0")}
+        expect([got[a]["tag"] if got[a] else None for a in got] == ["helmet", "style", "div", "h1", "sc-for", "div"]
+               and got["5:1/1/0"]["start"] == 8 and got["2:1"]["start"] == 5 and got["2:1"]["end"] == 10,
+               "anchor: tid and path resolve as view-state.md numbers them, with source lines")
+        expect(resolve_anchor(demo, "R1.dc.html#3:1/1")[0] is None and resolve_anchor(demo, "#3:1/0")[0]["tag"] == "h1",
+               "anchor: a tid and path that disagree are refused (the viewer's copy differs); a file-qualified anchor resolves")
         # pull + readme into a fake repo copy.
         global COPY_DIR, DOC
         saved = (COPY_DIR, DOC)
@@ -2134,6 +2240,8 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("arrange"); s.add_argument("id"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
     s.add_argument("--cols", type=int, default=PER_ROW); s.add_argument("--gap", type=int, default=GAP_X)
     s = sub.add_parser("outline"); s.add_argument("--live"); s.add_argument("--tab"); s.add_argument("--brief", action="store_true")
+    s = sub.add_parser("anchor"); s.add_argument("file"); s.add_argument("anchor"); s.add_argument("--context", type=int, default=2)
+    s.add_argument("--max-lines", type=int, default=60)
     s = sub.add_parser("retitle"); s.add_argument("--live", required=True); s.add_argument("--root", required=True); s.add_argument("--name", required=True)
     s = sub.add_parser("new-tab"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
     s.add_argument("--name", required=True); s.add_argument("--id")
@@ -2153,7 +2261,7 @@ def main(argv: list[str] | None = None) -> int:
             "new-tab": cmd_new_tab, "fold": cmd_fold, "check": cmd_check, "pull": cmd_pull, "readme": cmd_readme,
             "section": lambda a: cmd_frame(a, "section"), "group": lambda a: cmd_frame(a, "group"), "sections": cmd_sections,
             "ungroup": cmd_ungroup, "fit": cmd_fit, "move": cmd_move, "arrange": cmd_arrange, "outline": cmd_outline,
-            "retitle": cmd_retitle}[args.cmd](args)
+            "retitle": cmd_retitle, "anchor": cmd_anchor}[args.cmd](args)
 
 
 if __name__ == "__main__":

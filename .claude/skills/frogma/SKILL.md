@@ -1,6 +1,6 @@
 ---
 name: frogma
-description: Frogma, the team's design board - the ONE claude.ai Design canvas "Frogma" (formerly "Froglet Design Board" and "Menu Redesign B", https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), in tabs, sections and groups like a Figma file (Menu Redesign, Compute Console, Menu Redesign C, ...), where every Cosmic Shore UI screen, variation and round of mockups is drawn, compared and picked before anything is built in Unity. Brings the board into the session at once (opens it, reads its live index, says what is new and what waits on a pick), compares a new design against the board's current boards and the built screen, and adds the new design as a new round (a titled section on a tab + boards + notes, laid out and gated offline) with the repo copy and Docs/MENU_REDESIGN_B.md updated; organises the canvas with sections (tinted frames under the boards), groups (dashed outlines), move, auto-arrange and an outline (layers) view. Use on "/frogma", "/design-board" (the old name), "frogma", "open the design board", "show me the board", "add this to the design board", "put the mockups on the board", "give me variations / more mockups of <screen>", "compare these designs", "group these boards", "put these in a section", "tidy / arrange the board", "show the layers / outline", "what is on the board for <screen>", "new UI for <screen>", a Frogma or Menu Redesign B link, or Docs/MenuRedesignB/**. Never creates a second canvas.
+description: Frogma, the team's design board - the ONE claude.ai Design canvas "Frogma" (formerly "Froglet Design Board" and "Menu Redesign B", https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), in tabs, sections and groups like a Figma file (Menu Redesign, Compute Console, Menu Redesign C, ...), where every Cosmic Shore UI screen, variation and round of mockups is drawn, compared and picked before anything is built in Unity. Brings the board into the session at once (opens it, reads its live index, says what is new and what waits on a pick), compares a new design against the board's current boards and the built screen, and adds the new design as a new round (a titled section on a tab + boards + notes, laid out and gated offline) with the repo copy and Docs/MENU_REDESIGN_B.md updated; organises the canvas with sections (tinted frames under the boards), groups (dashed outlines), move, auto-arrange and an outline (layers) view. Use on "/frogma", "/design-board" (the old name), "frogma", "open the design board", "show me the board", "add this to the design board", "put the mockups on the board", "give me variations / more mockups of <screen>", "compare these designs", "group these boards", "put these in a section", "tidy / arrange the board", "show the layers / outline", a comment sent to Claude on the board (each goes to its own small agent, §4.5), "what is on the board for <screen>", "new UI for <screen>", a Frogma or Menu Redesign B link, or Docs/MenuRedesignB/**. Never creates a second canvas.
 ---
 
 # /frogma - Frogma, the one design board, in the session
@@ -27,6 +27,7 @@ One message, all in parallel:
 
 ```
 Artifact  action=open  url=https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2
+ArtifactComments  action=watch  url=<board>                    (comments sent to Claude wake this session: §4.5)
 Artifact  action=read  url=<board>  paths=["project/canvas.json"]  out_dir=<scratchpad>/board-live
 python3 .claude/skills/frogma/frogma.py status        (the repo copy, and the rounds waiting on a pick)
 ```
@@ -183,6 +184,39 @@ screen's generator and `/ui-redesign-tracker` (it verifies the build against the
 screen is a new round, not an edit of the picked board: the board a section names is the record of what was approved,
 and a changed board would silently change the record. Edit an existing board only for a typo or when the person asks
 for that board changed ("make D brighter") and say so in the doc.
+
+## 4.5 Comments sent to Claude: one small agent each (fast)
+
+A person leaves a comment on a board in the canvas and presses **Send to Claude** (or writes `@Claude`). The session
+that published the board watches it (`ArtifactComments watch`; every publish arms it), so the comment wakes the session
+as a new turn. **The waking session does not edit; it hands the comment off and stays free**, so ten comments become ten
+quick parallel changes instead of a queue:
+
+1. `ArtifactComments read url=<board>` (or `thread_id=<id>` from the wake): for each thread **sent to you and still
+   open**, take the board file and anchor from its `[anchor detail]` row (`R44IVoyage.dc.html: #180:1/6 ...`), the
+   words, and the `[presence when sent]` (which board was in view when the anchor is thin).
+2. **One background `Agent` per board** (comments on the same board go to the SAME agent, in the order sent, so two
+   never publish over each other): `subagent_type: general-purpose`, `model: sonnet` (`haiku` for a pure wording or
+   colour change), `run_in_background: true`, prompt:
+   ```
+   Follow .claude/skills/frogma/comment_agent.md exactly.
+   Board: https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2   Scratch: <scratchpad>/c-<thread id first 8>
+   Thread <id> on <File>.dc.html at <tid:path>  (location: <its [location] words>)
+   Comment: "<the words>"
+   [more threads on the same board, in order]
+   ```
+   Then end the turn (one line to the person: "on it: <board>, <n> comment(s)"). Nothing else in that turn.
+3. When each agent reports, check its reply landed and the thread is resolved (`ArtifactComments read thread_id`); if
+   it left a thread open (a bigger ask, a refusal), take that one up yourself in §2-3.
+4. **Record once at the end of the session, not per comment**: read the boards the agents changed and `pull` them into
+   the repo copy, add one line per change to the round's section in `Docs/MENU_REDESIGN_B.md` ("Comment fixes
+   (date): R44 I - presets beside the formation; ..."), commit. A picked board changed by a comment is a change to
+   the record (§4): say so in that line.
+
+`frogma.py anchor <board file> "<tid>:<path>"` turns the anchor into the element and its source lines (the Design
+type's `view-state.md` numbering), so the agent edits that element and nothing else. A comment arrives only for
+threads a writer sent to Claude; plain comments never wake the session (read them when asked). The watch lives as long
+as this session: a new session re-arms it with `ArtifactComments watch url=<board>` (or any publish).
 
 ## 5. Traps this board paid for
 
