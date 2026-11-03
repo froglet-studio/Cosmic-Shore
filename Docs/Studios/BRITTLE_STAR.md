@@ -425,3 +425,28 @@ at once, and every rival hull inside it is scored as the disk scores one (`Blast
 Untested in the Unity editor (no editor was open for the session that wrote them): the feel of the roll rates, the
 saber throw's speed and look, the burst and core radii.
 
+
+## The ring's wagon-wheel stutter (Garrett, 2026-11-03)
+
+**The bug:** spinning the right stick fast makes the ring look like a wagon wheel turning backward, and faster still it
+freezes into a static jitter. **The cause** is `BrittleStarExecutor.AimRing`. Every frame it re-picks the turret
+nearest the stick (`BrittleStarRules.NearestPoint`, never more than 36° away) and turns toward it at `ringTurnRate`
+(540°/s, 1.5 rev/s). When the stick outruns the ring, the ring falls 36° behind, the next turret becomes the nearest,
+and that turret sits behind the aim, so the ring turns backward. Measured headless, line for line, at 60 fps:
+
+| Stick spin (rev/s) | 1 | 1.5 | 2 | 3 | 4 | 6 |
+|---|---|---|---|---|---|---|
+| Ring net speed (rev/s) | 1.00 | 1.50 | 0.94 | 0.03 | 0.00 | 0.00 |
+| Frames per second turning backward | 0 | 0 | 11 | 29 | 20 | 30 |
+
+At 30 fps the ring settles into turning the wrong way (−0.67 rev/s at 4 rev/s).
+
+**The lab:** `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY6ykxFy5o7QR5sh). It shows the
+shipped rule as a control beside four candidate fixes, all fed one stick (auto spin, drag pad or a real gamepad) on one
+frame clock (display, 120, 60 or 30 fps), with a headless scorecard:
+- **Keep turning forward:** while the stick sweeps, the ring only hands over to the turret ahead.
+- **Faster ring:** `ringTurnRate` alone. At 1800°/s it fails again at 6 rev/s, where 60 fps strobes the pentagon.
+- **Forward + motion smear.**
+- **Flywheel.**
+
+No Unity change yet: waiting on Garrett's pick.
