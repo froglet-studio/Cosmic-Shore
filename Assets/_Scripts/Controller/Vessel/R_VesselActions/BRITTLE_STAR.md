@@ -142,6 +142,27 @@ design and, where they name parts, the placeholder's:
   gone while thrown and **blooms back** (ease-out-back) while rebuilt. The drawn hull leans 28° into a full-stick turn
   (fleet-scale puppetry, vessel rule 24). Channel discipline: the animation writes transforms only; the builder writes
   vertices and the muzzles' positions.
+- **The ring under a spinning stick** (Garrett, 2026-11-03; lab `Docs/Studios/BrittleStarRingLab.html`,
+  https://claude.ai/artifact/C2AB3CPY6ykxFy5o7QR5sh, his pick "Forward + motion smear"). Spinning the right stick faster
+  than `ringTurnRate` used to make the ring stutter BACKWARD (a wagon wheel) and, past ~4 rev/s at 60 fps, freeze into a
+  static jitter: `AimRing` re-picked the turret nearest the stick every frame, and once the ring fell 36° behind, that
+  turret sat behind the aim. Two changes:
+  - **Keep turning forward** (`BrittleStarRules.ForwardTurn`, `AimSweep`): the ring commits to a turret; while the stick
+    sweeps faster than `aimSweepThreshold` it hands over only to the turret AHEAD, never turns against the sweep, and
+    turns flat out while the stick outruns it. Slower than the cap it moves frame for frame as before (a test pins it).
+    `ringTurnRate` 540 → **1080** °/s (the lab's pick; the studio's `SHIPPED` moved with it).
+  - **A normalized motion smear** (`BrittleStarRingSmearPass`, `BrittleStarRingSmear.shader`, driven from
+    `BrittleStarAnimation.UpdateRingSmear`): when the drawn ring turns more than `ringSmearMinDegrees` in a frame, the hull
+    draws a copy of its mesh WITHOUT the ring's triangles (`BrittleStarHullModel.SetRingHidden`; the bones, muzzles and
+    plumes are untouched) and the pass draws the ring instead: the ring as it stands into its own RGBA16F layer with the
+    hull's own materials, then a disc in the ring's plane (depth-tested against the scene) that AVERAGES that layer over
+    copies spread back across the angle it turned (`ringSmear` of it, one copy per `ringSmearStepDegrees`, at most
+    `ringSmearMaxCopies`). Every copy weighs 1 / copies and the mean is blended premultiplied once, so **the smear adds
+    no brightness** (measured in the lab: within −1.2%..−0.3% of the still ring; copies summed in 8 bits brightened up to
+    18%). A thrown or regrowing ring never smears; a smear no camera drew shows the ring again at once.
+    Limits: the turn is applied on the ring's plane, so the pods and barrels standing off it smear with a little parallax;
+    a TRANSPARENT in front of the ring is overdrawn (the pass runs after the transparents); while the ring is hidden the
+    renderer's mesh is the ring-less copy, so a crystal fusing onto the hull in that frame finds no ring faces.
 - **Card images** (icon, inactive, silhouette, large, hangar preview) are renders of the MODEL (`Tools/Build/vessel_model/render_cards.py BrittleStar`, `--check`), the four ability icons are
   `Tools/Build/author_brittlestar_icons.py` (the Thresher's icon language).
 
@@ -438,7 +459,9 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `projectileScale` / `projectileScaleMultiplier` (Charge) | `BrittleStarConfig` | 1 (the Sparrow's) / 1 → 1.8 |
 | `roundGrowthFactor` (in-flight swell, the Sparrow's look) | `BrittleStarConfig` | ×3 |
 | `armFocusDistance` / `armSplayDegrees` (the guns and cords in / out) | `BrittleStarConfig` | 120 u / 25° |
-| `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 0.25 / 540°/s |
+| `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 0.25 / 1080°/s (540 until 2026-11-03) |
+| `aimSweepThreshold` / `aimSweepSmoothing` / `aimFlickDegrees` (a spinning stick, §2) | `BrittleStarConfig` | 90°/s / 0.06 s / 120° |
+| `ringSmear` / `ringSmearMinDegrees` / `ringSmearStepDegrees` / `ringSmearMaxCopies` / `ringSmearShader` (§2) | `BrittleStarConfig` | ×1 / 1.5° / 2.5° / 24 / `BrittleStarRingSmear.shader` |
 | `heatPerRound` / `coolRate` / `chargeCoolRate` / `overheatRecoverBelow` | `BrittleStarConfig` | 0.000637 / 0.12 /s / 0.6 /s / 0.35 |
 | `heatCapacity` (Space — the heat the guns hold) | `BrittleStarConfig` | 1 → 3.33 (~6 s → ~20 s full-pull burst) |
 | `cordLength` (the saber) / `cordLooseLengthScale` (the whip) / `cordLinks` / `cordCutRadius` (× Charge) | `BrittleStarConfig` | 80 u / ×1.5 / 16 / 0.6 u |
@@ -515,7 +538,13 @@ None of that is a play test. In order:
 12. **Multiplayer (MPPM, two clients)**: one pilot shoots the other: the victim loses petals and is **not** moved. Both
     clients see the same mode, the same five corner trails and the same ring stock. Known gap: the analog RT depth does
     not replicate, so the remote copy fires (and heats) at a full pull during a partial one (§3.4).
-13. Run the edit-mode suite: `BrittleStarTests`, `EnumIntegrityTests`, `OneThumbVesselCoverageTests`,
+13. **A spinning stick (2026-11-03)**: any mode but Speed, spin the right stick in fast circles, both ways, faster and
+    faster. The ring turns the stick's way at up to 3 rev/s and never stutters backward or freezes; above ~1.5°/frame it
+    is drawn smeared, and the smear is no brighter than the still ring (compare against a still ring on the same
+    background). Hold Space Mode and RT while spinning: the five guns still fire from the drawn turrets. Check the
+    smear in the Scene view too, and that the ring reappears at once when the stick stops. Profile one frame of a
+    spin (`BrittleStar ring layer` / `BrittleStar ring smear` in the Frame Debugger) on a phone.
+14. Run the edit-mode suite: `BrittleStarTests`, `BrittleStarRingSpinTests`, `EnumIntegrityTests`, `OneThumbVesselCoverageTests`,
     `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`.
 
 ## Follow-ups

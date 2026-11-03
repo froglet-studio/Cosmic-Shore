@@ -454,4 +454,8 @@ frame clock (display, 120, 60 or 30 fps), with a headless scorecard:
   port must average the same way: a rotational blur whose taps sum to 1, in a float or HDR target.
 - **Flywheel.**
 
-No Unity change yet: waiting on Garrett's pick.
+**Ported 2026-11-03** (Garrett picked Forward + motion smear: "push to unity"): `BrittleStarRules.ForwardTurn` and
+`AimSweep` in `AimRing`, `ringTurnRate` 1080, and the normalized smear as `BrittleStarRingSmearPass` +
+`BrittleStarRingSmear.shader` (the Unity contract: `R_VesselActions/BRITTLE_STAR.md` §2, "The ring under a spinning
+stick"). The studio's `AimRing` port (`VesselStudio/brittlestar.html`) runs the same forward rule, so
+`studio_to_unity.py --check` maps the three new sweep numbers too.

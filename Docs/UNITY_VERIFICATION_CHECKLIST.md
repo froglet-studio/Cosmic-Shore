@@ -21055,3 +21055,21 @@ tests were compiled, not run (the Prisma runner does not build on bleeding-edge 
 2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
    its end; only a faint rumble shows. Then a Dolphin drift: same.
 3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
+
+## 🔴 Brittle Star ring under a spinning stick: forward rule + normalized motion smear (2026-11-03, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/elegant-shannon-e7nrb2`. **Not compiled**: no .NET SDK in the session's container, so `unity_refcompile`
+did not run, and no editor was open. The rule was checked on a line-for-line JS copy (0 difference from the old rule below
+the turn rate; exactly the cap and 0 backward frames above it); the shader and the render pass were not compiled.
+Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY6ykxFy5o7QR5sh).
+
+1. **Compile** (player + editor) and run `BrittleStarRingSpinTests` and `BrittleStarTests`. Check the console for
+   `BrittleStarRingSmear.shader` errors and for `[BrittleStarAnimation] ... no camera drew the ring's motion smear`.
+2. **Spin the right stick** (Toybox Vessel Changer → Brittle Star, any mode but Speed): fast circles both ways. The ring
+   turns the stick's way, up to 3 rev/s, never stutters back or freezes.
+3. **The smear**: while it spins, the ring is drawn smeared and **no brighter** than a still ring on the same background;
+   the moment the stick stops, the plain ring is back with no pop (element morph unchanged, flames still on the pods).
+   Something opaque in front of the ring (your own trail) still hides it. Check the Scene view while playing too.
+4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
+   the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
+5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
