@@ -74,15 +74,20 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool aiStrikeSetupLeg;
         [Tooltip("The AI nose's follow rate per second, one row per intensity (I1..I4), by difficulty: 1.5 = the fleet lag every " +
                  "AI flies with elsewhere, higher = faster, 0 = no lag (as a human). The lag is the AI's biggest handicap in " +
-                 "Switchback, so these rows set each level's race time: offline, I4 lands Easy ~140 s, Medium ~130, Hard " +
-                 "~120, Legendary ~112 (SWITCHBACK.md \"Lag by difficulty\"). A negative entry leaves that level on the fleet lag.")]
+                 "Switchback, so these rows set each level's race time (SWITCHBACK.md \"Lag by difficulty\"). The I4 row is for a " +
+                 "mode WITHOUT the gauntlet (Scarab Rally; offline Easy ~140 s .. Legendary ~112); Switchback's I4 flies " +
+                 "aiNoseFollowGauntlet. A negative entry leaves that level on the fleet lag.")]
         [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
         {
             new(1.9f, 2.2f, 3f, 5f),     // I1
             new(2f, 2.4f, 3f, 5f),       // I2
             new(2.1f, 2.2f, 2.8f, 6f),   // I3
-            new(1.8f, 2.2f, 3.5f, 6f),   // I4
+            new(1.8f, 2.2f, 3.5f, 6f),   // I4 without the gauntlet
         };
+        [Tooltip("The AI nose's follow rates at I4 WITH the gauntlet (SWITCHBACK.md \"The I4 gauntlet\"), Easy/Medium/Hard/" +
+                 "Legendary, set to Yash's gauntlet bands (2026-11-03): offline Easy ~185 s, Medium ~173, Hard ~165, Legendary ~155, " +
+                 "each inside its 20 s band (175-195 / 165-185 / 155-175 / 145-165).")]
+        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.9f, 2.8f, 3.5f, 5f);
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +
@@ -169,12 +174,18 @@ namespace CosmicShore.Gameplay
         public static float NoseFollowFor(SwitchbackNoseFollow[] byIntensity, int intensity, int level) =>
             byIntensity != null && intensity >= 1 && intensity <= byIntensity.Length ? byIntensity[intensity - 1].For(level) : -1f;
 
+        /// <summary>The same, with the I4 gauntlet's own row (<paramref name="gauntlet"/>) wherever the course lays the
+        /// gauntlet (<paramref name="gauntletOn"/> at I4); every other intensity, and I4 without it, read the table.</summary>
+        public static float NoseFollowFor(SwitchbackNoseFollow[] byIntensity, in SwitchbackNoseFollow gauntlet, bool gauntletOn,
+                                          int intensity, int level) =>
+            SwitchbackBlastRun.HasGauntlet(intensity, gauntletOn) ? gauntlet.For(level) : NoseFollowFor(byIntensity, intensity, level);
+
         protected override void OnRacerArmed(IPlayer pilot)
         {
             var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
             if (transformer == null) return;
-            transformer.AINoseFollowPerSecond =
-                NoseFollowFor(aiNoseFollowByIntensity, Intensity, (int)gameData.AIDifficultyFor(pilot));
+            transformer.AINoseFollowPerSecond = NoseFollowFor(aiNoseFollowByIntensity, aiNoseFollowGauntlet, BlastRunGauntlet,
+                                                              Intensity, (int)gameData.AIDifficultyFor(pilot));
         }
 
         SwitchbackAvoidSkill AvoidSkillFor(IPlayer pilot) => SwitchbackAvoidSkill.ForLevel((int)gameData.AIDifficultyFor(pilot));

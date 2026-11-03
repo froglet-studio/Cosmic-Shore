@@ -146,10 +146,12 @@ sealed class Opts
     public bool NoseLag = true;
     // The AI nose's follow rate per second, one row per intensity (I1..I4), each Easy, Medium, Hard, Legendary: 1.5 = the
     // fleet lag, 0 = no lag. noseFollow=e,m,h,l sets every row (1.5,1.5,1.5,1.5 = the fleet lag, as before 2026-11-02);
-    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity.
+    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity for I1-I3 and, at I4 (the
+    // simulator always lays the gauntlet), SwitchbackController.aiNoseFollowGauntlet (2026-11-03; the old I4 row was
+    // 1.8, 2.2, 3.5, 6, which a mode without the gauntlet still flies).
     public float[][] NoseFollowTable =
     {
-        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.8f, 2.2f, 3.5f, 6f },
+        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.9f, 2.8f, 3.5f, 5f },
     };
     public bool CmdSteer;              // what-if: the AI judges its stick from its COMMANDED heading, not the lagging nose
     public float CmdLead;              // ...and leads the command past the aim by this share of the nose's lag        // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose

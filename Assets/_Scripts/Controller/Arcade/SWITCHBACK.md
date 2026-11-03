@@ -657,10 +657,17 @@ then `cone=1`, closer to the asset's cone):
 | Gauntlet, `cone=1` | 193 | 179 | 159 | 132 |
 
 Every race finishes. Legendary takes about 33 keys a race and hits 50-100 prisms (4-12 Danger); Easy (decision quality
-0.30, its habit is to thread) rams the line and takes about 45 Danger hits. **The I4 nose-lag row was not retuned**:
-Yash's I4 bands (130-150 / 120-140 / 110-130 / 100-120 s) were set on the old I4, and the gauntlet is meant to be slower;
-`noseFollowI4=e,m,h,l` in the simulator retunes the row once new bands are chosen. These are model seconds (the step 1
-soak ran about 1.6x the model).
+0.30, its habit is to thread) rams the line and takes about 45 Danger hits. These are model seconds (the step 1 soak ran
+about 1.6x the model), on the old I4 nose-lag row; the gauntlet has its own row since (next paragraph).
+
+**The gauntlet's difficulty row** (Yash, 2026-11-03: "yes", to new I4 bands): the old I4 bands no longer fit a slower
+course, so the gauntlet's bands keep their shape - 20 s wide, each level 10 s from the next - and move with it:
+**Easy 175-195 s, Medium 165-185, Hard 155-175, Legendary 145-165.** `SwitchbackController.aiNoseFollowGauntlet` = 1.9 /
+2.8 / 3.5 / 5 per second lands them, offline on 48 courses a level (slowest 10 % in brackets): **185 (200), 173 (190),
+165 (182), 155 (164)**, every race finished. As before, the nose rate is the lever: at the SAME rate the four levels
+finish within a few seconds of each other (at 3/s: 170 / 176 / 174 / 168 s on 12 courses). `aiNoseFollowByIntensity`'s
+I4 row (1.8 / 2.2 / 3.5 / 6) stays for a mode without the gauntlet (Scarab Rally); the simulator's I4 row is the
+gauntlet's (`noseFollowI4=` retunes it).
 
 **Tests** (headless: `bash Tools/Build/switchback_sim_harness/run.sh tests` runs the shipped `SwitchbackBlastRunTests`
 and `SwitchbackBlastPlannerTests` through `NUnitShim.cs` and `TestRunner.cs`, 76 cases): `TheGauntletZigZagsKeyToKeyToTheDoor`,
@@ -1019,7 +1026,8 @@ difficulty's clearance. Raise it if hulls still clip prism edges, lower it if th
 | `aiDodgeDangerOnly` | on | Dodge only Danger prisms; plain ones are flown through (Step 1) |
 | `aiNoDodgeNearRing` | 200 | u from the ring inside which nothing is dodged (Step 1); 0 = dodge up to the ring |
 | `aiStrikeSetupLeg` | off | Before a blast, fly to a point behind the key onto the fire line (the old strike, Step 2) |
-| `aiNoseFollowByIntensity` | I1 1.9/2.2/3/5, I2 2/2.4/3/5, I3 2.1/2.2/2.8/6, I4 1.8/2.2/3.5/6 | The AI nose's follow rate per second, per intensity, Easy/Medium/Hard/Legendary: 1.5 = the fleet lag, 0 = none ("Lag by difficulty") |
+| `aiNoseFollowGauntlet` | 1.9/2.8/3.5/5 | The I4 gauntlet's own nose follow rates, Easy/Medium/Hard/Legendary ("The I4 gauntlet") |
+| `aiNoseFollowByIntensity` | I1 1.9/2.2/3/5, I2 2/2.4/3/5, I3 2.1/2.2/2.8/6, I4 1.8/2.2/3.5/6 (I4 without the gauntlet) | The AI nose's follow rate per second, per intensity, Easy/Medium/Hard/Legendary: 1.5 = the fleet lag, 0 = none ("Lag by difficulty") |
 
 ## Offline: the Blast Run simulator (2026-11-01)
 
@@ -1245,6 +1253,7 @@ Median seconds offline (48 courses a cell; slowest 10 % in brackets) and the ban
 | I2 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (143) | 117 (131) | 109 (118) | 99 (105) |
 | I3 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (148) | 120 (136) | 111 (125) | 101 (109) |
 | I4 (Yash's bands 130-150 / 120-140 / 110-130 / 100-120) | 140 (149) | 129 (138) | 120 (127) | 112 (119) |
+| I4 gauntlet since 2026-11-03 (bands 175-195 / 165-185 / 155-175 / 145-165; `aiNoseFollowGauntlet`) | 185 (200) | 173 (190) | 165 (182) | 155 (164) |
 
 The I1-I3 bands are this doc's reading of "similar differences" (10 s steps, 20 s wide); retune a row with
 `noseFollowI<n>=e,m,h,l` in the simulator. All 768 races finished. **These are simulator seconds:** in the step 1 soak
