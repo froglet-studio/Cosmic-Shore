@@ -271,7 +271,8 @@
   }
   const ringBase = (j) => W.course.rings[((j % W.course.rings.length) + W.course.rings.length) % W.course.rings.length];
   function rot(p, a) { const c = Math.cos(a), s = Math.sin(a); return [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]]; }
-  const driftA = (t) => W.course.hz.drift ? DRIFT_W * W.course.spin * t : 0;
+  // the drift runs on the course clock W.driftT, which Stopwatch slows (lead times ahead run at the slowed rate too)
+  const driftA = (t) => W.course.hz.drift ? DRIFT_W * W.course.spin * ((W.driftT || 0) + (t - W.t) * (W.driftRate || 1)) : 0;
   const ringAt = (j, t) => rot(ringBase(j), driftA(t == null ? W.t : t));
   const isLocked = (j) => W.course.hz.keys && (j % W.course.rings.length) % 2 === 1;
   const raceLen = () => W.course.rings.length * LAPS;
@@ -458,6 +459,9 @@
 
     // ---- Time cards on a clock: Fast Forward (double time, cooldowns too), Metronome, Synchrony, Out of Phase ----
     for (const k of ['ffT', 'syncT', 'slingT', 'phaseOutT']) W[k] = Math.max(0, (W[k] || 0) - dt);
+    W.driftRate = has('time-stopwatch') ? 1 - sv('time-stopwatch', 0, lv('time-stopwatch')) / 100 : 1;   // Stopwatch: the switches drift slower too
+    W.driftT = (W.driftT || 0) + dt * W.driftRate;
+    const blink = has('time-blink-step') ? sv('time-blink-step', 0, lv('time-blink-step')) / 100 : 0;   // Blink Step: dodges shots and reef bites
     if (has('time-fast-forward') && cooldown('ff', 20, dt)) W.ffT = sv('time-fast-forward', 0, lv('time-fast-forward'));
     const cdt = W.ffT > 0 ? dt * 2 : dt;
     if (has('time-synchrony') && cooldown('sync', sv('time-synchrony', 0, lv('time-synchrony')), cdt)) W.syncT = 0.6;
@@ -486,7 +490,7 @@
         if (segD2(m.pp || m.p, m.p, ring) < rr && (m.thr !== W.done || W.t - m.thrT >= REPASS)) { m.thr = W.done; m.thrT = W.t; W.passes += 1 + ghost; }   // counts again after REPASS s
       }
       if (W.passes >= Math.ceil(P.startSize * QUORUM)) {
-        if (isLocked(W.done)) W.keys--;
+        if (isLocked(W.done) && !(has('time-rewind') && W.rnd() < sv('time-rewind', 0, lv('time-rewind')) / 100)) W.keys--;   // Rewind: a spent key may rewind and come back
         W.done++; W.passes = 0; W.events.push({ t: W.t, kind: 'switch', n: W.done });
         if (W.done >= raceLen()) { W.finishT = W.t; W.events.push({ t: W.t, kind: 'finish' }); }
       }
@@ -502,13 +506,15 @@
       W.fetch = W.fetch.filter((f) => { f.t -= cdt; if (f.t <= 0) { W.keys++; return false; } return true; });
       if (W.keys + W.fetch.length < 1 + (isLocked(W.done + 1) ? 1 : 0) && W.fetch.length < n) { const c = nearest(W.crystals, W.centroid, (c) => c.alive && c.key && d2(c.p, W.centroid) < 900 * 900); if (c) { c.alive = false; c.respawn = 8; W.fetch.push({ t: 2 * len(sub(c.p, W.centroid)) / sp }); } }
     }
-    // ---- Save Point: once a lap, a swarm knocked to its minimum rewinds to its size a few seconds ago ----
+    // ---- Save Point: once a lap, a swarm knocked to its minimum, or keyless at a locked switch, rewinds to its size and keys a few seconds ago ----
     if (game === 'race') {
-      W.saveLog.push([W.t, ms.length]); while (W.saveLog.length > 2 && W.saveLog[1][0] < W.t - 12) W.saveLog.shift();
-      const lap = Math.floor(W.done / W.course.rings.length);
-      if (has('time-save-point') && W.saveUsedLap !== lap && ms.length <= minS + 2) {
-        const back = sv('time-save-point', 0, lv('time-save-point')), then = W.saveLog.find((e) => e[0] >= W.t - back) || W.saveLog[0];
+      W.saveLog.push([W.t, ms.length, W.keys]); while (W.saveLog.length > 2 && W.saveLog[1][0] < W.t - 60) W.saveLog.shift();
+      const lap = Math.floor(W.done / W.course.rings.length), back = has('time-save-point') ? sv('time-save-point', 0, lv('time-save-point')) : 0;
+      const then = W.saveLog.find((e) => e[0] >= W.t - back) || W.saveLog[0];
+      const keyless = isLocked(W.done) && W.keys < 1 && then[2] > W.keys;   // at a locked switch with no key, but it held one back then
+      if (has('time-save-point') && W.saveUsedLap !== lap && (ms.length <= minS + 2 || keyless)) {
         for (let i = ms.length; i < then[1]; i++) addMember(W.centroid);
+        W.keys = Math.max(W.keys, then[2]);   // the rewind returns the keys it held too
         W.saveUsedLap = lap; W.events.push({ t: W.t, kind: 'save point' }); ms = alive();
       }
     }
@@ -560,7 +566,7 @@
     const baseBite = 0.5;    // lab: a bare member's chance per second to break a plain enemy prism it touches
     for (const m of ms) {
       if (skimPer) { let sk = false; near(m.p, 45, (q) => { if (q.team === 'E') sk = true; }); m.skim = Math.max(0, Math.min(5, (m.skim || 0) + (sk ? dt * 3 : -dt))); }
-      if (game === 'race' && W.course.hz.reefs && !(W.phaseOutT > 0)) { let hit = false; near(m.p, 12, (q) => { if (q.reef && q.alive) hit = true; }); if (hit && ms.length > minS && rnd() < REEF_KILL * dt) { killMember(m, 'reef'); continue; } }
+      if (game === 'race' && W.course.hz.reefs && !(W.phaseOutT > 0)) { let hit = false; near(m.p, 12, (q) => { if (q.reef && q.alive) hit = true; }); if (hit && ms.length > minS && rnd() < REEF_KILL * dt && rnd() >= blink) { killMember(m, 'reef'); continue; } }
       for (const c of W.crystals) if (c.alive && c.key && d2(c.p, m.p) < 28 * 28) takeKey(c);
       for (const c of W.crystals) if (c.alive && !c.key && d2(c.p, m.p) < 28 * 28) { c.alive = false; c.respawn = 6; W.stats.crystals++; if (PHASES[W.phase].key === 'elem' || (nSw > 1)) W.gotY++; if (alive().length < cap) addMember(c.p); }   // lab: each elemental crystal hatches one starling
       if (W.omni && d2(W.omni.p, m.p) < 20 * 20) { W.omni = null; W.omniRespawn = 4; W.stats.omnis++; if (PHASES[W.phase].key === 'omni') endPhase(true); else dealHand(); }
@@ -629,7 +635,7 @@
     }
 
     // ---- rivals: wander, lay their mass, collect crystals, shoot members ----
-    const dodge = has('time-blink-step') ? sv('time-blink-step', 0, lv('time-blink-step')) / 100 : 0;
+    const dodge = blink;
     for (const r of W.rivals) {
       if (r.ko) { r.ko -= dt; if (r.ko <= 0) Object.assign(r, newRival()); continue; }
       r.silenced = Math.max(0, r.silenced - dt); r.slowT = Math.max(0, r.slowT - dt);
@@ -648,7 +654,7 @@
           W.events.push({ t: W.t, kind: 'shot', a: r.p.slice(), b: tgt.p.slice() });
           const nowAlive = alive().length;
           const sw = has('time-stopwatch') && d2(r.p, W.centroid) < Math.pow(sv('time-stopwatch', 1, lv('time-stopwatch')) + 220, 2) ? sv('time-stopwatch', 0, lv('time-stopwatch')) / 100 : 0;
-          if (nowAlive > minS && rnd() < 0.5 * (1 - sw) && rnd() >= dodge) { if (tgt.shells > 0) tgt.shells--; else killMember(tgt, 'shot'); }
+          if (nowAlive > minS && !(W.phaseOutT > 0) && rnd() < 0.5 * (1 - sw) && rnd() >= dodge) {   /* Out of Phase: shots pass through */ if (tgt.shells > 0) tgt.shells--; else killMember(tgt, 'shot'); }
         }
       }
     }
