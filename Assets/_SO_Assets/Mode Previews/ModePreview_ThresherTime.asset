@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 66
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Thresher''s full-sling circle, laid
-    as rings at match start, so a preview has no gates. It teaches the Barren cell and the
-    plant - wind in - let go sling. One cell serves every intensity.'
+    at match start with a nest to break at every gate, so a preview has no gates. It teaches the
+    Barren cell and the plant - wind in - let go sling. One cell serves every intensity.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
@@ -23,7 +23,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 14
-  ObjectiveText: Plant, wind in, let go - sling down the straights
+  ObjectiveText: Break every nest - plant, swing the chain, smash the core
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

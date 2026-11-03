@@ -55,6 +55,9 @@ SCRIPT_PATHS = {
     "ThresherTimeController":  f"{MODE_DIR}/ThresherTimeController.cs",
     "ThresherTimeCourse":      f"{MODE_DIR}/ThresherTimeCourse.cs",
     "ThresherTimeCourseTests": "Assets/_Scripts/Tests/Editor/ThresherTimeCourseTests.cs",
+    # The targets (2026-11-04, Yash: "it should not have rings, it should have objects that it can break").
+    "ThresherTimeNest":        f"{MODE_DIR}/ThresherTimeNest.cs",
+    "ThresherTimeNestTests":   "Assets/_Scripts/Tests/Editor/ThresherTimeNestTests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/THRESHERTIME.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset"
@@ -94,6 +97,17 @@ EXISTING = {
 }
 assert lib.existing_guid("Assets/_SO_Assets/Classes/SO_Class_Thresher.asset") == EXISTING["Vessel_Thresher"], \
     "arcade_mode_lib.VESSELS['Thresher'] is not SO_Class_Thresher.asset's guid"
+# The environment prism every nest is laid from (ThresherTimeController.nestPrefab), Serpentine's debris prism:
+# Assets/_Prefabs/Trails/SpawnablePrism.prefab, whose Prism component is fileID 4563009547826722997.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+
+# ── The targets (ThresherTimeController's "Targets" and "Rewards" fields) ─────
+# A nest at every gate (ThresherTimeNest); the rings are hidden. On I1-I4: how near a pilot must be to an opened
+# nest to clear its gate, and how long it stays open before it grows back - shorter and tighter at the top, so the
+# high intensities are a race to break your OWN target. A crystal sits in every third nest's core.
+CREDIT_RADIUS_BY_INTENSITY = (320, 280, 240, 200)
+REGROW_SECONDS_BY_INTENSITY = (3, 3, 2.5, 2)
+CRYSTAL_EVERY_NTH_TARGET = 3
 
 # ── Tuning ───────────────────────────────────────────────────────────────────
 
@@ -159,10 +173,11 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "ThresherTi
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameThresherTime") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Your speed is your sling - pull LT all
-    the way to plant the ball and swing round it, pull RT to wind the chain in and spin up,
-    let go to fly off at up to nearly four times cruise. A sling is your own momentum, so
-    every corner asks how much of it you can carry. Three laps. Fastest domain home wins.
+  Description: Threshers only, against the clock. Every gate is a nest to break - the ball,
+    a chain cut, a charged blast or a ram all crack its core, and the gate opens. Plant beside
+    a nest and your orbiting chain shreds its cage and charges the ball, then let go and smash
+    the core. Every third nest hides a crystal. Higher levels arm the cage with danger and
+    shielded plates and regrow it fast. Fastest domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('ThresherTime')}, type: 3}}
@@ -262,13 +277,44 @@ def clone_scene() -> str:
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
     authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+
+
+def floats(values) -> str:
+    return "".join(f"  - {v}\n" for v in values)
+
+
+# The controller's target fields, authored into the committed scene (2026-11-04). The block is the generator's: on
+# the first run it goes in right after the controller's field block; after that it is replaced in place, so a re-tune
+# here is one edit plus a re-run (never a hand edit of the scene).
+TARGET_FIELDS = (
+    f"  nestPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+    f"  creditRadiusByIntensity:\n{floats(CREDIT_RADIUS_BY_INTENSITY)}"
+    f"  regrowSecondsByIntensity:\n{floats(REGROW_SECONDS_BY_INTENSITY)}"
+    "  nestBurstPerFrame: 48\n"
+    "  nestBurstSpeed: 40\n"
+    "  nestRegrowPerFrame: 40\n"
+    f"  crystalEveryNthTarget: {CRYSTAL_EVERY_NTH_TARGET}\n")
+
+
+def with_target_fields(text: str) -> str:
+    start = text.find("  nestPrefab: ")
+    if start < 0:
+        assert text.count(NEW_FIELDS) == 1, "the controller's field block is not in the scene exactly once"
+        return text.replace(NEW_FIELDS, NEW_FIELDS + TARGET_FIELDS, 1)
+    end_key = text.find("  crystalEveryNthTarget: ", start)
+    assert end_key > start, "the scene's target block has nestPrefab but no crystalEveryNthTarget"
+    end = text.index("\n", end_key) + 1
+    return text[:start] + TARGET_FIELDS + text[end:]
+
+
+scene = with_target_fields(scene)
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
 g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "ModePreview_ThresherTime") + f"""  Mode: {MODE_ID}
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Thresher''s full-sling circle, laid
-    as rings at match start, so a preview has no gates. It teaches the Barren cell and the
-    plant - wind in - let go sling. One cell serves every intensity.'
+    at match start with a nest to break at every gate, so a preview has no gates. It teaches the
+    Barren cell and the plant - wind in - let go sling. One cell serves every intensity.'
   PreviewCell: {{fileID: 11400000, guid: {EXISTING['PreviewCell']}, type: 2}}
   PreviewCellsByIntensity: []
   StructurePrefab: {{fileID: 0}}
@@ -276,7 +322,7 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Thresher']}
-  ObjectiveText: Plant, wind in, let go - sling down the straights
+  ObjectiveText: Break every nest - plant, swing the chain, smash the core
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -347,6 +393,21 @@ _ctrl = read_or_empty(SCRIPT_PATHS["ThresherTimeController"])
 _laps = lib.cs_field_default(_ctrl, "laps")
 if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"ThresherTimeController.laps default is not {LAPS}")
+
+# The targets: every authored key is a field the controller serializes (a renamed field would leave the scene's value
+# silently unread), the block is in the scene, and the ladder only gets harder.
+for key in re.findall(r"^  (\w+):", TARGET_FIELDS, re.M):
+    if not re.search(rf"\b{key}\b\s*[=;]", _ctrl):
+        errors.append(f"ThresherTimeController has no serialized field '{key}' for the scene's target block")
+if TARGET_FIELDS not in scene:
+    errors.append("the scene's controller block does not carry the authored target fields")
+if not SPAWNABLE_PRISM:
+    errors.append("Assets/_Prefabs/Trails/SpawnablePrism.prefab has no guid - the nests have no prism to lay")
+for name, ladder in (("credit radius", CREDIT_RADIUS_BY_INTENSITY), ("regrow seconds", REGROW_SECONDS_BY_INTENSITY)):
+    if len(ladder) != 4 or list(ladder) != sorted(ladder, reverse=True):
+        errors.append(f"the {name} ladder {ladder} must be four values that never grow with the intensity")
+if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherTimeNest"])):
+    errors.append("ThresherTimeNest.cs is missing - the controller lays its nests from it")
 
 _tests = read_or_empty(SCRIPT_PATHS["ThresherTimeCourseTests"])
 for const, want in (("Inner", 480.0), ("Outer", 1080.0)):

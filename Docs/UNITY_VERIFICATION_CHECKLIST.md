@@ -188,6 +188,28 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 Thresher Time: a nest to break at every gate instead of a ring (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
+
+**What landed:** the rings are hidden and every gate is a nest (`ThresherTimeNest`): a core inside a cage armoured more
+at each intensity (I1 seven blocks, no cage; I4 one 3.5 u block in a shielded cage with danger plates and a danger halo).
+Break the core by any means and the nest bursts; the pilot whose next gate it is clears it by passing within the credit
+radius (320 / 280 / 240 / 200 u) before it regrows (3 / 3 / 2.5 / 2 s). A crystal sits in every third core.
+`THRESHERTIME.md` §0. Affects: Garrett's Thresher Time (he created the mode, and asked for the ball to thread rings,
+which no longer applies while nests stand).
+
+**Verified without the editor:** the open editor on B: recompiled it through the Unity CLI with 0 errors and 0 warnings;
+`author_thresher_time_assets.py --check` passes and failed by name on a mutated card. NOT run: `ThresherTimeNestTests`
+(the CLI cannot run tests in an open editor with Unity Pipeline 0.5), any race.
+
+**Verify in editor:**
+1. EditMode: `ThresherTimeNestTests` and `ThresherTimeCourseTests` pass.
+2. Thresher Time I1: no rings show, a cluster of blocks stands at each gate; break one (ram or ball) and it bursts and the
+   objective arrow moves on. It grows back about 3 s later.
+3. I4: the cage is shielded (two hits a plate), danger plates debuff you, the core is small. Plant beside a nest and
+   orbit: the chain cuts the cage and the ball's next hit blasts the core.
+4. Every third nest holds a crystal you can take once it is open.
+5. AI Threshers (the soak or the AI Diagnose panel): they break their nests and finish at every intensity.
+
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** an AI Thresher in Thresher Time now launches AIMED, as Garrett does (85% of his planted time). Under the
