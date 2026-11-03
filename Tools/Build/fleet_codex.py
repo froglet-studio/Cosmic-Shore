@@ -343,8 +343,6 @@ def controls(key, elements, one_stick, bindings, atp, profile):
     import element_ability_table as eat
     names = eat.INPUT_EVENTS
     scheme = ("TotemButtons" if profile and profile["scheme"] == atp.SCHEME["TotemButtons"] else "ThumbLifts") if atp else None
-    inv_input = {v: k for k, v in (atp.INPUT.items() if atp else [])}
-    inv_el = {v: k for k, v in (atp.ELEMENT.items() if atp else [])}
 
     def touch_for(element, inp, label):
         if not atp:
@@ -671,7 +669,8 @@ def save_layers(art, rel, layers):
 
 
 def lockup_cards(key):
-    """The icon kit's resting cards (spec LOCKUP), rendered in silver: the HUD's card as it sits, parts and all."""
+    """The icon kit's cards for a hull, each as (silver composite, tint layers): the resting card (spec LOCKUP) per slot,
+    and the level-5 state per element as '<Element>@L5'. Reads the kit; never writes to it."""
     spec_path = os.path.join(HERE, "icon_kit", "specs", key.lower() + ".py")
     if not os.path.exists(spec_path):
         return {}
@@ -680,11 +679,6 @@ def lockup_cards(key):
         sys.path.insert(0, os.path.join(HERE, "icon_kit"))
         import states
         spec = importlib.import_module("specs." + key.lower())
-        silver = {k: (236, 236, 236, 255) for k in states.domain_colours()}
-        shielded = getattr(states, "SHIELDED", None)
-        if isinstance(shielded, dict):
-            for k in list(shielded):
-                shielded[k] = (190, 190, 190, 255)
         out = {}
         for el in ELEMENTS + ["Omni"]:
             sib = getattr(spec, "LOCKUP", {}).get(el)
@@ -693,14 +687,13 @@ def lockup_cards(key):
         # The level-5 card: the state the kit draws for "<Element> 5" on that element's own card (the picked card, not
         # an options group) - what the HUD swaps the card's parts to when the upgrade comes on (the Tiger Moth's gilded
         # keys, the Sparrow's shielded rounds). Shielded parts keep the HUD's shielded signal so the change reads.
-        signal = L5_SHIELDED
         for c in getattr(spec, "CARDS", []):
             el = c.get("element")
             if c.get("group") or el not in ELEMENTS or f"{el}@L5" in out:
                 continue
             for st in c.get("states", []):
                 if re.search(rf"(?<!\d){el} 5(?!\d)", st[0]):
-                    out[f"{el}@L5"] = kit_layers(st[1], c["parts"], states, silver_shielded=signal)
+                    out[f"{el}@L5"] = kit_layers(st[1], c["parts"], states, silver_shielded=L5_SHIELDED)
                     break
         return out
     except Exception as e:   # the kit is optional: the HUD's own sprites still answer

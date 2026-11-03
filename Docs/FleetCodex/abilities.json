@@ -609,18 +609,18 @@
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
   },
   "Mass": {
-   "ability": "Orbit Mode",
-   "does": "Parked: the shipped Stoat flies the orbit alone, so this button switches nothing right now. The field-dipole Mass mode it switched to is kept in code until the kit is decided.",
-   "trigger": "Parked",
-   "scales": "Mass has nothing to act on while the mode is parked.",
+   "ability": "Heavy Launch",
+   "does": "Your launch out of an orbit hits harder. Let go or flick your steering thumb to fly out of the orbit, aimed where you flick or steer, and the kick carries more momentum.",
+   "trigger": "Passive - on every launch",
+   "scales": "More Mass makes the launch kick harder.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md"
   },
   "Space": {
    "ability": "Catch Orbit",
-   "does": "Lay a black hole and its white hole ahead, the black hole on the side you pressed. Fly past and it catches you into an orbit: hold to circle, squeeze for a tighter turn, let go to fly out on the tangent.",
-   "trigger": "Press, hold to orbit, release to fly out",
+   "does": "Lay a black hole and its white hole ahead, the black hole on the side you pressed. Fly past it on that side and it catches you into an orbit: squeeze for a tighter circle, let go or flick to launch where you aim.",
+   "trigger": "Press, hold to orbit, release or flick to launch",
    "scales": "More Space widens the orbit your hole pair catches you into.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md"
   },
   "Time": {
    "ability": "Timed Slingshot",
@@ -630,7 +630,7 @@
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
   },
   "Omni": {
-   "ability": "Overclock",
+   "ability": "Fulmen",
    "does": "Fires a branching thunderbolt from your cell's centre that sets prisms along it burning; any omni crystal a branch reaches sends off a smaller bolt of its own.",
    "trigger": "Pick up an omni crystal",
    "source": "Assets/_Scripts/Controller/Environment/Fulmen/README.md"
