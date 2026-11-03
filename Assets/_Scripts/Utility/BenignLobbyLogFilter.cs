@@ -17,6 +17,13 @@ namespace CosmicShore.Utility
     /// decorate Unity's global <see cref="ILogHandler"/> and drop the signature on both overrides;
     /// every other log is forwarded to the original handler verbatim.
     ///
+    /// It also drops the SDK's <see cref="ObjectDisposedException"/> from
+    /// <c>LobbyHandler.OnAccessTokenChanged</c>: on a token refresh the handler's <c>ResetAsync</c>
+    /// unsubscribes every lobby channel it still tracks, including ones already disposed by a
+    /// leave, and the throw escapes on the SDK's own async path (no project frame is in the stack).
+    /// Matched on the exception type AND that frame, so a disposed-object bug in our own code
+    /// is never hidden.
+    ///
     /// Editor / Development only - the error has only been observed in the Editor and the release
     /// behaviour of the handler swap is untested.
     /// </summary>
@@ -29,7 +36,7 @@ namespace CosmicShore.Utility
             if (Debug.unityLogger.logHandler is FilteringLogHandler) return;
 
             Debug.unityLogger.logHandler = new FilteringLogHandler(Debug.unityLogger.logHandler);
-            CSDebug.Log("[BenignLobbyLogFilter] Installed - suppressing the benign LobbyPatcher ArgumentOutOfRangeException.");
+            CSDebug.Log("[BenignLobbyLogFilter] Installed - suppressing the benign LobbyPatcher ArgumentOutOfRangeException and the token-refresh ObjectDisposedException.");
         }
 
         private sealed class FilteringLogHandler : ILogHandler
@@ -64,6 +71,11 @@ namespace CosmicShore.Utility
                 {
                     if (current is ArgumentOutOfRangeException
                         && (current.StackTrace?.Contains("LobbyPatcher") ?? false))
+                        return true;
+
+                    // Token-refresh reset unsubscribing an already-disposed lobby channel.
+                    if (current is ObjectDisposedException
+                        && (current.StackTrace?.Contains("LobbyHandler.OnAccessTokenChanged") ?? false))
                         return true;
                 }
                 return false;
