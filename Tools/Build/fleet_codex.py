@@ -4,7 +4,7 @@ The Fleet Codex: every vessel's abilities, element scaling, level-5 upgrades, co
 modes, docs and recent changes, read from the SHIPPED assets and code, written as the data the Fleet Codex
 artifact draws (Docs/FleetCodex/README.md).
 
-    python3 Tools/Build/fleet_codex.py [--out DIR] [--no-images] [--files-json]
+    python3 Tools/Build/fleet_codex.py [--out DIR] [--no-images] [--files-json] [--branch-label L] [--pending BRANCH ...]
 
 The /fleet-codex skill (.claude/skills/fleet-codex/SKILL.md) publishes and refreshes the artifact from it.
 
@@ -49,6 +49,21 @@ def read(rel):
 def git(*args):
     r = subprocess.run(["git", "-C", REPO, *args], capture_output=True, text=True)
     return r.stdout.strip()
+
+
+def contains_bleeding_edge():
+    """None when the tree read carries every commit of origin/bleeding-edge, else why not. The codex states what the
+    game ships, so it is built on bleeding-edge (a worktree of it, with any shipped-but-unmerged branch merged on
+    top: /fleet-codex 1, /ship 5.6) - never on a feature branch alone, which silently drops whatever landed on
+    bleeding-edge since the branch was cut (2026-11-03: the live page had been published from a feature branch)."""
+    if subprocess.run(["git", "-C", REPO, "rev-parse", "--verify", "-q", "origin/bleeding-edge"],
+                      capture_output=True).returncode != 0:
+        return "origin/bleeding-edge is not fetched here (git fetch origin bleeding-edge)"
+    if subprocess.run(["git", "-C", REPO, "merge-base", "--is-ancestor", "origin/bleeding-edge", "HEAD"],
+                      capture_output=True).returncode != 0:
+        return ("HEAD does not contain origin/bleeding-edge: build in a worktree of bleeding-edge, merging any shipped "
+                "branch on top (/fleet-codex 1)")
+    return None
 
 
 def class_enum():
@@ -1230,7 +1245,7 @@ def card_art(card_asset, art, pngs, name):
     return rel
 
 
-def build(out_dir, images=True, render_domains=False):
+def build(out_dir, images=True, render_domains=False, branch_label=None, pending=()):
     import shutil
     if images and os.path.isdir(os.path.join(out_dir, "img")):
         for entry in os.listdir(os.path.join(out_dir, "img")):   # a removed icon must not be republished;
@@ -1331,7 +1346,11 @@ def build(out_dir, images=True, render_domains=False):
     data = {
         "schema": "cosmic-shore.fleet-codex/2",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
-        "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
+        # The tree read: the branch name, or a label for a merged tree ("bleeding-edge + claude/x"). `pending` lists
+        # the SHIPPED branches folded in that bleeding-edge does not carry yet (/ship 5.6, /fleet-codex 1): the daily
+        # refresh keeps merging each one in until it lands, so a shipped branch's facts are not reverted overnight.
+        "branch": branch_label or git("rev-parse", "--abbrev-ref", "HEAD"),
+        "pending": sorted(set(pending)),
         "commit": git("rev-parse", "--short", "HEAD"),
         "commitDate": git("log", "-1", "--date=short", "--format=%ad"),
         "github": GITHUB,
@@ -1341,7 +1360,7 @@ def build(out_dir, images=True, render_domains=False):
         "vessels": vessels,
     }
     # The content hash ignores the stamp, so a run that found nothing new says so.
-    body = json.dumps({k: v for k, v in data.items() if k not in ("generated", "branch", "commit", "commitDate")},
+    body = json.dumps({k: v for k, v in data.items() if k not in ("generated", "branch", "pending", "commit", "commitDate")},
                       sort_keys=True)
     data["contentHash"] = hashlib.sha256(body.encode()).hexdigest()[:16]
     os.makedirs(out_dir, exist_ok=True)
@@ -1359,8 +1378,18 @@ def main():
                          "cached in <out>/img/dom by model hash)")
     ap.add_argument("--files-json", action="store_true",
                     help="after building, print the Artifact publish `files` list (paths relative to --out, the root)")
+    ap.add_argument("--branch-label", help="the stamp's name for the tree read (default: the checked-out branch)")
+    ap.add_argument("--pending", action="append", default=[], metavar="BRANCH",
+                    help="a shipped branch folded into this tree that bleeding-edge does not carry yet (repeatable); "
+                         "recorded in the stamp so the daily refresh keeps it until it merges")
+    ap.add_argument("--allow-off-bleeding-edge", action="store_true",
+                    help="build a tree that does not contain origin/bleeding-edge (a local look only: never publish it)")
     a = ap.parse_args()
-    data = build(os.path.abspath(a.out), images=not a.no_images, render_domains=a.render_domains)
+    why = contains_bleeding_edge()
+    if why and not a.allow_off_bleeding_edge:
+        sys.exit(f"fleet_codex: refusing to build - {why}")
+    data = build(os.path.abspath(a.out), images=not a.no_images, render_domains=a.render_domains,
+                 branch_label=a.branch_label, pending=a.pending)
     v = data["vessels"]
     print(f"fleet.json: {len(v)} vessels, {sum(x['status']['abilities'] for x in v)} abilities, "
           f"{sum(x['status']['upgradesWired'] for x in v)} L5 upgrades wired, "
