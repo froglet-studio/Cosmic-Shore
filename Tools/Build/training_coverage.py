@@ -111,7 +111,10 @@ def collect():
     mode_tips = library_keys(lib, "modeTips", "Mode")
     metric_tips = library_keys(lib, "metricTips", "Metric")
     gotw = set(int_list(read(GOTW), "rotation")) | {int(field(read(GOTW), "fallback", "-1"))}
-    maps = {f[:-6] for f in os.listdir(os.path.join(ROOT, ABILITY_MAPS)) if f.endswith(".asset")}
+    # Keyed on vesselClass, the way the runtime finds a hull's map, never on the asset's file name: a
+    # hull whose display Name has a space ("Tiger Moth") would otherwise read as having no map.
+    maps = {field(read(os.path.join(ABILITY_MAPS, f)), "vesselClass")
+            for f in os.listdir(os.path.join(ROOT, ABILITY_MAPS)) if f.endswith(".asset")}
 
     cards = []
     for screen, rel in LISTS:
@@ -122,10 +125,12 @@ def collect():
                 continue
             t = read(path)
             mode = int(field(t, "Mode", "-1"))
-            hulls = []
+            hulls, hulls_no_map = [], []
             for vg in guid_list(t, "Vessels"):
                 vt = read(idx[vg]) if vg in idx else ""
                 hulls.append(field(vt, "Name") or "?")
+                if field(vt, "Class") not in maps:
+                    hulls_no_map.append(hulls[-1])
             p = previews.get(mode)
             metric = p["metric"] if p else None
             cards.append({
@@ -134,7 +139,7 @@ def collect():
                 "mode": mode,
                 "mode_name": modes.get(mode, str(mode)),
                 "hulls": hulls,
-                "hulls_no_map": [h for h in hulls if h not in maps],
+                "hulls_no_map": hulls_no_map,
                 "preview": bool(p),
                 "flyable": bool(p and p["flyable"]),
                 "mode_tips": mode in mode_tips,
