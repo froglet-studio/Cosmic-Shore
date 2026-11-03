@@ -21,6 +21,7 @@ The page keys everything by the VesselClassType member, so a class asset's displ
 map's name ("BrittleStar") can never split one vessel into two rows.
 """
 import argparse
+import functools
 import glob
 import hashlib
 import json
@@ -522,7 +523,8 @@ def image_sprite(prefabs, path, guid, fid, outer):
 
 
 def image_parts(path, fid):
-    """The sprites of an Image's visible child images (the cards the HUD builds from parts), in draw order."""
+    """(Image fileID, sprite guid) of an Image's visible child images (the cards the HUD builds from parts), in draw
+    order."""
     _, docs = unity_docs(path)
     doc = docs.get(fid)
     go = re.search(r"m_GameObject: \{fileID: (-?\d+)", doc[2]) if doc else None
@@ -541,7 +543,7 @@ def image_parts(path, fid):
             if c == "114" and IMAGE_SCRIPT in b:
                 sp = re.search(r"m_Sprite: \{fileID: (-?\d+)(?:, guid: (\w+))?", b)
                 if sp and sp.group(2):
-                    out.append(sp.group(2))
+                    out.append((k, sp.group(2)))
             if c in ("224", "4") and depth < 2 and "m_Children:" in b:
                 for ch in re.findall(r"- \{fileID: (-?\d+)\}", b.split("m_Children:")[1].split("m_Father")[0]):
                     cg = re.search(r"m_GameObject: \{fileID: (-?\d+)", docs.get(ch, ("", False, ""))[2])
@@ -563,13 +565,17 @@ def hud_of(key, prefabs):
         sp = prefabs.get(g.group(1)) if g else None
         if sp and "abilityIcons:" in open(sp, encoding="utf-8", errors="replace").read():
             return sp, g.group(1), prefab_mods(body)
+    # the Manta and the Grizzly carry their HUD view inside the vessel prefab itself
+    if any(c == "114" and "abilityIcons:" in b for c, s, b in docs.values()):
+        meta = open(path + ".meta", encoding="utf-8").read()
+        return path, re.search(r"guid: (\w+)", meta).group(1), []
     return None
 
 
 L5_SHIELDED = (104, 164, 255, 255)   # the HUD's shielded signal (states.SHIELDED["jade"]): an L5 that shields reads as one
 
 
-KIT_LAYERS = {}   # published icon path -> its exact tint layers, for icons the kit composed
+ICON_LAYERS = {}   # published icon path -> its tint layers (every icon drawn with the HUD's real colours)
 DOMAINS = ("Jade", "Ruby", "Gold")   # the playable domains (Blue is the game's "no team", Docs/PALETTE.md 2.8)
 COLOR_SET = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes", "OriginalColorSetSO.asset")
 BARS_CONFIG = os.path.join(REPO, "Assets", "Resources", "ElementalBarsConfig.asset")
@@ -588,6 +594,7 @@ def _linear_to_gamma(c):
     return 1.055 * (c ** (1 / 2.4)) - 0.055
 
 
+@functools.lru_cache(maxsize=1)
 def palette():
     """The colours the game tints a HUD with, read from the shipped palette and computed the way SO_ColorSet does:
     signal = GetDomainSignalColor (TrailHighlightColor with its brightest channel driven to 1), shielded =
@@ -610,6 +617,176 @@ def palette():
             "sources": [os.path.relpath(COLOR_SET, REPO), os.path.relpath(BARS_CONFIG, REPO)]}
 
 
+def _rgba(text, field):
+    m = re.search(rf"\b{field}: \{{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+), a: ([-\d.e]+)\}}", text)
+    return tuple(float(x) for x in m.groups()) if m else None
+
+
+@functools.lru_cache(maxsize=1)
+def game_colours():
+    """The fixed (domain-independent) colours a HUD paints, read from the shipped assets: danger =
+    SO_ColorSet.GetDangerSignalColor (EnvironmentColors.Danger, brightest channel to 1); fire, blue, lime, grey and the
+    petal white = ElementalBarsConfigSO; white = Color.white."""
+    cs = open(COLOR_SET, encoding="utf-8").read().replace("\n      ", " ")
+    bars = open(BARS_CONFIG, encoding="utf-8").read()
+    d = _rgba(cs, "Danger")
+    peak = max(d[:3]) or 1.0
+    out = {"danger": (d[0] / peak, d[1] / peak, d[2] / peak), "white": (1.0, 1.0, 1.0)}
+    for tok, field in (("fire", "fireColor"), ("blue", "blueColor"), ("lime", "limeColor"), ("grey", "greyColor"),
+                       ("petalwhite", "whiteColor")):
+        out[tok] = _rgba(bars, field)[:3]
+    return out
+
+
+# How a HUD view paints an Image, read from `<image>.color = <expr>` in its script. Order matters: the first match wins.
+COLOUR_RULES = [
+    (r"Color\.clear|new Color\(\s*1f?\s*,\s*1f?\s*,\s*1f?\s*,\s*0f?\s*\)", "hidden"),
+    (r"[Dd]anger", "danger"), (r"[Ss]hielded", "shielded"), (r"BlueColor", "blue"),
+    (r"LimeColor|CtaSignal|\bCTA", "lime"), (r"FireColor", "fire"), (r"GreyColor", "grey"),
+    (r"WhiteColor", "petalwhite"), (r"[Dd]omain|_teamColor|TeamColor", "domain"), (r"Color\.white", "white"),
+]
+# methods whose writes are a moment, not the card at rest (a hit flash, a punch, a toll)
+MOMENT_METHODS = re.compile(r"Flash|Hit|Punch|Pulse|Blink|Bite|Shake|Toll|Collect", re.I)
+_METHOD = re.compile(r"^ {8}(?:\[[^\]]*\]\s*)?(?:(?:public|private|protected|internal|static|override|virtual|sealed|"
+                     r"async|new)\s+)*[\w<>\[\],.?]+\s+(\w+)\s*\([^;{]*$", re.M)
+
+
+def resolve_colour(expr, method, view_body, aliases=None, depth=0):
+    """A colour expression -> a token (domain, shielded, danger, blue, lime, fire, grey, petalwhite, white, hidden),
+    an (r, g, b, a) the prefab authors, or None when the script does not say."""
+    expr = " ".join(expr.split())
+    if "?" in expr and ":" in expr:
+        cond, rest = expr.split("?", 1)
+        a, b = rest.rsplit(":", 1)
+        # `tint.a > 0f ? tint : white` paints the tint once it lands; any other condition is a state, so the card at
+        # rest is the `else`
+        # a null check (`barsConfig ? barsConfig.BlueColor : white`) paints the true branch too
+        landed = re.fullmatch(r"\s*\(?\s*[\w.]+\.a\s*>\s*0f?\s*\)?\s*", cond)
+        null_check = re.fullmatch(r"\s*!?\s*\(?\s*[\w.]+\s*(?:!=\s*null)?\s*\)?\s*", cond) and "!" not in cond
+        expr = (a if landed or null_check else b).strip()
+    ident = re.fullmatch(r"\w+", expr)
+    if ident:
+        lit = _rgba(view_body, ident.group(0))
+        if lit:
+            return lit
+    for pat, tok in COLOUR_RULES:
+        if re.search(pat, expr):
+            return tok
+    if ident and aliases and depth < 2:   # a field the script fills elsewhere (_driftHullColor = domain)
+        for e2, m2 in aliases.get(ident.group(0), []):
+            tok = resolve_colour(e2, m2, view_body, aliases, depth + 1)
+            if tok and tok != "hidden":
+                return tok
+    if ident:   # a parameter: the method says what it carries (SetPlayerDomainColor(color))
+        for pat, tok in COLOUR_RULES[1:]:
+            if re.search(pat, method):
+                return tok
+    return None
+
+
+def hud_colours(hud_path, scripts_by_guid):
+    """{Image fileID: colour} for a vessel HUD: the field each view Image is wired to, and what the view's script
+    paints that field at rest (the first write outside a moment-method that resolves). An Image no script paints keeps
+    the m_Color its prefab authors."""
+    _, docs = unity_docs(hud_path)
+    out = {}
+    for fid, (c, stripped, body) in docs.items():
+        if c != "114" or "abilityIcons:" not in body:
+            continue
+        sg = re.search(r"m_Script: \{fileID: \d+, guid: (\w+)", body)
+        cs_path = scripts_by_guid.get(sg.group(1)) if sg else None
+        if not cs_path:
+            continue
+        text = open(cs_path, encoding="utf-8", errors="replace").read()
+        methods = [(m.start(), m.group(1)) for m in _METHOD.finditer(text)]
+
+        def method_at(pos):
+            return max(((p, n) for p, n in methods if p < pos), default=(0, ""))[1]
+        aliases = {}
+        for m in re.finditer(r"(?<![.\w])(_\w+)\s*=(?!=)\s*([^;]+);", text):
+            if not MOMENT_METHODS.search(method_at(m.start())):
+                aliases.setdefault(m.group(1), []).append((m.group(2), method_at(m.start())))
+        painted = {}
+        for m in re.finditer(r"\b(\w+)\.color\s*=\s*([^;]+);", text):
+            name = method_at(m.start())
+            if MOMENT_METHODS.search(name):
+                continue
+            tok = resolve_colour(m.group(2), name, body, aliases)
+            if tok is None:
+                continue
+            if tok != "hidden" or m.group(1) not in painted:
+                if painted.get(m.group(1)) in (None, "hidden"):
+                    painted[m.group(1)] = tok
+        for field, ref in re.findall(r"^  (\w+): \{fileID: (-?\d+)\}$", body, re.M):
+            if field in painted:
+                out[ref] = painted[field]
+    return out
+
+
+def omni_tint(key):
+    """What the vessel's HUD controller pushes onto the omni card (SetOmniAbilityTint): the Squirrel's is the shielded
+    colour; a hull that pushes nothing keeps the icon white."""
+    for path in glob.glob(os.path.join(REPO, "Assets/_Scripts/**", f"{key}HUDController.cs"), recursive=True):
+        m = re.search(r"SetOmniAbilityTint\(\s*(\w+)\s*\)", open(path, encoding="utf-8", errors="replace").read())
+        if m:
+            return resolve_colour(m.group(1), "", "") or "white"
+    return "white"
+
+
+def colour_layers(parts, fixed):
+    """Draw an icon from (image, colour) parts the way a Unity Image does (sprite x colour), as the page's tint layers:
+    d = parts painted the pilot's domain, s = the domain's shielded colour (white masks), f = everything else in its
+    real colour. A later part hides earlier ones in every layer. Returns (preview in Jade, layers)."""
+    from PIL import Image, ImageChops
+    size = (128, 128)
+    layers = {k: Image.new("RGBA", size, (0, 0, 0, 0)) for k in "dsf"}
+    jade = palette()["domains"]["Jade"]
+    preview = Image.new("RGBA", size, (0, 0, 0, 0))
+    for im, colour in parts:
+        if colour == "hidden":
+            continue
+        im = im.convert("RGBA")
+        r, g, b, a = im.split()
+        if isinstance(colour, tuple) and len(colour) == 4:
+            if colour[3] <= 0.01:
+                continue
+            a = a.point(lambda v, k=colour[3]: int(v * k))
+            colour = colour[:3]
+        if colour in ("domain", "shielded"):
+            lum = ImageChops.lighter(ImageChops.lighter(r, g), b)
+            part, k = Image.merge("RGBA", (r.point(lambda _: 255), g.point(lambda _: 255), b.point(lambda _: 255),
+                                           ImageChops.multiply(a, lum))), "d" if colour == "domain" else "s"
+            hexv = jade["signal" if colour == "domain" else "shielded"]
+            tint = tuple(int(hexv[i:i + 2], 16) / 255 for i in (1, 3, 5))
+        else:
+            tint = fixed.get(colour, (1.0, 1.0, 1.0)) if isinstance(colour, str) else colour
+            part, k = None, "f"
+        coloured = Image.merge("RGBA", (r.point(lambda v, t=tint[0]: int(v * t)), g.point(lambda v, t=tint[1]: int(v * t)),
+                                        b.point(lambda v, t=tint[2]: int(v * t)), a))
+        part = part or coloured
+        cover = part.split()[3]
+        for other in "dsf":
+            if other != k:
+                lr, lg, lb, la = layers[other].split()
+                layers[other] = Image.merge("RGBA", (lr, lg, lb, ImageChops.multiply(la, ImageChops.invert(cover))))
+        layers[k].alpha_composite(part)
+        preview.alpha_composite(coloured)
+    return preview, {k: im for k, im in layers.items() if im.getbbox()}
+
+
+def _fit(path, box=128):
+    """A sprite cropped to its pixels and centred on a box x box canvas (a single-sprite card)."""
+    from PIL import Image
+    im = Image.open(path).convert("RGBA")
+    bb = im.getbbox()
+    if bb:
+        im = im.crop(bb)
+    im.thumbnail((box, box), Image.LANCZOS)
+    canvas = Image.new("RGBA", (box, box), (0, 0, 0, 0))
+    canvas.alpha_composite(im, ((box - im.width) // 2, (box - im.height) // 2))
+    return canvas
+
+
 def kit_layers(entries, draws, states, silver_shielded=(190, 190, 190, 255)):
     """A kit card state as a silver composite plus its tint layers: d = the parts the HUD paints in the pilot's domain,
     s = the parts it paints in the domain's shielded signal (both white masks), f = the fixed-colour parts. A part laid
@@ -627,7 +804,11 @@ def kit_layers(entries, draws, states, silver_shielded=(190, 190, 190, 255)):
             k, rgba, sv = "s", (255, 255, 255, 255), silver_shielded
         else:
             k = "f"
-            rgba = colour if isinstance(colour, tuple) else states.FIXED[colour]
+            if isinstance(colour, tuple):
+                rgba = colour
+            else:   # the kit names the colour; the value is the game's (game_colours), not the sheet's sample
+                rgb = game_colours().get(colour)
+                rgba = tuple(int(round(c * 255)) for c in rgb) + (255,) if rgb else states.FIXED[colour]
             sv = rgba
         part = states._colour(draws[name](), rgba, alpha)
         cover = part.split()[3]
@@ -684,6 +865,12 @@ def lockup_cards(key):
             sib = getattr(spec, "LOCKUP", {}).get(el)
             if sib:
                 out[el] = kit_layers(sib["state"], sib["parts"], states)
+        # no LOCKUP slot: the element's own card in the state the HUD rests it in (its lockup_state, else the first)
+        for c in getattr(spec, "CARDS", []):
+            el = c.get("element")
+            if el in ELEMENTS and el not in out and not c.get("group") and c.get("states"):
+                st = c["states"][min(c.get("lockup_state", 0), len(c["states"]) - 1)]
+                out[el] = kit_layers(st[1], c["parts"], states)
         # The level-5 card: the state the kit draws for "<Element> 5" on that element's own card (the picked card, not
         # an options group) - what the HUD swaps the card's parts to when the upgrade comes on (the Tiger Moth's gilded
         # keys, the Sparrow's shielded rounds). Shielded parts keep the HUD's shielded signal so the change reads.
@@ -719,6 +906,21 @@ def named_icon(key, label, pngs_by_dir):
     return None
 
 
+_SCRIPTS = {}
+
+
+def scripts_by_guid():
+    """script guid -> .cs path, for the UI scripts (the vessel HUD views)."""
+    if not _SCRIPTS:
+        for cs in glob.glob(os.path.join(REPO, "Assets", "_Scripts", "**", "*.cs"), recursive=True):
+            meta = cs + ".meta"
+            if os.path.exists(meta):
+                g = re.search(r"guid: (\w+)", open(meta, encoding="utf-8", errors="replace").read())
+                if g:
+                    _SCRIPTS[g.group(1)] = cs
+    return _SCRIPTS
+
+
 def ability_art(key, art, prefabs, pngs, labels=None):
     """element -> published icon path, plus 'Omni'. Kit card, else the HUD's sprite (own HUD or own art), else its
     visible parts, else the hull's own icon named after the ability."""
@@ -729,11 +931,30 @@ def ability_art(key, art, prefabs, pngs, labels=None):
         out[el] = art.save(im, f"img/ab/{key}_{name}.png") if art.enabled else None
         if out[el]:
             layers[out[el]] = save_layers(art, out[el], lay)
-    KIT_LAYERS.update(layers)
+    ICON_LAYERS.update(layers)
     hud = hud_of(key, prefabs)
-    if hud:
+    if hud and art.enabled:
+        from PIL import Image
         path, guid, outer = hud
-        text, _ = unity_docs(path)
+        text, docs = unity_docs(path)
+        colours = hud_colours(path, scripts_by_guid())
+        fixed = game_colours()
+
+        def colour_of(fid, root=False):
+            """What the HUD paints this Image at rest: its view script's write, else the prefab's m_Color. The ability
+            icon's own Image is often authored at alpha 0 because the lockup card draws its sprite (the Jacks), so its
+            alpha is not a hide; a child part at alpha 0 is a state that is off at rest."""
+            if fid in colours:
+                return colours[fid]
+            doc = docs.get(fid)
+            c = _rgba(doc[2], "m_Color") if doc else None
+            return c[:3] + (1.0,) if c and root else c
+
+        def publish(el, parts, name):
+            im, lay = colour_layers(parts, fixed)
+            if im.getbbox():
+                out[el] = art.save(im, f"img/ab/{key}_{name}.png")
+                ICON_LAYERS[out[el]] = save_layers(art, out[el], lay)
         m = re.search(r"\n  abilityIcons:\n((?:  - .*\n(?:    .*\n)*)*)", text)
         for el_num, fid in re.findall(r"  - element: (\d+)\n    icon: \{fileID: (-?\d+)\}", m.group(1) if m else ""):
             el = ELEMENTS[int(el_num) - 1] if 1 <= int(el_num) <= 4 else None
@@ -742,25 +963,21 @@ def ability_art(key, art, prefabs, pngs, labels=None):
             g = image_sprite(prefabs, path, guid, fid, outer)
             if g and g in pngs:
                 if own_icon(key, pngs[g], path):
-                    out[el] = art.png(os.path.relpath(pngs[g], REPO), f"ab/{key}_{el}.png")
+                    publish(el, [(_fit(pngs[g]), colour_of(fid, root=True) or "white")], el)
                 continue
-            parts = [pngs[x] for x in image_parts(path, fid) if x in pngs and own_icon(key, pngs[x], path)]
-            stems = [os.path.basename(x)[:-4] for x in parts]
+            parts = [(f, pngs[x]) for f, x in image_parts(path, fid) if x in pngs and own_icon(key, pngs[x], path)]
+            stems = [os.path.basename(x)[:-4] for _, x in parts]
             # a part whose name extends another's is that part's other state (TrailsFat of Trails): the card at rest has one
-            parts = [x for x, s in zip(parts, stems) if not any(s != o and s.startswith(o) for o in stems)]
-            if parts and art.enabled:
-                from PIL import Image
-                canvas = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-                for x in parts:
-                    im = Image.open(x).convert("RGBA").resize((128, 128), Image.LANCZOS)
-                    canvas.alpha_composite(im)
-                out[el] = art.save(canvas, f"img/ab/{key}_{el}.png")
+            parts = [(f, x) for (f, x), st in zip(parts, stems) if not any(st != o and st.startswith(o) for o in stems)]
+            if parts:
+                publish(el, [(Image.open(x).convert("RGBA").resize((128, 128), Image.LANCZOS), colour_of(f) or "white")
+                             for f, x in parts], el)
         if "Omni" not in out:
             om = re.search(r"omniAbilitySprite: \{fileID: \d+, guid: (\w+)", text)
             ov = [og for tf, tg, pp, og in outer if pp == "omniAbilitySprite"]
             g = ov[0] if ov else (om.group(1) if om else None)
             if g and g in pngs and own_icon(key, pngs[g], path):
-                out["Omni"] = art.png(os.path.relpath(pngs[g], REPO), f"ab/{key}_Omni.png")
+                publish("Omni", [(_fit(pngs[g]), omni_tint(key))], "Omni")
     by_dir = {}
     for path in pngs.values():
         m = re.search(r"/AbilityIcons/([^/]+)/(?:[^/]+/)*[^/]+\.png$", path.replace(os.sep, "/"))
@@ -769,8 +986,10 @@ def ability_art(key, art, prefabs, pngs, labels=None):
     for el, label in labels.items():
         if el not in out:
             hit = named_icon(key, label, by_dir)
-            if hit:
-                out[el] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}.png")
+            if hit and art.enabled:
+                im, lay = colour_layers([(_fit(hit), "white")], game_colours())
+                out[el] = art.save(im, f"img/ab/{key}_{el}.png")
+                ICON_LAYERS[out[el]] = save_layers(art, out[el], lay)
     return out
 
 
@@ -1086,12 +1305,23 @@ def build(out_dir, images=True, render_domains=False):
     def icon_layers(rel):
         if not rel or not art.enabled:
             return None
-        if rel in KIT_LAYERS:
-            return KIT_LAYERS[rel] or None
+        if rel in ICON_LAYERS:
+            return ICON_LAYERS[rel] or None
         from PIL import Image
         return save_layers(art, rel, split_layers(Image.open(os.path.join(out_dir, rel)))) or None
+    def tinted(rel):
+        """An icon the HUD paints whole in one colour the scripts compute at runtime (abilities.json `tint`): one mask."""
+        from PIL import Image
+        return save_layers(art, rel, {"d": split_layers(Image.open(os.path.join(out_dir, rel))).get("d") or
+                                           Image.open(os.path.join(out_dir, rel)).convert("RGBA")}) if rel and art.enabled else None
     for v in vessels:
         for e in v["elements"].values():
+            tint = (e.get("words") or {}).get("tint")
+            if tint and e.get("icon"):
+                whole = tinted(e["icon"])
+                e["layers"] = whole
+                e["upgrade"]["layers"] = icon_layers(e["upgrade"].get("icon")) if e["upgrade"].get("icon") else None
+                continue
             e["layers"] = icon_layers(e.get("icon"))
             e["upgrade"]["layers"] = icon_layers(e["upgrade"].get("icon"))
         if v["omni"]:
