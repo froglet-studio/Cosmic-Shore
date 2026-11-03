@@ -5,7 +5,9 @@ A READER tool: it only reads `.claude/skills/*/SKILL.md` and git history, and wr
 
 Everything comes from the repo, never typed by hand:
   name / what it is for   the SKILL.md frontmatter (`name:`, `description:`)
-  created                 the date of the OLDEST commit that touched that SKILL.md
+  created                 the date of the OLDEST commit that touched that SKILL.md (`--full-history`, not
+                          `--diff-filter=A`: an add that arrived through a merge has no non-merge 'A' commit,
+                          and /bug-closeout read as never created that way)
   by                      the person behind that commit (Docs/TEAM.json, via who_works_where.Team),
                           else the person its branch belongs to, else "a Claude session"
   landed                  the first "Merge pull request #N" on bleeding-edge that carried it
