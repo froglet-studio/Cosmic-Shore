@@ -21,6 +21,10 @@ namespace CosmicShore.Gameplay
     {
         protected override string ModeName => "Scarab Rally";
 
+        /// <summary>The I4 gauntlet is built for the Dolphin's key blast (sealed eyes, plugged tunnels): Scarab Rally keeps
+        /// I4 as it was before it (SWITCHBACK.md "The I4 gauntlet").</summary>
+        protected override bool BlastRunGauntlet => false;
+
         protected override RaceCourseSource CreateCourseSource() => new ScarabRallyCourseSource();
     }
 }

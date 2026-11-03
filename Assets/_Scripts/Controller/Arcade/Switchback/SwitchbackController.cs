@@ -35,6 +35,9 @@ namespace CosmicShore.Gameplay
         [Header("Blast Run")]
         [Tooltip("Lays Blast Run's doors and block fields along the course (SwitchbackBlastRun) on every peer.")]
         [SerializeField] SpawnableSwitchbackFeatures featuresPrefab;
+        [Tooltip("u: the radius of the I4 gauntlet's path rays (SwitchbackPathRays), the beams of light down the way through " +
+                 "each blocked gate - key to key, to the door and through the ring. 0 = no rays.")]
+        [SerializeField, Min(0f)] float pathRayRadius = 1.2f;
 
         [Header("Fauna corridor")]
         [Tooltip("Per intensity (I1..I4): u round the gate-to-gate path no fauna is born in, steers into or eats in " +
@@ -93,6 +96,13 @@ namespace CosmicShore.Gameplay
         static readonly Unity.Profiling.ProfilerMarker s_featuresSpawnMarker = new("Switchback.Features.Spawn");
 
         protected override string ModeName => "Switchback";
+
+        /// <summary>
+        /// Whether I4 lays the GAUNTLET (SWITCHBACK.md "The I4 gauntlet": zig-zag keys, plugged tunnels, sealed eyes,
+        /// the path rays) - built for the Dolphin's key blast. A mode that reuses Switchback's course for a hull without
+        /// that blast overrides it false and keeps I4 as it was before 2026-11-03 (Scarab Rally). No effect at I1-I3.
+        /// </summary>
+        protected virtual bool BlastRunGauntlet => true;
 
         /// <summary>
         /// Switchback flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>): commit no
@@ -290,6 +300,7 @@ namespace CosmicShore.Gameplay
         SwitchbackBlastRunRuntime _runtime;
         SwitchbackFeatureLayout _blastLayout;
         CrystalManager _keyManager;
+        SwitchbackPathRays _rays;
         SwitchbackBlastAI _blastAI;
 
         /// <summary>
@@ -305,9 +316,12 @@ namespace CosmicShore.Gameplay
             // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
             float clearRadius = inner / innerRadiusNucleusFactor + NucleusMargin;
 
-            var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius);
+            var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius, BlastRunGauntlet);
             RaiseBlastRun(layout);
             ApplyFaunaCorridor(intensity);
+            // The I4 gauntlet's rays light the way through every blocked gate (empty below I4).
+            if (_rays) Destroy(_rays.gameObject);
+            _rays = SwitchbackPathRays.Create(layout, _course, pathRayRadius);
 
             Transform container = null;
             if (layout.Prisms.Count > 0)
@@ -348,7 +362,7 @@ namespace CosmicShore.Gameplay
             }
             _blastAI?.Dispose();
             _blastAI = planAI
-                ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity), _runtime, _course,
+                ? new SwitchbackBlastAI(new SwitchbackBlastPlanner(layout, _course.Count, intensity, BlastRunGauntlet), _runtime, _course,
                                         RingIndexFor, () => RaceLength, SkillFor, CourseSeedUsed, AvoidSkillFor,
                                         p => (int)gameData.AIDifficultyFor(p))
                 {
@@ -423,6 +437,8 @@ namespace CosmicShore.Gameplay
         {
             if (_corridorCell) _corridorCell.ClearFaunaPathCorridor();
             _corridorCell = null;
+            if (_rays) Destroy(_rays.gameObject);
+            _rays = null;
             _hits?.Dispose();
             _hits = null;
             if (_blastLayout != null)

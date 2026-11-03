@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Switchback I4 gauntlet: 1.5x the prisms, zig-zag keys, plugged tunnels, sealed eyes, path rays (`claude/dreamy-dijkstra-iv7i0k`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackBlastRun` I4 (Switchback only; `ScarabRallyController` turns it off and keeps the old I4):
+no bore, both eyes sealed (3 x 3 cubes, Danger heart), 2-3 keys a gate in a zig-zag each aimed at the next, a plugged
+tunnel on every segment (Pipe / Duct / Hoops / Helix / Cage), four new field shapes (frame, jack, hoop, ziggurat), caps
+x1.5 (5,100 prisms, 600 within 200 u, 42 movers); `SwitchbackPathRays` + `Resources/SwitchbackPathRay.mat` (rays down the
+route); the AI planner and executor take the keys in order (`StageFor`, through-the-key strike). `SWITCHBACK.md` "The
+I4 gauntlet". Layout revision 6.
+
+**Verified without the editor:** the shipped `SwitchbackBlastRunTests` + `SwitchbackBlastPlannerTests` headless
+(`switchback_sim_harness/run.sh tests`, all pass, four negative controls fire); I1-I3 layouts and AI races bit-identical
+to before, and the I4 with the gauntlet off bit-identical to the old I4 (64 seeds); `switchback_sim_harness` eval (every
+I4 race finishes at every level); reference compile (see the commit). NOT run: anything in Unity.
+
+**Verify in editor:**
+1. EditMode: `SwitchbackBlastRunTests`, `SwitchbackBlastPlannerTests` pass.
+2. Switchback I4, SEED: FIXED (45_504), fly it yourself: each blocked gate shows its rays (key to key to the door);
+   taking a key while drifting the nose onto the next ray clears that tunnel's plugs; ramming a sealed eye is a dead stop.
+   Report whether 2-3 blasts a gate feels right and how hard the pro line is.
+3. The same with 3 AI (Easy to Legendary): every AI finishes; Legendary takes most keys (AI Diagnose, F2, AI plan overlay).
+4. Perf: `SwitchbackSoakRunner` at I4 (or a clean capture, `SWITCHBACK.md` "Performance"): frame time and live colliders
+   near the path against the I4 numbers of 2026-11-02 (`Docs/perf/SWITCHBACK_PRISM_BUDGET.md`).
+5. Scarab Rally I4: unchanged (open eyes, one key a gate, no rays).
+
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 
 **What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
