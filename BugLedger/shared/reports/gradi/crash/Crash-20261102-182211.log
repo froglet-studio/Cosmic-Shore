@@ -1,0 +1,775 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-02 18:22:11 (next editor launch after the abnormal exit)
+session:        20261102-224554493  (pid 20372, Unity 6000.3.17f1)
+started:        2026-11-02T22:45:54.494Z UTC
+last heartbeat: 2026-11-02T23:03:14.258Z UTC
+last state:     EditMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+hang dump:      C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261102-224554493.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261102-224554493
+started: 2026-11-02T22:45:54.494Z UTC
+unity:   6000.3.17f1
+pid:     20372
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[17:46:32.898] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd5057587f (Unity) DebugStringToFile
+        0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001eb6859ca2e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001eb6859c5e3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001eb6859c29b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:46:33.767] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd5057587f (Unity) DebugStringToFile
+        0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001eb6859ca2e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001eb6859c5e3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001eb6859c29b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:47:59.014] ---- entering play mode ----
+[17:48:02.451] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_11164_RIECVQLXZFIMQENG
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\GitHub CLI\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[17:48:02.521] [EditMode] Exception: [Vivox]: System.ArgumentException: 'server' is null or empty
+Parameter name: server
+        0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd5057587f (Unity) DebugStringToFile
+        0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001eb6859ca2e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001eb6859c5e3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001eb6859c29b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:48:03.024] ---- play mode running ----
+[17:52:15.632] ---- leaving play mode ----
+[17:52:19.804] ---- edit mode restored ----
+[17:55:01.723] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261102-224554493.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[17:55:02.185] ---- domain reload begins (script compilation / play-mode transition) ----
+[17:55:26.938] ---- domain reload complete — session re-adopted ----
+[17:55:38.899] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd5057587f (Unity) DebugStringToFile
+        0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:55:40.487] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd5057587f (Unity) DebugStringToFile
+        0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(341,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(386,22): warning CS0108: 'SwarmFauna.StomachVolume(int)' hides inherited member 'Fauna.StomachVolume'. Use the new keyword if hiding was intended.
+
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(401,21): warning CS0108: 'SwarmFauna.IsStarving' hides inherited member 'Fauna.IsStarving'. Use the new keyword if hiding was intended.
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(330,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(347,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(376,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(395,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(129,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(153,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(231,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(268,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(462,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(841,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(863,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(892,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(218,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(239,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(371,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(386,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Vessel\VesselController.cs(491,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Vessel\VesselController.cs(501,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\UI\Controller\GobyPistolHUDController.cs(166,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Controller\JacksHUDController.cs(149,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Controller\OrcaHUDController.cs(161,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Controller\WrasseHUDController.cs(108,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Modals\ArcadeGameConfigureModal.SwitchbackSeedPicker.cs(153,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\StarlingHUDView.cs(500,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\StarlingHUDView.cs(531,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(300,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\AnglerHUDView.cs(408,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(262,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1548,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+
+Assets\_Scripts\Controller\Arcade\Switchback\SwitchbackBlastRun.cs(796,40): warning CS0219: The variable 'hc' is assigned but its value is never used
+
+Assets\_Scripts\Controller\Managers\PrismBurnSpread.cs(63,18): warning CS8656: Call to non-readonly member 'PrismBurnSpread.Enabled.get' from a 'readonly' member results in an implicit copy of 'this'.
+
+Assets\_Scripts\Controller\Managers\PrismBurnSpread.cs(82,18): warning CS8656: Call to non-readonly member 'PrismBurnSpread.Enabled.get' from a 'readonly' member results in an implicit copy of 'this'.
+
+Assets\_Scripts\UI\Elements\Ark\SquadsPage.cs(130,41): warning CS0414: The field 'SquadsPage.madeLine' is assigned but its value is never used
+
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+[BUSY       6s] Csc Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp-Editor.dll (+2 others)
+[3187/3194  7s] Csc Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp-Editor.dll (+2 others)
+[BUSY      12s] ILPostProcess Library/Bee/artifacts/1300b0aEDbg.dag/post-processed/Assembly-CSharp.dll (+pdb)
+[3188/3194  8s] ILPostProcess Library/Bee/artifacts/1300b0aEDbg.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp-Editor.dll, with 150 defines and 493 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[3189/3194  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[3190/3194  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+[3191/3194 20s] ILPostProcess Library/Bee/artifacts/1300b0aEDbg.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp.dll, with 152 defines and 464 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[3192/3194  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[3193/3194  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (45.15 seconds), 9 items updated, 3194 evaluated
+Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerDomainGamesController.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(907,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(762,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Tandava\TandavaController.cs(888,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TandavaSevering\TandavaSeveringController.cs(944,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(154,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(341,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(386,22): warning CS0108: 'SwarmFauna.StomachVolume(int)' hides inherited member 'Fauna.StomachVolume'. Use the new keyword if hiding was intended.
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(401,21): warning CS0108: 'SwarmFauna.IsStarving' hides inherited member 'Fauna.IsStarving'. Use the new keyword if hiding was intended.
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(330,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(347,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(376,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(395,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(129,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(153,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(231,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(268,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(462,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(841,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(863,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(892,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(218,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(239,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(371,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(386,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(491,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(501,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\Controller\GobyPistolHUDController.cs(166,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\JacksHUDController.cs(149,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\OrcaHUDController.cs(161,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\WrasseHUDController.cs(108,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Modals\ArcadeGameConfigureModal.SwitchbackSeedPicker.cs(153,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(500,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(531,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(300,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\AnglerHUDView.cs(408,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(262,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1548,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+Assets\_Scripts\Controller\Arcade\Switchback\SwitchbackBlastRun.cs(796,40): warning CS0219: The variable 'hc' is assigned but its value is never used
+Assets\_Scripts\Controller\Managers\PrismBurnSpread.cs(63,18): warning CS8656: Call to non-readonly member 'PrismBurnSpread.Enabled.get' from a 'readonly' member results in an implicit copy of 'this'.
+Assets\_Scripts\Controller\Managers\PrismBurnSpread.cs(82,18): warning CS8656: Call to non-readonly member 'PrismBurnSpread.Enabled.get' from a 'readonly' member results in an implicit copy of 'this'.
+Assets\_Scripts\UI\Elements\Ark\SquadsPage.cs(130,41): warning CS0414: The field 'SquadsPage.madeLine' is assigned but its value is never used
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+Reloading assemblies after forced synchronous recompile.
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-20372-qkydoz
+Unloading 29 Unused Serialized files (Serialized files now loaded: 0)
+[Logcat] [WorkThread] 17:55:02.3688 Worker thread exited
+[Logcat] [MainThread]17:55:02.3698 Dispatcher shutting down
+Unloading 16 unused Assets / (470.3 KB). Loaded Objects now: 39523.
+Memory consumption went from 0.79 GB to 0.79 GB.
+Total: 79.374900 ms (FindLiveObjects: 2.571400 ms CreateObjectMapping: 1.556600 ms MarkObjects: 75.068500 ms  DeleteObjects: 0.177700 ms)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (2.6 KB). Loaded Objects now: 39523.
+Memory consumption went from 0.79 GB to 0.79 GB.
+Total: 75.567200 ms (FindLiveObjects: 2.142800 ms CreateObjectMapping: 1.703800 ms MarkObjects: 71.640400 ms  DeleteObjects: 0.079200 ms)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 39523.
+Memory consumption went from 0.79 GB to 0.79 GB.
+Total: 75.113900 ms (FindLiveObjects: 2.185000 ms CreateObjectMapping: 1.833200 ms MarkObjects: 71.037600 ms  DeleteObjects: 0.057000 ms)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 39523.
+Memory consumption went from 0.79 GB to 0.79 GB.
+Total: 80.364500 ms (FindLiveObjects: 1.811300 ms CreateObjectMapping: 1.595900 ms MarkObjects: 76.873400 ms  DeleteObjects: 0.082700 ms)
+
+Total cache size 266830912
+Total cache size after purge 266830912, took 00:00:01.2922324
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in 20.330 seconds
+Refreshing native plugins compatible for Editor in 764.25 ms, found 15 plugins.
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics. Update Graphics APIs in the Player Settings. This warning can be suppressed by adding the scripting define DISABLE_ENTITIES_GRAPHICS_GLES_WARNING. For more details, see: <a href="https://docs.unity3d.com/Documentation/Manual/custom-scripting-symbols.html#player-settings">Custom symbols for a platform</a>.
+0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd5057587f (Unity) DebugStringToFile
+0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eb727d204e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001eb727d1cbd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001eb727cd3e3 (Mono JIT Code) UnityEditor.PlayerSettingsEntitiesGraphicsValidation:ValidateOpenGLES3Deprecation ()
+0x000001eb727ccdeb (Mono JIT Code) UnityEditor.PlayerSettingsEntitiesGraphicsValidation:.cctor ()
+0x000001ed7fd2cf65 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a3965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ffd567d9fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ffd5680cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x000001eb7279e8b2 (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x000001eb7279e76b (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x000001eb727988ab (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x000001ed7fd2bc3b (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd50dffdd4 (Unity) scripting_method_invoke
+0x00007ffd50e06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd50e02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd513f2433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ffd50d1d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ffd50d14cf3 (Unity) MonoManager::FinalizeReload
+0x00007ffd52ce5cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ffd52d752d6 (Unity) ImportOutOfDateAssets
+0x00007ffd52d7e3fa (Unity) RefreshInternalV2
+0x00007ffd52d86f17 (Unity) StopAssetImportingV2Internal
+0x00007ffd52d7f51c (Unity) RefreshV2
+0x00007ffd52cf1073 (Unity) AssetDatabase::Refresh
+0x00007ffd51622951 (Unity) Application::AutoRefresh
+0x00007ffd51454674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffe2d77ef5c (USER32) CallWindowProcW
+0x00007ffe2d77e9de (USER32) CallWindowProcW
+0x00007ffe0c68a08a (COMCTL32) DefSubclassProc
+0x00007ffe0c689fc8 (COMCTL32) DefSubclassProc
+0x00007ffe019133f3 (AppUINativePlugin) 
+0x00007ffe0c68a08a (COMCTL32) DefSubclassProc
+0x00007ffe0c689e87 (COMCTL32) DSA_Create
+0x00007ffe2d77ef5c (USER32) CallWindowProcW
+0x00007ffe2d77e8cc (USER32) DispatchMessageW
+0x00007ffe2d7910e3 (USER32) SendMessageTimeoutW
+0x00007ffe2e551424 (ntdll) KiUserCallbackDispatcher
+0x00007ffe2c4a1064 (win32u) NtUserPeekMessage
+0x00007ffe2d77a333 (USER32) PeekMessageW
+0x00007ffe2d77a293 (USER32) PeekMessageW
+0x00007ffd51419b24 (Unity) MainMessageLoop
+0x00007ffd51421a12 (Unity) UnityMain
+0x00007ff67e082f2a (Unity) __scrt_common_main_seh
+0x00007ffe2dbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ffe2e4fcc91 (ntdll) RtlUserThreadStart
+
+TypeManager.Initialize took: 360ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 22.40 ms, found 15 plugins.
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd5057587f (Unity) DebugStringToFile
+0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eb727d204e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001eb727d1cbd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001ed7fe02ffb (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:88)
+0x000001ebc06b56b1 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:237)
+0x000001ebc06b3753 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:164)
+0x000001ebc06ab73b (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:44)
+0x000001ebc06989f5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a3965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ffd567d9fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ffd5680cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x000001eb7279e8b2 (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x000001eb7279e76b (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x000001eb727988ab (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x000001ed7fd2bc3b (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd50dffdd4 (Unity) scripting_method_invoke
+0x00007ffd50e06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd50e02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd513f2433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ffd50d1d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ffd50d14cf3 (Unity) MonoManager::FinalizeReload
+0x00007ffd52ce5cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ffd52d752d6 (Unity) ImportOutOfDateAssets
+0x00007ffd52d7e3fa (Unity) RefreshInternalV2
+0x00007ffd52d86f17 (Unity) StopAssetImportingV2Internal
+0x00007ffd52d7f51c (Unity) RefreshV2
+0x00007ffd52cf1073 (Unity) AssetDatabase::Refresh
+0x00007ffd51622951 (Unity) Application::AutoRefresh
+0x00007ffd51454674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffe2d77ef5c (USER32) CallWindowProcW
+0x00007ffe2d77e9de (USER32) CallWindowProcW
+0x00007ffe0c68a08a (COMCTL32) DefSubclassProc
+0x00007ffe0c689fc8 (COMCTL32) DefSubclassProc
+0x00007ffe019133f3 (AppUINativePlugin) 
+0x00007ffe0c68a08a (COMCTL32) DefSubclassProc
+0x00007ffe0c689e87 (COMCTL32) DSA_Create
+0x00007ffe2d77ef5c (USER32) CallWindowProcW
+0x00007ffe2d77e8cc (USER32) DispatchMessageW
+0x00007ffe2d7910e3 (USER32) SendMessageTimeoutW
+0x00007ffe2e551424 (ntdll) KiUserCallbackDispatcher
+0x00007ffe2c4a1064 (win32u) NtUserPeekMessage
+0x00007ffe2d77a333 (USER32) PeekMessageW
+0x00007ffe2d77a293 (USER32) PeekMessageW
+0x00007ffd51419b24 (Unity) MainMessageLoop
+0x00007ffd51421a12 (Unity) UnityMain
+0x00007ff67e082f2a (Unity) __scrt_common_main_seh
+0x00007ffe2dbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ffe2e4fcc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+[Logcat] [WorkThread] 17:55:30.4498 Worker thread started
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in 10.278 seconds
+Domain Reload Profiling: 30605ms
+	BeginReloadAssembly (2231ms)
+		ExecutionOrderSort (3ms)
+		DisableScriptedObjects (159ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (2ms)
+		CreateAndSetChildDomain (1171ms)
+	RebuildCommonClasses (34ms)
+	RebuildNativeTypeToScriptingClass (13ms)
+	initialDomainReloadingComplete (63ms)
+	LoadAllAssembliesAndSetupDomain (17985ms)
+		LoadAssemblies (17237ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (842ms)
+			TypeCache.Refresh (122ms)
+				TypeCache.ScanAssembly (103ms)
+			BuildScriptInfoCaches (688ms)
+			ResolveRequiredComponents (26ms)
+	FinalizeReload (10279ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (4835ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (37ms)
+			SetLoadedEditorAssemblies (9ms)
+			BeforeProcessingInitializeOnLoad (733ms)
+			ProcessInitializeOnLoadAttributes (3497ms)
+			ProcessInitializeOnLoadMethodAttributes (551ms)
+			AfterProcessingInitializeOnLoad (6ms)
+			EditorAssembliesLoaded (2ms)
+		ExecutionOrderSort2 (3ms)
+		AwakeInstancesAfterBackupRestoration (4097ms)
+Start importing Assets/_Scripts/Controller/Arcade/BRITTLESTARTIME.md using Guid(b3a71c20a6fa0a900341bbe445be04af) (TextScriptImporter) -> (artifact id: '75dba15994a7a8c8a6df4f77bdf891eb') in 0.0117689 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) (PrefabImporter) -> (artifact id: 'a4d7b567439270f85f364f3022763247') in 0.0869776 seconds
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: 'efa62606e2783a8d4253b06ee9a3d6dd') in 0.0574564 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) (PrefabImporter) -> (artifact id: '9cadef43cdd28696514768262bec0e95') in 0.0620473 seconds
+Refreshing native plugins compatible for Editor in 22.52 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.10 ms.
+Asset Pipeline Refresh (id=6262e633f233d5544b1dcadf010b9c99): Total: 80.674 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=4 (actual=4, local cache=0, cache server=0)
+		Asset DB Process Time: managed=3 ms, native=12104 ms
+		Asset DB Callback time: managed=636 ms, native=50 ms
+		Scripting: domain reloads=1, domain reload time=20378 ms, compile time=47501 ms, other=0 ms
+		Project Asset Count: scripts=4702, non-scripts=12637
+		Asset File Changes: new=0, changed=4, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 18.970ms
+	ApplyChangesToAssetFolders: 0.670ms
+	Scan: 153.261ms
+	OnSourceAssetsModified: 0.076ms
+	CategorizeAssetsWithTransientArtifact: 0.035ms
+	ProcessAssetsWithTransientArtifactChanges: 14.270ms
+	CategorizeAssets: 190.661ms
+	ImportOutOfDateAssets: 11649.410ms (-36108.533ms without children)
+		ImportManagerImport: 235.579ms (15.593ms without children)
+			ImportInProcess: 219.901ms
+			UpdateCategorizedAssets: 0.084ms
+		CompileScripts: 47500.658ms
+		CollectScriptTypesHashes: 10.162ms
+		ReloadNativeAssets: 7.021ms
+		UnloadImportedAssets: 0.345ms
+		ReloadImportedAssets: 0.000ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.350ms
+		InitializingProgressBar: 0.002ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 1.825ms
+	PostProcessAllAssets: 643.204ms
+	Hotreload: 26.531ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.837ms
+	UnloadStreamsBegin: 0.003ms
+	PersistCurrentRevisions: 0.610ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 26.474ms
+	Untracked: 67975.773ms
+
+Unloading 6 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] log Unity client connected with ID: editor-20372-1co5m6 (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-20372-1co5m6 port=9001
+Unloading 1757 unused Assets / (58.3 MB). Loaded Objects now: 43928.
+Memory consumption went from 1.05 GB to 0.99 GB.
+Total: 53.323600 ms (FindLiveObjects: 2.467400 ms CreateObjectMapping: 2.858300 ms MarkObjects: 42.826100 ms  DeleteObjects: 5.170900 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+Starting new worker id: 0 with log in C:/Users/gradi/source/repos/Cosmic-Shore/Logs/AssetImportWorker0.log
+Starting new worker id: 1 with log in C:/Users/gradi/source/repos/Cosmic-Shore/Logs/AssetImportWorker1.log
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd5057587f (Unity) DebugStringToFile
+0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eb727d204e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ed47be914a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x000001ed4235c8e7 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x000001ed412206c9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x000001ed412200ec (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000001eb62f70668 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd50dffdd4 (Unity) scripting_method_invoke
+0x00007ffd50e06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd50e02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd502db129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffd50cc2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffd52730bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffd52730dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffd50c428ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffd50ccb65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffd5163833d (Unity) Application::TickTimer
+0x00007ffd51419f7c (Unity) MainMessageLoop
+0x00007ffd51421a12 (Unity) UnityMain
+0x00007ff67e082f2a (Unity) __scrt_common_main_seh
+0x00007ffe2dbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ffe2e4fcc91 (ntdll) RtlUserThreadStart
+
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.System.Exception: HTTP/1.1 403 Forbidden
+0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd5057587f (Unity) DebugStringToFile
+0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eb727d204e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ed47be914a (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x000001ed4235c8e7 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass10_0:<GetAndSetVivoxCredentials>g__HandleException|2 (System.Exception) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:139)
+0x000001ed412206c9 (Mono JIT Code) Unity.Services.Vivox.Editor.VivoxApiClient/<>c__DisplayClass15_0`1<T_REF>:<CreateJsonResponseHandler>g__JsonResponseHandler|0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.vivox@c9029deeec82/Editor/VivoxApiClient.cs:243)
+0x000001ed412200ec (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000001eb62f70668 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd50dffdd4 (Unity) scripting_method_invoke
+0x00007ffd50e06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd50e02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd502db129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffd50cc2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffd52730bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffd52730dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffd50c428ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffd50ccb65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffd5163833d (Unity) Application::TickTimer
+0x00007ffd51419f7c (Unity) MainMessageLoop
+0x00007ffd51421a12 (Unity) UnityMain
+0x00007ff67e082f2a (Unity) __scrt_common_main_seh
+0x00007ffe2dbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ffe2e4fcc91 (ntdll) RtlUserThreadStart
+
+Worker ready: AssetImportWorker0 0
+Worker ready: AssetImportWorker1 1
+[Worker1] Start importing Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlsPanel.cs using Guid(10fc721f61f84dc7b96af0e203e5b8ef) Importer(2089858483,797179f86c6e516b54ff30bda720a719) 
+[Worker0] Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) Importer(2089858483,797179f86c6e516b54ff30bda720a719) 
+[Worker0] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '02db7d7c85093e82001d69b236a0fc86') in 0.0440609 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/BRITTLESTARTIME.md using Guid(b3a71c20a6fa0a900341bbe445be04af) Importer(2089858483,797179f86c6e516b54ff30bda720a719) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3951a17937db47a130529e2c2c6d863d') in 0.0106844 seconds
+[Worker1] Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) Importer(2089858483,797179f86c6e516b54ff30bda720a719) 
+[Worker1] (ScriptedImporter)
+Account API did not become accessible within 30 seconds. This may be due to network issues or editor focus.
+0x00007ffd505c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd51dff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd51dffbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd5057587f (Unity) DebugStringToFile
+0x00007ffd50431b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001eb727d335e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001eb727d2f13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001eb727d2bcb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eb727d204e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001eb727d1cbd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001ebc27c53eb (Mono JIT Code) Unity.AI.Toolkit.Accounts.Services.States.ApiAccessibleState/<WaitForCloudProjectSettings>d__3:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Toolkit.Accounts/Services/States/ApiAccessibleState.cs:32)
+0x000001ed4122a47a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000001ebaa01f29e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000001ebaa01e71b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000001ed4122a1fb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000001ed4127c740 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000001ed7ff70a64 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000001ed7ff6f4cb (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000001ebab413528 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000001ebab412083 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000001ed7febae93 (Mono JIT Code) System.Threading.Tasks.Task`1<bool>:TrySetResult (bool)
+0x000001ed7feba98b (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<bool>:TrySetResult (bool)
+0x000001ecd1b7060b (Mono JIT Code) Unity.AI.Toolkit.EditorTask/<>c__DisplayClass22_0:<WaitForCondition>b__0 () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Toolkit.Async/EditorTask.cs:420)
+0x000001ed41262a78 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+0x000001ed7fd2cf65 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffd56966c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd568a8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd568a8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd50dffdd4 (Unity) scripting_method_invoke
+0x00007ffd50e06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd50e02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd513ebcbb (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallUpdateFunctions
+0x00007ffd51a69d27 (Unity) SceneTracker::Update
+0x00007ffd5163846d (Unity) Application::TickTimer
+0x00007ffd51419f7c (Unity) MainMessageLoop
+0x00007ffd51421a12 (Unity) UnityMain
+0x00007ff67e082f2a (Unity) __scrt_common_main_seh
+0x00007ffe2dbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ffe2e4fcc91 (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Worker1]  -> (artifact id: '414769b7b39b8b810ab9d4fb63cf5ed6') in 4.3437001 seconds
+[Worker0]  -> (artifact id: '42ee839d6a50c4231013043ab13d25ec') in 4.6345759 seconds
+
