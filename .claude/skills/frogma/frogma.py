@@ -1,37 +1,55 @@
 #!/usr/bin/env python3
-"""design_board.py - the /design-board skill's helper for the Froglet Design Board canvas (the design board).
+"""frogma.py - the /frogma skill's helper for Frogma, the team's design board.
 
-The design board is ONE claude.ai Design canvas, https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2 ("Froglet Design
-Board"; it was "Menu Redesign B" until 2026-11-02). Its index is `project/canvas.json` and every board is a
+Frogma is ONE claude.ai Design canvas, https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2 (titled "Frogma" since
+2026-11-03; "Froglet Design Board" from 2026-11-02, "Menu Redesign B" before that). Its index is `project/canvas.json` and every board is a
 `project/<Name>.dc.html` file. The canvas's pages are TABS (at most 40): "Menu Redesign" (the master tab every menu,
-HUD and start-flow round lives in), "Compute Console", and one tab per new area (`new-tab`, the /design-board-new skill).
+HUD and start-flow round lives in), "Compute Console", and one tab per new area (`new-tab`, the /frogma-new skill).
 A ROUND is a titled section on a tab: its boards `R<N><Key>.dc.html` under a title note `rev<N>` ("Rev N - ..."), so a
 round no longer costs a page. A copy of every board lives in `Docs/MenuRedesignB/board/` so a session can read designs
 without the canvas. This script never talks to claude.ai: the Artifact tool reads and publishes; this script works on
 the files it saved.
 
-    design_board.py status   [--live <canvas.json>] [--version V]   what the board holds, what is new, what waits on a pick
-    design_board.py find     <words...> [--live <canvas.json>]      boards and doc sections about a screen, newest first
-    design_board.py tabs     [--live <canvas.json>]                 the tabs, their rounds and board counts
-    design_board.py next-rev [--live <canvas.json>]                 the first free round number (note/page id AND board prefix)
-    design_board.py plan     --live <canvas.json> --root <dir> --name "<round name>" (--tab <tab id> | --new-tab "<name>")
+    frogma.py status   [--live <canvas.json>] [--version V]   what the board holds, what is new, what waits on a pick
+    frogma.py find     <words...> [--live <canvas.json>]      boards and doc sections about a screen, newest first
+    frogma.py tabs     [--live <canvas.json>]                 the tabs, their rounds and board counts
+    frogma.py next-rev [--live <canvas.json>]                 the first free round number (note/page id AND board prefix)
+    frogma.py plan     --live <canvas.json> --root <dir> --name "<round name>" (--tab <tab id> | --new-tab "<name>")
                              --board KEY="<title>" [...] [--interactive A,B] [--compare "<title>"]
                              [--notes "<title>" | --no-notes] [--notes-h 900] [--size 1920x1080] [--skeletons]
                                                                     writes <root>/project/canvas.json: the live index plus
                                                                     ONE new round (a titled section under the tab's last
                                                                     row) and its boards; prints the files to write
-    design_board.py new-tab  --live <canvas.json> --root <dir> --name "<tab name>" [--id <id>]
+    frogma.py new-tab  --live <canvas.json> --root <dir> --name "<tab name>" [--id <id>]
                                                                     adds an empty tab and opens the canvas on it
-    design_board.py fold     --live <canvas.json> --root <dir> --into <tab id> --name "<tab name>" --pages a,b,c
+    frogma.py fold     --live <canvas.json> --root <dir> --into <tab id> --name "<tab name>" --pages a,b,c
                              [--title "<canvas title>"]             moves whole pages into one tab as titled sections
                                                                     (frees pages when the canvas nears 40)
-    design_board.py check    <dir> [--only R34] [--strict]          the offline gate on the boards in <dir> (holds canvas.json)
-    design_board.py pull     --src <dir> [--version V] [--date D]   copy the boards and index saved from the canvas into the
+    frogma.py section  --live <canvas.json> --root <dir> (--round N | --prefix R44G | --boards A,B | --title-note ID)
+                       [--name "<title>"] [--id key] [--color teal|purple|orange|green|blue|pink|red|gray] [--pad 160]
+                                                                    a SECTION: a tinted, outlined region drawn under the
+                                                                    boards, with a big title (a round's own, or its own)
+    frogma.py group    (same picks as section) --name "<title>"     a GROUP: a dashed outline with a small title, inside
+                                                                    a section (an option's screens, a flow, a states set)
+    frogma.py sections --live <canvas.json> --root <dir> (--tab <id> | --all) [--title "<canvas title>"]
+                                                                    a section around every round / titled area lacking one
+    frogma.py move     <sec-/grp-id> --live .. --root .. (--by dx,dy | --to x,y)
+                                                                    moves a section or group WITH everything in it
+    frogma.py arrange  <sec-/grp-id> --live .. --root .. [--cols 3] [--gap 180]
+                                                                    auto layout: re-flows its boards (groups as blocks)
+                                                                    in reading order and refits the frame
+    frogma.py fit      <sec-/grp-id> --live .. --root ..            refits a frame to what it holds now
+    frogma.py ungroup  <sec-/grp-id> --live .. --root ..            removes the frame and its own title; boards stay
+    frogma.py outline  [--live <canvas.json>] [--tab <id>] [--brief] the layers panel: tab > section > group > board
+    frogma.py retitle  --live <canvas.json> --root <dir> --name "<title>"
+    frogma.py check    <dir> [--only R34] [--strict]          the offline gate on the boards in <dir> (holds canvas.json)
+    frogma.py pull     --src <dir> [--version V] [--date D]   copy the boards and index saved from the canvas into the
                                                                     repo copy and regenerate its README
-    design_board.py readme                                          regenerate the repo copy's README from its canvas.json
-    design_board.py --self-test
+    frogma.py readme                                          regenerate the repo copy's README from its canvas.json
+    frogma.py --self-test
 
-A READER except for `plan`, `new-tab` and `fold` (write under --root), `pull` and `readme` (write Docs/MenuRedesignB/board/). Exit 0 = ok,
+A READER except for `plan`, `new-tab`, `fold`, `section`, `group`, `sections`, `move`, `arrange`, `fit`, `ungroup` and
+`retitle` (write under --root), `pull` and `readme` (write Docs/MenuRedesignB/board/). Exit 0 = ok,
 1 = a check failed (each one named), 2 = it could not run.
 """
 from __future__ import annotations
@@ -51,12 +69,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 BOARD_URL = "https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2"
-BOARD_TITLE = "Froglet Design Board"
+BOARD_TITLE = "Frogma"
 MAX_TABS = 40
 COPY_DIR = REPO / "Docs" / "MenuRedesignB" / "board"
 DOC = REPO / "Docs" / "MENU_REDESIGN_B.md"
-README_START = "<!-- design_board.py readme: generated below, edit the text above -->"
-README_END = "<!-- design_board.py readme: end -->"
+README_START = "<!-- frogma.py readme: generated below, edit the text above -->"
+OLD_README_MARKS = ("<!-- design_board.py readme: generated below, edit the text above -->", "<!-- design_board.py readme: end -->")
+README_END = "<!-- frogma.py readme: end -->"
 
 # The round layout every page since Rev 3 uses: 1920x1080 screens three to a row, 180 px apart.
 GAP_X = 180
@@ -182,7 +201,7 @@ def rounds(index: dict) -> list[tuple[int, str | None, list[str]]]:
 def tab_bottom(index: dict, tab: str | None) -> int | None:
     """The lowest edge of anything on a tab (boards and notes), or None for an empty tab."""
     ys = [b["y"] + b["h"] for b in index.get("boards", {}).values() if tab_of(index, b) == tab]
-    ys += [n["y"] + (120 if n.get("kind") == "title1" else int(n.get("w", 300) * 4 / 3))
+    ys += [n["y"] + (n.get("h", 0) if n.get("kind") in ("rect", "oval", "pen", "image") else 120 if n.get("kind") == "title1" else int(n.get("w", 300) * 4 / 3))
            for n in index.get("notes", {}).values() if tab_of(index, n) == tab and "y" in n]
     return max(ys) if ys else None
 
@@ -233,11 +252,14 @@ def cmd_status(args) -> int:
     repo_idx = load_index(COPY_DIR / "canvas.json") if (COPY_DIR / "canvas.json").exists() else {"boards": {}, "pages": []}
     live_idx = load_index(Path(args.live)) if args.live else None
     idx = live_idx or repo_idx
-    print(f"Design board: {BOARD_URL}")
+    print(f"Frogma: {BOARD_URL}")
     print(f"  title: {idx.get('title')}   launch tab: {idx.get('launch', {}).get('page', '(canvas)')}")
     print(f"  tabs: {len(idx.get('pages', []))} of {MAX_TABS}   boards: {len(idx.get('boards', {}))}   next free round: Rev {next_rev(idx)}")
     if args.version:
         print(f"  live version read: {args.version}")
+    fs = frames(idx)
+    print(f"  sections: {sum(1 for f in fs.values() if f['kind'] == 'section')}   groups: {sum(1 for f in fs.values() if f['kind'] == 'group')}"
+          f"   notes: {len(idx.get('notes', {}))} of 999   (`outline` shows tab > section > group > board)")
     print("  tabs:")
     print_tabs(idx)
     print("  latest rounds:")
@@ -388,6 +410,10 @@ def only_ours_changed(original: dict, live: dict, boards: list[str], notes: list
     if new_tab:
         check["pages"] = [p for p in check["pages"] if p["id"] != tab]
     check["launch"] = original.get("launch", {})
+    if "noteOrder" in original or "noteOrder" in check:
+        check["noteOrder"] = original.get("noteOrder")
+        if check["noteOrder"] is None:
+            del check["noteOrder"]
     return check == original
 
 
@@ -479,15 +505,23 @@ def cmd_plan(args) -> int:
         placed.append((file, entry))
     live.setdefault("launch", {})["view"] = "canvas"
     live["launch"]["page"] = tab
+    frame_notes: list[str] = []
+    if not args.no_section:
+        sec_key = f"sec-{note_id}"
+        frame_notes, why = make_frame(live, "section", sec_key, None, [f for f, _ in placed], note_id,
+                                      args.color or frame_color(live, sec_key))
+        if why:
+            print(f"ERROR: the round's section: {why} (--no-section plans it without one)", file=sys.stderr)
+            return 1
 
-    if not only_ours_changed(original, live, [f for f, _ in placed], [note_id], tab, new_tab):
+    if not only_ours_changed(original, live, [f for f, _ in placed], [note_id] + frame_notes, tab, new_tab):
         print("ERROR: the plan changed a key that is not ours; refusing to write", file=sys.stderr)
         return 1
 
     root = Path(args.root)
     out = write_index(root, live)
     print(f"Rev {rev}: {label!r} on tab {tab!r} ({page_name(live, tab)}){' (new tab)' if new_tab else ''}, "
-          f"title note {note_id!r} at y={top - TITLE_ABOVE}; launch opens on the tab. Index written to {out}")
+          f"title note {note_id!r} at y={top - TITLE_ABOVE}{'' if args.no_section else f', in section sec-{note_id}'}; launch opens on the tab. Index written to {out}")
     print("Boards to write (each its WHOLE .dc.html; $preview and the root's size must equal w x h):")
     for file, e in placed:
         print(f"  project/{file:<28} x={e['x']:<5} y={e['y']:<6} {e['w']}x{e['h']}{'  interactive' if e.get('is_interactive') else ''}\n      {e['title']}")
@@ -609,6 +643,680 @@ def cmd_fold(args) -> int:
     return 0
 
 
+# ----------------------------------------------------------------------------------------------- sections and groups
+#
+# Frogma's SECTIONS and GROUPS are drawn with the canvas's own shape notes, so they are real objects on the canvas,
+# not a picture of one. Measured in the Design type's editor (release 1793657174, app.js):
+#   - a note of `kind` "rect" keeps x, y, w, h, color, css (background, opacity, border-*, border-radius, box-shadow),
+#     page and rotate; anything else is dropped, and a rect that carries `text` turns into a text note;
+#   - a rect is clamped to 8000 x 8000 px (so a bigger frame is TILED, borders only on the outer edges);
+#   - a shape whose area is over 500,000 px2 (and has no filter / backdrop-filter) is drawn UNDER the artboards, so a
+#     frame never covers a board; a smaller one is drawn over them, so `frame_box` grows a frame past that floor;
+#   - the editor drops unknown top-level keys of canvas.json on save, so membership is never stored: a board belongs to
+#     the innermost section or group whose frame holds its centre, exactly as the person sees it.
+# A section is `sec-<key>` (+ `sec-<key>-2`... tiles): a tinted, outlined region with a big title (a round's `rev<N>`
+# title note, or its own `sec-<key>-t`). A group is `grp-<key>` (+ tiles): a dashed outline, tighter, with a small
+# title `grp-<key>-t`; groups sit inside sections (an option's five screens inside its round, say).
+
+SHAPE_KINDS = ("rect", "oval", "line", "arrow", "pen", "image", "link")
+RECT_MAX = 8000
+UNDER_AREA = 520_000          # the editor puts a shape under the artboards above 500,000 px2; keep a margin
+SECTION_PAD = 160
+GROUP_PAD = 40
+GROUP_LABEL_ABOVE = 96
+FRAME_PREFIXES = ("sec-", "grp-")
+COLORS = {  # name -> rgb; teal, purple and orange are the domain colours (Jade, Ruby, Gold); the canvas's own names
+    "teal": (0, 212, 255), "purple": (166, 0, 255), "orange": (255, 174, 0), "green": (46, 204, 113),
+    "blue": (64, 120, 255), "pink": (255, 92, 168), "red": (255, 77, 77), "gray": (150, 156, 190),
+}
+ROTATION = ["teal", "purple", "orange", "green", "blue", "pink"]
+
+
+def is_frame_id(nid: str) -> bool:
+    return nid.startswith(FRAME_PREFIXES)
+
+
+def frame_key(nid: str) -> str | None:
+    """'sec-rev44-3' -> 'sec-rev44'; 'grp-a-t' -> None (a label, not a frame tile)."""
+    if not is_frame_id(nid) or nid.endswith("-t"):
+        return None
+    return re.sub(r"-\d+$", "", nid) if re.search(r"-\d+$", nid) and not re.fullmatch(r"(sec|grp)-\d+", nid) else nid
+
+
+def frames(index: dict) -> dict:
+    """Every section and group on the canvas: key -> {kind, tab, tiles, box, label}. Tiles are the rect notes."""
+    out: dict = {}
+    notes = index.get("notes", {})
+    for nid, n in notes.items():
+        key = frame_key(nid)
+        if key is None or n.get("kind") != "rect":
+            continue
+        # A tile `<key>-<n>` belongs to `<key>` only when `<key>` itself is a frame; else the id is its own key.
+        if key != nid and key not in notes:
+            key = nid
+        f = out.setdefault(key, {"kind": "section" if key.startswith("sec-") else "group", "tab": tab_of(index, n), "tiles": []})
+        f["tiles"].append(nid)
+    for key, f in out.items():
+        ts = [notes[t] for t in f["tiles"]]
+        x0, y0 = min(t["x"] for t in ts), min(t["y"] for t in ts)
+        x1, y1 = max(t["x"] + t["w"] for t in ts), max(t["y"] + t["h"] for t in ts)
+        f["box"] = (x0, y0, x1 - x0, y1 - y0)
+        f["label"] = frame_label(index, key, f)
+    return out
+
+
+def frame_label(index: dict, key: str, f: dict) -> str:
+    notes = index.get("notes", {})
+    if f"{key}-t" in notes:
+        return notes[f"{key}-t"].get("text", key)
+    inner = key[4:]
+    if inner in notes and notes[inner].get("kind") == "title1":
+        return notes[inner].get("text", key)
+    return key
+
+
+def inside(box: tuple, x: float, y: float) -> bool:
+    return box[0] <= x < box[0] + box[2] and box[1] <= y < box[1] + box[3]
+
+
+def overlaps(a: tuple, b: tuple) -> bool:
+    return a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
+
+
+def contains(outer: tuple, inner: tuple) -> bool:
+    return outer[0] <= inner[0] and outer[1] <= inner[1] and inner[0] + inner[2] <= outer[0] + outer[2] and inner[1] + inner[3] <= outer[1] + outer[3]
+
+
+def container_of(index: dict, fs: dict, tab: str | None, box: tuple, skip: str | None = None) -> str | None:
+    """The innermost frame on `tab` that holds the centre of `box` (smallest area wins)."""
+    cx, cy = box[0] + box[2] / 2, box[1] + box[3] / 2
+    best = None
+    for key, f in fs.items():
+        if key == skip or f["tab"] != tab or not inside(f["box"], cx, cy):
+            continue
+        if skip is not None and not contains(f["box"], box):
+            continue
+        area = f["box"][2] * f["box"][3]
+        if best is None or area < best[0]:
+            best = (area, key)
+    return best[1] if best else None
+
+
+def members(index: dict, key: str, fs: dict | None = None) -> dict:
+    """What a frame holds DIRECTLY: boards and notes whose innermost frame it is, and the frames nested in it."""
+    fs = fs if fs is not None else frames(index)
+    f = fs[key]
+    out = {"boards": [], "notes": [], "frames": []}
+    for name, b in index.get("boards", {}).items():
+        if tab_of(index, b) == f["tab"] and container_of(index, fs, f["tab"], (b["x"], b["y"], b["w"], b["h"])) == key:
+            out["boards"].append(name)
+    for other, g in fs.items():
+        if other != key and g["tab"] == f["tab"] and container_of(index, fs, f["tab"], g["box"], skip=other) == key:
+            out["frames"].append(other)
+    own = set(f["tiles"]) | {f"{key}-t"}
+    for nid, n in index.get("notes", {}).items():
+        if nid in own or frame_key(nid) is not None or "x" not in n or "y" not in n:
+            continue
+        if nid.endswith("-t") and nid[:-2] in fs:
+            continue  # another frame's label moves with that frame
+        if tab_of(index, n) == f["tab"] and container_of(index, fs, f["tab"], (n["x"], n["y"], 1, 1)) == key:
+            out["notes"].append(nid)
+    return out
+
+
+def all_members(index: dict, key: str, fs: dict | None = None) -> dict:
+    """Everything a frame holds, nested frames' contents included (what moves with it)."""
+    fs = fs if fs is not None else frames(index)
+    out = {"boards": [], "notes": [], "frames": []}
+    todo = [key]
+    while todo:
+        k = todo.pop()
+        m = members(index, k, fs)
+        out["boards"] += m["boards"]
+        out["notes"] += m["notes"]
+        out["frames"] += m["frames"]
+        todo += m["frames"]
+    return out
+
+
+def frame_box(content: tuple, pad: int, top_extra: int = 0) -> tuple:
+    """A frame around `content` (x, y, w, h): `pad` on every side plus `top_extra` above, grown evenly until the
+    editor draws it under the artboards (area > 500,000 px2)."""
+    x, y, w, h = content
+    fx, fy, fw, fh = x - pad, y - pad - top_extra, w + 2 * pad, h + 2 * pad + top_extra
+    while fw * fh < UNDER_AREA:
+        fx, fy, fw, fh = fx - 20, fy - 20, fw + 40, fh + 40
+    return (int(fx), int(fy), int(fw), int(fh))
+
+
+def frame_css(kind: str, color: str, top: bool, bottom: bool, left: bool, right: bool) -> dict:
+    r, g, b = COLORS[color]
+    edge = 3 if kind == "section" else 2
+    radius = 40 if kind == "section" else 20
+    widths = " ".join(f"{edge if side else 0}px" for side in (top, right, bottom, left))
+    corners = " ".join(f"{radius if a and b2 else 0}px" for a, b2 in ((top, left), (top, right), (bottom, right), (bottom, left)))
+    css = {
+        "background": f"rgba({r}, {g}, {b}, {0.06 if kind == 'section' else 0.02})",
+        "border-style": "solid" if kind == "section" else "dashed",
+        "border-color": f"rgba({r}, {g}, {b}, {0.55 if kind == 'section' else 0.7})",
+        "border-width": widths,
+        "border-radius": corners,
+    }
+    return css
+
+
+def frame_tiles(key: str, kind: str, box: tuple, color: str, tab: str | None) -> dict:
+    """The rect notes of one frame, split into tiles of at most 8000 x 8000 that meet edge to edge."""
+    x, y, w, h = box
+    cols, rows = -(-w // RECT_MAX), -(-h // RECT_MAX)
+    tw, th = -(-w // cols), -(-h // rows)
+    out, n = {}, 1
+    for j in range(rows):
+        for i in range(cols):
+            tx, ty = x + i * tw, y + j * th
+            ww, hh = min(tw, x + w - tx), min(th, y + h - ty)
+            nid = key if n == 1 else f"{key}-{n}"
+            note = {"kind": "rect", "x": tx, "y": ty, "w": ww, "h": hh,
+                    "css": frame_css(kind, color, j == 0, j == rows - 1, i == 0, i == cols - 1)}
+            if tab is not None:
+                note["page"] = tab
+            out[nid] = note
+            n += 1
+    return out
+
+
+def put_frame(live: dict, key: str, kind: str, box: tuple, color: str, tab: str | None) -> list[str]:
+    """Writes (or rewrites) a frame's tiles, behind every other note. Returns the tile ids."""
+    notes = live.setdefault("notes", {})
+    for nid in [k for k in notes if frame_key(k) == key and notes[k].get("kind") == "rect"]:
+        del notes[nid]
+    tiles = frame_tiles(key, kind, box, color, tab)
+    notes.update(tiles)
+    if "noteOrder" in live:
+        order = [k for k in live["noteOrder"] if k in notes and k not in tiles]
+        # Back to front: sections first, then groups, then everything else.
+        sec = [k for k in order if frame_key(k) and k.startswith("sec-") and notes[k].get("kind") == "rect"]
+        grp = [k for k in order if frame_key(k) and k.startswith("grp-") and notes[k].get("kind") == "rect"]
+        rest = [k for k in order if k not in sec and k not in grp]
+        mine = list(tiles)
+        live["noteOrder"] = (sec + mine + grp + rest) if kind == "section" else (sec + grp + mine + rest)
+        missing = [k for k in notes if k not in live["noteOrder"]]
+        live["noteOrder"] += missing
+    return list(tiles)
+
+
+def frame_color(live: dict, key: str) -> str:
+    """The colour a frame already has (read back from its css), else the rotation's pick for its key."""
+    n = live.get("notes", {}).get(key)
+    if n and "css" in n:
+        m = re.search(r"rgba\((\d+), (\d+), (\d+)", n["css"].get("border-color", ""))
+        if m:
+            rgb = tuple(int(v) for v in m.groups())
+            for name, c in COLORS.items():
+                if c == rgb:
+                    return name
+    rv = re.search(r"(\d+)", key)
+    return ROTATION[(int(rv.group(1)) if rv else sum(map(ord, key))) % len(ROTATION)]
+
+
+def bbox(index: dict, boards: list[str], notes: list[str] = (), frame_keys: list[str] = (), fs: dict | None = None) -> tuple | None:
+    rects = [(index["boards"][b]["x"], index["boards"][b]["y"], index["boards"][b]["w"], index["boards"][b]["h"]) for b in boards]
+    for nid in notes:
+        n = index["notes"][nid]
+        rects.append((n["x"], n["y"], n.get("w", n.get("maxW", 240)) if n.get("kind") == "rect" else n.get("maxW", n.get("w", 240)),
+                      n.get("h", 120) if n.get("kind") == "rect" else 120))
+    for k in frame_keys:
+        rects.append(fs[k]["box"])
+    if not rects:
+        return None
+    x0, y0 = min(r[0] for r in rects), min(r[1] for r in rects)
+    return (x0, y0, max(r[0] + r[2] for r in rects) - x0, max(r[1] + r[3] for r in rects) - y0)
+
+
+def pick_boards(live: dict, args) -> tuple[list[str], str | None, str]:
+    """Boards a section/group command names: --round N, --prefix P, --boards a,b, or --title-note ID. -> (boards, title note, why)."""
+    boards = live.get("boards", {})
+    title = None
+    if getattr(args, "round", None) is not None:
+        names = [b for b in boards if rev_of_board(b) == args.round]
+        title = f"rev{args.round}" if f"rev{args.round}" in live.get("notes", {}) else None
+    elif getattr(args, "prefix", None):
+        names = [b for b in boards if b.startswith(args.prefix)]
+    elif getattr(args, "boards", None):
+        names = [x.strip() if x.strip().endswith(".dc.html") else x.strip() + ".dc.html" for x in args.boards.split(",") if x.strip()]
+        missing = [b for b in names if b not in boards]
+        if missing:
+            return [], None, f"no such boards: {missing}"
+    elif getattr(args, "title_note", None):
+        title = args.title_note
+        if title not in live.get("notes", {}):
+            return [], None, f"no note {title!r}"
+        names = [b for b in boards if section_of(live, b)[0] == title]
+    else:
+        return [], None, "name the boards: --round N, --prefix R44G, --boards A,B or --title-note <id>"
+    if not names:
+        return [], None, "that names no boards"
+    tabs = {tab_of(live, boards[b]) for b in names}
+    if len(tabs) > 1:
+        return [], None, f"those boards sit on several tabs {sorted(map(str, tabs))}; a frame lives on one"
+    return sorted(names), title, ""
+
+
+def changed_outside(original: dict, live: dict, boards_ok: set, notes_ok: set, extra_keys: set = frozenset()) -> list[str]:
+    """Keys of the index a command changed that it did not mean to (the guard every writer runs before writing)."""
+    bad = []
+    for k in set(original) | set(live):
+        if k in ("boards", "notes", "noteOrder", "launch") or k in extra_keys:
+            continue
+        if original.get(k) != live.get(k):
+            bad.append(k)
+    for name in set(original.get("boards", {})) | set(live.get("boards", {})):
+        if original.get("boards", {}).get(name) != live.get("boards", {}).get(name) and name not in boards_ok:
+            bad.append(f"boards/{name}")
+    for nid in set(original.get("notes", {})) | set(live.get("notes", {})):
+        if original.get("notes", {}).get(nid) != live.get("notes", {}).get(nid) and nid not in notes_ok:
+            bad.append(f"notes/{nid}")
+    if set(original.get("order", [])) != set(live.get("order", [])):
+        bad.append("order")
+    return bad
+
+
+def frame_overlap(live: dict, key: str, box: tuple, tab: str | None, kind: str, fs: dict) -> str | None:
+    """A frame may nest inside another or hold another, never cut across one; a section never cuts a board."""
+    for other, f in fs.items():
+        if other == key or f["tab"] != tab:
+            continue
+        if overlaps(box, f["box"]) and not contains(box, f["box"]) and not contains(f["box"], box):
+            return f"it would cut across {other} ({f['label']})"
+        if kind == "section" and f["kind"] == "section" and overlaps(box, f["box"]):
+            return f"it would overlap the section {other} ({f['label']}); sections do not nest"
+    return None
+
+
+def cut_boards(live: dict, box: tuple, tab: str | None, wanted: list[str]) -> list[str]:
+    """Boards on the tab the frame would slice through (partly in, partly out) that it was not asked to hold."""
+    out = []
+    for name, b in live.get("boards", {}).items():
+        if name in wanted or tab_of(live, b) != tab:
+            continue
+        r = (b["x"], b["y"], b["w"], b["h"])
+        if overlaps(box, r) and not contains(box, r):
+            out.append(name)
+    return out
+
+
+def strays(live: dict, box: tuple, tab: str | None, wanted: list[str], fs: dict) -> list[str]:
+    """Boards a new frame would take in (or slice) that it was not asked to hold: any board on the tab touching the box
+    that is not named and does not sit inside a frame the new one wholly contains (a group nested in it)."""
+    held = set(wanted)
+    for k, f in fs.items():
+        if f["tab"] == tab and contains(box, f["box"]):
+            held |= set(all_members(live, k, fs)["boards"])
+    return [n for n, b in live.get("boards", {}).items()
+            if n not in held and tab_of(live, b) == tab and overlaps(box, (b["x"], b["y"], b["w"], b["h"]))]
+
+
+def make_frame(live: dict, kind: str, key: str, name: str | None, boards: list[str], title: str | None, color: str,
+               pad: int | None = None) -> tuple[list[str], str]:
+    """Adds a section or group around `boards`. Returns (note ids written, '') or ([], why it was refused)."""
+    fs = frames(live)
+    if key in fs:
+        return [], f"{key} exists already ({fs[key]['label']}); `fit` refits it, `ungroup` removes it"
+    if color not in COLORS:
+        return [], f"colour {color!r} is not one of {sorted(COLORS)}"
+    if not PAGE_ID_RE.match(key) or not PAGE_ID_RE.match(f"{key}-t"):
+        return [], f"id {key!r} is not [A-Za-z0-9_-]{{1,38}}"
+    tab = tab_of(live, live["boards"][boards[0]])
+    notes = live.setdefault("notes", {})
+    written = []
+    content = bbox(live, boards)
+    if kind == "section":
+        pad = SECTION_PAD if pad is None else pad
+        if title:
+            content = bbox(live, boards, [title])
+            box = frame_box(content, pad)
+        else:
+            box = frame_box(content, pad, TITLE_ABOVE)
+            label = {"kind": "title1", "text": name or key, "x": content[0], "y": content[1] - TITLE_ABOVE,
+                     "w": 240, "maxW": max(1920, content[2])}
+            if tab is not None:
+                label["page"] = tab
+            notes[f"{key}-t"] = label
+            written.append(f"{key}-t")
+    else:
+        pad = GROUP_PAD if pad is None else pad
+        box = frame_box(content, pad)
+        label = {"kind": "title1", "text": name or key, "x": box[0], "y": box[1] - GROUP_LABEL_ABOVE,
+                 "w": 240, "maxW": box[2], "size": "l"}
+        if tab is not None:
+            label["page"] = tab
+        notes[f"{key}-t"] = label
+        written.append(f"{key}-t")
+    why = frame_overlap(live, key, box, tab, kind, fs)
+    if why is None:
+        extra = strays(live, box, tab, boards, fs)
+        if extra:
+            why = f"its frame would take in boards it was not given: {extra[:4]} (name them too, or `arrange` first)"
+    if why:
+        for w in written:
+            del notes[w]
+        return [], why
+    written += put_frame(live, key, kind, box, color, tab)
+    return written, ""
+
+
+def cmd_frame(args, kind: str) -> int:
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    boards, title, why = pick_boards(live, args)
+    if why:
+        print(f"ERROR: {why}", file=sys.stderr)
+        return 1
+    prefix = "sec-" if kind == "section" else "grp-"
+    key = prefix + (args.id or (title if title and kind == "section" else slug(args.name or "frame")))[:34]
+    key = re.sub(r"-(\d+)$", r"-n\1", key)  # `<key>-<n>` names a frame's tiles
+    color = args.color or frame_color(live, key)
+    written, why = make_frame(live, kind, key, args.name, boards, title if kind == "section" else None, color, args.pad)
+    if why:
+        print(f"ERROR: {key}: {why}", file=sys.stderr)
+        return 1
+    bad = changed_outside(original, live, set(), set(written))
+    if bad:
+        print(f"ERROR: the {kind} changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    f = frames(live)[key]
+    print(f"{kind} {key!r} ({f['label']}) on tab {f['tab']!r}: {len(boards)} boards, frame {f['box']} in {len(f['tiles'])} tile(s), {color}. Index written to {out}")
+    print("Publish ONLY the index: Artifact publish  url=<board>  root=<root>  file_path=<root>/project/canvas.json")
+    return 0
+
+
+def cmd_sections(args) -> int:
+    """A section around every round / titled area of a tab (or every tab) that has none yet."""
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    tabs = [p["id"] for p in live.get("pages", [])] if args.all else [args.tab]
+    if not args.all and args.tab not in [p["id"] for p in live.get("pages", [])]:
+        print(f"ERROR: no tab {args.tab!r}; `tabs` lists them (or --all)", file=sys.stderr)
+        return 1
+    written, made, skipped = set(), [], []
+    for tab in tabs:
+        groups: dict = {}
+        for name, b in live.get("boards", {}).items():
+            if tab_of(live, b) != tab:
+                continue
+            sid, label = section_of(live, name)
+            if sid:
+                groups.setdefault(sid, []).append(name)
+        for sid, names in sorted(groups.items(), key=lambda kv: min(live["boards"][n]["y"] for n in kv[1])):
+            key = f"sec-{sid}"[:38]
+            fs = frames(live)
+            if key in fs or any(container_of(live, fs, tab, (live["boards"][n]["x"], live["boards"][n]["y"], live["boards"][n]["w"], live["boards"][n]["h"])) for n in names):
+                skipped.append((key, "already in a section or group"))
+                continue
+            w, why = make_frame(live, "section", key, None, sorted(names), sid, args.color or frame_color(live, key))
+            if why:
+                skipped.append((key, why))
+                continue
+            written |= set(w)
+            made.append((key, live["notes"][sid].get("text", sid), len(names)))
+    if args.title:
+        live["title"] = args.title
+    bad = changed_outside(original, live, set(), written, {"title"} if args.title else set())
+    if bad:
+        print(f"ERROR: changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"{len(made)} section(s) added, {len(skipped)} skipped; {len(live['notes'])} notes (limit 999). Index written to {out}")
+    for key, label, n in made:
+        print(f"  + {key:<22} {label}  ({n} boards)")
+    for key, why in skipped:
+        print(f"  - {key:<22} {why}")
+    return 0
+
+
+def cmd_ungroup(args) -> int:
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    fs = frames(live)
+    key = args.id
+    if key not in fs:
+        print(f"ERROR: no section or group {key!r}; `outline` lists them", file=sys.stderr)
+        return 1
+    gone = list(fs[key]["tiles"])
+    if f"{key}-t" in live["notes"]:
+        gone.append(f"{key}-t")
+    for nid in gone:
+        del live["notes"][nid]
+    if "noteOrder" in live:
+        live["noteOrder"] = [k for k in live["noteOrder"] if k not in gone]
+    bad = changed_outside(original, live, set(), set(gone))
+    if bad:
+        print(f"ERROR: changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Removed {key} ({fs[key]['label']}): its frame and own title; every board stays where it is. Index written to {out}")
+    return 0
+
+
+def shift(live: dict, boards: list[str], notes: list[str], dx: int, dy: int) -> None:
+    for b in boards:
+        live["boards"][b]["x"] += dx
+        live["boards"][b]["y"] += dy
+    for n in notes:
+        live["notes"][n]["x"] += dx
+        live["notes"][n]["y"] += dy
+
+
+def frame_parts(live: dict, key: str, fs: dict) -> tuple[list[str], list[str]]:
+    """(boards, notes) that move with a frame: its contents, nested frames' tiles and labels, its own tiles and label."""
+    m = all_members(live, key, fs)
+    notes = list(m["notes"]) + list(fs[key]["tiles"])
+    for k in [key] + m["frames"]:
+        notes += fs[k]["tiles"] if k != key else []
+        if f"{k}-t" in live["notes"]:
+            notes.append(f"{k}-t")
+    return m["boards"], sorted(set(notes))
+
+
+def cmd_move(args) -> int:
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    fs = frames(live)
+    if args.id not in fs:
+        print(f"ERROR: no section or group {args.id!r}; `outline` lists them", file=sys.stderr)
+        return 1
+    f = fs[args.id]
+    if args.by:
+        dx, dy = (int(v) for v in args.by.split(","))
+    elif args.to:
+        tx, ty = (int(v) for v in args.to.split(","))
+        dx, dy = tx - f["box"][0], ty - f["box"][1]
+    else:
+        print("ERROR: --by dx,dy or --to x,y", file=sys.stderr)
+        return 1
+    boards, notes = frame_parts(live, args.id, fs)
+    shift(live, boards, notes, dx, dy)
+    new_box = (f["box"][0] + dx, f["box"][1] + dy, f["box"][2], f["box"][3])
+    moved = set(boards)
+    for name, b in live["boards"].items():
+        if name not in moved and tab_of(live, b) == f["tab"] and overlaps(new_box, (b["x"], b["y"], b["w"], b["h"])):
+            print(f"ERROR: at its new place {args.id} would land on {name}; pick another spot", file=sys.stderr)
+            return 1
+    fs2 = frames(live)
+    why = frame_overlap(live, args.id, new_box, f["tab"], f["kind"], {k: v for k, v in fs2.items() if k not in all_members(live, args.id, fs2)["frames"]})
+    if why:
+        print(f"ERROR: {why}", file=sys.stderr)
+        return 1
+    bad = changed_outside(original, live, moved, set(notes))
+    if bad:
+        print(f"ERROR: changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Moved {args.id} ({f['label']}) by {dx},{dy}: {len(boards)} boards and {len(notes)} notes with it. Index written to {out}")
+    return 0
+
+
+def refit(live: dict, key: str, fs: dict, m: dict | None = None) -> tuple | None:
+    """Rewrites a frame's tiles around what it holds (`m`, else what its frame holds now) and, for a group, moves its
+    title along. Returns the new box."""
+    f = fs[key]
+    m = m if m is not None else members(live, key, fs)
+    title = key[4:] if key[4:] in live["notes"] and live["notes"][key[4:]].get("kind") == "title1" else None
+    own_label = f"{key}-t" if f"{key}-t" in live["notes"] else None
+    if f["kind"] == "section":
+        label = title or own_label
+        content = bbox(live, m["boards"], [n for n in m["notes"] if n != label] + ([label] if label else []), m["frames"], fs)
+        if content is None:
+            return None
+        box = frame_box(content, SECTION_PAD)
+    else:
+        content = bbox(live, m["boards"], [n for n in m["notes"] if n != own_label], m["frames"], fs)
+        if content is None:
+            return None
+        box = frame_box(content, GROUP_PAD)
+        if own_label:
+            live["notes"][own_label].update({"x": box[0], "y": box[1] - GROUP_LABEL_ABOVE, "maxW": box[2]})
+    put_frame(live, key, f["kind"], box, frame_color(live, key), f["tab"])
+    return box
+
+
+def cmd_fit(args) -> int:
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    fs = frames(live)
+    if args.id not in fs:
+        print(f"ERROR: no section or group {args.id!r}; `outline` lists them", file=sys.stderr)
+        return 1
+    box = refit(live, args.id, fs)
+    if box is None:
+        print(f"ERROR: {args.id} holds nothing; `ungroup` removes it", file=sys.stderr)
+        return 1
+    fs2 = frames(live)
+    why = frame_overlap(live, args.id, box, fs[args.id]["tab"], fs[args.id]["kind"], fs2)
+    if why:
+        print(f"ERROR: refitted, {why}", file=sys.stderr)
+        return 1
+    touched = {k for k in live["notes"] if frame_key(k) == args.id} | {f"{args.id}-t"} | set(fs[args.id]["tiles"])
+    bad = changed_outside(original, live, set(), touched)
+    if bad:
+        print(f"ERROR: changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Refitted {args.id} ({fs[args.id]['label']}) to {box}. Index written to {out}")
+    return 0
+
+
+def cmd_arrange(args) -> int:
+    """Auto layout: re-flows what a frame holds in reading order, N to a row with an even gap, nested groups moving
+    as one block, then refits the frame (Figma's tidy up). The frame keeps its top-left corner."""
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    fs = frames(live)
+    if args.id not in fs:
+        print(f"ERROR: no section or group {args.id!r}; `outline` lists them", file=sys.stderr)
+        return 1
+    f = fs[args.id]
+    m = members(live, args.id, fs)
+    blocks = []  # (y, x, box, boards, notes)
+    for b in m["boards"]:
+        e = live["boards"][b]
+        blocks.append((e["y"], e["x"], (e["x"], e["y"], e["w"], e["h"]), [b], []))
+    for k in m["frames"]:
+        bs, ns = frame_parts(live, k, fs)
+        box = fs[k]["box"]
+        lab = live["notes"].get(f"{k}-t")
+        if lab:
+            box = (box[0], min(box[1], lab["y"]), box[2], box[3] + max(0, box[1] - lab["y"]))
+        blocks.append((box[1], box[0], box, bs, ns))
+    if not blocks:
+        print(f"ERROR: {args.id} holds nothing to arrange", file=sys.stderr)
+        return 1
+    blocks.sort(key=lambda t: (round(t[0] / 200), t[1]))
+    title = args.id[4:] if args.id[4:] in live["notes"] else (f"{args.id}-t" if f"{args.id}-t" in live["notes"] else None)
+    if f["kind"] == "section" and title:
+        x0, y0 = live["notes"][title]["x"], live["notes"][title]["y"] + TITLE_ABOVE
+    else:
+        x0 = min(t[2][0] for t in blocks)
+        y0 = min(t[2][1] for t in blocks)
+    gap, cols = args.gap, max(1, args.cols)
+    cy, moved_b, moved_n = y0, [], []
+    for r in range(0, len(blocks), cols):
+        row = blocks[r:r + cols]
+        cx = x0
+        for _, _, box, bs, ns in row:
+            dx, dy = cx - box[0], cy - box[1]
+            shift(live, bs, ns, dx, dy)
+            moved_b += bs
+            moved_n += ns
+            cx += box[2] + gap
+        cy += max(t[2][3] for t in row) + gap
+    if f["kind"] == "section" and title:
+        live["notes"][title]["maxW"] = max(live["notes"][title].get("maxW", 1920), 1920)
+    # Membership was taken before the move (the old frame no longer covers what moved); nested boxes are re-read.
+    box = refit(live, args.id, frames(live), m)
+    fs3 = frames(live)
+    why = frame_overlap(live, args.id, box, f["tab"], f["kind"], fs3)
+    if why is None:
+        cut = [n for n in cut_boards(live, box, f["tab"], moved_b)]
+        if cut:
+            why = f"the arranged frame would slice through {cut[:4]}"
+    if why:
+        print(f"ERROR: arranged, {why}; try other --cols, or `move` it first", file=sys.stderr)
+        return 1
+    touched = set(moved_n) | {k for k in live["notes"] if frame_key(k) == args.id} | set(f["tiles"]) | ({title} if title else set())
+    bad = changed_outside(original, live, set(moved_b), touched)
+    if bad:
+        print(f"ERROR: changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Arranged {args.id} ({f['label']}): {len(blocks)} blocks, {cols} to a row, gap {gap}; frame now {box}. Index written to {out}")
+    return 0
+
+
+def cmd_outline(args) -> int:
+    """The layers panel: tab > section > group > board, as the person sees the canvas."""
+    idx = load_index(Path(args.live)) if args.live else load_index(COPY_DIR / "canvas.json")
+    fs = frames(idx)
+    tabs = [p["id"] for p in idx.get("pages", [])] or [None]
+    if args.tab:
+        tabs = [args.tab]
+
+    def show(key: str, depth: int) -> None:
+        f = fs[key]
+        m = members(idx, key, fs)
+        print(f"{'  ' * depth}{'[S]' if f['kind'] == 'section' else '[G]'} {f['label']}  ({key}, {len(m['boards'])} boards)")
+        for k in sorted(m["frames"], key=lambda k: (fs[k]["box"][1], fs[k]["box"][0])):
+            show(k, depth + 1)
+        for b in sorted(m["boards"], key=lambda b: (idx["boards"][b]["y"], idx["boards"][b]["x"])):
+            print(f"{'  ' * (depth + 1)}- {b}  {idx['boards'][b].get('title', '')}")
+
+    for tab in tabs:
+        top = [k for k, f in fs.items() if f["tab"] == tab and container_of(idx, fs, tab, f["box"], skip=k) is None]
+        loose = [b for b, e in idx.get("boards", {}).items() if tab_of(idx, e) == tab and container_of(idx, fs, tab, (e["x"], e["y"], e["w"], e["h"])) is None]
+        print(f"Tab {page_name(idx, tab)} ({tab}): {len([k for k in fs if fs[k]['tab'] == tab])} frames, {len(loose)} boards outside any")
+        for k in sorted(top, key=lambda k: (fs[k]["box"][1], fs[k]["box"][0])):
+            show(k, 1)
+        if loose and not args.brief:
+            print("  (outside any section)")
+            for b in sorted(loose, key=lambda b: (idx["boards"][b]["y"], idx["boards"][b]["x"])):
+                print(f"    - {b}  {idx['boards'][b].get('title', '')}")
+    return 0
+
+
+def cmd_retitle(args) -> int:
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    live["title"] = args.name.strip()
+    bad = changed_outside(original, live, set(), set(), {"title"})
+    if bad or not live["title"]:
+        print("ERROR: a title is needed and nothing else may change", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Canvas retitled {original.get('title')!r} -> {live['title']!r}. Index written to {out}")
+    return 0
+
+
 # ----------------------------------------------------------------------------------------------- check
 
 NODE_HARNESS = r"""
@@ -620,7 +1328,7 @@ const finish = () => { process.stdout.write(JSON.stringify(out)); process.exit(0
 // A browser-less stand-in for the canvas runtime: timers never fire, the DOM is absent.
 globalThis.window = globalThis;
 globalThis.document = { querySelector: () => null, querySelectorAll: () => [], getElementById: () => null, body: {}, documentElement: {}, addEventListener() {}, removeEventListener() {}, createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }) };
-try { Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'design_board check' }, configurable: true }); } catch (e) {}
+try { Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'frogma check' }, configurable: true }); } catch (e) {}
 globalThis.requestAnimationFrame = () => 1; globalThis.cancelAnimationFrame = () => {};
 globalThis.setTimeout = () => 1; globalThis.setInterval = () => 1; globalThis.clearTimeout = () => {}; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
@@ -951,10 +1659,42 @@ def check_index(dir_: Path, idx: dict, only: str | None, rep: Report) -> None:
         if note.get("kind") == "link":
             if "href" not in note or "text" in note:
                 rep.err(where, f"note {n!r}: a link card has href and NO text")
+        elif note.get("kind") in ("rect", "oval", "pen", "image"):
+            if "text" in note:
+                rep.err(where, f"note {n!r}: a {note['kind']} with text turns into a text note in the editor; a frame's name is its own title note")
+            for k in ("x", "y", "w", "h"):
+                if not isinstance(note.get(k), (int, float)):
+                    rep.err(where, f"note {n!r}: a {note['kind']} needs a number {k}")
+            if isinstance(note.get("w"), (int, float)) and isinstance(note.get("h"), (int, float)):
+                if note["w"] > RECT_MAX or note["h"] > RECT_MAX:
+                    rep.err(where, f"note {n!r}: {note['w']}x{note['h']} - the editor clamps a shape to {RECT_MAX}; tile it (frame_tiles)")
+                if frame_key(n) and note["w"] * note["h"] <= 500_000 and len(frames(idx).get(frame_key(n), {}).get("tiles", [])) == 1:
+                    rep.err(where, f"note {n!r}: a frame of {note['w'] * note['h']} px2 is drawn OVER the artboards (the editor puts a shape under them above 500,000)")
         elif not all(k in note for k in ("x", "y", "text")):
             rep.err(where, f"note {n!r} needs x, y and text")
         if note.get("page") is not None and note["page"] not in page_ids:
             rep.err(where, f"note {n!r}: page {note['page']!r} is not a page")
+    if len(idx.get("notes", {})) >= 1000:
+        rep.err(where, f"{len(idx['notes'])} notes; the canvas holds fewer than 1000")
+    order_n = idx.get("noteOrder")
+    if isinstance(order_n, list) and sorted(order_n) != sorted(idx.get("notes", {})):
+        rep.warn(where, "noteOrder does not list every note once (the editor appends the rest on top: a frame there would cover notes)")
+    # Sections never cut across each other; a frame never slices a board it does not hold.
+    fs = frames(idx)
+    keys = sorted(fs)
+    for i, a in enumerate(keys):
+        for b in keys[i + 1:]:
+            fa, fb = fs[a], fs[b]
+            if fa["tab"] == fb["tab"] and overlaps(fa["box"], fb["box"]) and not contains(fa["box"], fb["box"]) and not contains(fb["box"], fa["box"]):
+                rep.err(where, f"frames {a} and {b} cut across each other on tab {fa['tab']!r}")
+            elif fa["tab"] == fb["tab"] and fa["kind"] == fb["kind"] == "section" and overlaps(fa["box"], fb["box"]):
+                rep.err(where, f"sections {a} and {b} overlap on tab {fa['tab']!r}; sections do not nest")
+    for k, f in fs.items():
+        for name, bd in boards.items():
+            if tab_of(idx, bd) == f["tab"] and all(isinstance(bd.get(q), (int, float)) for q in ("x", "y", "w", "h")):
+                r = (bd["x"], bd["y"], bd["w"], bd["h"])
+                if overlaps(f["box"], r) and not contains(f["box"], r):
+                    rep.warn(where, f"frame {k} ({f['label']}) slices through {name}; `fit {k}` or `move` the board")
     # Files on disk that the index does not list still show on the canvas.
     for f in sorted(dir_.glob("*.dc.html")):
         if f.name not in boards and not (dir_ / "ds").exists():
@@ -1005,9 +1745,9 @@ def cmd_check(args) -> int:
         print(f"FAIL  {e}")
     scope = f"{len(names)} board(s)" + (f" starting with {args.only}" if args.only else "")
     if rep.errors or (args.strict and rep.warnings):
-        print(f"design board check: {len(rep.errors)} failure(s), {len(rep.warnings)} warning(s) on {scope}")
+        print(f"frogma check: {len(rep.errors)} failure(s), {len(rep.warnings)} warning(s) on {scope}")
         return 1
-    print(f"design board check: OK on {scope} ({len(rep.warnings)} warning(s))")
+    print(f"frogma check: OK on {scope} ({len(rep.warnings)} warning(s))")
     return 0
 
 
@@ -1020,7 +1760,7 @@ def render_readme(idx: dict, copy_dir: Path, version: str | None, date: str) -> 
     span = f"Rev {rs[-1][0]} to Rev {rs[0][0]}, " if rs else ""
     lines.append(f"Copied on {date} from {ver} of **{idx.get('title', '')}**: {span}{len(idx.get('boards', {}))} boards on "
                  f"{len(idx.get('pages', []))} tabs. The canvas opens on the tab `{idx.get('launch', {}).get('page', 'canvas')}`. "
-                 "Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.")
+                 "Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.")
     lines.append("")
     lines.append("## Tabs, rounds and boards (newest first)")
     lines.append("")
@@ -1057,6 +1797,8 @@ def render_readme(idx: dict, copy_dir: Path, version: str | None, date: str) -> 
 def write_readme(idx: dict, version: str | None, date: str) -> Path:
     readme = COPY_DIR / "README.md"
     text = readme.read_text(encoding="utf-8") if readme.exists() else ""
+    for old, new in zip(OLD_README_MARKS, (README_START, README_END)):
+        text = text.replace(old, new)
     if README_START in text and README_END in text:
         head = text.split(README_START, 1)[0]
         tail = text.split(README_END, 1)[1]
@@ -1174,7 +1916,7 @@ def self_test() -> int:
         root = td / "root"
         ns = argparse.Namespace(live=str(lp), root=str(root), name="Squads, three ways", board=['A=Hangar bay', 'B=Formation', 'C=The deck', 'D=Dossier'],
                                 interactive="C", compare="the four side by side", notes=None, no_notes=False, notes_h="900", size="1920x1080", rev=None,
-                                skeletons=True, tab=None, new_tab=None)
+                                skeletons=True, tab=None, new_tab=None, no_section=False, color=None)
         expect(cmd_plan(ns) == 1, "plan: refuses a round that names no tab")
         expect(cmd_plan(argparse.Namespace(**{**vars(ns), "tab": "nope"})) == 1, "plan: refuses a tab that does not exist")
         rc = cmd_plan(argparse.Namespace(**{**vars(ns), "tab": "rev30"}))
@@ -1261,6 +2003,79 @@ def self_test() -> int:
         check_index(root / "project", idx_bad, "R31", rep)
         joined = "\n".join(rep.errors)
         expect("overlaps" in joined and "order must list every board once" in joined, "check: an overlapping new frame and a board missing from order are named")
+        # Sections and groups (Frogma).
+        expect("sec-rev31" in planned["notes"] and planned["notes"]["sec-rev31"]["kind"] == "rect"
+               and "text" not in planned["notes"]["sec-rev31"], "plan: a new round comes in its own section (a rect note, no text)")
+        sb = frames(planned)["sec-rev31"]["box"]
+        expect(contains(sb, (0, top, 3 * 1920 + 2 * GAP_X, 2 * 1080 + 2 * GAP_Y + 900)) and sb[1] <= planned["notes"]["rev31"]["y"]
+               and sb[2] * sb[3] > 500_000, "plan: the section holds the round's title and boards and is big enough to sit under them")
+        expect(sorted(members(planned, "sec-rev31")["boards"]) == sorted(k for k in planned["boards"] if k.startswith("R31"))
+               and "rev31" in members(planned, "sec-rev31")["notes"], "members: a section holds its round's boards and title by geometry")
+        tiles = frame_tiles("sec-big", "section", (0, 0, 17000, 9000), "teal", "t")
+        tb = [(t["x"], t["y"], t["w"], t["h"]) for t in tiles.values()]
+        expect(len(tiles) == 6 and all(w <= RECT_MAX and h <= RECT_MAX for _, _, w, h in tb) and sum(w * h for _, _, w, h in tb) == 17000 * 9000
+               and tiles["sec-big"]["css"]["border-width"] == "3px 0px 0px 3px" and tiles["sec-big-6"]["css"]["border-width"] == "0px 3px 3px 0px",
+               "frame_tiles: a 17000x9000 section is six tiles of <= 8000, edge to edge, outlined only outside")
+        expect(frame_box((0, 0, 390, 844), GROUP_PAD)[2] * frame_box((0, 0, 390, 844), GROUP_PAD)[3] >= UNDER_AREA,
+               "frame_box: a frame round one phone board grows until the editor draws it under the board")
+        gp = td / "g"
+        rc = cmd_frame(argparse.Namespace(live=str(root / "project" / "canvas.json"), root=str(gp), name="Option A and B", id=None, color=None,
+                                          pad=None, round=None, prefix=None, boards="R31A,R31B", title_note=None), "group")
+        g = load_index(gp / "project" / "canvas.json")
+        gf = frames(g)
+        expect(rc == 0 and "grp-option-a-and-b" in gf and gf["grp-option-a-and-b"]["label"] == "Option A and B"
+               and members(g, "sec-rev31")["frames"] == ["grp-option-a-and-b"]
+               and sorted(members(g, "grp-option-a-and-b")["boards"]) == ["R31A.dc.html", "R31B.dc.html"]
+               and "R31A.dc.html" not in members(g, "sec-rev31")["boards"], "group: nests in the round's section and takes its boards from it")
+        expect(g["noteOrder"].index("sec-rev31") < g["noteOrder"].index("grp-option-a-and-b") if "noteOrder" in g else True,
+               "group: drawn above its section, both under the boards")
+        gl = g["notes"]["grp-option-a-and-b-t"]
+        expect(gl["kind"] == "title1" and gl["y"] < gf["grp-option-a-and-b"]["box"][1], "group: its small title sits just above its outline")
+        rc = cmd_frame(argparse.Namespace(live=str(gp / "project" / "canvas.json"), root=str(td / "g2"), name="Cut", id=None, color=None,
+                                          pad=None, round=None, prefix=None, boards="R31B,R31C", title_note=None), "group")
+        expect(rc == 1, "group: refuses a frame that would take in boards it was not given (B and C span Compare and D)")
+        rc = cmd_frame(argparse.Namespace(live=str(gp / "project" / "canvas.json"), root=str(td / "g3"), name="Top row", id=None, color=None,
+                                          pad=None, round=None, prefix=None, boards="R31Compare,R31A,R31B", title_note=None), "group")
+        g3 = load_index(td / "g3" / "project" / "canvas.json")
+        expect(rc == 0 and members(g3, "grp-top-row")["frames"] == ["grp-option-a-and-b"] and members(g3, "grp-top-row")["boards"] == ["R31Compare.dc.html"],
+               "group: a group may hold a group (the top row holds Compare and the A-and-B group)")
+        rc = cmd_move(argparse.Namespace(id="sec-rev31", live=str(gp / "project" / "canvas.json"), root=str(td / "mv"), by="0,5000", to=None))
+        mv = load_index(td / "mv" / "project" / "canvas.json")
+        expect(rc == 0 and mv["boards"]["R31A.dc.html"]["y"] == g["boards"]["R31A.dc.html"]["y"] + 5000
+               and mv["notes"]["rev31"]["y"] == g["notes"]["rev31"]["y"] + 5000 and mv["notes"]["grp-option-a-and-b-t"]["y"] == gl["y"] + 5000
+               and frames(mv)["grp-option-a-and-b"]["box"][1] == gf["grp-option-a-and-b"]["box"][1] + 5000
+               and mv["boards"]["R30CodexVault.dc.html"] == g["boards"]["R30CodexVault.dc.html"],
+               "move: a section moves with its title, boards, nested group and the group's title; nothing else moves")
+        rc = cmd_move(argparse.Namespace(id="sec-rev31", live=str(gp / "project" / "canvas.json"), root=str(td / "mv2"), by="0,-2000", to=None))
+        expect(rc == 1, "move: refuses to land a section on another board")
+        rc = cmd_arrange(argparse.Namespace(id="sec-rev31", live=str(gp / "project" / "canvas.json"), root=str(td / "ar"), cols=2, gap=180))
+        ar = load_index(td / "ar" / "project" / "canvas.json")
+        afs = frames(ar)
+        expect(rc == 0 and sorted(members(ar, "sec-rev31")["boards"]) == sorted(members(g, "sec-rev31")["boards"])
+               and members(ar, "sec-rev31")["frames"] == ["grp-option-a-and-b"]
+               and sorted(members(ar, "grp-option-a-and-b")["boards"]) == ["R31A.dc.html", "R31B.dc.html"]
+               and all(contains(afs["sec-rev31"]["box"], (b["x"], b["y"], b["w"], b["h"])) for k, b in ar["boards"].items() if k.startswith("R31")),
+               "arrange: re-flows a section two to a row, the group as one block, and refits the frame round all of it")
+        rep = Report()
+        check_index(td / "ar" / "project", ar, None, rep)
+        expect(not rep.errors, "arrange: the arranged index passes the gate" + (f" ({rep.errors[:2]})" if rep.errors else ""))
+        rc = cmd_ungroup(argparse.Namespace(id="grp-option-a-and-b", live=str(gp / "project" / "canvas.json"), root=str(td / "ug")))
+        ug = load_index(td / "ug" / "project" / "canvas.json")
+        expect(rc == 0 and "grp-option-a-and-b" not in frames(ug) and "grp-option-a-and-b-t" not in ug["notes"] and ug["boards"] == g["boards"]
+               and "R31A.dc.html" in members(ug, "sec-rev31")["boards"], "ungroup: the outline and its title go, the boards stay and fall back to the section")
+        sp = td / "secall"
+        rc = cmd_sections(argparse.Namespace(live=str(td / "fo" / "project" / "canvas.json"), root=str(sp), tab=None, all=True, color=None, title="Frogma"))
+        sa = load_index(sp / "project" / "canvas.json")
+        rep = Report()
+        check_index(sp / "project", sa, None, rep)
+        expect(rc == 0 and sa["title"] == "Frogma" and {"sec-rev30", "sec-rev3", "sec-item1"} <= set(frames(sa)) and not rep.errors,
+               "sections --all: every titled area of a folded tab gets a section, retitled, gate clean" + (f" ({rep.errors[:2]})" if rep.errors else ""))
+        bad_frame = json.loads(json.dumps(sa))
+        bad_frame["notes"]["sec-x"] = {"kind": "rect", "x": 0, "y": 0, "w": 9000, "h": 600, "text": "Oops"}
+        rep = Report()
+        check_index(sp / "project", bad_frame, None, rep)
+        joined = "\n".join(rep.errors)
+        expect("turns into a text note" in joined and "clamps a shape" in joined, "check: a frame with text, or bigger than 8000, is named")
         # pull + readme into a fake repo copy.
         global COPY_DIR, DOC
         saved = (COPY_DIR, DOC)
@@ -1285,7 +2100,7 @@ def self_test() -> int:
             expect(rc == 0 and readme2.count(README_START) == 1 and "v-test2" in readme2 and "(not copied yet)" not in readme2, "pull: a second pull is exit 0 and regenerates in place")
         finally:
             COPY_DIR, DOC = saved
-    print("design_board.py self-test:", "OK" if not fails else f"{len(fails)} FAILED")
+    print("frogma.py self-test:", "OK" if not fails else f"{len(fails)} FAILED")
     return 0 if not fails else 1
 
 
@@ -1305,6 +2120,21 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--board", action="append"); s.add_argument("--interactive"); s.add_argument("--compare")
     s.add_argument("--notes"); s.add_argument("--no-notes", action="store_true"); s.add_argument("--notes-h", default="900")
     s.add_argument("--size", default="1920x1080"); s.add_argument("--rev", type=int); s.add_argument("--skeletons", action="store_true")
+    s.add_argument("--no-section", action="store_true"); s.add_argument("--color", choices=sorted(COLORS))
+    for kind in ("section", "group"):
+        s = sub.add_parser(kind); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+        s.add_argument("--name"); s.add_argument("--id"); s.add_argument("--color", choices=sorted(COLORS)); s.add_argument("--pad", type=int)
+        s.add_argument("--round", type=int); s.add_argument("--prefix"); s.add_argument("--boards"); s.add_argument("--title-note")
+    s = sub.add_parser("sections"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s.add_argument("--tab"); s.add_argument("--all", action="store_true"); s.add_argument("--color", choices=sorted(COLORS)); s.add_argument("--title")
+    for name in ("ungroup", "fit"):
+        s = sub.add_parser(name); s.add_argument("id"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s = sub.add_parser("move"); s.add_argument("id"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s.add_argument("--by"); s.add_argument("--to")
+    s = sub.add_parser("arrange"); s.add_argument("id"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s.add_argument("--cols", type=int, default=PER_ROW); s.add_argument("--gap", type=int, default=GAP_X)
+    s = sub.add_parser("outline"); s.add_argument("--live"); s.add_argument("--tab"); s.add_argument("--brief", action="store_true")
+    s = sub.add_parser("retitle"); s.add_argument("--live", required=True); s.add_argument("--root", required=True); s.add_argument("--name", required=True)
     s = sub.add_parser("new-tab"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
     s.add_argument("--name", required=True); s.add_argument("--id")
     s = sub.add_parser("fold"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
@@ -1320,7 +2150,10 @@ def main(argv: list[str] | None = None) -> int:
         ap.print_help()
         return 2
     return {"status": cmd_status, "tabs": cmd_tabs, "find": cmd_find, "next-rev": cmd_next_rev, "plan": cmd_plan,
-            "new-tab": cmd_new_tab, "fold": cmd_fold, "check": cmd_check, "pull": cmd_pull, "readme": cmd_readme}[args.cmd](args)
+            "new-tab": cmd_new_tab, "fold": cmd_fold, "check": cmd_check, "pull": cmd_pull, "readme": cmd_readme,
+            "section": lambda a: cmd_frame(a, "section"), "group": lambda a: cmd_frame(a, "group"), "sections": cmd_sections,
+            "ungroup": cmd_ungroup, "fit": cmd_fit, "move": cmd_move, "arrange": cmd_arrange, "outline": cmd_outline,
+            "retitle": cmd_retitle}[args.cmd](args)
 
 
 if __name__ == "__main__":

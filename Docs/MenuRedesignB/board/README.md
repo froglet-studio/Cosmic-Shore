@@ -14,9 +14,9 @@ canvas's `project/` files (Artifact read) into this folder.
 - **What was decided:** `Docs/MENU_REDESIGN_B.md` records each round, which option was picked and what was built.
   The pick for a round is the board the doc names, not the last one on its page.
 
-<!-- design_board.py readme: generated below, edit the text above -->
+<!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design Board**: Rev 3 to Rev 49, 434 boards on 4 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-03 from canvas version `1793668484-a986` of **Frogma**: Rev 3 to Rev 49, 434 boards on 4 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -648,4 +648,4 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R45B.dc.html`](R45B.dc.html) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control - interactive
 - [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
 
-<!-- design_board.py readme: end -->
+<!-- frogma.py readme: end -->
