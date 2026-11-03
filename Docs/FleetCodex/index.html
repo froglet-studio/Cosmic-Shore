@@ -1,154 +1,269 @@
 <title>Fleet Codex</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Michroma&family=JetBrains+Mono:wght@400;500&family=Chakra+Petch:wght@500;600;700&family=Aldrich&display=swap">
 <style>
-/* Layout: design B of the board's Rev 48 (picked by Shombith, 2026-11-02), in the website's Silver Screen look.
-   A top bar, a filmstrip of the whole fleet (crew vessels as wider posters with their seats), then the picked vessel as
-   a bento of tiles: the hull, its five abilities (four elements and the omni crystal), ONE control map drawing the
-   controller, keyboard and phone together with the picked ability lit on all three, the games it plays in, the picked
-   ability's full text, its docs and changes. #fleet is the whole fleet as one table. Data: fleet.json, generated from
-   the shipped assets by Tools/Build/fleet_codex.py; every icon is the game's own art. */
+/* Layout: design B of the board's Rev 48 (picked by Shombith, 2026-11-02). A top bar with the theme picker at its right,
+   a filmstrip of the whole fleet (crew vessels as wider posters with their seats), then the picked vessel as a bento:
+   the hull, its abilities as cards that flip to their level-5 face (a crew vessel's split into one card per seat), ONE
+   control map drawing controller, keyboard and phone with the picked ability lit, its games, the picked ability's full
+   text, docs and changes. #fleet is the whole fleet as one table. Data: fleet.json, generated from the shipped assets by
+   Tools/Build/fleet_codex.py; every icon is the game's own art.
+   Themes (Shombith 2026-11-02: "Tessaract, Endurance etc along with silver screen"): one token set each, on
+   html[data-skin]. Silver Screen is the website's and follows the system's light or dark; the others are fixed. */
 :root{
   --bg:#050505; --surface:#0C0C0C; --raise:#141414; --ink:#ECECEC; --muted:#A6A6A6; --faint:#6E6E6E; --line:#222;
   --edge:#3A3A3A; --tile:#111; --accent:#00D4FF; --warn:#E2A552; --good:#7FD69B; color-scheme:dark;
-  --display:"Bebas Neue","Arial Narrow",Impact,sans-serif; --mono:"Space Mono",ui-monospace,Menlo,monospace;
-  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Bebas Neue","Arial Narrow",Impact,sans-serif; --dscale:1; --dcase:uppercase; --dtrack:.04em;
+  --mono:"Space Mono",ui-monospace,Menlo,monospace; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --still:grayscale(1) contrast(1.1); --still-on:none; --still-op:.7; --ground:none; --radius:14px;
 }
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+@media (prefers-color-scheme: light){:root:not([data-skin]):not([data-theme="dark"]),:root[data-skin="silver"]:not([data-theme="dark"]){
   --bg:#EDEDEB; --surface:#F7F7F5; --raise:#FFFFFF; --ink:#111; --muted:#555; --faint:#8A8A8A; --line:#D2D2CF;
   --edge:#A9A9A6; --tile:#111; --accent:#0B7C8C; --warn:#9A5B0E; --good:#2C7A4B; color-scheme:light}}
-:root[data-theme="light"]{
+:root[data-theme="light"]:not([data-skin]),:root[data-theme="light"][data-skin="silver"]{
   --bg:#EDEDEB; --surface:#F7F7F5; --raise:#FFFFFF; --ink:#111; --muted:#555; --faint:#8A8A8A; --line:#D2D2CF;
   --edge:#A9A9A6; --tile:#111; --accent:#0B7C8C; --warn:#9A5B0E; --good:#2C7A4B; color-scheme:light}
+/* Tesseract: the bookshelf behind the bookshelf - warm gold lattice lines on deep brown-black, serif titles */
+:root[data-skin="tesseract"]{
+  --bg:#0A0705; --surface:#130D08; --raise:#1C140C; --ink:#F4E6C8; --muted:#BFA57C; --faint:#7C6646; --line:#30220F;
+  --edge:#5A4220; --tile:#0D0906; --accent:#F2B544; --warn:#F28C44; --good:#B9D98A; color-scheme:dark;
+  --display:"Cormorant Garamond",Georgia,serif; --dscale:1.05; --dcase:none; --dtrack:.01em;
+  --mono:"IBM Plex Mono",ui-monospace,monospace; --still:sepia(.9) saturate(1.5) hue-rotate(-12deg) brightness(.9);
+  --still-on:sepia(.5) saturate(1.3); --still-op:.62; --radius:6px;
+  --ground:repeating-linear-gradient(0deg,rgba(242,181,68,.05) 0 1px,transparent 1px 56px),repeating-linear-gradient(90deg,rgba(242,181,68,.05) 0 1px,transparent 1px 56px),radial-gradient(ellipse at 50% 0,rgba(242,181,68,.12),transparent 60%)}
+/* Endurance: the ship - white panels, technical type, the mission's orange */
+:root[data-skin="endurance"]{
+  --bg:#ECEEEC; --surface:#FFFFFF; --raise:#F6F7F5; --ink:#15191D; --muted:#5A636B; --faint:#98A0A6; --line:#DCE0E2;
+  --edge:#B6BEC4; --tile:#1B2026; --accent:#E4572E; --warn:#B4670E; --good:#2E7D4F; color-scheme:light;
+  --display:"Michroma","Eurostile",sans-serif; --dscale:.6; --dcase:uppercase; --dtrack:.04em;
+  --mono:"JetBrains Mono",ui-monospace,monospace; --still:saturate(.85) contrast(1.05); --still-on:none; --still-op:.9;
+  --radius:4px; --ground:linear-gradient(180deg,#F4F5F3,#E6E9E7)}
+/* Gargantua: the black hole - pure black, an accretion glow above, warm whites */
+:root[data-skin="gargantua"]{
+  --bg:#020100; --surface:#0A0705; --raise:#120C07; --ink:#F7EBDC; --muted:#B89F86; --faint:#6F5D4A; --line:#24180D;
+  --edge:#4A3220; --tile:#070503; --accent:#FF9F43; --warn:#FF7043; --good:#C8E07A; color-scheme:dark;
+  --still:grayscale(1) sepia(.55) contrast(1.25) brightness(.85); --still-on:sepia(.35) contrast(1.1); --still-op:.66;
+  --ground:radial-gradient(ellipse 90% 45% at 50% -8%,rgba(255,159,67,.28),rgba(255,120,40,.08) 45%,transparent 70%)}
+/* HyperSea: the game's own menu - the deep blue, the domain cyan, the game's typefaces */
+:root[data-skin="hypersea"]{
+  --bg:#00041F; --surface:#080C28; --raise:#0E1646; --ink:#E6E9FF; --muted:#8C93C7; --faint:#5C6290; --line:#222645;
+  --edge:#434C89; --tile:#00010A; --accent:#00D4FF; --warn:#FFAE00; --good:#99FF80; color-scheme:dark;
+  --display:"Chakra Petch",sans-serif; --dscale:.82; --dcase:uppercase; --dtrack:.08em;
+  --body:"Aldrich","Chakra Petch",sans-serif; --still:none; --still-on:none; --still-op:.8; --radius:4px;
+  --ground:repeating-linear-gradient(180deg,rgba(67,76,137,.10) 0 1px,transparent 1px 34px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+body{margin:0;background:var(--bg);background-image:var(--ground);background-attachment:fixed;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;transition:background-color .3s,color .3s}
 a{color:inherit}
 button{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.hd{font-family:var(--display);font-weight:400;letter-spacing:.04em;text-transform:uppercase;line-height:.95}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hd{font-family:var(--display);font-weight:600;letter-spacing:var(--dtrack);text-transform:var(--dcase);line-height:.95}
+:root:not([data-skin]) .hd,:root[data-skin="silver"] .hd,:root[data-skin="gargantua"] .hd{font-weight:400}
 .mo{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 .num{font-variant-numeric:tabular-nums}
 .wrap{padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 /* top bar */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:24px;min-height:60px;flex-wrap:wrap;padding-block:8px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;min-height:60px;flex-wrap:wrap;padding-block:8px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo img{width:22px;height:22px}
-.logo span{font-size:26px}
+.logo span{font-size:calc(26px * var(--dscale))}
 .top nav a{text-decoration:none;color:var(--muted);font-weight:500}
 .top nav a[aria-current="page"]{color:var(--ink)}
-.search{display:flex;align-items:center;gap:8px;height:36px;flex:0 1 320px;min-width:180px;padding:0 14px;border:1px solid var(--edge);border-radius:18px;background:var(--surface);margin-left:auto}
+.search{display:flex;align-items:center;gap:8px;height:36px;flex:0 1 300px;min-width:170px;padding:0 14px;border:1px solid var(--edge);border-radius:18px;background:var(--surface);margin-left:auto}
 .search input{all:unset;font-size:13px;color:var(--ink);width:100%}
+.themes{position:relative}
+.dompick{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+.dompick button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border-radius:14px;font-size:12.5px;color:var(--muted)}
+.dompick button i{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+.dompick button[aria-checked="true"]{background:var(--raise);color:var(--ink);box-shadow:0 0 0 1px var(--edge)}
+.dompick button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ico{position:relative;display:block;width:80px;height:80px;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.ico>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.ico .lay{-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;transition:background-color .35s}
+.l5t .ico{width:20px;height:20px;background:#15191D;border-radius:5px;align-self:center;flex:none}
+.l5t .ico>*{inset:1px;width:calc(100% - 2px);height:calc(100% - 2px)}
+.l5t .ico img{background:none;padding:0;border-radius:0}
+.cell .ic .ico{width:100%;height:100%}
+.tbtn{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--edge);border-radius:18px;background:var(--surface);cursor:pointer;font-size:13px}
+.tbtn:hover{border-color:var(--ink)}
+.sw{display:inline-flex;width:22px;height:14px;border-radius:7px;overflow:hidden;border:1px solid rgba(128,128,128,.5);flex:none}
+.sw i{flex:1}
+.tmenu{position:absolute;right:0;top:44px;width:290px;background:var(--surface);border:1px solid var(--edge);border-radius:12px;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.45);z-index:9}
+.titem{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:9px 10px;cursor:pointer}
+.titem:hover,.titem[aria-checked="true"]{background:var(--raise)}
+.titem .sw{width:30px;height:20px;border-radius:5px}
+.titem b{display:block;font-size:13px}
+.titem span.d{display:block;font-size:11.5px;color:var(--muted);line-height:15px}
 /* filmstrip */
 .strip{display:flex;gap:12px;overflow-x:auto;padding-block:16px 12px;scrollbar-width:thin}
 .poster{display:flex;flex-direction:column;gap:6px;flex:none;width:128px;text-decoration:none;color:var(--muted);font-size:12.5px;line-height:16px}
 .poster.crew{width:176px}
-.poster .ph{position:relative;display:block;height:72px;border-radius:8px;overflow:hidden;background:var(--surface)}
-.poster img{width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:.55;display:block}
+.poster .ph{position:relative;display:block;height:72px;border-radius:calc(var(--radius) * .6);overflow:hidden;background:var(--surface)}
+.poster img{width:100%;height:100%;object-fit:cover;opacity:.72;display:block;transition:opacity .2s,transform .3s}
 .poster.crew .ph{box-shadow:inset 0 0 0 1px var(--edge)}
 .poster[aria-current="page"]{color:var(--ink)}
-.poster[aria-current="page"] img{filter:none;opacity:1}
+.poster[aria-current="page"] img{opacity:1}
 .poster[aria-current="page"] .ph{box-shadow:0 0 0 2px var(--ink)}
-.poster:hover img{opacity:.85}
+.poster:hover img{opacity:.85;transform:scale(1.05)}
 .seats{position:absolute;right:6px;top:6px;font-family:var(--mono);font-size:9.5px;color:#ECECEC;background:rgba(5,5,5,.8);border:1px solid #555;border-radius:8px;padding:0 6px}
 .poster.all .ph{display:flex;align-items:center;justify-content:center;border:1px dashed var(--edge);background:transparent}
-.poster.all .ph svg{opacity:.8}
 /* bento */
 .bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;padding-block:6px 40px}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0;position:relative;overflow:hidden}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);min-width:0;position:relative;overflow:hidden}
 .pad{padding:18px 20px}
 .span5{grid-column:span 5}.span7{grid-column:span 7}.span9{grid-column:span 9}.span3{grid-column:span 3}.span12{grid-column:span 12}
 .hero{min-height:400px;display:flex;align-items:flex-end}
-.hero .still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.1);opacity:.7}
+.hero .still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero.wide{min-height:340px}.hero.wide .still{object-position:center 40%;left:28%;width:72%}
+.hero.wide::after{background:linear-gradient(90deg,var(--surface) 30%,color-mix(in srgb,var(--surface) 55%,transparent) 48%,transparent 78%)}
+.hero.wide .copy{max-width:min(760px,62%)}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--surface) 16%,transparent 72%)}
 .hero .copy{position:relative;z-index:1;padding:22px 24px;display:flex;flex-direction:column;gap:8px;width:100%}
-.hero h1{font-size:clamp(52px,6vw,88px);margin:0}
-.hero .crewline{font-family:var(--display);font-size:24px;letter-spacing:.06em;color:var(--muted)}
+.hero h1{font-size:calc(clamp(52px,6vw,88px) * var(--dscale));margin:0}
+.crewline{font-family:var(--display);font-size:24px;color:var(--muted)}
 .stats{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:6px}
-.stats .n{font-family:var(--display);font-size:28px}
-.kit{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.ab{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);cursor:pointer;min-width:0;min-height:400px}
-.ab:hover{border-color:var(--edge)}
-.ab[aria-pressed="true"]{background:var(--raise);border-color:var(--ink)}
-.ab .el{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted)}
+.stats .n{font-family:var(--display);font-size:calc(28px * var(--dscale))}
+/* the kit: ability cards that flip to their level-5 face */
+.kit{min-width:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-content:start}
+.ab{perspective:1100px;min-width:0;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
+@keyframes rise{from{opacity:.25;transform:translateY(14px)}to{opacity:1;transform:none}}
+.ab .inner{display:grid;transition:transform .6s cubic-bezier(.3,.9,.25,1);transform-style:preserve-3d;height:100%}
+.ab.flip .inner{transform:rotateY(180deg)}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);min-height:440px;min-width:0;transition:border-color .2s,box-shadow .25s,transform .2s}
+.face.back{transform:rotateY(180deg);background:var(--raise)}
+.ab:hover .face.front{border-color:var(--edge);transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.28)}
+.ab.sel .face{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink),0 16px 38px rgba(0,0,0,.3)}
+.pickbtn{all:unset;display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;cursor:pointer;flex:1;min-width:0}
+.pickbtn:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.pickbtn:active .icontile{transform:scale(.94)}
+.el{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted)}
 .chip{width:22px;height:22px;border-radius:5px;background:var(--tile);display:inline-flex;align-items:center;justify-content:center;flex:none}
 .chip img{width:15px;height:15px;object-fit:contain}
-.icontile{width:96px;height:96px;border-radius:14px;background:var(--tile);display:flex;align-items:center;justify-content:center;margin:14px 0 10px}
-.icontile img{width:80px;height:80px;object-fit:contain}
+.icontile{position:relative;width:96px;height:96px;border-radius:calc(var(--radius) + 2px);background:var(--tile);display:flex;align-items:center;justify-content:center;margin:14px 0 10px;transition:transform .25s cubic-bezier(.3,1.4,.5,1),box-shadow .25s}
+.icontile img{position:relative;width:80px;height:80px;object-fit:contain;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
 .icontile.none img{width:44px;height:44px;opacity:.6}
-.ab .name{font-family:var(--display);font-size:30px;line-height:1}
-.ab>span{max-width:100%}
-.ab .sum{width:100%;font-size:12.5px;line-height:18px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;overflow-wrap:anywhere}
-.ab .mo{overflow-wrap:anywhere}
-.ab .name{overflow-wrap:anywhere}
-.ab .grow{flex:1}
+.ab:hover .icontile img,.ab:hover .icontile .ico{transform:scale(1.08) rotate(-3deg)}
+.ab.sel .icontile{box-shadow:0 0 0 1px var(--edge),0 0 30px rgba(255,255,255,.07)}
+.ab.sel .icontile img,.ab.sel .icontile .ico{animation:float 3.2s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.icontile .bloom{position:absolute;inset:-26px;width:auto;height:auto;opacity:0;transition:opacity .5s;pointer-events:none}
+.icontile .bloom{display:none}
+.ab.flip .back .icontile{animation:glow 2.6s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 1px var(--edge),0 0 22px 2px rgba(255,255,255,.12)}50%{box-shadow:0 0 0 1px var(--edge),0 0 40px 8px rgba(255,255,255,.24)}}
+.name{font-family:var(--display);font-weight:600;font-size:calc(30px * var(--dscale) * var(--fit,1));line-height:1;letter-spacing:var(--dtrack);text-transform:var(--dcase);overflow-wrap:normal;hyphens:manual;max-width:100%}
+:root:not([data-skin]) .name,:root[data-skin="silver"] .name,:root[data-skin="gargantua"] .name{font-weight:400}
+.sum{width:100%;font-size:12.5px;line-height:18px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;color:var(--ink);overflow-wrap:anywhere}
+.face .mo{overflow-wrap:anywhere}
+.how{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 9px 3px 4px;border:1px solid var(--line);border-radius:12px;background:var(--raise);font-family:var(--mono);font-size:10.5px;line-height:14px;color:var(--ink);max-width:100%}
+.how:not(:has(.g)){padding-left:9px}
+.how .g{display:inline-flex;gap:2px;background:#15191D;border-radius:9px;padding:1px 2px}.how .g img{width:18px;height:18px;object-fit:contain}.how .g .cap{font-size:10px}
+.scl{display:flex;gap:7px;align-items:flex-start;width:100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;line-height:16px;color:var(--muted)}
+.scl .chip{width:18px;height:18px}.scl .chip img{width:12px;height:12px}
+.l5t{display:flex;gap:7px;align-items:baseline;width:100%;font-size:12px;color:var(--ink)}
+.l5t b{font-family:var(--display);font-size:calc(17px * var(--dscale));letter-spacing:var(--dtrack)}
+.l5t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.l5t img{width:20px;height:20px;object-fit:contain;align-self:center;background:#15191D;border-radius:5px;padding:1px}
+.detail .what{border-left:2px solid var(--edge);padding-left:14px;margin:10px 0 16px}
+.detail .big{font-size:16px;line-height:24px;color:var(--ink);max-width:75ch}
+:root[data-skin="endurance"] .hero::after{background:linear-gradient(to top,var(--surface) 36%,transparent 92%)}
+.grow{flex:1}
+.foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;min-width:0;margin-top:10px}
+.foot .l5{flex:none;margin-left:auto}
+.foot .sp{flex:1}
 .pill{font-family:var(--mono);font-size:10px;border:1px solid var(--edge);border-radius:10px;padding:1px 8px;color:var(--muted);white-space:nowrap}
 .pill.good{color:var(--good);border-color:currentColor}.pill.warn{color:var(--warn);border-color:currentColor}
+.l5{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:14px;border:1px solid var(--edge);background:var(--raise);cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.06em;transition:transform .15s,border-color .2s,background .2s,box-shadow .25s}
+.l5:hover{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+.l5:active{transform:scale(.93)}
+.l5 svg{transition:transform .4s}
+.l5:hover svg{transform:rotate(180deg)}
+.back .lvl{font-family:var(--display);font-size:calc(54px * var(--dscale));line-height:.9;color:var(--ink);letter-spacing:var(--dtrack)}
+.back .ul{font-weight:600;font-size:15px;line-height:19px}
+.back .gate{font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow-wrap:anywhere}
+/* a crew vessel: one card per seat, the seat's abilities inside it */
+.kit.crew{display:flex;flex-wrap:wrap;gap:12px}
+.kit.crew .seat{flex:var(--n,1) 1 calc(var(--n,1) * 196px + 30px);min-width:0;max-width:100%}
+.kit.crew>p{flex-basis:100%}
+.seat{border:1px solid var(--edge);border-radius:calc(var(--radius) + 4px);padding:14px;background:color-mix(in srgb,var(--surface) 70%,transparent);animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
+.seat-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 4px 12px}
+.seat-head .hd{font-size:calc(34px * var(--dscale))}
+.seat-head p{margin:0;flex:1 1 320px;color:var(--muted);font-size:13px;line-height:18px}
+.seat-kit{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.seat-kit .face{min-height:360px}
+.doc .face{min-height:0;background:transparent;border-style:dashed}
+.hullrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
 /* controls */
 .ctl-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.ctl-head .hd{font-size:26px}
+.ctl-head .hd{font-size:calc(26px * var(--dscale))}
 .devices{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.9fr) minmax(0,1fr);gap:22px}
 .dev h3{margin:0 0 10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:400;color:var(--muted)}
+.padwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:14px;align-items:start}
 .pad-map{position:relative;aspect-ratio:16/10;max-width:100%}
 .pad-body{position:absolute;left:12%;right:12%;top:24%;bottom:6%;border:2px solid var(--edge);border-radius:40% 40% 46% 46%}
-.slot{position:absolute;display:flex;align-items:center;gap:6px;transition:opacity .15s;font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.slot{position:absolute;display:flex;align-items:center;gap:6px;transition:opacity .2s,transform .2s}
 .slot img{width:28px;height:28px;object-fit:contain}
 .slot.stick img{width:38px;height:38px}
-.slot .lbl{font-family:var(--mono);font-size:10px;color:var(--muted)}
-.padwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:14px;align-items:start}
+.slot.lit{transform:scale(1.12)}
 .legend{display:flex;flex-direction:column;gap:6px}
-.legend .row{display:flex;align-items:center;gap:8px;transition:opacity .15s;font-size:12.5px;line-height:15px}
+.legend .row{display:flex;align-items:center;gap:8px;transition:opacity .2s;font-size:12.5px;line-height:15px}
 .legend .row img{width:24px;height:24px;object-fit:contain;flex:none}
 .legend .row .g{display:flex;gap:2px;flex:none;min-width:24px}
 .legend .row .cap{height:22px;font-size:9.5px;min-width:22px;padding:0 4px}
 .lit{opacity:1}.dim{opacity:.32}.off{opacity:.12}
 .keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
-.key{display:flex;flex-direction:column;gap:5px;transition:opacity .15s}
-.cap{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;min-width:34px;height:30px;padding:0 8px;border:1px solid var(--edge);border-bottom-width:3px;border-radius:6px;font-family:var(--mono);font-size:11px;background:var(--raise);white-space:nowrap}
+.key{display:flex;flex-direction:column;gap:5px;transition:opacity .2s}
+.cap{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;min-width:34px;height:30px;padding:0 8px;border:1px solid var(--edge);border-bottom-width:3px;border-radius:6px;font-family:var(--mono);font-size:11px;background:var(--raise);white-space:nowrap;transition:transform .15s}
+.key.lit .cap{transform:translateY(2px);border-bottom-width:1px;border-color:var(--accent)}
 .key .lbl{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
 .phone{position:relative;border:2px solid var(--edge);border-radius:26px;background:var(--bg);aspect-ratio:16/9;display:flex;align-items:center;gap:12px;padding:14px}
 .phone .steer{width:30%;aspect-ratio:1;border-radius:50%;border:1px dashed var(--edge);display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);flex:none;padding:6px}
 .phone .btns{flex:1;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-content:center}
-.tb{display:flex;flex-direction:column;align-items:center;gap:3px;transition:opacity .15s;width:64px}
-.tb .face{width:46px;height:46px;border-radius:12px;background:var(--tile);border:1px solid #444;display:flex;align-items:center;justify-content:center}
-.tb.round .face{border-radius:50%}
+.tb{display:flex;flex-direction:column;align-items:center;gap:3px;transition:opacity .2s,transform .2s;width:64px}
+.tb.lit{transform:scale(1.08)}
+.tb .face2{width:46px;height:46px;border-radius:12px;background:var(--tile);border:1px solid #444;display:flex;align-items:center;justify-content:center}
+.tb.round .face2{border-radius:50%}
 .tb img{width:34px;height:34px;object-fit:contain}
 .tb .lbl{font-family:var(--mono);font-size:9.5px;color:var(--muted);text-align:center;line-height:12px}
 .notes{margin:10px 0 0;padding-left:16px;color:var(--muted);font-size:12px;line-height:17px}
 /* plays in, detail, docs */
-.play{display:flex;flex-direction:column;gap:10px}
-.game{position:relative;border-radius:10px;overflow:hidden;min-height:150px;display:flex;align-items:flex-end;background:var(--raise)}
-.game img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:.5}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}.col>.tile{flex:none}
+.play{display:flex;flex-direction:column;gap:8px}
+.game.row{min-height:64px}.game.row .copy{padding:8px 12px}.game.row .copy .hd{font-size:calc(21px * var(--dscale))}
+.game.extra{display:none}.play.all .game.extra{display:flex}
+.moregames{all:unset;cursor:pointer;align-self:flex-start;font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--edge);border-radius:14px;color:var(--ink)}
+.moregames:hover{border-color:var(--accent)}.moregames:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.game{position:relative;border-radius:calc(var(--radius) * .7);overflow:hidden;min-height:150px;display:flex;align-items:flex-end;background:var(--raise)}
+.game img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--still);opacity:.5;transition:transform .6s}
+.game:hover img{transform:scale(1.04)}
 .game::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--surface) 12%,transparent 80%)}
 .game .copy{position:relative;z-index:1;padding:12px 14px;display:flex;flex-direction:column;gap:3px}
-.game .copy .hd{font-size:28px}
+.game .copy .hd{font-size:calc(28px * var(--dscale))}
 .game .copy p{margin:0;font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.pills{display:flex;flex-wrap:wrap;gap:5px}
-.detail h2{margin:0;font-size:34px}
-.detail p{margin:8px 0 0;max-width:110ch;color:var(--ink)}
+.detail h2{margin:0;font-size:calc(34px * var(--dscale))}
+.detail p{margin:8px 0 0;max-width:110ch}
 .dials{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:14px}
 .dial{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--raise)}
 .dial .top2{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:12px}
 .dial .v{white-space:nowrap}
 .dial .src{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
 .dial.off{opacity:.5}
-.l5{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-.l5 .t{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.l5 .gate{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.l5box{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.l5box .t{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.l5box .gate{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 ul.list{list-style:none;margin:8px 0 0;padding:0}
 ul.list li{padding:8px 0;border-top:1px solid var(--line);font-size:13px;overflow-wrap:anywhere}
 ul.list .dt{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:6px}
 /* fleet table */
 .tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 .tally .tile{padding:16px 18px}
-.tally .n{font-family:var(--display);font-size:44px}
+.tally .n{font-family:var(--display);font-size:calc(44px * var(--dscale))}
 .scroll{overflow-x:auto}
 table.mx{border-collapse:collapse;width:100%;min-width:1100px}
 .mx th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:400;white-space:nowrap}
 .mx th .chip{margin-right:6px;vertical-align:middle}
 .mx td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
-.mx tbody tr{cursor:pointer}
+.mx tbody tr{cursor:pointer;transition:background .15s}
 .mx tbody tr:hover td{background:var(--raise)}
 .cell{display:flex;align-items:center;gap:8px;min-width:0}
 .cell .ic{width:34px;height:34px;border-radius:8px;background:var(--tile);display:flex;align-items:center;justify-content:center;flex:none}
@@ -156,25 +271,34 @@ table.mx{border-collapse:collapse;width:100%;min-width:1100px}
 .cell .nm{font-weight:600;font-size:13px;line-height:16px}
 .cell .gl{height:18px;width:auto;vertical-align:middle;margin-right:4px}
 .hull{display:flex;gap:10px;align-items:center}
-.hull img{width:64px;height:36px;object-fit:cover;border-radius:6px;filter:grayscale(1)}
-.hull .nm{font-family:var(--display);font-size:22px;letter-spacing:.04em}
+.hull img{width:64px;height:36px;object-fit:cover;border-radius:6px}
+.hull .nm{font-family:var(--display);font-size:calc(22px * var(--dscale));letter-spacing:var(--dtrack);text-transform:var(--dcase)}
 footer{padding-block:6px 40px;color:var(--muted);font-size:12.5px;max-width:110ch}
 footer code{font-family:var(--mono);font-size:11.5px}
 .empty{color:var(--muted);font-style:italic}
 @media (max-width:1280px){
   .span5,.span7,.span9,.span3{grid-column:span 12}
   .kit{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
-  .ab{min-height:0}
+  .face{min-height:0}
   .devices{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 }
-@media (prefers-reduced-motion:reduce){.slot,.key,.tb{transition:none}}
+@media (max-width:640px){.top .stamp{display:none}.dompick button{padding:4px 6px}.dompick button span{display:none}.tmenu{position:fixed;left:12px;right:12px;width:auto;top:70px}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .ab.flip .inner{transform:none}.ab.flip .face.front{visibility:hidden}.face.back{transform:none}.ab:not(.flip) .face.back{visibility:hidden}
+}
 </style>
 
 <header class="top wrap">
   <a class="logo" href="#fleet"><img id="logo" alt=""><span class="hd">Fleet Codex</span></a>
   <nav aria-label="Sections"><a href="#fleet" id="navFleet">Fleet</a></nav>
   <label class="search"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" aria-label="Search the fleet" placeholder="Search vessels, abilities, games"></label>
-  <span class="mo" id="stamp">Loading&hellip;</span>
+  <div class="dompick" id="dompick" role="radiogroup" aria-label="Domain"></div>
+  <span class="mo stamp" id="stamp">Loading&hellip;</span>
+  <div class="themes">
+    <button class="tbtn" id="tbtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmenu"><span class="sw" id="tsw"></span><span id="tname">Silver Screen</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="tmenu" id="tmenu" role="menu" aria-label="Theme" hidden></div>
+  </div>
 </header>
 <div class="wrap"><nav class="strip" id="strip" aria-label="The fleet"></nav></div>
 <main class="wrap" id="app"><p class="empty">Reading the fleet&hellip;</p></main>
@@ -182,10 +306,39 @@ footer code{font-family:var(--mono);font-size:11.5px}
 
 <script>
 (function(){
-  var D = null, query = "", pick = 0;
+  var THEMES = [
+    {id:"silver", name:"Silver Screen", d:"The website's: black and white like a film still. Follows light or dark.", sw:["#050505","#ECECEC","#7F7F7F"]},
+    {id:"tesseract", name:"Tesseract", d:"Gold lattice lines on deep brown-black, serif titles.", sw:["#0A0705","#F2B544","#F4E6C8"]},
+    {id:"endurance", name:"Endurance", d:"White panels, technical type, the mission's orange.", sw:["#FFFFFF","#15191D","#E4572E"]},
+    {id:"gargantua", name:"Gargantua", d:"Pure black under an accretion glow, warm whites.", sw:["#020100","#FF9F43","#F7EBDC"]},
+    {id:"hypersea", name:"HyperSea", d:"The game's own menu: the deep blue, the domain cyan.", sw:["#00041F","#00D4FF","#E6E9FF"]}
+  ];
+  var D = null, query = "", pick = null, flipped = {}, dom = "Jade";
+  /* an icon as the HUD tints it: the parts the HUD paints in the pilot's domain (d) and in the domain's shielded
+     signal (s) are masks filled with the picked domain's colour; fixed-colour parts (f) keep theirs */
+  function ico(src, layers, alt, tint){
+    if(!layers) return img(src, alt);
+    var fill = tint === "omni" ? "var(--omni)" : "var(--dom)";
+    function lay(u, bg){ return u ? '<i class="lay" style="-webkit-mask-image:url(' + esc(u) + ');mask-image:url(' + esc(u) + ');background:' + bg + '"></i>' : ''; }
+    return '<span class="ico" role="img" aria-label="' + esc(alt || "") + '">' + lay(layers.d, fill) + lay(layers.s, "var(--dom-sh)") + (layers.f ? '<img src="' + esc(layers.f) + '" alt="">' : '') + '</span>';
+  }
+  function vimg(v){ return v.domainImages && v.domainImages[dom] || v.image; }
+  function applyDomain(name){
+    var P = D && D.palette; if(!P) return;
+    if(!P.domains[name]) name = P["default"];
+    dom = name;
+    var c = P.domains[name], root = document.documentElement.style;
+    root.setProperty("--dom", c.signal); root.setProperty("--dom-sh", c.shielded); root.setProperty("--omni", P.omni);
+    try { localStorage.setItem("fleetCodexDomain", name); } catch(e){}
+    var box = document.getElementById("dompick");
+    box.innerHTML = Object.keys(P.domains).map(function(k){
+      return '<button type="button" role="radio" aria-checked="' + (k === name) + '" data-dom="' + k + '" title="' + k + ': ' + P.domains[k].signal + '" style="--c:' + P.domains[k].signal + '"><i></i><span>' + k + '</span></button>'; }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll("[data-dom]"), function(b){ b.addEventListener("click", function(){ applyDomain(b.dataset.dom); route(true); }); });
+  }
   var EL_WORD = {Charge:"threat", Mass:"size", Space:"reach", Time:"rate"};
   var L5 = {wired:["good","L5 wired"], open:["","L5 open"], off:["warn","L5 switched off"], "label-only":["warn","L5 named, not gated"], "gate-only":["warn","L5 gated, not named"]};
   var app = document.getElementById("app"), strip = document.getElementById("strip"), q = document.getElementById("q");
+  var FLIP_ICON = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>';
 
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
   function num(v){ return v == null ? "&ndash;" : String(Math.round(v * 100) / 100); }
@@ -197,53 +350,171 @@ footer code{font-family:var(--mono);font-size:11.5px}
   function crewName(v){ return v.crew && v.crew.names && v.crew.names.length ? v.crew.names.join(" and ") : v.name; }
   function isCrew(v){ return v.crew && v.crew.seats > 1; }
   function current(){ var k = decodeURIComponent(location.hash.slice(1)); return D.vessels.filter(function(v){ return v.key === k; })[0] || null; }
-  function kitOf(v){
-    var out = D.elements.map(function(n){ var e = v.elements[n]; return e ? {kind:"element", el:n, e:e} : null; }).filter(Boolean);
-    if(v.omni) out.push({kind:"omni", el:"Omni", e:v.omni});
-    return out;
-  }
   function matches(v){
     if(!query) return true;
     var hay = [v.name, crewName(v), v.key, v.description].concat(
       Object.keys(v.elements).map(function(n){ var e = v.elements[n]; return e.ability + " " + e.upgrade.label; }),
-      v.cards.map(function(c){ return c.name; }), v.omni ? [v.omni.label].concat(v.omni.effects) : []).join(" ").toLowerCase();
+      v.cards.map(function(c){ return c.name; }), v.omni ? [v.omni.label].concat(v.omni.effects) : [],
+      v.seats ? v.seats.list.map(function(s){ return s.name + " " + s.abilities.map(function(a){ return a.name; }).join(" "); }) : []).join(" ").toLowerCase();
     return query.split(/\s+/).every(function(w){ return hay.indexOf(w) >= 0; });
   }
 
+  /* ---------- themes ---------- */
+  function swatch(t){ return t.sw.map(function(c){ return '<i style="background:' + c + '"></i>'; }).join(""); }
+  function fitNames(){   /* a name whose longest word is wider than its card steps down until it fits (the theme's display face sets the width) */
+    Array.prototype.forEach.call(document.querySelectorAll(".name"), function(n){
+      n.style.removeProperty("font-size");
+      var fs = parseFloat(getComputedStyle(n).fontSize), w = n.clientWidth;
+      if(!w) return;
+      while(n.scrollWidth > w + 1 && fs > 11){ fs -= 1; n.style.fontSize = fs + "px"; }
+    });
+  }
+  var fitTimer;
+  window.addEventListener("resize", function(){ clearTimeout(fitTimer); fitTimer = setTimeout(fitNames, 120); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitNames(); });
+  function applyTheme(id){
+    var t = THEMES.filter(function(x){ return x.id === id; })[0] || THEMES[0];
+    if(t.id === "silver") document.documentElement.removeAttribute("data-skin"); else document.documentElement.setAttribute("data-skin", t.id);
+    document.getElementById("tname").textContent = t.name;
+    document.getElementById("tsw").innerHTML = swatch(t);
+    try { localStorage.setItem("fleetCodexTheme", t.id); } catch(e){}
+    drawThemeMenu(t.id);
+    fitNames();
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
+  }
+  function drawThemeMenu(active){
+    var m = document.getElementById("tmenu");
+    m.innerHTML = THEMES.map(function(t){
+      return '<button class="titem" type="button" role="menuitemradio" aria-checked="' + (t.id === active) + '" data-t="' + t.id + '"><span class="sw">' + swatch(t) + '</span><span><b>' + esc(t.name) + '</b><span class="d">' + esc(t.d) + '</span></span></button>';
+    }).join("");
+    Array.prototype.forEach.call(m.querySelectorAll(".titem"), function(b){ b.addEventListener("click", function(){ applyTheme(b.dataset.t); openMenu(false); document.getElementById("tbtn").focus(); }); });
+  }
+  function openMenu(open){
+    var m = document.getElementById("tmenu"), b = document.getElementById("tbtn");
+    m.hidden = !open; b.setAttribute("aria-expanded", String(open));
+    if(open){ var c = m.querySelector('[aria-checked="true"]') || m.querySelector(".titem"); if(c) c.focus(); }
+  }
+  document.getElementById("tbtn").addEventListener("click", function(e){ e.stopPropagation(); openMenu(document.getElementById("tmenu").hidden); });
+  document.addEventListener("click", function(e){ if(!e.target.closest(".themes")) openMenu(false); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !document.getElementById("tmenu").hidden){ openMenu(false); document.getElementById("tbtn").focus(); }
+    if((e.key === "ArrowDown" || e.key === "ArrowUp") && e.target.classList && e.target.classList.contains("titem")){
+      e.preventDefault(); var items = Array.prototype.slice.call(document.querySelectorAll(".titem")), i = items.indexOf(e.target);
+      items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus();
+    }
+  });
+  var saved = "silver"; try { saved = localStorage.getItem("fleetCodexTheme") || "silver"; } catch(e){}
+  applyTheme(saved);
+
+  /* ---------- the fleet strip ---------- */
   function drawStrip(){
     var cur = current();
     var vs = D.vessels.filter(function(v){ return v.status.hasMap && matches(v); });
     vs.sort(function(a, b){ return (isCrew(a) - isCrew(b)) || a.id - b.id; });
     strip.innerHTML = '<a class="poster all" href="#fleet"' + (cur ? '' : ' aria-current="page"') + '><span class="ph"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>The whole fleet</a>' +
       vs.map(function(v){
-        return '<a class="poster' + (isCrew(v) ? ' crew' : '') + '" href="#' + esc(v.key) + '"' + (cur && cur.key === v.key ? ' aria-current="page"' : '') + '><span class="ph">' + img(v.image, "") +
+        return '<a class="poster' + (isCrew(v) ? ' crew' : '') + '" href="#' + esc(v.key) + '"' + (cur && cur.key === v.key ? ' aria-current="page"' : '') + '><span class="ph">' + img(vimg(v), "") +
           (isCrew(v) ? '<span class="seats">' + v.crew.seats + ' SEATS</span>' : '') + '</span>' + esc(crewName(v)) + '</a>';
       }).join("") + (vs.length ? '' : '<span class="empty">No vessel matches.</span>');
     var sel = strip.querySelector('[aria-current="page"]');
     if(sel && sel.scrollIntoView) try { sel.scrollIntoView({block:"nearest", inline:"center"}); } catch(e){}
   }
 
-  /* ---------- the vessel ---------- */
-  function abilityTile(k, i, v){
-    var e = k.e, isOmni = k.kind === "omni";
-    var name = isOmni ? (e.label ? e.label.charAt(0).toUpperCase() + e.label.slice(1) : (e.effects[0] || "Omni crystal")) : (e.open ? "Open slot" : e.ability);
-    var icon = isOmni ? (e.icon || e.mark) : (e.icon || e.shape);
-    var noArt = isOmni ? !e.icon : !e.icon;
-    var live = isOmni ? [] : e.scaling.filter(function(s){ return s.on; });
-    var scales = live.length ? live[0].field + " &times;" + num(live[0].min) + " &ndash; &times;" + num(live[0].max) + (live.length > 1 ? " +" + (live.length - 1) : "") : (isOmni ? "fly into an omni crystal" : "scales no number");
-    var sum = isOmni ? (e.label ? "What this hull does with an omni crystal." : (e.effects.length ? "Its crystal effects: " + e.effects.join(", ") + "." : "No omni crystal effect of its own.")) : e.description;
-    return '<button class="ab" type="button" data-i="' + i + '" aria-pressed="' + (pick === i) + '">' +
-      '<span class="el"><span class="chip">' + img(isOmni ? e.mark : e.shape, "") + '</span>' + (isOmni ? "OMNI CRYSTAL" : k.el.toUpperCase()) + '</span>' +
-      '<span class="icontile' + (noArt ? ' none' : '') + '">' + img(icon, name) + '</span>' +
-      '<span class="name">' + esc(name) + '</span><span class="sum">' + esc(sum) + '</span><span class="grow"></span>' +
-      '<span class="mo">' + scales + '</span>' +
-      (isOmni ? '<span class="pill">no level 5</span>' : pill(e.upgrade.status)) + '</button>';
+  /* ---------- the kit ---------- */
+  /* one picked thing: "el:<Element>", "omni", or "doc:<seat>:<n>" for a seat ability the map does not carry */
+  function resolve(v, key){
+    if(!key) return null;
+    if(key === "omni") return v.omni ? {kind:"omni", key:key, e:v.omni} : null;
+    var m = key.match(/^el:(\w+)$/);
+    if(m) return v.elements[m[1]] ? {kind:"element", key:key, el:m[1], e:v.elements[m[1]]} : null;
+    m = key.match(/^doc:(\d+):(\d+)$/);
+    if(m && v.seats){ var s = v.seats.list[+m[1]], a = s && s.abilities[+m[2]]; if(a) return {kind:"doc", key:key, el:a.element, a:a, seat:s}; }
+    return null;
+  }
+  function firstKey(v){
+    if(v.seats){ for(var i = 0; i < v.seats.list.length; i++){ var s = v.seats.list[i]; for(var j = 0; j < s.abilities.length; j++) return s.abilities[j].linked ? "el:" + s.abilities[j].element : "doc:" + i + ":" + j; } }
+    for(var k = 0; k < D.elements.length; k++) if(v.elements[D.elements[k]]) return "el:" + D.elements[k];
+    return v.omni ? "omni" : null;
+  }
+  function fit(name){   /* shrink a name whose longest word would not fit the card at the theme's display size */
+    var w = String(name || "").split(/\s+/).reduce(function(m, x){ return Math.max(m, x.length); }, 0);
+    return w > 8 ? ' style="--fit:' + (8 / w).toFixed(2) + '"' : '';
+  }
+  function howLine(v, el, w){
+    var r = v.controls ? v.controls.rows.filter(function(x){ return x.element === el; })[0] : null;
+    var btn = r && r.pad && r.pad !== "no button" ? padGlyph(r.pad) : "";
+    var t = w.trigger || (btn ? "" : "Passive");
+    if(!btn && !t) return "";
+    return '<span class="how">' + (btn ? '<span class="g">' + btn + '</span>' : '') + (t ? '<span>' + esc(t) + '</span>' : '') + '</span>';
+  }
+  function elementCard(v, el, delay, nameOverride){
+    var e = v.elements[el], key = "el:" + el, u = e.upgrade, isSel = pick === key, isFlip = !!flipped[v.key + key];
+    var name = e.open ? "Open slot" : e.ability;
+    var live = e.scaling.filter(function(s){ return s.on; });
+    var scales = live.length ? live[0].field + " &times;" + num(live[0].min) + " &ndash; &times;" + num(live[0].max) + (live.length > 1 ? " +" + (live.length - 1) : "") : "scales no number";
+    var icon = e.icon || e.shape, l5icon = u.icon || icon, w = e.words || {}, tint = w.tint || {};
+    return '<article class="ab' + (isSel ? ' sel' : '') + (isFlip ? ' flip' : '') + '" data-k="' + key + '" style="--d:' + delay + 'ms"><div class="inner">' +
+      '<div class="face front" aria-hidden="' + isFlip + '">' +
+        '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' +
+          '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + '</span>' +
+          '<span class="icontile' + (e.icon ? '' : ' none') + '">' + ico(icon, e.icon ? e.layers : null, name, tint.rest) + '</span>' +
+          '<span class="name"' + fit(nameOverride || name) + '>' + esc(nameOverride || name) + '</span>' + howLine(v, el, w) +
+          '<span class="sum">' + esc(w.does || e.description) + '</span>' +
+          (w.scales ? '<span class="scl"><span class="chip">' + img(e.shape, "") + '</span><span>' + esc(w.scales) + '</span></span>' : '<span class="mo">' + scales + '</span>') +
+          '<span class="grow"></span>' +
+          '<span class="l5t"><b>L5</b>' + (u.icon ? ico(u.icon, u.layers, "", tint.l5) : '') + '<span>' + esc(u.label || (u.status === "open" ? "not designed yet" : "unnamed")) + '</span></span></button>' +
+        '<span class="foot">' + pill(u.status) + '<span class="sp"></span><button class="l5" type="button" data-flip="' + key + '" aria-label="Show the level 5 upgrade of ' + esc(name) + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' + FLIP_ICON + 'L5</button></span>' +
+      '</div>' +
+      '<div class="face back" aria-hidden="' + !isFlip + '">' +
+        '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + ' &middot; LEVEL 5</span>' +
+        '<span class="icontile' + (l5icon === e.shape ? ' none' : '') + '">' + img(D.ui.bloom, "", "bloom") + ico(l5icon, u.icon ? u.layers : (e.icon ? e.layers : null), (u.label || name) + " at level 5", tint.l5) + '</span>' +
+        '<span class="lvl">L5</span>' +
+        '<span class="ul">' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed upgrade")) + '</span>' +
+        '<span class="sum" style="-webkit-line-clamp:6">' + esc(u.description || (u.status === "open" ? "No level-5 upgrade is designed for " + name + ". It unlocks at level " + u.unlockLevel + " and relocks below " + u.relockBelow + "." : "")) + '</span>' +
+        '<span class="grow"></span>' + u.gates.slice(0, 1).map(function(g){ return '<span class="gate">gated at ' + esc(g.site) + (g.offBecause ? ' &middot; off: ' + esc(g.offBecause) : '') + '</span>'; }).join("") +
+        '<span class="foot">' + pill(u.status) + '<span class="sp"></span><button class="l5" type="button" data-flip="' + key + '" aria-label="Back to ' + esc(name) + '"' + (isFlip ? '' : ' tabindex="-1"') + '>' + FLIP_ICON + 'Back</button></span>' +
+      '</div></div></article>';
+  }
+  function omniCard(v, delay){
+    var o = v.omni, key = "omni", isSel = pick === key;
+    var ow = o.words || {};
+    var name = ow.ability || (o.label ? o.label.charAt(0).toUpperCase() + o.label.slice(1) : (o.effects[0] || "Omni crystal"));
+    var sum = ow.does || (o.label ? "What this hull does when it flies into an omni crystal." : (o.effects.length ? "Its crystal effects: " + o.effects.join(", ") + "." : "No omni crystal effect of its own."));
+    return '<article class="ab' + (isSel ? ' sel' : '') + '" data-k="omni" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
+      '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="omni">' +
+        '<span class="el"><span class="chip">' + img(o.mark, "") + '</span>OMNI CRYSTAL</span>' +
+        '<span class="icontile' + (o.icon ? '' : ' none') + '">' + (o.icon ? ico(o.icon, o.layers, name) : img(o.mark, name)) + '</span>' +
+        '<span class="name"' + fit(name) + '>' + esc(name) + '</span><span class="how"><span>' + esc(ow.trigger || "Fly into an omni crystal") + '</span></span><span class="sum">' + esc(sum) + '</span><span class="grow"></span></button>' +
+      '<span class="foot"><span class="pill">no level 5</span></span></div></div></article>';
+  }
+  function docCard(v, si, ai, a, delay){
+    var key = "doc:" + si + ":" + ai, isSel = pick === key, shape = D.ui["shape/" + a.element];
+    return '<article class="ab doc' + (isSel ? ' sel' : '') + '" data-k="' + key + '" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
+      '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '">' +
+        '<span class="el"><span class="chip">' + img(shape, "") + '</span>' + esc(a.element.toUpperCase()) + '</span>' +
+        '<span class="name"' + (fit(a.name) ? fit(a.name).replace('"--fit', '"margin-top:10px;--fit') : ' style="margin-top:10px"') + '>' + esc(a.name) + '</span><span class="sum">' + esc(a.text) + '</span></button>' +
+      '<span class="foot"><span class="pill">seat control</span></span></div></div></article>';
+  }
+  function kitTile(v){
+    var d = 0;
+    if(v.seats){
+      return '<div class="kit crew span12" role="group" aria-label="The crew">' + v.seats.list.map(function(s, si){
+        return '<section class="seat" style="--d:' + (si * 90) + 'ms;--n:' + s.abilities.length + '" aria-label="' + esc(s.name) + '"><div class="seat-head"><span class="hd">' + esc(s.name) + '</span><span class="mo">' + (s.seats > 1 ? s.seats + ' SEATS' : 'SEAT ' + (si + 1)) + '</span><p>' + esc(s.role) + '</p></div><div class="seat-kit">' +
+          s.abilities.map(function(a, ai){ d += 50; return a.linked ? elementCard(v, a.element, d, a.name) : docCard(v, si, ai, a, d); }).join("") + '</div></section>';
+      }).join("") + (v.omni ? '<section class="seat" style="--d:' + (v.seats.list.length * 90) + 'ms" aria-label="The hull"><div class="seat-head"><span class="hd">The hull</span><span class="mo">EVERY SEAT</span><p>Shared by the whole crew.</p></div><div class="hullrow">' + omniCard(v, d + 50) + '</div></section>' : '') +
+        '<p class="mo" style="margin:2px 4px">Seats read from <a href="' + esc(v.seats.url) + '">' + esc(file(v.seats.source)) + '</a> through <code>Docs/FleetCodex/seats.json</code>.</p></div>';
+    }
+    var cards = D.elements.filter(function(n){ return v.elements[n]; }).map(function(n, i){ return elementCard(v, n, i * 60); });
+    if(v.omni) cards.push(omniCard(v, cards.length * 60));
+    return '<div class="kit span7" role="group" aria-label="The kit">' + (cards.length ? cards.join("") : '<p class="empty">No ability map for this vessel.</p>') + '</div>';
   }
 
+  /* ---------- controls ---------- */
   var SLOTS = {   /* the controller map: where each pad control sits, in % of the map */
-    "LT":{l:4,t:2}, "RT":{r:4,t:2,flip:1}, "RB":{r:22,t:14,flip:1}, "Left stick":{l:22,t:44,stick:1}, "Right stick":{l:52,t:66,stick:1},
+    "LT":{l:4,t:2}, "RT":{r:4,t:2}, "RB":{r:22,t:14}, "Left stick":{l:22,t:44,stick:1}, "Right stick":{l:52,t:66,stick:1},
     "Y":{l:72,t:24}, "X":{l:61,t:41}, "B":{l:83,t:41}, "A":{l:72,t:58}
   };
+  var PADMAP = {};
   function padGlyph(pad){
     if(pad === "LT+RT") return img(PADMAP["LT"], "LT") + img(PADMAP["RT"], "RT");
     return PADMAP[pad] ? img(PADMAP[pad], pad) : '<span class="cap">' + esc(pad) + '</span>';
@@ -255,11 +526,10 @@ footer code{font-family:var(--mono);font-size:11.5px}
       slots.forEach(function(s){ if(SLOTS[s]) (bySlot[s] = bySlot[s] || []).push(r); });
     });
     return Object.keys(SLOTS).map(function(s){
-      var p = SLOTS[s], rs = bySlot[s] || [], art = rs.length ? rs[0].padArt : null;
-      var state = !rs.length ? "off" : rs.some(function(r){ return r === litRow || r.action === "Steer"; }) ? "lit" : "dim";
+      var p = SLOTS[s], rs = bySlot[s] || [];
+      var state = !rs.length ? "off" : rs.some(function(r){ return r === litRow; }) ? "lit" : rs.some(function(r){ return r.action === "Steer"; }) ? "lit" : "dim";
       var pos = (p.l != null ? "left:" + p.l + "%;" : "right:" + p.r + "%;") + "top:" + p.t + "%";
-      var glyph = PADMAP[s] ? img(PADMAP[s], s) : '';
-      return '<span class="slot ' + state + (p.stick ? " stick" : "") + '" style="' + pos + '" title="' + esc(rs.map(function(r){ return r.action; }).join(", ") || s) + '">' + glyph + '</span>';
+      return '<span class="slot ' + state + (p.stick ? " stick" : "") + '" style="' + pos + '" title="' + esc(rs.map(function(r){ return r.action; }).join(", ") || s) + '">' + (PADMAP[s] ? img(PADMAP[s], s) : '') + '</span>';
     }).join("");
   }
   function controlsTile(v, sel){
@@ -270,7 +540,7 @@ footer code{font-family:var(--mono);font-size:11.5px}
     var keyRows = rows.filter(function(r){ return r.pc && r.pc !== "no button" && r.pc !== "passive"; });
     var phoneRows = rows.filter(function(r){ return r.action !== "Steer" && r.touch && r.touch !== "no button" && r.touch !== "passive"; });
     var steer = rows.filter(function(r){ return r.action === "Steer"; })[0];
-    var head = sel ? (sel.kind === "omni" ? "the omni crystal is flown into, not pressed" : esc(litRow ? litRow.action : sel.e.ability) + (litRow ? " lit on the controller, the keyboard and the phone" : " has no button: it is passive or a gesture")) : "";
+    var head = !sel ? "" : sel.kind === "omni" ? "the omni crystal is flown into, not pressed" : sel.kind === "doc" ? esc(sel.a.name) + " is a seat control: the seat's own buttons, in " + esc(file(v.seats.source)) : litRow ? esc(litRow.action) + " lit on the controller, the keyboard and the phone" : esc(sel.e.ability) + " has no button: it is passive or a gesture";
     return '<div class="ctl-head"><span class="hd">Controls</span><span class="mo">' + head + '</span></div><div class="devices">' +
       '<section class="dev" aria-label="Controller"><h3>CONTROLLER</h3><div class="padwrap"><div class="pad-map"><div class="pad-body"></div>' + padSlots(rows, litRow) + '</div>' +
         '<div class="legend">' + rows.filter(function(r){ return r.pad && r.pad !== "no button"; }).map(function(r){
@@ -280,62 +550,89 @@ footer code{font-family:var(--mono);font-size:11.5px}
       '<section class="dev" aria-label="Phone"><h3>PHONE' + (c.touchScheme === "TotemButtons" ? " &middot; BUTTONS ROUND THE RIGHT THUMB" : c.touchScheme ? " &middot; ABILITIES ON THUMB LIFTS" : "") + '</h3>' +
         '<div class="phone"><span class="steer">' + esc(steer ? "Steer: " + steer.touch : "Steer") + '</span><span class="btns">' + phoneRows.map(function(r){
           var round = /button/i.test(r.touch) && !/card/i.test(r.touch);
-          return '<span class="tb ' + state(r) + (round ? ' round' : '') + '"><span class="face">' + (r.touchArt ? img(r.touchArt, r.touch) : '<span class="mo">' + esc(r.touch) + '</span>') + '</span><span class="lbl">' + esc(r.action) + '</span></span>';
+          return '<span class="tb ' + state(r) + (round ? ' round' : '') + '"><span class="face2">' + (r.touchArt ? img(r.touchArt, r.touch) : '<span class="mo">' + esc(r.touch) + '</span>') + '</span><span class="lbl">' + esc(r.action) + '</span></span>';
         }).join("") + '</span></div>' +
         (c.notes.length ? '<ul class="notes">' + c.notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '') +
       '</section></div>';
   }
+
+  /* ---------- detail, games, docs ---------- */
   function detailTile(v, sel){
     if(!sel) return '';
+    if(sel.kind === "doc"){
+      return '<span class="mo">' + esc(sel.seat.name.toUpperCase()) + ' &middot; ' + esc(sel.el.toUpperCase()) + '</span><h2 class="hd">' + esc(sel.a.name) + '</h2><p>' + esc(sel.a.text) + '</p>' +
+        '<p class="mo">The ability map carries one ability per element for the whole hull, so this seat ability is read from <a href="' + esc(v.seats.url) + '">' + esc(file(v.seats.source)) + '</a>.</p>';
+    }
     var e = sel.e;
     if(sel.kind === "omni"){
-      return '<span class="mo">OMNI CRYSTAL &middot; ' + esc(crewName(v)) + '</span><h2 class="hd">' + esc(e.label || e.effects[0] || "Omni crystal") + '</h2>' +
+      return '<span class="mo">OMNI CRYSTAL &middot; ' + esc(crewName(v)) + '</span><h2 class="hd">' + esc((e.words && e.words.ability) || e.label || e.effects[0] || "Omni crystal") + '</h2>' +
+        (e.words && e.words.does ? '<div class="what"><span class="how"><span>' + esc(e.words.trigger || "Fly into an omni crystal") + '</span></span><p class="big">' + esc(e.words.does) + '</p>' + (e.words.source ? '<p class="mo">Read from <a href="' + gh(e.words.source) + '">' + esc(file(e.words.source)) + '</a> through <code>Docs/FleetCodex/abilities.json</code>.</p>' : '') + '</div>' : '') +
         '<p>' + esc(e.label ? "In the ability map's own words: " + e.label + "." : "The map names no omni ability (its omniAbilityLabel is empty), so this is read from the vessel's crystal effects.") + '</p>' +
         (e.effects.length ? '<div class="dials">' + e.effects.map(function(x){ return '<div class="dial"><div class="top2"><span>' + esc(x) + '</span></div><div class="src">crystal effect on the vessel&rsquo;s container</div></div>'; }).join("") + '</div>' : '');
     }
     var u = e.upgrade;
     return '<span class="mo">' + sel.el.toUpperCase() + ' &middot; ' + EL_WORD[sel.el].toUpperCase() + '</span><h2 class="hd">' + esc(e.open ? "Open design slot" : e.ability) + '</h2>' +
-      (e.description ? '<p>' + esc(e.description) + '</p>' : '') +
+      (e.words ? '<div class="what">' + howLine(v, sel.el, e.words) + '<p class="big">' + esc(e.words.does) + '</p>' +
+        (e.words.scales ? '<p><strong>' + esc(sel.el) + ':</strong> ' + esc(e.words.scales) + '</p>' : '') +
+        (e.words.source ? '<p class="mo">Read from <a href="' + gh(e.words.source) + '">' + esc(file(e.words.source)) + '</a> through <code>Docs/FleetCodex/abilities.json</code>.</p>' : '') + '</div>' : '') +
+      (e.description ? '<p class="mo">In the ability map&rsquo;s words</p><p>' + esc(e.description) + '</p>' : '') +
       '<div class="dials">' + (e.scaling.length ? e.scaling.map(function(s){
         return '<div class="dial' + (s.on ? '' : ' off') + '"><div class="top2"><span>' + esc(s.field) + '</span><span class="v">&times;' + num(s.min) + ' &rarr; &times;' + num(s.max) + '</span></div><div class="src">' + (s.on ? '' : 'switched off (' + esc(s.offBecause || 'disabled') + ') &middot; ') + esc(file(s.asset || s.script) || s.where) + '</div></div>'; }).join("")
         : '<span class="mo">This element changes no number.</span>') + '</div>' +
-      '<div class="l5"><div class="t"><span class="hd" style="font-size:22px">Level 5</span>' + pill(u.status) + (u.label ? '<strong>' + esc(u.label) + '</strong>' : '') + '</div>' +
+      '<div class="l5box"><div class="t"><span class="hd" style="font-size:22px">Level 5</span>' + pill(u.status) + (u.label ? '<strong>' + esc(u.label) + '</strong>' : '') + '</div>' +
         (u.description ? '<p>' + esc(u.description) + '</p>' : u.status === "open" ? '<p class="mo">Not designed yet. Unlocks at level ' + u.unlockLevel + ', relocks below ' + u.relockBelow + '.</p>' : '') +
         u.gates.map(function(g){ return '<div class="gate">gated at ' + (g.script ? '<a href="' + gh(g.script) + '">' + esc(g.site) + '</a>' : esc(g.site)) + (g.offBecause ? ' &middot; switched off: ' + esc(g.offBecause) : '') + '</div>'; }).join("") +
       '</div>';
   }
   function playsTile(v){
     if(!v.cards.length) return '<span class="mo">PLAYS IN</span><p class="empty">No game card seats this vessel yet.</p>';
+    var more = v.cards.length > SHOW_GAMES ? v.cards.length - SHOW_GAMES : 0;
     return '<span class="mo">PLAYS IN &middot; ' + v.cards.length + ' GAME' + (v.cards.length > 1 ? 'S' : '') + '</span>' + v.cards.map(function(c, i){
-      return '<div class="game"' + (i ? ' style="min-height:96px"' : '') + '>' + img(c.art, "") + '<div class="copy"><span class="mo">' + esc((c.rosters || []).map(function(r){ return r.replace("Games", ""); }).join(" ") || "on no roster") +
+      return '<div class="game' + (i ? ' row' : '') + (i >= SHOW_GAMES ? ' extra' : '') + '">' + img(c.art, "") + '<div class="copy"><span class="mo">' + esc((c.rosters || []).map(function(r){ return r.replace("Games", ""); }).join(" ") || "on no roster") +
         (c.intensity ? ' &middot; I' + c.intensity[0] + '&ndash;I' + c.intensity[1] : '') + (c.hullsOnCard > 1 ? ' &middot; ' + c.hullsOnCard + ' hulls' : ' &middot; this hull only') + '</span><span class="hd">' + esc(c.name) + '</span>' +
         (i === 0 && c.description ? '<p>' + esc(c.description) + '</p>' : '') + '</div></div>';
-    }).join("");
+    }).join("") + (more ? '<button class="moregames" type="button" aria-expanded="false" data-more>Show all ' + v.cards.length + ' games</button>' : '');
   }
+  var SHOW_GAMES = 6;
   function docsTile(v){
     return '<span class="mo">DOCS</span>' + (v.docs.length ? '<ul class="list">' + v.docs.slice(0, 6).map(function(d){ return '<li><a href="' + esc(d.url) + '">' + esc(file(d.path)) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">No doc found by name.</p>') +
       '<span class="mo" style="display:block;margin-top:14px">RECENT CHANGES</span>' + (v.changes.length ? '<ul class="list">' + v.changes.slice(0, 5).map(function(c){ return '<li><span class="dt">' + esc(c.date) + '</span><a href="' + commit(c.sha) + '">' + esc(c.subject) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">None in the history read.</p>');
   }
-  function vesselView(v){
-    var kit = kitOf(v);
-    if(pick >= kit.length) pick = 0;
-    var sel = kit[pick], f = v.flight, s = v.status;
-    var wired = s.upgradesWired;
+
+  /* ---------- the vessel ---------- */
+  function vesselView(v, keepScroll){
+    if(!resolve(v, pick)) pick = firstKey(v);
+    var sel = resolve(v, pick), f = v.flight, s = v.status;
     app.innerHTML = '<div class="bento">' +
-      '<section class="tile hero span5" aria-label="' + esc(crewName(v)) + '">' + img(v.image, "", "still") +
+      '<section class="tile hero ' + (v.seats ? 'span12 wide' : 'span5') + '" aria-label="' + esc(crewName(v)) + '">' + img(vimg(v), "", "still") +
         '<div class="copy"><span class="mo" style="letter-spacing:.12em">VESSEL ' + v.id + (isCrew(v) ? ' &middot; CREW VESSEL &middot; ' + v.crew.seats + ' SEATS' : v.controls ? (v.controls.oneStick ? ' &middot; ONE-STICK FLYER' : ' &middot; TWO-STICK FLYER') : '') + (s.inToybox ? ' &middot; IN THE VESSEL CHANGER' : '') + '</span>' +
         '<h1 class="hd">' + esc(isCrew(v) && v.crew.names.length ? v.crew.names.join(" & ") : v.name) + '</h1>' +
         (isCrew(v) && !v.crew.names.length ? '<span class="crewline">' + v.crew.seats + ' seats on one hull</span>' : '') +
         (v.description ? '<span style="color:var(--muted);max-width:70ch">' + esc(v.description) + '</span>' : '') +
-        (f ? '<div class="stats"><span><span class="n num">' + num(f.cruise) + '</span> <span class="mo">u/s cruise</span></span><span><span class="n num">' + num(f.pitch) + '/' + num(f.yaw) + '</span> <span class="mo">pitch / yaw</span></span><span><span class="n num">' + wired + '/4</span> <span class="mo">level 5 wired</span></span><span><span class="n num">' + v.cards.length + '</span> <span class="mo">games</span></span></div>' : '') +
+        (f ? '<div class="stats"><span><span class="n num">' + num(f.cruise) + '</span> <span class="mo">u/s cruise</span></span><span><span class="n num">' + num(f.pitch) + '/' + num(f.yaw) + '</span> <span class="mo">pitch / yaw</span></span><span><span class="n num">' + s.upgradesWired + '/4</span> <span class="mo">level 5 wired</span></span><span><span class="n num">' + v.cards.length + '</span> <span class="mo">games</span></span></div>' : '') +
         '</div></section>' +
-      '<div class="kit span7" role="group" aria-label="The kit">' + (kit.length ? kit.map(function(k, i){ return abilityTile(k, i, v); }).join("") : '<p class="empty">No ability map for this vessel.</p>') + '</div>' +
-      '<section class="tile pad span9" aria-label="Controls">' + controlsTile(v, sel) + '</section>' +
-      '<section class="tile pad span3 play" aria-label="Games">' + playsTile(v) + '</section>' +
-      '<section class="tile pad span9 detail" aria-label="Ability detail">' + detailTile(v, sel) + '</section>' +
-      '<section class="tile pad span3" aria-label="Docs and changes">' + docsTile(v) + '</section>' +
+      kitTile(v) +
+      '<div class="col span9"><section class="tile pad" aria-label="Controls">' + controlsTile(v, sel) + '</section>' +
+      '<section class="tile pad detail" aria-label="Ability detail">' + detailTile(v, sel) + '</section></div>' +
+      '<div class="col span3"><section class="tile pad play" aria-label="Games">' + playsTile(v) + '</section>' +
+      '<section class="tile pad" aria-label="Docs and changes">' + docsTile(v) + '</section></div>' +
       '</div>';
-    Array.prototype.forEach.call(app.querySelectorAll(".ab"), function(b){ b.addEventListener("click", function(){ pick = +b.dataset.i; vesselView(v); }); });
+    if(keepScroll) Array.prototype.forEach.call(app.querySelectorAll(".ab,.seat"), function(el){ el.style.animation = "none"; });
+    fitNames();
+    Array.prototype.forEach.call(app.querySelectorAll("[data-more]"), function(b){ b.addEventListener("click", function(){
+      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open);
+      b.parentNode.classList.toggle("all", open); b.textContent = open ? "Show fewer" : "Show all " + v.cards.length + " games"; }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-pick]"), function(b){ b.addEventListener("click", function(){ pick = b.dataset.pick; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = app.querySelector('[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-flip]"), function(b){ b.addEventListener("click", function(){
+      var k = b.dataset.flip, card = b.closest(".ab"), on = !flipped[v.key + k];
+      flipped[v.key + k] = on;
+      card.classList.toggle("flip", on);
+      card.querySelector(".front").setAttribute("aria-hidden", String(on));
+      card.querySelector(".back").setAttribute("aria-hidden", String(!on));
+      Array.prototype.forEach.call(card.querySelectorAll(".front button"), function(x){ x.tabIndex = on ? -1 : 0; });
+      Array.prototype.forEach.call(card.querySelectorAll(".back button"), function(x){ x.tabIndex = on ? 0 : -1; });
+      var to = card.querySelector(on ? ".back .l5" : ".front .l5"); if(to) setTimeout(function(){ to.focus({preventScroll:true}); }, 60);
+    }); });
   }
 
   /* ---------- the fleet ---------- */
@@ -345,24 +642,24 @@ footer code{font-family:var(--mono);font-size:11.5px}
     var all = D.vessels.filter(function(v){ return v.status.hasMap; }), slots = all.length * 4;
     var wired = all.reduce(function(a, v){ return a + v.status.upgradesWired; }, 0);
     var games = {}; all.forEach(function(v){ v.cards.forEach(function(c){ games[c.name] = 1; }); });
-    var crews = all.filter(isCrew).length;
-    function cell(e, el){
+    function cell(e){
       if(!e) return '<td class="mo">no map</td>';
-      var pad = v_padArt(e);
-      return '<td><span class="cell"><span class="ic">' + img(e.icon || e.shape, "") + '</span><span style="min-width:0"><span class="nm">' + esc(e.open ? "open slot" : e.ability) + '</span><br>' +
-        (e.pad === "LT+RT" ? '<img class="gl" src="' + esc(PADMAP["LT"]) + '" alt="LT"><img class="gl" src="' + esc(PADMAP["RT"]) + '" alt="RT">' : pad ? '<img class="gl" src="' + esc(pad) + '" alt="' + esc(e.pad) + '">' : '') + (e.key ? '<span class="mo">' + esc(e.key) + '</span> ' : '') + pill(e.upgrade.status) + '</span></span></td>';
+      var pad = PADMAP[e.pad] || null;
+      return '<td><span class="cell"><span class="ic">' + (e.icon ? ico(e.icon, e.layers, "", (e.words && e.words.tint || {}).rest) : img(e.shape, "")) + '</span><span style="min-width:0"><span class="nm">' + esc(e.open ? "open slot" : e.ability) + '</span><br>' +
+        (e.pad === "LT+RT" ? '<img class="gl" src="' + esc(PADMAP["LT"]) + '" alt="LT"><img class="gl" src="' + esc(PADMAP["RT"]) + '" alt="RT">' : pad ? '<img class="gl" src="' + esc(pad) + '" alt="' + esc(e.pad) + '">' : '') +
+        (e.key ? '<span class="mo">' + esc(e.key) + '</span> ' : '') + pill(e.upgrade.status) + '</span></span></td>';
     }
     app.innerHTML = '<div class="bento">' +
-      '<section class="tile pad span12"><span class="mo" style="letter-spacing:.12em">THE WHOLE FLEET</span><h1 class="hd" style="font-size:64px;margin:4px 0 14px">Every vessel, every ability</h1>' +
-        '<div class="tally"><div class="tile"><div class="n">' + all.length + '</div><div class="mo">vessels, ' + crews + ' of them crews</div></div><div class="tile"><div class="n">' + wired + '<span class="mo"> / ' + slots + '</span></div><div class="mo">level-5 upgrades wired</div></div>' +
+      '<section class="tile pad span12"><span class="mo" style="letter-spacing:.12em">THE WHOLE FLEET</span><h1 class="hd" style="font-size:calc(64px * var(--dscale));margin:4px 0 14px">Every vessel, every ability</h1>' +
+        '<div class="tally"><div class="tile"><div class="n">' + all.length + '</div><div class="mo">vessels, ' + all.filter(isCrew).length + ' of them crews</div></div><div class="tile"><div class="n">' + wired + '<span class="mo"> / ' + slots + '</span></div><div class="mo">level-5 upgrades wired</div></div>' +
         '<div class="tile"><div class="n">' + Object.keys(games).length + '</div><div class="mo">game cards that seat them</div></div><div class="tile"><div class="n">' + all.filter(function(v){ return v.status.inToybox; }).length + '</div><div class="mo">in the Vessel Changer</div></div></div></section>' +
       '<section class="tile span12 scroll"><table class="mx"><thead><tr><th>Vessel</th>' + D.elements.map(function(el){ return '<th><span class="chip">' + img(D.ui["shape/" + el], "") + '</span>' + el.toUpperCase() + '</th>'; }).join("") +
         '<th><span class="chip">' + img(D.ui.omni, "") + '</span>OMNI CRYSTAL</th><th>GAMES</th></tr></thead><tbody>' +
         vs.map(function(v){
           var o = v.omni || {};
-          return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(v.image, "") + '<span><span class="nm">' + esc(crewName(v)) + '</span><br><span class="mo">' + (isCrew(v) ? v.crew.seats + ' seats' : 'vessel ' + v.id) + '</span></span></span></td>' +
-            D.elements.map(function(el){ return cell(v.elements[el], el); }).join("") +
-            '<td><span class="cell"><span class="ic">' + img(o.icon || o.mark, "") + '</span><span class="nm">' + esc(o.label || (o.effects || [])[0] || "fly into it") + '</span></span></td>' +
+          return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(vimg(v), "") + '<span><span class="nm">' + esc(crewName(v)) + '</span><br><span class="mo">' + (isCrew(v) ? v.crew.seats + ' seats' + (v.seats ? ': ' + esc(v.seats.list.map(function(s){ return s.name; }).join(", ")) : '') : 'vessel ' + v.id) + '</span></span></span></td>' +
+            D.elements.map(function(el){ return cell(v.elements[el]); }).join("") +
+            '<td><span class="cell"><span class="ic">' + (o.icon ? ico(o.icon, o.layers, "") : img(o.mark, "")) + '</span><span class="nm">' + esc(o.label || (o.effects || [])[0] || "fly into it") + '</span></span></td>' +
             '<td class="mo">' + (v.cards.length ? v.cards.map(function(c){ return esc(c.name); }).join(", ") : "none") + '</td></tr>';
         }).join("") + '</tbody></table></section></div>';
     Array.prototype.forEach.call(app.querySelectorAll("tbody tr[data-k]"), function(tr){
@@ -371,26 +668,27 @@ footer code{font-family:var(--mono);font-size:11.5px}
       tr.addEventListener("keydown", function(ev){ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); go(); } });
     });
   }
-  var PADMAP = {};
-  function v_padArt(e){ return PADMAP[e.pad] || null; }
 
-  function route(){
+  function route(keep){
     if(!D) return;
-    var v = current();
+    var v = current(), y = window.scrollY;
     drawStrip();
     document.getElementById("navFleet").setAttribute("aria-current", v ? "false" : "page");
-    if(v){ vesselView(v); document.title = crewName(v) + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
+    if(keep === true) setTimeout(function(){ window.scrollTo(0, y); }, 0);
+    if(v){ vesselView(v, keep === true); document.title = crewName(v) + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
   }
 
   q.addEventListener("input", function(){ query = q.value.trim().toLowerCase(); drawStrip(); if(!current()) fleetView(); });
   fetch("fleet.json", {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
     D = d;
+    var saved = null; try { saved = localStorage.getItem("fleetCodexDomain"); } catch(e){}
+    applyDomain(saved || (d.palette && d.palette["default"]));
     D.vessels.forEach(function(v){ if(v.controls) v.controls.rows.forEach(function(r){ if(r.padArt && !PADMAP[r.pad]) PADMAP[r.pad] = r.padArt; }); });
     document.getElementById("logo").src = d.ui.omni || "";
     document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a> &middot; ' + esc(d.commitDate);
-    document.getElementById("foot").innerHTML = 'Nothing here is typed by hand. <code>Tools/Build/fleet_codex.py</code> reads the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles, the game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. The icons are the game&rsquo;s own: each ability&rsquo;s HUD card, the Codex&rsquo;s element shapes, the controller glyphs and the phone&rsquo;s touch icons. Where a vessel&rsquo;s HUD draws an icon only at runtime, its element&rsquo;s shape stands in. The skill: <code>/fleet-codex</code>.';
+    document.getElementById("foot").innerHTML = 'Only two tables here are typed by hand, each entry citing the doc or code it was read from: what each ability does (<code>Docs/FleetCodex/abilities.json</code>) and the crew seats (<code>Docs/FleetCodex/seats.json</code>). <code>Tools/Build/fleet_codex.py</code> reads the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles, the game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. The icons are the game&rsquo;s own: each ability&rsquo;s HUD card and its level-5 state from the icon kit or the HUD, the Codex&rsquo;s element shapes, the controller glyphs and the phone&rsquo;s touch icons. Where a HUD draws an icon only at runtime, its element&rsquo;s shape stands in. The skill: <code>/fleet-codex</code>.';
     route();
   }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
-  window.addEventListener("hashchange", function(){ pick = 0; route(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", function(){ pick = null; route(); window.scrollTo(0, 0); });
 })();
 </script>

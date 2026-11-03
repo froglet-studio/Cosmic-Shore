@@ -106,6 +106,7 @@ MonoBehaviour:
     element: 1
     UseFloor: 1
     Floor: 1
+  ringBlastCoreRadius: 40
   ringBlastFrontWidth: 0.05
   ringBlastFrontHeight: 0.04
   ringBlastRelief: 0.12
@@ -115,6 +116,14 @@ MonoBehaviour:
   ringBlastArmWidth: 0.08
   ringBlastArmWiggle: 0.06
   ringBlastArmCurlDegrees: 30
+  explosiveRoundRadius: 10
+  explosiveRoundMaxPerFrame: 12
+  thrownSaberSpeed: 220
+  thrownSaberSeconds: 1.2
+  thrownSaberSpin: 720
+  thrownSaberRegrowSeconds: 1.5
+  speedRollDegreesPerSecond: 220
+  speedRollPullDegreesPerSecond: 90
   maxSpareRings: 2
   rebuildSeconds: 3
   ringBlastHitClass: 3
@@ -205,6 +214,20 @@ MonoBehaviour:
       Data4: 0
     Path: 
   overheatEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  explosiveRoundEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  saberThrowEvent:
     Guid:
       Data1: 0
       Data2: 0
