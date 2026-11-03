@@ -33,11 +33,13 @@ COMMIT, LEAD, THROUGH = 160.0, 180.0, 120.0     # MinigameSlingshot.unity aiComm
 LEAD_SHARE, LEAD_INSIDE_SHARE = 0.4, 0.8        # GateRaceController.ApproachLeadShareOfLeg, the approach-point cap
 LAPS = 2                                        # EndConditionOverridesSO.slingshotGateTarget 16 = 2 x 8
 # StoatSlingConfig.asset
-CATCH_AHEAD, CATCH_SIDE, CATCH_REACH, CATCH_DEGREES = 150.0, 45.0, 1.5, 50.0
-WIDE, TIGHT, HOLD_EXP, WHITE_CLEAR = 150.0, 40.0, 1.5, 0.8
-FOLLOW_RATE, EASE_RATE, RADIAL_RATE, SETTLE_RATE, MAX_ORBIT = 3.0, 0.8, 5.0, 3.0, 360.0
-BOOST_MIN, BOOST_MAX, BOOST_SECONDS, MISS_SHARE = 0.25, 0.9, 1.5, 0.2
-SWEET, SWEET_HALF, SWEET_FALL = 90.0, 15.0, 30.0
+CATCH_AHEAD, CATCH_SIDE, CATCH_REACH, CATCH_DEGREES = 150.0, 45.0, 2.0, 40.0
+WIDE, TIGHT, HOLD_EXP, WHITE_CLEAR = 150.0, 55.0, 1.5, 0.8
+FOLLOW_RATE, EASE_RATE, RADIAL_RATE, SETTLE_RATE, MAX_ORBIT = 3.0, 0.8, 5.0, 3.0, 720.0
+BOOST_MIN, BOOST_MAX, BOOST_SECONDS, MISS_SHARE = 0.25, 0.9, 1.5, 0.35
+SWEET, SWEET_HALF, SWEET_FALL = 90.0, 30.0, 40.0
+# the aimed exit (2026-11-03): a release after about a second of orbit launches the ENTRY heading turned 30-45 deg
+EXIT_MIN, EXIT_MAX, EXIT_T, EXIT_HALF, EXIT_FALL = 30.0, 45.0, 1.1, 0.3, 0.4
 CATCH_WARP_SHARE = 1.15
 # StoatDipoleConfig.asset: the boost at Time 0 (x2.5) and its rise and fade
 BOOST_TOP, BOOST_RISE, BOOST_FADE = 2.5, 20.0, 0.6
@@ -61,6 +63,12 @@ EARNED = dict(press_share=0.5, min_sweep=30.0, momentum_s=6.0, cap=1.6, aim_cone
 EARNED_ROW = dict(ORBIT_ROW, **EARNED)
 # What ships (--grid-earned chose it): no warp-only presses, and the AI holds for the window (aiHoldForWindowDegrees 120).
 SHIPPED_ROW = dict(EARNED_ROW, warp_dist=0.0, window_ai=120.0)
+# The easier sling (Yash, 2026-11-03: "the slingshot mechanic is little hard"; the constants above carry its catch and
+# window): drawn in to 0.75 of the circle at 1 /s, so the orbit turns slower and the window lasts 2-3x as long.
+SHIPPED_ROW = dict(SHIPPED_ROW, inner=0.75, pull=1.0)
+# The aimed exit (Yash, 2026-11-03: "slingshot at 30-45 degrees from angle of entry after a second of orbiting").
+SLING_ROW = SHIPPED_ROW
+SHIPPED_ROW = dict(SHIPPED_ROW, aimed=True, min_turn=20.0)   # the AI slings only for a turn of 20 deg or more (was 7.84)
 # Regatta (MinigameRegatta.unity's approach numbers, three laps of RegattaCourse): the race line and the rails are not
 # modelled, so this is the gate steering only. Time 10 is the level regatta_balance.py gives the Stoat on the card.
 REGATTA_STEER = {"commit": 420.0, "lead": 480.0, "through": 320.0}
@@ -117,6 +125,26 @@ def sweet_spot(deg):
     return 1.0 - t * t * (3.0 - 2.0 * t)
 
 
+def exit_timing(seconds):
+    """StoatSlingConfigSO.ExitTiming: the sweet spot's curve in seconds of orbit."""
+    off = abs(seconds - EXIT_T)
+    if off <= EXIT_HALF: return 1.0
+    t = min(1.0, (off - EXIT_HALF) / EXIT_FALL)
+    return 1.0 - t * t * (3.0 - 2.0 * t)
+
+
+def aimed_exit(entry, radial, fwd, to):
+    """StoatSlingMath.AimedExit at the angle the AI's stick picks: the one of 30-45 deg nearest its aim."""
+    axis = cross(radial, fwd)
+    if norm(axis) < 1e-6: return list(entry)
+    axis = unit(axis)
+    best = None
+    for k in range(7):
+        d = rotate_about(entry, axis, math.radians(EXIT_MIN + (EXIT_MAX - EXIT_MIN) * k / 6))
+        if best is None or ang(d, to) < ang(best, to): best = d
+    return unit(best)
+
+
 def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press."""
     n = len(gates); total = n * laps
@@ -128,6 +156,7 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     extending = False; ext_t = 0.0; breaks = 0; misses = 0; orbit = L.Orbit()
     laid = caught = False; attractor = None; orbit_side_left = False; radius = 0.0; swept = 0.0; last_radial = None; laid_at = 0.0
     steered_out = False
+    orbit_s = 0.0; entry = None; aimed = bool(row.get("aimed"))
     # The Orrery (orrery_port.layout): its static prisms in a 24 u hash for contacts, its moons the AI's anchors.
     moons, hits, grid = [], set(), {}
     if orrery is not None:
@@ -166,7 +195,10 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                 else:
                     off = ang(fwd, to)
                     wide = max(3 * row["cone"], row.get("aim_cone", 0.0))
-                    if row.get("window_ai"):
+                    if aimed:
+                        # StoatSlingExecutor.AutopilotSling: the exit is set by the entry; let go as the window opens
+                        let_go = exit_timing(orbit_s) >= 0.999 or orbit_s >= EXIT_T + EXIT_HALF
+                    elif row.get("window_ai"):
                         # hold for the window, then launch whenever the aim can reach the target; past it, let go anyway
                         let_go = (sweet_spot(math.degrees(swept)) >= 0.999 and off <= wide) or math.degrees(swept) >= row["window_ai"]
                     else:
@@ -174,14 +206,17 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                     steered_out = False
                 if let_go:
                     if caught:
-                        timing = sweet_spot(math.degrees(swept))
+                        timing = exit_timing(orbit_s) if aimed else sweet_spot(math.degrees(swept))
                         timed += timing >= 0.999
                         amount = CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * (MISS_SHARE + (1 - MISS_SHARE) * timing) * kick_rate
                         if earned:
                             # StoatSlingExecutor.Slingshot: aimed by the stick (toward the AI's aim), nothing before the minimum
                             # sweep, momentum by the timing, the kick under the cap (StoatSlingMath.CappedKick)
-                            reach = min(ang(fwd, to), row["aim_cone"] * ai_stick(ang(fwd, to)))
-                            fwd = rotate_toward(fwd, unit(to), math.radians(reach)); cmd = list(fwd)
+                            if aimed:
+                                fwd = aimed_exit(entry, last_radial, fwd, to); cmd = list(fwd)
+                            else:
+                                reach = min(ang(fwd, to), row["aim_cone"] * ai_stick(ang(fwd, to)))
+                                fwd = rotate_toward(fwd, unit(to), math.radians(reach)); cmd = list(fwd)
                             if math.degrees(swept) < row["min_sweep"]:
                                 amount = 0.0
                             else:
@@ -254,8 +289,9 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
             own_side = (dot(sub(attractor, pos), hull_right) < 0) == orbit_side_left       # StoatSlingMath.OnSpinSide
             if not caught and (own_side or not row.get("side")) and catches(pos, fwd, attractor, radius):
                 caught = True; catches_n += 1; swept = 0.0; last_radial = sub(pos, attractor); radius = norm(last_radial)
+                orbit_s = 0.0; entry = list(fwd)
             if caught:
-                caught_t += dt
+                caught_t += dt; orbit_s += dt
                 to_c = sub(attractor, pos); d = norm(to_c)
                 if row.get("steer_out") and d > 1e-3:
                     # StoatSlingMath.SteersOut: the AI's stick turns toward its aim; away from the hole by 90+ deg lets go
@@ -411,7 +447,7 @@ def grid_earned(seeds=4):
 def self_test():
     bad = []
     # the geometry: the circle stays clear of the repulsor, a press catches a straight pass at every squeeze
-    if abs(orbit_radius(1.0) - 40.0) > 1e-6 or abs(orbit_radius(0.0) - 72.0) > 1e-6: bad.append(f"radius {orbit_radius(1.0)}, {orbit_radius(0.0)}")
+    if abs(orbit_radius(1.0) - 55.0) > 1e-6 or abs(orbit_radius(0.0) - 72.0) > 1e-6: bad.append(f"radius {orbit_radius(1.0)}, {orbit_radius(0.0)}")
     if abs(WARP_TOP - 2.725) > 1e-6: bad.append(f"warp top {WARP_TOP}")
     if abs(sweet_spot(90) - 1) > 1e-9 or sweet_spot(0) > 1e-9 or sweet_spot(180) > 1e-9: bad.append("sweet spot")
     # the course port against SLINGSHOT.md section 2's harness numbers: eight gates, the mouths, a lap near 3700 u

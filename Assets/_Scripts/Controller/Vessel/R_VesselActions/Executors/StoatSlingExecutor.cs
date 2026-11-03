@@ -113,6 +113,8 @@ namespace CosmicShore.Gameplay
         float _orbitRadius;
         float _squeezeRadius; // the squeeze's circle, before the inner pull: the detection ring is drawn from it
         float _orbitAngle;   // radians swept round the attractor since the catch
+        float _orbitSeconds; // seconds in the orbit since the catch (the aimed exit's window)
+        Vector3 _entryHeading; // the heading the hull was caught on (the aimed exit turns it)
         Vector3 _lastRadial;
         float _laidAt;
         float _momentumClock = 1f;       // the flight clock at the last paid launch, × its timing
@@ -176,7 +178,10 @@ namespace CosmicShore.Gameplay
         public BlackHole Attractor => HasPair ? _pair.Black : null;
         /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 before a catch) — the rings and the HUD.</summary>
         public float Timing01 => !IsOrbiting || !config ? 0f
-            : UsesSkim ? config.Skim.SweetSpot(_orbitAngle * Mathf.Rad2Deg) : config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+            : UsesSkim ? config.Skim.SweetSpot(_orbitAngle * Mathf.Rad2Deg)
+            : config.AimedExit ? config.ExitTiming(_orbitSeconds) : config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+        /// <summary>Seconds the current orbit has held the hull (0 before a catch).</summary>
+        public float OrbitSeconds => IsOrbiting ? _orbitSeconds : 0f;
         /// <summary>Space-5 Accretion on the orbit: how much of the +40% ripple-reach bonus the pair has earned, 0..1.</summary>
         public float Accretion01 => config && config.AccretionMax > 0f ? Mathf.Clamp01(_accretion / config.AccretionMax) : 0f;
         /// <summary>The Charge ripple the open pair would throw now, as a share of the largest (Accretion full), 0..1;
@@ -184,6 +189,7 @@ namespace CosmicShore.Gameplay
         public float RippleCharge01 => HasPair && config ? (1f + _accretion) / (1f + config.AccretionMax) : 0f;
         /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card).</summary>
         public float SweetProgress01 => !IsOrbiting || !config ? 0f
+            : !UsesSkim && config.AimedExit ? Mathf.Clamp01(_orbitSeconds / config.ExitWindowSeconds)
             : Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / (UsesSkim ? config.Skim.SweetSpotDegrees : config.SweetSpotDegrees));
 
         /// <summary>Time mode flies the Skim Sling: a skim config is set and the crystal style is off.</summary>
@@ -387,6 +393,7 @@ namespace CosmicShore.Gameplay
             _orbitSide = side;
             _orbitRadius = _squeezeRadius = RadiusFor(_holds[(int)side].Live);
             _orbitAngle = 0f;
+            _orbitSeconds = 0f;
             _laidAt = Time.time;
             // A sling is a launch: leave the hold-still stance, which would otherwise pin the hull.
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
@@ -429,6 +436,8 @@ namespace CosmicShore.Gameplay
                 _caught = true;
                 _inWindow = false;
                 _orbitAngle = 0f;
+                _orbitSeconds = 0f;
+                _entryHeading = hull.forward;
                 _lastRadial = hull.position - centre;
                 // Held where it was caught: no yank onto the squeeze's circle (the studio's dpHoldAtCatch).
                 if (config.HoldAtCatch) _orbitRadius = _lastRadial.magnitude;
@@ -460,6 +469,7 @@ namespace CosmicShore.Gameplay
             var radial = hull.position - centre;
             _orbitAngle += Vector3.Angle(_lastRadial, radial) * Mathf.Deg2Rad;
             _lastRadial = radial;
+            _orbitSeconds += dt;
             bool inWindow = Timing01 >= 0.999f;
             if (inWindow && !_inWindow && _status.IsLocalUser && !_status.AutoPilotEnabled) HapticController.PlaySkim(1f);
             _inWindow = inWindow;
@@ -515,16 +525,20 @@ namespace CosmicShore.Gameplay
             }
             if (boost && caught && transformer && hull && MantaStingActionExecutor.IsSimAuthority(_status))
             {
-                // AIMED: toward where the stick points, up to launchConeDegrees off the tangent (a flick's direction, or the
-                // stick held at the release; the AI's stick points at its target). The hull turns onto it at once.
+                // AIMED: the aimed exit turns the ENTRY heading 30-45 deg the way the orbit turns, the stick picking where;
+                // without it, toward where the stick points, up to launchConeDegrees off the tangent (a flick's direction,
+                // or the stick held at the release; the AI's stick points at its target). The hull turns onto it at once.
                 Stick(out float x, out float y, out _);
-                var aim = StoatSlingMath.LaunchAim(hull.forward, hull.right, hull.up, x, y, config.AimMinStick, config.LaunchConeDegrees);
+                var aim = config.AimedExit
+                    ? StoatSlingMath.AimedExit(_entryHeading, _lastRadial, hull.forward,
+                        StoatSlingMath.ExitDegrees(x, _orbitSide == Side.Right, config.ExitMinDegrees, config.ExitMaxDegrees))
+                    : StoatSlingMath.LaunchAim(hull.forward, hull.right, hull.up, x, y, config.AimMinStick, config.LaunchConeDegrees);
                 Quaternion.FromToRotation(hull.forward, aim).ToAngleAxis(out float turned, out var turnAxis);
                 if (turned > 1e-3f && turnAxis.sqrMagnitude > 1e-8f) transformer.ApplyRotation(turned, turnAxis);
                 transformer.SetCourseVelocity(aim);
-                // TIMED: the whole kick for a release a quarter-turn round (the sweet spot), the miss share outside it;
-                // × MASS's power (launchPower, ×1 → ×2.5). Time keeps the warp.
-                float timing = config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+                // TIMED: the whole kick for a release in the window (the aimed exit's seconds, or a quarter-turn round),
+                // the miss share outside it; × MASS's power (launchPower, ×1 → ×2.5). Time keeps the warp.
+                float timing = config.AimedExit ? config.ExitTiming(_orbitSeconds) : config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
                 float power = config.LaunchPower.EvaluateLive(_status);
                 float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
                 float swept = _orbitAngle * Mathf.Rad2Deg;
@@ -548,7 +562,7 @@ namespace CosmicShore.Gameplay
                 PlayOneShot(config.SlingEvent);
             }
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[Stoat] {_orbitSide} Time-mode pair let go ({(caught ? $"after {_orbitAngle * Mathf.Rad2Deg:F0}°" : "never caught")})");
+                $"[Stoat] {_orbitSide} Time-mode pair let go ({(caught ? $"after {_orbitAngle * Mathf.Rad2Deg:F0}°, {_orbitSeconds:F2} s" : "never caught")})");
         }
 
         void EndLastPair()
@@ -947,7 +961,10 @@ namespace CosmicShore.Gameplay
                     // EARNED speed: hold for the sweet spot and launch there (the stick aims it at the target); past
                     // aiHoldForWindowDegrees let go anyway. 0: the old rule, let go once the target is near the nose.
                     float hold = AIConfig.AiHoldForWindowDegrees;
-                    letGo = hold > 0f ? aimedInWindow || _orbitAngle * Mathf.Rad2Deg >= hold : off <= cone || aimedInWindow;
+                    // The aimed exit's direction is set by the entry, not the moment: the AI lets go as the window opens
+                    // (its stick picks the angle toward its target), and by the window's end at the latest.
+                    if (config.AimedExit) letGo = Timing01 >= 0.999f || _orbitSeconds >= config.ExitWindowEndSeconds;
+                    else letGo = hold > 0f ? aimedInWindow || _orbitAngle * Mathf.Rad2Deg >= hold : off <= cone || aimedInWindow;
                 }
                 if (letGo && ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
                 return;

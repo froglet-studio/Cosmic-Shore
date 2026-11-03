@@ -1,0 +1,777 @@
+{
+ "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. An optional tint ({rest, l5}: domain or omni) records an icon the HUD paints other than the pilot's domain, with its source. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes.",
+ "Angler": {
+  "Charge": {
+   "ability": "Erase / Lock-on",
+   "does": "A narrow beam unpaints prisms. Sweep it onto a rival vessel to lock on: one creature leaves your school and chases that vessel until it dies, every bite taking petals.",
+   "trigger": "Hold",
+   "scales": "Charge does not change this ability yet.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md"
+  },
+  "Mass": {
+   "ability": "Lure, Tame & Grow",
+   "does": "Light the lure and stop: wild herbivores in reach turn to you, and one held in the light long enough joins your school. Plants in the light grow faster; let go to plant any seed an omni crystal left.",
+   "trigger": "Hold",
+   "scales": "Mass does not change this ability yet.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md"
+  },
+  "Space": {
+   "ability": "Paint",
+   "does": "A long beam paints prisms, which light up while half your school balls up ahead. Let go to throw that half at the newest painted prisms to eat them; the next throw sends the other half.",
+   "trigger": "Hold, release to throw",
+   "scales": "Space does not change this ability yet.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md"
+  },
+  "Time": {
+   "ability": "Dash to the School",
+   "does": "Dash most of the way to the centre of one half of your school in a blink; the next dash goes to the other half, so you hop between your two groups.",
+   "trigger": "Tap",
+   "scales": "More Time makes your tamed creatures swim faster.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md"
+  },
+  "Omni": {
+   "ability": "Tame",
+   "does": "The crystal turns into a random creature that joins your school, and leaves a plant seed that is planted in your colour the next time you let go of the lure.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs"
+  }
+ },
+ "BrittleStar": {
+  "Charge": {
+   "ability": "Charge Mode",
+   "does": "Five cords, one per turret, slice prisms and strike rival hulls for petals: loose whips, or stiff sabers while you fire. With a spare ring, throw the ring to burst a spinning disk that wrecks every prism in its plane.",
+   "trigger": "Tap to switch mode",
+   "scales": "More Charge widens the cords' cut, grows the rounds and thickens the thrown ring's blast disk.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
+  },
+  "Mass": {
+   "ability": "Creation Mode",
+   "does": "Lay a trail behind each of the ring's five corners instead of one behind the cockpit, the five lines turning with the ring. The slowest mode: you cruise at half speed.",
+   "trigger": "Tap to switch mode",
+   "scales": "More Mass makes every block you lay wider and taller, never longer.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
+  },
+  "Space": {
+   "ability": "Space Mode",
+   "does": "All five guns fire together, converged ahead or splayed by your aim, and rounds that hit rival hulls take petals. Firing heats the guns; overheated they stop, and your trail lays danger prisms.",
+   "trigger": "Tap to switch mode, hold to fire",
+   "scales": "More Space gives every gun longer range and lets the guns hold more heat before they overheat.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
+  },
+  "Time": {
+   "ability": "Speed Mode",
+   "does": "Ignite every thruster for a big jump in cruise speed. The trail spreads out and stretches so it still joins up, without laying more prisms per second.",
+   "trigger": "Tap to switch mode",
+   "scales": "More Time makes Speed Mode faster still.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
+  },
+  "Omni": {
+   "ability": "Ring Charge",
+   "does": "Adds a spare ring to your stock, up to two, so you can throw your ring for a ring explosion.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md"
+  }
+ },
+ "Dolphin": {
+  "Charge": {
+   "ability": "Echo Sight",
+   "does": "While held, every prism inside the area your next crystal blast would destroy lights up, so you can line up the shot before you fire.",
+   "trigger": "Hold",
+   "scales": "More Charge makes your blast thicker across the beam, trading a long thin beam for a fat round one.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md"
+  },
+  "Mass": {
+   "ability": "Crystal Seeding",
+   "does": "On a repeating timer the Dolphin drops a crystal somewhere in the open space of the cell - ammo for your next blast, but any pilot who reaches it first can take it.",
+   "trigger": "Passive - on a timer",
+   "scales": "More Mass seeds crystals more often.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md",
+   "tint": {
+    "rest": "omni",
+    "l5": "domain",
+    "source": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+    "why": "CrystalTierColor: a seeding wears the lime of a free-for-all crystal, and the pilot's domain once Mass 5 (Claimed Seed) locks it to them."
+   }
+  },
+  "Space": {
+   "ability": "Echo Obliteration",
+   "does": "Skimming prisms banks energy; flying into a crystal spends all of it in a fan-shaped blast ahead that destroys the prisms inside. More energy opens it wider. Ramming a prism halves your bank.",
+   "trigger": "Passive - fly into a crystal",
+   "scales": "More Space makes the blast reach further ahead.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
+  },
+  "Time": {
+   "ability": "Charge Fill Rate",
+   "does": "Hold to drift, sliding at the speed you entered with while your boost meter fills. Let go and the stored boost carries you off in a burst that fades back to cruise.",
+   "trigger": "Hold, release to boost",
+   "scales": "More Time fills the boost meter faster while you drift; it does not raise boost speed.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
+  },
+  "Omni": {
+   "ability": "triggers its blast",
+   "does": "Fires a cone blast ahead that destroys prisms in its path. The energy you banked by skimming sets how wide it opens, and the crystal spends all of it.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
+  }
+ },
+ "Goby": {
+  "Charge": {
+   "ability": "Vortex Sting",
+   "does": "The Pistol's Snap fires a vortex ring that sweeps up rival prisms and smashes them as it collapses; a ring that hits a rival hull takes petals. If the Goby holds a lock on a rival in the Pistol's view, the ring homes in.",
+   "trigger": "Passive - Pistol fires, Goby locks",
+   "scales": "More Charge makes each ring hit take more petals from every one of a rival's elements.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs"
+  },
+  "Mass": {
+   "ability": "Dens",
+   "does": "At each perch the Pistol rests and builds a den of prisms and shielded prisms, bigger the more energy it earned flying over its ground. It can ride back to add to an old den; a fall loses the energy.",
+   "trigger": "Passive - the Pistol rests at a perch",
+   "scales": "More Mass builds more den prisms from the same energy.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs"
+  },
+  "Space": {
+   "ability": "Undertow",
+   "does": "Mass either side of the Pistol's plane is pulled into it, and crystals drift in for the Pistol to collect. Danger, super-shielded and your own prisms never move.",
+   "trigger": "Always on",
+   "scales": "More Space pulls mass in from further away and widens the hull's skim reach.",
+   "source": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
+  },
+  "Time": {
+   "ability": "Quick Jump",
+   "does": "Switched off: the Pistol's aimed jump is disabled in the Goby and Pistol config, so nothing fires it right now, neither a player nor the AI. Its level-5 upgrade is wired for when it returns.",
+   "trigger": "Switched off",
+   "scales": "Time has nothing to act on while the jump is off.",
+   "source": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
+  }
+ },
+ "Grizzly": {
+  "Charge": {
+   "ability": "Dig In",
+   "does": "Toggle to plant the Grizzly in place. You cannot move but can still aim, your trail stops, and energy refills faster. Rushing breaks you out.",
+   "trigger": "Tap to toggle",
+   "scales": "More Charge refills energy faster while dug in.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_DIG_IN.md"
+  },
+  "Mass": {
+   "ability": "Weapon Systems",
+   "does": "Cycles your fire between three weapons: explosive shells, a sniper shot, and a plasma claw that sets enemy prisms on fire with a burn that spreads and destroys them.",
+   "trigger": "Tap to cycle",
+   "scales": "Mass does not change this ability right now.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_PLASMA_CLAW.md"
+  },
+  "Space": {
+   "ability": "Charged Cannon",
+   "does": "Hold to charge a shell from your energy and release to fire it. Press again to freeze it where it is, then let go to set it off. Bigger charge, bigger blast, and the blast can launch you.",
+   "trigger": "Hold, release to fire",
+   "scales": "More Space makes the cannon's explosions bigger.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_CHARGED_CANNON.md"
+  },
+  "Time": {
+   "ability": "Rush",
+   "does": "Spend energy to lunge forward in a burst of speed that fades out over a second. You hold up to three rushes, refilled over time, and using one pulls you out of Dig In.",
+   "trigger": "Tap",
+   "scales": "More Time makes each rush cost less energy.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_RUSH.md"
+  }
+ },
+ "Honeyguide": {
+  "Charge": {
+   "ability": "Flit",
+   "does": "Hold to see the dart's line, let go to dart forward, striking every rival ship and creature along it. Each Charge card the Ratel makes on its puzzle banks three stronger uses.",
+   "trigger": "Hold, release to fire",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+   "scales": "The map names no Charge scaling for the dart; Charge cards from the Ratel are what change it."
+  },
+  "Mass": {
+   "ability": "Hive",
+   "does": "Every so often a hive appears somewhere in the cell, marked by a turning hex frame. Fly into it and the Ratel's board becomes a hive puzzle that pays out prisms and charges.",
+   "trigger": "Passive - fly into a hive",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+   "scales": "More Mass makes new hives appear sooner."
+  },
+  "Space": {
+   "ability": "Peck",
+   "does": "Hold to see the aim line, let go to fire three quick shots that chip away rival prisms ahead. Each Space card the Ratel makes banks three stronger uses.",
+   "trigger": "Hold, release to fire",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+   "scales": "The map names no Space scaling for the pecks; Space cards from the Ratel are what change them."
+  },
+  "Time": {
+   "ability": "Slip",
+   "does": "Touch a trail of a colour your battery holds with your nose along it and zip along it to its end. It spends that colour's charge, which the Ratel earns by making patterns.",
+   "trigger": "Passive - nose along a trail",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+   "scales": "The map names no Time scaling for the slip itself."
+  },
+  "Omni": {
+   "ability": "Sparrow Vessel Ward + Omni",
+   "does": "The crystal turns into a hive comb behind you and the Ratel plays the hive puzzle. Your ship is shielded from elemental damage while hive mode lasts, and for 8 seconds besides.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/HoneyguideOmniCrystalEffectSO.cs"
+  }
+ },
+ "Jacks": {
+  "Charge": {
+   "ability": "Danger Share",
+   "does": "Part of your herd turns dangerous. A danger creature that touches a rival hull stings it, scoring a hit, and is used up.",
+   "trigger": "Passive - your herd touches a rival",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+   "scales": "More Charge makes more of your herd dangerous, from none of it to all of it."
+  },
+  "Mass": {
+   "ability": "The Call",
+   "does": "Herding, the herd rushes to the point between your two jacks for a moment. Netting, it switches whether your creatures are pulled onto your plane.",
+   "trigger": "Tap",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+   "scales": "More Mass makes your herd breed faster, each birth costing less food."
+  },
+  "Space": {
+   "ability": "Wide",
+   "does": "Herding, the view eases out to show the whole cell so you can find more creatures, and back in again. It does nothing while netting.",
+   "trigger": "Tap",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+   "scales": "More Space widens the ring your jacks and decoy push the herd away with."
+  },
+  "Time": {
+   "ability": "Decoys",
+   "does": "Herding, drop a decoy jack where one of your jacks stands; it keeps the herd away like a third jack. Netting, rush the whole ship to the decoy at speed.",
+   "trigger": "Tap",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md",
+   "scales": "More Time makes your herd swim faster."
+  },
+  "Omni": {
+   "ability": "Omni Worm",
+   "does": "A jack or the hull that collects an omni crystal hatches a worm colony of your colour behind you, which eats prisms and creatures. A crystal caught in the net is carried, not collected.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md"
+  }
+ },
+ "Manta": {
+  "Charge": {
+   "ability": "Sting",
+   "does": "Skimming prisms arms bombs. Graze a rival vessel or creature to plant one without them knowing; it goes off on its own after its fuse runs out unless they scrape it off on prism mass.",
+   "trigger": "Passive - skim to arm, graze to plant",
+   "scales": "More Charge carries more bombs and arms them faster by skimming.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
+  },
+  "Mass": {
+   "ability": "Yastri",
+   "does": "A hard, flat turn to one side. The outer edge of your trail flares out as you bank, leaving a wall of prisms behind the turn.",
+   "trigger": "Hold, one side per direction",
+   "scales": "More Mass makes the prisms in your trail bigger; the turn itself stays the same.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
+  },
+  "Space": {
+   "ability": "Kabloom",
+   "does": "Touch a crystal to set off every bomb you have planted at once in big blooms, plus a bloom at your own ship. Pilots caught in a bloom lose Mass and Space.",
+   "trigger": "Passive - touch a crystal",
+   "scales": "More Space widens every bomb's bloom.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
+  },
+  "Time": {
+   "ability": "Soar",
+   "does": "Squeeze both to soar: an analog boost that goes faster the harder you press and the straighter you fly. On a phone, lift both thumbs and steer by tilting.",
+   "trigger": "Hold both",
+   "scales": "More Time raises your top soaring speed.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
+  },
+  "Omni": {
+   "ability": "Kabloom",
+   "does": "Every bomb you have planted on rivals and creatures goes off at once, and a blast blooms round your own ship as well.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/MantaKabloomByCrystalEffectSO.cs"
+  }
+ },
+ "Meerkat": {
+  "Charge": {
+   "ability": "Sentinel Mode",
+   "does": "While on, each new tunnel leaves a sentinel at its entrance that zaps rivals nearby, knocking out petals and silencing them, and shields your own prisms there. Its tunnel stands while it does.",
+   "trigger": "Toggle",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+   "scales": "More Charge makes each sentinel zap knock out more of a rival's petals."
+  },
+  "Mass": {
+   "ability": "Exit Portal",
+   "does": "Each tunnel you form sets six small prisms of your colour in a hexagon round its way out.",
+   "trigger": "Passive - form a tunnel",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+   "scales": "More Mass makes the exit portal's prisms bigger."
+  },
+  "Space": {
+   "ability": "Soliton",
+   "does": "Form the tunnel your reticle shows and dive through it. It stays standing for Meerkats to ride, sucks in nearby prisms and fires them out the far end to smash other prisms for you.",
+   "trigger": "Tap",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+   "scales": "More Space gives every tunnel more surface, so a tunnel of any length comes out fatter."
+  },
+  "Time": {
+   "ability": "Faster Ride",
+   "does": "You rush through every tunnel faster, your own or another Meerkat's.",
+   "trigger": "Passive - ride a tunnel",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md",
+   "scales": "More Time makes the rush through every tunnel stronger."
+  },
+  "Omni": {
+   "ability": "Soliton Network",
+   "does": "Grows a network of branching wormhole tunnels from where you took the crystal that you can slide through; with full Mass it covers the whole cell.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md"
+  }
+ },
+ "Orca": {
+  "Charge": {
+   "ability": "Flown Missiles",
+   "does": "Each gunner launches missiles from its own magazine and steers them by hand; a missile collects crystals it flies through. An omni crystal gives every gunner one more missile.",
+   "trigger": "Gunner seats - tap to launch, then steer",
+   "scales": "More Charge makes the missiles fly faster and turn sharper.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
+  },
+  "Mass": {
+   "ability": "Danger Shield",
+   "does": "The helm rings the hull in super-shielded prisms, open ahead, that ride with it for a few seconds, then drop where they stand as danger prisms that linger.",
+   "trigger": "Helm seat - tap",
+   "scales": "More Mass carries the shield ring with the hull for longer before it drops.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
+  },
+  "Space": {
+   "ability": "Burst",
+   "does": "A missile bursts on contact, after five seconds, or when its gunner taps again, wrecking rival prisms nearby and taking petals from rival hulls; the bomb gunner's bomb bursts the same way.",
+   "trigger": "On contact, on its fuse, or tap again",
+   "scales": "More Space widens the missile and bomb blasts and the hull's skim reach.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
+  },
+  "Time": {
+   "ability": "Boost Tank",
+   "does": "The helm boosts while the tank lasts, and the tank refills on its own.",
+   "trigger": "Helm seat - hold",
+   "scales": "More Time refills the tank faster and makes the boost faster.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md"
+  },
+  "Omni": {
+   "ability": "Omni",
+   "does": "Every gunner seat gets one more missile in its magazine, whether the hull or a gunner's missile took the crystal.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs"
+  }
+ },
+ "Rhino": {
+  "Charge": {
+   "ability": "Energize",
+   "does": "Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.",
+   "trigger": "Hold both",
+   "scales": "More Charge knocks more petals off a rival with each sword hit.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+  },
+  "Mass": {
+   "ability": "Afterimage",
+   "does": "When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds - walls you swing into place. Your own sword can still cut them.",
+   "trigger": "Passive - after Energize",
+   "scales": "More Mass makes the afterimage prisms bigger.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md"
+  },
+  "Space": {
+   "ability": "Blade Reach",
+   "does": "Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side. Super-shielded mass makes the blade stick unless you have the upgrade.",
+   "trigger": "Always on - swing with both",
+   "scales": "More Space makes the sword longer, and your camera pulls back to match.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+  },
+  "Time": {
+   "ability": "Ramp Spool",
+   "does": "Fly at full throttle in a straight line and the Rhino winds up steadily toward a very high top speed. Turning bleeds it off. Prisms you ram are shoved aside and cost you no speed.",
+   "trigger": "Passive - fly flat out and straight",
+   "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md"
+  },
+  "Omni": {
+   "ability": "Surge",
+   "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
+  }
+ },
+ "Scarab": {
+  "Charge": {
+   "ability": "Shove",
+   "does": "Every hard dash throws a broad flat plate along your path that shreds prisms, kills creatures and debuffs any rival pilot it engulfs, flinging everything the way you dashed. It recovers in a few seconds.",
+   "trigger": "Passive - rides your dash",
+   "scales": "More Charge makes the shove's debuff on rival pilots bite harder.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
+  },
+  "Mass": {
+   "ability": "Switch",
+   "does": "Place a curved ring around an elemental crystal on your path. Its panel deflects balls; any ball, friend or foe, that threads it pays you energy toward your next ball and breaks the switch into a dais of prisms.",
+   "trigger": "Tap near a crystal",
+   "scales": "More Mass widens the switch's ring, an easier mouth for a ball to thread.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
+  },
+  "Space": {
+   "ability": "Nucleus Seeding",
+   "does": "While you fly, balls of your domain appear stuck in the cell's nucleus. Anyone can knock them loose: outward they bounce harmlessly around the cell, inward they become live balls in play.",
+   "trigger": "Always on",
+   "scales": "More Space seeds bigger balls; each keeps the size it was born with.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
+  },
+  "Time": {
+   "ability": "Throttle",
+   "does": "Thrust along your nose: the deeper you press, the harder you keep accelerating. Letting go is your only brake.",
+   "trigger": "Hold, deeper pushes harder",
+   "scales": "More Time raises the throttle's top speed.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
+  },
+  "Omni": {
+   "ability": "forges its ball",
+   "does": "When your skimmer touches an omni crystal it turns into a ball, sitting still where the crystal was, ready for you to strike.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs"
+  }
+ },
+ "Serpent": {
+  "Charge": {
+   "ability": "Scope",
+   "does": "Raise a magnified eyepiece beside your flight view - the ship keeps flying as normal - with the zoom following how far you pull. While it is up, your cloak trigger fires the Sniper Shot instead.",
+   "trigger": "Hold, pull deeper to zoom",
+   "scales": "More Charge shortens the sniper's recovery between shots.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md"
+  },
+  "Mass": {
+   "ability": "Seed Wall",
+   "does": "Stop dead and your last prism becomes a seed that pulls loose prisms into a growing herringbone wall, stealing rival prisms as they land. It grows while you stay stopped, and you shrug off debuffs meanwhile.",
+   "trigger": "Tap to stop, tap again to fly",
+   "scales": "More Mass makes the wall's bricks bigger and more widely spaced.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md"
+  },
+  "Space": {
+   "ability": "Cloak / Sniper Shot",
+   "does": "Unscoped: vanish, hull and trail, for about 15 s, leaving a decoy and a super-shielded seed that grows a wall. Scoped: one long hitscan round that breaks every hostile prism in its path, shields and all, and strips rival petals.",
+   "trigger": "Tap; fires the shot while scoped",
+   "scales": "More Space lets your Seed Walls reach further to steal prisms.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md"
+  },
+  "Time": {
+   "ability": "Solid Fuel Pellets",
+   "does": "Each press burns one of four fuel pellets for a burst of speed; press again while one burns and the boosts stack. The tank never refills on a clock - your Seed Wall eating your own trail earns pellets back.",
+   "trigger": "Tap, tap again to stack",
+   "scales": "More Time makes each pellet burn longer, not faster.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_FUEL_PELLETS.md"
+  },
+  "Omni": {
+   "ability": "Explosion + Wall Shield",
+   "does": "A blast breaks prisms round you, and beams from the crystal re-shield every seed wall you have standing, rippling out from each seed.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SerpentWallShieldByCrystalEffectSO.cs"
+  }
+ },
+ "Shrike": {
+  "Charge": {
+   "ability": "Targeting Array",
+   "does": "Paint a target - a rival first, then a creature, a plant or nearby mass - and every nest plant with a ready missile launches it. Missiles home while you paint and burst on contact, a petal hit on any rival caught.",
+   "trigger": "Select mode, then hold fire to paint",
+   "scales": "More Charge does not change the missiles; it widens your Void Lance's beam.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
+  },
+  "Mass": {
+   "ability": "Nest",
+   "does": "Touch any block and you dock to it; docked, every cooldown runs faster. Detach and you leave a nest behind - a cup of super-shielded blocks crowned with a plant that grows a missile. Up to three nests at once.",
+   "trigger": "Passive dock; tap to detach",
+   "scales": "More Mass builds each nest from more blocks and tightens your trail's wave.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
+  },
+  "Space": {
+   "ability": "Void Lance",
+   "does": "Fire a long hitscan beam that breaks every block it passes, any domain, except super-shielded mass and the nest you sit in. A rival hull on the line takes a scored petal hit.",
+   "trigger": "Select mode, then hold fire",
+   "scales": "More Space does not change the lance; it widens the Targeting Array's lock cone.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
+  },
+  "Time": {
+   "ability": "Void Sling",
+   "does": "Shoot a tether at the first block ahead; the hull flies straight there in one second, laying thick trail, and docks on arrival. No block in range, no sling. A crystal resets it.",
+   "trigger": "Select mode, then tap fire",
+   "scales": "More Time shortens the sling's cooldown.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
+  },
+  "Omni": {
+   "ability": "Shrike",
+   "does": "The crystal becomes a nest plant where it was, which grows large missiles you can call down, and your Void Sling is ready again at once.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md"
+  }
+ },
+ "Sparrow": {
+  "Charge": {
+   "ability": "Skyburst Rockets",
+   "does": "Fire a rocket that bursts near a rival or creature: one blast tears prisms apart and lays new ones, a wider one debuffs pilots and kills wildlife. Restock rockets by shooting hostile prisms with your guns.",
+   "trigger": "Tap",
+   "scales": "More Charge widens the rockets' prism-tearing blast.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md"
+  },
+  "Mass": {
+   "ability": "Turret Stance",
+   "does": "Stop dead and your guns fire prisms instead of bullets - the same shot, but each prism stays wherever the bullet would have died, building mass as you shoot. You can still roll and turn faster while stopped.",
+   "trigger": "Tap to stop, tap again to fly",
+   "scales": "More Mass stretches the prisms you fire and swells every round bigger as it flies.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md"
+  },
+  "Space": {
+   "ability": "Pulsefire Cannons",
+   "does": "Full-auto cannons that break prisms. A cold gun is pin-accurate; keep firing and it heats, spreading the cone and shortening the range, then cools quickly when you let go.",
+   "trigger": "Hold",
+   "scales": "More Space widens your skimmer, the zone that grazes trails; the cannons' range stays fixed.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md"
+  },
+  "Time": {
+   "ability": "Afterburner",
+   "does": "Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and the Sparrow does a quick strafing roll, even while stopped.",
+   "trigger": "Hold",
+   "scales": "More Time raises your boost speed.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md"
+  },
+  "Omni": {
+   "ability": "reloads its missiles",
+   "does": "For 8 seconds danger prisms, blasts and overtakes cannot lower your elements; buffs still land. Missiles now reload by shooting prisms, not from crystals.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselWardByCrystalEffectSO.cs"
+  }
+ },
+ "Squirrel": {
+  "Charge": {
+   "ability": "Crystal Joust",
+   "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them.",
+   "trigger": "Passive - overtake",
+   "scales": "More Charge steals more petals with each overtake.",
+   "source": "Assets/Resources/ElementalAbilityMaps/Squirrel.asset"
+  },
+  "Mass": {
+   "ability": "Boost Ring",
+   "does": "Drops a ring of danger prisms ahead of you to fly through the middle of. Grazing it boosts you, but it slams any vessel that hits it, yours included. Twenty-second cooldown.",
+   "trigger": "Tap",
+   "scales": "More Mass shortens the cooldown between rings.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_TUBE.md"
+  },
+  "Space": {
+   "ability": "Steal",
+   "does": "Skim a prism to steal it into your own domain. A rival's shielded prism only loses its shield, and super-shielded prisms can never be taken.",
+   "trigger": "Passive - skim a prism",
+   "scales": "More Space grows your skimmer, so each pass steals from further away.",
+   "source": "Assets/Resources/ElementalAbilityMaps/Squirrel.asset"
+  },
+  "Time": {
+   "ability": "Skimming",
+   "does": "Every prism you skim past gives you boost energy, and that energy is your speed. Keep threading close to mass to stay fast.",
+   "trigger": "Passive - skim prisms",
+   "scales": "More Time gives more boost energy for each prism you skim.",
+   "source": "Docs/ElementalAbilitySystem/FLEET_MAPS.md"
+  },
+  "Omni": {
+   "ability": "bursts into a ring of shielded blocks",
+   "does": "The crystal opens and becomes a ring of eight shielded prisms just ahead of your nose.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md"
+  }
+ },
+ "Starling": {
+  "Charge": {
+   "ability": "Pick the Charge card",
+   "does": "Take the Charge card from a hand dealt to the swarm. Charge cards arm the swarm against rivals and wildlife - stings, lasers, chain lightning, a pulse - and a card you already hold levels up.",
+   "trigger": "Tap while a hand is up",
+   "scales": "Your Charge level does not change this; each card's own level sets its strength.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md"
+  },
+  "Mass": {
+   "ability": "Pick the Mass card",
+   "does": "Take the Mass card from a hand dealt to the swarm. Mass cards build and protect: the swarm lays your prisms, drips danger prisms, grows shells or breeds more members. A held card levels up.",
+   "trigger": "Tap while a hand is up",
+   "scales": "Your Mass level does not change this; each card's own level sets its strength.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md"
+  },
+  "Space": {
+   "ability": "Pick the Space card",
+   "does": "Take the Space card from a hand dealt to the swarm. Space cards eat rival mass: members steal, burst or bite through shielded prisms, or the swarm splits to work two objectives. A held card levels up.",
+   "trigger": "Tap while a hand is up",
+   "scales": "Your Space level does not change this; each card's own level sets its strength.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md"
+  },
+  "Time": {
+   "ability": "Pick the Time card",
+   "does": "Take the Time card from a hand dealt to the swarm. Time cards make the swarm faster and nimbler, let members dodge hits, or shorten every phase so hands come sooner. A held card levels up.",
+   "trigger": "Tap while a hand is up",
+   "scales": "Your Time level does not change this; each card's own level sets its strength.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md"
+  }
+ },
+ "Stoat": {
+  "Charge": {
+   "ability": "Ripple",
+   "does": "Whenever one of your hole pairs collapses, it throws a space-time ripple that strips a petal of every element from each rival it sweeps over and kills creatures. It never touches prisms, you or teammates.",
+   "trigger": "Passive - when your pair collapses",
+   "scales": "More Charge makes the ripple reach further.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
+  },
+  "Mass": {
+   "ability": "Heavy Launch",
+   "does": "Your launch out of an orbit hits harder. Let go or flick your steering thumb to fly out of the orbit, aimed where you flick or steer, and the kick carries more momentum.",
+   "trigger": "Passive - on every launch",
+   "scales": "More Mass makes the launch kick harder.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md"
+  },
+  "Space": {
+   "ability": "Catch Orbit",
+   "does": "Lay a black hole and its white hole ahead, the black hole on the side you pressed. Fly past it on that side and it catches you into an orbit: squeeze for a tighter circle, let go or flick to launch where you aim.",
+   "trigger": "Press, hold to orbit, release or flick to launch",
+   "scales": "More Space widens the orbit your hole pair catches you into.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md"
+  },
+  "Time": {
+   "ability": "Timed Slingshot",
+   "does": "While you orbit, your clock warps and you fly faster. Let go about a quarter-turn after the catch, when the dotted circle turns lime, for the full slingshot kick; any other moment gives only a fraction.",
+   "trigger": "Passive - release timing while orbiting",
+   "scales": "More Time speeds up the orbit's warp and strengthens the slingshot kick.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
+  },
+  "Omni": {
+   "ability": "Fulmen",
+   "does": "Fires a branching thunderbolt from your cell's centre that sets prisms along it burning; any omni crystal a branch reaches sends off a smaller bolt of its own.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Environment/Fulmen/README.md"
+  }
+ },
+ "Thresher": {
+  "Charge": {
+   "ability": "Wrecking Ball",
+   "does": "Your chained ball smashes rival prisms and bounces off your own. Swung to smash speed it turns red and blows up every prism it hits, yours too. Ball or chain striking a rival steals their petals.",
+   "trigger": "Always on",
+   "scales": "More Charge steals more petals with every strike on a rival.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+  },
+  "Mass": {
+   "ability": "Mass Mode",
+   "does": "Switch the ball from breaking to building: it steals rival prisms it touches, shields your own and lays your trail behind it, never exploding. The energy it banks makes a bigger blast once you switch back.",
+   "trigger": "Tap to toggle",
+   "scales": "More Mass makes the trail prisms the ball lays bigger.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+  },
+  "Space": {
+   "ability": "Winch",
+   "does": "Stiffen the chain: let go and it is a slack bungee, pull and it goes rigid, reeling the ball in and cracking it up to speed. The chain slices rival prisms and shields yours, banking energy for the ball's next explosion.",
+   "trigger": "Hold, pull deeper to tighten",
+   "scales": "More Space raises the biggest explosion your banked energy can buy.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+  },
+  "Time": {
+   "ability": "Plant",
+   "does": "Brake the ball: a partial pull swings you round it like a sliding anchor, a full pull plants it as a pivot you orbit faster every lap. Pull both triggers fully to aim, then ease off to launch boosted.",
+   "trigger": "Hold, full pull to plant",
+   "scales": "More Time winds the spin up to launch speed faster.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+  },
+  "Omni": {
+   "ability": "windmills the ball round the ship",
+   "does": "For 12 seconds your red-hot wrecking ball circles the ship across your line of flight, smashing what it sweeps; the winch still sets its size.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+  }
+ },
+ "TigerMoth": {
+  "Charge": {
+   "ability": "Scale Dust",
+   "does": "In Dust mode your falling dust steals petals from any rival inside it, one at a time, scoring and silencing them. Allies it touches are cleansed; rival creatures it reaches wither.",
+   "trigger": "Passive - keep a rival in your dust",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md",
+   "scales": "More Charge makes the dust steal petals faster, up to ten a second."
+  },
+  "Mass": {
+   "ability": "Mass / Dust Mode",
+   "does": "Switch between two modes. Mass mode paints a wide wake of prisms behind you with no dust; Dust mode narrows the wake to a line and turns on the dust below you.",
+   "trigger": "Toggle",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md",
+   "scales": "More Mass widens the wake you paint in Mass mode."
+  },
+  "Space": {
+   "ability": "Dust Reach",
+   "does": "Your dust works on prisms too: your own grow, turn dangerous or get shielded, while rival prisms are destroyed, shrunk or stolen.",
+   "trigger": "Passive - dust over prisms",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md",
+   "scales": "More Space makes the dust that falls below you longer."
+  },
+  "Time": {
+   "ability": "Drop",
+   "does": "Shut your wings and fall straight down your belly line, passing through everything and leaving no trail. Let go to flip into the fall and fly on. A long drop leaves a wormhole pair.",
+   "trigger": "Hold, release to land",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md",
+   "scales": "More Time shortens the drop's recharge, down to half at the top."
+  },
+  "Omni": {
+   "ability": "Explosion",
+   "does": "Sets off a huge bloom of dust: rivals in it lose petals of every element, rival prisms and creatures are blighted, your prisms are tended, and you and nearby allies are cleansed.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md"
+  }
+ },
+ "Urchin": {
+  "Charge": {
+   "ability": "Chain Spikes",
+   "does": "Tap for an aimed shotgun of spikes, or hold and release for a burst in every direction. Each spike steals the prism it hits and sprays new spikes from it, chaining through enemy territory.",
+   "trigger": "Tap, or hold and release",
+   "scales": "More Charge makes each spike fly further and the chain run deeper.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md"
+  },
+  "Mass": {
+   "ability": "Trail Rider",
+   "does": "Fly into a trail to latch on and ride it. Your own trail grows as you pass, an enemy's is stolen, and riding refills ammo. Ride off the end to launch at grind speed.",
+   "trigger": "Passive - fly into a trail",
+   "scales": "More Mass makes your own prisms grow more each time you ride over them.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md"
+  },
+  "Space": {
+   "ability": "Track Projector",
+   "does": "Lays a straight stretch of your own trail out ahead of you - a rail to ride where the map has none. Anyone can steal it from you. Twenty-second cooldown.",
+   "trigger": "Tap",
+   "scales": "More Space makes the projected track longer.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRACK_PROJECTOR.md"
+  },
+  "Time": {
+   "ability": "Slip",
+   "does": "Let go of the trail you are riding and phase out for a moment, so you can fly clear of the mass you were in without latching back on.",
+   "trigger": "Tap while riding",
+   "scales": "More Time makes the phase-out last longer.",
+   "source": "Assets/Resources/ElementalAbilityMaps/Urchin.asset"
+  }
+ },
+ "Wrasse": {
+  "Charge": {
+   "ability": "Kite Ram",
+   "does": "The Wrasse's kite loops its tail round Charge motes to power its ram: a charged ram on a rival hull knocks petals loose as crystals anyone can grab, and kills a creature it passes through.",
+   "trigger": "Passive - loop Charge motes, then ram",
+   "scales": "More Charge makes Charge motes turn up more often on the kite's board.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
+  },
+  "Mass": {
+   "ability": "Mass Cluster",
+   "does": "The Wrasse's kite closes its tail round Mass motes to lay a cluster of your prisms on its plane; the more motes in one loop, the far bigger the cluster. A loop holding two elements fizzles.",
+   "trigger": "Passive - loop Mass motes",
+   "scales": "More Mass makes Mass motes turn up more often on the kite's board.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
+  },
+  "Space": {
+   "ability": "Space Blast",
+   "does": "The Wrasse's kite closes its tail round Space motes and a blast goes off where the loop closed, destroying rival prisms and sparing yours; the more motes in the loop, the bigger the blast.",
+   "trigger": "Passive - loop Space motes",
+   "scales": "More Space makes Space motes turn up more often and widens the hull's skim reach.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
+  },
+  "Time": {
+   "ability": "Saved Boosts",
+   "does": "Each loop of Time motes the Wrasse's kite closes saves boosts for the Grouper. The Grouper's pilot spends them one at a time, each a short burst of speed, and can chain them back to back.",
+   "trigger": "Grouper seat - hold",
+   "scales": "More Time makes Time motes turn up more often and makes each boost faster.",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
+  },
+  "Omni": {
+   "ability": "Kite Omni",
+   "does": "Drops a cluster of motes of every element on the navigator's board for the kite to lasso, making up for a short supply of crystals.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md"
+  }
+ }
+}

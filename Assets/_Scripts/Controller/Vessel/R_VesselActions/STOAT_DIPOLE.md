@@ -169,7 +169,7 @@ circular-orbit GM (≈375 000 for a 150 u orbit at 60 u/s), several times Mass m
 | | |
 |---|---|
 | **Press** | a LIGHT pair is laid **`catchAhead` 150 u ahead**, the attractor **`catchSide` 45 u** to the pressed side, the repulsor mirrored (`StoatSlingMath.CatchPair`): in front, where you see it. Horizon `poleHorizon` 1.6 u, GM `poleGM` 20 000 (Mass mode's poles are 2.1 u / 50 000). It does not move and pulls no vessel. |
-| **The rings** (in place of the path) | round the attractor, in the plane of your pass (`StoatSlingMath.RingNormal` / `Ring`), drawn as world dots: the **ORBIT radius** (the squeeze, read live: a touch 150 u → buried 40 u, × Space 1 → 1.4) and, fainter, the **DETECTION radius** (`catchReach` 1.5 × the orbit). The orbit ring brightens once it has caught you, eases toward lime as the quarter-turn nears and is **lime inside the window**. |
+| **The rings** (in place of the path) | round the attractor, in the plane of your pass (`StoatSlingMath.RingNormal` / `Ring`), drawn as world dots: the **ORBIT radius** (the squeeze, read live: a touch 150 u → buried 55 u, × Space 1 → 1.4) and, fainter, the **DETECTION radius** (`catchReach` 2 × the orbit, 1.5 until 2026-11-03). The orbit ring brightens once it has caught you, eases toward lime as the quarter-turn nears and is **lime inside the window**. |
 | **The catch** | as you pass it — inside the detection radius with the attractor ≥ `catchDegrees` 50° off the nose — or as soon as you are inside the orbit radius (`StoatSlingMath.Catches`). A straight pass is caught at every squeeze (45 / sin 50° = 58.7 u ≤ 1.5 × 40 u; `StoatSlingTests.Catches_AStraightPassAlways_AtEveryShippedSqueeze`). Once caught the nose eases onto the tangent (`settleRate` 3 /s, `StoatSlingMath.SettleHeading`) and the hull is held on the orbit radius. |
 | **It cannot suck you in** | it catches you at the orbit radius (≥ 40 u, 25 horizons out), an owned pair pulls no vessel (`BlackHoleVesselPull`), and there is no field flight in Time mode. |
 | **Release** | the slingshot out along the tangent, the kick TIMED by the angle actually swept round the attractor since the catch (below). Let go before a catch: no kick. Past `maxOrbitDegrees` (360) you are let go on your own (through the replicated release). |
@@ -254,6 +254,43 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
   model (`stoat_orbit_sim.py --earned`): 78-91 s a Slingshot race at 11-12 presses a minute with 63-78% of releases timed,
   where the press-spam AI ran 55-58 s at 19-28 a minute with almost none timed before, and 80-85 s under earned speed.
 - **On a phone** two orbit discs (LT left, RT right) sit round the right thumb; a thumb anywhere else steers.
+- **The aimed exit (Yash, 2026-11-03: "I want to get into the orbit, and then I want to be slingshot at 30-45degrees from angle
+  of entry after a second of orbiting").** The orbit swings the hull round about 200 deg a second, so a launch along the
+  tangent after a second left at about 200 deg from the entry. Now (`aimedExit` on, `StoatSlingConfigSO`'s aimed-exit rows):
+  - **The window is time, not degrees.** The whole kick is paid from 0.8 to 1.4 s of orbit (`exitWindowSeconds` 1.1 ±
+    `exitWindowHalfSeconds` 0.3), easing off over `exitWindowFalloffSeconds` 0.4 s either side to the miss share; a release
+    in the first third of a second times nothing. The ring is lime inside it, as before.
+  - **The launch turns the ENTRY heading** (the hull's heading at the catch) `exitMinDegrees` 30 to `exitMaxDegrees` 45 the way
+    the orbit turns (right orbit right, left orbit left, in the orbit's own plane: `StoatSlingMath.AimedExit`). The stick
+    picks where (`ExitDegrees`): at rest 37.5, toward the turn 45, away from it 30. However far round the orbit you are,
+    the exit is the same, so the launch's direction is known before you press. A flick still launches at once.
+    `launchConeDegrees` is not read while it is on.
+  - `maxOrbitDegrees` is 720 (was 360), so the longest orbit never ends before the window does.
+  - **The AI** lets go as the window opens (by 1.4 s at the latest), its stick picking the angle toward its target, and
+    slings only for a turn of 20 deg or more (`aiSlingMinTurnDegrees` 20, was 7.84: a 30-45 deg exit overshot every small
+    turn). Model (`stoat_orbit_sim.py`, 8 courses): 113 / 115 / 122 / 125 s at I1-I4, every release timed, 0.8 / 1.8 / 2.6 /
+    3.4 rings missed a race. Cruising with no press takes 140-148 s; the tangent launch took 66-90 s. **A sling now costs about
+    a second of circling**, so a race is slower than with the tangent launch.
+  - Off (`aimedExit` 0) is the tangent launch with the 60-120 deg window, as it shipped in PR #1723.
+- **The easier sling (Yash, 2026-11-03 play test on bleeding-edge: "the slingshot mechanic is little hard").** Caught,
+  the orbit carries the hull round at about 188 u/s, so on the 0.6 circle the full-kick window (75-105 deg) lasted 0.1-0.2 s:
+  under a person's reaction time. Now:
+  - **The rings are further apart.** The detection ring is `catchReach` 2 x the circle (was 1.5), and the hull is drawn in to
+    `innerOrbitShare` 0.75 of it (was 0.6) at `innerPullRate` 1 /s (was 1.5). A light squeeze: detection 144 u, inner 54 u
+    (was 108 and 43).
+  - **The catch comes sooner.** It catches once the pair is `catchDegrees` 40 deg off the nose (was 50).
+  - **A full squeeze turns less tight.** `orbitRadiusTight` is 55 u (was 40), so its inner circle is 41 u (was 24).
+  - **The window is wider.** The full kick is paid within `sweetSpotHalfWidth` 30 deg of the quarter-turn (60-120 deg; was
+    15), it eases off over `sweetSpotFalloff` 40 deg (was 30), and a release outside it keeps `missKickShare` 0.35 of the kick
+    (was 0.2).
+  - **What that buys** (`ease_sling` measure on `stoat_orbit_sim.py`'s orbit): 0.28-0.50 s at the full kick (was 0.09-0.19 s),
+    and 0.54-0.98 s at half the kick or more (was 0.21-0.40 s). The window's centre still comes 0.3-0.65 s after the catch.
+  - **The AI** (its `StoatSlingConfig_Slingshot` copy carries the same rows) races faster in the model and misses more rings:
+    66 / 70 / 80 / 94 s at I1-I4 (was 81 / 76 / 85 / 96), 85 / 85 / 67 / 51% of releases timed, every race finished, 0.7 / 2 /
+    4 / 6 rings missed a race (was 0 / 0 / 0 / 0.8). It launches harder more often and overshoots; the learning sweep relearns
+    its numbers from people's races.
+  - The Vessel Studio page's `dpCaptureX`, `dpCatchDeg`, `dpSweetHalf`, `dpSweetFall` and `dpMissShare` carry the same
+    numbers (`studio_to_unity.py --check`).
 
 ## 1c. The Ripple — Charge, passive
 

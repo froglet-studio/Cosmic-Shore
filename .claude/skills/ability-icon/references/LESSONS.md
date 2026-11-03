@@ -529,14 +529,31 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
     negative-space X).
 
+## 2026-11-03 - the Brittle Star's four level-5 states (Shombith picked B A C C)
+
+79. **An upgrade's tint has to survive the plate under it.** The Mass card's plate is the mode's switch, so it is FULL
+    blue whenever Creation is on - exactly when the trail is drawn. The first Shielded Trail draft tinted the blocks the
+    domain's shielded colour, and the Jade shielded blue all but vanished on that fill at 40 px. Read the card's state
+    sheet with the plate as it really is in that state before choosing a colour; where the plate is full, keep the part
+    white and let the SHAPE carry the upgrade (here the fleet's shielded prism, two close triangles, LESSONS 77).
+80. **A part that lands on another part needs cleared copies, not an overlap.** Space 5's burst sits where the meeting
+    rounds converge; drawn over them it fused into one blob. The fix is a sprite swap the view makes with the upgrade
+    (`spaceRounds*BurstSprite`: the same rounds cleared 2 px round the burst), the way the Dolphin and the omni card swap
+    sprites, so the burst stays one clean shape. `canvas.band` takes DEGREES (the first Time 5 arc drew nothing but its
+    arrowhead because radians were passed).
+81. **The tumble won over the clean gap.** For Thrown Sabers the recommendation was A (the sabers straight, a clear gap
+    from their turrets) and B (each saber turned as it tumbles) was judged cluttered; Shombith picked B. A thrown thing
+    reads as THROWN when it is turned off its line, not only when it is apart: the gap said "detached", the tumble said
+    "flying". Offer the version that shows the motion even when a cleaner one reads better as a still.
+
 ## 2026-11-03 - the Meerkat: a first row for a hull still on a borrowed model
 
-79. **A hull on a borrowed model draws its cards from the model it will have, with a fallback.** The Meerkat flew the
+82. **A hull on a borrowed model draws its cards from the model it will have, with a fallback.** The Meerkat flew the
     Stoat's mesh while its own was being built in the same session, so `specs/meerkat.py` reads `Meerkat.fbx` when it
     exists and `Stoat.fbx` until then (`HULL_FBX`): the cards that draw the hull (Sentinel Mode, Faster Ride) are
     re-rendered by re-running `author.py` once the hull lands, the guids unchanged. The Stoat's long thin stick reads as a
     needle at 40 px and fails `coverage` side-on at a normal box; a hull that thin needs a bigger box or a second shape
     with mass (a mouth ring) to carry the card, not a thicker dilate.
-80. **A wormhole reads as an arch only when its feet go INTO something.** An arch with its mouths cut open across the
+83. **A wormhole reads as an arch only when its feet go INTO something.** An arch with its mouths cut open across the
     ends still read as a horseshoe; standing each foot in an edge-on ellipse ring, with the ring's near lip cut over the
     tube, reads as a tunnel from one hole in space to another.

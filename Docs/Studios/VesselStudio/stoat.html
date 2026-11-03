@@ -539,14 +539,14 @@
     orbitWide: 150, orbitTight: 40, orbitHorizons: 6, followRate: 3, radialRate: 5, boostMin: 0.25, boostMax: 0.9, boostSeconds: 1.5,
     closeSpeed: 40, closeRamp: 0.6, holdCap: 12, vesselTide: 0.08, releaseDamping: 1.5,
     // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
-    dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
+    dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 2, dpCatchDeg: 40, dpSettle: 3, dpGrip: 2,
     // the catch's control (round 17, the orbit review): whether being inside the circle catches at once, whether the circle
     // you are held on starts where you were caught (and eases to the squeeze's circle), how far it may reach toward the white hole
     dpCatchInside: 1, dpHoldAtCatch: 1, dpRadiusEase: 0.8, dpWhiteClear: 0.8,
     dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
     // the catch sling's pace and timing (2026-10-14): the field's warp while the black hole holds you (the same ftBoost, ftRise,
     // ftFade), and the game's 90 deg release window (StoatSlingConfig sweetSpot*), brought back here so the artifact is the source
-    dpWarp: 1.15, dpWarpHeld: 1, dpSweetDeg: 90, dpSweetHalf: 15, dpSweetFall: 30, dpMissShare: 0.2,
+    dpWarp: 1.15, dpWarpHeld: 1, dpSweetDeg: 90, dpSweetHalf: 30, dpSweetFall: 40, dpMissShare: 0.35,
     // the field trajectory (round 15 — LAB-ONLY: the game has no such mode and no such fields). The pair's strength,
     // horizon, push, force ceiling and fastest bend are the Dipole sling's rows; these are the mode's own.
     ftAhead: 250, ftStrength: 6, ftHorizon: 3.5, ftWhite: 1, ftSepMax: 200, ftSepLong: 120, ftSepFollow: 6, ftWarpDeg: 3, ftDotPx: 4, ftDotGap: 10,

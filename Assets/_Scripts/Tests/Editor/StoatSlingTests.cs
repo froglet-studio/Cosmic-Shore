@@ -374,7 +374,7 @@ namespace CosmicShore.Tests
             StringAssert.Contains("  catchWarpShare: 1.15\n", text, "studio dpWarp");
             StringAssert.Contains("  catchWarpFromPress: 1\n", text, "studio dpWarpHeld");
             StringAssert.Contains("  sweetSpotDegrees: 90\n", text, "studio dpSweetDeg");
-            StringAssert.Contains("  missKickShare: 0.2\n", text, "studio dpMissShare");
+            StringAssert.Contains("  missKickShare: 0.35\n", text, "studio dpMissShare");
         }
 
         [Test]
@@ -586,11 +586,72 @@ namespace CosmicShore.Tests
                 StringAssert.Contains("  " + row, text);
         }
 
+        // The aimed exit (Yash, 2026-11-03: "slingshot at 30-45 degrees from angle of entry after a second of orbiting").
+
+        [Test]
+        public void AimedExit_TurnsTheEntryTheWayTheOrbitTurns_InAnyPlane()
+        {
+            var entry = Vector3.forward;
+            // A right orbit: the attractor to the hull's right, the hull turning right round it (clockwise from above).
+            var right = StoatSlingMath.AimedExit(entry, Vector3.left * 50f, Vector3.forward, 37.5f);
+            Assert.AreEqual(37.5f, Vector3.Angle(entry, right), 0.01f);
+            Assert.Greater(right.x, 0f, "a right orbit turns the exit right");
+            var left = StoatSlingMath.AimedExit(entry, Vector3.right * 50f, Vector3.forward, 37.5f);
+            Assert.Less(left.x, 0f, "a left orbit turns it left");
+            // 200 deg round the orbit the radial and the heading have turned, but the orbit's axis has not: the same exit.
+            var spun = Quaternion.AngleAxis(200f, Vector3.up);
+            var later = StoatSlingMath.AimedExit(entry, spun * (Vector3.left * 50f), spun * Vector3.forward, 37.5f);
+            Assert.Less(Vector3.Angle(right, later), 0.01f, "the exit is set by the entry, not by where round the orbit you are");
+            // A vertical orbit (pitching up round it) turns the exit up.
+            var up = StoatSlingMath.AimedExit(entry, Vector3.down * 50f, Vector3.forward, 30f);
+            Assert.Greater(up.y, 0f);
+        }
+
+        [Test]
+        public void ExitDegrees_TheStickPicksWithin30To45_TowardTheTurnTheMost()
+        {
+            Assert.AreEqual(37.5f, StoatSlingMath.ExitDegrees(0f, true, 30f, 45f), 1e-4f, "at rest: the middle");
+            Assert.AreEqual(45f, StoatSlingMath.ExitDegrees(1f, true, 30f, 45f), 1e-4f, "right orbit, stick right: the most");
+            Assert.AreEqual(30f, StoatSlingMath.ExitDegrees(-1f, true, 30f, 45f), 1e-4f, "right orbit, stick left: the least");
+            Assert.AreEqual(45f, StoatSlingMath.ExitDegrees(-1f, false, 30f, 45f), 1e-4f, "left orbit, stick left: the most");
+            Assert.AreEqual(45f, StoatSlingMath.ExitDegrees(3f, true, 30f, 45f), 1e-4f, "a stick past full is full");
+        }
+
+        [Test]
+        public void ExitTiming_PaysTheWholeKickAboutASecondIn_NothingEarly()
+        {
+            var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try
+            {
+                Assert.AreEqual(1f, cfg.ExitTiming(0.8f), 1e-4f, "the full window opens at 0.8 s");
+                Assert.AreEqual(1f, cfg.ExitTiming(1.1f), 1e-4f);
+                Assert.AreEqual(1f, cfg.ExitTiming(1.4f), 1e-4f, "and closes at 1.4 s");
+                Assert.AreEqual(0f, cfg.ExitTiming(0.3f), 1e-4f, "a release a third of a second in times nothing");
+                Assert.AreEqual(0f, cfg.ExitTiming(1.9f), 1e-4f);
+                Assert.That(cfg.ExitTiming(0.6f), Is.GreaterThan(0f).And.LessThan(1f), "it eases in");
+                Assert.AreEqual(1.4f, cfg.ExitWindowEndSeconds, 1e-4f, "the AI lets go by the window's end");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(cfg); }
+        }
+
+        [Test]
+        public void SlingConfig_ShipsTheAimedExit()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            foreach (var row in new[] { "aimedExit: 1\n", "exitMinDegrees: 30\n", "exitMaxDegrees: 45\n", "exitWindowSeconds: 1.1\n",
+                         "exitWindowHalfSeconds: 0.3\n", "exitWindowFalloffSeconds: 0.4\n", "maxOrbitDegrees: 720\n" })
+                StringAssert.Contains("  " + row, text);
+            // The AI slings only for a turn the 30-45 deg exit can make (stoat_orbit_sim.py: 7.84 deg overshot every small turn).
+            foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
+                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
+                StringAssert.Contains("  aiSlingMinTurnDegrees: 20\n", Read(path), path);
+        }
+
         [Test]
         public void SlingConfig_ShipsTheInnerOrbit()
         {
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
-            foreach (var row in new[] { "innerOrbitShare: 0.6\n", "innerPullRate: 1.5\n", "orbitSpeedBonus: 0.15\n", "launchConeDegrees: 60\n",
+            foreach (var row in new[] { "innerOrbitShare: 0.75\n", "innerPullRate: 1\n", "orbitSpeedBonus: 0.15\n", "launchConeDegrees: 60\n",
                          "flickStick: 0.8\n", "flickSeconds: 0.15\n" })
                 StringAssert.Contains("  " + row, text);
         }

@@ -131,6 +131,28 @@ namespace CosmicShore.ScriptableObjects
                  "replicated unlock bit; every peer runs it from the replicated release.")]
         [SerializeField] bool massUpgradeShieldsLaunchTrail = true;
 
+        [Header("The aimed exit (Yash, 2026-11-03: \"slingshot at 30-45 degrees from angle of entry after a second of orbiting\")")]
+        [Tooltip("On: the window is TIME in the orbit (exitWindowSeconds), and a release launches the hull on its ENTRY heading " +
+                 "turned exitMinDegrees..exitMaxDegrees the way the orbit turns; the stick picks where (toward the turn the most, " +
+                 "away the least, at rest the middle). Off: the window is degrees swept (sweetSpotDegrees) and the launch follows " +
+                 "the orbit's tangent within launchConeDegrees.")]
+        [SerializeField] bool aimedExit = true;
+
+        [Tooltip("The least an aimed exit turns the entry heading, degrees (the stick held away from the turn).")]
+        [SerializeField, Range(0f, 90f)] float exitMinDegrees = 30f;
+
+        [Tooltip("The most an aimed exit turns the entry heading, degrees (the stick held toward the turn).")]
+        [SerializeField, Range(0f, 90f)] float exitMaxDegrees = 45f;
+
+        [Tooltip("Seconds of orbit at the centre of the aimed exit's window: the whole kick there.")]
+        [SerializeField, Range(0.1f, 5f)] float exitWindowSeconds = 1.1f;
+
+        [Tooltip("Seconds either side of exitWindowSeconds that still pay the WHOLE kick.")]
+        [SerializeField, Range(0f, 2f)] float exitWindowHalfSeconds = 0.3f;
+
+        [Tooltip("Seconds past the full window over which the kick eases (smoothstep) down to missKickShare.")]
+        [SerializeField, Range(0.05f, 3f)] float exitWindowFalloffSeconds = 0.4f;
+
         [Header("Space 5 - Accretion on the orbit (2026-11-02)")]
         [Tooltip("Each prism the held pair's attractor steals adds this share to the reach of the ripple that pair throws.")]
         [SerializeField, Range(0f, 0.2f)] float accretionPerPrism = 0.04f;
@@ -318,6 +340,14 @@ namespace CosmicShore.ScriptableObjects
         public float InnerPullRate => Mathf.Clamp(innerPullRate, 0f, 10f);
         public float OrbitSpeedBonus => Mathf.Clamp01(orbitSpeedBonus);
         public float LaunchConeDegrees => Mathf.Clamp(launchConeDegrees, 0f, 90f);
+        public bool AimedExit => aimedExit;
+        public float ExitMinDegrees => Mathf.Clamp(Mathf.Min(exitMinDegrees, exitMaxDegrees), 0f, 90f);
+        public float ExitMaxDegrees => Mathf.Clamp(Mathf.Max(exitMinDegrees, exitMaxDegrees), 0f, 90f);
+        public float ExitWindowSeconds => Mathf.Clamp(exitWindowSeconds, 0.1f, 5f);
+        public float ExitWindowHalfSeconds => Mathf.Clamp(exitWindowHalfSeconds, 0f, 2f);
+        public float ExitWindowFalloffSeconds => Mathf.Clamp(exitWindowFalloffSeconds, 0.05f, 3f);
+        /// <summary>The last second of the aimed exit's full window: the AI lets go by then.</summary>
+        public float ExitWindowEndSeconds => ExitWindowSeconds + ExitWindowHalfSeconds;
         public float AimMinStick => Mathf.Clamp01(aimMinStick);
         public float FlickStick => Mathf.Clamp(flickStick, 0.3f, 1f);
         public float FlickRestStick => Mathf.Clamp(flickRestStick, 0f, 0.6f);
@@ -346,5 +376,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>How well a release after <paramref name="sweptDegrees"/> of orbit is timed, 0..1.</summary>
         public float SweetSpot(float sweptDegrees) =>
             StoatSlingMath.SweetSpot(sweptDegrees, SweetSpotDegrees, SweetSpotHalfWidth, SweetSpotFalloff);
+
+        /// <summary>The aimed exit's timing after this many seconds of orbit, 0..1: the same curve as the sweet spot, in time.</summary>
+        public float ExitTiming(float orbitSeconds) =>
+            StoatSlingMath.SweetSpot(orbitSeconds, ExitWindowSeconds, ExitWindowHalfSeconds, ExitWindowFalloffSeconds);
     }
 }
