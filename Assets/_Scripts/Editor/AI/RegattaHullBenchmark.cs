@@ -46,21 +46,47 @@ namespace CosmicShore.Editor.AI
             public string Commit = "";
             public string Session = "";
             public bool Batch;
+            /// <summary>Per-hull starting Time overrides, "Manta=-0.5,Rhino=0.3" (normalized: 1 = level 10), applied over
+            /// the card's table in memory for every intensity. Empty: the card's own levels.</summary>
+            public string TimeLevels = "";
+            /// <summary>GRID mode: the AI seats' hulls in seat order, "Manta,Dolphin,Rhino,Urchin,Stoat" (a full Regatta: the
+            /// idle host and these, two domains). Empty: the one-hull time trial.</summary>
+            public string Grid = "";
         }
 
         [Serializable]
         class Record
         {
-            public string session, commit, hull, hostHull, difficulty, outcome;
+            public string session, commit, hull, hostHull, difficulty, outcome, timeLevels;
             public int intensity, race, gatesTotal, gatesThreaded, courseSeed;
             public float finishSeconds;
             public List<float> gateSeconds = new();
             /// <summary>Flat rows of <c>traceColumns</c> floats, one every <see cref="TraceInterval"/> s.</summary>
             public List<float> trace = new();
             public string traceColumns = "t,x,y,z,speed,phase,ring,range";
+            /// <summary>The course's rings in scene order, 7 floats each: x, y, z, axis x, y, z, mouth radius.</summary>
+            public List<float> rings = new();
         }
 
         const float TraceInterval = 0.25f;
+
+        [Serializable]
+        class GridPilot
+        {
+            public string hull, domain;
+            public bool ally;
+            public int gates;
+            public List<float> gateSeconds = new();
+        }
+
+        [Serializable]
+        class GridRecord
+        {
+            public string session, commit, hostHull, hostDomain, difficulty, outcome, timeLevels, grid;
+            public int intensity, race, gatesTotal;
+            public float seconds;
+            public List<GridPilot> pilots = new();
+        }
 
         static readonly string[] AllHulls =
             { "Squirrel", "Manta", "Rhino", "Urchin", "Dolphin", "Stoat", "Scarab", "Serpent", "Sparrow" };
@@ -136,6 +162,16 @@ namespace CosmicShore.Editor.AI
             EditorSceneManager.OpenScene(BootstrapScene);
             string file = Begin(hulls, races, intensity, timeout);
             var job = Load();
+            if (job != null)
+            {
+                job.TimeLevels = Arg("-regattaTime") ?? "";
+                job.Grid = Arg("-regattaGrid") ?? "";
+                // A run tag names the file, so a driver launching one editor per hull can collect one run's files.
+                string tag = Arg("-regattaTag");
+                if (!string.IsNullOrEmpty(tag))
+                    job.File = Path.Combine(Path.GetDirectoryName(job.File), $"{tag}_{Path.GetFileName(job.File)}");
+                Save(job);
+            }
             if (job == null)
             {
                 Debug.LogError($"[RegattaHullBenchmark] batch: {file}");
@@ -192,8 +228,15 @@ namespace CosmicShore.Editor.AI
             if (EditorApplication.isPlaying) return;
             if (SceneManager.GetActiveScene().path != BootstrapScene)
             {
-                Status = $"waiting: open {BootstrapScene}, then Resume";
-                return;
+                // A batch editor holds nobody's unsaved edits, so it may open the scene itself (the restore after Play
+                // mode left another scene active between hulls, 2026-11-03).
+                if (Application.isBatchMode && Load() is { Batch: true })
+                    EditorSceneManager.OpenScene(BootstrapScene);
+                else
+                {
+                    Status = $"waiting: open {BootstrapScene}, then Resume";
+                    return;
+                }
             }
             EditorApplication.isPlaying = true;
         }
@@ -263,6 +306,12 @@ namespace CosmicShore.Editor.AI
 
         static IEnumerator RunHull(Job job)
         {
+            if (!string.IsNullOrEmpty(job.Grid))
+            {
+                var grid = RunGrid(job);
+                while (grid.MoveNext()) yield return grid.Current;
+                yield break;
+            }
             var hull = (VesselClassType)Enum.Parse(typeof(VesselClassType), job.Hulls[job.HullIndex]);
             var hostHull = hull == VesselClassType.Sparrow ? VesselClassType.Manta : VesselClassType.Sparrow;
             var gameData = FindGameData();
@@ -283,6 +332,7 @@ namespace CosmicShore.Editor.AI
             gameData.IsTraining = false;
             if (gameData.selectedVesselClass != null) gameData.selectedVesselClass.Value = hostHull;
             if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = job.Intensity;
+            ApplyTimeLevels(gameData, job.TimeLevels);
             gameData.ConfigurePlayerCounts(2, 1);
             gameData.RequestedDomainCount = 2;
             gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(job.Difficulty);
@@ -309,6 +359,7 @@ namespace CosmicShore.Editor.AI
                 {
                     session = job.Session, commit = job.Commit, hull = hull.ToString(), hostHull = hostHull.ToString(),
                     difficulty = job.Difficulty.ToString(), intensity = job.Intensity, race = race,
+                    timeLevels = job.TimeLevels,
                 };
                 if (controller == null || ai == null)
                 {
@@ -339,6 +390,11 @@ namespace CosmicShore.Editor.AI
                 int total = controller.AuthoritativeGateCount;
                 rec.gatesTotal = total;
                 rec.courseSeed = controller.CourseSeed;
+                foreach (var ring in UnityEngine.Object.FindObjectsByType<RaceGateRing>(FindObjectsSortMode.InstanceID))
+                {
+                    Vector3 c = ring.transform.position, a = ring.Axis;
+                    rec.rings.AddRange(new[] { c.x, c.y, c.z, a.x, a.y, a.z, ring.Radius });
+                }
                 int last = 0;
                 float nextSample = 0f;
                 var status = ai.Vessel.VesselStatus as Component;
@@ -395,7 +451,158 @@ namespace CosmicShore.Editor.AI
             EditorApplication.isPlaying = false;
         }
 
+        /// <summary>
+        /// A full Regatta: the idle host (a hull none of the AIs fly) and one AI per <see cref="Job.Grid"/> hull over two
+        /// domains, so the host's team has its allies and the other team its opponents. Races until the first pilot
+        /// finishes (the mode's own end) and records every AI's gates and its domain: the spread a person sees in a real race.
+        /// </summary>
+        static IEnumerator RunGrid(Job job)
+        {
+            var hulls = job.Grid.Split(',').Select(h => (VesselClassType)Enum.Parse(typeof(VesselClassType), h.Trim())).ToList();
+            var hostHull = AllHulls.Select(h => (VesselClassType)Enum.Parse(typeof(VesselClassType), h)).First(h => !hulls.Contains(h));
+            var gameData = FindGameData();
+            var card = FindRegattaCard();
+            Status = "grid: booting";
+            double deadline = Now + 120;
+            while (Now < deadline && !(IsMenu() && gameData.LocalPlayer?.Vessel != null)) yield return 0.25f;
+            yield return 1.5f;
+
+            gameData.SyncFromArcadeGame(card);
+            gameData.IsTraining = false;
+            if (gameData.selectedVesselClass != null) gameData.selectedVesselClass.Value = hostHull;
+            if (gameData.SelectedIntensity != null) gameData.SelectedIntensity.Value = job.Intensity;
+            ApplyTimeLevels(gameData, job.TimeLevels);
+            gameData.ConfigurePlayerCounts(1 + hulls.Count, 1);
+            gameData.RequestedDomainCount = 2;
+            gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(job.Difficulty);
+            gameData.SetRequestedAIVessels(hulls);
+            gameData.InvokeGameLaunch();
+
+            for (int race = 0; race < job.RacesPerHull; race++)
+            {
+                Status = $"grid: race {race + 1}/{job.RacesPerHull}, loading";
+                GateRaceController controller = null;
+                List<IPlayer> ais = null;
+                deadline = Now + 120;
+                while (Now < deadline)
+                {
+                    if (SceneManager.GetActiveScene().name == gameData.SceneName)
+                    {
+                        controller = UnityEngine.Object.FindAnyObjectByType<GateRaceController>();
+                        ais = gameData.Players.Where(p => p != null && p.IsInitializedAsAI && p.Vessel != null).ToList();
+                        if (controller != null && ais.Count >= hulls.Count && controller.AuthoritativeGateCount > 0) break;
+                    }
+                    yield return 0.25f;
+                }
+                var host = gameData.LocalPlayer;
+                var rec = new GridRecord
+                {
+                    session = job.Session, commit = job.Commit, hostHull = hostHull.ToString(),
+                    hostDomain = host != null ? host.Domain.ToString() : "", difficulty = job.Difficulty.ToString(),
+                    intensity = job.Intensity, race = race, timeLevels = job.TimeLevels, grid = job.Grid,
+                };
+                if (controller == null || ais == null || ais.Count == 0)
+                {
+                    rec.outcome = "scene-not-ready";
+                    AppendLine(job, JsonUtility.ToJson(rec));
+                    break;
+                }
+                yield return 1f;
+                deadline = Now + 120;
+                while (!gameData.IsTurnRunning && Now < deadline)
+                {
+                    controller.OnReadyClicked();
+                    double repress = Now + 15;
+                    while (!gameData.IsTurnRunning && Now < repress && Now < deadline) yield return 0.25f;
+                }
+                if (!gameData.IsTurnRunning)
+                {
+                    rec.outcome = "not-started";
+                    AppendLine(job, JsonUtility.ToJson(rec));
+                    break;
+                }
+
+                Status = $"grid: race {race + 1}/{job.RacesPerHull}, racing";
+                float start = Time.time;
+                rec.gatesTotal = controller.AuthoritativeGateCount;
+                var pilots = ais.Select(p => new GridPilot
+                {
+                    hull = (p.Vessel.VesselStatus?.VesselType ?? VesselClassType.Any).ToString(),
+                    domain = p.Domain.ToString(), ally = host != null && p.Domain == host.Domain,
+                }).ToList();
+                var last = new int[ais.Count];
+                while (true)
+                {
+                    bool someoneFinished = false;
+                    for (int k = 0; k < ais.Count; k++)
+                    {
+                        int now = ais[k].RoundStats?.SwitchesThreaded ?? 0;
+                        while (last[k] < now) { last[k]++; pilots[k].gateSeconds.Add(Time.time - start); }
+                        if (now >= rec.gatesTotal) someoneFinished = true;
+                    }
+                    if (someoneFinished) { rec.outcome = "finished"; break; }
+                    if (!gameData.IsTurnRunning) { rec.outcome = "ended"; break; }
+                    if (Time.time - start > job.TimeoutSeconds) { rec.outcome = "timeout"; break; }
+                    yield return null;
+                }
+                rec.seconds = Time.time - start;
+                for (int k = 0; k < ais.Count; k++) pilots[k].gates = last[k];
+                rec.pilots = pilots;
+                AppendLine(job, JsonUtility.ToJson(rec));
+                Debug.Log($"[RegattaHullBenchmark] grid race {race}: {rec.outcome} {rec.seconds:F1} s - " +
+                          string.Join(", ", pilots.Select(p => $"{p.hull}{(p.ally ? "*" : "")} {p.gates}")));
+
+                if (race + 1 >= job.RacesPerHull) break;
+                deadline = Now + 30;
+                while (gameData.IsTurnRunning && Now < deadline) yield return 0.25f;
+                yield return 2.5f;
+                controller = UnityEngine.Object.FindAnyObjectByType<GateRaceController>();
+                if (controller != null) controller.RequestReplay();
+                deadline = Now + 120;
+                while (controller != null && Now < deadline) yield return 0.25f;
+            }
+
+            job.HullIndex = job.Hulls.Count;
+            Save(job);
+            Status = "grid: done";
+            EditorApplication.isPlaying = false;
+        }
+
+        static void AppendLine(Job job, string json)
+        {
+            _lastProgress = EditorApplication.timeSinceStartup;
+            File.AppendAllText(job.File, json + "\n", Encoding.UTF8);
+        }
+
         static double Now => EditorApplication.timeSinceStartup;
+
+        /// <summary>
+        /// Overrides the card's starting Time per hull for this run only (the published table in GameDataSO, never the
+        /// card asset): each named hull's rows are replaced by one every-intensity row with its Mass, Charge and Space
+        /// kept and Time set. The vessel reads the table on spawn (VesselController.ApplyStartingElements).
+        /// </summary>
+        static void ApplyTimeLevels(GameDataSO gameData, string spec)
+        {
+            if (string.IsNullOrWhiteSpace(spec)) return;
+            var table = new List<VesselStartingElements>(gameData.StartingElements);
+            foreach (var pair in spec.Split(','))
+            {
+                var kv = pair.Split('=');
+                if (kv.Length != 2 || !Enum.TryParse(kv[0].Trim(), out VesselClassType hull) ||
+                    !float.TryParse(kv[1].Trim(), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float time))
+                {
+                    Debug.LogError($"[RegattaHullBenchmark] bad -regattaTime entry '{pair}'");
+                    continue;
+                }
+                VesselStartingElements.TryResolve(table, hull, gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1,
+                    out ResourceCollection levels);
+                table.RemoveAll(row => row.Class == hull);
+                levels.Time = time;
+                table.Add(new VesselStartingElements(hull, 0, levels));
+            }
+            gameData.PublishStartingElements(table);
+        }
 
         static void Append(Job job, Record rec)
         {

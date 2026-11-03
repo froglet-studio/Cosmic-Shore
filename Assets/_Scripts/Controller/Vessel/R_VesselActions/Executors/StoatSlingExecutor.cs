@@ -952,6 +952,16 @@ namespace CosmicShore.Gameplay
                 if (letGo && ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
                 return;
             }
+            // A pair that ended under the AI (its lifetime ran out before it caught the hull) leaves that side's trigger
+            // HELD: a person lets go of a real trigger, an autopilot never does, so BeginHold refused every later press on
+            // that side and, once both sides were stuck, the Stoat cruised at 60 u/s for the rest of a Regatta (2026-11-03,
+            // the Regatta Hull Benchmark's flight trace: 3 warped legs, then 21 at cruise). Let it go first.
+            for (int s = 0; s < 2; s++)
+            {
+                if (!_holds[s].Holding || !ResolveBoundInput((Side)s, handler, out var stale)) continue;
+                handler.StopShipControllerActionsReplicated(stale);
+                return;
+            }
             if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
             // The Skim Sling's chain: inside the skip window after a launch the AI may press at once (no interval) - it
             // still presses only toward a turn it wants, so a run zig-zags along its line rather than circling.

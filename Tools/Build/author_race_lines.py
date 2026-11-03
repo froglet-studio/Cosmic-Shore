@@ -68,10 +68,19 @@ def learned():
     return json.load(open(LEARNED, encoding="utf-8")).get("hulls", {})
 
 
+# The AI's line runs no further out than this share, whatever people's flights learned (2026-11-03, Garrett's overnight
+# Regatta balance; the Regatta Hull Benchmark's flight traces): people cross the rings 0.68-0.81 of the way out, but an AI
+# tracking the line at a look-ahead misses the mouth from there - a Scarab lost 73 of 110 s, a Manta up to 69 s a race, to
+# missed mouths and the re-attacks after them. At 0.35 the line keeps about twice the room inside the mouth and still
+# clears the rails (sqrt(r^2 + 22^2 - 22 r) >= 40 u at I1). The learned share stays in race_lines_learned.json.
+AI_LANE_SHARE_CAP = 0.35
+
+
 def values(hull):
     v = dict(COMMON)
     v.update(HULLS[hull])
     v.update({k: x for k, x in learned().get(hull, {}).items() if k in FIELDS})
+    v["LaneShare"] = min(v["LaneShare"], AI_LANE_SHARE_CAP)
     return v
 
 
