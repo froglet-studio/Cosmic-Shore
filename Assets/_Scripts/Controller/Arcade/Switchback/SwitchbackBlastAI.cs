@@ -68,7 +68,8 @@ namespace CosmicShore.Gameplay
         static readonly Collider[] s_hits = new Collider[SenseCap];
         static readonly Vector3[] s_pts = new Vector3[SenseCap];
         static readonly float[] s_radii = new float[SenseCap];
-        static readonly Vector3[] s_crystals = new Vector3[32];
+        /// <summary>Managed crystals the sense considers: an I4 gauntlet course carries up to ~51 keys (26 gates), so 64.</summary>
+        static readonly Vector3[] s_crystals = new Vector3[64];
         /// <summary>u ahead of the hull the sense tube starts (its own fresh trail is behind it).</summary>
         const float SenseStart = 6f;
 

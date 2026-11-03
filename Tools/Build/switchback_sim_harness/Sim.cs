@@ -462,7 +462,7 @@ sealed class Race
         float keyClosest = float.MaxValue; bool keyClosestDrift = false; Phase keyClosestPhase = Phase.None;
         float nextSense = 0f; var avoidAct = SwitchbackAvoidAction.Clear; Vector3 avoidAim = default, blastCrystal = default, blastLook = default;
         bool emergOn = false; float emergHoldUntil = 0f, hotUntil = 0f; Vector3 emergSteer = default; int frame = 0;
-        var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[32];
+        var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[64];
 
         while (t < o.MaxSeconds && idx < total)
         {
