@@ -1,0 +1,115 @@
+{
+  "format": "froglet-tokens/1",
+  "generated_by": "python3 Tools/Build/froglet_style.py",
+  "guide": "Docs/UI_STYLE_GUIDE.md",
+  "sources": [
+    "Assets/_SO_Assets/UI/UITheme.asset",
+    "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset",
+    "Docs/VesselModels/colour_domains.json",
+    "Docs/STYLE_FOUNDATION.md"
+  ],
+  "themes": {
+    "deep-sea": {
+      "ground": "#00041F",
+      "ground-deep": "#00010A",
+      "surface": "#222645",
+      "surface-raised": "#434C89",
+      "line": "#434C89",
+      "text": "#E6E9FF",
+      "text-soft": "#747BAD",
+      "text-off": "#5C5F70",
+      "cta": "#99FF80",
+      "cta-fill": "#99FF80",
+      "danger": "#FF4B3A",
+      "purchase": "#FFAE00",
+      "purchase-fill": "#FFAE00",
+      "control": "#00D4FF",
+      "tooltip": "#A600FF",
+      "selection": "#3DB2FF",
+      "jade": "#0EC0B6",
+      "ruby": "#C800C3",
+      "gold": "#FFA700",
+      "gold-fill": "#FFA700",
+      "on-fill": "#00041F"
+    },
+    "shore": {
+      "ground": "#F4F5FF",
+      "ground-deep": "#E6E9FF",
+      "surface": "#FFFFFF",
+      "surface-raised": "#DDE1F7",
+      "line": "#B8C0F0",
+      "text": "#00041F",
+      "text-soft": "#434C89",
+      "text-off": "#8A8FAE",
+      "cta": "#487C1F",
+      "cta-fill": "#99FF80",
+      "danger": "#CD373A",
+      "purchase-fill": "#FFAE00",
+      "control": "#007D73",
+      "tooltip": "#893BFF",
+      "selection": "#0A61FF",
+      "jade": "#007D73",
+      "ruby": "#893BFF",
+      "gold-fill": "#FFA700",
+      "on-fill": "#00041F"
+    }
+  },
+  "fonts": {
+    "body": "Aldrich",
+    "label": "Chakra Petch",
+    "label-weights": [
+      500,
+      600,
+      700
+    ],
+    "google": "https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap"
+  },
+  "type": {
+    "display": 48,
+    "h1": 36,
+    "h2": 28,
+    "h3": 22,
+    "body": 18,
+    "body-small": 15,
+    "button": 18,
+    "button-small": 14,
+    "data-large": 44,
+    "data": 20,
+    "data-small": 15
+  },
+  "space": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64,
+    96
+  ],
+  "shape": {
+    "sliver-large": 14,
+    "sliver-small": 10,
+    "hairline": 1,
+    "stroke": 2
+  },
+  "motion": {
+    "micro": {
+      "ms": 120,
+      "ease": "cubic-bezier(0.5, 1, 0.89, 1)"
+    },
+    "std": {
+      "ms": 200,
+      "ease": "cubic-bezier(0.33, 1, 0.68, 1)"
+    },
+    "panel": {
+      "ms": 320,
+      "ease": "cubic-bezier(0.22, 1, 0.36, 1)"
+    },
+    "ceremony": {
+      "ms": 500,
+      "ease": "cubic-bezier(0.34, 1.56, 0.64, 1)"
+    }
+  }
+}

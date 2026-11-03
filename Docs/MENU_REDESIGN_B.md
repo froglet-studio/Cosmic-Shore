@@ -5719,3 +5719,30 @@ that make it a true design board like grouping and sectioning stuff."
   finds the commented element with `frogma.py anchor <board> "<tid>:<path>"` (the Design type's anchor numbering), edits
   that element only, gates it (`check --only`), publishes that one file, replies in the thread and resolves it. Comments
   on different boards run in parallel; the session records the changes in the repo once at the end (`/frogma` §4.5).
+
+## 121. The Froglet UI style guide on Frogma's first tab; every old area in a section (2026-11-03, awaiting decisions D1-D8)
+
+**Asked (Shombith, 2026-11-03):** "give them that ofcourse" (sections for the 11 old areas), then "take garretts color chart
+for the game from his PR and lets write UI rules according to that and other UI rules that is required and that should
+be shown on the first page of frogma", with the earlier brief: one UI style guide for the whole team, a UI checklist PR
+template and CODEOWNERS, the five screens that break it most, and "new themes ... all froglet specific ... so any UI
+task, artifact diagrams or presentation, website, codex should all follow these rules".
+
+- **Every board on the Menu Redesign tab is in a section** (version `1793722789-316f`). `frogma.py collect` moved the
+  interleaved old areas onto shelves at the tab's bottom, each keeping its inner layout and getting its section: In-game
+  HUD (Item 12's four areas, Maelstrom with the end of match), Menu (Items 0-11, each item's notes board joined to its
+  item), and Rev 3. Rev 4, 7 and 15 got theirs in place once the strays left. 0 boards outside a section.
+- **The Style Guide tab is Frogma's first page and the board opens on it** (version `1793723216-5530`): ten boards
+  (`SG*.dc.html`) drawn by `Docs/MenuRedesignB/rounds/style_guide_boards.py` from the tokens: start here, colour (the six
+  families), themes, type, shape and space, buttons and states, cards / windows / toasts, motion, do and don't, the UI
+  checklist and the five screens.
+- **The guide in words:** `Docs/UI_STYLE_GUIDE.md`. **Tokens:** `Docs/UI/froglet.css` and `froglet-tokens.json`, written
+  from `UITheme.asset`, `OriginalColorSetSO` and `colour_domains.json` by `Tools/Build/froglet_style.py` (`--check`).
+  Themes: Deep Sea (the game's own, default) and Shore (its light twin, each family re-picked inside itself at 4.5:1).
+- **Wired into PRs:** `.github/pull_request_template.md` (UI checklist section), `.github/workflows/ui-checklist.yml` +
+  `Tools/Build/check_ui_pr.py`, and CODEOWNERS for the UI paths (Shombith).
+- **Found while writing it** (decisions in the guide's section 13): the selection blue sits in the forbidden band (D3);
+  five STYLE_FOUNDATION light / dark domain variants fall outside their family (D4); the UI domain tokens and the game
+  palette disagree (D2); STYLE_FOUNDATION section 3 still says focus is CTA green (D5).
+- `/frogma-show` opens the board in one call.
+

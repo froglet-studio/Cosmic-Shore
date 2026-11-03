@@ -6,6 +6,8 @@
 
 Direction: Helldivers 2 **discipline only** — the rigour, not the look.
 
+**The team-facing guide built on these numbers is [`Docs/UI_STYLE_GUIDE.md`](UI_STYLE_GUIDE.md)** (2026-11-03): the rules in plain language with a do and a don't from our own screens, the Froglet themes, and the UI checklist every UI pull request answers. Its open decisions D2-D5 concern sections 2 and 3 here.
+
 ---
 
 ## 0. Resolved decisions

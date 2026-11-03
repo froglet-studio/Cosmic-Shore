@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Do and don&#x27;t, from our own screens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.src{font-family:'Aldrich',sans-serif;font-size:14px;color:#747BAD;margin:0}
+.do{color:#99FF80}
+.dont{color:#FF4B3A}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 64px 72px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">8 · Do and don&#x27;t</span><h1 class="h1">Every rule has been broken once already</h1><p class="body" style="color: #747BAD; max-width: 1500px">Each pair comes from a board on Frogma or a shipped screen. The don&#x27;ts are the reason the rule exists.</p></div><div style="display: flex; flex-direction: column; gap: 14px"><div class="sl panel" style="padding: 18px 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center"><span class="h3">Element colours on the HUD</span><p class="small"><span class="dont">Don't</span> Rev 3 HUDs: each element a colour, drifting like a lava lamp (R3HudSquirrel)</p><p class="small"><span class="do">Do</span> Today&#x27;s lockup: one neutral, the element told by its glyph (AbilityLockupStyle elementColour off)</p></div><div class="sl panel" style="padding: 18px 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center"><span class="h3">A placeholder backdrop</span><p class="small"><span class="dont">Don't</span> Rev 34: the options floated over an empty sea with a THE CELL label; rejected outright</p><p class="small"><span class="do">Do</span> Rev 36: the same captain drawn over the real Home screen</p></div><div class="sl panel" style="padding: 18px 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center"><span class="h3">Gold for a highlight</span><p class="small"><span class="dont">Don't</span> Gold on a first-place row or a featured card</p><p class="small"><span class="do">Do</span> Gold only where crystals are spent: the Purchase button, the upgrade price</p></div><div class="sl panel" style="padding: 18px 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center"><span class="h3">Glow as decoration</span><p class="small"><span class="dont">Don't</span> A pulsing ring round a card nobody needs to press</p><p class="small"><span class="do">Do</span> The one glow: a free Daily Deal (lime) or a buyable one (gold)</p></div><div class="sl panel" style="padding: 18px 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center"><span class="h3">Selection blue for anything else</span><p class="small"><span class="dont">Don't</span> Your own row, a playing track or a favourite in the selection blue</p><p class="small"><span class="do">Do</span> The selection blue on the one picked tile and the focus ring, nowhere else</p></div><div class="sl panel" style="padding: 18px 22px; display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: center"><span class="h3">A string in code</span><p class="small"><span class="dont">Don't</span> PrivacyConsentOverlay builds its colours and words in C#</p><p class="small"><span class="do">Do</span> Every word in a serialized field, filled from a template (TemplateText.Fill)</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
