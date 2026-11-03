@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// before the next frame's pose, so no follow, zoom, rear view or portal math ever sees them:
     /// <list type="bullet">
     /// <item><b>G-force</b>: the camera lags the vessel's ACCELERATION (a boost pulls the hull ahead, a turn
-    /// swings it into the turn) and a drift's SLIDE (the hull slides out across the frame), never its speed, so a
+    /// swings it into the turn), never its speed, and never a drift (a drift only rumbles), so a
     /// steady cruise sits exactly where it always did; the same G tilts the camera like the pilot's neck. A bigger
     /// hull's pilot feels less of it, and more slowly.</item>
     /// <item><b>Kicks</b>: one damped spring every one-off event nudges: a skim pushes away from the prism, a
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         [Range(0f, 0.3f)]
         [SerializeField] float maxLag = 0.06f;
 
-        [Tooltip("The furthest the G (lag and drift slide together) moves the camera, as a fraction of the follow " +
+        [Tooltip("The furthest the G lag moves the camera, as a fraction of the follow " +
                  "distance; it rounds off toward this rather than stopping at it. Scaled by the hull's G.")]
         [Range(0f, 0.4f)]
         [SerializeField] float maxGOffset = 0.14f;
@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
         [Range(0f, 10f)]
         [SerializeField] float gPitch = 1.5f;
 
-        [Tooltip("The pilot's neck: lean outward at the full sideways G (a turn or a drift), degrees.")]
+        [Tooltip("The pilot's neck: lean outward at the full sideways G (a turn), degrees.")]
         [Range(0f, 15f)]
         [SerializeField] float gRoll = 3.5f;
 
@@ -268,29 +268,14 @@ namespace CosmicShore.Gameplay
         [Min(0.1f)]
         [SerializeField] float rumbleFrequency = 6.5f;
 
-        [Header("Drift: the hull slides out across the frame")]
+        [Header("Drift: a rumble only; it never moves the hull on screen")]
         [Tooltip("The slip angle (between where the hull points and where it travels) that counts as a full " +
                  "drift, degrees.")]
         [Range(1f, 90f)]
         [SerializeField] float driftFullSlipDegrees = 35f;
 
-        [Tooltip("How far the hull slides off the centre at a full drift, as a fraction of the follow distance. It " +
-                 "rides the G spring (an accelerating start, a small overshoot, a settle), leans the camera through " +
-                 "the neck roll above, and is scaled by the hull's G.")]
-        [Range(0f, 0.3f)]
-        [SerializeField] float driftSlide = 0.08f;
-
-        [Tooltip("How fast the slide builds as a drift deepens, per second. The G spring still shapes it on top.")]
-        [Min(0.1f)]
-        [SerializeField] float driftSlideIn = 3f;
-
-        [Tooltip("How fast the slide eases home as a drift shallows or ends, per second. Slower than the build so " +
-                 "the hull glides back instead of snapping (a snap breaks the flow of a drift chain).")]
-        [Min(0.1f)]
-        [SerializeField] float driftSlideOut = 1.2f;
-
-        [Tooltip("The speed at which a drift slides in full, in follow distances per second; a slower slide slides " +
-                 "less, so a drift at a crawl stays gentle.")]
+        [Tooltip("The speed at which a drift rumbles in full, in follow distances per second; a slower drift " +
+                 "rumbles less, so a drift at a crawl stays quiet.")]
         [Min(0.01f)]
         [SerializeField] float driftFullSpeed = 4f;
 
@@ -392,9 +377,6 @@ namespace CosmicShore.Gameplay
         public float RumbleFrequency => Mathf.Max(0.1f, rumbleFrequency);
 
         public float DriftFullSlipDegrees => Mathf.Clamp(driftFullSlipDegrees, 1f, 90f);
-        public float DriftSlide => Mathf.Max(0f, driftSlide);
-        public float DriftSlideIn => Mathf.Max(0.1f, driftSlideIn);
-        public float DriftSlideOut => Mathf.Max(0.1f, driftSlideOut);
         public float DriftFullSpeed => Mathf.Max(0.01f, driftFullSpeed);
         public float DriftRumble => Mathf.Clamp01(driftRumble);
 

@@ -21044,3 +21044,14 @@ in an element (the Toybox's Vessel Changer, or a starting element) to try each:
    Space, a burst where the rounds meet (the rounds swap to copies cleared round it); Time, in Speed Mode, the trail
    swept round a turn under a roll arc. Below level 4 each card goes back to its plain state. Check that no new part
    flashes at full alpha before the HUD's first frame, and that a vessel swap keeps a live upgrade's state.
+
+## 🟡 No drift slide: a drift never moves the hull on screen (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/no-drift-slide`. Compiled with `unity_refcompile` (player + editor, 0 project errors); the edit-mode
+tests were compiled, not run (the Prisma runner does not build on bleeding-edge today: 63 engine gaps in unrelated files).
+
+1. **Run the edit-mode tests** `CameraFeelTests` (all): `ADrift_NeverMovesTheHullOnScreen` and `ADrift_StillRumbles`
+   pass, and the rest still pass.
+2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
+   its end; only a faint rumble shows. Then a Dolphin drift: same.
+3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
