@@ -111,6 +111,21 @@ Under the old rule it sat in the band (the lab's finding 02).
 5. **Frozen** (lab v6, this): the fit is not unique, because different starting points reach different boundaries
    (84% agreement on a 41³ grid). So the truth stores the boundaries themselves, not the inputs that produced them.
 
+## Colour sets: unlockable palettes with two pigments per domain
+
+[`colour_sets.json`](colour_sets.json) holds the unlockable colour sets (first: **Dart Frog**, paid track, proposed
+2026-11-02). There a domain is two pigments, a bright rim and a dark face of a different hue, and a pigment is one paint
+from shadow to highlight: a cone segment around a ray from black in OKLab. Four rules hold every set (the band, no
+shared pigment under any light, rim/face contrast, each rim still reading as its family in this truth);
+`Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. Shaped in the Colour Sets lab
+(https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
+by them.
+
+`Tools/Build/author_colour_set_assets.py` writes each set as an `SO_ColorSet` asset (Dart Frog:
+`Assets/_SO_Assets/Color Palettes/DartFrogColorSetSO.asset`). Every field keeps `OriginalColorSetSO`'s brightness, alpha and
+tier whiteness and takes its hue from its domain's rim or face pigment; `--check` fails on drift or on a field in another
+domain's pigment. To try a set in the editor, drop its asset into `ThemeManagerDataContainer.asset`'s `ColorSet` slot.
+
 ## What the truth does not change yet
 
 - **No palette asset changed.** Every anchor is the game's own colour.
