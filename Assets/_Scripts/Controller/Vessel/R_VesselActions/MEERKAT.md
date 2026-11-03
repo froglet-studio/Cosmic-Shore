@@ -17,9 +17,8 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
   - Garrett's four abilities are in (§10).
 - **The artifact and the game agree again (round 27, 2026-11-03):** the slip-and-slide, the plain wormhole and Yash's 14
   Unity numbers are in the artifact; `studio_to_unity.py --vessel meerkat --check` reads 80 mapped, 0 drift.
-- **Ahead in the artifact (round 28, 2026-11-03): the Rift.** The omni crystal's ultimate there is a Wraith-style void
-  run that lays a rift (`Docs/Studios/MEERKAT.md` round 28); the game still grows the Soliton Network until
-  `/artifact-to-unity` clones it.
+- **The Rift (round 28, cloned 2026-11-03, round 28b):** the omni crystal's ultimate is a Wraith-style void run that
+  lays a rift (§7b); the Soliton Network is one selector away (`omniMode`).
 - **Its own hull, HUD, icons, class cards and phone profile (2026-11-03):** §5.
 - **Nothing here is editor-verified yet.** The open hand tests are the Meerkat entries in
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of them are marked SUPERSEDED. The report is `Docs/Reports/MEERKAT.md`.
@@ -276,6 +275,27 @@ line for line:
 | Phased inside a tube (§9, round 25) | `MeerkatVesselTransformer.Phased` (the hull's `IHullContactGate`), `SkimmerImpactor.HullTakesPrisms`; the game's omni crystal arms the network through `OmniCrystalImpactor.CollectedByVessel` |
 | Studio map | `Tools/Build/studio_to_unity/meerkat.json` (69 mapped; `--check` 14 drift on 2026-11-01: Yash's Unity tuning, `Docs/Reports/MEERKAT.md` §5) |
 | Garrett's kit (§10) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
+
+## 7b. The Rift, the omnicrystal's ultimate (round 28, cloned 2026-11-03)
+
+Yash, 2026-11-03: "Yes, prototype the Rift" (after Apex's Wraith); then "the ability is not vanishing after certain time,
+also make it in unity". The artifact's rounds 28 and 28b (`Docs/Studios/MEERKAT.md`), line for line where the game has
+the same pieces:
+
+| Piece | In the game |
+|---|---|
+| Into the void | An omnicrystal taken with `omniMode` = Rift starts a run (`MeerkatSolitonExecutor.StartRift`): phased (`MeerkatVesselTransformer.Phased`), heading for `riftSpeed` x cruise x the Time rush (`ComputeThrottleTarget`), steering as ever; no reticle, no soliton entry |
+| Its end | `riftSeconds` (5), the length budget (the network's Mass reach x the cell's radius, `NetworkShare`, at least 100 u) or RT (a person only; the AI never ends one early) |
+| The rift | The path sampled every 12 u, smoothed and laid as ONE channel with a mouth at each end (`SolitonTunnelMath.PolyFrom`, `SolitonNetwork.LayRift`), with RT's tunnel config (its look and slide), sized as a soliton of its length (Garrett's surface area by Space). Under 20 u lays nothing |
+| Its life | `riftLife` (45 s) from the lay, then it collapses and fades (`SolitonNetwork.StayOverride`); nothing holds it for good (round 28b) |
+| Riding it | Any Meerkat at its way in slides it as a network (`TryRideAnySoliton`, `SolitonNetwork.RiftStanding`), out of its way out on the slingshot |
+| HUD | The Time card counts the run down in the ready colour (`MeerkatHUDView.SetRide`) |
+| Tests | `Tests/Editor/MeerkatRiftTests.cs` |
+
+**Not in the game yet:** Garrett's kit on a rift (the swallow at its way in, the exit portal at its way out, a sentinel in
+Sentinel mode): `MeerkatSolitonKit` and `MeerkatSwallow` are bound to the conic `SolitonTunnel`. Rifts are not replicated
+(`MeerkatSolitonNetworkRelay` publishes RT's tunnels and seeded networks; a rift's path would need a new payload and a
+protocol bump), so other players see the hull fly but not the rift. The omni card's icon is still the network's.
 
 ## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)
 

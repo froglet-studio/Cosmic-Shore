@@ -159,6 +159,8 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise",
                # an omnicrystal's Soliton Network (MEERKAT.md section 7, the artifact's rounds 13-21)
                "omniOn", "omniCount",
+               # round 28, the Rift (the omnicrystal's ultimate; omniMode 0 the Rift, 1 the network)
+               "omniMode", "riftSpeed", "riftSeconds", "riftLife",
                # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
                "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 

@@ -20,13 +20,14 @@ changed the Meerkat further in Unity; **round 27 (2026-11-03) brought those chan
 and the game agree again** and the artifact is the Meerkat's source of truth (`studio_to_unity.py --vessel meerkat
 --check`: 80 mapped, 0 drift).
 
-**In the artifact only: round 28, the Rift** (Yash, 2026-11-03: "Yes, prototype the Rift"). The omnicrystal's ability is
+**Round 28, the Rift** (Yash, 2026-11-03: "Yes, prototype the Rift"; cloned into Unity in round 28b, not yet played
+there). The omnicrystal's ability is
 now the Meerkat's ultimate, after Apex's Wraith (Dimensional Rift), in place of the network:
 - take an omnicrystal and you go into the void, phased and twice as fast, for up to 5 s or your Mass's length budget;
 - the path you flew stands as a soliton for 45 s, anyone's to ride.
 
-The network stays behind a selector (`omniMode`). The rift's four keys are artifact-only until `/artifact-to-unity`
-clones them, so the map still reads 0 drift. The four element abilities and RT's soliton are unchanged.
+The network stays behind a selector (`omniMode`). The rift's four keys are mapped to `MeerkatSolitonConfig` (84 mapped,
+0 drift). In Unity a rift does not yet carry Garrett's kit (swallow, exit portal, sentinel) and is not replicated. The four element abilities and RT's soliton are unchanged.
 
 **In both the artifact and the game:**
 - **A wormhole** (RT), a **Soliton Tunnel**: its centreline is one oval arc that bends round its middle, more oval as it
@@ -206,6 +207,27 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
 - Live races against three rivals (Hard, Medium, Easy) all ran to the end (all rivals 9-10 of 10 rings when the
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
+
+**Round 28b (Yash, 2026-11-03, testing version 93: "the ability is not vanishing after certain time").**
+- **The bug:** in Sentinel mode `kitSolitonMade` puts a sentinel at a rift's way in (`wh.held`), and the stay phase counted
+  `riftLife` only while nothing held it, so a guarded rift stood for good.
+- **The fix:** a rift always counts `riftLife`. When it runs out, its sentinel retires (`kitRemoveSentinel(..., 'retired')`)
+  and the rift collapses with it; with no sentinel it collapses directly. A plain soliton keeps Garrett's rule and stands
+  as long as its sentinel. The card text and the `riftLife` tooltip say so.
+- **Proof** (headless, Warpline seed 7, Garrett's kit, the hull idle once the 712 u rift is laid so no pool retires its
+  sentinel early):
+  - Sentinel mode on: the rift is held and guarded at lay; at 45.02 s it collapses and its sentinel is gone in the same
+    tick, and it has faded by 45.82 s.
+  - Sentinel mode off: no sentinel; it collapses at 45.02 s.
+  - Before the fix the guarded rift was still standing, `stay` 0, after 60 s.
+  - A plain soliton held by a sentinel still stands well past `staySeconds` (10 s): one stood 38 s, its `stay` at 0.
+- **Races** (round 28's method): Hard, Medium and Easy are unchanged to the tenth, and so are the field races. Only the
+  no-wormhole column moved, to 103.5 / 103.3 / 107.6 / 91.0 (from 97.4 / 97.2 / 101.6 / 91.0): its AI used to ride its own
+  rift again more than 45 s after laying it, which only the bug allowed (with `riftLife` set to 100,000 the old times come
+  back exactly). Solo self-rides are now 6 of 12, not 9.
+- **Cloned to Unity:** `MeerkatSolitonConfig` has `omniMode`, `riftSpeed`, `riftSeconds` and `riftLife` by the same names,
+  and `studio_to_unity/meerkat.json` maps all four. The page's game names for them are now ordinary linked
+  `MeerkatSolitonConfig.<key>` names, no longer 'new'.
 
 **Round 28 (Yash, 2026-11-03: "Yes, prototype the Rift"). Artifact only.** The omnicrystal's ability becomes the Meerkat's
 ultimate, after Apex's Wraith (Dimensional Rift), and replaces the Soliton Network. The four element abilities (Garrett's

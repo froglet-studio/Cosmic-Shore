@@ -36,6 +36,10 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 0.05
   omniCount: 3
+  omniMode: 0
+  riftSpeed: 2
+  riftSeconds: 5
+  riftLife: 45
   areaL0: 6000
   areaL10: 18000
   suckRadius: 40

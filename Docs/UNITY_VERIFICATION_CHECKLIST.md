@@ -92,6 +92,13 @@ all green. No editor run: another session had Unity open on this checkout; `unit
    Stoat's; it lopes and banks with `StoatAnimation` (no part left at rest, nothing detached); the four element morphs show
    as elements level; the jets sit on its nacelles; the class card, hangar preview and squad image show the new hull.
    Sentinels (Y, then form a soliton) read as the hull standing guard. Judge whether it reads as a meerkat in flight.
+7. **The Rift** (round 28b, `MEERKAT.md` §7b; compiled with Unity's Roslyn against the project's assemblies, the six
+   `MeerkatRiftTests` not run). Toybox, the Meerkat, fly into an omni crystal. **Pass:** you go into the void for about
+   5 s: faster (about 2x), steering freely, flying through prisms and crystals without touching them, the Time card
+   counting down in lime; RT ends the run early. A tube stands along the path you flew, a mouth at each end; fly into its
+   way in and you slide it to its way out; it collapses about 45 s after it was laid, with Sentinel mode on or off.
+   `MeerkatSolitonConfig` > Omnicrystal · the Rift > `omniMode` Network brings round 27's network back. Run
+   `MeerkatRiftTests`. Known gaps: no swallow, exit portal or sentinel on a rift yet; other players do not see rifts.
 
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 

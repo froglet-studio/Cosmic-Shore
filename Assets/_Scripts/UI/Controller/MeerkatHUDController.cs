@@ -46,7 +46,8 @@ namespace CosmicShore.UI
             if (!_isLocalPilotHud || !view || !wormhole) return;
             bool riding = wormhole.IsRiding;
             view.SetSoliton(riding ? 0f : wormhole.Ready01, !riding && wormhole.CanForm);
-            view.SetRide(riding ? 1f - wormhole.Ride01 : 0f, riding);
+            if (wormhole.IsInVoid) view.SetRide(wormhole.VoidLeft01, true);   // round 28: the void run's clock
+            else view.SetRide(riding ? 1f - wormhole.Ride01 : 0f, riding);
             if (!kit) return;
             view.SetSentinels(kit.SentinelCount / (float)Mathf.Max(1, kit.SentinelPoolNow), kit.SentinelMode);
             view.SetPortal(kit.PortalStanding / (float)MeerkatSolitonMath.PortalCount);
