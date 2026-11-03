@@ -7,3 +7,12 @@
 #
 # This only blocks a merge while the "Protect trunks" ruleset requires review from Code Owners.
 /.github/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+
+# Code that runs on teammates' machines or inside every Claude session without anyone reading it:
+# hooks, skills, settings, the build/compute scripts and the session rules. A malicious change here
+# would execute for everyone, so it gets the same second-person review as workflows.
+/.claude/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/CLAUDE.md @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/Tools/Build/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/Tools/Compute/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+/Docs/TEAM.json @Shombith03 @FenrysUnchained @gradies @YsKhan61
