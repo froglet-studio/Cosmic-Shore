@@ -21040,7 +21040,7 @@ in an element (the Toybox's Vessel Changer, or a starting element) to try each:
 5. **Ring explosion core (any level).** Throw the ring (LT with a spare) into a cluster: everything within 40 u of the
    blast breaks at once, then the disk sweeps out in the ring's plane as before.
 6. **The level-5 card states (icon_kit, same branch).** With each upgrade live, its card changes: Charge, RT pulled, the
-   sabers drawn cut free of their turrets; Mass, the trail blocks drawn as shielded prisms (two close triangles);
+   sabers drawn thrown out past their turrets, tumbling; Mass, the trail blocks drawn as shielded prisms (two close triangles);
    Space, a burst where the rounds meet (the rounds swap to copies cleared round it); Time, in Speed Mode, the trail
    swept round a turn under a roll arc. Below level 4 each card goes back to its plain state. Check that no new part
    flashes at full alpha before the HUD's first frame, and that a vessel swap keeps a live upgrade's state.

@@ -529,7 +529,7 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
     negative-space X).
 
-## 2026-11-03 - the Brittle Star's four level-5 states (round 1, not reviewed by Garrett yet)
+## 2026-11-03 - the Brittle Star's four level-5 states (Shombith picked B A C C)
 
 79. **An upgrade's tint has to survive the plate under it.** The Mass card's plate is the mode's switch, so it is FULL
     blue whenever Creation is on - exactly when the trail is drawn. The first Shielded Trail draft tinted the blocks the
@@ -541,4 +541,8 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     (`spaceRounds*BurstSprite`: the same rounds cleared 2 px round the burst), the way the Dolphin and the omni card swap
     sprites, so the burst stays one clean shape. `canvas.band` takes DEGREES (the first Time 5 arc drew nothing but its
     arrowhead because radians were passed).
+81. **The tumble won over the clean gap.** For Thrown Sabers the recommendation was A (the sabers straight, a clear gap
+    from their turrets) and B (each saber turned as it tumbles) was judged cluttered; Shombith picked B. A thrown thing
+    reads as THROWN when it is turned off its line, not only when it is apart: the gap said "detached", the tumble said
+    "flying". Offer the version that shows the motion even when a cleaner one reads better as a still.
 

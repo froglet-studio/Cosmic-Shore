@@ -876,9 +876,9 @@ CARDS += [
 ]
 
 
-# ==== the LEVEL-5 states in the game (recommended picks, 2026-11-03; the option sheets stay for the owner's pick) ==========
+# ==== the LEVEL-5 states in the game (Shombith picked B A C C, 2026-11-03) ===============================================
 # Each is a part that appears only once its upgrade is live (BrittleStarHUDView.SetAbilityUpgraded keeps the four flags):
-#   Charge 5  A  the sabers cut free of their turrets      ChargeSabersFree takes the sabers' alpha
+#   Charge 5  B  the sabers thrown, tumbling past turrets  ChargeSabersFree takes the sabers' alpha
 #   Mass 5    A  every block the fleet's shielded prism    MassTrailsShielded(Fat) take the trails' alpha
 #   Space 5   C  a burst where the rounds meet             SpaceBurst, and the rounds swap to copies cleared round it
 #   Time 5    C  the trail swept round a turn + the roll   TimeTrailTurn takes the stretched trail's alpha; TimeRoll with it
@@ -888,8 +888,8 @@ def _rounds_clear(draw):
 
 
 L5_PARTS = {
-    "Charge": [("ChargeSabersFree", "BrittleStar_ChargeSabersFree", "chargeSabersFreeIcon", thrown_free,
-                "Charge 5 Thrown Sabers: the five sabers cut free of their turrets (white; takes the sabers' alpha)")],
+    "Charge": [("ChargeSabersFree", "BrittleStar_ChargeSabersFree", "chargeSabersFreeIcon", thrown_tumble,
+                "Charge 5 Thrown Sabers: the five sabers thrown out past their turrets, tumbling (white; the sabers' alpha)")],
     "Mass": [("MassTrailsShielded", "BrittleStar_MassTrailsShielded", "massTrailsShieldedIcon",
               lambda: shielded_trails("halves"),
               "Mass 5 Shielded Trail: every block the fleet's shielded prism, two close triangles (white)"),
@@ -928,7 +928,7 @@ for c in CARDS:
     if c.get("group"):
         continue
     if c["name"] == "charge":
-        c["parts"] = dict(c["parts"], free=thrown_free)
+        c["parts"] = dict(c["parts"], free=thrown_tumble)
         c["states"] = c["states"] + [("Charge 5: RT pulled (Thrown Sabers)", [("free", "white"), ("star", "domain")])]
         c["gauge"] = dict(c["gauge"], **{"Charge 5: RT pulled (Thrown Sabers)": (1.0, None)})
     elif c["name"] == "mass":
@@ -944,3 +944,7 @@ for c in CARDS:
         c["parts"] = dict(c["parts"], turn=bent_trail, roll=roll_arc)
         c["states"] = c["states"] + [("Time 5: Speed Roll", [("turn", "white"), ("roll", "white"), ("star", "domain")])]
         c["gauge"] = dict(c["gauge"], **{"Time 5: Speed Roll": (1.0, None)})
+
+# The owner picked (Shombith, 2026-11-03: "B A C C"); the losers' option sheets go.
+CARDS[:] = [c for c in CARDS if c.get("group") not in ("charge5", "mass5", "space5", "time5")]
+

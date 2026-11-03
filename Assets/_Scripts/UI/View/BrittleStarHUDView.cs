@@ -19,7 +19,7 @@ namespace CosmicShore.UI
     /// </list>
     /// Colour here is a GAUGE channel. <see cref="SetAbilityUpgraded"/> re-anchors the captured rest scales (vessel rule 9)
     /// and keeps the four level-5 flags: each card's level-5 state is the ACT the upgrade unlocks, a part that appears
-    /// only once the upgrade is live (Garrett's icon rule, ability-icon LESSONS 46, 47, 67) - the sabers cut free
+    /// only once the upgrade is live (Garrett's icon rule, ability-icon LESSONS 46, 47, 67) - the sabers thrown
     /// (Thrown Sabers), the blocks as shielded prisms (Shielded Trail), a burst where the rounds meet (Explosive
     /// Rounds), the trail swept round a turn under a roll arc (Speed Roll).
     /// </summary>
@@ -80,7 +80,7 @@ namespace CosmicShore.UI
         [SerializeField, Range(0f, 1f)] float cruiseTrailAlpha = 0.4f;
 
         [Header("Level-5 states (icon_kit specs/brittlestar.py, 2026-11-03; each shown only while its upgrade is live)")]
-        [Tooltip("Charge 5 Thrown Sabers: the five sabers cut free of their turrets (BrittleStar_ChargeSabersFree), white: " +
+        [Tooltip("Charge 5 Thrown Sabers: the five sabers thrown out past their turrets, tumbling (BrittleStar_ChargeSabersFree), white: " +
                  "takes the sabers' alpha while the upgrade is live.")]
         [SerializeField] Image chargeSabersFreeIcon;
         [Tooltip("Mass 5 Shielded Trail: each corner's line as shielded prisms (BrittleStar_MassTrailsShielded), white.")]
@@ -158,7 +158,7 @@ namespace CosmicShore.UI
             float out01 = Mathf.Clamp01(cordsOut01), pull = Mathf.Clamp01(pull01) * out01;
             float cords = Mathf.Lerp(cordsOffAlpha, 1f, out01);
             if (chargeWhipsIcon) chargeWhipsIcon.color = new Color(1f, 1f, 1f, cords * (1f - pull));
-            // Charge 5: the rigid sabers are the ones LT can throw - drawn cut free of their turrets.
+            // Charge 5: the rigid sabers are the ones LT can throw - drawn thrown, tumbling past their turrets.
             if (chargeSabersIcon) chargeSabersIcon.color = new Color(1f, 1f, 1f, _chargeUpgraded ? 0f : cords * pull);
             if (chargeSabersFreeIcon) chargeSabersFreeIcon.color = new Color(1f, 1f, 1f, _chargeUpgraded ? cords * pull : 0f);
             if (chargeStarIcon) chargeStarIcon.color = _domain;
