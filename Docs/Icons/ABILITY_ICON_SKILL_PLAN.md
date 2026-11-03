@@ -340,6 +340,14 @@ DONE 2026-11-01** (picked C, "the stock": "I like that c can display the resourc
 spare-ring slots, a held spare a solid pentagon and an empty slot an outline, so the one-colour card still counts; three
 sprites (`Core/BrittleStar_OmniStock0..2`) swapped by `BrittleStarHUDView.SetSpareRings` through the new
 `VesselHUDView.SetOmniAbilitySprite`. The Brittle Star is done; next the rhombus recut of the shipped hulls.
+**Brittle Star level-5 states** (2026-11-03, round 1, Shombith asked; NOT yet reviewed by Garrett;
+`claude/brittle-stars-l5-updates-41j91p`): the four upgrades Shombith designed that day, each drawn as the act it unlocks
+and shown only while live (`BrittleStarHUDView.SetAbilityUpgraded` keeps the flags). Options A/B/C for each, in the
+lockup, `Docs/Icons/sheets/brittlestar_{charge5,mass5,space5,time5}_options.png`; the recommended pick is wired:
+Charge 5 Thrown Sabers A (the sabers cut free of their turrets), Mass 5 Shielded Trail A (every block the fleet's
+shielded prism, white: the shielded tint vanished on the full blue plate), Space 5 Explosive Rounds C (a burst where the
+rounds meet, the rounds swapped to copies cleared round it), Time 5 Speed Roll C (the stretched trail swept round a turn
+under a roll arc). A different pick is a one-line change in `specs/brittlestar.py` (`L5_PARTS`).
 **The Honeyguide** (2026-11-01, round 1, not yet reviewed by Garrett; `cece/jolly-lovelace-t8y3a1`): Garrett, "so we will
 need an icon for each ability that can take over". Seventeen white sprites for the trigger redesign (Honeyguide Lab round
 8): the four element cards (Slip on Time, Peck on Space RT, Flit on Charge LT, Hive on Mass) in

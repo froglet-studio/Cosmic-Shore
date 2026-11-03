@@ -528,3 +528,17 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     Serpent's shielded bricks, `author_squirrel_shielded_ring_icon.py`) were cut the same way. Small halves fail `thin`
     and `gap`: exempt them with that reason rather than growing the prism. A bare prism stays a square (or a square with a
     negative-space X).
+
+## 2026-11-03 - the Brittle Star's four level-5 states (round 1, not reviewed by Garrett yet)
+
+79. **An upgrade's tint has to survive the plate under it.** The Mass card's plate is the mode's switch, so it is FULL
+    blue whenever Creation is on - exactly when the trail is drawn. The first Shielded Trail draft tinted the blocks the
+    domain's shielded colour, and the Jade shielded blue all but vanished on that fill at 40 px. Read the card's state
+    sheet with the plate as it really is in that state before choosing a colour; where the plate is full, keep the part
+    white and let the SHAPE carry the upgrade (here the fleet's shielded prism, two close triangles, LESSONS 77).
+80. **A part that lands on another part needs cleared copies, not an overlap.** Space 5's burst sits where the meeting
+    rounds converge; drawn over them it fused into one blob. The fix is a sprite swap the view makes with the upgrade
+    (`spaceRounds*BurstSprite`: the same rounds cleared 2 px round the burst), the way the Dolphin and the omni card swap
+    sprites, so the burst stays one clean shape. `canvas.band` takes DEGREES (the first Time 5 arc drew nothing but its
+    arrowhead because radians were passed).
+
