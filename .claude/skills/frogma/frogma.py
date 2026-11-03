@@ -661,7 +661,6 @@ def cmd_fold(args) -> int:
 # title note, or its own `sec-<key>-t`). A group is `grp-<key>` (+ tiles): a dashed outline, tighter, with a small
 # title `grp-<key>-t`; groups sit inside sections (an option's five screens inside its round, say).
 
-SHAPE_KINDS = ("rect", "oval", "line", "arrow", "pen", "image", "link")
 RECT_MAX = 8000
 UNDER_AREA = 520_000          # the editor puts a shape under the artboards above 500,000 px2; keep a margin
 SECTION_PAD = 160
