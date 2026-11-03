@@ -52,22 +52,39 @@ name ("BrittleStar") never split one vessel into two rows.
 
 ## 1. Refresh (regenerate and republish)
 
-Do this after any vessel change lands, when asked, and in the daily scheduled run.
+Do this after any vessel change lands, when asked, in the daily scheduled run, and at the end of every ship that
+touched a vessel (`/ship` §5.6, all modes).
 
-1. **Read from bleeding-edge**, not from your feature branch, so the page states what the game ships:
+1. **Build on bleeding-edge, never on a feature branch alone** (Shombith, 2026-11-03: "codex should also read from
+   bleeding edge" - the live page had been published from `claude/optimistic-allen-jxrbrw`). `fleet_codex.py` now
+   REFUSES a tree that does not contain `origin/bleeding-edge` (exit 1, naming the cause; `--allow-off-bleeding-edge`
+   is for a local look and is never published):
    ```bash
    git fetch origin bleeding-edge
    git worktree add --detach "$SCRATCH/be" origin/bleeding-edge
    ```
-   If `Tools/Build/fleet_codex.py` is not on bleeding-edge yet, run the copy in your own checkout against it
-   instead and say so; the page's stamp names the branch and commit it read either way. `$SCRATCH` is your scratchpad
+   **Then fold in the PENDING branches**: shipped branches whose facts bleeding-edge does not carry yet. The list is the
+   published `fleet.json`'s `"pending"` (read it in step 3's read) plus, from `/ship` §5.6, the branch being shipped.
+   Drop each that has landed (`git merge-base --is-ancestor origin/<it> origin/bleeding-edge`) or no longer exists;
+   merge the rest into the worktree (`git -C "$SCRATCH/be" merge --no-ff --no-edit origin/<it>`, local only, never
+   pushed). One that conflicts is aborted, left out and named in the report. Pass the survivors to the generator so
+   the stamp carries them and the next run keeps them until they merge:
+   `--branch-label "bleeding-edge + <pending>" --pending <it> ...` (with no pending branch: `--branch-label bleeding-edge`). `$SCRATCH` is your scratchpad
    directory (Artifact publishes only accept files under the working directory or the scratchpad).
 2. **Generate** (about 2.5 min, ~9 with `--render-domains`, which a refresh should pass whenever a model, the colour scheme or the palette changed; rendering the icon kit's cards makes most of it, and it needs numpy and Pillow: without numpy the kit cards fall back to the HUD sprites and the run says so on stderr):
    ```bash
-   python3 "$SCRATCH/be/Tools/Build/fleet_codex.py" --out "$SCRATCH/codex" --files-json
+   python3 "$SCRATCH/be/Tools/Build/fleet_codex.py" --out "$SCRATCH/codex" --files-json \
+     --branch-label "bleeding-edge[ + <pending>]" [--pending <branch> ...]
    cp "$SCRATCH/be/Docs/FleetCodex/index.html" "$SCRATCH/codex-index.html"
    ```
-   `img/dom/` holds the domain renders, more than the 255 files one publish takes: publish `img/dom/*` in its own call first, then the page with the rest.
+   **Seed the domain renders first**: they are cached only in `--out`, so a fresh folder renders none and every vessel
+   falls back to its plain preview in every domain (a silent regression of the live page). Before generating, read the
+   published `img/dom/*` into `$SCRATCH/codex` (Artifact `read` with `paths`, `out_dir` the codex folder); their names
+   carry a hash of the model, so an unchanged hull reuses its file and a changed one is dropped (then pass
+   `--render-domains`).
+   **Publish in batches of at most 255 files, `fleet.json` in the LAST batch**, each batch with the page as `file_path`
+   (2026-11-03: 387 files). Later batches add to what is there, and the data goes last so no published version points
+   at art that has not arrived yet.
    It prints a `contentHash` (it ignores the timestamp and commit) and a `FILES [...]` line.
    Read its stderr: an `abilities.json:` warning means an ability was renamed or replaced; read the entry's `source`, rewrite the entry, and commit it with the refresh.
 3. **Skip when nothing changed.** Read the published data (`Artifact` `action: "read"`, `url` the codex,
@@ -102,6 +119,8 @@ that runs §1 (`trig_01AewfLUV66vYQC6b84FRFm5`, 05:41 UTC). Manage it with the s
 ## Rules
 
 - One codex artifact. Never publish a second one, and never pass `force`.
+- Built on bleeding-edge (plus the pending shipped branches), never on a feature branch alone; the generator refuses
+  anything else.
 - Never hand-edit `fleet.json` or commit `Docs/FleetCodex/build/`. The only typed facts are the two tables (`abilities.json`, `seats.json`), and each entry names its source; a doc that disagrees with the code loses (`/vessel` §2).
 - The generator is a reader: it must never write an asset, and it must never guess (a vessel with no map shows "no
   map", a hull with no prefab numbers shows none).

@@ -685,7 +685,10 @@ footer code{font-family:var(--mono);font-size:11.5px}
     applyDomain(saved || (d.palette && d.palette["default"]));
     D.vessels.forEach(function(v){ if(v.controls) v.controls.rows.forEach(function(r){ if(r.padArt && !PADMAP[r.pad]) PADMAP[r.pad] = r.padArt; }); });
     document.getElementById("logo").src = d.ui.omni || "";
-    document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a> &middot; ' + esc(d.commitDate);
+    var pending = (d.pending || []).length
+      ? ' &middot; includes unmerged: ' + d.pending.map(esc).join(', ')
+      : '';
+    document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a> &middot; ' + esc(d.commitDate) + pending;
     document.getElementById("foot").innerHTML = 'Only two tables here are typed by hand, each entry citing the doc or code it was read from: what each ability does (<code>Docs/FleetCodex/abilities.json</code>) and the crew seats (<code>Docs/FleetCodex/seats.json</code>). <code>Tools/Build/fleet_codex.py</code> reads the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles, the game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. The icons are the game&rsquo;s own: each ability&rsquo;s HUD card and its level-5 state from the icon kit or the HUD, the Codex&rsquo;s element shapes, the controller glyphs and the phone&rsquo;s touch icons. Where a HUD draws an icon only at runtime, its element&rsquo;s shape stands in. The skill: <code>/fleet-codex</code>.';
     route();
   }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
