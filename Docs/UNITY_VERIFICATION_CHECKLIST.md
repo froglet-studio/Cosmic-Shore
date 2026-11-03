@@ -120,9 +120,13 @@ I4 race finishes at every level); reference compile (see the commit). NOT run: a
    taking a key while drifting the nose onto the next ray clears that tunnel's plugs; ramming a sealed eye is a dead stop.
    Report whether 2-3 blasts a gate feels right and how hard the pro line is.
 3. The same with 3 AI (Easy to Legendary): every AI finishes; Legendary takes most keys (AI Diagnose, F2, AI plan overlay).
+   The gauntlet's own nose-lag row (`aiNoseFollowGauntlet` 1.9 / 2.8 / 3.5 / 5) puts the AIs offline at 185 / 173 / 165 /
+   155 s; the soak says whether real races sit in the bands 175-195 / 165-185 / 155-175 / 145-165 or need scaling.
 4. Perf: `SwitchbackSoakRunner` at I4 (or a clean capture, `SWITCHBACK.md` "Performance"): frame time and live colliders
    near the path against the I4 numbers of 2026-11-02 (`Docs/perf/SWITCHBACK_PRISM_BUDGET.md`).
 5. Scarab Rally I4: unchanged (open eyes, one key a gate, no rays).
+
+Froglet Tasks ticket: T-20261103-e945 (froglet-studio/Cosmic-Shore#1734), the same steps.
 
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 
