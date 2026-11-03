@@ -116,8 +116,7 @@ dolphin      102     11    5.5    74       5%     1%   11/102  0: 99, 3: 31, 7: 
 
 ## Files the learners changed
 
-- `Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Slingshot.md`
+- `Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset` and `Docs/AI_SYSTEM/LEARNED_DRIVES_Slingshot.md`: proposed, NOT committed (see below)
 - `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`
 
 ## What the sweep judged (2026-11-03 22:18 UTC)
