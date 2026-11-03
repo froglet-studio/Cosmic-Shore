@@ -74,7 +74,7 @@ def read_original(path=ORIGINAL):
 
 def parse(text):
     """{block: {field: (r, g, b, a) or raw text}}, ElementalCrystalColors as its raw lines."""
-    text = re.sub(r",\n\s+", ", ", text)   # Unity folds long colour lines when it saves
+    text = re.sub(r",\r?\n\s+", ", ", text)   # Unity folds long colour lines when it saves
     blocks, block = {}, None
     for line in text.splitlines():
         m = re.match(r"^  (\w+):\s*$", line)
