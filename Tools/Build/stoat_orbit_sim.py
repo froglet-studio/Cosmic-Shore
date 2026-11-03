@@ -41,6 +41,17 @@ SWEET, SWEET_HALF, SWEET_FALL = 90.0, 30.0, 40.0
 # the aimed exit (2026-11-03): a release after about a second of orbit launches the ENTRY heading turned 30-45 deg
 EXIT_MIN, EXIT_MAX, EXIT_T, EXIT_HALF, EXIT_FALL = 30.0, 45.0, 1.1, 0.3, 0.4
 CATCH_WARP_SHARE = 1.15
+# The trampoline (Yash, 2026-11-04: "remove the whole orbit ... just keep white hole, make it so that vessels can bounce off
+# with extra boost, it will be a 3D trampoline"): a soft shell round a lone white hole, laid AHEAD and line x R to the side
+# away from the bounce; inside it a spring pushes the hull out along the shell's normal (StoatSlingMath.TrampolineStep).
+TRAMP_AHEAD, TRAMP_R, TRAMP_LINE, TRAMP_SOFT, TRAMP_LIFE, TRAMP_PREDICT_MAX = 140.0, 60.0, 0.75, 0.35, 4.0, 90.0
+# the turn a graze gives at 150 u/s: 0.5 -> 83, 0.7 -> 53, 0.9 -> 19 deg, head-on 180 (about (1 - line) x 160)
+TRAMP_TURN_SCALE, TRAMP_LINE_MIN, TRAMP_LINE_MAX = 140.0, 0.3, 0.92
+
+
+def tramp_line_for(turn_deg, scale=TRAMP_TURN_SCALE):
+    """StoatSlingMath.TrampolineLineFor: how far off the centre to graze for a bounce of turn_deg."""
+    return max(TRAMP_LINE_MIN, min(TRAMP_LINE_MAX, 1.0 - turn_deg / scale))
 # StoatDipoleConfig.asset: the boost at Time 0 (x2.5) and its rise and fade
 BOOST_TOP, BOOST_RISE, BOOST_FADE = 2.5, 20.0, 0.6
 WARP_TOP = 1.0 + (BOOST_TOP - 1.0) * CATCH_WARP_SHARE   # StoatSlingConfigSO.CatchWarpTarget
@@ -145,6 +156,42 @@ def aimed_exit(entry, radial, fwd, to):
     return unit(best)
 
 
+def tramp_centre(pos, fwd, right, bounce_left, omega, speed, line=TRAMP_LINE, radius=TRAMP_R, ahead=TRAMP_AHEAD):
+    """StoatSlingMath.TrampolineCentre: on the line the hull is flying (its turn carried on, up to 90 deg, when omega is
+    given), line x R to the side AWAY from the bounce, so a hull flying on grazes the shell's near flank."""
+    p, f = list(pos), list(fwd)
+    rate = norm(omega) if omega is not None else 0.0
+    if rate > 1e-4:
+        axis = unit(omega); turn = min(math.radians(TRAMP_PREDICT_MAX), rate * ahead / max(speed, 1.0)); steps = 12
+        for _ in range(steps):
+            p = add(p, mul(f, ahead / steps)); f = rotate_about(f, axis, turn / steps)
+    else:
+        p = add(p, mul(f, ahead))
+    side = sub(right, mul(f, dot(right, f)))
+    side = unit(side) if norm(side) > 1e-6 else right
+    return add(p, mul(side, line * radius if bounce_left else -line * radius))
+
+
+def tramp_flank(pos, centre, right, bounce_left, line=TRAMP_LINE, radius=TRAMP_R):
+    """StoatSlingMath.TrampolineFlank: the point line x R from the centre toward the bounce side, square to the line from
+    the hull - where a hull flying at it grazes the shell's near flank and is turned toward the bounce."""
+    to = sub(centre, pos); f = unit(to)
+    side = sub(right, mul(f, dot(right, f)))
+    side = unit(side) if norm(side) > 1e-6 else right
+    return add(centre, mul(side, -line * radius if bounce_left else line * radius))
+
+
+def tramp_step(vel, radial, radius, soft, dt):
+    """StoatSlingMath.TrampolineStep: inside the shell the spring (pi / soft)^2 x depth pushes the velocity out along the
+    normal. The velocity is carried from the touch, so a head-on hull is stopped and sent back; the hull flies its
+    direction at its own speed."""
+    d = norm(radial)
+    depth = radius - d
+    if depth <= 0 or d < 1e-6: return list(vel)
+    k = (math.pi / soft) ** 2
+    return add(vel, mul(radial, k * depth * dt / d))
+
+
 def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press."""
     n = len(gates); total = n * laps
@@ -157,6 +204,8 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     laid = caught = False; attractor = None; orbit_side_left = False; radius = 0.0; swept = 0.0; last_radial = None; laid_at = 0.0
     steered_out = False
     orbit_s = 0.0; entry = None; aimed = bool(row.get("aimed"))
+    tramp = bool(row.get("tramp")); tramp_c = None; tramp_aim = None; bounces = 0; tramp_misses = 0; prev_fwd = list(fwd); omega = [0.0, 0.0, 0.0]
+    t_line, t_r, t_ahead = row.get("line", TRAMP_LINE), row.get("radius", TRAMP_R), row.get("ahead", TRAMP_AHEAD)
     # The Orrery (orrery_port.layout): its static prisms in a 24 u hash for contacts, its moons the AI's anchors.
     moons, hits, grid = [], set(), {}
     if orrery is not None:
@@ -189,7 +238,9 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
             extending = True; ext_t = 0.0; breaks += 1; orbit.reset()
         # StoatSlingExecutor.AutopilotSling
         if warp:
-            if laid:
+            if laid and tramp:
+                pass   # the AI lets go of the trigger at once: the shell stays up until it is bounced off or passed
+            elif laid:
                 if not caught:
                     let_go = t - laid_at >= row["give_up"]
                 else:
@@ -260,6 +311,12 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                     attractor = add(mid, mul(right, -CATCH_SIDE if left else CATCH_SIDE))
                     laid = True; caught = False; orbit_side_left = left
                     radius = orbit_radius(row["hold"]); swept = 0.0; laid_at = t
+                    if tramp:
+                        tramp_c = tramp_centre(pos, f, right, left, omega if row.get("predict") else None, CRUISE * clock,
+                                               t_line, t_r, t_ahead)
+                        # StoatSlingMath.TrampolineAim: the point on the shell's flank the line passes (line x R off the centre,
+                        # toward the bounce); the AI steers at it until it touches (StoatSlingExecutor's borrowed steering)
+                        tramp_aim = tramp_flank(pos, tramp_c, right, left, t_line, t_r)
         # the flight clock (StoatPathfinderExecutor, StoatDipoleMath.StepBoost): warped while a pair is held, from the press
         if earned:
             # StoatPathfinderExecutor: the press's small warp, the orbit's full one, the launch's momentum - the larger
@@ -280,7 +337,27 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
         v = CRUISE * clock
         # StoatSlingExecutor.StepOrbit
         correction = [0.0, 0.0, 0.0]
-        if laid:
+        # StoatSlingExecutor.StepTrampoline: touch the shell moving in and the spring turns you; out again moving out, the
+        # bounce (the kick and the momentum, every bounce timed); moving away untouched, or its life out, it is passed
+        if laid and tramp:
+            rad = sub(pos, tramp_c); d = norm(rad); outward = dot(fwd, rad) > 0
+            if not caught and d < t_r and not outward:
+                caught = True; catches_n += 1; tvel = mul(fwd, v)
+            if caught:
+                caught_t += dt
+                if d < t_r:
+                    tvel = tramp_step(tvel, rad, t_r, row.get("soft", TRAMP_SOFT), dt)
+                    before = list(fwd); fwd = unit(tvel) if norm(tvel) > 1e-3 else fwd
+                    applied = ang(before, fwd); ax2 = cross(before, fwd)
+                    if norm(ax2) > 1e-6 and applied > 1e-5: cmd = rotate_about(cmd, unit(ax2), math.radians(applied))
+                else:   # out of the shell again: the bounce
+                    amount = min(CRUISE * (BOOST_MIN + (BOOST_MAX - BOOST_MIN) * row["hold"]) * kick_rate, (row["cap"] - 1) * CRUISE * clock)
+                    momentum_clock, momentum_at = clock, t
+                    kick = (list(fwd), amount, t); bounces += 1; timed += 1
+                    laid = caught = False
+            elif outward or t - laid_at >= TRAMP_LIFE:
+                laid = False; tramp_misses += 1
+        if laid and not tramp:
             squeeze_r = orbit_radius(row["hold"])
             want = squeeze_r * row.get("inner", 1.0) if caught else squeeze_r
             follow = (row.get("pull", 0.0) or EASE_RATE) if caught else FOLLOW_RATE
@@ -323,6 +400,12 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                     laid = caught = False
         # the stick (AIPilot on the flight clock: the turn scales with the warp)
         steer = add(fwd, mul(desired, -0.35)) if extending else to
+        if tramp and laid and not caught and row.get("aim") and tramp_aim is not None:
+            if row.get("aim_turn"):
+                # the AI grazes as deep as the turn it wants: the angle from its heading to its target picks the line
+                hull_r = unit(cross([0.0, 1.0, 0.0], fwd)) if abs(fwd[1]) < 0.999 else [1.0, 0.0, 0.0]
+                tramp_aim = tramp_flank(pos, tramp_c, hull_r, orbit_side_left, tramp_line_for(ang(fwd, to), row.get("turn_scale", TRAMP_TURN_SCALE)), t_r)
+            steer = sub(tramp_aim, pos)
         s = ai_stick(ang(fwd, steer))
         fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(TURN * s) * dtf, dtf, True)
         shift = [0.0, 0.0, 0.0]
@@ -347,12 +430,14 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                             pr = orrery[1][k]
                             if k not in hits and norm(sub(newpos, pr["p"])) < pr["size"] * 0.5 + 3.0: hits.add(k)
         dist += norm(sub(newpos, pos))
+        # the hull's turn rate (rad/s about an axis), eased: what a trampoline laid now predicts the line with
+        omega = add(mul(omega, 0.8), mul(cross(prev_fwd, fwd), 0.2 / dt)); prev_fwd = list(fwd)
         pos = newpos; t += dt
     return {"time": round(t, 1) if idx >= total else None, "rings": idx, "misses": misses, "breaks": breaks,
             "warped": round(warped_t / max(t, 1e-6), 2), "caught": round(caught_t / max(t, 1e-6), 2),
             "speed": round(dist / max(t, 1e-6), 1), "presses": presses, "catches": catches_n, "timed": timed,
             "hits": len(hits), "moon_hits": sum(1 for k in hits if orrery[1][k]["size"] < 5.0) if orrery else 0,
-            "anchor_presses": anchor_presses}
+            "anchor_presses": anchor_presses, "bounces": bounces, "tramp_misses": tramp_misses}
 
 
 def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
@@ -364,7 +449,8 @@ def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
                   "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
                   "speed": statistics.mean(r["speed"] for r in rs), "warped": statistics.mean(r["warped"] for r in rs),
                   "ppm": statistics.mean(60 * r["presses"] / max(1.0, r["time"] or 300.0) for r in rs),
-                  "timed": statistics.mean(r["timed"] / max(1, r["catches"]) for r in rs), "n": len(rs)}
+                  "timed": statistics.mean(r["timed"] / max(1, r["catches"]) for r in rs), "n": len(rs),
+                  "hit": statistics.mean(r["bounces"] / max(1, r["presses"]) for r in rs)}
     return out
 
 
@@ -382,7 +468,7 @@ def score_regatta(row, intensities=(1, 2, 3, 4), dt=1 / 30):
 
 def line(name, s):
     cells = " ".join(f"I{i} {v['median']:6.1f}s {v['finished']}/{v['n']} {v['misses']:4.1f}m {v['speed']:4.0f}u/s "
-                     f"{v.get('ppm', 0):4.1f}/min {100 * v.get('timed', 0):3.0f}%t" for i, v in s.items())
+                     f"{v.get('ppm', 0):4.1f}/min {100 * v.get('timed', 0):3.0f}%t" + (f" {100 * v['hit']:3.0f}%hit" if v.get('hit') else "") for i, v in s.items())
     return f"{name:<34} {cells}"
 
 
@@ -472,11 +558,24 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid", action="store_true"); ap.add_argument("--self-test", action="store_true"); ap.add_argument("--seeds", type=int, default=12)
     ap.add_argument("--earned", action="store_true"); ap.add_argument("--grid-earned", action="store_true")
-    ap.add_argument("--orrery", action="store_true")
+    ap.add_argument("--orrery", action="store_true"); ap.add_argument("--trampoline", action="store_true")
     a = ap.parse_args()
     if a.self_test: sys.exit(self_test())
     if a.grid: grid(); sys.exit(0)
     if a.grid_earned: grid_earned(); sys.exit(0)
+    if a.trampoline:
+        print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
+        print(line("the aimed exit (shipped 11-03)", score(SHIPPED_ROW, seeds=a.seeds, dt=1 / 60)))
+        for name, extra in (("TRAMP, laid on the straight line", {}), ("TRAMP, laid on the turning line", {"predict": True}),
+                            ("TRAMP, straight line, AI aims at the flank", {"aim": True}),
+                            ("TRAMP, turning line, AI aims at the flank", {"predict": True, "aim": True})):
+            row = dict(SHIPPED_ROW, aimed=False, tramp=True, **extra)
+            print(line(name, score(row, seeds=a.seeds, dt=1 / 60)))
+        for sc_ in (100.0, 160.0, 220.0):
+            for mt in (20.0, 35.0, 50.0):
+                row = dict(SHIPPED_ROW, aimed=False, tramp=True, aim=True, aim_turn=True, turn_scale=sc_, min_turn=mt)
+                print(line(f"  aims for its turn, x{sc_:.0f}, turn >= {mt:.0f}", score(row, seeds=a.seeds, dt=1 / 60)))
+        sys.exit(0)
     if a.orrery:
         print(line_orrery("no Orrery (the shipped AI)", score(SHIPPED_ROW, seeds=a.seeds) and score_orrery(SHIPPED_ROW, seeds=0) or {}) if False else "")
         print(line_orrery("Orrery, the shipped AI", score_orrery(SHIPPED_ROW, seeds=a.seeds)))

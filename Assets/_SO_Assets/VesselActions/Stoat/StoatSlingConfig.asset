@@ -60,6 +60,28 @@ MonoBehaviour:
   exitWindowSeconds: 1.1
   exitWindowHalfSeconds: 0.3
   exitWindowFalloffSeconds: 0.4
+  trampoline: 1
+  trampolineAhead: 140
+  trampolineRadius: 60
+  trampolineLine: 0.75
+  trampolineSoftSeconds: 0.35
+  trampolineSeconds: 4
+  trampolinePredictDegrees: 90
+  trampolineAiTurnScale: 100
+  trampolineTouchEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  trampolineBounceEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   accretionPerPrism: 0.04
   accretionMax: 0.4
   pressWarpShare: 0.5
@@ -102,7 +124,7 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1.5
-  aiSlingMinTurnDegrees: 20
+  aiSlingMinTurnDegrees: 35
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941

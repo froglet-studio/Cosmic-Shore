@@ -21099,3 +21099,15 @@ tests were compiled, not run (the Prisma runner does not build on bleeding-edge 
 2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
    its end; only a faint rumble shows. Then a Dolphin drift: same.
 3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
+
+## 🟡 Stoat: the trampoline - no orbit, a white hole's soft shell you bounce off (2026-11-04, Yash, NOT PLAYED, TESTS NOT RUN)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The trampoline". `StoatSlingConfig`: trampoline on
+(ahead 140, radius 60, line 0.75, soft 0.35 s, life 4 s); aiSlingMinTurnDegrees 20 → 35 (and its Slingshot copy). Compiled
+(Assembly-CSharp and -Editor against the editor's own response files, 0 errors); the EditMode tests were NOT run (B:'s editor
+was on bleeding-edge); their numbers were checked in a Python copy of the same loops.
+- [ ] EditMode `StoatSlingTests`: all pass, the five new Trampoline* tests included.
+- [ ] Press RT in Slingshot: a white hole appears ahead-left with a dotted ball round it; flying on, you graze it and are thrown right about 45 deg with a kick.
+- [ ] Steer into it deeper: a sharper turn; skim its edge: a gentle one; head-on: straight back. No pull toward it at any point.
+- [ ] While you are in it the ball turns lime and the dent's ring shows; a lime ripple grows off it at the bounce. The camera does not jar.
+- [ ] Let go of the trigger before touching it: it stays up. Fly past it: it pops (the Charge ripple) and nothing happens to you.
+- [ ] Slingshot I1-I4: AI Stoats bounce off their own shells and finish (model: 111-125 s, 0-8 rings missed a race).

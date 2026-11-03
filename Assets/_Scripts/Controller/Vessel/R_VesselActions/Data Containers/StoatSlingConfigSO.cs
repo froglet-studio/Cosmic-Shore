@@ -153,6 +153,42 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds past the full window over which the kick eases (smoothstep) down to missKickShare.")]
         [SerializeField, Range(0.05f, 3f)] float exitWindowFalloffSeconds = 0.4f;
 
+        [Header("Time mode - the TRAMPOLINE (Yash, 2026-11-04: replaces the orbit while on)")]
+        [Tooltip("On: a press lays a lone WHITE HOLE ahead with a soft shell round it - no black hole, no orbit. Touch the shell " +
+                 "and it gives like a trampoline and throws you off, the kick added. Where you touch it decides where you go: " +
+                 "a graze turns you a little, deeper turns you more. RT bounces you right, LT left. Off: the orbit below.")]
+        [SerializeField] bool trampoline = true;
+
+        [Tooltip("How far ahead the white hole is laid, world units, along the line you are flying (your turn carried on).")]
+        [SerializeField, Range(40f, 400f)] float trampolineAhead = 140f;
+
+        [Tooltip("The soft shell's radius, world units, × Space's reach (orbitReach).")]
+        [SerializeField, Range(10f, 200f)] float trampolineRadius = 60f;
+
+        [Tooltip("How far to the side, as a share of the radius, the shell is laid off your line (away from the bounce): flying " +
+                 "on, you graze it there. 0.75 turns you about 37-51 degrees at 120-190 u/s; less turns you more (0 = head-on, " +
+                 "straight back).")]
+        [SerializeField, Range(0f, 0.95f)] float trampolineLine = 0.75f;
+
+        [Tooltip("How soft the shell is: seconds a head-on bounce lasts (the spring is (pi / this)^2). More is softer and deeper.")]
+        [SerializeField, Range(0.1f, 1.5f)] float trampolineSoftSeconds = 0.35f;
+
+        [Tooltip("Seconds a trampoline nobody touches stays up.")]
+        [SerializeField, Range(0.5f, 15f)] float trampolineSeconds = 4f;
+
+        [Tooltip("The most of your current turn, degrees, carried on to where the white hole is laid (0 = straight ahead).")]
+        [SerializeField, Range(0f, 180f)] float trampolinePredictDegrees = 90f;
+
+        [Tooltip("The autopilot grazes as deep as the turn it wants: share off the centre = 1 - turn / this (stoat_orbit_sim.py " +
+                 "--trampoline chose 100).")]
+        [SerializeField, Range(40f, 300f)] float trampolineAiTurnScale = 100f;
+
+        [Tooltip("Played when the hull touches the shell. Empty = silent.")]
+        [SerializeField] EventReference trampolineTouchEvent;
+
+        [Tooltip("Played when the shell throws the hull off (the bounce). Empty = silent.")]
+        [SerializeField] EventReference trampolineBounceEvent;
+
         [Header("Space 5 - Accretion on the orbit (2026-11-02)")]
         [Tooltip("Each prism the held pair's attractor steals adds this share to the reach of the ripple that pair throws.")]
         [SerializeField, Range(0f, 0.2f)] float accretionPerPrism = 0.04f;
@@ -348,6 +384,16 @@ namespace CosmicShore.ScriptableObjects
         public float ExitWindowFalloffSeconds => Mathf.Clamp(exitWindowFalloffSeconds, 0.05f, 3f);
         /// <summary>The last second of the aimed exit's full window: the AI lets go by then.</summary>
         public float ExitWindowEndSeconds => ExitWindowSeconds + ExitWindowHalfSeconds;
+        public bool Trampoline => trampoline;
+        public float TrampolineAhead => Mathf.Clamp(trampolineAhead, 40f, 400f);
+        public float TrampolineRadius => Mathf.Clamp(trampolineRadius, 10f, 200f);
+        public float TrampolineLine => Mathf.Clamp(trampolineLine, 0f, 0.95f);
+        public float TrampolineSoftSeconds => Mathf.Clamp(trampolineSoftSeconds, 0.1f, 1.5f);
+        public float TrampolineSeconds => Mathf.Clamp(trampolineSeconds, 0.5f, 15f);
+        public float TrampolinePredictDegrees => Mathf.Clamp(trampolinePredictDegrees, 0f, 180f);
+        public float TrampolineAiTurnScale => Mathf.Clamp(trampolineAiTurnScale, 40f, 300f);
+        public EventReference TrampolineTouchEvent => trampolineTouchEvent;
+        public EventReference TrampolineBounceEvent => trampolineBounceEvent;
         public float AimMinStick => Mathf.Clamp01(aimMinStick);
         public float FlickStick => Mathf.Clamp(flickStick, 0.3f, 1f);
         public float FlickRestStick => Mathf.Clamp(flickRestStick, 0f, 0.6f);
