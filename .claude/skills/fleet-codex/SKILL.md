@@ -12,6 +12,8 @@ menu). It is the ONLY codex: always republish to that URL, never create another.
 |---|---|
 | Generator (a READER: writes only its `--out`, touches no asset) | `Tools/Build/fleet_codex.py` |
 | The page: design B of the board's **Rev 48** (picked 2026-11-02; section 115 of `Docs/MENU_REDESIGN_B.md`), in the website's Silver Screen look: a top bar, a filmstrip of the fleet (crew vessels as wider posters with their seats), and the vessel as a bento: the hull, its five abilities (four elements and the omni crystal), ONE control map drawing controller, keyboard and phone with the picked ability lit, its games, the picked ability's full text, docs and changes. `#fleet` is the whole fleet as one table, `#<VesselKey>` one vessel | `Docs/FleetCodex/index.html` |
+| Themes | five, picked from the top-right menu and remembered per viewer (`localStorage` `fleetCodexTheme`): Silver Screen (the default, follows light/dark), Tesseract, Endurance, Gargantua, HyperSea. A theme is only tokens on `html[data-skin]` (`--still`, `--display`, `--dscale`...); a new one is one token block plus one row in `THEMES` |
+| The two hand tables (the only typed facts; each entry cites the doc or code it was read from) | `Docs/FleetCodex/abilities.json` (what each ability DOES, how it fires, what more of its element does, and what an omni crystal does: the maps record only what an element scales) and `Docs/FleetCodex/seats.json` (which seat of a crew vessel owns which ability) |
 | Generated data, git-ignored | `Docs/FleetCodex/build/` (`fleet.json`, `img/<Key>.webp`) |
 | What it reads and why | `Docs/FleetCodex/README.md` |
 
@@ -19,6 +21,12 @@ Where each fact comes from (so a wrong fact is fixed at its source, never in the
 
 | On the page | Source |
 |---|---|
+| What an ability does, its trigger, the plain 'more Mass ...' line, what the omni crystal does | `Docs/FleetCodex/abilities.json`; an entry whose `ability` no longer equals the map's `AbilityLabel` is DROPPED with a stderr warning (re-read its `source` and fix the entry) |
+| Crew seats (a card per seat with its abilities inside) | `Docs/FleetCodex/seats.json`; a seat not in `CrewNames` or an element the map lacks STOPS the build |
+| An ability card's level-5 face (the L5 button flips it) | the upgrade's label, description, gate and status from the map. Its art is what the HUD draws at level 5: the icon kit's `CARDS` state named `<Element> 5` on that element's own card (not an options `group`), rendered through `states.compose` with domain parts in silver and shielded parts in the HUD's shielded signal (14 kit cards + 1 HUD sprite on 2026-11-02: the Tiger Moth's gilded keys, the Sparrow's shielded and piercing rounds, the Serpent's sealed holes...); else a Sprite the vessel's HUD view serializes under a `(<ELEMENT> 5)` header, read from the vessel prefab and drawn lit (the Serpent's `pelletSlotsFive`, "Fifth pellet (TIME 5)"); else a file in the hull's icon folder named after the upgrade; else the ability icon, because on every other hull the game's L5 is the lockup bloom plus the plate lift on the SAME icon (`AbilityLockupView.SetUpgraded`; no `upgradedSprite` is assigned anywhere) |
+| The domain picker (Jade / Ruby / Gold, beside the stamp) and every colour it applies | `palette()` reads `OriginalColorSetSO.asset` with `SO_ColorSet`'s own maths: signal = `GetDomainSignalColor` (TrailHighlightColor, brightest channel to 1), shielded = `GetShieldedSignalColor` (ShieldedOutsideBlockColor.gamma); omni = `ElementalBarsConfig.asset` `limeColor`. Never a hand-picked colour |
+| Icon colours (what the HUD paints each part) | **never a guess by pixel**. A HUD card: `hud_colours()` reads the HUD view script's `<image>.color = ...` writes outside hit/flash methods (following a field the script fills elsewhere, a null-checked ternary's true branch, a `tint.a > 0` ternary's tint, any other ternary's else), maps each field to its prefab Image, and falls back to the Image's authored `m_Color` (the icon's own Image ignores an alpha of 0: the lockup card draws its sprite). The omni card takes `SetOmniAbilityTint` from `<Key>HUDController.cs` (the Squirrel's shielded), else white. A kit card: the spec's resting state (`LOCKUP`, else the card's `lockup_state`), its named colours given the game's values. Values: domain and shielded from `palette()`; danger = `GetDangerSignalColor` (EnvironmentColors.Danger to full brightness); blue, lime, fire, grey, petal white = `ElementalBarsConfig`; white = `Color.white`. Domain and shielded parts are masks the page fills with the picked domain; the rest are baked. An icon whose colour only runtime code computes is recorded in `abilities.json` `tint` with its source (the Dolphin's seed: omni lime, the domain at Claimed Seed) |
+| Vessel images (filmstrip, hero, fleet table) | the hangar preview rendered in the picked domain's livery by `vessel_model/render_cards.py` (`colors_for(scheme, domain)`, its camera and look) for the model the class asset's `PreviewImage` came from; cached in `build/img/dom/<model>_<Domain>_<hash>.webp` (hash = FBX + scheme + renderer + palette). `--render-domains` renders missing ones (needs `bpy`: `python3 -m venv --system-site-packages $SCRATCH/bpyenv && $SCRATCH/bpyenv/bin/pip install bpy`, then run the generator with that python; ~7 min for 57). Without it a vessel keeps its shipped preview (class livery) for every domain. Themes never tint a vessel |
 | Ability, input (pad / keyboard), prose, L5 label + description | `Assets/Resources/ElementalAbilityMaps/<Key>.asset`, via `element_ability_table.py --json --verbose` |
 | L5 status (wired / open / switched off / named-not-gated / gated-not-named) and its gate site | the `IsUpgradeActive` call sites the prefab reaches (`element_ability_table.py`) |
 | "What X scales" (field, ×min → ×max, asset; struck through when switched off) | the `ElementalFloat`s the prefab reaches (`element_ability_table.py`) |
@@ -44,22 +52,41 @@ name ("BrittleStar") never split one vessel into two rows.
 
 ## 1. Refresh (regenerate and republish)
 
-Do this after any vessel change lands, when asked, and in the daily scheduled run.
+Do this after any vessel change lands, when asked, in the daily scheduled run, and at the end of every ship that
+touched a vessel (`/ship` §5.6, all modes).
 
-1. **Read from bleeding-edge**, not from your feature branch, so the page states what the game ships:
+1. **Build on bleeding-edge, never on a feature branch alone** (Shombith, 2026-11-03: "codex should also read from
+   bleeding edge" - the live page had been published from `claude/optimistic-allen-jxrbrw`). `fleet_codex.py` now
+   REFUSES a tree that does not contain `origin/bleeding-edge` (exit 1, naming the cause; `--allow-off-bleeding-edge`
+   is for a local look and is never published):
    ```bash
    git fetch origin bleeding-edge
    git worktree add --detach "$SCRATCH/be" origin/bleeding-edge
    ```
-   If `Tools/Build/fleet_codex.py` is not on bleeding-edge yet, run the copy in your own checkout against it
-   instead and say so; the page's stamp names the branch and commit it read either way. `$SCRATCH` is your scratchpad
+   **Then fold in the PENDING branches**: shipped branches whose facts bleeding-edge does not carry yet. The list is the
+   published `fleet.json`'s `"pending"` (read it in step 3's read) plus, from `/ship` §5.6, the branch being shipped.
+   Drop each that has landed (`git merge-base --is-ancestor origin/<it> origin/bleeding-edge`) or no longer exists;
+   merge the rest into the worktree (`git -C "$SCRATCH/be" merge --no-ff --no-edit origin/<it>`, local only, never
+   pushed). One that conflicts is aborted, left out and named in the report. Pass the survivors to the generator so
+   the stamp carries them and the next run keeps them until they merge:
+   `--branch-label "bleeding-edge + <pending>" --pending <it> ...` (with no pending branch: `--branch-label bleeding-edge`). `$SCRATCH` is your scratchpad
    directory (Artifact publishes only accept files under the working directory or the scratchpad).
-2. **Generate** (about 2.5 min; rendering the icon kit's cards makes most of it, and it needs numpy and Pillow: without numpy the kit cards fall back to the HUD sprites and the run says so on stderr):
+2. **Generate** (about 2.5 min, ~9 with `--render-domains`, which a refresh should pass whenever a model, the colour scheme or the palette changed; rendering the icon kit's cards makes most of it, and it needs numpy and Pillow: without numpy the kit cards fall back to the HUD sprites and the run says so on stderr):
    ```bash
-   python3 "$SCRATCH/be/Tools/Build/fleet_codex.py" --out "$SCRATCH/codex" --files-json
+   python3 "$SCRATCH/be/Tools/Build/fleet_codex.py" --out "$SCRATCH/codex" --files-json \
+     --branch-label "bleeding-edge[ + <pending>]" [--pending <branch> ...]
    cp "$SCRATCH/be/Docs/FleetCodex/index.html" "$SCRATCH/codex-index.html"
    ```
+   **Seed the domain renders first**: they are cached only in `--out`, so a fresh folder renders none and every vessel
+   falls back to its plain preview in every domain (a silent regression of the live page). Before generating, read the
+   published `img/dom/*` into `$SCRATCH/codex` (Artifact `read` with `paths`, `out_dir` the codex folder); their names
+   carry a hash of the model, so an unchanged hull reuses its file and a changed one is dropped (then pass
+   `--render-domains`).
+   **Publish in batches of at most 255 files, `fleet.json` in the LAST batch**, each batch with the page as `file_path`
+   (2026-11-03: 387 files). Later batches add to what is there, and the data goes last so no published version points
+   at art that has not arrived yet.
    It prints a `contentHash` (it ignores the timestamp and commit) and a `FILES [...]` line.
+   Read its stderr: an `abilities.json:` warning means an ability was renamed or replaced; read the entry's `source`, rewrite the entry, and commit it with the refresh.
 3. **Skip when nothing changed.** Read the published data (`Artifact` `action: "read"`, `url` the codex,
    `path: "fleet.json"`) and compare its `contentHash`. Equal and the page file unchanged: stop, and report "no
    change". (The read also satisfies the rule that a session reads an artifact before publishing to it.)
@@ -92,7 +119,9 @@ that runs §1 (`trig_01AewfLUV66vYQC6b84FRFm5`, 05:41 UTC). Manage it with the s
 ## Rules
 
 - One codex artifact. Never publish a second one, and never pass `force`.
-- Never hand-edit `fleet.json` or commit `Docs/FleetCodex/build/`.
+- Built on bleeding-edge (plus the pending shipped branches), never on a feature branch alone; the generator refuses
+  anything else.
+- Never hand-edit `fleet.json` or commit `Docs/FleetCodex/build/`. The only typed facts are the two tables (`abilities.json`, `seats.json`), and each entry names its source; a doc that disagrees with the code loses (`/vessel` §2).
 - The generator is a reader: it must never write an asset, and it must never guess (a vessel with no map shows "no
   map", a hull with no prefab numbers shows none).
 - Owners: the vessels belong to their owners (`who_works_where.py`); the codex only reads them. The skill and
