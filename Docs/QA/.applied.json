@@ -80,6 +80,17 @@
           "date": "2026-10-12"
         }
       }
+    },
+    "2026-10-15-akouroshm.md": {
+      "submitted_hash": "6cf7f84c972e9aea227b2889bf7ff2bfdddcec67f3f3eb2524dd63b5af552a56",
+      "applied_hash": "6cf7f84c972e9aea227b2889bf7ff2bfdddcec67f3f3eb2524dd63b5af552a56",
+      "items": {
+        "QA-ARCADE-ROSTER-SMOKE": {
+          "verdict": "FAIL",
+          "row": "92617d79eb1c1a30",
+          "date": "2026-10-15"
+        }
+      }
     }
   }
 }
