@@ -795,9 +795,9 @@ def main():
 def self_test(schema, base):
     cfg = "Assets/_SO_Assets/Swarm Fauna/SwarmFaunaConfig.asset"
     tad = "Assets/_Prefabs/FloraAndFauna/SwarmTadpole.prefab"
+    species = "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Inner Mass Swarm Fauna Config Data.asset"
     tree0 = Tree(ROOT)
-    added = [cfg, tad, SWARM_PROFILE, SWARM_CELL,
-             "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Inner Mass Swarm Fauna Config Data.asset"]
+    added = [cfg, tad, SWARM_PROFILE, SWARM_CELL, species]
     plain_cs = None  # a script file whose same-named class is NOT a MonoBehaviour/ScriptableObject
     for full, t in schema.types.items():
         if t["kind"] == "Class" and t["files"] and UNITY_OBJECT not in t["bases"] and not t["isGeneric"]:
@@ -806,14 +806,31 @@ def self_test(schema, base):
                 plain_cs = f
                 break
     plain_guid = META_GUID.search(open(os.path.join(ROOT, plain_cs + ".meta")).read()).group(1)
-    first_member = re.search(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n",
-                             tree0.read(SWARM_PROFILE).split("SupportedFaunas:")[1], re.M).group(0)
+    member = "  - {fileID: 11400000, guid: %s, type: 2}\n" % meta_guid(tree0, species)
     cell_guid = meta_guid(tree0, SWARM_CELL)
 
     def sub(rel, old, new, count=1):
         t = tree0.read(rel)
         assert old in t, "self-test fixture drifted: %r not in %s" % (old, rel)
         return {rel: t.replace(old, new, count)}
+
+    # Every spawn path check_swarm reads for `species`: each SupportedFaunas block that lists it and its
+    # Spawn Matrix row. Other cells' profiles copy the Swarm cell's species (the Ark Escort cell's Escort
+    # Swarm Spawn Profile lists this one), so dropping it from the Swarm profile alone leaves a real
+    # spawn path and is rightly no finding; the control drops it from all of them.
+    fauna_profiles = []
+    for dirpath, _, names in os.walk(os.path.join(ROOT, "Assets", "_SO_Assets")):
+        fauna_profiles += [os.path.relpath(os.path.join(dirpath, n), ROOT) for n in names if n.endswith(".asset")]
+    fauna_profiles = sorted(r for r in fauna_profiles if "SupportedFaunas:" in tree0.read(r))
+    unlisted, row = {}, "\n" + member.rstrip("\n")
+    for rel in fauna_profiles:
+        head, rest = tree0.read(rel).split("SupportedFaunas:", 1)
+        block = re.match(r"(?:\n  [- ] .*)*", rest).group(0)
+        if row in block:
+            unlisted[rel] = head + "SupportedFaunas:" + block.replace(row, "", 1) + rest[len(block):]
+    assert SWARM_PROFILE in unlisted, "self-test fixture drifted: %s does not list %s" % (SWARM_PROFILE, species)
+    if ("  " + member) in tree0.read(SPAWN_MATRIX_TOY):
+        unlisted[SPAWN_MATRIX_TOY] = tree0.read(SPAWN_MATRIX_TOY).replace("  " + member, "")
 
     controls = [
         ("field", "renamed serialized key", sub(cfg, "  TickHz:", "  TickHertz:")),
@@ -825,13 +842,11 @@ def self_test(schema, base):
         ("type", "reference to an asset of the wrong class",
          sub(cfg, "Theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628", "Theme: {fileID: 11400000, guid: " + meta_guid(tree0, SWARM_PROFILE))),
         ("local", "in-file fileID that names no document", {tad: re.sub(r"m_GameObject: \{fileID: (\d+)\}", "m_GameObject: {fileID: 42}", tree0.read(tad), 1)}),
-        ("yaml", "broken YAML", sub(cfg, "  UnitScale: 2\n", "  UnitScale: [2\n")),
+        ("yaml", "broken YAML", sub(cfg, re.search(r"  UnitScale: [^\n]*\n", tree0.read(cfg)).group(0), "  UnitScale: [2\n")),
         ("yaml", "missing %TAG header", sub(cfg, "%TAG !u! tag:unity3d.com,2011:\n", "")),
         ("meta", "duplicate guid", {"Assets/_SO_Assets/Swarm Fauna/Dup.asset.meta": tree0.read(cfg + ".meta")}),
-        # Dropped from BOTH: a Spawn Matrix row is a spawn path too, and every Swarm-cell species is on it.
-        ("swarm", "species config dropped from the spawn profile and the Spawn Matrix",
-         {**sub(SWARM_PROFILE, first_member, ""),
-          SPAWN_MATRIX_TOY: tree0.read(SPAWN_MATRIX_TOY).replace("  " + first_member, "")}),
+        # Dropped from every spawn profile AND the Spawn Matrix: a matrix row is a spawn path too.
+        ("swarm", "species config dropped from the spawn profile and the Spawn Matrix", unlisted),
         ("swarm", "Swarm cell removed from the Cell Selector", sub(CELL_SELECTOR_SCENE, "guid: " + cell_guid, "guid: " + "f" * 32)),
     ]
     ok = True
@@ -846,6 +861,15 @@ def self_test(schema, base):
         hit = [f for f in found if f[0] == kind]
         print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", label, (hit[0][2][:110] if hit else "")))
         ok &= bool(hit)
+    # ...and the same species still on ANOTHER cell's spawn profile does spawn, so it is not a finding
+    other = next(r for r in fauna_profiles if r != SWARM_PROFILE and "SupportedFaunas:\n  - " in tree0.read(r))
+    relisted = {**unlisted, other: unlisted.get(other, tree0.read(other)).replace(
+        "SupportedFaunas:\n", "SupportedFaunas:\n" + member, 1)}
+    found, _ = run_audit(Tree(ROOT, relisted), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "swarm" and f[1] == species]
+    print("  [%s] %-60s %s" % ("FALSE HIT" if hit else "ok", "species another cell's spawn profile lists is NOT a finding",
+                               hit[0][2][:110] if hit else ""))
+    ok &= not hit
     # a scene override (modified file, so the per-document baseline path) naming no field
     def base_scene(rel):
         r = subprocess.run(["git", "show", "%s:%s" % (base, rel)], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
