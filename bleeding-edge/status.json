@@ -36,8 +36,8 @@
     }
   ],
   "bugs": {
-    "open": 274,
-    "source": "617 branch(es)",
+    "open": 278,
+    "source": "623 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -70,119 +70,117 @@
         "title": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!"
       }
     ],
-    "validating": 9
+    "validating": 8
   },
   "captures": [
     {
-      "branch": "Ys-bleeding-edge",
-      "commit": "3e329c4f42",
+      "branch": "bleeding-edge",
+      "commit": "71415b752c",
       "contaminated": [
         "frame cap active"
       ],
-      "cpuBusyMs": 11.101351737976074,
-      "gcKB": 158.16810607910156,
-      "key": "MinigameSwitchback|Switchback",
-      "timestamp": "2026-11-02 23:08:28",
-      "user": "yskha",
-      "valid": false,
-      "verdict": "invalid: not compared"
-    },
-    {
-      "branch": "Ys-bleeding-edge",
-      "commit": "9f332918fa",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 10.415779113769531,
-      "gcKB": 146.02076721191406,
+      "cpuBusyMs": 7.815604209899902,
+      "gcKB": 19.52128028869629,
       "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-11-03 00:56:06",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
-    },
-    {
-      "branch": null,
-      "commit": null,
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 8.652949333190918,
-      "gcKB": 35.590328216552734,
-      "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-11-03 01:14:06",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
-    },
-    {
-      "branch": "Ys-bleeding-edge",
-      "commit": "9f332918fa",
-      "contaminated": [
-        "frame cap active",
-        "Game view unfocused"
-      ],
-      "cpuBusyMs": 8.37865161895752,
-      "gcKB": 22.748157501220703,
-      "key": "MinigameSwitchback|Switchback",
-      "timestamp": "2026-11-03 01:16:47",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active, Game view unfocused)"
-    },
-    {
-      "branch": "Ys-bleeding-edge",
-      "commit": "9f332918fa",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 7.872576713562012,
-      "gcKB": 22.186058044433594,
-      "key": "MinigameSwitchback|Switchback",
-      "timestamp": "2026-11-03 01:22:10",
-      "user": "yskha",
+      "timestamp": "2026-11-03 15:54:02",
+      "user": "belac",
       "valid": true,
       "verdict": "not adopted as a baseline (frame cap active)"
-    },
-    {
-      "branch": "Ys-bleeding-edge",
-      "commit": "9f332918fa",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 10.965092658996582,
-      "gcKB": 30.61622428894043,
-      "key": "MinigameThresherTime|MinigameThresherTime",
-      "timestamp": "2026-11-03 01:27:09",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active)"
-    },
-    {
-      "branch": null,
-      "commit": null,
-      "contaminated": [
-        "frame cap active",
-        "Game view unfocused"
-      ],
-      "cpuBusyMs": 9.326492309570312,
-      "gcKB": 108.42138671875,
-      "key": "MinigameSlingshot|MinigameSlingshot",
-      "timestamp": "2026-11-03 01:35:13",
-      "user": "yskha",
-      "valid": true,
-      "verdict": "not adopted as a baseline (frame cap active, Game view unfocused)"
     },
     {
       "branch": "bleeding-edge",
-      "commit": "b9823ab119",
+      "commit": "71415b752c",
       "contaminated": [
         "frame cap active"
       ],
-      "cpuBusyMs": 11.84895133972168,
-      "gcKB": 71.99514770507812,
+      "cpuBusyMs": 3.4975907802581787,
+      "gcKB": 66.4278564453125,
+      "key": "MinigameDustup|MinigameDustup",
+      "timestamp": "2026-11-03 15:59:27",
+      "user": "belac",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "0fb8c50c3d",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.784768104553223,
+      "gcKB": 35.02295684814453,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-11-03 23:45:35",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "improved (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "0fb8c50c3d",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 9.122673988342285,
+      "gcKB": 69.42617797851562,
       "key": "MinigameSlingshot|MinigameSlingshot",
-      "timestamp": "2026-11-03 05:37:15",
+      "timestamp": "2026-11-04 00:32:04",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "2a85f22b2e",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.66124439239502,
+      "gcKB": 63.125152587890625,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-11-04 01:29:19",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "2a85f22b2e",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 8.812296867370605,
+      "gcKB": 79.29935455322266,
+      "key": "MinigameSlingshot|MinigameSlingshot",
+      "timestamp": "2026-11-04 01:31:50",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "a3a5a4aad6",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 9.72623348236084,
+      "gcKB": 124.13188934326172,
+      "key": "MinigameSwitchback|Switchback",
+      "timestamp": "2026-11-04 03:59:00",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "Ys-bleeding-edge",
+      "commit": "a3a5a4aad6",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 7.8039937019348145,
+      "gcKB": 168.3602752685547,
+      "key": "MinigameSwitchback|Switchback",
+      "timestamp": "2026-11-04 04:26:51",
       "user": "yskha",
       "valid": true,
       "verdict": "not adopted as a baseline (frame cap active)"
@@ -211,7 +209,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-11-03T13:02:33Z",
+  "generatedUtc": "2026-11-04T13:19:20Z",
   "next": [
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): gcKB 47.01902389526367 -> 61.291324615478516 (+30%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-30 17:08:25): marker Inl_UniversalRenderTotal 0.9318 -> 1.5055 ms/frame (+62%)",
@@ -220,9 +218,6 @@
     "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): cpuBusyMs 6.47861385345459 -> 8.757814407348633 (+35%)",
     "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): p95Ms 19.186302185058594 -> 23.271499633789062 (+21%)",
     "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): marker LateBehaviourUpdate 0.3973 -> 2.44 ms/frame (+514%)",
-    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker UGUI.Rendering.UpdateBatches 0.8188 -> 1.5682 ms/frame (+92%)",
-    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker CoroutinesDelayedCalls 0.2016 -> 0.4896 ms/frame (+143%)",
-    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker LightFauna.Tick.PrismScan 0.1389 -> 0.4153 ms/frame (+199%)",
     "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker BehaviourUpdate 1.5177 -> 2.5941 ms/frame (+71%)",
     "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker Inl_UniversalRenderTotal 1.6261 -> 2.4198 ms/frame (+49%)",
     "Resolve: Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker CoroutinesDelayedCalls 0.0084 -> 0.6112 ms/frame (+7176%)",
@@ -247,8 +242,11 @@
     "Resolve: Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
     "Resolve: Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
     "Resolve: Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): p95Ms 15.22900390625 -> 18.501296997070312 (+21%)",
-    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): gcKB 20.374347686767578 -> 35.590328216552734 (+75%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): p95Ms 15.22900390625 -> 18.06979751586914 (+19%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): gcKB 20.374347686767578 -> 63.125152587890625 (+210%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): marker LateBehaviourUpdate 0.7454 -> 2.5382 ms/frame (+241%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): marker BlackHole.Tick 0.0099 -> 1.7889 ms/frame (+17970%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): marker BlackHole.Field 0.0025 -> 1.7586 ms/frame (+70244%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)",
@@ -257,23 +255,13 @@
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go",
     "Capture Switchback I2 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped: the editor captures it by itself",
     "Capture Switchback Blast Run I4 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped",
-    "274 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
+    "278 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [
     {
       "id": "T-20261024-0212",
       "kind": "test",
       "task": "Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Pla"
-    },
-    {
-      "id": "T-20261021-b133",
-      "kind": "decision",
-      "task": "Decide which preset an older MobileLow phone starts on: first-run auto-detect still picks Very Low with 4x MSAA (Round 8); a hand pick of Low / Very Low now wri"
-    },
-    {
-      "id": "T-20261021-fa97",
-      "kind": "test",
-      "task": "Measure the new Medium / Low quality presets on an older phone (Mali-G52 / Adreno 610 class): F7 diag GPU ms at High, Medium, Low in the same scene, and run the"
     }
   ],
   "regressions": [
@@ -284,9 +272,6 @@
     "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): cpuBusyMs 6.47861385345459 -> 8.757814407348633 (+35%)",
     "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): p95Ms 19.186302185058594 -> 23.271499633789062 (+21%)",
     "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-25 15:19:30): marker LateBehaviourUpdate 0.3973 -> 2.44 ms/frame (+514%)",
-    "Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker UGUI.Rendering.UpdateBatches 0.8188 -> 1.5682 ms/frame (+92%)",
-    "Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker CoroutinesDelayedCalls 0.2016 -> 0.4896 ms/frame (+143%)",
-    "Performance regression in Menu_Main|Garland (yskha, 2026-11-01 00:01:58): marker LightFauna.Tick.PrismScan 0.1389 -> 0.4153 ms/frame (+199%)",
     "Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker BehaviourUpdate 1.5177 -> 2.5941 ms/frame (+71%)",
     "Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker Inl_UniversalRenderTotal 1.6261 -> 2.4198 ms/frame (+49%)",
     "Performance regression in Menu_Main|Garland (belac, 2026-10-30 16:08:25): marker CoroutinesDelayedCalls 0.0084 -> 0.6112 ms/frame (+7176%)",
@@ -311,8 +296,11 @@
     "Performance regression in MinigameThresherTime|MinigameThresherTime (owner, 2026-10-31 13:21:04): gcKB 27.322933197021484 -> 102.84180450439453 (+276%)",
     "Performance regression in MinigameHijack|MinigameHijack (owner, 2026-10-31 13:16:29): gcKB 18.92774772644043 -> 94.64755249023438 (+400%)",
     "Performance regression in MinigameTapestry|MinigameTapestry (owner, 2026-11-01 17:39:16): gcKB 23.88235092163086 -> 102.5220947265625 (+329%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): p95Ms 15.22900390625 -> 18.501296997070312 (+21%)",
-    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-03 01:14:06): gcKB 20.374347686767578 -> 35.590328216552734 (+75%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): p95Ms 15.22900390625 -> 18.06979751586914 (+19%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): gcKB 20.374347686767578 -> 63.125152587890625 (+210%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): marker LateBehaviourUpdate 0.7454 -> 2.5382 ms/frame (+241%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): marker BlackHole.Tick 0.0099 -> 1.7889 ms/frame (+17970%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-11-04 01:29:19, commit ?..2a85f22b2e): marker BlackHole.Field 0.0025 -> 1.7586 ms/frame (+70244%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): p95Ms 14.685699462890625 -> 18.504301071166992 (+26%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker BehaviourUpdate 1.2319 -> 5.0397 ms/frame (+309%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-26 00:13:52): marker UGUI.Rendering.UpdateBatches 0.3546 -> 1.0722 ms/frame (+202%)"
