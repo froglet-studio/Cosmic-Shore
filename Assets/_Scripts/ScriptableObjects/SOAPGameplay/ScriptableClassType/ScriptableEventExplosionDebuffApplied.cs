@@ -1,4 +1,4 @@
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
 namespace CosmicShore.ScriptableObjects

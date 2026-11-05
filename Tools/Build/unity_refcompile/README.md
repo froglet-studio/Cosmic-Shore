@@ -48,7 +48,7 @@ runtime file, not as missing types in the Editor files. The references are the n
 **non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs. Those engine
 DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
 `UIBehaviour.OnValidate` and `Reset` are reported as "unverified", not as errors. Packages stay
-player-compiled, and editor-only asmdefs (`Obvious.Soap.Editor`, `FMODUnityEditor`, package editor
+player-compiled, and editor-only asmdefs (`FMODUnityEditor`, package editor
 assemblies) and the test framework are not compiled. Use it to catch errors in editor branches. A
 green editor run is weaker evidence than a green player run.
 
@@ -127,7 +127,7 @@ references (one today: `GPUDrivenPackedMaterialData.hasTessellation`). Never app
 ## What a green run proves, and what it does not
 
 Proves: every project `.cs` compiled into the player assemblies (Assembly-CSharp, -firstpass,
-CosmicShore.Data, Obvious.Soap, FMOD, NiceVibrations, ...) type-checks against the real package
+CosmicShore.Data, CosmicShore.Soap.Core, FMOD, NiceVibrations, ...) type-checks against the real package
 sources at their locked versions and the real (6000.0.75) engine API — including source generators.
 
 Does not prove:

@@ -6,7 +6,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using FMODUnity;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
