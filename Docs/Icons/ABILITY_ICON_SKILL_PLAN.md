@@ -397,6 +397,13 @@ rain. Gilded Wake's keys go wider and taper sooner. The same round set a FLEET r
 negative-space X (`motifs.prism_square_x`), motes are little circles. Cards already shipped with the rhombus (Angler,
 Manta, Rhino, Scarab, Sparrow, Squirrel) are a later recut. The omni card stays one white sprite. Next: the Brittle
 Star.
+**The Meerkat (2026-11-03, round 1, Yash):** its first row of its own (it wore the Stoat's HUD and four Stoat
+placeholders). `specs/meerkat.py`, `Docs/Icons/sheets/meerkat.png`: Sentinel Mode (the hull on sentry over the mouth it
+guards, its guard an arc), Exit Portal (the way out face-on, ringed by its six prisms), Soliton (the wormhole, an arch
+pinched to its throat between two open mouths), Faster Ride (the hull shooting out of a mouth, one chamfered bar), and
+the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
+`MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
+guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
 
 | Round | What | Why first |
 |---|---|---|

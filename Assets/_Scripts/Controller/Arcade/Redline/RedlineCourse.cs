@@ -8,14 +8,18 @@ namespace CosmicShore.Gameplay
     /// intensity ladder is derived from them. The solver itself is <see cref="HeadlongCircuit"/>,
     /// shared: what makes this course the Manta's is the CUT, not the generator.
     ///
-    /// <para><b>The mode is a question about two triggers.</b> The Manta boosts on the OVERLAP of
-    /// its triggers (<c>min(LT, RT)</c>) and turns on their DIFFERENCE (<c>RT - LT</c>), so a
-    /// pilot holding one trigger flat and easing the other off is trading boost for yaw on one
-    /// linear scale: boost <c>b</c> buys <c>180 x (1 + 3b)</c> u/s and costs <c>60 x (1 - b)</c>
-    /// deg/s of trigger yaw. Every corner is therefore one question - <i>how much Soar is this
-    /// corner worth?</i> - and <see cref="CornerRadiusAtBoost"/> is the curve it is asked on.
-    /// Speed follows the answer with a 1.5/s exponential lag (<c>VesselTransformer.LERP_AMOUNT</c>),
-    /// so a boost given up costs about two seconds to win back.</para>
+    /// <para><b>The mode teaches ONE ability: Soar, the Manta's Time ability</b> (Yash,
+    /// 2026-11-04: "introduce the new player to the time ability of Manta in intensity 1, and in
+    /// intensity 4 it will get intense; no other elemental abilities needed"). The Manta Soars on
+    /// the OVERLAP of its triggers (<c>min(LT, RT)</c>): both held at <c>b</c> buy
+    /// <c>180 x (1 + 3b)</c> u/s, and easing BOTH together turns it tighter, because its stick's
+    /// turn rate grows slower than its speed. Every corner is therefore one question - <i>how much
+    /// Soar is this corner worth?</i> - and <see cref="SoarRadius"/> is the curve it is asked on.
+    /// No corner is tighter than <see cref="SoarOnlyMinimumRadius"/> (both triggers released, the
+    /// stick alone), so the race never needs the trigger DIFFERENCE (Yastri, the Mass ability,
+    /// <see cref="CornerRadiusAtBoost"/>'s 82 u pivot) or a roll into pitch. Speed follows the
+    /// answer with a 1.5/s exponential lag (<c>VesselTransformer.LERP_AMOUNT</c>), so Soar given up
+    /// costs about two seconds to win back.</para>
     ///
     /// <para><b>Why the Manta and not another hull.</b> Its cruise is the fleet's fastest
     /// (180 u/s, boosted x4 to 720, x1.3 again at Time 10) and its turning circle is bounded:
@@ -115,20 +119,67 @@ namespace CosmicShore.Gameplay
         public static float FastestSpeedForCorner(float radius) =>
             SpeedAtBoost(FastestBoostForCorner(radius));
 
+        // ── The curve the course is CUT against: Soar alone ──────────────────
+        // Both triggers eased TOGETHER to s: Soar = s, no trigger difference, so the only turn is the
+        // stick's, 0.2 v + 30 deg/s. 237 u flat out, 215 u at half, 156 u with both released.
+
+        /// <summary>The circle a Manta holds with both triggers at <paramref name="soar"/> in [0,1] and
+        /// the stick hard over: the Time ability alone, no Yastri.</summary>
+        public static float SoarRadius(float soar)
+        {
+            float v = SpeedAtBoost(soar);
+            float omega = v * MantaRotationThrottleScaler + MantaTurnScaler;
+            return omega <= 1e-4f ? float.PositiveInfinity : v / (omega * Mathf.Deg2Rad);
+        }
+
+        /// <summary>The tightest corner Soar alone can make: both triggers released, the stick hard
+        /// over, at cruise. ~156 u. Every Redline corner is at least this wide.</summary>
+        public static float SoarOnlyMinimumRadius => SoarRadius(0f);
+
+        /// <summary>The most Soar a Manta can hold through a corner of <paramref name="radius"/> with
+        /// both triggers eased together (<see cref="SoarRadius"/> inverted; monotone in Soar). 1 at or
+        /// above <see cref="FullBoostRadius"/>, 0 at or below <see cref="SoarOnlyMinimumRadius"/>.</summary>
+        public static float FastestSoarForCorner(float radius)
+        {
+            if (radius >= SoarRadius(1f)) return 1f;
+            if (radius <= SoarOnlyMinimumRadius) return 0f;
+            float lo = 0f, hi = 1f;
+            for (int i = 0; i < 40; i++)
+            {
+                float mid = 0.5f * (lo + hi);
+                if (SoarRadius(mid) > radius) hi = mid; else lo = mid;
+            }
+            return lo;
+        }
+
+        /// <summary>Speed the Manta settles at through a corner of <paramref name="radius"/> on Soar alone.</summary>
+        public static float FastestSoarSpeedForCorner(float radius) =>
+            SpeedAtBoost(FastestSoarForCorner(radius));
+
         /// <summary>
         /// The shipped circuit per intensity. <b>INTENSITY IS WHAT MIX OF CORNERS A LAP ASKS
-        /// FOR</b> - the same rule Headlong records, cut against a different curve:
+        /// FOR</b> - the same rule Headlong records, cut against the Soar-only curve
+        /// (<see cref="SoarRadius"/>): I1 teaches Soar, I4 is intense, and no level needs another
+        /// ability (2026-11-04, REDLINE.md section 4):
         ///
         /// <code>
-        ///      turn angles (deg), dealt so the big ones sit apart     corners that COST Soar,
+        ///      turn angles (deg), dealt so the big ones sit apart     corners that COST Soar (Soar held),
         ///                                                            median lap over 400 seeds
-        ///   1:  90  72  58  48  38  28  16  10     none - every corner holds full boost   362u
-        ///   2: 118  92  66  40  22  12   6   4     one, at 53% of top speed              153u
-        ///   3: 135 112  78  22   7   3   2   1     two, at 40% / 57%                 121u  160u
-        ///   4: 150 124  86   0   0   0   0   0     two hairpins (31% / 56%) and a KNIFE-EDGE
-        ///                                          third at 98% - holdable flat out only by
-        ///                                          a pilot who is exact             99u  157u  234u
+        ///   1:  90  72  58  48  38  28  16  10     none: bury both triggers               362u
+        ///   2: 118  92  66  40  22  12   6   4     one, eased to half                     217u (53%)
+        ///   3: 135 112  78  22   7   3   2   1     two, a short leg apart          184u (17%)  228u (76%)
+        ///   4: 125 120 115   0   0   0   0   0     three: triggers nearly off, a third, and a
+        ///                                          KNIFE-EDGE held flat only by a pilot who is
+        ///                                          exact                   171u (8%)  199u (30%)  233u (88%)
         /// </code>
+        ///
+        /// <para>Before 2026-11-04 the hardest corners were 153 / 121 / 99 u at I2-I4, cut against the
+        /// Soar-AND-Yastri curve (<see cref="CornerRadiusAtBoost"/>): below the 156 u Soar alone can
+        /// make, so they asked for the one-trigger pivot (Mass) or a roll into pitch. Level 4's three
+        /// even corners (125/120/115) are what keep it at three costing corners once every corner
+        /// must clear 160 u: spreading the turn over four or five corners made all of them WIDER
+        /// (longer legs, the same turn), and today's 150/124/86 broke the floor and relaxed the whole
+        /// lap down to one costing corner (measured on the 400-seed sweep in course_port.py).</para>
         ///
         /// <para>Each row sums to 360 because a closed lap does. The demand is asserted by
         /// <c>RedlineCourseTests</c> over a 400-seed sweep (a floor is a permission, not a
@@ -147,11 +198,14 @@ namespace CosmicShore.Gameplay
         /// the Manta pitches better than it yaws: a swooping climb is the corner this hull is
         /// best at.</para>
         ///
-        /// <para>The safety floor is stated in ABSOLUTE units through
+        /// <para>The floor is stated in ABSOLUTE units through
         /// <see cref="HeadlongCircuitSettings.CornerFloorRadius"/>, never as a fraction of the
-        /// Rhino's flat-out radius, and never below the 82 u a Manta with one trigger released
-        /// can actually fly. A Time-10 Manta (936 u/s) holds 247 u rather than 237 - the curve
-        /// is cut for the RESTING vessel, so an element level buys a real edge.</para>
+        /// Rhino's flat-out radius, and never below <see cref="SoarOnlyMinimumRadius"/> (156 u): every
+        /// corner of every seed can be made by letting Soar go. At I2-I4 it is also the level's
+        /// lesson (205 / 175 / 160 u: no corner tighter than half Soar, a sixth, triggers off). A
+        /// Time-10 Manta (936 u/s) holds 247 u rather than 237 - the curve is cut for the RESTING
+        /// vessel, so a Time crystal (one level, +3% Soar) buys speed and asks for more lift in the
+        /// corners (RedlineTimeCrystals).</para>
         /// </summary>
         public static HeadlongCircuitSettings ForIntensity(int intensity)
         {
@@ -169,19 +223,19 @@ namespace CosmicShore.Gameplay
                     new[] {  90f,  72f,  58f,  48f,  38f,  28f,  16f,  10f },
                     new[] { 118f,  92f,  66f,  40f,  22f,  12f,   6f,   4f },
                     new[] { 135f, 112f,  78f,  22f,   7f,   3f,   2f,   1f },
-                    new[] { 150f, 124f,  86f,   0f,   0f,   0f,   0f,   0f },
+                    new[] { 125f, 120f, 115f,   0f,   0f,   0f,   0f,   0f },
                 }[i - 1],
-                // The SAFETY floor in the Manta's own units (178 / 107 / 100 / 90 u): a corner
-                // the solver overshot is still one the Manta holds at a tenth of its boost, and
-                // never tighter than the 82 u it can fly with one trigger released. Not the
-                // design - CornerProfile is. CornerRadiusFactor is left at 0 on purpose: it
-                // would be read as a fraction of the RHINO's flat-out radius.
+                // The floor in the Manta's own units (178 / 205 / 175 / 160 u): the tightest corner
+                // a level may ever deal, each at or above the 156 u Soar alone makes, so no level
+                // needs Yastri. At I2-I4 it is what sets the hardest corner (the profile asks for
+                // more; the relaxation stops at the floor). CornerRadiusFactor is left at 0 on
+                // purpose: it would be read as a fraction of the RHINO's flat-out radius.
                 CornerRadiusFactor = 0f,
-                CornerFloorRadius = new[] { 0.75f, 0.45f, 0.42f, 0.38f }[i - 1] * full,
+                CornerFloorRadius = new[] { 0.75f * full, 205f, 175f, 160f }[i - 1],
                 RadialSwing = 0.42f,
                 // The reach dial (see the class docs): 3.0 is what turns level 2's asked-for
                 // 118 degrees into a corner that exists, and 4.8 is what drags level 4's third
-                // corner down onto the knife-edge.
+                // corner down onto the knife-edge (233 u with the 125/120/115 profile).
                 AngularSpread = new[] { 1.2f, 3.0f, 2.8f, 4.8f }[i - 1],
                 // More out-of-plane than Headlong at every level (120/170/215/260 there): the
                 // swoop is the Manta's corner.
@@ -201,8 +255,8 @@ namespace CosmicShore.Gameplay
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
                 // Must COVER half the level's hardest turn (a gate faces its corner's bisector,
                 // so the jitter budget is `cap - halfTurn` and clamps to zero past it). The
-                // measured worst half-turn over 400 seeds is 44.2 / 67.4 / 71.7 / 71.4, and each
-                // cap sits a little over its own.
+                // measured worst half-turn over 400 seeds is 44.2 / 52.6 / 58.8 / 66.4 (2026-11-04
+                // ladder), and each cap sits over its own.
                 MaxPresentDegrees = new[] { 50f, 72f, 76f, 80f }[i - 1],
             };
         }

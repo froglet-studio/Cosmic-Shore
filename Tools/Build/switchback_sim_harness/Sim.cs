@@ -109,7 +109,7 @@ static class Program
         {
             var st = w.L.Stations[0];
             int before = w.Planner.Standing(0, w);
-            Vector3 f = (st.Door - st.Key).normalized;
+            Vector3 f = (st.Target - st.Key).normalized;
             Vector3 u = Vector3.Cross(f, Mathf.Abs(f.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
             int removed = w.Blast(st.Key, f, u, 0f, null);
             int after = w.Planner.Standing(0, w);
@@ -146,10 +146,12 @@ sealed class Opts
     public bool NoseLag = true;
     // The AI nose's follow rate per second, one row per intensity (I1..I4), each Easy, Medium, Hard, Legendary: 1.5 = the
     // fleet lag, 0 = no lag. noseFollow=e,m,h,l sets every row (1.5,1.5,1.5,1.5 = the fleet lag, as before 2026-11-02);
-    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity.
+    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity for I1-I3 and, at I4 (the
+    // simulator always lays the gauntlet), SwitchbackController.aiNoseFollowGauntlet (2026-11-03; the old I4 row was
+    // 1.8, 2.2, 3.5, 6, which a mode without the gauntlet still flies).
     public float[][] NoseFollowTable =
     {
-        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.8f, 2.2f, 3.5f, 6f },
+        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.9f, 2.8f, 3.5f, 5f },
     };
     public bool CmdSteer;              // what-if: the AI judges its stick from its COMMANDED heading, not the lagging nose
     public float CmdLead;              // ...and leads the command past the aim by this share of the nose's lag        // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose
@@ -261,6 +263,9 @@ sealed class World : ISwitchbackAIWorld
     public bool[] Standing;
     public bool[] Key;
     public int[] MoverOf;
+    /// <summary>What each layout prism is, for the trace's hit lines: d door, s seal (an I4 eye), t tunnel wall,
+    /// p plug (inside an I4 tunnel), f field, m mover.</summary>
+    public char[] Part;
     public int Intensity;
     readonly Dictionary<long, List<int>> _grid = new();
     const float Cell = 40f;
@@ -296,6 +301,23 @@ sealed class World : ISwitchbackAIWorld
         }
         for (int k = 0; k < n; k++)
             if (w.MoverOf[k] < 0) w.Add(k, w.L.Prisms[k].Position);
+        w.Part = new char[n];
+        int finals = 0;
+        foreach (var st in w.L.Stations) if (st.Final) finals++;
+        int perGate = SwitchbackBlastRun.DoorPrisms(intensity) * (SwitchbackBlastRun.HasDoubleDoor(intensity) ? 2 : 1);
+        int perDoor = SwitchbackBlastRun.DoorPrisms(intensity);
+        int seal = SwitchbackBlastRun.HasGauntlet(intensity) ? SwitchbackBlastRun.SealPrisms : 0;
+        int at = 0;
+        for (; at < Math.Min(n, finals * perGate); at++) w.Part[at] = at % perDoor >= perDoor - seal ? 's' : 'd';
+        foreach (var st in w.L.Stations)
+            for (int j = 0; j < st.WorldPrisms && at < n; j++, at++)
+            {
+                if (j >= st.TunnelPrisms) { w.Part[at] = 'f'; continue; }
+                Vector3 seg = st.Target - st.Key, p = w.L.Prisms[at].Position - st.Key;
+                float along = Vector3.Dot(p, seg.normalized);
+                w.Part[at] = (p - seg.normalized * along).magnitude < SwitchbackBlastRun.TunnelRadius ? 'p' : 't';
+            }
+        for (int k = 0; k < n; k++) if (w.MoverOf[k] >= 0) w.Part[k] = 'm';
         return w;
     }
 
@@ -442,7 +464,7 @@ sealed class Race
         float keyClosest = float.MaxValue; bool keyClosestDrift = false; Phase keyClosestPhase = Phase.None;
         float nextSense = 0f; var avoidAct = SwitchbackAvoidAction.Clear; Vector3 avoidAim = default, blastCrystal = default, blastLook = default;
         bool emergOn = false; float emergHoldUntil = 0f, hotUntil = 0f; Vector3 emergSteer = default; int frame = 0;
-        var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[32];
+        var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[64];
 
         while (t < o.MaxSeconds && idx < total)
         {
@@ -482,6 +504,8 @@ sealed class Race
                     bool keyGone = d.Plan == SwitchbackAIPlan.Blast && phase != Phase.Done && !w.KeyAvailable(d.Station);
                     if (keyGone && Vector3.Distance(pos, d.Key) < 30f) phase = Phase.Done;
                     else if (keyGone || (skill.ReplanSeconds > 0f && t >= nextPlan && phase != Phase.Done && phase != Phase.Strike)) Plan();
+                    // An I4 gauntlet: past this key, the next one is the plan (SwitchbackBlastAI.TryAim).
+                    else if (d.Station >= 0 && w.Planner.StageFor(d.Gate, pos) != d.Station) Plan();
                 }
                 bool gateAim = GateBlastAim(out Vector3 gAim);
                 if (gateAim && phase == Phase.Strike) { aim = gAim; avoidAct = SwitchbackAvoidAction.Clear; }
@@ -632,7 +656,7 @@ sealed class Race
                     w.Key[s] = false; Keys++;
                     Vector3 gape = o.FlyRoll && d.Plan == SwitchbackAIPlan.Blast && d.Station == s ? d.FireUp : up;
                     int removed = o.BlastHarmless ? 0 : w.Blast(w.L.Stations[s].Key, fwd, gape, t, o);
-                    if (log != null) log.Add($"{t,6:F1} key {s} (gate {w.L.Stations[s].Gate}) taken, nose {Ang(fwd, w.L.Stations[s].Door - w.L.Stations[s].Key):F0} deg off the door, blasted {removed}");
+                    if (log != null) log.Add($"{t,6:F1} key {s} (gate {w.L.Stations[s].Gate}) taken, nose {Ang(fwd, w.L.Stations[s].Target - w.L.Stations[s].Key):F0} deg off its aim, blasted {removed}");
                 }
 
             // ---- prisms: the hull sphere against every standing prism's box
@@ -644,6 +668,7 @@ sealed class Race
                     if (w.BoxDistance(k, newPos, t) > o.HullRadius) continue;
                     bool danger = w.L.Prisms[k].Kind == PrismKind.Danger;
                     Hits++; if (danger) DangerHits++;
+                    if (log != null) log.Add($"{t,6:F1} hit {w.Part[k]}{(danger ? " DANGER" : "")} gate {idx} plan={d.Plan} phase={phase} drifting={drifting}");
                     slows.Add(new Vector3(danger ? o.Hit.DangerSlowFactor : o.Hit.SlowFactor, t,
                                           danger ? o.Hit.DangerSlowSeconds : o.Hit.SlowSeconds));
                     meter *= o.Hit.MeterKeep;
@@ -683,7 +708,7 @@ sealed class Race
             plans++;
             nextPlan = t + Mathf.Max(skill.ReplanSeconds, 0.25f);
             if (d.Plan != SwitchbackAIPlan.Blast) phase = Phase.None;
-            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != d.Gate) phase = Phase.None;
+            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != d.Gate || prev.Station != d.Station) phase = Phase.None;
             if (plans == 1) { if (d.Plan == SwitchbackAIPlan.Blast) Blast++; else if (d.Plan == SwitchbackAIPlan.Thread) Thread++; else Direct++; }
             if (log != null && (plans == 1 || prev.Plan != d.Plan))
                 log.Add($"{t,6:F1} gate {idx} plan={d.Plan} why={d.Why} cost thread={d.CostThread:F1} blast={d.CostBlast:F1} standing={d.Standing} cover={d.Coverage:P0}");
@@ -706,7 +731,7 @@ sealed class Race
             if (o.PassedByTravel ? (Vector3.Dot(toKey, travel) < 0f && dist > o.PickupRadius) : Vector3.Dot(-toKey, fire) > 5f) { phase = Phase.Done; return false; }
             float off = dist > 1f ? Ang(toKey, fire) : 0f;
             if (o.Setup && dist > 60f && off > SetupAngle) { phase = Phase.Setup; a = key - fire * Mathf.Min(SetupBack, 0.5f * dist); }
-            else { phase = Phase.Strike; a = o.StrikeAtKey ? key + (dist > 1f ? toKey / dist : fire) * StrikeThrough : key + fire * StrikeThrough; }
+            else { phase = Phase.Strike; a = (o.StrikeAtKey || w.Planner.IsGauntlet(d.Station)) ? key + (dist > 1f ? toKey / dist : fire) * StrikeThrough : key + fire * StrikeThrough; }
             return true;
         }
 
@@ -719,7 +744,7 @@ sealed class Race
                 look = blastLook; return true;
             }
             if (d.Plan != SwitchbackAIPlan.Blast || phase != Phase.Strike) return false;
-            if (Vector3.Distance(pos, d.Key) > LookRange) return false;
+            if (Vector3.Distance(pos, d.Key) > w.Planner.LookRangeFor(d.Station, LookRange)) return false;
             look = d.AimPoint; return true;
         }
 

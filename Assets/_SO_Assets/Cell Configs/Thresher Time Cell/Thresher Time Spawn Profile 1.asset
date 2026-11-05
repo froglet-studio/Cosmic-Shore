@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Thresher Time Spawn Profile 1
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 1
+  FloraSpawnVolumeCeiling: 0
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  SupportedFloras:
+  - {fileID: 11400000, guid: f2f0b51eae4f4c3fa92a5b11cc4b59b7, type: 2}
+  FaunaExcludeLocalDomain: 1
+  InitialFaunaSpawnWaitTime: 5
+  FaunaSpawnVolumeThreshold: 1
+  BaseFaunaSpawnTime: 30
+  FaunaFoodFloor: 10
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 1
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 8ccee818820503f4b60e63216d2610c7, type: 2}
