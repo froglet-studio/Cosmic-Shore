@@ -6071,8 +6071,12 @@ unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards 
   a tap closes; it is drawn at 0.42 on the screen, the same size the PC layout has on a phone, because it is laid out
   1026 tall. The spend window is drawn at 0.75.
 - The three configure windows and the Hangar left the fallback list (`author_menu_phone.py` takes their markers off).
-  Menu_Main's Has Phone Layout is still OFF: every boarded screen now has its layout, and it goes on after the editor
-  check below.
+- **Has Phone Layout is ON for Menu_Main** (Shombith, 2026-11-05: "switch the phone layout on"; `author_menu_phone.py`
+  writes it). A screen without its own layout yet is a window under the PC nav band, which is the rail on a phone, so
+  the fallback draws its PC layout less the band (`PhoneRect.pcCutTop` 84) into the region right of the rail
+  (`phoneInsets` 112 / 8 / 8 / 8; `K.phone_window_block()`), at 434 / 996 = 0.436. Full-canvas overlays (toasts, the
+  freestyle HUD, the loading and transition covers, the FTUE instruction set) keep the whole canvas. The hub window
+  strip (LT / RT and the edge arrows) is moved off the canvas on a phone: the Home hubs and the rail switch windows.
 
 ## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
 

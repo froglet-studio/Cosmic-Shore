@@ -477,6 +477,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -486,6 +488,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1971,6 +1974,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 0, y: 0}
@@ -1980,6 +1985,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -2788,6 +2794,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -2797,6 +2805,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -2994,6 +3003,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 0, y: 0}
@@ -3003,6 +3014,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -4464,6 +4476,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -4473,6 +4487,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -4681,6 +4696,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -4690,6 +4707,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -5260,6 +5278,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 1}
   anchorMax: {x: 0.5, y: 1}
@@ -5269,6 +5289,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -5434,6 +5455,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -5443,6 +5466,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -6606,6 +6630,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -6615,6 +6641,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -6696,6 +6723,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 1, y: 1}
   anchorMax: {x: 1, y: 1}
@@ -6705,6 +6734,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7363,6 +7393,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -7372,6 +7404,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7498,6 +7531,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -7507,6 +7542,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7628,6 +7664,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -7637,6 +7675,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7770,6 +7809,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -7779,6 +7820,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7897,6 +7939,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -7906,6 +7950,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 24.67, y: 19.65}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8099,6 +8144,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -8108,6 +8155,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8289,6 +8337,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0}
   anchorMax: {x: 0.5, y: 0}
@@ -8298,6 +8348,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8528,6 +8579,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -8537,6 +8590,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8664,6 +8718,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -8673,6 +8729,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8809,6 +8866,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -8818,6 +8877,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8954,6 +9014,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -8963,6 +9025,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9094,6 +9157,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -9103,6 +9168,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9281,6 +9347,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -9290,6 +9358,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9468,6 +9537,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 1, y: 0.5}
   anchorMax: {x: 1, y: 0.5}
@@ -9477,6 +9548,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9653,6 +9725,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0}
   anchorMax: {x: 0.5, y: 0}
@@ -9662,6 +9736,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9749,6 +9824,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0}
   anchorMax: {x: 0.5, y: 0}
@@ -9758,6 +9835,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9850,6 +9928,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 1}
   anchorMax: {x: 0.5, y: 1}
@@ -9859,6 +9939,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -9960,6 +10041,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -9969,6 +10052,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -10082,6 +10166,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -10091,6 +10177,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -10190,6 +10277,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 0}
@@ -10199,6 +10288,7 @@ MonoBehaviour:
   fontSize: 10.5
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -10567,6 +10657,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 0, y: 0}
@@ -10576,6 +10668,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -10849,6 +10942,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -10858,6 +10953,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -10944,6 +11040,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0.5, y: 1}
   anchorMax: {x: 0.5, y: 1}
@@ -10953,6 +11051,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}

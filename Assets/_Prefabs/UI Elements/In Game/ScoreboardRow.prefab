@@ -96,6 +96,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -105,6 +107,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 480, y: 52}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -394,6 +397,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -403,6 +408,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -654,6 +660,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -663,6 +671,7 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -725,6 +734,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -734,6 +745,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1097,6 +1109,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -1106,6 +1120,7 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1266,6 +1281,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -1275,6 +1292,7 @@ MonoBehaviour:
   fontSize: 12
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1435,6 +1453,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -1444,6 +1464,7 @@ MonoBehaviour:
   fontSize: 14
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1604,6 +1625,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 1, y: 1}
   anchorMax: {x: 1, y: 1}
@@ -1613,6 +1636,7 @@ MonoBehaviour:
   fontSize: 18
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1701,6 +1725,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 1, y: 1}
   anchorMax: {x: 1, y: 1}
@@ -1710,6 +1736,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1846,6 +1873,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -1855,6 +1884,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 14, y: 14}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -2036,6 +2066,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -2045,6 +2077,7 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 66, y: 28}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}

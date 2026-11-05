@@ -519,7 +519,8 @@ def kit_text(role, color_token="TextLight", driven=False):
                                 f"  colorDrivenExternally: {1 if driven else 0}\n")
 
 
-def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=False, stack=None, grid=None, width_scale=0):
+def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=False, stack=None, grid=None, width_scale=0,
+               pc_cut=0, insets=(0, 0, 0, 0)):
     """A PhoneRect (Assets/_Scripts/UI/PhoneRect.cs): the pose a node takes on the 800 x 450 phone canvas (a rect() dict,
     or None to leave the rect where a layout group puts it), a phone font size for a TMP with no KitText (0 leaves it),
     a phone LayoutElement preferred size (0 leaves that axis) and a phone uniform scale for a block drawn at the PC size
@@ -527,6 +528,8 @@ def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=F
     `hide` hides the node on a phone (it needs a CanvasGroup); `stack` = dict(origin, item, spacing, order) stacks its
     children top-down (the nav band as a rail); `grid` = dict(cell, columns, spacing) is its GridLayoutGroup on a phone;
     `width_scale` draws a scroll view's content at its PC look scaled by that much, re-flowed to the phone's width.
+    A `pc_block` drawn into a region: `pc_cut` PC units off the top (the 84 nav band) and `insets` (left, top, right,
+    bottom phone units: 112 left clears the rail) - phone_window_block() is the menu windows' one.
     Docs/UI_STYLE_GUIDE.md section 8 (D6)."""
     guid = meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
     r = pose or rect()
@@ -536,7 +539,8 @@ def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=F
     order = st.get("order", [])
     order_yaml = ("  stackOrder:\n" + "".join(f"  - {n}\n" for n in order)) if order else "  stackOrder: []\n"
     return lambda ctx, go: mono(go, guid,
-                                f"  drawAtPcScale: {1 if pc_block else 0}\n  pcHeight: 1080\n"
+                                f"  drawAtPcScale: {1 if pc_block else 0}\n  pcHeight: 1080\n  pcCutTop: {f32(pc_cut)}\n"
+                                + ("  phoneInsets: {x: %s, y: %s, z: %s, w: %s}\n" % tuple(f32(v) for v in insets)) +
                                 f"  movesRect: {1 if pose else 0}\n  anchorMin: {v2(r['amin'])}\n  anchorMax: {v2(r['amax'])}\n"
                                 f"  pivot: {v2(r['pivot'])}\n  anchoredPosition: {v2(r['pos'])}\n  sizeDelta: {v2(r['size'])}\n"
                                 f"  fontSize: {f32(font)}\n  layoutSize: {v2(layout)}\n  scale: {f32(scale)}\n  widthScale: {f32(width_scale)}\n"
@@ -545,6 +549,16 @@ def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=F
                                 f"  stackSpacing: {f32(st.get('spacing', 0))}\n" + order_yaml +
                                 f"  gridCellSize: {v2(gr.get('cell', (0, 0)))}\n  gridColumns: {gr.get('columns', 0)}\n"
                                 f"  gridSpacing: {v2(gr.get('spacing', (-1, -1)))}\n")
+
+
+# A menu window with no phone layout yet (Menu_Main, under the 84 nav band on PC): on a phone the band is the 96-wide rail,
+# so the window's PC layout less the band fills the region right of the rail (Docs/MENU_REDESIGN_B.md section 129).
+PHONE_RAIL_INSETS = (112, 8, 8, 8)
+PHONE_NAV_BAND = 84
+
+
+def phone_window_block():
+    return phone_rect(pc_block=True, pc_cut=PHONE_NAV_BAND, insets=PHONE_RAIL_INSETS)
 
 
 def themed(token, alpha=1.0):

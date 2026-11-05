@@ -192,6 +192,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -301,6 +303,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -371,6 +375,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -443,6 +449,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: -0.4090909, y: -0.8181818}
   anchorMax: {x: 1.4090909, y: 1}
@@ -549,6 +557,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 1, y: 1}
@@ -1125,6 +1135,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 1, y: 1}
   anchorMax: {x: 1, y: 1}
@@ -1604,6 +1616,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 0, y: 1}
@@ -2257,6 +2271,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 0, y: 0}
   anchorMax: {x: 1, y: 1}
@@ -9800,6 +9816,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
   anchorMin: {x: 1, y: 0.5}
   anchorMax: {x: 1, y: 0.5}
@@ -65984,6 +66002,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 0
   pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}

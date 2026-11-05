@@ -29,6 +29,12 @@ namespace CosmicShore.UI
         [SerializeField] private bool drawAtPcScale;
         [Tooltip("The PC reference height the block is drawn at.")]
         [SerializeField] private float pcHeight = 1080f;
+        [Tooltip("PC units at the top of the PC layout that are not drawn on a phone (the nav band above a window, 84, " +
+                 "which is the rail on a phone). The rest of the PC height fills the phone region.")]
+        [SerializeField, Min(0f)] private float pcCutTop;
+        [Tooltip("The phone region the block is drawn into, in from the parent's left, top, right and bottom (x, y, z, w) " +
+                 "in phone canvas units: 112 left clears the rail.")]
+        [SerializeField] private Vector4 phoneInsets;
 
         [Header("Pose on a phone (800 x 450 canvas units)")]
         [Tooltip("Move the rect to the pose below on a phone. Off for a child a LayoutGroup places.")]
@@ -151,10 +157,12 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Lay the block out as the PC layout shrunk onto the phone would: in a parent of size P/s (s = P.y / pcHeight)
-        /// with its authored pose, then scaled by s about its pivot. Its pivot then lands at the authored position times s,
-        /// and its unscaled size is what the virtual parent gives it: the authored size plus the stretched span of the
-        /// difference between the virtual parent and the real one.
+        /// Lay the block out as the PC layout shrunk onto the phone would. The phone region is the parent less
+        /// Phone Insets; the PC layout less its top Pc Cut Top rows fills the region's height, so s = region height /
+        /// (pcHeight - pcCutTop). The block is laid out with its authored pose in a virtual parent of size
+        /// (region width / s, pcHeight) whose bottom-left sits at the region's, then scaled by s about its pivot. With no
+        /// insets and no cut this is the PC layout shrunk onto the whole parent: the pivot lands at the authored position
+        /// times s and the stretched span grows by the difference between the virtual parent and the real one.
         /// </summary>
         public void FitPcBlock()
         {
@@ -162,11 +170,19 @@ namespace CosmicShore.UI
             var r = Rect;
             if (r.parent is not RectTransform parent) return;
             var size = parent.rect.size;
-            if (size.y <= 0f || pcHeight <= 0f) return;
-            float s = size.y / pcHeight;
+            if (size.y <= 0f || pcHeight <= pcCutTop) return;
+            float regionW = size.x - phoneInsets.x - phoneInsets.z;
+            float regionH = size.y - phoneInsets.y - phoneInsets.w;
+            if (regionW <= 0f || regionH <= 0f) return;
+            float s = regionH / (pcHeight - pcCutTop);
+            var virt = new Vector2(regionW / s, pcHeight);
+            var origin = new Vector2(phoneInsets.x, phoneInsets.w);
             var span = _aMax - _aMin;
-            var delta = _size + Vector2.Scale(span, size) * (1f / s - 1f);
-            var pos = _pos * s;
+            var refPoint = _aMin + Vector2.Scale(span, _pivot);
+            var sizeV = Vector2.Scale(span, virt) + _size;
+            var pivotV = Vector2.Scale(refPoint, virt) + _pos;
+            var delta = sizeV - Vector2.Scale(span, size);
+            var pos = origin + pivotV * s - Vector2.Scale(refPoint, size);
             if ((r.sizeDelta - delta).sqrMagnitude > 0.0001f) r.sizeDelta = delta;
             if ((r.anchoredPosition - pos).sqrMagnitude > 0.0001f) r.anchoredPosition = pos;
             var scaleV = new Vector3(s * _scale.x, s * _scale.y, _scale.z);
@@ -323,6 +339,12 @@ namespace CosmicShore.UI
         public void SetDrawAtPcScale(bool on, float referenceHeight = 1080f)
         {
             drawAtPcScale = on; pcHeight = referenceHeight;
+        }
+
+        /// <summary>Make this a PC-scale block drawn into a region of its parent from code (tests and editor tooling).</summary>
+        public void SetDrawAtPcScale(bool on, float referenceHeight, float cutTop, Vector4 insets)
+        {
+            drawAtPcScale = on; pcHeight = referenceHeight; pcCutTop = cutTop; phoneInsets = insets;
         }
 
         /// <summary>Set the phone text and layout sizes from code (tests and editor tooling).</summary>

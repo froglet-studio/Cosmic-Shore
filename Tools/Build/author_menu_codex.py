@@ -638,7 +638,7 @@ def screen_body(ctx):
 
 def build_view():
     root = N("root", "CodexView", STRETCH)
-    root.add("phone", 114, K.phone_rect(pc_block=True))   # no phone board yet: drawn as today on a phone (author_menu_phone.py)
+    root.add("phone", 114, K.phone_window_block())   # no phone board yet: the PC window right of the rail on a phone (author_menu_phone.py)
     # The Hangar's backdrop exactly: the near-opaque veil and the sea lines over it, under the top bar.
     veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84))))
     veil.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", H.WINDOW_BACKDROP_ALPHA), raycast=True)) \

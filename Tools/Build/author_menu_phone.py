@@ -67,10 +67,32 @@ SCENE_PHONE = {
 PHONE_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
 
 
-def mark(p, go):
+# Fallback objects that cover the whole canvas on PC (overlays, covers, the freestyle HUD): on a phone they are the PC
+# layout shrunk onto the whole canvas. Every other fallback is a window under the PC nav band, which is the rail on a
+# phone: its layout less the band fills the region right of the rail (K.phone_window_block).
+FULL_CANVAS = {"ToastNotificationContainer", "ToggleGameMenuButton", "Game UI", "InitializingScreen", "SceneTransitionModal",
+               "InGameInstructionSet.prefab"}
+
+
+def mark(p, go, name):
     """Add (or re-add) the fallback PhoneRect last on `go`."""
     p.remove_comp(go, str(p.ctx.fid(f"{go}#phone")))
-    p.add_comp(go, "phone", 114, K.phone_rect(pc_block=True))
+    p.add_comp(go, "phone", 114, K.phone_rect(pc_block=True) if name in FULL_CANVAS else K.phone_window_block())
+
+
+# Menu_Main's canvas: every screen now has a phone layout or the fallback, so it switches (Shombith, 2026-11-05).
+SCALER_GUID = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
+PHONE_FIELDS = "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n"
+
+
+def switch_on(p):
+    found = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!114 ") and f"guid: {SCALER_GUID}, type: 3}}" in d]
+    assert len(found) == 1, f"Menu_Main: expected one AdaptiveCanvasScaler, found {len(found)}"
+    doc = p.doc(found[0])
+    doc = re.sub(r"  hasPhoneLayout: \d\n  phoneReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", doc)
+    assert "  safeZoneMaxAspect: " in doc, "Menu_Main: the AdaptiveCanvasScaler body changed shape"
+    doc = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)", lambda m: m.group(1) + PHONE_FIELDS, doc, count=1)
+    p.replace(found[0], doc)
 
 
 def scene_text(text_):
@@ -82,11 +104,12 @@ def scene_text(text_):
             p.remove_comp(gos[0], str(p.ctx.fid(f"{gos[0]}#phone")))
             p.add_comp(gos[0], "phone", 114, K.phone_rect(**SCENE_PHONE[name]))
         else:
-            mark(p, gos[0])
+            mark(p, gos[0], name)
     for name in SCENE_RETIRED:
         gos = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and f"  m_Name: {name}\n" in d]
         assert len(gos) == 1, f"Menu_Main: expected one {name!r}, found {len(gos)}"
         p.remove_comp(gos[0], str(p.ctx.fid(f"{gos[0]}#phone")))
+    switch_on(p)
     return p.text()
 
 
@@ -98,7 +121,7 @@ def prefab_text(text_, key, retired=False):
     if retired:
         p.remove_comp(go, str(p.ctx.fid(f"{go}#phone")))
     else:
-        mark(p, go)
+        mark(p, go, key.rsplit("/Phone", 1)[0])
     return p.text()
 
 

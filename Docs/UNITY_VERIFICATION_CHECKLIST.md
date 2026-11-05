@@ -21159,7 +21159,7 @@ end-reveal panels and Authentication.unity, plus an `AdaptiveCanvasScaler` (phon
 Not compiled (no .NET SDK, `unity_refcompile` SKIP; no editor). New: `PhoneRect` Draw At PC Scale, stack / grid / hide,
 LayoutElement minimum, Width Scale; `PhoneSheet`; `FriendsDrawerOpener`; `FriendsDrawer` phone sheet; `ArcadeExploreView` flat grid; `AdaptiveCanvasScaler.PhoneLayoutChanged`; tests `PhoneRectTests`,
 `PhoneSheetTests`. Generated: Menu_Main's fallback blocks (`author_menu_phone.py`), the rail and Home's phone poses.
-Menu_Main's Has Phone Layout is still OFF.
+Menu_Main's Has Phone Layout is ON (step 9).
 
 1. **Compile, then run** `PhoneRectTests`, `PhoneSheetTests`, `PhoneScaleTests`.
 2. **PC unchanged**: Menu_Main's Home, nav band and every window look as before.
@@ -21180,3 +21180,7 @@ Menu_Main's Has Phone Layout is still OFF.
    closed. Maelstrom: the pool under the clip, the column on the right.
 8. **Hangar, PC**: unchanged, no DETAILS button. **Phone**: list left, vessel centre, DETAILS opens the dossier sheet
    (every tab works), the dim closes it; UNLOCK opens the spend window at 0.75.
+9. **The switch is ON** (Menu_Main's `AdaptiveCanvasScaler` Has Phone Layout): on an iPhone every menu window without
+   its own layout (Ark, Port, Profile, Codex, Mission, Toy Box, Arena, Settings, Credits, Replays, the leaderboard) sits
+   right of the rail, nothing under it, its top band gone; an iPad and PC are unchanged. Run `PhoneRectTests`
+   (`APcScaleBlockFillsTheRegionRightOfTheRailWithoutTheNavBand`).

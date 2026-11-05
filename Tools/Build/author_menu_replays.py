@@ -329,7 +329,7 @@ def section(col, key, name, caption, list_name):
 
 def build_browser():
     root = N("root", BROWSER, STRETCH)
-    root.add("phone", 114, K.phone_rect(pc_block=True))   # no phone board yet: drawn as today on a phone (author_menu_phone.py)
+    root.add("phone", 114, K.phone_window_block())   # no phone board yet: the PC window right of the rail on a phone (author_menu_phone.py)
     root.add("cg", 225, CR.hidden_group()).add("anim", 95, CR.animator())
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.88, raycast=True)
     content = root.child(N("Content", "Content", STRETCH))

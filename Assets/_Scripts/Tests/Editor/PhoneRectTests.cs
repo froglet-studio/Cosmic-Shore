@@ -142,6 +142,43 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void APcScaleBlockFillsTheRegionRightOfTheRailWithoutTheNavBand()
+        {
+            var parent = new GameObject("Canvas", typeof(RectTransform));
+            try
+            {
+                var pr = (RectTransform)parent.transform;
+                pr.sizeDelta = new Vector2(974f, 450f);
+                _go.transform.SetParent(pr, false);
+                var r = (RectTransform)_go.transform;
+                r.anchorMin = Vector2.zero;
+                r.anchorMax = Vector2.one;
+                r.sizeDelta = Vector2.zero;
+                var p = _go.AddComponent<PhoneRect>();
+                p.SetDrawAtPcScale(true, 1080f, 84f, new Vector4(112f, 8f, 8f, 8f));
+
+                p.Apply(true);
+                float s = 434f / 996f;
+                Assert.AreEqual(s, r.localScale.x, 1e-5f, "the PC layout under the band fills the region's height");
+                Assert.AreEqual(1080f, r.rect.height, 0.01f);
+                Assert.AreEqual(854f / s, r.rect.width, 0.05f, "and the region's width at that scale");
+                // The block's bottom-left corner, in the parent's rect, sits at the region's bottom-left.
+                var corner = r.anchoredPosition + Vector2.Scale(r.pivot, pr.rect.size) - Vector2.Scale(r.pivot, r.rect.size) * s;
+                Assert.AreEqual(112f, corner.x, 0.05f, "it starts right of the rail");
+                Assert.AreEqual(8f, corner.y, 0.05f);
+
+                p.Apply(false);
+                Assert.AreEqual(Vector2.zero, r.sizeDelta);
+                Assert.AreEqual(Vector2.zero, r.anchoredPosition);
+                Assert.AreEqual(Vector3.one, r.localScale);
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void AnEdgeAnchoredPcScaleBlockKeepsItsAnchorsAndScalesItsOffset()
         {
             var parent = new GameObject("Canvas", typeof(RectTransform));

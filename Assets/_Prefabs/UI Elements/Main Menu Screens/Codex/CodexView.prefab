@@ -54,6 +54,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawAtPcScale: 1
   pcHeight: 1080
+  pcCutTop: 84
+  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
