@@ -38,7 +38,7 @@ the vessel body, glass and engine ember, and black and white for Blue (every gre
 **They are the check, not the input.** Every anchor rests inside its own family, clear of the band, with one exception
 the JSON names and explains. The engine ember face (`#300A05`) is within one band of black, so no convex border can
 give it full clearance. It sits 0.0007 OKLab inside the band's edge. The four Lime element shades (Charge, Mass, Space,
-Time, `OriginalColorSetSO.ElementalCrystalColors`) all rest inside Lime, 1.8–3.0 JND clear.
+Time, `PhoticColorSetSO.ElementalCrystalColors`) all rest inside Lime, 1.8–3.0 JND clear.
 
 While shaping, two anchors were dragged by accident: the engine ember rim and Jade UI. Garrett, 2026-10-31: "i didn't
 mean to move the anchors that was not intentional. the work i liked was the boundary definitions for each region and
@@ -111,9 +111,28 @@ Under the old rule it sat in the band (the lab's finding 02).
 5. **Frozen** (lab v6, this): the fit is not unique, because different starting points reach different boundaries
    (84% agreement on a 41³ grid). So the truth stores the boundaries themselves, not the inputs that produced them.
 
+## Colour sets: unlockable palettes with two pigments per domain
+
+[`colour_sets.json`](colour_sets.json) holds the unlockable colour sets (first: **Dart Frog**, paid track, proposed
+2026-11-02; then **Nocturne**, 2026-11-03, **the game's default palette**: luminous rims in each family's hue over
+deep jewel faces of a different hue, every face in one night-dark band so the rim carries the domain). There a domain is two pigments, a bright rim and a dark face of a different hue, and a pigment is one paint
+from shadow to highlight: a cone segment around a ray from black in OKLab. Four rules hold every set (the band, no
+shared pigment under any light, rim/face contrast, each rim still reading as its family in this truth);
+`Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. Shaped in the Colour Sets lab
+(https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
+by them.
+
+`Tools/Build/author_colour_set_assets.py` writes each set as an `SO_ColorSet` asset (`DartFrogColorSetSO.asset`,
+`NocturneColorSetSO.asset` in `Assets/_SO_Assets/Color Palettes/`). Every field takes its hue from its domain's rim or face
+pigment and keeps `PhoticColorSetSO`'s alpha and tier whiteness; rims keep the original's HDR brightness and faces take
+their pigment's own lightness (the face is most of a prism, so it decides how the prism reads); `--check` fails on drift or on a field in another
+domain's pigment.
+
 ## What the truth does not change yet
 
-- **No palette asset changed.** Every anchor is the game's own colour.
+- **The anchors are Photic's.** `PhoticColorSetSO` (named `OriginalColorSetSO` until 2026-11-03) was the default when
+  the truth was shaped, and the gate still reads the anchors from it. The default is now Nocturne, whose rims rest in
+  these families (rule 4 of the colour sets) and whose faces deliberately do not.
 - **The Lime element shades follow the truth** (since 2026-10-31): one lime at four lightnesses, picked by Garrett
   inside the truth's Lime (`COLOR.md` §5d). `kite_mote_colors.py --check` and this gate both hold all four inside Lime;
   Charge, the darkest, sits 0.2 JND inside its border.

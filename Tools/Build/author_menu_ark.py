@@ -192,7 +192,7 @@ PICKS = ("Vessel", "Element", "Pilot", "Artifact")   # a card's four rows
 VESSEL_LIST = K.meta_guid("Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset")   # the Hangar's roster
 PILOT_CATALOG = K.meta_guid("Assets/Resources/Pilots/PilotArtifactCatalog.asset")
 CARD_ART = K.meta_guid("Assets/_SO_Assets/UI/HangarCardArt.asset")                  # the Hangar's hull renders
-COLOR_SET = K.meta_guid("Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset")  # the domains' colours
+COLOR_SET = K.meta_guid("Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset")  # the domains' colours
 DOMAIN_ORDER = (("Jade", 1), ("Ruby", 2), ("Gold", 4))                                 # Domains values
 # The deck (Rev 31): the list down the left, the cards in a fan to its right, the picker under them in Make squad.
 LIST_X, LIST_Y, LIST_W, LIST_H = 40, 176, 360, 864

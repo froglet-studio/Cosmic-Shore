@@ -422,7 +422,7 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    IGNITION blends it fully (`energizedColor` × `visibilityMultiplier` over
    `colorTransitionSeconds`) and detonates `igniteCrackleSites` (5) crackle bursts spread
    hilt→tip (`igniteCrackleIntensity` / `igniteCrackleSeconds`). `energizedColor` is the shared
-   **danger colour** — `SO_ColorSet.Danger` from the live `OriginalColorSetSO`, the same
+   **danger colour** — `SO_ColorSet.Danger` from the live `PhoticColorSetSO`, the same
    domain-independent red a danger prism wears on its rim. An energized blade tears apart
    hardened mass and still friendly-fires, so it speaks the platform's existing "this hurts"
    language instead of inventing a private one, and white→red is legible at a glance where
