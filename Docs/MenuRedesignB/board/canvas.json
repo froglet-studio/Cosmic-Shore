@@ -3847,6 +3847,38 @@
       "h": 900,
       "page": "phone",
       "title": "Rev 52 - notes: the phone rules each board follows, and what each changes in Unity"
+    },
+    "R53SignIn.dc.html": {
+      "x": 0,
+      "y": 5600,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)"
+    },
+    "R53HudLifts.dc.html": {
+      "x": 2128,
+      "y": 5600,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them"
+    },
+    "R53HudTotems.dc.html": {
+      "x": 4256,
+      "y": 5600,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb"
+    },
+    "R53Notes.dc.html": {
+      "x": 0,
+      "y": 6680,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 - notes: what changed from Rev 52 and why"
     }
   },
   "createdOnFiles": {
@@ -3961,6 +3993,7 @@
     "sec-rev50",
     "sec-rev51",
     "sec-rev52",
+    "sec-rev53",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4026,7 +4059,8 @@
     "style-guide",
     "rev50",
     "rev51",
-    "rev52"
+    "rev52",
+    "rev53"
   ],
   "notes": {
     "hud_end": {
@@ -6192,6 +6226,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "phone"
+    },
+    "rev53": {
+      "kind": "title1",
+      "text": "Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)",
+      "x": 0,
+      "y": 5200,
+      "w": 240,
+      "maxW": 6204,
+      "page": "phone"
+    },
+    "sec-rev53": {
+      "kind": "rect",
+      "x": -160,
+      "y": 5040,
+      "w": 6524,
+      "h": 2700,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
     }
   },
   "order": [
@@ -6662,7 +6720,11 @@
     "R52Hangar.dc.html",
     "R52Hud.dc.html",
     "R52Finish.dc.html",
-    "R52Notes.dc.html"
+    "R52Notes.dc.html",
+    "R53SignIn.dc.html",
+    "R53HudLifts.dc.html",
+    "R53HudTotems.dc.html",
+    "R53Notes.dc.html"
   ],
   "pages": [
     {

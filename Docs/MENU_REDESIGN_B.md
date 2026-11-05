@@ -5791,8 +5791,35 @@ once the HUD and the finish are built, Menu_Main once all its screens are. PC, c
 - The four modes on Home look alike: Arcade is no longer Lime (the Home board and the Compare board's phone side
   redrawn).
 - Steering is a floating stick: the left half of the screen is the steer zone, and the stick starts wherever the left
-  thumb lands (the Hud board redrawn; the Notes board records all three).
+  thumb lands (the Hud board redrawn; the Notes board records all three). **Withdrawn the same day (section 125):** phones
+  fly on Garrett's touch scheme.
 
 **Approved (Shombith, 2026-11-05):** "approved". All nine boards are the record the phone layouts are built against.
 
 The repo copy also took the Rev 50 and Rev 51 boards it lacked (drawn on other branches, sections 122-123 there).
+
+## 125. Rev 53 mockups: the phone HUD on Garrett's touch scheme, sign-in as it really is (2026-11-05, awaiting board approval)
+
+**Asked** (Shombith): "What garett has for phone controls that should be the one." Checked before building, two of the
+approved Rev 52 boards did not match the game. The HUD drew a stick and four tap buttons, but phones fly on Garrett's
+touch scheme (`Docs/ABILITY_LOCKUP.md` "On a phone", `Docs/Reports/MOBILE_VESSELS.md` §8, one row per hull in
+`author_touch_profiles.py`). The sign-in drew only Play as guest, but the chooser (Rev 9, `R9Phones`) also offers Apple
+and Google, and as one column it is taller than a phone. The floating-stick decision of section 124 is withdrawn.
+
+**On the canvas:** the Phone tab, section "Rev 53 - Phone fixes". Copies: `Docs/MenuRedesignB/board/R53*`. Rev 52's Hud
+and SignIn stay as the record; these replace them. The other Rev 52 boards stand as approved.
+- **SignIn**: two columns, the welcome left, the chooser right: Continue with Apple, Continue with Google (iPhone order;
+  Android puts Google first), "or", Play as guest (Default, "Saved on this device only") and the hint. The provider
+  buttons are drawn as stand-ins; the build keeps their own art untouched (section 57).
+- **HudLifts** (Squirrel, a thumb-lifts hull): both thumbs fly anywhere on the glass; the fleet row stays lower right and
+  its lift cards show their glyph (lift left, lift right; stand-ins for `touch_glyph_art.py`); the cards are not
+  buttons. Tilt rolls while one thumb flies.
+- **HudTotems** (Sparrow, a totem-buttons hull): Cannons, Afterburner and Turret Stance as 10 mm buttons round the right
+  thumb inside `TouchButtonLayout`'s 36 % x 55 % corner; a card that presses nothing steps down to the display strip.
+- Both HUD boards add only the HUD's own layout at the phone scale: the race facts in one top-centre plate and pause top
+  left.
+- **Notes**: why the round exists, the two touch schemes, and what is and is not touched.
+
+**Differs from the build:** the HUD change is the top plate and pause (`author_ingame_hud.py`); `TouchControlsHud`,
+`TouchButtonLayout` and the touch profiles are not touched. Sign-in gets a two-column phone layout
+(`author_start_flow.py`, `SignInChooser` re-laying its rows for the column).

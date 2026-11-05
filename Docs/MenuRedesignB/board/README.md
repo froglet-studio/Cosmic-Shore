@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793900034-b82c` of **Frogma**: Rev 3 to Rev 52, 468 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793902622-cd90` of **Frogma**: Rev 3 to Rev 53, 472 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -684,6 +684,13 @@ Copied on 2026-11-05 from canvas version `1793900034-b82c` of **Frogma**: Rev 3 
 - [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
 
 ### Tab: Phone  (`phone`)
+
+#### Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)
+
+- [`R53SignIn.dc.html`](R53SignIn.dc.html) - Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)
+- [`R53HudLifts.dc.html`](R53HudLifts.dc.html) - Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them
+- [`R53HudTotems.dc.html`](R53HudTotems.dc.html) - Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb
+- [`R53Notes.dc.html`](R53Notes.dc.html) - Rev 53 - notes: what changed from Rev 52 and why
 
 #### Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish
 
