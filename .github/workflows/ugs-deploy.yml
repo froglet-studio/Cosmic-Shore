@@ -1,54 +1,366 @@
-# Uploads the game's Cloud Code scripts to UGS from bleeding-edge, with a button: GitHub > Actions > "Deploy UGS
-# scripts" > Run workflow (Tools/UGS/README.md, "Deploying the scripts"). Runs Tools/UGS/deploy.sh, which tests every
-# script, checks the vessel prices, then uploads economy, weekly-score, match-report, trust and entitlements. It never
-# applies the access policies.
+# Deploys the game's Cloud Code scripts to UGS: development first, production only behind an approval, a diff before
+# every deploy, and a rollback that is just "deploy an older ref". GitHub > Actions > "Deploy UGS scripts" > Run
+# workflow, from the bleeding-edge branch (Tools/UGS/README.md, "Deploying the scripts" and "Rolling back").
 #
-# "development" and "production" are the UGS environments on Unity's servers, not git branches. Deploy to development,
-# test with a build there, then run it again with production.
+# "development" and "production" are the UGS environments on Unity's servers, not git branches.
 #
-# Needs two repository secrets (Settings > Secrets and variables > Actions), from a UGS service account with the project
-# roles Unity Environments Admin (the CLI looks the environment up; without it: 403 on GetEnvironments), Cloud Code
-# Script Publisher and Cloud Code Editor: UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY. Owner: Shombith (UGS and the backend).
+# Jobs:
+#   plan               no secrets. Checks out `ref`, runs the gate (Tools/UGS/deploy.sh check: every script's tests and
+#                      the vessel price check), lists what would be uploaded with hashes (Tools/UGS/ugs_manifest.py),
+#                      and diffs it against the last successful deploy to each environment recorded on the
+#                      launch-status branch. The diff is the run's summary page, which the production reviewer reads.
+#                      Publishes nothing. Also the only job on pull requests that touch this file or Tools/UGS.
+#   deploy-development GitHub Environment `ugs-development`: prints `ugs deploy --dry-run` against development, then
+#                      deploys the SAME commit the plan read.
+#   deploy-production  GitHub Environment `ugs-production` (required reviewers). Runs only when target is production
+#                      and deploy-development succeeded in this same run, for this same commit. Never on its own.
+#   record-*           contents: write, no UGS secret: publishes ugs-development / ugs-production records
+#                      (Tools/Launch/launch_status.py) for every deploy job that started, success or failure.
+#
+# Inputs: target (development | production), ref (a branch, tag or commit already on bleeding-edge; an older one is a
+# rollback), dry_run (plan only, no secrets touched).
+#
+# Secrets (environment secrets, not repository secrets; Tools/UGS/README.md "Setting up the environments"):
+# UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY, a UGS service account with the project roles Unity
+# Environments Admin, Cloud Code Script Publisher and Cloud Code Editor. Owner: Shombith (UGS and the backend).
+# The CLI reads the key from the environment and prints only an error code, title and request id on a failed sign-in
+# (checked against 2.0.0 with a fake key); never add `set -x` or echo its environment here.
 name: Deploy UGS scripts
 
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: UGS environment to upload to
+      target:
+        description: UGS environment to end at (production always deploys development first, in the same run)
         type: choice
         options: [development, production]
         default: development
+      ref:
+        description: What to deploy - a branch, tag or commit already on bleeding-edge. An older one is a rollback.
+        type: string
+        default: bleeding-edge
+      dry_run:
+        description: Plan only - the gate and the diff, no secrets, nothing uploaded
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - ".github/workflows/ugs-deploy.yml"
+      - "Tools/UGS/**"
+      - "Tools/Build/author_economy_catalog.py"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ugs-deploy
-  cancel-in-progress: false
+  # One deploy at a time, never cancelled half-way; pull-request plans cancel their own older runs.
+  group: ${{ github.event_name == 'pull_request' && format('ugs-plan-{0}', github.ref) || 'ugs-deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UGS_CLI_TELEMETRY_DISABLED: "1"
 
 jobs:
-  deploy:
+  plan:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      target: ${{ steps.decide.outputs.target }}
+      deploy: ${{ steps.decide.outputs.deploy }}
+      digest: ${{ steps.dev.outputs.dev_digest }}
+      dev_summary: ${{ steps.dev.outputs.dev_summary }}
+      dev_details: ${{ steps.dev.outputs.dev_details }}
+      dev_rollback_to: ${{ steps.dev.outputs.dev_rollback_to }}
+      prod_summary: ${{ steps.prod.outputs.prod_summary }}
+      prod_details: ${{ steps.prod.outputs.prod_details }}
+      prod_rollback_to: ${{ steps.prod.outputs.prod_rollback_to }}
     steps:
-      - name: Only from bleeding-edge
-        if: github.ref != 'refs/heads/bleeding-edge'
+      - name: Decide what this run does
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ inputs.target }}
+          REF_INPUT: ${{ inputs.ref }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          echo "::error::Run this from bleeding-edge (the branch picker on the Run workflow button), not ${GITHUB_REF#refs/heads/}."
-          exit 1
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+          set -euo pipefail
+          if [ "$EVENT" = pull_request ]; then
+            { echo "target=development"; echo "deploy=false"; } >> "$GITHUB_OUTPUT"
+            echo "Pull request: plan only, no secrets." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "$GITHUB_REF" != refs/heads/bleeding-edge ]; then
+            echo "::error::Run this from bleeding-edge (the branch picker on the Run workflow button), not ${GITHUB_REF#refs/heads/}. Pick what to deploy with the ref input."
+            exit 1
+          fi
+          case "$TARGET" in development|production) ;; *) echo "::error::target must be development or production"; exit 1;; esac
+          if ! printf '%s' "$REF_INPUT" | grep -Eq '^[A-Za-z0-9._/-]{1,60}$'; then
+            echo "::error::ref must be a branch, tag or commit name (letters, digits, . _ / -)."
+            exit 1
+          fi
+          deploy=true; [ "$DRY_RUN" = true ] && deploy=false
+          { echo "target=$TARGET"; echo "deploy=$deploy"; } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Resolve the commit, and refuse one that is not on bleeding-edge
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_INPUT: ${{ inputs.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = workflow_dispatch ]; then
+            # Only reviewed code reaches UGS: the commit must be bleeding-edge itself or one of its ancestors.
+            status=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${sha}...bleeding-edge" --jq .status)
+            case "$status" in
+              ahead|identical) echo "ref $REF_INPUT is $sha, on bleeding-edge ($status)." ;;
+              *) echo "::error::ref $REF_INPUT ($sha) is not on bleeding-edge (compare: $status). Merge it first; only bleeding-edge commits are deployed."; exit 1 ;;
+            esac
+          fi
+          if [ ! -f Tools/UGS/ugs_manifest.py ]; then
+            echo "::error::$sha predates this deploy pipeline (no Tools/UGS/ugs_manifest.py). Deploy it by hand from a terminal (Tools/UGS/README.md, Rolling back)."
+            exit 1
+          fi
+
+      - name: Every action in this workflow is pinned to a commit
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          bad=$(grep -nE '^\s*-?\s*uses:\s*[^ ./][^@]*@' .github/workflows/ugs-deploy.yml | grep -vE '@[0-9a-f]{40}(\s|$)' || true)
+          if [ -n "$bad" ]; then echo "::error::Unpinned actions:"; echo "$bad"; exit 1; fi
+          echo "All actions pinned."
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
-      - name: Install the UGS CLI
-        run: npm install -g ugs
-      - name: Test and deploy
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Gate - every script's tests and the price check
+        run: bash Tools/UGS/deploy.sh check
+
+      - name: The manifest tool proves itself
+        run: python3 Tools/UGS/ugs_manifest.py self-test
+
+      - name: The pinned UGS CLI downloads, matches its hash and has --dry-run
+        run: |
+          set -euo pipefail
+          bash Tools/UGS/install_cli.sh "$RUNNER_TEMP/ugs-cli"
+          "$RUNNER_TEMP/ugs-cli/ugs" deploy --help | grep -q -- '--dry-run'
+
+      - name: Read the last deploys from the launch-status branch
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/history"
+          url="https://github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code "$url" refs/heads/launch-status >/dev/null; then
+            git fetch -q --depth=1 "$url" launch-status
+            for env in development production; do
+              git show "FETCH_HEAD:history/ugs-$env.jsonl" > "$RUNNER_TEMP/history/ugs-$env.jsonl" 2>/dev/null \
+                || : > "$RUNNER_TEMP/history/ugs-$env.jsonl"
+            done
+          else
+            rc=$?
+            if [ "$rc" -ne 2 ]; then echo "::error::Could not read the launch-status branch (git ls-remote exit $rc)."; exit 1; fi
+            echo "No launch-status branch yet: no deploy has been recorded."
+            : > "$RUNNER_TEMP/history/ugs-development.jsonl"; : > "$RUNNER_TEMP/history/ugs-production.jsonl"
+          fi
+
+      - name: Diff against the last deploy to development
+        id: dev
+        env:
+          REF_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.head_ref }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: >
+          python3 Tools/UGS/ugs_manifest.py plan --env development
+          --history "$RUNNER_TEMP/history/ugs-development.jsonl" --ref "$REF_INPUT" --sha "$SHA"
+          --summary-md "$GITHUB_STEP_SUMMARY" --github-output "$GITHUB_OUTPUT" --output-prefix dev_
+
+      - name: Diff against the last deploy to production
+        id: prod
+        env:
+          REF_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.head_ref }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: >
+          python3 Tools/UGS/ugs_manifest.py plan --env production
+          --history "$RUNNER_TEMP/history/ugs-production.jsonl" --ref "$REF_INPUT" --sha "$SHA"
+          --summary-md "$GITHUB_STEP_SUMMARY" --github-output "$GITHUB_OUTPUT" --output-prefix prod_
+
+      - name: The records this run would publish pass the launch-status contract (nothing is pushed)
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+          DEV_SUMMARY: ${{ steps.dev.outputs.dev_summary }}
+          DEV_DETAILS: ${{ steps.dev.outputs.dev_details }}
+          DEV_ROLLBACK: ${{ steps.dev.outputs.dev_rollback_to }}
+          PROD_SUMMARY: ${{ steps.prod.outputs.prod_summary }}
+          PROD_DETAILS: ${{ steps.prod.outputs.prod_details }}
+          PROD_ROLLBACK: ${{ steps.prod.outputs.prod_rollback_to }}
+        run: |
+          set -euo pipefail
+          check() {
+            local id="$1" channel="$2" summary="$3" details="$4" rollback="$5"
+            local args=(--id "$id" --platform liveops --kind deploy --channel "$channel" --result success
+                        --commit "$SHA" --summary "$summary" --dry-run)
+            [ -n "$rollback" ] && args+=(--rollback-to "$rollback")
+            for d in $details; do args+=(--detail "$d"); done
+            python3 Tools/Launch/launch_status.py publish "${args[@]}" > /dev/null
+            echo "$id: the record is valid."
+          }
+          check ugs-development development "$DEV_SUMMARY" "$DEV_DETAILS" "$DEV_ROLLBACK"
+          check ugs-production production "$PROD_SUMMARY" "$PROD_DETAILS" "$PROD_ROLLBACK"
+
+  deploy-development:
+    needs: plan
+    if: needs.plan.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ugs-development
+    outputs:
+      started: ${{ steps.start.outputs.started }}
+    steps:
+      - id: start
+        run: echo "started=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: The files are the ones the plan showed
+        env:
+          DIGEST: ${{ needs.plan.outputs.digest }}
+        run: python3 Tools/UGS/ugs_manifest.py plan --env development --expect-digest "$DIGEST" > /dev/null
+      - name: Install the pinned UGS CLI
+        run: |
+          set -euo pipefail
+          bash Tools/UGS/install_cli.sh "$RUNNER_TEMP/ugs-cli"
+          echo "$RUNNER_TEMP/ugs-cli" >> "$GITHUB_PATH"
+      - name: Dry run, then deploy to development
         env:
           UGS_CLI_SERVICE_KEY_ID: ${{ secrets.UGS_CLI_SERVICE_KEY_ID }}
           UGS_CLI_SERVICE_SECRET_KEY: ${{ secrets.UGS_CLI_SERVICE_SECRET_KEY }}
         run: |
+          set -euo pipefail
           if [ -z "$UGS_CLI_SERVICE_KEY_ID" ] || [ -z "$UGS_CLI_SERVICE_SECRET_KEY" ]; then
-            echo "::error::Add the UGS_CLI_SERVICE_KEY_ID and UGS_CLI_SERVICE_SECRET_KEY repository secrets first (Tools/UGS/README.md)."
+            echo "::error::The ugs-development environment has no UGS_CLI_SERVICE_KEY_ID / UGS_CLI_SERVICE_SECRET_KEY secrets (Tools/UGS/README.md, Setting up the environments)."
             exit 1
           fi
-          bash Tools/UGS/deploy.sh "${{ inputs.environment }}"
+          bash Tools/UGS/deploy.sh development --dry-run
+          bash Tools/UGS/deploy.sh development
+
+  record-development:
+    needs: [plan, deploy-development]
+    if: always() && needs.deploy-development.outputs.started == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Not sparse: launch_status.py publishes from a git worktree, which inherits sparse-checkout patterns and
+          # would then miss the other components on the launch-status branch.
+          fetch-depth: 1
+      - name: Publish launch status (ugs-development)
+        env:
+          RESULT: ${{ needs.deploy-development.result }}
+          SHA: ${{ needs.plan.outputs.sha }}
+          SUMMARY: ${{ needs.plan.outputs.dev_summary }}
+          DETAILS: ${{ needs.plan.outputs.dev_details }}
+          ROLLBACK: ${{ needs.plan.outputs.dev_rollback_to }}
+        run: |
+          set -euo pipefail
+          case "$RESULT" in success) ;; cancelled) SUMMARY="Cancelled: $SUMMARY" ;; *) RESULT=failure; SUMMARY="FAILED: $SUMMARY" ;; esac
+          args=(--id ugs-development --platform liveops --kind deploy --channel development --result "$RESULT"
+                --commit "$SHA" --summary "${SUMMARY:0:280}")
+          [ -n "$ROLLBACK" ] && args+=(--rollback-to "$ROLLBACK")
+          for d in $DETAILS; do args+=(--detail "$d"); done
+          python3 Tools/Launch/launch_status.py publish "${args[@]}"
+
+  deploy-production:
+    needs: [plan, deploy-development]
+    if: needs.plan.outputs.target == 'production' && needs.plan.outputs.deploy == 'true' && needs.deploy-development.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ugs-production
+    outputs:
+      started: ${{ steps.start.outputs.started }}
+    steps:
+      - id: start
+        run: echo "started=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: The files are the ones the plan showed (and development just took)
+        env:
+          DIGEST: ${{ needs.plan.outputs.digest }}
+        run: python3 Tools/UGS/ugs_manifest.py plan --env production --expect-digest "$DIGEST" > /dev/null
+      - name: Install the pinned UGS CLI
+        run: |
+          set -euo pipefail
+          bash Tools/UGS/install_cli.sh "$RUNNER_TEMP/ugs-cli"
+          echo "$RUNNER_TEMP/ugs-cli" >> "$GITHUB_PATH"
+      - name: Dry run, then deploy to production
+        env:
+          UGS_CLI_SERVICE_KEY_ID: ${{ secrets.UGS_CLI_SERVICE_KEY_ID }}
+          UGS_CLI_SERVICE_SECRET_KEY: ${{ secrets.UGS_CLI_SERVICE_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$UGS_CLI_SERVICE_KEY_ID" ] || [ -z "$UGS_CLI_SERVICE_SECRET_KEY" ]; then
+            echo "::error::The ugs-production environment has no UGS_CLI_SERVICE_KEY_ID / UGS_CLI_SERVICE_SECRET_KEY secrets (Tools/UGS/README.md, Setting up the environments)."
+            exit 1
+          fi
+          bash Tools/UGS/deploy.sh production --dry-run
+          bash Tools/UGS/deploy.sh production
+
+  record-production:
+    needs: [plan, deploy-production]
+    if: always() && needs.deploy-production.outputs.started == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Not sparse: launch_status.py publishes from a git worktree, which inherits sparse-checkout patterns and
+          # would then miss the other components on the launch-status branch.
+          fetch-depth: 1
+      - name: Publish launch status (ugs-production)
+        env:
+          RESULT: ${{ needs.deploy-production.result }}
+          SHA: ${{ needs.plan.outputs.sha }}
+          SUMMARY: ${{ needs.plan.outputs.prod_summary }}
+          DETAILS: ${{ needs.plan.outputs.prod_details }}
+          ROLLBACK: ${{ needs.plan.outputs.prod_rollback_to }}
+        run: |
+          set -euo pipefail
+          case "$RESULT" in success) ;; cancelled) SUMMARY="Cancelled: $SUMMARY" ;; *) RESULT=failure; SUMMARY="FAILED: $SUMMARY" ;; esac
+          args=(--id ugs-production --platform liveops --kind deploy --channel production --result "$RESULT"
+                --commit "$SHA" --summary "${SUMMARY:0:280}")
+          [ -n "$ROLLBACK" ] && args+=(--rollback-to "$ROLLBACK")
+          for d in $DETAILS; do args+=(--detail "$d"); done
+          python3 Tools/Launch/launch_status.py publish "${args[@]}"
