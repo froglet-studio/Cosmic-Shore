@@ -1,3 +1,9 @@
+using System;
+using System.IO;
+using System.Linq;
+using CosmicShore.Content;
+using CosmicShore.Content.Serialization;
+using CosmicShore.Content.Yaml;
 using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Gameplay;
@@ -7,30 +13,33 @@ namespace CosmicShore.Client
 {
     /// <summary>
     /// The race's authored theme data (rung 5) — client-side factory, not a port: it
-    /// transcribes the Unity project's wired theme assets into the ported SO types so the
+    /// reads the Unity project's wired theme assets into the ported SO types so the
     /// REAL ThemeManager pipeline (the single writer of
     /// <see cref="ThemeManagerDataContainerSO.TeamMaterialSets"/> and of
     /// <c>GameFeedAPI.ColorSet</c>) runs on the game's actual palette.
     ///
     /// Sources (the assets ThemeManagerDataContainer.asset references — see
-    /// <see cref="ColorSetAssetPath"/> / <see cref="MaterialSetAssetPath"/>):
-    ///   • ColorSet  = OriginalColorSetSO.asset (guid 8d1c1bdcb636a424d9c54fbd1afc952f)
+    /// <see cref="ContainerAssetPath"/> / <see cref="MaterialSetAssetPath"/>):
+    ///   • ColorSet  = whichever SO_ColorSet the container's <c>ColorSet</c> slot names, resolved by
+    ///     guid through the .meta files (<see cref="ResolveColorSetAssetPath"/>): NocturneColorSetSO
+    ///     since 2026-11-03 (Docs/PALETTE.md §1), so a palette switch in Unity reaches the port
+    ///     with no edit here. Until then this file carried a hand transcription of the original
+    ///     palette (now PhoticColorSetSO), which went stale the day the default moved.
     ///   • Materials = OriginalMaterialSet.asset (guid 2cc7d7c117bfd194eb0377c17b230c14)
-    /// Every color below is the asset's exact serialized value (HDR intensities &gt; 1
-    /// preserved — the renderer tone-maps). The base materials are the engine's data-only
-    /// property stores named after the .mat files the original set references; their
-    /// domain-facing color properties are written by ThemeManager.GenerateDomainMaterialSet,
-    /// which is the only part of them the port reads.
+    /// Every color is the asset's exact serialized value (HDR intensities &gt; 1 preserved —
+    /// the renderer tone-maps). The base materials are the engine's data-only property stores
+    /// named after the .mat files the original set references; their domain-facing color
+    /// properties are written by ThemeManager.GenerateDomainMaterialSet, which is the only
+    /// part of them the port reads.
     /// </summary>
     public static class SkimRaceTheme
     {
-        public const string ColorSetAssetPath = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset";
         public const string MaterialSetAssetPath = "Assets/_SO_Assets/MaterialSets/OriginalMaterialSet.asset";
         public const string ContainerAssetPath = "Assets/_SO_Assets/ThemeManagerDataContainer.asset";
 
         /// <summary>
-        /// The wired container, exactly as ThemeManagerDataContainer.asset authors it:
-        /// the OriginalColorSetSO palette + the OriginalMaterialSet base materials.
+        /// The wired container, as ThemeManagerDataContainer.asset authors it: the palette its
+        /// ColorSet slot names + the OriginalMaterialSet base materials.
         /// Spawn a <see cref="ThemeManager"/> with this container so its Awake generates
         /// the four per-domain material sets (the original Bootstrap-scene flow).
         /// </summary>
@@ -43,115 +52,71 @@ namespace CosmicShore.Client
             return container;
         }
 
-        /// <summary>Verbatim transcription of OriginalColorSetSO.asset (see <see cref="ColorSetAssetPath"/>).</summary>
-        public static SO_ColorSet CreateColorSet()
+        /// <summary>
+        /// The live palette: the SO_ColorSet that ThemeManagerDataContainer.asset's <c>ColorSet</c>
+        /// slot names, read field for field from its YAML. <paramref name="projectRoot"/> defaults
+        /// to the Unity project this binary sits in (<see cref="AssetDatabase.FindProjectRoot"/>).
+        /// Throws when the project, the container or the named palette cannot be found: a silent
+        /// fallback is how the port kept painting the retired palette.
+        /// </summary>
+        public static SO_ColorSet CreateColorSet(string projectRoot = null)
         {
+            projectRoot ??= AssetDatabase.FindProjectRoot()
+                ?? throw new DirectoryNotFoundException("No Unity project (Assets/ + ProjectSettings/) above this binary; set COSMIC_SHORE_PROJECT.");
+            string path = ResolveColorSetAssetPath(projectRoot, out string guid);
+
+            var file = new AssetFile(path, guid, UnityYaml.ParseDocuments(File.ReadAllText(path)));
+            var body = file.Documents.FirstOrDefault(d => d.Body?.Has("JadeColors") == true)?.Body
+                ?? throw new InvalidDataException($"{path} (guid {guid}) is not an SO_ColorSet: it has no JadeColors.");
+
             var colorSet = ScriptableObject.CreateInstance<SO_ColorSet>();
-            colorSet.name = "OriginalColorSetSO";
-
-            colorSet.JadeColors = new DomainColorSet
-            {
-                ShipColor1 = new Color(0f, 0.04901961f, 0.09411765f, 1f),
-                ShipColor2 = new Color(0f, 0.3882353f, 0.7490196f, 1f),
-                OutsideBlockColor = new Color(0f, 0.16f, 0.34f, 1f),
-                ShieldedOutsideBlockColor = new Color(0.086804256f, 0.23667915f, 0.48427665f, 1f),
-                SuperShieldedOutsideBlockColor = new Color(0.03529412f, 0.20392157f, 0.36862746f, 1f),
-                InsideBlockColor = new Color(0f, 0.5884546f, 1.1353014f, 1f),
-                ShieldedInsideBlockColor = new Color(0.40942162f, 0.64190876f, 1.2167859f, 1f),
-                SuperShieldedInsideBlockColor = new Color(1.012825f, 1.1209937f, 1.4980391f, 1f),
-                AOETextureColor = new Color(0.36039874f, 1.860437f, 1.0082682f, 0f),
-                AOEFresnelColor = new Color(0f, 0.121500015f, 0.135f, 0f),
-                AOEConicColor = new Color(0.03529412f, 0.30980393f, 0.29803923f, 1f),
-                AOEConicEdgeColor = new Color(0.019607844f, 0.56078434f, 0.7921569f, 0f),
-                SpikeLightColor = new Color(0.08627451f, 0.69803923f, 0.7254902f, 0f),
-                SpikeDarkColor = new Color(0.24313726f, 0.5019608f, 0.78431374f, 1f),
-                SkimmerColor = new Color(0.05490196f, 0.7529412f, 0.7137255f, 1f),
-                DullCrystalColor = new Color(0f, 0f, 0f, 0.9411765f),
-                BrightCrystalColor = new Color(0.05490196f, 0.50980395f, 0.7490196f, 0.9411765f),
-                TrailHighlightColor = new Color(0.05490196f, 0.7529412f, 0.7137255f, 1f),
-                TrailCoreColor = new Color(0f, 0.3882353f, 0.7490196f, 1f),
-            };
-
-            colorSet.RubyColors = new DomainColorSet
-            {
-                ShipColor1 = new Color(0.03529412f, 0f, 0.09411765f, 1f),
-                ShipColor2 = new Color(0.27450982f, 0f, 0.7490196f, 1f),
-                OutsideBlockColor = new Color(0.11906711f, 0.006783697f, 0.30817598f, 1f),
-                ShieldedOutsideBlockColor = new Color(0.34509805f, 0f, 2.1960785f, 1f),
-                SuperShieldedOutsideBlockColor = new Color(0.21176471f, 0.12156863f, 0.70980394f, 1f),
-                InsideBlockColor = new Color(0.5490196f, 0f, 1.4980392f, 1f),
-                ShieldedInsideBlockColor = new Color(0.20340309f, 0.03169036f, 1.2596958f, 1f),
-                SuperShieldedInsideBlockColor = new Color(0.83832616f, 0.73017627f, 1.4980392f, 1f),
-                AOETextureColor = new Color(4f, 0f, 3.958115f, 0f),
-                AOEFresnelColor = new Color(0.060094018f, 0f, 0.16078432f, 0f),
-                AOEConicColor = new Color(0.16078432f, 0.023529412f, 0.29411766f, 1f),
-                AOEConicEdgeColor = new Color(0.28627452f, 0.09803922f, 0.65882355f, 0f),
-                SpikeLightColor = new Color(0.78431374f, 0f, 0.7647059f, 0f),
-                SpikeDarkColor = new Color(0.4117647f, 0.050980393f, 0.9529412f, 1f),
-                SkimmerColor = new Color(0.21953903f, 0f, 0.5471698f, 0f),
-                DullCrystalColor = new Color(0f, 0f, 0f, 0.9411765f),
-                BrightCrystalColor = new Color(0.6392157f, 0.05490196f, 0.7490196f, 0.9411765f),
-                TrailHighlightColor = new Color(0.7843137f, 0f, 0.7647059f, 1f),
-                TrailCoreColor = new Color(0.27450982f, 0f, 0.7490196f, 1f),
-            };
-
-            colorSet.GoldColors = new DomainColorSet
-            {
-                ShipColor1 = new Color(1.2203892f, 0.6122575f, 0.03070152f, 1f),
-                ShipColor2 = new Color(0.47058824f, 0.23529412f, 0.043137256f, 1f),
-                OutsideBlockColor = new Color(0.23899364f, 0.124818474f, 0f, 1f),
-                ShieldedOutsideBlockColor = new Color(1.0440251f, 0.5677132f, 0.12804069f, 1f),
-                SuperShieldedOutsideBlockColor = new Color(0.59607846f, 0.28627452f, 0.003921569f, 1f),
-                InsideBlockColor = new Color(1.4980392f, 0.66787237f, 0.08886676f, 1f),
-                ShieldedInsideBlockColor = new Color(1.2596956f, 0.8630464f, 0.24956217f, 1f),
-                SuperShieldedInsideBlockColor = new Color(1.4980395f, 1.1186504f, 0.5323221f, 1f),
-                AOETextureColor = new Color(2.0590868f, 1.6091012f, 0.44200292f, 0f),
-                AOEFresnelColor = new Color(0.16078432f, 0.12418869f, 0f, 0f),
-                AOEConicColor = new Color(0.37254903f, 0.40392157f, 0.047058824f, 1f),
-                AOEConicEdgeColor = new Color(0.6431373f, 0.32156864f, 0.03529412f, 0f),
-                SpikeLightColor = new Color(0.85882354f, 0.6313726f, 0f, 0f),
-                SpikeDarkColor = new Color(0.4627451f, 0.3529412f, 0f, 1f),
-                SkimmerColor = new Color(0.7490196f, 0.42745098f, 0.05490196f, 0f),
-                DullCrystalColor = new Color(0f, 0f, 0f, 0.9411765f),
-                BrightCrystalColor = new Color(0.7490196f, 0.5238843f, 0.054901935f, 0.9411765f),
-                TrailHighlightColor = new Color(1f, 0.65654284f, 0f, 1f),
-                TrailCoreColor = new Color(1f, 0f, 0f, 1f),
-            };
-
-            colorSet.BlueColors = new DomainColorSet
-            {
-                ShipColor1 = new Color(0f, 0f, 0.48235294f, 1f),
-                ShipColor2 = new Color(0f, 0f, 0.5019608f, 1f),
-                OutsideBlockColor = new Color(0.023529412f, 0.023529412f, 0.34901962f, 1f),
-                ShieldedOutsideBlockColor = new Color(0f, 0f, 0.54901963f, 1f),
-                SuperShieldedOutsideBlockColor = new Color(0f, 0f, 0.54901963f, 1f),
-                InsideBlockColor = new Color(0.46681717f, 0.53749484f, 1.2167859f, 0.9411765f),
-                ShieldedInsideBlockColor = new Color(1.1131275f, 1.1268682f, 1.2596959f, 0.9411765f),
-                SuperShieldedInsideBlockColor = new Color(1.3237392f, 1.3400798f, 1.4980394f, 0.9411765f),
-                AOETextureColor = new Color(0.4790567f, 0.44200292f, 2.0590868f, 0f),
-                AOEFresnelColor = new Color(0.0026707277f, 0f, 0.16078432f, 0f),
-                AOEConicColor = new Color(0f, 0f, 0f, 0f),
-                AOEConicEdgeColor = new Color(0f, 0f, 0f, 0f),
-                SpikeLightColor = new Color(0.8f, 0.8117647f, 1f, 0f),
-                SpikeDarkColor = new Color(0.023529412f, 0.03137255f, 0.32156864f, 1f),
-                SkimmerColor = new Color(0.019607844f, 0.007843138f, 0.91764706f, 0f),
-                DullCrystalColor = new Color(0f, 0.02745098f, 0.5058824f, 0.9411765f),
-                BrightCrystalColor = new Color(0.07058824f, 0.05490196f, 0.7490196f, 0.9411765f),
-                TrailHighlightColor = new Color(0.4f, 0.5f, 1f, 1f),
-                TrailCoreColor = new Color(0f, 0f, 0.5019608f, 1f),
-            };
-
-            colorSet.EnvironmentColors = new EnvironmentColorSet
-            {
-                SkyColor = new Color(0f, 0f, 0.102f, 0f),
-                LightColor = new Color(0f, 0f, 0f, 0f),
-                DarkColor = new Color(0f, 0f, 0f, 0f),
-                BrightCTA = new Color(0f, 0f, 0f, 0f),
-                DarkCTA = new Color(0f, 0f, 0f, 0f),
-                Danger = new Color(0.72350526f, 0.04628531f, 0.020476442f, 0f),
-            };
-
+            colorSet.name = Path.GetFileNameWithoutExtension(path);
+            new SerializedReader(NoReferences.Instance).ReadInto(colorSet, body, file);
             return colorSet;
+        }
+
+        /// <summary>
+        /// The full path of the palette ThemeManagerDataContainer.asset's <c>ColorSet</c> slot names,
+        /// found the way Unity finds it: by the guid in a .meta file (the palette folder first, then
+        /// all of Assets/). Throws, naming the guid, when no asset carries it.
+        /// </summary>
+        public static string ResolveColorSetAssetPath(string projectRoot, out string guid)
+        {
+            string containerPath = Path.Combine(projectRoot, ContainerAssetPath);
+            if (!File.Exists(containerPath))
+                throw new FileNotFoundException($"The theme container is missing: {containerPath}");
+            var slot = UnityYaml.ParseDocuments(File.ReadAllText(containerPath))
+                .Select(d => d.Body?["ColorSet"])
+                .FirstOrDefault(n => n != null)
+                ?? throw new InvalidDataException($"{ContainerAssetPath} has no ColorSet slot.");
+            guid = ObjRef.From(slot).Guid;
+            if (string.IsNullOrEmpty(guid))
+                throw new InvalidDataException($"{ContainerAssetPath}'s ColorSet slot is empty.");
+
+            string assets = Path.Combine(projectRoot, "Assets");
+            foreach (var root in new[] { Path.Combine(assets, "_SO_Assets", "Color Palettes"), assets })
+            {
+                if (!Directory.Exists(root)) continue;
+                foreach (var meta in Directory.EnumerateFiles(root, "*.asset.meta", SearchOption.AllDirectories))
+                    if (MetaGuid(meta) == guid) return meta.Substring(0, meta.Length - ".meta".Length);
+            }
+            throw new InvalidDataException(
+                $"{ContainerAssetPath}'s ColorSet names guid {guid}, which no asset under {assets} carries.");
+        }
+
+        static string MetaGuid(string metaPath)
+        {
+            foreach (var line in File.ReadLines(metaPath).Take(4))
+                if (line.StartsWith("guid: ", StringComparison.Ordinal)) return line.Substring(6).Trim();
+            return null;
+        }
+
+        /// <summary>A palette holds colours only; any object reference in it stays null.</summary>
+        sealed class NoReferences : IReferenceResolver
+        {
+            public static readonly NoReferences Instance = new();
+            public object Resolve(ObjRef reference, Type fieldType, AssetFile origin) => null;
+            public void OnUnityEvent(object unityEvent, YNode persistentCalls, AssetFile origin) { }
         }
 
         /// <summary>
