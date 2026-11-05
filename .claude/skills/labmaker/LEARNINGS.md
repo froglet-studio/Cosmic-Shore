@@ -919,14 +919,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
 - Promoted: no
 
-### L-STU-163 — A "normalized" average of n copies on an 8-bit canvas is not normalized: rounding brightens it
+### L-STU-164 — A "normalized" average of n copies on an 8-bit canvas is not normalized: rounding brightens it
 - Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `cece/elegant-shannon-e7nrb2` · By: Garrett's session · Date: 2026-11-03
 - What happened: the motion-smear scope drew n ghost copies with `lighter` at weights summing to 1.5 (+25..+58% brighter than the still ring). Fixing the weights to 1/n still left +2% at 4 copies, +9% at 15 and +18% at 24: the SAME image stacked n times at `globalAlpha = 1/n` brightens, because every small 8-bit contribution rounds up. Composite mode `lighter` also summed each copy's OWN overlapping parts (a glow under its beam, a dark pod hole), which a normal draw stacks.
 - Do instead: draw each copy whole (normal compositing) on a scratch layer, then average the copies in FLOAT (WebGL2 with an `EXT_color_buffer_float` target, or a Float32Array over the object's box) and quantize once. Prove it with a stack-the-same-image control: n copies of one image at 1/n must equal the image.
 - Evidence: the page's `lum.js` / `q.js` measurements (scratch), round 2 publish; the Unity port (`BrittleStarRingSmear.shader`) averages in the shader's registers for the same reason.
 - Promoted: no
 
-### L-STU-164 — Port the control's rule line for line into JS first, then write the C# tests from what it measured
+### L-STU-165 — Port the control's rule line for line into JS first, then write the C# tests from what it measured
 - Lab: Brittle Star Ring Spin · Branch: `cece/elegant-shannon-e7nrb2` · Date: 2026-11-03
 - What happened: with no Unity and no .NET in the container, the C# `BrittleStarRules.ForwardTurn` was transliterated to JS (Mathf.DeltaAngle / Repeat / MoveTowards included) and run against the old rule: 0 difference frame for frame below the turn rate (0.25..2 rev/s), exactly the cap and 0 backward frames above it, and the old rule's 13..30 backward frames a second. The EditMode tests assert those numbers, so they were measured before they were written, not guessed.
 - Do instead: when the tests cannot run here, run a line-for-line copy of the code under test and assert only what it produced; say in the PR that the C# itself did not run.
@@ -1844,4 +1844,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the first publish compared ladders with sliders but kept their state only in the viewer's browser. Garrett set his values and asked "can you retrieve them?"; they could not be read, a republish added a db-backed "Save my pick" and a copyable text line, and he had to set them again. Three saves then landed (two identical), so the latest by `savedAt` is the pick.
 - Do instead: any page whose purpose is a CHOICE (a pick, a tuning, a vote) declares `db` and carries a save button and a plain-text readout from its first publish; read the latest save by `savedAt`, and say which one you took.
 - Evidence: the page's `picks` collection (three documents, 2026-10-31 20:31-20:33); `kite_mote_colors.py` `PICKED`.
+- Promoted: no
+
+### L-STU-163 — Judge a colour by the share of the object it paints, not by its swatch
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `claude/nocturne-colour-set` · By: the 2026-11-03 colour-sets session · Date: 2026-11-03
+- What happened: Dart Frog passed every rule, and its lab showed rim and face as equal swatches with a glowing edge drawn wide. In Unity it was "not quite there": a prism's body is the face and the rim is a thin fresnel line, so Jade read as tan, Ruby as teal and Blue as green. Nothing in the page could show that. A small numpy render of the shader's real formula, lerp(face, rim, fresnel) with bloom and ACES, showed it at once. Darkening Dart Frog's faces barely helped; designing faces in one night-dark band from the start gave Nocturne, which Garrett made the default the same day.
+- Do instead: before tuning colours on a page, render them with the shipped shader's formula, on the real shape, beside what ships today. Weight every colour by the area it covers. Use the rule gate to prove a palette is legal, and the render to judge whether it reads.
+- Evidence: `author_colour_set_assets.py` (face fields take the pigment's own lightness); `colour_sets.json` `nocturne`.
 - Promoted: no

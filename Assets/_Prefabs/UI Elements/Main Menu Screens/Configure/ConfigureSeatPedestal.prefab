@@ -108,7 +108,7 @@ MonoBehaviour:
   seatButton: {fileID: 245924367346118608}
   openNameText: {fileID: 1013920370198313415}
   openLineText: {fileID: 799810266223200302}
-  colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
+  colorSet: {fileID: 11400000, guid: 116ff08ebc0c4e6db955bab003a86ce4, type: 2}
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
 --- !u!1 &1132432508023908712
 GameObject:

@@ -526,7 +526,7 @@ tested for that user's shape.*
 The eighth pass shipped and the card came back *"blue regardless of which domain I picked"*. The
 follow-up correction is what identified it: **it was reported as NOT being Jade's shielded hue** —
 *"a neutral hue of blue, not the jade shielded outside prism hue which has more green and is less
-saturated."* Measured against the shipped `OriginalColorSetSO`:
+saturated."* Measured against the shipped `PhoticColorSetSO`:
 
 | domain | `GetShieldedSignalColor()` | hue | saturation | green |
 |---|---|---|---|---|
@@ -641,7 +641,7 @@ Jade's *identity* colour is teal 41° away in the other direction. So a correct 
 look the same at 60 px, and no palette reading makes Jade's shielded mass teal — the icon is honest,
 it is Jade's trail that is the teal players recognise. Confirmed across all three palettes:
 `CosmicWaveColorSetSO` and `PastelColorSetSO` author their shielded base at **alpha 0** (unauthored,
-correctly refused), so `OriginalColorSetSO` is the only live answer and `ThemeManager` never swaps it.
+correctly refused), so `PhoticColorSetSO` is the only live answer and `ThemeManager` never swaps it.
 
 That is what makes the **white-when-unresolved** contract load-bearing rather than tidy: it is the
 only thing that separates *"this is Jade"* from *"this never resolved"*, because the two colours

@@ -651,7 +651,7 @@ never fold it into a fix for something else.
   URP's Bloom clamps the bloom SOURCE before thresholding, so the per-pixel bloom
   contribution is flat above `clamp` and every colour above it blooms identically.
   This project overrides `clamp` to **0.5** (URP's default is 65472) in the GamePlay
-  and Commander profiles, which makes 56 of the 86 colours in `OriginalColorSetSO`
+  and Commander profiles, which makes 56 of the 86 colours in `PhoticColorSetSO`
   — the danger rim at 1.498, AOE at 4.0 — bloom exactly the same, and makes
   `Docs/PALETTE.md` §3's "channels above 1.0 bloom" false as shipped. **Read the
   volume profile's `threshold`/`knee`/`clamp` and compute the response curve BEFORE
