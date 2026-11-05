@@ -59,7 +59,7 @@ const CATALOG = {
   vessels: {
     "Angler": { cost: 100, starter: false },
     "Brittle Star": { cost: 100, starter: false },
-    "Dolphin": { cost: 4000, starter: false },
+    "Dolphin": { cost: 1, starter: false },
     "Falcon": { cost: 4000, starter: false },
     "Goby": { cost: 0, starter: true },
     "Grizzly": { cost: 4000, starter: true },
