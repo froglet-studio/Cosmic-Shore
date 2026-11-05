@@ -4,7 +4,7 @@ diagrams, the website and the Fleet Codex. Docs/UI_STYLE_GUIDE.md is the guide; 
 
 It READS the game, so the tokens never drift from what players see:
   - Assets/_SO_Assets/UI/UITheme.asset              the UI's chrome and family colours (UIThemeSO)
-  - Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset   the three domain colours (through domain_colors.py)
+  - the live colour set (ThemeManagerDataContainer.ColorSet)   the three domain colours
   - Docs/VesselModels/colour_domains.json           Garrett's six colour families (through colour_domains.py)
   - Docs/STYLE_FOUNDATION.md section 4/5/7          the type scale, the sliver, spacing and motion (the numbers below)
 
@@ -53,7 +53,12 @@ PALETTE_CLEAR = 0.035      # a palette colour sits at least this far (OKLab) ins
 OUT_CSS = os.path.join(REPO, "Docs", "UI", "froglet.css")
 
 # Open decisions recorded in Docs/UI_STYLE_GUIDE.md (D-numbers there); --check reports these but does not fail.
-OPEN: dict = {}
+OPEN: dict = {
+    # Garrett's call (the palette's owner): Nocturne, the default palette since 2026-11-03, draws the Gold domain at
+    # #FF8F11, inside the forbidden band between Gold and Fire on his chart. Reported, not failed; Docs/PALETTE.md.
+    ("deep-sea", "gold"): "Nocturne's Gold domain sits in the band between Gold and Fire (Garrett, Docs/PALETTE.md)",
+    ("deep-sea", "gold-fill"): "Nocturne's Gold domain sits in the band between Gold and Fire (Garrett, Docs/PALETTE.md)",
+}
 
 # The numbers STYLE_FOUNDATION.md owns (v0.3.3, sections 4, 5 and 7). Change them there first, then here.
 TYPE = {  # PC @1920 canvas units; the CSS uses them as px at a 1920-wide page
@@ -112,8 +117,21 @@ def uitheme(path: str = UITHEME) -> dict:
     return out
 
 
+def live_color_set() -> str:
+    """The palette the game runs on: the SO_ColorSet ThemeManagerDataContainer.ColorSet names, found by its guid (the
+    same rule fleet_codex.py uses), so switching the default colour set (Photic -> Nocturne, 2026-11-03) moves the
+    tokens with the game."""
+    container = open(os.path.join(REPO, "Assets", "_SO_Assets", "ThemeManagerDataContainer.asset"), encoding="utf-8").read()
+    guid = re.search(r"^  ColorSet: \{fileID: \d+, guid: (\w+)", container, re.M).group(1)
+    palettes = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes")
+    for name in sorted(os.listdir(palettes)):
+        if name.endswith(".asset.meta") and re.search(rf"^guid: {guid}$", open(os.path.join(palettes, name), encoding="utf-8").read(), re.M):
+            return os.path.join(palettes, name[:-len(".meta")])
+    raise SystemExit(f"froglet_style: ThemeManagerDataContainer names ColorSet guid {guid}, and no palette has it")
+
+
 def domains() -> dict:
-    cols = domain_colors.asset_colors(open(os.path.join(REPO, domain_colors.ASSET), encoding="utf-8").read())
+    cols = domain_colors.asset_colors(open(live_color_set(), encoding="utf-8").read())
     return {k: to_hex(v) for k, v in cols.items() if k in ("jade", "ruby", "gold")}
 
 
@@ -252,7 +270,7 @@ def build(theme_asset: dict | None = None, dom: dict | None = None) -> dict:
         "format": "froglet-tokens/1",
         "generated_by": "python3 Tools/Build/froglet_style.py",
         "guide": "Docs/UI_STYLE_GUIDE.md",
-        "sources": ["Assets/_SO_Assets/UI/UITheme.asset", "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset",
+        "sources": ["Assets/_SO_Assets/UI/UITheme.asset", os.path.relpath(live_color_set(), REPO) + " (the live palette)",
                     "Docs/VesselModels/colour_domains.json", "Docs/STYLE_FOUNDATION.md"],
         "themes": {"deep-sea": deep, "shore": dict(SHORE)},
         "fonts": {"body": "Aldrich", "label": "Chakra Petch", "label-weights": [500, 600, 700],

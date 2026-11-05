@@ -165,7 +165,7 @@ def sg_colour() -> str:
         "A colour that means nothing is Blue. Elements carry no colour.")
         + f'<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">{"".join(cards)}</div>'
         + '<p class="src">Sources: Docs/VesselModels/colour_domains.json (families, checked by colour_domains.py --check), '
-          'Assets/_SO_Assets/UI/UITheme.asset (UI tokens), OriginalColorSetSO (domains). Docs/UI/froglet-tokens.json collects them.</p>')
+          'Assets/_SO_Assets/UI/UITheme.asset (UI tokens), the live palette (Nocturne since 2026-11-03; domains). Docs/UI/froglet-tokens.json collects them.</p>')
 
 
 def mini_screen(theme: dict, name: str, note: str) -> str:

@@ -59,8 +59,9 @@ by animation and by effects, never by a fixed hue.
 - **Don't:** the Rev 3 HUD boards (`R3HudSquirrel` and the rest: "element colours drifting like a lava lamp").
 
 **The three domains** (Jade, Ruby, Gold) are teams. Only a team thing wears one: your score, your avatar chip, your
-domain panel. A domain colour is the game palette's (`OriginalColorSetSO`: Jade `#0EC0B6`, Ruby `#C800C3`, Gold
-`#FFA700`); the UI's own Jade, Ruby and Gold tokens (`#00D4FF` control and selection, `#A600FF` commit, `#FFAE00`
+domain panel. A domain colour is the live game palette's (since 2026-11-03 Garrett's Nocturne: Jade `#21C0BD`, Ruby
+`#BD1BC8`, Gold `#FF8F11`; the tokens follow whichever set `ThemeManagerDataContainer` names, and Nocturne's Gold is in
+the band between Gold and Fire, an open item for Garrett in `Docs/PALETTE.md`); the UI's own Jade, Ruby and Gold tokens (`#00D4FF` control and selection, `#A600FF` commit, `#FFAE00`
 purchase) mean the uses above, as the colour board shows them (decided, D2).
 
 ## 2. Themes: Deep Sea and Shore
@@ -239,7 +240,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 | # | Question | Decision |
 |---|---|---|
 | D1 | Theme names | **Deep Sea** (dark, default) and **Shore** (light). |
-| D2 | Domain colours | As the colour board shows them: a domain is the game palette (Jade `#0EC0B6`, Ruby `#C800C3`, Gold `#FFA700`); the UI's Jade, Ruby and Gold tokens mean their uses (control and selection, commit, purchase). |
+| D2 | Domain colours | As the colour board shows them: a domain is the live game palette (Nocturne since 2026-11-03: Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF8F11`); the UI's Jade, Ruby and Gold tokens mean their uses (control and selection, commit, purchase). |
 | D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
 | D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |
 | D5 | Focus and CTA | **CTA is always lime**: the important thing the screen asks the player to do that they can still change. Focus and selection are Jade (D3), never lime. Play, which launches a game, is Ruby like Ready (Frogma comment, 2026-11-05). |
