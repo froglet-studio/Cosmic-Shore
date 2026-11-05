@@ -1,0 +1,218 @@
+# Release: a tag becomes release notes, a build identity and a DRAFT GitHub release, never a published one.
+#
+#   git tag -a v0.3.0 -m "Release 0.3.0" <commit> && git push origin v0.3.0      (or rc-<label> for a candidate)
+#
+# 1. notes   (read-only)  checks the tag is a release tag, lists every pull request merged since the previous
+#                         release tag, grouped by area (Tools/Launch/release_notes.py), and writes
+#                         build-identity.json (tag, commit, version from the tag, build number = this run's number).
+# 2. release (contents: write, the only job that can write)  creates or refreshes the DRAFT release for the tag with
+#                         the notes and build-identity.json attached, then publishes the `release` launch-status
+#                         record (Docs/LAUNCH/STATUS_CONTRACT.md) whatever happened, so a failure shows too.
+#
+# Publishing the draft is a person's decision in the GitHub UI; nothing here publishes a release, and a release
+# that is already published is never touched. Player builds start from this workflow's success
+# (Docs/LAUNCH/PIPELINES.md once the player-build pipeline lands).
+#
+# No secrets: only the run's own GITHUB_TOKEN. Pull requests from forks cannot reach this workflow (tags and
+# manual runs only). Third-party actions are pinned to a commit; the release itself is made with the `gh` CLI
+# that GitHub-hosted runners ship.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*", "rc-*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "An existing release tag: v<major>.<minor>.<patch>[-<pre>] or rc-<label>"
+        required: true
+        type: string
+      allow_empty:
+        description: "Make the draft even when no pull request was merged since the previous release tag"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    name: Release notes and build identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read   # titles and authors for the notes (public data; falls back to commit messages)
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+      sha: ${{ steps.tag.outputs.sha }}
+      prs: ${{ steps.notes.outputs.prs }}
+      since: ${{ steps.notes.outputs.since }}
+    steps:
+      - name: Which tag
+        id: name
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then TAG="$INPUT_TAG"; else TAG="$REF_NAME"; fi
+          # Only a plain ref name may reach git and the shell below; the release-tag rule itself is the tool's.
+          if [ -z "$TAG" ] || printf '%s' "$TAG" | grep -q '[^A-Za-z0-9._-]'; then
+            # The name itself is not echoed: it is free text from the dispatch form.
+            echo "::error::The tag name holds characters a release tag never has. Use v<major>.<minor>.<patch>[-<pre>] or rc-<label>."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      # Full history (commits and trees, no file contents) so the range from the previous release tag can be read.
+      # Only Tools/Launch is checked out.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: Tools/Launch
+          lfs: false
+          persist-credentials: false
+
+      - name: Check the tag
+        id: tag
+        env:
+          TAG: ${{ steps.name.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! VERSION=$(python3 Tools/Launch/release_notes.py check-tag "$TAG"); then
+            exit 1
+          fi
+          if ! SHA=$(git rev-parse --verify --quiet "refs/tags/$TAG^{commit}"); then
+            echo "::error::The tag $TAG does not exist on origin. Push it first: git push origin $TAG"
+            exit 1
+          fi
+          { echo "tag=$TAG"; echo "version=$VERSION"; echo "sha=$SHA"; } >> "$GITHUB_OUTPUT"
+          echo "Tag $TAG -> version $VERSION at $SHA"
+          if ! git merge-base --is-ancestor "$SHA" origin/bleeding-edge; then
+            echo "::warning::$TAG ($SHA) is not on bleeding-edge. A release normally comes from bleeding-edge, development or master (Docs/BRANCHING_AND_RELEASE.md)."
+          fi
+
+      - name: Release notes
+        id: notes
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          ALLOW_EMPTY: ${{ inputs.allow_empty }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          args=(notes --tag "$TAG" --out dist/notes.md --json dist/notes.json)
+          if [ "$ALLOW_EMPTY" != "true" ]; then args+=(--require-prs); fi
+          python3 Tools/Launch/release_notes.py "${args[@]}"
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          n = json.load(open("dist/notes.json"))
+          print(f"prs={len(n['pull_requests'])}")
+          print(f"since={n['from']}")
+          PY
+          cat dist/notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build identity
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          SHA: ${{ steps.tag.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 Tools/Launch/release_notes.py identity --tag "$TAG" --sha "$SHA" \
+            --build-number "$GITHUB_RUN_NUMBER" --run-url "$RUN_URL" --out dist/build-identity.json
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-notes
+          path: |
+            dist/notes.md
+            dist/notes.json
+            dist/build-identity.json
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Draft release and launch status
+    needs: notes
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # the draft release, and the launch-status record
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          sparse-checkout: Tools/Launch
+          lfs: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: needs.notes.result == 'success'
+        with:
+          name: release-notes
+          path: dist
+
+      - name: Create or refresh the draft release
+        id: draft
+        if: needs.notes.result == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.notes.outputs.tag }}
+          VERSION: ${{ needs.notes.outputs.version }}
+        run: |
+          set -euo pipefail
+          title="Cosmic Shore $VERSION"
+          prerelease=()
+          case "$TAG" in rc-*|v*-*) prerelease=(--prerelease) ;; esac
+          if state=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null); then
+            if [ "$state" != "true" ]; then
+              echo "::error::A PUBLISHED release already exists for $TAG. This workflow never edits a published release; make a new tag."
+              exit 1
+            fi
+            gh release edit "$TAG" --draft --title "$title" --notes-file dist/notes.md "${prerelease[@]}"
+            gh release upload "$TAG" dist/build-identity.json --clobber
+            echo "Refreshed the existing draft for $TAG."
+          else
+            gh release create "$TAG" --draft --verify-tag --title "$title" --notes-file dist/notes.md \
+              "${prerelease[@]}" dist/build-identity.json
+            echo "Created a draft release for $TAG."
+          fi
+          url=$(gh release view "$TAG" --json url --jq '.url')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Draft release (visible to repository writers only): $url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish launch status
+        if: always()
+        env:
+          NOTES_RESULT: ${{ needs.notes.result }}
+          DRAFT_RESULT: ${{ steps.draft.outcome }}
+          TAG: ${{ needs.notes.outputs.tag }}
+          VERSION: ${{ needs.notes.outputs.version }}
+          SHA: ${{ needs.notes.outputs.sha }}
+          PRS: ${{ needs.notes.outputs.prs }}
+          SINCE: ${{ needs.notes.outputs.since }}
+          URL: ${{ steps.draft.outputs.url }}
+        run: |
+          set -euo pipefail
+          args=(publish --id release --platform release --kind build --build "$GITHUB_RUN_NUMBER" --commit "$SHA")
+          if [ "$NOTES_RESULT" = "success" ] && [ "$DRAFT_RESULT" = "success" ]; then
+            args+=(--result success --summary "Draft release $TAG: $PRS pull requests since $SINCE")
+            args+=(--detail "tag=$TAG" --detail "pull_requests=$PRS" --detail "since=$SINCE" --detail "draft=true")
+          elif [ "$NOTES_RESULT" = "cancelled" ] || [ "$DRAFT_RESULT" = "cancelled" ]; then
+            args+=(--result cancelled --summary "Release run cancelled")
+          else
+            stage="release notes"; [ "$NOTES_RESULT" = "success" ] && stage="draft release"
+            args+=(--result failure --summary "Release run failed at the $stage step; see the run")
+          fi
+          [ -n "$VERSION" ] && args+=(--version "$VERSION")
+          [ -n "$URL" ] && args+=(--link "$URL")
+          python3 Tools/Launch/launch_status.py "${args[@]}"
