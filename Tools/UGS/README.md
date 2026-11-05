@@ -24,7 +24,9 @@ or write to the backend goes through Shombith first.
 | `Commerce/entitlements.js` | Paid content, kept apart from fair play (R14): episode tokens and owned episodes in the protected key `PLAYER_ENTITLEMENTS`. A token is created only from an order its storefront confirmed, counted from the script's own `STORE` table, once per order | T3 |
 | `Commerce/entitlements.test.cjs` | `node Tools/UGS/Commerce/entitlements.test.cjs` | T3 |
 | (no file) | Game Center sign-in on iOS is a dashboard identity provider plus `Assets/Resources/MobileSignInConfig.asset`, below | T1 |
-| `deploy.sh` | Runs every script's tests and the price check, then uploads all five scripts to one environment | all |
+| `deploy.sh` | The gate (every script's tests and the price check), then uploads the five scripts to one environment: `check`, `development [--dry-run]`, `production [--dry-run]` | all |
+| `ugs_manifest.py` | What a deploy uploads (deploy.sh's own `SCRIPTS` list, each file hashed) and what changed since the last deploy recorded for that environment; `self-test` | all |
+| `install_cli.sh` | Installs the pinned UGS CLI (2.0.0) from Unity's release and checks its sha256 before it runs | all |
 
 ## Deploying the scripts
 
@@ -33,24 +35,92 @@ The scripts in this folder do nothing until they are uploaded to UGS: the game c
 switch in the game stays off until its script is deployed, so **deploy first, then turn switches on**. Deploying is safe
 at any time: nothing calls a script while its switch is off.
 
-"development" and "production" are the two UGS environments on Unity's servers, not git branches. Scripts are
-deployed from **bleeding-edge**, development first.
+"development" and "production" are the two UGS environments on Unity's servers, not git branches. Only commits already
+on **bleeding-edge** are deployed, and production only after development took the same commit.
 
-**With the button (no terminal):**
-1. Once: make a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New; project roles
-   Unity Environments Admin, Cloud Code Script Publisher and Cloud Code Editor; then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
-   `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
-2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
-   It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
-3. Dashboard > Cloud Code > Scripts, development environment: the five are there.
-4. After the editor checks pass with a switch on, run it again with `production`.
+**With the button (no terminal):** GitHub > Actions > **Deploy UGS scripts** > Run workflow, branch `bleeding-edge`.
 
-**From a terminal instead:** `npm install -g ugs`, `ugs login` with the same key, then
-`bash Tools/UGS/deploy.sh development` from the repository root.
+| Input | What it does |
+|---|---|
+| `target` | `development`, or `production`. Production always deploys development first, in the same run, then waits for a reviewer. |
+| `ref` | What to deploy: `bleeding-edge` (its newest commit, the default), a tag, or a commit sha. It must be on bleeding-edge. An older one is a rollback (below). |
+| `dry_run` | Plan only: the gate and the diff, no secret is read and nothing is uploaded. |
+
+What one run does (`.github/workflows/ugs-deploy.yml`):
+1. **plan** (no secrets): checks out `ref`, refuses a commit that is not on bleeding-edge, runs the gate
+   (`deploy.sh check`: every script's `.test.cjs` and `author_economy_catalog.py --check`), downloads the pinned CLI and
+   checks its hash, and writes **the diff** on the run's summary page: each file's hash now against the hash of the last
+   successful deploy to development and to production, as recorded on the `launch-status` branch.
+2. **deploy-development** (GitHub Environment `ugs-development`): checks the files are the ones the plan listed, prints
+   `ugs deploy --dry-run` against development (what the server itself says will change), then deploys.
+3. **deploy-production** (GitHub Environment `ugs-production`, required reviewers), only for `target: production` and
+   only if deploy-development succeeded in this run: the run stops at "Waiting for review". **The reviewer reads the
+   plan's summary page first** (the production table), then approves or rejects. It prints the dry run against
+   production, then deploys.
+4. **record-development / record-production** publish `ugs-development` / `ugs-production` records
+   (`Tools/Launch/launch_status.py`, `Docs/LAUNCH/STATUS_CONTRACT.md`) for every deploy job that started, success or
+   failure: the commit, a one-line summary of what changed, and the details `scripts`, `changed`,
+   `policies_applied` (always 0), `manifest`, `ref` and one `h_<script>` hash per file. `rollback_to` is the commit of
+   the deploy before it. The plan publishes nothing.
+
+Then check the dashboard: Cloud Code > Scripts, that environment: the five are there. Production after the editor
+checks pass with a switch on.
+
+Pull requests that touch `Tools/UGS/`, `author_economy_catalog.py` or the workflow run the plan alone, so a broken test
+or a drifted price fails the PR before anything can be deployed.
+
+What the diff knows: it compares with the last deploy **this workflow recorded**. A deploy made from a terminal is not
+recorded, so the deploy jobs also print the CLI's own dry run against the live environment. A script that an older
+deploy uploaded and this one does not list is left on the server (`ugs deploy` never deletes; the plan names it).
+
+**From a terminal instead:** install the CLI (`bash Tools/UGS/install_cli.sh ~/.ugs-cli` on Linux, or
+`npm install -g ugs@2.0.0`), `ugs login` with a service-account key, then from the repository root
+`bash Tools/UGS/deploy.sh development --dry-run` and `bash Tools/UGS/deploy.sh development`. Prefer the button: a
+terminal deploy has no approval and leaves no record.
 
 `deploy.sh` never applies the access policies (`AccessControl/*.json`): `project-policy.json` blocks direct leaderboard
 posts, which breaks every build that still posts directly. Apply it only once a build with `ServerScoreGate` on is out
 (below). Redeploy after any change to a script, its `RULES`, or a vessel price.
+
+### Setting up the environments (once, a repository admin)
+
+Repository Settings > Environments:
+1. **New environment `ugs-development`.** No reviewers. Deployment branches and tags: Selected, add `bleeding-edge`.
+   Environment secrets: `UGS_CLI_SERVICE_KEY_ID` and `UGS_CLI_SERVICE_SECRET_KEY`.
+2. **New environment `ugs-production`.** Required reviewers: Shombith (and whoever else may approve a production
+   deploy); tick **Prevent self-review**. Deployment branches and tags: Selected, add `bleeding-edge`. Environment
+   secrets: `UGS_CLI_SERVICE_KEY_ID` and `UGS_CLI_SERVICE_SECRET_KEY`.
+3. **Delete the two repository secrets** of the same names (Settings > Secrets and variables > Actions), so no other
+   workflow and no other branch can read them. Until they are deleted, an environment without its own secrets falls
+   back to them silently.
+
+The key is a UGS service account (Unity Cloud dashboard > Administration > Service accounts > New; project roles Unity
+Environments Admin, Cloud Code Script Publisher and Cloud Code Editor; then Add key). One account can serve both
+environments; a second account for production (rotated on its own) is better. The workflow cannot check that
+`ugs-production` has reviewers: if the environment is missing or has none, GitHub runs the job without waiting. Check
+the setting after creating it, and after anyone edits it.
+
+What the CLI prints when the key is wrong (2.0.0, tried with a fake key): `Code: 51, Detail: Authentication failed,
+Status: 401, Title: Unauthorized, Error calling: GetEnvironments` and a request id; never the key. A key without the
+Environments Admin role fails the same way with `403` on `GetEnvironments`.
+
+### Rolling back
+
+A rollback is a deploy of an older commit:
+1. Find the commit to return to: the `rollback_to` of the newest `ugs-production` (or `ugs-development`) record
+   (`python3 Tools/Launch/launch_status.py show`, or the Launch Console), or any earlier record in
+   `history/ugs-production.jsonl` on the `launch-status` branch, or a tag.
+2. Run the workflow from `bleeding-edge` with `ref` = that commit (or tag) and `target` = the environment to fix.
+   Production still goes through development and the reviewer: approve it on the plan's table, which shows exactly
+   which scripts go back.
+3. Check the dashboard (Cloud Code > Scripts) and the game; then fix forward on bleeding-edge. The next normal deploy
+   (ref `bleeding-edge`) puts the fix out the same way.
+
+Limits: a rollback re-uploads the five scripts as they were in that commit; it does not remove a script added since (it
+stays at its new version; remove it in the dashboard if it must go), and it does not undo data the scripts wrote. Only
+commits that carry this pipeline (`Tools/UGS/ugs_manifest.py`) can be deployed by the button; for an older one, check
+it out and run `deploy.sh` from a terminal. A rollback that changes a price must match the build players run: prices
+come from the Unity assets (`author_economy_catalog.py`).
 
 ## Switching on the server-owned wallet
 
@@ -63,7 +133,7 @@ works exactly as before. Turn it on in this order, development environment first
 2. **Install and sign in to the UGS CLI** (needs dashboard access to project
    `3030fd69-28ab-433f-b4bd-22b9b93c5118`):
    ```
-   npm install -g ugs
+   npm install -g ugs@2.0.0
    ugs login
    ugs config set project-id 3030fd69-28ab-433f-b4bd-22b9b93c5118
    ugs config set environment-name development
