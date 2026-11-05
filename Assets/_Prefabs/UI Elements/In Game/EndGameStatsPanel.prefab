@@ -744,6 +744,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!224 &116487824576648733
 RectTransform:
   m_ObjectHideFlags: 0
@@ -937,6 +946,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!224 &874153325610988130
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1058,6 +1076,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!224 &470465097946086742
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1480,6 +1507,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!224 &3780540842356262167
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1948,6 +1984,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.54
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!224 &2795126439267128504
 RectTransform:
   m_ObjectHideFlags: 0

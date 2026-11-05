@@ -198,6 +198,75 @@ namespace CosmicShore.Tests
             p.Apply(true);
             Assert.AreEqual(new Vector2(12f, 34f), r.anchoredPosition);
         }
+
+        [Test]
+        public void StackedChildrenGoTopDownAndComeBack()
+        {
+            var hlg = _go.AddComponent<HorizontalLayoutGroup>();
+            var a = new GameObject("Hangar", typeof(RectTransform));
+            var b = new GameObject("Home", typeof(RectTransform));
+            try
+            {
+                a.transform.SetParent(_go.transform, false);
+                b.transform.SetParent(_go.transform, false);
+                ((RectTransform)a.transform).anchoredPosition = new Vector2(100f, 0f);
+                var p = _go.AddComponent<PhoneRect>();
+                p.SetPhoneSizes(0f, Vector2.zero, false);
+                p.SetPhoneChildren(false, true, new Vector2(0f, -14f), new Vector2(72f, 56f), 2f, new[] { "Home" }, Vector2.zero, 0);
+
+                p.Apply(true);
+                Assert.IsFalse(hlg.enabled, "the band's layout is off while it is a rail");
+                var rb = (RectTransform)b.transform;
+                var ra = (RectTransform)a.transform;
+                Assert.AreEqual(new Vector2(0f, -14f), rb.anchoredPosition, "Stack Order puts Home first");
+                Assert.AreEqual(new Vector2(0f, -14f - 58f), ra.anchoredPosition);
+                Assert.AreEqual(new Vector2(72f, 56f), ra.sizeDelta);
+
+                p.Apply(false);
+                Assert.IsTrue(hlg.enabled);
+                Assert.AreEqual(new Vector2(100f, 0f), ra.anchoredPosition);
+            }
+            finally
+            {
+                Object.DestroyImmediate(a);
+                Object.DestroyImmediate(b);
+            }
+        }
+
+        [Test]
+        public void GridTakesItsPhoneColumnsAndCellsAndComesBack()
+        {
+            var grid = _go.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(182f, 150f);
+            grid.constraint = GridLayoutGroup.Constraint.Flexible;
+            var p = _go.AddComponent<PhoneRect>();
+            p.SetPhoneSizes(0f, Vector2.zero, false);
+            p.SetPhoneChildren(false, false, Vector2.zero, Vector2.zero, 0f, null, new Vector2(186f, 104f), 4);
+
+            p.Apply(true);
+            Assert.AreEqual(new Vector2(186f, 104f), grid.cellSize);
+            Assert.AreEqual(GridLayoutGroup.Constraint.FixedColumnCount, grid.constraint);
+            Assert.AreEqual(4, grid.constraintCount);
+
+            p.Apply(false);
+            Assert.AreEqual(new Vector2(182f, 150f), grid.cellSize);
+            Assert.AreEqual(GridLayoutGroup.Constraint.Flexible, grid.constraint);
+        }
+
+        [Test]
+        public void HiddenOnAPhoneShowsAgainOnPc()
+        {
+            var g = _go.AddComponent<CanvasGroup>();
+            var p = _go.AddComponent<PhoneRect>();
+            p.SetPhoneSizes(0f, Vector2.zero, false);
+            p.SetPhoneChildren(true, false, Vector2.zero, Vector2.zero, 0f, null, Vector2.zero, 0);
+            p.Apply(true);
+            Assert.AreEqual(0f, g.alpha);
+            Assert.IsFalse(g.blocksRaycasts);
+            p.Apply(false);
+            Assert.AreEqual(1f, g.alpha);
+            Assert.IsTrue(g.blocksRaycasts);
+        }
     }
 }
 #endif

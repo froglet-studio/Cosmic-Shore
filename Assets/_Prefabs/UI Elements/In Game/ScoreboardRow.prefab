@@ -105,6 +105,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 480, y: 52}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!114 &48113510094413269
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -394,6 +403,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &967502047629003605
 GameObject:
   m_ObjectHideFlags: 0
@@ -645,6 +663,15 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &813458945181560260
 GameObject:
   m_ObjectHideFlags: 0
@@ -707,6 +734,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!222 &137870944366662069
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1070,6 +1106,15 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &282638417700282485
 GameObject:
   m_ObjectHideFlags: 0
@@ -1230,6 +1275,15 @@ MonoBehaviour:
   fontSize: 12
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &488237288775722435
 GameObject:
   m_ObjectHideFlags: 0
@@ -1390,6 +1444,15 @@ MonoBehaviour:
   fontSize: 14
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &832230120219920573
 GameObject:
   m_ObjectHideFlags: 0
@@ -1550,6 +1613,15 @@ MonoBehaviour:
   fontSize: 18
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &315529253900722083
 GameObject:
   m_ObjectHideFlags: 0
@@ -1638,6 +1710,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &648393412861801014
 GameObject:
   m_ObjectHideFlags: 0
@@ -1774,6 +1855,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 14, y: 14}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &70330468856709133
 GameObject:
   m_ObjectHideFlags: 0
@@ -1955,3 +2045,12 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 66, y: 28}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}

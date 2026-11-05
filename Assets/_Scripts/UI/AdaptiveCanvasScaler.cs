@@ -77,6 +77,9 @@ namespace CosmicShore.UI
         /// <summary>Whether this canvas is laid out at the phone scale right now.</summary>
         public bool UsesPhoneLayout { get; private set; }
 
+        /// <summary>Raised when this canvas switches to or from its phone layout (true = phone).</summary>
+        public event System.Action<bool> PhoneLayoutChanged;
+
         /// <summary>Whether this canvas has a phone layout to switch to (the inspector's Has Phone Layout).</summary>
         public bool HasPhoneLayout => hasPhoneLayout;
 
@@ -191,6 +194,7 @@ namespace CosmicShore.UI
                 for (int i = 0, n = 0; i < rects.Length; i++)
                     if (rects[i].DrawsAtPcScale) _pcBlocks[n++] = rects[i];
             _pcBlocksFitHeight = -1f;
+            PhoneLayoutChanged?.Invoke(phone);
         }
 
         private void ApplySafeZone(float aspect)

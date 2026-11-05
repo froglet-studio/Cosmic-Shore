@@ -66,6 +66,15 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!114 &680530762005084648
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -54,6 +54,26 @@ namespace CosmicShore.UI
                  "authored in 1920 units). 0 leaves the scale.")]
         [SerializeField, Min(0f)] private float scale;
 
+        [Header("Children on a phone")]
+        [Tooltip("Hide this object on a phone (its CanvasGroup goes transparent and stops taking input); shown again on " +
+                 "PC. Needs a CanvasGroup on the same object.")]
+        [SerializeField] private bool hideOnPhone;
+        [Tooltip("Stack this object's active children top-down on a phone (the nav band becomes a rail): its own " +
+                 "LayoutGroup switches off and each child takes Stack Item Size, Stack Spacing apart from Stack Origin. " +
+                 "A child with its own PhoneRect is left to it. The order is Stack Order by name, then the rest in " +
+                 "sibling order.")]
+        [SerializeField] private bool stackChildren;
+        [SerializeField] private Vector2 stackOrigin;
+        [SerializeField] private Vector2 stackItemSize = new(72f, 56f);
+        [SerializeField] private float stackSpacing;
+        [SerializeField] private string[] stackOrder = System.Array.Empty<string>();
+        [Tooltip("The GridLayoutGroup's cell size on a phone (0 leaves it).")]
+        [SerializeField] private Vector2 gridCellSize;
+        [Tooltip("The GridLayoutGroup's column count on a phone, as a Fixed Column Count constraint (0 leaves it).")]
+        [SerializeField, Min(0)] private int gridColumns;
+        [Tooltip("The GridLayoutGroup's spacing on a phone (negative leaves it).")]
+        [SerializeField] private Vector2 gridSpacing = new(-1f, -1f);
+
         private RectTransform _rect;
         private bool _authoredRead;
         private Vector2 _aMin, _aMax, _pivot, _pos, _size;
@@ -61,6 +81,16 @@ namespace CosmicShore.UI
         private Vector3 _scale;
         private TMP_Text _text;
         private LayoutElement _le;
+        private CanvasGroup _group;
+        private float _groupAlpha;
+        private bool _groupInteractable, _groupBlocks;
+        private LayoutGroup _layout;
+        private bool _layoutEnabled;
+        private GridLayoutGroup _grid;
+        private Vector2 _gridCell, _gridSpacing;
+        private GridLayoutGroup.Constraint _gridConstraint;
+        private int _gridCount;
+        private readonly System.Collections.Generic.List<(RectTransform rt, Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 size)> _stacked = new();
         private AdaptiveCanvasScaler _scaler;
         private bool _scalerResolved;
 
@@ -149,6 +179,7 @@ namespace CosmicShore.UI
                     if (layoutSize.x > 0f) _le.preferredWidth = layoutSize.x;
                     if (layoutSize.y > 0f) _le.preferredHeight = layoutSize.y;
                 }
+                ApplyChildren(true);
             }
             else if (_authoredRead)
             {
@@ -164,6 +195,7 @@ namespace CosmicShore.UI
                     if (layoutSize.x > 0f) _le.preferredWidth = _leW;
                     if (layoutSize.y > 0f) _le.preferredHeight = _leH;
                 }
+                ApplyChildren(false);
             }
             OnPhone = phone;
         }
@@ -174,8 +206,77 @@ namespace CosmicShore.UI
             _pos = r.anchoredPosition; _size = r.sizeDelta; _scale = r.localScale;
             if (TryGetComponent(out _text)) { _font = _text.fontSize; _fontMax = _text.fontSizeMax; }
             if (TryGetComponent(out _le)) { _leW = _le.preferredWidth; _leH = _le.preferredHeight; }
+            if (TryGetComponent(out _group)) { _groupAlpha = _group.alpha; _groupInteractable = _group.interactable; _groupBlocks = _group.blocksRaycasts; }
+            if (TryGetComponent(out _layout)) _layoutEnabled = _layout.enabled;
+            if (TryGetComponent(out _grid))
+            {
+                _gridCell = _grid.cellSize; _gridSpacing = _grid.spacing;
+                _gridConstraint = _grid.constraint; _gridCount = _grid.constraintCount;
+            }
             _authoredRead = true;
         }
+
+        private void ApplyChildren(bool phone)
+        {
+            if (hideOnPhone && _group)
+            {
+                _group.alpha = phone ? 0f : _groupAlpha;
+                _group.interactable = !phone && _groupInteractable;
+                _group.blocksRaycasts = !phone && _groupBlocks;
+            }
+            if (_grid)
+            {
+                if (gridCellSize.x > 0f && gridCellSize.y > 0f) _grid.cellSize = phone ? gridCellSize : _gridCell;
+                if (gridColumns > 0)
+                {
+                    _grid.constraint = phone ? GridLayoutGroup.Constraint.FixedColumnCount : _gridConstraint;
+                    _grid.constraintCount = phone ? gridColumns : _gridCount;
+                }
+                if (gridSpacing.x >= 0f && gridSpacing.y >= 0f) _grid.spacing = phone ? gridSpacing : _gridSpacing;
+            }
+            if (!stackChildren) return;
+            if (phone)
+            {
+                if (_layout) _layout.enabled = false;
+                _stacked.Clear();
+                int i = 0;
+                foreach (var child in StackSequence())
+                {
+                    _stacked.Add((child, child.anchorMin, child.anchorMax, child.pivot, child.anchoredPosition, child.sizeDelta));
+                    var top = new Vector2(0f, 1f);
+                    Set(child, top, top, top, stackOrigin + new Vector2(0f, -i * (stackItemSize.y + stackSpacing)), stackItemSize);
+                    i++;
+                }
+            }
+            else
+            {
+                foreach (var s in _stacked)
+                    if (s.rt) Set(s.rt, s.aMin, s.aMax, s.pivot, s.pos, s.size);
+                _stacked.Clear();
+                if (_layout) _layout.enabled = _layoutEnabled;
+            }
+        }
+
+        /// <summary>The children to stack: Stack Order by name first, then the rest in sibling order; never one that is
+        /// inactive or carries its own PhoneRect.</summary>
+        private System.Collections.Generic.IEnumerable<RectTransform> StackSequence()
+        {
+            var t = transform;
+            var used = new System.Collections.Generic.HashSet<Transform>();
+            foreach (var name in stackOrder)
+            {
+                var c = t.Find(name);
+                if (c && Stackable(c)) { used.Add(c); yield return (RectTransform)c; }
+            }
+            for (int i = 0; i < t.childCount; i++)
+            {
+                var c = t.GetChild(i);
+                if (!used.Contains(c) && Stackable(c)) yield return (RectTransform)c;
+            }
+        }
+
+        private static bool Stackable(Transform c) =>
+            c.gameObject.activeSelf && c is RectTransform && !c.TryGetComponent(out PhoneRect _);
 
         private static void Set(RectTransform r, Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 size)
         {
@@ -201,6 +302,14 @@ namespace CosmicShore.UI
         }
 
         /// <summary>Set the phone text and layout sizes from code (tests and editor tooling).</summary>
+        /// <summary>Set the phone children behaviour from code (tests and editor tooling).</summary>
+        public void SetPhoneChildren(bool hide, bool stack, Vector2 origin, Vector2 itemSize, float spacing, string[] order,
+                                     Vector2 cell, int columns)
+        {
+            hideOnPhone = hide; stackChildren = stack; stackOrigin = origin; stackItemSize = itemSize; stackSpacing = spacing;
+            stackOrder = order ?? System.Array.Empty<string>(); gridCellSize = cell; gridColumns = columns;
+        }
+
         public void SetPhoneSizes(float phoneFontSize, Vector2 phoneLayoutSize, bool moves, float phoneScale = 0f)
         {
             fontSize = phoneFontSize; layoutSize = phoneLayoutSize; movesRect = moves; scale = phoneScale;
