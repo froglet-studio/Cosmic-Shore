@@ -121,7 +121,7 @@ RENDER = 1024
 CARD_DOMAIN = "Class"
 HANGAR_GLOW = (150, 175, 230)         # the preview's glow: cool silver, the neutral family (was gold)
 OUTLINE_LINEAR = (0.0012, 0.0014, 0.0035)
-SKY_SRGB = (0.0, 0.0, 0.102)          # OriginalColorSetSO.EnvironmentColors.SkyColor: what a ship is seen against
+SKY_SRGB = (0.0, 0.0, 0.102)          # PhoticColorSetSO.EnvironmentColors.SkyColor: what a ship is seen against
 
 
 _BPY = r'''

@@ -592,7 +592,19 @@ L5_SHIELDED = (104, 164, 255, 255)   # the HUD's shielded signal (states.SHIELDE
 
 ICON_LAYERS = {}   # published icon path -> its tint layers (every icon drawn with the HUD's real colours)
 DOMAINS = ("Jade", "Ruby", "Gold")   # the playable domains (Blue is the game's "no team", Docs/PALETTE.md 2.8)
-COLOR_SET = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes", "OriginalColorSetSO.asset")
+def _live_color_set():
+    """The palette the game runs on: the SO_ColorSet ThemeManagerDataContainer.ColorSet names, found by its guid, so a
+    switch of the default colour set (Photic -> Nocturne, 2026-11-03) moves the codex with the game, not after it."""
+    container = open(os.path.join(REPO, "Assets", "_SO_Assets", "ThemeManagerDataContainer.asset"), encoding="utf-8").read()
+    guid = re.search(r"^  ColorSet: \{fileID: \d+, guid: (\w+)", container, re.M).group(1)
+    palettes = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes")
+    for name in sorted(os.listdir(palettes)):
+        if name.endswith(".asset.meta") and re.search(rf"^guid: {guid}$", open(os.path.join(palettes, name), encoding="utf-8").read(), re.M):
+            return os.path.join(palettes, name[:-len(".meta")])
+    raise SystemExit(f"fleet_codex: ThemeManagerDataContainer names ColorSet guid {guid}, and no palette in {palettes} has it")
+
+
+COLOR_SET = _live_color_set()
 BARS_CONFIG = os.path.join(REPO, "Assets", "Resources", "ElementalBarsConfig.asset")
 
 

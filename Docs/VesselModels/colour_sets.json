@@ -1,0 +1,110 @@
+{
+  "format": "cosmic-shore-colour-sets/1",
+  "status": "Colour sets. Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03.",
+  "checker": "python3 Tools/Build/colour_sets.py --check",
+  "lab": "Docs/Studios/ColourSetsLab.html",
+  "artifact": "https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf",
+  "space": "OKLab, x = [L, a, b] of the sRGB colour (Bjorn Ottosson 2020)",
+  "rule": "TWO-PIGMENT DOMAINS. A domain is two regions, its rim pigment and its face pigment. A pigment is one paint seen from shadow to highlight: lighting scales a colour's linear RGB, which moves it along a ray from black in OKLab, so a pigment is the cone segment of colours with L0 <= L <= L1 whose chroma direction (a/L, b/L) lies within rho of (sat cos hue, sat sin hue). A colour belongs to a domain when it lies in either of that domain's pigments; a colour in no pigment is unclaimed by the set. The rules every set keeps: (1) any two pigments of different domains are at least margin apart in OKLab (the band); (2) their chroma directions are at least pigment_gap apart beyond their rho (no light or shadow turns one domain's pigment into another's); (3) a domain's rim and face differ in hue by at least min_hue_contrast degrees and in mid lightness by at least min_lightness_contrast (the hue contrast between a prism's rim and face); (4) every rim pigment's swatch rests in its own family of the colour_domains.json truth, clear of the band (the domain still reads as itself).",
+  "prism_mapping": {
+    "rim": "SO_ColorSet DomainColorSet.InsideBlockColor and its shielded twins: the prism's fresnel rim (_BrightColor). 'Inside' is a legacy name for the rim (Docs/PALETTE.md section 2).",
+    "face": "SO_ColorSet DomainColorSet.OutsideBlockColor and its shielded twins: the prism's base face (_DarkColor).",
+    "fire": "Fire and Lime are not DomainColorSets: Fire is EnvironmentColors.Danger (the danger rim over the domain's shielded face), Lime is the CTA pair (BrightCTA rim, DarkCTA body). How a set paints them is an open decision (see open)."
+  },
+  "unity": "Tools/Build/author_colour_set_assets.py writes each set as Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset (Dart Frog: DartFrogColorSetSO.asset). Every field takes its hue from one pigment of its domain and keeps PhoticColorSetSO's alpha and tier whiteness; rim fields keep the original's (HDR) brightness, face fields take their face pigment's own lightness, scaled by the original's step between tiers; Danger wears the Fire rim, BrightCTA and DarkCTA both wear the Lime rim, ElementalCrystalColors are copied. --check fails on drift or on any field that lands in another domain's pigment. The default is the set named by ThemeManagerDataContainer.asset's ColorSet slot and by the prefabs that hold a palette directly (ThemeManager, ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal); PhoticColorSetSO is the palette every field's tuning comes from.",
+  "sets": {
+    "dart_frog": {
+      "name": "Dart Frog",
+      "track": "paid",
+      "proposed": "2026-11-02",
+      "by": "Garrett (Jade from his photo of a green-and-bronze Dendrobates auratus); the other five laid out under the same rules",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "Oophaga pumilio 'Blue Jeans': strawberry-red body, denim legs",
+          "rim": {"name": "Strawberry", "hue": 30, "sat": 0.36, "L": [0.46, 0.68], "rho": 0.04, "swatch": "#D52E1E"},
+          "face": {"name": "Denim", "hue": 264, "sat": 0.36, "L": [0.32, 0.54], "rho": 0.035, "swatch": "#2247A3"}
+        },
+        "gold": {
+          "inspiration": "Dendrobates leucomelas (bumblebee): yellow bands on black, the black given a violet hue so the face keeps a hue",
+          "rim": {"name": "Bumblebee", "hue": 88, "sat": 0.2, "L": [0.74, 0.96], "rho": 0.035, "swatch": "#FCC618"},
+          "face": {"name": "Indigo", "hue": 300, "sat": 0.4, "L": [0.3, 0.5], "rho": 0.035, "swatch": "#57288F"}
+        },
+        "lime": {
+          "inspiration": "a dart-frog pairing: acid lime over oxblood",
+          "rim": {"name": "Lime", "hue": 124, "sat": 0.24, "L": [0.68, 0.92], "rho": 0.035, "swatch": "#A4D11D"},
+          "face": {"name": "Oxblood", "hue": 356, "sat": 0.38, "L": [0.3, 0.48], "rho": 0.04, "swatch": "#7C0F48"}
+        },
+        "jade": {
+          "inspiration": "Dendrobates auratus, green-and-bronze (Garrett's photo): measured mint L 0.63-0.89, C/L 0.08-0.10, hue 148-178; bronze L 0.32-0.55, C/L 0.18-0.21, hue 46-58",
+          "photo_coverage": "Mint surrounds 76% of the photo's mint pixels and Bronze 86% of its bronze. The greyest quarter of the mint (C/L under about 0.075) lies in the six-family truth's Jade/Lime band, so rule 4 stops Mint reaching it.",
+          "rim": {"name": "Mint", "hue": 164, "sat": 0.115, "L": [0.6, 0.94], "rho": 0.04, "swatch": "#7DC6A5"},
+          "face": {"name": "Bronze", "hue": 50, "sat": 0.19, "L": [0.3, 0.58], "rho": 0.04, "swatch": "#774325"}
+        },
+        "blue": {
+          "inspiration": "a dart-frog pairing: azure over forest green",
+          "rim": {"name": "Azure", "hue": 250, "sat": 0.18, "L": [0.6, 0.84], "rho": 0.035, "swatch": "#61AAF2"},
+          "face": {"name": "Forest", "hue": 148, "sat": 0.28, "L": [0.3, 0.48], "rho": 0.025, "swatch": "#06541F"}
+        },
+        "ruby": {
+          "inspiration": "a dart-frog pairing: orchid over deep petrol",
+          "rim": {"name": "Orchid", "hue": 318, "sat": 0.3, "L": [0.56, 0.8], "rho": 0.04, "swatch": "#CB67E8"},
+          "face": {"name": "Petrol", "hue": 210, "sat": 0.165, "L": [0.36, 0.54], "rho": 0.025, "swatch": "#0D606C"}
+        }
+      },
+      "summary": "Every domain is two pigments: a bright one for the prism's rim and a dark one, a different hue, for its face. Jade is the green-and-bronze frog; the other five domains follow the same rules."
+    },
+    "nocturne": {
+      "name": "Nocturne",
+      "track": "the default",
+      "proposed": "2026-11-03",
+      "by": "Claude, asked by Garrett for the most beautiful set it could make; Garrett made it the default on 2026-11-03 after playing it",
+      "summary": "Every prism is a lantern. The rim glows in its family's own hue and carries the domain; the face is a deep jewel tone of a different hue, all six faces in one night-dark band (mid L 0.27 to 0.32) so no body outshines another and the bodies read as tinted glass. Rims sit at mid L 0.66 to 0.85.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "an ember against the night sky: vermilion over midnight indigo (Fire is the danger rim, so it stays hot)",
+          "rim": {"name": "Ember", "hue": 30, "sat": 0.261, "L": [0.56, 0.76], "rho": 0.035, "swatch": "#E8614E"},
+          "face": {"name": "Indigo", "hue": 264, "sat": 0.419, "L": [0.22, 0.32], "rho": 0.035, "swatch": "#081F5C"}
+        },
+        "gold": {
+          "inspiration": "ametrine, the one stone that is citrine and amethyst together: honey over violet",
+          "rim": {"name": "Honey", "hue": 83, "sat": 0.176, "L": [0.72, 0.92], "rho": 0.035, "swatch": "#F1BB45"},
+          "face": {"name": "Violet", "hue": 303, "sat": 0.337, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#3F205F"}
+        },
+        "lime": {
+          "inspiration": "new leaves against red wine: chartreuse over garnet",
+          "rim": {"name": "Chartreuse", "hue": 124, "sat": 0.231, "L": [0.75, 0.95], "rho": 0.035, "swatch": "#B4E232"},
+          "face": {"name": "Garnet", "hue": 23, "sat": 0.383, "L": [0.25, 0.35], "rho": 0.035, "swatch": "#5A050F"}
+        },
+        "jade": {
+          "inspiration": "bioluminescent surf on a night beach: lagoon over plum",
+          "rim": {"name": "Lagoon", "hue": 194, "sat": 0.146, "L": [0.7, 0.9], "rho": 0.035, "swatch": "#4BD5D4"},
+          "face": {"name": "Plum", "hue": 342, "sat": 0.422, "L": [0.22, 0.32], "rho": 0.035, "swatch": "#480135"}
+        },
+        "blue": {
+          "inspiration": "blue hour above a pine forest: cornflower over spruce",
+          "rim": {"name": "Cornflower", "hue": 266, "sat": 0.213, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#739AFB"},
+          "face": {"name": "Spruce", "hue": 152, "sat": 0.258, "L": [0.26, 0.36], "rho": 0.035, "swatch": "#023B1B"}
+        },
+        "ruby": {
+          "inspiration": "an orchid in a dark aquarium: orchid over deep teal",
+          "rim": {"name": "Orchid", "hue": 326, "sat": 0.328, "L": [0.59, 0.79], "rho": 0.035, "swatch": "#DF5CE4"},
+          "face": {"name": "Deep Teal", "hue": 232, "sat": 0.203, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#00384E"}
+        }
+      }
+    }
+  },
+  "open": [
+    "Nocturne as the default leaves four things on Photic: vessel hull materials, rendered card art, the vessel studio's colours and Amoebius. Its dark faces also darken the HUD shielded signal (Docs/PALETTE.md section 1).",
+    "Lime as the CTA pair: DarkCTA paints about 93% of a free crystal, so a face pigment there makes free pickups read as oxblood. The Unity asset keeps the CTA lime on both halves for now; the Lime face (Oxblood) has no field.",
+    "Fire as danger: danger is a shared rim over each domain's shielded face, so Fire's own face pigment (Denim) has nowhere to go in SO_ColorSet today. The Unity asset paints Danger with the Fire rim (Strawberry) only.",
+    "The free colour-blind sets (protan, deutan, tritan) need the same rules applied to the simulated colours; colour_sets.py --report already prints how each set fares under each."
+  ]
+}
