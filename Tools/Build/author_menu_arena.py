@@ -99,6 +99,8 @@ def build_card():
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
     star = root.child(N("Star", "FavoriteStar", R((1, 1), None, (-8, -8), (44, 44), (1, 1))))
+    # On a phone the card is drawn at PH_SCALE: the star's hit area grows so it is still a thumb's width there.
+    star.add("phone", 114, K.phone_rect(R((1, 1), None, (-4, -4), (PH_STAR, PH_STAR), (1, 1))))
     star.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
     image_node(star, "Star/Glyph", "Glyph", R(size=(24, 24)), "NeutralLightest", K.chrome_sprite("chrome_star"), preserve=True)
     star.add("audio", 114, A.menu_audio(5)) \
@@ -203,21 +205,28 @@ def build_view():
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, A.rect_mask())
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
-    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2)) \
+        .add("phone", 114, K.phone_rect(width_scale=PH_SCALE))
     allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (GRID_W, 18), (0, 1))))
     allg.add("le", 114, le(ph=18))
     label(allg.child(N("AllGames/Label", "Label", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "ALL GAMES", "Label", "TextLight")
     label(allg.child(N("AllGames/Count", "Count", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "4", "Label", "NeutralLightest",
           align="right")
     content.child(N("Gap", "Gap", R((0, 1), None, (0, 0), (GRID_W, 10), (0, 1)))).add("le", 114, le(ph=10))
+    # ONE wrapping grid, the cards its own children (ArcadeExploreView reads either shape, as Arcade's since section 129):
+    # COLS across on PC at the width the old flexing row gave each card, PH_COLS on a phone, where the scroll's content is
+    # drawn at PH_SCALE.
     grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (GRID_W, ROWS * (CARD_H + GAP) - GAP), (0, 1))))
-    grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), GAP, 0, (1, 1), (1, 0)))
+    grid.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+             "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+             f"  m_CellSize: {{x: {K.f32(GRID_CELL_W)}, y: {CARD_H}}}\n  m_Spacing: {{x: {GAP}, y: {GAP}}}\n"
+             f"  m_Constraint: 1\n  m_ConstraintCount: {COLS}\n"))
+    grid.add("phone", 114, K.phone_rect(grid=dict(columns=PH_COLS, cell=(PH_CELL_W, CARD_H))))
     for r in range(ROWS):
-        row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + GAP)), (GRID_W, CARD_H), (0, 1))))
-        row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), GAP, 0, (1, 1), (1, 1))).add("le", 114, le(ph=CARD_H))
         for col in range(COLS):
-            row.children.append(instance(card_key(r, col), "ArenaGameCard", "GameCard",
-                                         R((0, 1), None, (col * (CARD_W + GAP), 0), (CARD_W, CARD_H), (0, 1))))
+            grid.children.append(instance(card_key(r, col), "ArenaGameCard", "GameCard",
+                                          R((0, 1), None, (col * (GRID_CELL_W + GAP), -r * (CARD_H + GAP)), (GRID_CELL_W, CARD_H), (0, 1))))
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main; the explore scroll fills the body.
 
     header = root.child(N("Header", "Header", A.WINDOW_HEADER))
@@ -228,7 +237,90 @@ def build_view():
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore arena", "H1",
           "TextLight")
     A.back_button(header)
+    phone_window(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/UI_STYLE_GUIDE.md section 8; Docs/MENU_REDESIGN_B.md section 129). The hub windows beside Arcade
+# take Arcade's phone window exactly (author_menu_arcade.py, R55Arcade) so the four read as one family: the nav dim over
+# the 96-wide rail, the glass right of it, the header 52 tall from y 10 with its buttons 48 tall, the body from y 72 to
+# 10 above the foot; the explore scroll's content drawn at PH_SCALE and re-flowed, its card grid PH_COLS across.
+# --------------------------------------------------------------------------------------------
+
+PHONE_RAIL, PHONE_X = A.PHONE_RAIL, A.PHONE_X
+PH_HEADER = R((0, 1), (1, 1), ((PHONE_X - 16) / 2, -10), (-(PHONE_X + 16), 52), (0.5, 1))
+PH_BODY = R((0, 0), (1, 1), ((PHONE_X - 16) / 2, -31), (-(PHONE_X + 16), -82))
+PH_W, PH_BODY_H = 800 - PHONE_X - 16, 450 - 72 - 10      # 672 x 368 on the narrowest (800-wide) phone canvas
+PH_TOUCH = 44                                             # the smallest control on a phone, in phone units
+# Arena: four tall cards. 0.6 keeps a whole card (560 tall) in the body under ALL GAMES, and three across leaves each
+# card wide enough for its title ("Astro League") at the PC H1 size.
+PH_SCALE, PH_COLS = 0.6, 3
+GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"         # UnityEngine.UI.GridLayoutGroup
+GRID_CELL_W = (A.CONTENT_W - (COLS - 1) * GAP) / COLS     # what the old flexing row gave each card (419.5)
+
+
+def phone_content_w(scale):
+    """The explore content's inner width on an 800-wide phone, in its own (PC) units: the viewport (the body less its
+    10-unit inset) drawn at `scale`, less the content's 6 + 6 padding."""
+    return (PH_W - 10) / scale - 12
+
+
+def phone_cell_w(scale, cols, gap):
+    return int((phone_content_w(scale) - (cols - 1) * gap) // cols)
+
+
+PH_CELL_W = phone_cell_w(PH_SCALE, PH_COLS, GAP)
+PH_STAR = 74                                              # the favourite star's hit area on a phone: 74 x PH_SCALE >= 44
+
+
+def phone_window(root):
+    """Arcade's phone window on a hub window's root (NavDim, Backdrop, BackdropLattice, Header, Body), its header's
+    eyebrow, title and Back."""
+    for child in root.children:
+        if child.key == "NavDim":
+            child.add("phone", 114, K.phone_rect(R((0, 0), (0, 1), (PHONE_RAIL / 2, 0), (PHONE_RAIL, 0))))
+        elif child.key in ("Backdrop", "BackdropLattice"):
+            child.add("phone", 114, K.phone_rect(R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0))))
+        elif child.key == "Header":
+            child.add("phone", 114, K.phone_rect(PH_HEADER))
+            for h in child.children:
+                if h.key == "Header/Eyebrow":
+                    h.add("phone", 114, K.phone_rect(R((0, 1), None, (0, 0), (300, 14), (0, 1))))
+                elif h.key == "Header/Title":
+                    h.add("phone", 114, K.phone_rect(R((0, 1), None, (0, -16), (420, 32), (0, 1))))
+                elif h.key == "Back":
+                    h.add("phone", 114, K.phone_rect(R((1, 0), None, (0, 0), (A.back_width(), PH_TOUCH + 4), (1, 0))))
+        elif child.key == "Body":
+            child.add("phone", 114, K.phone_rect(PH_BODY))
+
+
+PHONE_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+
+
+def phone_of(text_, comp_fid):
+    """A PhoneRect's fields, by its component fileID (None when it is not one)."""
+    _, body = A.doc_of(text_, comp_fid)
+    if not body or f"guid: {PHONE_GUID}" not in body:
+        return None
+    out = {}
+    for m in re.finditer(r"^  (\w+): (.*)$", body, re.M):
+        v = m.group(2)
+        vec = re.match(r"\{x: (-?[\d.e+-]+), y: (-?[\d.e+-]+)", v)
+        out[m.group(1)] = (float(vec.group(1)), float(vec.group(2))) if vec else v
+    return out
+
+
+def check_phone_window(text_, name):
+    """The window's phone header, body, rail dim and Back are Arcade's (a later edit that drops one is caught here)."""
+    V = K.FileIds(name)
+    for key, size in (("Header", (-(PHONE_X + 16), 52)), ("Body", (-(PHONE_X + 16), -82)), ("NavDim", (PHONE_RAIL, 0)),
+                      ("Back", (A.back_width(), PH_TOUCH + 4))):
+        ph = phone_of(text_, V(f"{key}#phone"))
+        assert ph, f"{name}: {key} has no phone pose"
+        assert ph["movesRect"] == "1" and ph["sizeDelta"] == tuple(float(K.f32(v)) for v in size), \
+            f"{name}: {key}'s phone pose is not Arcade's ({ph['sizeDelta']})"
+    assert phone_of(text_, V("Back#phone"))["sizeDelta"][1] >= PH_TOUCH, f"{name}: Back is under {PH_TOUCH} tall on a phone"
 
 
 def prefab_outputs():
@@ -394,7 +486,7 @@ CARD_FIELDS = dict(GameTitle=TMP, BackgroundImage=IMG, StarImage=IMG, AvatarSpac
 
 def validate(files):
     M.require_entrances(files, {prefab_path("ArenaView"): 2})
-    guids = T.known_guids() | P.PACKAGE
+    guids = T.known_guids() | P.PACKAGE | {GRID_LAYOUT}
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     memo = {}
     for path, text_ in files.items():
@@ -416,6 +508,21 @@ def validate(files):
     assert view.count(f"guid: {asset_guid('ArenaGameCard')}") >= 2 * ROWS, "ArenaView: the grid does not hold ArenaGameCards"
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "ArenaView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "ArenaView: Back must close through ModalWindowCloseButton"
+    # The phone layout: Arcade's window, the content at PH_SCALE, the grid PH_COLS across in cells that fit the phone.
+    check_phone_window(view, "ArenaView")
+    V = K.FileIds("ArenaView")
+    _, g = A.doc_of(view, V("Grid#grid"))
+    assert g and f"guid: {GRID_LAYOUT}" in g, "ArenaView: the cards are not in one wrapping grid (a phone lays them fewer across)"
+    assert f"  m_ConstraintCount: {COLS}\n" in g, f"ArenaView: the grid is not {COLS} across on PC"
+    ph = phone_of(view, V("Grid#phone"))
+    assert ph and ph["gridColumns"] == str(PH_COLS), f"ArenaView: the grid is not {PH_COLS} across on a phone"
+    assert PH_COLS * ph["gridCellSize"][0] + (PH_COLS - 1) * GAP <= phone_content_w(PH_SCALE), "ArenaView: the phone grid is wider than the phone"
+    assert ph["gridCellSize"][0] - 52 >= K.label_width("Astro League", "H1"), "ArenaView: a phone card is too narrow for its title"
+    ph = phone_of(view, V("Explore/Viewport/Content#phone"))
+    assert ph and float(ph["widthScale"]) == PH_SCALE, "ArenaView: the explore content is not drawn at the phone scale"
+    assert (6 + 18 + 10 + CARD_H) * PH_SCALE <= PH_BODY_H, "ArenaView: a phone card does not fit the body under ALL GAMES"
+    ph = phone_of(card, K.FileIds("ArenaGameCard")("Star#phone"))
+    assert ph and min(ph["sizeDelta"]) * PH_SCALE >= PH_TOUCH, "ArenaGameCard: the favourite star is under a thumb's size on a phone"
 
     sc = T.Scene(files[SCENE])
     anchors = set(sc.order) | {"0"}
@@ -462,6 +569,12 @@ def self_test(files):
         ("the hull template left in layout", lambda f: f.__setitem__(card, f[card].replace("  m_IgnoreLayout: 1\n", "  m_IgnoreLayout: 0\n"))),
         ("the roster back to the master list", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"rosterOverride: {{fileID: 11400000, guid: {ARENA_GAMES}, type: 2}}", "rosterOverride: {fileID: 0}", 1))),
+        ("the phone header off Arcade's", lambda f: f.__setitem__(prefab_path("ArenaView"), f[prefab_path("ArenaView")].replace(
+            "  sizeDelta: {x: -128, y: 52}\n", "  sizeDelta: {x: -128, y: 64}\n"))),
+        ("the phone grid four across", lambda f: f.__setitem__(prefab_path("ArenaView"), f[prefab_path("ArenaView")].replace(
+            f"  gridColumns: {PH_COLS}\n", "  gridColumns: 4\n"))),
+        ("the star a PC-sized target on a phone", lambda f: f.__setitem__(card, f[card].replace(
+            f"  sizeDelta: {{x: {PH_STAR}, y: {PH_STAR}}}\n", "  sizeDelta: {x: 44, y: 44}\n"))),
         ("the grid field nulled", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  GameSelectionGrid: {{fileID: {ids.stubs['GameSelectionGrid']}}}", "  GameSelectionGrid: {fileID: 0}"))),
     ]

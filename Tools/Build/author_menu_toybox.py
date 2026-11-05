@@ -190,7 +190,8 @@ def shuffle_card(parent):
     w, h = K.button_size("SHUFFLE", small=True)
     n.children.append(P.Inst("ShuffleButton", "KitButtonSmall", "ShuffleButton", R((1, 0), None, (-24, 24), (w, h), (1, 0)),
                              K.button_mods("KitButtonSmall", "Default", False, "SHUFFLE", small=True)
-                             + [("root#button", "m_Navigation.m_Mode", 0, None)]))
+                             + [("root#button", "m_Navigation.m_Mode", 0, None)],
+                             added=[("phone", 114, K.phone_rect(R((1, 0), None, (-24, 24), (PH_SHUFFLE_W, PH_SHUFFLE_H), (1, 0))))]))
     n.add("tile", 114, tile(k, [c(f"{k}/Title", "tmp")]))
     n.add("shuffle", 114, lambda ctx, go: mono(go, S["shuffle"],
           f"  titleText: {ref(ctx.c(f'{k}/Title', 'tmp'))}\n  detailText: {ref(ctx.c(f'{k}/Detail', 'tmp'))}\n"
@@ -217,11 +218,15 @@ def build_view():
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, A.rect_mask())
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
-    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2)) \
+        .add("phone", 114, K.phone_rect(width_scale=PH_SCALE))
     # Sibling order is focus order (ScreenSwitcher.Refocus): today's activity comes first, so the pad
     # starts on the card the board highlights; the party panel and the header's Back follow.
     feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (GRID_W, FEAT_H), (0, 1))))
     feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEAT_H))
+    # On a phone the two feature cards stack, each the content's width: side by side at PH_SCALE neither card's words fit.
+    feats.add("phone", 114, K.phone_rect(layout=(0, PH_FEATS_H), stack=dict(origin=(0, 0), item=(PH_FEAT_W, FEAT_H),
+                                                                          spacing=PH_FEAT_GAP)))
     daily_card(feats)
     shuffle_card(feats)
     content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (GRID_W, 26), (0, 1)))).add("le", 114, le(ph=26))
@@ -237,6 +242,7 @@ def build_view():
              "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
              f"  m_CellSize: {{x: {TOY_W}, y: {TOY_H}}}\n  m_Spacing: {{x: {TOY_GAP_X}, y: {TOY_GAP_Y}}}\n"
              f"  m_Constraint: 1\n  m_ConstraintCount: {COLS}\n"))
+    grid.add("phone", 114, K.phone_rect(grid=dict(columns=PH_COLS, cell=(PH_CELL_W, TOY_H))))
     empty = content.child(N("Empty", "Empty", R((0, 1), None, (0, 0), (GRID_W, 60), (0, 1)), active=False))
     empty.add("le", 114, le(ph=60))
     label(empty.child(N("Empty/Text", "Text", STRETCH)), "No toys are standing right now.", "Body", "NeutralLightest",
@@ -250,7 +256,17 @@ def build_view():
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore toys", "H1",
           "TextLight")
     A.back_button(header)
+    AR.phone_window(root)
     return root
+
+
+# The phone layout: Arcade's window (AR.phone_window, the arena's), the content drawn at PH_SCALE - the scale at which
+# three toy cards across keep their 310-wide words - the toy grid PH_COLS across, the two feature cards stacked.
+PH_SCALE, PH_COLS = 0.64, 3
+PH_CELL_W = AR.phone_cell_w(PH_SCALE, PH_COLS, TOY_GAP_X)
+PH_FEAT_W, PH_FEAT_GAP = int(AR.phone_content_w(PH_SCALE)), 12
+PH_FEATS_H = 2 * FEAT_H + PH_FEAT_GAP
+PH_SHUFFLE_W, PH_SHUFFLE_H = 150, 69                      # 69 x PH_SCALE >= 44: a thumb's height on a phone
 
 
 AR_GRID = "8a8695521f0d02e499659fee002a26c2"   # UnityEngine.UI.GridLayoutGroup
@@ -451,6 +467,21 @@ def validate(files):
     C.wired(view, shuf, "shuffleButton", S["button"], "ToyboxShuffleCard")
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "ToyboxView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "ToyboxView: Back must close through ModalWindowCloseButton"
+    # The phone layout: Arcade's window, the content at PH_SCALE, the toys PH_COLS across, the feature cards stacked.
+    AR.check_phone_window(view, "ToyboxView")
+    ph = AR.phone_of(view, V("Grid#phone"))
+    assert ph and ph["gridColumns"] == str(PH_COLS), f"ToyboxView: the toy grid is not {PH_COLS} across on a phone"
+    assert PH_COLS * ph["gridCellSize"][0] + (PH_COLS - 1) * TOY_GAP_X <= AR.phone_content_w(PH_SCALE), \
+        "ToyboxView: the phone toy grid is wider than the phone"
+    assert ph["gridCellSize"][0] >= 16 + 310, "ToyboxView: a phone toy card is narrower than its words"
+    ph = AR.phone_of(view, V("Explore/Viewport/Content#phone"))
+    assert ph and float(ph["widthScale"]) == PH_SCALE, "ToyboxView: the explore content is not drawn at the phone scale"
+    ph = AR.phone_of(view, V("Features#phone"))
+    assert ph and ph["stackChildren"] == "1" and ph["layoutSize"][1] == PH_FEATS_H, "ToyboxView: the feature cards do not stack on a phone"
+    assert ph["stackItemSize"][0] <= AR.phone_content_w(PH_SCALE), "ToyboxView: a stacked feature card is wider than the phone"
+    sb = [m.group(1) for m in re.finditer(r"^--- !u!114 &(-?\d+)\n((?:(?!--- ).*\n)*)", view, re.M)
+          if f"guid: {AR.PHONE_GUID}" in m.group(2) and f"sizeDelta: {{x: {PH_SHUFFLE_W}, y: {PH_SHUFFLE_H}}}" in m.group(2)]
+    assert len(sb) == 1 and PH_SHUFFLE_H * PH_SCALE >= AR.PH_TOUCH, "ToyboxView: SHUFFLE is under a thumb's height on a phone"
 
     sc = T.Scene(files[SCENE])
     anchors = set(sc.order) | {"0"}
@@ -499,6 +530,12 @@ def self_test(files):
         ("the daily card without its countdown", lambda f: f.__setitem__(view, re.sub(r"(  countdownText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
         ("the card prefab back on the scene template", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  cardPrefab: {card_prefab_ref()}", "  cardPrefab: {fileID: 0}"))),
+        ("the phone toy grid four across", lambda f: f.__setitem__(view, f[view].replace(
+            f"  gridColumns: {PH_COLS}\n", "  gridColumns: 4\n"))),
+        ("the feature cards side by side on a phone", lambda f: f.__setitem__(view, f[view].replace(
+            "  stackChildren: 1\n", "  stackChildren: 0\n"))),
+        ("SHUFFLE a PC-sized target on a phone", lambda f: f.__setitem__(view, f[view].replace(
+            f"  sizeDelta: {{x: {PH_SHUFFLE_W}, y: {PH_SHUFFLE_H}}}\n", "  sizeDelta: {x: 150, y: 36}\n"))),
         ("the shuffle card unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  shuffleCard: {{fileID: {ids.stubs['shuffleCard']}}}", "  shuffleCard: {fileID: 0}"))),
     ]

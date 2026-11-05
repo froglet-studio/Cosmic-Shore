@@ -52,6 +52,9 @@ P = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(P)
 
 C, A, K, T, H, M = P.C, P.A, P.K, P.T, P.H, P.M
+_spec = importlib.util.spec_from_file_location("author_voyage_window", os.path.join(HERE, "author_voyage_window.py"))
+VW = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(VW)
 REPO = K.REPO
 SCENE = P.SCENE
 OUT_DIR = "Assets/_Prefabs/UI Elements/Main Menu Screens/Mission"
@@ -305,8 +308,176 @@ def build_view():
 
 
 def build_voyage_quest_card():
-    """The Profile's old quest card (author_menu_profile.build_quest_card), compact: five across Episode 1."""
-    return P.build_quest_card("VoyageQuestCard", QUEST_W, QUEST_H, QUEST_ART_H, QUEST_GAP, compact=True)
+    """The Profile's old quest card (author_menu_profile.build_quest_card), compact: five across Episode 1. On a phone the
+    Quests page is drawn at PH_QUESTS_SCALE, so the footer grows into the gap over it and CLAIM and PLAY QUEST grow to
+    PH_QUEST_BUTTON_H, a thumb's height there."""
+    root = P.build_quest_card("VoyageQuestCard", QUEST_W, QUEST_H, QUEST_ART_H, QUEST_GAP, compact=True)
+    found = {}
+
+    def walk(n):
+        found[n.key] = n
+        for ch in getattr(n, "children", ()):
+            walk(ch)
+    walk(root)
+    pad = 16
+    found["Body/Footer"].add("phone", 114, K.phone_rect(R((0, 0), (1, 0), (0, pad), (-2 * pad, PH_QUEST_FOOTER_H), (0.5, 0))))
+    found["Body/Footer/Claim"].add("phone", 114, K.phone_rect(R((0, 0), (1, 0), (0, 0), (0, PH_QUEST_BUTTON_H), (0.5, 0))))
+    found["PlayButton"].added = list(getattr(found["PlayButton"], "added", [])) + [
+        ("phone", 114, K.phone_rect(R((0, 0), (1, 0), (0, 0), (0, PH_QUEST_BUTTON_H), (0.5, 0))))]
+    return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout of the Voyage window (Docs/UI_STYLE_GUIDE.md section 8; Docs/MENU_REDESIGN_B.md section 129).
+# MissionView.prefab's PC layout is author_voyage_window.py's (this script stands down on it), so the phone poses are
+# PATCHED onto that file: one PhoneRect per object below, re-added every run (a re-run is a no-op), nothing else touched.
+# It is Arcade's phone window (author_menu_arcade.py, R55Arcade): the nav dim over the 96-wide rail, the glass right of
+# it, the header 52 tall from y 10 with Back 48 tall, the body from y 72 to 10 above the foot. The four tabs move up into
+# the header row left of Back (the title "Voyage" leaves the phone: the selected tab names the page), so every page has
+# the whole body (672 x 368 on an 800-wide phone):
+#     Voyages   the map column and the voyage cards drawn at PH_VOYAGES_SCALE, re-flowed to the phone's width
+#     Saga      the two voyage cards at PH_SAGA_SCALE, SET SAIL a thumb's height
+#     Quests    Episode 1's five quest cards at PH_QUESTS_SCALE (VoyageQuestCard's footer grows on a phone)
+#     Episodes  the locked Episode 2 at PH_QUESTS_SCALE
+# --------------------------------------------------------------------------------------------
+
+PHONE_RAIL, PHONE_X = A.PHONE_RAIL, A.PHONE_X
+PH_W, PH_BODY_H, PH_TOUCH = 800 - PHONE_X - 16, 450 - 72 - 10, 44
+PH_HEADER = R((0, 1), (1, 1), ((PHONE_X - 16) / 2, -10), (-(PHONE_X + 16), 52), (0.5, 1))
+PH_BODY = R((0, 0), (1, 1), ((PHONE_X - 16) / 2, -31), (-(PHONE_X + 16), -82))
+PH_BUTTON_H, PH_BUTTON_GAP, PH_TAB_GAP = 48, 12, 8
+PH_TOP_RIGHT = A.back_width() + PH_BUTTON_GAP           # the tabs end this far left of the header's right edge
+PH_TOP_RISE = 72 - 62                                    # the body starts 10 under the header's foot
+PH_VOYAGES_SCALE, PH_MAP_W, PH_MAP_GAP = 0.6, 520, 20
+PH_SAGA_SCALE, PH_QUESTS_SCALE = 0.65, 0.5
+PH_SAIL_Y, PH_SAIL_H = 10, 68                            # 68 x PH_SAGA_SCALE >= 44
+PH_QUEST_FOOTER_H, PH_QUEST_BUTTON_H = 140, 88           # 88 x PH_QUESTS_SCALE >= 44
+PH_BRACKET, PH_BRACKET_IN = 12, 10                       # a 48-tall tab's corner brackets: 12 square, centred 10 in
+OFF = (-4000, 0)                                         # off the canvas: the pad's LB / RB keycaps, the title
+
+
+def phone_poses():
+    """(path in MissionView, PhoneRect body) for every object the phone layout moves."""
+    out = [
+        ("MissionView/NavDim", K.phone_rect(R((0, 0), (0, 1), (PHONE_RAIL / 2, 0), (PHONE_RAIL, 0)))),
+        ("MissionView/Backdrop", K.phone_rect(R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0)))),
+        ("MissionView/SeaLines", K.phone_rect(R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0)))),
+        ("MissionView/Header", K.phone_rect(PH_HEADER)),
+        ("MissionView/Header/Title", K.phone_rect(R((0, 1), None, OFF, (420, 32), (0, 1)))),
+        ("MissionView/Header/Back", K.phone_rect(R((1, 0), None, (0, 0), (A.back_width(), PH_BUTTON_H), (1, 0)))),
+        ("MissionView/Body", K.phone_rect(PH_BODY)),
+        # The tabs: in the header's row, from its left edge to PH_TOP_RIGHT short of its right, PH_BUTTON_H tall.
+        ("MissionView/Body/Top", K.phone_rect(R((0, 1), (1, 1), (-PH_TOP_RIGHT / 2, 52 - 4 + PH_TOP_RISE),
+                                                (-PH_TOP_RIGHT, PH_BUTTON_H), (0.5, 1)))),
+        ("MissionView/Body/Top/LB", K.phone_rect(R((0, 0), (0, 1), OFF, (48, 0), (0, 0.5)))),
+        ("MissionView/Body/Top/RB", K.phone_rect(R((1, 0), (1, 1), OFF, (48, 0), (1, 0.5)))),
+        # Voyages: the map column and the cards column drawn at PH_VOYAGES_SCALE, the body's height, the phone's width.
+        ("MissionView/Body/Voyages", K.phone_rect(R((0, 1), (1, 1), (0, 0), (0, PH_BODY_H / PH_VOYAGES_SCALE), (0, 1)),
+                                                  width_scale=PH_VOYAGES_SCALE)),
+        ("MissionView/Body/Voyages/MapColumn", K.phone_rect(R((0, 0), (0, 1), (0, 0), (PH_MAP_W, 0), (0, 0.5)))),
+        ("MissionView/Body/Voyages/Scroll", K.phone_rect(R((0, 0), (1, 1), ((PH_MAP_W + PH_MAP_GAP) / 2, 0),
+                                                           (-(PH_MAP_W + PH_MAP_GAP), 0)))),
+        # The other three pages fill the body; each page's panel keeps its PC layout, drawn smaller.
+        ("MissionView/VoyagePages", K.phone_rect(PH_BODY)),
+        ("MissionView/VoyagePages/SagaPage/Panel", K.phone_rect(scale=PH_SAGA_SCALE)),
+        ("MissionView/VoyagePages/QuestsPage/Panel", K.phone_rect(scale=PH_QUESTS_SCALE)),
+        ("MissionView/VoyagePages/EpisodesPage/Panel", K.phone_rect(scale=PH_QUESTS_SCALE)),
+    ]
+    for i, tab in enumerate(VW.TABS):
+        t = f"MissionView/Body/Top/{tab}Tab"
+        out.append((t, K.phone_rect(R((i / 4, 0), ((i + 1) / 4, 1), (0, 0), (-PH_TAB_GAP, 0)))))
+        for corner, (ax, ay) in (("TL", (0, 1)), ("TR", (1, 1)), ("BR", (1, 0)), ("BL", (0, 0))):
+            x = PH_BRACKET_IN if ax == 0 else -PH_BRACKET_IN
+            y = PH_BRACKET_IN if ay == 0 else -PH_BRACKET_IN
+            out.append((f"{t}/Bracket {corner}", K.phone_rect(R((ax, ay), None, (x, y), (PH_BRACKET, PH_BRACKET)))))
+    out.append(("MissionView/Body/Top/EpisodesTab/Lock", K.phone_rect(R((0, 0.5), None, (8, 0), (14, 16), (0, 0.5)))))
+    for card in ("Featured", "Voyage2"):
+        out.append((f"MissionView/VoyagePages/SagaPage/Panel/{card}/SetSail",
+                    K.phone_rect(R((0, 0), (1, 0), (0, PH_SAIL_Y), (-48, PH_SAIL_H), (0.5, 0)))))
+    return out
+
+
+PHONE_IDS = K.FileIds("MissionView/Phone")
+
+
+def phone_patch(text_):
+    """MissionView.prefab (author_voyage_window.py's layout) with its phone poses: each PhoneRect removed and re-added
+    right after its GameObject, last in its component list."""
+    pf = VW.Prefab(text_)
+    for path, fn in phone_poses():
+        go = pf.find(path)
+        fid = str(PHONE_IDS(f"{path}#phone"))
+        others = [c for c in pf.comps(go) if c != fid and f"guid: {A_PHONE_GUID}" in pf.by[c].body]
+        assert not others, f"{path} already carries a PhoneRect this script did not write"
+        g = pf.by[go]
+        if fid in pf.by:
+            pf.remove(fid)
+            g.body = g.body.replace(f"  - component: {{fileID: {fid}}}\n", "")
+        pf.add("114", fid, fn(None, go), after=go)
+        g.body = re.sub(r"(  m_Component:\n(?:  - component: .*\n)*)", lambda m: m.group(1) + f"  - component: {{fileID: {fid}}}\n",
+                        g.body, count=1)
+    return pf.text()
+
+
+A_PHONE_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+
+
+def phone_fields(pf, go):
+    """The PhoneRect on `go` as a dict of its fields (vectors as tuples), or None."""
+    for c in pf.comps(go):
+        body = pf.by[c].body
+        if f"guid: {A_PHONE_GUID}" in body:
+            out = {}
+            for m in re.finditer(r"^  (\w+): (.*)$", body, re.M):
+                v = re.match(r"\{x: (-?[\d.e+-]+), y: (-?[\d.e+-]+)", m.group(2))
+                out[m.group(1)] = (float(v.group(1)), float(v.group(2))) if v else m.group(2)
+            return out
+    return None
+
+
+def validate_phone(text_):
+    """The phone layout on disk: every pose present, the header and body Arcade's, the tabs in the header row clear of
+    Back, every control a thumb's height on the phone, every page inside the body."""
+    VW.validate(text_)
+    pf = VW.Prefab(text_)
+    ph = {path: phone_fields(pf, pf.find(path)) for path, _ in phone_poses()}
+    for path, f in ph.items():
+        assert f, f"MissionView: {path} has no phone pose"
+    assert ph["MissionView/Header"]["sizeDelta"] == (-(PHONE_X + 16), 52), "MissionView: the phone header is not Arcade's"
+    assert ph["MissionView/Body"]["sizeDelta"] == (-(PHONE_X + 16), -82), "MissionView: the phone body is not Arcade's"
+    assert ph["MissionView/VoyagePages"]["sizeDelta"] == ph["MissionView/Body"]["sizeDelta"], "MissionView: the pages are not the body"
+    back = ph["MissionView/Header/Back"]["sizeDelta"]
+    top = ph["MissionView/Body/Top"]
+    assert back[1] >= PH_TOUCH and top["sizeDelta"][1] >= PH_TOUCH, "MissionView: Back or the tabs are under a thumb's height"
+    # The tabs' row ends PH_BUTTON_GAP short of Back and its foot meets the header's (y 62 on the canvas).
+    assert -top["sizeDelta"][0] >= back[0] + PH_BUTTON_GAP, "MissionView: the tabs run under Back"
+    assert 72 - top["anchoredPosition"][1] + top["sizeDelta"][1] == 62, "MissionView: the tabs are not on the header's row"
+    tab_w = (PH_W + top["sizeDelta"][0]) / 4 - PH_TAB_GAP
+    words = max(K.label_width(t, "H3") * 16 / 22 for t in VW.TABS)     # H3 at its phone size (Docs/UI_STYLE_GUIDE.md 8)
+    lock = ph["MissionView/Body/Top/EpisodesTab/Lock"]
+    assert lock["anchoredPosition"][0] + lock["sizeDelta"][0] + 4 <= (tab_w - words) / 2, \
+        "MissionView: the Episodes lock runs into its word on a phone"
+    # Voyages: the map and cards columns fit the content drawn at PH_VOYAGES_SCALE, two closed cards a thumb's height.
+    vy = ph["MissionView/Body/Voyages"]
+    assert float(vy["widthScale"]) == PH_VOYAGES_SCALE and vy["sizeDelta"][1] * PH_VOYAGES_SCALE <= PH_BODY_H + 0.01, \
+        "MissionView: the Voyages page is not the body at the phone scale"
+    cards_w = PH_W / PH_VOYAGES_SCALE - PH_MAP_W - PH_MAP_GAP
+    assert cards_w >= 2 * 260 and VW.EDGE_H + VW.EDGE_GAP < vy["sizeDelta"][1] / 2, "MissionView: the voyage columns do not fit a phone"
+    # The pages' panels (their PC sizes, read off disk) drawn inside the body.
+    for page, scale in (("SagaPage", PH_SAGA_SCALE), ("QuestsPage", PH_QUESTS_SCALE), ("EpisodesPage", PH_QUESTS_SCALE)):
+        path = f"MissionView/VoyagePages/{page}/Panel"
+        assert float(ph[path]["scale"]) == scale, f"MissionView: {page} is not drawn at {scale} on a phone"
+        size = re.search(r"m_SizeDelta: \{x: (\S+), y: (\S+)\}", pf.by[pf.rt(pf.find(path))].body)
+        w, h = float(size.group(1)), float(size.group(2))
+        assert w * scale <= PH_W and h * scale <= PH_BODY_H, f"MissionView: {page} ({w} x {h} at {scale}) does not fit a phone's body"
+    for card in ("Featured", "Voyage2"):
+        sail = ph[f"MissionView/VoyagePages/SagaPage/Panel/{card}/SetSail"]
+        assert sail["sizeDelta"][1] * PH_SAGA_SCALE >= PH_TOUCH, f"MissionView: {card}'s SET SAIL is under a thumb's height"
+        lowest = min(float(y) - 12 for y in re.findall(r"m_AnchoredPosition: \{x: 0, y: (\S+)\}", "".join(
+            pf.by[pf.rt(pf.find(f"MissionView/VoyagePages/SagaPage/Panel/{card}/{n}"))].body
+            for n in ("Form1", "Form2", "Form3", "Form4"))))
+        assert sail["anchoredPosition"][1] + sail["sizeDelta"][1] < lowest, f"MissionView: {card}'s SET SAIL covers its forms"
+    return pf
 
 
 def prefab_outputs():
@@ -458,6 +629,14 @@ def validate(files):
                   "goalsGroup", "node", "segment"):
         assert re.search(r"^  " + field + r": \{fileID: [1-9-]", rb, re.M), f"VoyageQuestCard: {field} is not wired"
     assert len(re.findall(r"^  - group: \{fileID: [1-9]", rb, re.M)) == 2, "VoyageQuestCard needs its two goal rows"
+    # On a phone (the Quests page at PH_QUESTS_SCALE) CLAIM and PLAY QUEST are a thumb's height, the footer clear of the goals.
+    Q = K.FileIds("VoyageQuestCard")
+    for key in ("Body/Footer/Claim", "Body/Footer"):
+        _, d = A.doc_of(card, Q(f"{key}#phone"))
+        assert d and f"guid: {A_PHONE_GUID}" in d, f"VoyageQuestCard: {key} has no phone pose"
+    n = card.count(f"sizeDelta: {{x: 0, y: {PH_QUEST_BUTTON_H}}}\n")
+    assert n == 2 and PH_QUEST_BUTTON_H * PH_QUESTS_SCALE >= PH_TOUCH, "VoyageQuestCard: CLAIM / PLAY QUEST under a thumb's height on a phone"
+    assert 16 + PH_QUEST_FOOTER_H <= QUEST_H - (QUEST_ART_H + 16 + 106 + 80), "VoyageQuestCard: the phone footer covers the goals"
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "MissionView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "MissionView: Back must close through ModalWindowCloseButton"
 
@@ -493,10 +672,20 @@ def stood_down(path):
     return any(m in text for m in VOYAGE_WINDOW_MARKERS)
 
 
+def written(files):
+    """What this script writes: its outputs, with MissionView swapped for author_voyage_window.py's layout on disk plus
+    the phone poses once that layout stands this script down there."""
+    out = dict(files)
+    mv = prefab_path("MissionView")
+    if stood_down(mv):
+        out[mv] = phone_patch(open(os.path.join(REPO, mv), encoding="utf-8").read())
+        validate_phone(out[mv])
+    return out
+
+
 def drift(files):
     return [p for p, t in files.items()
-            if not stood_down(p) and (not os.path.exists(os.path.join(REPO, p))
-                                      or open(os.path.join(REPO, p), encoding="utf-8").read() != t)] \
+            if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t] \
         + [p for p in RETIRED if os.path.exists(os.path.join(REPO, p))]
 
 
@@ -527,6 +716,29 @@ def self_test(files):
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)
+    mv = prefab_path("MissionView")
+    if stood_down(mv):
+        phone = written(files)[mv]
+
+        def expect_phone(label_, mutate):
+            try:
+                validate_phone(mutate(phone))
+            except AssertionError as e:
+                print(f"  caught: {label_} ({e})")
+                return True
+            print(f"  MISSED: {label_}")
+            return False
+        top = str(PHONE_IDS("MissionView/Body/Top#phone"))
+        phone_cases = [
+            ("a phone pose dropped", lambda t: t.replace(f"  - component: {{fileID: {top}}}\n", "")),
+            ("SET SAIL back to its PC height on a phone", lambda t: t.replace(
+                f"  sizeDelta: {{x: -48, y: {PH_SAIL_H}}}\n", "  sizeDelta: {x: -48, y: 51.4}\n", 1)),
+            ("the tabs under Back", lambda t: t.replace(f"  sizeDelta: {{x: {K.f32(-PH_TOP_RIGHT)}, y: {PH_BUTTON_H}}}\n",
+                                                        f"  sizeDelta: {{x: -20, y: {PH_BUTTON_H}}}\n")),
+            ("the quests page at the saga's scale", lambda t: t.replace(
+                f"  scale: {K.f32(PH_QUESTS_SCALE)}\n", f"  scale: {K.f32(PH_SAGA_SCALE)}\n", 1)),
+        ]
+        ok = all([ok] + [expect_phone(l, m) for l, m in phone_cases])
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
     return ok
 
@@ -541,6 +753,9 @@ def main():
     print(f"OK: {len(PREFABS)} mission prefabs and Menu_Main validate")
     if args.self_test:
         return 0 if self_test(files) else 1
+    files = written(files)
+    if stood_down(prefab_path("MissionView")):
+        print("OK: MissionView (author_voyage_window.py's layout) carries the phone layout")
     stale = drift(files)
     if args.check:
         for p in stale:
