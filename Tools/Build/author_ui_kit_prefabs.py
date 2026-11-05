@@ -753,9 +753,12 @@ def build_top_nav_tab():
     inactive = root.child(Node("InactiveImage", "InactiveImage", STRETCH))
     inactive.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("NeutralLightest"))) \
         .add("kt", 114, kit_text("Button", "NeutralLightest"))
+    # In the phone rail (Docs/MENU_REDESIGN_B.md section 129) a tab is 96 x 56: its word along the bottom, its glyph above.
+    inactive.add("phone", 114, phone_rect(rect((0, 0), (1, 0), (0, 6), (0, 20), (0.5, 0))))
     # The tab's glyph (rev 3: the old nav's icons back beside the word). Off until a host sets its
     # sprite and its x - the word is centred, so only the host knows where the word's left edge is.
     iicon = inactive.child(Node("InactiveImage/Icon", "Icon", rect(size=(NAV_ICON, NAV_ICON)), active=False))
+    iicon.add("phone", 114, phone_rect(rect((0.5, 1), None, (0, 4), (22, 22), (0.5, 0))))
     iicon.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("NeutralLightest"), None, preserve=True)) \
         .add("th", 114, themed("NeutralLightest"))
     # The locked look, off by default. A host's MenuAvailabilityView shows it as its lockedOverlay;
@@ -765,6 +768,7 @@ def build_top_nav_tab():
     lock.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("InactiveLight"), chrome_sprite("chrome_lock"), preserve=True)) \
         .add("th", 114, themed("InactiveLight"))
     active = root.child(Node("ActiveImage", "ActiveImage", STRETCH, active=False))
+    active.add("phone", 114, phone_rect(rect((0, 0), (1, 0), (0, 6), (0, 20), (0.5, 0))))
     # The label sizes itself to its text so the 2px underline beneath it spans the word, not the tab.
     alab = active.child(Node("ActiveImage/Label", "Label",
                              rect(size=(label_width("TAB", "Button"), line_height("Button")))))
@@ -778,6 +782,7 @@ def build_top_nav_tab():
     # The lit glyph hangs off the word's left edge, so it follows the fitted label without a layout.
     aicon = alab.child(Node("ActiveImage/Icon", "Icon", rect((0, 0.5), None, (-(NAV_ICON_GAP + NAV_ICON / 2), 0),
                                                               (NAV_ICON, NAV_ICON)), active=False))
+    aicon.add("phone", 114, phone_rect(rect((0.5, 1), None, (0, 4), (22, 22), (0.5, 0))))
     aicon.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("TextLight"), None, preserve=True)) \
         .add("th", 114, themed("TextLight"))
     return root

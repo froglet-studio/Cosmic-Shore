@@ -77,7 +77,7 @@ namespace CosmicShore.UI
         private RectTransform _rect;
         private bool _authoredRead;
         private Vector2 _aMin, _aMax, _pivot, _pos, _size;
-        private float _font, _fontMax, _leW, _leH;
+        private float _font, _fontMax, _leW, _leH, _leMinW, _leMinH;
         private Vector3 _scale;
         private TMP_Text _text;
         private LayoutElement _le;
@@ -176,8 +176,10 @@ namespace CosmicShore.UI
                 }
                 if (_le)
                 {
-                    if (layoutSize.x > 0f) _le.preferredWidth = layoutSize.x;
-                    if (layoutSize.y > 0f) _le.preferredHeight = layoutSize.y;
+                    // The phone size is the preferred size, and a minimum larger than it comes down to it (the Home hubs'
+                    // 210-unit minimum would not fit four across a phone).
+                    if (layoutSize.x > 0f) { _le.preferredWidth = layoutSize.x; if (_leMinW > layoutSize.x) _le.minWidth = layoutSize.x; }
+                    if (layoutSize.y > 0f) { _le.preferredHeight = layoutSize.y; if (_leMinH > layoutSize.y) _le.minHeight = layoutSize.y; }
                 }
                 ApplyChildren(true);
             }
@@ -192,8 +194,8 @@ namespace CosmicShore.UI
                 }
                 if (_le)
                 {
-                    if (layoutSize.x > 0f) _le.preferredWidth = _leW;
-                    if (layoutSize.y > 0f) _le.preferredHeight = _leH;
+                    if (layoutSize.x > 0f) { _le.preferredWidth = _leW; _le.minWidth = _leMinW; }
+                    if (layoutSize.y > 0f) { _le.preferredHeight = _leH; _le.minHeight = _leMinH; }
                 }
                 ApplyChildren(false);
             }
@@ -205,7 +207,7 @@ namespace CosmicShore.UI
             _aMin = r.anchorMin; _aMax = r.anchorMax; _pivot = r.pivot;
             _pos = r.anchoredPosition; _size = r.sizeDelta; _scale = r.localScale;
             if (TryGetComponent(out _text)) { _font = _text.fontSize; _fontMax = _text.fontSizeMax; }
-            if (TryGetComponent(out _le)) { _leW = _le.preferredWidth; _leH = _le.preferredHeight; }
+            if (TryGetComponent(out _le)) { _leW = _le.preferredWidth; _leH = _le.preferredHeight; _leMinW = _le.minWidth; _leMinH = _le.minHeight; }
             if (TryGetComponent(out _group)) { _groupAlpha = _group.alpha; _groupInteractable = _group.interactable; _groupBlocks = _group.blocksRaycasts; }
             if (TryGetComponent(out _layout)) _layoutEnabled = _layout.enabled;
             if (TryGetComponent(out _grid))

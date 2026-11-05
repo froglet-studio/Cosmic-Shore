@@ -643,6 +643,8 @@ def upnext_node():
 def build_invite():
     root = N("root", INVITE, R((1, 1), None, (-40, -INVITE_TOP), (520, 132), (1, 1)))
     root.add("cg", 225, lambda ctx, go: H.canvas_group(False)(ctx, go))
+    # On a phone (R55Home): under the pilot chip, at 0.75 (its words keep their PC sizes, drawn at 0.75).
+    root.add("phone", 114, K.phone_rect(R((0, 1), None, (112, -84), (520, 132), (0, 1)), scale=0.75))
     # Motion (section 22.8): the popup drops in each time it appears. PartyInviteNotificationPanel
     # starts it (play on enable off) - the popup lives on an always-enabled screen.
     root.add("in", 114, M.entrance("Drop", distance=18, play_on_enable=False))
@@ -810,6 +812,52 @@ def patch_freestyle_toggle(p):
     p.field(SWITCHER, "crystalClickHandler", ref(CRYSTAL_HANDLER))
 
 
+# --- the phone layout (Docs/MENU_REDESIGN_B.md section 129, the approved R55Home board) --------------------------
+# On the 800 x 450 phone canvas the nav band is the rail down the left (96 wide, author_menu_phone.py and
+# author_menu_topnav.py), so Home's content starts at x 112: the pilot chip and its question bar top left, Settings top
+# right with Up next under it, the fly hint in the middle, the four hubs in one row along the bottom. Every piece keeps
+# its PC place on PC; PhoneRect carries the phone one.
+PH = K.phone_rect
+PH_X = 112                                   # right of the rail (96) and a 16 margin
+
+
+def _add_phone(p, go, fn):
+    """Add (or re-add) the PhoneRect last on `go`; some of these objects are re-emitted each run, so it is removed
+    first and appended again, which lands it in the same place every run (--check)."""
+    p.remove_comp(go, str(p.ctx.fid(f"{go}#phone")))
+    p.add_comp(go, "phone", 114, fn)
+
+
+def patch_phone(p):
+    I = IDS
+    g = lambda key: str(p.ctx.go(key))
+    poses = [
+        (g("Chip"), PH(TL(PH_X, 12, 340, 60))),
+        (g("Chip/Divider"), PH(TL(250, 12, 1, 36))),
+        (g("Chip/Crystals"), PH(TL(262, 8, 74, 44))),
+        (g("Chip/Crystals/Label"), PH(TL(0, 0, 74, 14))),
+        (g("Chip/Crystals/Glyph"), PH(TL(0, 22, 16, 16))),
+        (g("Chip/Crystals/Amount"), PH(TL(20, 18, 54, 24))),
+        (I["avatar_go"], PH(TL(PH_X + 6, 18, 48, 48))),
+        (I["lamp_go"], PH(R((1, 0), (1, 0), (2, 2), (16, 16), (0.5, 0.5)))),
+        (I["name_go"], PH(TL(PH_X + 62, 16, 76, 50))),
+        (sc_go(p, I["name_text"]), PH(R((0, 1), (1, 1), (0, 0), (0, 24), (0.5, 1)), font=18)),
+        (g("Name/Status"), PH(R((0, 1), (1, 1), (0, -26), (0, 14), (0.5, 1)))),
+        (I["bar_go"], PH(TL(PH_X, 80, 340, 96))),
+        (sc_go(p, I["bar_text"]), PH(TL(14, 10, 312, 22), font=16)),
+        (g("Bar/Note"), PH(TL(14, 34, 312, 16))),
+        (I["accept_go"], PH(R((0, 0), None, (14, 0), (112, 48), (0, 0.5)))),
+        (I["cancel_go"], PH(R((0, 0), None, (136, 0), (112, 48), (0, 0.5)))),
+        (I["settings_go"], PH(R((1, 1), None, (-16, -12), (96, 84), (1, 1)), scale=0.62)),
+        (g("UpNext"), PH(R((1, 1), None, (-16, -76), (CARD_W, 2 * CARD_H + DOCK_GAP), (1, 1)), scale=0.75)),
+        (g("Hint"), PH(R((0.5, 1), None, (PH_X / 2 - 8, -250), (HINT_W, HINT_H), (0.5, 1)))),
+        (I["row_go"], PH(R((0, 0), (1, 0), ((PH_X - 16) / 2, 12), (-(PH_X + 16), 56), (0.5, 0)))),
+    ]
+    poses += [(go, PH(None, layout=(160, 56))) for _, go, *_ in HUBS]
+    for go, fn in poses:
+        _add_phone(p, go, fn)
+
+
 def transform(text_):
     p = Patch(text_)
     I = IDS
@@ -833,6 +881,7 @@ def transform(text_):
     patch_invite(p)
     patch_tap_surface(p)
     patch_freestyle_toggle(p)
+    patch_phone(p)
     return p.text()
 
 

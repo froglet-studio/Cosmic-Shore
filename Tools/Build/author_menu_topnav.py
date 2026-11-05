@@ -309,7 +309,7 @@ class Ids:
         self.ctx = K.Ctx(FILE_KEY)
         f = self.ctx.fid
         self.band = {k: str(f("Band#" + k)) for k in ("go", "rt", "cr", "img", "th")}
-        self.rule = {k: str(f("Rule#" + k)) for k in ("go", "rt", "cr", "img", "th")}
+        self.rule = {k: str(f("Rule#" + k)) for k in ("go", "rt", "cr", "img", "th", "phone")}
         # Keyed by the tab's link, not its place: a reorder moves a tab, it never hands one tab's objects to another.
         self.tabs = [{k: str(f(f"Tab{link}#{k}")) for k in
                       ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "stub_lock", "stub_label",
@@ -483,6 +483,9 @@ def transform(text):
     rule = K.Node("Rule", "Rule", K.rect((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)))
     rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceLight", RULE_ALPHA))) \
         .add("th", 114, K.themed("SurfaceLight", RULE_ALPHA))
+    # On a phone the band is the rail down the left (author_menu_phone.py; Docs/MENU_REDESIGN_B.md section 129): the
+    # rule runs down its right edge.
+    rule.add("phone", 114, K.phone_rect(K.rect((1, 0), (1, 1), (0, 0), (1, 0), (1, 0.5))))
     K.emit_node(ids.ctx, band, NAVBAR["rt"], out)
     K.emit_node(ids.ctx, rule, NAVBAR["rt"], out)
     for i in range(len(TABS)):

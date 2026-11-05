@@ -109,6 +109,7 @@ GameObject:
   - component: {fileID: 6374596164143806}
   - component: {fileID: 1006226634690138268}
   - component: {fileID: 12900780453098841}
+  - component: {fileID: 186182865257873516}
   m_Layer: 5
   m_Name: InactiveImage
   m_TagString: Untagged
@@ -252,6 +253,38 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &186182865257873516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 560574309437499168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 0}
+  pivot: {x: 0.5, y: 0}
+  anchoredPosition: {x: 0, y: 6}
+  sizeDelta: {x: 0, y: 20}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &98293131272352550
 GameObject:
   m_ObjectHideFlags: 0
@@ -261,6 +294,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 541745736101041383}
+  - component: {fileID: 130629505280461220}
   - component: {fileID: 551384280624732625}
   - component: {fileID: 33190492533555961}
   - component: {fileID: 439856720006593890}
@@ -290,6 +324,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 24, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &130629505280461220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98293131272352550}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 1}
+  anchorMax: {x: 0.5, y: 1}
+  pivot: {x: 0.5, y: 0}
+  anchoredPosition: {x: 0, y: 4}
+  sizeDelta: {x: 22, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!222 &551384280624732625
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -443,6 +509,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 268262652357482550}
+  - component: {fileID: 130525706704552479}
   m_Layer: 5
   m_Name: ActiveImage
   m_TagString: Untagged
@@ -470,6 +537,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &130525706704552479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 314185968830832710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 0}
+  pivot: {x: 0.5, y: 0}
+  anchoredPosition: {x: 0, y: 6}
+  sizeDelta: {x: 0, y: 20}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &568534812435680331
 GameObject:
   m_ObjectHideFlags: 0
@@ -741,6 +840,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 52501364956983403}
+  - component: {fileID: 830140832604990676}
   - component: {fileID: 1000247993144937836}
   - component: {fileID: 580809380607268173}
   - component: {fileID: 378520317990387913}
@@ -770,6 +870,38 @@ RectTransform:
   m_AnchoredPosition: {x: -20, y: 0}
   m_SizeDelta: {x: 24, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &830140832604990676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 268072446976896536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 1}
+  anchorMax: {x: 0.5, y: 1}
+  pivot: {x: 0.5, y: 0}
+  anchoredPosition: {x: 0, y: 4}
+  sizeDelta: {x: 22, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!222 &1000247993144937836
 CanvasRenderer:
   m_ObjectHideFlags: 0

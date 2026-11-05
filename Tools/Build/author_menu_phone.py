@@ -37,8 +37,8 @@ MENU = "Assets/_Scenes/Menu_Main.unity"
 
 # Scene objects of Menu_Main with no phone board yet, by their (unique) name.
 SCENE_FALLBACK = [
-    "Hangar Screen", "ArkScreen", "HomeScreen", "PortScreen", "ProfileScreen",
-    "NavBar", "FriendsDrawerHost", "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
+    "Hangar Screen", "ArkScreen", "PortScreen", "ProfileScreen",
+    "FriendsDrawerHost", "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
     "ArcadeScreenModal", "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal",
     "ToyboxGameConfigureModal", "ArenaGameConfigureModal", "MaelstromGameConfigurationModal",
     "ProfileModal", "LeaderboardConfigureModal", "PlayerDataSelectModal", "InitializingScreen", "SceneTransitionModal",
@@ -51,6 +51,15 @@ PREFAB_FALLBACK = [
     "Assets/_Prefabs/UI Elements/Quest/InGameInstructionSet.prefab",
 ]
 
+# Scene objects of Menu_Main that HAVE a phone layout and no generator of their own to write it (the nav band is
+# patched in place by author_menu_topnav.py, which keeps other generators' components on it). R55 (section 129): the
+# band is the rail down the left, 96 wide, its tabs stacked Home first.
+RAIL_W, TAB_H = 96, 56
+SCENE_PHONE = {
+    "NavBar": dict(pose=K.rect((0, 0), (0, 1), (RAIL_W / 2, 0), (RAIL_W, 0))),
+    "NavBarButtons": dict(pose=K.STRETCH, stack=dict(origin=(0, -10), item=(RAIL_W, TAB_H), spacing=2,
+                                                     order=["HomeLink", "CodexLink", "HangarLink", "ArkLink", "PortLink"])),
+}
 PHONE_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
 
 
@@ -62,10 +71,14 @@ def mark(p, go):
 
 def scene_text(text_):
     p = Patch(text_, "Menu_Main/Phone")
-    for name in SCENE_FALLBACK:
+    for name in list(SCENE_FALLBACK) + list(SCENE_PHONE):
         gos = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and f"  m_Name: {name}\n" in d]
         assert len(gos) == 1, f"Menu_Main: expected one {name!r}, found {len(gos)}"
-        mark(p, gos[0])
+        if name in SCENE_PHONE:
+            p.remove_comp(gos[0], str(p.ctx.fid(f"{gos[0]}#phone")))
+            p.add_comp(gos[0], "phone", 114, K.phone_rect(**SCENE_PHONE[name]))
+        else:
+            mark(p, gos[0])
     return p.text()
 
 
@@ -88,7 +101,7 @@ def outputs():
 def validate(out):
     for path, text_ in out.items():
         n = text_.count(f"guid: {PHONE_GUID}, type: 3}}")
-        want = len(SCENE_FALLBACK) if path == MENU else 1
+        want = len(SCENE_FALLBACK) + len(SCENE_PHONE) if path == MENU else 1
         assert n >= want, f"{path}: {n} PhoneRects, expected at least {want}"
         for m in re.finditer(r"^--- !u!114 &(-?\d+)\n(.*?)(?=^--- |\Z)", text_, re.S | re.M):
             body = m.group(2)

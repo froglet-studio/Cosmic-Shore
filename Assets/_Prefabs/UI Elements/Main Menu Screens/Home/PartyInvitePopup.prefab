@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1072430939251367470}
   - component: {fileID: 861207231775141405}
+  - component: {fileID: 150519770027451879}
   - component: {fileID: 1002799244024019823}
   - component: {fileID: 395316660096324623}
   m_Layer: 5
@@ -58,6 +59,38 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &150519770027451879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 943084556780148090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 112, y: -84}
+  sizeDelta: {x: 520, y: 132}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.75
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!114 &1002799244024019823
 MonoBehaviour:
   m_ObjectHideFlags: 0
