@@ -15,8 +15,9 @@ Release tags (the only names the release workflow accepts):
     rc-<label>                         a release candidate, e.g. rc-0.3.0-1, rc-launchtest-1   version = the tag
                                        (<label>: lower-case letters and digits, joined by '.' or '-')
 
-The range starts at the nearest earlier tag matching `--match` (default `v*` and `rc-*`) that is an ancestor of
-the new tag. If there is none it falls back to `--fallback-match` (default `internal/*`, the weekly dated tag on
+The range starts at the nearest earlier tag matching `--match` that is an ancestor of the new tag: for a final
+release (v1.2.3) the previous final release, so its notes cover every candidate since; for a candidate or a
+pre-release the nearest `v*` or `rc-*` tag. If there is none it falls back to `--fallback-match` (default `internal/*`, the weekly dated tag on
 bleeding-edge) and says so in the notes. `--from <ref>` names the start outright.
 
 A pull request is found two ways on the first-parent line of the range: a merge commit whose subject is
@@ -51,6 +52,14 @@ AREAS = ("UI", "Vessels", "Multiplayer", "Live ops / UGS", "Build & CI", "Ecolog
 V_TAG_RE = re.compile(r"^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$")
 RC_TAG_RE = re.compile(r"^rc-[a-z0-9]+(?:[.-][a-z0-9]+)*$")
 DEFAULT_MATCH = ("v*", "rc-*")
+FINAL_MATCH = ("v*", "!v*-*")  # a final release counts from the previous final release, not the last candidate
+
+
+def default_match(tag: str) -> tuple[str, ...]:
+    """The previous-release patterns for a tag: v1.2.3 looks back to the last v<x.y.z> with no suffix; a candidate
+    or a pre-release (rc-..., v1.2.3-beta.1) looks back to the nearest release tag of any kind."""
+    m = V_TAG_RE.match(tag)
+    return FINAL_MATCH if m and not m.group(4) else DEFAULT_MATCH
 DEFAULT_FALLBACK = ("internal/*",)
 
 MERGE_RE = re.compile(r"^Merge pull request #(\d+) from (\S+)")
@@ -178,7 +187,7 @@ def previous_tag(repo: Path, tag: str, match: tuple[str, ...], fallback: tuple[s
             continue
         args = ["describe", "--tags", "--abbrev=0"]
         for p in patterns:
-            args += ["--match", p]
+            args += ["--exclude", p[1:]] if p.startswith("!") else ["--match", p]
         proc = subprocess.run(["git", "-C", str(repo), *args, f"{tag_commit}^"], text=True, capture_output=True)
         found = proc.stdout.strip()
         if proc.returncode == 0 and found and found != tag:
@@ -498,6 +507,16 @@ def _self_test() -> int:
         check("empty range with --require-prs exits non-zero", rc != 0)
         out.unlink(missing_ok=True)
 
+        # A final release looks back past the candidates to the previous final release.
+        merge_pr("final", 16, "feat(ugs): flags document", {"Tools/UGS/CloudCode/flags.js": "x"})
+        git("tag", "v0.2.0")
+        n5 = build_notes(tmp, "v0.2.0", None, default_match("v0.2.0"), DEFAULT_FALLBACK)
+        check("final release counts from the previous final release (past rc tags)",
+              n5["from"] == "v0.1.0" and len(n5["pull_requests"]) == 7)
+        check("ugs scope -> Live ops / UGS", {p["number"]: p["area"] for p in n5["pull_requests"]}[16] == "Live ops / UGS")
+        check("a candidate counts from the nearest release tag of any kind",
+              default_match("rc-0.3.0-1") == DEFAULT_MATCH and default_match("v0.3.0-beta.1") == DEFAULT_MATCH)
+
         # Malformed and missing tags fail clearly.
         for bad in ("v1.2", "rc-", "rc-Launch_Test", "release-1", "v01.2.3", "rc-a..b"):
             expect_error(f"malformed tag {bad!r} refused", lambda b=bad: tag_version(b), "is not a release tag")
@@ -593,7 +612,9 @@ def main(argv: list[str] | None = None) -> int:
     n = sub.add_parser("notes", help="write the release notes for a tag")
     n.add_argument("--tag", required=True)
     n.add_argument("--from", dest="start", help="start of the range (default: the previous release tag)")
-    n.add_argument("--match", action="append", help="previous release tag pattern (repeatable; default v*, rc-*)")
+    n.add_argument("--match", action="append",
+                   help="previous release tag pattern, '!pattern' to exclude (repeatable; default: v* and rc-* for a "
+                        "candidate, v* without a '-' suffix for a final release)")
     n.add_argument("--fallback-match", action="append",
                    help="used when no tag matches --match (repeatable; default internal/*; 'none' to disable)")
     n.add_argument("--repo", default=".")
@@ -625,7 +646,7 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.out).write_text(json.dumps(ident, indent=2) + "\n")
             print(json.dumps(ident, indent=2))
             return 0
-        match = tuple(args.match or DEFAULT_MATCH)
+        match = tuple(args.match or default_match(args.tag))
         fallback = tuple(args.fallback_match or DEFAULT_FALLBACK)
         if fallback == ("none",):
             fallback = ()
