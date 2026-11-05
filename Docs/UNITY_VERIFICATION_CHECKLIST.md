@@ -21110,4 +21110,6 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 4. **Pick Dart Frog and press APPLY.** The loading screen reads "Changing colour set" and lifts on Dart Frog. The tile
    tick moves, Equipped shows, and leaving now keeps Dart Frog. Restart Play: the game starts in Dart Frog.
 5. **Check the words fit:** the 88-point name for the longest set name, and four pigment pairs on one row.
+6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
+   page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
