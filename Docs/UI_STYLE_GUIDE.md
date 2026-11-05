@@ -174,7 +174,14 @@ An iPad sideways (820 points tall) lands body at about 13.7 pt, which is fine.
   1/160 inch). `AdaptiveCanvasScaler`, already on GameCanvas, Menu_Main and Maelstrom, has a **Has Phone Layout**
   switch: when it is on, a phone in play mode lays that canvas out against 800 x 450, and every `KitText` under it sets
   in its role's phone size (`UITypeRoles.asset`'s `phoneSize` column, written by `author_ui_kit_prefabs.py`).
-- **The switch is off on every canvas today.** A 1920-wide layout in an 800-wide canvas spills off the screen, so a
+- **`PhoneRect`** carries a piece's phone layout: its pose on the 800 x 450 canvas, a phone font size for a text with no
+  `KitText`, a phone `LayoutElement` size, or a phone scale for a block drawn at the PC size. The scaler applies every
+  `PhoneRect` under its canvas when the phone layout turns on and puts the authored values back when it turns off; the
+  generators write them (`K.phone_rect`).
+- **Where it stands (2026-11-05):** sign-in is built and ON (`Authentication.unity`). The in-game finish (the scoreboard),
+  the HUD pieces and the pause, connecting and end-reveal panels are built but GameCanvas's switch stays OFF until two
+  instance overrides are cleared at the editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). The menus are next.
+- **The switch is off on every other canvas.** A 1920-wide layout in an 800-wide canvas spills off the screen, so a
   canvas turns it on only once its screens have a phone layout: drawn on Frogma, then built. Until then a phone shows
   the PC layout scaled down: test it, and log any screen that cannot be read in the UI checklist's Safe area line.
 
@@ -262,9 +269,10 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
    (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`, `author_ingame_hud.py`, `author_maelstrom_ui.py`,
    `author_menu_configure.py`, and the menu generators that bake the selection colour); `colour_domains.json`
    `ui_tokens` has `selection: jade` and `commit: ruby`.
-2. **The phone scale** (D6). The mechanism is done (2026-11-05, branch `claude/ui-phone-scale`; section 8). What is
-   left is per screen: draw its phone layout on Frogma, build it for 800 x 450, then tick Has Phone Layout on its
-   canvas. Menu_Main holds every menu screen on one canvas, so its switch waits until all of them have one.
+2. **The phone scale** (D6). The mechanism is done (section 8). Built against the approved boards (Docs/MENU_REDESIGN_B.md
+   sections 124-125): sign-in (on), the in-game finish, HUD and panels (built, off until GameCanvas's two instance
+   overrides are cleared). Still to build: the toasts and the picture-in-picture frame in GameCanvas, then Home, Arcade,
+   Configure and Hangar, and every other Menu_Main screen before Menu_Main's switch goes on.
 
 **The prompt for D8** (paste into a new session):
 

@@ -85,6 +85,7 @@ S = dict(
     brand=K.kit_script("KitBrandButton"),
     welcome=HUD.script_guid("Assets/_Scripts/UI/Screens/BootWelcomeCard.cs"),
 )
+ADAPTIVE = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
 AUTH_DATA = "875bcedfcf3335047b416297732cba15"            # the AuthenticationData variable the broadcaster reads
 WELCOME_H = 168
 PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"          # SignInProviders.asset
@@ -138,6 +139,13 @@ NOTE_H = 40   # R9b: "Steam is not running" above the buttons
 PROGRESS_H, AUTO_H = 360, 250
 AUTH_H, NAME_H, RETRY_H = 330, 440, 250
 RULES = 4                      # DisplayNameRuleState.Count
+# The phone layout (Docs/MENU_REDESIGN_B.md section 125, the approved R53SignIn board; Docs/UI_STYLE_GUIDE.md section 8):
+# the sign-in window widens to two columns on the 800 x 450 phone canvas - the heading left, the chooser's rows right
+# (SignInChooser still sets each row's y, from its phoneStackTop). PhoneRect carries each pose; the PC layout is untouched.
+PH = K.phone_rect
+PH_WIN_W, PH_WIN_H = 760, 400
+PH_LX, PH_LW = 24, 330          # the heading column
+PH_RX, PH_RW = 390, 346         # the chooser column
 
 
 # --------------------------------------------------------------------------------------------
@@ -224,7 +232,7 @@ def readout_node(prefix, with_line):
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
     track.add("bar", 114, lambda ctx, go: K.mono(go, S["loadbar"], f"  fill: {{fileID: {ctx.rt(prefix + '/Readout/Track/Fill')}}}\n"))
     if with_line:
-        H.label(n.child(N(f"{prefix}/Readout/Line", "StatusLine", R((0.5, 0), None, (0, 0), (900, 22)))),
+        H.label(n.child(N(f"{prefix}/Readout/Line", "StatusLine", R((0.5, 0), None, (0, 0), (900, 22)))).add("ph", 114, PH(R((0.5, 0), None, (0, 0), (600, 22)))),
                 "", "BodySmall", "NeutralLightest", align="center")
         n.add("line", 114, lambda ctx, go: K.mono(go, S["line"],
               f"  requestEvent: {K.ref(11400000, BOOT_STATUS_CHANNEL, 2)}\n"
@@ -362,6 +370,7 @@ def icon_button(k, name, r, variant, caption, icon=None, cap=None, align=3, sub=
     content_keys.insert(0, (f"{k}/Label", "tmp"))
     if sub:
         sl = n.child(N(f"{k}/Sub", "Sub", R((1, 0.5), None, (-24, 0), (220, 20), (1, 0.5))))
+        sl.add("ph", 114, PH(R((1, 0.5), None, (-12, -17), (170, 14), (1, 0.5))))
         H.label(sl, sub, "BodySmall", "NeutralLightest", align="right")
         sl.add("le", 114, H.le(ignore=True))
     n.add("button", 114, lambda ctx, go: K.mono(go, S["kitbutton"],
@@ -447,25 +456,33 @@ def auth_window():
     rows, height = chooser_rows()
     at = {k: y for k, y, _ in rows}
     w = bare_window("SignIn", R((0.5, 0.5), None, (0, height / 2 - 80), (WIN_W, height), (0.5, 1)))
+    w.add("ph", 114, PH(R((0.5, 0.5), None, (0, PH_WIN_H / 2), (PH_WIN_W, PH_WIN_H), (0.5, 1))))
 
     ch = face(w, "SignIn/Choose", True)
     heading(ch, "SignIn/Choose", "Welcome, pilot", "NeutralLightest", "Sign in to fly", "H1",
             "Your pilot, crystals and vessels follow you to every device you sign in on.")
-    H.label(ch.child(N("SignIn/Choose/SilentNote", "SilentNote", TL(PAD, at["SignIn/Choose/SilentNote"], INNER, NOTE_H), active=False)),
-            "Steam is not running. Start Steam to sign in with it, or pick a way below.", "BodySmall", "Danger",
+    for part, r in (("Eyebrow", TL(PH_LX, 30, PH_LW, 16)), ("Title", TL(PH_LX, 50, PH_LW, 32)), ("Body", TL(PH_LX, 90, PH_LW, 90))):
+        next(c for c in ch.children if c.key == f"SignIn/Choose/{part}").add("ph", 114, PH(r))
+    note = ch.child(N("SignIn/Choose/SilentNote", "SilentNote", TL(PAD, at["SignIn/Choose/SilentNote"], INNER, NOTE_H), active=False))
+    H.label(note, "Steam is not running. Start Steam to sign in with it, or pick a way below.", "BodySmall", "Danger",
             valign="top", wrap=True)
+    note.add("ph", 114, PH(TL(PH_RX, 0, PH_RW, NOTE_H)))
     for name, _ in CHOOSER:
         ch.child(brand_button(f"SignIn/Choose/{name}", f"{name}Button",
-                              TL((WIN_W - BRAND_W) / 2, at[f"SignIn/Choose/{name}"], BRAND_W, BRAND_H), brand_sprite(f"{name.lower()}Button")))
+                              TL((WIN_W - BRAND_W) / 2, at[f"SignIn/Choose/{name}"], BRAND_W, BRAND_H), brand_sprite(f"{name.lower()}Button"))) \
+            .add("ph", 114, PH(TL(PH_RX + (PH_RW - BRAND_W) / 2, 0, BRAND_W, BRAND_H)))
     orr = ch.child(N("SignIn/Choose/Or", "Or", TL(PAD, at["SignIn/Choose/Or"], INNER, OR_H)))
+    orr.add("ph", 114, PH(TL(PH_RX, 0, PH_RW, OR_H)))
     for side, amin, amax, pos in (("L", (0, 0.5), (0.5, 0.5), (-14, 0)), ("R", (0.5, 0.5), (1, 0.5), (14, 0))):   # 24 px clear round "or"
         rule = orr.child(N(f"SignIn/Choose/Or/{side}", f"Rule{side}", R(amin, amax, (pos[0] * 6 / 7, 0), (-24, 1))))
         rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
     H.label(orr.child(N("SignIn/Choose/Or/Word", "Word", R((0.5, 0.5), None, (0, 0), (40, 20)))), "or", "Label", "NeutralLightest", align="center")
     ch.child(icon_button("SignIn/Choose/Guest", "GuestLoginButton", TL(PAD, at["SignIn/Choose/Guest"], INNER, BTN_H),
-                         "Default", "Play as guest", icon="chrome_person", sub="Saved on this device only"))
-    H.label(ch.child(N("SignIn/Choose/Hint", "Hint", TL(PAD, at["SignIn/Choose/Hint"], INNER, HINT_H))),
-            "You can link an account later in Settings > Account.", "BodySmall", "NeutralLightest")
+                         "Default", "Play as guest", icon="chrome_person", sub="Saved on this device only")) \
+        .add("ph", 114, PH(TL(PH_RX, 0, PH_RW, BTN_H)))
+    hint = ch.child(N("SignIn/Choose/Hint", "Hint", TL(PAD, at["SignIn/Choose/Hint"], INNER, HINT_H)))
+    H.label(hint, "You can link an account later in Settings > Account.", "BodySmall", "NeutralLightest")
+    hint.add("ph", 114, PH(TL(PH_RX, 0, PH_RW, 34)))
 
     pr = face(w, "SignIn/Progress", False)
     heading(pr, "SignIn/Progress", "Google", "NeutralLightest", "Finish in your browser", "H2",
@@ -549,6 +566,7 @@ PROVIDERS_META = ("fileFormatVersion: 2\nguid: %s\nNativeFormatImporter:\n  exte
 
 def name_window():
     w = window("Name", R((0.5, 0.5), None, (0, 30), (WIN_W, NAME_H)), "Pilot name", "NeutralLightest", "What should we call you?", "H2")
+    w.add("ph", 114, PH(R((0.5, 0.5), None, (0, 0), (WIN_W, NAME_H))))
     for i in range(RULES):
         row = w.child(N(f"Name/Rule{i}", f"Rule{i}", TL(PAD, 182 + i * 26, WIN_W - 2 * PAD, 22)))
         mark = row.child(N(f"Name/Rule{i}/Mark", "Mark", R((0, 0.5), None, (7, 0), (14, 12))))
@@ -622,6 +640,15 @@ def auth_text(text_):
     st = tmp_restyle(p.doc(I["login_status_tmp"]), "Chakra", 15, False, 2, "left", "NeutralLightest")
     p.replace(I["login_status_tmp"], C.field_set(st, "m_TextWrappingMode", "1"))
     p.children(choose_rt, p.kids(choose_rt) + [I["login_status_rt"]])
+    status_go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(I["login_status_rt"])).group(1)
+    p.add_comp(status_go, "phone", 114, PH(TL(PH_RX, 0, PH_RW, STATUS_H), font=13))
+
+    # The phone scale (Docs/UI_STYLE_GUIDE.md section 8): the sign-in canvas gets the AdaptiveCanvasScaler GameCanvas
+    # and Menu_Main carry, with its phone layout ON - every screen on this canvas has one (R53SignIn).
+    canvas_go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(I["canvas_rt"])).group(1)
+    p.add_comp(canvas_go, "adaptive", 114, lambda ctx, go: K.mono(go, ADAPTIVE,
+        "  referenceAspect: 1.7777778\n  blendRange: 0.15\n  safeZone: {fileID: 0}\n  safeZoneMaxAspect: 1.7777778\n"
+        "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n"))
 
     # Pilot-name panel: the window; the field and the error line move into it.
     nw = name_window()

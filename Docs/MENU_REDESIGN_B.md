@@ -5752,3 +5752,17 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   out-of-family variants; D5 CTA always lime; D6 phones on their own 800 x 450 scale; D7 the UI checklist required;
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
+**Built (2026-11-05, `claude/ui-phone-layouts`, NOT RUN IN EDITOR):** `PhoneRect` (a piece's phone pose, text size, layout
+size or scale, applied by `AdaptiveCanvasScaler`).
+- **Sign-in** (R53SignIn): the window widens to two columns, the heading left, the chooser's rows right
+  (`SignInChooser.phoneStackTop`); the Authentication canvas gets the `AdaptiveCanvasScaler` with its phone layout ON.
+- **The finish** (R52Finish): the scoreboard's header and ladder on the left, the reward top right, Play again and Main
+  menu bottom right; every row, team header, stat and versus column re-laid for 52-unit rows.
+- **The in-game HUD** (R53): each piece keeps its place and draws at 1.3x the shrunk PC size (a block with no KitText
+  scaled 0.54; Ready, the waiting card and the countdown re-posed at 0.75 with their KitTexts at the phone sizes),
+  stepped in by the notch; the pause window, connecting panel and end reveal take the same pass. Not the one top plate the
+  board draws, nor pause moved to the top left: that needs every mode's HUD rebuilt, so it is a later round.
+  GameCanvas's switch stays OFF until the pause window instance's root offsets and the notification feed's place
+  override are cleared at the editor. The toasts and the picture-in-picture frame have no phone layout yet.
+- Garrett's touch controls and the vessel HUD are untouched (they are on the vessel's own canvas).
+

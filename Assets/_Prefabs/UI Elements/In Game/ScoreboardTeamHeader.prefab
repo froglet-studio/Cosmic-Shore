@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 615160418713517991}
   - component: {fileID: 141216434921242582}
+  - component: {fileID: 71988736236131274}
   - component: {fileID: 720616461796896060}
   m_Layer: 5
   m_Name: ScoreboardTeamHeader
@@ -60,6 +61,27 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &71988736236131274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1127019133284052377}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 480, y: 22}
+  scale: 0
 --- !u!114 &720616461796896060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86,6 +108,7 @@ GameObject:
   - component: {fileID: 309747492000210707}
   - component: {fileID: 702229139347473370}
   - component: {fileID: 672801831870331030}
+  - component: {fileID: 800590450902990703}
   m_Layer: 5
   m_Name: Domain
   m_TagString: Untagged
@@ -211,6 +234,27 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &800590450902990703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 839739974931656853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 8, y: -4}
+  sizeDelta: {x: 60, y: 14}
+  fontSize: 12
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &568080911631682409
 GameObject:
   m_ObjectHideFlags: 0
@@ -222,6 +266,7 @@ GameObject:
   - component: {fileID: 780192867414261626}
   - component: {fileID: 135616491198175921}
   - component: {fileID: 185497723055626534}
+  - component: {fileID: 416237014828626283}
   m_Layer: 5
   m_Name: Rule
   m_TagString: Untagged
@@ -286,6 +331,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &416237014828626283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 568080911631682409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 72, y: -11}
+  sizeDelta: {x: 60, y: 1}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &109062616826710031
 GameObject:
   m_ObjectHideFlags: 0
@@ -297,6 +363,7 @@ GameObject:
   - component: {fileID: 222528223413777755}
   - component: {fileID: 888828973687017176}
   - component: {fileID: 312474713316741523}
+  - component: {fileID: 606782518801003313}
   m_Layer: 5
   m_Name: Summary
   m_TagString: Untagged
@@ -422,3 +489,24 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &606782518801003313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109062616826710031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 144, y: -4}
+  sizeDelta: {x: 330, y: 14}
+  fontSize: 12
+  layoutSize: {x: 0, y: 0}
+  scale: 0

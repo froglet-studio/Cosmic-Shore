@@ -23,8 +23,9 @@ namespace CosmicShore.UI
     ///
     /// Phone scale (Docs/UI_STYLE_GUIDE.md §8, D6): a canvas whose screens have a phone layout ticks
     /// <see cref="hasPhoneLayout"/>. On a phone (<see cref="PhoneScale.IsPhone(int,int,float,bool)"/>) in play mode
-    /// the scaler then lays the canvas out against 800 x 450 instead of its authored reference, and every
-    /// <see cref="KitText"/> under it sets in its role's phone size. A canvas without a phone layout keeps the PC
+    /// the scaler then lays the canvas out against 800 x 450 instead of its authored reference, every
+    /// <see cref="KitText"/> under it sets in its role's phone size, and every <see cref="PhoneRect"/> takes its
+    /// phone pose. A canvas without a phone layout keeps the PC
     /// layout scaled down on a phone (off by default: a 1920-wide layout in an 800-wide canvas would spill), and
     /// nothing changes on PC, console or iPad either way. The reference is only switched in play mode, so a
     /// Device Simulator preview never saves 800 x 450 into the prefab or scene.
@@ -163,6 +164,8 @@ namespace CosmicShore.UI
             // The profile changes on a resolution change only (rare), so one walk of the texts is fine here.
             var texts = GetComponentsInChildren<KitText>(true);
             for (int i = 0; i < texts.Length; i++) texts[i].Apply();
+            var rects = GetComponentsInChildren<PhoneRect>(true);
+            for (int i = 0; i < rects.Length; i++) rects[i].Apply(phone);
         }
 
         private void ApplySafeZone(float aspect)

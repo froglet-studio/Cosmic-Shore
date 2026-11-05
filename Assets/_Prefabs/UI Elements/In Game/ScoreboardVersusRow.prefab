@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1065529086857221543}
   - component: {fileID: 626297207498137277}
   - component: {fileID: 240126914605859788}
+  - component: {fileID: 543174752593199203}
   - component: {fileID: 613143190166236277}
   m_Layer: 5
   m_Name: ScoreboardVersusRow
@@ -81,6 +82,27 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &543174752593199203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 74389381005804261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 228, y: 52}
+  scale: 0
 --- !u!114 &613143190166236277
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -448,6 +470,7 @@ GameObject:
   - component: {fileID: 513747242936707116}
   - component: {fileID: 836276398201825467}
   - component: {fileID: 734686801850728488}
+  - component: {fileID: 913404180743888805}
   m_Layer: 5
   m_Name: Rank
   m_TagString: Untagged
@@ -573,6 +596,27 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &913404180743888805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 966795333495866700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 8, y: -12}
+  sizeDelta: {x: 18, y: 28}
+  fontSize: 16
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &447875916567874403
 GameObject:
   m_ObjectHideFlags: 0
@@ -582,6 +626,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 161964698886670825}
+  - component: {fileID: 437535507423556350}
   - component: {fileID: 835682971061959215}
   - component: {fileID: 675383985884073608}
   m_Layer: 5
@@ -611,6 +656,27 @@ RectTransform:
   m_AnchoredPosition: {x: 64, y: -16}
   m_SizeDelta: {x: 52, y: 52}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &437535507423556350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 447875916567874403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 28, y: -10}
+  sizeDelta: {x: 32, y: 32}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!222 &835682971061959215
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -825,6 +891,7 @@ GameObject:
   - component: {fileID: 273405733257555117}
   - component: {fileID: 1011011563275429912}
   - component: {fileID: 856722932266325230}
+  - component: {fileID: 721347934527884705}
   m_Layer: 5
   m_Name: Name
   m_TagString: Untagged
@@ -950,6 +1017,27 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &721347934527884705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542062028799032259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 66, y: -4}
+  sizeDelta: {x: 70, y: 20}
+  fontSize: 14
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &72365373829682072
 GameObject:
   m_ObjectHideFlags: 0
@@ -961,6 +1049,7 @@ GameObject:
   - component: {fileID: 169037229389527001}
   - component: {fileID: 287654843156073924}
   - component: {fileID: 889747921613726147}
+  - component: {fileID: 889642938749693126}
   m_Layer: 5
   m_Name: Domain
   m_TagString: Untagged
@@ -1086,6 +1175,27 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &889642938749693126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72365373829682072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 66, y: -24}
+  sizeDelta: {x: 70, y: 13}
+  fontSize: 12
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &219416018840188862
 GameObject:
   m_ObjectHideFlags: 0
@@ -1097,6 +1207,7 @@ GameObject:
   - component: {fileID: 457753787968990088}
   - component: {fileID: 921075542505818516}
   - component: {fileID: 755131530889018130}
+  - component: {fileID: 1015226824299241522}
   m_Layer: 5
   m_Name: Secondary
   m_TagString: Untagged
@@ -1222,6 +1333,27 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1015226824299241522
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 219416018840188862}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 66, y: -37}
+  sizeDelta: {x: 70, y: 13}
+  fontSize: 12
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &713624971642613810
 GameObject:
   m_ObjectHideFlags: 0
@@ -1233,6 +1365,7 @@ GameObject:
   - component: {fileID: 220297350128925658}
   - component: {fileID: 1088299347945061179}
   - component: {fileID: 108252859717189661}
+  - component: {fileID: 16454076721539377}
   m_Layer: 5
   m_Name: Score
   m_TagString: Untagged
@@ -1358,6 +1491,27 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &16454076721539377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 713624971642613810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -46, y: -12}
+  sizeDelta: {x: 44, y: 28}
+  fontSize: 16
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &606628387666123433
 GameObject:
   m_ObjectHideFlags: 0
@@ -1368,6 +1522,7 @@ GameObject:
   m_Component:
   - component: {fileID: 746487019412690145}
   - component: {fileID: 396121444087948344}
+  - component: {fileID: 374565426034625328}
   m_Layer: 5
   m_Name: DataPanels
   m_TagString: Untagged
@@ -1422,6 +1577,27 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &374565426034625328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 606628387666123433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -4, y: -14}
+  sizeDelta: {x: 40, y: 24}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &221080747635778450
 GameObject:
   m_ObjectHideFlags: 0
@@ -1435,6 +1611,7 @@ GameObject:
   - component: {fileID: 528336003888569378}
   - component: {fileID: 677585851827636403}
   - component: {fileID: 957935055195381212}
+  - component: {fileID: 57999696381929946}
   m_Layer: 5
   m_Name: Glyph
   m_TagString: Untagged
@@ -1534,6 +1711,27 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &57999696381929946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 221080747635778450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 12, y: 12}
+  scale: 0
 --- !u!1 &164847404908462473
 GameObject:
   m_ObjectHideFlags: 0
@@ -1546,6 +1744,7 @@ GameObject:
   - component: {fileID: 875025853097076490}
   - component: {fileID: 414138440753517509}
   - component: {fileID: 703771072765428862}
+  - component: {fileID: 206260894158477546}
   m_Layer: 5
   m_Name: Amount
   m_TagString: Untagged
@@ -1691,3 +1890,24 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &206260894158477546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 164847404908462473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 12
+  layoutSize: {x: 24, y: 24}
+  scale: 0

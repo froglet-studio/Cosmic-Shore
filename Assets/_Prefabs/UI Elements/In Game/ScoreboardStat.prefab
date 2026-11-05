@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 407029661823374203}
   - component: {fileID: 825117969222247932}
+  - component: {fileID: 528758676133442959}
   - component: {fileID: 681226743051797010}
   - component: {fileID: 35447227945898462}
   - component: {fileID: 2866030435025379}
@@ -62,6 +63,27 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &528758676133442959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1040032230958334551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 150, y: 30}
+  scale: 0
 --- !u!225 &681226743051797010
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -120,6 +142,7 @@ GameObject:
   - component: {fileID: 787023277619051711}
   - component: {fileID: 450272882526210586}
   - component: {fileID: 979060265805592845}
+  - component: {fileID: 23929490512395006}
   m_Layer: 5
   m_Name: Icon
   m_TagString: Untagged
@@ -184,6 +207,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &23929490512395006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580356470728681200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -7}
+  sizeDelta: {x: 16, y: 16}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &239413276573168299
 GameObject:
   m_ObjectHideFlags: 0
@@ -196,6 +240,7 @@ GameObject:
   - component: {fileID: 980208822229129920}
   - component: {fileID: 479584710321516246}
   - component: {fileID: 311194307288487764}
+  - component: {fileID: 567658718108751254}
   m_Layer: 5
   m_Name: Label
   m_TagString: Untagged
@@ -338,6 +383,27 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &567658718108751254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 239413276573168299}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 20, y: -8}
+  sizeDelta: {x: 76, y: 14}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!1 &1047453064529610716
 GameObject:
   m_ObjectHideFlags: 0
@@ -349,6 +415,7 @@ GameObject:
   - component: {fileID: 202779860576314418}
   - component: {fileID: 728495838627854660}
   - component: {fileID: 891267139081335914}
+  - component: {fileID: 1111383497389050188}
   m_Layer: 5
   m_Name: Value
   m_TagString: Untagged
@@ -474,3 +541,24 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1111383497389050188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1047453064529610716}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 98, y: -3}
+  sizeDelta: {x: 52, y: 24}
+  fontSize: 16
+  layoutSize: {x: 0, y: 0}
+  scale: 0

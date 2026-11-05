@@ -21095,3 +21095,21 @@ and `KitText` choosing its size by its canvas.
 3. **Try the switch** on a scratch copy: tick Has Phone Layout on Menu_Main's canvas, enter play mode in the Device
    Simulator on an iPhone sideways. The canvas reference reads 800 x 450 and a Body Kit Text reads 16; exit play mode
    and the CanvasScaler still reads 1920 x 1080 (the switch never saves into the scene). On an iPad it stays 1920 x 1080.
+
+## 🔴 Phone layouts: PhoneRect, sign-in, the finish and the in-game HUD (`claude/ui-phone-layouts`, 2026-11-05) — NOT COMPILED
+
+Not compiled: no .NET SDK in this session (`unity_refcompile` SKIP) and no editor. New: `PhoneRect`, `PhoneRectTests`,
+`SignInChooser.phoneStackTop`; generated: PhoneRects in GameCanvas, the scoreboard prefabs, the pause / connecting /
+end-reveal panels and Authentication.unity, plus an `AdaptiveCanvasScaler` (phone layout ON) on the sign-in canvas.
+
+1. **Compile, then run** `PhoneRectTests` and `PhoneScaleTests`.
+2. **PC is unchanged**: Authentication, a game mode and its scoreboard look as before at 16:9. (At 16:10 / 21:9 the sign-in
+   canvas now matches height like GameCanvas and Menu_Main do, so it can read a little smaller at 21:9.)
+3. **Sign-in on a phone**: Device Simulator, an iPhone sideways, play Authentication. The window is two columns (heading
+   left; Apple / Google / Play as guest right), nothing under the notch, text readable. Then an iPad: the PC layout.
+4. **GameCanvas, before its switch goes on** (Shombith, GameCanvas owner): clear the `R_Pause_Menu_Panel` instance's
+   root offsets (size 717.6 x 84, position 19, -264) and the `NotificationUI` instance's place override, or give them
+   their phone poses; then tick Has Phone Layout on GameCanvas's `AdaptiveCanvasScaler` and play a mode on an iPhone:
+   the HUD pieces sit clear of the notch at about 1.3x today's phone size, Ready / the countdown read, the scoreboard is
+   the one-column board (header and ladder left, reward top right, Play again bottom right), pause opens on screen.
+5. **Still without a phone layout**: the toasts, the picture-in-picture frame, and every Menu_Main screen.

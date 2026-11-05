@@ -713,6 +713,7 @@ GameObject:
   - component: {fileID: 199003685583076890}
   - component: {fileID: 306244780521621790}
   - component: {fileID: 858383686452732343}
+  - component: {fileID: 243613065388153897}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -720,6 +721,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &243613065388153897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670852612422102744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: -19.44}
+  sizeDelta: {x: 1600, y: 30}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
 --- !u!224 &116487824576648733
 RectTransform:
   m_ObjectHideFlags: 0
@@ -882,6 +904,7 @@ GameObject:
   - component: {fileID: 976061822935762744}
   - component: {fileID: 638829638674337294}
   - component: {fileID: 702486889299883382}
+  - component: {fileID: 294979714875536131}
   m_Layer: 5
   m_Name: Rule
   m_TagString: Untagged
@@ -889,6 +912,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &294979714875536131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 448019339356768130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 160, y: 3}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
 --- !u!224 &874153325610988130
 RectTransform:
   m_ObjectHideFlags: 0
@@ -979,6 +1023,7 @@ GameObject:
   - component: {fileID: 120552451088065782}
   - component: {fileID: 475263883032160513}
   - component: {fileID: 491037961659229731}
+  - component: {fileID: 827400073206845903}
   m_Layer: 5
   m_Name: Winner
   m_TagString: Untagged
@@ -986,6 +1031,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &827400073206845903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 902840761122712513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 79.92}
+  sizeDelta: {x: 1600, y: 28}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
 --- !u!224 &470465097946086742
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1377,6 +1443,7 @@ GameObject:
   - component: {fileID: 3780540842356262167}
   - component: {fileID: 4524640252258915755}
   - component: {fileID: 3550892840546606587}
+  - component: {fileID: 756812506186540969}
   m_Layer: 5
   m_Name: ScoreRevealPanel
   m_TagString: Untagged
@@ -1384,6 +1451,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &756812506186540969
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3820349884772688365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 50.54}
+  sizeDelta: {x: 1127.4341, y: 303.92282}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
 --- !u!224 &3780540842356262167
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1821,6 +1909,7 @@ GameObject:
   - component: {fileID: 2795126439267128504}
   - component: {fileID: 8921264947835217914}
   - component: {fileID: 8549829074479965766}
+  - component: {fileID: 99925359413420700}
   m_Layer: 5
   m_Name: GameOverCounter
   m_TagString: Untagged
@@ -1828,6 +1917,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &99925359413420700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6065125739201124439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 36.72}
+  sizeDelta: {x: 1600, y: 110}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
 --- !u!224 &2795126439267128504
 RectTransform:
   m_ObjectHideFlags: 0

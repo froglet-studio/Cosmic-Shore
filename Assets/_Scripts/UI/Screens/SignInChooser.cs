@@ -40,6 +40,9 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform window;
         [Tooltip("Top of the first row under the title, from the window's top edge.")]
         [SerializeField] float stackTop = 152f;
+        [Tooltip("Top of the first row on a phone (Docs/MENU_REDESIGN_B.md section 125, R53SignIn): the heading moves to " +
+                 "the left column, so the rows start near the window's top. Used while the canvas is at the phone scale.")]
+        [SerializeField] float phoneStackTop = 24f;
         [SerializeField] float rowGap = 14f;
         [SerializeField] float bottomPadding = 34f;
         [SerializeField] float progressHeight = 330f;
@@ -159,7 +162,7 @@ namespace CosmicShore.UI
         public GameObject ShowChoose(GameObject fallback)
         {
             SetFace(chooseGroup);
-            float y = stackTop;
+            float y = OnPhoneCanvas() ? phoneStackTop : stackTop;
             GameObject first = null;
             var order = providers ? providers.OrderFor(providers.CurrentGroup) : null;
             int sibling = 0;
@@ -296,6 +299,12 @@ namespace CosmicShore.UI
             foreach (var b in providerButtons)
                 if (b.provider == provider) return b;
             return default;
+        }
+
+        bool OnPhoneCanvas()
+        {
+            var scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+            return scaler && scaler.UsesPhoneLayout;
         }
 
         float Place(RectTransform rt, float y)

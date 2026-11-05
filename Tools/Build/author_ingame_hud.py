@@ -1191,6 +1191,19 @@ S.update(header=script_guid("Assets/_Scripts/UI/ScoreboardTeamHeader.cs"),
 # for the rest), PLAY AGAIN is the Ruby commit (it launches a game, Docs/UI_STYLE_GUIDE.md D3), CONTINUE the lime call to
 # action, MAIN MENU / LEAVE LOBBY are neutral, the reward strip is plain.
 NO_ROW_RIM = "{fileID: 0}"
+# The phone layout (Docs/MENU_REDESIGN_B.md section 124, the approved R52Finish board; Docs/UI_STYLE_GUIDE.md section 8):
+# on the 800 x 450 phone canvas the board is one column - the header and the ladder on the left, the reward top right,
+# the buttons bottom right - clear of the notch on either side (54 units plus padding). PhoneRect carries each pose and
+# the phone font size of every text that has no KitText; the PC layout above is untouched.
+PH = K.phone_rect
+PH_M, PH_LIST_W, PH_TOP = 70, 480, 92          # side margin, the ladder's width, where the ladder starts
+PH_ROW_HT, PH_VS_W = 52, 228                   # a row's height, a versus column's width
+PH_BTN_W, PH_BTN_W2 = 230, 190                 # Play again / Continue, then Main menu / Leave lobby
+
+
+def BR(x, y, w, h):
+    """A rect placed by its bottom-right corner, `x` in from the right and `y` up from the bottom."""
+    return R((1, 0), None, (-x, y), (w, h), (1, 0))
 
 
 def sb_path(name):
@@ -1205,39 +1218,47 @@ def build_row():
     """Rev 8 option B: a dark glass row with a thin team stripe, the pilot's share of the team's count along its foot,
     and a still hairline border (brighter for you)."""
     root = N("root", SB_ROW, R(size=(LIST_W, ROW_HT)))
-    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=LIST_W))
+    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=LIST_W)) \
+        .add("ph", 114, PH(None, layout=(PH_LIST_W, PH_ROW_HT)))
     glass = root.child(N("Glass", "Glass", STRETCH))
     glass.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver14_fill"), True))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True))
     stripe = root.child(N("Stripe", "TeamStripe", HM.TL(0, 12, 4, ROW_HT - 24)))
-    stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE)).add("ph", 114, PH(HM.TL(0, 8, 3, PH_ROW_HT - 16)))
     share = root.child(N("Share", "Share", R((0, 0), (0.5, 0), (0, 0), (0, 3), (0, 0))))
     share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
     rank = root.child(N("Rank", "Rank", HM.TL(28, 21, 44, 42)))
-    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
+    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight"))) \
+        .add("ph", 114, PH(HM.TL(12, 12, 24, 28), font=16))
     ring = root.child(N("Ring", "Ring", HM.TL(84, 16, 52, 52)))
+    ring.add("ph", 114, PH(HM.TL(40, 8, 36, 36)))
     ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_oct_fill"), True))
     clip = ring.child(N("Ring/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
     clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)).add("mask", 114, A.mask(False))
     av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
     name = root.child(N("Name", "Name", HM.TL(158, 12, 420, 34)))
-    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H2", tok("TextLight"))))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H2", tok("TextLight")))) \
+        .add("ph", 114, PH(HM.TL(84, 6, 170, 22), font=16))
     dom = root.child(N("Domain", "Domain", HM.TL(158, 50, 300, 18)))
-    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest")))
+    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"))) \
+        .add("ph", 114, PH(HM.TL(84, 30, 170, 14), font=12))
     # The pilot's own count ("12 Crystals") in the middle column; the team's shared score lives in its header.
     sec = root.child(N("Secondary", "Secondary", HM.TL(620, 21, 260, 42)))
-    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Data", tok("TextLight")))
+    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Data", tok("TextLight"))) \
+        .add("ph", 114, PH(HM.TL(258, 14, 60, 24), font=14))
     score = root.child(N("Score", "Score", HM.TR(210, 21, 300, 42)))
-    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right")) \
+        .add("ph", 114, PH(HM.TR(100, 12, 60, 28), font=18))
     data = root.child(N("Data", "DataPanels", HM.TR(26, 21, 170, 42)))
-    data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
+    data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0))).add("ph", 114, PH(HM.TR(8, 12, 88, 28)))
     glyph = data.child(N("Data/Glyph", "Glyph", R(size=(20, 20))))
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=20, ph=20))
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=20, ph=20)).add("ph", 114, PH(None, layout=(14, 14)))
     amt = data.child(N("Data/Amount", "Amount", R(size=(110, 36))))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=110, ph=36))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=110, ph=36)) \
+        .add("ph", 114, PH(None, font=16, layout=(66, 28)))
     root.add("card", 114, card_body)
     return root
 
@@ -1269,7 +1290,7 @@ def build_versus_row():
     the pilot's line and counts stacked under it, the score, the reward."""
     w = VS_ROW_W
     root = N("root", SB_VSROW, R(size=(w, ROW_HT)))
-    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=w))
+    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=w)).add("ph", 114, PH(None, layout=(PH_VS_W, PH_ROW_HT)))
     glass = root.child(N("Glass", "Glass", STRETCH))
     glass.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver14_fill"), True))
     bord = root.child(N("Border", "Border", STRETCH))
@@ -1279,8 +1300,10 @@ def build_versus_row():
     share = root.child(N("Share", "Share", R((0, 0), (0.5, 0), (0, 0), (0, 3), (0, 0))))
     share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
     rank = root.child(N("Rank", "Rank", HM.TL(18, 21, 40, 42)))
-    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
+    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight"))) \
+        .add("ph", 114, PH(HM.TL(8, 12, 18, 28), font=16))
     ring = root.child(N("Ring", "Ring", HM.TL(64, 16, 52, 52)))
+    ring.add("ph", 114, PH(HM.TL(28, 10, 32, 32)))
     ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_oct_fill"), True))
     clip = ring.child(N("Ring/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
     clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)).add("mask", 114, A.mask(False))
@@ -1288,20 +1311,25 @@ def build_versus_row():
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
     name_w = w - 132 - 270
     name = root.child(N("Name", "Name", HM.TL(132, 8, name_w, 30)))
-    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H3", tok("TextLight"))))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H3", tok("TextLight")))) \
+        .add("ph", 114, PH(HM.TL(66, 4, 70, 20), font=14))
     dom = root.child(N("Domain", "Domain", HM.TL(132, 40, name_w, 16)))
-    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "Label", tok("NeutralLightest"))))
+    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "Label", tok("NeutralLightest")))) \
+        .add("ph", 114, PH(HM.TL(66, 24, 70, 13), font=12))
     sec = root.child(N("Secondary", "Secondary", HM.TL(132, 58, name_w, 18)))
-    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "BodySmall", tok("TextLight"))))
+    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "BodySmall", tok("TextLight")))) \
+        .add("ph", 114, PH(HM.TL(66, 37, 70, 13), font=12))
     score = root.child(N("Score", "Score", HM.TR(118, 21, 150, 42)))
-    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right")) \
+        .add("ph", 114, PH(HM.TR(46, 12, 44, 28), font=16))
     data = root.child(N("Data", "DataPanels", HM.TR(16, 21, 96, 42)))
-    data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 5, (0, 0), (0, 0)))
+    data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 5, (0, 0), (0, 0))).add("ph", 114, PH(HM.TR(4, 14, 40, 24)))
     glyph = data.child(N("Data/Glyph", "Glyph", R(size=(18, 18))))
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=18, ph=18))
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=18, ph=18)).add("ph", 114, PH(None, layout=(12, 12)))
     amt = data.child(N("Data/Amount", "Amount", R(size=(70, 36))))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=70, ph=36))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=70, ph=36)) \
+        .add("ph", 114, PH(None, font=12, layout=(24, 24)))
     root.add("card", 114, card_body)
     return root
 
@@ -1309,13 +1337,15 @@ def build_versus_row():
 def build_header():
     """A team's header above its rows: the domain's name and a rule in its colour, then the team's line."""
     root = N("root", SB_HEADER, R(size=(LIST_W, HEAD_HT)))
-    root.add("le", 114, H.le(ph=HEAD_HT, pw=LIST_W))
+    root.add("le", 114, H.le(ph=HEAD_HT, pw=LIST_W)).add("ph", 114, PH(None, layout=(PH_LIST_W, 22)))
     dom = root.child(N("Domain", "Domain", HM.TL(12, 6, 72, 20)))
-    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("Jade", "Label", tok("TextLight")))
+    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("Jade", "Label", tok("TextLight"))) \
+        .add("ph", 114, PH(HM.TL(8, 4, 60, 14), font=12))
     rule = root.child(N("Rule", "Rule", HM.TL(92, 15, 120, 1)))
-    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE)).add("ph", 114, PH(HM.TL(72, 11, 60, 1)))
     summ = root.child(N("Summary", "Summary", HM.TL(228, 6, 700, 20)))
-    summ.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest")))
+    summ.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"))) \
+        .add("ph", 114, PH(HM.TL(144, 4, 330, 14), font=12))
     root.add("header", 114, lambda ctx, go: K.mono(go, S["header"],
         f"  domainText: {{fileID: {ctx.c('Domain', 'tmp')}}}\n  rule: {{fileID: {ctx.c('Rule', 'img')}}}\n"
         f"  summaryText: {{fileID: {ctx.c('Summary', 'tmp')}}}\n"))
@@ -1325,14 +1355,17 @@ def build_header():
 def build_stat():
     """Rev 8 option B: a slim inline stat - its icon, its label, its value - in a row under the ladder."""
     root = N("root", SB_STAT, R(size=(300, 40)))
-    root.add("le", 114, H.le(pw=300, ph=40))
+    root.add("le", 114, H.le(pw=300, ph=40)).add("ph", 114, PH(None, layout=(150, 30)))
     # Rows are spawned into a layout group; each rises from where it lands (KitEntrance.ReconcileRest).
     root.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", by_sibling=True, distance=8))
     icon = root.child(N("Icon", "Icon", HM.TL(0, 9, 22, 22)))
-    icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), preserve=True))
-    H.label(root.child(N("Label", "Label", HM.TL(32, 11, 150, 18))), "Longest drift", "Label", "NeutralLightest")
+    icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), preserve=True)).add("ph", 114, PH(HM.TL(0, 7, 16, 16)))
+    lab = root.child(N("Label", "Label", HM.TL(32, 11, 150, 18)))
+    H.label(lab, "Longest drift", "Label", "NeutralLightest")
+    lab.add("ph", 114, PH(HM.TL(20, 8, 76, 14)))
     val = root.child(N("Value", "Value", HM.TL(186, 4, 110, 32)))
-    val.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("TextLight")))
+    val.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("TextLight"))) \
+        .add("ph", 114, PH(HM.TL(98, 3, 52, 24), font=16))
     root.add("stat", 114, lambda ctx, go: K.mono(go, S["statrow"],
         f"  iconImage: {{fileID: {ctx.c('Icon', 'img')}}}\n  labelText: {{fileID: {ctx.c('Label', 'tmp')}}}\n"
         f"  valueText: {{fileID: {ctx.c('Value', 'tmp')}}}\n"))
@@ -1344,21 +1377,27 @@ def reward_strip(root):
     good outcome, the crystal in gold)."""
     w, h = 560, 92
     strip = root.child(N("Reward", "RewardStrip", R((0.5, 1), (0.5, 1), (LIST_W / 2 - w / 2, -770), (w, h), (0.5, 1))))
-    strip.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.7))
+    strip.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.7)) \
+        .add("ph", 114, PH(HM.TR(PH_M, PH_TOP, 270, 70)))
     _, bord = H.framed(strip, "Reward", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.86)
     glyph = strip.child(N("Reward/Glyph", "Glyph", HM.TL(24, 30, 32, 32)))
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("Purchase"))
-    H.label(strip.child(N("Reward/Earned", "Earned", HM.TL(72, 18, 200, 16))), "You earned", "Label", "NeutralLightest")
+        .add("th", 114, H.themed("Purchase")).add("ph", 114, PH(HM.TL(14, 23, 24, 24)))
+    earned = strip.child(N("Reward/Earned", "Earned", HM.TL(72, 18, 200, 16)))
+    H.label(earned, "You earned", "Label", "NeutralLightest")
+    earned.add("ph", 114, PH(HM.TL(48, 12, 80, 14)))
     amt = strip.child(N("Reward/Amount", "Amount", HM.TL(72, 36, 180, 42)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H1", tok("Cta")))
-    H.label(strip.child(N("Reward/Balance", "Balance", HM.TR(24, 20, 200, 16))), "Balance", "Label", "NeutralLightest", align="right")
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H1", tok("Cta"))).add("ph", 114, PH(HM.TL(48, 28, 70, 30), font=24))
+    bal = strip.child(N("Reward/Balance", "Balance", HM.TR(24, 20, 200, 16)))
+    H.label(bal, "Balance", "Label", "NeutralLightest", align="right")
+    bal.add("ph", 114, PH(HM.TR(14, 12, 90, 14)))
     to = strip.child(N("Reward/To", "To", HM.TR(24, 42, 120, 32)))
-    to.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("TextLight"), align="right"))
+    to.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("TextLight"), align="right")).add("ph", 114, PH(HM.TR(14, 30, 56, 24), font=16))
     chev = strip.child(N("Reward/Arrow", "Arrow", HM.TR(152, 50, 16, 16)))
-    chev.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_chevron"), preserve=True))
+    chev.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_chevron"), preserve=True)) \
+        .add("ph", 114, PH(HM.TR(74, 36, 12, 12)))
     frm = strip.child(N("Reward/From", "From", HM.TR(176, 42, 120, 32)))
-    frm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("NeutralLightest"), align="right"))
+    frm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("NeutralLightest"), align="right")).add("ph", 114, PH(HM.TR(90, 30, 50, 24), font=16))
     strip.add("strip", 114, lambda ctx, go: K.mono(go, S["strip"],
         f"  amountText: {{fileID: {ctx.c('Reward/Amount', 'tmp')}}}\n  fromText: {{fileID: {ctx.c('Reward/From', 'tmp')}}}\n"
         f"  toText: {{fileID: {ctx.c('Reward/To', 'tmp')}}}\n  amountTemplate: +{{amount}}\n  countSeconds: 0.8\n"))
@@ -1369,14 +1408,21 @@ def versus_side(vs, key, right):
     """One team: its name in its colour and WINNER (or nothing) under it, its score on the right, a rule in its colour,
     then its rows."""
     col = vs.child(N(key, key.rsplit("/", 1)[-1], HM.TR(0, 56, VS_ROW_W, LIST_H - 56) if right else HM.TL(0, 56, VS_ROW_W, LIST_H - 56)))
+    ph_h = 250 - 34
+    col.add("ph", 114, PH(HM.TR(0, 34, PH_VS_W, ph_h) if right else HM.TL(0, 34, PH_VS_W, ph_h)))
     name = col.child(N(f"{key}/Name", "Name", HM.TL(0, 0, 340, 50)))
-    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("JADE", "H1", "TextLight", 40, align="left"))
-    H.label(col.child(N(f"{key}/Status", "Status", HM.TL(2, 52, 300, 18))), "Winner", "Label", "NeutralLightest")
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("JADE", "H1", "TextLight", 40, align="left")) \
+        .add("ph", 114, PH(HM.TL(0, 0, 130, 26), font=20))
+    stat = col.child(N(f"{key}/Status", "Status", HM.TL(2, 52, 300, 18)))
+    H.label(stat, "Winner", "Label", "NeutralLightest")
+    stat.add("ph", 114, PH(HM.TL(1, 27, 130, 14)))
     score = col.child(N(f"{key}/Score", "Score", HM.TR(0, 4, 300, 60)))
-    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("", "H1", "TextLight", 48, align="right"))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("", "H1", "TextLight", 48, align="right")) \
+        .add("ph", 114, PH(HM.TR(0, 2, 96, 34), font=24))
     rule = col.child(N(f"{key}/Rule", "Rule", R((0, 1), (1, 1), (0, -(VS_HEAD_H - 14)), (0, 2), (0.5, 1))))
-    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE)).add("ph", 114, PH(R((0, 1), (1, 1), (0, -44), (0, 2), (0.5, 1))))
     rows = col.child(N(f"{key}/Rows", "Rows", R((0, 1), (1, 1), (0, -VS_HEAD_H), (0, 0), (0.5, 1))))
+    rows.add("ph", 114, PH(R((0, 1), (1, 1), (0, -52), (0, 0), (0.5, 1))))
     rows.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
     return col
 
@@ -1386,17 +1432,22 @@ def versus_layout(root):
     the winner on the left - with the share bar across the top and VS between them. Hidden until a two-team match
     (ScoreboardVersusView); the ladder keeps every other match."""
     vs = root.child(N("Versus", "Versus", R((0.5, 1), (0.5, 1), (0, -196), (LIST_W, LIST_H), (0.5, 1))))
-    vs.add("cg", 225, H.canvas_group(False))
+    vs.add("cg", 225, H.canvas_group(False)).add("ph", 114, PH(HM.TL(PH_M, PH_TOP, PH_LIST_W, 250)))
     share = vs.child(N("Versus/Share", "Share", HM.TL(0, 0, LIST_W, 40)))
-    share.add("cg", 225, H.canvas_group(True))
+    share.add("cg", 225, H.canvas_group(True)).add("ph", 114, PH(HM.TL(0, 0, PH_LIST_W, 28)))
     track = share.child(N("Versus/Share/Bar", "Bar", HM.TL(0, 0, LIST_W, 10)))
+    track.add("ph", 114, PH(HM.TL(0, 0, PH_LIST_W, 6)))
     for side, r in (("Left", R((0, 0), (0.5, 1), (-1, 0), (-2, 0))), ("Right", R((0.5, 0), (1, 1), (1, 0), (-2, 0)))):
         track.child(N(f"Versus/Share/Bar/{side}", side, r)).add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
-    H.label(share.child(N("Versus/Share/LeftLine", "LeftLine", HM.TL(0, 18, 600, 18))), "Ruby 52%", "Label", "TextLight")
-    H.label(share.child(N("Versus/Share/RightLine", "RightLine", HM.TR(0, 18, 600, 18))), "Jade 48%", "Label", "NeutralLightest",
-            align="right")
+    ll = share.child(N("Versus/Share/LeftLine", "LeftLine", HM.TL(0, 18, 600, 18)))
+    H.label(ll, "Ruby 52%", "Label", "TextLight")
+    ll.add("ph", 114, PH(HM.TL(0, 11, 220, 14)))
+    rl = share.child(N("Versus/Share/RightLine", "RightLine", HM.TR(0, 18, 600, 18)))
+    H.label(rl, "Jade 48%", "Label", "NeutralLightest", align="right")
+    rl.add("ph", 114, PH(HM.TR(0, 11, 220, 14)))
     vs_word = vs.child(N("Versus/Vs", "Vs", HM.TL(VS_ROW_W, 56 + 14, VS_COL_GAP, 40)))
-    vs_word.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("VS", "H2", tok("NeutralLightest"), align="center"))
+    vs_word.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("VS", "H2", tok("NeutralLightest"), align="center")) \
+        .add("ph", 114, PH(HM.TL(PH_VS_W, 40, PH_LIST_W - 2 * PH_VS_W, 24), font=14))
     versus_side(vs, "Versus/Left", False)
     versus_side(vs, "Versus/Right", True)
 
@@ -1424,38 +1475,43 @@ def build_panel():
     scrim.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Fade", duration=0.2))
     root.children.append(HM.M.window_sea_node("Lattice", name="Sea"))
     head = root.child(N("Header", "Header", R((0.5, 1), (0.5, 1), (0, -56), (LIST_W, 120), (0.5, 1))))
-    head.add("in", 114, HM.M.entrance("Rise", distance=14))
+    head.add("in", 114, HM.M.entrance("Rise", distance=14)).add("ph", 114, PH(HM.TL(PH_M, 12, PH_LIST_W, 72)))
     mode = head.child(N("Header/Mode", "Mode", HM.TL(0, 0, LIST_W, 22)))
-    mode.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"), align="center"))
+    mode.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"), align="center")) \
+        .add("ph", 114, PH(HM.TL(0, 0, PH_LIST_W, 16), font=12))
     ban = head.child(N("Header/Banner", "Banner", HM.TL(0, 28, LIST_W, 64)))
     ban.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Game over", "Display", "TextLight", 56)) \
-        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Pop", delay=0.08))
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Pop", delay=0.08)) \
+        .add("ph", 114, PH(HM.TL(0, 18, PH_LIST_W, 40), font=32))
     rule = head.child(N("Header/Rule", "Rule", R((0.5, 1), (0.5, 1), (0, -102), (220, 3), (0.5, 1))))
     rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"))) \
-        .add("in", 114, HM.M.entrance("GrowX", delay=0.3))
+        .add("in", 114, HM.M.entrance("GrowX", delay=0.3)).add("ph", 114, PH(R((0.5, 1), (0.5, 1), (0, -64), (120, 2), (0.5, 1))))
     view = root.child(N("List", "List", R((0.5, 1), (0.5, 1), (0, -196), (LIST_W, LIST_H), (0.5, 1))))
     view.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30)) \
-        .add("cg", 225, H.canvas_group(True))
+        .add("cg", 225, H.canvas_group(True)).add("ph", 114, PH(HM.TL(PH_M, PH_TOP, PH_LIST_W, 250)))
     content = view.child(N("List/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
     versus_layout(root)
     stats = root.child(N("Stats", "Stats", R((0.5, 1), (0.5, 1), (0, -712), (LIST_W, 40), (0.5, 1))))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 3, (1, 1), (0, 0))) \
-        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.5))
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.5)) \
+        .add("ph", 114, PH(HM.TL(PH_M, PH_TOP + 258, PH_LIST_W, 30)))
     row = root.child(N("Buttons", "Buttons", R((0.5, 1), (0.5, 1), (0, -784), (LIST_W, 52), (0.5, 1))))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 0))) \
-        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.6))
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.6)) \
+        .add("ph", 114, PH(BR(PH_M, 30, PH_BTN_W + 16 + PH_BTN_W2, 52)))
     for key, cap, variant, keycap, pad, w in SB_BUTTONS:
         b = kit_button(f"Sb/{key}", f"{key}Button", R(size=(w, 52)), variant, False, cap, keycap, pad,
                        keycap_key=f"Sb{key}Keycap")
-        b.add("le", 114, H.le(pw=w, ph=52))
+        b.add("le", 114, H.le(pw=w, ph=52)).add("ph", 114, PH(None, layout=(PH_BTN_W if pad == 6 else PH_BTN_W2, 52)))
         if key == "PlayAgain":
             strip = b.child(N("Sb/PlayAgain/Avatars", "PlayerAvatars", R((0, 0), (0, 0), (8, -12), (420, 30), (0, 1))))
-            strip.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (0, 0), (0, 0))).add("le", 114, H.le(ignore=True))
+            strip.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (0, 0), (0, 0))).add("le", 114, H.le(ignore=True)) \
+                .add("ph", 114, PH(R((0, 1), (0, 1), (4, 6), (PH_BTN_W, 22), (0, 0))))
             cnt = strip.child(N("Sb/PlayAgain/Avatars/Count", "Count", R(size=(300, 30))))
             cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"))) \
-                .add("le", 114, H.le(pw=300, ph=30))
+                .add("le", 114, H.le(pw=300, ph=30)).add("ph", 114, PH(None, font=12, layout=(180, 22)))
             b.add("roster", 114, lambda ctx, go: K.mono(go, S["roster"],
                 f"  container: {{fileID: {ctx.rt('Sb/PlayAgain/Avatars')}}}\n  builtEntrySize: 30\n"
                 f"  countText: {{fileID: {ctx.c('Sb/PlayAgain/Avatars/Count', 'tmp')}}}\n"
@@ -1755,6 +1811,126 @@ def retire_thumb_cursors(p):
         p.children(parent, [k for k in p.kids(parent) if k != rt])
 
 
+# --- the phone layout of the in-game HUD (Docs/MENU_REDESIGN_B.md section 125, the approved R53 Hud boards) ------
+# Every piece keeps its place and is drawn bigger than the 1920 layout shrunk onto a phone: a piece with no KitText is
+# scaled as a block (PHONE_HUD_SCALE, its numbers and art drawn at the PC size), a piece with KitTexts is re-posed at
+# PHONE_HUD_POSE (its KitTexts take their role's phone size, a TMP without one is scaled). Pieces pinned to a side edge
+# step in by the notch. The ability row and the touch controls are not here: they are Garrett's (TouchControlsHud).
+# Prefab instances nested in the canvas (Pip, NotificationUI) are not posed here either.
+PHONE_HUD_SCALE = 0.54                      # 1.3 x what the 1920 layout shrunk to 450 tall shows (450 / 1080)
+PHONE_HUD_POSE = 0.75
+PHONE_NOTCH = 54
+TMP_GUID = "f4688fdb7df04437aeb418b961361dc5"
+
+
+def _v2(doc, name):
+    m = re.search(r"^  %s: \{x: ([-\d.e]+), y: ([-\d.e]+)\}" % name, doc, re.M)
+    return (float(m.group(1)), float(m.group(2)))
+
+
+def _comps(p, go):
+    out = {}
+    for fid in p.comp_ids(go):
+        d = p.doc(fid)
+        m = re.search(r"m_Script: \{fileID: 11500000, guid: ([0-9a-f]{32})", d)
+        if m:
+            out.setdefault(m.group(1), fid)
+    return out
+
+
+def _has_kit_text(p, rt):
+    go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(rt)).group(1)
+    if K.kit_script("KitText") in _comps(p, go):
+        return True
+    return any(_has_kit_text(p, k) for k in p.kids(rt) if p.sc.has(k) and " stripped" not in p.doc(k).split("\n", 1)[0])
+
+
+def _phone_pose(p, rt, k, inset=0.0, scale=0):
+    d = p.doc(rt)
+    amin, amax, pv = _v2(d, "m_AnchorMin"), _v2(d, "m_AnchorMax"), _v2(d, "m_Pivot")
+    pos, size = _v2(d, "m_AnchoredPosition"), _v2(d, "m_SizeDelta")
+    pk = k if not scale else scale
+    x = pos[0] * pk + (inset if amin[0] == amax[0] == 0 else -inset if amin[0] == amax[0] == 1 else 0)
+    return R(amin, amax, (round(x, 2), round(pos[1] * pk, 2)), size if scale else (round(size[0] * k, 2), round(size[1] * k, 2)), pv)
+
+
+def _add_phone(p, go, fn):
+    """Add (or re-add) the PhoneRect last on `go`: other patches re-emit some of these objects each run, so it is
+    removed first and appended again, which lands it in the same place every run (--check)."""
+    p.remove_comp(go, str(p.ctx.fid(f"{go}#phone")))
+    p.add_comp(go, "phone", 114, fn)
+
+
+def _phone_branch(p, rt, top, posed=False):
+    """Pose one HUD rect for the phone. A top-level piece with no KitText is scaled as a block; a piece with KitTexts,
+    and everything under it, is re-posed at PHONE_HUD_POSE."""
+    head = p.doc(rt).split("\n", 1)[0]
+    if " stripped" in head:
+        return
+    go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(rt)).group(1)
+    inset = PHONE_NOTCH if top else 0.0
+    if not posed and not _has_kit_text(p, rt):
+        _add_phone(p, go, K.phone_rect(_phone_pose(p, rt, PHONE_HUD_SCALE, inset, PHONE_HUD_SCALE), scale=PHONE_HUD_SCALE))
+        return
+    comps = _comps(p, go)
+    font = 0
+    if TMP_GUID in comps and K.kit_script("KitText") not in comps:
+        font = round(float(p.sc.field(comps[TMP_GUID], "m_fontSize")) * PHONE_HUD_POSE, 1)
+    layout = (0, 0)
+    if K.LAYOUT_ELEMENT in comps:
+        pw, ph = (float(p.sc.field(comps[K.LAYOUT_ELEMENT], f)) for f in ("m_PreferredWidth", "m_PreferredHeight"))
+        layout = (round(pw * PHONE_HUD_POSE, 2) if pw > 0 else 0, round(ph * PHONE_HUD_POSE, 2) if ph > 0 else 0)
+    _add_phone(p, go, K.phone_rect(_phone_pose(p, rt, PHONE_HUD_POSE, inset), font=font, layout=layout))
+    for kid in p.kids(rt):
+        if p.sc.has(kid):
+            _phone_branch(p, kid, False, True)
+
+
+def _phone_tops(p, rt):
+    """The pieces under `rt` to pose: a child that fills its parent (a scrim, a backdrop, a safe-area frame) stays as it
+    is and its own children are the pieces."""
+    out = []
+    for kid in p.kids(rt):
+        if not p.sc.has(kid) or " stripped" in p.doc(kid).split("\n", 1)[0]:
+            continue
+        d = p.doc(kid)
+        if _v2(d, "m_AnchorMin") == (0.0, 0.0) and _v2(d, "m_AnchorMax") == (1.0, 1.0):
+            out += _phone_tops(p, kid)
+        else:
+            out.append(kid)
+    return out
+
+
+def phone_prefab(text_, key):
+    """The phone pass over a panel nested in GameCanvas (the pause window, the connecting panel, the end reveal), so the
+    canvas can switch to its phone layout without one of them drawn at the PC size. Not the notification feed: GameCanvas
+    overrides its instance's anchors and place, so a pose read from the prefab would put it somewhere else. Before
+    GameCanvas's Has Phone Layout goes on, that override and the pause window instance's root offsets (717 x 84, 264
+    down) are cleared at the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md, the phone layouts entry)."""
+    p = Patch(text_, key)
+    roots = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!224 ") and "  m_Father: {fileID: 0}\n" in d]
+    assert len(roots) == 1, f"{key}: one root rect expected"
+    d = p.doc(roots[0])
+    full = _v2(d, "m_AnchorMin") == (0.0, 0.0) and _v2(d, "m_AnchorMax") == (1.0, 1.0)
+    for rt in (_phone_tops(p, roots[0]) if full else roots):
+        _phone_branch(p, rt, True)
+    return p.text()
+
+
+def patch_phone_hud(p):
+    gos = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and "  m_Name: MiniGameHUD\n" in d]
+    assert len(gos) == 1, "GameCanvas should carry one MiniGameHUD"
+    tops = _phone_tops(p, p.sc.rect_of(gos[0]))
+    # The invite cards too. The toasts are not here yet: their container is re-emitted every run and each toast
+    # prefab needs its own phone layout (Docs/UNITY_VERIFICATION_CHECKLIST.md, the phone layouts entry).
+    g = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and "  m_Name: Safe Area (Invites)\n" in d]
+    assert len(g) == 1, "GameCanvas should carry one Safe Area (Invites)"
+    tops += _phone_tops(p, p.sc.rect_of(g[0]))
+    for rt in tops:
+        if p.sc.has(rt):
+            _phone_branch(p, rt, True)
+
+
 def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
     retire_thumb_cursors(p)
@@ -1767,6 +1943,7 @@ def canvas_text(text_):
     patch_pause(p)
     patch_ready(p)
     patch_waiting_and_countdown(p)
+    patch_phone_hud(p)
     return p.text()
 
 
@@ -1833,8 +2010,11 @@ def panel_text(text_):
 # Outputs, validation
 # --------------------------------------------------------------------------------------------
 
-TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text, PAUSE: pause_text,
-              CONNECT: connect_text, ENDGAME: endgame_text, FEED: feed_text, FEED_UI: feed_ui_text,
+TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text,
+              PAUSE: lambda t: phone_prefab(pause_text(t), "Pause/Phone"),
+              CONNECT: lambda t: phone_prefab(connect_text(t), "Connecting/Phone"),
+              ENDGAME: lambda t: phone_prefab(endgame_text(t), "EndGame/Phone"), FEED: feed_text,
+              FEED_UI: feed_ui_text,   # no phone pass: GameCanvas overrides its instance's place (see phone_prefab)
               TOAST_SETTINGS: toast_settings_text, MENU: menu_text, FTUE: ftue_text}
 
 
