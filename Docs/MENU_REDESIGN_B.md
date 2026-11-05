@@ -6013,7 +6013,7 @@ size or scale, applied by `AdaptiveCanvasScaler`).
   override are cleared at the editor. The toasts and the picture-in-picture frame have no phone layout yet.
 - Garrett's touch controls and the vessel HUD are untouched (they are on the vessel's own canvas).
 
-## 129. Rev 55 mockups: the phone menus drawn from the real screens (2026-11-05, awaiting board approval)
+## 129. Rev 55 mockups: the phone menus drawn from the real screens (2026-11-05, approved)
 
 **Asked** (Shombith): "yes redraw them from the real screens". Building Rev 52's Home, Arcade, Configure and Hangar boards
 (section 127) showed they had been drawn from the older Rev 21 boards, not the screens that ship: the real Arcade has
@@ -6040,3 +6040,64 @@ Copies: `Docs/MenuRedesignB/board/R55*`. Content is the built screens' own (the 
 
 **Differs from the build:** each screen's generator gains its phone layout (PhoneRect, its sheet and phone-only
 buttons), `author_menu_topnav.py` the rail; each screen then leaves `author_menu_phone.py`'s fallback list.
+
+**Approved (Shombith, 2026-11-05):** "Approve Rev 55, sheet for party, Home first, both cards". The party panel is a sheet
+on a phone; the phone rail runs Home, Codex, Hangar, Ark, Port (Home first, the rest in today's order; the PC nav band is
+unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards were redrawn with the rail in that order.
+
+## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
+
+**Asked** (Shombith): "make the phone UI expandable for portrait mode too since we have honeyguide and ratel and in
+future we might make that the focus game for mobile ... but not now. So create mobile UI mockups supporting both
+portrait and landscape." And: "You are suggesting that PC has a different UI and mobile has a different one? How does
+the game detect that?"
+
+**The answer, as built:** one UI, not two: the same screens, kit components and colour tokens; each canvas switches its
+LAYOUT. `PhoneScale.IsPhone` reads the screen's short side in points (`Screen.dpi`; under 600 is a phone: an iPhone is
+about 390, an iPad 820, a 1080p monitor about 1800; a phone with no dpi is judged at 2x, a desktop never), and
+`AdaptiveCanvasScaler` checks it at start and on every resolution change. PC, console and iPad keep 1920 x 1080; a phone
+switches the canvas that has a phone layout to 800 x 450, every `PhoneRect` to its phone pose and every `KitText` to its
+phone size. Portrait would be one more test (the screen taller than wide) picking a 450 x 800 reference and a second
+pose on each `PhoneRect`. Today the game locks the screen to landscape (`DeviceOrientationHandler`), and the Ratel's
+Dynamo board fakes portrait by drawing a quarter turn (`Docs/Studios/HONEYGUIDE_LAB.md`, 2026-10-22).
+
+**On the canvas:** the Phone tab, section "Rev 56 - Phone in portrait too", ONE board (`R56Portrait`): the canvas holds
+at most 512 files a version and was at the limit, so the six upright screens and the notes share one board instead of
+seven. An iPhone held upright, 390 x 844 pt = 450 x 974 canvas units, drawn at 1.5x: Home (a bottom tab bar; the friends
+orb and Settings in the top bar; the pilot chip, Up next, the hubs two by two), Arcade (the feature cards stacked, the
+games two across, the party sheet open from the bottom), Configure (the picture on top, then the objective, class,
+intensity and teams; Start game pinned at the thumb), Hangar (the fleet as a strip, the vessel under it, Unlock and
+Abilities at the thumb), sign-in (one column, the chooser at the thumb) and the finish (the result, the ladder, Play again
+at the thumb). Decisions: [approve as the portrait direction, built when a portrait game is picked], [in portrait, the
+bottom tab bar (drawn) or keep the rail].
+
+**Differs from the build:** nothing yet. When portrait is picked: the orientation lock lifts for the menus and the games
+that play upright, `PhoneRect` gains a portrait pose, each screen's generator writes it.
+
+**The 512-file limit:** the canvas is at 487 of its files plus the type's; a new round of several boards will not fit
+until older boards are folded or removed (the board owner's call, `/frogma` section 5).
+
+## 131. Rev 57: every screen on PC, phone landscape and phone portrait, side by side (2026-11-05, for review)
+
+**Asked** (Shombith): "give me another design of all screens side by side you proposing after this change: PC vs Phone
+Portrait and Phone Landscape".
+
+**On the canvas:** the Phone tab, section "Rev 57 - One UI, three layouts", one board (`R57Compare`; the canvas is at
+its file limit): seven rows (sign-in, Home, Arcade, Configure, Hangar, in game, the finish) by three columns - PC,
+console and iPad at 1920 x 1080 as shipped (drawn simplified from the built screens), phone landscape at 974 x 450
+(Rev 53 and Rev 55, frozen at their first state) and phone portrait at 450 x 974 (Rev 56). Shown at a common height so
+the layouts compare, not to physical scale. Each row says what moves between the three: the nav band becomes the rail
+(landscape) or a bottom tab bar (portrait); the party panel, the controls list and the abilities become sheets on a
+phone; games run 7, 4, then 2 across; the commit (Start game, Play again) stays Ruby and moves to the thumb. In game
+stays landscape; a game played upright gets its own portrait HUD when one is picked.
+
+Nothing new to approve here: it puts Rev 53, 55 and 56 beside the PC screens they come from.
+
+**Correction (2026-11-05):** Shombith: "the home arcade arena buttons are grey in PC as well, why?" The boards of Rev 53,
+55, 56 and 57 drew the kit's buttons in a flat grey (and the calls to action as solid lime), which is not how they ship.
+Redrawn in place with the kit's own glass palette, by variant (`K.button_palette(variant, False)`): Default is a Jade
+hairline over a 12 % Jade fill (the four hubs, Back, Replays, Leaderboard, Controls, Fly it first, Play as guest, Main
+menu), Cancel a Neutral Lightest one (Leave, Decline), Cta a Lime one with Lime words (Join, Invite, Accept, Yes),
+Purchase Gold (Unlock), Inactive grey (Voyage, Unlocked); Start game and Play again stay the opaque Ruby Commit. The
+fourth hub reads Voyage, as built. Nothing about the desktop build changed: the boards had the colours wrong, not the
+game.
