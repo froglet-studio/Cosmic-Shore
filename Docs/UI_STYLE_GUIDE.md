@@ -30,17 +30,17 @@ never look alike (`python3 Tools/Build/colour_domains.py classify '#hex'` answer
 
 | Family | Means | Use it for | Never for | UI token |
 |---|---|---|---|---|
-| **Lime** | Call to action, **always** | the important thing to do now: launch, join, accept, claim; "online", a done tick | headings, eyebrows, decoration, a choice you can change | `cta` `#99FF80` |
+| **Lime** | Call to action, **always** | the important thing to do now that you can still change: join, accept, claim; "online", a done tick | headings, eyebrows, decoration, a choice you can change | `cta` `#99FF80` |
 | **Fire** | Danger | delete my data, a guest-account warning, why a game cannot launch, connection lost | anything merely important | `danger` `#FF4B3A` |
 | **Gold** | Spend, and the Gold domain | a purchase, an upgrade, any button that uses a resource; the crystal glyph | first place, a highlight, a reward amount | `purchase` `#FFAE00` |
 | **Jade** | **Pick, and change again**; the Jade domain (Team 1) | a choice you can claim and reclaim: a hull pick in an arena mode, friends, the selected thing, the focus ring; toggles, sliders, scrollbars | an element, a commitment | `controlActive` `#00D4FF` (also the selection) |
-| **Ruby** | **No way back**; the Ruby domain (Team 2) | a commitment you cannot take back: the Ready button | an element, a choice you can change | `commit` `#A600FF` (the UI's `tooltip` today) |
+| **Ruby** | **No way back**; the Ruby domain (Team 2) | a commitment you cannot take back: Play (it launches a game), Ready | an element, a choice you can change | `commit` `#A600FF` (the UI's `tooltip` today) |
 | **Blue** | Neutral, and every grey | text, panels, lines, information | a call to action, a selection | `textLight`, `neutralLightest`, `surface*` |
 
 **Jade or Ruby? (Shombith, 2026-11-05.)** Ask whether the player can change their mind. A hull they claim in an arena
 lineup, a friend they add, a tab or tile they select: they can take it back, so it is **Jade**, and so are the
-selection and the focus ring. Ready: once pressed there is no way back, so it is **Ruby**. Lime stays the call to action:
-the one important thing the screen asks of the player. (In the game the selection is still the old sky blue `#3DB2FF`
+selection and the focus ring. Play and Ready: once pressed there is no way back (Play launches the game), so they are
+**Ruby** (a Frogma comment, 2026-11-05). Lime stays the call to action the player can still change: join, accept, claim. (In the game the selection is still the old sky blue `#3DB2FF`
 until the Unity change in section 13 lands; new work uses Jade.)
 
 **Choosing a colour.** Pick from the chart's shades (the colour chart board, `--fs-<family>-<lightness>` in
@@ -109,8 +109,8 @@ wide: Display 48, H1 36, H2 28, H3 22, Body 18, Body small 15, Button 18, Button
 
 ![Buttons and states](UI/style-guide/SGButtons.webp)
 
-Six buttons: **Play / CTA** (lime), **Purchase** (gold, icon + amount), **Default** (light), **Cancel** (soft
-neutral), **Ready / commit** (ruby, no way back), **Danger** (fire). Five states, the same on every button:
+Six buttons: **Play / Ready** (ruby, no way back), **CTA** (lime: join, accept, claim), **Purchase** (gold, icon +
+amount), **Default** (light), **Cancel** (soft neutral), **Danger** (fire). Five states, the same on every button:
 
 | State | Looks like | Why |
 |---|---|---|
@@ -120,7 +120,7 @@ neutral), **Ready / commit** (ruby, no way back), **Danger** (fire). Five states
 | Pressed | sinks 2 and darkens | |
 | Disabled | grey, with the reason next to it | |
 
-- **Do:** the Arcade card's PLAY and the purchase confirm's SPEND 40 (Frogma, Menu tab, Items 3 and 10).
+- **Do:** the purchase confirm's SPEND 40 (Frogma, Menu tab, Items 10 + 11); PLAY and READY in Ruby.
 - **Don't:** an element-coloured button (the Mass / Space / Time variants are retired and draw as Default).
 
 ## 6. Cards, windows and toasts
@@ -242,7 +242,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 | D2 | Domain colours | As the colour board shows them: a domain is the game palette (Jade `#0EC0B6`, Ruby `#C800C3`, Gold `#FFA700`); the UI's Jade, Ruby and Gold tokens mean their uses (control and selection, commit, purchase). |
 | D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
 | D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |
-| D5 | Focus and CTA | **CTA is always lime**: the important thing the screen asks the player to do. Focus and selection are Jade (D3), never lime. |
+| D5 | Focus and CTA | **CTA is always lime**: the important thing the screen asks the player to do that they can still change. Focus and selection are Jade (D3), never lime. Play, which launches a game, is Ruby like Ready (Frogma comment, 2026-11-05). |
 | D6 | Phones | One component set, two scales: phones (under 600 points tall) get an 800 x 450 canvas and the mobile type column (section 8). |
 | D7 | The UI checklist | A required check (section 11 has the one-time step). |
 | D8 | The codex and studios | Move them onto Deep Sea and Shore in a separate change; the prompt for it is below. |

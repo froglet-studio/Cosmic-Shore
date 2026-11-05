@@ -261,11 +261,11 @@ def build(theme_asset: dict | None = None, dom: dict | None = None) -> dict:
         "motion": {k: {"ms": v[0], "ease": v[1]} for k, v in MOTION.items()},
         "palettes": palettes(),
         "meanings": {
-            "lime": "a call to action: an important thing the player should do now (always green)",
+            "lime": "a call to action the player can still change: join, accept, claim (always green)",
             "fire": "danger: bad, avoid it or deal with it",
             "gold": "spending, and the Gold domain",
             "jade": "a choice you can pick and change again (a hull pick, a friend, the selected thing, the focus ring), and the Jade domain",
-            "ruby": "a commitment you cannot take back (Ready), and the Ruby domain",
+            "ruby": "a commitment you cannot take back (Play, which launches a game; Ready), and the Ruby domain",
             "blue": "neutral: text, panels, lines, every grey",
         },
     }

@@ -131,7 +131,7 @@ def sg_readme() -> str:
 
 
 FAMILIES = [
-    ("Lime", "lime", "Call to action, always", "The important thing to do now: launch, join, accept, claim; online, a done tick",
+    ("Lime", "lime", "Call to action, always", "The important thing to do now that you can still change: join, accept, claim; online, a done tick",
      "Headings, eyebrows, decoration, a choice you can change", [("cta", D["cta"])]),
     ("Fire", "fire", "Danger", "Delete my data, a guest-account warning, why a game cannot launch, connection lost",
      "Anything merely important", [("danger", D["danger"])]),
@@ -139,7 +139,7 @@ FAMILIES = [
      "First place, a highlight, a reward amount", [("purchase", D["purchase"]), ("Gold domain", D["gold"])]),
     ("Jade", "jade", "Pick, change again", "A choice you can claim and reclaim: a hull pick in an arena mode, friends, the selected thing, the focus ring; toggles and sliders; Team 1",
      "An element, a commitment", [("Jade domain", D["jade"]), ("selection / control", D["control"])]),
-    ("Ruby", "ruby", "No way back", "A commitment you cannot take back: the Ready button; Team 2",
+    ("Ruby", "ruby", "No way back", "A commitment you cannot take back: Play (launching a game), Ready; Team 2",
      "An element, a choice you can change", [("Ruby domain", D["ruby"]), ("commit", D["commit"])]),
     ("Blue", "blue", "Neutral, and every grey", "Text, panels, lines, structure, information",
      "A call to action, a selection", [("text", D["text"]), ("text-soft", D["text-soft"]), ("surface", D["surface"])]),
@@ -180,7 +180,7 @@ def mini_screen(theme: dict, name: str, note: str) -> str:
         f'<div class="sl" style="padding: 18px; background: {theme["surface"]}; box-shadow: inset 0 0 0 1px {theme["line"]}; display: flex; gap: 16px; align-items: center">'
         f'<span class="lab" style="color: {theme["text-soft"]}">Best</span><span class="num" style="font-size: 44px; color: {theme["text"]}">01:12.48</span></div>'
         f'<div style="display: flex; gap: 14px; flex-wrap: wrap">'
-        f'<button class="btn sls" type="button" style="background: {theme["cta-fill"]}; color: {theme["on-fill"]}">Play</button>'
+        f'<button class="btn sls" type="button" style="background: {theme["commit-fill"]}; color: {theme["on-commit"]}">Play</button>'
         f'<button class="btn sls" type="button" style="background: {gold_btn}; color: {theme["on-fill"]}">Upgrade 40</button>'
         f'<button class="btn sls" type="button" style="background: transparent; color: {theme["danger"]}; box-shadow: inset 0 0 0 2px {theme["danger"]}">Leave</button></div>'
         f'<p class="small" style="color: {theme["text-soft"]}">{e(note)}</p></div>')
@@ -277,23 +277,24 @@ def button(label: str, fill: str, text: str, state: str) -> str:
 
 
 def sg_buttons() -> str:
-    variants = [("Play / CTA", D["cta-fill"], D["on-fill"], "Launch, join, accept"),
+    variants = [("Play / Ready", D["commit-fill"], D["on-commit"], "No way back: launch a game, Ready"),
+                ("CTA", D["cta-fill"], D["on-fill"], "Join, accept, claim"),
                 ("Purchase", D["purchase-fill"], D["on-fill"], "Any spend: icon + amount"),
                 ("Default", D["text"], D["on-fill"], "A standard action"),
                 ("Cancel", D["text-soft"], D["on-fill"], "Back out, not now"),
-                ("Ready / commit", D["commit-fill"], D["on-commit"], "No way back: Ready"),
                 ("Danger", D["danger"], D["on-fill"], "Delete, leave, can't launch")]
     states = ["rest", "hover", "focus", "pressed", "disabled"]
     head = "".join(f'<span class="lab" style="width: 210px">{s}</span>' for s in states)
     rows = "".join(
         f'<div style="display: flex; align-items: center; gap: 24px"><div style="width: 260px; display: flex; flex-direction: column; gap: 4px">'
         f'<span class="h3">{e(n)}</span><span class="small">{e(why)}</span></div>'
-        + "".join(button(n.split(" ")[0].replace("/", "").upper() or n.upper(), f, t, s) for s in states) + "</div>" for n, f, t, why in variants)
+        + "".join(button({"CTA": "JOIN"}.get(n, n.split(" ")[0].upper()), f, t, s) for s in states) + "</div>" for n, f, t, why in variants)
     return board("Buttons and their states", header(
         "5 · Buttons",
         "Six buttons, five states, nothing else",
         "Hover is the kit's sheen, one band across the fill (Rev 35 C, built in #1619). Focus is the Jade ring, the same for "
-        "pad, keyboard and touch. Pressed sinks 2. Disabled is grey and says why nearby. Ready is Ruby: you cannot take it back.")
+        "pad, keyboard and touch. Pressed sinks 2. Disabled is grey and says why nearby. Play and Ready are Ruby: once pressed "
+        "there is no way back. Lime is the call to action you can still change: join, accept, claim.")
         + f'<div style="display: flex; flex-direction: column; gap: 20px"><div style="display: flex; gap: 24px; padding-left: 284px">{head}</div>{rows}</div>'
         + '<p class="src">Kit prefabs: Assets/_Prefabs/UI Elements (KitButton, KitButtonSmall), drawn by '
           'Tools/Build/author_ui_kit_prefabs.py. On a popup and on a line buttons are opaque; elsewhere transparent with the same border.</p>')
@@ -364,8 +365,8 @@ def sg_dodont() -> str:
          "Gold only where crystals are spent: the Purchase button, the upgrade price"),
         ("Glow as decoration", "A pulsing ring round a card nobody needs to press",
          "The one glow: a free Daily Deal (lime) or a buyable one (gold)"),
-        ("Lime on a Ready button", "READY drawn as a lime call to action, as if you could change your mind",
-         "READY in Ruby: once pressed there is no way back"),
+        ("Lime on Play or Ready", "PLAY or READY drawn as a lime call to action, as if you could change your mind",
+         "PLAY and READY in Ruby: once pressed there is no way back"),
         ("A hull pick in sky blue", "The picked hull in an arena lineup marked in the old sky-blue selection",
          "The picked hull in Jade: you can claim it and pick again"),
         ("A string in code", "PrivacyConsentOverlay builds its colours and words in C#",

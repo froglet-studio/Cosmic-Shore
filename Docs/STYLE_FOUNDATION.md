@@ -90,7 +90,7 @@ Three main colours carry both team identity and a UI function. **Green is the in
 | Tooltip boxes | Ruby `A600FF` *(per the guide)* |
 | Primary buttons (the call to action) | CTA `99FF80`, always (UI_STYLE_GUIDE D5, 2026-11-05) |
 | Focus, selection, a choice you can claim and reclaim (a hull pick, friends) | Jade (`controlActive` `00D4FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
-| A commitment you cannot take back (Ready) | Ruby (`A600FF`; UI_STYLE_GUIDE D3) |
+| A commitment you cannot take back (Play, which launches a game; Ready) | Ruby (`A600FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
 | Player online status | CTA `99FF80` |
 | Currency / purchase | Gold `FFAE00` |
 | Panel borders, chrome | Neutral (Dark) `222645` |
@@ -247,7 +247,7 @@ language of everything around it.
 | Cancel | Dark neutral | `747BAD` fill, dark text | Cancel; "coming soon" in store |
 | Purchase | Dark amber tint | `FFAE00` fill, dark text | Any spend — icon + amount |
 | CTA | Dark green tint | `99FF80` fill, dark text | Free / primary action |
-| Play | Dark blue tint | Jade gradient fill | Launch a game |
+| Play | Dark ruby tint | Ruby fill, white text (UI_STYLE_GUIDE D3, 2026-11-05; was the Jade gradient) | Launch a game |
 
 Icons may sit before or after the label. Buttons lengthen for long text rather than wrapping.
 
