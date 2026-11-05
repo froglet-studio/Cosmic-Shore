@@ -478,6 +478,7 @@ def scene_text(text_):
     assert p.sc.field(I["sum_go"], "m_Name") == "Summary Panel", "the summary panel moved"
     hub_text(p)
     summary_text(p)
+    phone_layout(p)
     c, ctx = p.ctx.c, p.ctx
     d = p.doc(I["view"])
     for f, v in (("readyButton", ref(c("Hub/Ready", "button"))), ("readyButtonLabel", ref(c("Hub/Ready/Label", "tmp"))),
@@ -496,6 +497,54 @@ def scene_text(text_):
     d = set_list(d, "rankChips", [c(f"Summary/Ranking/Chip{i}", "row") for i in range(DOMAINS)])
     p.replace(I["view"], d)
     return p.text()
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/MENU_REDESIGN_B.md section 129; Shombith, 2026-11-05: "complete in game hud maelstrom").
+# The hub window is a fixed 1920 x 1080 block: on a phone it is laid out in 1600 x 900 and drawn at 0.5 (800 x 450, 1.2x
+# the PC layout shrunk): the title block, the round cards (0.82) and the standings on the left; the preview (0.86), the
+# pilots (0.86), READY / NEXT (1.4, a thumb's target), the countdown and its line on the right. The pad hints leave the
+# canvas. The summary is drawn as the PC layout in a 940-tall space (it fits: the cards end at 780, the buttons start at
+# 796), so it is 1.15x the PC layout shrunk. Both of the scene's AdaptiveCanvasScalers switch on.
+# --------------------------------------------------------------------------------------------
+PHONE_W, PHONE_H, PHONE_SCALE = 1600, 900, 0.5
+SUMMARY_PC_HEIGHT = 940
+SCALER = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
+
+
+def phone_layout(p):
+    ctx = p.ctx
+
+    def put(go, pose=None, **kw):
+        p.remove_comp(go, str(ctx.fid(f"{go}#phone")))
+        p.add_comp(go, "phone", 114, K.phone_rect(pose, **kw))
+
+    go = p.sc.go_of
+    put(go(I["config_rt"]), R((0.5, 0.5), None, (0, 0), (PHONE_W, PHONE_H)), scale=PHONE_SCALE)
+    put(str(ctx.go("ModeEyebrow")), TL(40, 30, 800, 20))
+    put(go(I["title_rt"]), TL(40, 52, 900, 58))
+    put(go(I["info_rt"]), TL(40, 112, 900, 26))
+    put(str(ctx.go("Chips")), R((1, 1), None, (-40, -30), (10, 40), (1, 1)))
+    put(go(I["scroll_rt"]), TL(40, 160, 1180, 560), scale=0.82)
+    put(str(ctx.go("Standings")), TL(40, 640, 700, 140))
+    put(go(I["gameview_rt"]), TL(1060, 160, 580, 330), scale=0.86)
+    put(str(ctx.go("Pilots")), TL(1060, 470, 580, 130), scale=0.86)
+    put(str(ctx.go("Hub/Ready")), TL(1060, 606, 300, 60), scale=1.4)
+    put(str(ctx.go("Hub/Next")), TL(1060, 606, 260, 60), scale=1.4)
+    put(go(I["start_rt"]), TL(1060, 730, 220, 56))
+    put(str(ctx.go("Caption")), TL(1060, 800, 500, 22))
+    put(str(ctx.go("KeyHints")), TL(-4000, 0, 900, 20))      # the pad's hints: off the canvas on a phone
+    put(I["sum_go"], pc_block=True, pc_height=SUMMARY_PC_HEIGHT)
+    # The party invite cards (this canvas is a copy of GameCanvas's): the PC layout shrunk onto the phone.
+    inv = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and "  m_Name: Safe Area (Invites)\n" in d]
+    assert len(inv) == 1, "Maelstrom.unity should carry one Safe Area (Invites)"
+    put(inv[0], pc_block=True)
+    for fid, d in list(p.sc.docs.items()):
+        if d.startswith("--- !u!114 ") and f"guid: {SCALER}, type: 3}}" in d:
+            d = re.sub(r"  hasPhoneLayout: \d\n  phoneReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", d)
+            d = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)",
+                       lambda m: m.group(1) + "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n", d, count=1)
+            p.replace(fid, d)
 
 
 def outputs():

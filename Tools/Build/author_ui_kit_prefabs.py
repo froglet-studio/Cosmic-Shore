@@ -520,7 +520,7 @@ def kit_text(role, color_token="TextLight", driven=False):
 
 
 def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=False, stack=None, grid=None, width_scale=0,
-               pc_cut=0, insets=(0, 0, 0, 0)):
+               pc_cut=0, insets=(0, 0, 0, 0), pc_height=1080):
     """A PhoneRect (Assets/_Scripts/UI/PhoneRect.cs): the pose a node takes on the 800 x 450 phone canvas (a rect() dict,
     or None to leave the rect where a layout group puts it), a phone font size for a TMP with no KitText (0 leaves it),
     a phone LayoutElement preferred size (0 leaves that axis) and a phone uniform scale for a block drawn at the PC size
@@ -539,7 +539,7 @@ def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=F
     order = st.get("order", [])
     order_yaml = ("  stackOrder:\n" + "".join(f"  - {n}\n" for n in order)) if order else "  stackOrder: []\n"
     return lambda ctx, go: mono(go, guid,
-                                f"  drawAtPcScale: {1 if pc_block else 0}\n  pcHeight: 1080\n  pcCutTop: {f32(pc_cut)}\n"
+                                f"  drawAtPcScale: {1 if pc_block else 0}\n  pcHeight: {f32(pc_height)}\n  pcCutTop: {f32(pc_cut)}\n"
                                 + ("  phoneInsets: {x: %s, y: %s, z: %s, w: %s}\n" % tuple(f32(v) for v in insets)) +
                                 f"  movesRect: {1 if pose else 0}\n  anchorMin: {v2(r['amin'])}\n  anchorMax: {v2(r['amax'])}\n"
                                 f"  pivot: {v2(r['pivot'])}\n  anchoredPosition: {v2(r['pos'])}\n  sizeDelta: {v2(r['size'])}\n"

@@ -1792,6 +1792,9 @@ def patch_toast_container(p):
     n.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 2, (1, 1), (0, 0)))
     n.add("cg", 225, lambda ctx, go: H.canvas_group(True)(ctx, go).replace("  m_Interactable: 1\n  m_BlocksRaycasts: 1\n",
                                                                            "  m_Interactable: 0\n  m_BlocksRaycasts: 0\n"))
+    # On a phone the toasts sit where they do on PC, drawn as the rest of the HUD is (PHONE_HUD_SCALE, in by the notch).
+    n.add("phone", 114, K.phone_rect(R((1, 1), None, (-(TOAST_RIGHT * PHONE_HUD_SCALE + PHONE_NOTCH), -TOAST_TOP * PHONE_HUD_SCALE),
+                                       (TOAST_W, TOAST_H), (1, 1)), scale=PHONE_HUD_SCALE))
     rt = p.emit(n, root, root)
     p.children(root, [k for k in p.kids(root) if k != rt] + [rt])
 
@@ -1816,7 +1819,7 @@ def retire_thumb_cursors(p):
 # scaled as a block (PHONE_HUD_SCALE, its numbers and art drawn at the PC size), a piece with KitTexts is re-posed at
 # PHONE_HUD_POSE (its KitTexts take their role's phone size, a TMP without one is scaled). Pieces pinned to a side edge
 # step in by the notch. The ability row and the touch controls are not here: they are Garrett's (TouchControlsHud).
-# Prefab instances nested in the canvas (Pip, NotificationUI) are not posed here either.
+# Prefab instances nested in the canvas (Pip, NotificationUI) are posed by patch_phone_instances.
 PHONE_HUD_SCALE = 0.54                      # 1.3 x what the 1920 layout shrunk to 450 tall shows (450 / 1080)
 PHONE_HUD_POSE = 0.75
 PHONE_NOTCH = 54
@@ -1904,9 +1907,11 @@ def _phone_tops(p, rt):
 def phone_prefab(text_, key):
     """The phone pass over a panel nested in GameCanvas (the pause window, the connecting panel, the end reveal), so the
     canvas can switch to its phone layout without one of them drawn at the PC size. Not the notification feed: GameCanvas
-    overrides its instance's anchors and place, so a pose read from the prefab would put it somewhere else. Before
-    GameCanvas's Has Phone Layout goes on, that override and the pause window instance's root offsets (717 x 84, 264
-    down) are cleared at the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md, the phone layouts entry)."""
+    overrides its instance's anchors and place, so its phone pose is added on the canvas's side (patch_phone_instances).
+    The pause instance's "717 x 84, 264 down" overrides were measured on 2026-11-05: they size the toggles of the legacy
+    Options_Menu_Panel nested in the pause window, whose root is inactive, so they need no phone pose and stay as they are
+    (they target objects of nested prefabs: an override whose target is not a document of the pause prefab is NOT
+    dead)."""
     p = Patch(text_, key)
     roots = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!224 ") and "  m_Father: {fileID: 0}\n" in d]
     assert len(roots) == 1, f"{key}: one root rect expected"
@@ -1931,6 +1936,74 @@ def patch_phone_hud(p):
             _phone_branch(p, rt, True)
 
 
+PIP_GUID = K.meta_guid("Assets/_Prefabs/UI Elements/In Game/Pip.prefab")
+PIP_ROOT_GO = "6678124231473903037"                  # Pip.prefab's root GameObject
+FEED_UI_GUID = K.meta_guid(FEED_UI)
+FEED_UI_ROOT_GO = "4670989921267096617"            # NotificationUI.prefab's root GameObject
+SCALER_GUID = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
+
+
+def instance_of(p, guid):
+    pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {guid}" in d]
+    assert len(pis) == 1, f"GameCanvas should nest one instance of {guid}"
+    return pis[0]
+
+
+def stripped_go(p, inst, src_go, guid):
+    for f, d in p.sc.docs.items():
+        if (d.startswith("--- !u!1 ") and " stripped\n" in d.split("\n", 1)[0] + "\n"
+                and f"m_CorrespondingSourceObject: {{fileID: {src_go}, guid: {guid}," in d and f"m_PrefabInstance: {{fileID: {inst}}}" in d):
+            return f
+    # None yet (nothing on the canvas named the instance's root GameObject): add the stripped stand-in Unity writes.
+    fid = str(p.ctx.fid(f"{inst}#rootgo"))
+    if not p.sc.has(fid):
+        p.sc.insert_after(inst, fid, f"--- !u!1 &{fid} stripped\nGameObject:\n"
+                          f"  m_CorrespondingSourceObject: {{fileID: {src_go}, guid: {guid},\n    type: 3}}\n"
+                          f"  m_PrefabInstance: {{fileID: {inst}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+    return fid
+
+
+def add_instance_phone(p, guid, src_go, fn):
+    """A PhoneRect ADDED to a nested prefab instance's root on the canvas's side (m_AddedComponents): the instance's own
+    place is a canvas override, so its phone pose belongs to the canvas, not to the prefab. Re-added every run."""
+    inst = instance_of(p, guid)
+    go = stripped_go(p, inst, src_go, guid)
+    fid = str(p.ctx.fid(f"{inst}#phone"))
+    if p.sc.has(fid):
+        p.sc.remove(fid)
+    d = p.doc(inst)
+    d = re.sub(r"    - targetCorrespondingSourceObject: \{fileID: %s, guid: %s,\s*type: 3\}\n      insertIndex: -1\n"
+               r"      addedObject: \{fileID: %s\}\n" % (src_go, guid, fid), "", d)
+    entry = (f"    - targetCorrespondingSourceObject: {{fileID: {src_go}, guid: {guid}, type: 3}}\n"
+             f"      insertIndex: -1\n      addedObject: {{fileID: {fid}}}\n")
+    if "    m_AddedComponents: []\n" in d:
+        d = d.replace("    m_AddedComponents: []\n", "    m_AddedComponents:\n" + entry)
+    else:
+        d = re.sub(r"(    m_AddedComponents:\n)", lambda m: m.group(1) + entry, d, count=1)
+    p.replace(inst, d)
+    p.sc.insert_after(inst, fid, f"--- !u!114 &{fid}\n" + fn(p.ctx, go))
+
+
+def patch_phone_instances(p):
+    """Section 128's two open items: the notification feed (its place is a canvas override, FEED_POS) and the Pip, posed
+    for the phone the way the rest of the HUD is (PHONE_HUD_SCALE, in by the notch on a side edge)."""
+    k = PHONE_HUD_SCALE
+    add_instance_phone(p, FEED_UI_GUID, FEED_UI_ROOT_GO, K.phone_rect(
+        R((1, 1), None, (FEED_POS["pos"][0] * k - PHONE_NOTCH, FEED_POS["pos"][1] * k), FEED_POS["size"], (1, 1)), scale=k))
+    add_instance_phone(p, PIP_GUID, PIP_ROOT_GO, K.phone_rect(
+        R((0.5, 1), None, (0, round(-240 * k, 2)), (0, 0), (0.5, 0.5)), scale=k))
+
+
+def switch_on(p):
+    found = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!114 ") and f"guid: {SCALER_GUID}, type: 3}}" in d]
+    assert len(found) == 1, f"GameCanvas: expected one AdaptiveCanvasScaler, found {len(found)}"
+    d = re.sub(r"  hasPhoneLayout: \d\n  phoneReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", p.doc(found[0]))
+    assert "  safeZoneMaxAspect: " in d, "GameCanvas: the AdaptiveCanvasScaler body changed shape"
+    d = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)", lambda m: m.group(1) + "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n",
+               d, count=1)
+    p.replace(found[0], d)
+
+
 def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
     retire_thumb_cursors(p)
@@ -1944,6 +2017,8 @@ def canvas_text(text_):
     patch_ready(p)
     patch_waiting_and_countdown(p)
     patch_phone_hud(p)
+    patch_phone_instances(p)
+    switch_on(p)      # every piece has its phone pose (Shombith, 2026-11-05: "switch the phone layout on")
     return p.text()
 
 
@@ -2010,11 +2085,53 @@ def panel_text(text_):
 # Outputs, validation
 # --------------------------------------------------------------------------------------------
 
+SETTINGS_MODAL = "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab"
+PHONE_RECT_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+
+
+def root_phone_rect(path):
+    """The PhoneRect on a prefab's root (author_menu_phone.py's fallback marker), by its fileID."""
+    t = open(os.path.join(REPO, path), encoding="utf-8").read()
+    roots = re.findall(r"^--- !u!224 &-?\d+\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}\n(?:(?!--- ).*\n)*?  m_Father: \{fileID: 0\}", t, re.M)
+    assert len(roots) == 1, f"{path}: one root expected"
+    for m in re.finditer(r"^--- !u!114 &(-?\d+)\n((?:(?!--- ).*\n)*)", t, re.M):
+        if f"guid: {PHONE_RECT_GUID}" in m.group(2) and f"m_GameObject: {{fileID: {roots[0]}}}" in m.group(2):
+            return m.group(1)
+    raise AssertionError(f"{path}: its root has no PhoneRect")
+
+
+def put_mod(doc, target, guid, path, value):
+    """Set one override on a PrefabInstance document, adding it when it is not there."""
+    pat = re.compile(r"(    - target: \{fileID: %s, guid: %s,\s*type: 3\}\n      propertyPath: %s\n      value: ).*\n"
+                     % (target, guid, re.escape(path)))
+    if pat.search(doc):
+        return pat.sub(lambda m: m.group(1) + str(value) + "\n", doc, count=1)
+    entry = (f"    - target: {{fileID: {target}, guid: {guid}, type: 3}}\n      propertyPath: {path}\n"
+             f"      value: {value}\n      objectReference: {{fileID: 0}}\n")
+    return doc.replace("    m_RemovedComponents:", entry + "    m_RemovedComponents:", 1)
+
+
+def pause_settings_phone(text_):
+    """The Settings window nested in the pause window carries Menu_Main's fallback marker on its root (a window right of
+    the rail, under the cut nav band). A match has no rail and no band: here it is the PC layout shrunk onto the whole
+    canvas (Docs/MENU_REDESIGN_B.md section 129)."""
+    guid = K.meta_guid(SETTINGS_MODAL)
+    fid = root_phone_rect(SETTINGS_MODAL)
+    p = Patch(text_, "Pause/Settings")
+    pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {guid}" in d]
+    assert len(pis) == 1, "the pause window should nest one SettingsModal"
+    d = p.doc(pis[0])
+    for path, v in (("pcCutTop", 0), ("phoneInsets.x", 0), ("phoneInsets.y", 0), ("phoneInsets.z", 0), ("phoneInsets.w", 0)):
+        d = put_mod(d, fid, guid, path, v)
+    p.replace(pis[0], d)
+    return p.text()
+
+
 TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text,
-              PAUSE: lambda t: phone_prefab(pause_text(t), "Pause/Phone"),
+              PAUSE: lambda t: pause_settings_phone(phone_prefab(pause_text(t), "Pause/Phone")),
               CONNECT: lambda t: phone_prefab(connect_text(t), "Connecting/Phone"),
               ENDGAME: lambda t: phone_prefab(endgame_text(t), "EndGame/Phone"), FEED: feed_text,
-              FEED_UI: feed_ui_text,   # no phone pass: GameCanvas overrides its instance's place (see phone_prefab)
+              FEED_UI: feed_ui_text,   # its phone pose is added on the canvas's side (patch_phone_instances)
               TOAST_SETTINGS: toast_settings_text, MENU: menu_text, FTUE: ftue_text}
 
 

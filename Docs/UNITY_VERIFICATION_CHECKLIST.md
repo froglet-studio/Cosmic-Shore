@@ -21184,3 +21184,8 @@ Menu_Main's Has Phone Layout is ON (step 9).
    its own layout (Ark, Port, Profile, Codex, Mission, Toy Box, Arena, Settings, Credits, Replays, the leaderboard) sits
    right of the rail, nothing under it, its top band gone; an iPad and PC are unchanged. Run `PhoneRectTests`
    (`APcScaleBlockFillsTheRegionRightOfTheRailWithoutTheNavBand`).
+10. **In a match on an iPhone** (GameCanvas's switch is ON): the HUD at about 1.3x today's phone size clear of the
+    notch, the feed and toasts top right, the Pip at the top centre, pause opens and its Settings fills the screen (no
+    gap on the left), Ready / countdown / scoreboard as step 4 of the phone layouts entry. PC unchanged.
+11. **Maelstrom on an iPhone**: the hub - round cards and standings left, preview, pilots and a large READY right, no
+    pad hints; the summary readable with its buttons clear of the cards. PC unchanged.

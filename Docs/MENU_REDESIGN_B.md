@@ -6077,6 +6077,19 @@ unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards 
   (`phoneInsets` 112 / 8 / 8 / 8; `K.phone_window_block()`), at 434 / 996 = 0.436. Full-canvas overlays (toasts, the
   freestyle HUD, the loading and transition covers, the FTUE instruction set) keep the whole canvas. The hub window
   strip (LT / RT and the edge arrows) is moved off the canvas on a phone: the Home hubs and the rail switch windows.
+- **GameCanvas's Has Phone Layout is ON** (`author_ingame_hud.py`). Section 128's two blockers, measured: the pause
+  instance's "717.6 x 84 at 19, -264" overrides size the toggles of the legacy `Options_Menu_Panel` nested in the pause
+  window, whose root is inactive, so they need nothing (they are live overrides on nested-prefab objects, not dead ones);
+  the notification feed's place is a canvas override, so its PhoneRect is ADDED on the canvas's side
+  (`m_AddedComponents`), posed like the rest of the HUD (0.54, in by the notch). The toasts' container and the `Pip`
+  widget take the same pose. The Settings window nested in the pause window overrides its Menu_Main fallback back to the
+  whole canvas (no rail in a match). The crew picture-in-picture frame (`PipViewFrame`) needs nothing: it frames the
+  camera's screen rect on its own canvas.
+- **Maelstrom** (`author_maelstrom_ui.py`): the hub window is laid out in 1600 x 900 and drawn at 0.5: title, round
+  cards (0.82) and standings left; the preview (0.86), pilots ready (0.86), READY / NEXT (1.4), the countdown and its
+  line right; the pad hints leave the canvas. The summary is the PC layout in a 940-tall space (0.48); the invite cards
+  the PC layout shrunk. Both AdaptiveCanvasScalers on the scene's canvas (a duplicate since #1569; Yash's, left in place)
+  switch on.
 
 ## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
 

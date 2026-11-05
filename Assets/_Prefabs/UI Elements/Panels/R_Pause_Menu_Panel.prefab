@@ -6518,6 +6518,26 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -124.28
       objectReference: {fileID: 0}
+    - target: {fileID: 905863385838301029, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
+      propertyPath: pcCutTop
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 905863385838301029, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
+      propertyPath: phoneInsets.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 905863385838301029, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
+      propertyPath: phoneInsets.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 905863385838301029, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
+      propertyPath: phoneInsets.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 905863385838301029, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
+      propertyPath: phoneInsets.w
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

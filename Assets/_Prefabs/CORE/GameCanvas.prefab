@@ -6226,6 +6226,7 @@ GameObject:
   - component: {fileID: 817354840197582065}
   - component: {fileID: 452496507691719859}
   - component: {fileID: 1139933949215147531}
+  - component: {fileID: 976456878196479001}
   m_Layer: 5
   m_Name: ToastNotificationContainer
   m_TagString: Untagged
@@ -6290,6 +6291,41 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &976456878196479001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 468012041259105995}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -75.6, y: -110.16}
+  sizeDelta: {x: 720, y: 200}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!223 &5497835173863578974
 Canvas:
   m_ObjectHideFlags: 0
@@ -6369,6 +6405,8 @@ MonoBehaviour:
   blendRange: 0.15
   safeZone: {fileID: 0}
   safeZoneMaxAspect: 1.7777778
+  hasPhoneLayout: 1
+  phoneReferenceResolution: {x: 800, y: 450}
 --- !u!1 &5497835173978931473
 GameObject:
   m_ObjectHideFlags: 0
@@ -12134,8 +12172,52 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4670989921267096617, guid: a5daa036237c15c46bb0f787819f4a07, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 184145487024000978}
   m_SourcePrefab: {fileID: 100100000, guid: a5daa036237c15c46bb0f787819f4a07, type: 3}
+--- !u!114 &184145487024000978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200919238233088295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -75.6, y: -228.96}
+  sizeDelta: {x: 520, y: 300}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+--- !u!1 &200919238233088295 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4670989921267096617, guid: a5daa036237c15c46bb0f787819f4a07,
+    type: 3}
+  m_PrefabInstance: {fileID: 2353765311602242758}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &8859118550030172360 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
@@ -13971,8 +14053,46 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6678124231473903037, guid: d370a19728e4ce442882786116ae5f18, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1028216419285480192}
   m_SourcePrefab: {fileID: 100100000, guid: d370a19728e4ce442882786116ae5f18, type: 3}
+--- !u!114 &1028216419285480192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2169239178018152565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0.5, y: 1}
+  anchorMax: {x: 0.5, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: -129.6}
+  sizeDelta: {x: 0, y: 0}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.54
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!114 &306425813614236517 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5113694123919099565, guid: d370a19728e4ce442882786116ae5f18,
