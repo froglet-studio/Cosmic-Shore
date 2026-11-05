@@ -50,12 +50,24 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
-- [`Docs/MENU_REDESIGN_B.md`](Docs/MENU_REDESIGN_B.md): **The UI redesign and its design board.** Every menu, HUD, start-flow and
-  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Froglet Design Board"
-  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2; "Menu Redesign B" until 2026-11-02) before it is built. The canvas is in tabs
-  ("Menu Redesign" is the master tab of every earlier round, "Compute Console", "Menu Redesign C", ...): **`/design-board-new`** opens a
-  new tab and asks its name; the **`/design-board`** skill brings the board into a
-  session, compares a new design against the board and the build, and adds it as a new round on a tab (never a second canvas); the copy of
+- [`Docs/UI_STYLE_GUIDE.md`](Docs/UI_STYLE_GUIDE.md): **The Froglet UI style guide - one look for EVERYTHING Froglet makes**
+  (Shombith, 2026-11-03): the game's UI, Frogma boards, artifacts and diagrams, decks, the website, the Fleet Codex and every
+  studio. Garrett's six colour families with one meaning each (Lime is always the call to action; Jade is a choice you can
+  claim and reclaim, the selection and focus; Ruby is no way back, Ready), his colour chart with the shades to choose from,
+  the Froglet themes (Deep Sea, its light twin Shore; a domain is one accent), phones on their own 800x450 scale, type, the corner sliver, buttons and states, cards, windows, toasts, motion, the safe area, each with a
+  do and a don't from our own screens; drawn on Frogma's first tab (Style Guide). Tokens: `Docs/UI/froglet.css` and
+  `froglet-tokens.json`, written from the game by `Tools/Build/froglet_style.py` (`--check`) - any web page loads them
+  instead of typing colours. A PR touching `Assets/_Prefabs/UI*`, Menu_Main, GameCanvas, the UI theme or
+  `Assets/_Scripts/UI/` answers the template's **UI checklist** (`ui-checklist.yml`, `check_ui_pr.py`); Shombith is code owner.
+  Sections: 1-10 the rules; 11 the UI checklist; 12 the five worst screens; 13 open decisions; 14 outside the game
+- [`Docs/MENU_REDESIGN_B.md`](Docs/MENU_REDESIGN_B.md): **The UI redesign and its design board, Frogma.** Every menu, HUD, start-flow and
+  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Frogma"
+  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2; "Froglet Design Board" on 2026-11-02, "Menu Redesign B" before) before it is built.
+  The canvas is in tabs ("Menu Redesign" is the master tab of every earlier round, "Compute Console", "Menu Redesign C", ...), each round
+  a section (a tinted frame under its boards) and sets of boards in groups (dashed outlines): **`/frogma-new`** opens a
+  new tab and asks its name; the **`/frogma`** skill (was `/design-board`) brings the board into a
+  session, compares a new design against the board and the build, adds it as a new round on a tab (never a second canvas), and
+  sections, groups, moves, arranges and outlines what is there; the copy of
   every board is `Docs/MenuRedesignB/board/`; `/ui-redesign-tracker` verifies a build against the picked board. Read before touching
   Menu_Main, GameCanvas's look or any `Tools/Build/author_menu_*.py`.
   Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)

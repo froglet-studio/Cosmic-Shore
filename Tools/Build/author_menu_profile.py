@@ -60,6 +60,7 @@ S = dict(
     kt=K.kit_script("KitText"), cover=K.kit_script("KitCoverImage"),
     record=C.script("ProfileRecordWindow"), studio=C.script("AudioStudioPanel"), picker=C.script("FavouritePilotPicker"),
     nowplaying=C.script("NowPlayingCard"), cbp=C.script("ControllerButtonPress"),
+    tab=K.kit_script("KitTextTab"), colours=C.script("ProfileColorSetsPanel"),
 )
 # Rev 10 (section 56): the pilot record window's data.
 VESSEL_LIST = "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset"   # the Hangar's roster (HangarScreen.ShipList)
@@ -329,11 +330,14 @@ def build_view():
 
     # The record first in hierarchy: Refocus lands on the first live Selectable (the favourite pilot's CHANGE).
     build_record(root)
+    # Rev 51 A (section 123): the Colour sets page, a layer over the record that the header's two tabs switch to.
+    build_colour_sets(root)
 
     head = root.child(N("Header", "Header", TL(40, 96, 900, 64)))
     head.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", distance=10))
     label(head.child(N("Header/Eyebrow", "Eyebrow", TL(0, 4, 300, 18))), "Profile", "Label", "NeutralLightest")
     label(head.child(N("Header/Title", "Title", TL(0, 24, 600, 40))), "Your pilot", "H2", "TextLight")
+    build_tabs(root)
     w, h = K.button_size("BACK", small=True)
     root.children.append(pad_button("Back", "BackButton", "Default", "BACK", TR(40, 108, w, h), PAD_B, "Record"))
     # My Replays (Yash, 2026-10-26: "inside profiles should have my replay area where I can choose the last 10
@@ -383,6 +387,172 @@ def build_view():
         else:
             label(card.child(N(f"Pilot/{key}Value", f"{key}Value", TL(x + 18, 80, 200, 40))), val, "H1", "TextLight")
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# Rev 51 A (Shombith picked it, 2026-11-05; section 123): Record | Colour sets
+# --------------------------------------------------------------------------------------------
+# The two word tabs sit in the header row beside "Your pilot", with LB / RB, so the approved record keeps every position.
+# Colour sets is Rev 54 A, the Showroom (Shombith picked it, 2026-11-05; section 126): a window onto the real menu cell.
+# While it shows, the Profile's veil, the pilot card and the record step aside (ProfileColorSetsPanel) and the cell wears
+# the set being browsed. Over it: the set's name, line and four pigments, a rail of set tiles with < >, and APPLY. The
+# words a set shows come from the catalog (Tools/Build/author_colour_set_catalog.py); every other word is authored here.
+
+COLOUR_SET_CARDS = 3
+COLOUR_CATALOG = "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset"
+DOMAIN_NAMES = ("Jade", "Ruby", "Gold", "Blue")
+COLOUR_WORDS = (("positionTemplate", "'{index} of {count}'"), ("wearingTemplate", "Wearing {name}"))
+HERO_W, HERO_H, HERO_TOP = 1840, 864, 176
+NAME_SIZE = 88   # the board's hero name; past the type scale's Display (48) on purpose (section 126)
+TAB_X, TAB_Y = 360, 112
+
+
+def build_tabs(root):
+    tabs = root.child(N("Tabs", "Tabs", TL(TAB_X, TAB_Y, 640, 44)))
+    tabs.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", distance=10))
+    # LB / RB step between the tabs (ProfileColorSetsPanel reads the shoulders); the keycaps say so, as on the board.
+    kw, kh = K.label_width("LB", "Label") + 24, K.line_height("Label") + 8
+    tabs.children.append(Inst("TabsLB", "KitKeycap", "KeycapLB", TL(0, (44 - kh) // 2, kw, kh), [("Label#tmp", "m_text", "LB", None)]))
+    x = kw + 24
+    for key, caption, selected in (("RecordTab", "Record", True), ("ColourSetsTab", "Colour sets", False)):
+        k = f"Tabs/{key}"
+        w = K.label_width(caption.upper(), "Button")
+        n = tabs.child(N(k, key, TL(x, 0, w, 44)))
+        A.ring_node(n, f"{k}/FocusRing", 10)
+        hit = n.child(N(f"{k}/Hit", "Hit", STRETCH))
+        hit.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
+        # The word centred in the row, level with the LB / RB keycaps (it sat at the row's top: "misaligned texts").
+        lab = n.child(N(f"{k}/Label", "Label", R((0, 0.5), (1, 0.5), (0, 0), (0, K.line_height("Button")), (0.5, 0.5))))
+        lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption.upper(), "Button", tok("NeutralLightest"))) \
+            .add("kt", 114, K.kit_text("Button", "NeutralLightest", driven=True))
+        und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 0), (0, 2), (0.5, 0))))
+        und.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.0)))
+        n.add("tab", 114, (lambda k_, sel: lambda ctx, go: mono(go, S["tab"],
+              A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{k_}/Hit', 'img'))}\n" + A.calls([])
+              + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k_}/FocusRing', 'img'))}\n"
+              f"  isSelected: {1 if sel else 0}\n"
+              f"  label: {ref(ctx.c(f'{k_}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k_}/Underline', 'img'))}\n"))(k, selected))
+        n.add("audio", 114, A.menu_audio(11))
+        x += w + 36
+    tabs.children.append(Inst("TabsRB", "KitKeycap", "KeycapRB", TL(x - 12, (44 - kh) // 2, kw, kh), [("Label#tmp", "m_text", "RB", None)]))
+
+
+def swatch(parent, key, r, rim=True):
+    """A prism swatch: the hex face and (optionally) its rim, untinted - ProfileColorSetsPanel paints both."""
+    n = parent.child(N(key, key.split("/")[-1], r))
+    art_node(n, f"{key}/Face", "Face", STRETCH, K.kit_sprite("kit_hex_fill"), preserve=True)
+    if rim:
+        art_node(n, f"{key}/Rim", "Rim", STRETCH, K.kit_sprite("kit_hex_line2"), preserve=True)
+    return n
+
+
+def tick_node(parent, key, r):
+    t = parent.child(N(key, "Tick", r, active=False))
+    t.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta"), K.chrome_sprite("chrome_confirm"), preserve=True)) \
+        .add("th", 114, H.themed("Cta"))
+    return t
+
+
+def big_name(node, size=NAME_SIZE):
+    """The hero name: Display's face at the board's size (no KitText, which would set the role's size back)."""
+    base = text("", "Display", tok("TextLight"))
+
+    def body(ctx, go):
+        out = base(ctx, go)
+        assert "  m_fontSize: 48\n" in out and "  m_fontSizeBase: 48\n" in out, "Display's size moved; update big_name"
+        return out.replace("  m_fontSize: 48\n", f"  m_fontSize: {size}\n").replace("  m_fontSizeBase: 48\n", f"  m_fontSizeBase: {size}\n")
+    node.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
+    return node
+
+
+def build_colour_sets(root):
+    k0 = "ColourSets"
+    kh = f"{k0}/Hero"
+    pg = root.child(N(k0, "ColourSets", R((0, 0), (1, 1), (0, -42), (0, -84))))
+    pg.add("cg", 225, canvas_group(False))
+    W, H = HERO_W, HERO_H
+    hero = pg.child(N(kh, "Hero", TL(40, HERO_TOP - 84, W, H)))
+    # A window onto the cell, with a backing under the words and the rail: the real cell is far busier than the
+    # board's drawn sea, so a fade alone left the words on the world ("missing background"). A fade into a solid band,
+    # and the Profile's veil dimmed rather than off (ProfileColorSetsPanel.veilWhileShowing).
+    BAND = 300
+    fade = hero.child(N(f"{kh}/Fade", "Fade", TL(0, H - BAND - 220, W, 220)))
+    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88), K.kit_sprite("kit_fade_v"), False))
+    band = hero.child(N(f"{kh}/Band", "Band", TL(0, H - BAND, W, BAND)))
+    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88)))
+    frame(hero, f"{kh}/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.0)
+    label(hero.child(N(f"{kh}/Position", "Position", TL(56, 40, 160, 18))), "", "Label", "NeutralLightest")
+    label(hero.child(N(f"{kh}/Wearing", "Wearing", TL(200, 40, 600, 18))), "", "Label", "TextLight")
+    label(hero.child(N(f"{kh}/Private", "Private", TR(48, 38, 600, 20))), "Only you see your colour set", "BodySmall",
+          "NeutralLightest", align="right")
+    label(hero.child(N(f"{kh}/Eyebrow", "Eyebrow", TL(56, H - 350, 300, 18))), "Colour set", "Label", "NeutralLightest")
+    big_name(hero.child(N(f"{kh}/Name", "Name", TL(56, H - 330, 1240, 104))))
+    label(hero.child(N(f"{kh}/Line", "Line", TL(56, H - 218, 1240, 28))), "", "Body", "TextLight")
+    for d, dom in enumerate(DOMAIN_NAMES):
+        x, y = 56 + d * 300, H - 178
+        label(hero.child(N(f"{kh}/Pair{d}/Domain", f"Domain{d}", TL(x, y + 3, 44, 16))), dom, "Label", "NeutralLightest")
+        art_node(hero, f"{kh}/Pair{d}/Rim", f"Rim{d}", TL(x + 50, y, 20, 20), None)
+        art_node(hero, f"{kh}/Pair{d}/Face", f"Face{d}", TL(x + 70, y, 20, 20), None)
+        label(hero.child(N(f"{kh}/Pair{d}/Words", f"Words{d}", TL(x + 100, y - 1, 196, 22))), "", "BodySmall", "TextLight")
+    # The rail: < the three sets >. The pad moving onto a tile previews it on the cell.
+    w, h = K.button_size("<", small=True)
+    rail_y = H - 152
+    hero.children.append(small("ColourPrev", "PreviousButton", "Default", "<", TL(56, rail_y + 42 - h // 2, w, h)))
+    x0 = 56 + w + 16
+    for i in range(COLOUR_SET_CARDS):
+        k = f"{kh}/Set{i}"
+        x = x0 + i * 224
+        t = hero.child(N(k, f"Set{i}", TL(x, rail_y, 204, 84)))
+        t.add("cg", 225, canvas_group(True))
+        tile_nodes(t, k, 10)
+        for d in range(4):
+            swatch(t, f"{k}/Swatch{d}", TL(20 + d * 44, 24, 36, 32))
+        label(hero.child(N(f"{k}Name", f"Set{i}Name", TL(x, rail_y + 96, 170, 18))), "", "Label", "TextLight")
+        tick_node(hero, f"{k}Tick", TL(x + 184, rail_y + 96, 18, 18))
+        t.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10))
+        t.add("audio", 114, A.menu_audio(11))
+    hero.children.append(small("ColourNext", "NextButton", "Default", ">", TL(x0 + COLOUR_SET_CARDS * 224, rail_y + 42 - h // 2, w, h)))
+    # APPLY, or Equipped when the set shown is the one worn.
+    aw, ah = K.button_size("APPLY")
+    hero.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(W - 48 - aw, H - 56 - ah, aw, ah)))
+    eq = hero.child(N(f"{kh}/Equipped", "Equipped", TL(W - 48 - 220, H - 56 - 30, 220, 30), active=False))
+    tick_node(eq, f"{kh}/Equipped/Tick", TL(120, 6, 18, 18)).active = True
+    label(eq.child(N(f"{kh}/Equipped/Word", "Word", TL(146, 4, 74, 22))), "Equipped", "Label", "TextLight")
+    pg.add("colours", 114, lambda ctx, go: mono(go, S["colours"], colour_sets_body(ctx)))
+
+
+def colour_sets_body(ctx):
+    k0, kh = "ColourSets", "ColourSets/Hero"
+    seq = lambda name, ids, ind="  ": f"{ind}{name}:\n" + "".join(f"{ind}- {ref(x)}\n" for x in ids)
+    thumbs = "".join(
+        f"  - group: {ref(ctx.c(f'{kh}/Set{i}', 'cg'))}\n"
+        f"    tile: {ref(ctx.c(f'{kh}/Set{i}', 'tile'))}\n"
+        f"    nameText: {ref(ctx.c(f'{kh}/Set{i}Name', 'tmp'))}\n"
+        f"    equippedMark: {ref(ctx.go(f'{kh}/Set{i}Tick'))}\n"
+        + seq("faces", [ctx.c(f"{kh}/Set{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
+        + seq("rims", [ctx.c(f"{kh}/Set{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
+        for i in range(COLOUR_SET_CARDS))
+    words = "".join(f"  {k}: {v}\n" for k, v in COLOUR_WORDS)
+    return (f"  recordTab: {ref(ctx.c('Tabs/RecordTab', 'tab'))}\n"
+            f"  colourSetsTab: {ref(ctx.c('Tabs/ColourSetsTab', 'tab'))}\n"
+            f"  record: {ref(ctx.c('Record', 'record'))}\n"
+            f"  group: {ref(ctx.c(k0, 'cg'))}\n"
+            f"  pilotCard: {ref(ctx.c('Pilot', 'cg'))}\n"
+            + f"  veil: {ref(ctx.c('Veil', 'img'))}\n  veilWhileShowing: 0.55\n"
+            + seq("hideWhileShowing", [ctx.c("VeilSea", "img")])
+            + f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
+            "  thumbs:\n" + thumbs
+            + f"  previousButton: {ref(ctx.iref('ColourPrev', 'root#button'))}\n"
+            f"  nextButton: {ref(ctx.iref('ColourNext', 'root#button'))}\n"
+            f"  nameText: {ref(ctx.c(f'{kh}/Name', 'tmp'))}\n"
+            f"  lineText: {ref(ctx.c(f'{kh}/Line', 'tmp'))}\n"
+            f"  positionText: {ref(ctx.c(f'{kh}/Position', 'tmp'))}\n"
+            f"  wearingText: {ref(ctx.c(f'{kh}/Wearing', 'tmp'))}\n"
+            + seq("pairRims", [ctx.c(f"{kh}/Pair{d}/Rim", "img") for d in range(4)])
+            + seq("pairFaces", [ctx.c(f"{kh}/Pair{d}/Face", "img") for d in range(4)])
+            + seq("pairTexts", [ctx.c(f"{kh}/Pair{d}/Words", "tmp") for d in range(4)])
+            + f"  applyButton: {ref(ctx.iref('ApplyColourSet', 'root#button'))}\n"
+            f"  equippedMark: {ref(ctx.go(f'{kh}/Equipped'))}\n" + words)
 
 
 # --------------------------------------------------------------------------------------------

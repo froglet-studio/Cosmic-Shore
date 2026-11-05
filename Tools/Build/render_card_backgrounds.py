@@ -67,7 +67,7 @@ OUT_DIR = ROOT / "Assets/_Graphics/ARCADE/CardBackgrounds"
 MANIFEST = ROOT / "Tools/Build/card_backgrounds_manifest.json"
 ROSTERS = ["Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset",
            "Assets/_SO_Assets/Games/GameLists/ArenaGames.asset"]
-COLOR_SET = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset"
+COLOR_SET = "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset"
 END_CONDITIONS = "Assets/Resources/EndConditionOverrides.asset"
 INTENSITY = 2
 # Cards that deliberately ship a HAND capture instead of a render (author_card_backgrounds.py still

@@ -42,6 +42,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("One is shown, at random, each time the screen comes up. Empty: no tip.")]
         public string[] tips = Array.Empty<string>();
 
+        [Header("Words: a colour-set change (Profile > Colour sets, Docs/MENU_REDESIGN_B.md section 123)")]
+        [Tooltip("Over the set's name, in place of the cell's 'Entering'.")]
+        public string colourSetWord = "Changing colour set";
+        [Tooltip("The repaint's four steps, lit in turn: the domain materials are rebuilt, the prisms repainted, the " +
+                 "vessels and HUD recoloured, the veil lifts.")]
+        public string[] colourSetSteps = { "Mixing the palette", "Repainting prisms", "Recolouring vessels and trails", "Opening the cell" };
+        [Tooltip("The tip under a colour-set change. Empty: no tip.")]
+        public string colourSetTip = string.Empty;
+
         [Header("Look")]
         [Tooltip("The sea behind it all (Sea_Window.mat, Docs/MENU_REDESIGN_B.md §70). Empty: black.")]
         [FormerlySerializedAs("lattice")]
@@ -67,6 +76,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Step <paramref name="index"/>'s label, or empty.</summary>
         public string StepLabel(int index) =>
             stepLabels != null && index >= 0 && index < stepLabels.Length ? stepLabels[index] ?? string.Empty : string.Empty;
+
+        /// <summary>Colour-set step <paramref name="index"/>'s label, or empty.</summary>
+        public string ColourSetStep(int index) =>
+            colourSetSteps != null && index >= 0 && index < colourSetSteps.Length ? colourSetSteps[index] ?? string.Empty : string.Empty;
 
         /// <summary>Step <paramref name="index"/>'s glyph, or null.</summary>
         public Sprite StepGlyph(int index) =>

@@ -7,3 +7,14 @@
 #
 # This only blocks a merge while the "Protect trunks" ruleset requires review from Code Owners.
 /.github/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
+
+# UI (Docs/UI_STYLE_GUIDE.md): Shombith owns the menus, the UI prefabs, the theme and the style guide, and reviews
+# every change to them against the guide's UI checklist (section 11).
+/Assets/_Prefabs/UI* @Shombith03
+/Assets/_Scenes/Menu_Main.unity @Shombith03
+/Assets/_Prefabs/CORE/GameCanvas.prefab @Shombith03
+/Assets/_SO_Assets/UI/ @Shombith03
+/Assets/_Scripts/UI/ @Shombith03
+/Docs/UI_STYLE_GUIDE.md @Shombith03
+/Docs/UI/ @Shombith03
+/Tools/Build/froglet_style.py @Shombith03
