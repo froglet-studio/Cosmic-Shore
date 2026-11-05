@@ -6,7 +6,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// A panel's place on a phone (Docs/UI_STYLE_GUIDE.md §8, D6; the approved phone boards, Docs/MENU_REDESIGN_B.md
-    /// §124-125). The RectTransform keeps its authored 1920 x 1080 pose; this component holds the pose the panel takes
+    /// §127-128). The RectTransform keeps its authored 1920 x 1080 pose; this component holds the pose the panel takes
     /// on the 800 x 450 phone canvas. <see cref="AdaptiveCanvasScaler"/> applies it to every PhoneRect under its canvas
     /// when the phone layout turns on, and puts the authored pose back when it turns off; a PhoneRect enabled later
     /// (a pooled card, a panel opened after the switch) asks its canvas itself.

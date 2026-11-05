@@ -274,7 +274,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
    `author_menu_configure.py`, and the menu generators that bake the selection colour); `colour_domains.json`
    `ui_tokens` has `selection: jade` and `commit: ruby`.
 2. **The phone scale** (D6). The mechanism is done (section 8). Built against the approved boards (Docs/MENU_REDESIGN_B.md
-   sections 124-125): sign-in (on), the in-game finish, HUD and panels (built, off until GameCanvas's two instance
+   sections 127-128): sign-in (on), the in-game finish, HUD and panels (built, off until GameCanvas's two instance
    overrides are cleared). Still to build: the toasts and the picture-in-picture frame in GameCanvas, then Home, Arcade,
    Configure and Hangar, and every other Menu_Main screen before Menu_Main's switch goes on.
 

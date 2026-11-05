@@ -1191,7 +1191,7 @@ S.update(header=script_guid("Assets/_Scripts/UI/ScoreboardTeamHeader.cs"),
 # for the rest), PLAY AGAIN is the Ruby commit (it launches a game, Docs/UI_STYLE_GUIDE.md D3), CONTINUE the lime call to
 # action, MAIN MENU / LEAVE LOBBY are neutral, the reward strip is plain.
 NO_ROW_RIM = "{fileID: 0}"
-# The phone layout (Docs/MENU_REDESIGN_B.md section 124, the approved R52Finish board; Docs/UI_STYLE_GUIDE.md section 8):
+# The phone layout (Docs/MENU_REDESIGN_B.md section 127, the approved R52Finish board; Docs/UI_STYLE_GUIDE.md section 8):
 # on the 800 x 450 phone canvas the board is one column - the header and the ladder on the left, the reward top right,
 # the buttons bottom right - clear of the notch on either side (54 units plus padding). PhoneRect carries each pose and
 # the phone font size of every text that has no KitText; the PC layout above is untouched.
@@ -1811,7 +1811,7 @@ def retire_thumb_cursors(p):
         p.children(parent, [k for k in p.kids(parent) if k != rt])
 
 
-# --- the phone layout of the in-game HUD (Docs/MENU_REDESIGN_B.md section 125, the approved R53 Hud boards) ------
+# --- the phone layout of the in-game HUD (Docs/MENU_REDESIGN_B.md section 128, the approved R53 Hud boards) ------
 # Every piece keeps its place and is drawn bigger than the 1920 layout shrunk onto a phone: a piece with no KitText is
 # scaled as a block (PHONE_HUD_SCALE, its numbers and art drawn at the PC size), a piece with KitTexts is re-posed at
 # PHONE_HUD_POSE (its KitTexts take their role's phone size, a TMP without one is scaled). Pieces pinned to a side edge

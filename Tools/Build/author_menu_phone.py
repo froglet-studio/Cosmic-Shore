@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 The phone layout of Menu_Main, for the screens that have no phone board yet (Docs/UI_STYLE_GUIDE.md section 8, D6;
-Docs/MENU_REDESIGN_B.md sections 124-125).
+Docs/MENU_REDESIGN_B.md sections 127-129).
 
 The phone scale switches a whole canvas at once (AdaptiveCanvasScaler.hasPhoneLayout). Menu_Main holds every menu
 screen, and only Home, Arcade, Configure and Hangar have approved phone boards. Every other screen gets a PhoneRect with
@@ -13,7 +13,8 @@ off this list when its phone board is approved and its own generator writes its 
     prefab roots                  the screens that are prefab instances in the scene (their prefab's root carries it)
 
 The PhoneRect is added last on each object and re-added every run, so a re-run is a no-op (--check). Each owning
-generator's --check stays clean (they patch, they do not re-emit these objects); gates.sh runs all of them.
+generator's --check stays clean (they patch, they do not re-emit these objects); gates.sh runs all of them. A screen whose
+generator re-emits its root (Codex, Port, Replays, Credits, the hub window strip) carries the fallback in that generator.
 
     python3 Tools/Build/author_menu_phone.py            # write
     python3 Tools/Build/author_menu_phone.py --check    # fail if any output drifted
@@ -37,7 +38,7 @@ MENU = "Assets/_Scenes/Menu_Main.unity"
 # Scene objects of Menu_Main with no phone board yet, by their (unique) name.
 SCENE_FALLBACK = [
     "Hangar Screen", "ArkScreen", "HomeScreen", "PortScreen", "ProfileScreen",
-    "NavBar", "HubWindowNavHost", "FriendsDrawerHost", "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
+    "NavBar", "FriendsDrawerHost", "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
     "ArcadeScreenModal", "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal",
     "ToyboxGameConfigureModal", "ArenaGameConfigureModal", "MaelstromGameConfigurationModal",
     "ProfileModal", "LeaderboardConfigureModal", "PlayerDataSelectModal", "InitializingScreen", "SceneTransitionModal",
@@ -45,12 +46,8 @@ SCENE_FALLBACK = [
 
 # Screens that are prefab instances directly under a container that is not itself a fallback block.
 PREFAB_FALLBACK = [
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/CodexView.prefab",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab",
     "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab",
     "Assets/_Prefabs/ArcadeGameConfigureModal.prefab",
-    "Assets/_Prefabs/UI Elements/Panels/ReplayBrowserModal.prefab",
-    "Assets/_Prefabs/UI Elements/Panels/CreditsModal.prefab",
     "Assets/_Prefabs/UI Elements/Quest/InGameInstructionSet.prefab",
 ]
 

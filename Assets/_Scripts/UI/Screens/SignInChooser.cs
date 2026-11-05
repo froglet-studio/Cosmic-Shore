@@ -40,7 +40,7 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform window;
         [Tooltip("Top of the first row under the title, from the window's top edge.")]
         [SerializeField] float stackTop = 152f;
-        [Tooltip("Top of the first row on a phone (Docs/MENU_REDESIGN_B.md section 125, R53SignIn): the heading moves to " +
+        [Tooltip("Top of the first row on a phone (Docs/MENU_REDESIGN_B.md section 128, R53SignIn): the heading moves to " +
                  "the left column, so the rows start near the window's top. Used while the canvas is at the phone scale.")]
         [SerializeField] float phoneStackTop = 24f;
         [SerializeField] float rowGap = 14f;

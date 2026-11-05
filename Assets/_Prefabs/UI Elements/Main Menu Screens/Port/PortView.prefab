@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 729196370740781817}
+  - component: {fileID: 863023850702289973}
   - component: {fileID: 680530762005084648}
-  - component: {fileID: 508351069345127905}
   m_Layer: 5
   m_Name: PortView
   m_TagString: Untagged
@@ -18,29 +18,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &508351069345127905
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 507237716404341088}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
 --- !u!224 &729196370740781817
 RectTransform:
   m_ObjectHideFlags: 0
@@ -66,6 +43,29 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &863023850702289973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 507237716404341088}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 1
+  pcHeight: 1080
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
 --- !u!114 &680530762005084648
 MonoBehaviour:
   m_ObjectHideFlags: 0

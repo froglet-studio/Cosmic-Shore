@@ -518,6 +518,7 @@ def leaderboard_pane(root):
 
 def build_view():
     root = N("root", "PortView", STRETCH)
+    root.add("phone", 114, K.phone_rect(pc_block=True))   # no phone board yet: drawn as today on a phone (author_menu_phone.py)
     # The sea, as behind every window (Shombith 2026-10-27: "use the sea line background like everywhere"): the veil
     # and the sea lines under the top bar, exactly the Codex's and the Hangar's.
     veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -TOP_BAR / 2), (0, -TOP_BAR))))

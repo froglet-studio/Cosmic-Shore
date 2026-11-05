@@ -187,6 +187,7 @@ def arrow_node(host, side):
 
 def host_node():
     host = N("Host", "HubWindowNavHost", STRETCH)
+    host.add("phone", 114, K.phone_rect(pc_block=True))   # no phone board yet: drawn as today on a phone (author_menu_phone.py)
     host.add("cg", 225, H.canvas_group(False))
     strip_node(host)
     arrow_node(host, "Left")

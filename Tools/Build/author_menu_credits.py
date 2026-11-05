@@ -130,6 +130,7 @@ STYLES = (  # key, role, token, sample
 
 def build_modal():
     root = N("root", NAME, STRETCH)
+    root.add("phone", 114, K.phone_rect(pc_block=True))   # no phone board yet: drawn as today on a phone (author_menu_phone.py)
     root.add("cg", 225, hidden_group()).add("anim", 95, animator())
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.88, raycast=True)
     content = root.child(N("Content", "Content", STRETCH))

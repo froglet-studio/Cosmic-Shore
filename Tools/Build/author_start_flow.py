@@ -139,7 +139,7 @@ NOTE_H = 40   # R9b: "Steam is not running" above the buttons
 PROGRESS_H, AUTO_H = 360, 250
 AUTH_H, NAME_H, RETRY_H = 330, 440, 250
 RULES = 4                      # DisplayNameRuleState.Count
-# The phone layout (Docs/MENU_REDESIGN_B.md section 125, the approved R53SignIn board; Docs/UI_STYLE_GUIDE.md section 8):
+# The phone layout (Docs/MENU_REDESIGN_B.md section 128, the approved R53SignIn board; Docs/UI_STYLE_GUIDE.md section 8):
 # the sign-in window widens to two columns on the 800 x 450 phone canvas - the heading left, the chooser's rows right
 # (SignInChooser still sets each row's y, from its phoneStackTop). PhoneRect carries each pose; the PC layout is untouched.
 PH = K.phone_rect
