@@ -21094,3 +21094,20 @@ errors); `author_menu_profile.py`, `author_colour_set_catalog.py` and `author_lo
 6. **Fly a match in Dart Frog.** Prisms, trails, the HUD's domain colours, the Configure pedestals and the Ark's squads
    wear it. Note what does not (a vessel hull keeps Photic: its materials read Photic by path).
 7. **Leave the Profile on COLOUR SETS, go Home, open it again.** It opens on RECORD.
+
+## 🔴 Profile Colour sets: the Showroom on the real cell (Rev 54 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sleepy-dirac-ytn1ph`; Docs/MENU_REDESIGN_B.md sections 124 and 126. It replaces the Rev 51 A layout in
+the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_refcompile`; not opened in the editor.
+
+1. **Open the Profile and press COLOUR SETS (or RB).** The veil, the pilot card and the record go, and the menu cell
+   fills a framed window. "1 of 3 / Wearing Nocturne", NOCTURNE large, its line and four pigment pairs; the rail shows
+   three tiles with Nocturne ticked; Equipped where APPLY would be.
+2. **Move the pad onto Dart Frog (or press >).** The cell's prisms and crystals turn Dart Frog at once, the name and
+   pigments change, APPLY appears. Press < back to Nocturne: the cell returns.
+3. **Pick Dart Frog, press LB (or the RECORD tab), or B to leave.** The cell goes back to Nocturne, and the record and
+   pilot card return.
+4. **Pick Dart Frog and press APPLY.** The loading screen reads "Changing colour set" and lifts on Dart Frog. The tile
+   tick moves, Equipped shows, and leaving now keeps Dart Frog. Restart Play: the game starts in Dart Frog.
+5. **Check the words fit:** the 88-point name for the longest set name, and four pigment pairs on one row.
+

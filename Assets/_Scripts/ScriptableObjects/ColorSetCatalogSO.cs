@@ -27,12 +27,20 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Whether a player may pick it. Every set is unlocked for now (Shombith, 2026-11-05); quests " +
                      "will give sets once they are planned.")]
             public bool unlocked = true;
+            [Tooltip("Jade, Ruby, Gold, Blue: each domain's rim over its face, as the Profile names them (\"Mint over " +
+                     "Bronze\"). Empty shows nothing for that domain.")]
+            public string[] pigments = Array.Empty<string>();
         }
 
         [Header("Sets, in card order")]
         [SerializeField] private Entry[] entries = Array.Empty<Entry>();
 
         public int Count => entries?.Length ?? 0;
+
+        /// <summary>The pigment words for domain <paramref name="domainIndex"/> (Jade 0 .. Blue 3), or empty.</summary>
+        public static string Pigment(Entry entry, int domainIndex) =>
+            entry?.pigments != null && domainIndex >= 0 && domainIndex < entry.pigments.Length
+                ? entry.pigments[domainIndex] ?? string.Empty : string.Empty;
 
         public Entry Get(int index) => entries != null && index >= 0 && index < entries.Length ? entries[index] : null;
 

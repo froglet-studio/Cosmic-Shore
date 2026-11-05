@@ -18,13 +18,28 @@ MonoBehaviour:
     displayName: Nocturne
     line: 'Every prism a lantern: a glowing rim over a deep jewel face.'
     unlocked: 1
+    pigments:
+    - Lagoon over Plum
+    - Orchid over Deep Teal
+    - Honey over Violet
+    - Cornflower over Spruce
   - id: photic
     colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
     displayName: Photic
     line: 'The original sunlit sea: one bright hue per domain.'
     unlocked: 1
+    pigments:
+    - Cyan over Deep cyan
+    - Violet over Deep violet
+    - Amber over Umber
+    - Periwinkle over Indigo
   - id: dartfrog
     colorSet: {fileID: 11400000, guid: fc278fc4db3642deb6d5c94314865280, type: 2}
     displayName: Dart Frog
     line: 'Two frog pigments per domain: mint over bronze, bumblebee over indigo.'
     unlocked: 1
+    pigments:
+    - Mint over Bronze
+    - Orchid over Petrol
+    - Bumblebee over Indigo
+    - Azure over Forest

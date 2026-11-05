@@ -5869,7 +5869,7 @@ game in order for it to be applied", and "lb rb stuff is missing".
 - Compiled against the Unity reference assemblies (0 errors in project code); the hand test in
   `Docs/UNITY_VERIFICATION_CHECKLIST.md` now expects the colours to change the moment the veil lifts.
 
-## 125. Rev 54 mockups: colour sets, more modern - the set's world leads (2026-11-05, awaiting a pick)
+## 125. Rev 54 mockups: colour sets, more modern - the set's world leads (2026-11-05; Shombith picked A, built in section 126)
 
 **Asked (Shombith, 2026-11-05):** "give me a few better modern mockups, I do not love these".
 
@@ -5896,3 +5896,33 @@ Unity if the cell behind the Profile previews the set being browsed.
 
 **Decisions waiting:** which option; whether browsing previews on the real cell (no extra render, but the cell repaints
 as you browse) or only APPLY repaints; Audio Studio as its own tab or kept on Record.
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity and open the PR". Built in section 126.
+
+## 126. Built: Rev 54 A, the Showroom - the Colour sets tab is a window onto the real cell (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". It replaces section 123's cards and preview panel. The tabs, LB / RB, the
+catalog, the veil's colour-set mode and section 124's re-stamp stay.
+
+- **The world is the real cell.** While Colour sets shows, `ProfileColorSetsPanel` switches off the Profile's veil and
+  its sea lines, hides the pilot card and hides the record without closing it (`ProfileRecordWindow.SetHidden`), so the
+  menu cell is seen through a framed window with a fade under the words. No render texture and no second scene.
+- **Browsing previews on the cell.** This answers section 125's open question; the board's notes recommended it.
+  Picking a set, pressing < or >, or moving the pad onto a tile calls `ThemeManager.PreviewColorSet`, which repaints
+  in place and re-stamps without saving. APPLY raises the cell-change veil, then `ApplyColorSet` saves the pick and
+  makes it `Equipped`. If another load holds the screen, APPLY wears the set at once. Leaving the tab or the Profile
+  without applying puts the equipped set back: `ProfileRecordWindow` now raises `Opened` and `Closed`.
+- **On the cell:**
+  - "2 of 3" and "Wearing Nocturne" (authored templates);
+  - "Only you see your colour set";
+  - "Colour set", the set's name at 88 (the board's size, past the type scale's Display 48 on purpose), its line, and
+    the four domains' rim and face swatches with their pigment words;
+  - the rail: <, three set tiles (the four rim-over-face swatches, the name, the lime tick on the worn set), >;
+  - APPLY (Cta), or Equipped when the set shown is the one worn.
+- **Pigment words** are authored in the catalog (`ColorSetCatalogSO.Entry.pigments`; `author_colour_set_catalog.py`
+  added them to the asset once, and its checks hold four per set).
+- **Departures from the board:** the tabs stay in the header row (as built in section 123). Audio Studio stays on
+  Record; that decision is still open. The thumbnails are swatch tiles, not pictures of the cell.
+- Compiled against the Unity reference assemblies; `author_menu_profile.py` and `author_colour_set_catalog.py` pass
+  `--check` and `--self-test`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+

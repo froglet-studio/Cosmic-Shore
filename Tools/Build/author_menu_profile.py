@@ -392,18 +392,18 @@ def build_view():
 # --------------------------------------------------------------------------------------------
 # Rev 51 A (Shombith picked it, 2026-11-05; section 123): Record | Colour sets
 # --------------------------------------------------------------------------------------------
-# The two word tabs sit in the header row beside "Your pilot", so the approved record keeps every position (the board
-# drew them under the pilot card). Colour sets is a layer over the record's panels: three set cards on the left, the
-# preview on the right at the record's own rects, APPLY straddling the preview's foot. The words a set shows come from
-# the catalog (Tools/Build/author_colour_set_catalog.py); every other word is authored here, in the prefab.
+# The two word tabs sit in the header row beside "Your pilot", with LB / RB, so the approved record keeps every position.
+# Colour sets is Rev 54 A, the Showroom (Shombith picked it, 2026-11-05; section 126): a window onto the real menu cell.
+# While it shows, the Profile's veil, the pilot card and the record step aside (ProfileColorSetsPanel) and the cell wears
+# the set being browsed. Over it: the set's name, line and four pigments, a rail of set tiles with < >, and APPLY. The
+# words a set shows come from the catalog (Tools/Build/author_colour_set_catalog.py); every other word is authored here.
 
 COLOUR_SET_CARDS = 3
 COLOUR_CATALOG = "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset"
 DOMAIN_NAMES = ("Jade", "Ruby", "Gold", "Blue")
-TIER_NAMES = ("Prism", "Shielded", "Super-shielded", "Vessel")
-COLOUR_WORDS = (("equippedWord", "Equipped"), ("ownedWord", "Owned"), ("lockedWord", "Unlocks with a quest"),
-                ("equippedStatus", "Equipped - every prism, vessel and trail wears it"),
-                ("lockedStatus", "A quest will give this set"))
+COLOUR_WORDS = (("positionTemplate", "'{index} of {count}'"), ("wearingTemplate", "Wearing {name}"))
+HERO_W, HERO_H, HERO_TOP = 1840, 864, 176
+NAME_SIZE = 88   # the board's hero name; past the type scale's Display (48) on purpose (section 126)
 TAB_X, TAB_Y = 360, 112
 
 
@@ -452,79 +452,100 @@ def tick_node(parent, key, r):
     return t
 
 
+def big_name(node, size=NAME_SIZE):
+    """The hero name: Display's face at the board's size (no KitText, which would set the role's size back)."""
+    base = text("", "Display", tok("TextLight"))
+
+    def body(ctx, go):
+        out = base(ctx, go)
+        assert "  m_fontSize: 48\n" in out and "  m_fontSizeBase: 48\n" in out, "Display's size moved; update big_name"
+        return out.replace("  m_fontSize: 48\n", f"  m_fontSize: {size}\n").replace("  m_fontSizeBase: 48\n", f"  m_fontSizeBase: {size}\n")
+    node.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
+    return node
+
+
 def build_colour_sets(root):
     k0 = "ColourSets"
-    top = lambda y: y - 84
+    kh = f"{k0}/Hero"
     pg = root.child(N(k0, "ColourSets", R((0, 0), (1, 1), (0, -42), (0, -84))))
     pg.add("cg", 225, canvas_group(False))
-    # Covers the record's panels (from just above them to the bottom) and takes their clicks while this page shows.
-    image_node(pg, f"{k0}/Cover", "Cover", R((0, 0), (1, 0), (0, 0), (0, 1080 - 366), (0.5, 0)), "SurfaceBlack", alpha=0.96,
-               raycast=True)
-    for i in range(COLOUR_SET_CARDS):
-        k = f"{k0}/Card{i}"
-        card = pg.child(N(k, f"Card{i}", TL(40, top(376) + i * 228, 1000, 208)))
-        card.add("cg", 225, canvas_group(True))
-        tile_nodes(card, k, 14)
-        label(card.child(N(f"{k}/Name", "Name", TL(28, 22, 600, 40))), "", "H2", "TextLight")
-        label(card.child(N(f"{k}/Line", "Line", TL(28, 68, 600, 44))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
-        tick_node(card, f"{k}/Tick", TL(28, 158, 18, 18))
-        label(card.child(N(f"{k}/State", "State", TL(54, 157, 500, 20))), "", "Label", "TextLight")
-        for d, dom in enumerate(DOMAIN_NAMES):
-            swatch(card, f"{k}/Swatch{d}", TL(664 + d * 80, 46, 56, 48))
-            label(card.child(N(f"{k}/Domain{d}", f"Domain{d}", TL(656 + d * 80, 104, 72, 16))), dom, "Label", "NeutralLightest",
-                  align="center")
-        card.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"),
-                                          14, primary=[c(f"{k}/Name", "tmp")]))
-        card.add("audio", 114, A.menu_audio(11))
-
-    kp = f"{k0}/Preview"
-    pv = panel(pg, kp, "Preview", TL(1060, top(376), 820, 664), "Preview", "NeutralLightest")
-    label(pv.child(N(f"{kp}/Name", "Name", TL(24, 52, 770, 52))), "", "H1", "TextLight")
-    label(pv.child(N(f"{kp}/Line", "Line", TL(24, 108, 770, 44))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
-    for t, name in enumerate(TIER_NAMES):
-        label(pv.child(N(f"{kp}/Column{t}", f"Column{t}", TL(150 + t * 160, 176, 150, 16))), name, "Label", "NeutralLightest",
-              align="center")
+    W, H = HERO_W, HERO_H
+    hero = pg.child(N(kh, "Hero", TL(40, HERO_TOP - 84, W, H)))
+    # A window onto the cell: the frame and a fade under the words, nothing over the world itself.
+    fade = hero.child(N(f"{kh}/Fade", "Fade", TL(0, H - 470, W, 470)))
+    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.92), K.kit_sprite("kit_fade_v"), False))
+    frame(hero, f"{kh}/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.0)
+    label(hero.child(N(f"{kh}/Position", "Position", TL(56, 40, 160, 18))), "", "Label", "NeutralLightest")
+    label(hero.child(N(f"{kh}/Wearing", "Wearing", TL(200, 40, 600, 18))), "", "Label", "TextLight")
+    label(hero.child(N(f"{kh}/Private", "Private", TR(48, 38, 600, 20))), "Only you see your colour set", "BodySmall",
+          "NeutralLightest", align="right")
+    label(hero.child(N(f"{kh}/Eyebrow", "Eyebrow", TL(56, H - 350, 300, 18))), "Colour set", "Label", "NeutralLightest")
+    big_name(hero.child(N(f"{kh}/Name", "Name", TL(56, H - 330, 1240, 104))))
+    label(hero.child(N(f"{kh}/Line", "Line", TL(56, H - 218, 1240, 28))), "", "Body", "TextLight")
     for d, dom in enumerate(DOMAIN_NAMES):
-        y = 208 + d * 88
-        label(pv.child(N(f"{kp}/Domain{d}", f"Domain{d}", TL(24, y + 16, 120, 18))), dom, "Label", "TextLight")
-        for t in range(3):
-            swatch(pv, f"{kp}/Tier{d}_{t}", TL(150 + t * 160 + 47, y, 56, 48))
-        swatch(pv, f"{kp}/Vessel{d}", TL(150 + 3 * 160 + 47, y, 56, 48), rim=False)
-    tick_node(pv, f"{kp}/Tick", TL(24, 590, 18, 18))
-    label(pv.child(N(f"{kp}/Status", "Status", TL(52, 588, 520, 22))), "", "Body", "NeutralLightest")
-    w, h = K.button_size("APPLY")
-    pv.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(820 - 24 - w, 664 - h // 2, w, h)))
+        x, y = 56 + d * 300, H - 178
+        label(hero.child(N(f"{kh}/Pair{d}/Domain", f"Domain{d}", TL(x, y + 3, 44, 16))), dom, "Label", "NeutralLightest")
+        art_node(hero, f"{kh}/Pair{d}/Rim", f"Rim{d}", TL(x + 50, y, 20, 20), None)
+        art_node(hero, f"{kh}/Pair{d}/Face", f"Face{d}", TL(x + 70, y, 20, 20), None)
+        label(hero.child(N(f"{kh}/Pair{d}/Words", f"Words{d}", TL(x + 100, y - 1, 196, 22))), "", "BodySmall", "TextLight")
+    # The rail: < the three sets >. The pad moving onto a tile previews it on the cell.
+    w, h = K.button_size("<", small=True)
+    rail_y = H - 152
+    hero.children.append(small("ColourPrev", "PreviousButton", "Default", "<", TL(56, rail_y + 42 - h // 2, w, h)))
+    x0 = 56 + w + 16
+    for i in range(COLOUR_SET_CARDS):
+        k = f"{kh}/Set{i}"
+        x = x0 + i * 224
+        t = hero.child(N(k, f"Set{i}", TL(x, rail_y, 204, 84)))
+        t.add("cg", 225, canvas_group(True))
+        tile_nodes(t, k, 10)
+        for d in range(4):
+            swatch(t, f"{k}/Swatch{d}", TL(20 + d * 44, 24, 36, 32))
+        label(hero.child(N(f"{k}Name", f"Set{i}Name", TL(x, rail_y + 96, 170, 18))), "", "Label", "TextLight")
+        tick_node(hero, f"{k}Tick", TL(x + 184, rail_y + 96, 18, 18))
+        t.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10))
+        t.add("audio", 114, A.menu_audio(11))
+    hero.children.append(small("ColourNext", "NextButton", "Default", ">", TL(x0 + COLOUR_SET_CARDS * 224, rail_y + 42 - h // 2, w, h)))
+    # APPLY, or Equipped when the set shown is the one worn.
+    aw, ah = K.button_size("APPLY")
+    hero.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(W - 48 - aw, H - 56 - ah, aw, ah)))
+    eq = hero.child(N(f"{kh}/Equipped", "Equipped", TL(W - 48 - 220, H - 56 - 30, 220, 30), active=False))
+    tick_node(eq, f"{kh}/Equipped/Tick", TL(120, 6, 18, 18)).active = True
+    label(eq.child(N(f"{kh}/Equipped/Word", "Word", TL(146, 4, 74, 22))), "Equipped", "Label", "TextLight")
     pg.add("colours", 114, lambda ctx, go: mono(go, S["colours"], colour_sets_body(ctx)))
 
 
 def colour_sets_body(ctx):
-    k0, kp = "ColourSets", "ColourSets/Preview"
+    k0, kh = "ColourSets", "ColourSets/Hero"
     seq = lambda name, ids, ind="  ": f"{ind}{name}:\n" + "".join(f"{ind}- {ref(x)}\n" for x in ids)
-    cards = "".join(
-        f"  - group: {ref(ctx.c(f'{k0}/Card{i}', 'cg'))}\n"
-        f"    tile: {ref(ctx.c(f'{k0}/Card{i}', 'tile'))}\n"
-        f"    nameText: {ref(ctx.c(f'{k0}/Card{i}/Name', 'tmp'))}\n"
-        f"    lineText: {ref(ctx.c(f'{k0}/Card{i}/Line', 'tmp'))}\n"
-        f"    stateText: {ref(ctx.c(f'{k0}/Card{i}/State', 'tmp'))}\n"
-        f"    equippedMark: {ref(ctx.go(f'{k0}/Card{i}/Tick'))}\n"
-        + seq("faces", [ctx.c(f"{k0}/Card{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
-        + seq("rims", [ctx.c(f"{k0}/Card{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
+    thumbs = "".join(
+        f"  - group: {ref(ctx.c(f'{kh}/Set{i}', 'cg'))}\n"
+        f"    tile: {ref(ctx.c(f'{kh}/Set{i}', 'tile'))}\n"
+        f"    nameText: {ref(ctx.c(f'{kh}/Set{i}Name', 'tmp'))}\n"
+        f"    equippedMark: {ref(ctx.go(f'{kh}/Set{i}Tick'))}\n"
+        + seq("faces", [ctx.c(f"{kh}/Set{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
+        + seq("rims", [ctx.c(f"{kh}/Set{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
         for i in range(COLOUR_SET_CARDS))
     words = "".join(f"  {k}: {v}\n" for k, v in COLOUR_WORDS)
     return (f"  recordTab: {ref(ctx.c('Tabs/RecordTab', 'tab'))}\n"
             f"  colourSetsTab: {ref(ctx.c('Tabs/ColourSetsTab', 'tab'))}\n"
             f"  record: {ref(ctx.c('Record', 'record'))}\n"
             f"  group: {ref(ctx.c(k0, 'cg'))}\n"
-            f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
-            "  cards:\n" + cards
-            + f"  previewName: {ref(ctx.c(f'{kp}/Name', 'tmp'))}\n"
-            f"  previewLine: {ref(ctx.c(f'{kp}/Line', 'tmp'))}\n"
-            + seq("tierFaces", [ctx.c(f"{kp}/Tier{d}_{t}/Face", "img") for d in range(4) for t in range(3)])
-            + seq("tierRims", [ctx.c(f"{kp}/Tier{d}_{t}/Rim", "img") for d in range(4) for t in range(3)])
-            + seq("vessels", [ctx.c(f"{kp}/Vessel{d}/Face", "img") for d in range(4)])
+            f"  pilotCard: {ref(ctx.c('Pilot', 'cg'))}\n"
+            + seq("veil", [ctx.c("Veil", "img"), ctx.c("VeilSea", "img")])
+            + f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
+            "  thumbs:\n" + thumbs
+            + f"  previousButton: {ref(ctx.iref('ColourPrev', 'root#button'))}\n"
+            f"  nextButton: {ref(ctx.iref('ColourNext', 'root#button'))}\n"
+            f"  nameText: {ref(ctx.c(f'{kh}/Name', 'tmp'))}\n"
+            f"  lineText: {ref(ctx.c(f'{kh}/Line', 'tmp'))}\n"
+            f"  positionText: {ref(ctx.c(f'{kh}/Position', 'tmp'))}\n"
+            f"  wearingText: {ref(ctx.c(f'{kh}/Wearing', 'tmp'))}\n"
+            + seq("pairRims", [ctx.c(f"{kh}/Pair{d}/Rim", "img") for d in range(4)])
+            + seq("pairFaces", [ctx.c(f"{kh}/Pair{d}/Face", "img") for d in range(4)])
+            + seq("pairTexts", [ctx.c(f"{kh}/Pair{d}/Words", "tmp") for d in range(4)])
             + f"  applyButton: {ref(ctx.iref('ApplyColourSet', 'root#button'))}\n"
-            f"  statusText: {ref(ctx.c(f'{kp}/Status', 'tmp'))}\n"
-            f"  statusTick: {ref(ctx.go(f'{kp}/Tick'))}\n" + words)
+            f"  equippedMark: {ref(ctx.go(f'{kh}/Equipped'))}\n" + words)
 
 
 # --------------------------------------------------------------------------------------------
