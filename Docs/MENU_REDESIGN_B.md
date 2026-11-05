@@ -5798,7 +5798,7 @@ once the HUD and the finish are built, Menu_Main once all its screens are. PC, c
 
 The repo copy also took the Rev 50 and Rev 51 boards it lacked (drawn on other branches, sections 122-123 there).
 
-## 125. Rev 53 mockups: the phone HUD on Garrett's touch scheme, sign-in as it really is (2026-11-05, awaiting board approval)
+## 125. Rev 53 mockups: the phone HUD on Garrett's touch scheme, sign-in as it really is (2026-11-05, approved)
 
 **Asked** (Shombith): "What garett has for phone controls that should be the one." Checked before building, two of the
 approved Rev 52 boards did not match the game. The HUD drew a stick and four tap buttons, but phones fly on Garrett's
@@ -5823,3 +5823,5 @@ and SignIn stay as the record; these replace them. The other Rev 52 boards stand
 **Differs from the build:** the HUD change is the top plate and pause (`author_ingame_hud.py`); `TouchControlsHud`,
 `TouchButtonLayout` and the touch profiles are not touched. Sign-in gets a two-column phone layout
 (`author_start_flow.py`, `SignInChooser` re-laying its rows for the column).
+
+**Approved (Shombith, 2026-11-05):** "approved, start building".
