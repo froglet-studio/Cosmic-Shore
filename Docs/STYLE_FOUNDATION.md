@@ -51,6 +51,11 @@ Direction: Helldivers 2 **discipline only** — the rigour, not the look.
 
 **(Light)** variants may be used for text emphasis, player-name text, and subheadings.
 
+> **2026-11-05 (UI_STYLE_GUIDE D4):** five of these variants fall outside their family on Garrett's colour chart
+> (`colour_domains.json`): Jade Light, Ruby Light, Jade Dark, Ruby Dark and Gold Dark. Use their in-family
+> replacements from the guide's section 13 (the chart's palette, `froglet-tokens.json` `palettes`); the table below is
+> kept as the record of the original guide.
+
 | Name | Hex | Name | Hex |
 |---|---|---|---|
 | Neutral (Lightest) | `747BAD` | Neutral (Light) | `434C89` |
@@ -83,7 +88,9 @@ Three main colours carry both team identity and a UI function. **Green is the in
 | End-of-game victory banner | Team **(Light)** variant — see §11.9 |
 | **Active toggles, sliders, scrollbars** | **Jade `00D4FF` per the guide — keep.** Jade players see a mild overlap; acceptable because controls and team data never share a component |
 | Tooltip boxes | Ruby `A600FF` *(per the guide)* |
-| Primary buttons, focus, selection | CTA `99FF80` |
+| Primary buttons (the call to action) | CTA `99FF80`, always (UI_STYLE_GUIDE D5, 2026-11-05) |
+| Focus, selection, a choice you can claim and reclaim (a hull pick, friends) | Jade (`controlActive` `00D4FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
+| A commitment you cannot take back (Ready) | Ruby (`A600FF`; UI_STYLE_GUIDE D3) |
 | Player online status | CTA `99FF80` |
 | Currency / purchase | Gold `FFAE00` |
 | Panel borders, chrome | Neutral (Dark) `222645` |

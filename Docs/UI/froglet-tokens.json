@@ -25,7 +25,10 @@
       "purchase-fill": "#FFAE00",
       "control": "#00D4FF",
       "tooltip": "#A600FF",
-      "selection": "#3DB2FF",
+      "selection": "#00D4FF",
+      "commit": "#A600FF",
+      "commit-fill": "#A600FF",
+      "on-commit": "#FFFFFF",
       "jade": "#0EC0B6",
       "ruby": "#C800C3",
       "gold": "#FFA700",
@@ -47,7 +50,10 @@
       "purchase-fill": "#FFAE00",
       "control": "#007D73",
       "tooltip": "#893BFF",
-      "selection": "#0A61FF",
+      "selection": "#007D73",
+      "commit": "#893BFF",
+      "commit-fill": "#893BFF",
+      "on-commit": "#FFFFFF",
       "jade": "#007D73",
       "ruby": "#893BFF",
       "gold-fill": "#FFA700",
@@ -111,5 +117,242 @@
       "ms": 500,
       "ease": "cubic-bezier(0.34, 1.56, 0.64, 1)"
     }
+  },
+  "palettes": {
+    "fire": [
+      {
+        "name": "fire-84",
+        "hex": "#FFB6A1",
+        "L": 0.84
+      },
+      {
+        "name": "fire-76",
+        "hex": "#FB8E7E",
+        "L": 0.76
+      },
+      {
+        "name": "fire-68",
+        "hex": "#FE5645",
+        "L": 0.68
+      },
+      {
+        "name": "fire-60",
+        "hex": "#EF0B06",
+        "L": 0.6
+      },
+      {
+        "name": "fire-52",
+        "hex": "#C41009",
+        "L": 0.52
+      },
+      {
+        "name": "fire-44",
+        "hex": "#9E0101",
+        "L": 0.44
+      },
+      {
+        "name": "fire-36",
+        "hex": "#770503",
+        "L": 0.36
+      },
+      {
+        "name": "fire-28",
+        "hex": "#520503",
+        "L": 0.28
+      }
+    ],
+    "gold": [
+      {
+        "name": "gold-92",
+        "hex": "#FEE297",
+        "L": 0.92
+      },
+      {
+        "name": "gold-84",
+        "hex": "#FFBC5D",
+        "L": 0.84
+      },
+      {
+        "name": "gold-76",
+        "hex": "#EF9D06",
+        "L": 0.76
+      },
+      {
+        "name": "gold-68",
+        "hex": "#C48D19",
+        "L": 0.68
+      }
+    ],
+    "lime": [
+      {
+        "name": "lime-92",
+        "hex": "#B0FF7E",
+        "L": 0.92
+      },
+      {
+        "name": "lime-84",
+        "hex": "#7FEA05",
+        "L": 0.84
+      },
+      {
+        "name": "lime-76",
+        "hex": "#70CD13",
+        "L": 0.76
+      },
+      {
+        "name": "lime-68",
+        "hex": "#61B019",
+        "L": 0.68
+      },
+      {
+        "name": "lime-60",
+        "hex": "#509509",
+        "L": 0.6
+      },
+      {
+        "name": "lime-52",
+        "hex": "#427A0F",
+        "L": 0.52
+      },
+      {
+        "name": "lime-44",
+        "hex": "#455C04",
+        "L": 0.44
+      }
+    ],
+    "jade": [
+      {
+        "name": "jade-92",
+        "hex": "#7BFEF3",
+        "L": 0.92
+      },
+      {
+        "name": "jade-84",
+        "hex": "#15E8DC",
+        "L": 0.84
+      },
+      {
+        "name": "jade-76",
+        "hex": "#26CAC0",
+        "L": 0.76
+      },
+      {
+        "name": "jade-68",
+        "hex": "#0AAFA6",
+        "L": 0.68
+      },
+      {
+        "name": "jade-60",
+        "hex": "#1A938B",
+        "L": 0.6
+      },
+      {
+        "name": "jade-52",
+        "hex": "#077B63",
+        "L": 0.52
+      }
+    ],
+    "blue": [
+      {
+        "name": "blue-84",
+        "hex": "#B9C9FA",
+        "L": 0.84
+      },
+      {
+        "name": "blue-76",
+        "hex": "#96ACFC",
+        "L": 0.76
+      },
+      {
+        "name": "blue-68",
+        "hex": "#758FFB",
+        "L": 0.68
+      },
+      {
+        "name": "blue-60",
+        "hex": "#566DFE",
+        "L": 0.6
+      },
+      {
+        "name": "blue-52",
+        "hex": "#404EEC",
+        "L": 0.52
+      },
+      {
+        "name": "blue-44",
+        "hex": "#302BD5",
+        "L": 0.44
+      },
+      {
+        "name": "blue-36",
+        "hex": "#230BB0",
+        "L": 0.36
+      },
+      {
+        "name": "blue-28",
+        "hex": "#16017F",
+        "L": 0.28
+      },
+      {
+        "name": "grey-96",
+        "hex": "#EAF3FF",
+        "L": 0.96
+      },
+      {
+        "name": "grey-80",
+        "hex": "#B6BECA",
+        "L": 0.8
+      },
+      {
+        "name": "grey-64",
+        "hex": "#858D98",
+        "L": 0.64
+      },
+      {
+        "name": "grey-48",
+        "hex": "#575E68",
+        "L": 0.48
+      },
+      {
+        "name": "grey-32",
+        "hex": "#2D333C",
+        "L": 0.32
+      },
+      {
+        "name": "grey-18",
+        "hex": "#0C121A",
+        "L": 0.18
+      }
+    ],
+    "ruby": [
+      {
+        "name": "ruby-76",
+        "hex": "#FE6EF7",
+        "L": 0.76
+      },
+      {
+        "name": "ruby-68",
+        "hex": "#F510EF",
+        "L": 0.68
+      },
+      {
+        "name": "ruby-60",
+        "hex": "#D00BCB",
+        "L": 0.6
+      },
+      {
+        "name": "ruby-52",
+        "hex": "#A30AB9",
+        "L": 0.52
+      }
+    ]
+  },
+  "meanings": {
+    "lime": "a call to action: an important thing the player should do now (always green)",
+    "fire": "danger: bad, avoid it or deal with it",
+    "gold": "spending, and the Gold domain",
+    "jade": "a choice you can pick and change again (a hull pick, a friend, the selected thing, the focus ring), and the Jade domain",
+    "ruby": "a commitment you cannot take back (Ready), and the Ruby domain",
+    "blue": "neutral: text, panels, lines, every grey"
   }
 }

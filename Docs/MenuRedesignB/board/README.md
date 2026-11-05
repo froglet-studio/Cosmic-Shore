@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-03 from canvas version `1793723216-5530` of **Frogma**: Rev 3 to Rev 49, 444 boards on 5 tabs. The canvas opens on the tab `style-guide`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793891384-6434` of **Frogma**: Rev 3 to Rev 49, 445 boards on 5 tabs. The canvas opens on the tab `style-guide`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -26,6 +26,7 @@ Copied on 2026-11-03 from canvas version `1793723216-5530` of **Frogma**: Rev 3 
 
 - [`SGReadMe.dc.html`](SGReadMe.dc.html) - Style Guide - start here: one look for everything Froglet makes
 - [`SGColour.dc.html`](SGColour.dc.html) - Style Guide 1 - Colour: the six families (Garrett's colour chart)
+- [`SGChart.dc.html`](SGChart.dc.html) - Style Guide 1b - The colour chart: the wheel, the forbidden band, the shades to choose from
 - [`SGThemes.dc.html`](SGThemes.dc.html) - Style Guide 2 - Themes: Deep Sea and Shore, domains as one accent
 - [`SGType.dc.html`](SGType.dc.html) - Style Guide 3 - Type and numbers
 - [`SGShape.dc.html`](SGShape.dc.html) - Style Guide 4 - Shape, space, layers and the safe area
@@ -542,16 +543,16 @@ Copied on 2026-11-03 from canvas version `1793723216-5530` of **Frogma**: Rev 3 
 - [`R42C.dc.html`](R42C.dc.html) - Rev 42 C - Ledger: the light edition, paper grey, stills as thin bands, dense rows
 - [`R42Notes.dc.html`](R42Notes.dc.html) - Rev 42 - notes: what each look changes against the built page, and what stays
 
-### Tab: Menu Redesign C  (`menu-redesign-c`)
+### Tab: Menu Redesign A  (`menu-redesign-c`)
 
 #### Rev 49 - Voyage card I (picked): four more inviting looks, just the card
 
-- [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recommended) - interactive
+- [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme - interactive
 - [`R49B.dc.html`](R49B.dc.html) - Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive
 - [`R49C.dc.html`](R49C.dc.html) - Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive
 - [`R49D.dc.html`](R49D.dc.html) - Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive
 - [`R49Notes.dc.html`](R49Notes.dc.html) - Rev 49 - notes: what was asked, what all four share, the recommendation
-- [`R49ACrew.dc.html`](R49ACrew.dc.html) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
+- [`R49ACrew.dc.html`](R49ACrew.dc.html) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv - interactive
 - [`R49BCrew.dc.html`](R49BCrew.dc.html) - Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
 - [`R49CCrew.dc.html`](R49CCrew.dc.html) - Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
 - [`R49DCrew.dc.html`](R49DCrew.dc.html) - Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive

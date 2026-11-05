@@ -5745,4 +5745,10 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   five STYLE_FOUNDATION light / dark domain variants fall outside their family (D4); the UI domain tokens and the game
   palette disagree (D2); STYLE_FOUNDATION section 3 still says focus is CTA green (D5).
 - `/frogma-show` opens the board in one call.
+- **Decisions (Shombith, 2026-11-05)**, recorded in the guide's section 13: D1 Deep Sea and Shore; D2 the domains as the
+  colour board shows them; D3 Jade is what you can claim and reclaim (selection, focus, hull picks, friends) and Ruby is
+  no way back (Ready); D4 the whole colour chart on the Style Guide (`SGChart`, the wheel from
+  `Docs/UI/colour-wheel.png` and each family's shades) with in-family replacements for STYLE_FOUNDATION's five
+  out-of-family variants; D5 CTA always lime; D6 phones on their own 800 x 450 scale; D7 the UI checklist required;
+  D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 

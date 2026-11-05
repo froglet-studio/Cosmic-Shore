@@ -131,18 +131,18 @@ def sg_readme() -> str:
 
 
 FAMILIES = [
-    ("Lime", "lime", "Call to action", "Launch, join, accept, confirm, an earned reward, online, a done tick",
-     "Headings, eyebrows, decoration", [("cta", D["cta"])]),
+    ("Lime", "lime", "Call to action, always", "The important thing to do now: launch, join, accept, claim; online, a done tick",
+     "Headings, eyebrows, decoration, a choice you can change", [("cta", D["cta"])]),
     ("Fire", "fire", "Danger", "Delete my data, a guest-account warning, why a game cannot launch, connection lost",
      "Anything merely important", [("danger", D["danger"])]),
     ("Gold", "gold", "Spend, and the Gold domain", "A purchase, an upgrade, any button that uses a resource; the crystal glyph",
      "First place, a highlight, a reward amount", [("purchase", D["purchase"]), ("Gold domain", D["gold"])]),
-    ("Jade", "jade", "Order: the Jade domain", "Team 1; active toggles, sliders and scrollbars (controlActive)",
-     "An element, a status", [("Jade domain", D["jade"]), ("controlActive", D["control"])]),
-    ("Ruby", "ruby", "Freedom: the Ruby domain", "Team 2; tooltip boxes",
-     "An element, a warning", [("Ruby domain", D["ruby"]), ("tooltip", D["tooltip"])]),
-    ("Blue", "blue", "Neutral, and every grey", "Text, panels, lines, structure; the one selected thing and the focus ring",
-     "A call to action", [("text", D["text"]), ("text-soft", D["text-soft"]), ("surface", D["surface"]), ("selection", D["selection"])]),
+    ("Jade", "jade", "Pick, change again", "A choice you can claim and reclaim: a hull pick in an arena mode, friends, the selected thing, the focus ring; toggles and sliders; Team 1",
+     "An element, a commitment", [("Jade domain", D["jade"]), ("selection / control", D["control"])]),
+    ("Ruby", "ruby", "No way back", "A commitment you cannot take back: the Ready button; Team 2",
+     "An element, a choice you can change", [("Ruby domain", D["ruby"]), ("commit", D["commit"])]),
+    ("Blue", "blue", "Neutral, and every grey", "Text, panels, lines, structure, information",
+     "A call to action, a selection", [("text", D["text"]), ("text-soft", D["text-soft"]), ("surface", D["surface"])]),
 ]
 
 
@@ -161,7 +161,8 @@ def sg_colour() -> str:
         "1 · Colour",
         "Six families, one meaning each",
         "Garrett's colour chart (#1664) decides which family a colour belongs to, with a forbidden band between "
-        "families. A colour that means nothing is Blue. Elements carry no colour.")
+        "families. Jade is what you can change again, Ruby is what you cannot take back, Lime is always the call to action. "
+        "A colour that means nothing is Blue. Elements carry no colour.")
         + f'<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">{"".join(cards)}</div>'
         + '<p class="src">Sources: Docs/VesselModels/colour_domains.json (families, checked by colour_domains.py --check), '
           'Assets/_SO_Assets/UI/UITheme.asset (UI tokens), OriginalColorSetSO (domains). Docs/UI/froglet-tokens.json collects them.</p>')
@@ -198,8 +199,8 @@ def sg_themes() -> str:
         + f'<div style="display: flex; gap: 28px">{mini_screen(D, "Deep Sea · data-fs-theme=deep-sea", "The menu, the HUD, Frogma, the codex, decks.")}'
           f'{mini_screen(S, "Shore · data-fs-theme=shore", "Docs, print, the website by day. Gold is a fill under dark text, never text.")}</div>'
         + f'<div style="display: flex; gap: 20px">{doms}</div>'
-        + '<p class="src">[Theme names are a decision for Shombith: D1 in Docs/UI_STYLE_GUIDE.md.] The film-named codex '
-          'themes (Silver Screen, Tesseract, Endurance, Gargantua, HyperSea) move to these.</p>')
+        + '<p class="src">Names decided by Shombith (2026-11-05). The film-named codex themes (Silver Screen, Tesseract, '
+          'Endurance, Gargantua, HyperSea) move to these.</p>')
 
 
 def sg_type() -> str:
@@ -280,18 +281,19 @@ def sg_buttons() -> str:
                 ("Purchase", D["purchase-fill"], D["on-fill"], "Any spend: icon + amount"),
                 ("Default", D["text"], D["on-fill"], "A standard action"),
                 ("Cancel", D["text-soft"], D["on-fill"], "Back out, not now"),
+                ("Ready / commit", D["commit-fill"], D["on-commit"], "No way back: Ready"),
                 ("Danger", D["danger"], D["on-fill"], "Delete, leave, can't launch")]
     states = ["rest", "hover", "focus", "pressed", "disabled"]
     head = "".join(f'<span class="lab" style="width: 210px">{s}</span>' for s in states)
     rows = "".join(
         f'<div style="display: flex; align-items: center; gap: 24px"><div style="width: 260px; display: flex; flex-direction: column; gap: 4px">'
         f'<span class="h3">{e(n)}</span><span class="small">{e(why)}</span></div>'
-        + "".join(button(n.split(" ")[0].upper(), f, t, s) for s in states) + "</div>" for n, f, t, why in variants)
+        + "".join(button(n.split(" ")[0].replace("/", "").upper() or n.upper(), f, t, s) for s in states) + "</div>" for n, f, t, why in variants)
     return board("Buttons and their states", header(
         "5 · Buttons",
-        "Five buttons, five states, nothing else",
-        "Hover is the kit's sheen, one band across the fill (Rev 35 C, built in #1619). Focus is the selection blue ring, "
-        "the same for pad, keyboard and touch. Pressed sinks 2. Disabled is grey and says why nearby.")
+        "Six buttons, five states, nothing else",
+        "Hover is the kit's sheen, one band across the fill (Rev 35 C, built in #1619). Focus is the Jade ring, the same for "
+        "pad, keyboard and touch. Pressed sinks 2. Disabled is grey and says why nearby. Ready is Ruby: you cannot take it back.")
         + f'<div style="display: flex; flex-direction: column; gap: 20px"><div style="display: flex; gap: 24px; padding-left: 284px">{head}</div>{rows}</div>'
         + '<p class="src">Kit prefabs: Assets/_Prefabs/UI Elements (KitButton, KitButtonSmall), drawn by '
           'Tools/Build/author_ui_kit_prefabs.py. On a popup and on a line buttons are opaque; elsewhere transparent with the same border.</p>')
@@ -362,8 +364,10 @@ def sg_dodont() -> str:
          "Gold only where crystals are spent: the Purchase button, the upgrade price"),
         ("Glow as decoration", "A pulsing ring round a card nobody needs to press",
          "The one glow: a free Daily Deal (lime) or a buyable one (gold)"),
-        ("Selection blue for anything else", "Your own row, a playing track or a favourite in the selection blue",
-         "The selection blue on the one picked tile and the focus ring, nowhere else"),
+        ("Lime on a Ready button", "READY drawn as a lime call to action, as if you could change your mind",
+         "READY in Ruby: once pressed there is no way back"),
+        ("A hull pick in sky blue", "The picked hull in an arena lineup marked in the old sky-blue selection",
+         "The picked hull in Jade: you can claim it and pick again"),
         ("A string in code", "PrivacyConsentOverlay builds its colours and words in C#",
          "Every word in a serialized field, filled from a template (TemplateText.Fill)"),
     ]
@@ -382,7 +386,7 @@ def sg_checklist() -> str:
     checks = ["Colours come from theme tokens (UIThemeSO or froglet.css), none typed in by hand",
               "Each colour means what its family means (the colour chart), elements carry none",
               "Tested at phone (390x844), iPad (820x1180) and PC (16:9, 21:9), inside the safe area",
-              "Every control reachable with a gamepad and by touch; focus shows the selection ring",
+              "Every control reachable with a gamepad and by touch; focus shows the Jade ring",
               "No scene-level overrides on a shared prefab (GameCanvas, kit prefabs): changed on the prefab or a variant",
               "Every word a player reads is an authored field",
               "Matches its picked Frogma board, or says why not"]
@@ -405,9 +409,43 @@ def sg_checklist() -> str:
           f'<p class="small">Measured 2026-11-03; fixes in Docs/UI_STYLE_GUIDE.md section 12.</p></div></div>')
 
 
+def sg_chart() -> str:
+    wheel = json.load(open(os.path.join(REPO, "Docs", "UI", "colour-wheel.json"), encoding="utf-8"))
+    pal = TOK["palettes"]
+    iw, ih = 1000, 500  # the wheel image drawn at this size (two 500 discs)
+    names = {"fire": "Fire", "gold": "Gold", "lime": "Lime", "jade": "Jade", "blue": "Blue", "ruby": "Ruby"}
+    labels = "".join(
+        f'<span class="lab" style="position: absolute; left: {round(x * iw)}px; top: {round(y * ih)}px; transform: translate(-50%, -50%); '
+        f'color: #00041F; background: rgba(230,233,255,.86); padding: 4px 8px">{names[f]}</span>'
+        for f, pts in wheel["labels"].items() for x, y in pts)
+    rows = []
+    for f in ("lime", "fire", "gold", "jade", "ruby", "blue"):
+        chips = "".join(
+            f'<span title="{sh["name"]} {sh["hex"]}" style="display: flex; flex-direction: column; gap: 4px; align-items: center">'
+            f'<span class="sls" style="width: 52px; height: 40px; background: {sh["hex"]}"></span>'
+            f'<span class="small num" style="font-size: 11px">{sh["hex"][1:]}</span></span>'
+            for sh in pal[f])
+        rows.append(f'<div style="display: grid; grid-template-columns: 90px minmax(0, 1fr); align-items: center; gap: 14px">'
+                    f'<span class="lab" style="color: {D["text"]}">{names[f]}</span><div style="display: flex; gap: 8px; flex-wrap: wrap">{chips}</div></div>')
+    return board("The colour chart and the shades to choose from", header(
+        "1b · The colour chart",
+        "Garrett's chart, and every shade you may choose",
+        "Hue runs clockwise from red at the top, saturation grows outward; left at full value, right at 55%. Hatched is the "
+        "forbidden band, where two meanings would look alike: never pick a colour there. On the right, the shades inside "
+        "each family, clear of the band (--fs-<family>-<lightness> in froglet.css).")
+        + f'<div style="display: grid; grid-template-columns: {iw}px minmax(0, 1fr); gap: 40px; align-items: start">'
+          f'<div style="position: relative; width: {iw}px; height: {ih}px"><img src="/_blob/ebcbacf2eb55f7cfa395c7d3686efaaf" '
+          f'alt="Garrett\'s colour chart: two HSV discs split into the six families, the forbidden band hatched" style="width: {iw}px; height: {ih}px; display: block">{labels}</div>'
+          f'<div style="display: flex; flex-direction: column; gap: 16px">{"".join(rows)}</div></div>'
+        + '<p class="src">Drawn from Docs/VesselModels/colour_domains.json by Tools/Build/froglet_style.py (Docs/UI/colour-wheel.png), '
+          'the same rule the Colour Domains lab shows (https://claude.ai/artifact/QT7nMWURMQgznfAnAg2FXh). '
+          'python3 Tools/Build/colour_domains.py classify \'#hex\' says where any colour falls.</p>')
+
+
 BOARDS = [
     ("SGReadMe.dc.html", "Style Guide - start here: one look for everything Froglet makes", sg_readme),
     ("SGColour.dc.html", "Style Guide 1 - Colour: the six families (Garrett's colour chart)", sg_colour),
+    ("SGChart.dc.html", "Style Guide 1b - The colour chart: the wheel, the forbidden band, the shades to choose from", sg_chart),
     ("SGThemes.dc.html", "Style Guide 2 - Themes: Deep Sea and Shore, domains as one accent", sg_themes),
     ("SGType.dc.html", "Style Guide 3 - Type and numbers", sg_type),
     ("SGShape.dc.html", "Style Guide 4 - Shape, space, layers and the safe area", sg_shape),
@@ -419,6 +457,44 @@ BOARDS = [
 ]
 
 
+def update(live: dict, original: dict, root_dir: str) -> int:
+    """The tab exists: rewrite every board, add new ones, lay them out again three to a row, and refit the section,
+    keeping any extent a person gave the frame by hand (the new frame is the union of theirs and the fitted one)."""
+    root = os.path.join(root_dir, "project")
+    os.makedirs(root, exist_ok=True)
+    top = live["notes"][TITLE_NOTE]["y"] + frogma.TITLE_ABOVE
+    names = []
+    for i, (file, title, fn) in enumerate(BOARDS):
+        col, row = i % 3, i // 3
+        entry = live["boards"].get(file, {})
+        entry.update({"x": col * (W + frogma.GAP_X), "y": top + row * (H + frogma.GAP_Y), "w": W, "h": H, "page": TAB, "title": title})
+        live["boards"][file] = entry
+        if file not in live["order"]:
+            live["order"].append(file)
+        names.append(file)
+        with open(os.path.join(root, file), "w", encoding="utf-8") as fh:
+            fh.write(fn())
+    key = f"sec-{TITLE_NOTE}"
+    fs = frogma.frames(live)
+    old = fs[key]["box"] if key in fs else None
+    content = frogma.bbox(live, names, [TITLE_NOTE])
+    box = frogma.frame_box(content, frogma.SECTION_PAD)
+    if old:
+        x0, y0 = min(box[0], old[0]), min(box[1], old[1])
+        box = (x0, y0, max(box[0] + box[2], old[0] + old[2]) - x0, max(box[1] + box[3], old[1] + old[3]) - y0)
+    tiles = frogma.put_frame(live, key, "section", box, "teal", TAB)
+    live["launch"] = {"view": "canvas", "page": TAB}
+    touched = set(tiles) | {k for k in original["notes"] if frogma.frame_key(k) == key}
+    bad = [k for k in frogma.changed_outside(original, live, set(names), touched) if k != "order"]
+    if bad:
+        print(f"changed keys that are not ours {bad[:5]}", file=sys.stderr)
+        return 1
+    frogma.write_index(__import__("pathlib").Path(root_dir), live)
+    print(f"Style Guide updated: {len(names)} boards, section {box}. Root: {root_dir}")
+    print("files: " + json.dumps({f"project/{n}": f"project/{n}" for n in names}))
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--live", required=True)
@@ -428,8 +504,7 @@ def main() -> int:
     original = json.loads(json.dumps(live))
     pages = live.setdefault("pages", [])
     if any(p["id"] == TAB for p in pages):
-        print(f"tab {TAB!r} exists; this script only creates it", file=sys.stderr)
-        return 1
+        return update(live, original, a.root)
     if any(not b.get("page") for b in live["boards"].values()) or any(not n.get("page") for n in live["notes"].values()):
         print("a board or note relies on the first page; give it its page before inserting a new first tab", file=sys.stderr)
         return 1

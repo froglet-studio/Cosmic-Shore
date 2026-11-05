@@ -12,8 +12,7 @@ screens.
   game's own assets by `python3 Tools/Build/froglet_style.py` (`--check` is the gate).
 - **Where the numbers come from:** colour families are Garrett's colour chart, `Docs/VesselModels/colour_domains.json`
   (PR #1664, `COLOR_DOMAINS.md`); what each UI colour means is `Docs/UI_COLOR_RULES.md`; type, shape, spacing, layers
-  and motion are `Docs/STYLE_FOUNDATION.md` v0.3.3. This guide does not change a number; when they disagree it says so
-  and leaves a **[decision]** for Shombith (section 13).
+  and motion are `Docs/STYLE_FOUNDATION.md` v0.3.3. Where they disagreed, Shombith decided (2026-11-05, section 13).
 
 Owner: Shombith (UI, colour tokens, Frogma). Colour families: Garrett. Started 2026-11-03.
 
@@ -23,18 +22,31 @@ Owner: Shombith (UI, colour tokens, Frogma). Colour families: Garrett. Started 2
 
 ![The six colour families](UI/style-guide/SGColour.webp)
 
+![Garrett's colour chart and the shades to choose from](UI/style-guide/SGChart.webp)
+
 Every colour belongs to one of six families, and each family means one thing. A colour that means nothing is Blue.
 Garrett's chart decides which family a colour is in and keeps a **forbidden band** between families, so two meanings
 never look alike (`python3 Tools/Build/colour_domains.py classify '#hex'` answers for any colour).
 
 | Family | Means | Use it for | Never for | UI token |
 |---|---|---|---|---|
-| **Lime** | Call to action | launch, join, accept, confirm, an earned reward, "online", a done tick | headings, eyebrows, decoration | `cta` `#99FF80` |
+| **Lime** | Call to action, **always** | the important thing to do now: launch, join, accept, claim; "online", a done tick | headings, eyebrows, decoration, a choice you can change | `cta` `#99FF80` |
 | **Fire** | Danger | delete my data, a guest-account warning, why a game cannot launch, connection lost | anything merely important | `danger` `#FF4B3A` |
 | **Gold** | Spend, and the Gold domain | a purchase, an upgrade, any button that uses a resource; the crystal glyph | first place, a highlight, a reward amount | `purchase` `#FFAE00` |
-| **Jade** | Order: the Jade domain (Team 1) | Jade players; active toggles, sliders, scrollbars | an element, a status | `controlActive` `#00D4FF` |
-| **Ruby** | Freedom: the Ruby domain (Team 2) | Ruby players; tooltip boxes | an element, a warning | `tooltip` `#A600FF` |
-| **Blue** | Neutral, and every grey | text, panels, lines; the one selected thing and the focus ring | a call to action | `textLight`, `neutralLightest`, `surface*`, `selection` |
+| **Jade** | **Pick, and change again**; the Jade domain (Team 1) | a choice you can claim and reclaim: a hull pick in an arena mode, friends, the selected thing, the focus ring; toggles, sliders, scrollbars | an element, a commitment | `controlActive` `#00D4FF` (also the selection) |
+| **Ruby** | **No way back**; the Ruby domain (Team 2) | a commitment you cannot take back: the Ready button | an element, a choice you can change | `commit` `#A600FF` (the UI's `tooltip` today) |
+| **Blue** | Neutral, and every grey | text, panels, lines, information | a call to action, a selection | `textLight`, `neutralLightest`, `surface*` |
+
+**Jade or Ruby? (Shombith, 2026-11-05.)** Ask whether the player can change their mind. A hull they claim in an arena
+lineup, a friend they add, a tab or tile they select: they can take it back, so it is **Jade**, and so are the
+selection and the focus ring. Ready: once pressed there is no way back, so it is **Ruby**. Lime stays the call to action:
+the one important thing the screen asks of the player. (In the game the selection is still the old sky blue `#3DB2FF`
+until the Unity change in section 13 lands; new work uses Jade.)
+
+**Choosing a colour.** Pick from the chart's shades (the colour chart board, `--fs-<family>-<lightness>` in
+`froglet.css`, `palettes` in `froglet-tokens.json`): every one sits clear inside its family. Never pick a colour in the
+hatched band, where two meanings would look alike. `python3 Tools/Build/colour_domains.py classify '#hex'` answers for
+any colour.
 
 - **Do:** the Rev 37 Connection Lost window (Frogma, Menu Redesign tab, `R37Lost`) uses Fire for the one line that says
   what went wrong, and Lime only for RECONNECT.
@@ -47,8 +59,9 @@ by animation and by effects, never by a fixed hue.
 - **Don't:** the Rev 3 HUD boards (`R3HudSquirrel` and the rest: "element colours drifting like a lava lamp").
 
 **The three domains** (Jade, Ruby, Gold) are teams. Only a team thing wears one: your score, your avatar chip, your
-domain panel. The game draws them from `OriginalColorSetSO` (Jade `#0EC0B6`, Ruby `#C800C3`, Gold `#FFA700`).
-**[D2: the UI tokens and STYLE_FOUNDATION use `#00D4FF` / `#A600FF` / `#FFAE00` for the same domains; pick one set.]**
+domain panel. A domain colour is the game palette's (`OriginalColorSetSO`: Jade `#0EC0B6`, Ruby `#C800C3`, Gold
+`#FFA700`); the UI's own Jade, Ruby and Gold tokens (`#00D4FF` control and selection, `#A600FF` commit, `#FFAE00`
+purchase) mean the uses above, as the colour board shows them (decided, D2).
 
 ## 2. Themes: Deep Sea and Shore
 
@@ -66,7 +79,7 @@ On the web: `<html data-fs-theme="deep-sea">` (or `shore`, or `auto` to follow t
 `var(--fs-text)`, `var(--fs-cta)` and so on from `froglet.css`.
 - **Do:** the menu's ground and sea lines (Arcade, Toy Box, Configure windows) are Deep Sea.
 - **Don't:** a page in a theme of its own (the Fleet Codex's Silver Screen, Tesseract, Endurance, Gargantua and HyperSea
-  are film looks; they move to Deep Sea and Shore). **[D1: are the names Deep Sea and Shore right?]**
+  are film looks; they move to Deep Sea and Shore). The names are decided (D1).
 
 ## 3. Type and numbers
 
@@ -78,8 +91,7 @@ wide: Display 48, H1 36, H2 28, H3 22, Body 18, Body small 15, Button 18, Button
 - Any number that changes while you watch (score, timer, count, rank, balance) is tabular (`<mspace>` in TMP,
   `font-variant-numeric: tabular-nums` on the web) so it never jitters.
 - **Do:** the Rev 33 D countdown and the HUD timer hold their width as the digits change.
-- **Don't:** a second, smaller type set for phones. The canvas scales; the sizes do not change.
-  **[D6: confirm phones scale the 1920 canvas rather than use STYLE_FOUNDATION's mobile @800 column.]**
+- **Phones get their own scale (D6).** Section 8 explains why and what that means.
 
 ## 4. Shape and spacing
 
@@ -97,14 +109,14 @@ wide: Display 48, H1 36, H2 28, H3 22, Body 18, Body small 15, Button 18, Button
 
 ![Buttons and states](UI/style-guide/SGButtons.webp)
 
-Five buttons: **Play / CTA** (lime), **Purchase** (gold, icon + amount), **Default** (light), **Cancel** (soft
-neutral), **Danger** (fire). Five states, the same on every button:
+Six buttons: **Play / CTA** (lime), **Purchase** (gold, icon + amount), **Default** (light), **Cancel** (soft
+neutral), **Ready / commit** (ruby, no way back), **Danger** (fire). Five states, the same on every button:
 
 | State | Looks like | Why |
 |---|---|---|
 | Rest | the variant's fill (opaque on a popup or a line, transparent with its border elsewhere) | |
 | Hover | one soft sheen across the fill, nothing moves | Rev 35 C, picked and built (#1619) |
-| Focus | the selection-blue ring, the same for pad, keyboard and touch | `Docs/UI_COLOR_RULES.md`, 2026-10-24 |
+| Focus | the Jade ring, the same for pad, keyboard and touch | D3, 2026-11-05 (was sky blue, 2026-10-24) |
 | Pressed | sinks 2 and darkens | |
 | Disabled | grey, with the reason next to it | |
 
@@ -145,10 +157,26 @@ presence orb and party bonds, avatars and art. Respect "reduce motion" (froglet.
 
 ## 8. Safe area and phone layout
 
+**Why a phone needs its own scale (D6).** Every canvas today scales the 1920 x 1080 layout to the screen's height
+(`CanvasScaler`, reference 1920 x 1080, match height). On a PC monitor that is right. On a phone held sideways the screen
+is about 390 points tall, so the whole layout shrinks to 36 %: body text (18 units) lands at about **6.5 pt** and a
+52-unit button at about 19 pt tall, where 11 pt text and 44 pt touch targets are the floor people can read and press.
+An iPad sideways (820 points tall) lands body at about 13.7 pt, which is fine.
+
+**So (decided, D6):** one set of components, two scales.
+- **PC, console and iPad** (screen 600 points tall or more): the 1920 x 1080 canvas and the PC type column (section 3).
+- **Phones** (under 600 points tall): an 800 x 450 canvas reference and STYLE_FOUNDATION's mobile column (H1 24,
+  body 16, buttons 16, small buttons 12), which puts body text near 14 pt and buttons near 44 pt. The same kit prefabs
+  and tokens, laid out for the smaller canvas: menus stack, side panels become full-screen sheets, and a screen that
+  must work on phones gets a phone board on Frogma before it is built.
+- Until the phone scale is built (section 13, the Unity follow-up), a phone shows the PC layout scaled down: test it,
+  and log any screen that cannot be read in the UI checklist's Safe area line.
+
 - Backgrounds bleed to the edge; content sits inside `Screen.safeArea` with at least 24 units of padding
   (`SafeAreaFitter` on every canvas that carries player-facing content).
 - Test every screen at **phone 390 x 844**, **iPad 820 x 1180** and **PC 16:9, 16:10 and 21:9**.
-- Touch targets are at least 44 units; nothing important sits under a notch, a home bar or a thumb's resting place.
+- Touch targets are at least 44 points on the device; nothing important sits under a notch, a home bar or a thumb's
+  resting place.
 - **Do:** `ConnectingPanel` carries its own `SafeAreaFitter`.
 - **Don't:** the Hangar's four canvases have no `SafeAreaFitter` (section 12).
 
@@ -177,7 +205,7 @@ A pull request that touches **`Assets/_Prefabs/UI*`, `Assets/_Scenes/Menu_Main.u
 - [ ] **Theme tokens:** every colour comes from `UIThemeSO` / the kit (or `froglet.css` on the web); none typed in.
 - [ ] **Families:** each colour means its family's meaning (section 1); elements carry no colour.
 - [ ] **Safe area:** tested at phone 390x844, iPad 820x1180 and PC 16:9 / 21:9, content inside the safe area.
-- [ ] **Focus:** every control reachable with a gamepad and by touch; focus shows the selection ring.
+- [ ] **Focus:** every control reachable with a gamepad and by touch; focus shows the Jade ring.
 - [ ] **Shared prefabs:** no scene-level overrides on a shared prefab; changed on the prefab or a variant.
 - [ ] **Words:** every player-facing word is an authored field.
 - [ ] **Board:** matches its picked Frogma board, or says why not.
@@ -185,7 +213,9 @@ A pull request that touches **`Assets/_Prefabs/UI*`, `Assets/_Scenes/Menu_Main.u
 Each box is ticked, or marked `N/A` with a reason. **The design-review step:** a new screen is drawn and picked on
 Frogma before it is built (`Docs/MENU_REDESIGN_B.md`, the three gates); the reviewer opens the picked board beside the
 build and this checklist, and `/ui-redesign-tracker` verifies the build against the board.
-**[D7: should the UI checklist workflow be a required check on bleeding-edge?]**
+**The UI checklist is a required check (D7).** A repository admin adds it once: GitHub > Settings > Rules > Rulesets >
+"Protect trunks" > Require status checks to pass > add **UI checklist / checklist** (it appears after the workflow's
+first run on a pull request into bleeding-edge). Until then it reports but does not block.
 
 ## 12. The five screens that break the guide most today
 
@@ -204,21 +234,39 @@ code), the leaderboard teal and score-gain green (no tokens), the two unpacked c
 tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHUDController`, `TouchControlsHud`,
 `AbilityLockupView`; other people's HUD code, ask first).
 
-## 13. Decisions only Shombith can make
+## 13. Decisions (Shombith, 2026-11-05)
 
-- **[D1]** Theme names: Deep Sea (dark, default) and Shore (light). Keep, or name them?
-- **[D2]** The domain colours: the game palette (Jade `#0EC0B6`, Ruby `#C800C3`, Gold `#FFA700`) or the UI tokens
-  (`#00D4FF`, `#A600FF`, `#FFAE00`)?
-- **[D3]** The selection blue `#3DB2FF` sits in the forbidden band between Blue and Jade: move it into Blue, or ask
-  Garrett to reshape Blue?
-- **[D4]** Five of STYLE_FOUNDATION's light and dark domain variants fall outside their family on Garrett's chart:
-  Jade Light `#80EAFF` and Ruby Light `#D280FF` (in the band), Jade Dark `#004D81` (Blue), Ruby Dark `#530080` and Gold
-  Dark `#805700` (in the band). Re-pick them inside their families?
-- **[D5]** STYLE_FOUNDATION section 3 still says focus and selection are CTA green; `UI_COLOR_RULES.md` (2026-10-24)
-  made them the selection blue. This guide follows the newer rule; update STYLE_FOUNDATION to match?
-- **[D6]** Phones scale the 1920 canvas (no second type set)?
-- **[D7]** Make the UI checklist workflow a required check?
-- **[D8]** Move the Fleet Codex and the studios off their film themes onto Deep Sea and Shore (a follow-up change)?
+| # | Question | Decision |
+|---|---|---|
+| D1 | Theme names | **Deep Sea** (dark, default) and **Shore** (light). |
+| D2 | Domain colours | As the colour board shows them: a domain is the game palette (Jade `#0EC0B6`, Ruby `#C800C3`, Gold `#FFA700`); the UI's Jade, Ruby and Gold tokens mean their uses (control and selection, commit, purchase). |
+| D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
+| D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |
+| D5 | Focus and CTA | **CTA is always lime**: the important thing the screen asks the player to do. Focus and selection are Jade (D3), never lime. |
+| D6 | Phones | One component set, two scales: phones (under 600 points tall) get an 800 x 450 canvas and the mobile type column (section 8). |
+| D7 | The UI checklist | A required check (section 11 has the one-time step). |
+| D8 | The codex and studios | Move them onto Deep Sea and Shore in a separate change; the prompt for it is below. |
+
+**Still to do in Unity** (one change each, Shombith's area; the guide already holds the rules):
+1. **Selection and focus to Jade, Ready to Ruby.** `UITheme.asset` `selection` -> the Jade control colour, a `commit`
+   token on `UIThemeSO` for Ready; the fallback in `UITheme.Resolve` and `SelectionStyleTests`; the generators that
+   assert the sky blue (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`) and the SelectionRim materials they write;
+   `colour_domains.json` `ui_tokens.selection` -> jade (Garrett's file: say so in the PR).
+2. **The phone scale** (D6): a phone canvas reference of 800 x 450 and the mobile type column, applied by one
+   component on every player-facing canvas, with the menus' phone layouts drawn on Frogma first.
+
+**The prompt for D8** (paste into a new session):
+
+> Move the Fleet Codex (`Tools/Build/fleet_codex.py`, `Docs/FleetCodex/`, the `/fleet-codex` skill, the published
+> artifact https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8) and every studio page that has a theme picker onto the
+> Froglet themes in `Docs/UI_STYLE_GUIDE.md`: Deep Sea (default) and Shore (light). Replace the film-named themes
+> (Silver Screen, Tesseract, Endurance, Gargantua, HyperSea) with those two, taking every colour from
+> `Docs/UI/froglet.css` / `froglet-tokens.json` (written by `Tools/Build/froglet_style.py`; never type a hex), keep
+> `data-fs-theme` on `<html>` and follow the viewer's light/dark setting by default. Follow the guide's colour families
+> (Lime = call to action only, Jade = choices you can change, Ruby = no way back, Blue = neutral, elements carry no
+> colour) and type (Aldrich, Chakra Petch). Keep each page's layout and content; this is a re-skin. Regenerate, check
+> the page at phone and desktop width with Playwright, republish the codex to the same URL with `/fleet-codex`, and
+> open a PR stacked on the UI style guide PR (#1731) or on bleeding-edge once it has merged.
 
 ## 14. Outside the game: artifacts, diagrams, decks, the website, the codex
 

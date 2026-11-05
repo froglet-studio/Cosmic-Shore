@@ -16,7 +16,7 @@
 - [ ] Theme tokens: every colour comes from UIThemeSO / the kit (froglet.css on the web); none typed in by hand
 - [ ] Families: each colour means its family's meaning (the colour chart); elements carry no colour
 - [ ] Safe area: tested at phone 390x844, iPad 820x1180 and PC 16:9 / 21:9, content inside the safe area
-- [ ] Focus: every control reachable with a gamepad and by touch; focus shows the selection ring
+- [ ] Focus: every control reachable with a gamepad and by touch; focus shows the Jade ring
 - [ ] Shared prefabs: no scene-level overrides on a shared prefab; changed on the prefab or a variant
 - [ ] Words: every player-facing word is an authored field
 - [ ] Board: matches its picked Frogma board, or says why not
