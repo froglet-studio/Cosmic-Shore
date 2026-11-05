@@ -6026,3 +6026,35 @@ Copies: `Docs/MenuRedesignB/board/R55*`. Content is the built screens' own (the 
 
 **Differs from the build:** each screen's generator gains its phone layout (PhoneRect, its sheet and phone-only
 buttons), `author_menu_topnav.py` the rail; each screen then leaves `author_menu_phone.py`'s fallback list.
+
+## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
+
+**Asked** (Shombith): "make the phone UI expandable for portrait mode too since we have honeyguide and ratel and in
+future we might make that the focus game for mobile ... but not now. So create mobile UI mockups supporting both
+portrait and landscape." And: "You are suggesting that PC has a different UI and mobile has a different one? How does
+the game detect that?"
+
+**The answer, as built:** one UI, not two: the same screens, kit components and colour tokens; each canvas switches its
+LAYOUT. `PhoneScale.IsPhone` reads the screen's short side in points (`Screen.dpi`; under 600 is a phone: an iPhone is
+about 390, an iPad 820, a 1080p monitor about 1800; a phone with no dpi is judged at 2x, a desktop never), and
+`AdaptiveCanvasScaler` checks it at start and on every resolution change. PC, console and iPad keep 1920 x 1080; a phone
+switches the canvas that has a phone layout to 800 x 450, every `PhoneRect` to its phone pose and every `KitText` to its
+phone size. Portrait would be one more test (the screen taller than wide) picking a 450 x 800 reference and a second
+pose on each `PhoneRect`. Today the game locks the screen to landscape (`DeviceOrientationHandler`), and the Ratel's
+Dynamo board fakes portrait by drawing a quarter turn (`Docs/Studios/HONEYGUIDE_LAB.md`, 2026-10-22).
+
+**On the canvas:** the Phone tab, section "Rev 56 - Phone in portrait too", ONE board (`R56Portrait`): the canvas holds
+at most 512 files a version and was at the limit, so the six upright screens and the notes share one board instead of
+seven. An iPhone held upright, 390 x 844 pt = 450 x 974 canvas units, drawn at 1.5x: Home (a bottom tab bar; the friends
+orb and Settings in the top bar; the pilot chip, Up next, the hubs two by two), Arcade (the feature cards stacked, the
+games two across, the party sheet open from the bottom), Configure (the picture on top, then the objective, class,
+intensity and teams; Start game pinned at the thumb), Hangar (the fleet as a strip, the vessel under it, Unlock and
+Abilities at the thumb), sign-in (one column, the chooser at the thumb) and the finish (the result, the ladder, Play again
+at the thumb). Decisions: [approve as the portrait direction, built when a portrait game is picked], [in portrait, the
+bottom tab bar (drawn) or keep the rail].
+
+**Differs from the build:** nothing yet. When portrait is picked: the orientation lock lifts for the menus and the games
+that play upright, `PhoneRect` gains a portrait pose, each screen's generator writes it.
+
+**The 512-file limit:** the canvas is at 487 of its files plus the type's; a new round of several boards will not fit
+until older boards are folded or removed (the board owner's call, `/frogma` section 5).
