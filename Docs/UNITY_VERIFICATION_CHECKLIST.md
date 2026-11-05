@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Nocturne is the default colour set; the previous default is Photic (`claude/nocturne-colour-set-lpulng`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `OriginalColorSetSO` renamed `PhoticColorSetSO` (guid kept); `NocturneColorSetSO` is now named by
+`ThemeManagerDataContainer.ColorSet`, `ThemeManager.prefab` and the Ark, Codex and two Configure prefabs. C# changes are
+comments and three edit-mode tests' palette paths. Not compiled (no .NET SDK in the session, so `unity_refcompile` was
+skipped); the `ShieldedSignalColorTests` assertions were replayed in Python against both palettes and pass. Garrett
+played Nocturne in the editor on 2026-11-03 before the switch.
+
+1. Enter any arena mode in each of Jade, Ruby and Gold. **Pass:** prisms draw Nocturne (Jade: lagoon rims on plum faces);
+   no magenta "missing material" prisms.
+2. Menu_Main: open the Ark, Codex and Configure screens. **Pass:** domain tints are Nocturne's, nothing pink or blank.
+3. Fly the Squirrel, Angler and Butterfly. **Pass:** the HUD's shielded-signal icons (now dark: Jade `#552345`, Ruby
+   `#385060`, Gold `#53416C`) are still legible on the HUD row (`Docs/PALETTE.md`, the open effects).
+4. Test Runner, EditMode: `ShieldedSignalColorTests`, `ElementalCrystalShadeTests`, `CrystalElementPlatesTests`. **Pass:** green.
+
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 
 **What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
@@ -2539,7 +2554,7 @@ New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_m
 
 **Verify in editor:**
 1. Run `ElementalCrystalShadeTests` and `OmniCombineTests` (EditMode): all pass.
-2. Open `OriginalColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
+2. Open `PhoticColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
 3. Play any mode with free crystals (or kill a lifeform of each element): a free Mass crystal is a visibly darker,
    deeper green than the omni; Space reads cooler and Time warmer; Charge reads yellow-green. All still read as lime.
 4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
@@ -5155,7 +5170,7 @@ T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime je
   rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
   in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
 - **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
-  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  `PhoticColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
   right.
 
 Verify in the Editor:
