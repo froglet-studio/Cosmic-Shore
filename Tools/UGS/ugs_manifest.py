@@ -158,13 +158,17 @@ def plan(man: dict, env: str, history: Path | None, ref: str, sha: str) -> dict:
                   f"{', '.join(dropped)}.")
     md.append(f"Access policies: not applied by this pipeline ({len(man['policies_in_repo'])} in the repo; "
               "Tools/UGS/README.md says when to apply each by hand).")
+    if base and base.get("commit"):
+        md.append(f"To undo this deploy afterwards: run the workflow with ref `{base['commit']}` and target {env} "
+                  "(Tools/UGS/README.md, Rolling back).")
 
     details = {s["key"]: s["sha"] for s in man["scripts"]}
     details.update({"scripts": str(n), "changed": str(len(changed)) if base else str(n),
                     "policies_applied": "0", "manifest": man["digest"]})
     if ref and re.match(r"^[A-Za-z0-9._/-]{1,60}$", ref):
         details["ref"] = ref
-    rollback_to = (base.get("commit") or "")[:12] if base else ""
+    # The full sha: it is what a rollback passes as `ref` (checkout cannot fetch a short one).
+    rollback_to = (base.get("commit") or "") if base else ""
     return {"summary": summary, "markdown": "\n".join(md) + "\n", "details": details, "changed": len(changed),
             "rollback_to": rollback_to, "digest": man["digest"]}
 
@@ -222,7 +226,7 @@ def self_test() -> int:
                         + json.dumps({"result": "failure", "commit": "c" * 40, "details": {}}) + "\n")
         p = plan(man, "development", hist, "bleeding-edge", "a" * 40)
         expect(p["changed"] == 1 and "(match-report)" in p["summary"], "one changed script is named")
-        expect(p["rollback_to"] == "b" * 12, "rollback_to is the last SUCCESSFUL deploy, not the failed one")
+        expect(p["rollback_to"] == "b" * 40, "rollback_to is the last SUCCESSFUL deploy, not the failed one")
         expect("newest development record is a failure" in p["markdown"], "warns that the last deploy failed")
 
         hist.write_text(json.dumps({"result": "success", "commit": "b" * 40, "details": first["details"]}) + "\n")

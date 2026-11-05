@@ -43,7 +43,7 @@ on **bleeding-edge** are deployed, and production only after development took th
 | Input | What it does |
 |---|---|
 | `target` | `development`, or `production`. Production always deploys development first, in the same run, then waits for a reviewer. |
-| `ref` | What to deploy: `bleeding-edge` (its newest commit, the default), a tag, or a commit sha. It must be on bleeding-edge. An older one is a rollback (below). |
+| `ref` | What to deploy: `bleeding-edge` (its newest commit, the default), a tag, or a full 40-character commit sha. It must be on bleeding-edge. An older one is a rollback (below). |
 | `dry_run` | Plan only: the gate and the diff, no secret is read and nothing is uploaded. |
 
 What one run does (`.github/workflows/ugs-deploy.yml`):
@@ -110,7 +110,7 @@ A rollback is a deploy of an older commit:
 1. Find the commit to return to: the `rollback_to` of the newest `ugs-production` (or `ugs-development`) record
    (`python3 Tools/Launch/launch_status.py show`, or the Launch Console), or any earlier record in
    `history/ugs-production.jsonl` on the `launch-status` branch, or a tag.
-2. Run the workflow from `bleeding-edge` with `ref` = that commit (or tag) and `target` = the environment to fix.
+2. Run the workflow from `bleeding-edge` with `ref` = that full commit sha (or a tag) and `target` = the environment to fix.
    Production still goes through development and the reviewer: approve it on the plan's table, which shows exactly
    which scripts go back.
 3. Check the dashboard (Cloud Code > Scripts) and the game; then fix forward on bleeding-edge. The next normal deploy
