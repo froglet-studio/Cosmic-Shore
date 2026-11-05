@@ -37,19 +37,23 @@ MENU = "Assets/_Scenes/Menu_Main.unity"
 
 # Scene objects of Menu_Main with no phone board yet, by their (unique) name.
 SCENE_FALLBACK = [
-    "Hangar Screen", "ArkScreen", "PortScreen", "ProfileScreen",
+    "ArkScreen", "PortScreen", "ProfileScreen",
     "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
     "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal",
-    "ToyboxGameConfigureModal", "ArenaGameConfigureModal", "MaelstromGameConfigurationModal",
+    "ToyboxGameConfigureModal",
     "ProfileModal", "LeaderboardConfigureModal", "PlayerDataSelectModal", "InitializingScreen", "SceneTransitionModal",
 ]
 
 # Screens that are prefab instances directly under a container that is not itself a fallback block.
 PREFAB_FALLBACK = [
     "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab",
-    "Assets/_Prefabs/ArcadeGameConfigureModal.prefab",
     "Assets/_Prefabs/UI Elements/Quest/InGameInstructionSet.prefab",
 ]
+
+# Screens that HAD the fallback and now carry their own phone layout (their generators write it): the marker this tool
+# left on them is taken off, so a screen never carries both.
+SCENE_RETIRED = ["ArenaGameConfigureModal", "MaelstromGameConfigurationModal", "Hangar Screen"]
+PREFAB_RETIRED = ["Assets/_Prefabs/ArcadeGameConfigureModal.prefab"]
 
 # Scene objects of Menu_Main that HAVE a phone layout and no generator of their own to write it (the nav band is
 # patched in place by author_menu_topnav.py, which keeps other generators' components on it). R55 (section 129): the
@@ -79,15 +83,22 @@ def scene_text(text_):
             p.add_comp(gos[0], "phone", 114, K.phone_rect(**SCENE_PHONE[name]))
         else:
             mark(p, gos[0])
+    for name in SCENE_RETIRED:
+        gos = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and f"  m_Name: {name}\n" in d]
+        assert len(gos) == 1, f"Menu_Main: expected one {name!r}, found {len(gos)}"
+        p.remove_comp(gos[0], str(p.ctx.fid(f"{gos[0]}#phone")))
     return p.text()
 
 
-def prefab_text(text_, key):
+def prefab_text(text_, key, retired=False):
     p = Patch(text_, key)
     roots = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!224 ") and "  m_Father: {fileID: 0}\n" in d]
     assert len(roots) == 1, f"{key}: one root rect expected"
     go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(roots[0])).group(1)
-    mark(p, go)
+    if retired:
+        p.remove_comp(go, str(p.ctx.fid(f"{go}#phone")))
+    else:
+        mark(p, go)
     return p.text()
 
 
@@ -95,12 +106,17 @@ def outputs():
     out = {MENU: scene_text(open(os.path.join(REPO, MENU), encoding="utf-8").read())}
     for path in PREFAB_FALLBACK:
         out[path] = prefab_text(open(os.path.join(REPO, path), encoding="utf-8").read(), os.path.basename(path) + "/Phone")
+    for path in PREFAB_RETIRED:
+        out[path] = prefab_text(open(os.path.join(REPO, path), encoding="utf-8").read(), os.path.basename(path) + "/Phone",
+                                retired=True)
     return out
 
 
 def validate(out):
     for path, text_ in out.items():
         n = text_.count(f"guid: {PHONE_GUID}, type: 3}}")
+        if path in PREFAB_RETIRED:
+            continue
         want = len(SCENE_FALLBACK) + len(SCENE_PHONE) if path == MENU else 1
         assert n >= want, f"{path}: {n} PhoneRects, expected at least {want}"
         for m in re.finditer(r"^--- !u!114 &(-?\d+)\n(.*?)(?=^--- |\Z)", text_, re.S | re.M):

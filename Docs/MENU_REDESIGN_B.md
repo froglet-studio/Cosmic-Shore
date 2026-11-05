@@ -6056,6 +6056,23 @@ unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards 
   which on a phone is a **sheet over the left of the screen at 0.7**, top to bottom, instead of docking beside the window
   (`FriendsDrawer.phoneScale`, the window's `PhoneRect`); its orb sits at the rail's foot at 0.6. The board's row of seats
   is the drawer's own party panel, unchanged. Arcade and the drawer left the fallback list.
+- **Configure, Arena and Maelstrom** (`author_menu_configure.py`): the window sits right of the rail, its header where
+  Arcade's is. Left, 252 wide: the preview (drawn at 252 / 1100; double-tap or FLY still flies it full screen), the
+  objective, the briefing, the status line and START (Ruby, 60 tall). Right, against the screen's edge: the card drawn
+  at 0.6 (the Maelstrom's Rev 4 column at 0.49), 408 wide. The controls are a bottom sheet behind a phone-only
+  **CONTROLS** button in the header, over a dim a tap closes (`PhoneSheet`; the panel's inner Sheet group is the
+  sheet's, so the full-screen tray fading the column back in never shows a closed sheet). The Maelstrom's game pool
+  takes the briefing's place under the clip (0.45) and its summary chips hide. Differs from the board: the real card
+  (signal-sign intensity, the pilot pedestals, the AI row) is kept and drawn smaller rather than redrawn as the board's
+  I-IV row and three team columns, and the Arena's hull strip stays inside the card.
+- **Hangar** (`author_menu_hangar.py`): right of the rail, the content drawn at 0.55: the vessel list down the left,
+  the header and the OmniCrystal balance across the top, the vessel, its vibe and UNLOCK under them. The dossier (all
+  five tabs, not only abilities) is a full-height sheet on the right behind a phone-only **DETAILS** button, over a dim
+  a tap closes; it is drawn at 0.42 on the screen, the same size the PC layout has on a phone, because it is laid out
+  1026 tall. The spend window is drawn at 0.75.
+- The three configure windows and the Hangar left the fallback list (`author_menu_phone.py` takes their markers off).
+  Menu_Main's Has Phone Layout is still OFF: every boarded screen now has its layout, and it goes on after the editor
+  check below.
 
 ## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
 

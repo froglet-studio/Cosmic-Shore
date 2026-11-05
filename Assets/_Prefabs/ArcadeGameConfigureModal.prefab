@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6779145356922034367}
   - component: {fileID: 6890353763471025318}
   - component: {fileID: 4357675176818844460}
-  - component: {fileID: 789737988146680492}
   m_Layer: 5
   m_Name: ArcadeGameConfigureModal
   m_TagString: Untagged
@@ -20,39 +19,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &789737988146680492
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3548093454574644931}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!224 &6155677160994725012
 RectTransform:
   m_ObjectHideFlags: 0

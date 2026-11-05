@@ -104,6 +104,7 @@ GameObject:
   - component: {fileID: 232956162148985790}
   - component: {fileID: 1026217363906495159}
   - component: {fileID: 1121187523960345364}
+  - component: {fileID: 265709332633839176}
   m_Layer: 5
   m_Name: Veil
   m_TagString: Untagged
@@ -183,6 +184,39 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   token: 3
   alpha: 1
+--- !u!114 &265709332633839176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 380511619387681403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 48, y: 0}
+  sizeDelta: {x: -96, y: 0}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &768980709370206539
 GameObject:
   m_ObjectHideFlags: 0
@@ -194,6 +228,7 @@ GameObject:
   - component: {fileID: 995008207921621144}
   - component: {fileID: 118058990661544365}
   - component: {fileID: 1145675369121721685}
+  - component: {fileID: 309898184933417574}
   m_Layer: 5
   m_Name: SeaLines
   m_TagString: Untagged
@@ -258,6 +293,39 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &309898184933417574
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 768980709370206539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 48, y: 0}
+  sizeDelta: {x: -96, y: 0}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &778003413082988597
 GameObject:
   m_ObjectHideFlags: 0
@@ -270,6 +338,7 @@ GameObject:
   - component: {fileID: 1050285625702904825}
   - component: {fileID: 221759815694060976}
   - component: {fileID: 314020676225496239}
+  - component: {fileID: 841202458718618667}
   m_Layer: 5
   m_Name: Preview
   m_TagString: Untagged
@@ -370,6 +439,39 @@ VideoPlayer:
   m_WaitForFirstFrame: 1
   m_FrameReadyEventEnabled: 0
   m_VideoShaders: []
+--- !u!114 &841202458718618667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 778003413082988597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 112, y: -72}
+  sizeDelta: {x: 1100, y: 620}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.2291
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &767625891758625615
 GameObject:
   m_ObjectHideFlags: 0
@@ -1342,6 +1444,7 @@ GameObject:
   - component: {fileID: 816122514641197191}
   - component: {fileID: 473101696896001222}
   - component: {fileID: 123581062863961164}
+  - component: {fileID: 935765090663759756}
   m_Layer: 5
   m_Name: Steps
   m_TagString: Untagged
@@ -1433,6 +1536,39 @@ MonoBehaviour:
   seatHeight: 40
   minSeatHeight: 32
   compactGap: 2
+--- !u!114 &935765090663759756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924987817256950501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -16, y: -72}
+  sizeDelta: {x: 680, y: 706}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.4929
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &220202550035270655
 GameObject:
   m_ObjectHideFlags: 0
@@ -7080,6 +7216,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1051483988270511493}
+  - component: {fileID: 1113351224081432577}
   m_Layer: 5
   m_Name: Status
   m_TagString: Untagged
@@ -7109,6 +7246,39 @@ RectTransform:
   m_AnchoredPosition: {x: 1180, y: -922}
   m_SizeDelta: {x: 484.8, y: 26}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &1113351224081432577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 210976615260794774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 112, y: -348}
+  sizeDelta: {x: 252, y: 20}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &439886485684115323
 GameObject:
   m_ObjectHideFlags: 0
@@ -7636,7 +7806,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 582185606988274204}
+  - component: {fileID: 1079801986975761946}
   - component: {fileID: 924382175166100886}
+  - component: {fileID: 301254395392751785}
   m_Layer: 5
   m_Name: Chips
   m_TagString: Untagged
@@ -7666,6 +7838,18 @@ RectTransform:
   m_AnchoredPosition: {x: 1180, y: -954}
   m_SizeDelta: {x: 484.8, y: 26}
   m_Pivot: {x: 0, y: 1}
+--- !u!225 &1079801986975761946
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88126795107245613}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!114 &924382175166100886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7692,6 +7876,39 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &301254395392751785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88126795107245613}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 1
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &428523312456015166
 GameObject:
   m_ObjectHideFlags: 0
@@ -9077,6 +9294,7 @@ GameObject:
   - component: {fileID: 696414807084570889}
   - component: {fileID: 438102210128287270}
   - component: {fileID: 559524378123770499}
+  - component: {fileID: 881297593416205943}
   m_Layer: 5
   m_Name: Start
   m_TagString: Untagged
@@ -9136,6 +9354,39 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &881297593416205943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855059512307170820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 112, y: -376}
+  sizeDelta: {x: 252, y: 60}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1001 &527815670587393157
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9467,6 +9718,7 @@ GameObject:
   - component: {fileID: 983192576247489135}
   - component: {fileID: 298329503269396485}
   - component: {fileID: 727883665726356865}
+  - component: {fileID: 889468281366366017}
   m_Layer: 5
   m_Name: Pool
   m_TagString: Untagged
@@ -9547,6 +9799,39 @@ MonoBehaviour:
   tournamentData: {fileID: 11400000, guid: f1738a31735a43a196f1b3a711c91947, type: 2}
   summaryText: {fileID: 878685000100472848}
   summaryFormat: '{0} of {1} games'
+--- !u!114 &889468281366366017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 803693856559126943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 112, y: -220}
+  sizeDelta: {x: 560, y: 218}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.45
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &999651014999490322
 GameObject:
   m_ObjectHideFlags: 0
@@ -10326,6 +10611,7 @@ GameObject:
   - component: {fileID: 116724123859481301}
   - component: {fileID: 927996662573849366}
   - component: {fileID: 1143151391260725641}
+  - component: {fileID: 557036630404167547}
   m_Layer: 5
   m_Name: Briefing
   m_TagString: Untagged
@@ -10402,6 +10688,39 @@ MonoBehaviour:
   dwellSeconds: 6
   fadeSeconds: 0.4
   descriptionExtraDwell: 3
+--- !u!114 &557036630404167547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1077385520805148306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 1
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &607086649143630319
 GameObject:
   m_ObjectHideFlags: 0
@@ -10567,6 +10886,7 @@ GameObject:
   - component: {fileID: 913907353497553646}
   - component: {fileID: 703412059444168784}
   - component: {fileID: 536116424438357695}
+  - component: {fileID: 553714003474097507}
   m_Layer: 5
   m_Name: Header
   m_TagString: Untagged
@@ -10629,6 +10949,39 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &553714003474097507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 373977913385292343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 0.5, y: 1}
+  anchoredPosition: {x: 48, y: -10}
+  sizeDelta: {x: -128, y: 52}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &313515763450380448
 GameObject:
   m_ObjectHideFlags: 0
@@ -10641,6 +10994,7 @@ GameObject:
   - component: {fileID: 285690346873076412}
   - component: {fileID: 816691306706321259}
   - component: {fileID: 1072791423587434783}
+  - component: {fileID: 826225281852689328}
   m_Layer: 5
   m_Name: Eyebrow
   m_TagString: Untagged
@@ -10783,6 +11137,39 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &826225281852689328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 313515763450380448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 300, y: 14}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &137011716952646360
 GameObject:
   m_ObjectHideFlags: 0
@@ -10793,6 +11180,7 @@ GameObject:
   m_Component:
   - component: {fileID: 856128027683573634}
   - component: {fileID: 217727092092494527}
+  - component: {fileID: 764827591175787719}
   m_Layer: 5
   m_Name: TitleRow
   m_TagString: Untagged
@@ -10847,6 +11235,39 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &764827591175787719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 137011716952646360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -16}
+  sizeDelta: {x: 480, y: 32}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &364219672014819949
 GameObject:
   m_ObjectHideFlags: 0
@@ -11185,6 +11606,7 @@ GameObject:
   - component: {fileID: 324312388976875325}
   - component: {fileID: 132898779077013767}
   - component: {fileID: 161306821653689073}
+  - component: {fileID: 514450655747075624}
   m_Layer: 5
   m_Name: Back
   m_TagString: Untagged
@@ -11321,6 +11743,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 2
   m_VerticalFit: 2
+--- !u!114 &514450655747075624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078204196082990772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 1, y: 0}
+  anchorMax: {x: 1, y: 0}
+  pivot: {x: 1, y: 0}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 114.7, y: 48}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &302488081727107413
 GameObject:
   m_ObjectHideFlags: 0
@@ -11883,6 +12338,7 @@ GameObject:
   m_Component:
   - component: {fileID: 865080694979865330}
   - component: {fileID: 606811080100147481}
+  - component: {fileID: 1135527189056877324}
   m_Layer: 5
   m_Name: Leaderboard
   m_TagString: Untagged
@@ -11922,6 +12378,39 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &1135527189056877324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 233037981232508814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 1, y: 0}
+  anchorMax: {x: 1, y: 0}
+  pivot: {x: 1, y: 0}
+  anchoredPosition: {x: -126.7, y: 0}
+  sizeDelta: {x: 146, y: 48}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1001 &130843134795098407
 PrefabInstance:
   m_ObjectHideFlags: 0

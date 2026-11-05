@@ -700,6 +700,8 @@ def header(parent, kind):
              f"  IconImage: {ref(ctx.c('Header/Star', 'img'))}\n")) \
         .add("audio", 114, A.menu_audio(11))
     back = A.back_button(hd)
+    if kind in G_KINDS:
+        controls_button(hd)
     # The leaderboard is offered on the weekly challenge only (ArcadeLaunchPanel.SetLeaderboardAvailable).
     back_w = 16 + (K.label_width("B", "Label") + 24) + 10 + K.label_width("BACK", "ButtonSmall") + 16
     lb_w, lb_h = K.button_size("LEADERBOARD", small=True)
@@ -999,6 +1001,7 @@ def footer(chrome, kind):
     wait.add("cg", 225, canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=1.6, amplitude=0.5))
     label(wait, "Waiting for others...", "Body", "ControlActive")
     chips = chrome.child(N("Chips", "Chips", TL(SET_X, top + 32, left, 26)))
+    chips.add("cg", 225, canvas_group(True))   # hidden on a phone (phone_layout)
     chips.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (0, 0), (0, 0)))
     chip_node(chips, "Chips/Vessel", "Vessel", "Maelstrom" if kind == "maelstrom" else "Squirrel")
     chip_node(chips, "Chips/Intensity", "Intensity", "Intensity 1")
@@ -1600,8 +1603,25 @@ def g_column(chrome, kind):
         y += h + G_SEC_GAP
     assert y - G_SEC_GAP + G_PAD_B == g_card_h(kind), f"{kind}: the card's sections and its height disagree"
     assert ped_h(kind) - WORDS_H - IMG_GAP - IMG_TOP >= 120, f"{kind}: the pedestals leave the portraits no room"
-    ctrl = glass(chrome, "ControlsPanel", "ControlsPanel", TL(G_SET_X, TOP, G_SET_W, G_CTRL_H), 3)
-    controls(ctrl, TL(PAD, PAD, G_SET_W - 2 * PAD, G_CTRL_H - 2 * PAD), cols=CTRL_COLS, inner_w=G_SET_W - 2 * PAD)
+    # The dim behind the controls when they are a sheet on a phone (section 129): hidden on PC.
+    dim = image_node(chrome, "ControlsDim", "ControlsDim", STRETCH, "SurfaceBlack", alpha=0.6, raycast=True)
+    dim.add("cg", 225, canvas_group(False)).add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable(0)
+                                                 + f"  m_TargetGraphic: {ref(ctx.c('ControlsDim', 'img'))}\n"
+                                                 "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"))
+    # ControlsPanel's group is the tray's (ConfigureCinema.rightSide); its Sheet's group is the phone sheet's, so the tray
+    # fading back in never shows a closed sheet.
+    ctrl = chrome.child(N("ControlsPanel", "ControlsPanel", TL(G_SET_X, TOP, G_SET_W, G_CTRL_H)))
+    ctrl.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=3))
+    ctrl.add("phone", 114, K.phone_rect(R((0.5, 0), None, (PHONE_X / 2 - 8, 16), (G_SET_W, G_CTRL_H), (0.5, 0)),
+                                         scale=PHONE_SHEET_SCALE))
+    sheet = ctrl.child(N("ControlsPanel/Sheet", "Sheet", STRETCH))
+    sheet.add("cg", 225, canvas_group(True))
+    frame(sheet, "ControlsPanel/Frame", 14, fill_alpha=0.82)
+    controls(sheet, TL(PAD, PAD, G_SET_W - 2 * PAD, G_CTRL_H - 2 * PAD), cols=CTRL_COLS, inner_w=G_SET_W - 2 * PAD)
+    sheet.add("sheet", 114, lambda ctx, go: mono(go, K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs"),
+              f"  panel: {ref(ctx.c('ControlsPanel/Sheet', 'cg'))}\n  dim: {ref(ctx.c('ControlsDim', 'cg'))}\n"
+              f"  openButton: {ref(ctx.c('Header/Controls', 'button'))}\n  closeButton: {{fileID: 0}}\n"
+              f"  dimButton: {ref(ctx.c('ControlsDim', 'button'))}\n"))
     name_w = (G_SET_W - 2 * PAD - (CTRL_COLS - 1) * 28) // CTRL_COLS - 36 - CTRL_NAME_RIGHT
     assert name_w >= K.label_width("Pulsefire Cannons", "Body"), f"a control's name has {name_w} px: it would be cut"
     assert (G_CTRL_H - 2 * PAD - 36) >= 2 * CTRL_CELL_H + 4, "the controls panel cannot show two rows"
@@ -1716,6 +1736,109 @@ def check_pilots_fit():
     return max(worst)
 
 
+# --------------------------------------------------------------------------------------------
+# The phone layout (Rev 55, R55Configure / R55ConfigureArena; Docs/MENU_REDESIGN_B.md section 129). The window sits right
+# of the 96-wide rail, its header and content where Arcade's are (author_menu_arcade.PHONE_X). Left, 252 wide: the preview
+# (drawn at 252 / 1100), the objective, the briefing, the status line and START. Right, against the screen's edge: the
+# card (Maelstrom: the Rev 4 column) drawn at its PC size scaled to fit the height. The controls are a bottom sheet behind
+# a phone-only CONTROLS button in the header (PhoneSheet), over a dim a tap closes.
+# --------------------------------------------------------------------------------------------
+PHONE_RAIL, PHONE_X = A.PHONE_RAIL, A.PHONE_X
+PH_TOP, PH_BOTTOM = 72, 440                     # the content's band on the 450-tall phone canvas (Arcade's Body)
+PH_LEFT_W, PH_GAP = 252, 12
+PH_RIGHT_W = 800 - PHONE_X - PH_LEFT_W - PH_GAP - 16   # 408 on the narrowest (800-wide) phone canvas
+PH_START_H, PH_STATUS_H = 60, 20
+PH_PV_SCALE = PH_LEFT_W / PV_W
+PH_PV_H = PV_H * PH_PV_SCALE
+PHONE_SHEET_SCALE = 0.9
+
+
+def ph_card_scale(h):
+    """The right column's scale: it fits 408 wide and the content band's height."""
+    return round(min(PH_RIGHT_W / SET_W, (PH_BOTTOM - PH_TOP - 20) / h), 4)
+
+
+def controls_button(hd):
+    """The phone-only CONTROLS button (R55Configure): it opens the controls sheet (PhoneSheet keeps it hidden on PC)."""
+    w = CONTROLS_W
+    b = hd.child(N("Header/Controls", "Controls", R((1, 0), None, (-(A.back_width() + 12), 0), (w, 40), (1, 0))))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    f = b.child(N("Header/Controls/Fill", "Fill", STRETCH))
+    f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    bd = b.child(N("Header/Controls/Border", "Border", STRETCH))
+    bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    lab = b.child(N("Header/Controls/Label", "Label", STRETCH))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp("CONTROLS", "ButtonSmall", content, align="center")) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("audio", 114, A.menu_audio(2))
+    b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable()
+                                              + f"  m_TargetGraphic: {ref(ctx.c('Header/Controls/Fill', 'img'))}\n"
+                                              + A.calls([(ctx.c("Header/Controls", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
+    return b
+
+
+CONTROLS_W = round(16 + K.label_width("CONTROLS", "ButtonSmall") + 16, 1)
+
+
+def phone_layout(root, kind):
+    """Give every block of the window its phone pose (see the comment above)."""
+    def tl(x, y, w, h):
+        return TL(x, y, w, h)
+
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    back_w = A.back_width()
+    lb_w = K.button_size("LEADERBOARD", small=True)[0]
+    col_h = column_height(kind) if kind == "maelstrom" else g_card_h(kind)
+    s = ph_card_scale(col_h)
+    status_top = PH_BOTTOM - PH_START_H - 4 - PH_STATUS_H - 8
+    for n in root.children:
+        if n.key in ("Veil", "VeilLattice"):
+            put(n, R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0)))
+        elif n.key == "Preview":
+            put(n, tl(PHONE_X, PH_TOP, PV_W, PV_H), scale=round(PH_PV_SCALE, 4))
+    chrome = next(n for n in root.children if n.key == "Chrome")
+    for n in chrome.children:
+        k = n.key
+        if k == "Steps":
+            put(n, R((1, 1), None, (-16, -PH_TOP), (SET_W, col_h), (1, 1)), scale=s)
+        elif k == "Status":
+            put(n, tl(PHONE_X, status_top, PH_LEFT_W, PH_STATUS_H))
+        elif k == "Start":
+            put(n, tl(PHONE_X, PH_BOTTOM - PH_START_H - 4, PH_LEFT_W, PH_START_H))
+        elif k == "Fly":
+            put(n, tl(PHONE_X + 6, PH_TOP + PH_PV_H - 30, 460, 44), scale=0.55)
+        elif k == "Objective":
+            put(n, tl(PHONE_X, PH_TOP + PH_PV_H + 6, 500, 48), scale=round(PH_LEFT_W / 500, 4))
+        elif k == "Briefing":
+            if kind == "maelstrom":
+                put(n, hide=True)       # the pool takes its place; the card's own words name the format
+            else:
+                top = PH_TOP + PH_PV_H + 6 + 48 * PH_LEFT_W / 500 + 6
+                put(n, tl(PHONE_X, round(top, 1), PH_LEFT_W, round(status_top - 6 - top, 1)))
+        elif k == "Pool":
+            pool_h = BOTTOM - UNDER_TOP
+            put(n, tl(PHONE_X, round(PH_TOP + PH_PV_H + 6, 1), PV_W - 540, pool_h),
+                scale=round(min(PH_LEFT_W / (PV_W - 540), (status_top - 6 - PH_TOP - PH_PV_H - 6) / pool_h), 4))
+        elif k == "Chips":
+            put(n, hide=True)
+        elif k == "Header":
+            put(n, R((0, 1), (1, 1), ((PHONE_X - 16) / 2, -10), (-(PHONE_X + 16), 52), (0.5, 1)))
+            for c_ in n.children:
+                if c_.key == "Header/Eyebrow":
+                    put(c_, R((0, 1), None, (0, 0), (300, 14), (0, 1)))
+                elif c_.key == "Header/TitleRow":
+                    put(c_, R((0, 1), None, (0, -16), (480, 32), (0, 1)))
+                elif c_.key == "Back":
+                    put(c_, R((1, 0), None, (0, 0), (back_w, 48), (1, 0)))
+                elif c_.key == "Header/Leaderboard":
+                    put(c_, R((1, 0), None, (-(back_w + 12), 0), (lb_w, 48), (1, 0)))
+                elif c_.key == "Header/Controls":
+                    put(c_, R((1, 0), None, (-(back_w + 12 + lb_w + 12), 0), (CONTROLS_W, 48), (1, 0)))
+
+
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
     # Opaque (Shombith 2026-10-26: the Arcade window's title and cards read through the 0.95 veil, words over words).
@@ -1752,6 +1875,7 @@ def build_view(kind):
                     if kind in G_KINDS else "")))
 
     root.add("panel", 114, lambda ctx, go: panel_body(ctx, go, kind))
+    phone_layout(root, kind)
     return root
 
 
@@ -2747,7 +2871,11 @@ def validate_g(text, body, V, kind, view):
     assert all(b > a for a, b in zip(heights, heights[1:])), f"{view}: the signal sign's bars must rise level by level ({heights})"
     wired(text, comp_doc(text, V("root#panel"))[1], "controlsPanel", S["controls"], view)
     ctrl = A.doc_of(text, V("Controls#rt"))[1]
-    assert f"m_Father: {{fileID: {V('ControlsPanel#rt')}}}" in ctrl, f"{view}: the controls are not at the top of the right column"
+    assert f"m_Father: {{fileID: {V('ControlsPanel/Sheet#rt')}}}" in ctrl, f"{view}: the controls are not at the top of the right column"
+    sheet = comp_doc(text, V("ControlsPanel/Sheet#sheet"))[1]
+    for f, want in (("panel", V("ControlsPanel/Sheet#cg")), ("dim", V("ControlsDim#cg")),
+                    ("openButton", V("Header/Controls#button")), ("dimButton", V("ControlsDim#button"))):
+        assert f"  {f}: {{fileID: {want}}}\n" in sheet, f"{view}: the controls sheet's {f} is not wired (section 129)"
     book = A.doc_of(text, V("SeatBook#cg"))[1]
     assert "  m_Alpha: 0\n  m_Interactable: 0\n  m_BlocksRaycasts: 0\n" in book, \
         f"{view}: the domain columns (the modal's seat book) must stay hidden under the lineup"

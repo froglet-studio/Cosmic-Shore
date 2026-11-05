@@ -21154,7 +21154,7 @@ end-reveal panels and Authentication.unity, plus an `AdaptiveCanvasScaler` (phon
    the one-column board (header and ladder left, reward top right, Play again bottom right), pause opens on screen.
 5. **Still without a phone layout**: the toasts, the picture-in-picture frame, and every Menu_Main screen.
 
-## 🔴 Phone menus: the fallback, the rail, Home and Arcade (`claude/ui-phone-menus`, 2026-11-05) — NOT COMPILED
+## 🔴 Phone menus: the fallback, the rail, Home, Arcade, Configure and Hangar (`claude/ui-phone-menus`, 2026-11-05) — NOT COMPILED
 
 Not compiled (no .NET SDK, `unity_refcompile` SKIP; no editor). New: `PhoneRect` Draw At PC Scale, stack / grid / hide,
 LayoutElement minimum, Width Scale; `PhoneSheet`; `FriendsDrawerOpener`; `FriendsDrawer` phone sheet; `ArcadeExploreView` flat grid; `AdaptiveCanvasScaler.PhoneLayoutChanged`; tests `PhoneRectTests`,
@@ -21173,3 +21173,10 @@ Menu_Main's Has Phone Layout is still OFF.
 5. **Arcade, phone**: 3 cards across, readable, right of the rail; a Party button in the header opens the friends
    drawer as a sheet over the left (0.7), its minimise closes it; the orb sits at the rail's foot. Back on PC the drawer
    docks again.
+6. **Configure, PC** (Arcade card, Arena, Maelstrom): unchanged; no CONTROLS button; the controls panel shows and the
+   FULL SCREEN tray still fades the right column out and back.
+7. **Configure, phone**: preview, objective, briefing and START down the left, the card on the right (readable at
+   0.6); CONTROLS opens the controls as a bottom sheet, a tap on the dim closes it; FULL SCREEN and back leaves the sheet
+   closed. Maelstrom: the pool under the clip, the column on the right.
+8. **Hangar, PC**: unchanged, no DETAILS button. **Phone**: list left, vessel centre, DETAILS opens the dossier sheet
+   (every tab works), the dim closes it; UNLOCK opens the spend window at 0.75.

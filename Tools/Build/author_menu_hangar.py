@@ -1248,7 +1248,19 @@ def build_view(row_guid):
     owned.children.append(button_instance("UnlockedButton", "UnlockedButton", "Inactive", False, "UNLOCKED", disabled=True))
 
     # ---- right: the dossier in the open angled border (R24Borders "2 Rail") ----
+    details_button(cz)
+    # The dim behind the dossier when it is a sheet on a phone (section 129): hidden on PC.
+    dim = body.child(N("DossierDim", "DossierDim", STRETCH))
+    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
+        .add("cg", 225, canvas_group(False)) \
+        .add("button", 114, lambda ctx, go: K.mono(go, A_BUTTON, K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", "    m_Mode: 0\n")
+                                                    + f"  m_TargetGraphic: {ref(ctx.c('DossierDim', 'img'))}\n" + EMPTY_CALLS))
     rz = body.child(N("Abilities", "Dossier", R((1, 1), None, (-SIDE, -DOSSIER_TOP), (DOSSIER_W, DOSSIER_H), (1, 1))))
+    rz.add("cg", 225, canvas_group(True))
+    rz.add("sheet", 114, lambda ctx, go: K.mono(go, K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs"),
+           f"  panel: {ref(ctx.c('Abilities', 'cg'))}\n  dim: {ref(ctx.c('DossierDim', 'cg'))}\n"
+           f"  openButton: {ref(ctx.c('Details', 'button'))}\n  closeButton: {{fileID: 0}}\n"
+           f"  dimButton: {ref(ctx.c('DossierDim', 'button'))}\n"))
     panel = rz.child(N("Abilities/Panel", "Panel", STRETCH))
     panel.child(N("Abilities/Panel/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_cradle_fill")))
@@ -1312,7 +1324,65 @@ def build_view(row_guid):
                       "  unlockFreeWord: UNLOCK - FREE\n  spendTemplate: '{cost} to unlock {vessel}'\n"
                       "  confirmTemplate: CONFIRM - {cost}\n  shortfallTemplate: You need {amount} more OmniCrystals.\n")
     root.add("detail", 114, detail_body)
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Rev 55, R55Hangar; Docs/MENU_REDESIGN_B.md section 129). The screen sits right of the 96-wide rail
+# (author_menu_arcade.PHONE_X), its content drawn at PHONE_CONTENT_SCALE: the vessel list down the left, the header and
+# the balance across the top, the vessel, its vibe and UNLOCK under them. The dossier (Abilities, Upgrades, Games, Pilots,
+# Artifacts) is a full-height sheet on the right behind a phone-only DETAILS button, over a dim a tap closes (PhoneSheet).
+# --------------------------------------------------------------------------------------------
+PHONE_RAIL, PHONE_X = 96, 112                 # author_menu_arcade.PHONE_RAIL / PHONE_X
+PHONE_H = 450 - 16                            # the frame on the 450-tall phone canvas, 8 in from top and foot
+PHONE_CONTENT_SCALE = 0.55
+PHONE_VH = PHONE_H / PHONE_CONTENT_SCALE      # the content's height in its own units (789)
+PH_LIST_GAP, PH_BAL_W, PH_HEAD_H = 30, 250, 140
+DETAILS_W, DETAILS_H = 260, 60
+PHONE_DOSSIER_SCALE = round(PHONE_VH / DOSSIER_H, 4)
+
+
+def details_button(cz):
+    """The phone-only DETAILS button: it opens the dossier sheet (PhoneSheet hides it on PC)."""
+    b = cz.child(N("Details", "Details", R((1, 0), None, (0, 0), (DETAILS_W, DETAILS_H), (1, 0))))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    b.child(N("Details/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    b.child(N("Details/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver14_line1"), True))
+    label(b.child(N("Details/Label", "Label", STRETCH)), "DETAILS", "Button", "TextLight", align="center")
+    b.add("button", 114, lambda ctx, go: K.mono(go, A_BUTTON, K.SELECTABLE_FIELDS
+                                                + f"  m_TargetGraphic: {ref(ctx.c('Details/Fill', 'img'))}\n" + EMPTY_CALLS))
+    return b
+
+
+def phone_layout(root):
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    def kid(node, key):
+        return next(c for c in node.children if c.key == key)
+
+    for n in root.children:
+        if n.key in ("Backdrop", "Sea"):
+            put(n, R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0)))
+        elif n.key == "Popup":
+            put(kid(n, "Popup/Dialog"), scale=0.75)
+    frame = kid(root, "Frame")
+    put(frame, R((0, 0), (1, 1), ((PHONE_X - 16) / 2, 0), (-(PHONE_X + 16), -16)))
+    content = kid(frame, "Frame/Content")
+    k = 0.5 / PHONE_CONTENT_SCALE
+    put(content, R((0.5 - k, 1 - 1 / PHONE_CONTENT_SCALE), (0.5 + k, 1), (0, 0), (0, 0), (0.5, 1)), scale=PHONE_CONTENT_SCALE)
+    left = LIST_W + PH_LIST_GAP
+    put(kid(content, "Header"), R((0, 1), (1, 1), ((left - PH_BAL_W) / 2, 0), (-(left + PH_BAL_W), PH_HEAD_H), (0.5, 1)))
+    put(kid(content, "Header/Balance"), R((1, 1), None, (0, 0), (220, 40), (1, 1)))
+    body = kid(content, "Body")
+    put(kid(body, "List"), R((0, 0), (0, 1), (0, 0), (LIST_W, 0), (0, 1)))
+    cz = kid(body, "Selected")
+    put(cz, R((0, 0), (1, 1), (left / 2, -(PH_HEAD_H + 10) / 2), (-left, -(PH_HEAD_H + 10))))
+    put(kid(body, "Abilities"), R((1, 0.5), None, (0, 0), (DOSSIER_W, DOSSIER_H), (1, 0.5)), scale=PHONE_DOSSIER_SCALE)
 
 
 # The detail view's fields, each with the class / script its target must be (validation).
@@ -1561,6 +1631,11 @@ def validate_prefabs(files, guids):
     assert "m_Name: Parts\n" not in view and "m_Name: TabHint\n" not in view, \
         "a second tab row is back (Shombith: all the tabs on the same bar)"
     check_flowers(view)
+    # Section 129: on a phone the dossier is a sheet behind DETAILS, over a dim a tap closes.
+    _, sheet = doc_of(view, hv("Abilities#sheet"))
+    for field, key in (("panel", "Abilities#cg"), ("dim", "DossierDim#cg"), ("openButton", "Details#button"),
+                       ("dimButton", "DossierDim#button")):
+        assert f"  {field}: {{fileID: {hv(key)}}}\n" in sheet, f"the dossier sheet's {field} is not wired (section 129)"
     # The pages clear the right side where it leans in: at a page's floor the side is RAIL_LEAN x (how far below the
     # knee) in from the edge, and the fill is the sprite drawn at exactly the dossier's size.
     floor = DOSSIER_H - PAGE_BOTTOM
