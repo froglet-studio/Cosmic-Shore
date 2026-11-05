@@ -8,7 +8,7 @@ its three levels (the voyage with Your Ark, the 12 Ark crew settings, the option
 
     python3 Docs/MenuRedesignB/rounds/r44_voyage_window.py <root> 44
 
-<root> is the scratch folder `design_board.py plan` wrote. The pieces shared with Rev 43 (nav, map, card blocks, the
+<root> is the scratch folder `frogma.py plan` wrote. The pieces shared with Rev 43 (nav, map, card blocks, the
 crew settings, the content) come from r43_voyage_window.py; the sea lines are the approved layer from R40E.dc.html.
 """
 import importlib.util

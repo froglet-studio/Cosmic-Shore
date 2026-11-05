@@ -1076,6 +1076,10 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
+- **UI changes answer the UI checklist** (`Docs/UI_STYLE_GUIDE.md` §11): when the branch touches `Assets/_Prefabs/UI*`,
+  `Assets/_Scenes/Menu_Main.unity`, `GameCanvas`, `Assets/_SO_Assets/UI/` or `Assets/_Scripts/UI/`, the PR body carries the
+  template's `## UI checklist` with every box ticked or `N/A - <why>` (`python3 Tools/Build/check_ui_pr.py --body-file
+  <body> --files <changed>` before opening; the `UI checklist` workflow runs the same check on the PR).
 - PR body: what & why, per-system summary, **verification status** (what a human must
   still verify in-editor, with steps), **Tool output** (every tool the branch touched,
   reader vs writer, which commit carries its output, which tools were retired and which
