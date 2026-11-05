@@ -5999,7 +5999,7 @@ and SignIn stay as the record; these replace them. The other Rev 52 boards stand
 
 **Approved (Shombith, 2026-11-05):** "approved, start building".
 
-## 129. Rev 55 mockups: the phone menus drawn from the real screens (2026-11-05, awaiting board approval)
+## 129. Rev 55 mockups: the phone menus drawn from the real screens (2026-11-05, approved)
 
 **Asked** (Shombith): "yes redraw them from the real screens". Building Rev 52's Home, Arcade, Configure and Hangar boards
 (section 127) showed they had been drawn from the older Rev 21 boards, not the screens that ship: the real Arcade has
@@ -6026,6 +6026,10 @@ Copies: `Docs/MenuRedesignB/board/R55*`. Content is the built screens' own (the 
 
 **Differs from the build:** each screen's generator gains its phone layout (PhoneRect, its sheet and phone-only
 buttons), `author_menu_topnav.py` the rail; each screen then leaves `author_menu_phone.py`'s fallback list.
+
+**Approved (Shombith, 2026-11-05):** "Approve Rev 55, sheet for party, Home first, both cards". The party panel is a sheet
+on a phone; the phone rail runs Home, Codex, Hangar, Ark, Port (Home first, the rest in today's order; the PC nav band is
+unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards were redrawn with the rail in that order.
 
 ## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
 
