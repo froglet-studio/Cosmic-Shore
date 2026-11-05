@@ -60,6 +60,7 @@ S = dict(
     kt=K.kit_script("KitText"), cover=K.kit_script("KitCoverImage"),
     record=C.script("ProfileRecordWindow"), studio=C.script("AudioStudioPanel"), picker=C.script("FavouritePilotPicker"),
     nowplaying=C.script("NowPlayingCard"), cbp=C.script("ControllerButtonPress"),
+    tab=K.kit_script("KitTextTab"), colours=C.script("ProfileColorSetsPanel"),
 )
 # Rev 10 (section 56): the pilot record window's data.
 VESSEL_LIST = "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset"   # the Hangar's roster (HangarScreen.ShipList)
@@ -329,11 +330,14 @@ def build_view():
 
     # The record first in hierarchy: Refocus lands on the first live Selectable (the favourite pilot's CHANGE).
     build_record(root)
+    # Rev 51 A (section 123): the Colour sets page, a layer over the record that the header's two tabs switch to.
+    build_colour_sets(root)
 
     head = root.child(N("Header", "Header", TL(40, 96, 900, 64)))
     head.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", distance=10))
     label(head.child(N("Header/Eyebrow", "Eyebrow", TL(0, 4, 300, 18))), "Profile", "Label", "NeutralLightest")
     label(head.child(N("Header/Title", "Title", TL(0, 24, 600, 40))), "Your pilot", "H2", "TextLight")
+    build_tabs(root)
     w, h = K.button_size("BACK", small=True)
     root.children.append(pad_button("Back", "BackButton", "Default", "BACK", TR(40, 108, w, h), PAD_B, "Record"))
     # My Replays (Yash, 2026-10-26: "inside profiles should have my replay area where I can choose the last 10
@@ -383,6 +387,140 @@ def build_view():
         else:
             label(card.child(N(f"Pilot/{key}Value", f"{key}Value", TL(x + 18, 80, 200, 40))), val, "H1", "TextLight")
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# Rev 51 A (Shombith picked it, 2026-11-05; section 123): Record | Colour sets
+# --------------------------------------------------------------------------------------------
+# The two word tabs sit in the header row beside "Your pilot", so the approved record keeps every position (the board
+# drew them under the pilot card). Colour sets is a layer over the record's panels: three set cards on the left, the
+# preview on the right at the record's own rects, APPLY straddling the preview's foot. The words a set shows come from
+# the catalog (Tools/Build/author_colour_set_catalog.py); every other word is authored here, in the prefab.
+
+COLOUR_SET_CARDS = 3
+COLOUR_CATALOG = "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset"
+DOMAIN_NAMES = ("Jade", "Ruby", "Gold", "Blue")
+TIER_NAMES = ("Prism", "Shielded", "Super-shielded", "Vessel")
+COLOUR_WORDS = (("equippedWord", "Equipped"), ("ownedWord", "Owned"), ("lockedWord", "Unlocks with a quest"),
+                ("equippedStatus", "Equipped - every prism, vessel and trail wears it"),
+                ("lockedStatus", "A quest will give this set"))
+TAB_X, TAB_Y = 360, 112
+
+
+def build_tabs(root):
+    tabs = root.child(N("Tabs", "Tabs", TL(TAB_X, TAB_Y, 600, 44)))
+    tabs.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", distance=10))
+    x = 0
+    for key, caption, selected in (("RecordTab", "Record", True), ("ColourSetsTab", "Colour sets", False)):
+        k = f"Tabs/{key}"
+        w = K.label_width(caption.upper(), "Button")
+        n = tabs.child(N(k, key, TL(x, 0, w, 44)))
+        A.ring_node(n, f"{k}/FocusRing", 10)
+        hit = n.child(N(f"{k}/Hit", "Hit", STRETCH))
+        hit.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
+        lab = n.child(N(f"{k}/Label", "Label", R((0, 1), (1, 1), (0, 0), (0, K.line_height("Button")), (0.5, 1))))
+        lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption.upper(), "Button", tok("NeutralLightest"))) \
+            .add("kt", 114, K.kit_text("Button", "NeutralLightest", driven=True))
+        und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 4), (0, 2), (0.5, 0))))
+        und.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.0)))
+        n.add("tab", 114, (lambda k_, sel: lambda ctx, go: mono(go, S["tab"],
+              A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{k_}/Hit', 'img'))}\n" + A.calls([])
+              + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k_}/FocusRing', 'img'))}\n"
+              f"  isSelected: {1 if sel else 0}\n"
+              f"  label: {ref(ctx.c(f'{k_}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k_}/Underline', 'img'))}\n"))(k, selected))
+        n.add("audio", 114, A.menu_audio(11))
+        x += w + 36
+
+
+def swatch(parent, key, r, rim=True):
+    """A prism swatch: the hex face and (optionally) its rim, untinted - ProfileColorSetsPanel paints both."""
+    n = parent.child(N(key, key.split("/")[-1], r))
+    art_node(n, f"{key}/Face", "Face", STRETCH, K.kit_sprite("kit_hex_fill"), preserve=True)
+    if rim:
+        art_node(n, f"{key}/Rim", "Rim", STRETCH, K.kit_sprite("kit_hex_line2"), preserve=True)
+    return n
+
+
+def tick_node(parent, key, r):
+    t = parent.child(N(key, "Tick", r, active=False))
+    t.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta"), K.chrome_sprite("chrome_confirm"), preserve=True)) \
+        .add("th", 114, H.themed("Cta"))
+    return t
+
+
+def build_colour_sets(root):
+    k0 = "ColourSets"
+    top = lambda y: y - 84
+    pg = root.child(N(k0, "ColourSets", R((0, 0), (1, 1), (0, -42), (0, -84))))
+    pg.add("cg", 225, canvas_group(False))
+    # Covers the record's panels (from just above them to the bottom) and takes their clicks while this page shows.
+    image_node(pg, f"{k0}/Cover", "Cover", R((0, 0), (1, 0), (0, 0), (0, 1080 - 366), (0.5, 0)), "SurfaceBlack", alpha=0.96,
+               raycast=True)
+    for i in range(COLOUR_SET_CARDS):
+        k = f"{k0}/Card{i}"
+        card = pg.child(N(k, f"Card{i}", TL(40, top(376) + i * 228, 1000, 208)))
+        card.add("cg", 225, canvas_group(True))
+        tile_nodes(card, k, 14)
+        label(card.child(N(f"{k}/Name", "Name", TL(28, 22, 600, 40))), "", "H2", "TextLight")
+        label(card.child(N(f"{k}/Line", "Line", TL(28, 68, 600, 44))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
+        tick_node(card, f"{k}/Tick", TL(28, 158, 18, 18))
+        label(card.child(N(f"{k}/State", "State", TL(54, 157, 500, 20))), "", "Label", "TextLight")
+        for d, dom in enumerate(DOMAIN_NAMES):
+            swatch(card, f"{k}/Swatch{d}", TL(664 + d * 80, 46, 56, 48))
+            label(card.child(N(f"{k}/Domain{d}", f"Domain{d}", TL(656 + d * 80, 104, 72, 16))), dom, "Label", "NeutralLightest",
+                  align="center")
+        card.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"),
+                                          14, primary=[c(f"{k}/Name", "tmp")]))
+        card.add("audio", 114, A.menu_audio(11))
+
+    kp = f"{k0}/Preview"
+    pv = panel(pg, kp, "Preview", TL(1060, top(376), 820, 664), "Preview", "NeutralLightest")
+    label(pv.child(N(f"{kp}/Name", "Name", TL(24, 52, 770, 52))), "", "H1", "TextLight")
+    label(pv.child(N(f"{kp}/Line", "Line", TL(24, 108, 770, 44))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    for t, name in enumerate(TIER_NAMES):
+        label(pv.child(N(f"{kp}/Column{t}", f"Column{t}", TL(150 + t * 160, 176, 150, 16))), name, "Label", "NeutralLightest",
+              align="center")
+    for d, dom in enumerate(DOMAIN_NAMES):
+        y = 208 + d * 88
+        label(pv.child(N(f"{kp}/Domain{d}", f"Domain{d}", TL(24, y + 16, 120, 18))), dom, "Label", "TextLight")
+        for t in range(3):
+            swatch(pv, f"{kp}/Tier{d}_{t}", TL(150 + t * 160 + 47, y, 56, 48))
+        swatch(pv, f"{kp}/Vessel{d}", TL(150 + 3 * 160 + 47, y, 56, 48), rim=False)
+    tick_node(pv, f"{kp}/Tick", TL(24, 590, 18, 18))
+    label(pv.child(N(f"{kp}/Status", "Status", TL(52, 588, 520, 22))), "", "Body", "NeutralLightest")
+    w, h = K.button_size("APPLY")
+    pv.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(820 - 24 - w, 664 - h // 2, w, h)))
+    pg.add("colours", 114, lambda ctx, go: mono(go, S["colours"], colour_sets_body(ctx)))
+
+
+def colour_sets_body(ctx):
+    k0, kp = "ColourSets", "ColourSets/Preview"
+    seq = lambda name, ids, ind="  ": f"{ind}{name}:\n" + "".join(f"{ind}- {ref(x)}\n" for x in ids)
+    cards = "".join(
+        f"  - group: {ref(ctx.c(f'{k0}/Card{i}', 'cg'))}\n"
+        f"    tile: {ref(ctx.c(f'{k0}/Card{i}', 'tile'))}\n"
+        f"    nameText: {ref(ctx.c(f'{k0}/Card{i}/Name', 'tmp'))}\n"
+        f"    lineText: {ref(ctx.c(f'{k0}/Card{i}/Line', 'tmp'))}\n"
+        f"    stateText: {ref(ctx.c(f'{k0}/Card{i}/State', 'tmp'))}\n"
+        f"    equippedMark: {ref(ctx.go(f'{k0}/Card{i}/Tick'))}\n"
+        + seq("faces", [ctx.c(f"{k0}/Card{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
+        + seq("rims", [ctx.c(f"{k0}/Card{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
+        for i in range(COLOUR_SET_CARDS))
+    words = "".join(f"  {k}: {v}\n" for k, v in COLOUR_WORDS)
+    return (f"  recordTab: {ref(ctx.c('Tabs/RecordTab', 'tab'))}\n"
+            f"  colourSetsTab: {ref(ctx.c('Tabs/ColourSetsTab', 'tab'))}\n"
+            f"  record: {ref(ctx.c('Record', 'record'))}\n"
+            f"  group: {ref(ctx.c(k0, 'cg'))}\n"
+            f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
+            "  cards:\n" + cards
+            + f"  previewName: {ref(ctx.c(f'{kp}/Name', 'tmp'))}\n"
+            f"  previewLine: {ref(ctx.c(f'{kp}/Line', 'tmp'))}\n"
+            + seq("tierFaces", [ctx.c(f"{kp}/Tier{d}_{t}/Face", "img") for d in range(4) for t in range(3)])
+            + seq("tierRims", [ctx.c(f"{kp}/Tier{d}_{t}/Rim", "img") for d in range(4) for t in range(3)])
+            + seq("vessels", [ctx.c(f"{kp}/Vessel{d}/Face", "img") for d in range(4)])
+            + f"  applyButton: {ref(ctx.iref('ApplyColourSet', 'root#button'))}\n"
+            f"  statusText: {ref(ctx.c(f'{kp}/Status', 'tmp'))}\n"
+            f"  statusTick: {ref(ctx.go(f'{kp}/Tick'))}\n" + words)
 
 
 # --------------------------------------------------------------------------------------------
