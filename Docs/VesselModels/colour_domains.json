@@ -435,10 +435,6 @@
     {
       "anchor": "fire-3",
       "reason": "The engine ember face (#300A05) is within one band of black, and every grey is Blue's, so no convex border can give it full clearance. It sits 0.0007 OKLab inside the band edge."
-    },
-    {
-      "anchor": "ui:selection",
-      "reason": "OPEN DECISION: the UI's selection blue #3DB2FF sits in the band, 0.0077 OKLab from Blue's border with Jade (needs 0.025). Either move the selection colour into Blue or reshape Blue in the lab; until then it is listed here so any NEW drift still fails."
     }
   ],
   "measured": {
@@ -465,7 +461,8 @@
       "controlActive": "jade",
       "purchase": "gold",
       "tooltip": "ruby",
-      "selection": "blue"
+      "selection": "jade",
+      "commit": "ruby"
     }
   }
 }

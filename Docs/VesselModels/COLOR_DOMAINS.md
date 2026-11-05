@@ -46,7 +46,7 @@ the forbidden zones." Both are back at their game values in the truth, and both 
 
 ## The UI's family colours
 
-`Docs/UI_COLOR_RULES.md` gives five UI theme colours a family. Five of the six rest in their family:
+`Docs/UI_COLOR_RULES.md` and `Docs/UI_STYLE_GUIDE.md` give seven UI theme colours a family, and all seven rest in it:
 
 | UITheme | family | colour | clearance |
 |---|---|---|---|
@@ -55,10 +55,13 @@ the forbidden zones." Both are back at their game values in the truth, and both 
 | `controlActive` | Jade | `#00D4FF` | 0.7 JND |
 | `purchase` | Gold | `#FFAE00` | 1.7 JND |
 | `tooltip` | Ruby | `#A600FF` | 3.9 JND |
-| `selection` | Blue | `#3DB2FF` | **in the band**, 0.0077 OKLab from Blue's border with Jade (needs 0.025) |
+| `selection` | Jade | `#00D4FF` | 0.7 JND (the controlActive colour) |
+| `commit` | Ruby | `#A600FF` | 3.9 JND |
 
-**Open decision:** move the selection blue into Blue, or reshape Blue in the lab. Until then it is listed as an
-exception in the JSON, so any new drift still fails the gate.
+**Decided (Shombith, 2026-11-05, `Docs/UI_STYLE_GUIDE.md` D3):** the old selection blue `#3DB2FF` sat in the band
+between Blue and Jade. A selection is a choice the player can claim and reclaim, so it is now **Jade** (the
+controlActive colour), and its exception is gone from the JSON. A commitment with no way back (Play, Ready) is the new
+`commit` token, **Ruby**.
 
 ## The gate: `colour_domains.py --check`
 
@@ -69,7 +72,7 @@ exception in the JSON, so any new drift still fails the gate.
 - an anchor is not inside its own family, clear of the band, unless it is listed as an exception;
 - a Lime element shade has left Lime;
 - a UI theme colour named for a family (`UITheme.asset`: `cta`, `danger`, `controlActive`, `purchase`, `tooltip`,
-  `selection`) is not in that family, clear of the band, unless it is listed as an exception;
+  `selection`, `commit`) is not in that family, clear of the band, unless it is listed as an exception;
 - the measured shares in the JSON are stale;
 - the lab embeds a different truth.
 

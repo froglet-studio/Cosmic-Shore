@@ -21070,3 +21070,15 @@ tests were compiled, not run (the Prisma runner does not build on bleeding-edge 
 2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
    its end; only a faint rumble shows. Then a Dolphin drift: same.
 3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
+
+## 🔴 Selection to Jade, Ready / Play to Ruby (`claude/ui-jade-ruby`, 2026-11-05) — NOT COMPILED
+
+Not compiled: this cloud session has no .NET SDK, so `unity_refcompile` printed SKIP, and no editor was open. The C#
+change is small (`UIColorToken.Commit = 18`, `UIThemeSO.commit`, `KitButtonVariant.Commit = 10` and its palette case).
+
+1. **Compile, then run the edit-mode tests** `SelectionStyleTests` (all pass).
+2. **Open Menu_Main**: the Configure START GAME button (solo, Arena, Maelstrom) is a flat Ruby fill with white text; the
+   selected tile / focus ring is Jade (`00D4FF`), not the old sky blue.
+3. **Play a mode**: the GameCanvas Ready button is Ruby; at the end, the Scoreboard's Play again is Ruby. In Maelstrom,
+   Ready, Next and Play again are Ruby.
+4. **Lime stays Lime**: Pause > Resume, the Reconnect and Confirm buttons are still the Lime call to action.

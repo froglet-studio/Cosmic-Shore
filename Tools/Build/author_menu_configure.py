@@ -1006,7 +1006,7 @@ def footer(chrome, kind):
     start = chrome.child(N("Start", "Start", TR(MARGIN, top, w, h)))
     start.add("in", 114, M.entrance("Rise", stagger=5)).add("cg", 225, canvas_group(True))
     start.children.append(Inst("StartButton", "KitButton", "StartButton", STRETCH,
-                               K.button_mods("KitButton", "Play", True, "START GAME"),
+                               K.button_mods("KitButton", "Commit", True, "START GAME"),
                                added=[("mask", 114, A.rect_mask())],
                                added_nodes=[sweep_node()]))
 
@@ -1529,7 +1529,7 @@ def chevron(parent, key, name, r, glyph):
             .replace("    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
                      "    m_HighlightedColor: {r: 1, g: 1, b: 1, a: 1}\n")
             .replace("    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
-                     "    m_SelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}\n")
+                     "    m_SelectedColor: {r: 0, g: 0.83137256, b: 1, a: 1}\n")   # the Jade selection (D3)
             .replace("    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}\n",
                      "    m_DisabledColor: {r: 0.6, g: 0.6, b: 0.6, a: 0.25}\n"))
     n.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, tint + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Glyph', 'tmp'))}\n"
@@ -1622,7 +1622,7 @@ def g_footer(chrome):
     label(wait, "Waiting for others...", "Body", "ControlActive", align="center")
     start = chrome.child(N("Start", "Start", TL(G_SET_X, G_START_TOP, G_SET_W, G_START_H)))
     start.add("in", 114, M.entrance("Rise", stagger=5)).add("cg", 225, canvas_group(True))
-    prompt_button(start, "Start/Button", "StartButton", STRETCH, "A", "START", variant="Play", opaque=True, role="Button",
+    prompt_button(start, "Start/Button", "StartButton", STRETCH, "A", "START", variant="Commit", opaque=True, role="Button",
                   key_size=34, sliver=14)
 
 
@@ -2718,7 +2718,7 @@ def validate_g(text, body, V, kind, view):
     assert "invite" not in words, f"{view}: an invite control is back (Shombith: remove the invite a friend button)"
     assert "hold" not in words, f"{view}: START holds again (Shombith: remove the hold to launch, START is enough)"
     _, start = comp_doc(text, V("Start/Button#button"))
-    assert f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n" in start, f"{view}: START is not the solid lime Play slab"
+    assert f"  variant: {K.VARIANTS['Commit']}\n  fill: 1\n" in start, f"{view}: START is not the solid Ruby Commit slab (D3)"
     assert "START GAME" not in words.upper(), f"{view}: the old START GAME button is back"
     # Section 90: the controls tab shows the hull's Omni crystal ability after its four elements.
     ctrl = re.search(r"--- !u!114 &-?\d+\nMonoBehaviour:\n(?:(?!^--- ).*\n)*?  m_Script: \{fileID: 11500000, guid: %s, type: 3\}\n(?:(?!^--- ).*\n)*"
@@ -2918,8 +2918,8 @@ def self_test(files):
             "  m_text: ADD AI PILOT\n", "  m_text: INVITE A FRIEND\n", 1)), validate_prefabs),
         ("START held to launch again", lambda f: f.__setitem__(view, f[view].replace(
             "  m_text: START\n", "  m_text: HOLD TO LAUNCH\n", 1)), validate_prefabs),
-        ("START no longer the lime Play slab", lambda f: f.__setitem__(view, f[view].replace(
-            f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n", "  variant: 0\n  fill: 0\n", 1)), validate_prefabs),
+        ("START no longer the Ruby Commit slab", lambda f: f.__setitem__(view, f[view].replace(
+            f"  variant: {K.VARIANTS['Commit']}\n  fill: 1\n", "  variant: 0\n  fill: 0\n", 1)), validate_prefabs),
         ("the domain columns showing under the lineup", lambda f: f.__setitem__(view, re.sub(
             r"(--- !u!225 &" + str(V("SeatBook#cg")) + r"\n(?:.*\n)*?  m_Alpha: )0\n  m_Interactable: 0\n  m_BlocksRaycasts: 0\n",
             r"\g<1>1\n  m_Interactable: 1\n  m_BlocksRaycasts: 1\n", f[view], count=1)), validate_prefabs),

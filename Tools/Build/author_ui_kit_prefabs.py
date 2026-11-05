@@ -120,13 +120,17 @@ TOK = {
     # Rev 6's element colours: RETIRED 2026-10-24 (elements carry no colour in the UI, Docs/UI_COLOR_RULES.md). The
     # tokens keep their indices for serialized assets; no style-B surface may draw with them.
     "ElementCharge": "FFD34D", "ElementMass": "7FA8FF", "ElementSpace": "B07CFF", "ElementTime": "5FF0C8",
-    # Rev 7: whatever is selected or focused (UITheme.Selection).
-    "Selection": "3DB2FF",
+    # Rev 7: whatever is selected or focused (UITheme.Selection). Jade since 2026-11-05 (Docs/UI_STYLE_GUIDE.md D3:
+    # a choice you can claim and reclaim), the controlActive colour; the old sky blue 3DB2FF sat in the forbidden band.
+    "Selection": "00D4FF",
+    # No way back: Play (it launches a game) and Ready (UITheme.Commit, D3).
+    "Commit": "A600FF",
 }
 TOKEN_INDEX = {"TextLight": 0, "TextInactive": 1, "InactiveLight": 2, "SurfaceBlack": 3,
                "SurfaceVeryDark": 4, "SurfaceDark": 5, "SurfaceLight": 6, "NeutralLightest": 7,
                "Cta": 8, "Danger": 9, "ControlActive": 10, "Purchase": 11, "Tooltip": 12,
-               "ElementCharge": 13, "ElementMass": 14, "ElementSpace": 15, "ElementTime": 16, "Selection": 17}
+               "ElementCharge": 13, "ElementMass": 14, "ElementSpace": 15, "ElementTime": 16, "Selection": 17,
+               "Commit": 18}
 
 
 def tok(name, alpha=1.0):
@@ -139,7 +143,7 @@ def lerp(a, b, t):
 
 WHITE = (1.0, 1.0, 1.0, 1.0)
 VARIANTS = {"Default": 0, "Inactive": 1, "Cancel": 2, "Purchase": 3, "Cta": 4, "Play": 5, "Danger": 6,
-            "Mass": 7, "Space": 8, "Time": 9}
+            "Mass": 7, "Space": 8, "Time": 9, "Commit": 10}
 # Retired rev 6 variants: they draw as Default (KitButton.PaletteFor).
 RETIRED_VARIANTS = ("Mass", "Space", "Time")
 ELEMENT_TOKENS = ("ElementCharge", "ElementMass", "ElementSpace", "ElementTime")
@@ -167,6 +171,10 @@ def button_palette(variant, opaque, disabled=False):
         cta = tok("Cta")
         return ((lerp(cta, WHITE, 0.5), cta, dark) if opaque else
                 (cta, tok("Cta", 0.24), cta))
+    if v == "Commit":          # no way back (Play, Ready): ruby, a flat fill under a white label
+        commit = tok("Commit")
+        return ((lerp(commit, WHITE, 0.5), commit, WHITE) if opaque else
+                (commit, tok("Commit", 0.24), tok("TextLight")))
     if v == "Danger":
         return (tok("Danger"), tok("Danger"), dark)
     return ((tok("TextLight"), tok("TextLight"), dark) if opaque else
@@ -1230,7 +1238,8 @@ def validate(out):
     # Garrett's colour roles (2026-10-24, Docs/UI_COLOR_RULES.md): Play is the lime call to action, a spend is gold,
     # danger is fire, the rest is the neutral blue - and no button wears an element colour. KitButton.PaletteFor
     # mirrors this table.
-    for variant, token in (("Play", "Cta"), ("Cta", "Cta"), ("Purchase", "Purchase"), ("Danger", "Danger")):
+    for variant, token in (("Play", "Cta"), ("Cta", "Cta"), ("Purchase", "Purchase"), ("Danger", "Danger"),
+                           ("Commit", "Commit")):
         assert button_palette(variant, True)[1] == tok(token), f"the {variant} button is not drawn in {token}"
     for variant in VARIANTS:
         for opaque in (True, False):
@@ -1240,8 +1249,10 @@ def validate(out):
     for variant in RETIRED_VARIANTS:
         assert button_palette(variant, False) == button_palette("Default", False), f"retired {variant} must draw as Default"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
-    # Rev 7: a selection is the glowing sky blue everywhere (Docs/MENU_REDESIGN_B.md §47.1, the owner 2026-10-17).
-    assert tok("Selection")[:3] == tuple(int("3DB2FF"[i:i + 2], 16) / 255 for i in (0, 2, 4)), "Selection is not sky blue"
+    # A selection is Jade everywhere: the controlActive colour (Docs/UI_STYLE_GUIDE.md D3, 2026-11-05; was the Rev 7
+    # sky blue, which sat in the forbidden band). A commitment (Play, Ready) is Ruby and never the call to action.
+    assert TOK["Selection"] == TOK["ControlActive"], "Selection is not the Jade control colour (D3)"
+    assert TOK["Commit"] == "A600FF" and TOK["Commit"] != TOK["Cta"], "Commit is not Ruby (D3)"
     assert tile_palette(True, False)["border"] == tok("Selection"), "a selected tile's border is not the Selection blue"
     tile = out[f"{PREFAB_DIR}/KitTile.prefab"]
     assert f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n" in tile, "KitTile's selected border is not Selection"

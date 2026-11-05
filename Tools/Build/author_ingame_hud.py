@@ -265,7 +265,8 @@ S.update(kitbutton=K.kit_script("KitButton"), button=A.BUTTON, cbp=script_guid(n
 
 def ready_nodes():
     """FocusRing, Fill, Border, KeycapSlot, Label, Caption - under the Ready button's own RT."""
-    border, fillc, content = K.button_palette("Play", True)
+    # Ready is a commitment with no way back: the Ruby Commit button (Docs/UI_STYLE_GUIDE.md D3, 2026-11-05).
+    border, fillc, content = K.button_palette("Commit", True)
     ring = N("Ready/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)))
     ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
         .add("le", 114, H.le(ignore=True))
@@ -297,7 +298,7 @@ def ready_button_doc(old, ctx):
     doc = re.sub(r"\n  theme: .*\Z", "\n", doc, flags=re.S)          # re-run: drop the KitButton tail
     return (doc.rstrip("\n") + "\n"
             + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c('Ready/FocusRing', 'img')}}}\n"
-            + f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n"
+            + f"  variant: {K.VARIANTS['Commit']}\n  fill: 1\n"
             + f"  fillGraphic: {{fileID: {ctx.c('Ready/Fill', 'img')}}}\n"
             + f"  borderGraphic: {{fileID: {ctx.c('Ready/Border', 'img')}}}\n"
             + K.refs_list("contentGraphics", [ctx.c("Ready/Label", "tmp")])
@@ -1171,7 +1172,7 @@ ANIM_SETTINGS = "e1e99ce577ae9be408463160f475ed8d"
 LIST_W, ROW_HT, LIST_H = 1400, 84, 500
 HEAD_HT = 30
 SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width
-    ("PlayAgain", "Play again", "Play", "A", 6, 300),
+    ("PlayAgain", "Play again", "Commit", "A", 6, 300),   # launches the next game: no way back, Ruby (D3)
     ("Continue", "Continue", "Play", "A", 6, 300),
     ("MainMenu", "Main menu", "Default", "B", 5, 260),
     ("LeaveLobby", "Leave lobby", "Default", "B", 5, 260),
@@ -1187,7 +1188,8 @@ S.update(header=script_guid("Assets/_Scripts/UI/ScoreboardTeamHeader.cs"),
          roster=script_guid("Assets/_Scripts/UI/Elements/RematchVoteRoster.cs"))
 # Docs/UI_COLOR_RULES.md (Garrett, 2026-10-24): no element colours and no element rims anywhere in the UI, and the
 # selection blue only on what is actually selected. A row's border is a still hairline (TextLight for you, SurfaceDark
-# for the rest), PLAY AGAIN is the lime call to action, MAIN MENU / LEAVE LOBBY are neutral, the reward strip is plain.
+# for the rest), PLAY AGAIN is the Ruby commit (it launches a game, Docs/UI_STYLE_GUIDE.md D3), CONTINUE the lime call to
+# action, MAIN MENU / LEAVE LOBBY are neutral, the reward strip is plain.
 NO_ROW_RIM = "{fileID: 0}"
 
 
@@ -1908,7 +1910,7 @@ def validate(files):
     view = next(f for f, d in docs.items() if f"guid: {S['hudview']}" in d)
     btn = re.search(r"  readyButton: \{fileID: (-?\d+)\}", docs[view]).group(1)
     assert f"guid: {S['kitbutton']}" in docs[btn], "the Ready button is not a KitButton"
-    assert f"  variant: {K.VARIANTS['Play']}\n" in docs[btn], "the Ready button is not the Play variant"
+    assert f"  variant: {K.VARIANTS['Commit']}\n" in docs[btn], "the Ready button is not the Ruby Commit variant (D3)"
     assert "propertyPath: m_text\n      value: A\n" in cv, "the Ready button has no A keycap"
     cbp = [d for d in docs.values() if f"guid: {S['cbp']}" in d and f"m_GameObject: {{fileID: {re.search(r'm_GameObject: {fileID: (-?[0-9]+)}', docs[btn]).group(1)}}}" in d]
     assert len(cbp) == 1 and "  activationButton: 6\n" in cbp[0], "the Ready button no longer answers the pad's A (South)"

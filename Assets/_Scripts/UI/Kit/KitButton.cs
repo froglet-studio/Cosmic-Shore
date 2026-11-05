@@ -30,6 +30,10 @@ namespace CosmicShore.UI
         Space = 8,
         /// <summary>Retired, as <see cref="Mass"/>. Draws as <see cref="Default"/>.</summary>
         Time = 9,
+        /// <summary>No way back: Play (it launches a game) and Ready. Ruby, the Commit token (Docs/UI_STYLE_GUIDE.md D3,
+        /// 2026-11-05); a flat fill with a light label, no gradient. A call to action the player can still change stays
+        /// <see cref="Cta"/> or <see cref="Play"/>.</summary>
+        Commit = 10,
     }
 
     /// <summary>§10.1: opaque on popups and wherever a button sits on a line, transparent everywhere else.</summary>
@@ -138,8 +142,8 @@ namespace CosmicShore.UI
             if (playGradient) playGradient.enabled = v == KitButtonVariant.Play && opaque;
         }
 
-        /// <summary>The variant's colours by role (Docs/UI_COLOR_RULES.md): neutral blue, lime for the call to action,
-        /// gold for a spend, fire for danger.</summary>
+        /// <summary>The variant's colours by role (Docs/UI_COLOR_RULES.md, Docs/UI_STYLE_GUIDE.md): neutral blue, lime
+        /// for the call to action, ruby for a commitment (Play, Ready), gold for a spend, fire for danger.</summary>
         private Palette PaletteFor(KitButtonVariant v, bool opaque)
         {
             var dark = Token(UIColorToken.SurfaceBlack);
@@ -169,6 +173,15 @@ namespace CosmicShore.UI
                     return opaque
                         ? new Palette(Color.Lerp(cta, Color.white, KitGradient.DefaultLighten), cta, dark)
                         : new Palette(cta, Token(UIColorToken.Cta, PlayTintAlpha), cta);
+                }
+                case KitButtonVariant.Commit:
+                {
+                    // No way back (Play, Ready): Ruby. Opaque, a flat Ruby fill under a white label, its border the fill
+                    // halfway to white; transparent, a Ruby border over Ruby at the Play tint with a light label.
+                    var commit = Token(UIColorToken.Commit);
+                    return opaque
+                        ? new Palette(Color.Lerp(commit, Color.white, KitGradient.DefaultLighten), commit, Color.white)
+                        : new Palette(commit, Token(UIColorToken.Commit, PlayTintAlpha), Token(UIColorToken.TextLight));
                 }
                 case KitButtonVariant.Danger:
                     return new Palette(Token(UIColorToken.Danger), Token(UIColorToken.Danger), dark);

@@ -29,9 +29,10 @@ MonoBehaviour:
   elementMass: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   elementSpace: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
   elementTime: {r: 0.37254903, g: 0.9411765, b: 0.78431374, a: 1}
-  selection: {r: 0.2392157, g: 0.6980392, b: 1, a: 1}
+  selection: {r: 0, g: 0.8313726, b: 1, a: 1}
   selectionMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
   selectionBarMaterial: {fileID: 2100000, guid: 63699a177466fecef5da1f6829147be5, type: 2}
+  commit: {r: 0.6509804, g: 0, b: 1, a: 1}
   hoverSheenSprite: {fileID: 21300000, guid: d0e7bd0bbafbaffb3f2c73a43ff6b7fc, type: 3}
   hoverSheenSeconds: 0.52
   hoverSheenAlpha: 0.16
