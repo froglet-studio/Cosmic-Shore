@@ -3991,6 +3991,14 @@
       "h": 1641,
       "page": "phone",
       "title": "Rev 56 Portrait - Home, Arcade, Configure, Hangar, sign-in and the finish held upright, and how the game tells a phone (and portrait) apart"
+    },
+    "R57Compare.dc.html": {
+      "x": 0,
+      "y": 16661,
+      "w": 3226,
+      "h": 6959,
+      "page": "phone",
+      "title": "Rev 57 Compare - sign-in, Home, Arcade, Configure, Hangar, in game and the finish, on PC, phone landscape and phone portrait"
     }
   },
   "createdOnFiles": {
@@ -4111,6 +4119,8 @@
     "sec-rev56",
     "sec-rev56-2",
     "sec-rev56-3",
+    "sec-rev57",
+    "sec-rev57-2",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4180,7 +4190,8 @@
     "rev53",
     "rev54",
     "rev55",
-    "rev56"
+    "rev56",
+    "rev57"
   ],
   "notes": {
     "hud_end": {
@@ -6472,6 +6483,45 @@
         "border-radius": "0px 40px 40px 0px"
       },
       "page": "phone"
+    },
+    "rev57": {
+      "kind": "title1",
+      "text": "Rev 57 - One UI, three layouts: every screen on PC, phone landscape and phone portrait, side by side",
+      "x": 0,
+      "y": 16261,
+      "w": 240,
+      "maxW": 10038,
+      "page": "phone"
+    },
+    "sec-rev57": {
+      "kind": "rect",
+      "x": -160,
+      "y": 16101,
+      "w": 5179,
+      "h": 7679,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 0px 3px 3px",
+        "border-radius": "40px 0px 0px 40px"
+      },
+      "page": "phone"
+    },
+    "sec-rev57-2": {
+      "kind": "rect",
+      "x": 5019,
+      "y": 16101,
+      "w": 5179,
+      "h": 7679,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 0px",
+        "border-radius": "0px 40px 40px 0px"
+      },
+      "page": "phone"
     }
   },
   "order": [
@@ -6959,7 +7009,8 @@
     "R55ConfigureArena.dc.html",
     "R55Hangar.dc.html",
     "R55Notes.dc.html",
-    "R56Portrait.dc.html"
+    "R56Portrait.dc.html",
+    "R57Compare.dc.html"
   ],
   "pages": [
     {

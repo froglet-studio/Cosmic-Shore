@@ -6058,3 +6058,19 @@ that play upright, `PhoneRect` gains a portrait pose, each screen's generator wr
 
 **The 512-file limit:** the canvas is at 487 of its files plus the type's; a new round of several boards will not fit
 until older boards are folded or removed (the board owner's call, `/frogma` section 5).
+
+## 131. Rev 57: every screen on PC, phone landscape and phone portrait, side by side (2026-11-05, for review)
+
+**Asked** (Shombith): "give me another design of all screens side by side you proposing after this change: PC vs Phone
+Portrait and Phone Landscape".
+
+**On the canvas:** the Phone tab, section "Rev 57 - One UI, three layouts", one board (`R57Compare`; the canvas is at
+its file limit): seven rows (sign-in, Home, Arcade, Configure, Hangar, in game, the finish) by three columns - PC,
+console and iPad at 1920 x 1080 as shipped (drawn simplified from the built screens), phone landscape at 974 x 450
+(Rev 53 and Rev 55, frozen at their first state) and phone portrait at 450 x 974 (Rev 56). Shown at a common height so
+the layouts compare, not to physical scale. Each row says what moves between the three: the nav band becomes the rail
+(landscape) or a bottom tab bar (portrait); the party panel, the controls list and the abilities become sheets on a
+phone; games run 7, 4, then 2 across; the commit (Start game, Play again) stays Ruby and moves to the thumb. In game
+stays landscape; a game played upright gets its own portrait HUD when one is picked.
+
+Nothing new to approve here: it puts Rev 53, 55 and 56 beside the PC screens they come from.
