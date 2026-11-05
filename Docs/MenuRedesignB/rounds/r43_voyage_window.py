@@ -3,9 +3,9 @@
 right with three levels (the voyage, its Ark crew, its story), and Saga | Voyages | Episodes on LB / RB.
 Six options A-F, five screens each, plus Compare and Notes. Writes the board files into <root>/project/.
 
-    python3 Docs/MenuRedesignB/rounds/r43_voyage_window.py <root> 43     (root: the scratch folder `design_board.py plan` wrote)
+    python3 Docs/MenuRedesignB/rounds/r43_voyage_window.py <root> 43     (root: the scratch folder `frogma.py plan` wrote)
 
-The boards it wrote are on the Froglet Design Board's Menu Redesign C tab (section 113 of Docs/MENU_REDESIGN_B.md); kept
+The boards it wrote are on the Frogma's Menu Redesign C tab (section 113 of Docs/MENU_REDESIGN_B.md); kept
 so a follow-up round on the picked option starts from the same pieces. MAP and EDGE are the Voyage Board
 (Docs/Voyages/VoyageBoard/voyage-board.html) rendered at 2x with Playwright and uploaded to the canvas's asset store."""
 import html

@@ -63,7 +63,7 @@ MonoBehaviour:
   - {fileID: 2800000, guid: a82c3277cc8d45d1b9bfb211acfd06e5, type: 3}
   - {fileID: 2800000, guid: 54ce7ba5d021482a950540e57c8f4283, type: 3}
   - {fileID: 2800000, guid: ffc77f16fb7e42d38d229aa1081a45a5, type: 3}
-  colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
+  colorSet: {fileID: 11400000, guid: 116ff08ebc0c4e6db955bab003a86ce4, type: 2}
   words:
     elementNames:
     - Charge

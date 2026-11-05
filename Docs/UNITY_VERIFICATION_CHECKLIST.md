@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Nocturne is the default colour set; the previous default is Photic (`claude/nocturne-colour-set-lpulng`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `OriginalColorSetSO` renamed `PhoticColorSetSO` (guid kept); `NocturneColorSetSO` is now named by
+`ThemeManagerDataContainer.ColorSet`, `ThemeManager.prefab` and the Ark, Codex and two Configure prefabs. C# changes are
+comments and three edit-mode tests' palette paths. Not compiled (no .NET SDK in the session, so `unity_refcompile` was
+skipped); the `ShieldedSignalColorTests` assertions were replayed in Python against both palettes and pass. Garrett
+played Nocturne in the editor on 2026-11-03 before the switch.
+
+1. Enter any arena mode in each of Jade, Ruby and Gold. **Pass:** prisms draw Nocturne (Jade: lagoon rims on plum faces);
+   no magenta "missing material" prisms.
+2. Menu_Main: open the Ark, Codex and Configure screens. **Pass:** domain tints are Nocturne's, nothing pink or blank.
+3. Fly the Squirrel, Angler and Butterfly. **Pass:** the HUD's shielded-signal icons (now dark: Jade `#552345`, Ruby
+   `#385060`, Gold `#53416C`) are still legible on the HUD row (`Docs/PALETTE.md`, the open effects).
+4. Test Runner, EditMode: `ShieldedSignalColorTests`, `ElementalCrystalShadeTests`, `CrystalElementPlatesTests`. **Pass:** green.
+
 ### 🔴 Auto-capture start: the Editor.log scan runs off the main thread (`Ys-bleeding-edge`, 2026-11-03) — NOT EDITOR-VERIFIED
 
 **What landed:** `BurstProbe.ReportWithoutLog` / `ScanLogAsync`; `DiagnosticsHUD.RunCapture` joins the log after the diag window;
@@ -2539,7 +2554,7 @@ New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_m
 
 **Verify in editor:**
 1. Run `ElementalCrystalShadeTests` and `OmniCombineTests` (EditMode): all pass.
-2. Open `OriginalColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
+2. Open `PhoticColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
 3. Play any mode with free crystals (or kill a lifeform of each element): a free Mass crystal is a visibly darker,
    deeper green than the omni; Space reads cooler and Time warmer; Charge reads yellow-green. All still read as lime.
 4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
@@ -5155,7 +5170,7 @@ T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime je
   rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
   in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
 - **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
-  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  `PhoticColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
   right.
 
 Verify in the Editor:
@@ -21020,3 +21035,81 @@ says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
 - [ ] Caught, the orbit turns more slowly, and the ring stays lime long enough to release in it most times (60-120 deg round).
 - [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
 - [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).
+
+## 🔴 Brittle Star level-5 upgrades and the ring explosion's core (2026-11-03, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `unity_refcompile` player + editor 0 errors in
+project code, `/ship` gates green (incl. `author_brittlestar_assets.py --check`), the element ability table reads
+`L5 gates wired 4/4`. `BrittleStarTests` gained three rule tests (written, not run: no Unity here). Give the hull level 5
+in an element (the Toybox's Vessel Changer, or a starting element) to try each:
+
+1. **Mass 5, Shielded Trail.** Cruise and Creation Mode: every block laid (base trail and the five corner trails) is
+   shielded; overheated in Space Mode the danger prisms are still danger prisms. Below Mass 4 the trail is plain again.
+2. **Space 5, Explosive Rounds.** Fire into a wall: each stopped round breaks the prisms within 10 u round it. Watch the
+   frame time with all five guns held into dense mass (bursts are capped at 12 a frame).
+3. **Charge 5, Thrown Sabers.** Charge Mode, hold RT (sabers), press LT: the five sabers fly off along their lines
+   (centred stick converges them, pushed fans them), tumbling, cutting prisms and striking rival hulls; new cords regrow
+   after ~1.5 s. With RT released (whips), LT throws the ring as before.
+4. **Time 5, Speed Roll.** Speed Mode: the right stick's x rolls the hull, its y pulls the nose; the ring stops turning
+   with the stick while in Speed Mode. Check the roll direction and the pull direction feel right (and Invert Y).
+5. **Ring explosion core (any level).** Throw the ring (LT with a spare) into a cluster: everything within 40 u of the
+   blast breaks at once, then the disk sweeps out in the ring's plane as before.
+6. **The level-5 card states (icon_kit, same branch).** With each upgrade live, its card changes: Charge, RT pulled, the
+   sabers drawn thrown out past their turrets, tumbling; Mass, the trail blocks drawn as shielded prisms (two close triangles);
+   Space, a burst where the rounds meet (the rounds swap to copies cleared round it); Time, in Speed Mode, the trail
+   swept round a turn under a roll arc. Below level 4 each card goes back to its plain state. Check that no new part
+   flashes at full alpha before the HUD's first frame, and that a vessel swap keeps a live upgrade's state.
+
+## 🟡 No drift slide: a drift never moves the hull on screen (2026-11-02, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/no-drift-slide`. Compiled with `unity_refcompile` (player + editor, 0 project errors); the edit-mode
+tests were compiled, not run (the Prisma runner does not build on bleeding-edge today: 63 engine gaps in unrelated files).
+
+1. **Run the edit-mode tests** `CameraFeelTests` (all): `ADrift_NeverMovesTheHullOnScreen` and `ADrift_StillRumbles`
+   pass, and the rest still pass.
+2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
+   its end; only a faint rumble shows. Then a Dolphin drift: same.
+3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
+
+## 🔴 Profile Colour sets tab and the colour-set repaint (Rev 51 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sleepy-dirac-ytn1ph`; Docs/MENU_REDESIGN_B.md section 123. Compiled with `unity_refcompile` (0 project
+errors); `author_menu_profile.py`, `author_colour_set_catalog.py` and `author_load_veil_content.py` pass `--check` and
+`--self-test`. Not opened in the editor; the new edit-mode tests were compiled, not run.
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` (all four) and `ShieldedSignalColorTests`.
+2. **Open Menu_Main, open the Profile (the Home pilot or Y).** RECORD and COLOUR SETS show beside "Your pilot", RECORD
+   underlined; the record looks exactly as before.
+3. **Press COLOUR SETS.** Three cards (Nocturne Equipped with the lime tick, Photic, Dart Frog Owned), each with four
+   prism swatches; the preview shows Nocturne at three tiers plus the vessel colour, "Equipped - ..." under it, no APPLY.
+   The record underneath takes no clicks or pad focus.
+4. **Pick Dart Frog, press APPLY.** The cell-change loading screen comes up with "Changing colour set", DART FROG and its
+   line, the four steps lighting in turn, then lifts. The menu cell's prisms and crystals are now Dart Frog's the moment
+   the veil lifts (mint over bronze on Jade, and so on), with no restart, and the card says Equipped (section 124: the
+   prism entities and crystal tints are re-stamped).
+4b. **Press LB and RB on a pad** in the Profile: they step between RECORD and COLOUR SETS. Open the favourite-pilot
+   picker: LB / RB step its vessels, not the tabs.
+5. **Restart Play mode.** The game starts in Dart Frog (the pick is saved). Stop Play: `ThemeManagerDataContainer.asset`
+   still names Nocturne in the inspector, and `git status` shows no change to it.
+6. **Fly a match in Dart Frog.** Prisms, trails, the HUD's domain colours, the Configure pedestals and the Ark's squads
+   wear it. Note what does not (a vessel hull keeps Photic: its materials read Photic by path).
+7. **Leave the Profile on COLOUR SETS, go Home, open it again.** It opens on RECORD.
+
+## 🔴 Profile Colour sets: the Showroom on the real cell (Rev 54 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sleepy-dirac-ytn1ph`; Docs/MENU_REDESIGN_B.md sections 124 and 126. It replaces the Rev 51 A layout in
+the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_refcompile`; not opened in the editor.
+
+1. **Open the Profile and press COLOUR SETS (or RB).** The veil, the pilot card and the record go, and the menu cell
+   fills a framed window. "1 of 3 / Wearing Nocturne", NOCTURNE large, its line and four pigment pairs; the rail shows
+   three tiles with Nocturne ticked; Equipped where APPLY would be.
+2. **Move the pad onto Dart Frog (or press >).** The cell's prisms and crystals turn Dart Frog at once, the name and
+   pigments change, APPLY appears. Press < back to Nocturne: the cell returns.
+3. **Pick Dart Frog, press LB (or the RECORD tab), or B to leave.** The cell goes back to Nocturne, and the record and
+   pilot card return.
+4. **Pick Dart Frog and press APPLY.** The loading screen reads "Changing colour set" and lifts on Dart Frog. The tile
+   tick moves, Equipped shows, and leaving now keeps Dart Frog. Restart Play: the game starts in Dart Frog.
+5. **Check the words fit:** the 88-point name for the longest set name, and four pigment pairs on one row.
+6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
+   page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
+

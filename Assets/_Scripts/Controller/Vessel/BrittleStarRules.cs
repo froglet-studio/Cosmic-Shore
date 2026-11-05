@@ -224,5 +224,38 @@ namespace CosmicShore.Gameplay
             float reach = radius + extentAcross;
             return (offset - normal * along).sqrMagnitude <= reach * reach;
         }
+
+        // ------------------------------------------------------------------ level-5 upgrades (Shombith, 2026-11-03)
+
+        /// <summary>
+        /// CHARGE L5, Thrown Sabers: can LT cut the five cords off and throw them? Only with the upgrade, in Charge Mode,
+        /// with the cords held RIGID - RT held (the replicated press, so every peer agrees; the analog depth is the
+        /// owner's alone) and the cords fully grown out - and not while new ones are still waiting to regrow.
+        /// </summary>
+        public static bool CanThrowSabers(bool upgrade, bool chargeOn, bool triggerHeld, float cordsOut01,
+                                          float regrowRemaining) =>
+            upgrade && chargeOn && triggerHeld && cordsOut01 >= 0.99f && regrowRemaining <= 0f;
+
+        /// <summary>
+        /// TIME L5, Speed Roll: the roll (x) and pull (y) rates, degrees per second, the right stick asks for. Nothing
+        /// inside the deadzone; outside it each axis is proportional to its own deflection.
+        /// </summary>
+        public static Vector2 SpeedRollRates(Vector2 stick, float deadzone, float rollDegreesPerSecond,
+                                             float pullDegreesPerSecond)
+        {
+            if (stick.sqrMagnitude <= deadzone * deadzone) return Vector2.zero;
+            stick = Vector2.ClampMagnitude(stick, 1f);
+            return new Vector2(stick.x * Mathf.Max(0f, rollDegreesPerSecond), stick.y * Mathf.Max(0f, pullDegreesPerSecond));
+        }
+
+        /// <summary>Does a burst of <paramref name="radius"/> reach a body at <paramref name="offset"/> from its centre
+        /// whose own half-extent is <paramref name="extent"/>? (The ring explosion's core and Space L5's explosive
+        /// rounds.)</summary>
+        public static bool SphereReaches(Vector3 offset, float radius, float extent)
+        {
+            if (radius <= 0f) return false;
+            float reach = radius + Mathf.Max(0f, extent);
+            return offset.sqrMagnitude <= reach * reach;
+        }
     }
 }

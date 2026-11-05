@@ -12,9 +12,37 @@ actual defect. Read §3 before touching any `*BlockColor` field.
 
 | | |
 |---|---|
-| Active asset | `Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset` (guid `8d1c1bdcb636a424d9c54fbd1afc952f`) |
-| Wired at | `ThemeManagerDataContainer.asset` → `ColorSet` |
+| Active asset | `Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset` (guid `116ff08ebc0c4e6db955bab003a86ce4`), the default since 2026-11-03 |
+| Wired at | `ThemeManagerDataContainer.asset` → `ColorSet`, and directly in `ThemeManager`, `ArkView`, `CodexView`, `ConfigureDomainColumn` and `ConfigureSeatPedestal` |
+| Written by | `Tools/Build/author_colour_set_assets.py`, from `Docs/VesselModels/colour_sets.json` and the tuning in Photic. Never hand-edit it; `--check` is the drift gate. |
 | Consumer | `ThemeManager.GenerateDomainMaterialSet` (per-domain material set) + `GameToastAPI.ColorSet` (domain name tinting) |
+
+**`PhoticColorSetSO`** (guid `8d1c1bdcb636a424d9c54fbd1afc952f`; named `OriginalColorSetSO` until 2026-11-03) was the
+default until then. It is no longer wired to the game, but it is still load-bearing: every number this doc quotes as
+"shipped" or "authored" is Photic's, Nocturne's fields take their brightness, alpha and tier whiteness from it, and
+`colour_domains.py`, `kite_mote_colors.py`, `vessel_colors.py`, the vessel studio's `domain_colors.py` and
+`render_card_backgrounds.py` still read it. So a tuning edit goes into Photic, then re-run the writer to carry it into
+the sets. A hue belongs in `colour_sets.json`.
+
+Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
+
+- **HUD shielded signal.** `GetShieldedSignalColor` reads the shielded FACE, so it now paints Jade `#552345`, Ruby
+  `#385060` and Gold `#53416C` (HSV value 0.33-0.42, against Photic's 0.60-0.73). The Squirrel, Angler and Butterfly HUDs
+  use it. Check that those icons stay legible.
+- **Not moved by the switch, because they read Photic:** the vessel hull materials (`vessel_colors.py`), the rendered card
+  art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and the Amoebius launcher's three
+  accent colours (`Port/src/CosmicShore.Launcher/Neon.cs`, kept matched to Photic by `domain_colors.py --check`).
+  Amoebius itself follows the live palette since 2026-11-05: its player loads whatever `ThemeManagerDataContainer.ColorSet`
+  names, and its client windows read that asset by guid (`SkimRaceTheme.CreateColorSet`, `LivePaletteTests`).
+- **The icon kit's shielded colours are a hand table** (`Tools/Build/icon_kit/states.py` `SHIELDED`, light blues and
+  golds that predate the switch), so its states sheets and the Fleet Codex's L5 art (`fleet_codex.py` `L5_SHIELDED`)
+  no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
+  `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
+
+- **Nocturne's Gold domain is in the forbidden band.** `#FF8F11` sits between Gold and Fire on the colour chart
+  (`colour_domains.py classify '#FF8F11'`), where Photic's `#FFA700` rested inside Gold. The style guide's tokens read
+  the live palette since 2026-11-05 (`Tools/Build/froglet_style.py`, `Docs/UI_STYLE_GUIDE.md`) and report it as open
+  rather than failing; moving the colour or reshaping Gold is Garrett's decision.
 
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
@@ -146,7 +174,7 @@ bloom contribution rises with the max channel only up to 0.5 and is **flat above
 Two consequences, both load-bearing:
 
 1. **§3's "channels above 1.0 bloom" is FALSE in gameplay.** 56 of the 86 colours authored in
-   `OriginalColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
+   `PhoticColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
    flattened to the same bloom. Raising the clamp is therefore not a crystal change — it re-lights
    the entire palette — and is deliberately **not** done here. See §7.
 2. **Within the clamp, extra bloom is bought with bright AREA, not intensity.** `DarkCTA` was
@@ -245,7 +273,7 @@ actually *transitioning*, and cheaper than the cloned-material lerp it runs alon
 ### 2.4 A crystal colour is NOT a domain's UI colour — `GetDomainSignalColor` (2026-08-17)
 
 **`DullCrystalColor` is authored `(0, 0, 0)` on Jade, Ruby AND Gold in the live
-`OriginalColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
+`PhoticColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
 crystal*: §2.2 established that at the crystal shaders' fresnel power the dull colour paints ~93% of
 the surface, so a near-black body with a bright fresnel rim is what makes a faceted domain crystal
 read as a dark gem with a lit edge.
@@ -279,7 +307,7 @@ separate by HUE from the lit prisms around it, and brightness alone cannot do th
 §2.2's "dull is the body, bright is only the rim" is a statement about a **crystal**, and it is
 what makes `DarkCTA` the right read *on a crystal*. It is the wrong read on anything that does not
 compose the pair. A **prism** does not: it takes one colour. So a prism painted from `DarkCTA`
-alone renders the shipped `OriginalColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
+alone renders the shipped `PhoticColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
 not as the free-pickup lime a player has learned — the same shape of mistake as §2.4's, reached
 from the other pair.
 
@@ -313,7 +341,7 @@ The danger tier has **no colour fields of its own** (§ "The danger tier borrows
 `EnvironmentColors.Danger` rim, and the RIM is the half that says dangerous. So that is what the
 accessor returns, normalised the way the other two are:
 
-| source | shipped `OriginalColorSetSO` value |
+| source | shipped `PhoticColorSetSO` value |
 |---|---|
 | `EnvironmentColors.Danger` raw | (1.4979, 0.00585, 0.00685, **a: 0**) |
 | `GetDangerSignalColor()` | (1.0, 0.0039, 0.0046, a: 1) |
@@ -408,7 +436,7 @@ as Jade — is 41° away in the other direction:
 So a *correct* Jade card and the sentinel bug are indistinguishable at 60 px, and the only thing that
 separates "this is Jade" from "this never resolved" is that an unresolved read renders **white**. The
 icon is honest — Jade's shielded mass really is blue, on every palette that authors it (`CosmicWave`
-and `Pastel` author alpha 0 and are correctly refused, so `OriginalColorSetSO` is the only live answer
+and `Pastel` author alpha 0 and are correctly refused, so `PhoticColorSetSO` is the only live answer
 and `ThemeManager` never swaps it). If a card should say WHICH DOMAIN rather than WHAT THE MASS IS,
 that is `GetDomainSignalColor` and a different promise.
 
@@ -1177,7 +1205,7 @@ other tiers first, then solve the channels.
 
 Machine validation covers structure and colorimetry; only a playtest covers *looks right*:
 
-1. Pull, let Unity reimport `OriginalColorSetSO.asset` (if nothing changes visually,
+1. Pull, let Unity reimport `PhoticColorSetSO.asset` (if nothing changes visually,
    suspect a stale Library and Reimport the asset before suspecting the values).
 2. Get shielded prisms on screen. Verified producers, easiest first:
    - **Any cell with lifeforms** (Menu_Main freestyle) — every flora/fauna **health

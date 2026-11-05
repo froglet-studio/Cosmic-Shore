@@ -7,6 +7,11 @@ much, not too fancy". After flying the Squirrel (same day): hits were right, but
 should slide further off the centre, build "in an accelerated way, not a linear move", and the pilot should feel the
 G-force in their neck, more or less by vessel: a bigger, heavier hull's pilot feels less, an agile one's more.
 
+**A drift never moves the hull on screen (Garrett, 2026-11-02).** The drift slide built for that ask was removed: "these
+sort of features are disruptive to the players sense of their reference frame, position, speed, etc. Our game is truly
+3d and usually does its best to not have an 'up' ... we do things to help players, but we can't do things like drift
+displacement that hinder them." A drift is felt as a rumble only; test `ADrift_NeverMovesTheHullOnScreen` holds it.
+
 Every hull in the fleet flies `CameraMode.FixedCamera` (measured 2026-10-25: all 17 `CameraSettingsSO` assets), so the
 camera was hard-attached: the hull sat on one pixel whatever it did. Before this, five systems called
 `CustomCameraController.Shake` (the Serpent's sniper, the Rhino's sword, the Thresher, the Astro League ball and
@@ -21,7 +26,7 @@ smooth from the clean pose, not from a shaken one. `CameraFeelTests.TheFeelComes
 
 | Part | What drives it | What you see |
 |---|---|---|
-| **G-force** | the framed point's ACCELERATION and a drift's SLIDE (never its speed), on one spring | a boost drops the camera back so the hull pulls ahead; a turn swings it outside so the hull leads into the turn; a drift slides the hull out across the frame; the same G tilts the view like the pilot's neck (thrown back by a boost, leaned outward in a turn or slide); a steady cruise frames exactly as before |
+| **G-force** | the framed point's ACCELERATION (never its speed, never a drift's slide), on one spring | a boost drops the camera back so the hull pulls ahead; a turn swings it outside so the hull leads into the turn; the same G tilts the view like the pilot's neck (thrown back by a boost, leaned outward in a turn); a steady cruise and a drift frame exactly as before |
 | **Kicks** | one damped spring every one-off event nudges | a skim pushes away from the prism, a hit shoves and tilts, a shot recoils, a crystal lifts |
 | **Shake** | trauma 0..1, felt squared, drains linearly | hits and blasts |
 | **Rumble** | a level 0..1, felt linearly | a fine wobble while skimming (it builds with each prism and fades) and while drifting |
@@ -38,28 +43,27 @@ about 0.58 of the follow distance, so a fraction f moves the hull about f / 0.58
 degrees. A kick's number is its **true peak**: the impulse that reaches it through the spring's damping is worked out
 in `CameraFeel.Kick` (`PeakFactor`), so retuning the spring does not retune every event.
 
-### G lags acceleration and slide, never speed
+### G lags acceleration, never speed
 
 The camera is modelled as a mass on a spring riding the hull: the framed point's velocity is estimated from its motion
 (25 ms smoothing) and its change drives the G spring as a pseudo-force. A constant acceleration settles at a constant
 lag (`maxLag` x drive), a constant velocity at none. The acceleration is normalised by the follow distance
 (`fullLagAcceleration` is in follow distances per second squared), so a boost reads alike on every hull.
 
-**Why drifts needed their own input.** A drift locks the hull's course while its nose swings, so its real
-acceleration is near zero: the lag alone never saw a drift, which is why the first version's drift (a 2% lean on a
-first-order ease) read as barely there. The slide (the sine of the slip angle, as a share of `driftFullSlipDegrees`
-35) is now a second rest point on the same spring: `driftSlide` 0.08 of the follow distance at a full drift, four
-times the first version's offset. The camera is left behind toward the side the hull slides FROM, so the hull slides
-out across the frame. It is scaled by speed (`driftFullSpeed`, 4 follow distances per second, through a smoothstep),
-so a drift at a crawl stays gentle.
+**A drift does not feed the G.** A drift locks the hull's course while its nose swings, so its real acceleration is
+near zero and the lag leaves the hull where it was on screen. That is on purpose: from 2026-10-25 to 2026-11-02 a
+drift's slide was a second rest point on this spring (`driftSlide` 0.08 of the follow distance), and it was removed
+because displacing the hull hindered the pilot's read of position, speed and orientation in a game with no "up". The
+drift's slip (the sine of the slip angle, as a share of `driftFullSlipDegrees` 35, scaled by speed through
+`driftFullSpeed`) now drives only the rumble.
 
 **Not a linear move.** The spring (`inertiaFrequency` 1.3 Hz, `inertiaDamping` 0.7) starts from still, gathers speed,
 swings about 4% past and settles, the way a head is thrown and caught; the first version eased in along a decaying
-exponential, which starts at full speed. Lag and slide together round off toward `maxGOffset` 0.14 (tanh), never
+exponential, which starts at full speed. The lag rounds off toward `maxGOffset` 0.14 (tanh), never
 stopping at a wall.
 
 **The pilot's neck.** The same G tilts the view: `gPitch` 1.5 degrees nose-up at the full forward G (a boost throws
-the head back; a stop tips it forward), `gRoll` 3.5 degrees leaned outward at the full sideways G (a turn or a slide).
+the head back; a stop tips it forward), `gRoll` 3.5 degrees leaned outward at the full sideways G (a turn).
 Read against the fleet's full G, so a hull that is pushed less also leans less.
 
 The springs step in closed form (`CameraFeel.Spring`), exact at any frame rate: a kick peaks at the same height at
@@ -82,7 +86,7 @@ player's camera feels the player's ship and a spectator's camera feels the ship 
 | A blast catches the vessel | `ExplosionImpactor.AcceptImpactee`, under the one-blast-one-victim ledger | `Blast` |
 | A round strikes the vessel | `ProjectileImpactor.AcceptImpactee`, after the own-domain rule | `Struck`, at most one per `struckMinInterval` (0.15 s) so a stream of rounds rattles without pinning the shake |
 | The vessel fires | `Gun.FireGun` and `Gun.FireRingBlast` (one per trigger, not per spike) | `Shot`: recoil back and nose up |
-| The vessel drifts | read each frame from `IVesselStatus.IsDrifting` / `Course` | the slide (G spring) and rumble |
+| The vessel drifts | read each frame from `IVesselStatus.IsDrifting` / `Course` | rumble only (never a displacement) |
 | The vessel accelerates | read each frame from the framed point | the lag (G spring) |
 
 ### Different objects, different weight
@@ -138,8 +142,8 @@ Three things set how much G a pilot feels, so no two hulls feel the same:
 ## Tuning
 
 Select `Assets/Resources/CameraFeelConfig.asset` and change it in play mode: the controller reads the config and the
-hull's row every frame, so a change shows at once (the hull's size is measured once per follow). More drift: raise
-`driftSlide` (and `maxGOffset` with it, or the slide rounds off); a snappier or lazier G: `inertiaFrequency`; more or
+hull's row every frame, so a change shows at once (the hull's size is measured once per follow). More drift rumble:
+raise `driftRumble` (a drift never moves the hull, so there is no slide to raise); a snappier or lazier G: `inertiaFrequency`; more or
 less overshoot: `inertiaDamping` (1 = none); more neck: `gRoll` / `gPitch`; less difference between big and small
 hulls: lower `sizeGExponent`. To turn a part off, set its amplitude to 0 (`breathAngle`,
 `rumbleAngle`, `maxLag`, ...); to turn all of it off, untick `feelEnabled`. If the whole thing reads too strong or too
@@ -168,3 +172,4 @@ weak, change `strength` before any single number.
 | 2026-10-25 | First version (Yash's ask): six parts, the event table, per-hull inertia and weight, the accessibility setting wired, closed-form springs. `Ys-bleeding-edge`. |
 | 2026-10-25 | After Yash flew the Squirrel ("hits good, drift too little, not linear, feel the G in the neck, by size and agility"): inertia and drift lean became one **G-force** spring fed by acceleration AND slide (`driftSlide` 0.08, four times the old offset, at drift speed), damping 0.7 for an accelerating start and a small overshoot; neck tilt from the same G (`gPitch` 1.5, `gRoll` 3.5); hull size measured from the model (bigger: less G, slower); the per-hull table became character (`gForce`) on top of size. `driftRoll`, `driftYaw`, `driftOffset`, `driftEase` retired. |
 | 2026-10-27 | Garrett: the slide's return was jerky and broke the Squirrel's flow. The slide's rest point is now eased before the G spring (`driftSlideIn` 3/s, `driftSlideOut` 1.2/s), so a drift ending glides the hull home (peak return speed about a quarter of before) and never swings past centre; the build keeps its accelerating start. Drift screen rumble `driftRumble` 0.5 -> 0.15. Test `ADriftEnding_GlidesHome_WithoutSnappingOrSwingingPast`. |
+| 2026-11-02 | Garrett: the drift slide removed. Displacing the hull in a drift hinders the pilot's sense of reference frame, position and speed in a game with no "up", so a drift now only rumbles. `driftSlide`, `driftSlideIn`, `driftSlideOut` retired; the four slide tests replaced by `ADrift_NeverMovesTheHullOnScreen` and `ADrift_StillRumbles`. Affects Yash's camera feel. |

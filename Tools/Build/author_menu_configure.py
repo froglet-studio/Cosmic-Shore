@@ -112,7 +112,7 @@ PACKAGE = A.PACKAGE | {RAW_IMAGE, M.RECT_MASK_2D, GRID_LAYOUT}
 
 # --- data assets (read off the shipped wiring the rebuild replaces) ------------------------------
 INTENSITY_VAR = "490485287c38a2f4e9178566394efd69"       # the IntVariable every intensity button writes
-COLOR_SET = "8d1c1bdcb636a424d9c54fbd1afc952f"           # ThemeManagerDataContainer.ColorSet
+COLOR_SET = "116ff08ebc0c4e6db955bab003a86ce4"           # ThemeManagerDataContainer.ColorSet
 VESSEL_PREFABS = "05f8f1205bd90e14b8e59cf78da1a6f2"      # VesselControlsPanel.vesselPrefabs
 OMNI_ICON = K.meta_guid("Assets/_Graphics/ElementIcons/OmniCrystal_Active.png")   # VesselControlsPanel.omniIcon
 # VesselControlsPanel.elementShapes, Charge..Time: the element's SHAPE, the Codex's icon, never the HUD petal (Shombith,
