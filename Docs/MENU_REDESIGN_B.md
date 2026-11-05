@@ -5926,3 +5926,14 @@ catalog, the veil's colour-set mode and section 124's re-stamp stay.
 - Compiled against the Unity reference assemblies; `author_menu_profile.py` and `author_colour_set_catalog.py` pass
   `--check` and `--self-test`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+### 126.1 Fix: a backing under the words, the tab words level with LB / RB (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
+- **Backing.** The real cell is much brighter and busier than the board's drawn sea, so the 92 % fade alone left the
+  name, pigments and rail on the world. The hero now has a solid band (SurfaceBlack at 88 %) under the words and the
+  rail, with the fade above it. The Profile's veil is dimmed to 55 % while Colour sets shows
+  (`ProfileColorSetsPanel.veilWhileShowing`) instead of switched off, so the cell is seen but sits back; its sea lines
+  stay off.
+- **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
+  centred, and the underline sits at the row's foot.

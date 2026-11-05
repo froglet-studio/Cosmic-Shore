@@ -421,10 +421,11 @@ def build_tabs(root):
         A.ring_node(n, f"{k}/FocusRing", 10)
         hit = n.child(N(f"{k}/Hit", "Hit", STRETCH))
         hit.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
-        lab = n.child(N(f"{k}/Label", "Label", R((0, 1), (1, 1), (0, 0), (0, K.line_height("Button")), (0.5, 1))))
+        # The word centred in the row, level with the LB / RB keycaps (it sat at the row's top: "misaligned texts").
+        lab = n.child(N(f"{k}/Label", "Label", R((0, 0.5), (1, 0.5), (0, 0), (0, K.line_height("Button")), (0.5, 0.5))))
         lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption.upper(), "Button", tok("NeutralLightest"))) \
             .add("kt", 114, K.kit_text("Button", "NeutralLightest", driven=True))
-        und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 4), (0, 2), (0.5, 0))))
+        und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 0), (0, 2), (0.5, 0))))
         und.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.0)))
         n.add("tab", 114, (lambda k_, sel: lambda ctx, go: mono(go, S["tab"],
               A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{k_}/Hit', 'img'))}\n" + A.calls([])
@@ -471,9 +472,14 @@ def build_colour_sets(root):
     pg.add("cg", 225, canvas_group(False))
     W, H = HERO_W, HERO_H
     hero = pg.child(N(kh, "Hero", TL(40, HERO_TOP - 84, W, H)))
-    # A window onto the cell: the frame and a fade under the words, nothing over the world itself.
-    fade = hero.child(N(f"{kh}/Fade", "Fade", TL(0, H - 470, W, 470)))
-    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.92), K.kit_sprite("kit_fade_v"), False))
+    # A window onto the cell, with a backing under the words and the rail: the real cell is far busier than the
+    # board's drawn sea, so a fade alone left the words on the world ("missing background"). A fade into a solid band,
+    # and the Profile's veil dimmed rather than off (ProfileColorSetsPanel.veilWhileShowing).
+    BAND = 300
+    fade = hero.child(N(f"{kh}/Fade", "Fade", TL(0, H - BAND - 220, W, 220)))
+    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88), K.kit_sprite("kit_fade_v"), False))
+    band = hero.child(N(f"{kh}/Band", "Band", TL(0, H - BAND, W, BAND)))
+    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88)))
     frame(hero, f"{kh}/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.0)
     label(hero.child(N(f"{kh}/Position", "Position", TL(56, 40, 160, 18))), "", "Label", "NeutralLightest")
     label(hero.child(N(f"{kh}/Wearing", "Wearing", TL(200, 40, 600, 18))), "", "Label", "TextLight")
@@ -532,7 +538,8 @@ def colour_sets_body(ctx):
             f"  record: {ref(ctx.c('Record', 'record'))}\n"
             f"  group: {ref(ctx.c(k0, 'cg'))}\n"
             f"  pilotCard: {ref(ctx.c('Pilot', 'cg'))}\n"
-            + seq("veil", [ctx.c("Veil", "img"), ctx.c("VeilSea", "img")])
+            + f"  veil: {ref(ctx.c('Veil', 'img'))}\n  veilWhileShowing: 0.55\n"
+            + seq("hideWhileShowing", [ctx.c("VeilSea", "img")])
             + f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
             "  thumbs:\n" + thumbs
             + f"  previousButton: {ref(ctx.iref('ColourPrev', 'root#button'))}\n"
