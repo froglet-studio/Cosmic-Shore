@@ -5299,58 +5299,6 @@ shows that are not authored lines yet (waypoints, odds, the cell-by-cell mix, th
 
 Affects: Garrett's Voyage window (`author_voyage_window.py`, `VoyageJobsView`, `VoyageWindowModals`) once a pick is built.
 
-## 114. Rev 47 mockups: the Ark's Squads tab - real domain colours, the Ark in 3D, nanobots or the Meerkat warp (2026-11-02, awaiting a pick)
+## 114. Rev 47 mockups: the Ark's Squads tab (2026-11-02; removed 2026-11-05)
 
-**Asked (Shombith, 2026-11-02):** "lets start with reword of the Ark squad screen. First of all the domain colors are
-wrong on the vessel please check that as we change and we do not want that animation we can either have a nanobot
-animation or the warping animation on the meerkat. Also we need to show the 3d animated model of the ark inside the
-squad screen as well." Done when six mockups are on Menu Redesign C. Mid-round: "The lighting is too bad, liked the
-transparent bg like the deep blue but bring back the sea lines too here."
-
-**Read first:** the Squads tab as built (section 95, `SquadsPage`, `SquadMateCard`, `SquadNanobotSwap`), its boards
-(Rev 28, 29, 31), the Ark's model dossier (`Docs/VesselModels/ArkReverse.md`), the fleet colour language
-(`Docs/VesselModels/COLOR.md`), the Meerkat's wormhole (`MEERKAT.md`, `Docs/Shaders/WORMHOLE_SHADERS.md` §16).
-
-**What was wrong with the colours.** `SquadNanobotSwap.ApplyTint` sets the hull `Graphic.color` to
-`Lerp(white, GetDomainSignalColor(d), 0.45)`, a multiply over the whole Hangar card render. The signal colour is the
-palette's `TrailHighlightColor` pushed to full brightness: teal `13FFF2`, magenta `FF00F9`, amber `FFA700`. The card
-wears the silver class livery (a card claims no team, COLOR.md section 4), so body, glass and engines all take the cast
-and Jade reads teal, Ruby pink, while the ship itself wears azure and violet plates (`ShipColor1/2`) on gunmetal. The
-Rev 28 / 31 boards drew the same teal and magenta. A third set, the style foundation's `00D4FF` / `A600FF` / `FFAE00`,
-is what the chips should use; that question is row 19 of the Design feedback queue in `Docs/UI_REDESIGN_TASKS.md`.
-
-**On the canvas:** tab **Menu Redesign C**, round title "Rev 47 - Ark Squads: real domain colours, the Ark in 3D,
-nanobots or the Meerkat warp (six ways)" (version `1793652168-d3c4`). Rev 45 (Fleet Codex) and Rev 46 (Voyage) were taken while it was drawn. Copies:
-`Docs/MenuRedesignB/board/R47*.dc.html`; the generator `Docs/MenuRedesignB/rounds/r47_ark_squads.py`, the renders `r47_render.py`, the uploaded ids `r47_blobs.json`.
-Every hull (Sparrow, Dolphin, Squirrel, Rhino, Manta, Serpent) and the Ark are rendered from their FBX models in each
-domain with the game's colours (body, glass, engine from `vessel_colors.py`, the domain slot from `ShipColor1/2`), lit
-for a showroom (key, fill and rim light; the domain plates glow), on a transparent ground over the menu's deep blue
-and its sea lines (the Rev 31 block). The Ark (`ArkReverse.fbx`) is a 36-frame orbit, an animated WebP looping in
-6 s, one per domain; its 108 socket prisms are not part of the model and are not drawn. Every option board is
-interactive: Jade / Ruby / Gold on Skim Wing plays the change (the Ark first, then each escort 0.14 s apart, 1.2 s each);
-Breakers is Kestrel's, so its chips refuse; the squad rows switch squads.
-
-- **A - Escort (recommended), nanobots:** the Ark centre stage, the three escorts round it labelled by seat, the
-  seats along the bottom (pilot figure, who, vessel / element / pilot / artifact). Recommended because it is the only
-  one where the Ark reads as what it is, a big ship its three escorts protect, and the nanobots are already built and
-  need only the colour fix.
-- **B - Hangar, warp:** the seats stacked on the left, each with its hull; the Ark large on the right with the domain
-  chips under it; the squads as a chip row.
-- **C - The deck, kept, nanobots:** the built deck (leader raised in the middle, rogues turned 6 degrees) unchanged,
-  the Ark turning above it. The least to build.
-- **D - Bays, warp:** the Ark over three launch bays, an escort and its seat in each.
-- **E - Dossier, nanobots:** the Ark on the left half, the squad as three rows on the right.
-- **F - Cinema, warp:** the Ark fills the screen behind thin glass panels: name and squads top left, the chips top
-  right, the three seats along the bottom.
-- **Compare:** the colour fix (built today against ship colours, per hull and domain), and both transitions frame by
-  frame (0, 0.25, 0.55, 0.80, 1.20 s). The **Meerkat warp** is the wormhole: a mouth opens on the picture with an
-  Einstein ring in the new domain and a dark throat, the hull twists into it and comes back out in its new colours.
-
-**Differs from the build:** the hull picture per domain replaces the tint (a render per hull and domain, or the hull
-model on a RenderTexture, the way the converter tab draws its 3D picture); the Ark's 3D picture joins the tab with its
-turn takes playing; the warp would be new UI work (a ring and a throat over each picture), the nanobots keep
-`SquadNanobotSwap` minus `tintStrength`. Make squad, Join, Edit and Take into (Mission, Arena) are unchanged from
-section 95. The build waits on a pick.
-
-Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`, `SquadNanobotSwap`) once a pick is built; Garrett's
-Ark model (rendered only, not changed).
+Six options for the Squads tab (the Ark in 3D, the nanobot swap or the Meerkat warp) were drawn on Menu Redesign C and removed from the canvas and this copy at Shombith's ask (2026-11-05: "None of it, Remove this completely"). The next round redraws the tab as the inside of the Ark. The colour bug it found in the build stays open as row 19 of the Design feedback queue (`Docs/UI_REDESIGN_TASKS.md`): `SquadNanobotSwap` tints the whole hull toward `TrailHighlightColor`.
