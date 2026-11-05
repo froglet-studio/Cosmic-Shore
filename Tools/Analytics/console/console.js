@@ -14,8 +14,12 @@
   const KEY_STORE = "froglet-analytics-key";
   const PAGES = {
     overview: { title: "Overview", build: true, days: [7, 30, 90, 365] },
+    players: { title: "Players", build: true, days: [7, 30, 90, 365] },
     retention: { title: "Retention", build: true, days: [7, 30, 90, 365] },
     matches: { title: "Matches", build: true, days: [7, 30, 90, 365] },
+    ftue: { title: "FTUE", build: true, days: [7, 30, 90, 365] },
+    economy: { title: "Economy", build: true, days: [7, 30, 90, 365] },
+    social: { title: "Social", build: true, days: [7, 30, 90, 365] },
     health: { title: "Data health", build: false, days: [14, 30, 90] },
     ask: { title: "Ask Claude", build: false, days: null },
     erasure: { title: "Erasure", build: false, days: null },
@@ -31,7 +35,16 @@
     "How many players came back the day after their first match, by play type?",
   ];
 
-  const state = { page: "overview", build: "release", days: 90, healthDays: 30, ask: null, asking: false };
+  const state = { page: "overview", build: "release", days: 90, healthDays: 30, ask: null, asking: false,
+                  profiles: false, person: null, peopleQuery: "" };
+  let countryNames = null;
+  try { countryNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
+  const country = (code) => {
+    if (!code || code === "unknown") return "Unknown";
+    try { return countryNames ? `${countryNames.of(code)} (${code})` : code; } catch (e) { return code; }
+  };
+  const when = (ms) => (ms ? new Date(ms).toISOString().slice(0, 16).replace("T", " ") : "–");
+  const seconds = (s) => (s === null || s === undefined ? "–" : s >= 90 ? `${Math.round(s / 6) / 10} min` : `${Math.round(s)} s`);
 
   // ------------------------------------------------------------------ tiny DOM helpers
 
@@ -95,6 +108,14 @@
       const answer = SNAPSHOT.ask[(body && body.question || "").trim()];
       if (!answer) throw new Error("This preview has answers for the three questions below only. The live console sends any question to Claude.");
       return JSON.parse(JSON.stringify(answer));
+    }
+    if (path.startsWith("/v1/people")) {                 // the snapshot holds the whole list; search it here
+      const query = decodeURIComponent((path.match(/[?&]q=([^&]*)/) || [])[1] || "").toLowerCase();
+      const list = SNAPSHOT.get[path.replace(/&q=[^&]*/, "")];
+      if (!list) throw new Error("This preview has no snapshot for that view.");
+      const people = list.people.filter((p) => !query || p.distinct_id.toLowerCase().includes(query)
+        || (p.display_name || "").toLowerCase().includes(query));
+      return JSON.parse(JSON.stringify(Object.assign({}, list, { people, total: people.length })));
     }
     const page = SNAPSHOT.get[path];
     if (!page) throw new Error("This preview has no snapshot for that view.");
@@ -328,12 +349,198 @@
               tip: `${d.day}: ${fmt(d.matches)} matches, ${fmt(d.completed)} of ${fmt(d.plays)} plays finished` })), { label: "Matches per day", width: 1080, height: 240 })
           : h("p", { class: "small" }, "No matches in this range.")),
       h("div", { class: "grid2" },
-        card("By mode", null, table(["Mode", "Plays", "Finished", "", "Avg flight"], m.by_mode.map((r) => h("tr", {},
+        card("By mode", null, table(["Mode", "Plays", "Finished", "", "Won", "Avg flight"], m.by_mode.map((r) => h("tr", {},
           h("td", {}, r.game_mode || "Unknown"), h("td", {}, fmt(r.plays)), h("td", {}, pct(r.finished_pct)),
-          h("td", { class: "meter" }, meter(r.finished_pct)), h("td", {}, r.avg_flight_s ? `${r.avg_flight_s} s` : "–"))))),
+          h("td", { class: "meter" }, meter(r.finished_pct)), h("td", {}, pct(r.win_pct)),
+          h("td", {}, r.avg_flight_s ? `${r.avg_flight_s} s` : "–"))))),
         card("By intensity", null, table(["Intensity", "Plays", "Finished", ""], m.by_intensity.map((r) => h("tr", {},
           h("td", {}, r.intensity ?? "–"), h("td", {}, fmt(r.plays)), h("td", {}, pct(r.finished_pct)),
           h("td", { class: "meter" }, meter(r.finished_pct))))))),
+      h("div", { class: "grid2" },
+        card("By vessel", null, table(["Vessel", "Plays", "Finished", "Won", "Avg flight"], (m.by_vessel || []).map((r) => h("tr", {},
+          h("td", {}, r.vessel_class || "Unknown"), h("td", {}, fmt(r.plays)), h("td", {}, pct(r.finished_pct)),
+          h("td", {}, pct(r.win_pct)), h("td", {}, r.avg_flight_s ? `${r.avg_flight_s} s` : "–"))))),
+        card("What players say about modes", "favourites, repeated fails, shares",
+          (m.signals || []).length
+            ? table(["Mode", "Favourited", "Unfavourited", "Repeated fails", "Shared"], m.signals.map((r) => h("tr", {},
+                h("td", {}, r.game_mode), h("td", {}, fmt(r.favorited)), h("td", { class: "soft" }, fmt(r.unfavorited)),
+                h("td", { class: r.fails ? "bad" : "soft" }, fmt(r.fails)), h("td", {}, fmt(r.shares)))))
+            : h("p", { class: "small" }, "No favourites, fails or shares in this range."),
+          m.pause ? h("p", { class: "small" }, `Paused or away from the controls: ${seconds(m.pause.avg_pause_s)} a match on average, ` +
+            `${pct(m.pause.paused_over_30s_pct)} of matches over 30 s. Average match: ${seconds(m.pause.avg_duration_s)}.`) : null)),
+    ];
+  }
+
+  function bars(rows, labelKey, valueKey, fmtLabel) {
+    const top = Math.max(1, ...rows.map((r) => r[valueKey] || 0));
+    return table(["", "Players", ""], rows.map((r) => h("tr", {}, h("td", {}, fmtLabel ? fmtLabel(r[labelKey]) : r[labelKey]),
+      h("td", {}, fmt(r[valueKey])), h("td", { class: "meter" }, meter(100 * (r[valueKey] || 0) / top)))));
+  }
+
+  async function players() {
+    if (state.person) return profile(state.person);
+    const a = await api(`/v1/audience?build=${state.build}&days=${state.days}`);
+    if (a.empty) return [empty("Nothing has been received yet.")];
+    const first = a.funnel.length ? a.funnel[0].players : 0;
+    const parts = [
+      card("Active players per day", `${state.build}, last ${state.days} days · hover a bar`,
+        barChart(a.per_day.map((d) => ({ label: d.day.slice(5), value: d.players,
+          tip: `${d.day}: ${fmt(d.players)} players, ${fmt(d.new_players)} new` })), { label: "Active players per day", height: 200 })),
+      h("div", { class: "grid2" },
+        card("Where they play from", "country from the connection, the address itself is not kept",
+          a.countries.length ? bars(a.countries, "country", "players", country) : h("p", { class: "small" }, "No countries yet."),
+          h("p", { class: "small" }, "IP Geolocation by ", h("a", { href: "https://db-ip.com", target: "_blank", rel: "noopener", style: "color:inherit" }, "DB-IP"))),
+        card("What they play on", null,
+          a.platforms.length ? bars(a.platforms, "platform", "players") : h("p", { class: "small" }, "No platforms yet."))),
+      h("div", { class: "grid2" },
+        card("First-day funnel", "players whose first event was in this range, and how far they have got",
+          a.funnel.length ? table(["Step", "Players", "Of new", ""], a.funnel.map((f) => h("tr", {}, h("td", {}, f.step),
+            h("td", {}, fmt(f.players)), h("td", {}, pct(first ? Math.round(1000 * f.players / first) / 10 : null)),
+            h("td", { class: "meter" }, meter(first ? 100 * f.players / first : 0))))) : h("p", { class: "small" }, "No new players in this range.")),
+        card("Launch to menu", "seconds from opening the game to the main menu",
+          a.launches.length ? table(["Platform", "Launches", "Typical", "Slowest 10%"], a.launches.map((l) => h("tr", {},
+            h("td", {}, l.platform), h("td", {}, fmt(l.launches)), h("td", {}, seconds(l.p50_seconds)),
+            h("td", { class: l.p90_seconds > 30 ? "bad" : "" }, seconds(l.p90_seconds))))) : h("p", { class: "small" }, "No launches yet."),
+          a.session_ends.length ? h("p", { class: "small" }, "How sessions ended: " +
+            a.session_ends.map((e) => `${e.reason.replace(/_/g, " ")} ${fmt(e.count)}`).join(", ") + ".") : null)),
+    ];
+    parts.push(await peopleCard());
+    return parts;
+  }
+
+  async function peopleCard() {
+    if (!state.profiles) return card("Every player", null, h("p", { class: "small" },
+      "Player profiles (ids, display names, countries, everything they did) open with an admin key or a key named in the server's profile_readers."));
+    const list = await api(`/v1/people?build=${state.build}&days=${state.days}&q=${encodeURIComponent(state.peopleQuery)}`);
+    const search = h("input", { id: "people-q", class: "field sls", type: "search", value: state.peopleQuery,
+      placeholder: "Search by display name or player id" });
+    const form = h("form", { class: "row" }, h("label", { class: "lab", for: "people-q", style: "position:absolute;left:-9999px" }, "Search"),
+      h("div", { style: "flex:1;min-width:220px" }, search), h("button", { class: "btn sls default", type: "submit" }, "Search"));
+    form.addEventListener("submit", (e) => { e.preventDefault(); state.peopleQuery = search.value.trim(); render(); });
+    const open = (id) => { state.person = id; render(); window.scrollTo(0, 0); };
+    return card("Every player", `${fmt(list.total)} seen in the last ${state.days} days, newest first`, form,
+      list.people.length ? table(["Player", "Country", "Platform", "First seen", "Last seen", "Days", "Matches", "Finished", "Crystals"],
+        list.people.map((p) => h("tr", {},
+          h("td", {}, h("button", { type: "button", class: "link", style: "color:var(--fs-text);font-size:14px", onclick: () => open(p.distinct_id) },
+            p.display_name || "(no name)"), h("div", { class: "small", style: "font-size:12px" }, p.distinct_id)),
+          h("td", {}, p.countries.map(country).join(", ") || "–"), h("td", {}, p.platforms.join(", ") || "–"),
+          h("td", {}, when(p.first_ms).slice(0, 10)), h("td", {}, when(p.last_ms)), h("td", {}, fmt(p.days_active)),
+          h("td", {}, fmt(p.matches)), h("td", {}, fmt(p.finished)), h("td", {}, fmt(p.crystal_balance))))) : h("p", { class: "small" }, "Nobody matches."));
+  }
+
+  function kv(pairs) {
+    return h("div", { class: "kv" }, pairs.filter((p) => p[1] !== null && p[1] !== undefined && p[1] !== "").map(([k, v]) =>
+      h("div", { class: "kv-row" }, h("span", { class: "lab" }, k), h("span", { class: "small", style: "color:var(--fs-text)" }, v))));
+  }
+  const listOf = (obj, f) => Object.entries(obj || {}).map(([k, n]) => `${f ? f(k) : k} (${fmt(n)})`).join(", ") || "–";
+
+  async function profile(id) {
+    const p = await api(`/v1/person?id=${encodeURIComponent(id)}`);
+    const back = h("button", { type: "button", class: "btn sls default", onclick: () => { state.person = null; render(); } }, "All players");
+    const m = p.matches, e = p.economy, w = p.where, act = p.activity;
+    const person = Object.entries(p.person || {}).filter(([k]) => k !== "display_name");
+    return [
+      h("div", { class: "row" }, back),
+      h("section", { class: "card panel sl" },
+        h("div", { class: "card-head" }, h("span", { class: "h2" }, p.display_name || "(no display name)"),
+          h("span", { class: "small" }, `Player id ${p.player_id}`)),
+        h("div", { class: "tiles" }, [
+          ["Country", country(w.latest_country)], ["First seen", when(p.first_ms).slice(0, 10)], ["Last seen", when(p.last_ms)],
+          ["Days active", fmt(act.days_active)], ["Matches", `${fmt(m.total)} (${fmt(m.finished)} finished)`], ["Crystals", fmt(e.balance)],
+        ].map(([k, v]) => h("div", { class: "tile panel sl" }, h("span", { class: "lab" }, k), h("span", { class: "body num" }, v))))),
+      h("div", { class: "grid2" },
+        card("Where and on what", null, kv([
+          ["Countries", listOf(w.countries, country)], ["Platforms", listOf(w.platforms)], ["App versions", listOf(w.app_versions)],
+          ["Builds", listOf(w.builds)], ["Devices (installs)", fmt(Object.keys(w.installs || {}).length)],
+          ["Launch to menu, typical", seconds(act.launch_to_menu_p50)], ["Sessions ended", listOf(act.session_ends)]])),
+        card("Profile the game sent", "the latest person properties", person.length
+          ? kv(person.map(([k, v]) => [k.replace(/_/g, " "), typeof v === "object" ? JSON.stringify(v) : String(v)]))
+          : h("p", { class: "small" }, "None yet."))),
+      card("Activity per day", "events and matches · hover a bar", act.per_day.length
+        ? barChart(act.per_day.map((d) => ({ label: d.day.slice(5), value: d.events, tip: `${d.day}: ${fmt(d.events)} events, ${fmt(d.matches)} matches` })),
+            { label: "Events per day", height: 160 }) : h("p", { class: "small" }, "No activity.")),
+      h("div", { class: "grid2" },
+        card("How they play", null, kv([["Modes", listOf(m.by_mode)], ["Vessels", listOf(m.by_vessel)],
+          ["Play types", listOf(m.by_play_type, playType)], ["Matches won", fmt(m.won)], ["Time at the controls", seconds(m.flight_seconds)]])),
+        card("Crystals", `${fmt(e.earned)} earned, ${fmt(e.spent)} spent`, e.recent.length
+          ? table(["When", "What", "Amount", "Source", "Balance"], e.recent.slice(0, 12).map((x) => h("tr", {}, h("td", {}, when(x.ts_ms)),
+              h("td", {}, x.event.replace(/_/g, " ")), h("td", {}, fmt(x.amount)), h("td", {}, x.source || "–"), h("td", {}, fmt(x.balance)))))
+          : h("p", { class: "small" }, "No crystal activity."),
+          e.unlocks.length ? h("p", { class: "small" }, "Unlocked: " + e.unlocks.map((u) => `${u.name} (${u.kind})`).join(", ") + ".") : null)),
+      card("Matches", `latest ${Math.min(m.recent.length, 100)} of ${fmt(m.total)}`, m.recent.length
+        ? table(["When", "Mode", "Int.", "Vessel", "Play type", "Humans / AI", "Finished", "Won", "Flight", "Rematched"],
+            m.recent.map((x) => h("tr", {}, h("td", {}, when(x.ts_ms)), h("td", {}, x.game_mode || "–"), h("td", {}, x.intensity ?? "–"),
+              h("td", {}, x.vessel_class || "–"), h("td", {}, playType(x.play_type)), h("td", {}, `${x.humans ?? "–"} / ${x.ai ?? "–"}`),
+              h("td", { class: x.finished ? "" : "bad" }, x.finished ? "yes" : "no"),
+              h("td", {}, x.won === null || x.won === undefined ? "–" : String(x.won) === "true" ? "yes" : "no"),
+              h("td", {}, seconds(x.flight_time_seconds)), h("td", {}, x.rematched ? "yes" : "–"))))
+        : h("p", { class: "small" }, "No matches.")),
+      h("div", { class: "grid2" },
+        card("FTUE", `${p.ftue.length} steps`, p.ftue.length ? table(["When", "Phase", "Step", "After launch"], p.ftue.map((f) => h("tr", {},
+          h("td", {}, when(f.ts_ms)), h("td", {}, f.phase_index ?? "–"), h("td", {}, f.step), h("td", {}, seconds(f.seconds_since_launch)))))
+          : h("p", { class: "small" }, "No FTUE steps recorded.")),
+        card("Friends, parties, settings", null, kv([
+          ...Object.entries(p.social).map(([k, v]) => [k.replace(/_/g, " "), `${fmt(v.count)}${v.with.length ? ": " + v.with.slice(0, 6).join(", ") : ""}`]),
+          ...Object.entries(p.settings).map(([k, v]) => [`setting ${k.replace(/_/g, " ")}`, `${v.value} (${when(v.ts_ms).slice(0, 10)})`])]))),
+      card("Event timeline", `latest ${p.recent_events.length} of ${fmt(act.events)} events · ${fmt(act.flagged_duplicates)} flagged as duplicates`,
+        table(["When", "Event", "Build", "Platform", "Country", "Detail"], p.recent_events.map((x) => h("tr", {}, h("td", {}, when(x.ts_ms)),
+          h("td", {}, x.event), h("td", {}, x.build), h("td", {}, x.platform || "–"), h("td", {}, x.country || "–"),
+          h("td", { class: "soft" }, x.detail || ""))))),
+      card("This player's data", null, h("p", { class: "small" },
+        "Everything above is kept only on our server and is never sent to Claude. To delete it, use Erasure with this player id.")),
+    ];
+  }
+
+  async function ftuePage() {
+    const f = await api(`/v1/ftue?build=${state.build}&days=${state.days}`);
+    if (f.empty) return [empty("Nothing has been received yet.")];
+    return [
+      h("div", { class: "tiles" }, [["New players", fmt(f.new_players)], ["Finished the FTUE", fmt(f.finished_ftue)],
+        ["Finished", pct(f.finished_pct)]].map(([k, v]) => h("div", { class: "tile panel sl" }, h("span", { class: "lab" }, k), h("span", { class: "value num" }, v)))),
+      card("Each step of the quest graph", "players who started in this range and completed the step, in the order players reach them",
+        f.steps.length ? table(["Phase", "Step", "Players", "Of new", "", "After launch"], f.steps.map((s) => h("tr", {},
+          h("td", {}, s.phase_index ?? "–"), h("td", {}, s.step_name), h("td", {}, fmt(s.players)), h("td", {}, pct(s.pct_of_new)),
+          h("td", { class: "meter" }, meter(s.pct_of_new)), h("td", {}, seconds(s.avg_seconds)))))
+          : h("p", { class: "small" }, "No FTUE steps in this range.")),
+    ];
+  }
+
+  async function economyPage() {
+    const e = await api(`/v1/economy?build=${state.build}&days=${state.days}`);
+    if (e.empty) return [empty("Nothing has been received yet.")];
+    const t = (k) => (e.totals[k] || {}).amount || 0;
+    return [
+      h("div", { class: "tiles" }, [["Earned", fmt(t("earned"))], ["Spent", fmt(t("spent") + t("unlock"))],
+        ["Spends blocked", fmt((e.totals.blocked || {}).events || 0)], ["Paid twice", fmt(e.double_payouts.count), e.double_payouts.count > 0],
+        ["Unlocks", fmt(e.unlocks.reduce((a, u) => a + u.count, 0))], ["Earned per spent", t("spent") + t("unlock") ? (t("earned") / (t("spent") + t("unlock"))).toFixed(2) : "–"]]
+        .map(([k, v, bad]) => h("div", { class: "tile panel sl" + (bad ? " bad" : "") }, h("span", { class: "lab" }, k), h("span", { class: "value num" }, v)))),
+      card("Crystals earned per day", "hover a bar for earned and spent",
+        barChart(e.per_day.map((d) => ({ label: d.day.slice(5), value: d.earned, tip: `${d.day}: ${fmt(d.earned)} earned, ${fmt(d.spent)} spent` })),
+          { label: "Crystals earned per day", height: 180 })),
+      h("div", { class: "grid2" },
+        card("Where crystals come from and go", null, e.sources.length ? table(["", "Source", "Times", "Crystals"], e.sources.map((r) => h("tr", {},
+          h("td", {}, r.kind), h("td", {}, r.source), h("td", {}, fmt(r.events)), h("td", {}, fmt(r.amount))))) : h("p", { class: "small" }, "None.")),
+        card("Balances now", "players active in the last 30 days, by their latest balance",
+          e.balances.length ? bars(e.balances, "bucket", "players") : h("p", { class: "small" }, "No balances yet."))),
+      h("div", { class: "grid2" },
+        card("Spends blocked", "a player tried to buy without enough crystals", e.blocked.length
+          ? table(["Item", "Times", "Short by"], e.blocked.map((r) => h("tr", {}, h("td", {}, r.item), h("td", {}, fmt(r.events)), h("td", {}, fmt(r.short_by)))))
+          : h("p", { class: "small" }, "None.")),
+        card("Unlocks", null, e.unlocks.length ? table(["Kind", "What", "Times"], e.unlocks.map((r) => h("tr", {},
+          h("td", {}, r.kind), h("td", {}, r.name), h("td", {}, fmt(r.count))))) : h("p", { class: "small" }, "None."))),
+    ];
+  }
+
+  async function socialPage() {
+    const so = await api(`/v1/social?build=${state.build}&days=${state.days}`);
+    if (so.empty) return [empty("Nothing has been received yet.")];
+    const t = so.totals;
+    return [
+      h("div", { class: "tiles" }, [["Party invites", fmt(t.party_invite_sent)], ["Invites joined", pct(so.invite_join_pct)],
+        ["Friend requests", fmt(t.friend_request_sent)], ["Requests accepted", pct(so.friend_accept_pct)], ["Shares", fmt(t.share_triggered)],
+        ["Multi-human matches", fmt(so.multi_human_matches)]].map(([k, v]) => h("div", { class: "tile panel sl" }, h("span", { class: "lab" }, k), h("span", { class: "value num" }, v)))),
+      card("Every social event", null, table(["Event", "Count"], Object.entries(t).map(([k, v]) => h("tr", {},
+        h("td", {}, k.replace(/_/g, " ")), h("td", {}, fmt(v)))))),
     ];
   }
 
@@ -365,12 +572,24 @@
           statusRow(d.backup && Date.now() - d.backup.last_ms < 2 * day, "Nightly backup", d.backup ? ago(d.backup.last_ms) : "never"),
           statusRow(d.rebuild && Date.now() - d.rebuild.last_ms < 15 * 60 * 1000, "Numbers rebuilt", d.rebuild ? ago(d.rebuild.last_ms) : "never"),
           statusRow(true, "Deletions done", fmt(d.erasures_done)),
-          statusRow(true, "Editor share of matches", pct(d.editor_share_pct)))),
+          statusRow(true, "Editor share of matches", pct(d.editor_share_pct)),
+          statusRow(!(d.double_payouts || []).length, "Crystals paid twice", fmt((d.double_payouts || []).reduce((a, r) => a + r.count, 0))),
+          statusRow(!(d.cloud_save_failures || []).length, "Cloud save failures", fmt((d.cloud_save_failures || []).reduce((a, r) => a + r.count, 0))))),
       h("div", { class: "grid2" },
         card("Flagged duplicates per day", "same player, event and properties within 50 ms",
           (d.near_duplicates || []).length
             ? barChart(d.near_duplicates.map((r) => ({ label: r.day.slice(5), value: r.near_duplicates,
                 tip: `${r.day}: ${fmt(r.near_duplicates)} of ${fmt(r.rows)} rows` })), { height: 180, label: "Duplicates per day", width: 520 })
+            : h("p", { class: "small" }, "None.")),
+        card("Crystals paid twice", "same player, source and amount within 1 s",
+          (d.double_payouts || []).length
+            ? table(["Day", "Build", "Source", "Times", "Crystals"], d.double_payouts.map((r) => h("tr", {}, h("td", {}, r.day),
+                h("td", {}, r.build_kind), h("td", {}, r.source), h("td", { class: "bad" }, fmt(r.count)), h("td", {}, fmt(r.amount)))))
+            : h("p", { class: "small" }, "None. Every payout was made once.")),
+        card("Cloud save failures", null,
+          (d.cloud_save_failures || []).length
+            ? table(["Key", "Failures", "Last"], d.cloud_save_failures.map((r) => h("tr", {}, h("td", {}, r.key),
+                h("td", { class: "bad" }, fmt(r.count)), h("td", {}, r.last_day))))
             : h("p", { class: "small" }, "None.")),
         card("Rejected events", "counted, not stored",
           (d.rejects || []).length
@@ -476,7 +695,7 @@
     if (!key()) { page.replaceChildren(); showGate(); return; }
     try {
       const parts = state.page === "ask" ? askPage() : state.page === "erasure" ? erasurePage()
-        : await { overview, retention, matches, health }[state.page]();
+        : await { overview, players, retention, matches, health, ftue: ftuePage, economy: economyPage, social: socialPage }[state.page]();
       page.replaceChildren(...parts);
     } catch (e) {
       if (e.message !== "unauthorised") page.replaceChildren(empty(e.message === "Failed to fetch"
@@ -487,6 +706,7 @@
   function route() {
     const name = location.hash.replace("#", "");
     state.page = PAGES[name] ? name : "overview";
+    if (state.page !== "players") state.person = null;
     render();
   }
 
@@ -502,10 +722,13 @@
 
   async function whoAmI() {
     if (!key()) return;
-    try { const me = await api("/v1/me"); $("who-name").textContent = me.name + (me.admin ? " · admin" : ""); } catch (e) {}
+    try {
+      const me = await api("/v1/me");
+      state.profiles = !!me.profiles;
+      $("who-name").textContent = me.name + (me.admin ? " · admin" : "");
+    } catch (e) {}
   }
 
   window.addEventListener("hashchange", route);
-  whoAmI();
-  route();
+  whoAmI().then(route);
 })();

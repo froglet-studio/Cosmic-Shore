@@ -21,6 +21,9 @@ HTTP:
     GET  /v1/retention?build=..&days=..              Retention                        } Bearer <read key>
     GET  /v1/matches?build=..&days=..                Matches                          }
     GET  /v1/health?days=30                          Data health                      }
+    GET  /v1/audience|ftue|economy|social?build&days Players, FTUE, Economy, Social   }
+    GET  /v1/people?build&days&q=                    every player, newest first       } profile readers only:
+    GET  /v1/person?id=<player id>                   one player's whole profile       } admin keys + profile_readers
     GET  /v1/digest                                  the latest overnight read        }
     POST /v1/ask        {"question": "..."}          Ask Claude                       }
     POST /v1/erase      {"player_id": "..."}         Erasure (admin key)
@@ -46,6 +49,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import analytics_claude as C  # noqa: E402
+import analytics_geo as G  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
 
@@ -79,6 +83,8 @@ DEFAULTS = {
     "claude_effort": "medium",
     "ask_daily_limit": 50,
     "ingest_per_minute": 600,
+    "profile_readers": [],             # read-key names that may open player profiles (admin keys always may)
+    "geo_csv": "",                     # DB-IP country lite file; default <data_dir>/dbip-country-lite.csv.gz
 }
 
 
@@ -139,6 +145,8 @@ class App:
         self.store = S.Store(config["data_dir"], schema_events(config["schema_path"]), config["extra_events"])
         self.limit = RateLimit(config["ingest_per_minute"])
         self.ingest_keys = {f"ingest{i}": k for i, k in enumerate(config["ingest_keys"])}
+        self.geo_path = config["geo_csv"] or os.path.join(config["data_dir"], "dbip-country-lite.csv.gz")
+        self.geo = G.CountryLookup(self.geo_path)
         self.stop = threading.Event()
 
     @property
@@ -150,7 +158,17 @@ class App:
         self.store.mark_job("rebuild", f"{plays} plays")
         return plays
 
+    def refresh_geo(self):
+        if not self.config.get("geo_csv") and G.stale(self.geo_path):
+            try:
+                G.refresh(self.geo_path)
+                self.geo = G.CountryLookup(self.geo_path)
+                self.store.mark_job("geo", "refreshed")
+            except Exception as exc:   # no network, or the month's file is not out yet: keep the old one
+                self.store.mark_job("geo", f"refresh failed: {type(exc).__name__}")
+
     def nightly(self):
+        self.refresh_geo()
         gone = self.store.apply_retention(self.config["retention_days"])
         target = self.store.backup()
         self.store.mark_job("backup", os.path.basename(target))
@@ -223,6 +241,11 @@ def make_handler(app):
             return _match_key(self._bearer(), app.config["read_keys"]) or \
                 _match_key(self._bearer(), app.config["admin_keys"])
 
+        def _profiles_allowed(self):
+            admin = _match_key(self._bearer(), app.config["admin_keys"])
+            reader = _match_key(self._bearer(), app.config["read_keys"])
+            return bool(admin or (reader and reader in app.config["profile_readers"]))
+
         def _query(self):
             q = parse_qs(urlparse(self.path).query)
             build = (q.get("build") or ["release"])[0]
@@ -263,7 +286,18 @@ def make_handler(app):
                 return self._send(401, {"error": "A read key is needed (Authorization: Bearer <key>)."})
             if path == "/v1/me":
                 admin = _match_key(self._bearer(), app.config["admin_keys"])
-                return self._send(200, {"name": admin or self._reader(), "admin": bool(admin)})
+                return self._send(200, {"name": admin or self._reader(), "admin": bool(admin),
+                                        "profiles": self._profiles_allowed()})
+            if path in ("/v1/people", "/v1/person"):
+                if not self._profiles_allowed():
+                    return self._send(403, {"error": "Player profiles need an admin key or a profile reader's key."})
+                q = parse_qs(urlparse(self.path).query)
+                if path == "/v1/person":
+                    found = app.store.person((q.get("id") or [""])[0])
+                    return self._send(200, found) if found else self._send(404, {"error": "No player with that id."})
+                build = (q.get("build") or [""])[0] or None
+                days = int((q.get("days") or ["90"])[0]) if (q.get("days") or ["90"])[0].isdigit() else 90
+                return self._send(200, app.store.people_list(build, min(days, 400), (q.get("q") or [""])[0]))
             build, days = self._query()
             if build not in S.BUILD_KINDS:
                 return self._send(400, {"error": f"build must be one of {list(S.BUILD_KINDS)}"})
@@ -280,6 +314,10 @@ def make_handler(app):
                     return self._send(200, V.matches(app.agg, build, days))
                 if path == "/v1/health":
                     return self._send(200, V.health(app.agg, app.store.health_facts(), days))
+                if path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
+                    view = {"/v1/audience": V.audience, "/v1/ftue": V.ftue, "/v1/economy": V.economy,
+                            "/v1/social": V.social}[path]
+                    return self._send(200, view(app.agg, build, days))
                 if path == "/v1/digest":
                     return self._send(200, app.store.latest_digest() or {})
             except Exception:
@@ -312,7 +350,7 @@ def make_handler(app):
                 return self._send(400, {"error": f"batch must be a list of at most {MAX_BATCH} events."})
             if not app.limit.allow(client, cost=max(1, len(batch) // 20)):
                 return self._send(429, {"error": "Too many requests; the client will retry."})
-            return self._send(200, {"status": 1, **app.store.ingest(batch)})
+            return self._send(200, {"status": 1, **app.store.ingest(batch, country=app.geo.country(client))})
 
         def _ask(self):
             reader = self._reader()

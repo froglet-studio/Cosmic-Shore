@@ -39,8 +39,9 @@ Not written yet; it is C# and needs the Unity verify rule.
 | `analytics_server.py` | HTTP server and CLI: ingest, the console's read API, Ask, erasure, the nightly job |
 | `analytics_store.py` | `events.db` (raw, with player ids), and the rebuild of `aggregates.db` (no player ids) |
 | `analytics_views.py` | The console's pages, read from `aggregates.db` only; the guarded SQL runner for Ask |
+| `analytics_geo.py` | Country from an IP address (DB-IP country table), the address not kept |
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
-| `test_analytics_server.py` | 19 tests: `python3 analytics_server.py --self-test` |
+| `test_analytics_server.py` | 24 tests: `python3 analytics_server.py --self-test` |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
 | `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy |
@@ -70,6 +71,32 @@ carries the team fields; earlier matches read `multi_human_unknown`, never guess
 
 Nightly (05:00 UTC by default): raw events older than `retention_days` (395) are deleted, `events.db` is backed up
 (14 kept), the aggregates are rebuilt, and the overnight read is written.
+
+## Pages, and who sees player profiles
+
+Overview, **Players**, Retention, **FTUE**, Matches, **Economy**, **Social**, Data health, Ask Claude, Erasure.
+
+- **Players**: active players per day, countries, platforms, the first-day funnel (reached the menu, started a match,
+  finished one, finished the FTUE, came back another day), launch-to-menu time per platform, and how sessions end.
+  Below that, **every player**: display name, player id, country, platform, first and last seen, matches, crystals.
+  It is searchable, and a click opens a **profile**: where and on what they play, the person properties the game
+  sent, activity per day, modes, vessels and play types, every match (finished, won, flight time, rematched),
+  crystals in and out, unlocks, FTUE steps with times, friends, invites and parties, settings, and the event
+  timeline.
+- **FTUE**: each quest-graph node, with the share of new players who completed it and when.
+- **Economy**: crystals earned and spent per day, sources, spends blocked for lack of crystals, unlocks, current
+  balances, and **crystals paid twice** (same player, source and amount within 1 s: the October wallet bug).
+- **Social**: invites sent and joined, friend requests and acceptance, shares.
+- **Matches** adds win rate by mode, vessels, favourites, repeated fails, shares and time paused.
+  **Data health** adds double payouts and cloud save failures.
+
+Profiles come from the raw events, so they are shown only to **admin keys and the read keys named in
+`profile_readers`** in `config.json`; any other read key sees the totals only. Claude never sees a profile.
+
+**Country**: ingest looks up the sender's address in DB-IP's free country table (CC BY 4.0; the Players page
+credits it) and keeps only the two-letter code; the address itself is never stored. The nightly job downloads the
+month's table into the data directory when the copy is over 32 days old (`geo_csv` in the config points at your own
+file instead). Decided by Shombith, 2026-11-05 (`Docs/Analytics/DATA_ARCHITECTURE.md` §8.11 row 8).
 
 ## Claude, and what it can see
 

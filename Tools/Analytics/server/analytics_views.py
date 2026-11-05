@@ -146,8 +146,21 @@ def matches(agg_path, build="release", days=90):
         "by_mode": [dict(r) for r in db.execute(
             "SELECT game_mode, COUNT(*) AS plays, SUM(completed) AS completed, "
             "ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
+            "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, "
             "ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s FROM plays "
             "WHERE build_kind=? AND day>=? GROUP BY game_mode ORDER BY plays DESC", (build, since))],
+        "by_vessel": [dict(r) for r in db.execute(
+            "SELECT vessel_class, COUNT(*) AS plays, ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
+            "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s "
+            "FROM plays WHERE build_kind=? AND day>=? GROUP BY vessel_class ORDER BY plays DESC", (build, since))],
+        "signals": [dict(r) for r in db.execute(
+            "SELECT game_mode, SUM(favorited) AS favorited, SUM(unfavorited) AS unfavorited, SUM(fails) AS fails, "
+            "SUM(shares) AS shares FROM mode_signals WHERE build_kind=? AND day>=? GROUP BY game_mode "
+            "ORDER BY favorited - unfavorited DESC", (build, since))],
+        "pause": dict(db.execute(
+            "SELECT ROUND(AVG(pause_seconds), 1) AS avg_pause_s, ROUND(AVG(duration_seconds), 1) AS avg_duration_s, "
+            "ROUND(100.0 * SUM(CASE WHEN pause_seconds > 30 THEN 1 ELSE 0 END) / NULLIF(COUNT(pause_seconds), 0), 1) "
+            "AS paused_over_30s_pct FROM plays WHERE build_kind=? AND day>=?", (build, since)).fetchone()),
         "by_intensity": [dict(r) for r in db.execute(
             "SELECT intensity, COUNT(*) AS plays, ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct "
             "FROM plays WHERE build_kind=? AND day>=? GROUP BY intensity ORDER BY intensity", (build, since))],
@@ -172,6 +185,12 @@ def health(agg_path, store_facts, days=30):
             "SELECT reason, event, SUM(count) AS count FROM rejects WHERE day>=? GROUP BY reason, event "
             "ORDER BY count DESC LIMIT 20", (since,))],
         "editor_share_pct": None,
+        "cloud_save_failures": [dict(r) for r in db.execute(
+            "SELECT key, SUM(count) AS count, MAX(day) AS last_day FROM cloud_save_failures WHERE day>=? "
+            "GROUP BY key ORDER BY count DESC", (since,))],
+        "double_payouts": [dict(r) for r in db.execute(
+            "SELECT day, build_kind, source, count, amount FROM double_payouts WHERE day>=? ORDER BY day DESC",
+            (since,))],
         **store_facts,
     }
     split = db.execute("SELECT build_kind, COUNT(DISTINCT match_id) FROM plays WHERE day>=? GROUP BY build_kind",
@@ -181,6 +200,135 @@ def health(agg_path, store_facts, days=30):
     result["editor_share_pct"] = _pct(editor, total)
     db.close()
     return result
+
+
+def audience(agg_path, build="release", days=90):
+    """Who plays: active and new players per day, platforms, countries, the first-day funnel, launch time, how
+    sessions end."""
+    db = _open(agg_path)
+    if db is None:
+        return _empty(build, days)
+    since = _since(days)
+    funnel = db.execute(
+        "SELECT SUM(players), SUM(reached_menu), SUM(started_match), SUM(finished_match), SUM(finished_ftue), "
+        "SUM(came_back) FROM funnel WHERE build_kind=? AND first_day>=?", (build, since)).fetchone()
+    steps = ["New players", "Reached the menu", "Started a match", "Finished a match", "Finished the FTUE",
+             "Came back another day"]
+    result = {
+        "build": build, "days": days, "built_ms": _built_ms(db),
+        "per_day": _every_day_players(since, days, {r["day"]: dict(r) for r in db.execute(
+            "SELECT day, players, new_players FROM daily_players WHERE build_kind=? AND day>=?", (build, since))}),
+        "platforms": [dict(r) for r in db.execute(
+            "SELECT platform, players FROM players_by_platform WHERE build_kind=? AND days=? ORDER BY players DESC",
+            (build, days))],
+        "countries": [dict(r) for r in db.execute(
+            "SELECT country, players FROM players_by_country WHERE build_kind=? AND days=? ORDER BY players DESC",
+            (build, days))],
+        "funnel": [{"step": name, "players": funnel[i] or 0} for i, name in enumerate(steps)] if funnel[0] else [],
+        "launches": [dict(r) for r in db.execute(
+            "SELECT platform, launches, p50_seconds, p90_seconds FROM launches WHERE build_kind=? AND days=? "
+            "ORDER BY launches DESC", (build, days))],
+        "session_ends": [dict(r) for r in db.execute(
+            "SELECT reason, SUM(count) AS count FROM session_ends WHERE build_kind=? AND day>=? GROUP BY reason "
+            "ORDER BY count DESC", (build, since))],
+    }
+    db.close()
+    return result
+
+
+def _every_day_players(since, days, by_day):
+    start = datetime.strptime(since, "%Y-%m-%d")
+    return [by_day.get(d, {"day": d, "players": 0, "new_players": 0})
+            for d in ((start + timedelta(days=n)).strftime("%Y-%m-%d") for n in range(days))]
+
+
+def ftue(agg_path, build="release", days=90):
+    """The FTUE quest graph as a funnel: how many of the players who started in the range completed each node."""
+    db = _open(agg_path)
+    if db is None:
+        return _empty(build, days)
+    since = _since(days)
+    cohort = db.execute("SELECT SUM(players), SUM(finished_ftue) FROM funnel WHERE build_kind=? AND first_day>=?",
+                        (build, since)).fetchone()
+    steps = [dict(r) for r in db.execute(
+        "SELECT quest_id, phase_index, step_id, MAX(step_name) AS step_name, SUM(players) AS players, "
+        "ROUND(SUM(seconds_sum) / NULLIF(SUM(seconds_n), 0), 0) AS avg_seconds FROM ftue_steps "
+        "WHERE build_kind=? AND first_day>=? GROUP BY quest_id, phase_index, step_id "
+        "ORDER BY quest_id, phase_index, avg_seconds", (build, since))]
+    for step in steps:
+        step["pct_of_new"] = _pct(step["players"], cohort[0] or 0)
+    db.close()
+    return {"build": build, "days": days, "built_ms": None,
+            "new_players": cohort[0] or 0, "finished_ftue": cohort[1] or 0,
+            "finished_pct": _pct(cohort[1] or 0, cohort[0] or 0), "steps": steps}
+
+
+def economy(agg_path, build="release", days=90):
+    """Crystals: earned and spent per day, where they come from and go, blocked spends, unlocks, balances, and
+    payouts made twice."""
+    db = _open(agg_path)
+    if db is None:
+        return _empty(build, days)
+    since = _since(days)
+    by_day = {}
+    for r in db.execute("SELECT day, kind, SUM(amount) AS amount FROM economy WHERE build_kind=? AND day>=? "
+                        "GROUP BY day, kind", (build, since)):
+        by_day.setdefault(r["day"], {})[r["kind"]] = r["amount"]
+    start = datetime.strptime(since, "%Y-%m-%d")
+    per_day = []
+    for n in range(days):
+        day = (start + timedelta(days=n)).strftime("%Y-%m-%d")
+        entry = by_day.get(day, {})
+        per_day.append({"day": day, "earned": entry.get("earned", 0), "spent": entry.get("spent", 0) + entry.get("unlock", 0)})
+    totals = {r["kind"]: dict(r) for r in db.execute(
+        "SELECT kind, SUM(events) AS events, SUM(amount) AS amount FROM economy WHERE build_kind=? AND day>=? "
+        "GROUP BY kind", (build, since))}
+    result = {
+        "build": build, "days": days, "built_ms": _built_ms(db), "per_day": per_day, "totals": totals,
+        "sources": [dict(r) for r in db.execute(
+            "SELECT kind, source, SUM(events) AS events, SUM(amount) AS amount FROM economy "
+            "WHERE build_kind=? AND day>=? AND kind IN ('earned', 'spent', 'unlock') GROUP BY kind, source "
+            "ORDER BY kind, amount DESC", (build, since))],
+        "blocked": [dict(r) for r in db.execute(
+            "SELECT source AS item, SUM(events) AS events, SUM(amount) AS short_by FROM economy "
+            "WHERE build_kind=? AND day>=? AND kind='blocked' GROUP BY source ORDER BY events DESC", (build, since))],
+        "unlocks": [dict(r) for r in db.execute(
+            "SELECT kind, name, SUM(count) AS count FROM unlocks WHERE build_kind=? AND day>=? GROUP BY kind, name "
+            "ORDER BY kind, count DESC", (build, since))],
+        "balances": [dict(r) for r in db.execute(
+            "SELECT bucket, players FROM balances WHERE build_kind=? ORDER BY bucket_order", (build,))],
+        "double_payouts": dict(db.execute(
+            "SELECT COALESCE(SUM(count), 0) AS count, COALESCE(SUM(amount), 0) AS amount FROM double_payouts "
+            "WHERE build_kind=? AND day>=?", (build, since)).fetchone()),
+    }
+    db.close()
+    return result
+
+
+SOCIAL_EVENTS = ("friend_request_sent", "friend_request_received", "friend_added", "party_invite_sent",
+                 "party_invite_received", "party_joined", "share_triggered")
+
+
+def social(agg_path, build="release", days=90):
+    db = _open(agg_path)
+    if db is None:
+        return _empty(build, days)
+    since = _since(days)
+    marks = ",".join("?" * len(SOCIAL_EVENTS))
+    totals = {r["event"]: dict(r) for r in db.execute(
+        f"SELECT event, SUM(rows) AS count, MAX(players) AS peak_daily_players FROM daily_events "
+        f"WHERE build_kind=? AND day>=? AND event IN ({marks}) GROUP BY event", (build, since, *SOCIAL_EVENTS))}
+    get = lambda e: (totals.get(e) or {}).get("count") or 0
+    per_day = {}
+    for r in db.execute(f"SELECT day, event, rows FROM daily_events WHERE build_kind=? AND day>=? "
+                        f"AND event IN ('party_invite_sent', 'party_joined', 'friend_added')", (build, since)):
+        per_day.setdefault(r["day"], {"day": r["day"], "party_invite_sent": 0, "party_joined": 0, "friend_added": 0})[r["event"]] = r["rows"]
+    db.close()
+    return {"build": build, "days": days, "built_ms": None, "totals": {e: get(e) for e in SOCIAL_EVENTS},
+            "invite_join_pct": _pct(get("party_joined"), get("party_invite_received")),
+            "friend_accept_pct": _pct(get("friend_added"), get("friend_request_received")),
+            "multi_human_matches": overview(agg_path, build, days)["tiles"]["multi_human_matches"] if days in WINDOWS else None,
+            "per_day": sorted(per_day.values(), key=lambda r: r["day"])}
 
 
 def digest_facts(agg_path):
@@ -195,6 +343,12 @@ def digest_facts(agg_path):
         facts[build] = {"last_7_days": week["tiles"], "last_14_days": prior["tiles"],
                         "rematch_by_play_type_90d": overview(agg_path, build, 90)["rematch_by_play_type"]}
     facts["match_health_90d"] = overview(agg_path, "release", 90)["match_health_by_build"]
+    facts["players_90d"] = {"funnel": audience(agg_path, "release", 90)["funnel"],
+                            "launch_to_menu": audience(agg_path, "release", 30)["launches"],
+                            "countries": audience(agg_path, "release", 30)["countries"][:8]}
+    eco = economy(agg_path, "release", 30)
+    facts["economy_30d"] = {"totals": eco["totals"], "double_payouts": eco["double_payouts"],
+                            "blocked": eco["blocked"][:5]}
     h = health(agg_path, {}, 14)
     facts["health_14d"] = {"rows_per_play": h["rows_per_play"][-14:], "rejects": h["rejects"],
                            "editor_share_pct": h["editor_share_pct"]}

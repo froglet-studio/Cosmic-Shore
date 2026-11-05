@@ -525,6 +525,61 @@
         }
       },
       "description": "A Cloud Save write exhausted all retries while online. Backend health signal."
+    },
+    "ftue_step_completed": {
+      "description": "One node of the FTUE quest graph completed (the activation funnel's steps). Sent by AnalyticsServiceFacade.HandleFtueStepCompleted.",
+      "parameters": {
+        "quest_id": {
+          "type": "string",
+          "description": "The quest graph's id (Assets/FTUE); \"unknown\" when the quest has none."
+        },
+        "phase_index": {
+          "type": "int",
+          "description": "Zero-based index of the quest phase."
+        },
+        "step_id": {
+          "type": "string",
+          "description": "The node's stable id, so re-wording a node never forks the funnel."
+        },
+        "step_name": {
+          "type": "string",
+          "description": "The node's display name; its id when it has none."
+        },
+        "seconds_since_launch": {
+          "type": "int",
+          "description": "Seconds since the app launched, at the moment the event fired."
+        }
+      }
+    },
+    "ftue_phase_completed": {
+      "description": "A phase of the FTUE quest graph completed.",
+      "parameters": {
+        "quest_id": {
+          "type": "string",
+          "description": "The quest graph's id (Assets/FTUE); \"unknown\" when the quest has none."
+        },
+        "phase_index": {
+          "type": "int",
+          "description": "Zero-based index of the quest phase."
+        },
+        "seconds_since_launch": {
+          "type": "int",
+          "description": "Seconds since the app launched, at the moment the event fired."
+        }
+      }
+    },
+    "ftue_completed": {
+      "description": "The whole FTUE quest graph completed.",
+      "parameters": {
+        "quest_id": {
+          "type": "string",
+          "description": "The quest graph's id (Assets/FTUE); \"unknown\" when the quest has none."
+        },
+        "seconds_since_launch": {
+          "type": "int",
+          "description": "Seconds since the app launched, at the moment the event fired."
+        }
+      }
     }
   },
   "queries": {

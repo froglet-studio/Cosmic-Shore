@@ -16,6 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import analytics_claude as C  # noqa: E402
+import analytics_geo as G  # noqa: E402
 import analytics_server as A  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
@@ -223,6 +224,86 @@ class AskDoor(StoreCase):
             C._client = real
 
 
+class Details(StoreCase):
+    def seed(self):
+        hour = 3600 * 1000
+        self.store.ingest([
+            ev("game_first_launched", "p1", T0), ev("menu_ready", "p1", T0 + 1000, seconds_since_launch=12, is_first=True),
+            ev("ftue_step_completed", "p1", T0 + 2000, quest_id="q", phase_index=0, step_id="n1", step_name="Fly",
+               seconds_since_launch=40),
+            started("p1", "m1", T0 + 3000), completed("p1", "m1", T0 + 90_000, player_won=True),
+            ev("crystals_earned", "p1", T0 + 91_000, amount=200, source="game_placement", balance=200),
+            ev("crystals_earned", "p1", T0 + 91_020, amount=200, source="game_placement", balance=400),  # paid twice
+            ev("vessel_unlocked", "p1", T0 + 95_000, vessel="Manta", cost=300, balance=100),
+            ev("setting_changed", "p1", T0 + 96_000, setting="invert_y", value="true"),
+            ev("cloud_save_failed", "p1", T0 + 97_000, key="HANGAR_DATA"),
+            ev("menu_ready", "p2", T0 + hour, seconds_since_launch=30),
+            ev("friend_added", "p2", T0 + hour + 10, friend_id="p1"),
+        ], country="SE")
+        self.store.ingest([{"event": "$identify", "timestamp": iso(T0),
+                            "properties": {"distinct_id": "p1", "$set": {"display_name": "Kestrel"}}}], country="SE")
+        self.store.rebuild_aggregates()
+
+    def test_the_new_pages_count_what_was_sent(self):
+        self.seed()
+        agg = self.store.agg_path
+        aud = V.audience(agg, "release", 7)
+        self.assertEqual({r["country"]: r["players"] for r in aud["countries"]}, {"SE": 2})
+        self.assertEqual([f["players"] for f in aud["funnel"]][:4], [2, 2, 1, 1])
+        self.assertEqual(V.ftue(agg, "release", 7)["steps"][0]["players"], 1)
+        eco = V.economy(agg, "release", 7)
+        self.assertEqual(eco["double_payouts"], {"count": 1, "amount": 200})
+        self.assertEqual(eco["totals"]["earned"]["amount"], 400)
+        self.assertEqual(V.matches(agg, "release", 7)["by_mode"][0]["win_pct"], 100.0)
+        self.assertEqual(V.social(agg, "release", 7)["totals"]["friend_added"], 1)
+        self.assertEqual(V.health(agg, {}, 14)["cloud_save_failures"][0]["key"], "HANGAR_DATA")
+        dump = "\n".join(sqlite3.connect(agg).iterdump())
+        for secret in ("'p1'", "'p2'", "Kestrel"):
+            self.assertNotIn(secret, dump)
+
+    def test_a_profile_holds_everything_about_one_player(self):
+        self.seed()
+        listing = self.store.people_list(days=7)
+        self.assertEqual({p["distinct_id"]: p["display_name"] for p in listing["people"]}, {"p1": "Kestrel", "p2": ""})
+        self.assertEqual(self.store.people_list(days=7, search="kest")["total"], 1)
+        p = self.store.person("p1")
+        self.assertEqual((p["display_name"], p["where"]["latest_country"]), ("Kestrel", "SE"))
+        self.assertEqual((p["matches"]["total"], p["matches"]["won"]), (1, 1))
+        self.assertEqual(p["economy"]["balance"], 100)
+        self.assertEqual(p["settings"]["invert_y"]["value"], "true")
+        self.assertEqual(p["ftue"][0]["step"], "Fly")
+        self.assertIsNone(self.store.person("nobody"))
+        self.store.erase("p1", "admin")
+        self.assertIsNone(self.store.person("p1"))
+
+
+class Geo(unittest.TestCase):
+    def test_country_lookup_keeps_only_the_code(self):
+        folder = tempfile.mkdtemp()
+        path = os.path.join(folder, "geo.csv")
+        with open(path, "w") as handle:
+            handle.write("1.0.0.0,1.0.0.255,AU\n81.0.0.0,81.255.255.255,SE\n2a00:1450::,2a00:1450:ffff::,NL\n")
+        geo = G.CountryLookup(path)
+        self.assertEqual(geo.country("81.2.3.4"), "SE")
+        self.assertEqual(geo.country("2a00:1450::1"), "NL")
+        self.assertIsNone(geo.country("10.0.0.1"))
+        self.assertIsNone(geo.country("not an ip"))
+        self.assertIsNone(G.CountryLookup(os.path.join(folder, "missing.csv")).country("81.2.3.4"))
+        shutil.rmtree(folder)
+
+
+class SchemaCoversTheGame(unittest.TestCase):
+    def test_every_event_the_game_sends_is_in_the_schema(self):
+        """The server rejects events missing from EVENT_SCHEMA.json; the FTUE events were missing (2026-11-05)."""
+        import re
+        keys = os.path.join(HERE, "..", "..", "..", "Assets", "_Scripts", "System", "UGSKeys.cs")
+        if not os.path.exists(keys):
+            self.skipTest("no Unity sources in this checkout (the VM's sparse checkout)")
+        sent = set(re.findall(r'public const string Event\w+\s*=\s*"([^"]+)"', open(keys).read()))
+        missing = sent - set(A.schema_events(A.REPO_SCHEMA))
+        self.assertEqual(missing, set(), "add these to Docs/Analytics/EVENT_SCHEMA.json")
+
+
 class Http(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
@@ -288,9 +369,20 @@ class Http(unittest.TestCase):
         for name in ("/console.js", "/console.css"):
             with urllib.request.urlopen(self.base + name) as response:
                 self.assertEqual(response.status, 200)
-        self.assertEqual(self.call("GET", "/v1/me", key="read-key")[1], {"name": "ian", "admin": False})
-        self.assertEqual(self.call("GET", "/v1/me", key="admin-key")[1], {"name": "admin", "admin": True})
+        self.assertEqual(self.call("GET", "/v1/me", key="read-key")[1], {"name": "ian", "admin": False, "profiles": False})
+        self.assertEqual(self.call("GET", "/v1/me", key="admin-key")[1], {"name": "admin", "admin": True, "profiles": True})
         self.assertEqual(self.call("GET", "/../analytics_server.py")[0], 401)
+
+    def test_profiles_need_a_profile_readers_key(self):
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [started("p1", "m1", T0)]})
+        self.assertEqual(self.call("GET", "/v1/people", key="read-key")[0], 403)
+        self.app.config["profile_readers"] = ["ian"]
+        status, out, _ = self.call("GET", "/v1/people?days=7", key="read-key")
+        self.assertEqual((status, out["total"]), (200, 1))
+        self.assertEqual(self.call("GET", "/v1/person?id=p1", key="admin-key")[1]["player_id"], "p1")
+        self.assertEqual(self.call("GET", "/v1/person?id=nope", key="admin-key")[0], 404)
+        for path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
+            self.assertEqual(self.call("GET", path + "?days=30", key="read-key")[0], 200, path)
 
     def test_healthz_is_public(self):
         self.assertEqual(self.call("GET", "/healthz")[:2], (200, {"ok": True}))
