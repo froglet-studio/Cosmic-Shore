@@ -6074,3 +6074,12 @@ phone; games run 7, 4, then 2 across; the commit (Start game, Play again) stays 
 stays landscape; a game played upright gets its own portrait HUD when one is picked.
 
 Nothing new to approve here: it puts Rev 53, 55 and 56 beside the PC screens they come from.
+
+**Correction (2026-11-05):** Shombith: "the home arcade arena buttons are grey in PC as well, why?" The boards of Rev 53,
+55, 56 and 57 drew the kit's buttons in a flat grey (and the calls to action as solid lime), which is not how they ship.
+Redrawn in place with the kit's own glass palette, by variant (`K.button_palette(variant, False)`): Default is a Jade
+hairline over a 12 % Jade fill (the four hubs, Back, Replays, Leaderboard, Controls, Fly it first, Play as guest, Main
+menu), Cancel a Neutral Lightest one (Leave, Decline), Cta a Lime one with Lime words (Join, Invite, Accept, Yes),
+Purchase Gold (Unlock), Inactive grey (Voyage, Unlocked); Start game and Play again stay the opaque Ruby Commit. The
+fourth hub reads Voyage, as built. Nothing about the desktop build changed: the boards had the colours wrong, not the
+game.

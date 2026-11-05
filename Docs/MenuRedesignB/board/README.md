@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793910907-e698` of **Frogma**: Rev 3 to Rev 57, 486 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793912687-ef90` of **Frogma**: Rev 3 to Rev 57, 478 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -581,17 +581,6 @@ Copied on 2026-11-05 from canvas version `1793910907-e698` of **Frogma**: Rev 3 
 - [`R49BStory.dc.html`](R49BStory.dc.html) - Rev 49 B - Hangar light, level 3, the story (optional) - interactive
 - [`R49CStory.dc.html`](R49CStory.dc.html) - Rev 49 C - Route poster, level 3, the story (optional) - interactive
 - [`R49DStory.dc.html`](R49DStory.dc.html) - Rev 49 D - Split art, level 3, the story (optional) - interactive
-
-#### Rev 47 - Ark Squads: real domain colours, the Ark in 3D, nanobots or the Meerkat warp (six ways)
-
-- [`R47Compare.dc.html`](R47Compare.dc.html) - Rev 47 - The colour fix (built tint against ship colours, per hull and domain) and the two domain changes frame by frame
-- [`R47A.dc.html`](R47A.dc.html) - Rev 47 A - Escort: the Ark centre stage, its three escorts round it, seats along the bottom - nanobot swap (recommended) - interactive
-- [`R47B.dc.html`](R47B.dc.html) - Rev 47 B - Hangar: seats stacked left, the Ark large right - Meerkat warp - interactive
-- [`R47C.dc.html`](R47C.dc.html) - Rev 47 C - The deck, kept: the built deck, the Ark turning above it - nanobot swap - interactive
-- [`R47D.dc.html`](R47D.dc.html) - Rev 47 D - Bays: the Ark over three launch bays, an escort in each - Meerkat warp - interactive
-- [`R47E.dc.html`](R47E.dc.html) - Rev 47 E - Dossier: the Ark on the left half, three seat rows right - nanobot swap - interactive
-- [`R47F.dc.html`](R47F.dc.html) - Rev 47 F - Cinema: the Ark fills the screen, the squad floats over it - Meerkat warp - interactive
-- [`R47Notes.dc.html`](R47Notes.dc.html) - Rev 47 - notes: what was wrong with the colours, the Ark render, the recommendation
 
 #### Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)
 
