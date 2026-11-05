@@ -130,7 +130,6 @@ STYLES = (  # key, role, token, sample
 
 def build_modal():
     root = N("root", NAME, STRETCH)
-    root.add("phone", 114, K.phone_window_block())   # no phone board yet: the PC window right of the rail on a phone (author_menu_phone.py)
     root.add("cg", 225, hidden_group()).add("anim", 95, animator())
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.88, raycast=True)
     content = root.child(N("Content", "Content", STRETCH))
@@ -200,7 +199,65 @@ def build_modal():
     image_node(styles, "Window/Styles/Rule", "Rule", TL(0, len(STYLES) * 34, 600, 1), "SurfaceDark")
 
     root.add("credits", 114, lambda ctx, go: mono(go, S["credits"], credits_body(ctx)))
+    phone_layout(win)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/UI_STYLE_GUIDE.md section 8; the 800 x 450 phone canvas, Docs/MENU_REDESIGN_B.md section 129).
+# The window fills the region right of the 96-wide rail (author_menu_arcade.PHONE_X): x 112 .. W-16, y 8 .. 442, so
+# 672 x 434 on the narrowest phone; the dim still covers the whole screen. Inside it, in phone units:
+#   the title (H1 at its phone size) top left, Close top right drawn at 1.1 (48.6 tall), the right-stick hint left of
+#   Close at its PC look; the list from 68 down to 12 above the foot, 20 in from the left, the thin scrollbar 14 in from
+#   the right; the title band 100 tall (its Display title at its phone size). Every text but the hint and Close takes
+#   its role's phone size, and so do the row styles the manifest's rows copy. The Replays browser shares this frame
+#   (author_menu_replays.py calls phone_window_frame).
+# --------------------------------------------------------------------------------------------
+PHONE_X, PH_RIGHT, PH_VPAD = 112, 16, 8               # author_menu_arcade.PHONE_X; the window's right and top/foot margins
+PH_W, PH_H = 800 - PHONE_X - PH_RIGHT, 450 - 2 * PH_VPAD   # 672 x 434 on the narrowest phone canvas
+PH_PAD = 20                                           # the window's inner side margin on a phone
+PH_LIST_TOP, PH_LIST_BOTTOM, PH_LIST_RIGHT = 68, 12, 28
+PH_CLOSE_SCALE = 1.1
+PH_BAND_H = 100
+
+
+def close_size():
+    """Close's size as its layout fits it (W.close_button): 16 | keycap | 10 | CLOSE | 16 wide, 9 + keycap + 9 tall."""
+    return (16 + K.label_width("B", "Label") + 24 + 10 + K.label_width("CLOSE", "ButtonSmall") + 16,
+            18 + max(K.line_height("Label") + 8, K.line_height("ButtonSmall")))
+
+
+def phone_window_frame(win, put):
+    """The window right of the rail, Close top right at PH_CLOSE_SCALE, the list and its scrollbar under the header."""
+    def kid(key):
+        return next(c for c in win.children if c.key == key)
+    put(win, R((0, 0), (1, 1), ((PHONE_X - PH_RIGHT) / 2, 0), (-(PHONE_X + PH_RIGHT), -2 * PH_VPAD)))
+    cw, ch = close_size()
+    put(kid("Window/Close"), R((1, 1), None, (-PH_RIGHT, -10), (cw, ch), (1, 1)), scale=PH_CLOSE_SCALE)
+    put(kid("Window/Scroll"), R((0, 0), (1, 1), ((PH_PAD - PH_LIST_RIGHT) / 2, (PH_LIST_BOTTOM - PH_LIST_TOP) / 2),
+                                 (-(PH_PAD + PH_LIST_RIGHT), -(PH_LIST_TOP + PH_LIST_BOTTOM))))
+    put(kid("Window/Scrollbar"), R((1, 0), (1, 1), (-14, (PH_LIST_BOTTOM - PH_LIST_TOP) / 2),
+                                    (6, -(PH_LIST_TOP + PH_LIST_BOTTOM)), (1, 0.5)))
+    return kid
+
+
+def phone_layout(win):
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    kid = phone_window_frame(win, put)
+    put(kid("Window/Title"), TL(PH_PAD, 12, 360, 32))
+    cw, _ = close_size()
+    hint_w = K.label_width("RS", "Label") + 24 + 8 + K.label_width("Scroll", "BodySmall")
+    put(kid("Window/Hint"), R((1, 1), None, (-(PH_RIGHT + cw * PH_CLOSE_SCALE + 12), -14), (hint_w, 40), (1, 1)), scale=1)
+    band = next(c for c in kid("Window/Scroll").children[0].children[0].children
+                if c.key == "Window/Scroll/Viewport/Content/Band")
+    put(band, layout=(0, PH_BAND_H))
+    for c in band.children:
+        if c.key.endswith("/Presents"):
+            put(c, TL(0, 14, 560, 16))
+        elif c.key.endswith("/Title"):
+            put(c, TL(0, 32, 560, 44))
 
 
 def credits_body(ctx):
@@ -317,6 +374,14 @@ def validate(files):
     assert STANDARD_CONTROLLER in anim, "the root's Animator must run Standard.controller"
     assert re.search(r"^  m_Name: Content$", pf, re.M), "Standard.controller animates a child named Content"
     assert pf.count("guid: " + S["close"]) == 1, "Close must close through ModalWindowCloseButton"
+    # The phone layout (phone_layout): its own, never the PC window shrunk onto the phone.
+    assert "  drawAtPcScale: 1\n" not in pf, "CreditsModal carries its own phone layout: no block may be the PC-scale fallback"
+    for key in ("Window", "Window/Close", "Window/Scroll", "Window/Scrollbar", "Window/Title"):
+        _, ph = A.doc_of(pf, F(f"{key}#phone"))
+        assert ph and "  movesRect: 1\n" in ph, f"CreditsModal: {key} has no phone pose"
+    _, ph = A.doc_of(pf, F("Window/Close#phone"))
+    assert float(re.search(r"^  scale: (\S+)$", ph, re.M).group(1)) * close_size()[1] >= 44, \
+        "Close must be a thumb-sized target (44 tall) on a phone"
 
     sc_text = files[SCENE]
     inst, stub, comp_fid = scene_ids()
@@ -369,6 +434,9 @@ def self_test(files):
         ("a scroll view with no scrollbar", lambda f: f.__setitem__(pf, re.sub(
             r"(  m_VerticalScrollbar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[pf], count=1))),
         ("the wrong modal type", lambda f: f.__setitem__(pf, f[pf].replace(f"  ModalType: {CREDITS_TYPE}\n", "  ModalType: 5\n"))),
+        ("the PC-scale fallback back", lambda f: f.__setitem__(pf, f[pf].replace("  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
+        ("Close too small to tap on a phone", lambda f: f.__setitem__(pf, f[pf].replace(
+            f"  scale: {K.f32(PH_CLOSE_SCALE)}\n", "  scale: 0.8\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

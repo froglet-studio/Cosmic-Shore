@@ -313,8 +313,22 @@ def orbit_layout(content):
     C.plain_image(halo, "Orbit/Nodes/Core/Halo/Image", "Image", STRETCH, tok("Selection", 0.4), K.kit_sprite("kit_ring_glow"),
                   preserve=False)
     portrait_node(core, "Orbit/Nodes/Core/Portrait", STRETCH, CORE_BADGE)
+    # On a phone the reading panel is a sheet behind a phone-only READ button, over a dim a tap closes (PhoneSheet; see
+    # phone_layout). On PC the button is hidden, the dim transparent and the sheet a plain stretched wrapper.
+    read_button(lay)
+    dim = lay.child(N("PageDim", "PageDim", STRETCH))
+    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
+        .add("cg", 225, H.canvas_group(False)) \
+        .add("button", 114, lambda ctx, go: mono(go, A.BUTTON, C.A.selectable(0)
+                                                  + f"  m_TargetGraphic: {ref(ctx.c('PageDim', 'img'))}\n" + C.A.calls([])))
+    sheet = lay.child(N("PageSheet", "PageSheet", STRETCH))
+    sheet.add("cg", 225, H.canvas_group(True))
+    sheet.add("sheet", 114, lambda ctx, go: mono(go, K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs"),
+              f"  panel: {ref(ctx.c('PageSheet', 'cg'))}\n  dim: {ref(ctx.c('PageDim', 'cg'))}\n"
+              f"  openButton: {ref(ctx.c('Read', 'button'))}\n  closeButton: {{fileID: 0}}\n"
+              f"  dimButton: {ref(ctx.c('PageDim', 'button'))}\n"))
     # Placed by its top-right corner: SIDE in from the right, y LAYOUT_TOP down, 40 clear of the foot.
-    page_zone(lay, "Page", R((1, 0), (1, 1), (-SIDE, -LAYOUT_TOP), (PAGE_W, -(LAYOUT_TOP + 40)), (1, 1)), CORE_PORTRAIT)
+    page_zone(sheet, "Page", R((1, 0), (1, 1), (-SIDE, -LAYOUT_TOP), (PAGE_W, -(LAYOUT_TOP + 40)), (1, 1)), CORE_PORTRAIT)
 
 
 def guide_layout(content):
@@ -638,7 +652,6 @@ def screen_body(ctx):
 
 def build_view():
     root = N("root", "CodexView", STRETCH)
-    root.add("phone", 114, K.phone_window_block())   # no phone board yet: the PC window right of the rail on a phone (author_menu_phone.py)
     # The Hangar's backdrop exactly: the near-opaque veil and the sea lines over it, under the top bar.
     veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84))))
     veil.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", H.WINDOW_BACKDROP_ALPHA), raycast=True)) \
@@ -656,7 +669,131 @@ def build_view():
     head_row(content)
     chapter_row(content)
     root.add("screen", 114, lambda ctx, go: mono(go, S["screen"], screen_body(ctx)))
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/UI_STYLE_GUIDE.md section 8; the 800 x 450 phone canvas, Docs/MENU_REDESIGN_B.md section 129).
+# The screen sits right of the 96-wide rail (author_menu_arcade.PHONE_X), in the frame x 112 .. W-16, y 8 .. 442. The
+# content is drawn at 1 there (its units are phone units) and each block at its own scale, its PC-authored parts kept:
+#   row 1 (0 .. 48)      the chapter row at 0.92 (tabs 48 tall), FLORA / FAUNA right of it at 0.92 while ECOLOGY is
+#                        open; the chapter's title and count are not drawn (the lit tab names the chapter)
+#   ELEMENTS (56 .. 434) the orbit across the whole width at 0.45 (front entry 71 x 84, back 42 x 50); the reading panel
+#                        is a sheet on the right (340 wide, at 0.85) behind a phone-only READ button, over a dim
+#   ECOLOGY / LEXICON    the book (56 .. 316): the plate at 0.267 (160 x 260), the page right of it at 0.8; the strip
+#                        under it (324 .. 434) at 0.6 (tiles 90 x 90)
+# Every number below is frame units on the narrowest (800-wide) phone canvas; a wider phone widens the book and centres
+# the orbit and the strip.
+# --------------------------------------------------------------------------------------------
+PHONE_RAIL, PHONE_X = 96, 112                 # author_menu_arcade.PHONE_RAIL / PHONE_X
+PH_W, PH_H = 800 - PHONE_X - 16, 450 - 16     # the frame on the narrowest phone canvas: 672 x 434
+PH_ROW_H = 48                                 # the chapter row's height on screen
+PH_TAB_SCALE = round(PH_ROW_H / TAB_H, 4)     # 0.9231: the chapter and FLORA / FAUNA tabs 48 tall
+PH_BODY_TOP = 56                              # both layouts start under the chapter row
+PH_BODY_H = PH_H - PH_BODY_TOP                # 378
+PH_ORBIT_SCALE = 0.45
+PH_SHEET_W, PH_SHEET_SCALE = 340, 0.85        # the ELEMENTS reading sheet, on screen
+PH_STRIP_SCALE, PH_STRIP_GAP = 0.6, 8
+PH_STRIP_H = round(STRIP_H * PH_STRIP_SCALE, 2)                 # 110.4
+PH_BOOK_H = round(PH_BODY_H - PH_STRIP_GAP - PH_STRIP_H, 2)     # 259.6
+PH_PLATE_W = 160
+PH_PLATE_SCALE = round(PH_BOOK_H / 975, 4)    # the plate laid out 975 tall (its portrait 520 fits its 600 width)
+PH_PAGE_X, PH_GUIDE_SCALE = PH_PLATE_W + 10, 0.8
+PH_GUIDE_CELL = (269, CELL_H)                 # two cells across the Field Guide's page on a phone
+PH_FACT_LABEL_W = 140
+READ_W, READ_H = round(16 + K.label_width("READ", "Button") + 16, 1), 48
+
+
+def read_button(lay):
+    """The phone-only READ button: it opens the ELEMENTS reading sheet (PhoneSheet keeps it hidden on PC)."""
+    b = lay.child(N("Read", "Read", R((1, 0), None, (0, 0), (READ_W, READ_H), (1, 0))))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    b.child(N("Read/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    b.child(N("Read/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver14_line1"), True))
+    lab = b.child(N("Read/Label", "Label", STRETCH))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp("READ", "Button", content, align="center")) \
+        .add("kt", 114, K.kit_text("Button", driven=True))
+    b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, C.A.selectable()
+                                              + f"  m_TargetGraphic: {ref(ctx.c('Read/Fill', 'img'))}\n" + C.A.calls([])))
+    return b
+
+
+def phone_layout(root):
+    """Give every block of the screen its phone pose (see the comment above)."""
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    def kid(node, key):
+        return next(c for c in node.children if c.key == key)
+
+    def find(node, key):
+        if node.key == key:
+            return node
+        for c in node.children:
+            if isinstance(c, K.Node):
+                hit = find(c, key)
+                if hit:
+                    return hit
+        return None
+
+    for n in root.children:
+        if n.key in ("Backdrop", "Sea"):
+            put(n, R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0)))
+    frame = kid(root, "Frame")
+    put(frame, R((0, 0), (1, 1), ((PHONE_X - 16) / 2, 0), (-(PHONE_X + 16), -16)))
+    content = kid(frame, "Frame/Content")
+    put(content, STRETCH, scale=1)
+
+    # Row 1: the chapters, then FLORA / FAUNA right of them; the title and the count off the canvas.
+    chapters_w = chapter_width()
+    put(kid(content, "Chapters"), TL(0, 0, chapters_w, TAB_H), scale=PH_TAB_SCALE)
+    head = kid(content, "Head")
+    put(head, R((0, 1), (1, 1), (0, 0), (0, TAB_H), (0.5, 1)))
+    put(kid(head, "Head/Title"), TL(-4000, 0, 300, 34))
+    put(kid(head, "Head/Count"), TL(-4000, 0, 260, 24))
+    put(kid(head, "Head/Ecology"), TL(PH_ECO_X, 0, 320, TAB_H), scale=PH_TAB_SCALE)
+
+    # ELEMENTS: the orbit across the body, the reading panel a sheet on the right.
+    orbit = kid(content, "OrbitLayout")
+    put(kid(orbit, "Orbit"), R((0.5, 1), None, (0, -PH_BODY_TOP), (round(PH_W / PH_ORBIT_SCALE, 2),
+                                                                   round(PH_BODY_H / PH_ORBIT_SCALE, 2)), (0.5, 1)),
+        scale=PH_ORBIT_SCALE)
+    put(kid(orbit, "Read"), R((1, 0), None, (0, 0), (READ_W, READ_H), (1, 0)))
+    page = kid(kid(orbit, "PageSheet"), "Page")
+    put(page, R((1, 1), None, (0, -PH_BODY_TOP), (round(PH_SHEET_W / PH_SHEET_SCALE, 2), round(PH_BODY_H / PH_SHEET_SCALE, 2)),
+                (1, 1)), scale=PH_SHEET_SCALE)
+    put(find(page, "Page/Cells/Cells"), grid=dict(columns=1))
+
+    # ECOLOGY / LEXICON: the book over the strip.
+    guide = kid(content, "Guide")
+    book = kid(guide, "Guide/Book")
+    put(book, R((0, 1), (1, 1), (0, -PH_BODY_TOP), (0, PH_BOOK_H), (0.5, 1)))
+    put(kid(book, "Guide/Plate"), TL(0, 0, round(PH_PLATE_W / PH_PLATE_SCALE, 2), 975), scale=PH_PLATE_SCALE)
+    put(kid(book, "Guide/Spine"), R((0, 0), (0, 1), (PH_PLATE_W + 5, 0), (2, -40)))
+    gpage = kid(book, "Guide/Page")
+    put(gpage, TL(PH_PAGE_X, 0, round((PH_W - PH_PAGE_X) / PH_GUIDE_SCALE, 2), round(PH_BOOK_H / PH_GUIDE_SCALE, 2)),
+        scale=PH_GUIDE_SCALE)
+    put(find(gpage, "Guide/Page/Cells/Cells"), grid=dict(cell=PH_GUIDE_CELL, columns=2))
+    cell = "Guide/Page/Cells/Cells/Template"
+    put(find(gpage, f"{cell}/Title"), TL(64, 20, PH_GUIDE_CELL[0] - 76, 28))
+    put(find(gpage, f"{cell}/Line"), TL(12, 64, PH_GUIDE_CELL[0] - 24, CELL_H - 72))
+    put(kid(guide, "Guide/Strip"), R((0.5, 0), None, (0, 0), (round(PH_W / PH_STRIP_SCALE, 2), STRIP_H), (0.5, 0)),
+        scale=PH_STRIP_SCALE)
+
+    # Both pages: a fact's label narrower, so its value keeps room on the narrower page.
+    for p in (page, gpage):
+        put(find(p, f"{p.key}/Facts/Template/Title"), layout=(PH_FACT_LABEL_W, 0))
+
+
+def chapter_width():
+    return sum(K.label_width(n.upper(), TAB_ROLE) + TAB_PAD for n in CHAPTERS) + 2 * 40 + TAB_GAP * (len(CHAPTERS) + 1)
+
+
+PH_ECO_X = round(chapter_width() * PH_TAB_SCALE + 16, 1)
 
 
 FOLDER_META = ("fileFormatVersion: 2\nguid: {g}\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {{}}\n"
@@ -854,6 +991,25 @@ def validate(files):
     kids = re.findall(r"fileID: (-?\d+)", order)
     assert kids[:2] == [str(V("OrbitLayout#rt")), str(V("Guide#rt"))], "focus order: the layouts first, the chapters last"
 
+    # The phone layout (phone_layout): a real one, not the PC window shrunk; the ELEMENTS page a sheet behind READ.
+    assert "  drawAtPcScale: 1\n" not in view, "CodexView carries its own phone layout: no block may be the PC-scale fallback"
+    _, sheet = A.doc_of(view, V("PageSheet#sheet"))
+    assert sheet and K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs") in sheet, "the ELEMENTS page's PhoneSheet is missing"
+    for field, key in (("panel", "PageSheet#cg"), ("dim", "PageDim#cg"), ("openButton", "Read#button"),
+                       ("dimButton", "PageDim#button")):
+        assert f"  {field}: {{fileID: {V(key)}}}\n" in sheet, f"the ELEMENTS page sheet's {field} is not wired"
+    assert "  m_Alpha: 0\n" in A.doc_of(view, V("PageDim#cg"))[1], "the page sheet's dim must start hidden (PC never shows it)"
+    assert "  m_IsActive: 0\n" in A.doc_of(view, V("Read#go"))[1], "READ is phone-only: it must ship inactive"
+    sheet_kids = re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V("PageSheet#rt"))[1], re.M).group(1)
+    assert f"{{fileID: {V('Page#rt')}}}" in sheet_kids, "the ELEMENTS page must sit inside its sheet"
+    lay_kids = re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)",
+                                                       A.doc_of(view, V("OrbitLayout#rt"))[1], re.M).group(1))
+    assert lay_kids == [str(V(f"{k}#rt")) for k in ("Orbit", "Read", "PageDim", "PageSheet")], \
+        "the orbit layout's order: the orbit (focus lands on an entry), READ under the dim, the sheet over both"
+    for key in ("Frame", "Frame/Content", "Chapters", "Head/Ecology", "Orbit", "Page", "Guide/Book", "Guide/Page", "Guide/Strip"):
+        _, ph = A.doc_of(view, V(f"{key}#phone"))
+        assert ph and "  movesRect: 1\n" in ph, f"{key} has no phone pose"
+
     sc_text = files[SCENE]
     inst, stub = scene_ids()
     assert sc_text.count(f"m_SourcePrefab: {{fileID: 100100000, guid: {asset_guid('CodexView')}") == 1, \
@@ -939,6 +1095,10 @@ def self_test(files):
         ("the chapters before the grid in focus order", lambda f: f.__setitem__(view, f[view].replace(
             f"  m_Children:\n  - {{fileID: {V('OrbitLayout#rt')}}}\n  - {{fileID: {V('Guide#rt')}}}\n",
             f"  m_Children:\n  - {{fileID: {V('Guide#rt')}}}\n  - {{fileID: {V('OrbitLayout#rt')}}}\n", 1))),
+        ("the ELEMENTS sheet's READ unwired", lambda f: f.__setitem__(view, f[view].replace(
+            f"  openButton: {{fileID: {V('Read#button')}}}\n", "  openButton: {fileID: 0}\n", 1))),
+        ("the PC-scale fallback back on the root", lambda f: f.__setitem__(view, f[view].replace(
+            "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

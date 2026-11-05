@@ -196,6 +196,7 @@ def build_row():
              f"  deleteButton: {ref(ctx.c('Actions/Delete', 'button'))}\n"
              f"  deleteText: {ref(ctx.c('Actions/Delete/Label', 'tmp'))}\n"
              f"  elsewhere: {ref(ctx.c('Elsewhere', 'cg'))}\n  confirmSeconds: 3\n"))
+    row_phone_layout(root)
     return root
 
 
@@ -329,7 +330,6 @@ def section(col, key, name, caption, list_name):
 
 def build_browser():
     root = N("root", BROWSER, STRETCH)
-    root.add("phone", 114, K.phone_window_block())   # no phone board yet: the PC window right of the rail on a phone (author_menu_phone.py)
     root.add("cg", 225, CR.hidden_group()).add("anim", 95, CR.animator())
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.88, raycast=True)
     content = root.child(N("Content", "Content", STRETCH))
@@ -382,7 +382,53 @@ def build_browser():
     W.close_button(win)
 
     root.add("browser", 114, lambda ctx, go: mono(go, S["browser"], browser_body(ctx)))
+    browser_phone_layout(win)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/UI_STYLE_GUIDE.md section 8; the 800 x 450 phone canvas, Docs/MENU_REDESIGN_B.md section 129).
+# The browser takes Credits' phone window (author_menu_credits.phone_window_frame): right of the 96-wide rail, 672 x 434
+# on the narrowest phone, Close top right at 1.1, the list from 68 down. Its header: "My replays" (H1 at its phone
+# size), "Your last 10 games" beside it, the status line under them. A row (ReplayRow.prefab, PH_ROW_H tall): its four
+# lines stacked down the left at their phone sizes, WATCH and DELETE on the right drawn at PH_ACTIONS_SCALE (45 tall);
+# "Recorded on another device" in their place on a replay from elsewhere. The playback HUD is not on Menu_Main's canvas
+# (ReplayBrowserModal instantiates it as its own root canvas), so it has no phone layout here.
+# --------------------------------------------------------------------------------------------
+PH_ROW_H = 100
+PH_ACTIONS_W = 200                                  # WATCH | 10 | DELETE (CONFIRM) fit at their PC sizes
+PH_ACTIONS_SCALE = 1.25
+PH_BUTTON_H = K.line_height("ButtonSmall") + 18     # kit_button's height
+PH_ROW_TEXT_RIGHT = 16 + PH_ACTIONS_W * PH_ACTIONS_SCALE + 12
+PH_ROW_LINES = (("Title", 10, 22), ("When", 34, 18), ("Result", 54, 20), ("Detail", 76, 18))   # key, top, height
+
+
+def browser_phone_layout(win):
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    kid = CR.phone_window_frame(win, put)
+    put(kid("Window/Title"), TL(CR.PH_PAD, 12, 260, 32))
+    count_x = round(CR.PH_PAD + K.label_width(TITLE, "H1") * K.PHONE_SIZES["H1"] / K.ROLES["H1"][2] + 14, 1)
+    put(kid("Window/Count"), TL(count_x, 22, 300, 18))
+    put(kid("Window/Status"), TL(CR.PH_PAD, 46, 440, 18))
+
+
+def row_phone_layout(root):
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    put(root, layout=(0, PH_ROW_H))
+    right = PH_ROW_TEXT_RIGHT
+    for c in root.children:
+        line = next((l for l in PH_ROW_LINES if l[0] == c.key), None)
+        if line:
+            _, top, h = line
+            put(c, R((0, 1), (1, 1), ((16 - right) / 2, -top), (-(16 + right), h), (0.5, 1)))
+        elif c.key == "Actions":
+            put(c, R((1, 0.5), None, (-16, 0), (PH_ACTIONS_W, PH_BUTTON_H), (1, 0.5)), scale=PH_ACTIONS_SCALE)
+        elif c.key == "Elsewhere":
+            put(c, R((1, 0.5), None, (-16, 0), (260, 20), (1, 0.5)))
 
 
 def browser_body(ctx):
@@ -552,6 +598,18 @@ def validate(files):
     assert f"  m_Content: {{fileID: {F(BROWSER)(COL + '#rt')}}}\n" in scroll, "ScrollRect.m_Content is not the list column"
     C.wired(pf, scroll, "m_VerticalScrollbar", SCROLLBAR, "ScrollRect")
 
+    # The phone layout (browser_phone_layout, row_phone_layout): its own, never the PC window shrunk onto the phone.
+    assert "  drawAtPcScale: 1\n" not in pf, "ReplayBrowserModal carries its own phone layout: no PC-scale fallback"
+    for key in ("Window", "Window/Close", "Window/Scroll", "Window/Scrollbar", "Window/Title", "Window/Count", "Window/Status"):
+        _, ph = A.doc_of(pf, F(BROWSER)(f"{key}#phone"))
+        assert ph and "  movesRect: 1\n" in ph, f"ReplayBrowserModal: {key} has no phone pose"
+    _, ph = A.doc_of(rf, F(ROW)("Actions#phone"))
+    assert ph and "  movesRect: 1\n" in ph, "ReplayRow: WATCH and DELETE have no phone pose"
+    assert float(re.search(r"^  scale: (\S+)$", ph, re.M).group(1)) * PH_BUTTON_H >= 44, \
+        "ReplayRow: WATCH and DELETE must be thumb-sized targets (44 tall) on a phone"
+    for key, _, _ in PH_ROW_LINES:
+        assert A.doc_of(rf, F(ROW)(f"{key}#phone"))[1], f"ReplayRow: {key} has no phone pose"
+
     # The scene.
     sc_text = files[SCENE]
     inst, stub, comp_fid = scene_ids()
@@ -618,6 +676,9 @@ def self_test(files):
             f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {F(HUD)('Loading#go')}}}\n"
             "  m_Enabled: 1\n  m_Alpha: 0\n"))),
         ("the HUD drawn under the menu", lambda f: f.__setitem__(hf, f[hf].replace(f"  m_SortingOrder: {HUD_SORTING}\n", "  m_SortingOrder: 0\n"))),
+        ("the PC-scale fallback back", lambda f: f.__setitem__(pf, f[pf].replace("  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
+        ("a row's buttons too small to tap on a phone", lambda f: f.__setitem__(rf, f[rf].replace(
+            f"  scale: {K.f32(PH_ACTIONS_SCALE)}\n", "  scale: 1\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
