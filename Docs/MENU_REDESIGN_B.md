@@ -5753,7 +5753,7 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
 
-## 122. Rev 51 mockups: colour sets in the Profile, and the repaint between them (2026-11-05, awaiting a pick)
+## 122. Rev 51 mockups: colour sets in the Profile, and the repaint between them (2026-11-05; Shombith picked A, built in section 123)
 
 **Asked (Shombith, 2026-11-05):** "create mockups inside profile where we can change these themes from there. remember
 it will be something that the player unlocks with quest system. So it should something inside the profile view, once
@@ -5797,3 +5797,53 @@ their material when they spawn. The hull materials, card art, studios and the la
 **Decisions waiting:** which option; the word ("Colour sets", Garrett's, since "theme" is the style guide's Deep Sea /
 Shore); later, which quests give which sets; Dart Frog is on the paid track in `colour_sets.json` (Garrett's call);
 whether the UI's domain colours follow the set (style guide D2 says a domain is the live palette).
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity". Built in section 123.
+
+## 123. Built: Rev 51 A, the Profile's Colour sets tab and the repaint (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". Every set is unlocked (the quests are not planned yet). Compiled against the
+Unity reference assemblies (`Tools/Build/unity_refcompile`, 0 errors in project code); not opened in the editor.
+
+**The switch** (the one palette slot stays the truth):
+- `ColorSetCatalogSO` (`Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset`, written by
+  `Tools/Build/author_colour_set_catalog.py`, `--check` / `--self-test`): one entry per set, with an id, its
+  `SO_ColorSet`, the name and line the Profile shows (authored in the asset), and `unlocked` (all on).
+  `ThemeManagerDataContainer.Catalog` points at it.
+- `ColorSetPreference`: the pick is saved on the device (PlayerPrefs). A set changes how this player sees the game,
+  nothing anyone else sees.
+- `ThemeManager`: at Awake it puts the saved pick (if it is in the catalog and unlocked) into
+  `ThemeManagerDataContainer.ColorSet`, then builds the four domain material sets as before. `ApplyColorSet` puts a
+  new set in the slot and repaints the SAME material instances in place (`PaintDomainMaterialSet`, split out of
+  `GenerateDomainMaterialSet`), hands the set to `GameToastAPI` and `PrismLit` again, saves the pick and raises
+  `ColorSetApplied`. Live prisms change colour without a rebuild because they draw with those shared materials.
+  `OnDestroy` puts the authored palette back in the slot, so an editor play session never leaves the asset pointing at
+  another set.
+- The four menu views that held a palette of their own (`CodexScreen`, `ConfigureSeatPedestal`, `KitDomainTile`,
+  `SquadsPage`) now paint with `ThemeManager.LiveOr(theirs)`.
+
+**The loading screen:** `EnvironmentLoadVeil.ShowColourSetChange(name, line, repaint)`, the cell-change veil in a
+colour-set mode: "Changing colour set", the set's name and line, and four steps from
+`EnvironmentLoadVeilContentSO.colourSetSteps` (Mixing the palette, Repainting prisms, Recolouring vessels and trails,
+Opening the cell) plus `colourSetTip`. The repaint runs once the screen is opaque; the steps light 0.3 s apart and the
+veil lifts. No load gate is taken. Words authored by `Tools/Build/author_load_veil_content.py` (its checks now hold the
+four colour-set steps too).
+
+**The Profile** (`Tools/Build/author_menu_profile.py`, `ProfileView.prefab`):
+- Two word tabs, RECORD and COLOUR SETS (`KitTextTab`), in the header row beside "Your pilot". **Departure from the
+  board:** the board drew them under the pilot card with a third tab, Audio Studio. In the header the approved record
+  keeps every position, and Audio Studio stays on the Record page where Rev 13 put it. A third tab is one generator
+  change if wanted.
+- `ProfileColorSetsPanel` on the `ColourSets` layer over the record's panels: three set cards (name, line, the four
+  domains' prism swatches, Equipped with the lime tick / Owned / "Unlocks with a quest"), the picked set's preview
+  (Jade, Ruby, Gold, Blue at Prism, Shielded, Super-shielded, plus the vessel colour; HDR shown at its hue), and APPLY
+  (Cta) straddling the preview's foot, hidden while the shown set is equipped. Opening the Profile again returns to
+  Record.
+
+**Not built:** the board's per-card cell pictures and big cell preview (swatches stand in), Clear Sight (no asset
+yet), LB / RB on the tabs (the picker uses them), and the Later boards (quest locks and the claim window).
+
+**Not repainted by a switch:** what reads Photic by path (hull materials, card art, the studios, the launcher accents;
+Docs/PALETTE.md section 1), a vessel's own material copies until it respawns, and a live crystal's tint until it next
+re-tints. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
