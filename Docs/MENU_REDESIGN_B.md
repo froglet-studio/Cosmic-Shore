@@ -5753,7 +5753,7 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
 
-## 124. Rev 52 mockups: phone layouts at 800 x 450 (2026-11-05, awaiting board approval)
+## 124. Rev 52 mockups: phone layouts at 800 x 450 (2026-11-05, decisions made; awaiting board approval)
 
 **Asked** (Shombith): "draw the phone boards on frogma", after the phone scale was built (UI_STYLE_GUIDE §8, D6;
 `claude/ui-phone-scale`, #1739). The guide says a screen gets its phone board before its phone layout is built, and a
@@ -5785,5 +5785,12 @@ island is on the left, the safe area (54 / 54 / 24 units) is a dashed hairline. 
 its generator gains a phone layout (`author_start_flow.py`, `author_menu_hub_nav.py`, `author_menu_arcade.py`,
 `author_menu_configure.py`, `author_menu_hangar.py`, `author_ingame_hud.py`), and Has Phone Layout goes on: GameCanvas
 once the HUD and the finish are built, Menu_Main once all its screens are. PC, console and iPad are unchanged.
+
+**Decided (Shombith, 2026-11-05):** "Rail is right, all four alike, stick where thumb lands."
+- The four tabs are a left rail on phones.
+- The four modes on Home look alike: Arcade is no longer Lime (the Home board and the Compare board's phone side
+  redrawn).
+- Steering is a floating stick: the left half of the screen is the steer zone, and the stick starts wherever the left
+  thumb lands (the Hud board redrawn; the Notes board records all three).
 
 The repo copy also took the Rev 50 and Rev 51 boards it lacked (drawn on other branches, sections 122-123 there).
