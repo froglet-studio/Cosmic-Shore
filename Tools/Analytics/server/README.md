@@ -42,6 +42,7 @@ Not written yet; it is C# and needs the Unity verify rule.
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
 | `test_analytics_server.py` | 19 tests: `python3 analytics_server.py --self-test` |
 | `../console/` | The console page (Rev 50 B), served at `/` |
+| `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
 | `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy |
 
 Standard library only, except the two Claude features (`pip install anthropic`, `ANTHROPIC_API_KEY`). Without them

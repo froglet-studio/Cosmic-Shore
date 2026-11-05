@@ -5,6 +5,10 @@
 (function () {
   "use strict";
 
+  // Preview mode: a page built by make_preview.py carries a snapshot of the server's answers (invented sample data)
+  // in <script id="fa-snapshot">, and reads it instead of a server. The live console never has one.
+  const SNAP_EL = document.getElementById("fa-snapshot");
+  const SNAPSHOT = SNAP_EL ? JSON.parse(SNAP_EL.textContent) : null;
   const params = new URLSearchParams(location.search);
   const API = (params.get("api") || location.origin).replace(/\/$/, "");
   const KEY_STORE = "froglet-analytics-key";
@@ -69,10 +73,11 @@
 
   // ------------------------------------------------------------------ the server
 
-  function key() { try { return localStorage.getItem(KEY_STORE) || ""; } catch (e) { return ""; } }
+  function key() { if (SNAPSHOT) return "preview"; try { return localStorage.getItem(KEY_STORE) || ""; } catch (e) { return ""; } }
   function setKey(k) { try { k ? localStorage.setItem(KEY_STORE, k) : localStorage.removeItem(KEY_STORE); } catch (e) {} }
 
   async function api(path, body) {
+    if (SNAPSHOT) return snapshotAnswer(path, body);
     const res = await fetch(API + path, {
       method: body ? "POST" : "GET",
       headers: Object.assign({ Authorization: "Bearer " + key() }, body ? { "Content-Type": "application/json" } : {}),
@@ -82,6 +87,18 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `The server answered ${res.status}.`);
     return data;
+  }
+
+  function snapshotAnswer(path, body) {
+    if (path === "/v1/erase") throw new Error("Erasure is off in this preview: there is no server behind it.");
+    if (path === "/v1/ask") {
+      const answer = SNAPSHOT.ask[(body && body.question || "").trim()];
+      if (!answer) throw new Error("This preview has answers for the three questions below only. The live console sends any question to Claude.");
+      return JSON.parse(JSON.stringify(answer));
+    }
+    const page = SNAPSHOT.get[path];
+    if (!page) throw new Error("This preview has no snapshot for that view.");
+    return JSON.parse(JSON.stringify(page));
   }
 
   function showGate(message) {
@@ -453,6 +470,9 @@
     }
     if (state.page === "ask" || state.page === "erasure") setUpdated(null);
     const page = $("page");
+    $("preview-note").hidden = !SNAPSHOT;
+    if (SNAPSHOT) $("preview-note").textContent = SNAPSHOT.note;
+    $("sign-out").hidden = !!SNAPSHOT;
     if (!key()) { page.replaceChildren(); showGate(); return; }
     try {
       const parts = state.page === "ask" ? askPage() : state.page === "erasure" ? erasurePage()
