@@ -519,7 +519,7 @@ def kit_text(role, color_token="TextLight", driven=False):
                                 f"  colorDrivenExternally: {1 if driven else 0}\n")
 
 
-def phone_rect(pose=None, font=0, layout=(0, 0), scale=0):
+def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False):
     """A PhoneRect (Assets/_Scripts/UI/PhoneRect.cs): the pose a node takes on the 800 x 450 phone canvas (a rect() dict,
     or None to leave the rect where a layout group puts it), a phone font size for a TMP with no KitText (0 leaves it)
     a phone LayoutElement preferred size (0 leaves that axis) and a phone uniform scale for a block drawn at the PC size
@@ -528,6 +528,7 @@ def phone_rect(pose=None, font=0, layout=(0, 0), scale=0):
     r = pose or rect()
     v2 = lambda xy: "{x: %s, y: %s}" % (f32(xy[0]), f32(xy[1]))
     return lambda ctx, go: mono(go, guid,
+                                f"  drawAtPcScale: {1 if pc_block else 0}\n  pcHeight: 1080\n"
                                 f"  movesRect: {1 if pose else 0}\n  anchorMin: {v2(r['amin'])}\n  anchorMax: {v2(r['amax'])}\n"
                                 f"  pivot: {v2(r['pivot'])}\n  anchoredPosition: {v2(r['pos'])}\n  sizeDelta: {v2(r['size'])}\n"
                                 f"  fontSize: {f32(font)}\n  layoutSize: {v2(layout)}\n  scale: {f32(scale)}\n")

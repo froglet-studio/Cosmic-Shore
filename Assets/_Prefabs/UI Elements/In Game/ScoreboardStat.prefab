@@ -75,6 +75,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -219,6 +221,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -395,6 +399,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
@@ -553,6 +559,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
   movesRect: 1
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}

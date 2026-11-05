@@ -178,6 +178,10 @@ An iPad sideways (820 points tall) lands body at about 13.7 pt, which is fine.
   `KitText`, a phone `LayoutElement` size, or a phone scale for a block drawn at the PC size. The scaler applies every
   `PhoneRect` under its canvas when the phone layout turns on and puts the authored values back when it turns off; the
   generators write them (`K.phone_rect`).
+- **A screen with no phone board yet** carries a `PhoneRect` with **Draw At PC Scale**: on a phone it is drawn exactly as
+  the 1920 layout shrunk onto the phone draws it today (its `KitText`s keep their PC sizes), so its canvas can switch to
+  the phone layout while that screen waits for its board. Menu_Main's screens are marked by `author_menu_phone.py`; a
+  screen leaves that list when its own generator writes its phone layout.
 - **Where it stands (2026-11-05):** sign-in is built and ON (`Authentication.unity`). The in-game finish (the scoreboard),
   the HUD pieces and the pause, connecting and end-reveal panels are built but GameCanvas's switch stays OFF until two
   instance overrides are cleared at the editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). The menus are next.

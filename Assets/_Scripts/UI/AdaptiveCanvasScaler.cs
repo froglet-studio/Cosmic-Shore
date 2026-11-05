@@ -67,6 +67,8 @@ namespace CosmicShore.UI
         [SerializeField] private Vector2 phoneReferenceResolution = new(800f, 450f);
 
         private CanvasScaler _scaler;
+        private PhoneRect[] _pcBlocks = System.Array.Empty<PhoneRect>();
+        private float _pcBlocksFitHeight;
         private Vector2 _authoredReference;
         private bool _authoredReferenceRead;
         private int _lastWidth;
@@ -98,6 +100,19 @@ namespace CosmicShore.UI
 
         private void Update()
         {
+            // The canvas rect takes its new size a frame after the reference changes: re-fit the blocks drawn at the PC
+            // scale (PhoneRect) once it has, and on any later resize. A float compare per frame on a phone, nothing on PC.
+            if (UsesPhoneLayout && _pcBlocks.Length > 0)
+            {
+                float h = ((RectTransform)transform).rect.height;
+                if (!Mathf.Approximately(h, _pcBlocksFitHeight))
+                {
+                    _pcBlocksFitHeight = h;
+                    for (int i = 0; i < _pcBlocks.Length; i++)
+                        if (_pcBlocks[i]) _pcBlocks[i].FitPcBlock();
+                }
+            }
+
             // Fallback for transitions that don't resize the canvas rect on the same frame
             // (monitor hops, some fullscreen toggles). Cost: two int compares.
             if (Screen.width == _lastWidth && Screen.height == _lastHeight) return;
@@ -165,7 +180,17 @@ namespace CosmicShore.UI
             var texts = GetComponentsInChildren<KitText>(true);
             for (int i = 0; i < texts.Length; i++) texts[i].Apply();
             var rects = GetComponentsInChildren<PhoneRect>(true);
-            for (int i = 0; i < rects.Length; i++) rects[i].Apply(phone);
+            int blocks = 0;
+            for (int i = 0; i < rects.Length; i++)
+            {
+                rects[i].Apply(phone);
+                if (rects[i].DrawsAtPcScale) blocks++;
+            }
+            _pcBlocks = new PhoneRect[phone ? blocks : 0];
+            if (phone)
+                for (int i = 0, n = 0; i < rects.Length; i++)
+                    if (rects[i].DrawsAtPcScale) _pcBlocks[n++] = rects[i];
+            _pcBlocksFitHeight = -1f;
         }
 
         private void ApplySafeZone(float aspect)

@@ -21,6 +21,15 @@ namespace CosmicShore.UI
     [AddComponentMenu("Cosmic Shore/UI/Phone Rect")]
     public class PhoneRect : MonoBehaviour
     {
+        [Header("A screen with no phone layout yet")]
+        [Tooltip("Draw this block on a phone exactly as the PC layout shrunk onto the phone draws it: it keeps its authored " +
+                 "anchors, is laid out as if its parent were 1080 units tall, and is scaled down to fit; the KitTexts inside " +
+                 "keep their PC sizes. For a screen whose phone board is not drawn yet, so its canvas can still switch to " +
+                 "the phone layout. The pose fields below are ignored.")]
+        [SerializeField] private bool drawAtPcScale;
+        [Tooltip("The PC reference height the block is drawn at.")]
+        [SerializeField] private float pcHeight = 1080f;
+
         [Header("Pose on a phone (800 x 450 canvas units)")]
         [Tooltip("Move the rect to the pose below on a phone. Off for a child a LayoutGroup places.")]
         [SerializeField] private bool movesRect = true;
@@ -58,6 +67,18 @@ namespace CosmicShore.UI
         /// <summary>Whether the phone pose is on.</summary>
         public bool OnPhone { get; private set; }
 
+        /// <summary>Whether this block draws at the PC scale on a phone (a screen with no phone layout yet).</summary>
+        public bool DrawsAtPcScale => drawAtPcScale;
+
+        /// <summary>Whether <paramref name="t"/> sits inside a block drawn at the PC scale on a phone (a fallback screen, or
+        /// a block given a phone scale): its KitTexts keep their PC sizes there.</summary>
+        public static bool InsidePcScaleBlock(Transform t)
+        {
+            for (var at = t; at; at = at.parent)
+                if (at.TryGetComponent(out PhoneRect p) && (p.drawAtPcScale || p.scale > 0f)) return true;
+            return false;
+        }
+
         private RectTransform Rect => _rect ? _rect : (_rect = (RectTransform)transform);
 
         private void OnEnable()
@@ -72,6 +93,36 @@ namespace CosmicShore.UI
 
         private void OnTransformParentChanged() => _scalerResolved = false;
 
+        // A PC-scale block fills its parent, so its own rect changes when the parent's does (a resolution change, the
+        // canvas switching reference): re-fit then, when the parent's rect is current.
+        private void OnRectTransformDimensionsChange()
+        {
+            if (OnPhone && drawAtPcScale) FitPcBlock();
+        }
+
+        /// <summary>
+        /// Lay the block out as the PC layout shrunk onto the phone would: in a parent of size P/s (s = P.y / pcHeight)
+        /// with its authored pose, then scaled by s about its pivot. Its pivot then lands at the authored position times s,
+        /// and its unscaled size is what the virtual parent gives it: the authored size plus the stretched span of the
+        /// difference between the virtual parent and the real one.
+        /// </summary>
+        public void FitPcBlock()
+        {
+            if (!OnPhone || !drawAtPcScale) return;
+            var r = Rect;
+            if (r.parent is not RectTransform parent) return;
+            var size = parent.rect.size;
+            if (size.y <= 0f || pcHeight <= 0f) return;
+            float s = size.y / pcHeight;
+            var span = _aMax - _aMin;
+            var delta = _size + Vector2.Scale(span, size) * (1f / s - 1f);
+            var pos = _pos * s;
+            if ((r.sizeDelta - delta).sqrMagnitude > 0.0001f) r.sizeDelta = delta;
+            if ((r.anchoredPosition - pos).sqrMagnitude > 0.0001f) r.anchoredPosition = pos;
+            var scaleV = new Vector3(s * _scale.x, s * _scale.y, _scale.z);
+            if (r.localScale != scaleV) r.localScale = scaleV;
+        }
+
         /// <summary>Put the panel in its phone pose, or back in its authored one.</summary>
         public void Apply(bool phone)
         {
@@ -80,6 +131,12 @@ namespace CosmicShore.UI
             if (phone)
             {
                 if (!_authoredRead) ReadAuthored(r);
+                if (drawAtPcScale)
+                {
+                    OnPhone = true;
+                    FitPcBlock();
+                    return;
+                }
                 if (movesRect) Set(r, anchorMin, anchorMax, pivot, anchoredPosition, sizeDelta);
                 if (scale > 0f) r.localScale = new Vector3(scale, scale, 1f);
                 if (_text && fontSize > 0f)
@@ -95,8 +152,8 @@ namespace CosmicShore.UI
             }
             else if (_authoredRead)
             {
-                if (movesRect) Set(r, _aMin, _aMax, _pivot, _pos, _size);
-                if (scale > 0f) r.localScale = _scale;
+                if (movesRect || drawAtPcScale) Set(r, _aMin, _aMax, _pivot, _pos, _size);
+                if (scale > 0f || drawAtPcScale) r.localScale = _scale;
                 if (_text && fontSize > 0f)
                 {
                     _text.fontSize = _font;
@@ -135,6 +192,12 @@ namespace CosmicShore.UI
             movesRect = true;
             anchorMin = aMin; anchorMax = aMax; pivot = pv; anchoredPosition = pos; sizeDelta = size;
             if (OnPhone) Set(Rect, anchorMin, anchorMax, pivot, anchoredPosition, sizeDelta);
+        }
+
+        /// <summary>Make this a PC-scale block from code (tests and editor tooling).</summary>
+        public void SetDrawAtPcScale(bool on, float referenceHeight = 1080f)
+        {
+            drawAtPcScale = on; pcHeight = referenceHeight;
         }
 
         /// <summary>Set the phone text and layout sizes from code (tests and editor tooling).</summary>

@@ -111,6 +111,84 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AStretchedPcScaleBlockIsLaidOutAt1080AndScaledDown()
+        {
+            var parent = new GameObject("Canvas", typeof(RectTransform));
+            try
+            {
+                var pr = (RectTransform)parent.transform;
+                pr.sizeDelta = new Vector2(974f, 450f);
+                _go.transform.SetParent(pr, false);
+                var r = (RectTransform)_go.transform;
+                r.anchorMin = Vector2.zero;
+                r.anchorMax = Vector2.one;
+                r.sizeDelta = Vector2.zero;
+                var p = _go.AddComponent<PhoneRect>();
+                p.SetDrawAtPcScale(true);
+
+                p.Apply(true);
+                Assert.AreEqual(1080f, r.rect.height, 0.01f, "the screen is laid out 1080 units tall");
+                Assert.AreEqual(974f / (450f / 1080f), r.rect.width, 0.05f, "and as wide as the phone at that scale");
+                Assert.AreEqual(450f / 1080f, r.localScale.x, 1e-5f);
+
+                p.Apply(false);
+                Assert.AreEqual(Vector2.zero, r.sizeDelta);
+                Assert.AreEqual(Vector3.one, r.localScale);
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
+        public void AnEdgeAnchoredPcScaleBlockKeepsItsAnchorsAndScalesItsOffset()
+        {
+            var parent = new GameObject("Canvas", typeof(RectTransform));
+            try
+            {
+                var pr = (RectTransform)parent.transform;
+                pr.sizeDelta = new Vector2(974f, 450f);
+                _go.transform.SetParent(pr, false);
+                var r = (RectTransform)_go.transform;
+                r.anchorMin = r.anchorMax = Vector2.one;
+                r.pivot = Vector2.one;
+                r.anchoredPosition = new Vector2(-40f, -232f);
+                r.sizeDelta = new Vector2(720f, 200f);
+                var p = _go.AddComponent<PhoneRect>();
+                p.SetDrawAtPcScale(true);
+
+                p.Apply(true);
+                float s = 450f / 1080f;
+                Assert.AreEqual(Vector2.one, r.anchorMin);
+                Assert.AreEqual(new Vector2(-40f, -232f) * s, r.anchoredPosition);
+                Assert.AreEqual(new Vector2(720f, 200f), r.sizeDelta, "an unstretched block keeps its size and is scaled");
+                Assert.AreEqual(s, r.localScale.x, 1e-5f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
+        public void TextInsideAPcScaleBlockIsFound()
+        {
+            var child = new GameObject("Label", typeof(RectTransform));
+            try
+            {
+                child.transform.SetParent(_go.transform, false);
+                Assert.IsFalse(PhoneRect.InsidePcScaleBlock(child.transform));
+                _go.AddComponent<PhoneRect>().SetDrawAtPcScale(true);
+                Assert.IsTrue(PhoneRect.InsidePcScaleBlock(child.transform));
+            }
+            finally
+            {
+                Object.DestroyImmediate(child);
+            }
+        }
+
+        [Test]
         public void ARectThatDoesNotMoveKeepsItsPose()
         {
             var r = (RectTransform)_go.transform;

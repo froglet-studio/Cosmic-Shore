@@ -45,6 +45,7 @@ namespace CosmicShore.UI
         private TMP_Text _text;
         private AdaptiveCanvasScaler _scaler;
         private bool _scalerResolved;
+        private bool _inPcScaleBlock;
 
         public UITypeRole Role => role;
 
@@ -73,9 +74,12 @@ namespace CosmicShore.UI
             if (!_scalerResolved)
             {
                 _scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+                // A screen with no phone layout yet draws at the PC scale on a phone (PhoneRect), so its texts keep the
+                // PC sizes there.
+                _inPcScaleBlock = PhoneRect.InsidePcScaleBlock(transform);
                 _scalerResolved = true;
             }
-            return _scaler && _scaler.UsesPhoneLayout;
+            return _scaler && _scaler.UsesPhoneLayout && !_inPcScaleBlock;
         }
 
         private void OnValidate() => KitEditorDefer.Run(this, Apply);
