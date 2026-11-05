@@ -80,7 +80,8 @@ BOND_GUID = guid("bond_mat")
 # tints it), sweeping and breathing; the Bar runs along an underline.
 SELECTION_GUID = guid("selection_rim_mat")
 SELECTION_BAR_GUID = guid("selection_bar_mat")
-SELECTION = (0.23921569, 0.69803923, 1)            # #3DB2FF, UITheme.Selection
+SELECTION = (0, 0.83137256, 1)                     # #00D4FF, UITheme.Selection: Jade, the controlActive colour (D3)
+COMMIT = (0.6509804, 0, 1)                         # #A600FF, UITheme.Commit: Ruby, Play and Ready (D3, 2026-11-05)
 THEME = "Assets/_SO_Assets/UI/UITheme.asset"
 # The elemental rims (§45.3), RETIRED 2026-10-24 (Docs/UI_COLOR_RULES.md): elements carry no colour in the UI, and a
 # light running round a panel nobody selected read as the selection. Their five materials are deleted; the guids stay
@@ -236,8 +237,11 @@ def theme_asset():
         assert anchor, "UITheme.asset has no elementTime to follow"
         text = text[:anchor.end()] + missing + text[anchor.end():]
     text = re.sub(r"^  hoverSheen\w+: .*\n", "", text, flags=re.M)
+    text = re.sub(r"^  commit: .*\n", "", text, flags=re.M)
     anchor = re.search(r"^  selectionBarMaterial: .*\n", text, re.M)
-    text = text[:anchor.end()] + "".join(f"  {k}: {v}\n" for k, v in hover.items()) + text[anchor.end():]
+    # UIThemeSO's field order: selectionBarMaterial, commit (2026-11-05, Docs/UI_STYLE_GUIDE.md D3), the hover sheen.
+    text = (text[:anchor.end()] + f"  commit: {col(COMMIT)}\n" + "".join(f"  {k}: {v}\n" for k, v in hover.items())
+            + text[anchor.end():])
     return text
 
 
@@ -439,8 +443,8 @@ def validate(files):
     radii = {k: re.search(rf"^    - {k}: (.*)$", orb, re.M).group(1) for k in ("_MemberRadius", "_InnerRadius")}
     assert radii["_MemberRadius"] == radii["_InnerRadius"] == f(ORB_MEMBER_RADIUS), \
         f"the member seats are off the inner ring ({radii}, want {ORB_MEMBER_RADIUS})"
-    # Rev 7: the selection's two materials are rims, white (the theme's blue is the vertex colour), breathing; the
-    # Bar runs along its line; the theme names both and carries the sky blue.
+    # Rev 7: the selection's two materials are rims, white (the theme's selection colour is the vertex colour),
+    # breathing; the Bar runs along its line; the theme names both and carries the selection colour (Jade since D3).
     for name, bar, g in (("SelectionRim", False, SELECTION_GUID), ("SelectionBar", True, SELECTION_BAR_GUID)):
         m = files[f"{DIR}/{name}.mat"]
         assert f"m_Shader: {{fileID: 4800000, guid: {RIM_SHADER_GUID}, type: 3}}" in m, f"{name} is not on ElementRim.shader"
@@ -451,7 +455,11 @@ def validate(files):
         assert f"- _ElementColor: {col((1, 1, 1))}" in m, f"{name} is tinted: the theme's Selection colour must reach it unchanged"
         assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
     theme = files[THEME]
-    assert f"  selection: {col(SELECTION)}\n" in theme, "UITheme.asset's selection is not the sky blue (#3DB2FF)"
+    assert f"  selection: {col(SELECTION)}\n" in theme, "UITheme.asset's selection is not the Jade control colour (#00D4FF, D3)"
+    assert f"  commit: {col(COMMIT)}\n" in theme, "UITheme.asset's commit is not Ruby (#A600FF, D3: Play and Ready)"
+    ctl = [float(v) for v in re.findall(r"[rgb]: ([\d.]+)", re.search(r"^  controlActive: (.*)$", theme, re.M).group(1))]
+    assert all(abs(c - s) < 1e-5 for c, s in zip(ctl, SELECTION)), \
+        "the selection is the controlActive colour (D3): they drifted apart"
     for field, g in (("selectionMaterial", SELECTION_GUID), ("selectionBarMaterial", SELECTION_BAR_GUID)):
         assert f"  {field}: {{fileID: 2100000, guid: {g}, type: 2}}" in theme, f"UITheme.asset does not name its {field}"
     assert f"  hoverSheenSprite: {{fileID: 21300000, guid: {SHEEN_GUID}, type: 3}}\n" in theme, \

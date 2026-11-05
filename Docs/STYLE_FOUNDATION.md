@@ -90,7 +90,7 @@ Three main colours carry both team identity and a UI function. **Green is the in
 | Tooltip boxes | Ruby `A600FF` *(per the guide)* |
 | Primary buttons (the call to action) | CTA `99FF80`, always (UI_STYLE_GUIDE D5, 2026-11-05) |
 | Focus, selection, a choice you can claim and reclaim (a hull pick, friends) | Jade (`controlActive` `00D4FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
-| A commitment you cannot take back (Play, which launches a game; Ready) | Ruby (`A600FF`; UI_STYLE_GUIDE D3, 2026-11-05) |
+| A commitment you cannot take back (Play, which launches a game; Ready) | Ruby (`commit` `A600FF`, the KitButton `Commit` variant; UI_STYLE_GUIDE D3, 2026-11-05) |
 | Player online status | CTA `99FF80` |
 | Currency / purchase | Gold `FFAE00` |
 | Panel borders, chrome | Neutral (Dark) `222645` |

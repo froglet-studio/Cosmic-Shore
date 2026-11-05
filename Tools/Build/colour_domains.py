@@ -19,7 +19,7 @@ convex and fill OKLab with no gaps, and the band is the same thickness on every 
   - an anchor's colour in the game (read live from the palette, the HUD config, the vessel scheme, the kite view) no
     longer matches the definitions, naming the asset to look at;
   - an anchor does not rest in its own family, clear of the band (except the listed exceptions, each with its reason);
-  - a UI theme colour named for a family (UITheme.asset cta, danger, controlActive, purchase, tooltip, selection) is
+  - a UI theme colour named for a family (UITheme.asset cta, danger, controlActive, purchase, tooltip, selection, commit) is
     not in that family, clear of the band (except the listed exceptions);
   - one of the four Lime element shades (PhoticColorSetSO ElementalCrystalColors) is not in Lime, clear of the band;
   - the measured shares written in the definitions are stale (more than 0.1 point off a fresh measurement);

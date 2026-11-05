@@ -249,10 +249,14 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 | D8 | The codex and studios | Move them onto Deep Sea and Shore in a separate change; the prompt for it is below. |
 
 **Still to do in Unity** (one change each, Shombith's area; the guide already holds the rules):
-1. **Selection and focus to Jade, Ready to Ruby.** `UITheme.asset` `selection` -> the Jade control colour, a `commit`
-   token on `UIThemeSO` for Ready; the fallback in `UITheme.Resolve` and `SelectionStyleTests`; the generators that
-   assert the sky blue (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`) and the SelectionRim materials they write;
-   `colour_domains.json` `ui_tokens.selection` -> jade (Garrett's file: say so in the PR).
+1. **Selection and focus to Jade, Ready to Ruby.** Done (branch `claude/ui-jade-ruby`, 2026-11-05): `UITheme.asset`
+   `selection` is the Jade control colour; a `commit` token (`UIColorToken.Commit = 18`, Ruby `A600FF`) and a KitButton
+   `Commit` variant (10, a flat Ruby fill with white text) carry the no-way-back buttons: GameCanvas Ready, the
+   Configure / Arena / Maelstrom START GAME, Maelstrom Ready / Next / Play again and the Scoreboard's Play again.
+   Resume, Reconnect, Confirm and every other call to action stay Lime. The generators write it
+   (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`, `author_ingame_hud.py`, `author_maelstrom_ui.py`,
+   `author_menu_configure.py`, and the menu generators that bake the selection colour); `colour_domains.json`
+   `ui_tokens` has `selection: jade` and `commit: ruby`.
 2. **The phone scale** (D6): a phone canvas reference of 800 x 450 and the mobile type column, applied by one
    component on every player-facing canvas, with the menus' phone layouts drawn on Frogma first.
 

@@ -7753,10 +7753,10 @@ MonoBehaviour:
     Label: {fileID: 752200439282529165}
   plateSelected: {fileID: 21300000, guid: c98bf509f8f1a509923a051d3b07c6c5, type: 3}
   plateUnselected: {fileID: 21300000, guid: 98099cf4a35661dd88b7e9cb399386b7, type: 3}
-  labelSelected: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+  labelSelected: {r: 0, g: 0.83137256, b: 1, a: 1}
   labelUnselected: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
   tintPlates: 1
-  plateSelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+  plateSelectedColor: {r: 0, g: 0.83137256, b: 1, a: 1}
   plateUnselectedColor: {r: 0.2627451, g: 0.29803923, b: 0.5372549, a: 1}
   plateSelectedMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
 --- !u!1 &827729091610931609
@@ -10773,7 +10773,7 @@ MonoBehaviour:
       m_Calls: []
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   focusRing: {fileID: 148698725664313293}
-  variant: 5
+  variant: 10
   fill: 1
   fillGraphic: {fileID: 685642236905038683}
   borderGraphic: {fileID: 111671711596975058}
@@ -10781,7 +10781,7 @@ MonoBehaviour:
   - {fileID: 605385193705139930}
   - {fileID: 729075050729805038}
   - {fileID: 46924303156098123}
-  playGradient: {fileID: 327894382806196729}
+  playGradient: {fileID: 0}
 --- !u!114 &472686025043817581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10915,7 +10915,6 @@ GameObject:
   - component: {fileID: 726281104461523891}
   - component: {fileID: 349855624460506642}
   - component: {fileID: 685642236905038683}
-  - component: {fileID: 327894382806196729}
   - component: {fileID: 538678473307313570}
   m_Layer: 5
   m_Name: Fill
@@ -10964,7 +10963,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  m_Color: {r: 0.6509804, g: 0, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -10981,19 +10980,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &327894382806196729
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 724146079665733178}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f2be64bbecfb76a4103c4318a42087f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  lightenRight: 0.5
 --- !u!114 &538678473307313570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11073,7 +11059,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.8, g: 1, b: 0.7509804, a: 1}
+  m_Color: {r: 0.8254902, g: 0.5, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -11170,7 +11156,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.003921569, b: 0.039215688, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -11282,8 +11268,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278845696
-  m_fontColor: {r: 0, g: 0.003921569, b: 0.039215688, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -11436,8 +11422,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278845696
-  m_fontColor: {r: 0, g: 0.003921569, b: 0.039215688, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

@@ -398,8 +398,8 @@ def hub_text(p):
     H.label(caption, "", "BodySmall", "NeutralLightest")
     hints = N("KeyHints", "KeyHints", TL(60, 1030, 900, 20))
     H.label(hints, "", "Label", "NeutralLightest")
-    ready = kit_button("Hub/Ready", "ReadyButton", TL(1280, 800, 300, 60), 300, "Play", True, "Ready 4/4", "A")
-    nxt = kit_button("Hub/Next", "NextButton", TL(1280, 800, 260, 60), 260, "Play", True, "Next", "A", active=False)
+    ready = kit_button("Hub/Ready", "ReadyButton", TL(1280, 800, 300, 60), 300, "Commit", True, "Ready 4/4", "A")
+    nxt = kit_button("Hub/Next", "NextButton", TL(1280, 800, 260, 60), 260, "Commit", True, "Next", "A", active=False)
     new = [eyebrow, chips_node(), standings_node(), pilots_node(), ready, nxt, caption, hints]
     added = SF.emit_under(p, I["content_rt"], new, I["content_cr"], lambda rts: [k for k in p.kids(I["content_rt"]) if k not in rts] + rts)
 
@@ -443,7 +443,7 @@ def summary_text(p):
     buttons = N("Summary/Buttons", "Buttons", R((0.5, 0), None, (0, 80), (1000, 64)))
     buttons.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0))) \
         .add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", delay=0.6))
-    buttons.child(kit_button("Sum/Again", "PlayAgain Button", None, 280, "Play", True, "Play again", "A"))
+    buttons.child(kit_button("Sum/Again", "PlayAgain Button", None, 280, "Commit", True, "Play again", "A"))
     buttons.child(kit_button("Sum/Stats", "StatsScreenButton", None, 200, "Default", False, "Stats", "Y", pad=PAD_NORTH))
     buttons.child(kit_button("Sum/Menu", "Main Menu Button", None, 260, "Cancel", False, "Main menu", "B", pad=PAD_EAST))
     added = SF.emit_under(p, I["sum_rt"], [dim, rule, rank, buttons], I["sum_rt"],

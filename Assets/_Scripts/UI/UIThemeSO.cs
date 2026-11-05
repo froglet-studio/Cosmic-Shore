@@ -52,7 +52,7 @@ namespace CosmicShore.UI
         public Color neutralLightest = new Color32(0x74, 0x7B, 0xAD, 0xFF);
 
         [Header("Signal")]
-        [Tooltip("99FF80 — call to action; primary buttons, focus, selection, online status, app shell before a team exists")]
+        [Tooltip("99FF80 — the call to action the player can still change (join, accept, claim); online status. Never focus or selection (Docs/UI_STYLE_GUIDE.md D5).")]
         public Color cta = new Color32(0x99, 0xFF, 0x80, 0xFF);
         [Tooltip("FF4B3A — destructive / danger. Approved in v0.3.2. Full-bleed fill only.")]
         public Color danger = new Color32(0xFF, 0x4B, 0x3A, 0xFF);
@@ -75,14 +75,22 @@ namespace CosmicShore.UI
         [Tooltip("Time - rate: progress. Timers, quests, records, leaderboards.")]
         public Color elementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
 
-        [Header("Selection (rev 7)")]
-        [Tooltip("Whatever is selected or focused - a tile, a card, a tab, the pad's ring - wears this sky blue.")]
-        public Color selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
+        [Header("Selection (rev 7; Jade since 2026-11-05)")]
+        [Tooltip("00D4FF — whatever is selected or focused (a tile, a card, a tab, the pad's ring): a choice the player can " +
+                 "claim and reclaim, so Jade (Docs/UI_STYLE_GUIDE.md D3). Was the sky blue 3DB2FF, which sat in the band " +
+                 "between Blue and Jade on the colour chart.")]
+        public Color selection = new Color32(0x00, 0xD4, 0xFF, 0xFF);
         [Tooltip("The selection's border light (SelectionRim.mat): a bright sweep running round the border while it " +
                  "breathes. Optional - without it the selection is the plain colour.")]
         public Material selectionMaterial;
         [Tooltip("The same light for a line (SelectionBar.mat): the sweep runs along an underline.")]
         public Material selectionBarMaterial;
+
+        [Header("Commit (2026-11-05)")]
+        [Tooltip("A600FF — a commitment the player cannot take back: Play (it launches a game) and Ready. Ruby " +
+                 "(Docs/UI_STYLE_GUIDE.md D3); the KitButton Commit variant. Same hex as the tooltip role; never use it " +
+                 "to mean the Ruby team.")]
+        public Color commit = new Color32(0xA6, 0x00, 0xFF, 0xFF);
 
         [Header("Hover (Rev 35 C)")]
         [Tooltip("The hover sheen (kit_sheen): one soft band sweeps across a control when the pointer enters it, then " +
