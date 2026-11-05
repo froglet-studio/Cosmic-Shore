@@ -40,7 +40,7 @@ if [ ! -d "$REPO/.git" ]; then
 else
   as git -C "$REPO" remote set-url origin "$AUTH_URL"
   as git -C "$REPO" sparse-checkout set --no-cone /Tools/Analytics/server/ /Tools/Analytics/console/ /Docs/Analytics/EVENT_SCHEMA.json
-  as git -C "$REPO" fetch --quiet origin "$BRANCH"
+  as git -C "$REPO" fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
   as git -C "$REPO" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
 fi
 as git -C "$REPO" remote set-url origin "https://github.com/froglet-studio/Cosmic-Shore.git"
