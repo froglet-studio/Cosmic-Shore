@@ -179,6 +179,7 @@ GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"   # UnityEngine.UI.GridLayoutGr
 # The phone layout (Docs/MENU_REDESIGN_B.md section 129, the approved R55Arcade board): the explore scroll's content is
 # drawn at PHONE_SCALE (its cards keep their PC look and words), re-flowed to the phone's width, PHONE_COLS across.
 PHONE_SCALE, PHONE_COLS = 0.68, 3
+PHONE_CELL_W = 313             # (672 / 0.68 - 12 padding - 2 x 10 spacing) / 3 = 318.7, rounded down for air
 
 
 def asset_guid(name):
@@ -1365,7 +1366,9 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
              "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
              f"  m_CellSize: {{x: {K.f32(GRID_CELL_W)}, y: {CARD_H}}}\n  m_Spacing: {{x: 10, y: 10}}\n"
              f"  m_Constraint: 1\n  m_ConstraintCount: {GRID_COLS}\n"))
-    grid.add("phone", 114, K.phone_rect(grid=dict(columns=PHONE_COLS)))
+    # Three cells fit the content's phone width (body 672 / PHONE_SCALE, less the padding): the PC cell is 339.6 wide,
+    # three of which would cut the third column.
+    grid.add("phone", 114, K.phone_rect(grid=dict(columns=PHONE_COLS, cell=(PHONE_CELL_W, CARD_H))))
     for r in range(GRID_ROWS):
         for col in range(GRID_COLS):
             grid.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",

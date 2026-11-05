@@ -19327,7 +19327,7 @@ MonoBehaviour:
   stackItemSize: {x: 72, y: 56}
   stackSpacing: 0
   stackOrder: []
-  gridCellSize: {x: 0, y: 0}
+  gridCellSize: {x: 313, y: 296}
   gridColumns: 3
   gridSpacing: {x: -1, y: -1}
 --- !u!1001 &557676336073671424

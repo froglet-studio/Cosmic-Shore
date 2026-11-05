@@ -656,7 +656,6 @@ GameObject:
   - component: {fileID: 159236445}
   - component: {fileID: 159236444}
   - component: {fileID: 159236450}
-  - component: {fileID: 1111523024727443868}
   m_Layer: 5
   m_Name: ToyboxScreenModal
   m_TagString: Untagged
@@ -664,41 +663,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1111523024727443868
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 159236442}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!224 &159236443
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3382,7 +3346,6 @@ GameObject:
   - component: {fileID: 948404568}
   - component: {fileID: 948404567}
   - component: {fileID: 948404566}
-  - component: {fileID: 272478844351943045}
   m_Layer: 5
   m_Name: MissionScreenModal
   m_TagString: Untagged
@@ -3390,41 +3353,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &272478844351943045
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 948404564}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!224 &948404565
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8695,7 +8623,6 @@ GameObject:
   - component: {fileID: 2072797378}
   - component: {fileID: 2072797377}
   - component: {fileID: 2072797376}
-  - component: {fileID: 585298912016037058}
   m_Layer: 5
   m_Name: ArenaScreenModal
   m_TagString: Untagged
@@ -8703,41 +8630,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &585298912016037058
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2072797374}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!224 &2072797375
 RectTransform:
   m_ObjectHideFlags: 0
