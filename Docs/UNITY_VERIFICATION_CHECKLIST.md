@@ -21113,3 +21113,23 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🔴 Colour sets for colour vision: Contrast and five vision sets, worn by Settings > Colorblind mode (2026-11-05, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`. Compiled with
+`unity_refcompile` (0 errors in the changed files; the run's 21 errors are in UGS files whose packages this sandbox
+could not fetch); `colour_sets.py`, `author_colour_set_assets.py` and `author_colour_set_catalog.py` pass `--check` and
+`--self-test`. Not opened in the editor; the new edit-mode tests were compiled, not run. Affects Shombith's Settings
+panel and Profile colour sets.
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` (all six, two new).
+2. **Open Settings > General > Colorblind mode.** Seven options: Off, Protanopia, Deuteranopia, Tritanopia,
+   Achromatopsia, Low Vision, Contrast (the names come from the catalog).
+3. **Pick each one in Menu_Main.** The menu cell's prisms and crystals change at once to that set, no restart. Judge by
+   eye, ideally with a colour-blind simulator (or a colour-blind player) for the four vision sets: can every domain's
+   prism, trail and HUD colour be told from every other's? Note bloom and ACES: the sets were measured before both.
+4. **Pick Off.** The cell goes back to Nocturne. Pick Dart Frog in the Profile while a mode is on: the mode reads Off
+   when Settings opens again.
+5. **Restart Play with a mode on.** The game starts in that mode's set even though the Profile's saved pick is another.
+6. **Fly a match in Protanopia and in Achromatopsia.** Danger (Fire) and the free pickup (Lime) still read as
+   themselves against all four domains.

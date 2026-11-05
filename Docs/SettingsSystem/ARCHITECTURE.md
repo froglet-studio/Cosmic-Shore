@@ -182,7 +182,12 @@ Auto-Detect also logs via `CSDebug`. Wire `menuOnlyHint` + `restartRequiredNotic
 These settings are stored and broadcast change events; the systems that *read* them need a small
 hook (each is its own follow-up, some are ecology-sensitive — use the `/ecology` skill):
 
-- **Colorblind / Reduce-flashing** → a screen-space color/flash post-process.
+- **Colorblind** → WIRED 2026-11-05, and not as a post-process: each mode wears the colour set made for that
+  vision (`ColorSetCatalogSO.Entry.vision`; Contrast, Protanopia, Deuteranopia, Tritanopia, Achromatopsia, Low Vision
+  in `Docs/VesselModels/colour_sets.json`, rule 5). `ThemeManager` resolves the mode at boot and on
+  `OnColorblindModeChanged`, and applying any set keeps the mode in step; the dropdown's options are the catalog's
+  set names. A filter could only remap a set's colours; a set chooses colours the viewer can tell apart.
+- **Reduce-flashing** → a screen-space flash post-process.
 - **Subtitles / scale** → Dialogue System (`DialogueManager`) subtitle rendering.
 - **Ecosystem density / physics detail / AI crowd / VFX density** → spawn profile scaling, collider
   LOD, AI count, explosion-VFX budget (ecology-sensitive: tune production, never add decay).

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Core;
 using CosmicShore.ECS;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -46,8 +47,10 @@ namespace CosmicShore.Gameplay
         {
             Instance = this;
             _authoredColorSet = _dataContainer.ColorSet;
-            // The player's pick, if it is in the catalog and unlocked; else the authored palette (Nocturne).
-            var picked = PickedColorSet(_dataContainer.Catalog, ColorSetPreference.Load());
+            // The set made for the player's colour-vision mode, if one is on; else their pick, if it is in the catalog
+            // and unlocked; else the authored palette (Nocturne).
+            var picked = ResolveColorSet(_dataContainer.Catalog, ColorSetPreference.Load(),
+                                         AccessibilitySettings.ColorblindMode);
             if (picked) _dataContainer.ColorSet = picked;
             Equipped = _dataContainer.ColorSet;
 
@@ -69,6 +72,9 @@ namespace CosmicShore.Gameplay
             Data = _dataContainer;
         }
 
+        void OnEnable() => AccessibilitySettings.OnColorblindModeChanged += OnColorblindModeChanged;
+        void OnDisable() => AccessibilitySettings.OnColorblindModeChanged -= OnColorblindModeChanged;
+
         void OnDestroy()
         {
             if (_dataContainer && _authoredColorSet) _dataContainer.ColorSet = _authoredColorSet;
@@ -81,6 +87,36 @@ namespace CosmicShore.Gameplay
             if (!catalog) return null;
             var entry = catalog.Get(catalog.IndexOfId(savedId));
             return entry != null && entry.unlocked ? entry.colorSet : null;
+        }
+
+        /// <summary>
+        /// The set to wear at start: the unlocked set made for <paramref name="vision"/> when a colour-vision mode is
+        /// on and the catalog has one (an accessibility need outranks a look), else <see cref="PickedColorSet"/>.
+        /// Null means the authored palette.
+        /// </summary>
+        public static SO_ColorSet ResolveColorSet(ColorSetCatalogSO catalog, string savedId, ColorblindModeSetting vision)
+        {
+            if (!catalog) return null;
+            var made = catalog.Get(catalog.IndexOfVision(vision));
+            return made != null && made.unlocked && made.colorSet ? made.colorSet : PickedColorSet(catalog, savedId);
+        }
+
+        // Settings > General > Colorblind mode: wear the set made for the mode at once. Off takes a vision set back
+        // to the authored palette and leaves a set picked for its looks alone.
+        void OnColorblindModeChanged(ColorblindModeSetting mode)
+        {
+            var catalog = _dataContainer ? _dataContainer.Catalog : null;
+            if (!catalog) return;
+            ColorSetCatalogSO.Entry entry;
+            if (mode == ColorblindModeSetting.Off)
+            {
+                var worn = catalog.Get(catalog.IndexOf(Equipped));
+                if (worn == null || worn.vision == ColorblindModeSetting.Off) return;
+                entry = catalog.Get(catalog.IndexOf(_authoredColorSet));
+            }
+            else entry = catalog.Get(catalog.IndexOfVision(mode));
+            if (entry == null || !entry.unlocked || !entry.colorSet || entry.colorSet == Equipped) return;
+            ApplyColorSet(entry.colorSet, entry.id);
         }
 
         /// <summary>The set the player wears: the saved pick, or the authored palette. What a preview returns to.</summary>
@@ -96,6 +132,13 @@ namespace CosmicShore.Gameplay
             if (!PreviewColorSet(set)) return false;
             ColorSetPreference.Save(savedId);
             Equipped = set;
+            // The colour-vision mode follows what is worn (a set picked in the Profile turns a mode off, a vision set
+            // turns its mode on), so the two settings never disagree. Equipped is set first: the mode's change
+            // handler then finds the set already worn and stops.
+            var catalog = _dataContainer.Catalog;
+            var worn = catalog ? catalog.Get(catalog.IndexOfId(savedId)) : null;
+            var vision = worn?.vision ?? ColorblindModeSetting.Off;
+            if (AccessibilitySettings.ColorblindMode != vision) AccessibilitySettings.ColorblindMode = vision;
             ColorSetApplied?.Invoke(set);
             return true;
         }

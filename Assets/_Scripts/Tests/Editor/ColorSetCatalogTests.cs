@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -71,6 +72,56 @@ namespace CosmicShore.Tests
             Object.DestroyImmediate(catalog);
             Object.DestroyImmediate(open);
             Object.DestroyImmediate(closed);
+        }
+
+        [Test]
+        public void EveryColourVisionMode_HasOneUnlockedSet()
+        {
+            // Settings > General > Colorblind mode offers only the visions a set is made for; every one should be.
+            var catalog = Catalog;
+            Assert.AreEqual(-1, catalog.IndexOfVision(ColorblindModeSetting.Off), "no set is made for Off");
+            foreach (ColorblindModeSetting mode in System.Enum.GetValues(typeof(ColorblindModeSetting)))
+            {
+                if (mode == ColorblindModeSetting.Off) continue;
+                var entry = catalog.Get(catalog.IndexOfVision(mode));
+                Assert.IsNotNull(entry, $"no colour set is made for {mode}");
+                Assert.IsTrue(entry.unlocked, $"the {mode} set is locked: an accessibility set is never a reward");
+                Assert.IsNotNull(entry.colorSet, $"the {mode} entry names no palette");
+                Assert.IsFalse(string.IsNullOrEmpty(entry.displayName), $"the {mode} set has no name for its option");
+            }
+        }
+
+        [Test]
+        public void AColourVisionMode_OutranksThePickedLook()
+        {
+            var catalog = ScriptableObject.CreateInstance<ColorSetCatalogSO>();
+            var look = ScriptableObject.CreateInstance<SO_ColorSet>();
+            var protan = ScriptableObject.CreateInstance<SO_ColorSet>();
+            var so = new SerializedObject(catalog);
+            var entries = so.FindProperty("entries");
+            entries.arraySize = 2;
+            void Set(int i, string id, SO_ColorSet set, ColorblindModeSetting vision)
+            {
+                var e = entries.GetArrayElementAtIndex(i);
+                e.FindPropertyRelative("id").stringValue = id;
+                e.FindPropertyRelative("colorSet").objectReferenceValue = set;
+                e.FindPropertyRelative("unlocked").boolValue = true;
+                e.FindPropertyRelative("vision").enumValueIndex = (int)vision;
+            }
+            Set(0, "look", look, ColorblindModeSetting.Off);
+            Set(1, "protan", protan, ColorblindModeSetting.Protanopia);
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.AreEqual(1, catalog.IndexOfVision(ColorblindModeSetting.Protanopia));
+            Assert.AreSame(protan, ThemeManager.ResolveColorSet(catalog, "look", ColorblindModeSetting.Protanopia));
+            Assert.AreSame(look, ThemeManager.ResolveColorSet(catalog, "look", ColorblindModeSetting.Off));
+            Assert.AreSame(look, ThemeManager.ResolveColorSet(catalog, "look", ColorblindModeSetting.Tritanopia),
+                "a mode no set is made for keeps the picked look");
+            Assert.IsNull(ThemeManager.ResolveColorSet(null, "look", ColorblindModeSetting.Protanopia));
+
+            Object.DestroyImmediate(catalog);
+            Object.DestroyImmediate(look);
+            Object.DestroyImmediate(protan);
         }
 
         [Test]

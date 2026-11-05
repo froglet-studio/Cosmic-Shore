@@ -118,7 +118,11 @@ Under the old rule it sat in the band (the lab's finding 02).
 deep jewel faces of a different hue, every face in one night-dark band so the rim carries the domain). There a domain is two pigments, a bright rim and a dark face of a different hue, and a pigment is one paint
 from shadow to highlight: a cone segment around a ray from black in OKLab. Four rules hold every set (the band, no
 shared pigment under any light, rim/face contrast, each rim still reading as its family in this truth);
-`Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. Shaped in the Colour Sets lab
+`Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. A set made for a
+**vision** (2026-11-05: **Contrast** for typical vision, then **Protanopia**, **Deuteranopia**, **Tritanopia**,
+**Achromatopsia** and **Low Vision**) keeps a fifth rule: as that viewer sees the colours the asset paints, every two
+domains' rims, every two domains' faces, and each rim against its face stay `vision_margin` apart. Settings > General >
+Colorblind mode wears the set made for the mode picked. Shaped in the Colour Sets lab
 (https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
 by them.
 

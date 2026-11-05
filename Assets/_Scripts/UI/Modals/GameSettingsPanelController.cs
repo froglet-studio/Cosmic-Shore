@@ -46,6 +46,9 @@ namespace CosmicShore.UI
         [SerializeField] string versionLine = "Version {version}";
         [Tooltip("The credits row's label when the row is built in code.")]
         [SerializeField] string creditsLabel = "Credits";
+        [Tooltip("The colorblind dropdown's first option (no colour-vision set). Every other option is the name of the " +
+                 "colour set made for that vision (ColorSetCatalog's displayName), so it is edited there.")]
+        [SerializeField] string colorblindOffLabel = "Off";
 
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
@@ -126,7 +129,9 @@ namespace CosmicShore.UI
         [SerializeField] string bugReportUrl = "https://www.froglet.games/support";
 
         // Option labels (index == enum value - the controller fills these, never author them in the dropdown)
-        static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
+        // The colorblind dropdown is built from the colour-set catalog (BuildColorblindOptions): Off, then one option per
+        // vision a set is made for, in enum order. _colorblindModes maps an option back to its mode.
+        readonly List<ColorblindModeSetting> _colorblindModes = new() { ColorblindModeSetting.Off };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
         static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
@@ -306,7 +311,7 @@ namespace CosmicShore.UI
             if (versionText) versionText.text = TemplateText.Fill(versionLine, "version", Application.version);
 
             // GENERAL
-            BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
+            BindDropdown(colorblindDropdown, BuildColorblindOptions(), SetColorblindModeIndex);
             BindDropdown(subtitleScaleDropdown, SubtitleScaleOpts, SetSubtitleScaleIndex);
             BindOnOff(subtitles, SetSubtitles, () => SubtitlesOn);
             BindOnOff(analyticsConsent, SetAnalyticsConsent, () => ConsentOn);
@@ -486,7 +491,8 @@ namespace CosmicShore.UI
 
         // ───────────────────────── setters (listeners call these) ─────────────────────────
 
-        public void SetColorblindModeIndex(int index) => AccessibilitySettings.ColorblindMode = (ColorblindModeSetting)index;
+        public void SetColorblindModeIndex(int index) =>
+            AccessibilitySettings.ColorblindMode = index >= 0 && index < _colorblindModes.Count ? _colorblindModes[index] : ColorblindModeSetting.Off;
         public void SetSubtitles(bool on) => AccessibilitySettings.Subtitles = on;
         public void SetSubtitleScaleIndex(int index) => AccessibilitySettings.SubtitleScale = SubtitleScales[Mathf.Clamp(index, 0, SubtitleScales.Length - 1)];
         public void SetAnalyticsConsent(bool granted) => analytics?.SetConsent(granted);
@@ -599,7 +605,29 @@ namespace CosmicShore.UI
 
         // ───────────────────────── getters ─────────────────────────
 
-        public int ColorblindIndex => (int)AccessibilitySettings.ColorblindMode;
+        public int ColorblindIndex => Mathf.Max(0, _colorblindModes.IndexOf(AccessibilitySettings.ColorblindMode));
+
+        /// <summary>
+        /// Off, then the name of each unlocked colour set made for a vision (ColorSetCatalogSO.Entry.vision), in the
+        /// enum's order. A vision no set is made for has no option, so the list only offers what can be worn.
+        /// </summary>
+        string[] BuildColorblindOptions()
+        {
+            _colorblindModes.Clear();
+            _colorblindModes.Add(ColorblindModeSetting.Off);
+            var labels = new List<string> { colorblindOffLabel ?? string.Empty };
+            var theme = CosmicShore.Gameplay.ThemeManager.Data;
+            var catalog = theme ? theme.Catalog : null;
+            if (catalog)
+                foreach (ColorblindModeSetting mode in Enum.GetValues(typeof(ColorblindModeSetting)))
+                {
+                    var entry = catalog.Get(catalog.IndexOfVision(mode));
+                    if (entry == null || !entry.unlocked || !entry.colorSet) continue;
+                    _colorblindModes.Add(mode);
+                    labels.Add(entry.displayName ?? string.Empty);
+                }
+            return labels.ToArray();
+        }
         public bool SubtitlesOn => AccessibilitySettings.Subtitles;
         public int SubtitleScaleIndex => NearestScaleIndex(AccessibilitySettings.SubtitleScale);
         public bool ConsentOn => analytics != null && analytics.ConsentGranted;

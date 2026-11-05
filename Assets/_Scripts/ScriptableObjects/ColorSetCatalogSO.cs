@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -30,6 +31,10 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Jade, Ruby, Gold, Blue: each domain's rim over its face, as the Profile names them (\"Mint over " +
                      "Bronze\"). Empty shows nothing for that domain.")]
             public string[] pigments = Array.Empty<string>();
+            [Tooltip("The vision this set is made for (colour_sets.json rule 5). Off: a set picked for its looks. Any " +
+                     "other value: Settings > General > Colorblind mode wears this set when the player picks that mode, " +
+                     "and the mode's option shows this entry's name.")]
+            public ColorblindModeSetting vision = ColorblindModeSetting.Off;
         }
 
         [Header("Sets, in card order")]
@@ -50,6 +55,18 @@ namespace CosmicShore.ScriptableObjects
             if (!set || entries == null) return -1;
             for (int i = 0; i < entries.Length; i++)
                 if (entries[i] != null && entries[i].colorSet == set) return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// The first entry made for <paramref name="vision"/>, or -1 (always -1 for <see cref="ColorblindModeSetting.Off"/>,
+        /// which no set is made for). A question, never an error.
+        /// </summary>
+        public int IndexOfVision(ColorblindModeSetting vision)
+        {
+            if (vision == ColorblindModeSetting.Off || entries == null) return -1;
+            for (int i = 0; i < entries.Length; i++)
+                if (entries[i] != null && entries[i].vision == vision) return i;
             return -1;
         }
 

@@ -273,8 +273,9 @@ namespace CosmicShore.UI
             var shown = cat ? cat.Get(_picked) : null;
             if (nameText) nameText.text = shown?.displayName ?? string.Empty;
             if (lineText) lineText.text = shown?.line ?? string.Empty;
+            // A set worn from Settings > Colorblind mode can sit past the rail's tiles: it shows, with no "n of m".
             if (positionText)
-                positionText.text = shown != null
+                positionText.text = shown != null && _picked < count
                     ? TemplateText.Fill(positionTemplate, "index", (_picked + 1).ToString(), "count", count.ToString())
                     : string.Empty;
             var worn = cat ? cat.Get(cat.IndexOf(equipped)) : null;
