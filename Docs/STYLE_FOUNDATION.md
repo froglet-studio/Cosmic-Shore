@@ -119,6 +119,8 @@ Three main colours carry both team identity and a UI function. **Green is the in
 
 **† Spec-authored additions.** The source guide's Typography page defines only H1–H3, Body, and the two button sizes; those six are transcriptions and their Mobile @800 column matches the page exactly. Display, Body small, and the three Data roles do not appear on it — they are additions this document makes, and their sizes carry no guide backing. Treat them as open to revision in a way the transcribed six are not.
 
+**The Mobile @800 column is live** (UI_STYLE_GUIDE §8, D6, 2026-11-05): it is the `phoneSize` column of `UITypeRolesSO`, used by a `KitText` on a canvas laid out at the phone scale. Its blanks are filled with spec-authored sizes that keep each role's proportion to its nearest transcribed role: Display 32, Body small 13, Label 12, Data (large) 30, Data 16, Data (small) 13.
+
 **Emphasis: colour shift only.** *(Resolved — the guide's alternative "italics in the Chakra Petch font" is retired. Colour is the single emphasis channel, so no italic face is installed.)*
 
 **Caps on buttons is unconditional.** *(Resolved — the guide records one exception, the "used" state of the Port's "request knowledge" button. The Port screen is cut from the overhaul, so the exception is retired with it. Do not reintroduce a per-button caps opt-out.)*

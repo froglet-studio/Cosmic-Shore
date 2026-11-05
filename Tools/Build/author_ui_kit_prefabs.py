@@ -212,6 +212,13 @@ ROLES = {  # role: (index, face, size, spacing, upper, tabular)
     "Data": (10, "Aldrich", 20, 0, False, True), "DataSmall": (11, "Aldrich", 15, 0, False, True),
 }
 
+# §4 Mobile @800 column - mirrors the phoneSize column of UITypeRolesSO.Defaults() (UI_STYLE_GUIDE §8, D6).
+# H1-H3, Body and the two buttons are STYLE_FOUNDATION §4 verbatim; the rest keep their nearest role's proportion.
+PHONE_SIZES = {
+    "Display": 32, "H1": 24, "H2": 20, "H3": 16, "Body": 16, "BodySmall": 13,
+    "Button": 16, "ButtonSmall": 12, "Label": 12, "DataLarge": 30, "Data": 16, "DataSmall": 13,
+}
+
 # --------------------------------------------------------------------------------------------
 # Serialization helpers
 # --------------------------------------------------------------------------------------------
@@ -944,8 +951,9 @@ def variant_text():
 def roles_asset_text():
     rows = "".join(
         f"  - role: {idx}\n    face: {0 if face == 'Aldrich' else 1}\n    size: {f32(size)}\n"
+        f"    phoneSize: {f32(PHONE_SIZES[name])}\n"
         f"    characterSpacing: {f32(sp)}\n    upperCase: {1 if up else 0}\n    tabular: {1 if tab else 0}\n"
-        for _, (idx, face, size, sp, up, tab) in sorted(ROLES.items(), key=lambda kv: kv[1][0]))
+        for name, (idx, face, size, sp, up, tab) in sorted(ROLES.items(), key=lambda kv: kv[1][0]))
     return (HEADER + "--- !u!114 &11400000\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
             "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n"
@@ -1249,6 +1257,18 @@ def validate(out):
     for variant in RETIRED_VARIANTS:
         assert button_palette(variant, False) == button_palette("Default", False), f"retired {variant} must draw as Default"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
+    # The phone column (UI_STYLE_GUIDE §8, D6) mirrors UITypeRolesSO.Defaults(): read the C# rows and compare, so
+    # the asset and the fallback cannot drift apart.
+    with open(os.path.join(REPO, "Assets/_Scripts/UI/Kit/UITypeRolesSO.cs")) as fh:
+        cs = fh.read()
+    rows = dict(re.findall(r"Row\(UITypeRole\.(\w+), UITypeFace\.\w+, [\d.]+f, ([\d.]+)f,", cs))
+    assert set(rows) == set(ROLES), f"UITypeRolesSO.Defaults() rows {sorted(rows)} are not the roles {sorted(ROLES)}"
+    for name, phone in rows.items():
+        assert float(phone) == PHONE_SIZES[name], f"{name}: phone size {phone} in C#, {PHONE_SIZES[name]} here"
+    for name in ("H1", "H2", "H3", "Body", "Button", "ButtonSmall"):
+        assert PHONE_SIZES[name] == {"H1": 24, "H2": 20, "H3": 16, "Body": 16, "Button": 16, "ButtonSmall": 12}[name], \
+            f"{name} is not STYLE_FOUNDATION §4's Mobile @800 size"
+    assert "    phoneSize: 16\n" in out[ROLES_ASSET], "the roles asset carries no phone column"
     # A selection is Jade everywhere: the controlActive colour (Docs/UI_STYLE_GUIDE.md D3, 2026-11-05; was the Rev 7
     # sky blue, which sat in the forbidden band). A commitment (Play, Ready) is Ruby and never the call to action.
     assert TOK["Selection"] == TOK["ControlActive"], "Selection is not the Jade control colour (D3)"

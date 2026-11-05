@@ -21082,3 +21082,16 @@ change is small (`UIColorToken.Commit = 18`, `UIThemeSO.commit`, `KitButtonVaria
 3. **Play a mode**: the GameCanvas Ready button is Ruby; at the end, the Scoreboard's Play again is Ruby. In Maelstrom,
    Ready, Next and Play again are Ruby.
 4. **Lime stays Lime**: Pause > Resume, the Reconnect and Confirm buttons are still the Lime call to action.
+
+## 🔴 Phone scale: 800 x 450 canvas and the mobile type column (`claude/ui-phone-scale`, 2026-11-05) — NOT COMPILED
+
+Not compiled: this cloud session has no .NET SDK, so `unity_refcompile` printed SKIP, and no editor was open. New:
+`PhoneScale` (the rule), `AdaptiveCanvasScaler.hasPhoneLayout` (off on every canvas), `UITypeRolesSO.RoleSpec.phoneSize`,
+and `KitText` choosing its size by its canvas.
+
+1. **Compile, then run the edit-mode tests** `PhoneScaleTests` (all pass).
+2. **Nothing changes yet**: with the switch off everywhere, Menu_Main and a game mode look as before on PC and in the
+   Device Simulator on a phone.
+3. **Try the switch** on a scratch copy: tick Has Phone Layout on Menu_Main's canvas, enter play mode in the Device
+   Simulator on an iPhone sideways. The canvas reference reads 800 x 450 and a Body Kit Text reads 16; exit play mode
+   and the CanvasScaler still reads 1920 x 1080 (the switch never saves into the scene). On an iPad it stays 1920 x 1080.

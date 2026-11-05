@@ -55,6 +55,9 @@ namespace CosmicShore.UI
             public UITypeFace face;
             [Tooltip("Size in canvas units at the 1920x1080 reference (§4 PC column).")]
             public float size;
+            [Tooltip("Size in canvas units at the 800x450 phone reference (§4 Mobile column; UI_STYLE_GUIDE §8, D6). " +
+                     "Used by a Kit Text on a canvas laid out at the phone scale. 0 takes the §4 default.")]
+            public float phoneSize;
             [Tooltip("TMP character spacing (1/100 em). Buttons 8 = 0.08em, labels 14 = 0.14em.")]
             public float characterSpacing;
             [Tooltip("Render upper case. §4: caps on buttons is unconditional.")]
@@ -69,7 +72,7 @@ namespace CosmicShore.UI
         [Tooltip("Chakra Petch SemiBold SDF - the button and label face (§4).")]
         [SerializeField] private TMP_FontAsset chakraPetchSemiBold;
 
-        [Header("Roles (§4 PC @1920)")]
+        [Header("Roles (§4 PC @1920, Mobile @800)")]
         [SerializeField] private RoleSpec[] roles = Defaults();
 
         public TMP_FontAsset FontFor(UITypeFace face) =>
@@ -84,6 +87,14 @@ namespace CosmicShore.UI
             return DefaultSpec(role);
         }
 
+        /// <summary>The size <paramref name="spec"/> sets in: its phone size on a phone-scale canvas (the §4 default
+        /// when the row has none), its PC size otherwise.</summary>
+        public static float SizeFor(RoleSpec spec, bool phone)
+        {
+            if (!phone) return spec.size;
+            return spec.phoneSize > 0f ? spec.phoneSize : DefaultSpec(spec.role).phoneSize;
+        }
+
         /// <summary>The §4 row for <paramref name="role"/>, used when no asset is wired.</summary>
         public static RoleSpec DefaultSpec(UITypeRole role)
         {
@@ -92,25 +103,32 @@ namespace CosmicShore.UI
             return Defaults()[(int)UITypeRole.Body];
         }
 
-        /// <summary>Docs/STYLE_FOUNDATION.md §4, PC column, verbatim; Label is the style-B addition.</summary>
+        /// <summary>Docs/STYLE_FOUNDATION.md §4, PC and Mobile columns. The PC column is verbatim; the Mobile column
+        /// is verbatim for H1-H3, Body and the two buttons, and the rest (Display, Body small, Label, the Data roles)
+        /// keep the PC column's proportions to its nearest transcribed role (spec-authored, open to revision).
+        /// Label is the style-B addition.</summary>
         public static RoleSpec[] Defaults() => new[]
         {
-            Row(UITypeRole.Display, UITypeFace.Aldrich, 48f, 0f, false, false),
-            Row(UITypeRole.H1, UITypeFace.Aldrich, 36f, 0f, false, false),
-            Row(UITypeRole.H2, UITypeFace.Aldrich, 28f, 0f, false, false),
-            Row(UITypeRole.H3, UITypeFace.Aldrich, 22f, 0f, false, false),
-            Row(UITypeRole.Body, UITypeFace.Aldrich, 18f, 0f, false, false),
-            Row(UITypeRole.BodySmall, UITypeFace.Aldrich, 15f, 0f, false, false),
-            Row(UITypeRole.Button, UITypeFace.ChakraPetchSemiBold, 18f, 8f, true, true),
-            Row(UITypeRole.ButtonSmall, UITypeFace.ChakraPetchSemiBold, 14f, 8f, true, true),
-            Row(UITypeRole.Label, UITypeFace.ChakraPetchSemiBold, 14f, 14f, true, true),
-            Row(UITypeRole.DataLarge, UITypeFace.Aldrich, 44f, 0f, false, true),
-            Row(UITypeRole.Data, UITypeFace.Aldrich, 20f, 0f, false, true),
-            Row(UITypeRole.DataSmall, UITypeFace.Aldrich, 15f, 0f, false, true),
+            Row(UITypeRole.Display, UITypeFace.Aldrich, 48f, 32f, 0f, false, false),
+            Row(UITypeRole.H1, UITypeFace.Aldrich, 36f, 24f, 0f, false, false),
+            Row(UITypeRole.H2, UITypeFace.Aldrich, 28f, 20f, 0f, false, false),
+            Row(UITypeRole.H3, UITypeFace.Aldrich, 22f, 16f, 0f, false, false),
+            Row(UITypeRole.Body, UITypeFace.Aldrich, 18f, 16f, 0f, false, false),
+            Row(UITypeRole.BodySmall, UITypeFace.Aldrich, 15f, 13f, 0f, false, false),
+            Row(UITypeRole.Button, UITypeFace.ChakraPetchSemiBold, 18f, 16f, 8f, true, true),
+            Row(UITypeRole.ButtonSmall, UITypeFace.ChakraPetchSemiBold, 14f, 12f, 8f, true, true),
+            Row(UITypeRole.Label, UITypeFace.ChakraPetchSemiBold, 14f, 12f, 14f, true, true),
+            Row(UITypeRole.DataLarge, UITypeFace.Aldrich, 44f, 30f, 0f, false, true),
+            Row(UITypeRole.Data, UITypeFace.Aldrich, 20f, 16f, 0f, false, true),
+            Row(UITypeRole.DataSmall, UITypeFace.Aldrich, 15f, 13f, 0f, false, true),
         };
 
-        private static RoleSpec Row(UITypeRole role, UITypeFace face, float size, float spacing,
+        private static RoleSpec Row(UITypeRole role, UITypeFace face, float size, float phoneSize, float spacing,
             bool upper, bool tabular) =>
-            new() { role = role, face = face, size = size, characterSpacing = spacing, upperCase = upper, tabular = tabular };
+            new()
+            {
+                role = role, face = face, size = size, phoneSize = phoneSize, characterSpacing = spacing,
+                upperCase = upper, tabular = tabular,
+            };
     }
 }

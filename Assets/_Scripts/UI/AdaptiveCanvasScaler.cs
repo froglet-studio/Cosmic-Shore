@@ -21,6 +21,14 @@ namespace CosmicShore.UI
     /// Leave null to disable — off by default. Sibling concept to <see cref="WidescreenLayoutAdapter"/>,
     /// which pillarboxes a single full-screen panel.
     ///
+    /// Phone scale (Docs/UI_STYLE_GUIDE.md §8, D6): a canvas whose screens have a phone layout ticks
+    /// <see cref="hasPhoneLayout"/>. On a phone (<see cref="PhoneScale.IsPhone(int,int,float,bool)"/>) in play mode
+    /// the scaler then lays the canvas out against 800 x 450 instead of its authored reference, and every
+    /// <see cref="KitText"/> under it sets in its role's phone size. A canvas without a phone layout keeps the PC
+    /// layout scaled down on a phone (off by default: a 1920-wide layout in an 800-wide canvas would spill), and
+    /// nothing changes on PC, console or iPad either way. The reference is only switched in play mode, so a
+    /// Device Simulator preview never saves 800 x 450 into the prefab or scene.
+    ///
     /// Runtime cost: two cached-int comparisons per frame; all real work happens only on the frame
     /// the resolution changes (window resize, monitor hop, fullscreen toggle — resizes are also
     /// caught event-style via OnRectTransformDimensionsChange on the driven canvas rect). Zero
@@ -48,11 +56,34 @@ namespace CosmicShore.UI
         [Tooltip("Maximum aspect ratio the safe zone may span before being pinned to a centered region. Default 16:9.")]
         [SerializeField] private float safeZoneMaxAspect = 16f / 9f;
 
+        [Header("Phone Scale (D6)")]
+        [Tooltip("This canvas's screens have a phone layout (drawn on Frogma, built for 800 x 450). On a phone in " +
+                 "play mode it is then laid out against the phone reference and its Kit Texts use the phone type " +
+                 "column. Leave off until the phone layout exists: off keeps the PC layout scaled down.")]
+        [SerializeField] private bool hasPhoneLayout;
+
+        [Tooltip("The canvas reference on a phone. Docs/UI_STYLE_GUIDE.md §8: 800 x 450.")]
+        [SerializeField] private Vector2 phoneReferenceResolution = new(800f, 450f);
+
         private CanvasScaler _scaler;
+        private Vector2 _authoredReference;
+        private bool _authoredReferenceRead;
         private int _lastWidth;
         private int _lastHeight;
 
+        /// <summary>Whether this canvas is laid out at the phone scale right now.</summary>
+        public bool UsesPhoneLayout { get; private set; }
+
+        /// <summary>Whether this canvas has a phone layout to switch to (the inspector's Has Phone Layout).</summary>
+        public bool HasPhoneLayout => hasPhoneLayout;
+
         private void Awake() => _scaler = GetComponent<CanvasScaler>();
+
+        private void OnDisable()
+        {
+            // Hand the authored reference back so a disabled scaler never leaves the phone one behind.
+            if (UsesPhoneLayout) SetPhoneLayout(false);
+        }
 
         private void OnEnable() => Apply();
 
@@ -100,6 +131,11 @@ namespace CosmicShore.UI
 
             float aspect = (float)width / height;
 
+            bool phone = hasPhoneLayout && Application.isPlaying &&
+                         _scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize &&
+                         PhoneScale.IsPhone(width, height, Screen.dpi, Application.isMobilePlatform);
+            if (phone != UsesPhoneLayout) SetPhoneLayout(phone);
+
             if (_scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
             {
                 // 1 at/above the reference aspect, 0 at/below (reference - blendRange), linear between.
@@ -109,6 +145,24 @@ namespace CosmicShore.UI
             }
 
             ApplySafeZone(aspect);
+        }
+
+        private void SetPhoneLayout(bool phone)
+        {
+            if (!_scaler) _scaler = GetComponent<CanvasScaler>();
+            if (!_scaler) return;
+            if (!_authoredReferenceRead)
+            {
+                _authoredReference = _scaler.referenceResolution;
+                _authoredReferenceRead = true;
+            }
+
+            UsesPhoneLayout = phone;
+            _scaler.referenceResolution = phone ? phoneReferenceResolution : _authoredReference;
+
+            // The profile changes on a resolution change only (rare), so one walk of the texts is fine here.
+            var texts = GetComponentsInChildren<KitText>(true);
+            for (int i = 0; i < texts.Length; i++) texts[i].Apply();
         }
 
         private void ApplySafeZone(float aspect)

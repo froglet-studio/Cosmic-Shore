@@ -43,6 +43,8 @@ namespace CosmicShore.UI
         public const float MinSizeScale = 0.6f;
 
         private TMP_Text _text;
+        private AdaptiveCanvasScaler _scaler;
+        private bool _scalerResolved;
 
         public UITypeRole Role => role;
 
@@ -63,6 +65,19 @@ namespace CosmicShore.UI
 
         private void OnEnable() => Apply();
 
+        private void OnTransformParentChanged() => _scalerResolved = false;
+
+        /// <summary>Whether this text's canvas is laid out at the phone scale (UI_STYLE_GUIDE §8, D6).</summary>
+        private bool OnPhoneCanvas()
+        {
+            if (!_scalerResolved)
+            {
+                _scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+                _scalerResolved = true;
+            }
+            return _scaler && _scaler.UsesPhoneLayout;
+        }
+
         private void OnValidate() => KitEditorDefer.Run(this, Apply);
 
         public void Apply()
@@ -76,14 +91,15 @@ namespace CosmicShore.UI
                 var font = roles.FontFor(spec.face);
                 if (font && t.font != font) t.font = font;
             }
-            t.fontSize = spec.size;
+            float size = UITypeRolesSO.SizeFor(spec, OnPhoneCanvas());
+            t.fontSize = size;
             // Auto-size starts at its maximum and only searches smaller sizes when the text overflows, so a label
             // that fits costs one layout pass and looks the same as a fixed size.
             t.enableAutoSizing = shrinkToFit;
             if (shrinkToFit)
             {
-                t.fontSizeMax = spec.size;
-                t.fontSizeMin = Mathf.Max(8f, Mathf.Round(spec.size * minSizeScale));
+                t.fontSizeMax = size;
+                t.fontSizeMin = Mathf.Max(8f, Mathf.Round(size * minSizeScale));
             }
             t.characterSpacing = spec.characterSpacing;
             // §4: weight comes from the face (no faux bold) and emphasis is colour only (no italic).

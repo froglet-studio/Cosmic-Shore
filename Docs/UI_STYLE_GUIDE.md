@@ -170,8 +170,13 @@ An iPad sideways (820 points tall) lands body at about 13.7 pt, which is fine.
   body 16, buttons 16, small buttons 12), which puts body text near 14 pt and buttons near 44 pt. The same kit prefabs
   and tokens, laid out for the smaller canvas: menus stack, side panels become full-screen sheets, and a screen that
   must work on phones gets a phone board on Frogma before it is built.
-- Until the phone scale is built (section 13, the Unity follow-up), a phone shows the PC layout scaled down: test it,
-  and log any screen that cannot be read in the UI checklist's Safe area line.
+- **How it is built** (2026-11-05): `PhoneScale.IsPhone` is the rule (short side under 600 points, a point being
+  1/160 inch). `AdaptiveCanvasScaler`, already on GameCanvas, Menu_Main and Maelstrom, has a **Has Phone Layout**
+  switch: when it is on, a phone in play mode lays that canvas out against 800 x 450, and every `KitText` under it sets
+  in its role's phone size (`UITypeRoles.asset`'s `phoneSize` column, written by `author_ui_kit_prefabs.py`).
+- **The switch is off on every canvas today.** A 1920-wide layout in an 800-wide canvas spills off the screen, so a
+  canvas turns it on only once its screens have a phone layout: drawn on Frogma, then built. Until then a phone shows
+  the PC layout scaled down: test it, and log any screen that cannot be read in the UI checklist's Safe area line.
 
 - Backgrounds bleed to the edge; content sits inside `Screen.safeArea` with at least 24 units of padding
   (`SafeAreaFitter` on every canvas that carries player-facing content).
@@ -257,8 +262,9 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
    (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`, `author_ingame_hud.py`, `author_maelstrom_ui.py`,
    `author_menu_configure.py`, and the menu generators that bake the selection colour); `colour_domains.json`
    `ui_tokens` has `selection: jade` and `commit: ruby`.
-2. **The phone scale** (D6): a phone canvas reference of 800 x 450 and the mobile type column, applied by one
-   component on every player-facing canvas, with the menus' phone layouts drawn on Frogma first.
+2. **The phone scale** (D6). The mechanism is done (2026-11-05, branch `claude/ui-phone-scale`; section 8). What is
+   left is per screen: draw its phone layout on Frogma, build it for 800 x 450, then tick Has Phone Layout on its
+   canvas. Menu_Main holds every menu screen on one canvas, so its switch waits until all of them have one.
 
 **The prompt for D8** (paste into a new session):
 
