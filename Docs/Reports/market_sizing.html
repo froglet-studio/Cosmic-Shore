@@ -1,0 +1,401 @@
+<title>Cosmic Shore Market Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: one column of drill-down levels, each a full-width bar of its parent with a wedge zooming into the kept slice. */
+:root {
+  /* Froglet Deep Sea (Docs/UI/froglet.css), dark-first */
+  --ground: #00041F; --ground-deep: #00010A; --surface: #0E1236; --surface-2: #222645;
+  --line: #434C89; --text: #E6E9FF; --soft: #8E95C4; --off: #5C5F70;
+  --sel: #00D4FF; --sel-dim: rgba(0,212,255,.16); --sel-wedge: rgba(0,212,255,.10);
+  --blue: #758FFB; --rest: #1A1F45; --cta: #99FF80; --on-fill: #00041F; --warn: #FFAE00; --danger: #FF4B3A;
+  --font-read: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --font-press: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --sl: 14px; --sl-s: 10px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --surface-2: #DDE1F7;
+  --line: #B8C0F0; --text: #00041F; --soft: #434C89; --off: #8A8FAE;
+  --sel: #007D73; --sel-dim: rgba(0,125,115,.14); --sel-wedge: rgba(0,125,115,.08);
+  --blue: #404EEC; --rest: #E6E9FF; --cta: #487C1F; --on-fill: #00041F; --warn: #9a5b00; --danger: #CD373A;
+  color-scheme: light; } }
+:root[data-theme="light"] {
+  --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --surface-2: #DDE1F7;
+  --line: #B8C0F0; --text: #00041F; --soft: #434C89; --off: #8A8FAE;
+  --sel: #007D73; --sel-dim: rgba(0,125,115,.14); --sel-wedge: rgba(0,125,115,.08);
+  --blue: #404EEC; --rest: #E6E9FF; --cta: #487C1F; --on-fill: #00041F; --warn: #9a5b00; --danger: #CD373A;
+  color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--text); font-family: var(--font-read); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font-family: var(--font-press); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: var(--soft); }
+.num { font-variant-numeric: tabular-nums; }
+.sliver { clip-path: polygon(var(--sl) 0, 100% 0, 100% calc(100% - var(--sl)), calc(100% - var(--sl)) 100%, 0 100%, 0 var(--sl)); }
+.sliver-s { clip-path: polygon(var(--sl-s) 0, 100% 0, 100% calc(100% - var(--sl-s)), calc(100% - var(--sl-s)) 100%, 0 100%, 0 var(--sl-s)); }
+a { color: var(--sel); }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 8px 0 12px; font-weight: 400; text-wrap: balance; }
+h2 { font-size: 24px; font-weight: 400; margin: 0 0 8px; text-wrap: balance; }
+p { margin: 0 0 12px; max-width: 68ch; }
+.lede { color: var(--soft); font-size: 17px; }
+.em { color: var(--sel); }
+section { margin-top: 48px; }
+
+/* headline tiles */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-top: 24px; }
+.tile { background: var(--surface); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tile .v { font-size: clamp(28px, 4vw, 40px); line-height: 1.05; }
+.tile .d { color: var(--soft); font-size: 13px; }
+.tile.som .v { color: var(--sel); }
+@media (max-width: 640px) { .tiles { grid-template-columns: 1fr; } }
+
+/* drill-down */
+.drill { margin-top: 20px; display: flex; flex-direction: column; }
+.lvl { display: grid; grid-template-columns: 210px minmax(0,1fr) 120px; gap: 6px 16px; align-items: center; }
+.lvl .who { min-width: 0; }
+.lvl .who .name { font-size: 15px; }
+.lvl .who .tag { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.badge { font-family: var(--font-press); font-weight: 700; font-size: 11px; letter-spacing: .1em; padding: 1px 7px; text-transform: uppercase; }
+.badge.tam { background: var(--blue); color: var(--ground); }
+.badge.sam { background: var(--sel); color: var(--ground); }
+.badge.som { background: var(--cta); color: var(--on-fill); }
+.badge.src { border: 1px solid var(--line); color: var(--soft); }
+.badge.asm { border: 1px solid var(--warn); color: var(--warn); }
+.track { position: relative; height: 34px; background: var(--rest); border: 1px solid var(--line); display: flex; overflow: hidden; }
+.track .kept { background: var(--sel); height: 100%; transition: width 200ms cubic-bezier(.33,1,.68,1); min-width: 2px; }
+.track .klabel, .track .rlabel { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; white-space: nowrap; pointer-events: none; }
+.track .klabel { color: var(--ground); left: 8px; font-family: var(--font-press); font-weight: 600; }
+.track .rlabel { right: 8px; color: var(--soft); max-width: 60%; overflow: hidden; text-overflow: ellipsis; }
+.lvl .val { text-align: right; font-size: 20px; }
+.lvl .val small { display: block; color: var(--soft); font-size: 12px; }
+.wedge { height: 22px; background: var(--sel-wedge); margin-left: calc(210px + 16px); margin-right: calc(120px + 16px);
+  clip-path: polygon(0 0, var(--w, 50%) 0, 100% 100%, 0 100%); transition: clip-path 200ms; }
+.lvl-row { padding: 6px 0; }
+.lvl-row details { grid-column: 1 / -1; }
+details.why { margin: 6px 0 0 calc(210px + 16px); color: var(--soft); font-size: 13px; }
+details.why summary { cursor: pointer; font-family: var(--font-press); font-weight: 600; letter-spacing: .06em; color: var(--soft); list-style: none; display: inline-flex; gap: 10px; align-items: center; }
+details.why summary::-webkit-details-marker { display: none; }
+details.why summary:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+details.why[open] summary { color: var(--text); }
+details.why .body { padding: 8px 0 4px; max-width: 72ch; }
+.lever { display: inline-flex; align-items: center; gap: 6px; }
+.lever input { width: 64px; background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 3px 6px; font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
+.lvl.som-row .track .kept { background: var(--cta); }
+@media (max-width: 760px) {
+  .lvl { grid-template-columns: minmax(0,1fr) auto; }
+  .lvl .track { grid-column: 1 / -1; order: 3; }
+  .wedge { margin-left: 0; margin-right: 0; }
+  details.why { margin-left: 0; }
+}
+
+/* panels */
+.panel { background: var(--surface); padding: 20px 22px; }
+.grid2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+.scen { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 16px; }
+button.chip { font-family: var(--font-press); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-size: 13px;
+  background: transparent; color: var(--text); border: 1px solid var(--line); padding: 7px 14px; cursor: pointer; }
+button.chip[aria-pressed="true"] { border-color: var(--sel); background: var(--sel-dim); color: var(--sel); }
+button.chip:hover { background: var(--sel-dim); }
+.field { display: grid; grid-template-columns: minmax(0,1fr) 92px; gap: 4px 12px; align-items: center; margin-bottom: 12px; }
+.field label { font-size: 14px; }
+.field label small { display: block; color: var(--soft); font-size: 12px; }
+.field input[type=number] { width: 100%; background: var(--ground); color: var(--text); border: 1px solid var(--line); padding: 6px 8px; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
+.field input[type=range] { grid-column: 1 / -1; accent-color: var(--sel); width: 100%; }
+.out { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 16px; align-items: baseline; }
+.out .k { color: var(--soft); font-size: 14px; }
+.out .v { text-align: right; font-size: 18px; }
+.out .v.big { font-size: 32px; color: var(--sel); }
+.out hr { grid-column: 1 / -1; border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
+.rule { color: var(--soft); font-size: 13px; margin-top: 12px; }
+
+/* tables */
+.tbl { overflow-x: auto; margin-top: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+th { font-family: var(--font-press); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; font-size: 11px; color: var(--soft); text-align: left; padding: 0 10px 8px; border-bottom: 2px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--surface-2); vertical-align: top; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.state { font-family: var(--font-press); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 8px; white-space: nowrap; border: 1px solid; }
+.state.now { color: var(--sel); border-color: var(--sel); }
+.state.next { color: var(--warn); border-color: var(--warn); }
+.state.no { color: var(--off); border-color: var(--off); }
+ol.src { padding-left: 20px; font-size: 13px; color: var(--soft); }
+ol.src li { margin-bottom: 6px; }
+.toolbar { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="label">Froglet Inc. · Market sizing · Calendar 2025 consumer spend, USD</div>
+  <h1>From a <span class="em num">$197B</span> industry to the market Cosmic Shore can reach</h1>
+  <p class="lede">Each level below keeps one slice of the level above it. The slice Cosmic Shore lives in is lit; the rest of each level is named on the right. Every share is editable, and every number names its source or says it is an assumption.</p>
+
+  <div class="tiles">
+    <div class="tile sliver"><span class="label">TAM · Premium games on Steam</span><span class="v num" id="tTam">–</span><span class="d">The store and business model the game is built to sell through.</span></div>
+    <div class="tile sliver"><span class="label">SAM · What the launch can serve</span><span class="v num" id="tSam">–</span><span class="d">Indie-priced, online multiplayer, party / arcade racing / arcade flight, English-only, Windows.</span></div>
+    <div class="tile sliver som"><span class="label">SOM · Year-one capture</span><span class="v num" id="tSom">–</span><span class="d" id="tSomD">Gross Steam revenue, first 12 months after a paid launch.</span></div>
+  </div>
+
+  <section>
+    <div class="toolbar">
+      <div>
+        <h2>The drill-down</h2>
+        <p class="lede" style="margin:0">Open any level to see where its share comes from and to change it.</p>
+      </div>
+      <button class="chip" id="reset" type="button">Reset shares</button>
+    </div>
+    <div class="drill" id="drill"></div>
+  </section>
+
+  <section>
+    <h2>SOM: what one launch can take</h2>
+    <p>The SOM is not a share of SAM someone picks. It is built from the Steam launch funnel: wishlists at launch, the share that buy in week one, how week one grows into a year, and what a unit really earns after regional pricing and discounts. The Steam Playtest earns nothing (Valve forbids charging for access in any form), so its whole job is to grow the first input.</p>
+    <div class="scen" role="group" aria-label="Scenario">
+      <button class="chip" type="button" data-s="low" aria-pressed="false">Low</button>
+      <button class="chip" type="button" data-s="base" aria-pressed="true">Base</button>
+      <button class="chip" type="button" data-s="high" aria-pressed="false">High</button>
+    </div>
+    <div class="grid2">
+      <div class="panel sliver">
+        <div class="field"><label for="wl">Wishlists at launch<small>Driven by the Playtest, the Coming Soon window (≥ 2 weeks), streamers and festivals</small></label><input type="number" id="wl" min="0" step="1000"><input type="range" id="wlR" min="0" max="300000" step="1000" aria-label="Wishlists at launch"></div>
+        <div class="field"><label for="cv">Week-one conversion (× wishlists)<small>GameDiscoverCo median 0.15×; 0.10× for games above $10</small></label><input type="number" id="cv" min="0" max="1" step="0.01"><input type="range" id="cvR" min="0.02" max="0.40" step="0.01" aria-label="Week-one conversion"></div>
+        <div class="field"><label for="ym">Year one ÷ week one<small>GameDiscoverCo median 2.8× for $15–19 games; multiplayer with streamers has a longer tail</small></label><input type="number" id="ym" min="1" max="10" step="0.1"><input type="range" id="ymR" min="1.5" max="6" step="0.1" aria-label="Year one over week one"></div>
+        <div class="field"><label for="pr">Realized gross per unit ($)<small>$15 list price; launch discount, sales and Valve's regional prices pull the average down. Assumption: 73%</small></label><input type="number" id="pr" min="0" step="0.5"><input type="range" id="prR" min="5" max="15" step="0.5" aria-label="Realized gross per unit"></div>
+      </div>
+      <div class="panel sliver">
+        <div class="out">
+          <span class="k">Week-one units</span><span class="v num" id="oW">–</span>
+          <span class="k">Year-one units</span><span class="v num" id="oY">–</span>
+          <hr>
+          <span class="k">Year-one gross revenue</span><span class="v big num" id="oG">–</span>
+          <span class="k">Net to Froglet after Steam's 30%</span><span class="v num" id="oN">–</span>
+          <span class="k">Share of SAM</span><span class="v num" id="oS">–</span>
+          <hr>
+          <span class="k">Each extra 10,000 launch wishlists adds</span><span class="v num" id="oP">–</span>
+        </div>
+        <p class="rule">Before tax, refunds and VAT. Steam takes 30% up to $10M gross per title. Comparable lifetime outcomes are in the table further down.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Branches the launch does not reach yet</h2>
+    <p>The SAM above is Steam only. The game already runs on phones (iOS on TestFlight since 2026-10-12, Android on Play internal testing since 2026-10-14), and the other branches of the tree open when the product does.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Branch</th><th class="r">Market</th><th class="r">Slice that fits</th><th>What unlocks it</th><th>Today</th></tr></thead>
+        <tbody>
+          <tr><td>Steam, premium (the SAM above)</td><td class="r num" id="bSteam">–</td><td class="r num" id="bSam">–</td><td>A Steamworks account, store page, Playtest, then a paid launch</td><td><span class="state now">Building</span></td></tr>
+          <tr><td>Steam, more languages</td><td class="r num" id="bLang">–</td><td class="r num" id="bLangAdd">–</td><td>Localizing the remaining 40% of the genre slice (Simplified Chinese first). Listed for 1.0 in the Early Access answers.</td><td><span class="state next">Planned</span></td></tr>
+          <tr><td>Mobile, free to play</td><td class="r num">$108B</td><td class="r num">≈ $1.2B</td><td>Public App Store and Play releases plus an in-app economy. Commerce is de-scoped today (R4). Slice: 1.5% of $82B mobile IAP for party and arcade multiplayer, an assumption anchored on Stumble Guys ($168M lifetime).</td><td><span class="state next">In testing</span></td></tr>
+          <tr><td>Console</td><td class="r num">$46B</td><td class="r num">not sized</td><td>A console port. Party games sell well on Switch, so this is the natural next platform after mobile.</td><td><span class="state no">Not targeted</span></td></tr>
+          <tr><td>PC outside Steam</td><td class="r num">$25.3B</td><td class="r num">small</td><td>Epic, itch.io and the browser Toybox. Most of this money is in first-party clients (Riot, Battle.net) and China's PC market.</td><td><span class="state no">Not targeted</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>How these markets actually pay out</h2>
+    <div class="grid2">
+      <div class="panel sliver">
+        <span class="label">Steam is a hit market</span>
+        <p style="margin-top:8px">About <span class="em num">20,000</span> games launched on Steam in 2025. About <span class="em num">300</span> crossed $1M gross; the median earned about <span class="em num">$249</span>.</p>
+        <p>The Flight tag is narrower still: <span class="em num">85</span> games have ever crossed $1M on Steam and fewer than <span class="em num">20</span> reached $10M, with almost no middle class.</p>
+        <p style="margin:0">Co-op and multiplayer is the exception that pays: co-op games grossed about <span class="em num">$8.2B</span> on Steam in 2025 and held 11 of the year's top 20, and multiplayer games supported by streamers keep the longest tails.</p>
+      </div>
+      <div class="panel sliver">
+        <span class="label">What the SAM is made of</span>
+        <div class="tbl" style="margin-top:4px">
+          <table style="min-width:0">
+            <thead><tr><th>Genre slice</th><th class="r">Share of indie MP</th><th class="r">Revenue</th></tr></thead>
+            <tbody id="genreRows"></tbody>
+          </table>
+        </div>
+        <p class="rule">Shares are assumptions. Cosmic Shore's vessels each carry a genre (the Sparrow shoots, Skim Race races, the Maelstrom is a party tournament), so the game draws from three slices at once rather than one.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Comparable games</h2>
+    <p>Third-party estimates of lifetime Steam gross (modelled from reviews, not reported). The two trackers disagree by up to 2.4×, so read each as a range.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Game</th><th>Why it compares</th><th class="r">Price</th><th class="r">Lifetime gross</th><th class="r">Units</th></tr></thead>
+        <tbody>
+          <tr><td>Pummel Party (2018)</td><td>Online party minigames, 4–8 players</td><td class="r">$14.99</td><td class="r">$8.3M – $19.1M</td><td class="r">0.85M – 2.1M</td></tr>
+          <tr><td>Ultimate Chicken Horse (2016)</td><td>Indie party platformer, online and local</td><td class="r">$14.99</td><td class="r">$8.5M – $20.1M</td><td class="r">0.94M – 2.65M</td></tr>
+          <tr><td>Spaceflight Simulator (Steam)</td><td>Space flight, single player</td><td class="r">–</td><td class="r">$1.9M</td><td class="r">212.5K</td></tr>
+          <tr><td>Reentry (Nov 2025)</td><td>Space flight sim, recent launch</td><td class="r">–</td><td class="r">≈ $1M net</td><td class="r">68.2K</td></tr>
+          <tr><td>Stumble Guys (mobile)</td><td>Free-to-play mobile party game</td><td class="r">F2P</td><td class="r">$168M</td><td class="r">600M installs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Sources and assumptions</h2>
+    <ol class="src">
+      <li>Global, mobile, PC, console 2025: Newzoo, September forecast $188.8B (mobile $103B, console $45.9B, PC $39.9B), raised in its year-in-review to ≈ $197B with mobile ≈ $108B and PC ≈ $43B; console is the remainder. <a href="https://wccftech.com/newzoo-expects-global-video-games-market-reach-197-billion-2025-exceeds-expectations/">Wccftech</a>, <a href="https://www.pocketgamer.biz/newzoo-global-games-market-set-to-hit-1888bn-in-2025/">PocketGamer.biz</a>.</li>
+      <li>Steam 2025 ≈ $17.7B gross (Alinea; GameDiscoverCo ≈ $16.9B); premium 78%; indie ≈ 25% (≈ $4.4–4.5B). <a href="https://www.notebookcheck.net/Indie-games-accounted-for-25-of-Steam-s-revenue-in-2025.1189429.0.html">Notebookcheck</a>, <a href="https://gamedevreports.substack.com/p/alinea-analytics-2025-year-in-review">Alinea year in review</a>, <a href="https://newsletter.gamediscover.co/p/revealed-the-numbers-behind-steams">GameDiscoverCo</a>.</li>
+      <li>Co-op games ≈ $8.2B on Steam in 2025, 11 of the top 20. <a href="https://www.notebookcheck.net/Games-with-co-op-modes-generated-8-2-billion-in-gross-revenue-on-Steam-in-2025.1218225.0.html">Notebookcheck (Alinea)</a>.</li>
+      <li>Release volume, ~300 games over $1M, median $249. <a href="https://game-developers.org/2025-steam-game-revenue-distribution">game-developers.org</a>. Flight tag: 85 games over $1M, fewer than 20 over $10M. <a href="https://wnhub.io/news/other/item-52312">WN Hub</a>.</li>
+      <li>Wishlist conversion 0.15× median (0.10× above $10); year one ≈ 2.8× week one for $15–19 games. <a href="https://newsletter.gamediscover.co/p/the-state-of-steam-wishlist-conversions">GameDiscoverCo</a>, <a href="https://gamedevreports.substack.com/p/gamediscoverco-conversion-benchmarks">benchmarks</a>.</li>
+      <li>Mobile IAP $82B, strategy the only growing genre. <a href="https://gamedevreports.substack.com/p/sensor-tower-state-of-gaming-2026">Sensor Tower State of Gaming 2026</a>. Stumble Guys: <a href="https://www.blog.udonis.co/mobile-marketing/mobile-games/stumble-guys">Udonis (AppMagic)</a>.</li>
+      <li>Comparables: <a href="https://raijin.gg/app/880940/Pummel_Party">Raijin</a> and <a href="https://steamdata.ai/game/880940">SteamData.AI</a> (Pummel Party), <a href="https://raijin.gg/app/386940/Ultimate_Chicken_Horse">Raijin</a> and <a href="https://steamdata.ai/game/386940">SteamData.AI</a> (Ultimate Chicken Horse), <a href="https://raijin.gg/app/1718870/Spaceflight_Simulator">Raijin</a> (Spaceflight Simulator), <a href="https://datahumble.com/reentry---a-space-flight-simulator-882140">Datahumble</a> (Reentry).</li>
+      <li>Cosmic Shore facts: $15 base price, Steam Playtest destination, mobile in testing, commerce de-scoped: <code>Docs/STEAM_BUSINESS_SETUP.md</code>, <code>Docs/Reports/STEAM_LAUNCH.md</code>, <code>Docs/STEAM_RELEASE_TASKS.md</code>.</li>
+      <li>Marked <em>assumption</em>: indie share of premium (29%, from indie ≈ 25% of all Steam being mostly premium), multiplayer share of indie (45%, from co-op ≈ 46% of all Steam), the genre slice (10%), English-only reach (60%), realized price (73% of list), the mobile slice (1.5% of IAP), and the scenario wishlists.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  const LEVELS = [
+    { id: 'global', tag: 'Industry', name: 'Global games market', base: 197e9, kind: 'src',
+      why: 'Newzoo’s 2025 year-in-review estimate, raised from its September forecast of $188.8B as PC and mobile beat expectations.' },
+    { id: 'pc', tag: 'Platform', name: 'PC', share: 21.8, kind: 'src', kept: 'PC', rest: 'Mobile $108B · Console $46B',
+      why: 'Newzoo’s revised PC figure, about $43B (+10% year on year). Steam Deck and other handhelds count as PC. Cosmic Shore launches on Windows; mobile and console are the branches in the table further down.' },
+    { id: 'steam', tag: 'Store', name: 'Steam', share: 41.2, kind: 'src', kept: 'Steam', rest: 'Epic, first-party clients, China PC',
+      why: 'Alinea Analytics estimates Steam’s 2025 gross at about $17.7B (GameDiscoverCo: $16.9B). Valve publishes no figures. Steam is the only PC store on the launch plan.' },
+    { id: 'premium', tag: 'Business model', name: 'Premium (paid) games', share: 78, kind: 'src', badge: 'tam', kept: 'Premium', rest: 'Free-to-play and in-game spend',
+      why: 'Alinea: premium games took 78% of Steam revenue in 2025. Cosmic Shore is planned at $15 with no price rise at 1.0. This level is the TAM: every dollar the game could in principle compete for with its current business model.' },
+    { id: 'indie', tag: 'Studio tier', name: 'Indie', share: 29, kind: 'asm', kept: 'Indie', rest: 'AA and AAA',
+      why: 'Indie games took about 25% of all Steam revenue (≈ $4.4–4.5B). Almost all of it is premium, so indie is about 29% of the premium slice. A $15 game from a small studio competes here for attention, not with Battlefield.' },
+    { id: 'mp', tag: 'Mode', name: 'Online multiplayer and co-op', share: 45, kind: 'asm', kept: 'Multiplayer', rest: 'Single player',
+      why: 'Co-op tagged games made about $8.2B, 46% of Steam, and grew faster than the store. Cosmic Shore is online multiplayer first (parties of 1–4 with AI backfill), so single-player-only indie money is outside its reach.' },
+    { id: 'genre', tag: 'Genre', name: 'Party, arcade racing, arcade flight', share: 10, kind: 'asm', kept: 'Fits', rest: 'Co-op horror, survival, sims, shooters…',
+      why: 'An assumption, split in the genre table below: party games 6%, arcade racing 2%, arcade space and flight combat 2%. Multiplayer indie money is led by social co-op (R.E.P.O., survival crafting, horror), which Cosmic Shore does not compete with.' },
+    { id: 'lang', tag: 'Language', name: 'English-only launch', share: 60, kind: 'asm', badge: 'sam', kept: 'English', rest: 'Needs localization',
+      why: 'The launch ships in English; more languages are planned for 1.0. Action games need little reading, so many non-native readers still buy. Simplified Chinese is the largest group left out. This level is the SAM.' },
+  ];
+  const GENRE = [['Party games', 6], ['Arcade racing', 2], ['Arcade space and flight combat', 2]];
+  const SCEN = {
+    low:  { wl: 7000,   cv: 0.10, ym: 2.8, pr: 11 },
+    base: { wl: 30000,  cv: 0.10, ym: 2.8, pr: 11 },
+    high: { wl: 150000, cv: 0.15, ym: 3.5, pr: 11 },
+  };
+  const DEF = Object.fromEntries(LEVELS.filter(l => l.share != null).map(l => [l.id, l.share]));
+  let shares = { ...DEF };
+  try { const s = JSON.parse(localStorage.getItem('csmm-shares') || 'null'); if (s) shares = { ...shares, ...s }; } catch (e) {}
+  let som = { ...SCEN.base };
+  try { const s = JSON.parse(localStorage.getItem('csmm-som') || 'null'); if (s) som = { ...som, ...s }; } catch (e) {}
+
+  const $ = id => document.getElementById(id);
+  const fmt = v => {
+    if (v >= 1e9) return '$' + (v / 1e9).toFixed(v >= 1e10 ? 1 : 2).replace(/\.?0+$/, '') + 'B';
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(v >= 1e8 ? 0 : 1).replace(/\.0$/, '') + 'M';
+    if (v >= 1e3) return '$' + (v / 1e3).toFixed(v >= 1e5 ? 0 : 1).replace(/\.0$/, '') + 'k';
+    return '$' + Math.round(v);
+  };
+  const n0 = v => Math.round(v).toLocaleString('en-US');
+  const pct = v => (v >= 1 ? v.toFixed(1).replace(/\.0$/, '') : v >= 0.01 ? v.toFixed(2) : v.toFixed(3)) + '%';
+
+  function values() {
+    const out = {}; let v = LEVELS[0].base; out.global = v;
+    for (let i = 1; i < LEVELS.length; i++) { v = v * shares[LEVELS[i].id] / 100; out[LEVELS[i].id] = v; }
+    return out;
+  }
+  function somCalc() {
+    const w = som.wl * som.cv, y = w * som.ym, g = y * som.pr;
+    return { w, y, g, n: g * 0.7, per10k: 10000 * som.cv * som.ym * som.pr };
+  }
+
+  const drill = $('drill');
+  function build() {
+    drill.innerHTML = '';
+    LEVELS.forEach((l, i) => {
+      if (i > 0) { const w = document.createElement('div'); w.className = 'wedge'; w.id = 'w-' + l.id; drill.appendChild(w); }
+      const row = document.createElement('div'); row.className = 'lvl-row';
+      const badges = (l.badge ? `<span class="badge ${l.badge}">${l.badge}</span>` : '') +
+        `<span class="badge ${l.kind}">${l.kind === 'src' ? 'sourced' : 'assumption'}</span>`;
+      const lever = l.share != null
+        ? `<span class="lever"><label for="s-${l.id}">Share of level above</label><input type="number" id="s-${l.id}" min="0.1" max="100" step="0.5" value="${shares[l.id]}">%</span>` : '';
+      row.innerHTML = `
+        <div class="lvl">
+          <div class="who"><div class="label">L${i} · ${l.tag}</div><div class="name">${l.name}</div><div class="tag">${badges}</div></div>
+          <div class="track sliver-s" aria-hidden="true"><div class="kept" id="k-${l.id}"></div><span class="klabel" id="kl-${l.id}"></span><span class="rlabel" id="r-${l.id}">${l.rest || ''}</span></div>
+          <div class="val num"><span id="v-${l.id}"></span><small id="p-${l.id}"></small></div>
+        </div>
+        <details class="why"><summary>Why this share ▸</summary><div class="body"><p>${l.why}</p>${lever}</div></details>`;
+      drill.appendChild(row);
+      if (l.share != null) $('s-' + l.id).addEventListener('input', e => {
+        const v = parseFloat(e.target.value); if (!(v > 0 && v <= 100)) return;
+        shares[l.id] = v; save('csmm-shares', shares); render();
+      });
+    });
+    // SOM row
+    const w = document.createElement('div'); w.className = 'wedge'; w.id = 'w-som'; drill.appendChild(w);
+    const row = document.createElement('div'); row.className = 'lvl-row';
+    row.innerHTML = `
+      <div class="lvl som-row">
+        <div class="who"><div class="label">L${LEVELS.length} · Capture</div><div class="name">Cosmic Shore, year one</div><div class="tag"><span class="badge som">som</span><span class="badge asm">funnel model</span></div></div>
+        <div class="track sliver-s" aria-hidden="true"><div class="kept" id="k-som"></div><span class="rlabel">Every other game in the slice</span></div>
+        <div class="val num"><span id="v-som"></span><small id="p-som"></small></div>
+      </div>`;
+    drill.appendChild(row);
+  }
+
+  function render() {
+    const v = values(), s = somCalc(), sam = v.lang;
+    LEVELS.forEach((l, i) => {
+      $('v-' + l.id).textContent = fmt(v[l.id]);
+      $('p-' + l.id).textContent = i === 0 ? '100% of industry' : pct(v[l.id] / v.global * 100) + ' of industry';
+      const sh = i === 0 ? 100 : shares[l.id];
+      $('k-' + l.id).style.width = sh + '%';
+      $('kl-' + l.id).textContent = i === 0 ? 'All games' : (sh >= 14 ? l.kept + ' ' + pct(sh) : '');
+      if (i > 0) $('w-' + l.id).style.setProperty('--w', sh + '%');
+      if (i > 0 && sh < 14) $('kl-' + l.id).textContent = '';
+      $('r-' + l.id).hidden = sh > 60;
+    });
+    const somShare = s.g / sam * 100;
+    $('v-som').textContent = fmt(s.g);
+    $('p-som').textContent = pct(somShare) + ' of SAM';
+    $('k-som').style.width = Math.max(somShare, 0.3) + '%';
+    $('w-som').style.setProperty('--w', '100%');
+    $('tTam').textContent = fmt(v.premium);
+    $('tSam').textContent = fmt(sam);
+    $('tSom').textContent = fmt(s.g);
+    $('tSomD').textContent = `Gross Steam revenue in the first 12 months after a paid launch: ${n0(s.y)} units, ${pct(somShare)} of SAM.`;
+    $('oW').textContent = n0(s.w); $('oY').textContent = n0(s.y);
+    $('oG').textContent = fmt(s.g); $('oN').textContent = fmt(s.n);
+    $('oS').textContent = pct(somShare); $('oP').textContent = fmt(s.per10k) + ' gross';
+    $('bSteam').textContent = fmt(v.premium); $('bSam').textContent = fmt(sam);
+    $('bLang').textContent = fmt(v.genre); $('bLangAdd').textContent = '+' + fmt(v.genre - sam);
+    $('genreRows').innerHTML = GENRE.map(([g, p]) => {
+      const scaled = p / 10 * shares.genre;
+      return `<tr><td>${g}</td><td class="r">${pct(scaled)}</td><td class="r">${fmt(v.mp * scaled / 100)}</td></tr>`;
+    }).join('') + `<tr><td><b style="font-weight:400;color:var(--sel)">Genre slice, all languages</b></td><td class="r">${pct(shares.genre)}</td><td class="r">${fmt(v.genre)}</td></tr>`;
+  }
+
+  function save(k, o) { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} }
+
+  const F = [['wl', 'wlR', 'wl'], ['cv', 'cvR', 'cv'], ['ym', 'ymR', 'ym'], ['pr', 'prR', 'pr']];
+  function syncFields() { F.forEach(([a, b, k]) => { $(a).value = som[k]; $(b).value = som[k]; }); }
+  F.forEach(([a, b, k]) => [a, b].forEach(id => $(id).addEventListener('input', e => {
+    const x = parseFloat(e.target.value); if (!(x >= 0)) return;
+    som[k] = x; (id === a ? $(b) : $(a)).value = x;
+    document.querySelectorAll('[data-s]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    save('csmm-som', som); render();
+  })));
+  document.querySelectorAll('[data-s]').forEach(c => c.addEventListener('click', () => {
+    som = { ...SCEN[c.dataset.s] }; syncFields(); save('csmm-som', som);
+    document.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', String(x === c)));
+    render();
+  }));
+  $('reset').addEventListener('click', () => {
+    shares = { ...DEF }; save('csmm-shares', shares);
+    LEVELS.forEach(l => { if (l.share != null) $('s-' + l.id).value = shares[l.id]; });
+    render();
+  });
+  // mark the pressed scenario if the stored inputs match one
+  const match = Object.keys(SCEN).find(k => Object.keys(SCEN[k]).every(f => SCEN[k][f] === som[f]));
+  document.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.s === match)));
+
+  build(); syncFields(); render();
+})();
+</script>
