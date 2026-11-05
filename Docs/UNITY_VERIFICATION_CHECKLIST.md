@@ -21084,8 +21084,11 @@ errors); `author_menu_profile.py`, `author_colour_set_catalog.py` and `author_lo
    prism swatches; the preview shows Nocturne at three tiers plus the vessel colour, "Equipped - ..." under it, no APPLY.
    The record underneath takes no clicks or pad focus.
 4. **Pick Dart Frog, press APPLY.** The cell-change loading screen comes up with "Changing colour set", DART FROG and its
-   line, the four steps lighting in turn, then lifts. The menu cell's prisms are now Dart Frog's (mint over bronze on
-   Jade, and so on), and the card says Equipped.
+   line, the four steps lighting in turn, then lifts. The menu cell's prisms and crystals are now Dart Frog's the moment
+   the veil lifts (mint over bronze on Jade, and so on), with no restart, and the card says Equipped (section 124: the
+   prism entities and crystal tints are re-stamped).
+4b. **Press LB and RB on a pad** in the Profile: they step between RECORD and COLOUR SETS. Open the favourite-pilot
+   picker: LB / RB step its vessels, not the tabs.
 5. **Restart Play mode.** The game starts in Dart Frog (the pick is saved). Stop Play: `ThemeManagerDataContainer.asset`
    still names Nocturne in the inspector, and `git status` shows no change to it.
 6. **Fly a match in Dart Frog.** Prisms, trails, the HUD's domain colours, the Configure pedestals and the Ark's squads

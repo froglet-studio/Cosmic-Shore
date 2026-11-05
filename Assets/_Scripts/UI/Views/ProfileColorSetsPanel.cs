@@ -4,6 +4,8 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -99,12 +101,20 @@ namespace CosmicShore.UI
         void OnEnable() => ThemeManager.ColorSetApplied += OnApplied;
         void OnDisable() => ThemeManager.ColorSetApplied -= OnApplied;
 
-        // The Profile opening again (the record window opening) brings back the Record tab.
+        // The Profile opening again (the record window opening) brings back the Record tab. LB / RB step between the
+        // tabs while the Profile is up, as the Codex and the Hangar step theirs; the favourite-pilot picker owns the
+        // shoulders while it is open, and a window over the Profile (navigation off) owns the pad.
         void Update()
         {
             bool open = record && record.IsOpen;
             if (open && !_recordWasOpen && _showing) SetPage(false);
             _recordWasOpen = open;
+
+            var pad = Gamepad.current;
+            if (!open || pad == null || record.IsPickerOpen) return;
+            if (EventSystem.current && !EventSystem.current.sendNavigationEvents) return;
+            if (pad.rightShoulder.wasPressedThisFrame && !_showing) ShowColourSets();
+            else if (pad.leftShoulder.wasPressedThisFrame && _showing) ShowRecord();
         }
 
         public void ShowRecord() => SetPage(false);

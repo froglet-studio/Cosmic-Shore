@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.ECS;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -93,12 +95,34 @@ namespace CosmicShore.Gameplay
             if (set == _dataContainer.ColorSet) return false;
 
             _dataContainer.ColorSet = set;
+            var repainted = new List<Material>(64);
             foreach (var pair in _dataContainer.TeamMaterialSets)
                 if (pair.Value && set.TryGetColorSetByDomain(pair.Key, out var domainColors))
+                {
                     PaintDomainMaterialSet(pair.Value, domainColors, pair.Key);
+                    CollectMaterials(pair.Value, repainted);
+                }
             HandOffColorSet();
+            // What copied its colours out of a material when it spawned does not see a repaint in place: the prism
+            // render entities and the crystals' tint blocks (§124). Vessels and settled MeshRenderer prisms draw the
+            // shared material itself and change with it.
+            PrismRenderService.RestampColors(repainted);
+            Crystal.RetintAll();
             ColorSetApplied?.Invoke(set);
             return true;
+        }
+
+        static void CollectMaterials(SO_MaterialSet set, List<Material> into)
+        {
+            foreach (var m in new[]
+                     {
+                         set.BlockMaterial, set.TransparentBlockMaterial, set.ShieldedBlockMaterial,
+                         set.TransparentShieldedBlockMaterial, set.SuperShieldedBlockMaterial,
+                         set.TransparentSuperShieldedBlockMaterial, set.DangerousBlockMaterial,
+                         set.TransparentDangerousBlockMaterial, set.ExplodingBlockMaterial, set.CrystalMaterial,
+                         set.CrystalMaterial1, set.CrystalMaterial2, set.CrystalMaterial3, set.CrystalMaterial4,
+                     })
+                if (m) into.Add(m);
         }
 
         void HandOffColorSet()

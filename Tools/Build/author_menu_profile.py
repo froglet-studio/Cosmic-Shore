@@ -408,9 +408,12 @@ TAB_X, TAB_Y = 360, 112
 
 
 def build_tabs(root):
-    tabs = root.child(N("Tabs", "Tabs", TL(TAB_X, TAB_Y, 600, 44)))
+    tabs = root.child(N("Tabs", "Tabs", TL(TAB_X, TAB_Y, 640, 44)))
     tabs.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", distance=10))
-    x = 0
+    # LB / RB step between the tabs (ProfileColorSetsPanel reads the shoulders); the keycaps say so, as on the board.
+    kw, kh = K.label_width("LB", "Label") + 24, K.line_height("Label") + 8
+    tabs.children.append(Inst("TabsLB", "KitKeycap", "KeycapLB", TL(0, (44 - kh) // 2, kw, kh), [("Label#tmp", "m_text", "LB", None)]))
+    x = kw + 24
     for key, caption, selected in (("RecordTab", "Record", True), ("ColourSetsTab", "Colour sets", False)):
         k = f"Tabs/{key}"
         w = K.label_width(caption.upper(), "Button")
@@ -430,6 +433,7 @@ def build_tabs(root):
               f"  label: {ref(ctx.c(f'{k_}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k_}/Underline', 'img'))}\n"))(k, selected))
         n.add("audio", 114, A.menu_audio(11))
         x += w + 36
+    tabs.children.append(Inst("TabsRB", "KitKeycap", "KeycapRB", TL(x - 12, (44 - kh) // 2, kw, kh), [("Label#tmp", "m_text", "RB", None)]))
 
 
 def swatch(parent, key, r, rim=True):

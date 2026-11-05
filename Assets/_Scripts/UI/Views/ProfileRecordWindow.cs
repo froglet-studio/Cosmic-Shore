@@ -113,6 +113,9 @@ namespace CosmicShore.UI
 
         public bool IsOpen => group && group.alpha > 0f;
 
+        /// <summary>True while the favourite-pilot picker is up (it owns LB / RB then).</summary>
+        public bool IsPickerOpen => picker && picker.IsOpen;
+
         void Awake()
         {
             if (closeButton) closeButton.onClick.AddListener(Close);
