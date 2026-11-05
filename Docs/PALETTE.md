@@ -31,6 +31,10 @@ Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
   use it. Check that those icons stay legible.
 - **Not moved by the switch, because they read Photic:** the vessel hull materials (`vessel_colors.py`), the rendered card
   art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and Amoebius.
+- **The icon kit's shielded colours are a hand table** (`Tools/Build/icon_kit/states.py` `SHIELDED`, light blues and
+  golds that predate the switch), so its states sheets and the Fleet Codex's L5 art (`fleet_codex.py` `L5_SHIELDED`)
+  no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
+  `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
 
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
