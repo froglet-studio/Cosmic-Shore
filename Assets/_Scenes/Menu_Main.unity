@@ -687,6 +687,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -1049,6 +1050,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 160, y: 56}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -2571,6 +2573,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 160, y: 56}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -3243,6 +3246,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -3401,6 +3405,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -3790,6 +3795,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -3941,6 +3947,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -4479,6 +4486,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 160, y: 56}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -5229,6 +5237,7 @@ MonoBehaviour:
   fontSize: 16
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -5536,6 +5545,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -5885,6 +5895,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -6715,6 +6726,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7104,6 +7116,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 160, y: 56}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -7942,6 +7955,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -8684,6 +8698,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -19459,6 +19474,7 @@ MonoBehaviour:
   fontSize: 18
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -19889,6 +19905,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.62
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -20268,6 +20285,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -21312,6 +21330,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -22312,6 +22331,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -22643,6 +22663,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -22765,6 +22786,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -22852,6 +22874,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -23039,6 +23062,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -23163,6 +23187,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -23401,6 +23426,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -23918,6 +23944,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0.75
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -35086,6 +35113,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -35602,6 +35630,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -37769,6 +37798,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -38792,6 +38822,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -39091,6 +39122,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -43183,6 +43215,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -47065,6 +47098,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -50896,6 +50930,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -52610,6 +52645,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -55056,6 +55092,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -59746,6 +59783,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -60812,6 +60850,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -64373,6 +64412,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -65526,6 +65566,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -68209,7 +68250,6 @@ GameObject:
   - component: {fileID: 156420618031010432}
   - component: {fileID: 530598231118804509}
   - component: {fileID: 860581289702350099}
-  - component: {fileID: 977545883998552626}
   m_Layer: 5
   m_Name: FriendsDrawerHost
   m_TagString: Untagged
@@ -68217,38 +68257,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &977545883998552626
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 729224036940201910}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!224 &56087458914497300
 RectTransform:
   m_ObjectHideFlags: 0
@@ -68322,6 +68330,7 @@ MonoBehaviour:
   dockBottom: 0
   openInset: 0
   moveSeconds: 0.22
+  phoneScale: 0.7
 --- !u!1 &815546721374735624
 GameObject:
   m_ObjectHideFlags: 0
@@ -68370,6 +68379,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1008986405452370696}
   - component: {fileID: 81537129348641397}
+  - component: {fileID: 316743174682339270}
   - component: {fileID: 1014048315657270785}
   - component: {fileID: 145363451517714487}
   - component: {fileID: 461918900229499687}
@@ -68417,6 +68427,39 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &316743174682339270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 421834896953159202}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 0, y: 0}
+  pivot: {x: 0, y: 0}
+  anchoredPosition: {x: 12, y: 8}
+  sizeDelta: {x: 92, y: 92}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.6
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!114 &1014048315657270785
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69835,6 +69878,7 @@ GameObject:
   m_Component:
   - component: {fileID: 975914502995754703}
   - component: {fileID: 471128676009213165}
+  - component: {fileID: 625308268269160628}
   m_Layer: 5
   m_Name: Window
   m_TagString: Untagged
@@ -69881,6 +69925,39 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &625308268269160628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 250583192752104360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0.7
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &92617385888463435
 GameObject:
   m_ObjectHideFlags: 0
@@ -74748,6 +74825,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -83177,6 +83255,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -85524,6 +85603,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -87795,6 +87875,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -91411,6 +91492,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 1
   stackOrigin: {x: 0, y: -10}

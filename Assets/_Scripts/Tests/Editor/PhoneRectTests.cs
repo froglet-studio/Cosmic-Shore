@@ -267,6 +267,41 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, g.alpha);
             Assert.IsTrue(g.blocksRaycasts);
         }
+
+        [Test]
+        public void AWidthScaledBlockWidensByOneOverItsScaleAndKeepsItsHeight()
+        {
+            var parent = new GameObject("Viewport", typeof(RectTransform));
+            try
+            {
+                var pr = (RectTransform)parent.transform;
+                pr.sizeDelta = new Vector2(738f, 400f);
+                _go.transform.SetParent(pr, false);
+                var r = (RectTransform)_go.transform;
+                r.anchorMin = new Vector2(0f, 1f);
+                r.anchorMax = new Vector2(1f, 1f);
+                r.pivot = new Vector2(0.5f, 1f);
+                r.sizeDelta = new Vector2(0f, 2200f);
+                r.anchoredPosition = new Vector2(0f, 120f);
+                var p = _go.AddComponent<PhoneRect>();
+                p.SetPhoneSizes(0f, Vector2.zero, false, 0f, 0.68f);
+
+                p.Apply(true);
+                Assert.AreEqual(738f / 0.68f, r.rect.width, 0.05f, "laid out as wide as the viewport at that scale");
+                Assert.AreEqual(2200f, r.sizeDelta.y, "its height is left to its fitter");
+                Assert.AreEqual(new Vector2(0f, 120f), r.anchoredPosition, "its scroll position is left alone");
+                Assert.AreEqual(0.68f, r.localScale.x, 1e-5f);
+                Assert.IsTrue(PhoneRect.InsidePcScaleBlock(r), "its KitTexts keep their PC sizes");
+
+                p.Apply(false);
+                Assert.AreEqual(0f, r.sizeDelta.x);
+                Assert.AreEqual(Vector3.one, r.localScale);
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
     }
 }
 #endif

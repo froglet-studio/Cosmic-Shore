@@ -21154,10 +21154,10 @@ end-reveal panels and Authentication.unity, plus an `AdaptiveCanvasScaler` (phon
    the one-column board (header and ladder left, reward top right, Play again bottom right), pause opens on screen.
 5. **Still without a phone layout**: the toasts, the picture-in-picture frame, and every Menu_Main screen.
 
-## 🔴 Phone menus: the fallback, the rail and Home (`claude/ui-phone-menus`, 2026-11-05) — NOT COMPILED
+## 🔴 Phone menus: the fallback, the rail, Home and Arcade (`claude/ui-phone-menus`, 2026-11-05) — NOT COMPILED
 
 Not compiled (no .NET SDK, `unity_refcompile` SKIP; no editor). New: `PhoneRect` Draw At PC Scale, stack / grid / hide,
-LayoutElement minimum; `PhoneSheet`; `AdaptiveCanvasScaler.PhoneLayoutChanged`; tests `PhoneRectTests`,
+LayoutElement minimum, Width Scale; `PhoneSheet`; `FriendsDrawerOpener`; `FriendsDrawer` phone sheet; `ArcadeExploreView` flat grid; `AdaptiveCanvasScaler.PhoneLayoutChanged`; tests `PhoneRectTests`,
 `PhoneSheetTests`. Generated: Menu_Main's fallback blocks (`author_menu_phone.py`), the rail and Home's phone poses.
 Menu_Main's Has Phone Layout is still OFF.
 
@@ -21168,3 +21168,8 @@ Menu_Main's Has Phone Layout is still OFF.
    top left; Settings and Up next on the right; the four hubs along the bottom); every other screen (Arcade, Configure,
    Hangar, Ark, Port, Codex, the windows) draws as it does today, the PC layout shrunk. Switching back to PC restores
    everything.
+4. **Arcade, PC**: the grid is one wrapping grid of 5 across; every card, the weekly challenge and Maelstrom cards
+   are where they were, scrolling unchanged, and the friends drawer docks beside the window as before. No Party button.
+5. **Arcade, phone**: 3 cards across, readable, right of the rail; a Party button in the header opens the friends
+   drawer as a sheet over the left (0.7), its minimise closes it; the orb sits at the rail's foot. Back on PC the drawer
+   docks again.

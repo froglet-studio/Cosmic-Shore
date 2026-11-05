@@ -68,7 +68,18 @@ namespace CosmicShore.UI
         [Tooltip("Seconds a slide or resize takes.")]
         [SerializeField, Min(0f)] private float moveSeconds = 0.22f;
 
+        [Header("On a phone")]
+        [Tooltip("On a phone (its canvas's AdaptiveCanvasScaler at the phone layout; Docs/MENU_REDESIGN_B.md section 129) " +
+                 "the drawer is a sheet over the window instead of docking beside it: the open window covers the left of " +
+                 "the screen at this scale, top to bottom, and nothing is pushed. The window's PhoneRect applies the scale; " +
+                 "keep the two equal (author_menu_friends_drawer.py writes both).")]
+        [SerializeField, Range(0.3f, 1f)] private float phoneScale = 0.7f;
+
         private DrawerState _state = DrawerState.Closed;
+        private AdaptiveCanvasScaler _scaler;
+        private bool _phone;
+        private Vector2 _pcAnchorMin, _pcAnchorMax, _pcPivot;
+        private bool _pcRead;
         private float _fromX, _toX, _fromWidth, _toWidth;
         private float _t = 1f;
         private bool _blocked;
@@ -91,13 +102,46 @@ namespace CosmicShore.UI
         private void OnEnable()
         {
             if (screenSwitcher) screenSwitcher.ModalStackChanged += OnModalStackChanged;
+            _scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+            if (_scaler) _scaler.PhoneLayoutChanged += OnPhoneLayout;
+            OnPhoneLayout(_scaler && _scaler.UsesPhoneLayout);
             OnModalStackChanged();
         }
 
         private void OnDisable()
         {
             if (screenSwitcher) screenSwitcher.ModalStackChanged -= OnModalStackChanged;
+            if (_scaler) _scaler.PhoneLayoutChanged -= OnPhoneLayout;
             SetDockWidth(0f);
+        }
+
+        /// <summary>Switch between the PC drawer (docks beside the window) and the phone sheet (covers it, scaled), closed.</summary>
+        private void OnPhoneLayout(bool phone)
+        {
+            if (!window || phone == _phone) return;
+            if (!_pcRead)
+            {
+                _pcAnchorMin = window.anchorMin; _pcAnchorMax = window.anchorMax; _pcPivot = window.pivot;
+                _pcRead = true;
+            }
+            _phone = phone;
+            if (phone)
+            {
+                float parentH = window.parent is RectTransform p ? p.rect.height : 450f;
+                window.anchorMin = Vector2.zero;
+                window.anchorMax = Vector2.zero;
+                window.pivot = Vector2.zero;
+                // The window's PhoneRect draws it at phoneScale (so its KitTexts keep their PC sizes); this sizes it to match.
+                window.sizeDelta = new Vector2(normalWidth, parentH / phoneScale);
+                window.anchoredPosition = new Vector2(window.anchoredPosition.x, 0f);
+            }
+            else
+            {
+                window.anchorMin = _pcAnchorMin; window.anchorMax = _pcAnchorMax; window.pivot = _pcPivot;
+                window.offsetMin = new Vector2(window.offsetMin.x, dockBottom);
+                window.offsetMax = new Vector2(window.offsetMax.x, -dockTop);
+            }
+            Apply(DrawerState.Closed, instant: true);
         }
 
         private void OnDestroy()
@@ -142,7 +186,7 @@ namespace CosmicShore.UI
             _fromX = window.anchoredPosition.x;
             _fromWidth = window.sizeDelta.x;
             _toWidth = width;
-            _toX = open ? openInset : -width - 8f;
+            _toX = open ? openInset : -width * (_phone ? phoneScale : 1f) - 8f;
             _t = instant || moveSeconds <= 0f ? 1f : 0f;
             if (_t >= 1f) Place(1f);
         }
@@ -166,7 +210,8 @@ namespace CosmicShore.UI
         private void UpdateDockWidth()
         {
             float reach = window ? window.anchoredPosition.x + window.sizeDelta.x : 0f;
-            SetDockWidth(OverHubWindow ? Mathf.Max(0f, reach) : 0f);
+            // On a phone the drawer covers the window as a sheet: nothing docks beside it.
+            SetDockWidth(OverHubWindow && !_phone ? Mathf.Max(0f, reach) : 0f);
         }
 
         private static void SetDockWidth(float width)

@@ -6045,6 +6045,18 @@ buttons), `author_menu_topnav.py` the rail; each screen then leaves `author_menu
 on a phone; the phone rail runs Home, Codex, Hangar, Ark, Port (Home first, the rest in today's order; the PC nav band is
 unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards were redrawn with the rail in that order.
 
+**Built (2026-11-05, `claude/ui-phone-menus`):**
+- **Rail and Home**: the nav band is a 96-wide rail down the left (`author_menu_topnav.py`, `author_menu_phone.py`), Home's
+  chip, Settings, Up next and hub row take their R55Home poses (`author_menu_home.py`).
+- **Arcade**: the seven 5-card rows are now ONE wrapping `GridLayoutGroup` (5 across on PC, the same cards and keys;
+  `ArcadeExploreView` reads both grid shapes). On a phone it is **3 across with the content drawn at 0.68**
+  (`PhoneRect.widthScale`), not the board's four: the real cards are 341 x 296 with their art, title, best score and
+  intensity row, and four across at a legible size does not fit 800 wide. The header and body sit right of the rail.
+- **Party**: a phone-only **Party** button in Arcade's header (`FriendsDrawerOpener`) opens the existing friends drawer,
+  which on a phone is a **sheet over the left of the screen at 0.7**, top to bottom, instead of docking beside the window
+  (`FriendsDrawer.phoneScale`, the window's `PhoneRect`); its orb sits at the rail's foot at 0.6. The board's row of seats
+  is the drawer's own party panel, unchanged. Arcade and the drawer left the fallback list.
+
 ## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
 
 **Asked** (Shombith): "make the phone UI expandable for portrait mode too since we have honeyguide and ratel and in

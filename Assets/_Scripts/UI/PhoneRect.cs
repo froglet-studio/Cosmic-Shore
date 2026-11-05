@@ -53,6 +53,11 @@ namespace CosmicShore.UI
         [Tooltip("A uniform scale on a phone for a block drawn at the PC size (an in-game HUD piece whose parts are " +
                  "authored in 1920 units). 0 leaves the scale.")]
         [SerializeField, Min(0f)] private float scale;
+        [Tooltip("Draw this block at its PC look scaled by this much on a phone, re-flowed to the phone's width: its " +
+                 "horizontally stretched width grows by 1/scale so its layout fills the parent once scaled, and its height " +
+                 "and position are left to whoever owns them (a scroll view's content, its size fitter). Its KitTexts keep " +
+                 "their PC sizes. 0 leaves it. Used for a scroll view whose cards are built at the PC size.")]
+        [SerializeField, Min(0f)] private float widthScale;
 
         [Header("Children on a phone")]
         [Tooltip("Hide this object on a phone (its CanvasGroup goes transparent and stops taking input); shown again on " +
@@ -105,7 +110,7 @@ namespace CosmicShore.UI
         public static bool InsidePcScaleBlock(Transform t)
         {
             for (var at = t; at; at = at.parent)
-                if (at.TryGetComponent(out PhoneRect p) && (p.drawAtPcScale || p.scale > 0f)) return true;
+                if (at.TryGetComponent(out PhoneRect p) && (p.drawAtPcScale || p.scale > 0f || p.widthScale > 0f)) return true;
             return false;
         }
 
@@ -128,6 +133,21 @@ namespace CosmicShore.UI
         private void OnRectTransformDimensionsChange()
         {
             if (OnPhone && drawAtPcScale) FitPcBlock();
+            if (OnPhone && widthScale > 0f) FitWidthAtScale();
+        }
+
+        /// <summary>Scale the block by Width Scale and widen its stretched width by 1/scale, so its layout fills the parent
+        /// once scaled. Height and position are left alone.</summary>
+        private void FitWidthAtScale()
+        {
+            var r = Rect;
+            if (r.parent is not RectTransform parent) return;
+            float s = widthScale;
+            float span = _aMax.x - _aMin.x;
+            float w = _size.x + span * parent.rect.width * (1f / s - 1f);
+            if (Mathf.Abs(r.sizeDelta.x - w) > 0.01f) r.sizeDelta = new Vector2(w, r.sizeDelta.y);
+            var scaleV = new Vector3(s * _scale.x, s * _scale.y, _scale.z);
+            if (r.localScale != scaleV) r.localScale = scaleV;
         }
 
         /// <summary>
@@ -169,6 +189,7 @@ namespace CosmicShore.UI
                 }
                 if (movesRect) Set(r, anchorMin, anchorMax, pivot, anchoredPosition, sizeDelta);
                 if (scale > 0f) r.localScale = new Vector3(scale, scale, 1f);
+                if (widthScale > 0f) { OnPhone = true; FitWidthAtScale(); }
                 if (_text && fontSize > 0f)
                 {
                     _text.fontSize = fontSize;
@@ -186,7 +207,8 @@ namespace CosmicShore.UI
             else if (_authoredRead)
             {
                 if (movesRect || drawAtPcScale) Set(r, _aMin, _aMax, _pivot, _pos, _size);
-                if (scale > 0f || drawAtPcScale) r.localScale = _scale;
+                if (scale > 0f || drawAtPcScale || widthScale > 0f) r.localScale = _scale;
+                if (widthScale > 0f && !movesRect) r.sizeDelta = new Vector2(_size.x, r.sizeDelta.y);
                 if (_text && fontSize > 0f)
                 {
                     _text.fontSize = _font;
@@ -312,9 +334,9 @@ namespace CosmicShore.UI
             stackOrder = order ?? System.Array.Empty<string>(); gridCellSize = cell; gridColumns = columns;
         }
 
-        public void SetPhoneSizes(float phoneFontSize, Vector2 phoneLayoutSize, bool moves, float phoneScale = 0f)
+        public void SetPhoneSizes(float phoneFontSize, Vector2 phoneLayoutSize, bool moves, float phoneScale = 0f, float phoneWidthScale = 0f)
         {
-            fontSize = phoneFontSize; layoutSize = phoneLayoutSize; movesRect = moves; scale = phoneScale;
+            fontSize = phoneFontSize; layoutSize = phoneLayoutSize; movesRect = moves; scale = phoneScale; widthScale = phoneWidthScale;
         }
     }
 }

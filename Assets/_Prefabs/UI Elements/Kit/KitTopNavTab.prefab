@@ -276,6 +276,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -347,6 +348,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -560,6 +562,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}
@@ -893,6 +896,7 @@ MonoBehaviour:
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
+  widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
   stackOrigin: {x: 0, y: 0}

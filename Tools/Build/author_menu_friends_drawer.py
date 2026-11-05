@@ -77,6 +77,7 @@ BTN = 28
 # The presence orb (section 45.4). Its place is author_menu_arcade.ORB_* (the windows' gutter gate reads it too);
 # its member seats sit on the shader's inner ring at author_ui_lattice.ORB_MEMBER_ANGLES.
 ORB = AR.ORB_SIZE
+PHONE_SCALE, PHONE_ORB_SCALE = 0.7, 0.6   # the window as a phone sheet, and the orb at the rail's foot
 YOU = 30            # your avatar's ring
 MEMBER = 22         # a member's ring
 COUNT_H = 18
@@ -123,6 +124,8 @@ def orb_tint():
 def orb_node(parent):
     o = parent.child(N("Drawer/Orb", "PresenceOrb", R((0, 0), None, (AR.ORB_X, AR.ORB_Y), (ORB, ORB), (0, 0))))
     o.add("cg", 225, H.canvas_group(True))
+    # On a phone the orb sits at the foot of the rail, drawn at 0.6 so it fits the rail's 96 (section 129).
+    o.add("phone", 114, K.phone_rect(R((0, 0), None, (12, 8), (ORB, ORB), (0, 0)), scale=PHONE_ORB_SCALE))
     field = o.child(N("Drawer/Orb/Field", "Field", STRETCH))
     field.add("cr", 222, K.canvas_renderer()).add("img", 114, M.material_image(K.WHITE, M.PRESENCE_MAT, raycast=True))
     for i in range(len(LAT.ORB_MEMBER_ANGLES)):
@@ -161,6 +164,9 @@ def window_node(parent):
     w = parent.child(N("Drawer/Window", "Window", R((0, 0), (0, 1), (-NORMAL_W - 8, (DOCK_BOTTOM - DOCK_TOP) / 2),
                                                     (NORMAL_W, -(DOCK_TOP + DOCK_BOTTOM)), (0, 0.5))))
     w.add("cg", 225, H.canvas_group(False))
+    # On a phone FriendsDrawer lays the window out as a sheet over the screen at phoneScale; this PhoneRect draws it at
+    # the same scale so its KitTexts keep their PC sizes (a PC-scale block, section 129).
+    w.add("phone", 114, K.phone_rect(scale=PHONE_SCALE))
     fill = w.child(N("Drawer/Window/Fill", "Fill", STRETCH))
     # Fully opaque, the pilot record's surface (the owner, 2026-10-18: "Make the friends panel bg the same and full
     # opaque"): solid SurfaceBlack with a SurfaceDark wash, so it reads navy, not black. It was glass at 0.9 (2026-10-16 /
@@ -290,7 +296,7 @@ def host_node():
              f"  minimiseButton: {ref(ctx.c('Drawer/Window/Minimise', 'button'))}\n"
              "  screenSwitcher: {fileID: 0}\n"
              f"  normalWidth: {NORMAL_W}\n  dockTop: {DOCK_TOP}\n  dockBottom: {DOCK_BOTTOM}\n"
-             f"  openInset: {INSET}\n  moveSeconds: 0.22\n"))
+             f"  openInset: {INSET}\n  moveSeconds: 0.22\n  phoneScale: {PHONE_SCALE}\n"))
     return host
 
 
@@ -428,7 +434,9 @@ def validate_dock(sc, ctx, hub):
             rt = re.search(r"^--- !u!224 &%s\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}" % fid, text_, re.M)
             go = rt and re.search(r"^--- !u!1 &%s\n(?:(?!--- ).*\n)*?  m_Name: (\w+)" % rt.group(1), text_, re.M)
             names.add(go.group(1) if go else None)
-        assert names == {"Header", "Body"}, f"{path}: the dock must push the Header and the Body, pushes {names}"
+        # The Mission window's Voyage pages (the Voyage window, section 119) are pushed with its Body.
+        allowed = {"Header", "Body", "VoyagePages"} if "/Mission/" in path else {"Header", "Body"}
+        assert {"Header", "Body"} <= names <= allowed, f"{path}: the dock must push the Header and the Body, pushes {names}"
 
 
 def validate_profile(sc, ctx):

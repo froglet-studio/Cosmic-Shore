@@ -38,8 +38,8 @@ MENU = "Assets/_Scenes/Menu_Main.unity"
 # Scene objects of Menu_Main with no phone board yet, by their (unique) name.
 SCENE_FALLBACK = [
     "Hangar Screen", "ArkScreen", "PortScreen", "ProfileScreen",
-    "FriendsDrawerHost", "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
-    "ArcadeScreenModal", "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal",
+    "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
+    "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal",
     "ToyboxGameConfigureModal", "ArenaGameConfigureModal", "MaelstromGameConfigurationModal",
     "ProfileModal", "LeaderboardConfigureModal", "PlayerDataSelectModal", "InitializingScreen", "SceneTransitionModal",
 ]

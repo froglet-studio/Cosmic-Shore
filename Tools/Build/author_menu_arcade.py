@@ -75,7 +75,7 @@ MASK63 = 0x7FFFFFFFFFFFFFFF
 SCROLL_RECT, RECT_MASK_2D, MASK = H.SCROLL_RECT, H.RECT_MASK_2D, H.MASK
 KIT_RECT_MASK_2D = H.KIT_RECT_MASK_2D
 BUTTON = T.BUTTON
-PACKAGE = H.PACKAGE | {BUTTON}
+PACKAGE = H.PACKAGE | {BUTTON, "8a8695521f0d02e499659fee002a26c2"}   # + UnityEngine.UI.GridLayoutGroup (the game grid)
 
 # --- project scripts ----------------------------------------------------------------------------
 def script(path):
@@ -175,6 +175,10 @@ PREFABS = PARTY_PREFABS + ARCADE_PREFABS
 # Rev 3: five across - the friends panel gave its 444 px back. 35 slots hold the roster without a clone,
 # and every rev-2 card key (Card r_c, c <= 4) still exists, so no scene stub goes stale.
 GRID_ROWS, GRID_COLS = 7, 5
+GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"   # UnityEngine.UI.GridLayoutGroup
+# The phone layout (Docs/MENU_REDESIGN_B.md section 129, the approved R55Arcade board): the explore scroll's content is
+# drawn at PHONE_SCALE (its cards keep their PC look and words), re-flowed to the phone's width, PHONE_COLS across.
+PHONE_SCALE, PHONE_COLS = 0.68, 3
 
 
 def asset_guid(name):
@@ -966,6 +970,7 @@ def build_panel():
 # --------------------------------------------------------------------------------------------
 
 CARD_W, CARD_H = 341, 296
+GRID_CELL_W = round((CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS, 2)   # what the old rows gave each card
 # Rev 18 A (Docs/MENU_REDESIGN_B.md section 72, Shombith 2026-10-25 "implement a"): the art in a band on top, an opaque body
 # under it - the hull, the name, the genre petals. Nothing is written on the art. The art drifts slowly (Card_ArtDrift.mat)
 # inside a margin KitCoverImage draws it larger by. Section 73: the hull is lit (Hull_Lit.mat) instead of sitting on a
@@ -1293,6 +1298,12 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=WINDOW_BACKDROP_ALPHA)
     # §67: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
     root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    # On a phone the nav band is the rail down the left (author_menu_phone.py): the dim covers the rail, the glass the rest.
+    for child in root.children:
+        if child.key == "NavDim":
+            child.add("phone", 114, K.phone_rect(R((0, 0), (0, 1), (PHONE_RAIL / 2, 0), (PHONE_RAIL, 0))))
+        elif child.key in ("Backdrop", "BackdropLattice"):
+            child.add("phone", 114, K.phone_rect(R((0, 0), (1, 1), (PHONE_RAIL / 2, 0), (-PHONE_RAIL, 0))))
 
     # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
     # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out
@@ -1311,7 +1322,8 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, rect_mask())
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
-    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2)) \
+        .add("phone", 114, K.phone_rect(width_scale=PHONE_SCALE))
 
     feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (CONTENT_W, FEATURE_H), (0, 1))))
     feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEATURE_H))
@@ -1345,14 +1357,19 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     empty.add("le", 114, le(ph=24))
     label(empty.child(N("EmptyFilter/Line", "Line", STRETCH)), "No games match this filter.", "BodySmall", "NeutralLightest")
 
+    # ONE wrapping grid, the cards its own children (ArcadeExploreView reads either shape): GRID_COLS across on PC,
+    # PHONE_COLS on a phone, where the scroll's content is drawn at PHONE_SCALE (Docs/MENU_REDESIGN_B.md section 129).
     grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (CONTENT_W, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
-    grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 0, (1, 1), (1, 0)))
+    grid.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+             "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+             f"  m_CellSize: {{x: {K.f32(GRID_CELL_W)}, y: {CARD_H}}}\n  m_Spacing: {{x: 10, y: 10}}\n"
+             f"  m_Constraint: 1\n  m_ConstraintCount: {GRID_COLS}\n"))
+    grid.add("phone", 114, K.phone_rect(grid=dict(columns=PHONE_COLS)))
     for r in range(GRID_ROWS):
-        row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + 10)), (CONTENT_W, CARD_H), (0, 1))))
-        row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 0, (1, 1), (1, 1))).add("le", 114, le(ph=CARD_H))
         for col in range(GRID_COLS):
-            row.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
-                                     R((0, 1), None, (col * (CARD_W + 10), 0), (CARD_W, CARD_H), (0, 1))))
+            grid.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
+                                      R((0, 1), None, (col * (GRID_CELL_W + 10), -r * (CARD_H + 10)), (GRID_CELL_W, CARD_H), (0, 1))))
     # Rev 3 (2026-10-16): the party panel left every window for ONE friends drawer on Menu_Main
     # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
@@ -1365,7 +1382,55 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
           "TextLight")
     replays_button(header)
     back_button(header)
+    party_button(header)
+    # The phone layout (R55Arcade): the header and the body right of the rail, the header 52 tall, its buttons 48.
+    ph_header = R((0, 1), (1, 1), ((PHONE_X - 16) / 2, -10), (-(PHONE_X + 16), 52), (0.5, 1))
+    ph_body = R((0, 0), (1, 1), ((PHONE_X - 16) / 2, -31), (-(PHONE_X + 16), -82))
+    for child in root.children:
+        if child.key == "Header":
+            child.add("phone", 114, K.phone_rect(ph_header))
+        elif child.key == "Body":
+            child.add("phone", 114, K.phone_rect(ph_body))
+    for child in header.children:
+        if child.key == "Header/Eyebrow":
+            child.add("phone", 114, K.phone_rect(R((0, 1), None, (0, 0), (300, 14), (0, 1))))
+        elif child.key == "Header/Title":
+            child.add("phone", 114, K.phone_rect(R((0, 1), None, (0, -16), (420, 32), (0, 1))))
+        elif child.key == "Back":
+            child.add("phone", 114, K.phone_rect(R((1, 0), None, (0, 0), (back_width(), 48), (1, 0))))
+        elif child.key == "Replays":
+            child.add("phone", 114, K.phone_rect(R((1, 0), None, (-(back_width() + 12), 0), (replays_width(), 48), (1, 0))))
     return root
+
+
+PHONE_RAIL, PHONE_X = 96, 112          # the phone rail's width; the content's left edge right of it
+PARTY_W = 150
+
+
+def replays_width():
+    return 16 + K.label_width("REPLAYS", "ButtonSmall") + 16
+
+
+def party_button(header):
+    """A phone-only Party button (R55Arcade, section 129): it opens the friends drawer, which on a phone overlays the
+    window as a sheet instead of docking beside it. On PC the drawer's own orb opens it and this stays hidden
+    (FriendsDrawerOpener)."""
+    x = -(back_width() + 12 + replays_width() + 12)
+    b = header.child(N("Party", "Party", R((1, 0), None, (x, 0), (PARTY_W, 48), (1, 0))))
+    border, fillc, content = K.button_palette("Default", False)
+    b.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("cg", 225, lambda ctx, go: H.canvas_group(False)(ctx, go))
+    f = b.child(N("Party/Fill", "Fill", STRETCH))
+    f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True))
+    bd = b.child(N("Party/Border", "Border", STRETCH))
+    bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    lab = b.child(N("Party/Label", "Label", STRETCH))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp("PARTY", "ButtonSmall", content)) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("button", 114, lambda ctx, go: mono(go, BUTTON, selectable() + f"  m_TargetGraphic: {ref(ctx.c('Party/Fill', 'img'))}\n"
+                                              "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"))
+    b.add("opener", 114, lambda ctx, go: mono(go, script("Assets/_Scripts/UI/Elements/Party/FriendsDrawerOpener.cs"),
+                                              f"  button: {ref(ctx.c('Party', 'button'))}\n  group: {ref(ctx.c('Party', 'cg'))}\n"))
 
 
 def card_key(r, col):
@@ -1812,9 +1877,10 @@ def validate_prefabs(files, guids):
     for row in ("ElementRow", "VesselRow"):
         assert "  m_Alpha: 0\n" in doc_of(view, V(f"{row}#cg"))[1] and "  m_IgnoreLayout: 1\n" in doc_of(view, V(f"{row}#le"))[1], \
             f"{row} must start closed and out of the layout"
-    for r in range(GRID_ROWS):
-        _, row = doc_of(view, V(f"Row{r + 1}#rt"))
-        assert len(re.findall(r"^  - \{fileID:", row, re.M)) == GRID_COLS, f"grid row {r + 1} does not hold {GRID_COLS} cards"
+    _, grid_rt = doc_of(view, V("Grid#rt"))
+    assert len(re.findall(r"^  - \{fileID:", grid_rt, re.M)) == GRID_ROWS * GRID_COLS, \
+        f"the grid does not hold its {GRID_ROWS * GRID_COLS} cards directly (one wrapping GridLayoutGroup)"
+    assert f"  m_ConstraintCount: {GRID_COLS}\n" in doc_of(view, V("Grid#grid"))[1], f"the grid is not {GRID_COLS} across on PC"
     order = [doc_of(view, k)[1] for k in re.findall(r"^  - \{fileID: (-?\d+)\}", doc_of(view, V("root#rt"))[1], re.M)]
     names = [re.search(r"m_Name: (.*)", doc_of(view, re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1))[1]).group(1)
              for b in order]
