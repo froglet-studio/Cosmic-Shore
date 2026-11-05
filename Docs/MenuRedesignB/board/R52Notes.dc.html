@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 52 - notes: the phone rules each board follows, and what each changes in Unity</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(34,38,69,.85);color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1948px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div style="position:absolute;inset:0;background:#00041F;padding:56px 72px;box-sizing:border-box;font-family:Aldrich;color:#E6E9FF"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;color:#747BAD">REV 52 · NOTES</div><div style="font-size:32px;margin:8px 0 28px">Phone layouts: one design per screen, drawn at the phone scale</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:56px"><div style="display:flex;flex-direction:column;gap:26px"><div style="display:flex;flex-direction:column;gap:10px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;color:#747BAD">THE FRAME</div><ul style="margin:0;padding-left:20px;font-size:17px;line-height:1.4"><li style="margin:0 0 8px 0">An iPhone 14 sideways: 844 x 390 pt. The canvas matches height, so 450 units tall and 974 wide. Each board is that screen at 2x.</li><li style="margin:0 0 8px 0">Safe area: 54 units on each side (the island is drawn on the left), 24 at the bottom (the home bar). The dashed hairline is its edge.</li><li style="margin:0 0 8px 0">An iPad (820 pt tall) and every PC keep the 1920 x 1080 boards: nothing here changes them.</li></ul></div><div style="display:flex;flex-direction:column;gap:10px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;color:#747BAD">THE RULES EVERY BOARD KEEPS</div><ul style="margin:0;padding-left:20px;font-size:17px;line-height:1.4"><li style="margin:0 0 8px 0">Type: H1 24, H2 20, H3 16, Body 16, Button 16, Button small and Label 12 (STYLE_FOUNDATION 4, Mobile).</li><li style="margin:0 0 8px 0">Every control is at least 52 units (45 pt) tall; the big actions 56.</li><li style="margin:0 0 8px 0">Width is the room a phone has: the four tabs become a left rail, columns sit side by side, nothing stacks under a fold.</li><li style="margin:0 0 8px 0">One toast at a time. Side panels open as sheets from the bottom (Configure's controls).</li><li style="margin:0 0 8px 0">Colours as the style guide: Lime calls to action, Jade is the pick and focus, Ruby is no way back (START GAME, Play again), Gold is crystals.</li></ul></div></div><div style="display:flex;flex-direction:column;gap:26px"><div style="display:flex;flex-direction:column;gap:10px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;color:#747BAD">WHAT EACH BOARD CHANGES IN UNITY (once picked)</div><ul style="margin:0;padding-left:20px;font-size:17px;line-height:1.4"><li style="margin:0 0 8px 0">Sign-in: author_start_flow.py, one right-hand column over the art.</li><li style="margin:0 0 8px 0">Home: author_menu_hub_nav.py, a phone rail instead of the top band; the pilot chip, friends and one toast at the top.</li><li style="margin:0 0 8px 0">Arcade: author_menu_arcade.py, a 4 x 2 grid of 186 x 165 cards.</li><li style="margin:0 0 8px 0">Configure: author_menu_configure.py, two columns; the ability list moves into a sheet.</li><li style="margin:0 0 8px 0">Hangar: author_menu_hangar.py, the hull large and the fleet as chips.</li><li style="margin:0 0 8px 0">In game: author_ingame_hud.py, the four-icon row as 64-unit thumb buttons (the LOCKED structure, bigger), the race facts in one top-centre plate, a steer area for the left thumb.</li><li style="margin:0 0 8px 0">The finish: author_ingame_hud.py, the Scoreboard as one column and two buttons.</li><li style="margin:0 0 8px 0">Then Has Phone Layout goes on: GameCanvas once the HUD and finish are built, Menu_Main once all its screens are.</li></ul></div><div style="display:flex;flex-direction:column;gap:10px"><div style="font-family:Chakra Petch;font-weight:600;font-size:14px;letter-spacing:.14em;color:#747BAD">FOR SHOMBITH TO DECIDE</div><ul style="margin:0;padding-left:20px;font-size:17px;line-height:1.4"><li style="margin:0 0 8px 0">[The rail or a top band for the four tabs? The rail is drawn: a 52-unit top band takes 12 % of the height.]</li><li style="margin:0 0 8px 0">[Arcade as the Lime button on Home, or all four modes alike?]</li><li style="margin:0 0 8px 0">[The steer area: a fixed stick, or wherever the left thumb lands?]</li></ul></div></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1948,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

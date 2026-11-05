@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793891384-6434` of **Frogma**: Rev 3 to Rev 49, 445 boards on 5 tabs. The canvas opens on the tab `style-guide`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793899808-3073` of **Frogma**: Rev 3 to Rev 52, 468 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,6 +545,18 @@ Copied on 2026-11-05 from canvas version `1793891384-6434` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 51 - Colour sets in the Profile: pick Photic, Nocturne or Dart Frog, and the repaint between them
+
+- [`R51Compare.dc.html`](R51Compare.dc.html) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in progress and not started), its prisms in its own shipped colours
+- [`R51A.dc.html`](R51A.dc.html) - Rev 51 A - Profile tabs: Record | Colour sets | Audio Studio on LB / RB; the set cards beside a big live preview (recommended) - interactive
+- [`R51B.dc.html`](R51B.dc.html) - Rev 51 B - Pilot card chip: the colour set sits on the pilot card and opens a Colour sets window - interactive
+- [`R51C.dc.html`](R51C.dc.html) - Rev 51 C - Shelf: a full-width row of large set cards under the pilot card, the record below it
+- [`R51Locked.dc.html`](R51Locked.dc.html) - Rev 51 Locked - Later, once quests are planned: a set its quest has not given yet - which quest, how far you are, where to play it
+- [`R51Unlock.dc.html`](R51Unlock.dc.html) - Rev 51 Unlock - Later, once quests are planned: the quest claim in the Voyage window hands over the colour set
+- [`R51Loading.dc.html`](R51Loading.dc.html) - Rev 51 Loading - Changing colour set: the cell-change loading screen, repainting the HyperSea
+- [`R51Applied.dc.html`](R51Applied.dc.html) - Rev 51 Applied - Applied: back in the Profile, every prism, vessel and trail in the new set, the cell behind it repainted
+- [`R51Notes.dc.html`](R51Notes.dc.html) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, decisions
+
 #### Rev 49 - Voyage card I (picked): four more inviting looks, just the card
 
 - [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme - interactive
@@ -660,5 +672,29 @@ Copied on 2026-11-05 from canvas version `1793891384-6434` of **Frogma**: Rev 3 
 - [`R45A.dc.html`](R45A.dc.html) - Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as devic - interactive
 - [`R45B.dc.html`](R45B.dc.html) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control - interactive
 - [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
+
+### Tab: Froglet Analytics  (`froglet-analytics`)
+
+#### Rev 50 - Froglet Analytics dashboard: our own backend replaces PostHog, three ways to read it
+
+- [`R50Compare.dc.html`](R50Compare.dc.html) - Rev 50 - the top of each option side by side: the overnight read, the console rail, the ask bar
+- [`R50A.dc.html`](R50A.dc.html) - Rev 50 A - Morning read: Claude's overnight read on top, then the numbers and charts on one page (recommended) - interactive
+- [`R50B.dc.html`](R50B.dc.html) - Rev 50 B - Console: a left rail of pages (Overview, Retention, Matches, Data health, Ask, Erasure), dense overview
+- [`R50C.dc.html`](R50C.dc.html) - Rev 50 C - Ask first: one question box on top, Claude's answer with its query, pinned charts below - interactive
+- [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
+
+### Tab: Phone  (`phone`)
+
+#### Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish
+
+- [`R52Compare.dc.html`](R52Compare.dc.html) - Rev 52 - the same Home on a phone: today's PC layout shrunk vs the phone scale, at true size
+- [`R52SignIn.dc.html`](R52SignIn.dc.html) - Rev 52 SignIn - Sign-in: the welcome and Play as guest, one column
+- [`R52Home.dc.html`](R52Home.dc.html) - Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interactive
+- [`R52Arcade.dc.html`](R52Arcade.dc.html) - Rev 52 Arcade - Arcade: eight cards in a 4 x 2 grid, the game of the week marked
+- [`R52Configure.dc.html`](R52Configure.dc.html) - Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interactive
+- [`R52Hangar.dc.html`](R52Hangar.dc.html) - Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive
+- [`R52Hud.dc.html`](R52Hud.dc.html) - Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre
+- [`R52Finish.dc.html`](R52Finish.dc.html) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
+- [`R52Notes.dc.html`](R52Notes.dc.html) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
 
 <!-- frogma.py readme: end -->

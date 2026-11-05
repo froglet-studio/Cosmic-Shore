@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(34,38,69,.85);color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1948px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="ph" style="left:0px;top:0px;transform:scale(2)"><div style="position:absolute;left:66px;top:16px;display:flex;align-items:center;gap:12px"><button class="ico slx" type="button" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><div><div class="lab">Arcade</div><h2 class="h2">Skim Race</h2></div></div><div class="sls" style="position:absolute;left:66px;top:84px;width:520px;height:248px;background:#222645"><img src="/_blob/b4195b6e5e4d00204264de8c5f8bfbca" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><button class="btn s slx" type="button" style="position:absolute;right:10px;bottom:10px;background:rgba(0,4,31,.86);color:#E6E9FF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>Fly it first</button></div><div style="position:absolute;left:66px;top:342px;width:520px;display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="h3">Squirrel</div><p class="small">Find the fastest path to the crystal by skimming trails.</p></div><button class="btn s slx" type="button" onClick="{{cfg.openSheet}}" style="background:rgba(34,38,69,.92);color:#E6E9FF">Controls</button></div><div style="position:absolute;left:606px;top:84px;width:302px;display:flex;flex-direction:column;gap:8px"><span class="lab">Intensity</span><div style="display:flex;gap:6px"><sc-for list="{{cfg.levels}}" as="l" hint-placeholder-count="4"><button class="btn slx" type="button" onClick="{{l.tap}}" aria-pressed="{{l.pressed}}" style="flex:1;padding:0;font-family:Aldrich;font-size:16px;background:{{l.fill}};color:{{l.ink}};box-shadow:inset 0 0 0 2px {{l.edge}}">{{l.name}}</button></sc-for></div><p class="small">{{cfg.levelNote}}</p><span class="lab" style="margin-top:8px">Pilots · {{cfg.count}} of 4</span><div style="display:flex;gap:10px"><sc-for list="{{cfg.seats}}" as="s" hint-placeholder-count="4"><button class="pick oct" type="button" aria-label="{{s.label}}" onClick="{{s.tap}}" style="width:52px;height:52px;background:{{s.edge}};padding:2px;box-sizing:border-box"><span class="oct" style="width:48px;height:48px;background:{{s.fill}};display:flex;align-items:center;justify-content:center;font-family:Chakra Petch;font-weight:600;font-size:{{s.size}};color:{{s.ink}}">{{s.text}}</span></button></sc-for></div></div><button class="btn sls" type="button" style="position:absolute;left:606px;width:302px;bottom:36px;height:56px;background:#A600FF;color:#FFFFFF">Start game</button><sc-if value="{{cfg.sheet}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:rgba(0,1,10,.6)"></div><div style="position:absolute;left:54px;right:54px;bottom:0;height:300px;background:#00041F;box-shadow:inset 0 1px 0 #434C89;padding:12px 12px 0 12px;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between"><h2 class="h2">Squirrel · controls</h2><button class="ico slx" type="button" aria-label="Close" onClick="{{cfg.closeSheet}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#747BAD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 32px;margin-top:8px"><div style="display:flex;align-items:center;gap:12px;height:52px"><img src="/_blob/4f317d83e1e2a3f9bebee93fbe02d892" alt="" style="width:40px;height:40px;object-fit:contain"><span class="body" style="flex:1">Boost Ring</span><span class="small">Hold RT</span></div><div style="display:flex;align-items:center;gap:12px;height:52px"><img src="/_blob/19f76e2c3cb92174176edaf83fcbdcbd" alt="" style="width:40px;height:40px;object-fit:contain"><span class="body" style="flex:1">Skimming</span><span class="small">Passive</span></div><div style="display:flex;align-items:center;gap:12px;height:52px"><img src="/_blob/b855f249864307be854720a7c22f4f9f" alt="" style="width:40px;height:40px;object-fit:contain"><span class="body" style="flex:1">Steal</span><span class="small">Passive</span></div><div style="display:flex;align-items:center;gap:12px;height:52px"><img src="/_blob/33991065df1170b3ac608e62a406776e" alt="" style="width:40px;height:40px;object-fit:contain"><span class="body" style="flex:1">Crystal Joust</span><span class="small">Passive</span></div></div></div></sc-if><div aria-hidden="true" style="position:absolute;left:54px;right:54px;top:0;bottom:24px;outline:1px dashed rgba(230,233,255,.10);pointer-events:none"></div><div aria-hidden="true" style="position:absolute;left:13px;top:152px;width:43px;height:145px;border-radius:22px;background:#000"></div><div aria-hidden="true" style="position:absolute;left:409px;bottom:7px;width:155px;height:6px;border-radius:3px;background:rgba(230,233,255,.55)"></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1948,"height":900}}'>
+class Component extends DCLogic {
+constructor(p){ super(p); this.state = { level: 1, ai: 1, sheet: false }; }
+renderVals() {
+const L = ['I', 'II', 'III', 'IV'], lv = this.state.level, ai = this.state.ai;
+const levels = L.map((n, i) => {
+  const open = i < 2, on = i === lv;
+  return { name: n, pressed: on ? 'true' : 'false',
+    fill: on ? 'rgba(0,212,255,.14)' : 'rgba(34,38,69,.92)', ink: open ? '#E6E9FF' : '#5C5F70', edge: on ? '#00D4FF' : 'transparent',
+    tap: () => { if (open) this.setState({ level: i }); } };
+});
+const seats = [0, 1, 2, 3].map(i => {
+  if (i === 0) return { label: 'You, the host', text: 'YOU', size: '12px', fill: '#222645', edge: '#E6E9FF', ink: '#E6E9FF', tap: () => {} };
+  const filled = i <= ai;
+  return { label: filled ? 'AI pilot, tap to remove' : 'Open seat, tap to add an AI pilot', text: filled ? 'AI' : '+', size: filled ? '12px' : '22px',
+    fill: filled ? '#222645' : 'rgba(0,4,31,.9)', edge: filled ? '#747BAD' : '#434C89', ink: filled ? '#E6E9FF' : '#747BAD',
+    tap: () => this.setState({ ai: filled ? i - 1 : i }) };
+});
+return { cfg: { levels, seats, count: 1 + ai, sheet: this.state.sheet,
+  levelNote: lv === 0 ? 'I: a calm sea. III and IV open when you play II.' : 'II: more crystals, more pilots. III and IV open when you play II.',
+  openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false }) } };
+}
+}
+</script>
+</body>
+</html>

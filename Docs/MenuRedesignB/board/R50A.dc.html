@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Froglet Analytics, A: Morning read</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.num{font-variant-numeric:tabular-nums}
+.seg{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.1em;text-transform:uppercase;border:0;height:40px;padding:0 18px;cursor:pointer;background:transparent;color:#747BAD}
+.seg:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 44px 64px; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span class="lab">Froglet Analytics · morning read</span>
+    <h1 class="h1">Wednesday 5 November</h1>
+  </div>
+  <div style="display: flex; align-items: center; gap: 24px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span class="lab">Build</span>
+      <div class="sls panel" style="display: flex; padding: 0 4px">
+        <sc-for list="{{ builds }}" as="b" hint-placeholder-count="3">
+          <button class="seg" type="button" onClick="{{ b.pick }}" style="{{ b.style }}">{{ b.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span class="lab">Range</span>
+      <div class="sls panel" style="display: flex; padding: 0 4px">
+        <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="3">
+          <button class="seg" type="button" onClick="{{ r.pick }}" style="{{ r.style }}">{{ r.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <span class="small num">Updated 06:00 UTC</span>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 24px">
+  <div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span class="lab" style="color: #E6E9FF">Overnight read</span>
+      <span class="small">Written by Claude from last night's totals. No player ids are sent to it.</span>
+    </div>
+    <sc-for list="{{ digest }}" as="d" hint-placeholder-count="3">
+      <div style="display: grid; grid-template-columns: 6px minmax(0, 1fr); gap: 16px">
+        <span style="{{ d.bar }}"></span>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h3 class="h3">{{ d.title }}</h3>
+          <p class="small">{{ d.body }}</p>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 14px">
+    <span class="lab" style="color: #E6E9FF">Data health</span>
+    <sc-for list="{{ health }}" as="h" hint-placeholder-count="5">
+      <div style="display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center">
+        <sc-if value="{{ h.ok }}" hint-placeholder-val="{{ true }}">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#99FF80" stroke-width="2" aria-label="healthy"><path d="M3 9.5l4 4 8-9"></path></svg>
+        </sc-if>
+        <sc-if value="{{ h.bad }}" hint-placeholder-val="{{ false }}">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#FF4B3A" stroke-width="2" aria-label="problem"><path d="M9 3v7"></path><path d="M9 13.5v1"></path></svg>
+        </sc-if>
+        <span class="small" style="color: #E6E9FF">{{ h.label }}</span>
+        <span class="small num">{{ h.value }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px">
+  <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="6">
+    <div class="sl panel" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span class="lab">{{ t.label }}</span>
+      <span class="num" style="{{ t.valueStyle }}">{{ t.value }}</span>
+      <span class="small">{{ t.note }}</span>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; flex: 1; min-height: 0">
+  <div class="sl panel" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span class="lab" style="color: #E6E9FF">Rematch rate by play type</span>
+      <span class="small">Release builds, 90 days. Share of matches followed by another.</span>
+    </div>
+    <sc-for list="{{ rematch }}" as="m" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 6px" title="{{ m.tip }}">
+        <div style="display: flex; justify-content: space-between"><span class="small" style="color: #E6E9FF">{{ m.label }}</span><span class="small num">{{ m.value }}</span></div>
+        <div style="height: 14px; background: #00041F"><div style="{{ m.bar }}"></div></div>
+      </div>
+    </sc-for>
+    <span class="small" style="margin-top: auto">Multi-human has 2 matches. Too few to read.</span>
+  </div>
+
+  <div class="sl panel" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span class="lab" style="color: #E6E9FF">Rows per play, game_started</span>
+      <span class="small">Should be 1.0. The double-send bug reads 2.0.</span>
+    </div>
+    <svg width="100%" height="210" viewBox="0 0 520 210" role="img" aria-label="Rows per play by day">
+      <line x1="40" y1="20" x2="510" y2="20" stroke="#434C89" stroke-width="1"></line>
+      <line x1="40" y1="100" x2="510" y2="100" stroke="#434C89" stroke-width="1" stroke-dasharray="4 6"></line>
+      <line x1="40" y1="180" x2="510" y2="180" stroke="#434C89" stroke-width="1"></line>
+      <text x="30" y="25" fill="#747BAD" font-size="13" text-anchor="end" font-family="Aldrich">2.0</text>
+      <text x="30" y="105" fill="#747BAD" font-size="13" text-anchor="end" font-family="Aldrich">1.0</text>
+      <text x="30" y="185" fill="#747BAD" font-size="13" text-anchor="end" font-family="Aldrich">0</text>
+      <polyline points="{{ rowsPoints }}" fill="none" stroke="#758FFB" stroke-width="2"></polyline>
+      <rect x="{{ rowsEndX }}" y="{{ rowsEndY }}" width="8" height="8" fill="#758FFB"></rect>
+      <text x="510" y="94" fill="#747BAD" font-size="13" text-anchor="end" font-family="Aldrich">target 1.0</text>
+      <text x="40" y="204" fill="#747BAD" font-size="13" font-family="Aldrich">{{ rangeStart }}</text>
+      <text x="510" y="204" fill="#747BAD" font-size="13" text-anchor="end" font-family="Aldrich">5 Nov</text>
+    </svg>
+  </div>
+
+  <div class="sl panel" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span class="lab" style="color: #E6E9FF">Matches per day</span>
+      <span class="small">{{ matchesCaption }}</span>
+    </div>
+    <div style="display: flex; align-items: flex-end; gap: 2px; height: 180px; border-bottom: 1px solid #434C89">
+      <sc-for list="{{ days }}" as="day" hint-placeholder-count="30">
+        <div title="{{ day.tip }}" style="{{ day.bar }}"></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: space-between"><span class="small">{{ rangeStart }}</span><span class="small">5 Nov</span></div>
+  </div>
+</div>
+
+<span class="small" style="position: absolute; left: 64px; bottom: 14px; font-size: 13px">Totals and rates are Ian's PostHog figures of 29 Oct (release excludes the editor and port builds). The daily series are examples.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+const DATA = '#758FFB';
+const FIRE = '#FF4B3A';
+const SEL = 'color: #E6E9FF; box-shadow: inset 0 -2px 0 #00D4FF;';
+const KPI = {
+  release: [
+    { label: 'Players', value: '25', note: '90 days' },
+    { label: 'Matches', value: '117', note: '90 days' },
+    { label: 'Finished', value: '63%', note: 'game_completed per start' },
+    { label: 'Rematch', value: '64%', note: 'solo vs AI' },
+    { label: 'Rows per play', value: '2.0', note: 'double-send, fix in #1639', bad: true },
+    { label: 'Multi-human', value: '2', note: 'matches with 2+ people' }
+  ],
+  editor: [
+    { label: 'Sessions', value: 'Team', note: 'editor play, not players' },
+    { label: 'Matches', value: '1,284', note: '91% of all matches' },
+    { label: 'Finished', value: 'n/a', note: 'not measured' },
+    { label: 'Rematch', value: 'n/a', note: 'not measured' },
+    { label: 'Rows per play', value: '2.0', note: 'Play, Stop, Play repeats', bad: true },
+    { label: 'Payouts twice', value: '21', note: 'of 241, 16 to 19 Oct', bad: true }
+  ],
+  port: [
+    { label: 'Players', value: 'n/a', note: 'not measured' },
+    { label: 'Plays', value: '43', note: 'app_version ends -port' },
+    { label: 'Finished', value: '2%', note: '1 of 43, Windows is 63%', bad: true },
+    { label: 'Rematch', value: 'Excluded', note: 'until game_completed fires' },
+    { label: 'Rows per play', value: 'n/a', note: 'not measured' },
+    { label: 'Bloomrush', value: '0 of 13', note: 'finished', bad: true }
+  ]
+};
+const DIGEST = {
+  release: [
+    { title: 'Every event still arrives twice', body: 'game_started read 2.0 rows per play every day through 29 Oct. Expect 1.0 once a build with #1639 is in players\' hands.', bad: true },
+    { title: 'Solo vs AI brings players back most', body: '64% of solo vs AI matches were followed by another, 50% of solo matches. Only 2 multi-human matches, so co-op and versus cannot be compared yet.' },
+    { title: 'Next thing to learn', body: 'Co-op or versus needs the team fields on game_started and a few organised playtests with 2 or more people on a real build.' }
+  ],
+  editor: [
+    { title: 'The editor is 91% of all matches', body: '1,284 of about 1,400 matches came from the editor. They are kept in their own table and left out of every other view.' },
+    { title: 'Payouts twice, 16 to 19 Oct', body: '21 of 241 crystal awards paid again 2 to 27 ms later, all WindowsEditor 0.2.0. None since 19 Oct.', bad: true },
+    { title: 'Play, Stop, Play doubles events', body: 'Domain reload is off, so a second analytics service stays subscribed. #1639 tears the old one down.' }
+  ],
+  port: [
+    { title: 'The port build almost never finishes a match', body: '1 of 43 plays sent game_completed (2%), against 63% on the Windows build. Bloomrush finished 0 of 13.', bad: true },
+    { title: 'It is a Unity build, not Amoebius', body: 'Amoebius sends no analytics at all. Find which build profile stamps -port and check that the match end event fires.' },
+    { title: 'Left out of retention', body: 'Rematch and return rates exclude this build until its matches report an end.' }
+  ]
+};
+const HEALTH = [
+  { label: 'Last event received', value: '2 min ago', ok: true },
+  { label: 'Rejected by the schema, 24 h', value: '0', ok: true },
+  { label: 'Rows per play', value: '2.0', bad: true },
+  { label: 'Erasure requests waiting', value: '0', ok: true },
+  { label: 'Nightly backup', value: '03:10 UTC', ok: true }
+];
+const REMATCH = [
+  { label: 'Solo vs AI', value: '64%', pct: 64 },
+  { label: 'Solo', value: '50%', pct: 50 },
+  { label: 'Multi-human', value: '0 of 2', pct: 0 }
+];
+function series(n) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(Math.max(0, Math.round(1.3 + 1.1 * Math.sin(i * 0.9) + (i % 5 === 0 ? 1.4 : 0) + (i % 7) * 0.15)));
+  return out;
+}
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { build: 'release', range: 30 };
+  }
+  renderVals() {
+    const st = this.state;
+    const builds = [['release', 'Release'], ['editor', 'Editor'], ['port', 'Port']].map((p) => ({
+      label: p[1], style: st.build === p[0] ? SEL : '', pick: () => this.setState({ build: p[0] })
+    }));
+    const ranges = [[7, '7 d'], [30, '30 d'], [90, '90 d']].map((p) => ({
+      label: p[1], style: st.range === p[0] ? SEL : '', pick: () => this.setState({ range: p[0] })
+    }));
+    const tiles = KPI[st.build].map((t) => Object.assign({}, t, {
+      valueStyle: 'font-size: 40px; color: ' + (t.bad ? FIRE : '#E6E9FF') + ';'
+    }));
+    const digest = DIGEST[st.build].map((d) => Object.assign({}, d, {
+      bar: 'display: block; background: ' + (d.bad ? FIRE : '#434C89') + ';'
+    }));
+    const rematch = REMATCH.map((m) => Object.assign({}, m, {
+      tip: m.label + ': ' + m.value,
+      bar: 'height: 14px; width: ' + m.pct + '%; background: ' + DATA + ';'
+    }));
+    const n = st.range;
+    const step = 470 / (n - 1);
+    const pts = [];
+    for (let i = 0; i < n; i++) pts.push((40 + i * step).toFixed(1) + ',20');
+    const counts = series(n);
+    const peak = Math.max.apply(null, counts) || 1;
+    const days = counts.map((c, i) => ({
+      tip: (n - i - 1) + ' days ago: ' + c + ' matches',
+      bar: 'flex: 1; min-width: 0; height: ' + Math.max(2, Math.round(170 * c / peak)) + 'px; background: ' + DATA + ';'
+    }));
+    const startLabel = { 7: '30 Oct', 30: '7 Oct', 90: '8 Aug' }[n];
+    return {
+      builds, ranges, tiles, digest, health: HEALTH, rematch, days,
+      rowsPoints: pts.join(' '), rowsEndX: 506, rowsEndY: 16,
+      rangeStart: startLabel,
+      matchesCaption: 'Release builds, last ' + n + ' days. Hover a bar for its count.'
+    };
+  }
+}
+</script>
+</body>
+</html>

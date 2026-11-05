@@ -5752,3 +5752,38 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   out-of-family variants; D5 CTA always lime; D6 phones on their own 800 x 450 scale; D7 the UI checklist required;
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
+
+## 124. Rev 52 mockups: phone layouts at 800 x 450 (2026-11-05, awaiting board approval)
+
+**Asked** (Shombith): "draw the phone boards on frogma", after the phone scale was built (UI_STYLE_GUIDE §8, D6;
+`claude/ui-phone-scale`, #1739). The guide says a screen gets its phone board before its phone layout is built, and a
+canvas turns on Has Phone Layout only once its screens have one.
+
+**On the canvas:** a new tab **Phone** (`phone`), section "Rev 52 - Phone layouts at 800 x 450 (D6)". Each board is an
+iPhone 14 held sideways (844 x 390 pt): the canvas matches height, so 974 x 450 units, drawn at 2x (1948 x 900). The
+island is on the left, the safe area (54 / 54 / 24 units) is a dashed hairline. Copies: `Docs/MenuRedesignB/board/R52*`.
+- **Compare**: the same Home at the same size, today's PC layout shrunk to 42 % (body 6.5 pt, a mode button 22 pt tall)
+  beside the phone scale (body 13.9 pt, a mode button 49 pt).
+- **SignIn**: the welcome and Play as guest (Lime) in one right-hand column over the sign-in art.
+- **Home** (interactive): the four tabs as a left rail with a Jade line on the picked one, the pilot chip and friends
+  at the top, one toast at a time, the four modes as 56-unit buttons along the bottom (Arcade Lime).
+- **Arcade**: the eight cards in a 4 x 2 grid (186 x 165), Skim Race marked This week (Gold), Hijack locked.
+- **Configure** (interactive): the picture left with Fly it first, intensity I-IV (Jade pick, III and IV locked),
+  pilots as four 52-unit seats you tap to add or remove an AI, START GAME (Ruby, no way back); the ability list moves
+  into a bottom sheet behind Controls.
+- **Hangar** (interactive): the hull large, its pilot and element beside it, the fleet as Jade-selectable chips, the
+  Urchin locked at L4.
+- **Hud**: the four-icon ability row (the LOCKED structure) as 64-unit thumb buttons lower right, the race facts in one
+  top-centre plate, pause top left, a steer area for the left thumb.
+- **Finish**: time, Personal best, earned crystals, the quest; Play again (Ruby) over Menu.
+- **Notes**: the frame, the rules every board keeps (the mobile type column, 52-unit controls, width before height, one
+  toast, sheets for side panels, the style guide's colours), what each board changes in Unity, and three decisions:
+  [the rail or a top band for the four tabs], [Arcade as the Lime button on Home, or all four alike], [a fixed stick or
+  wherever the left thumb lands].
+
+**Differs from the build:** every screen today is the 1920 x 1080 layout shrunk on a phone. Once a board is approved,
+its generator gains a phone layout (`author_start_flow.py`, `author_menu_hub_nav.py`, `author_menu_arcade.py`,
+`author_menu_configure.py`, `author_menu_hangar.py`, `author_ingame_hud.py`), and Has Phone Layout goes on: GameCanvas
+once the HUD and the finish are built, Menu_Main once all its screens are. PC, console and iPad are unchanged.
+
+The repo copy also took the Rev 50 and Rev 51 boards it lacked (drawn on other branches, sections 122-123 there).

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(34,38,69,.85);color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1948px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="ph" style="left:0px;top:0px;transform:scale(2)"><img src="/_blob/33b45ebe5f51c2b0d213c122ea74892a" alt="" style="position:absolute;inset:0;width:974px;height:450px;object-fit:cover"><button class="ico slx" type="button" aria-label="Pause" style="position:absolute;left:66px;top:14px;background:rgba(0,4,31,.72)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button><div class="sls" style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(0,4,31,.72);display:flex;align-items:flex-start;gap:20px;padding:6px 18px"><div style="text-align:center"><div class="lab">Time</div><div class="num" style="font-size:30px">01:12.4</div></div><div style="text-align:center"><div class="lab">Crystals</div><div class="num" style="font-size:16px;margin-top:6px"><span style="color:#FFAE00">&#x25C6;</span> 21</div></div><div style="text-align:center"><div class="lab">Intensity</div><div class="num" style="font-size:16px;margin-top:6px">II</div></div></div><div aria-hidden="true" style="position:absolute;left:86px;bottom:44px;width:150px;height:150px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(230,233,255,.22)"><div style="position:absolute;left:50px;top:50px;width:50px;height:50px;border-radius:50%;background:rgba(230,233,255,.18)"></div></div><span class="lab" style="position:absolute;left:102px;bottom:202px;color:rgba(230,233,255,.55)">Steer</span><div style="position:absolute;right:66px;bottom:36px;display:flex;gap:8px"><button class="pick sls" type="button" aria-label="Boost Ring" style="width:64px;height:64px;background:rgba(0,4,31,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><img src="/_blob/4f317d83e1e2a3f9bebee93fbe02d892" alt="" style="width:36px;height:36px;object-fit:contain"><span style="width:44px;height:3px;background:rgba(230,233,255,.25);position:relative;display:block"><span style="position:absolute;left:0;top:0;bottom:0;width:70%;background:#E6E9FF"></span></span></button><button class="pick sls" type="button" aria-label="Skimming" style="width:64px;height:64px;background:rgba(0,4,31,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><img src="/_blob/19f76e2c3cb92174176edaf83fcbdcbd" alt="" style="width:36px;height:36px;object-fit:contain"><span style="width:44px;height:3px;background:rgba(230,233,255,.25);position:relative;display:block"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#E6E9FF"></span></span></button><button class="pick sls" type="button" aria-label="Steal" style="width:64px;height:64px;background:rgba(0,4,31,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><img src="/_blob/b855f249864307be854720a7c22f4f9f" alt="" style="width:36px;height:36px;object-fit:contain"><span style="width:44px;height:3px;background:rgba(230,233,255,.25);position:relative;display:block"><span style="position:absolute;left:0;top:0;bottom:0;width:40%;background:#E6E9FF"></span></span></button><button class="pick sls" type="button" aria-label="Crystal Joust" style="width:64px;height:64px;background:rgba(0,4,31,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><img src="/_blob/33991065df1170b3ac608e62a406776e" alt="" style="width:36px;height:36px;object-fit:contain"><span style="width:44px;height:3px;background:rgba(230,233,255,.25);position:relative;display:block"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#E6E9FF"></span></span></button></div><div aria-hidden="true" style="position:absolute;left:54px;right:54px;top:0;bottom:24px;outline:1px dashed rgba(230,233,255,.10);pointer-events:none"></div><div aria-hidden="true" style="position:absolute;left:13px;top:152px;width:43px;height:145px;border-radius:22px;background:#000"></div><div aria-hidden="true" style="position:absolute;left:409px;bottom:7px;width:155px;height:6px;border-radius:3px;background:rgba(230,233,255,.55)"></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1948,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
