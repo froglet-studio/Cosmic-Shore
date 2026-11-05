@@ -4,8 +4,12 @@
 > rings, with three **super-shielded rails** — one per playable domain — braided along the
 > racing line. Every pilot flies **three laps** of it in order. The race ends when the first
 > pilot threads the last gate of the last lap, and the **team with the most gates threaded —
-> every pilot's gates, summed** — wins (§6.5). Opponent AI fly **Squirrels** until the racing AI
-> can drive every hull; teammates pick their **ally AI's hulls** on the launch panel (§6). It is an **Arena** card
+> every pilot's gates, summed** — wins (§6.5). Opponent AI roll their hull from the card (the Squirrel
+> pin was retired 2026-11-03); teammates pick their **ally AI's hulls** on the launch panel (§6). **The card seats only
+> Regatta-ready hulls** (2026-11-05): a hull whose AI the Regatta Hull Benchmark measured finishing every I1 race with no
+> missed ring alone and finishing a full mixed grid. Eight are: Manta, Dolphin, Rhino, Urchin, Squirrel, Serpent, Sparrow,
+> Stoat. The **Scarab is held off** (`NOT_REGATTA_READY` in `author_regatta_assets.py`, which `--check` enforces) while it
+> misses 6-20 ring mouths a race. It is an **Arena** card
 > (`ArenaGames`, the `ArenaLaunchPanel` vessel carousel), and the first one built for the
 > whole fleet rather than for a hull.
 

@@ -8,14 +8,14 @@ the whole result is validated in memory, and only then is anything written.
 
     python3 Tools/Build/author_regatta_assets.py [--check]
 
-WHAT THIS MODE IS. Regatta is the ARENA race: every playable hull on the same closed circuit of
+WHAT THIS MODE IS. Regatta is the ARENA race: every Regatta-ready hull on the same closed circuit of
 eight switch rings, with three super-shielded rails - one per playable domain - braided along
 the racing line, so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a
-Scarab or a Sparrow flies beside it. The race ends when the first pilot threads the last gate of
+Stoat or a Sparrow flies beside it. The race ends when the first pilot threads the last gate of
 the last lap; the TEAM with the most gates threaded - every pilot's gates, summed
-(RegattaScoringRuleSO) - wins. Opponent AI (a domain no human flies) are pinned to the Squirrel
-through the card's OpponentAIVessel until the racing AI can drive every hull; ally AI fly what
-their teammates pick on the launch panel. See Assets/_Scripts/Controller/Arcade/REGATTA.md.
+(RegattaScoringRuleSO) - wins. Opponent AI roll their hull from the card (the pin to the Squirrel
+was retired 2026-11-03); ally AI fly what their teammates pick on the launch panel. The card
+seats only hulls whose AI is measured Regatta-ready (NOT_REGATTA_READY, section 5). See Assets/_Scripts/Controller/Arcade/REGATTA.md.
 
 WHAT IS FORKED AND WHY. Four cell configs, because the arena is an AUTHORED environment (the
 rails, one SpawnableRegattaRails prefab variant per intensity) and its volume ladder has to
@@ -129,7 +129,9 @@ CRUISE_ONLY = RB.CRUISE_ONLY   # held out of the pace and the spread gate; why: 
 COURSE = RB.read_course()
 _src_hash = hashlib.sha256()
 for _s in COURSE["sources"]:
-    _src_hash.update(open(os.path.join(lib.ROOT, _s), "rb").read())
+    # Line endings normalised: a Windows checkout (core.autocrlf) reads these files with CRLF, a Linux or Mac one with
+    # LF, and a raw-byte hash stamped on one failed --check on the other with no source change (2026-11-05).
+    _src_hash.update(open(os.path.join(lib.ROOT, _s), "rb").read().replace(b"\r\n", b"\n"))
 COURSE_STALE = _src_hash.hexdigest() != COURSE.get("sourceHash")
 
 CONSTANTS = RB.read_constants()
@@ -285,7 +287,16 @@ for _i in range(1, 5):
 # different vessels"). It held every OPPONENT AI on the Squirrel while the racing AI could not drive the other hulls; the
 # Regatta Hull Benchmark now measures seven hulls finishing every race with no missed ring (Urchin, Manta, Squirrel, Rhino,
 # Dolphin, Serpent, Sparrow), so opponents draw from the card under arena seating like allies - one pilot per hull.
-HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Stoat"]
+# REGATTA-READY is the card's bar (Garrett, 2026-11-05: "make sure that all the vessels that are regatta ready are the
+# ones available"): a hull is seated only when its AI, measured in the real game by the Regatta Hull Benchmark at I1,
+# finishes every race with no missed ring alone AND finishes a full mixed grid. The card's Vessels list is both the
+# player's carousel and the pool every AI seat rolls from, so a hull that is not ready would also reach the AI seats.
+# A hull held back here returns to HULL_ORDER once a benchmark run clears the bar; the check below keeps it off until then.
+NOT_REGATTA_READY = {
+    "Scarab": "misses 6-20 ring mouths a race at I1 (its Time-10 speed, 324 u/s, outruns its turn; 67-122 s alone) and "
+              "was not raced in the full grids - open item: lead the nose lag in its steering (Docs/Reports/REGATTA_AI.md)",
+}
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
 
@@ -318,7 +329,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   DisplayName: Regatta
   Description: Every hull, one circuit, three laps. Three rails run the racing line in the
     three team colours - an Urchin grinds the one in its colour and a Squirrel skims it,
-    while a Manta, a Rhino, a Scarab or a Sparrow flies beside it. Thread the rings in
+    while a Manta, a Rhino, a Stoat or a Sparrow flies beside it. Thread the rings in
     order - every gate anyone on your team threads counts. The race ends when the first
     pilot finishes; the team with the most gates wins. Pick your hull, and tap an ally's
     avatar to pick theirs.
@@ -584,6 +595,9 @@ card = g.files["Assets/_SO_Assets/Games/ArcadeGameRegatta.asset"]
 for h in HULL_ORDER:
     if card.count(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n") != 1:
         errors.append(f"card does not list {h} exactly once")
+for h, why in NOT_REGATTA_READY.items():
+    if h in HULL_ORDER or EXISTING[f"Vessel_{h}"] in card:
+        errors.append(f"card seats {h}, which is not Regatta-ready: {why}")
 if "  OpponentAIVessel: {fileID: 0}\n" not in card:
     errors.append("card pins an OpponentAIVessel - the pin is retired (opponents draw from the card, one pilot per hull)")
 rule = g.files["Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset"]

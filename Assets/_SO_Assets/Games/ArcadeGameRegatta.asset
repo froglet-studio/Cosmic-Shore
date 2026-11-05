@@ -17,7 +17,7 @@ MonoBehaviour:
   DisplayName: Regatta
   Description: Every hull, one circuit, three laps. Three rails run the racing line in the
     three team colours - an Urchin grinds the one in its colour and a Squirrel skims it,
-    while a Manta, a Rhino, a Scarab or a Sparrow flies beside it. Thread the rings in
+    while a Manta, a Rhino, a Stoat or a Sparrow flies beside it. Thread the rings in
     order - every gate anyone on your team threads counts. The race ends when the first
     pilot finishes; the team with the most gates wins. Pick your hull, and tap an ally's
     avatar to pick theirs.
@@ -34,7 +34,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   - {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
   - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
-  - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
   - {fileID: 11400000, guid: cc163188820f4e7a985561bc609da2e0, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 6
@@ -80,13 +79,6 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
-  - Class: 12
-    Intensity: 1
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
   - Class: 15
     Intensity: 1
     Levels:
@@ -115,13 +107,6 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
-  - Class: 12
-    Intensity: 2
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
   - Class: 15
     Intensity: 2
     Levels:
@@ -150,13 +135,6 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
-  - Class: 12
-    Intensity: 3
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
   - Class: 15
     Intensity: 3
     Levels:
@@ -179,13 +157,6 @@ MonoBehaviour:
       Space: 0
       Time: 1
   - Class: 11
-    Intensity: 4
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
-  - Class: 12
     Intensity: 4
     Levels:
       Mass: 0
