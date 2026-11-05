@@ -2,6 +2,7 @@
 
 **The same model as an interactive page:** [Cosmic Shore Market Map](https://claude.ai/artifact/QgkTZY2WKM1khg4twGCind)
 (private; the owner shares it from the page's Share menu). Its source is `Docs/Reports/market_sizing.html`.
+**Next:** [`AUDIENCE_ROADMAP.md`](AUDIENCE_ROADMAP.md), the order to capture each niche and join them.
 
 **From:** a Claude session for Garrett, 2026-11-05. **Basis:** calendar 2025 gross consumer spend in USD, from public
 third-party estimates (Valve publishes no Steam figures). Every share is either **sourced** or marked **assumption**.
