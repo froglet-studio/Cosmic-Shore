@@ -995,6 +995,7 @@ path removes it.
 | Define retention for PostHog and Cloud Save (§8.7) | instrumentation | No |
 | **Fill in the PostHog project API key** in `Assets/Resources/PostHogConfig.asset` (write-only project key, never a personal key) — the sink stays inert until then | instrumentation | **Yes** |
 | **Server-side PostHog person deletion** to complete right-to-erasure; the client can only flag it (§7.3, §8.6) | instrumentation | **Yes** |
+| **Replacing PostHog with our own server** (Shombith, 2026-11-05): `Tools/Analytics/server/` takes the PostHog sink's batches unchanged and finishes the in-game deletion on arrival, which closes the item above once the game points at it. Until then the PostHog rows above still apply | instrumentation | No |
 | Run `Tools/Analytics/export_cloud_save.py` + `import_snapshot_to_posthog.py` once to backfill existing players into PostHog People (needs a read-only UGS service account) | instrumentation | No |
 | One `SO_Vessel` asset has a blank `Name` — fix the asset (§3.2 stops it persisting, it does not fix the asset) | gameplay | No |
 | Publish `SO_Game.GolfScoring` onto `GameDataSO` so scoring direction has one source (§3.3) | gameplay | No |

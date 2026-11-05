@@ -5721,7 +5721,7 @@ that make it a true design board like grouping and sectioning stuff."
   that element only, gates it (`check --only`), publishes that one file, replies in the thread and resolves it. Comments
   on different boards run in parallel; the session records the changes in the repo once at the end (`/frogma` §4.5).
 
-## 122. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05, awaiting a pick)
+## 122. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
 
 - **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
   show me mockups of the dashboard, follow the style guide." The decision it follows: leave PostHog for our own ingest
@@ -5753,4 +5753,7 @@ that make it a true design board like grouping and sectioning stuff."
   as row 19 of the design feedback queue in `Docs/UI_REDESIGN_TASKS.md`.
 - **Differs from the build:** nothing is built. The dashboard is a new web page that reads the analytics server's read
   API; it is not a Unity screen. Not drawn yet: sign-in, the Erasure page, phone width.
+- **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
+  Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
+  there); the page itself is not built yet.
 
