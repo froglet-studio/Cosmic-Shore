@@ -1,0 +1,23 @@
+{
+ "args": {
+  "intensity": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "mode": "Regatta",
+  "vessel": "Serpent"
+ },
+ "budget": {
+  "tries": 50
+ },
+ "by": "you",
+ "created": 1793898129,
+ "id": "r20261105-090209-a196",
+ "job": "unity-train",
+ "machine": "belacstein/desktop-lqtg35e",
+ "note": "",
+ "schema": "froglet-compute/request/1",
+ "start": "now"
+}
