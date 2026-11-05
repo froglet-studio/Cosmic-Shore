@@ -5753,7 +5753,7 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
 
-## 124. Rev 52 mockups: phone layouts at 800 x 450 (2026-11-05, decisions made; awaiting board approval)
+## 124. Rev 52 mockups: phone layouts at 800 x 450 (2026-11-05, approved)
 
 **Asked** (Shombith): "draw the phone boards on frogma", after the phone scale was built (UI_STYLE_GUIDE §8, D6;
 `claude/ui-phone-scale`, #1739). The guide says a screen gets its phone board before its phone layout is built, and a
@@ -5792,5 +5792,7 @@ once the HUD and the finish are built, Menu_Main once all its screens are. PC, c
   redrawn).
 - Steering is a floating stick: the left half of the screen is the steer zone, and the stick starts wherever the left
   thumb lands (the Hud board redrawn; the Notes board records all three).
+
+**Approved (Shombith, 2026-11-05):** "approved". All nine boards are the record the phone layouts are built against.
 
 The repo copy also took the Rev 50 and Rev 51 boards it lacked (drawn on other branches, sections 122-123 there).
