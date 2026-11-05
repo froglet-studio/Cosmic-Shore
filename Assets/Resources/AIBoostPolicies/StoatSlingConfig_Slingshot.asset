@@ -70,7 +70,7 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1.5
-  aiSlingMinTurnDegrees: 7.84
+  aiSlingMinTurnDegrees: 35
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941

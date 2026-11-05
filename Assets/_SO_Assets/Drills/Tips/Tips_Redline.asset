@@ -11,10 +11,20 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f3ad6d4674ab419a88260ad2eec9aacb, type: 3}
   m_Name: Tips_Redline
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   tips:
+  - Id: redline-hold
+    Prompt: 'Keep {glyph:Time} held. {ability:Time} is four times cruise, and most corners take it flat out.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 1
+    Priority: 40
+    DwellSeconds: 0
+    Moment:
+      rid: 1000
   - Id: redline-soar
-    Prompt: 'Easing off {ability:Time} turns you harder. Every corner asks how much speed it is worth.'
+    Prompt: 'Too tight for full {ability:Time}? Ease both triggers together. Let go of one and you swing off the line.'
     Element: 0
     Anchor: 0
     Cue: 0
@@ -22,13 +32,45 @@ MonoBehaviour:
     Priority: 50
     DwellSeconds: 0
     Moment:
-      rid: 1000
+      rid: 1001
+  - Id: redline-wind-up
+    Prompt: '{ability:Time} takes two seconds to wind back up. Lift late, then bury both triggers again early.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 50
+    DwellSeconds: 0
+    Moment:
+      rid: 1002
+  - Id: redline-time-crystals
+    Prompt: 'From intensity 2, Time crystals make {ability:Time} faster for the rest of the race. Every corner after one asks for a little more lift.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 60
+    DwellSeconds: 0
+    Moment:
+      rid: -2
   references:
     version: 2
     RefIds:
     - rid: 1000
       type: {class: GateAheadCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
       data:
+        MaxAngle: 10
+        MinSeconds: 3
+        MaxSeconds: 30
+    - rid: 1001
+      type: {class: GateAheadCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
         MaxAngle: 60
         MinSeconds: 0
         MaxSeconds: 3
+    - rid: 1002
+      type: {class: GatesThreadedCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        Count: 1
+    - rid: -2
+      type: {class: , ns: , asm: }

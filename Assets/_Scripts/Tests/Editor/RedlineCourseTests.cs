@@ -11,7 +11,10 @@ namespace CosmicShore.Tests
     /// how much Soar is it worth? - and that is only true if the corners are actually cut
     /// around the Manta's full-boost turn radius, with the intensity ladder DEMANDING the
     /// corners it claims rather than merely permitting them (HEADLONG.md §1: a floor is a
-    /// permission, not a demand). Asserted across a 400-seed sweep of every intensity, because
+    /// permission, not a demand). Since 2026-11-04 the ladder is cut against SOAR ALONE (both
+    /// triggers eased together, <see cref="RedlineCourse.SoarRadius"/>): no corner of any seed is
+    /// tighter than <see cref="RedlineCourse.SoarOnlyMinimumRadius"/>, so the race never needs the
+    /// Yastri pivot (Yash: "only time"). Asserted across a 400-seed sweep of every intensity, because
     /// a generated course is exactly the kind of thing that is fine on the seed you looked at.
     ///
     /// <para>The solver is Headlong's and is deliberately unable to fail, so the liveness half
@@ -77,6 +80,29 @@ namespace CosmicShore.Tests
             // Releasing one trigger entirely buys 60 deg/s of yaw AND drops to cruise: 82u.
             Assert.AreEqual(81.9f, RedlineCourse.CornerRadiusAtBoost(0f), 0.5f,
                 "Manta released-trigger radius changed - re-derive the safety floors.");
+        }
+
+        [Test]
+        public void Soar_only_curve_matches_the_shipped_Manta()
+        {
+            // Both triggers buried: no trigger difference, so the same 237u as the Soar/Yastri curve.
+            Assert.AreEqual(RedlineCourse.FullBoostRadius, RedlineCourse.SoarRadius(1f), 1e-3f);
+            // Half Soar: 450 u/s over (450 x 0.2 + 30) = 120 deg/s - a 215u circle.
+            Assert.AreEqual(214.9f, RedlineCourse.SoarRadius(0.5f), 0.5f);
+            // Both released, the stick alone at cruise: 180 / (66 deg/s) - the 156u every corner clears.
+            Assert.AreEqual(156.3f, RedlineCourse.SoarOnlyMinimumRadius, 0.5f,
+                "Manta Soar-only radius changed - re-derive the corner floors (RedlineCourse.ForIntensity).");
+
+            float previous = 0f;
+            for (int step = 0; step <= 20; step++)
+            {
+                float radius = RedlineCourse.SoarRadius(step / 20f);
+                Assert.Greater(radius, previous, $"the Soar-only radius must grow with Soar (step {step})");
+                previous = radius;
+            }
+            Assert.AreEqual(0.5f, RedlineCourse.FastestSoarForCorner(RedlineCourse.SoarRadius(0.5f)), 1e-3f,
+                "the inverse must recover the Soar the forward curve was evaluated at");
+            Assert.AreEqual(0f, RedlineCourse.FastestSoarForCorner(RedlineCourse.SoarOnlyMinimumRadius - 1f), 1e-4f);
         }
 
         [Test]
@@ -185,8 +211,8 @@ namespace CosmicShore.Tests
             {
                 var s = Settings(intensity);
                 Assert.Greater(s.CornerFloorRadius, 0f, "Redline states its floor in absolute units");
-                Assert.GreaterOrEqual(s.CornerFloorRadius, RedlineCourse.CornerRadiusAtBoost(0f),
-                    $"i{intensity}: the floor must never ask for a corner tighter than a Manta with one trigger released can fly");
+                Assert.GreaterOrEqual(s.CornerFloorRadius, RedlineCourse.SoarOnlyMinimumRadius,
+                    $"i{intensity}: the floor must never ask for a corner Soar alone cannot make (it would need the Yastri pivot)");
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var c = Circuit(intensity, seed);
@@ -239,14 +265,14 @@ namespace CosmicShore.Tests
 
         /// <summary>
         /// How many corners of a median lap cost Soar - that is, sit inside the full-boost
-        /// radius. 0 / 1 / 2 at levels 1-3, and at least 2 at level 4 (its third corner is a
+        /// radius. 0 / 1 / 2 / 3 at levels 1-4: one new corner a level (level 4's third is a
         /// knife-edge, asserted separately).
         /// </summary>
         [Test]
         public void Every_intensity_demands_the_corners_it_claims()
         {
             float full = RedlineCourse.FullBoostRadius;
-            int[] expected = { 0, 0, 1, 2, 2 };   // index = intensity; level 4 is ">= 2"
+            int[] expected = { 0, 0, 1, 2, 3 };   // index = intensity
             for (int intensity = 1; intensity <= 4; intensity++)
             {
                 var counts = new List<int>();
@@ -255,11 +281,8 @@ namespace CosmicShore.Tests
 
                 var sorted = counts.OrderBy(c => c).ToList();
                 int median = sorted[sorted.Count / 2];
-                if (intensity < 4)
-                    Assert.AreEqual(expected[intensity], median,
-                        $"i{intensity}: a median lap must have exactly {expected[intensity]} corner(s) that cost Soar");
-                else
-                    Assert.GreaterOrEqual(median, 2, "i4: a median lap must have at least two corners that cost Soar");
+                Assert.AreEqual(expected[intensity], median,
+                    $"i{intensity}: a median lap must have exactly {expected[intensity]} corner(s) that cost Soar");
             }
         }
 
@@ -267,36 +290,40 @@ namespace CosmicShore.Tests
         public void Level_four_has_a_knife_edge_third_corner()
         {
             // The geometry cannot deliver three corners clearly inside 237u with eight gates -
-            // measured over base radius, profile and spread, every variant left the third corner
-            // between 230 and 250u - so the design states what it can deliver: a third corner AT
-            // the full-boost radius, holdable flat out only by a pilot who is exact.
+            // measured over base radius, profile and spread, the third corner sits near the
+            // full-boost radius - so the design states what it can deliver: a third corner just
+            // inside it (233u, 88% Soar on the 400-seed median), holdable flat out only by a pilot
+            // who is exact, and never so tight it is a real lift.
             var thirds = new List<float>();
             for (int seed = 1; seed <= Seeds; seed++)
                 thirds.Add(SortedCorners(Circuit(4, seed))[2]);
-            Assert.LessOrEqual(Median(thirds), RedlineCourse.FullBoostRadius * 1.03f,
+            float third = Median(thirds);
+            Assert.LessOrEqual(third, RedlineCourse.FullBoostRadius * 1.03f,
                 "i4's third-tightest corner must sit on the full-boost radius (within 3%)");
+            Assert.GreaterOrEqual(third, RedlineCourse.SoarRadius(0.75f),
+                "i4's third corner is a knife-edge, not a lift: at least three-quarters Soar");
         }
 
         [Test]
         public void The_hardest_corner_of_each_level_costs_more_speed_than_the_last()
         {
             // Speed, not radius: the ladder is stated in what a corner COSTS the pilot, via the
-            // Manta's own curve. Each level's hardest corner must give up at least 5 more points
-            // of top speed than the level below.
+            // Manta's Soar-only curve. Each level's hardest corner must give up at least 5 more
+            // points of top speed than the level below.
             var costs = new float[5];
             for (int intensity = 1; intensity <= 4; intensity++)
             {
                 var tightest = new List<float>();
                 for (int seed = 1; seed <= Seeds; seed++)
                     tightest.Add(SortedCorners(Circuit(intensity, seed))[0]);
-                costs[intensity] = RedlineCourse.FastestSpeedForCorner(Median(tightest)) / RedlineCourse.MantaTopSpeed;
+                costs[intensity] = RedlineCourse.FastestSoarSpeedForCorner(Median(tightest)) / RedlineCourse.MantaTopSpeed;
             }
 
-            Assert.AreEqual(1f, costs[1], 1e-3f, "i1's hardest corner must hold full boost");
+            Assert.AreEqual(1f, costs[1], 1e-3f, "i1's hardest corner must hold full Soar");
             for (int intensity = 2; intensity <= 4; intensity++)
                 Assert.LessOrEqual(costs[intensity], costs[intensity - 1] - 0.05f,
                     $"i{intensity}'s hardest corner must cost at least 5 more points of top speed than i{intensity - 1}'s");
-            Assert.Less(costs[4], 0.4f, "i4 must produce a real hairpin - under 40% of top speed");
+            Assert.Less(costs[4], 0.4f, "i4 must ask for the triggers nearly off - under 40% of top speed");
         }
 
         [Test]

@@ -586,6 +586,169 @@ namespace CosmicShore.Tests
                 StringAssert.Contains("  " + row, text);
         }
 
+        // The aimed exit (Yash, 2026-11-03: "slingshot at 30-45 degrees from angle of entry after a second of orbiting").
+
+        [Test]
+        public void AimedExit_TurnsTheEntryTheWayTheOrbitTurns_InAnyPlane()
+        {
+            var entry = Vector3.forward;
+            // A right orbit: the attractor to the hull's right, the hull turning right round it (clockwise from above).
+            var right = StoatSlingMath.AimedExit(entry, Vector3.left * 50f, Vector3.forward, 37.5f);
+            Assert.AreEqual(37.5f, Vector3.Angle(entry, right), 0.01f);
+            Assert.Greater(right.x, 0f, "a right orbit turns the exit right");
+            var left = StoatSlingMath.AimedExit(entry, Vector3.right * 50f, Vector3.forward, 37.5f);
+            Assert.Less(left.x, 0f, "a left orbit turns it left");
+            // 200 deg round the orbit the radial and the heading have turned, but the orbit's axis has not: the same exit.
+            var spun = Quaternion.AngleAxis(200f, Vector3.up);
+            var later = StoatSlingMath.AimedExit(entry, spun * (Vector3.left * 50f), spun * Vector3.forward, 37.5f);
+            Assert.Less(Vector3.Angle(right, later), 0.01f, "the exit is set by the entry, not by where round the orbit you are");
+            // A vertical orbit (pitching up round it) turns the exit up.
+            var up = StoatSlingMath.AimedExit(entry, Vector3.down * 50f, Vector3.forward, 30f);
+            Assert.Greater(up.y, 0f);
+        }
+
+        [Test]
+        public void ExitDegrees_TheStickPicksWithin30To45_TowardTheTurnTheMost()
+        {
+            Assert.AreEqual(37.5f, StoatSlingMath.ExitDegrees(0f, true, 30f, 45f), 1e-4f, "at rest: the middle");
+            Assert.AreEqual(45f, StoatSlingMath.ExitDegrees(1f, true, 30f, 45f), 1e-4f, "right orbit, stick right: the most");
+            Assert.AreEqual(30f, StoatSlingMath.ExitDegrees(-1f, true, 30f, 45f), 1e-4f, "right orbit, stick left: the least");
+            Assert.AreEqual(45f, StoatSlingMath.ExitDegrees(-1f, false, 30f, 45f), 1e-4f, "left orbit, stick left: the most");
+            Assert.AreEqual(45f, StoatSlingMath.ExitDegrees(3f, true, 30f, 45f), 1e-4f, "a stick past full is full");
+        }
+
+        [Test]
+        public void ExitTiming_PaysTheWholeKickAboutASecondIn_NothingEarly()
+        {
+            var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try
+            {
+                Assert.AreEqual(1f, cfg.ExitTiming(0.8f), 1e-4f, "the full window opens at 0.8 s");
+                Assert.AreEqual(1f, cfg.ExitTiming(1.1f), 1e-4f);
+                Assert.AreEqual(1f, cfg.ExitTiming(1.4f), 1e-4f, "and closes at 1.4 s");
+                Assert.AreEqual(0f, cfg.ExitTiming(0.3f), 1e-4f, "a release a third of a second in times nothing");
+                Assert.AreEqual(0f, cfg.ExitTiming(1.9f), 1e-4f);
+                Assert.That(cfg.ExitTiming(0.6f), Is.GreaterThan(0f).And.LessThan(1f), "it eases in");
+                Assert.AreEqual(1.4f, cfg.ExitWindowEndSeconds, 1e-4f, "the AI lets go by the window's end");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(cfg); }
+        }
+
+        [Test]
+        public void SlingConfig_ShipsTheAimedExit()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            foreach (var row in new[] { "aimedExit: 1\n", "exitMinDegrees: 30\n", "exitMaxDegrees: 45\n", "exitWindowSeconds: 1.1\n",
+                         "exitWindowHalfSeconds: 0.3\n", "exitWindowFalloffSeconds: 0.4\n", "maxOrbitDegrees: 720\n" })
+                StringAssert.Contains("  " + row, text);
+        }
+
+        // The trampoline (Yash, 2026-11-04: "remove the whole orbit ... just keep white hole, make it so that vessels can bounce
+        // off with extra boost, it will be a 3D trampoline").
+
+        [Test]
+        public void TrampolineCentre_LaidAheadAndOffTheLine_AwayFromTheBounce()
+        {
+            var right = StoatSlingMath.TrampolineCentre(Vector3.zero, Vector3.forward, Vector3.right, true, 140f, 60f, 0.7f,
+                Vector3.zero, 0f, 150f, 90f);
+            Assert.AreEqual(140f, right.z, 1e-3f, "ahead on the line");
+            Assert.AreEqual(-42f, right.x, 1e-3f, "a right bounce lays it 0.7 x R to the LEFT: you graze its right flank");
+            var left = StoatSlingMath.TrampolineCentre(Vector3.zero, Vector3.forward, Vector3.right, false, 140f, 60f, 0.7f,
+                Vector3.zero, 0f, 150f, 90f);
+            Assert.AreEqual(42f, left.x, 1e-3f);
+            // Turning right at 1 rad/s, the shell is laid on the turning line - to the right of the straight one.
+            var turning = StoatSlingMath.TrampolineCentre(Vector3.zero, Vector3.forward, Vector3.right, true, 140f, 60f, 0.7f,
+                Vector3.up, 1f, 150f, 90f);
+            Assert.Greater(turning.x, right.x + 20f, "carried on along the turn");
+            var capped = StoatSlingMath.TrampolineCentre(Vector3.zero, Vector3.forward, Vector3.right, true, 140f, 60f, 0.7f,
+                Vector3.up, 100f, 150f, 0f);
+            Assert.AreEqual(right.x, capped.x, 1e-3f, "predictMaxDegrees 0: straight ahead");
+        }
+
+        [Test]
+        public void TrampolineStep_PushesOutAlongTheNormal_NothingOutside()
+        {
+            // 10 u into a 60 u shell, flying straight at its centre: the spring slows the velocity along the way in.
+            var v = StoatSlingMath.TrampolineStep(Vector3.forward * 150f, Vector3.back * 50f, 60f, 0.35f, 1f / 60f);
+            Assert.Less(v.z, 150f - 1f, "slowed along the way in");
+            Assert.AreEqual(0f, v.x, 1e-4f, "head-on: no sideways push");
+            var outside = StoatSlingMath.TrampolineStep(Vector3.forward * 150f, Vector3.back * 70f, 60f, 0.35f, 1f / 60f);
+            Assert.AreEqual(Vector3.forward * 150f, outside, "outside the shell nothing pushes");
+            Assert.Greater(StoatSlingMath.TrampolineStiffness(0.2f), StoatSlingMath.TrampolineStiffness(0.5f), "softer = weaker spring");
+            Assert.IsTrue(StoatSlingMath.TrampolineTouches(Vector3.back * 50f, Vector3.forward, Vector3.zero, 60f), "inside, moving in");
+            Assert.IsFalse(StoatSlingMath.TrampolineTouches(Vector3.back * 50f, Vector3.back, Vector3.zero, 60f), "moving out passes free");
+            Assert.IsFalse(StoatSlingMath.TrampolineTouches(Vector3.back * 70f, Vector3.forward, Vector3.zero, 60f), "outside");
+        }
+
+        /// <summary>A pass flown through the shell at 150 u/s, 60 fps, as the executor flies it (the velocity carried from the
+        /// touch, the hull at its own speed along it): the degrees it was turned (+ right).</summary>
+        static float FlyThrough(float lineShare, float radius = 60f, float speed = 150f, float soft = 0.35f)
+        {
+            var pos = new Vector3(-lineShare * radius, 0f, -2f * radius);   // the centre lineShare x R to the right of the line
+            var fwd = Vector3.forward;
+            var velocity = Vector3.zero;
+            bool touching = false;
+            const float dt = 1f / 60f;
+            for (int i = 0; i < 600; i++)
+            {
+                if (!touching && StoatSlingMath.TrampolineTouches(pos, fwd, Vector3.zero, radius)) { touching = true; velocity = fwd * speed; }
+                if (touching)
+                {
+                    if (pos.magnitude >= radius) break;
+                    velocity = StoatSlingMath.TrampolineStep(velocity, pos, radius, soft, dt);
+                    if (velocity.sqrMagnitude > 1e-4f) fwd = velocity.normalized;
+                }
+                pos += fwd * speed * dt;
+                if (!touching && pos.z > radius) break;
+            }
+            return Vector3.SignedAngle(Vector3.forward, fwd, Vector3.up);
+        }
+
+        [Test]
+        public void Trampoline_AGrazeTurnsALittle_DeeperTurnsMore_HeadOnStraightBack()
+        {
+            float graze = FlyThrough(0.9f), shipped = FlyThrough(0.75f), deep = FlyThrough(0.4f);
+            // The shell sits to the right of the line, so it throws the hull LEFT (negative).
+            Assert.Less(shipped, 0f, "thrown away from the shell");
+            Assert.That(-shipped, Is.InRange(30f, 55f), "the shipped 0.75 graze: about 37-51 deg (stoat_orbit_sim.py)");
+            Assert.Less(-graze, -shipped, "a lighter graze turns less");
+            Assert.Greater(-deep, -shipped, "a deeper touch turns more");
+            Assert.AreEqual(180f, Mathf.Abs(FlyThrough(0f)), 1f, "head-on: stopped and sent straight back");
+            Assert.AreEqual(0f, FlyThrough(1.1f), 1e-3f, "a miss turns nothing");
+        }
+
+        [Test]
+        public void TrampolineAim_TheAIGrazesAsDeepAsItsTurn()
+        {
+            Assert.AreEqual(0.65f, StoatSlingMath.TrampolineLineFor(35f, 100f), 1e-4f);
+            Assert.Greater(StoatSlingMath.TrampolineLineFor(20f, 100f), StoatSlingMath.TrampolineLineFor(60f, 100f), "a wider turn, deeper");
+            Assert.AreEqual(0.3f, StoatSlingMath.TrampolineLineFor(170f, 100f), 1e-4f, "never through the middle");
+            Assert.AreEqual(0.92f, StoatSlingMath.TrampolineLineFor(0f, 100f), 1e-4f, "never off the edge");
+            // The flank point: 0.65 x R off the centre toward the bounce side (a right bounce: the right flank of a shell to the left).
+            var centre = new Vector3(-42f, 0f, 140f);
+            var flank = StoatSlingMath.TrampolineFlank(Vector3.zero, centre, Vector3.right, true, 0.65f, 60f);
+            Assert.AreEqual(39f, Vector3.Distance(flank, centre), 1e-3f);
+            Assert.Greater(flank.x, centre.x, "toward the right");
+            Assert.AreEqual(0f, Vector3.Dot(flank - centre, centre.normalized), 1e-3f, "square to the line from the hull");
+        }
+
+        [Test]
+        public void SlingConfig_ShipsTheTrampoline()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            foreach (var row in new[] { "trampoline: 1\n", "trampolineAhead: 140\n", "trampolineRadius: 60\n", "trampolineLine: 0.75\n",
+                         "trampolineSoftSeconds: 0.35\n", "trampolineSeconds: 4\n", "trampolinePredictDegrees: 90\n",
+                         "trampolineAiTurnScale: 100\n" })
+                StringAssert.Contains("  " + row, text);
+            // The AI bounces only for a turn of 35 deg or more (stoat_orbit_sim.py --trampoline: 20 bounced it off its line).
+            foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
+                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
+                StringAssert.Contains("  aiSlingMinTurnDegrees: 35\n", Read(path), path);
+            var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try { Assert.IsTrue(cfg.Trampoline, "on by default"); }
+            finally { UnityEngine.Object.DestroyImmediate(cfg); }
+        }
+
         [Test]
         public void SlingConfig_ShipsTheInnerOrbit()
         {
