@@ -149,7 +149,8 @@ namespace CosmicShore.UI
             var entry = Catalog ? Catalog.Get(_picked) : null;
             var manager = ThemeManager.Instance;
             if (entry == null || !entry.unlocked || !entry.colorSet || !manager || entry.colorSet == Equipped) return;
-            // The repaint runs behind the opaque veil; with no veil possible (another load holds the screen) it waits.
+            // The repaint runs behind the opaque veil. While another load holds the screen no veil can rise, so nothing
+            // changes and APPLY stays offered: press it again once the screen is free.
             EnvironmentLoadVeil.ShowColourSetChange(entry.displayName, entry.line,
                 () => manager.ApplyColorSet(entry.colorSet, entry.id));
         }
