@@ -40,6 +40,9 @@ the files it saved.
                                                                     in reading order and refits the frame
     frogma.py fit      <sec-/grp-id> --live .. --root ..            refits a frame to what it holds now
     frogma.py ungroup  <sec-/grp-id> --live .. --root ..            removes the frame and its own title; boards stay
+    frogma.py collect  --live .. --root .. --tab <id> --areas a,b,c [--heading <note id>] [--assign Board=area ...]
+                                                                    gathers interleaved old areas onto one shelf at the
+                                                                    tab's bottom, each a block in its own section
     frogma.py outline  [--live <canvas.json>] [--tab <id>] [--brief] the layers panel: tab > section > group > board
     frogma.py anchor   <board.dc.html> "<tid>:<path>"              the element a canvas comment is anchored to, with its
                                                                     source lines (view-state.md's numbering)
@@ -50,7 +53,7 @@ the files it saved.
     frogma.py readme                                          regenerate the repo copy's README from its canvas.json
     frogma.py --self-test
 
-A READER except for `plan`, `new-tab`, `fold`, `section`, `group`, `sections`, `move`, `arrange`, `fit`, `ungroup` and
+A READER except for `plan`, `new-tab`, `fold`, `collect`, `section`, `group`, `sections`, `move`, `arrange`, `fit`, `ungroup` and
 `retitle` (write under --root), `pull` and `readme` (write Docs/MenuRedesignB/board/). Exit 0 = ok,
 1 = a check failed (each one named), 2 = it could not run.
 """
@@ -1276,6 +1279,92 @@ def cmd_arrange(args) -> int:
     return 0
 
 
+def cmd_collect(args) -> int:
+    """Gathers titled areas whose boards were laid out interleaved (before sections) onto one SHELF at the bottom of their
+    tab: each area keeps its own inner layout and moves as a block under its title, the blocks pack left to right, a
+    heading note (`--heading`, optional) sits above the shelf, and every block gets its section. `--assign board=area`
+    moves a board the geometry put in the wrong area (a notes board that sat beside another column)."""
+    live = load_index(Path(args.live))
+    original = json.loads(json.dumps(live))
+    tab = args.tab
+    areas = [a.strip() for a in args.areas.split(",") if a.strip()]
+    notes = live.get("notes", {})
+    missing = [a for a in areas if a not in notes or notes[a].get("kind") != "title1"]
+    if missing:
+        print(f"ERROR: no title note {missing}", file=sys.stderr)
+        return 1
+    member: dict = {a: [] for a in areas}
+    for name, b in live.get("boards", {}).items():
+        if tab_of(live, b) == tab:
+            sid = section_of(live, name)[0]
+            if sid in member:
+                member[sid].append(name)
+    for spec in args.assign or []:
+        board, _, area = spec.partition("=")
+        board = board if board.endswith(".dc.html") else board + ".dc.html"
+        if board not in live["boards"] or area not in member:
+            print(f"ERROR: --assign {spec!r}: no such board or area", file=sys.stderr)
+            return 1
+        for m in member.values():
+            if board in m:
+                m.remove(board)
+        member[area].append(board)
+    empty = [a for a in areas if not member[a]]
+    if empty:
+        print(f"ERROR: areas with no boards {empty}", file=sys.stderr)
+        return 1
+    fs = frames(live)
+    dropped = []
+    for a in areas:  # their old frames go; new ones are made after the move
+        key = f"sec-{a}"
+        if key in fs:
+            dropped += fs[key]["tiles"]
+            for t in fs[key]["tiles"]:
+                del notes[t]
+    if "noteOrder" in live:
+        live["noteOrder"] = [k for k in live["noteOrder"] if k not in dropped]
+    moving_b = {b for a in areas for b in member[a]}
+    moving_n = set(areas) | ({args.heading} if args.heading else set())
+    ys = [b["y"] + b["h"] for n, b in live["boards"].items() if tab_of(live, b) == tab and n not in moving_b]
+    ys += [n["y"] + (n.get("h", 120) if n.get("kind") == "rect" else 120) for k, n in notes.items()
+           if tab_of(live, n) == tab and "y" in n and k not in moving_n and not (frame_key(k) and k in dropped)]
+    y0 = (max(ys) if ys else 0) + ROUND_GAP
+    if args.heading:
+        h = notes[args.heading]
+        h["x"], h["y"] = 0, y0
+        h["size"] = "xxl"
+        y0 += TITLE_ABOVE + SECTION_PAD + 200
+    blocks = []
+    for a in areas:
+        bb = bbox(live, member[a], [a])
+        blocks.append((a, bb))
+    cx, cy, shelf_h = 0, y0 + SECTION_PAD, 0
+    for a, (x, y, w, h) in blocks:
+        if cx and cx + w > args.shelf_w:
+            cx, cy, shelf_h = 0, cy + shelf_h + 2 * SECTION_PAD + SHELF_GAP_Y // 2, 0
+        dx, dy = cx - x, cy - y
+        shift(live, member[a], [a], dx, dy)
+        cx += w + 2 * SECTION_PAD + 400
+        shelf_h = max(shelf_h, h)
+    written = set(dropped)
+    for a in areas:
+        w, why = make_frame(live, "section", f"sec-{a}"[:38], None, sorted(member[a]), a, args.color or frame_color(live, f"sec-{a}"))
+        if why:
+            print(f"ERROR: sec-{a}: {why}", file=sys.stderr)
+            return 1
+        written |= set(w)
+    bad = changed_outside(original, live, moving_b, written | moving_n)
+    if bad:
+        print(f"ERROR: changed keys that are not ours {bad[:5]}; refusing to write", file=sys.stderr)
+        return 1
+    out = write_index(Path(args.root), live)
+    print(f"Collected {len(areas)} areas ({len(moving_b)} boards) onto a shelf at y={y0} on tab {tab!r}"
+          f"{' under ' + repr(notes[args.heading]['text']) if args.heading else ''}. Index written to {out}")
+    for a in areas:
+        print(f"  sec-{a:<18} {notes[a]['text'][:60]}  ({len(member[a])} boards)")
+    return 0
+
+
 def cmd_outline(args) -> int:
     """The layers panel: tab > section > group > board, as the person sees the canvas."""
     idx = load_index(Path(args.live)) if args.live else load_index(COPY_DIR / "canvas.json")
@@ -2238,6 +2327,9 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--by"); s.add_argument("--to")
     s = sub.add_parser("arrange"); s.add_argument("id"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
     s.add_argument("--cols", type=int, default=PER_ROW); s.add_argument("--gap", type=int, default=GAP_X)
+    s = sub.add_parser("collect"); s.add_argument("--live", required=True); s.add_argument("--root", required=True)
+    s.add_argument("--tab", required=True); s.add_argument("--areas", required=True); s.add_argument("--heading")
+    s.add_argument("--assign", action="append"); s.add_argument("--color", choices=sorted(COLORS)); s.add_argument("--shelf-w", type=int, default=SHELF_W)
     s = sub.add_parser("outline"); s.add_argument("--live"); s.add_argument("--tab"); s.add_argument("--brief", action="store_true")
     s = sub.add_parser("anchor"); s.add_argument("file"); s.add_argument("anchor"); s.add_argument("--context", type=int, default=2)
     s.add_argument("--max-lines", type=int, default=60)
@@ -2260,7 +2352,7 @@ def main(argv: list[str] | None = None) -> int:
             "new-tab": cmd_new_tab, "fold": cmd_fold, "check": cmd_check, "pull": cmd_pull, "readme": cmd_readme,
             "section": lambda a: cmd_frame(a, "section"), "group": lambda a: cmd_frame(a, "group"), "sections": cmd_sections,
             "ungroup": cmd_ungroup, "fit": cmd_fit, "move": cmd_move, "arrange": cmd_arrange, "outline": cmd_outline,
-            "retitle": cmd_retitle, "anchor": cmd_anchor}[args.cmd](args)
+            "retitle": cmd_retitle, "anchor": cmd_anchor, "collect": cmd_collect}[args.cmd](args)
 
 
 if __name__ == "__main__":

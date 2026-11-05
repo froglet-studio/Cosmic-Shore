@@ -36,6 +36,11 @@ Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
   no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
   `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
 
+- **Nocturne's Gold domain is in the forbidden band.** `#FF8F11` sits between Gold and Fire on the colour chart
+  (`colour_domains.py classify '#FF8F11'`), where Photic's `#FFA700` rested inside Gold. The style guide's tokens read
+  the live palette since 2026-11-05 (`Tools/Build/froglet_style.py`, `Docs/UI_STYLE_GUIDE.md`) and report it as open
+  rather than failing; moving the colour or reshaping Gold is Garrett's decision.
+
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
 `Shielded*SpreadFresnelMaterial.mat` files under `_Graphics/Materials/` are likewise

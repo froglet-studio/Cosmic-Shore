@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cards, windows and toasts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.src{font-family:'Aldrich',sans-serif;font-size:14px;color:#747BAD;margin:0}
+.do{color:#99FF80}
+.dont{color:#FF4B3A}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 64px 72px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">6 · Cards, windows, toasts</span><h1 class="h1">Cards say their state, windows straddle, toasts stay small</h1><p class="body" style="color: #747BAD; max-width: 1500px">A card shows one of four states. A window&#x27;s buttons straddle its bottom edge, the spend or confirm first. Toasts stack top right, one line and a short second line, a 3-unit family strip, gone in a few seconds.</p></div><div style="display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 48px; align-items: start"><div style="display: flex; flex-direction: column; gap: 14px"><span class="lab">Card states</span><div style="display: flex; gap: 16px"><div class="sl" style="width: 168px; height: 260px; background: #222645; box-shadow: inset 0 0 0 2px #99FF80; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 16px; box-sizing: border-box"><span class="lab" style="color: #E6E9FF">Free</span><span class="sls lab" style="padding: 8px 12px; background: #99FF80; color: #00041F; align-self: flex-start">Claim</span></div><div class="sl" style="width: 168px; height: 260px; background: #222645; box-shadow: inset 0 0 0 2px #FFAE00; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 16px; box-sizing: border-box"><span class="lab" style="color: #E6E9FF">Buy</span><span class="sls lab" style="padding: 8px 12px; background: #FFAE00; color: #00041F; align-self: flex-start">40</span></div><div class="sl" style="width: 168px; height: 260px; background: #222645; box-shadow: inset 0 0 0 1px #434C89; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 16px; box-sizing: border-box"><span class="lab" style="color: #E6E9FF">Locked</span><span class="sls lab" style="padding: 8px 12px; background: #5C5F70; color: #00041F; align-self: flex-start">Clout 4</span></div><div class="sl" style="width: 168px; height: 260px; background: #222645; box-shadow: inset 0 0 0 1px #434C89; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 16px; box-sizing: border-box"><span class="lab" style="color: #E6E9FF">Owned</span><span class="sls lab" style="padding: 8px 12px; background: #747BAD; color: #00041F; align-self: flex-start">Owned</span></div></div></div><div style="display: flex; flex-direction: column; gap: 14px"><span class="lab">Window (popup)</span><div style="position: relative; width: 560px; padding-bottom: 28px"><div class="sl" style="background: #00010A; box-shadow: inset 0 0 0 1px #E6E9FF; padding: 32px 36px 56px; display: flex; flex-direction: column; gap: 14px"><span class="lab">Confirm</span><h2 class="h2">Upgrade the Sparrow?</h2><p class="body">Spend 40 crystals to raise Charge to level 2.</p></div><div style="position: absolute; left: 36px; bottom: 0; display: flex; gap: 14px"><button class="btn sls" type="button" style="background: #FFAE00; color: #00041F">Spend 40</button><button class="btn sls" type="button" style="background: #747BAD; color: #00041F">Cancel</button></div></div></div><div style="display: flex; flex-direction: column; gap: 12px"><span class="lab">Toasts</span><div class="sls" style="width: 360px; padding: 14px 18px; background: #222645; box-shadow: inset 3px 0 0 #99FF80; display: flex; flex-direction: column; gap: 4px"><span class="lab" style="color: #E6E9FF">Kestrel is online</span><span class="small">Invite her to your squad</span></div><div class="sls" style="width: 360px; padding: 14px 18px; background: #222645; box-shadow: inset 3px 0 0 #99FF80; display: flex; flex-direction: column; gap: 4px"><span class="lab" style="color: #E6E9FF">Quest done</span><span class="small">Claim 120 knowledge</span></div><div class="sls" style="width: 360px; padding: 14px 18px; background: #222645; box-shadow: inset 3px 0 0 #FF4B3A; display: flex; flex-direction: column; gap: 4px"><span class="lab" style="color: #E6E9FF">Connection lost</span><span class="small">Reconnecting...</span></div></div></div><p class="src">From the shipped screens: Arcade and Toy Box cards (author_menu_arcade.py, author_menu_toybox.py), PurchaseConfirm and Toasts boards (Frogma, Menu tab, Items 10 + 11), ToastNotificationManager.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

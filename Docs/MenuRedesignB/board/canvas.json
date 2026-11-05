@@ -8,48 +8,48 @@
       "page": "menu-redesign",
       "title": "Item 3 · Arcade · interactive (party: accept, invite, kick, leave; games: star, pick)",
       "w": 1920,
-      "x": 5600,
-      "y": 69450
+      "x": 9180,
+      "y": 90750
     },
     "ArcadeNoFriends.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 3 · Arcade · solo, no friends online",
       "w": 1920,
-      "x": 5600,
-      "y": 71930
+      "x": 9180,
+      "y": 93230
     },
     "ArcadeNotes.dc.html": {
       "h": 1240,
       "page": "menu-redesign",
       "title": "Item 3 · Arcade · what changes",
       "w": 1100,
-      "x": 7680,
-      "y": 69450
+      "x": 11260,
+      "y": 90750
     },
     "ArcadePicks.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 3 · Arcade · favourites, party picks, locked look (illustration)",
       "w": 1920,
-      "x": 5600,
-      "y": 73170
+      "x": 9180,
+      "y": 94470
     },
     "ArcadeSolo.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 3 · Arcade · solo, friends online, gamepad focus on a card",
       "w": 1920,
-      "x": 5600,
-      "y": 70690
+      "x": 9180,
+      "y": 91990
     },
     "ArenaWindow.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 8 · Arena · gamepad focus on Broadside",
       "w": 1920,
-      "x": 21500,
-      "y": 71930
+      "x": 7800,
+      "y": 113570
     },
     "Ark.dc.html": {
       "h": 1080,
@@ -57,40 +57,40 @@
       "page": "menu-redesign",
       "title": "Item 7 · Ark · interactive, revision 2 (recipe panel, Convert runs the sequence)",
       "w": 1920,
-      "x": 18100,
-      "y": 69450
+      "x": 3900,
+      "y": 111090
     },
     "ArkConverting.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 7 · Ark · converting (Mass merging)",
       "w": 1920,
-      "x": 18100,
-      "y": 70690
+      "x": 3900,
+      "y": 112330
     },
     "ArkDone.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 7 · Ark · converted",
       "w": 1920,
-      "x": 18100,
-      "y": 71930
+      "x": 3900,
+      "y": 113570
     },
     "ArkNotes.dc.html": {
       "h": 1000,
       "page": "menu-redesign",
       "title": "Item 7 · Ark · what changes",
       "w": 1100,
-      "x": 20180,
-      "y": 69450
+      "x": 5980,
+      "y": 111090
     },
     "ClosedSurfaces.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 10 · Closed surfaces as a player meets them",
       "w": 1920,
-      "x": 28400,
-      "y": 69450
+      "x": 15600,
+      "y": 111090
     },
     "Configure.dc.html": {
       "h": 1080,
@@ -98,72 +98,72 @@
       "page": "menu-redesign",
       "title": "Item 4 · Configure · interactive, revision 2 (fuller tree, motion: intensity, domain, + AI, fly the preview, Start)",
       "w": 1920,
-      "x": 9000,
-      "y": 69450
+      "x": 13080,
+      "y": 90750
     },
     "ConfigureArena.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · Arena card, picking a hull (Manta taken)",
       "w": 1920,
-      "x": 9000,
-      "y": 70690
+      "x": 13080,
+      "y": 91990
     },
     "ConfigureGuest.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · party guest after Ready",
       "w": 1920,
-      "x": 9000,
-      "y": 75650
+      "x": 13080,
+      "y": 96950
     },
     "ConfigureLocked.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · Joust, Add AI armed, locked intensity pressed",
       "w": 1920,
-      "x": 9000,
-      "y": 76890
+      "x": 13080,
+      "y": 98190
     },
     "ConfigureMaelstrom.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · Maelstrom: pool and format",
       "w": 1920,
-      "x": 9000,
-      "y": 71930
+      "x": 13080,
+      "y": 93230
     },
     "ConfigureNotes.dc.html": {
       "h": 2300,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · what changes",
       "w": 1100,
-      "x": 11080,
-      "y": 69450
+      "x": 25580,
+      "y": 107450
     },
     "ConfigureWeekly.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · weekly challenge",
       "w": 1920,
-      "x": 9000,
-      "y": 73170
+      "x": 13080,
+      "y": 94470
     },
     "ConfigureWeeklySpent.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Configure · weekly challenge, already played today",
       "w": 1920,
-      "x": 9000,
-      "y": 74410
+      "x": 13080,
+      "y": 95710
     },
     "Credits.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 9 · Credits",
       "w": 1920,
-      "x": 25000,
-      "y": 74410
+      "x": 11700,
+      "y": 116050
     },
     "Hangar.dc.html": {
       "h": 1080,
@@ -171,48 +171,48 @@
       "page": "menu-redesign",
       "title": "Item 2 · Hangar · interactive (pick a vessel, unlock, confirm / cancel)",
       "w": 1920,
-      "x": 2200,
-      "y": 69450
+      "x": 5280,
+      "y": 90750
     },
     "HangarLocked.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 2 · Hangar · locked Manta, gamepad focus on its tile",
       "w": 1920,
-      "x": 2200,
-      "y": 70690
+      "x": 5280,
+      "y": 91990
     },
     "HangarNoArt.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 2 · Hangar · vessel with no preview art or abilities (Scarab)",
       "w": 1920,
-      "x": 2200,
-      "y": 74410
+      "x": 5280,
+      "y": 95710
     },
     "HangarNotes.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 2 · Hangar · what changes",
       "w": 1100,
-      "x": 4280,
-      "y": 69450
+      "x": 7360,
+      "y": 90750
     },
     "HangarShort.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 2 · Hangar · spend crystals (not enough)",
       "w": 1920,
-      "x": 2200,
-      "y": 73170
+      "x": 5280,
+      "y": 94470
     },
     "HangarSpend.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 2 · Hangar · spend crystals (enough)",
       "w": 1920,
-      "x": 2200,
-      "y": 71930
+      "x": 5280,
+      "y": 93230
     },
     "Home.dc.html": {
       "h": 1080,
@@ -220,88 +220,88 @@
       "page": "menu-redesign",
       "title": "Item 6 · Home · interactive, revision 2 (Up next cards, hub icons, lamp asks to go offline)",
       "w": 1920,
-      "x": 31800,
-      "y": 69450
+      "x": 0,
+      "y": 111090
     },
     "HomeFocus.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 6 · Home · gamepad focus on Arena",
       "w": 1920,
-      "x": 31800,
-      "y": 71930
+      "x": 0,
+      "y": 113570
     },
     "HomeInvite.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 6 · Home · party invite arriving",
       "w": 1920,
-      "x": 31800,
-      "y": 70690
+      "x": 0,
+      "y": 112330
     },
     "HomeNotes.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 6 · Home · what changes",
       "w": 1100,
-      "x": 33880,
-      "y": 69450
+      "x": 2080,
+      "y": 111090
     },
     "HomeOffline.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 6 · Home · offline, asking to go online",
       "w": 1920,
-      "x": 31800,
-      "y": 73170
+      "x": 0,
+      "y": 114810
     },
     "HudButterfly.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Butterfly HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 13420,
-      "y": 61570
+      "x": 17200,
+      "y": 83970
     },
     "HudCardStates.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Ability card states at 2x",
       "w": 1920,
-      "x": 11420,
-      "y": 57490
+      "x": 8640,
+      "y": 81490
     },
     "HudConnecting.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Connecting, building the arena",
       "w": 1920,
-      "x": 13420,
-      "y": 63170
+      "x": 4000,
+      "y": 81490
     },
     "HudDolphin.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Dolphin HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 13420,
-      "y": 59090
+      "x": 17200,
+      "y": 81490
     },
     "HudEndReveal.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Match end reveal",
       "w": 1920,
-      "x": 9420,
-      "y": 64790
+      "x": 19840,
+      "y": 81490
     },
     "HudManta.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Manta HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 13420,
-      "y": 60330
+      "x": 17200,
+      "y": 82730
     },
     "HudMatch.dc.html": {
       "h": 1080,
@@ -309,24 +309,24 @@
       "page": "menu-redesign",
       "title": "Item 12 - Match HUD - interactive (press the feed for a toast, a score to punch it)",
       "w": 1920,
-      "x": 9420,
-      "y": 57490
+      "x": 6640,
+      "y": 81490
     },
     "HudNotes.dc.html": {
       "h": 1700,
       "page": "menu-redesign",
       "title": "Item 12 - In-game HUD - what changes",
       "w": 1100,
-      "x": 13420,
-      "y": 57490
+      "x": 10640,
+      "y": 81490
     },
     "HudPause.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Pause",
       "w": 1920,
-      "x": 11420,
-      "y": 63170
+      "x": 2000,
+      "y": 81490
     },
     "HudReady.dc.html": {
       "h": 1080,
@@ -334,24 +334,24 @@
       "page": "menu-redesign",
       "title": "Item 12 - Ready and countdown - interactive",
       "w": 1920,
-      "x": 9420,
-      "y": 63170
+      "x": 0,
+      "y": 81490
     },
     "HudRhino.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Rhino HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 9420,
-      "y": 61570
+      "x": 13200,
+      "y": 83970
     },
     "HudScarab.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Scarab HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 9420,
-      "y": 60330
+      "x": 13200,
+      "y": 82730
     },
     "HudScoreboard.dc.html": {
       "h": 1080,
@@ -359,88 +359,88 @@
       "page": "menu-redesign",
       "title": "Item 12 - Scoreboard - interactive (vote to play again)",
       "w": 1920,
-      "x": 11420,
-      "y": 64790
+      "x": 21840,
+      "y": 81490
     },
     "HudSerpent.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Serpent HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 11420,
-      "y": 61570
+      "x": 15200,
+      "y": 83970
     },
     "HudSparrow.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Sparrow HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 11420,
-      "y": 59090
+      "x": 15200,
+      "y": 81490
     },
     "HudSpectator.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Spectating",
       "w": 1920,
-      "x": 13420,
-      "y": 64790
+      "x": 23840,
+      "y": 81490
     },
     "HudSquirrel.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Squirrel HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 9420,
-      "y": 59090
+      "x": 13200,
+      "y": 81490
     },
     "HudUrchin.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 12 - Urchin HUD (its own icons, style-B chrome; 1.5x annotation)",
       "w": 1920,
-      "x": 11420,
-      "y": 60330
+      "x": 15200,
+      "y": 82730
     },
     "LeaderboardEmpty.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 4 · Weekly leaderboard · no times yet",
       "w": 1920,
-      "x": 12400,
-      "y": 70690
+      "x": 2840,
+      "y": 189490
     },
     "MaelstromHub.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Maelstrom - Hub between rounds",
       "w": 1920,
-      "x": 9420,
-      "y": 66270
+      "x": 19840,
+      "y": 82970
     },
     "MaelstromNotes.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Maelstrom - Notes",
       "w": 1920,
-      "x": 15720,
-      "y": 66270
+      "x": 12840,
+      "y": 124610
     },
     "MaelstromStats.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Maelstrom - Stats (tournament decided)",
       "w": 1920,
-      "x": 11520,
-      "y": 66270
+      "x": 21940,
+      "y": 82970
     },
     "MaelstromSummary.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Maelstrom - Summary",
       "w": 1920,
-      "x": 13620,
-      "y": 66270
+      "x": 24040,
+      "y": 82970
     },
     "Main.dc.html": {
       "h": 220,
@@ -448,8 +448,8 @@
       "page": "menu-redesign",
       "title": "Item 1 · Top nav · interactive (click tabs, LT / RT)",
       "w": 1920,
-      "x": 0,
-      "y": 69450
+      "x": 2640,
+      "y": 90750
     },
     "MenuKit.dc.html": {
       "h": 2140,
@@ -457,23 +457,23 @@
       "title": "Item 0 · Component kit (approved; reference copy)",
       "w": 1920,
       "x": 0,
-      "y": 70650
+      "y": 90750
     },
     "MissionWindow.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 8 · Missions (hub entry still Unavailable)",
       "w": 1920,
-      "x": 21500,
-      "y": 73170
+      "x": 7800,
+      "y": 114810
     },
     "ModesNotes.dc.html": {
       "h": 1560,
       "page": "menu-redesign",
       "title": "Item 8 · Arena, Toy Box, Mission, Toy configure · what changes",
       "w": 1100,
-      "x": 23580,
-      "y": 69450
+      "x": 9880,
+      "y": 111090
     },
     "Profile.dc.html": {
       "h": 1080,
@@ -481,16 +481,16 @@
       "page": "menu-redesign",
       "title": "Item 5 · Profile · interactive, revision 2 (record, quest goals, claim ceremony, Episodes refuses)",
       "w": 1920,
-      "x": 14700,
-      "y": 69450
+      "x": 29540,
+      "y": 90750
     },
     "ProfileFresh.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 5 · Profile · new pilot, first quest in progress",
       "w": 1920,
-      "x": 14700,
-      "y": 70690
+      "x": 29540,
+      "y": 91990
     },
     "ProfileModal.dc.html": {
       "h": 1080,
@@ -498,48 +498,48 @@
       "page": "menu-redesign",
       "title": "Item 5 · Profile window · interactive, revision 2 (preview column, pick an avatar, type a name)",
       "w": 1920,
-      "x": 14700,
-      "y": 71930
+      "x": 29540,
+      "y": 93230
     },
     "ProfileName.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 5 · Profile window · display name, valid",
       "w": 1920,
-      "x": 14700,
-      "y": 73170
+      "x": 29540,
+      "y": 94470
     },
     "ProfileNameError.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 5 · Profile window · display name, invalid",
       "w": 1920,
-      "x": 14700,
-      "y": 74410
+      "x": 29540,
+      "y": 95710
     },
     "ProfileNameTaken.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 5 · Profile window · display name taken",
       "w": 1920,
-      "x": 14700,
-      "y": 75650
+      "x": 29540,
+      "y": 96950
     },
     "ProfileNotes.dc.html": {
       "h": 1300,
       "page": "menu-redesign",
       "title": "Item 5 · Profile · what changes",
       "w": 1100,
-      "x": 16780,
-      "y": 69450
+      "x": 7560,
+      "y": 171550
     },
     "PurchaseConfirm.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 10 · Purchase confirmation (blind, unreachable today)",
       "w": 1920,
-      "x": 28400,
-      "y": 70690
+      "x": 15600,
+      "y": 112330
     },
     "R10AudioStudio.dc.html": {
       "h": 1080,
@@ -2016,184 +2016,184 @@
       "page": "menu-redesign",
       "title": "Rev 3 - Arcade with the friends panel gone: three tall featured cards (the quest-view rhythm) and a filtered grid",
       "w": 1920,
-      "x": 28260,
-      "y": 49110
+      "x": 4200,
+      "y": 129910
     },
     "R3ConfigureA.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Configure option A: Cinematic - the live preview fills the window, settings on a bottom console",
       "w": 1920,
-      "x": 24060,
-      "y": 50410
+      "x": 0,
+      "y": 131210
     },
     "R3ConfigureB.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Configure option B: three tall step cards (vessel, intensity, pilots) under a wide live preview",
       "w": 1920,
-      "x": 26160,
-      "y": 50410
+      "x": 2100,
+      "y": 131210
     },
     "R3ConfigureC.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Configure option C: split console - big preview with Briefing / Controls / Objective tabs, a clean settings list",
       "w": 1920,
-      "x": 28260,
-      "y": 50410
+      "x": 4200,
+      "y": 131210
     },
     "R3ConfigureNotes.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Configure: the three options compared",
       "w": 1920,
-      "x": 30360,
-      "y": 50410
+      "x": 6300,
+      "y": 131210
     },
     "R3HangarAbilities.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: Abilities tab, RT held - the 3D Sparrow fires its cannons",
       "w": 1920,
-      "x": 24060,
-      "y": 46510
+      "x": 0,
+      "y": 127310
     },
     "R3HangarArtifacts.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: Artifacts tab - one slot, a real upgrade, flagged at risk",
       "w": 1920,
-      "x": 26160,
-      "y": 47810
+      "x": 2100,
+      "y": 128610
     },
     "R3HangarGames.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: Games tab - the vessel's games as wide art cards",
       "w": 1920,
-      "x": 30360,
-      "y": 46510
+      "x": 6300,
+      "y": 127310
     },
     "R3HangarPilots.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: Pilots tab - the old Captains back as pilots, one per element, with level, XP and quote",
       "w": 1920,
-      "x": 24060,
-      "y": 47810
+      "x": 0,
+      "y": 128610
     },
     "R3HangarTabSwap.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: the tab swap in motion - loops through all five tabs",
       "w": 1920,
-      "x": 28260,
-      "y": 47810
+      "x": 4200,
+      "y": 128610
     },
     "R3HangarUpgrades.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: Upgrades tab on arrival - no element selected, the default hull",
       "w": 1920,
-      "x": 26160,
-      "y": 46510
+      "x": 2100,
+      "y": 127310
     },
     "R3HangarUpgradesMass.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Hangar: Upgrades tab with Mass previewed at level 3 - the hull morphs on the 3D model",
       "w": 1920,
-      "x": 28260,
-      "y": 46510
+      "x": 4200,
+      "y": 127310
     },
     "R3Home.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Home: icons in the nav, white selection, cards docked under the pilot, toasts right, friends tab",
       "w": 1920,
-      "x": 24060,
-      "y": 49110
+      "x": 0,
+      "y": 129910
     },
     "R3HomeFriends.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Home: friends drawer open from the left (minimise, maximise, close), weekly card minimised",
       "w": 1920,
-      "x": 26160,
-      "y": 49110
+      "x": 2100,
+      "y": 129910
     },
     "R3HudButterfly.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Butterfly HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 24060,
-      "y": 54310
+      "x": 0,
+      "y": 135110
     },
     "R3HudDolphin.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Dolphin HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 28260,
-      "y": 51710
+      "x": 4200,
+      "y": 132510
     },
     "R3HudManta.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Manta HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 26160,
-      "y": 53010
+      "x": 2100,
+      "y": 133810
     },
     "R3HudRhino.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Rhino HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 28260,
-      "y": 53010
+      "x": 4200,
+      "y": 133810
     },
     "R3HudScarab.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Scarab HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 30360,
-      "y": 51710
+      "x": 6300,
+      "y": 132510
     },
     "R3HudSerpent.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Serpent HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 30360,
-      "y": 53010
+      "x": 6300,
+      "y": 133810
     },
     "R3HudSparrow.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Sparrow HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 26160,
-      "y": 51710
+      "x": 2100,
+      "y": 132510
     },
     "R3HudSquirrel.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Squirrel HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 24060,
-      "y": 51710
+      "x": 0,
+      "y": 132510
     },
     "R3HudUrchin.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Rev 3 - Urchin HUD: its own icons, element colours drifting like a lava lamp",
       "w": 1920,
-      "x": 24060,
-      "y": 53010
+      "x": 0,
+      "y": 133810
     },
     "R40D.dc.html": {
       "h": 1080,
@@ -2968,6 +2968,122 @@
       "x": 0,
       "y": 4720
     },
+    "R49A.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme",
+      "w": 760,
+      "x": 0,
+      "y": 28240
+    },
+    "R49ACrew.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv",
+      "w": 760,
+      "x": 0,
+      "y": 29288
+    },
+    "R49AStory.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 A - Destination glow, level 3, the story (optional) - interactive",
+      "w": 760,
+      "x": 0,
+      "y": 30336
+    },
+    "R49B.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive",
+      "w": 760,
+      "x": 940,
+      "y": 28240
+    },
+    "R49BCrew.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "w": 760,
+      "x": 940,
+      "y": 29288
+    },
+    "R49BStory.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 B - Hangar light, level 3, the story (optional) - interactive",
+      "w": 760,
+      "x": 940,
+      "y": 30336
+    },
+    "R49C.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive",
+      "w": 760,
+      "x": 1880,
+      "y": 28240
+    },
+    "R49CCrew.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "w": 760,
+      "x": 1880,
+      "y": 29288
+    },
+    "R49CStory.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 C - Route poster, level 3, the story (optional) - interactive",
+      "w": 760,
+      "x": 1880,
+      "y": 30336
+    },
+    "R49D.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive",
+      "w": 760,
+      "x": 2820,
+      "y": 28240
+    },
+    "R49DCrew.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
+      "w": 760,
+      "x": 2820,
+      "y": 29288
+    },
+    "R49DStory.dc.html": {
+      "h": 868,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 D - Split art, level 3, the story (optional) - interactive",
+      "w": 760,
+      "x": 2820,
+      "y": 30336
+    },
+    "R49Notes.dc.html": {
+      "h": 868,
+      "page": "menu-redesign-c",
+      "title": "Rev 49 - notes: what was asked, what all four share, the recommendation",
+      "w": 760,
+      "x": 3760,
+      "y": 28240
+    },
     "R4Configure.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
@@ -3248,38 +3364,118 @@
       "x": 0,
       "y": 43630
     },
+    "SGButtons.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 5 - Buttons and their states",
+      "w": 1920,
+      "x": 0,
+      "y": 2920
+    },
+    "SGChecklist.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 9 - The UI checklist and the five screens to fix",
+      "w": 1920,
+      "x": 2100,
+      "y": 4180
+    },
+    "SGColour.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 1 - Colour: the six families (Garrett's colour chart)",
+      "w": 1920,
+      "x": 2100,
+      "y": 400
+    },
+    "SGDoDont.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 8 - Do and don't, from our own screens",
+      "w": 1920,
+      "x": 0,
+      "y": 4180
+    },
+    "SGMotion.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 7 - Motion",
+      "w": 1920,
+      "x": 4200,
+      "y": 2920
+    },
+    "SGReadMe.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide - start here: one look for everything Froglet makes",
+      "w": 1920,
+      "x": 0,
+      "y": 400
+    },
+    "SGShape.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 4 - Shape, space, layers and the safe area",
+      "w": 1920,
+      "x": 4200,
+      "y": 1660
+    },
+    "SGThemes.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 2 - Themes: Deep Sea and Shore, domains as one accent",
+      "w": 1920,
+      "x": 0,
+      "y": 1660
+    },
+    "SGType.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 3 - Type and numbers",
+      "w": 1920,
+      "x": 2100,
+      "y": 1660
+    },
+    "SGWindows.dc.html": {
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 6 - Cards, windows and toasts",
+      "w": 1920,
+      "x": 2100,
+      "y": 2920
+    },
     "Settings.dc.html": {
       "h": 1080,
       "is_interactive": true,
       "page": "menu-redesign",
       "title": "Item 9 · Settings · interactive, revision 2 (descriptions, tabs, toggles, dropdowns cycle)",
       "w": 1920,
-      "x": 25000,
-      "y": 69450
+      "x": 11700,
+      "y": 111090
     },
     "SettingsDisplay.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 9 · Settings · Display",
       "w": 1920,
-      "x": 25000,
-      "y": 70690
+      "x": 11700,
+      "y": 112330
     },
     "SettingsOther.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 9 · Settings · Other",
       "w": 1920,
-      "x": 25000,
-      "y": 73170
+      "x": 11700,
+      "y": 114810
     },
     "SettingsPerformance.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 9 · Settings · Performance after a hand change (Custom, restart notice)",
       "w": 1920,
-      "x": 25000,
-      "y": 71930
+      "x": 11700,
+      "y": 113570
     },
     "StartAgeGate.dc.html": {
       "h": 1080,
@@ -3366,8 +3562,8 @@
       "page": "menu-redesign",
       "title": "Items 9, 10, 11 · what changes",
       "w": 1100,
-      "x": 27080,
-      "y": 69450
+      "x": 13780,
+      "y": 111090
     },
     "Toasts.dc.html": {
       "h": 1080,
@@ -3375,24 +3571,24 @@
       "page": "menu-redesign",
       "title": "Item 11 · Menu toasts · interactive, revision 2 (raise any message; lifetime drains)",
       "w": 1920,
-      "x": 28400,
-      "y": 71930
+      "x": 15600,
+      "y": 113570
     },
     "TopNavHover.dc.html": {
       "h": 84,
       "page": "menu-redesign",
       "title": "Item 1 · Top nav · HANGAR active, pointer over ARK",
       "w": 1920,
-      "x": 0,
-      "y": 69790
+      "x": 2640,
+      "y": 91090
     },
     "TopNavLocked.dc.html": {
       "h": 220,
       "page": "menu-redesign",
       "title": "Item 1 · Top nav · PORT pressed: locked, refused",
       "w": 1920,
-      "x": 0,
-      "y": 69994
+      "x": 2640,
+      "y": 91294
     },
     "ToyBox.dc.html": {
       "h": 1080,
@@ -3400,16 +3596,16 @@
       "page": "menu-redesign",
       "title": "Item 8 · Toy Box · interactive, revision 2 (live activity clock, shuffle rolls, toys)",
       "w": 1920,
-      "x": 21500,
-      "y": 69450
+      "x": 7800,
+      "y": 111090
     },
     "ToyBoxClaimed.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 8 · Toy Box · activity claimed, last shuffle, Wander unavailable",
       "w": 1920,
-      "x": 21500,
-      "y": 70690
+      "x": 7800,
+      "y": 112330
     },
     "ToyConfigure.dc.html": {
       "h": 1080,
@@ -3417,32 +3613,32 @@
       "page": "menu-redesign",
       "title": "Item 8 · Toy configure · interactive, revision 2 (Vessel Changer)",
       "w": 1920,
-      "x": 21500,
-      "y": 74410
+      "x": 7800,
+      "y": 116050
     },
     "ToyConfigureDomain.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 8 · Toy configure · Domain Changer (tap applies, no commit)",
       "w": 1920,
-      "x": 21500,
-      "y": 78130
+      "x": 7800,
+      "y": 119770
     },
     "ToyConfigurePaint.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 8 · Toy configure · Connect the Dots, paused painting picked",
       "w": 1920,
-      "x": 21500,
-      "y": 75650
+      "x": 7800,
+      "y": 117290
     },
     "ToyConfigureSpawn.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
       "title": "Item 8 · Toy configure · Spawn Matrix, inside Fauna / Shark",
       "w": 1920,
-      "x": 21500,
-      "y": 76890
+      "x": 7800,
+      "y": 118530
     },
     "WeeklyLeaderboard.dc.html": {
       "h": 1080,
@@ -3450,124 +3646,16 @@
       "page": "menu-redesign",
       "title": "Item 4 · Weekly leaderboard · interactive, revision 2 (podium, live countdown, tabs)",
       "w": 1920,
-      "x": 12400,
-      "y": 69450
+      "x": 22820,
+      "y": 86150
     },
-    "R49A.dc.html": {
-      "x": 0,
-      "y": 28240,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R49B.dc.html": {
-      "x": 940,
-      "y": 28240,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive",
-      "is_interactive": true
-    },
-    "R49C.dc.html": {
-      "x": 1880,
-      "y": 28240,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive",
-      "is_interactive": true
-    },
-    "R49D.dc.html": {
-      "x": 2820,
-      "y": 28240,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive",
-      "is_interactive": true
-    },
-    "R49Notes.dc.html": {
-      "x": 3760,
-      "y": 28240,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 - notes: what was asked, what all four share, the recommendation"
-    },
-    "R49ACrew.dc.html": {
-      "x": 0,
-      "y": 29288,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "is_interactive": true
-    },
-    "R49AStory.dc.html": {
-      "x": 0,
-      "y": 30336,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 A - Destination glow, level 3, the story (optional) - interactive",
-      "is_interactive": true
-    },
-    "R49BCrew.dc.html": {
-      "x": 940,
-      "y": 29288,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "is_interactive": true
-    },
-    "R49BStory.dc.html": {
-      "x": 940,
-      "y": 30336,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 B - Hangar light, level 3, the story (optional) - interactive",
-      "is_interactive": true
-    },
-    "R49CCrew.dc.html": {
-      "x": 1880,
-      "y": 29288,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "is_interactive": true
-    },
-    "R49CStory.dc.html": {
-      "x": 1880,
-      "y": 30336,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 C - Route poster, level 3, the story (optional) - interactive",
-      "is_interactive": true
-    },
-    "R49DCrew.dc.html": {
-      "x": 2820,
-      "y": 29288,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "is_interactive": true
-    },
-    "R49DStory.dc.html": {
-      "x": 2820,
-      "y": 30336,
-      "w": 760,
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 D - Split art, level 3, the story (optional) - interactive",
-      "is_interactive": true
+    "SGChart.dc.html": {
+      "x": 4200,
+      "y": 400,
+      "w": 1920,
+      "h": 1080,
+      "page": "style-guide",
+      "title": "Style Guide 1b - The colour chart: the wheel, the forbidden band, the shades to choose from"
     }
   },
   "createdOnFiles": {
@@ -3576,8 +3664,8 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "menu-redesign-c",
-    "view": "canvas"
+    "view": "canvas",
+    "page": "style-guide"
   },
   "noteOrder": [
     "sec-rev34",
@@ -3619,18 +3707,6 @@
     "sec-rev6-2",
     "sec-start",
     "sec-start-2",
-    "sec-hud_flow",
-    "sec-item3",
-    "sec-item8",
-    "sec-item8-2",
-    "sec-item7",
-    "sec-item10",
-    "sec-item4",
-    "sec-item4-2",
-    "sec-item9",
-    "sec-item2",
-    "sec-item6",
-    "sec-item5",
     "sec-rev38",
     "sec-rev38-2",
     "sec-rev43",
@@ -3644,6 +3720,53 @@
     "sec-rev49",
     "sec-rev45",
     "sec-rev48",
+    "sec-hud_flow",
+    "sec-hud_match",
+    "sec-hud_vessels",
+    "sec-hud_end",
+    "sec-hud_end-2",
+    "sec-item0",
+    "sec-item1",
+    "sec-item2",
+    "sec-item3",
+    "sec-item4",
+    "sec-item4-2",
+    "sec-item4-3",
+    "sec-item4-4",
+    "sec-item4-5",
+    "sec-item4-6",
+    "sec-item4-7",
+    "sec-item4-8",
+    "sec-item4-9",
+    "sec-item5",
+    "sec-item6",
+    "sec-item7",
+    "sec-item8",
+    "sec-item8-2",
+    "sec-item9",
+    "sec-item9-2",
+    "sec-item10",
+    "sec-rev3",
+    "sec-rev3-2",
+    "sec-rev3-3",
+    "sec-rev3-4",
+    "sec-rev3-5",
+    "sec-rev3-6",
+    "sec-rev3-7",
+    "sec-rev3-8",
+    "sec-rev3-9",
+    "sec-rev3-10",
+    "sec-rev3-11",
+    "sec-rev3-12",
+    "sec-rev3-13",
+    "sec-rev3-14",
+    "sec-rev3-15",
+    "sec-rev3-16",
+    "sec-rev15",
+    "sec-rev7",
+    "sec-rev7-2",
+    "sec-rev4",
+    "sec-style-guide",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -3705,7 +3828,8 @@
     "rev46",
     "rev47",
     "rev48",
-    "rev49"
+    "rev49",
+    "style-guide"
   ],
   "notes": {
     "hud_end": {
@@ -3714,8 +3838,8 @@
       "page": "menu-redesign",
       "text": "Item 12 - End of match, spectating",
       "w": 240,
-      "x": 9420,
-      "y": 64490
+      "x": 19840,
+      "y": 81190
     },
     "hud_flow": {
       "kind": "title1",
@@ -3723,8 +3847,8 @@
       "page": "menu-redesign",
       "text": "Item 12 - Ready, pause, connecting",
       "w": 240,
-      "x": 9420,
-      "y": 62870
+      "x": 0,
+      "y": 81190
     },
     "hud_match": {
       "kind": "title1",
@@ -3732,8 +3856,8 @@
       "page": "menu-redesign",
       "text": "Item 12 - Match HUD",
       "w": 240,
-      "x": 9420,
-      "y": 57190
+      "x": 6640,
+      "y": 81190
     },
     "hud_vessels": {
       "kind": "title1",
@@ -3741,8 +3865,8 @@
       "page": "menu-redesign",
       "text": "Item 12 - Every vessel's HUD",
       "w": 240,
-      "x": 9420,
-      "y": 58790
+      "x": 13200,
+      "y": 81190
     },
     "ingame": {
       "kind": "title1",
@@ -3751,8 +3875,8 @@
       "size": 120,
       "text": "In-game HUD",
       "w": 240,
-      "x": 9420,
-      "y": 56790
+      "x": 0,
+      "y": 80270
     },
     "item0": {
       "kind": "title1",
@@ -3761,7 +3885,7 @@
       "text": "Item 0 · Component kit",
       "w": 240,
       "x": 0,
-      "y": 70350
+      "y": 90450
     },
     "item1": {
       "kind": "title1",
@@ -3769,8 +3893,8 @@
       "page": "menu-redesign",
       "text": "Item 1 · Top nav",
       "w": 240,
-      "x": 0,
-      "y": 69150
+      "x": 2640,
+      "y": 90450
     },
     "item10": {
       "kind": "title1",
@@ -3778,8 +3902,8 @@
       "page": "menu-redesign",
       "text": "Items 10 + 11 · Closed surfaces, toasts",
       "w": 240,
-      "x": 28400,
-      "y": 69150
+      "x": 15600,
+      "y": 110790
     },
     "item2": {
       "kind": "title1",
@@ -3787,8 +3911,8 @@
       "page": "menu-redesign",
       "text": "Item 2 · Hangar",
       "w": 240,
-      "x": 2200,
-      "y": 69150
+      "x": 5280,
+      "y": 90450
     },
     "item3": {
       "kind": "title1",
@@ -3796,8 +3920,8 @@
       "page": "menu-redesign",
       "text": "Item 3 · Arcade + party panel",
       "w": 240,
-      "x": 5600,
-      "y": 69150
+      "x": 9180,
+      "y": 90450
     },
     "item4": {
       "kind": "title1",
@@ -3805,8 +3929,8 @@
       "page": "menu-redesign",
       "text": "Item 4 · Game configure + weekly leaderboard",
       "w": 240,
-      "x": 9000,
-      "y": 69150
+      "x": 13080,
+      "y": 90450
     },
     "item5": {
       "kind": "title1",
@@ -3814,8 +3938,8 @@
       "page": "menu-redesign",
       "text": "Item 5 · Profile + profile window",
       "w": 240,
-      "x": 14700,
-      "y": 69150
+      "x": 29540,
+      "y": 90450
     },
     "item6": {
       "kind": "title1",
@@ -3823,8 +3947,8 @@
       "page": "menu-redesign",
       "text": "Item 6 · Home",
       "w": 240,
-      "x": 31800,
-      "y": 69150
+      "x": 0,
+      "y": 110790
     },
     "item7": {
       "kind": "title1",
@@ -3832,8 +3956,8 @@
       "page": "menu-redesign",
       "text": "Item 7 · Ark (Elemental Converter)",
       "w": 240,
-      "x": 18100,
-      "y": 69150
+      "x": 3900,
+      "y": 110790
     },
     "item8": {
       "kind": "title1",
@@ -3841,8 +3965,8 @@
       "page": "menu-redesign",
       "text": "Item 8 · Arena, Toy Box, Mission, Toy configure",
       "w": 240,
-      "x": 21500,
-      "y": 69150
+      "x": 7800,
+      "y": 110790
     },
     "item9": {
       "kind": "title1",
@@ -3850,8 +3974,8 @@
       "page": "menu-redesign",
       "text": "Item 9 · Settings + Credits",
       "w": 240,
-      "x": 25000,
-      "y": 69150
+      "x": 11700,
+      "y": 110790
     },
     "menu": {
       "kind": "title1",
@@ -3861,7 +3985,7 @@
       "text": "Menu",
       "w": 240,
       "x": 0,
-      "y": 68750
+      "y": 89530
     },
     "rev10": {
       "kind": "title1",
@@ -4070,8 +4194,8 @@
       "size": 120,
       "text": "Rev 3",
       "w": 240,
-      "x": 24060,
-      "y": 46110
+      "x": 0,
+      "y": 126910
     },
     "rev30": {
       "kind": "title1",
@@ -4237,6 +4361,15 @@
       "x": 0,
       "y": 3060
     },
+    "rev49": {
+      "kind": "title1",
+      "maxW": 4520,
+      "page": "menu-redesign-c",
+      "text": "Rev 49 - Voyage card I (picked): four more inviting looks, just the card",
+      "w": 240,
+      "x": 0,
+      "y": 27840
+    },
     "rev5": {
       "kind": "title1",
       "maxW": 6120,
@@ -4287,6 +4420,1476 @@
       "x": 0,
       "y": 40630
     },
+    "sec-hud_end": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 7600,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 19680,
+      "y": 81030
+    },
+    "sec-hud_end-2": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 7600,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 23950,
+      "y": 81030
+    },
+    "sec-hud_flow": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1700,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6240,
+      "x": -160,
+      "y": 81030
+    },
+    "sec-hud_match": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2320,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6160,
+      "x": 6480,
+      "y": 81030
+    },
+    "sec-hud_vessels": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4180,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6240,
+      "x": 13040,
+      "y": 81030
+    },
+    "sec-item0": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2760,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 2240,
+      "x": -160,
+      "y": 90290
+    },
+    "sec-item1": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1384,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 2240,
+      "x": 2480,
+      "y": 90290
+    },
+    "sec-item10": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4180,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 2240,
+      "x": 15440,
+      "y": 110630
+    },
+    "sec-item2": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 6660,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 5120,
+      "y": 90290
+    },
+    "sec-item3": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5420,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 9020,
+      "y": 90290
+    },
+    "sec-item4": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 0px 0px 3px"
+      },
+      "h": 6547,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5354,
+      "x": 12920,
+      "y": 90290
+    },
+    "sec-item4-2": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 0px 0px 0px"
+      },
+      "h": 6547,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5354,
+      "x": 18274,
+      "y": 90290
+    },
+    "sec-item4-3": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 40px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 0px 0px"
+      },
+      "h": 6547,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5352,
+      "x": 23628,
+      "y": 90290
+    },
+    "sec-item4-4": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 6547,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5354,
+      "x": 12920,
+      "y": 96837
+    },
+    "sec-item4-5": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 0px"
+      },
+      "h": 6547,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5354,
+      "x": 18274,
+      "y": 96837
+    },
+    "sec-item4-6": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 6547,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5352,
+      "x": 23628,
+      "y": 96837
+    },
+    "sec-item4-7": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "0px 0px 3px 3px"
+      },
+      "h": 6546,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5354,
+      "x": 12920,
+      "y": 103384
+    },
+    "sec-item4-8": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 3px 0px"
+      },
+      "h": 6546,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5354,
+      "x": 18274,
+      "y": 103384
+    },
+    "sec-item4-9": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "0px 0px 40px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 3px 0px"
+      },
+      "h": 6546,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 5352,
+      "x": 23628,
+      "y": 103384
+    },
+    "sec-item5": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 7900,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 29380,
+      "y": 90290
+    },
+    "sec-item6": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5420,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": -160,
+      "y": 110630
+    },
+    "sec-item7": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4180,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 3740,
+      "y": 110630
+    },
+    "sec-item8": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 0px 3px"
+      },
+      "h": 5190,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 7640,
+      "y": 110630
+    },
+    "sec-item8-2": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "0px 0px 40px 40px",
+        "border-style": "solid",
+        "border-width": "0px 3px 3px 3px"
+      },
+      "h": 5190,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 7640,
+      "y": 115820
+    },
+    "sec-item9": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 0px 3px"
+      },
+      "h": 7610,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 11540,
+      "y": 110630
+    },
+    "sec-item9-2": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 40px 40px",
+        "border-style": "solid",
+        "border-width": "0px 3px 3px 3px"
+      },
+      "h": 7610,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 3500,
+      "x": 11540,
+      "y": 118240
+    },
+    "sec-rev10": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 22820,
+      "y": 32010
+    },
+    "sec-rev11": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 7380,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4340,
+      "x": 17600,
+      "y": 32010
+    },
+    "sec-rev12": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5900,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4340,
+      "x": 12380,
+      "y": 32010
+    },
+    "sec-rev13": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4360,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4340,
+      "x": 7160,
+      "y": 32010
+    },
+    "sec-rev14": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2640,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": -160,
+      "y": 32010
+    },
+    "sec-rev15": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 29120,
+      "y": 26530
+    },
+    "sec-rev16": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 21800,
+      "y": 26530
+    },
+    "sec-rev17": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 14480,
+      "y": 26530
+    },
+    "sec-rev18": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4400,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 7160,
+      "y": 26530
+    },
+    "sec-rev19": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": -160,
+      "y": 26530
+    },
+    "sec-rev20": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 23900,
+      "y": 19830
+    },
+    "sec-rev20-2": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 28170,
+      "y": 19830
+    },
+    "sec-rev21": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 5620,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 14480,
+      "y": 19830
+    },
+    "sec-rev21-2": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 5620,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 18750,
+      "y": 19830
+    },
+    "sec-rev22": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4240,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 7160,
+      "y": 19830
+    },
+    "sec-rev23": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4240,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": -160,
+      "y": 19830
+    },
+    "sec-rev24": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4240,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 24840,
+      "y": 13170
+    },
+    "sec-rev25": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4080,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4260,
+      "x": 19700,
+      "y": 13170
+    },
+    "sec-rev26": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5580,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 12380,
+      "y": 13170
+    },
+    "sec-rev27": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4240,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4340,
+      "x": 7160,
+      "y": 13170
+    },
+    "sec-rev28": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4240,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": -160,
+      "y": 13170
+    },
+    "sec-rev29": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 24920,
+      "y": 7520
+    },
+    "sec-rev3": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 126750
+    },
+    "sec-rev3-10": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 158742
+    },
+    "sec-rev3-11": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 166740
+    },
+    "sec-rev3-12": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 166740
+    },
+    "sec-rev3-13": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 174738
+    },
+    "sec-rev3-14": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 174738
+    },
+    "sec-rev3-15": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "0px 0px 3px 3px"
+      },
+      "h": 7994,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 182736
+    },
+    "sec-rev3-16": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 40px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 3px 0px"
+      },
+      "h": 7994,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 182736
+    },
+    "sec-rev3-2": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 40px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 126750
+    },
+    "sec-rev3-3": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 134748
+    },
+    "sec-rev3-4": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 134748
+    },
+    "sec-rev3-5": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 142746
+    },
+    "sec-rev3-6": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 142746
+    },
+    "sec-rev3-7": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 150744
+    },
+    "sec-rev3-8": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 0px 0px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": 4330,
+      "y": 150744
+    },
+    "sec-rev3-9": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "0px 0px 0px 3px"
+      },
+      "h": 7998,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4490,
+      "x": -160,
+      "y": 158742
+    },
+    "sec-rev30": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4240,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4340,
+      "x": 19700,
+      "y": 7520
+    },
+    "sec-rev31": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 12380,
+      "y": 7520
+    },
+    "sec-rev32": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 3060,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 5060,
+      "y": 7520
+    },
+    "sec-rev33": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4570,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4340,
+      "x": -160,
+      "y": 7520
+    },
+    "sec-rev34": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 29120,
+      "y": -160
+    },
+    "sec-rev35": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 21800,
+      "y": -160
+    },
+    "sec-rev36": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 14480,
+      "y": -160
+    },
+    "sec-rev37": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5400,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 7160,
+      "y": -160
+    },
+    "sec-rev38": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 0px 3px"
+      },
+      "h": 4590,
+      "kind": "rect",
+      "page": "compute-console",
+      "w": 6440,
+      "x": -160,
+      "y": -160
+    },
+    "sec-rev38-2": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "0px 0px 40px 40px",
+        "border-style": "solid",
+        "border-width": "0px 3px 3px 3px"
+      },
+      "h": 4590,
+      "kind": "rect",
+      "page": "compute-console",
+      "w": 6440,
+      "x": -160,
+      "y": 4430
+    },
+    "sec-rev39": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 6600,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": -160,
+      "y": -160
+    },
+    "sec-rev4": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 16580,
+      "y": 45950
+    },
+    "sec-rev43": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 0px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 0px 0px 3px"
+      },
+      "h": 4680,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 5320,
+      "x": -160,
+      "y": -560
+    },
+    "sec-rev43-2": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "0px 40px 0px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 0px 0px"
+      },
+      "h": 4680,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 5320,
+      "x": 5160,
+      "y": -560
+    },
+    "sec-rev43-3": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "0px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "0px 0px 3px 3px"
+      },
+      "h": 4680,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 5320,
+      "x": -160,
+      "y": 4120
+    },
+    "sec-rev43-4": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "0px 0px 40px 0px",
+        "border-style": "solid",
+        "border-width": "0px 3px 3px 0px"
+      },
+      "h": 4680,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 5320,
+      "x": 5160,
+      "y": 4120
+    },
+    "sec-rev44": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 6840,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 6370,
+      "x": -160,
+      "y": 9380
+    },
+    "sec-rev44-2": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 6840,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 6370,
+      "x": 6210,
+      "y": 9380
+    },
+    "sec-rev45": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "fleet-codex",
+      "w": 6440,
+      "x": -160,
+      "y": -560
+    },
+    "sec-rev46": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4320,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 6440,
+      "x": -160,
+      "y": 16800
+    },
+    "sec-rev47": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5400,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 6440,
+      "x": -160,
+      "y": 21700
+    },
+    "sec-rev48": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "fleet-codex",
+      "w": 6440,
+      "x": -160,
+      "y": 2900
+    },
+    "sec-rev49": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 3684,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 4840,
+      "x": -160,
+      "y": 27680
+    },
+    "sec-rev5": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 6440,
+      "x": 9260,
+      "y": 45950
+    },
+    "sec-rev6": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": -160,
+      "y": 45950
+    },
+    "sec-rev6-2": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 4110,
+      "y": 45950
+    },
+    "sec-rev7": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 18680,
+      "y": 40470
+    },
+    "sec-rev7-2": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 3100,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 22950,
+      "y": 40470
+    },
+    "sec-rev8": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 9260,
+      "y": 40470
+    },
+    "sec-rev8-2": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 13530,
+      "y": 40470
+    },
+    "sec-rev9": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 4400,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": -160,
+      "y": 40470
+    },
+    "sec-rev9-2": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 4400,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 4110,
+      "y": 40470
+    },
+    "sec-start": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 0px 0px 40px",
+        "border-style": "solid",
+        "border-width": "3px 0px 3px 3px"
+      },
+      "h": 4400,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": -160,
+      "y": 56630
+    },
+    "sec-start-2": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "0px 40px 40px 0px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 0px"
+      },
+      "h": 4400,
+      "kind": "rect",
+      "page": "menu-redesign",
+      "w": 4270,
+      "x": 4110,
+      "y": 56630
+    },
     "start": {
       "kind": "title1",
       "maxW": 8000,
@@ -4297,51 +5900,21 @@
       "x": 0,
       "y": 56790
     },
-    "rev49": {
+    "style-guide": {
       "kind": "title1",
-      "text": "Rev 49 - Voyage card I (picked): four more inviting looks, just the card",
-      "x": 0,
-      "y": 27840,
+      "maxW": 6120,
+      "page": "style-guide",
+      "text": "Frogma style guide - the rules every screen, board, deck and page follows",
       "w": 240,
-      "maxW": 4520,
-      "page": "menu-redesign-c"
+      "x": 0,
+      "y": 0
     },
-    "sec-rev34": {
+    "sec-style-guide": {
       "kind": "rect",
-      "x": 29120,
-      "y": -160,
+      "x": -160,
+      "y": -805,
       "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev35": {
-      "kind": "rect",
-      "x": 21800,
-      "y": -160,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev36": {
-      "kind": "rect",
-      "x": 14480,
-      "y": -160,
-      "w": 6440,
-      "h": 4140,
+      "h": 6474,
       "css": {
         "background": "rgba(0, 212, 255, 0.06)",
         "border-style": "solid",
@@ -4349,922 +5922,7 @@
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
-      "page": "menu-redesign"
-    },
-    "sec-rev37": {
-      "kind": "rect",
-      "x": 7160,
-      "y": -160,
-      "w": 6440,
-      "h": 5400,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev39": {
-      "kind": "rect",
-      "x": -160,
-      "y": -160,
-      "w": 6440,
-      "h": 6600,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev29": {
-      "kind": "rect",
-      "x": 24920,
-      "y": 7520,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev30": {
-      "kind": "rect",
-      "x": 19700,
-      "y": 7520,
-      "w": 4340,
-      "h": 4240,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev31": {
-      "kind": "rect",
-      "x": 12380,
-      "y": 7520,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev32": {
-      "kind": "rect",
-      "x": 5060,
-      "y": 7520,
-      "w": 6440,
-      "h": 3060,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev33": {
-      "kind": "rect",
-      "x": -160,
-      "y": 7520,
-      "w": 4340,
-      "h": 4570,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev24": {
-      "kind": "rect",
-      "x": 24840,
-      "y": 13170,
-      "w": 6440,
-      "h": 4240,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev25": {
-      "kind": "rect",
-      "x": 19700,
-      "y": 13170,
-      "w": 4260,
-      "h": 4080,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev26": {
-      "kind": "rect",
-      "x": 12380,
-      "y": 13170,
-      "w": 6440,
-      "h": 5580,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev27": {
-      "kind": "rect",
-      "x": 7160,
-      "y": 13170,
-      "w": 4340,
-      "h": 4240,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev28": {
-      "kind": "rect",
-      "x": -160,
-      "y": 13170,
-      "w": 6440,
-      "h": 4240,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev20": {
-      "kind": "rect",
-      "x": 23900,
-      "y": 19830,
-      "w": 4270,
-      "h": 3100,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev20-2": {
-      "kind": "rect",
-      "x": 28170,
-      "y": 19830,
-      "w": 4270,
-      "h": 3100,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev21": {
-      "kind": "rect",
-      "x": 14480,
-      "y": 19830,
-      "w": 4270,
-      "h": 5620,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev21-2": {
-      "kind": "rect",
-      "x": 18750,
-      "y": 19830,
-      "w": 4270,
-      "h": 5620,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev22": {
-      "kind": "rect",
-      "x": 7160,
-      "y": 19830,
-      "w": 6440,
-      "h": 4240,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev23": {
-      "kind": "rect",
-      "x": -160,
-      "y": 19830,
-      "w": 6440,
-      "h": 4240,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev16": {
-      "kind": "rect",
-      "x": 21800,
-      "y": 26530,
-      "w": 6440,
-      "h": 1800,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev17": {
-      "kind": "rect",
-      "x": 14480,
-      "y": 26530,
-      "w": 6440,
-      "h": 1800,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev18": {
-      "kind": "rect",
-      "x": 7160,
-      "y": 26530,
-      "w": 6440,
-      "h": 4400,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev19": {
-      "kind": "rect",
-      "x": -160,
-      "y": 26530,
-      "w": 6440,
-      "h": 3100,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev10": {
-      "kind": "rect",
-      "x": 22820,
-      "y": 32010,
-      "w": 6440,
-      "h": 3100,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev11": {
-      "kind": "rect",
-      "x": 17600,
-      "y": 32010,
-      "w": 4340,
-      "h": 7380,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev12": {
-      "kind": "rect",
-      "x": 12380,
-      "y": 32010,
-      "w": 4340,
-      "h": 5900,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev13": {
-      "kind": "rect",
-      "x": 7160,
-      "y": 32010,
-      "w": 4340,
-      "h": 4360,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev14": {
-      "kind": "rect",
-      "x": -160,
-      "y": 32010,
-      "w": 6440,
-      "h": 2640,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev8": {
-      "kind": "rect",
-      "x": 9260,
-      "y": 40470,
-      "w": 4270,
-      "h": 1800,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev8-2": {
-      "kind": "rect",
-      "x": 13530,
-      "y": 40470,
-      "w": 4270,
-      "h": 1800,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev9": {
-      "kind": "rect",
-      "x": -160,
-      "y": 40470,
-      "w": 4270,
-      "h": 4400,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev9-2": {
-      "kind": "rect",
-      "x": 4110,
-      "y": 40470,
-      "w": 4270,
-      "h": 4400,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev5": {
-      "kind": "rect",
-      "x": 9260,
-      "y": 45950,
-      "w": 6440,
-      "h": 1800,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev6": {
-      "kind": "rect",
-      "x": -160,
-      "y": 45950,
-      "w": 4270,
-      "h": 3100,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev6-2": {
-      "kind": "rect",
-      "x": 4110,
-      "y": 45950,
-      "w": 4270,
-      "h": 3100,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-start": {
-      "kind": "rect",
-      "x": -160,
-      "y": 56630,
-      "w": 4270,
-      "h": 4400,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-start-2": {
-      "kind": "rect",
-      "x": 4110,
-      "y": 56630,
-      "w": 4270,
-      "h": 4400,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-hud_flow": {
-      "kind": "rect",
-      "x": 9260,
-      "y": 62710,
-      "w": 6240,
-      "h": 1700,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item3": {
-      "kind": "rect",
-      "x": 5440,
-      "y": 68990,
-      "w": 2240,
-      "h": 5420,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item8": {
-      "kind": "rect",
-      "x": 21340,
-      "y": 68990,
-      "w": 2240,
-      "h": 5190,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 0px 3px",
-        "border-radius": "40px 40px 0px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item8-2": {
-      "kind": "rect",
-      "x": 21340,
-      "y": 74180,
-      "w": 2240,
-      "h": 5190,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "0px 3px 3px 3px",
-        "border-radius": "0px 0px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item7": {
-      "kind": "rect",
-      "x": 17940,
-      "y": 68990,
-      "w": 2240,
-      "h": 4180,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item10": {
-      "kind": "rect",
-      "x": 28240,
-      "y": 68990,
-      "w": 2240,
-      "h": 4180,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item4": {
-      "kind": "rect",
-      "x": 8840,
-      "y": 68990,
-      "w": 2240,
-      "h": 4570,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 0px 3px",
-        "border-radius": "40px 40px 0px 0px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item4-2": {
-      "kind": "rect",
-      "x": 8840,
-      "y": 73560,
-      "w": 2240,
-      "h": 4570,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "0px 3px 3px 3px",
-        "border-radius": "0px 0px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item9": {
-      "kind": "rect",
-      "x": 24840,
-      "y": 68990,
-      "w": 2240,
-      "h": 6660,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item2": {
-      "kind": "rect",
-      "x": 2040,
-      "y": 68990,
-      "w": 2240,
-      "h": 6660,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item6": {
-      "kind": "rect",
-      "x": 31640,
-      "y": 68990,
-      "w": 2240,
-      "h": 5420,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-item5": {
-      "kind": "rect",
-      "x": 14540,
-      "y": 68990,
-      "w": 2240,
-      "h": 7900,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign"
-    },
-    "sec-rev38": {
-      "kind": "rect",
-      "x": -160,
-      "y": -160,
-      "w": 6440,
-      "h": 4590,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 0px 3px",
-        "border-radius": "40px 40px 0px 0px"
-      },
-      "page": "compute-console"
-    },
-    "sec-rev38-2": {
-      "kind": "rect",
-      "x": -160,
-      "y": 4430,
-      "w": 6440,
-      "h": 4590,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "0px 3px 3px 3px",
-        "border-radius": "0px 0px 40px 40px"
-      },
-      "page": "compute-console"
-    },
-    "sec-rev43": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 5320,
-      "h": 4680,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 0px 0px 3px",
-        "border-radius": "40px 0px 0px 0px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev43-2": {
-      "kind": "rect",
-      "x": 5160,
-      "y": -560,
-      "w": 5320,
-      "h": 4680,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 0px 0px",
-        "border-radius": "0px 40px 0px 0px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev43-3": {
-      "kind": "rect",
-      "x": -160,
-      "y": 4120,
-      "w": 5320,
-      "h": 4680,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "0px 0px 3px 3px",
-        "border-radius": "0px 0px 0px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev43-4": {
-      "kind": "rect",
-      "x": 5160,
-      "y": 4120,
-      "w": 5320,
-      "h": 4680,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "0px 3px 3px 0px",
-        "border-radius": "0px 0px 40px 0px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev44": {
-      "kind": "rect",
-      "x": -160,
-      "y": 9380,
-      "w": 6370,
-      "h": 6840,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev44-2": {
-      "kind": "rect",
-      "x": 6210,
-      "y": 9380,
-      "w": 6370,
-      "h": 6840,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev46": {
-      "kind": "rect",
-      "x": -160,
-      "y": 16800,
-      "w": 6440,
-      "h": 4320,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev47": {
-      "kind": "rect",
-      "x": -160,
-      "y": 21700,
-      "w": 6440,
-      "h": 5400,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev49": {
-      "kind": "rect",
-      "x": -160,
-      "y": 27680,
-      "w": 4840,
-      "h": 3684,
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "sec-rev45": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "fleet-codex"
-    },
-    "sec-rev48": {
-      "kind": "rect",
-      "x": -160,
-      "y": 2900,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "fleet-codex"
+      "page": "style-guide"
     }
   },
   "order": [
@@ -5701,9 +6359,24 @@
     "R49CCrew.dc.html",
     "R49CStory.dc.html",
     "R49DCrew.dc.html",
-    "R49DStory.dc.html"
+    "R49DStory.dc.html",
+    "SGReadMe.dc.html",
+    "SGColour.dc.html",
+    "SGThemes.dc.html",
+    "SGType.dc.html",
+    "SGShape.dc.html",
+    "SGButtons.dc.html",
+    "SGWindows.dc.html",
+    "SGMotion.dc.html",
+    "SGDoDont.dc.html",
+    "SGChecklist.dc.html",
+    "SGChart.dc.html"
   ],
   "pages": [
+    {
+      "id": "style-guide",
+      "name": "Style Guide"
+    },
     {
       "id": "menu-redesign",
       "name": "Menu Redesign"
@@ -5714,7 +6387,7 @@
     },
     {
       "id": "menu-redesign-c",
-      "name": "Menu Redesign C"
+      "name": "Menu Redesign A"
     },
     {
       "id": "fleet-codex",

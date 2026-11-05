@@ -50,6 +50,16 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
+- [`Docs/UI_STYLE_GUIDE.md`](Docs/UI_STYLE_GUIDE.md): **The Froglet UI style guide - one look for EVERYTHING Froglet makes**
+  (Shombith, 2026-11-03): the game's UI, Frogma boards, artifacts and diagrams, decks, the website, the Fleet Codex and every
+  studio. Garrett's six colour families with one meaning each (Lime is always the call to action; Jade is a choice you can
+  claim and reclaim, the selection and focus; Ruby is no way back, Ready), his colour chart with the shades to choose from,
+  the Froglet themes (Deep Sea, its light twin Shore; a domain is one accent), phones on their own 800x450 scale, type, the corner sliver, buttons and states, cards, windows, toasts, motion, the safe area, each with a
+  do and a don't from our own screens; drawn on Frogma's first tab (Style Guide). Tokens: `Docs/UI/froglet.css` and
+  `froglet-tokens.json`, written from the game by `Tools/Build/froglet_style.py` (`--check`) - any web page loads them
+  instead of typing colours. A PR touching `Assets/_Prefabs/UI*`, Menu_Main, GameCanvas, the UI theme or
+  `Assets/_Scripts/UI/` answers the template's **UI checklist** (`ui-checklist.yml`, `check_ui_pr.py`); Shombith is code owner.
+  Sections: 1-10 the rules; 11 the UI checklist; 12 the five worst screens; 13 open decisions; 14 outside the game
 - [`Docs/MENU_REDESIGN_B.md`](Docs/MENU_REDESIGN_B.md): **The UI redesign and its design board, Frogma.** Every menu, HUD, start-flow and
   loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Frogma"
   (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2; "Froglet Design Board" on 2026-11-02, "Menu Redesign B" before) before it is built.
