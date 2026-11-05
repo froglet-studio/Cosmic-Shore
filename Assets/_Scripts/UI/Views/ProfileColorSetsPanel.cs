@@ -4,33 +4,32 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Profile's COLOUR SETS tab (Rev 51 A, picked by Shombith 2026-11-05; Docs/MENU_REDESIGN_B.md §123). Two word
-    /// tabs in the header switch between the pilot record and this page. The page lists the catalog's sets as cards
-    /// (each with its four domains' prism swatches and Equipped / Owned), previews the picked one at the three prism
-    /// tiers plus the vessel colour, and APPLY raises the cell-change veil in its colour-set mode
-    /// (<see cref="EnvironmentLoadVeil.ShowColourSetChange"/>), which repaints through
-    /// <see cref="ThemeManager.ApplyColorSet"/> behind the opaque screen.
+    /// The Profile's COLOUR SETS tab, the Showroom (Rev 54 A, picked by Shombith 2026-11-05; Docs/MENU_REDESIGN_B.md
+    /// §126). The page is a window onto the real menu cell: while it shows, the Profile's veil, the pilot card and the
+    /// record step aside, and the cell wears the set being browsed (<see cref="ThemeManager.PreviewColorSet"/>). Over
+    /// the cell sit the set's name, line and four rim-over-face pigments, a rail of set tiles (the pad moving onto a
+    /// tile previews it) and APPLY, which raises the cell-change veil in its colour-set mode and wears the set
+    /// (<see cref="ThemeManager.ApplyColorSet"/>). Leaving the tab or the Profile without applying puts the equipped set
+    /// back. LB / RB step between the Record and Colour sets tabs.
     ///
-    /// <para>The page is a layer over the record: the record window keeps its own state, and this page returns to the
-    /// Record tab whenever the record opens again (the Profile entering). Every word is a field here or authored in
-    /// the prefab; the sets' names and lines are the catalog's (<see cref="ColorSetCatalogSO"/>).</para>
+    /// <para>Every word is a field here, authored in the prefab, or the catalog's (<see cref="ColorSetCatalogSO"/>).</para>
     /// </summary>
     public class ProfileColorSetsPanel : MonoBehaviour
     {
         [Serializable]
-        public struct Card
+        public struct Thumb
         {
             public CanvasGroup group;
             public KitTile tile;
             public TMP_Text nameText;
-            public TMP_Text lineText;
-            public TMP_Text stateText;
-            [Tooltip("The lime tick beside the state while this set is equipped.")]
+            [Tooltip("The lime tick beside the name while this set is equipped.")]
             public GameObject equippedMark;
             [Tooltip("Jade, Ruby, Gold, Blue: each prism swatch's face (fill) and rim (outline).")]
             public Image[] faces;
@@ -40,74 +39,122 @@ namespace CosmicShore.UI
         [Header("Tabs")]
         [SerializeField] private KitTextTab recordTab;
         [SerializeField] private KitTextTab colourSetsTab;
-        [Tooltip("The pilot record (the Record tab's page). Its CanvasGroup stops taking input while this page shows.")]
+        [Tooltip("The pilot record (the Record tab's page). It stays open but hidden while this page shows.")]
         [SerializeField] private ProfileRecordWindow record;
         [Tooltip("This page.")]
         [SerializeField] private CanvasGroup group;
 
+        [Header("Step aside while the world shows")]
+        [Tooltip("The pilot card, hidden while this page shows (the board gives the world its space).")]
+        [SerializeField] private CanvasGroup pilotCard;
+        [Tooltip("The Profile's veil and its sea lines: switched off while this page shows, so the cell is seen.")]
+        [SerializeField] private Graphic[] veil = Array.Empty<Graphic>();
+
         [Header("Sets")]
         [Tooltip("Used when the theme manager is not up (a test scene). In the game, ThemeManagerDataContainer's catalog.")]
         [SerializeField] private ColorSetCatalogSO catalog;
-        [SerializeField] private Card[] cards = Array.Empty<Card>();
+        [SerializeField] private Thumb[] thumbs = Array.Empty<Thumb>();
+        [SerializeField] private Button previousButton;
+        [SerializeField] private Button nextButton;
 
-        [Header("Preview")]
-        [SerializeField] private TMP_Text previewName;
-        [SerializeField] private TMP_Text previewLine;
-        [Tooltip("Row-major, Jade, Ruby, Gold, Blue x Prism, Shielded, Super-shielded: each swatch's face.")]
-        [SerializeField] private Image[] tierFaces = Array.Empty<Image>();
-        [Tooltip("The same swatches' rims.")]
-        [SerializeField] private Image[] tierRims = Array.Empty<Image>();
-        [Tooltip("Jade, Ruby, Gold, Blue: the vessel colour (DomainColorSet.ShipColor2).")]
-        [SerializeField] private Image[] vessels = Array.Empty<Image>();
+        [Header("The set shown")]
+        [SerializeField] private TMP_Text nameText;
+        [SerializeField] private TMP_Text lineText;
+        [Tooltip("\"2 of 3\".")]
+        [SerializeField] private TMP_Text positionText;
+        [Tooltip("\"Wearing Nocturne\".")]
+        [SerializeField] private TMP_Text wearingText;
+        [Tooltip("Jade, Ruby, Gold, Blue: the rim swatch, the face swatch and the pigment words.")]
+        [SerializeField] private Image[] pairRims = Array.Empty<Image>();
+        [SerializeField] private Image[] pairFaces = Array.Empty<Image>();
+        [SerializeField] private TMP_Text[] pairTexts = Array.Empty<TMP_Text>();
         [SerializeField] private Button applyButton;
-        [Tooltip("Under the preview: why APPLY is not offered (equipped, locked).")]
-        [SerializeField] private TMP_Text statusText;
-        [SerializeField] private GameObject statusTick;
+        [Tooltip("Shown instead of APPLY when the set shown is the one worn (a tick and the word).")]
+        [SerializeField] private GameObject equippedMark;
 
         [Header("Words (empty shows nothing)")]
-        [SerializeField] private string equippedWord = "Equipped";
-        [SerializeField] private string ownedWord = "Owned";
-        [SerializeField] private string lockedWord = "Unlocks with a quest";
-        [Tooltip("Under the preview when the shown set is the one you wear.")]
-        [SerializeField] private string equippedStatus = "Equipped - every prism, vessel and trail wears it";
-        [Tooltip("Under the preview when the shown set is locked.")]
-        [SerializeField] private string lockedStatus = "A quest will give this set";
+        [Tooltip("{index} the set's place in the rail, {count} how many sets.")]
+        [SerializeField] private string positionTemplate = "{index} of {count}";
+        [Tooltip("{name} the set worn now.")]
+        [SerializeField] private string wearingTemplate = "Wearing {name}";
 
         static readonly Domains[] DomainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-        static readonly PrismKind[] Tiers = { PrismKind.Plain, PrismKind.Shielded, PrismKind.SuperShielded };
 
         bool _showing;
-        bool _recordWasOpen;
         int _picked = -1;
+        GameObject _lastSelected;
 
         ColorSetCatalogSO Catalog => ThemeManager.Data && ThemeManager.Data.Catalog ? ThemeManager.Data.Catalog : catalog;
-        SO_ColorSet Equipped => ThemeManager.LiveOr(null);
+        static ThemeManager Manager => ThemeManager.Instance;
+        SO_ColorSet Equipped => Manager ? Manager.Equipped : ThemeManager.LiveOr(null);
 
         void Awake()
         {
             if (recordTab) recordTab.onClick.AddListener(ShowRecord);
             if (colourSetsTab) colourSetsTab.onClick.AddListener(ShowColourSets);
             if (applyButton) applyButton.onClick.AddListener(Apply);
-            for (int i = 0; i < cards.Length; i++)
+            if (previousButton) previousButton.onClick.AddListener(() => Step(-1));
+            if (nextButton) nextButton.onClick.AddListener(() => Step(+1));
+            for (int i = 0; i < thumbs.Length; i++)
             {
                 int index = i;
-                if (cards[i].tile) cards[i].tile.onClick.AddListener(() => Pick(index));
+                if (thumbs[i].tile) thumbs[i].tile.onClick.AddListener(() => Pick(index));
+            }
+            if (record)
+            {
+                record.Opened += OnRecordOpened;
+                record.Closed += OnRecordClosed;
             }
             SetPage(false);
+        }
+
+        void OnDestroy()
+        {
+            if (!record) return;
+            record.Opened -= OnRecordOpened;
+            record.Closed -= OnRecordClosed;
         }
 
         void OnEnable() => ThemeManager.ColorSetApplied += OnApplied;
         void OnDisable() => ThemeManager.ColorSetApplied -= OnApplied;
 
-        // The Profile opening again (the record window opening) brings back the Record tab.
-        void Update()
+        void OnRecordOpened() => SetPage(false);
+
+        // Leaving the Profile without applying puts the equipped set back.
+        void OnRecordClosed()
         {
-            bool open = record && record.IsOpen;
-            if (open && !_recordWasOpen && _showing) SetPage(false);
-            _recordWasOpen = open;
+            RevertPreview();
+            SetPage(false);
         }
 
-        public void ShowRecord() => SetPage(false);
+        void OnApplied(SO_ColorSet _) { if (_showing) Refresh(); }
+
+        void Update()
+        {
+            if (!record || !record.IsOpen) return;
+
+            // LB / RB step between the tabs, as the Codex and the Hangar step theirs; the favourite-pilot picker owns
+            // the shoulders while it is open, and a window over the Profile (navigation off) owns the pad.
+            var pad = Gamepad.current;
+            var events = EventSystem.current;
+            bool padFree = pad != null && !record.IsPickerOpen && (!events || events.sendNavigationEvents);
+            if (padFree && pad.rightShoulder.wasPressedThisFrame && !_showing) ShowColourSets();
+            else if (padFree && pad.leftShoulder.wasPressedThisFrame && _showing) ShowRecord();
+
+            // The pad moving onto a set's tile previews it: one reference compare a frame while the page shows.
+            if (!_showing || !events) return;
+            var selected = events.currentSelectedGameObject;
+            if (selected == _lastSelected) return;
+            _lastSelected = selected;
+            for (int i = 0; i < thumbs.Length; i++)
+                if (thumbs[i].tile && thumbs[i].tile.gameObject == selected && i != _picked) { Pick(i); break; }
+        }
+
+        public void ShowRecord()
+        {
+            RevertPreview();
+            SetPage(false);
+        }
 
         public void ShowColourSets()
         {
@@ -115,6 +162,9 @@ namespace CosmicShore.UI
             _picked = cat ? Mathf.Max(0, cat.IndexOf(Equipped)) : -1;
             SetPage(true);
             Refresh();
+            var events = EventSystem.current;
+            if (events && _picked >= 0 && _picked < thumbs.Length && thumbs[_picked].tile)
+                events.SetSelectedGameObject(thumbs[_picked].tile.gameObject);
         }
 
         void SetPage(bool colourSets)
@@ -126,92 +176,109 @@ namespace CosmicShore.UI
                 group.interactable = colourSets;
                 group.blocksRaycasts = colourSets;
             }
-            if (record && record.IsOpen)
+            if (record) record.SetHidden(colourSets);
+            if (pilotCard)
             {
-                // The record stays open under this page; it only stops taking input while hidden.
-                var recordGroup = record.GetComponent<CanvasGroup>();
-                if (recordGroup) recordGroup.interactable = !colourSets;
+                pilotCard.alpha = colourSets ? 0f : 1f;
+                pilotCard.interactable = pilotCard.blocksRaycasts = !colourSets;
             }
+            foreach (var g in veil)
+                if (g) g.enabled = !colourSets;
             if (recordTab) recordTab.IsSelected = !colourSets;
             if (colourSetsTab) colourSetsTab.IsSelected = colourSets;
         }
 
+        void Step(int by)
+        {
+            var cat = Catalog;
+            int n = cat ? Mathf.Min(cat.Count, thumbs.Length) : 0;
+            if (n == 0) return;
+            int next = ((_picked < 0 ? 0 : _picked) + by % n + n) % n;
+            Pick(next);
+            var events = EventSystem.current;
+            if (events && thumbs[next].tile) events.SetSelectedGameObject(thumbs[next].tile.gameObject);
+        }
+
+        // Browsing previews the set on the real cell; nothing is saved until APPLY.
         void Pick(int index)
         {
             _picked = index;
+            var entry = Catalog ? Catalog.Get(index) : null;
+            if (entry != null && entry.unlocked && entry.colorSet && Manager) Manager.PreviewColorSet(entry.colorSet);
             Refresh();
         }
 
-        void OnApplied(SO_ColorSet _) { if (_showing) Refresh(); }
+        void RevertPreview()
+        {
+            var manager = Manager;
+            if (manager && manager.Equipped && ThemeManager.LiveOr(null) != manager.Equipped)
+                manager.PreviewColorSet(manager.Equipped);
+        }
 
         void Apply()
         {
             var entry = Catalog ? Catalog.Get(_picked) : null;
-            var manager = ThemeManager.Instance;
+            var manager = Manager;
             if (entry == null || !entry.unlocked || !entry.colorSet || !manager || entry.colorSet == Equipped) return;
-            // The repaint runs behind the opaque veil. While another load holds the screen no veil can rise, so nothing
-            // changes and APPLY stays offered: press it again once the screen is free.
-            EnvironmentLoadVeil.ShowColourSetChange(entry.displayName, entry.line,
-                () => manager.ApplyColorSet(entry.colorSet, entry.id));
+            // The cell already wears the set (the preview); the veil is the moment it becomes yours. While another
+            // load holds the screen no veil can rise, so the set is worn straight away.
+            if (!EnvironmentLoadVeil.ShowColourSetChange(entry.displayName, entry.line,
+                    () => manager.ApplyColorSet(entry.colorSet, entry.id)))
+                manager.ApplyColorSet(entry.colorSet, entry.id);
         }
 
         void Refresh()
         {
             var cat = Catalog;
             var equipped = Equipped;
-            for (int i = 0; i < cards.Length; i++)
+            int count = cat ? Mathf.Min(cat.Count, thumbs.Length) : 0;
+            for (int i = 0; i < thumbs.Length; i++)
             {
-                var card = cards[i];
+                var t = thumbs[i];
                 var entry = cat ? cat.Get(i) : null;
-                if (card.group)
+                if (t.group)
                 {
-                    card.group.alpha = entry != null ? 1f : 0f;
-                    card.group.interactable = card.group.blocksRaycasts = entry != null;
+                    t.group.alpha = entry != null ? 1f : 0f;
+                    t.group.interactable = t.group.blocksRaycasts = entry != null;
                 }
                 if (entry == null) continue;
-                bool isEquipped = entry.colorSet && entry.colorSet == equipped;
-                if (card.nameText) card.nameText.text = entry.displayName ?? string.Empty;
-                if (card.lineText) card.lineText.text = entry.line ?? string.Empty;
-                if (card.stateText) card.stateText.text = isEquipped ? equippedWord : entry.unlocked ? ownedWord : lockedWord;
-                if (card.equippedMark) card.equippedMark.SetActive(isEquipped);
-                if (card.tile)
+                if (t.nameText) t.nameText.text = entry.displayName ?? string.Empty;
+                if (t.equippedMark) t.equippedMark.SetActive(entry.colorSet && entry.colorSet == equipped);
+                if (t.tile)
                 {
-                    card.tile.IsSelected = i == _picked;
-                    card.tile.IsLocked = !entry.unlocked;
+                    t.tile.IsSelected = i == _picked;
+                    t.tile.IsLocked = !entry.unlocked;
                 }
                 for (int d = 0; d < DomainOrder.Length; d++)
-                {
-                    if (!entry.colorSet || !entry.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
-                        continue;
-                    Paint(card.faces, d, face);
-                    Paint(card.rims, d, rim);
-                }
+                    if (entry.colorSet && entry.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
+                    {
+                        Paint(t.faces, d, face);
+                        Paint(t.rims, d, rim);
+                    }
             }
 
             var shown = cat ? cat.Get(_picked) : null;
-            if (previewName) previewName.text = shown?.displayName ?? string.Empty;
-            if (previewLine) previewLine.text = shown?.line ?? string.Empty;
-            var set = shown?.colorSet;
-            if (set)
+            if (nameText) nameText.text = shown?.displayName ?? string.Empty;
+            if (lineText) lineText.text = shown?.line ?? string.Empty;
+            if (positionText)
+                positionText.text = shown != null
+                    ? TemplateText.Fill(positionTemplate, "index", (_picked + 1).ToString(), "count", count.ToString())
+                    : string.Empty;
+            var worn = cat ? cat.Get(cat.IndexOf(equipped)) : null;
+            if (wearingText) wearingText.text = worn != null ? TemplateText.Fill(wearingTemplate, "name", worn.displayName ?? string.Empty) : string.Empty;
+            for (int d = 0; d < DomainOrder.Length; d++)
             {
-                for (int d = 0; d < DomainOrder.Length; d++)
+                if (d < pairTexts.Length && pairTexts[d]) pairTexts[d].text = ColorSetCatalogSO.Pigment(shown, d);
+                if (shown?.colorSet && shown.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
                 {
-                    for (int t = 0; t < Tiers.Length; t++)
-                        if (set.TryGetPrismKindColors(DomainOrder[d], Tiers[t], out var rim, out var face))
-                        {
-                            Paint(tierFaces, d * Tiers.Length + t, face);
-                            Paint(tierRims, d * Tiers.Length + t, rim);
-                        }
-                    if (set.TryGetColorSetByDomain(DomainOrder[d], out var domain)) Paint(vessels, d, domain.ShipColor2);
+                    Paint(pairRims, d, rim);
+                    Paint(pairFaces, d, face);
                 }
             }
 
-            bool isShownEquipped = set && set == equipped;
-            bool canApply = shown != null && shown.unlocked && set && !isShownEquipped;
-            if (applyButton) applyButton.gameObject.SetActive(canApply);
-            if (statusTick) statusTick.SetActive(isShownEquipped);
-            if (statusText)
-                statusText.text = isShownEquipped ? equippedStatus : shown != null && !shown.unlocked ? lockedStatus : string.Empty;
+            bool isEquipped = shown?.colorSet && shown.colorSet == equipped;
+            if (applyButton) applyButton.gameObject.SetActive(shown != null && shown.unlocked && shown.colorSet && !isEquipped);
+            if (equippedMark) equippedMark.SetActive(isEquipped);
         }
 
         static void Paint(Image[] images, int index, Color linear)

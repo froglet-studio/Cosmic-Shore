@@ -1203,6 +1203,47 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
+        /// Re-reads bright, dark and spread from <paramref name="materials"/> into every live prism entity that draws
+        /// with one of them. A colour set applied from the Profile (Docs/MENU_REDESIGN_B.md §124) repaints the domain
+        /// materials in place, but an entity copied its colours out of its material when it was created
+        /// (<see cref="Create"/>), so without this the world keeps the old set until every prism respawns. One pass
+        /// over the prism entities, on the main thread, run behind the loading veil; entities on other materials are
+        /// untouched. A prism whose owner shades it (<see cref="ApplyColorShade"/>) takes the raw new colours until its
+        /// next material sync re-applies the shade. Returns how many entities were re-stamped.
+        /// </summary>
+        public static int RestampColors(IReadOnlyList<Material> materials)
+        {
+            if (materials == null || materials.Count == 0 || _world == null || !_world.IsCreated) return 0;
+            var colours = new Dictionary<BatchMaterialID, (float4 bright, float4 dark, float3 spread)>();
+            foreach (var m in materials)
+                if (m && _materialIds.TryGetValue(m, out var id))
+                    colours[id] = (ReadColor(m, BrightColorId), ReadColor(m, DarkColorId), ReadVector3(m, SpreadId));
+            if (colours.Count == 0) return 0;
+
+            var em = _world.EntityManager;
+            using var query = em.CreateEntityQuery(new EntityQueryDesc
+            {
+                All = new[]
+                {
+                    ComponentType.ReadOnly<MaterialMeshInfo>(), ComponentType.ReadWrite<PrismBrightColorOverride>(),
+                    ComponentType.ReadWrite<PrismDarkColorOverride>(), ComponentType.ReadWrite<PrismSpreadOverride>(),
+                },
+                Options = EntityQueryOptions.IncludeDisabledEntities,
+            });
+            using var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+            int restamped = 0;
+            foreach (var entity in entities)
+            {
+                if (!colours.TryGetValue(em.GetComponentData<MaterialMeshInfo>(entity).MaterialID, out var c)) continue;
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = c.bright });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = c.dark });
+                em.SetComponentData(entity, new PrismSpreadOverride { Value = c.spread });
+                restamped++;
+            }
+            return restamped;
+        }
+
+        /// <summary>
         /// Re-writes the entity's bright/dark overrides as a SHADE of <paramref name="material"/>'s authored colours:
         /// scaled by <paramref name="gain"/> (0-1, darker), then lifted toward white by <paramref name="lift"/> (0-1,
         /// the LIT state). The hue stays the material's, so neither reads as another team. Inputs are authored-space;

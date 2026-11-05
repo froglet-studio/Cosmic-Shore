@@ -30,11 +30,35 @@ SCRIPT = "Assets/_Scripts/ScriptableObjects/ColorSetCatalogSO.cs"
 CATALOG_GUID = hashlib.md5(b"CosmicShore/ColorSetCatalog").hexdigest()
 
 # (id, palette asset, the name the Profile shows, its line). The words seed the asset once; edit them in Unity.
+# PIGMENTS: Jade, Ruby, Gold, Blue, rim over face, from colour_sets.json (Photic has no pigments there: named by eye).
 SETS = (
     ("nocturne", "NocturneColorSetSO", "Nocturne", "Every prism a lantern: a glowing rim over a deep jewel face."),
     ("photic", "PhoticColorSetSO", "Photic", "The original sunlit sea: one bright hue per domain."),
     ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Two frog pigments per domain: mint over bronze, bumblebee over indigo."),
 )
+
+
+PIGMENTS = {
+    "nocturne": ("Lagoon over Plum", "Orchid over Deep Teal", "Honey over Violet", "Cornflower over Spruce"),
+    "photic": ("Cyan over Deep cyan", "Violet over Deep violet", "Amber over Umber", "Periwinkle over Indigo"),
+    "dartfrog": ("Mint over Bronze", "Orchid over Petrol", "Bumblebee over Indigo", "Azure over Forest"),
+}
+
+
+def pigment_lines(sid):
+    return "    pigments:\n" + "".join(f"    - {yaml_str(p)}\n" for p in PIGMENTS[sid])
+
+
+def add_pigments(text):
+    """Migration (section 126): an entry without pigments gets them after its `unlocked` line. Stands down per entry
+    once present, so a person's edits in the inspector are kept."""
+    out, blocks = [], re.split(r"(?=^  - id: )", text, flags=re.M)
+    for b in blocks:
+        m = re.match(r"  - id: (\S+)\n", b)
+        if m and m.group(1) in PIGMENTS and "    pigments:" not in b:
+            b = re.sub(r"(    unlocked: \d+\n)", lambda x: x.group(1) + pigment_lines(m.group(1)), b, count=1)
+        out.append(b)
+    return "".join(out)
 
 
 def read(path):
@@ -63,7 +87,7 @@ def yaml_str(s):
 def catalog_text(script_guid, palette_guids):
     entries = "".join(
         f"  - id: {sid}\n    colorSet: {ref(palette_guids[sid])}\n    displayName: {yaml_str(name)}\n"
-        f"    line: {yaml_str(line)}\n    unlocked: 1\n" for sid, _, name, line in SETS)
+        f"    line: {yaml_str(line)}\n    unlocked: 1\n" + pigment_lines(sid) for sid, _, name, line in SETS)
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
@@ -98,6 +122,8 @@ def validate(catalog, container, palette_guids, script_guid):
             errors.append(f"{CATALOG}: id '{sid}' appears {ids.count(sid)} times (want 1)")
             continue
         block = catalog.split(f"  - id: {sid}\n", 1)[1].split("  - id:", 1)[0]
+        if len(re.findall(r"^    - ", block, re.M)) != 4:
+            errors.append(f"{CATALOG}: '{sid}' needs four pigment lines (Jade, Ruby, Gold, Blue)")
         m = re.search(r"colorSet: \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}", block)
         if not m or m.group(1) != palette_guids[sid]:
             errors.append(f"{CATALOG}: '{sid}' does not point at {asset}.asset ({palette_guids[sid]})")
@@ -126,6 +152,7 @@ def self_test():
         "a duplicated id": (good_cat.replace("  - id: photic", "  - id: nocturne"), good_con),
         "the wrong script": (good_cat.replace(script_guid, "0" * 32), good_con),
         "an unwired container": (good_cat, "MonoBehaviour:\n  ColorSet: {fileID: 0}\n"),
+        "a set missing a pigment": (good_cat.replace("    - Mint over Bronze\n", "", 1), good_con),
     }
     for name, (cat, con) in planted.items():
         assert validate(cat, con, guids, script_guid), f"self-test: '{name}' was not caught"
@@ -148,7 +175,13 @@ def main():
             write(CATALOG + ".meta", catalog_meta())
             print(f"wrote {CATALOG}")
         else:
-            print(f"{CATALOG} exists: its words stay as authored (validating only)")
+            cat = read(CATALOG)
+            migrated = add_pigments(cat)
+            if migrated != cat:
+                write(CATALOG, migrated)
+                print(f"added pigments to {CATALOG}")
+            else:
+                print(f"{CATALOG} exists: its words stay as authored (validating only)")
         con = read(CONTAINER)
         wired = wire_container(con)
         if wired != con:
