@@ -102,6 +102,26 @@ namespace CosmicShore.Engine
             int layerMask = DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => Raycast(origin, direction, out hitInfo, maxDistance + radius, layerMask, queryTriggerInteraction);
 
+        /// <summary>Every hit along the cast, nearest first; the cast is the same widened ray <see cref="SphereCast"/> uses.</summary>
+        public static RaycastHit[] SphereCastAll(Vector3 origin, float radius, Vector3 direction, float maxDistance = float.PositiveInfinity,
+            int layerMask = DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+        {
+            var all = RaycastAll(origin, direction, maxDistance + radius, layerMask, queryTriggerInteraction);
+            Array.Sort(all, (x, y) => x.distance.CompareTo(y.distance));
+            return all;
+        }
+
+        /// <summary>Original contract: the hits written into <paramref name="results"/>, truncated at its length.</summary>
+        public static int SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, RaycastHit[] results,
+            float maxDistance = float.PositiveInfinity, int layerMask = DefaultRaycastLayers,
+            QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+        {
+            var all = SphereCastAll(origin, radius, direction, maxDistance, layerMask, queryTriggerInteraction);
+            int n = Math.Min(all.Length, results.Length);
+            Array.Copy(all, results, n);
+            return n;
+        }
+
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
             => Pass?.OverlapSphereNonAlloc(position, radius, results, layerMask, queryTriggerInteraction) ?? 0;
 

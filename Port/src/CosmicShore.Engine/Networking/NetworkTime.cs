@@ -11,6 +11,9 @@ namespace CosmicShore.Engine.Networking
     {
         public double Time { get; }
 
+        /// <summary>The time as a float (original: NetworkTime.TimeAsFloat).</summary>
+        public float TimeAsFloat => (float)Time;
+
         public NetworkTime(double time) => Time = time;
     }
 }

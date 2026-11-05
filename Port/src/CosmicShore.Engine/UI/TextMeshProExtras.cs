@@ -89,6 +89,19 @@ namespace CosmicShore.Engine.UI
         /// <summary>True when the text or a layout-relevant property changed since the last layout.</summary>
         public bool havePropertiesChanged { get => m_havePropertiesChanged; set => m_havePropertiesChanged = value; }
 
+        /// <summary>
+        /// Original: TMP_Text.isTextObjectScaleStatic - a static text skips TMP's per-frame scale check. The port lays a text
+        /// out only when it changed, so there is no per-frame check to skip; the flag is kept as data.
+        /// </summary>
+        public bool isTextObjectScaleStatic { get; set; }
+
+        /// <summary>The font colour's alpha (original: TMP_Text.alpha).</summary>
+        public float alpha
+        {
+            get => color.a;
+            set { var c = color; if (c.a == value) return; c.a = value; color = c; }
+        }
+
         public TMP_TextInfo textInfo
         {
             get
@@ -336,5 +349,17 @@ namespace CosmicShore.Engine.UI
         public virtual float preferredHeight => EnsureLayout()?.preferredHeight ?? 0f;
         public virtual float flexibleHeight => -1f;
         public virtual int layoutPriority => 0;
+    }
+
+    /// <summary>
+    /// Original: TMPro.TMP_UpdateManager, TMP's queue of texts to rebuild. The port rebuilds a text when it changed, from
+    /// the canvas pass, so the queue is implicit: registering does nothing, and unregistering leaves the text to that pass.
+    /// </summary>
+    public static class TMP_UpdateManager
+    {
+        public static void RegisterTextElementForLayoutRebuild(TMP_Text element) { }
+        public static void RegisterTextElementForGraphicRebuild(TMP_Text element) { }
+        public static void RegisterTextElementForCullingUpdate(TMP_Text element) { }
+        public static void UnRegisterTextElementForRebuild(TMP_Text element) { }
     }
 }

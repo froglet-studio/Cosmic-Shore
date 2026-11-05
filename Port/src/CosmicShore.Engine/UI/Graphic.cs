@@ -93,12 +93,15 @@ namespace CosmicShore.Engine.UI
 
         // ── Mesh generation (the uGUI OnPopulateMesh contract) ──────────────────
 
-        static Texture2D s_WhiteTexture;
+        static Texture2D s_white;
+
+        /// <summary>The white texture a graphic with no texture samples (original: protected Graphic.s_WhiteTexture).</summary>
+        protected static Texture2D s_WhiteTexture => s_white ??= Texture2D.whiteTexture;
 
         /// <summary>The texture this graphic samples (default: the material's main texture, else white).</summary>
         public virtual Texture mainTexture => m_Material != null && m_Material.mainTexture != null
             ? m_Material.mainTexture
-            : (s_WhiteTexture ??= Texture2D.whiteTexture);
+            : s_WhiteTexture;
 
         /// <summary>The material actually used to draw (original: material after modifiers).</summary>
         public virtual Material materialForRendering => material;

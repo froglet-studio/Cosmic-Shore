@@ -15,6 +15,10 @@ namespace CosmicShore.Engine
         public static bool QuitRequested { get; private set; }
 
         static bool s_quitSent;
+        static System.Threading.CancellationTokenSource s_exitCts = new();
+
+        /// <summary>Cancelled when the application quits (original: Application.exitCancellationToken), after <see cref="quitting"/>.</summary>
+        public static System.Threading.CancellationToken exitCancellationToken => s_exitCts.Token;
 
         /// <summary>
         /// Unity's quit, in its order: every <see cref="wantsToQuit"/> handler may cancel (only when
@@ -29,6 +33,7 @@ namespace CosmicShore.Engine
             s_quitSent = true;
             Broadcast(h => h.ApplicationQuit, (call, mb) => call(mb));
             quitting?.Invoke();
+            s_exitCts.Cancel();
             return true;
         }
 
@@ -45,7 +50,12 @@ namespace CosmicShore.Engine
         public static void SetPaused(bool paused) => Broadcast(h => h.ApplicationPause, (call, mb) => call(mb, paused));
 
         /// <summary>For a new world (tests): the quit sequence may run again.</summary>
-        internal static void ResetQuit() { QuitRequested = false; s_quitSent = false; }
+        internal static void ResetQuit()
+        {
+            QuitRequested = false;
+            s_quitSent = false;
+            if (s_exitCts.IsCancellationRequested) s_exitCts = new();
+        }
 
         static void Broadcast<TCall>(Func<LifecycleHooks, TCall> pick, Action<TCall, MonoBehaviour> invoke) where TCall : Delegate
         {

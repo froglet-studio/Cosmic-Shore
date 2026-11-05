@@ -29,8 +29,14 @@ namespace CosmicShore.Engine.Networking
         public bool RunInBackground = true;
         public bool DontDestroy = true;
 
+        /// <summary>Raised when a NetworkManager wakes (original: NetworkManager.OnInstantiated), before its config is adopted.</summary>
+        public static event System.Action<NetworkManager> OnInstantiated;
+        /// <summary>Raised when a NetworkManager is destroyed (original: NetworkManager.OnDestroying).</summary>
+        public static event System.Action<NetworkManager> OnDestroying;
+
         void Awake()
         {
+            OnInstantiated?.Invoke(this);
             if (!EmulateNetcodeLifecycle) return;
             if (NetworkConfigSerialized != null) NetworkConfig = NetworkConfigSerialized;
             IsServer = false;
@@ -50,6 +56,7 @@ namespace CosmicShore.Engine.Networking
 
         void OnDestroy()
         {
+            OnDestroying?.Invoke(this);
             if (!EmulateNetcodeLifecycle) return;
             SceneManagement.SceneManager.BeforeSingleLoadUnload -= MigrateSurvivingObjects;
             if (IsListening) Shutdown();

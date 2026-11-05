@@ -6,6 +6,16 @@ namespace CosmicShore.Engine
 {
     public enum MeshTopology { Triangles = 0, Quads = 2, Lines = 3, LineStrip = 4, Points = 5 }
 
+    /// <summary>One mesh to combine (original: UnityEngine.CombineInstance).</summary>
+    public struct CombineInstance
+    {
+        public Mesh mesh;
+        public int subMeshIndex;
+        public Matrix4x4 transform;
+        public Vector4 lightmapScaleOffset;
+        public Vector4 realtimeLightmapScaleOffset;
+    }
+
     public partial class Mesh
     {
         // Full-width UV channels (Vector3/Vector4 texcoords — e.g. the shield morph's per-face
@@ -151,6 +161,73 @@ namespace CosmicShore.Engine
         public void SetColors(Color[] inColors) => colors = inColors;
         public void SetColors(Color32[] inColors) => colors32 = inColors;
         public void SetColors(List<Color32> inColors) => colors32 = inColors.ToArray();
+        public void SetColors(Color[] inColors, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => colors = new ArraySegment<Color>(inColors, start, length).ToArray();
+        public void SetColors(Color32[] inColors, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => colors32 = new ArraySegment<Color32>(inColors, start, length).ToArray();
+        public void SetColors(List<Color> inColors, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => colors = inColors.GetRange(start, length).ToArray();
+        public void SetColors(List<Color32> inColors, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => colors32 = inColors.GetRange(start, length).ToArray();
+
+        /// <summary>Original contract: indices[indicesStart .. +indicesLength] become the submesh.</summary>
+        public void SetIndices(int[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh,
+            bool calculateBounds = true, int baseVertex = 0)
+            => SetIndices(new ArraySegment<int>(indices, indicesStart, indicesLength).ToArray(), topology, submesh, calculateBounds, baseVertex);
+
+        public void SetIndices(List<int> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh,
+            bool calculateBounds = true, int baseVertex = 0)
+            => SetIndices(indices.GetRange(indicesStart, indicesLength).ToArray(), topology, submesh, calculateBounds, baseVertex);
+
+        /// <summary>
+        /// Original contract (UnityEngine.Mesh.CombineMeshes): each instance's mesh is appended whole (all its vertices),
+        /// transformed by its matrix when <paramref name="useMatrices"/>; its <c>subMeshIndex</c> submesh becomes one
+        /// submesh of the result, or all of them merge into submesh 0 when <paramref name="mergeSubMeshes"/>. Normals take
+        /// the inverse transpose; positions, normals, tangents, the first UV channel and colours are carried.
+        /// </summary>
+        public void CombineMeshes(CombineInstance[] combine, bool mergeSubMeshes = true, bool useMatrices = true, bool hasLightmapData = false)
+        {
+            var verts = new List<Vector3>();
+            var norms = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var cols = new List<Color>();
+            var subs = new List<List<int>>();
+            bool anyNormals = false, anyUv = false, anyColors = false;
+            foreach (var ci in combine ?? Array.Empty<CombineInstance>())
+                if (ci.mesh) { anyNormals |= ci.mesh.normals.Length > 0; anyUv |= ci.mesh.uv.Length > 0; anyColors |= ci.mesh.colors.Length > 0; }
+            foreach (var ci in combine ?? Array.Empty<CombineInstance>())
+            {
+                var m = ci.mesh;
+                if (!m) continue;
+                int baseIndex = verts.Count;
+                var mv = m.vertices;
+                var mn = m.normals;
+                var mu = m.uv;
+                var mc = m.colors;
+                var nm = ci.transform.inverse.transpose;
+                for (int i = 0; i < mv.Length; i++)
+                {
+                    verts.Add(useMatrices ? ci.transform.MultiplyPoint3x4(mv[i]) : mv[i]);
+                    if (anyNormals) norms.Add(i < mn.Length ? (useMatrices ? nm.MultiplyVector(mn[i]).normalized : mn[i]) : Vector3.up);
+                    if (anyUv) uvs.Add(i < mu.Length ? mu[i] : default);
+                    if (anyColors) cols.Add(i < mc.Length ? mc[i] : Color.white);
+                }
+                var tris = m.GetTriangles(Math.Clamp(ci.subMeshIndex, 0, Math.Max(0, m.subMeshCount - 1)));
+                if (mergeSubMeshes) { if (subs.Count == 0) subs.Add(new List<int>()); }
+                else subs.Add(new List<int>());
+                var dst = subs[^1];
+                for (int i = 0; i < tris.Length; i++) dst.Add(tris[i] + baseIndex);
+            }
+            Clear();
+            if (verts.Count > 65535) indexFormat = IndexFormat.UInt32;
+            vertices = verts.ToArray();
+            if (anyNormals) normals = norms.ToArray();
+            if (anyUv) uv = uvs.ToArray();
+            if (anyColors) colors = cols.ToArray();
+            subMeshCount = subs.Count;
+            for (int s = 0; s < subs.Count; s++) SetTriangles(subs[s].ToArray(), s);
+            RecalculateBounds();
+        }
 
         public void SetTriangles(int[] triangles, int submesh, bool calculateBounds, int baseVertex = 0)
         {

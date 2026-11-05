@@ -605,6 +605,41 @@ namespace CosmicShore.Engine
         public static void DrawFrustum(Vector3 center, float fov, float maxRange, float minRange, float aspect) { }
     }
 
+    /// <summary>
+    /// Immediate-mode drawing (original: UnityEngine.GL). Like <see cref="Gizmos"/> it is accepted and not drawn: the
+    /// port's renderer has no immediate path, and the game uses it only for development overlays (the Third Eye's lines).
+    /// The matrix stack is kept so code that reads <see cref="modelview"/> back sees what it set.
+    /// </summary>
+    public static class GL
+    {
+        public const int TRIANGLES = 4, TRIANGLE_STRIP = 5, QUADS = 7, LINES = 1, LINE_STRIP = 2;
+        static readonly Stack<Matrix4x4> s_stack = new();
+        public static Matrix4x4 modelview { get; set; } = Matrix4x4.identity;
+        public static bool wireframe { get; set; }
+        public static bool sRGBWrite { get; set; }
+        public static bool invertCulling { get; set; }
+        public static void PushMatrix() => s_stack.Push(modelview);
+        public static void PopMatrix() { if (s_stack.Count > 0) modelview = s_stack.Pop(); }
+        public static void LoadIdentity() => modelview = Matrix4x4.identity;
+        public static void LoadOrtho() { }
+        public static void LoadPixelMatrix() { }
+        public static void LoadPixelMatrix(float left, float right, float bottom, float top) { }
+        public static void LoadProjectionMatrix(Matrix4x4 mat) { }
+        public static void MultMatrix(Matrix4x4 m) => modelview = modelview * m;
+        public static Matrix4x4 GetGPUProjectionMatrix(Matrix4x4 proj, bool renderIntoTexture) => proj;
+        public static void Begin(int mode) { }
+        public static void End() { }
+        public static void Vertex(Vector3 v) { }
+        public static void Vertex3(float x, float y, float z) { }
+        public static void Color(Color c) { }
+        public static void TexCoord(Vector3 v) { }
+        public static void TexCoord2(float x, float y) { }
+        public static void Clear(bool clearDepth, bool clearColor, Color backgroundColor, float depth = 1f) { }
+        public static void Viewport(Rect pixelRect) { }
+        public static void Flush() { }
+        public static void IssuePluginEvent(IntPtr callback, int eventID) { }
+    }
+
     public sealed class GUISkin : ScriptableObject
     {
         public GUIStyle label { get; set; } = new GUIStyle();
@@ -650,7 +685,51 @@ namespace CosmicShore.Engine
         public static Rect Window(int id, Rect clientRect, WindowFunction func, string text, GUIStyle style) => clientRect;
         public static void DragWindow() { }
         public static void DragWindow(Rect position) { }
+        public static void Box(Rect position, GUIContent content) { }
+        public static void Label(Rect position, GUIContent content) { }
+        // Keyboard focus by control name: no IMGUI control ever takes focus here, so the focused name is always empty.
+        public static void SetNextControlName(string name) { }
+        public static string GetNameOfFocusedControl() => "";
+        public static void FocusControl(string name) { }
     }
+
+    /// <summary>
+    /// The IMGUI event being processed (original: UnityEngine.Event). OnGUI never runs in the port, so there is one
+    /// idle Layout event that nothing dispatches; code reading it outside OnGUI sees a quiet frame.
+    /// </summary>
+    public sealed class Event
+    {
+        public static Event current { get; set; } = new();
+        public EventType type { get; set; } = EventType.Layout;
+        public EventType rawType => type;
+        public Vector2 mousePosition { get; set; }
+        public Vector2 delta { get; set; }
+        public int button { get; set; }
+        public int clickCount { get; set; }
+        public KeyCode keyCode { get; set; }
+        public char character { get; set; }
+        public EventModifiers modifiers { get; set; }
+        public bool shift => (modifiers & EventModifiers.Shift) != 0;
+        public bool control => (modifiers & EventModifiers.Control) != 0;
+        public bool alt => (modifiers & EventModifiers.Alt) != 0;
+        public bool command => (modifiers & EventModifiers.Command) != 0;
+        public bool isKey => type is EventType.KeyDown or EventType.KeyUp;
+        public bool isMouse => type is EventType.MouseDown or EventType.MouseUp or EventType.MouseMove or EventType.MouseDrag;
+        public void Use() => type = EventType.Used;
+    }
+
+    /// <summary>Original: UnityEngine.EventType (values match).</summary>
+    public enum EventType
+    {
+        MouseDown = 0, MouseUp = 1, MouseMove = 2, MouseDrag = 3, KeyDown = 4, KeyUp = 5, ScrollWheel = 6, Repaint = 7,
+        Layout = 8, DragUpdated = 9, DragPerform = 10, Ignore = 11, Used = 12, ValidateCommand = 13, ExecuteCommand = 14,
+        DragExited = 15, ContextClick = 16, MouseEnterWindow = 20, MouseLeaveWindow = 21, TouchDown = 30, TouchUp = 31,
+        TouchMove = 32, TouchEnter = 33, TouchLeave = 34, TouchStationary = 35,
+    }
+
+    /// <summary>Original: UnityEngine.EventModifiers (values match).</summary>
+    [Flags]
+    public enum EventModifiers { None = 0, Shift = 1, Control = 2, Alt = 4, Command = 8, Numeric = 16, CapsLock = 32, FunctionKey = 64 }
 
     public enum ScaleMode { StretchToFill = 0, ScaleAndCrop = 1, ScaleToFit = 2 }
 
@@ -675,6 +754,30 @@ namespace CosmicShore.Engine
         public static void FlexibleSpace() { }
         public static GUILayoutOption Width(float w) => new();
         public static GUILayoutOption Height(float h) => new();
+        public static GUILayoutOption MinWidth(float w) => new();
+        public static GUILayoutOption MaxWidth(float w) => new();
+        public static GUILayoutOption MinHeight(float h) => new();
+        public static GUILayoutOption MaxHeight(float h) => new();
+        public static GUILayoutOption ExpandWidth(bool expand) => new();
+        public static GUILayoutOption ExpandHeight(bool expand) => new();
+        public static void Label(GUIContent content, params GUILayoutOption[] options) { }
+        public static void Label(GUIContent content, GUIStyle style, params GUILayoutOption[] options) { }
+        public static bool Button(GUIContent content, params GUILayoutOption[] options) => false;
+        public static bool Button(GUIContent content, GUIStyle style, params GUILayoutOption[] options) => false;
+        public static bool Toggle(bool value, string text, GUIStyle style, params GUILayoutOption[] options) => value;
+        public static bool Toggle(bool value, GUIContent content, params GUILayoutOption[] options) => value;
+        public static bool Toggle(bool value, GUIContent content, GUIStyle style, params GUILayoutOption[] options) => value;
+        public static string TextField(string text, params GUILayoutOption[] options) => text;
+        public static string TextField(string text, GUIStyle style, params GUILayoutOption[] options) => text;
+        public static string TextField(string text, int maxLength, params GUILayoutOption[] options) => text;
+        public static float HorizontalSlider(float value, float leftValue, float rightValue, params GUILayoutOption[] options) => value;
+        public static Vector2 BeginScrollView(Vector2 scrollPosition, params GUILayoutOption[] options) => scrollPosition;
+        public static Vector2 BeginScrollView(Vector2 scrollPosition, GUIStyle style, params GUILayoutOption[] options) => scrollPosition;
+        public static Vector2 BeginScrollView(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, params GUILayoutOption[] options) => scrollPosition;
+        public static void EndScrollView() { }
+        public static void BeginArea(Rect screenRect, GUIStyle style) { }
+        public static void BeginHorizontal(GUIStyle style, params GUILayoutOption[] options) { }
+        public static void BeginVertical(GUIStyle style, params GUILayoutOption[] options) { }
     }
 
     public sealed class GUILayoutOption { }

@@ -142,5 +142,22 @@ the engine.
      text-asset case. A game feature that ships data in `Resources/` as text or bytes is worth one boot to confirm
      Amoebius finds it; the miss reads as "the feature quietly falls back".
 
+16. **Traps from the catch-up session (2026-11-05, `claude/dazzling-einstein-gnr5iw`).**
+   - **The live compile had been red on bleeding-edge since about Oct 29** (77 errors there, 72 on this branch, behind 3
+     declaration errors that hid the rest). The gaps were Unity members newer game code calls: batched queries
+     (`SpherecastCommand`, `OverlapCapsuleCommand`, `QueryParameters`, `ColliderHit`), IMGUI (`Event`, `GUILayout`
+     scroll views / text fields / sliders / size options, `GUIStyle` from a string), immediate-mode `GL`,
+     `Mesh.CombineMeshes`, ranged `SetColors` / `SetIndices`, `Gradient.mode`, `Application.exitCancellationToken`,
+     netcode metrics switches and `OnInstantiated`, TMP `alpha` / `isTextObjectScaleStatic` / `TMP_UpdateManager`,
+     `Graphic.s_WhiteTexture`, Game Center / Play Games sign-in. Fill them as engine members, never by moving game files
+     out of the sync (moving the 15 failing files cascaded into the arcade screens within 8 rounds).
+   - **An engine type named like a Silk.NET type collides in the renderer.** `CosmicShore.Engine.GL` made every `GL` in
+     `CosmicShore.Render`, `.Player`, `.Client` and `.Launcher` ambiguous; each has `GlobalUsings.Gl.cs` pinning
+     `GL` to Silk.NET's binding.
+   - **Clean world pictures from the menu**: `set UI_Refactored Canvas enabled false` hides the menu UI, and
+     `set Camera Transform position (x,y,z)` / `eulerAngles (p,y,0)` plus `Camera Camera farClipPlane 6000` frame the cell
+     from anywhere (the menu camera holds still once its intro ends).
+   - **Maelstrom's launch panel waits for others**: `do arcade start` does not reach it; drive another mode.
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

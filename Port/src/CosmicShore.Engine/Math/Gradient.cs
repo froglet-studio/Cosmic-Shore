@@ -10,8 +10,14 @@ namespace CosmicShore.Engine
     /// alpha curve) can't be mutated out from under the holder; <see cref="Evaluate"/>
     /// blends linearly between neighboring keys and clamps past the ends.
     /// </summary>
+    /// <summary>How a gradient reads between keys (original: UnityEngine.GradientMode; values match).</summary>
+    public enum GradientMode { Blend = 0, Fixed = 1, PerceptualBlend = 2 }
+
     public class Gradient
     {
+        /// <summary>Blend lerps between keys; Fixed holds the next key's value (Unity's step). PerceptualBlend reads as Blend here.</summary>
+        public GradientMode mode { get; set; } = GradientMode.Blend;
+
         GradientColorKey[] _colorKeys =
         {
             new(Color.white, 0f),
@@ -60,7 +66,7 @@ namespace CosmicShore.Engine
                 if (time > keys[i].time) continue;
                 float span = keys[i].time - keys[i - 1].time;
                 float t = span <= 0f ? 1f : (time - keys[i - 1].time) / span;
-                return Color.Lerp(keys[i - 1].color, keys[i].color, t);
+                return Color.Lerp(keys[i - 1].color, keys[i].color, mode == GradientMode.Fixed ? 1f : t);
             }
             return keys[^1].color;
         }
@@ -75,7 +81,7 @@ namespace CosmicShore.Engine
                 if (time > keys[i].time) continue;
                 float span = keys[i].time - keys[i - 1].time;
                 float t = span <= 0f ? 1f : (time - keys[i - 1].time) / span;
-                return Mathf.Lerp(keys[i - 1].alpha, keys[i].alpha, t);
+                return Mathf.Lerp(keys[i - 1].alpha, keys[i].alpha, mode == GradientMode.Fixed ? 1f : t);
             }
             return keys[^1].alpha;
         }
