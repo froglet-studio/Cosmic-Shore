@@ -21153,3 +21153,18 @@ end-reveal panels and Authentication.unity, plus an `AdaptiveCanvasScaler` (phon
    the HUD pieces sit clear of the notch at about 1.3x today's phone size, Ready / the countdown read, the scoreboard is
    the one-column board (header and ladder left, reward top right, Play again bottom right), pause opens on screen.
 5. **Still without a phone layout**: the toasts, the picture-in-picture frame, and every Menu_Main screen.
+
+## 🔴 Phone menus: the fallback, the rail and Home (`claude/ui-phone-menus`, 2026-11-05) — NOT COMPILED
+
+Not compiled (no .NET SDK, `unity_refcompile` SKIP; no editor). New: `PhoneRect` Draw At PC Scale, stack / grid / hide,
+LayoutElement minimum; `PhoneSheet`; `AdaptiveCanvasScaler.PhoneLayoutChanged`; tests `PhoneRectTests`,
+`PhoneSheetTests`. Generated: Menu_Main's fallback blocks (`author_menu_phone.py`), the rail and Home's phone poses.
+Menu_Main's Has Phone Layout is still OFF.
+
+1. **Compile, then run** `PhoneRectTests`, `PhoneSheetTests`, `PhoneScaleTests`.
+2. **PC unchanged**: Menu_Main's Home, nav band and every window look as before.
+3. **Phone, on a scratch copy**: tick Has Phone Layout on Menu_Main's `AdaptiveCanvasScaler`, play in the Device
+   Simulator on an iPhone sideways. Home matches R55Home (the rail Home, Codex, Hangar, Ark, Port down the left; the chip
+   top left; Settings and Up next on the right; the four hubs along the bottom); every other screen (Arcade, Configure,
+   Hangar, Ark, Port, Codex, the windows) draws as it does today, the PC layout shrunk. Switching back to PC restores
+   everything.
