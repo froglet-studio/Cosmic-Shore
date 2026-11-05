@@ -5752,3 +5752,48 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   out-of-family variants; D5 CTA always lime; D6 phones on their own 800 x 450 scale; D7 the UI checklist required;
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
+
+## 122. Rev 51 mockups: colour sets in the Profile, and the repaint between them (2026-11-05, awaiting a pick)
+
+**Asked (Shombith, 2026-11-05):** "create mockups inside profile where we can change these themes from there. remember
+it will be something that the player unlocks with quest system. So it should something inside the profile view, once
+done bring up the loading screen like when cell is change that the theme is changing and apply the theme." Then, while
+it was drawn: "For now all color sets are unlocked since quest is not planned properly". The sets are Garrett's
+(`Docs/VesselModels/colour_sets.json`, `Docs/PALETTE.md` section 1): Nocturne (the default since 2026-11-03), Photic
+(the original) and Dart Frog, plus the planned colour-blind sets, drawn here as one card, Clear Sight.
+
+**On the canvas:** tab Menu Redesign A, section "Rev 51 - Colour sets in the Profile" (version `1793896538-6258`; Rev 50
+went to the Froglet Analytics tab while this round was drawn, so it moved to 51). Copies in `Docs/MenuRedesignB/board/`,
+drawn by `Docs/MenuRedesignB/rounds/r51_profile_colour_sets.py <root> 51`. Every prism, vessel, trail and crystal on the
+boards is the set's SHIPPED value read from its `SO_ColorSet` asset (linear HDR, tone-clamped for a screen).
+- **R51Compare:** each set's card in each state it can show: equipped, owned (every set, for now), and the two Later
+  columns, quest in progress and quest not started.
+- **R51A (recommended, interactive):** the built Profile (Rev 13) gains a third tab, Record | Colour sets | Audio
+  Studio on LB / RB. Four set cards, each with a small cell in its colours, beside a big preview of the cell in the
+  picked set and its four rim-over-face pairs. APPLY (lime) plays the loading screen, then the toast; the cell behind
+  the Profile's veil is drawn in the equipped set.
+- **R51B (interactive):** the set you wear sits on the pilot card with CHANGE (X); the picker is a Colour sets window
+  over the Profile (APPLY / CANCEL straddling its foot). The smallest change to the built screen.
+- **R51C:** a shelf of four large cards under the pilot card, each its own preview; the record moves below.
+- **R51Loading:** the cell-change veil (`EnvironmentLoadVeil`, section 47.4) with its words for a set change: CHANGING
+  COLOUR SET, the set's name, old -> new rim and face per domain, the omni crystal's hex filling with the new set over
+  the old, and the four steps (mixing the palette, repainting prisms, recolouring vessels and trails, opening the cell).
+- **R51Applied:** back in the Profile with Dart Frog equipped, the toast "Colour set applied", the cell behind repainted.
+- **R51Locked, R51Unlock (Later, once quests are planned):** a set a quest has not given yet (grey, the quest's goals,
+  OPEN VOYAGE), and the Voyage window's claim handing over a set (USE IT NOW repaints at once, LATER leaves it in the
+  Profile). Quest 4 / Maelstrom is an example, not a plan.
+- **R51Notes:** the options, unlocked-for-now, what the repaint does in Unity, decisions.
+
+A is recommended: one more tab on the screen that is built, nothing else moves, and the preview is large enough to judge
+a palette; it is the Voyage window's LB / RB tab pattern.
+
+**Differs from the build:** the Profile has no colour sets today, and the game has one palette, chosen by the slot on
+`ThemeManagerDataContainer.asset`. Building a pick means: a per-player chosen set (saved like the other profile
+settings); `ThemeManager` rebuilding its four domain material sets and handing the set to `GameToastAPI` and `PrismLit`
+again (today it does that once, at Awake); and reloading the menu cell under the existing veil, since prisms take
+their material when they spawn. The hull materials, card art, studios and the launcher still read Photic
+(`Docs/PALETTE.md` section 1), so a set is not a full repaint until they have a per-set path.
+
+**Decisions waiting:** which option; the word ("Colour sets", Garrett's, since "theme" is the style guide's Deep Sea /
+Shore); later, which quests give which sets; Dart Frog is on the paid track in `colour_sets.json` (Garrett's call);
+whether the UI's domain colours follow the set (style guide D2 says a domain is the live palette).
