@@ -166,6 +166,9 @@ class Aggregates(StoreCase):
         health = {r["build"]: r for r in page["match_health_by_build"]}
         self.assertEqual(health["port"]["finished_pct"], 0.0)
         self.assertEqual(V.overview(self.store.agg_path, "editor", 90)["tiles"]["players"], 1)
+        per_day = V.matches(self.store.agg_path, "release", 7)["per_day"]
+        self.assertEqual(len(per_day), 7)                      # every day of the range, zeros included
+        self.assertEqual(sum(d["matches"] for d in per_day), 4)
 
     def test_rule_notes_flag_the_double_send(self):
         self.seed()
@@ -276,6 +279,18 @@ class Http(unittest.TestCase):
         self.assertEqual(self.call("POST", "/v1/erase", {"player_id": "p1"}, key="read-key")[0], 401)
         status, out, _ = self.call("POST", "/v1/erase", {"player_id": "p1"}, key="admin-key")
         self.assertEqual((status, out["rows_deleted"]), (200, 1))
+
+    def test_the_console_page_is_served_with_a_strict_policy_and_me_names_the_reader(self):
+        with urllib.request.urlopen(self.base + "/") as response:
+            page = response.read().decode()
+            self.assertIn("Froglet Analytics", page)
+            self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
+        for name in ("/console.js", "/console.css"):
+            with urllib.request.urlopen(self.base + name) as response:
+                self.assertEqual(response.status, 200)
+        self.assertEqual(self.call("GET", "/v1/me", key="read-key")[1], {"name": "ian", "admin": False})
+        self.assertEqual(self.call("GET", "/v1/me", key="admin-key")[1], {"name": "admin", "admin": True})
+        self.assertEqual(self.call("GET", "/../analytics_server.py")[0], 401)
 
     def test_healthz_is_public(self):
         self.assertEqual(self.call("GET", "/healthz")[:2], (200, {"ok": True}))

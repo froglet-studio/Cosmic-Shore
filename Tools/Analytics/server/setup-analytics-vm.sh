@@ -33,10 +33,11 @@ as() { sudo -u "$SVC" -H "$@"; }
 AUTH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/froglet-studio/Cosmic-Shore.git"
 if [ ! -d "$REPO/.git" ]; then
   as git clone --quiet --single-branch --filter=blob:limit=1m --no-checkout --branch "$BRANCH" "$AUTH_URL" "$REPO"
-  as git -C "$REPO" sparse-checkout set --no-cone /Tools/Analytics/server/ /Docs/Analytics/EVENT_SCHEMA.json
+  as git -C "$REPO" sparse-checkout set --no-cone /Tools/Analytics/server/ /Tools/Analytics/console/ /Docs/Analytics/EVENT_SCHEMA.json
   as git -C "$REPO" checkout --quiet "$BRANCH"
 else
   as git -C "$REPO" remote set-url origin "$AUTH_URL"
+  as git -C "$REPO" sparse-checkout set --no-cone /Tools/Analytics/server/ /Tools/Analytics/console/ /Docs/Analytics/EVENT_SCHEMA.json
   as git -C "$REPO" fetch --quiet origin "$BRANCH"
   as git -C "$REPO" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
 fi
@@ -113,5 +114,5 @@ sudo systemctl reload caddy || sudo systemctl restart caddy
 
 sleep 3
 curl -fsS "http://127.0.0.1:$PORT/healthz" >/dev/null && echo "server: up on 127.0.0.1:$PORT" || echo "server: NOT answering; journalctl -u $SVC"
-echo "address: https://$DOMAIN   (the game's analytics config host; the dashboard's API)"
+echo "address: https://$DOMAIN   (the console page, the dashboard API, and the game's analytics host)"
 echo "keys:    sudo cat $BASE/config.json   (a reader's key: sudo -u $SVC env FROGLET_ANALYTICS_CONFIG=$BASE/config.json $BASE/venv/bin/python $REPO/Tools/Analytics/server/analytics_server.py key read ian)"

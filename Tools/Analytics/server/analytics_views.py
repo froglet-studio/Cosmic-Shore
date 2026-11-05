@@ -123,6 +123,16 @@ def retention(agg_path, build="release", days=90):
     return result
 
 
+def _every_day(since, days, by_day):
+    """One row per day of the range, zeros where nothing was played, so a chart's axis is time and not just data."""
+    start = datetime.strptime(since, "%Y-%m-%d")
+    out = []
+    for n in range(days):
+        day = (start + timedelta(days=n)).strftime("%Y-%m-%d")
+        out.append(by_day.get(day, {"day": day, "matches": 0, "plays": 0, "completed": 0}))
+    return out
+
+
 def matches(agg_path, build="release", days=90):
     db = _open(agg_path)
     if db is None:
@@ -130,9 +140,9 @@ def matches(agg_path, build="release", days=90):
     since = _since(days)
     result = {
         "build": build, "days": days, "built_ms": _built_ms(db),
-        "per_day": [dict(r) for r in db.execute(
+        "per_day": _every_day(since, days, {r["day"]: dict(r) for r in db.execute(
             "SELECT day, COUNT(DISTINCT match_id) AS matches, COUNT(*) AS plays, SUM(completed) AS completed "
-            "FROM plays WHERE build_kind=? AND day>=? GROUP BY day ORDER BY day", (build, since))],
+            "FROM plays WHERE build_kind=? AND day>=? GROUP BY day ORDER BY day", (build, since))}),
         "by_mode": [dict(r) for r in db.execute(
             "SELECT game_mode, COUNT(*) AS plays, SUM(completed) AS completed, "
             "ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "

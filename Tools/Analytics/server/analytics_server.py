@@ -14,7 +14,9 @@ HTTP:
     POST /batch/                 ingest, PostHog's own batch shape ({api_key, batch:[{event, properties, timestamp}]}),
                                  so PostHogAnalyticsSink sends here once its config's host and key point at us
     POST /v1/batch               the same
+    GET  /                       the console page (Tools/Analytics/console/; public: it holds no data and asks for a key)
     GET  /healthz                {"ok": true} (public, for uptime checks)
+    GET  /v1/me                  {"name", "admin"} for the key sent
     GET  /v1/overview?build=release&days=90          the console's Overview page      } Authorization:
     GET  /v1/retention?build=..&days=..              Retention                        } Bearer <read key>
     GET  /v1/matches?build=..&days=..                Matches                          }
@@ -48,6 +50,14 @@ import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
 
 CONFIG_PATH = os.path.expanduser(os.environ.get("FROGLET_ANALYTICS_CONFIG", "~/.froglet-analytics/config.json"))
+CONSOLE_DIR = os.path.normpath(os.path.join(HERE, "..", "console"))
+CONSOLE_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
+                 "/index.html": ("index.html", "text/html; charset=utf-8"),
+                 "/console.css": ("console.css", "text/css; charset=utf-8"),
+                 "/console.js": ("console.js", "text/javascript; charset=utf-8")}
+CONSOLE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+               "font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; "
+               "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 REPO_SCHEMA = os.path.normpath(os.path.join(HERE, "..", "..", "..", "Docs", "Analytics", "EVENT_SCHEMA.json"))
 MAX_BODY = 2 * 1024 * 1024
 MAX_BATCH = 1000
@@ -229,12 +239,31 @@ def make_handler(app):
             self._cors()
             self.end_headers()
 
+        def _static(self, path):
+            name, kind = CONSOLE_FILES[path]
+            with open(os.path.join(CONSOLE_DIR, name), "rb") as handle:
+                body = handle.read()
+            self.send_response(200)
+            self.send_header("Content-Type", kind)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Content-Security-Policy", CONSOLE_CSP)
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(body)
+
         def do_GET(self):
-            path = urlparse(self.path).path.rstrip("/") or "/"
+            raw = urlparse(self.path).path
+            if raw in CONSOLE_FILES:
+                return self._static(raw)
+            path = raw.rstrip("/") or "/"
             if path == "/healthz":
                 return self._send(200, {"ok": True})
             if self._reader() is None:
                 return self._send(401, {"error": "A read key is needed (Authorization: Bearer <key>)."})
+            if path == "/v1/me":
+                admin = _match_key(self._bearer(), app.config["admin_keys"])
+                return self._send(200, {"name": admin or self._reader(), "admin": bool(admin)})
             build, days = self._query()
             if build not in S.BUILD_KINDS:
                 return self._send(400, {"error": f"build must be one of {list(S.BUILD_KINDS)}"})

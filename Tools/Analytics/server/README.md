@@ -5,8 +5,18 @@ Oracle VM, and serves the **Froglet Analytics console**: the dashboard picked on
 pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §122). Claude writes
 three notes about the numbers each night and answers questions in the Ask box. UGS Analytics is unchanged.
 
-Status (2026-11-05): the server and its tests are written. Not yet on the VM, the game not yet pointed at it,
-the console page not yet built.
+Status (2026-11-05): the server, its tests and the console page are written and were run locally on sample data.
+Not yet on the VM; the game is not yet pointed at it.
+
+## The console page
+
+`Tools/Analytics/console/` (`index.html`, `console.css`, `console.js`): plain HTML, CSS and JS with no build step and
+no library, drawn to the Frogma style guide (Deep Sea, Aldrich and Chakra Petch, cut corners; data in blue-68, a
+problem in Fire, healthy as the Lime tick, the picked filter and focus in Jade). The server serves it at `/` with a
+strict Content-Security-Policy. It asks once for the reader's key and keeps it in that browser. GitHub Pages can host
+the same three files; open it there as `https://<pages>/?api=https://analytics.<the VM>` and add the Pages origin to
+`allowed_origins`. The page holds no data. The CSS uses `froglet.css`'s token names; link that file instead of the
+inline copy once `claude/ui-style-guide` merges.
 
 ## How the game reaches it, with no code change
 
@@ -30,7 +40,8 @@ Not written yet; it is C# and needs the Unity verify rule.
 | `analytics_store.py` | `events.db` (raw, with player ids), and the rebuild of `aggregates.db` (no player ids) |
 | `analytics_views.py` | The console's pages, read from `aggregates.db` only; the guarded SQL runner for Ask |
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
-| `test_analytics_server.py` | 18 tests: `python3 analytics_server.py --self-test` |
+| `test_analytics_server.py` | 19 tests: `python3 analytics_server.py --self-test` |
+| `../console/` | The console page (Rev 50 B), served at `/` |
 | `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy |
 
 Standard library only, except the two Claude features (`pip install anthropic`, `ANTHROPIC_API_KEY`). Without them
@@ -99,8 +110,6 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 
 ## Not done yet
 
-- The console page itself (Rev 50 B). It will read `/v1/overview`, `/v1/retention`, `/v1/matches`, `/v1/health` and
-  `/v1/digest`, and post to `/v1/ask`. GitHub Pages can host the page; the data stays on the VM behind read keys.
 - The second sink for the side-by-side weeks, and `build_kind` stamped by the client (which would split development
   builds from release).
 - Off-VM backups (the nightly backup stays on the VM's disk).
