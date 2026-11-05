@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
+
+**What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:
+- At rest: `gaugeToken` = `NeutralLightest` (#747BAD). It was a hand-picked #97A6C2, so the rest is a little darker and bluer.
+- Ready: `readyToken` = `Cta` (#99FF80). It was #9DFF2E.
+
+`MeerkatHUDVariant.prefab` wires `theme` to `UITheme.asset`. `author_meerkat_assets.py` writes the same lines and checks them. This closes #1733's UI checklist "Theme tokens" line for the Meerkat. The other six vessel HUDs with their own colour pair (Angler, Brittle Star, Goby, Shrike, Starling, Stoat) are unchanged: whether they move too is Shombith's call.
+
+**Verified without the editor:**
+- `MeerkatHUDView.cs` compiled alone with Unity 6000.3.17f1's Roslyn against the editor's current `Assembly-CSharp.dll`: 0 errors. A negative control (a misspelt token) fails with CS0117.
+- The generator's `patch_hud_variant` turns the committed prefab into the new one exactly and is idempotent.
+- `check_hud_variant` passes on the new prefab and flags the old one.
+
+NOT run: the full project compile, any EditMode test, a play.
+
+**Verify in editor:**
+1. Open `MeerkatHUDVariant.prefab`: the view's `theme` is `UITheme`, `gaugeToken` is NeutralLightest, `readyToken` is Cta, and no missing-field warning shows.
+2. Fly the Meerkat from the Toybox Vessel Changer:
+   - The gauges rest in the theme's neutral.
+   - The Charge card turns lime with Sentinel Mode on.
+   - The Space card turns lime once RT would form a soliton.
+   - The Time card turns lime while riding.
+3. Judge the darker resting gauge against the other cards on the row. If it reads too dark, pick another token in the inspector; no code change is needed.
+
 ### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by

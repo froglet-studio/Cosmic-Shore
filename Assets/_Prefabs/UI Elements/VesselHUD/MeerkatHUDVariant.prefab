@@ -189,8 +189,9 @@ MonoBehaviour:
   portalGauge: {fileID: 7700000000000001223}
   solitonGauge: {fileID: 7700000000000001213}
   rideGauge: {fileID: 7700000000000001233}
-  gaugeColor: {r: 0.59, g: 0.65, b: 0.76, a: 1}
-  readyColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
+  theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  gaugeToken: 7
+  readyToken: 8
   colorBlendRate: 15
 --- !u!224 &7475086108544464464 stripped
 RectTransform:
