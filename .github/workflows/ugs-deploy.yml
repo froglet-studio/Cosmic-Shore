@@ -36,7 +36,7 @@ on:
         options: [development, production]
         default: development
       ref:
-        description: What to deploy - a branch, tag or commit already on bleeding-edge. An older one is a rollback.
+        description: What to deploy - a branch, tag or full 40-character commit sha already on bleeding-edge. An older one is a rollback.
         type: string
         default: bleeding-edge
       dry_run:
@@ -99,6 +99,10 @@ jobs:
             echo "::error::ref must be a branch, tag or commit name (letters, digits, . _ / -)."
             exit 1
           fi
+          if printf '%s' "$REF_INPUT" | grep -Eq '^[0-9a-f]{7,39}$'; then
+            echo "::error::ref looks like a short commit sha; give the full 40-character sha (checkout cannot fetch a short one)."
+            exit 1
+          fi
           deploy=true; [ "$DRY_RUN" = true ] && deploy=false
           { echo "target=$TARGET"; echo "deploy=$deploy"; } >> "$GITHUB_OUTPUT"
 
@@ -141,7 +145,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 20
+          node-version: 22
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
@@ -237,7 +241,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 20
+          node-version: 22
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
@@ -310,7 +314,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 20
+          node-version: 22
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
