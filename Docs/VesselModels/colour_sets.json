@@ -102,6 +102,7 @@
     }
   },
   "open": [
+    "Nocturne as the default leaves four things on Photic: vessel hull materials, rendered card art, the vessel studio's colours and Amoebius. Its dark faces also darken the HUD shielded signal (Docs/PALETTE.md section 1).",
     "Lime as the CTA pair: DarkCTA paints about 93% of a free crystal, so a face pigment there makes free pickups read as oxblood. The Unity asset keeps the CTA lime on both halves for now; the Lime face (Oxblood) has no field.",
     "Fire as danger: danger is a shared rim over each domain's shielded face, so Fire's own face pigment (Denim) has nowhere to go in SO_ColorSet today. The Unity asset paints Danger with the Fire rim (Strawberry) only.",
     "The free colour-blind sets (protan, deutan, tritan) need the same rules applied to the simulated colours; colour_sets.py --report already prints how each set fares under each."

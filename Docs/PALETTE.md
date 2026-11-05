@@ -24,6 +24,14 @@ default until then. It is no longer wired to the game, but it is still load-bear
 `render_card_backgrounds.py` still read it. So a tuning edit goes into Photic, then re-run the writer to carry it into
 the sets. A hue belongs in `colour_sets.json`.
 
+Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
+
+- **HUD shielded signal.** `GetShieldedSignalColor` reads the shielded FACE, so it now paints Jade `#552345`, Ruby
+  `#385060` and Gold `#53416C` (HSV value 0.33-0.42, against Photic's 0.60-0.73). The Squirrel, Angler and Butterfly HUDs
+  use it. Check that those icons stay legible.
+- **Not moved by the switch, because they read Photic:** the vessel hull materials (`vessel_colors.py`), the rendered card
+  art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and Amoebius.
+
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
 `Shielded*SpreadFresnelMaterial.mat` files under `_Graphics/Materials/` are likewise
