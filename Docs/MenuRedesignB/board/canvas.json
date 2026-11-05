@@ -3772,6 +3772,165 @@
       "h": 900,
       "page": "menu-redesign-c",
       "title": "Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, decisions"
+    },
+    "R52Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 - the same Home on a phone: today's PC layout shrunk vs the phone scale, at true size"
+    },
+    "R52SignIn.dc.html": {
+      "x": 2128,
+      "y": 0,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 SignIn - Sign-in: the welcome and Play as guest, one column"
+    },
+    "R52Home.dc.html": {
+      "x": 4256,
+      "y": 0,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R52Arcade.dc.html": {
+      "x": 0,
+      "y": 1080,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 Arcade - Arcade: eight cards in a 4 x 2 grid, the game of the week marked"
+    },
+    "R52Configure.dc.html": {
+      "x": 2128,
+      "y": 1080,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interactive",
+      "is_interactive": true
+    },
+    "R52Hangar.dc.html": {
+      "x": 4256,
+      "y": 1080,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive",
+      "is_interactive": true
+    },
+    "R52Hud.dc.html": {
+      "x": 0,
+      "y": 2160,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre"
+    },
+    "R52Finish.dc.html": {
+      "x": 2128,
+      "y": 2160,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu"
+    },
+    "R52Notes.dc.html": {
+      "x": 0,
+      "y": 3240,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 52 - notes: the phone rules each board follows, and what each changes in Unity"
+    },
+    "R53SignIn.dc.html": {
+      "x": 0,
+      "y": 5600,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)"
+    },
+    "R53HudLifts.dc.html": {
+      "x": 2128,
+      "y": 5600,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them"
+    },
+    "R53HudTotems.dc.html": {
+      "x": 4256,
+      "y": 5600,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb"
+    },
+    "R53Notes.dc.html": {
+      "x": 0,
+      "y": 6680,
+      "w": 1948,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 53 - notes: what changed from Rev 52 and why"
+    },
+    "R54Compare.dc.html": {
+      "x": 0,
+      "y": 38804,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one"
+    },
+    "R54A.dc.html": {
+      "x": 2100,
+      "y": 38804,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 54 A - Showroom: the picked set's world fills the page under a big name, a rail of sets along its foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R54B.dc.html": {
+      "x": 4200,
+      "y": 38804,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 54 B - Paint chips: every set as a tall chip of its rim-over-face pairs, the picked one opens wide - interactive",
+      "is_interactive": true
+    },
+    "R54C.dc.html": {
+      "x": 0,
+      "y": 40064,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 54 C - Plinth: one domain's three prism tiers large on a plinth, sets left, domain and pigments right - interactive",
+      "is_interactive": true
+    },
+    "R54D.dc.html": {
+      "x": 2100,
+      "y": 40064,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 54 D - Before / after: drag a divider across one world between the set you wear and the one you try - interactive",
+      "is_interactive": true
+    },
+    "R54Notes.dc.html": {
+      "x": 0,
+      "y": 41324,
+      "w": 1920,
+      "h": 900,
+      "page": "menu-redesign-c",
+      "title": "Rev 54 - notes: what changed from Rev 51, the four, how it maps to Unity, decisions"
     }
   },
   "createdOnFiles": {
@@ -3885,6 +4044,9 @@
     "sec-style-guide",
     "sec-rev50",
     "sec-rev51",
+    "sec-rev52",
+    "sec-rev53",
+    "sec-rev54",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -3949,7 +4111,10 @@
     "rev49",
     "style-guide",
     "rev50",
-    "rev51"
+    "rev51",
+    "rev52",
+    "rev53",
+    "rev54"
   ],
   "notes": {
     "hud_end": {
@@ -6091,6 +6256,78 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "menu-redesign-c"
+    },
+    "rev52": {
+      "kind": "title1",
+      "text": "Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6204,
+      "page": "phone"
+    },
+    "sec-rev52": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6524,
+      "h": 4860,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
+    },
+    "rev53": {
+      "kind": "title1",
+      "text": "Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)",
+      "x": 0,
+      "y": 5200,
+      "w": 240,
+      "maxW": 6204,
+      "page": "phone"
+    },
+    "sec-rev53": {
+      "kind": "rect",
+      "x": -160,
+      "y": 5040,
+      "w": 6524,
+      "h": 2700,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
+    },
+    "rev54": {
+      "kind": "title1",
+      "text": "Rev 54 - Colour sets in the Profile, more modern: the set's world leads",
+      "x": 0,
+      "y": 38404,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
+    },
+    "sec-rev54": {
+      "kind": "rect",
+      "x": -160,
+      "y": 38244,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "menu-redesign-c"
     }
   },
   "order": [
@@ -6552,7 +6789,26 @@
     "R51Unlock.dc.html",
     "R51Loading.dc.html",
     "R51Applied.dc.html",
-    "R51Notes.dc.html"
+    "R51Notes.dc.html",
+    "R52Compare.dc.html",
+    "R52SignIn.dc.html",
+    "R52Home.dc.html",
+    "R52Arcade.dc.html",
+    "R52Configure.dc.html",
+    "R52Hangar.dc.html",
+    "R52Hud.dc.html",
+    "R52Finish.dc.html",
+    "R52Notes.dc.html",
+    "R53SignIn.dc.html",
+    "R53HudLifts.dc.html",
+    "R53HudTotems.dc.html",
+    "R53Notes.dc.html",
+    "R54Compare.dc.html",
+    "R54A.dc.html",
+    "R54B.dc.html",
+    "R54C.dc.html",
+    "R54D.dc.html",
+    "R54Notes.dc.html"
   ],
   "pages": [
     {
@@ -6578,6 +6834,10 @@
     {
       "id": "froglet-analytics",
       "name": "Froglet Analytics"
+    },
+    {
+      "id": "phone",
+      "name": "Phone"
     }
   ],
   "title": "Frogma"
