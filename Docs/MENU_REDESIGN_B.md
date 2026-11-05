@@ -5847,3 +5847,82 @@ yet), LB / RB on the tabs (the picker uses them), and the Later boards (quest lo
 Docs/PALETTE.md section 1), a vessel's own material copies until it respawns, and a live crystal's tint until it next
 re-tints. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 124. Fix: APPLY reaches the live world; LB / RB on the Profile's tabs (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith, on section 123 as built: "I apply it but the color of the game does not change at all, I have to restart the
+game in order for it to be applied", and "lb rb stuff is missing".
+
+- **Why nothing changed.** `ThemeManager.ApplyColorSet` repainted the domain materials in place, but prisms draw through
+  Entities Graphics and each prism entity COPIES its bright, dark and spread out of its material when it is created
+  (`PrismRenderService.Create`). The copies kept the old set until every prism respawned, which is what a restart did.
+  Crystals do the same into their own property blocks (`Crystal.ApplyColorSetTint`).
+- **The fix.** `ApplyColorSet` now calls `PrismRenderService.RestampColors(<the repainted materials>)`, one pass over the
+  prism entities that re-reads the three colours for every entity on a repainted material, and `Crystal.RetintAll()`.
+  Both run behind the veil. Vessels and settled MeshRenderer prisms (the no-Entities-Graphics path) draw the shared
+  material and already changed. A prism its owner shades (`ApplyColorShade`) takes the raw new colours until its next
+  material sync.
+- **LB / RB.** The tab row has the LB and RB keycaps the board drew (`KitKeycap`), and `ProfileColorSetsPanel` steps
+  between the tabs on the pad's shoulders while the Profile is up, as the Codex and the Hangar step theirs. It stands
+  down while the favourite-pilot picker is open (it owns LB / RB; `ProfileRecordWindow.IsPickerOpen`) or a window over
+  the Profile has the pad.
+- Compiled against the Unity reference assemblies (0 errors in project code); the hand test in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` now expects the colours to change the moment the veil lifts.
+
+## 125. Rev 54 mockups: colour sets, more modern - the set's world leads (2026-11-05; Shombith picked A, built in section 126)
+
+**Asked (Shombith, 2026-11-05):** "give me a few better modern mockups, I do not love these".
+
+**On the canvas:** tab Menu Redesign A, section "Rev 54 - Colour sets in the Profile, more modern" (version
+`1793902693-58fe`; Rev 53 went to the Phone tab while this was drawn). Copies in `Docs/MenuRedesignB/board/`, drawn by
+`Docs/MenuRedesignB/rounds/r54_colour_sets_modern.py <root> 54`. What changes from Rev 51: one scene for every set drawn
+in depth (near prisms large and sharp, far ones small and soft, each set's rims lighting the sea, a vessel's trail and a
+free crystal; the same seeded positions for every set, so only the colours change), less text, and the tabs with LB / RB.
+- **R54Compare:** the three sets in the new scene, and the four ways to pick one.
+- **R54A Showroom (recommended, interactive):** the picked set's world fills the page under a big name and its four
+  rim-over-face pairs; a rail of set thumbnails along its foot; APPLY bottom right. One decision per screen, like a
+  modern cosmetics screen.
+- **R54B Paint chips (interactive):** every set at once as a tall chip of its four pairs; the picked one opens wide
+  into its world.
+- **R54C Plinth (interactive):** one domain's three prism tiers large on a plinth, so the shielded tiers can be judged;
+  sets on the left, the domain switch and its rim / face / vessel / trail on the right.
+- **R54D Before / after (interactive):** a divider dragged across one world between the set you wear and the one you
+  try; a rail to choose what to try.
+- **R54Notes:** what changed, the four, how it maps to Unity (the scene is the real menu cell behind the Profile, or a
+  small render for B and C), decisions.
+
+A is recommended: the world sells the set, the rail keeps every set one press away, and it needs no new rendering in
+Unity if the cell behind the Profile previews the set being browsed.
+
+**Decisions waiting:** which option; whether browsing previews on the real cell (no extra render, but the cell repaints
+as you browse) or only APPLY repaints; Audio Studio as its own tab or kept on Record.
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity and open the PR". Built in section 126.
+
+## 126. Built: Rev 54 A, the Showroom - the Colour sets tab is a window onto the real cell (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". It replaces section 123's cards and preview panel. The tabs, LB / RB, the
+catalog, the veil's colour-set mode and section 124's re-stamp stay.
+
+- **The world is the real cell.** While Colour sets shows, `ProfileColorSetsPanel` switches off the Profile's veil and
+  its sea lines, hides the pilot card and hides the record without closing it (`ProfileRecordWindow.SetHidden`), so the
+  menu cell is seen through a framed window with a fade under the words. No render texture and no second scene.
+- **Browsing previews on the cell.** This answers section 125's open question; the board's notes recommended it.
+  Picking a set, pressing < or >, or moving the pad onto a tile calls `ThemeManager.PreviewColorSet`, which repaints
+  in place and re-stamps without saving. APPLY raises the cell-change veil, then `ApplyColorSet` saves the pick and
+  makes it `Equipped`. If another load holds the screen, APPLY wears the set at once. Leaving the tab or the Profile
+  without applying puts the equipped set back: `ProfileRecordWindow` now raises `Opened` and `Closed`.
+- **On the cell:**
+  - "2 of 3" and "Wearing Nocturne" (authored templates);
+  - "Only you see your colour set";
+  - "Colour set", the set's name at 88 (the board's size, past the type scale's Display 48 on purpose), its line, and
+    the four domains' rim and face swatches with their pigment words;
+  - the rail: <, three set tiles (the four rim-over-face swatches, the name, the lime tick on the worn set), >;
+  - APPLY (Cta), or Equipped when the set shown is the one worn.
+- **Pigment words** are authored in the catalog (`ColorSetCatalogSO.Entry.pigments`; `author_colour_set_catalog.py`
+  added them to the asset once, and its checks hold four per set).
+- **Departures from the board:** the tabs stay in the header row (as built in section 123). Audio Studio stays on
+  Record; that decision is still open. The thumbnails are swatch tiles, not pictures of the cell.
+- Compiled against the Unity reference assemblies; `author_menu_profile.py` and `author_colour_set_catalog.py` pass
+  `--check` and `--self-test`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+

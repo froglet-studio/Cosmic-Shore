@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.ECS;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -47,6 +49,7 @@ namespace CosmicShore.Gameplay
             // The player's pick, if it is in the catalog and unlocked; else the authored palette (Nocturne).
             var picked = PickedColorSet(_dataContainer.Catalog, ColorSetPreference.Load());
             if (picked) _dataContainer.ColorSet = picked;
+            Equipped = _dataContainer.ColorSet;
 
             var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, Domains.Jade, "Green");
             var RedTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.RubyColors, Domains.Ruby, "Red");
@@ -80,25 +83,63 @@ namespace CosmicShore.Gameplay
             return entry != null && entry.unlocked ? entry.colorSet : null;
         }
 
+        /// <summary>The set the player wears: the saved pick, or the authored palette. What a preview returns to.</summary>
+        public SO_ColorSet Equipped { get; private set; }
+
         /// <summary>
-        /// Puts <paramref name="set"/> in the container's slot and repaints the four domain material sets IN PLACE,
-        /// so every prism, vessel and effect drawn with them takes the new colours at once - no cell rebuild. Then
-        /// hands the set to the statics again, saves the pick under <paramref name="savedId"/> and raises
-        /// <see cref="ColorSetApplied"/>. Returns false when there is nothing to do.
+        /// Wears <paramref name="set"/>: shows it (<see cref="PreviewColorSet"/>, a no-op when it is already showing),
+        /// saves the pick under <paramref name="savedId"/>, makes it <see cref="Equipped"/> and raises
+        /// <see cref="ColorSetApplied"/>. Returns false when there is nothing to apply.
         /// </summary>
         public bool ApplyColorSet(SO_ColorSet set, string savedId)
         {
-            if (!set || _dataContainer.TeamMaterialSets == null) return false;
+            if (!PreviewColorSet(set)) return false;
             ColorSetPreference.Save(savedId);
-            if (set == _dataContainer.ColorSet) return false;
-
-            _dataContainer.ColorSet = set;
-            foreach (var pair in _dataContainer.TeamMaterialSets)
-                if (pair.Value && set.TryGetColorSetByDomain(pair.Key, out var domainColors))
-                    PaintDomainMaterialSet(pair.Value, domainColors, pair.Key);
-            HandOffColorSet();
+            Equipped = set;
             ColorSetApplied?.Invoke(set);
             return true;
+        }
+
+        /// <summary>
+        /// Shows <paramref name="set"/> without saving it - the Profile's Colour sets tab previews the set being browsed
+        /// on the real cell behind it (Rev 54 A, §126), and puts <see cref="Equipped"/> back when the player leaves
+        /// without applying. Puts the set in the container's slot and repaints the four domain material sets IN PLACE,
+        /// so every prism, vessel and effect drawn with them takes the new colours at once - no cell rebuild - then
+        /// hands it to the statics again. Returns false when it cannot (no set, the manager not up).
+        /// </summary>
+        public bool PreviewColorSet(SO_ColorSet set)
+        {
+            if (!set || _dataContainer.TeamMaterialSets == null) return false;
+            if (set == _dataContainer.ColorSet) return true;
+
+            _dataContainer.ColorSet = set;
+            var repainted = new List<Material>(64);
+            foreach (var pair in _dataContainer.TeamMaterialSets)
+                if (pair.Value && set.TryGetColorSetByDomain(pair.Key, out var domainColors))
+                {
+                    PaintDomainMaterialSet(pair.Value, domainColors, pair.Key);
+                    CollectMaterials(pair.Value, repainted);
+                }
+            HandOffColorSet();
+            // What copied its colours out of a material when it spawned does not see a repaint in place: the prism
+            // render entities and the crystals' tint blocks (§124). Vessels and settled MeshRenderer prisms draw the
+            // shared material itself and change with it.
+            PrismRenderService.RestampColors(repainted);
+            Crystal.RetintAll();
+            return true;
+        }
+
+        static void CollectMaterials(SO_MaterialSet set, List<Material> into)
+        {
+            foreach (var m in new[]
+                     {
+                         set.BlockMaterial, set.TransparentBlockMaterial, set.ShieldedBlockMaterial,
+                         set.TransparentShieldedBlockMaterial, set.SuperShieldedBlockMaterial,
+                         set.TransparentSuperShieldedBlockMaterial, set.DangerousBlockMaterial,
+                         set.TransparentDangerousBlockMaterial, set.ExplodingBlockMaterial, set.CrystalMaterial,
+                         set.CrystalMaterial1, set.CrystalMaterial2, set.CrystalMaterial3, set.CrystalMaterial4,
+                     })
+                if (m) into.Add(m);
         }
 
         void HandOffColorSet()
