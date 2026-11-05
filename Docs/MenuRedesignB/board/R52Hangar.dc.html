@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(34,38,69,.85);color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1948px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="ph" style="left:0px;top:0px;transform:scale(2)"><img src="/_blob/423125b7f05629e899e1ec1f3e076f05" alt="" style="position:absolute;inset:0;width:974px;height:450px;object-fit:cover;opacity:.3"><nav style="position:absolute;left:54px;top:0;bottom:24px;width:72px;background:rgba(0,1,10,.78);box-shadow:inset -1px 0 0 #222645;display:flex;flex-direction:column;align-items:center;padding-top:28px;gap:4px"><button class="pick" type="button" aria-pressed="true" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:#00D4FF"></span><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:24px;height:24px;object-fit:contain;opacity:1"><span class="lab" style="color:#E6E9FF;letter-spacing:.1em">Hangar</span></button><button class="pick" type="button" aria-pressed="false" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:transparent"></span><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:24px;height:24px;object-fit:contain;opacity:.6"><span class="lab" style="color:#747BAD;letter-spacing:.1em">Ark</span></button><button class="pick" type="button" aria-pressed="false" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:transparent"></span><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:24px;height:24px;object-fit:contain;opacity:.6"><span class="lab" style="color:#747BAD;letter-spacing:.1em">Home</span></button><button class="pick" type="button" aria-pressed="false" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:transparent"></span><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:24px;height:24px;object-fit:contain;opacity:.6"><span class="lab" style="color:#747BAD;letter-spacing:.1em">Port</span></button><span style="flex:1"></span><button class="ico slx" type="button" aria-label="Settings" style="margin-bottom:10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></nav><div style="position:absolute;left:142px;top:16px"><span class="lab">Hangar · your vessel</span><h1 class="h1" style="margin-top:4px">{{hg.name}}</h1></div><img src="{{hg.img}}" alt="{{hg.name}}" style="position:absolute;left:182px;top:84px;width:480px;height:200px;object-fit:contain"><div style="position:absolute;right:66px;top:96px;width:200px;display:flex;flex-direction:column;gap:8px"><span class="lab">Pilot</span><span class="body">{{hg.pilot}}</span><span class="lab" style="margin-top:6px">Element</span><span class="body">{{hg.element}}</span><button class="btn s slx" type="button" style="margin-top:10px;background:rgba(34,38,69,.92);color:#E6E9FF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>Fly it</button></div><div style="position:absolute;left:142px;bottom:36px;display:flex;gap:10px"><sc-for list="{{hg.list}}" as="h" hint-placeholder-count="3"><button class="pick sls" type="button" onClick="{{h.pick}}" aria-pressed="{{h.pressed}}" style="width:132px;height:64px;background:{{h.fill}};box-shadow:inset 0 0 0 2px {{h.edge}};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><img src="{{h.img}}" alt="" style="width:96px;height:32px;object-fit:contain"><span class="lab" style="color:{{h.ink}}">{{h.name}}</span></button></sc-for><div class="sls" style="width:132px;height:64px;background:rgba(0,4,31,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#747BAD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="lab">Urchin · L4</span></div></div><div aria-hidden="true" style="position:absolute;left:54px;right:54px;top:0;bottom:24px;outline:1px dashed rgba(230,233,255,.10);pointer-events:none"></div><div aria-hidden="true" style="position:absolute;left:13px;top:152px;width:43px;height:145px;border-radius:22px;background:#000"></div><div aria-hidden="true" style="position:absolute;left:409px;bottom:7px;width:155px;height:6px;border-radius:3px;background:rgba(230,233,255,.55)"></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1948,"height":900}}'>
+const HULLS = [{"name": "Sparrow", "img": "/_blob/a2a4139d8e2822885778740d4f2fb92e", "pilot": "Shrapnel", "element": "Charge"}, {"name": "Dolphin", "img": "/_blob/e4ebf079ba441cd7141a2c8bc092d8ea", "pilot": "Riptide", "element": "Space"}, {"name": "Squirrel", "img": "/_blob/694ae84ec6db347c4f034c8e03b56991", "pilot": "Trace", "element": "Time"}];
+class Component extends DCLogic {
+constructor(p){ super(p); this.state = { pick: 2 }; }
+renderVals() {
+const k = this.state.pick, H = HULLS[k];
+return { hg: { name: H.name, img: H.img, pilot: H.pilot, element: H.element,
+  list: HULLS.map((h, i) => ({ name: h.name, img: h.img, pressed: i === k ? 'true' : 'false',
+    fill: i === k ? 'rgba(0,212,255,.12)' : 'rgba(34,38,69,.85)', edge: i === k ? '#00D4FF' : 'transparent', ink: i === k ? '#00D4FF' : '#747BAD',
+    pick: () => this.setState({ pick: i }) })) } };
+}
+}
+</script>
+</body>
+</html>

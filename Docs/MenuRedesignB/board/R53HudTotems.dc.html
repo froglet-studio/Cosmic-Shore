@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(34,38,69,.85);color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1948px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="ph" style="left:0px;top:0px;transform:scale(2)"><img src="/_blob/33b45ebe5f51c2b0d213c122ea74892a" alt="" style="position:absolute;inset:0;width:974px;height:450px;object-fit:cover"><button class="ico slx" type="button" aria-label="Pause" style="position:absolute;left:66px;top:14px;background:rgba(0,4,31,.72)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button><div class="sls" style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(0,4,31,.72);display:flex;align-items:flex-start;gap:20px;padding:6px 18px"><div style="text-align:center"><div class="lab">Time</div><div class="num" style="font-size:30px">01:12.4</div></div><div style="text-align:center"><div class="lab">Crystals</div><div class="num" style="font-size:16px;margin-top:6px"><span style="color:#FFAE00">&#x25C6;</span> 21</div></div><div style="text-align:center"><div class="lab">Intensity</div><div class="num" style="font-size:16px;margin-top:6px">II</div></div></div><div aria-hidden="true" style="position:absolute;left:150px;top:230px;width:64px;height:84px;border-radius:32px;background:rgba(230,233,255,.22);box-shadow:inset 0 0 0 1px rgba(230,233,255,.35)"></div><span class="small" style="position:absolute;left:110px;top:322px;width:144px;text-align:center;color:rgba(230,233,255,.7)">left thumb flies</span><div aria-hidden="true" style="position:absolute;left:569px;top:178px;width:351px;height:248px;outline:1px dashed rgba(230,233,255,.22)"></div><span class="small" style="position:absolute;left:577px;top:184px;color:rgba(230,233,255,.6)">right-thumb corner: 36 % x 55 %</span><button class="pick" type="button" aria-label="Cannons" style="position:absolute;left:830px;top:338px;width:74px;height:74px;border-radius:50%;background:rgba(0,4,31,.78);box-shadow:inset 0 0 0 2px rgba(230,233,255,.5);display:flex;align-items:center;justify-content:center"><img src="/_blob/c9f12e5e04a46fed18f3efcae9278454" alt="" style="width:40px;height:40px;object-fit:contain"></button><button class="pick" type="button" aria-label="Afterburner" style="position:absolute;left:732px;top:348px;width:74px;height:74px;border-radius:50%;background:rgba(0,4,31,.78);box-shadow:inset 0 0 0 2px rgba(230,233,255,.5);display:flex;align-items:center;justify-content:center"><img src="/_blob/8e700cac90a06800993474de189e2ffd" alt="" style="width:40px;height:40px;object-fit:contain"></button><button class="pick" type="button" aria-label="Turret Stance" style="position:absolute;left:812px;top:244px;width:74px;height:74px;border-radius:50%;background:rgba(0,4,31,.78);box-shadow:inset 0 0 0 2px rgba(230,233,255,.5);display:flex;align-items:center;justify-content:center"><img src="/_blob/7ed7bd08d6ba99bde4e4f1915204092e" alt="" style="width:40px;height:40px;object-fit:contain"></button><div class="slx" style="position:absolute;left:379px;bottom:28px;height:44px;padding:0 10px;background:rgba(0,4,31,.72);display:flex;align-items:center;gap:8px"><img src="/_blob/7ed7bd08d6ba99bde4e4f1915204092e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:.6"><span class="lab">Display only</span></div><span class="small" style="position:absolute;left:577px;top:202px;width:200px;color:rgba(230,233,255,.6)">buttons 10 mm, down to 7 mm when they do not fit</span><div aria-hidden="true" style="position:absolute;left:54px;right:54px;top:0;bottom:24px;outline:1px dashed rgba(230,233,255,.10);pointer-events:none"></div><div aria-hidden="true" style="position:absolute;left:13px;top:152px;width:43px;height:145px;border-radius:22px;background:#000"></div><div aria-hidden="true" style="position:absolute;left:409px;bottom:7px;width:155px;height:6px;border-radius:3px;background:rgba(230,233,255,.55)"></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1948,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

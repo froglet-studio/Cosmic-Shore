@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.ph{position:absolute;left:0;top:0;width:974px;height:450px;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich',sans-serif;transform-origin:0 0}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:24px;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:20px;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:16px;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:16px;line-height:1.35;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:13px;line-height:1.35;color:#747BAD;margin:0}
+.sls{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;height:52px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.s{font-size:12px;height:52px;padding:0 14px}
+.ico{appearance:none;border:0;cursor:pointer;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;background:rgba(34,38,69,.85);color:#E6E9FF;padding:0}
+.pick{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit;padding:0;text-align:left;background:none}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1948px; height: 900px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="ph" style="left:0px;top:0px;transform:scale(2)"><img src="/_blob/423125b7f05629e899e1ec1f3e076f05" alt="" style="position:absolute;inset:0;width:974px;height:450px;object-fit:cover"><div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse at 55% 45%,rgba(0,1,10,.1) 30%,rgba(0,1,10,.6) 100%)"></div><nav style="position:absolute;left:54px;top:0;bottom:24px;width:72px;background:rgba(0,1,10,.78);box-shadow:inset -1px 0 0 #222645;display:flex;flex-direction:column;align-items:center;padding-top:28px;gap:4px"><button class="pick" type="button" onClick="{{nav.Hangar.go}}" aria-pressed="{{nav.Hangar.pressed}}" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:{{nav.Hangar.line}}"></span><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:24px;height:24px;object-fit:contain;opacity:{{nav.Hangar.op}}"><span class="lab" style="color:{{nav.Hangar.col}};letter-spacing:.1em">Hangar</span></button><button class="pick" type="button" onClick="{{nav.Ark.go}}" aria-pressed="{{nav.Ark.pressed}}" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:{{nav.Ark.line}}"></span><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:24px;height:24px;object-fit:contain;opacity:{{nav.Ark.op}}"><span class="lab" style="color:{{nav.Ark.col}};letter-spacing:.1em">Ark</span></button><button class="pick" type="button" onClick="{{nav.Home.go}}" aria-pressed="{{nav.Home.pressed}}" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:{{nav.Home.line}}"></span><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:24px;height:24px;object-fit:contain;opacity:{{nav.Home.op}}"><span class="lab" style="color:{{nav.Home.col}};letter-spacing:.1em">Home</span></button><button class="pick" type="button" onClick="{{nav.Port.go}}" aria-pressed="{{nav.Port.pressed}}" style="position:relative;width:72px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><span style="position:absolute;left:0;top:12px;bottom:12px;width:2px;background:{{nav.Port.line}}"></span><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:24px;height:24px;object-fit:contain;opacity:{{nav.Port.op}}"><span class="lab" style="color:{{nav.Port.col}};letter-spacing:.1em">Port</span></button><span style="flex:1"></span><button class="ico slx" type="button" aria-label="Settings" style="margin-bottom:10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></nav><button class="pick sls" type="button" style="position:absolute;left:142px;top:16px;height:56px;padding:0 16px 0 6px;background:rgba(0,4,31,.86);display:flex;align-items:center;gap:10px"><span class="oct" style="width:44px;height:44px;background:#222645;padding:2px;box-sizing:border-box;display:block"><img class="oct" src="/_blob/e706037f2062090a1514ed6e21e28a7b" alt="" style="width:40px;height:40px;object-fit:cover;display:block"></span><span style="display:flex;flex-direction:column;gap:2px"><span class="h3">Kai</span><span class="small num" style="color:#E6E9FF"><span style="color:#FFAE00">&#x25C6;</span> 1,250</span></span></button><button class="ico slx" type="button" aria-label="Friends, 3 online" style="position:absolute;right:66px;top:16px;width:auto;padding:0 14px;gap:8px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c3 .2 5.5 2.6 5.5 5.8"/></svg><span class="h3 num" style="color:#00D4FF">3</span></button><sc-if value="{{toast.show}}" hint-placeholder-val="{{ true }}"><div class="sls" style="position:absolute;right:66px;top:80px;width:300px;background:#222645;padding:1px"><div class="sls" style="background:rgba(0,4,31,.94);display:flex;align-items:center;gap:10px;padding:8px 6px 8px 14px"><div style="flex:1"><div class="lab" style="color:#00D4FF">Party</div><div class="small" style="color:#E6E9FF;margin-top:2px">Kestrel joined your party</div></div><button class="ico" type="button" aria-label="Dismiss" onClick="{{toast.close}}" style="background:none;width:44px;height:44px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#747BAD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div></sc-if><div class="lab" style="position:absolute;left:142px;right:54px;top:210px;text-align:center;color:#E6E9FF;opacity:.8">Tap the cell to fly</div><div style="position:absolute;left:142px;right:66px;bottom:36px;display:flex;gap:10px"><button class="btn sls" type="button" style="flex:1;background:rgba(34,38,69,.92);color:#E6E9FF;height:56px">Toy Box</button><button class="btn sls" type="button" style="flex:1;background:rgba(34,38,69,.92);color:#E6E9FF;height:56px">Arcade</button><button class="btn sls" type="button" style="flex:1;background:rgba(34,38,69,.92);color:#E6E9FF;height:56px">Arena</button><button class="btn sls" type="button" style="flex:1;background:rgba(34,38,69,.92);color:#E6E9FF;height:56px">Voyage</button></div><div aria-hidden="true" style="position:absolute;left:54px;right:54px;top:0;bottom:24px;outline:1px dashed rgba(230,233,255,.10);pointer-events:none"></div><div aria-hidden="true" style="position:absolute;left:13px;top:152px;width:43px;height:145px;border-radius:22px;background:#000"></div><div aria-hidden="true" style="position:absolute;left:409px;bottom:7px;width:155px;height:6px;border-radius:3px;background:rgba(230,233,255,.55)"></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1948,"height":900}}'>
+class Component extends DCLogic {
+constructor(p){ super(p); this.state = { tab: 'Home', toast: true }; }
+renderVals() {
+const t = this.state.tab, nav = { title: t };
+['Hangar', 'Ark', 'Home', 'Port'].forEach(n => {
+  const on = n === t;
+  nav[n] = { col: on ? '#E6E9FF' : '#747BAD', line: on ? '#00D4FF' : 'transparent', op: on ? '1' : '.6', pressed: on ? 'true' : 'false',
+    go: () => this.setState({ tab: n }) };
+});
+return { nav, toast: { show: this.state.toast, close: () => this.setState({ toast: false }) } };
+}
+}
+</script>
+</body>
+</html>

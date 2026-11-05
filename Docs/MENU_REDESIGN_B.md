@@ -5752,9 +5752,256 @@ task, artifact diagrams or presentation, website, codex should all follow these 
   out-of-family variants; D5 CTA always lime; D6 phones on their own 800 x 450 scale; D7 the UI checklist required;
   D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
 
+
+## 122. Rev 51 mockups: colour sets in the Profile, and the repaint between them (2026-11-05; Shombith picked A, built in section 123)
+
+**Asked (Shombith, 2026-11-05):** "create mockups inside profile where we can change these themes from there. remember
+it will be something that the player unlocks with quest system. So it should something inside the profile view, once
+done bring up the loading screen like when cell is change that the theme is changing and apply the theme." Then, while
+it was drawn: "For now all color sets are unlocked since quest is not planned properly". The sets are Garrett's
+(`Docs/VesselModels/colour_sets.json`, `Docs/PALETTE.md` section 1): Nocturne (the default since 2026-11-03), Photic
+(the original) and Dart Frog, plus the planned colour-blind sets, drawn here as one card, Clear Sight.
+
+**On the canvas:** tab Menu Redesign A, section "Rev 51 - Colour sets in the Profile" (version `1793896538-6258`; Rev 50
+went to the Froglet Analytics tab while this round was drawn, so it moved to 51). Copies in `Docs/MenuRedesignB/board/`,
+drawn by `Docs/MenuRedesignB/rounds/r51_profile_colour_sets.py <root> 51`. Every prism, vessel, trail and crystal on the
+boards is the set's SHIPPED value read from its `SO_ColorSet` asset (linear HDR, tone-clamped for a screen).
+- **R51Compare:** each set's card in each state it can show: equipped, owned (every set, for now), and the two Later
+  columns, quest in progress and quest not started.
+- **R51A (recommended, interactive):** the built Profile (Rev 13) gains a third tab, Record | Colour sets | Audio
+  Studio on LB / RB. Four set cards, each with a small cell in its colours, beside a big preview of the cell in the
+  picked set and its four rim-over-face pairs. APPLY (lime) plays the loading screen, then the toast; the cell behind
+  the Profile's veil is drawn in the equipped set.
+- **R51B (interactive):** the set you wear sits on the pilot card with CHANGE (X); the picker is a Colour sets window
+  over the Profile (APPLY / CANCEL straddling its foot). The smallest change to the built screen.
+- **R51C:** a shelf of four large cards under the pilot card, each its own preview; the record moves below.
+- **R51Loading:** the cell-change veil (`EnvironmentLoadVeil`, section 47.4) with its words for a set change: CHANGING
+  COLOUR SET, the set's name, old -> new rim and face per domain, the omni crystal's hex filling with the new set over
+  the old, and the four steps (mixing the palette, repainting prisms, recolouring vessels and trails, opening the cell).
+- **R51Applied:** back in the Profile with Dart Frog equipped, the toast "Colour set applied", the cell behind repainted.
+- **R51Locked, R51Unlock (Later, once quests are planned):** a set a quest has not given yet (grey, the quest's goals,
+  OPEN VOYAGE), and the Voyage window's claim handing over a set (USE IT NOW repaints at once, LATER leaves it in the
+  Profile). Quest 4 / Maelstrom is an example, not a plan.
+- **R51Notes:** the options, unlocked-for-now, what the repaint does in Unity, decisions.
+
+A is recommended: one more tab on the screen that is built, nothing else moves, and the preview is large enough to judge
+a palette; it is the Voyage window's LB / RB tab pattern.
+
+**Differs from the build:** the Profile has no colour sets today, and the game has one palette, chosen by the slot on
+`ThemeManagerDataContainer.asset`. Building a pick means: a per-player chosen set (saved like the other profile
+settings); `ThemeManager` rebuilding its four domain material sets and handing the set to `GameToastAPI` and `PrismLit`
+again (today it does that once, at Awake); and reloading the menu cell under the existing veil, since prisms take
+their material when they spawn. The hull materials, card art, studios and the launcher still read Photic
+(`Docs/PALETTE.md` section 1), so a set is not a full repaint until they have a per-set path.
+
+**Decisions waiting:** which option; the word ("Colour sets", Garrett's, since "theme" is the style guide's Deep Sea /
+Shore); later, which quests give which sets; Dart Frog is on the paid track in `colour_sets.json` (Garrett's call);
+whether the UI's domain colours follow the set (style guide D2 says a domain is the live palette).
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity". Built in section 123.
+
+## 123. Built: Rev 51 A, the Profile's Colour sets tab and the repaint (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". Every set is unlocked (the quests are not planned yet). Compiled against the
+Unity reference assemblies (`Tools/Build/unity_refcompile`, 0 errors in project code); not opened in the editor.
+
+**The switch** (the one palette slot stays the truth):
+- `ColorSetCatalogSO` (`Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset`, written by
+  `Tools/Build/author_colour_set_catalog.py`, `--check` / `--self-test`): one entry per set, with an id, its
+  `SO_ColorSet`, the name and line the Profile shows (authored in the asset), and `unlocked` (all on).
+  `ThemeManagerDataContainer.Catalog` points at it.
+- `ColorSetPreference`: the pick is saved on the device (PlayerPrefs). A set changes how this player sees the game,
+  nothing anyone else sees.
+- `ThemeManager`: at Awake it puts the saved pick (if it is in the catalog and unlocked) into
+  `ThemeManagerDataContainer.ColorSet`, then builds the four domain material sets as before. `ApplyColorSet` puts a
+  new set in the slot and repaints the SAME material instances in place (`PaintDomainMaterialSet`, split out of
+  `GenerateDomainMaterialSet`), hands the set to `GameToastAPI` and `PrismLit` again, saves the pick and raises
+  `ColorSetApplied`. Live prisms change colour without a rebuild because they draw with those shared materials.
+  `OnDestroy` puts the authored palette back in the slot, so an editor play session never leaves the asset pointing at
+  another set.
+- The four menu views that held a palette of their own (`CodexScreen`, `ConfigureSeatPedestal`, `KitDomainTile`,
+  `SquadsPage`) now paint with `ThemeManager.LiveOr(theirs)`.
+
+**The loading screen:** `EnvironmentLoadVeil.ShowColourSetChange(name, line, repaint)`, the cell-change veil in a
+colour-set mode: "Changing colour set", the set's name and line, and four steps from
+`EnvironmentLoadVeilContentSO.colourSetSteps` (Mixing the palette, Repainting prisms, Recolouring vessels and trails,
+Opening the cell) plus `colourSetTip`. The repaint runs once the screen is opaque; the steps light 0.3 s apart and the
+veil lifts. No load gate is taken. Words authored by `Tools/Build/author_load_veil_content.py` (its checks now hold the
+four colour-set steps too).
+
+**The Profile** (`Tools/Build/author_menu_profile.py`, `ProfileView.prefab`):
+- Two word tabs, RECORD and COLOUR SETS (`KitTextTab`), in the header row beside "Your pilot". **Departure from the
+  board:** the board drew them under the pilot card with a third tab, Audio Studio. In the header the approved record
+  keeps every position, and Audio Studio stays on the Record page where Rev 13 put it. A third tab is one generator
+  change if wanted.
+- `ProfileColorSetsPanel` on the `ColourSets` layer over the record's panels: three set cards (name, line, the four
+  domains' prism swatches, Equipped with the lime tick / Owned / "Unlocks with a quest"), the picked set's preview
+  (Jade, Ruby, Gold, Blue at Prism, Shielded, Super-shielded, plus the vessel colour; HDR shown at its hue), and APPLY
+  (Cta) straddling the preview's foot, hidden while the shown set is equipped. Opening the Profile again returns to
+  Record.
+
+**Not built:** the board's per-card cell pictures and big cell preview (swatches stand in), Clear Sight (no asset
+yet), LB / RB on the tabs (the picker uses them), and the Later boards (quest locks and the claim window).
+
+**Not repainted by a switch:** what reads Photic by path (hull materials, card art, the studios, the launcher accents;
+Docs/PALETTE.md section 1), a vessel's own material copies until it respawns, and a live crystal's tint until it next
+re-tints. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+## 124. Fix: APPLY reaches the live world; LB / RB on the Profile's tabs (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith, on section 123 as built: "I apply it but the color of the game does not change at all, I have to restart the
+game in order for it to be applied", and "lb rb stuff is missing".
+
+- **Why nothing changed.** `ThemeManager.ApplyColorSet` repainted the domain materials in place, but prisms draw through
+  Entities Graphics and each prism entity COPIES its bright, dark and spread out of its material when it is created
+  (`PrismRenderService.Create`). The copies kept the old set until every prism respawned, which is what a restart did.
+  Crystals do the same into their own property blocks (`Crystal.ApplyColorSetTint`).
+- **The fix.** `ApplyColorSet` now calls `PrismRenderService.RestampColors(<the repainted materials>)`, one pass over the
+  prism entities that re-reads the three colours for every entity on a repainted material, and `Crystal.RetintAll()`.
+  Both run behind the veil. Vessels and settled MeshRenderer prisms (the no-Entities-Graphics path) draw the shared
+  material and already changed. A prism its owner shades (`ApplyColorShade`) takes the raw new colours until its next
+  material sync.
+- **LB / RB.** The tab row has the LB and RB keycaps the board drew (`KitKeycap`), and `ProfileColorSetsPanel` steps
+  between the tabs on the pad's shoulders while the Profile is up, as the Codex and the Hangar step theirs. It stands
+  down while the favourite-pilot picker is open (it owns LB / RB; `ProfileRecordWindow.IsPickerOpen`) or a window over
+  the Profile has the pad.
+- Compiled against the Unity reference assemblies (0 errors in project code); the hand test in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` now expects the colours to change the moment the veil lifts.
+
+## 125. Rev 54 mockups: colour sets, more modern - the set's world leads (2026-11-05; Shombith picked A, built in section 126)
+
+**Asked (Shombith, 2026-11-05):** "give me a few better modern mockups, I do not love these".
+
+**On the canvas:** tab Menu Redesign A, section "Rev 54 - Colour sets in the Profile, more modern" (version
+`1793902693-58fe`; Rev 53 went to the Phone tab while this was drawn). Copies in `Docs/MenuRedesignB/board/`, drawn by
+`Docs/MenuRedesignB/rounds/r54_colour_sets_modern.py <root> 54`. What changes from Rev 51: one scene for every set drawn
+in depth (near prisms large and sharp, far ones small and soft, each set's rims lighting the sea, a vessel's trail and a
+free crystal; the same seeded positions for every set, so only the colours change), less text, and the tabs with LB / RB.
+- **R54Compare:** the three sets in the new scene, and the four ways to pick one.
+- **R54A Showroom (recommended, interactive):** the picked set's world fills the page under a big name and its four
+  rim-over-face pairs; a rail of set thumbnails along its foot; APPLY bottom right. One decision per screen, like a
+  modern cosmetics screen.
+- **R54B Paint chips (interactive):** every set at once as a tall chip of its four pairs; the picked one opens wide
+  into its world.
+- **R54C Plinth (interactive):** one domain's three prism tiers large on a plinth, so the shielded tiers can be judged;
+  sets on the left, the domain switch and its rim / face / vessel / trail on the right.
+- **R54D Before / after (interactive):** a divider dragged across one world between the set you wear and the one you
+  try; a rail to choose what to try.
+- **R54Notes:** what changed, the four, how it maps to Unity (the scene is the real menu cell behind the Profile, or a
+  small render for B and C), decisions.
+
+A is recommended: the world sells the set, the rail keeps every set one press away, and it needs no new rendering in
+Unity if the cell behind the Profile previews the set being browsed.
+
+**Decisions waiting:** which option; whether browsing previews on the real cell (no extra render, but the cell repaints
+as you browse) or only APPLY repaints; Audio Studio as its own tab or kept on Record.
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity and open the PR". Built in section 126.
+
+## 126. Built: Rev 54 A, the Showroom - the Colour sets tab is a window onto the real cell (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". It replaces section 123's cards and preview panel. The tabs, LB / RB, the
+catalog, the veil's colour-set mode and section 124's re-stamp stay.
+
+- **The world is the real cell.** While Colour sets shows, `ProfileColorSetsPanel` switches off the Profile's veil and
+  its sea lines, hides the pilot card and hides the record without closing it (`ProfileRecordWindow.SetHidden`), so the
+  menu cell is seen through a framed window with a fade under the words. No render texture and no second scene.
+- **Browsing previews on the cell.** This answers section 125's open question; the board's notes recommended it.
+  Picking a set, pressing < or >, or moving the pad onto a tile calls `ThemeManager.PreviewColorSet`, which repaints
+  in place and re-stamps without saving. APPLY raises the cell-change veil, then `ApplyColorSet` saves the pick and
+  makes it `Equipped`. If another load holds the screen, APPLY wears the set at once. Leaving the tab or the Profile
+  without applying puts the equipped set back: `ProfileRecordWindow` now raises `Opened` and `Closed`.
+- **On the cell:**
+  - "2 of 3" and "Wearing Nocturne" (authored templates);
+  - "Only you see your colour set";
+  - "Colour set", the set's name at 88 (the board's size, past the type scale's Display 48 on purpose), its line, and
+    the four domains' rim and face swatches with their pigment words;
+  - the rail: <, three set tiles (the four rim-over-face swatches, the name, the lime tick on the worn set), >;
+  - APPLY (Cta), or Equipped when the set shown is the one worn.
+- **Pigment words** are authored in the catalog (`ColorSetCatalogSO.Entry.pigments`; `author_colour_set_catalog.py`
+  added them to the asset once, and its checks hold four per set).
+- **Departures from the board:** the tabs stay in the header row (as built in section 123). Audio Studio stays on
+  Record; that decision is still open. The thumbnails are swatch tiles, not pictures of the cell.
+- Compiled against the Unity reference assemblies; `author_menu_profile.py` and `author_colour_set_catalog.py` pass
+  `--check` and `--self-test`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 127. Rev 52 mockups: phone layouts at 800 x 450 (2026-11-05, approved)
+
+**Asked** (Shombith): "draw the phone boards on frogma", after the phone scale was built (UI_STYLE_GUIDE §8, D6;
+`claude/ui-phone-scale`, #1739). The guide says a screen gets its phone board before its phone layout is built, and a
+canvas turns on Has Phone Layout only once its screens have one.
+
+**On the canvas:** a new tab **Phone** (`phone`), section "Rev 52 - Phone layouts at 800 x 450 (D6)". Each board is an
+iPhone 14 held sideways (844 x 390 pt): the canvas matches height, so 974 x 450 units, drawn at 2x (1948 x 900). The
+island is on the left, the safe area (54 / 54 / 24 units) is a dashed hairline. Copies: `Docs/MenuRedesignB/board/R52*`.
+- **Compare**: the same Home at the same size, today's PC layout shrunk to 42 % (body 6.5 pt, a mode button 22 pt tall)
+  beside the phone scale (body 13.9 pt, a mode button 49 pt).
+- **SignIn**: the welcome and Play as guest (Lime) in one right-hand column over the sign-in art.
+- **Home** (interactive): the four tabs as a left rail with a Jade line on the picked one, the pilot chip and friends
+  at the top, one toast at a time, the four modes as 56-unit buttons along the bottom (Arcade Lime).
+- **Arcade**: the eight cards in a 4 x 2 grid (186 x 165), Skim Race marked This week (Gold), Hijack locked.
+- **Configure** (interactive): the picture left with Fly it first, intensity I-IV (Jade pick, III and IV locked),
+  pilots as four 52-unit seats you tap to add or remove an AI, START GAME (Ruby, no way back); the ability list moves
+  into a bottom sheet behind Controls.
+- **Hangar** (interactive): the hull large, its pilot and element beside it, the fleet as Jade-selectable chips, the
+  Urchin locked at L4.
+- **Hud**: the four-icon ability row (the LOCKED structure) as 64-unit thumb buttons lower right, the race facts in one
+  top-centre plate, pause top left, a steer area for the left thumb.
+- **Finish**: time, Personal best, earned crystals, the quest; Play again (Ruby) over Menu.
+- **Notes**: the frame, the rules every board keeps (the mobile type column, 52-unit controls, width before height, one
+  toast, sheets for side panels, the style guide's colours), what each board changes in Unity, and three decisions:
+  [the rail or a top band for the four tabs], [Arcade as the Lime button on Home, or all four alike], [a fixed stick or
+  wherever the left thumb lands].
+
+**Differs from the build:** every screen today is the 1920 x 1080 layout shrunk on a phone. Once a board is approved,
+its generator gains a phone layout (`author_start_flow.py`, `author_menu_hub_nav.py`, `author_menu_arcade.py`,
+`author_menu_configure.py`, `author_menu_hangar.py`, `author_ingame_hud.py`), and Has Phone Layout goes on: GameCanvas
+once the HUD and the finish are built, Menu_Main once all its screens are. PC, console and iPad are unchanged.
+
+**Decided (Shombith, 2026-11-05):** "Rail is right, all four alike, stick where thumb lands."
+- The four tabs are a left rail on phones.
+- The four modes on Home look alike: Arcade is no longer Lime (the Home board and the Compare board's phone side
+  redrawn).
+- Steering is a floating stick: the left half of the screen is the steer zone, and the stick starts wherever the left
+  thumb lands (the Hud board redrawn; the Notes board records all three). **Withdrawn the same day (section 128):** phones
+  fly on Garrett's touch scheme.
+
+**Approved (Shombith, 2026-11-05):** "approved". All nine boards are the record the phone layouts are built against.
+
+The repo copy also took the Rev 50 and Rev 51 boards it lacked (drawn on other branches, sections 122-123 there).
+
+## 128. Rev 53 mockups: the phone HUD on Garrett's touch scheme, sign-in as it really is (2026-11-05, approved)
+
+**Asked** (Shombith): "What garett has for phone controls that should be the one." Checked before building, two of the
+approved Rev 52 boards did not match the game. The HUD drew a stick and four tap buttons, but phones fly on Garrett's
+touch scheme (`Docs/ABILITY_LOCKUP.md` "On a phone", `Docs/Reports/MOBILE_VESSELS.md` §8, one row per hull in
+`author_touch_profiles.py`). The sign-in drew only Play as guest, but the chooser (Rev 9, `R9Phones`) also offers Apple
+and Google, and as one column it is taller than a phone. The floating-stick decision of section 127 is withdrawn.
+
+**On the canvas:** the Phone tab, section "Rev 53 - Phone fixes". Copies: `Docs/MenuRedesignB/board/R53*`. Rev 52's Hud
+and SignIn stay as the record; these replace them. The other Rev 52 boards stand as approved.
+- **SignIn**: two columns, the welcome left, the chooser right: Continue with Apple, Continue with Google (iPhone order;
+  Android puts Google first), "or", Play as guest (Default, "Saved on this device only") and the hint. The provider
+  buttons are drawn as stand-ins; the build keeps their own art untouched (section 57).
+- **HudLifts** (Squirrel, a thumb-lifts hull): both thumbs fly anywhere on the glass; the fleet row stays lower right and
+  its lift cards show their glyph (lift left, lift right; stand-ins for `touch_glyph_art.py`); the cards are not
+  buttons. Tilt rolls while one thumb flies.
+- **HudTotems** (Sparrow, a totem-buttons hull): Cannons, Afterburner and Turret Stance as 10 mm buttons round the right
+  thumb inside `TouchButtonLayout`'s 36 % x 55 % corner; a card that presses nothing steps down to the display strip.
+- Both HUD boards add only the HUD's own layout at the phone scale: the race facts in one top-centre plate and pause top
+  left.
+- **Notes**: why the round exists, the two touch schemes, and what is and is not touched.
+
+**Differs from the build:** the HUD change is the top plate and pause (`author_ingame_hud.py`); `TouchControlsHud`,
+`TouchButtonLayout` and the touch profiles are not touched. Sign-in gets a two-column phone layout
+(`author_start_flow.py`, `SignInChooser` re-laying its rows for the column).
+
+**Approved (Shombith, 2026-11-05):** "approved, start building".
+
 **Built (2026-11-05, `claude/ui-phone-layouts`, NOT RUN IN EDITOR):** `PhoneRect` (a piece's phone pose, text size, layout
 size or scale, applied by `AdaptiveCanvasScaler`).
-- **Sign-in** (R53SignIn): the window widens to two columns, the heading left, the chooser's rows right
+- **Sign-in** (R53SignIn, section 128): the window widens to two columns, the heading left, the chooser's rows right
   (`SignInChooser.phoneStackTop`); the Authentication canvas gets the `AdaptiveCanvasScaler` with its phone layout ON.
 - **The finish** (R52Finish): the scoreboard's header and ladder on the left, the reward top right, Play again and Main
   menu bottom right; every row, team header, stat and versus column re-laid for 52-unit rows.
@@ -5766,3 +6013,30 @@ size or scale, applied by `AdaptiveCanvasScaler`).
   override are cleared at the editor. The toasts and the picture-in-picture frame have no phone layout yet.
 - Garrett's touch controls and the vessel HUD are untouched (they are on the vessel's own canvas).
 
+## 129. Rev 55 mockups: the phone menus drawn from the real screens (2026-11-05, awaiting board approval)
+
+**Asked** (Shombith): "yes redraw them from the real screens". Building Rev 52's Home, Arcade, Configure and Hangar boards
+(section 127) showed they had been drawn from the older Rev 21 boards, not the screens that ship: the real Arcade has
+the party panel, two feature cards and 28 games; the real Configure has team columns with seats, an intensity route, a
+controls list and Arena / Maelstrom variants; the real Hangar a vessel list and an ability column; the real nav five
+tabs. These four replace them; Rev 52's stay on the board as the record.
+
+**On the canvas:** the Phone tab, section "Rev 55 - Phone menus from the real screens". Same frame and rules as Rev 52.
+Copies: `Docs/MenuRedesignB/board/R55*`. Content is the built screens' own (the `Home`, `Arcade`, `Configure` and
+`Hangar` boards' data: game art, the vessels with their renders, prices and abilities, Skim Race's controls and teams).
+- **Home** (interactive): the five nav tabs (Codex, Hangar, Home, Ark, Port) as the left rail, the friends orb and
+  Settings at its foot; the pilot chip (Online, crystals; Go offline? under it); the party invite; Up next (the weekly
+  challenge and the current quest); the hint; the four hubs, Mission dimmed.
+- **Arcade** (interactive): Back, Replays and Party 2 / 4 in the header; the weekly challenge and Maelstrom cards; all
+  28 games four across, scrolling. The party panel is a sheet from the Party button (the molecule as a row of seats,
+  invites, friends online).
+- **Configure** (interactive): the picture, objective and briefing left; the class with a Controls sheet, intensity
+  I-IV, the three teams with + AI, and Start game (Ruby) right; Leaderboard in the header.
+- **ConfigureArena**: the hull strip (Jade pick) in place of the class, Claim beside Start game.
+- **Hangar** (interactive): the vessel list left; the vessel, its words, Unlock (Gold) and Abilities right; abilities
+  in a sheet; the spend window.
+- **Notes**: what each keeps and moves, what each changes in Unity, and three decisions: [the party panel as a sheet or
+  a fifth column], [Codex first in the rail as today, or Home first], [Up next: both cards or only the weekly challenge].
+
+**Differs from the build:** each screen's generator gains its phone layout (PhoneRect, its sheet and phone-only
+buttons), `author_menu_topnav.py` the rail; each screen then leaves `author_menu_phone.py`'s fallback list.

@@ -232,8 +232,13 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
 - **Draw the real screen, never a placeholder backdrop** (Rev 34, rejected outright: "I do not like them one bit").
   An option board over an empty sea with a "THE CELL" label reads as a wireframe, however good the overlay. Use the
   canvas's own art: the menu cell (`/_blob/423125b7...`), the nav icons, the card and hull renders. Render the board
-  locally before publishing (`r33/shot.cjs`-style Playwright with a blob map) and look for an overlay covering the
+  locally before publishing (`node .claude/skills/frogma/render_local.cjs <dir> <out> <boards...>`: a stand-in for the
+  canvas runtime, holes / `sc-for` / `sc-if` / handlers, `CLICK=` presses through a flow; `/_blob/` images show broken) and look for an overlay covering the
   very control it points at. Rev 36's `clear_of()` moves a panel off its target.
+- **The sliver clips what straddles it** (Rev 51, 2026-11-05). `.sl` is a `clip-path`, so a window's buttons placed to
+  straddle its foot (style guide §6) are cut in half when they are children of the `.sl` element: the check passes,
+  the board shows half a button. Put the sliver on a background layer (`<div class="abs sl panel" style="inset:0">`)
+  and the content and buttons beside it in an unclipped parent. Only a local render shows it.
 - **A "frozen moment" with a negative `animation-delay` overrides each element's OWN delay.** Pausing a sequence at
   t = 0.45 s with `animation-delay:-0.45s!important` shows every element 0.45 s into its own animation, so a panel
   meant to open at 1.25 s shows half open. Either put the timing in keyframe percentages on one shared loop (the
