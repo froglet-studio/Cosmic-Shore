@@ -119,6 +119,7 @@ On the VM (as a user with sudo), once:
 export GITHUB_TOKEN=...            # can read the repository
 export ANALYTICS_DOMAIN=analytics.froglet.studio    # optional; default analytics.<ip>.sslip.io
 export ANTHROPIC_API_KEY=...       # optional; turns on Claude
+export ANALYTICS_PROFILE_READERS="ian garrett caleb"   # read keys that may open player profiles
 bash Tools/Analytics/server/setup-analytics-vm.sh
 ```
 

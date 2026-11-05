@@ -7,6 +7,8 @@
 #                                                Default: analytics.<public-ip-with-dashes>.sslip.io
 #   export ANALYTICS_BRANCH=bleeding-edge        optional; the branch the server runs from
 #   export ANALYTICS_ORIGINS="https://froglet-studio.github.io"   optional; dashboard origins allowed to read (CORS)
+#   export ANALYTICS_PROFILE_READERS="ian garrett caleb"   optional; each gets a read key (printed once, when made)
+#                                                and may open player profiles. Anyone already listed keeps their key.
 #   export ANTHROPIC_API_KEY=...                 optional; turns on Claude's overnight read and the Ask box.
 #                                                Saved to /etc/froglet-analytics.env (root, 600), never to the repo.
 #   bash setup-analytics-vm.sh
@@ -52,8 +54,9 @@ IP="$(curl -fsS https://api.ipify.org || curl -fsS https://ifconfig.me)"
 DOMAIN="${ANALYTICS_DOMAIN:-analytics.${IP//./-}.sslip.io}"
 export FROGLET_ANALYTICS_CONFIG="$BASE/config.json"
 as env FROGLET_ANALYTICS_CONFIG="$FROGLET_ANALYTICS_CONFIG" "$BASE/venv/bin/python" "$REPO/Tools/Analytics/server/analytics_server.py" init
-as env FROGLET_ANALYTICS_CONFIG="$FROGLET_ANALYTICS_CONFIG" ORIGINS="${ANALYTICS_ORIGINS:-}" "$BASE/venv/bin/python" - <<'PY'
-import json, os
+as env FROGLET_ANALYTICS_CONFIG="$FROGLET_ANALYTICS_CONFIG" ORIGINS="${ANALYTICS_ORIGINS:-}" \
+   READERS="${ANALYTICS_PROFILE_READERS:-}" "$BASE/venv/bin/python" - <<'PY'
+import json, os, secrets
 path = os.environ["FROGLET_ANALYTICS_CONFIG"]
 config = json.load(open(path))
 config["data_dir"] = "/var/lib/froglet-analytics/data"
@@ -61,8 +64,18 @@ config["schema_path"] = "/var/lib/froglet-analytics/repo/Docs/Analytics/EVENT_SC
 origins = [o for o in os.environ.get("ORIGINS", "").split() if o]
 if origins:
     config["allowed_origins"] = origins
+made = []
+for name in os.environ.get("READERS", "").lower().split():
+    if name not in config["read_keys"]:
+        config["read_keys"][name] = "fa_read_" + secrets.token_urlsafe(24)
+        made.append(name)
+    if name not in config.setdefault("profile_readers", []):
+        config["profile_readers"].append(name)
 json.dump(config, open(path, "w"), indent=2)
 os.chmod(path, 0o600)
+for name in made:
+    print(f"read key for {name} (send it to them privately; shown once): {config['read_keys'][name]}")
+print("profile readers:", ", ".join(config.get("profile_readers", [])) or "none")
 PY
 if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_API_KEY" | sudo tee /etc/froglet-analytics.env >/dev/null
