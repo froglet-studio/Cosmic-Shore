@@ -366,11 +366,13 @@ deltas on top of the adopted foundation** — not to rebuild anything:
   collider-LOD is met. See `Docs/SPATIAL_INDEX.md`.
 - ✅ **Proximity collider-LOD** *(shipped on the merge line — in-editor verification owed)*:
   `PrismColliderLodManager` culls prism colliders beyond `lodRadiusMeters` (200m default) of
-  any focus and restores them as foci move; vessels and in-flight projectiles self-register as
-  foci. Never blanket-disables (focus-less scenes idle), never fights the lifecycle
+  any focus and restores them as foci move; vessels and in-flight TRIGGER projectiles
+  self-register as foci (a swept round, `sweptPrismDetection`, reads the spatial index and does
+  not: since 2026-11-02, because every focus costs the manager work per prism and a held
+  full-auto keeps tens to thousands of rounds in the air). Never blanket-disables (focus-less scenes idle), never fights the lifecycle
   (`Prism.SetColliderCulledByLod` snapshots/restores pre-cull state), never touches the
   unregistered Mound-layer blocks. Verify: fly toward a distant structure (collision works on
-  arrival), shoot a distant structure (projectile connects — projectiles are foci), and watch
+  arrival), shoot a distant structure (projectile connects — trigger rounds are foci, swept rounds query the index), and watch
   `colliders=near/live` in the probe line stay bounded as a cell fills. Kill switch:
   `lodEnabled` on a scene-placed manager.
 - ✅ **Telemetry** *(shipped)*: `EcosystemPerfProbe` line is now

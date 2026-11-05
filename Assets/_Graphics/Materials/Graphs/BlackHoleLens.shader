@@ -17,6 +17,15 @@
 //
 // Requires the camera's depth texture, which the project has OFF in URP_Asset; BlackHoleLens.CameraSupport
 // switches it on for every game camera while a hole is live and restores it after.
+//
+// THE WAVES' LIGHT IS A SECOND PASS (Docs/BLACK_HOLE.md §5.2, 2026-10-28). The studio composites its lens on the
+// FINAL picture, in display (sRGB) values, into an 8-bit target with no bloom: a light shell's 0.35 glow and a passing
+// shell's 0.3 wash are display values. Drawn here, before URP's post-processing, the same numbers were LINEAR HDR
+// light fed to the gameplay Bloom (threshold 0.2, intensity 2.5) and the tonemapper — a white flash that filled the
+// screen (play, 2026-10-14). So pass 0 bends the scene and adds only the holes' own light (the waves' bend and
+// trough darkening stay here); pass 1, "BlackHoleWaveLight", drawn by BlackHoleLensPass AFTER post-processing,
+// adds the shells' and crests' glow and the shell's wash to the finished picture in display values — the studio's
+// sum, where the studio adds it.
 Shader "CosmicShore/BlackHoleLens"
 {
     Properties
@@ -109,13 +118,14 @@ Shader "CosmicShore/BlackHoleLens"
                 float core = 0.0;
                 float coreGlow = 0.0;
                 float3 glow = float3(0.0, 0.0, 0.0);
+                float3 waveGlow = float3(0.0, 0.0, 0.0);   // the waves' light: added after post-processing (pass 1)
                 float3 shadowColour = float3(0.0, 0.0, 0.0);
                 float3 coreColour = BLACK_HOLE_LENS_CORE_COLOUR;
                 for (int k = 0; k < 4; k++)
                 {
                     if (k >= (int)_BHWaveCount) break;
                     if (_BHWaveC[k].w < 0.5) continue;
-                    BlackHoleLensWave(p, _BHWaveC[k], _BHWaveP[k], _BHWaveQ[k], _BHWaveA[k], _BHWave.z, disp, glow, squeeze);
+                    BlackHoleLensWave(p, _BHWaveC[k], _BHWaveP[k], _BHWaveQ[k], _BHWaveA[k], _BHWave.z, disp, waveGlow, squeeze);
                 }
                 for (int i = 0; i < BLACK_HOLE_LENS_MAX_WELLS; i++)
                 {
@@ -126,12 +136,124 @@ Shader "CosmicShore/BlackHoleLens"
                     BlackHoleLensWell(p, c, _BHWellP[i], _BHWellM[i], _BHLook, _BHLook2, _BHWellT[i],
                                       disp, shadow, core, coreGlow, glow, shadowColour, coreColour);
                 }
-                if (BlackHoleLensUntouched(p - p0 + disp, shadow, core, glow, squeeze, _BHWave.y)) discard;
+                // No wash here: it is the waves' light, pass 1's.
+                if (BlackHoleLensUntouched(p - p0 + disp, shadow, core, glow, squeeze, 0.0)) discard;
 
                 float2 suv = BlackHoleLensSampleUV(p, disp, aspect);
                 float3 col = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, suv, 0).rgb;
                 col = BlackHoleLensComposite(col, shadow, core, coreGlow, glow, _BHLook2.z, shadowColour, coreColour,
-                                             squeeze, _BHWave.y);
+                                             squeeze, 0.0);
+                return half4(col, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            // The waves' LIGHT on the finished picture (see the header): drawn by BlackHoleLensPass's second pass at
+            // AfterRenderingPostProcessing, from its copy of the camera colour AFTER bloom and tonemapping, so the
+            // studio's display values are added as display values and nothing blooms them.
+            Name "BlackHoleWaveLight"
+            Tags { "LightMode" = "BlackHoleWaveLight" }
+
+            ZWrite Off
+            ZTest Always
+            Cull Off
+            Blend Off
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex BlackHoleLensVert
+            #pragma fragment BlackHoleWaveLightFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+            #include "BlackHoleLens.hlsl"
+
+            // The same per-camera rows as pass 0 (BlackHoleLensPass sets both draws from one camera's numbers).
+            float4 _BHWellC[BLACK_HOLE_LENS_MAX_WELLS];
+            float4 _BHWellP[BLACK_HOLE_LENS_MAX_WELLS];
+            float4 _BHWellM[BLACK_HOLE_LENS_MAX_WELLS];
+            float4 _BHWellT[BLACK_HOLE_LENS_MAX_WELLS];
+            float _BHWellCount;
+            float4 _BHLook;
+            float4 _BHLook2;
+            float4 _BHWaveC[4];
+            float4 _BHWaveP[4];
+            float4 _BHWaveQ[4];
+            float4 _BHWaveA[4];
+            float _BHWaveCount;
+            float4 _BHWave;
+
+            // The camera colour after post-processing, copied by BlackHoleLensPass.
+            TEXTURE2D(_BlackHoleSceneColor);
+
+            // Display values: the studio's buffer is what the screen shows. In a Linear project the camera colour is
+            // linear light, so the light is added to its sRGB encoding and decoded back (a Gamma project needs neither).
+            #if defined(UNITY_COLORSPACE_GAMMA)
+                #define BLACK_HOLE_TO_DISPLAY(c) (c)
+                #define BLACK_HOLE_FROM_DISPLAY(c) (c)
+            #else
+                #define BLACK_HOLE_TO_DISPLAY(c) LinearToSRGB(max(c, 0.0))
+                #define BLACK_HOLE_FROM_DISPLAY(c) SRGBToLinear(c)
+            #endif
+
+            struct Attributes
+            {
+                uint vertexID : SV_VertexID;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            Varyings BlackHoleLensVert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
+                return output;
+            }
+
+            half4 BlackHoleWaveLightFrag(Varyings input) : SV_Target
+            {
+                float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
+                float aspect = _BHLook2.w;
+                float2 p0 = (uv - 0.5) * float2(aspect, 1.0);
+                float2 p = BlackHoleLensViewStretch(p0, _BHWave.x);
+                float sceneZ = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
+
+                // The waves' light at this pixel (pass 0 took their bend and trough darkening).
+                float2 disp = float2(0.0, 0.0);
+                float squeeze = 0.0;
+                float3 waveGlow = float3(0.0, 0.0, 0.0);
+                for (int k = 0; k < 4; k++)
+                {
+                    if (k >= (int)_BHWaveCount) break;
+                    if (_BHWaveC[k].w < 0.5) continue;
+                    BlackHoleLensWave(p, _BHWaveC[k], _BHWaveP[k], _BHWaveQ[k], _BHWaveA[k], _BHWave.z, disp, waveGlow, squeeze);
+                }
+                // A hole's shadow is drawn last in the studio, over every light: no wave light there.
+                float shadow = 0.0;
+                float core = 0.0;
+                float coreGlow = 0.0;
+                float3 glow = float3(0.0, 0.0, 0.0);
+                float3 shadowColour = float3(0.0, 0.0, 0.0);
+                float3 coreColour = BLACK_HOLE_LENS_CORE_COLOUR;
+                for (int i = 0; i < BLACK_HOLE_LENS_MAX_WELLS; i++)
+                {
+                    if (i >= (int)_BHWellCount) break;
+                    float4 c = _BHWellC[i];
+                    if (c.w < 0.5) continue;
+                    if (sceneZ < c.z - _BHWellM[i].w) continue;   // a foreground object is not shadowed
+                    BlackHoleLensWell(p, c, _BHWellP[i], _BHWellM[i], _BHLook, _BHLook2, _BHWellT[i],
+                                      disp, shadow, core, coreGlow, glow, shadowColour, coreColour);
+                }
+                if (BlackHoleLensWaveLightUntouched(shadow, waveGlow, _BHWave.y)) discard;
+
+                float3 col = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, uv, 0).rgb;
+                col = BLACK_HOLE_FROM_DISPLAY(BlackHoleLensWaveLight(BLACK_HOLE_TO_DISPLAY(col), waveGlow, _BHWave.y));
                 return half4(col, 1.0);
             }
             ENDHLSL

@@ -26,7 +26,7 @@ is stamped in here from the file the game ships, never typed into the page.
   detail config  Assets/Resources/PrismInteractionLodConfig.asset (the detail levels' lines, the shape, the
                  shed weights) and Assets/Resources/PrismMotionConfig.asset (the motion ladder)
   burst look     Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat
-  domain colours Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset (Inside/OutsideBlockColor —
+  domain colours Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset (Inside/OutsideBlockColor —
                  the Plain tier pair TryGetPrismKindColors hands both the burst and the explosion)
 
     python3 Tools/Build/prism_collision_burst_lab/build.py           # write the page
@@ -59,7 +59,7 @@ CLOCK_HLSL = os.path.join(GRAPHS, "PrismClockAnimation.hlsl")
 TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/Foundation/PrismSierpinskiTiling.cs")
 ANIMATOR_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Environment/Prisms/MaterialPropertyAnimator.cs")
 BURST_MAT = os.path.join(ROOT, "Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat")
-COLORSET = os.path.join(ROOT, "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset")
+COLORSET = os.path.join(ROOT, "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset")
 MOTION_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Prisms/PrismMotion.cs")
 
 

@@ -35,7 +35,7 @@ SPOT = {
     ("Grizzly", "Rush"): "Boost", ("Stoat", "Catch Orbit"): "Pull", ("Stoat", "Timed Slingshot"): "Boost", ("Thresher", "Wrecking Ball"): "Strike",
     ("Thresher", "Mass Mode"): "Stance", ("Manta", "Kabloom"): "Burst", ("Urchin", "Slip"): "Phase",
     ("Urchin", "Track Projector"): "Build", ("Dolphin", "Echo Sight"): "Sense", ("Squirrel", "Boost Ring"): "Build",
-    ("TigerMoth", "Mass / Dust Mode"): "Stance", ("Stoat", "Orbit Mode"): "Stance",
+    ("TigerMoth", "Mass / Dust Mode"): "Stance", ("Stoat", "Heavy Launch"): "Boost",
     ("BrittleStar", "Charge Mode"): "Strike", ("BrittleStar", "Space Mode"): "Shot", ("BrittleStar", "Speed Mode"): "Boost",
 }
 

@@ -1,25 +1,22 @@
-# Froglet Design Board - the mockup board, in git
+# Menu Redesign B - the mockup board, in git
 
-Every board of the **Froglet Design Board** canvas (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2; called "Menu
-Redesign B" until 2026-11-02), every round, copied here so a parallel session can read the designs from the repo. The
-canvas is in **tabs**: "Menu Redesign" is the master tab (every menu, HUD and start-flow round, Rev 3 to Rev 40, each
-old page now a titled section on it), "Compute Console" holds Rev 38, 41 and 42, and each new area gets a tab of its
-own (`/design-board-new`). A round is a titled section on a tab (title note `rev<N>`), not a page.
+Every board of the **Menu Redesign B** canvas (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), every round,
+copied here so a parallel session can read the designs from the repo.
 The live canvas stays the source: new rounds are published there first, and this copy is refreshed by re-reading the
 canvas's `project/` files (Artifact read) into this folder.
 
 - **What a board is:** a `.dc.html` file for the claude.ai Design canvas. It renders inside the canvas (it loads the
   canvas runtime `./support.js`), so open the link above to SEE a board; read the file here to see its layout, words,
-  sizes and colours. `canvas.json` is the canvas layout: every board's tab (`page`), position and title, and the round titles (`notes`).
+  sizes and colours. `canvas.json` is the canvas layout: every board's page (round), position and title.
 - **Images are not in this copy.** Boards point at `/_blob/<id>` images in the canvas's asset store (vessel renders,
   card art, avatars, icons). A Claude session on the same account reads one with the Artifact tool
   (`action: read`, the canvas url, `path: <id>`).
 - **What was decided:** `Docs/MENU_REDESIGN_B.md` records each round, which option was picked and what was built.
   The pick for a round is the board the doc names, not the last one on its page.
 
-<!-- design_board.py readme: generated below, edit the text above -->
+<!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 to Rev 57, 478 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 to Rev 57, 478 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -27,17 +24,17 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 
 #### Frogma style guide - the rules every screen, board, deck and page follows
 
-- `SGReadMe.dc.html` (not copied yet) - Style Guide - start here: one look for everything Froglet makes
-- `SGColour.dc.html` (not copied yet) - Style Guide 1 - Colour: the six families (Garrett's colour chart)
-- `SGChart.dc.html` (not copied yet) - Style Guide 1b - The colour chart: the wheel, the forbidden band, the shades to choose from
-- `SGThemes.dc.html` (not copied yet) - Style Guide 2 - Themes: Deep Sea and Shore, domains as one accent
-- `SGType.dc.html` (not copied yet) - Style Guide 3 - Type and numbers
-- `SGShape.dc.html` (not copied yet) - Style Guide 4 - Shape, space, layers and the safe area
-- `SGButtons.dc.html` (not copied yet) - Style Guide 5 - Buttons and their states
-- `SGWindows.dc.html` (not copied yet) - Style Guide 6 - Cards, windows and toasts
-- `SGMotion.dc.html` (not copied yet) - Style Guide 7 - Motion
-- `SGDoDont.dc.html` (not copied yet) - Style Guide 8 - Do and don't, from our own screens
-- `SGChecklist.dc.html` (not copied yet) - Style Guide 9 - The UI checklist and the five screens to fix
+- [`SGReadMe.dc.html`](SGReadMe.dc.html) - Style Guide - start here: one look for everything Froglet makes
+- [`SGColour.dc.html`](SGColour.dc.html) - Style Guide 1 - Colour: the six families (Garrett's colour chart)
+- [`SGChart.dc.html`](SGChart.dc.html) - Style Guide 1b - The colour chart: the wheel, the forbidden band, the shades to choose from
+- [`SGThemes.dc.html`](SGThemes.dc.html) - Style Guide 2 - Themes: Deep Sea and Shore, domains as one accent
+- [`SGType.dc.html`](SGType.dc.html) - Style Guide 3 - Type and numbers
+- [`SGShape.dc.html`](SGShape.dc.html) - Style Guide 4 - Shape, space, layers and the safe area
+- [`SGButtons.dc.html`](SGButtons.dc.html) - Style Guide 5 - Buttons and their states
+- [`SGWindows.dc.html`](SGWindows.dc.html) - Style Guide 6 - Cards, windows and toasts
+- [`SGMotion.dc.html`](SGMotion.dc.html) - Style Guide 7 - Motion
+- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
+- [`SGChecklist.dc.html`](SGChecklist.dc.html) - Style Guide 9 - The UI checklist and the five screens to fix
 
 ### Tab: Menu Redesign  (`menu-redesign`)
 
@@ -550,40 +547,40 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
-- `R54Compare.dc.html` (not copied yet) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
-- `R54A.dc.html` (not copied yet) - Rev 54 A - Showroom: the picked set's world fills the page under a big name, a rail of sets along its foot (recommended) - interactive
-- `R54B.dc.html` (not copied yet) - Rev 54 B - Paint chips: every set as a tall chip of its rim-over-face pairs, the picked one opens wide - interactive
-- `R54C.dc.html` (not copied yet) - Rev 54 C - Plinth: one domain's three prism tiers large on a plinth, sets left, domain and pigments right - interactive
-- `R54D.dc.html` (not copied yet) - Rev 54 D - Before / after: drag a divider across one world between the set you wear and the one you try - interactive
-- `R54Notes.dc.html` (not copied yet) - Rev 54 - notes: what changed from Rev 51, the four, how it maps to Unity, decisions
+- [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
+- [`R54A.dc.html`](R54A.dc.html) - Rev 54 A - Showroom: the picked set's world fills the page under a big name, a rail of sets along its foot (recommended) - interactive
+- [`R54B.dc.html`](R54B.dc.html) - Rev 54 B - Paint chips: every set as a tall chip of its rim-over-face pairs, the picked one opens wide - interactive
+- [`R54C.dc.html`](R54C.dc.html) - Rev 54 C - Plinth: one domain's three prism tiers large on a plinth, sets left, domain and pigments right - interactive
+- [`R54D.dc.html`](R54D.dc.html) - Rev 54 D - Before / after: drag a divider across one world between the set you wear and the one you try - interactive
+- [`R54Notes.dc.html`](R54Notes.dc.html) - Rev 54 - notes: what changed from Rev 51, the four, how it maps to Unity, decisions
 
 #### Rev 51 - Colour sets in the Profile: pick Photic, Nocturne or Dart Frog, and the repaint between them
 
-- `R51Compare.dc.html` (not copied yet) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in
-- `R51A.dc.html` (not copied yet) - Rev 51 A - Profile tabs: Record | Colour sets | Audio Studio on LB / RB; the set cards beside a big live preview (recomm - interactive
-- `R51B.dc.html` (not copied yet) - Rev 51 B - Pilot card chip: the colour set sits on the pilot card and opens a Colour sets window - interactive
-- `R51C.dc.html` (not copied yet) - Rev 51 C - Shelf: a full-width row of large set cards under the pilot card, the record below it
-- `R51Locked.dc.html` (not copied yet) - Rev 51 Locked - Later, once quests are planned: a set its quest has not given yet - which quest, how far you are, where
-- `R51Unlock.dc.html` (not copied yet) - Rev 51 Unlock - Later, once quests are planned: the quest claim in the Voyage window hands over the colour set
-- `R51Loading.dc.html` (not copied yet) - Rev 51 Loading - Changing colour set: the cell-change loading screen, repainting the HyperSea
-- `R51Applied.dc.html` (not copied yet) - Rev 51 Applied - Applied: back in the Profile, every prism, vessel and trail in the new set, the cell behind it repainte
-- `R51Notes.dc.html` (not copied yet) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, d
+- [`R51Compare.dc.html`](R51Compare.dc.html) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in
+- [`R51A.dc.html`](R51A.dc.html) - Rev 51 A - Profile tabs: Record | Colour sets | Audio Studio on LB / RB; the set cards beside a big live preview (recomm - interactive
+- [`R51B.dc.html`](R51B.dc.html) - Rev 51 B - Pilot card chip: the colour set sits on the pilot card and opens a Colour sets window - interactive
+- [`R51C.dc.html`](R51C.dc.html) - Rev 51 C - Shelf: a full-width row of large set cards under the pilot card, the record below it
+- [`R51Locked.dc.html`](R51Locked.dc.html) - Rev 51 Locked - Later, once quests are planned: a set its quest has not given yet - which quest, how far you are, where
+- [`R51Unlock.dc.html`](R51Unlock.dc.html) - Rev 51 Unlock - Later, once quests are planned: the quest claim in the Voyage window hands over the colour set
+- [`R51Loading.dc.html`](R51Loading.dc.html) - Rev 51 Loading - Changing colour set: the cell-change loading screen, repainting the HyperSea
+- [`R51Applied.dc.html`](R51Applied.dc.html) - Rev 51 Applied - Applied: back in the Profile, every prism, vessel and trail in the new set, the cell behind it repainte
+- [`R51Notes.dc.html`](R51Notes.dc.html) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, d
 
 #### Rev 49 - Voyage card I (picked): four more inviting looks, just the card
 
-- `R49A.dc.html` (not copied yet) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme - interactive
-- `R49B.dc.html` (not copied yet) - Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive
-- `R49C.dc.html` (not copied yet) - Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive
-- `R49D.dc.html` (not copied yet) - Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive
-- `R49Notes.dc.html` (not copied yet) - Rev 49 - notes: what was asked, what all four share, the recommendation
-- `R49ACrew.dc.html` (not copied yet) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv - interactive
-- `R49BCrew.dc.html` (not copied yet) - Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
-- `R49CCrew.dc.html` (not copied yet) - Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
-- `R49DCrew.dc.html` (not copied yet) - Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
-- `R49AStory.dc.html` (not copied yet) - Rev 49 A - Destination glow, level 3, the story (optional) - interactive
-- `R49BStory.dc.html` (not copied yet) - Rev 49 B - Hangar light, level 3, the story (optional) - interactive
-- `R49CStory.dc.html` (not copied yet) - Rev 49 C - Route poster, level 3, the story (optional) - interactive
-- `R49DStory.dc.html` (not copied yet) - Rev 49 D - Split art, level 3, the story (optional) - interactive
+- [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme - interactive
+- [`R49B.dc.html`](R49B.dc.html) - Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive
+- [`R49C.dc.html`](R49C.dc.html) - Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive
+- [`R49D.dc.html`](R49D.dc.html) - Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive
+- [`R49Notes.dc.html`](R49Notes.dc.html) - Rev 49 - notes: what was asked, what all four share, the recommendation
+- [`R49ACrew.dc.html`](R49ACrew.dc.html) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv - interactive
+- [`R49BCrew.dc.html`](R49BCrew.dc.html) - Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
+- [`R49CCrew.dc.html`](R49CCrew.dc.html) - Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
+- [`R49DCrew.dc.html`](R49DCrew.dc.html) - Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
+- [`R49AStory.dc.html`](R49AStory.dc.html) - Rev 49 A - Destination glow, level 3, the story (optional) - interactive
+- [`R49BStory.dc.html`](R49BStory.dc.html) - Rev 49 B - Hangar light, level 3, the story (optional) - interactive
+- [`R49CStory.dc.html`](R49CStory.dc.html) - Rev 49 C - Route poster, level 3, the story (optional) - interactive
+- [`R49DStory.dc.html`](R49DStory.dc.html) - Rev 49 D - Split art, level 3, the story (optional) - interactive
 
 #### Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)
 
@@ -663,10 +660,10 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 
 #### Rev 48 - Fleet Codex, modern: one page, the kit with its controls, the omni crystal
 
-- `R48A.dc.html` (not copied yet) - Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended) - interactive
-- `R48B.dc.html` (not copied yet) - Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog - interactive
-- `R48C.dc.html` (not copied yet) - Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index
-- `R48Notes.dc.html` (not copied yet) - Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads
+- [`R48A.dc.html`](R48A.dc.html) - Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended) - interactive
+- [`R48B.dc.html`](R48B.dc.html) - Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog - interactive
+- [`R48C.dc.html`](R48C.dc.html) - Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index
+- [`R48Notes.dc.html`](R48Notes.dc.html) - Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads
 
 #### Rev 45 - Fleet Codex - a vessel in tabs
 
@@ -678,11 +675,11 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 
 #### Rev 50 - Froglet Analytics dashboard: our own backend replaces PostHog, three ways to read it
 
-- `R50Compare.dc.html` (not copied yet) - Rev 50 - the top of each option side by side: the overnight read, the console rail, the ask bar
-- `R50A.dc.html` (not copied yet) - Rev 50 A - Morning read: Claude's overnight read on top, then the numbers and charts on one page (recommended) - interac - interactive
-- `R50B.dc.html` (not copied yet) - Rev 50 B - Console: a left rail of pages (Overview, Retention, Matches, Data health, Ask, Erasure), dense overview
-- `R50C.dc.html` (not copied yet) - Rev 50 C - Ask first: one question box on top, Claude's answer with its query, pinned charts below - interactive
-- `R50Notes.dc.html` (not copied yet) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
+- [`R50Compare.dc.html`](R50Compare.dc.html) - Rev 50 - the top of each option side by side: the overnight read, the console rail, the ask bar
+- [`R50A.dc.html`](R50A.dc.html) - Rev 50 A - Morning read: Claude's overnight read on top, then the numbers and charts on one page (recommended) - interac - interactive
+- [`R50B.dc.html`](R50B.dc.html) - Rev 50 B - Console: a left rail of pages (Overview, Retention, Matches, Data health, Ask, Erasure), dense overview
+- [`R50C.dc.html`](R50C.dc.html) - Rev 50 C - Ask first: one question box on top, Claude's answer with its query, pinned charts below - interactive
+- [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
 
 ### Tab: Phone  (`phone`)
 
@@ -722,4 +719,4 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 - `R52Finish.dc.html` (not copied yet) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
 - `R52Notes.dc.html` (not copied yet) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
 
-<!-- design_board.py readme: end -->
+<!-- frogma.py readme: end -->

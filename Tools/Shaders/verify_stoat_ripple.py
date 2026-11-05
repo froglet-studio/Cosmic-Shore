@@ -23,6 +23,27 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 SHADER = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "Graphs", "StoatRipple.shader")
 
 
+MESH_MOCK = r"""
+// mock (verify_stoat_ripple.py): what a mesh pass adds from URP Core.hlsl
+#define CBUFFER_START(name) cbuffer name {
+#define CBUFFER_END };
+#define UNITY_REVERSED_Z 1
+#define UNITY_VERTEX_INPUT_INSTANCE_ID
+#define UNITY_VERTEX_OUTPUT_STEREO
+#define UNITY_SETUP_INSTANCE_ID(v)
+#define UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o)
+#define UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i)
+float4x4 unity_ObjectToWorld;
+float4x4 unity_MatrixVP;
+#define UNITY_MATRIX_VP unity_MatrixVP
+float3 _WorldSpaceCameraPos;
+float3 TransformObjectToWorld(float3 positionOS) { return mul(unity_ObjectToWorld, float4(positionOS, 1.0)).xyz; }
+float4 TransformWorldToHClip(float3 positionWS) { return mul(unity_MatrixVP, float4(positionWS, 1.0)); }
+float4 _ProjectionParams;
+float4 ComputeScreenPos(float4 positionCS) { return positionCS; }
+"""
+
+
 def main() -> int:
     if shutil.which("glslangValidator") is None:
         print("glslangValidator not found", file=sys.stderr)
@@ -38,6 +59,11 @@ def main() -> int:
     ok = True
     try:
         lens.write_mock_library(work)
+        # The lens's mock declares only what the full-screen lens uses; the ripple is a MESH (object -> world -> clip,
+        # instanced, stereo) with a per-material CBUFFER, so its own declarations go on top. Without them every run
+        # failed to parse at CBUFFER_START (found 2026-10-29) and the negative control "fired" on that, not on the uniform.
+        with open(os.path.join(work, "mock", lens.URP + "Core.hlsl"), "a") as f:
+            f.write(MESH_MOCK)
         for stage, entry in (("vert", vert), ("frag", frag)):
             rc, out = lens.glslang_compile(work, prog, stage, entry)
             print(f"{'compiled' if rc == 0 else 'COMPILE FAIL'} {entry} [{stage}]" + ("" if rc == 0 else "\n" + out))

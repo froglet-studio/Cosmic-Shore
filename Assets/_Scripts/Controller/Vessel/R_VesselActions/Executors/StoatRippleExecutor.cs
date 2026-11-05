@@ -65,12 +65,13 @@ namespace CosmicShore.Gameplay
         /// This hull's pair just annihilated at <paramref name="at"/>, its poles <paramref name="separation"/> apart when
         /// they were let go. Every peer calls this from its own copy of the pair.
         /// </summary>
-        public void Detonate(Vector3 at, float separation)
+        /// <param name="reachBonus">Space-5 Accretion's share on top of the radius (0.4 = +40%).</param>
+        public void Detonate(Vector3 at, float separation, float reachBonus = 0f)
         {
             if (config == null || _status == null) return;
             var wave = _spare.Count > 0 ? _spare.Pop() : new Wave();
             wave.Centre = at;
-            wave.Radius = config.Radius(separation, _status);
+            wave.Radius = config.Radius(separation, _status) * (1f + Mathf.Max(0f, reachBonus));
             wave.Age = 0f;
             wave.Struck.Clear();
             wave.Candidates.Clear();

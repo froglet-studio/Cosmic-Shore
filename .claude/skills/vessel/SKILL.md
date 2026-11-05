@@ -900,7 +900,8 @@ applies to new abilities, new resources on the meter list, and anything that add
     transformer's RotateShip goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a
     new override; read `NoseFollowRate` to predict a hull), which since 2026-10-23 reads one dial per device
     (`PilotNoseFollowPerSecond`: pad `GamepadFlightConfig` 1.5, touch `TouchControlProfiles` 9, keyboard and mouse
-    none; never per hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    none; never per hull; an AI hull keeps the fleet's 1.5/s unless a mode sets `AINoseFollowPerSecond`, which only
+    Switchback does, by difficulty) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
     input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
     **The pad's smoothness IS its one-stage nose lag; neither a curve nor a smoothing chain replaces it** (Garrett,
     2026-10-23, `cece/serene-galileo-t77xt3`). A response curve shapes how FAR a stick turns the hull, not how the
@@ -1493,7 +1494,8 @@ but not CLAUDE.md — don't repeat that), the map asset's `UpgradeLabel`/`Upgrad
 a co-located design doc `Assets/_Scripts/Controller/Vessel/R_VesselActions/{FEATURE}.md`
 (overview + Files table + tuning-knobs table + "## In-editor verification" + "## Follow-ups";
 `RHINO_SHIELD_SWIPE.md` is the exemplar). Delete stale serialized blocks left by script-field
-renames, and use `[FormerlySerializedAs]` when renaming container fields.
+renames, and use `[FormerlySerializedAs]` when renaming container fields. Once it lands on bleeding-edge, refresh the
+**Fleet Codex** artifact with `/fleet-codex` §1 (the daily refresh catches it otherwise); never edit the codex by hand.
 
 ## 7. Growing the contract (how a vessel requirement becomes enforced)
 

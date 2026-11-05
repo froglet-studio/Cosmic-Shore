@@ -239,76 +239,38 @@ namespace CosmicShore.Tests
         // ---------------------------------------------------------------- drift
 
         [Test]
-        public void AFullDrift_SlidesTheHullOut_AndTheNeckLeans_ThenSettlesBack()
+        public void ADrift_NeverMovesTheHullOnScreen()
         {
+            // Garrett 2026-11-02: the game is truly 3D with no "up", so the hull's place in the frame is the pilot's
+            // reference for position, speed and orientation. A drift (course locked, nose swinging) rumbles, but
+            // never offsets the camera or leans it.
             var feel = new CameraFeel();
             Set("driftRumble", 0f);
             Vector3 cruise = new(0f, 0f, 2f * _config.DriftFullSpeed * Distance);   // well above drift speed
-            Vector3 p = Fly(feel, 3f, Vector3.zero, cruise, Vector3.zero, drift: 1f);
-            float slide = CameraFeel.SoftClamp(new Vector3(_config.DriftSlide, 0f, 0f), _config.MaxGOffset).x;
-            Assert.AreEqual(-slide, feel.LocalOffset.x, 1e-3f, "A full drift slides the hull off the centre by DriftSlide.");
-            Assert.AreEqual(_config.GRoll * slide / _config.MaxGOffset, feel.LocalAngles.z, 0.02f,
-                "The same G leans the camera like the pilot's neck.");
-            Fly(feel, 8f, p, cruise, Vector3.zero, drift: 0f);
-            Assert.Less(feel.LocalOffset.magnitude, 1e-3f);
-            Assert.Less(feel.LocalAngles.magnitude, 1e-2f);
+            Vector3 p = Fly(feel, 0.5f, Vector3.zero, cruise, Vector3.zero);
+            p = Fly(feel, 3f, p, cruise, Vector3.zero, drift: 1f);
+            Assert.Less(feel.LocalOffset.magnitude, 1e-4f, "A full drift must not displace the hull on screen.");
+            Assert.Less(feel.LocalAngles.magnitude, 1e-3f, "A full drift must not lean the camera.");
+            Fly(feel, 1f, p, cruise, Vector3.zero, drift: -1f);
+            Assert.Less(feel.LocalOffset.magnitude, 1e-4f, "Nor a drift to the other side.");
         }
 
         [Test]
-        public void ADrift_BuildsWithAnAcceleratingStart()
+        public void ADrift_StillRumbles()
         {
-            // Not an ease along a straight line: the slide starts still and gathers speed.
             var feel = new CameraFeel();
+            Set("driftRumble", 1f);
             Vector3 cruise = new(0f, 0f, 2f * _config.DriftFullSpeed * Distance);
             Vector3 p = Fly(feel, 0.5f, Vector3.zero, cruise, Vector3.zero);
-            float previous = 0f, previousStep = 0f;
-            bool accelerated = false;
-            for (int i = 0; i < 180; i++)
+            float most = 0f;
+            for (int i = 0; i < 120; i++)
             {
                 p += cruise * Dt;
                 feel.Step(_config, Dt, p, Quaternion.identity, Distance, 1f, 1f, 1f);
-                float x = -feel.LocalOffset.x;
-                if (i > 0 && i < 4 && x - previous > previousStep + 1e-7f) accelerated = true;
-                previousStep = x - previous;
-                previous = x;
+                most = Mathf.Max(most, feel.LocalAngles.magnitude);
+                Assert.Less(feel.LocalOffset.magnitude, 1e-4f, "The rumble wobbles the view; it never moves the hull.");
             }
-            Assert.IsTrue(accelerated, "The slide must gather speed over its first frames, not start at full speed.");
-            Assert.Greater(previous, 0f);
-        }
-
-        [Test]
-        public void ADriftEnding_GlidesHome_WithoutSnappingOrSwingingPast()
-        {
-            // The Squirrel's flow (Garrett 2026-10-27): the return from a drift must not jerk. The slide's rest
-            // eases home slower than it built, so the hull glides back and never crosses the centre.
-            var feel = new CameraFeel();
-            Set("driftRumble", 0f);
-            Vector3 cruise = new(0f, 0f, 2f * _config.DriftFullSpeed * Distance);
-            Vector3 p = Fly(feel, 3f, Vector3.zero, cruise, Vector3.zero, drift: 1f);
-            float held = -feel.LocalOffset.x;
-            float previous = held, fastest = 0f, lowest = held;
-            for (int i = 0; i < 360; i++)
-            {
-                p += cruise * Dt;
-                feel.Step(_config, Dt, p, Quaternion.identity, Distance, 1f, 1f, 0f);
-                float x = -feel.LocalOffset.x;
-                fastest = Mathf.Max(fastest, Mathf.Abs(x - previous) / Dt);
-                lowest = Mathf.Min(lowest, x);
-                previous = x;
-            }
-            Assert.Less(fastest, held * 1.5f, "The return is a glide (under 1.5 slide-widths a second), not a snap.");
-            Assert.GreaterOrEqual(lowest, -1e-4f, "The hull never swings past the centre on the way home.");
-            Assert.Less(previous, held * 0.1f, "And it does come home.");
-        }
-
-        [Test]
-        public void ADriftAtACrawl_SlidesLess()
-        {
-            var slow = new CameraFeel();
-            var fast = new CameraFeel();
-            Fly(slow, 3f, Vector3.zero, new Vector3(0f, 0f, 0.3f * _config.DriftFullSpeed * Distance), Vector3.zero, drift: 1f);
-            Fly(fast, 3f, Vector3.zero, new Vector3(0f, 0f, 2f * _config.DriftFullSpeed * Distance), Vector3.zero, drift: 1f);
-            Assert.Less(Mathf.Abs(slow.LocalOffset.x), 0.5f * Mathf.Abs(fast.LocalOffset.x));
+            Assert.Greater(most, 0.05f * _config.RumbleAngle, "A drift is still felt as a rumble.");
         }
 
         [Test]

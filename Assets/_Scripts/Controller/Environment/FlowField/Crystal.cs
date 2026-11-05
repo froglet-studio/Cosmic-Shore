@@ -158,6 +158,17 @@ namespace CosmicShore.Gameplay
             if (cellData) cellData.TryRemoveItem(this);
         }
 
+        /// <summary>
+        /// Re-paints every live crystal from the theme's colour set. A crystal writes its tint into its own property
+        /// block, so a colour set applied from the Profile (Docs/MENU_REDESIGN_B.md §124) reaches the crystals already
+        /// in the cell only through this.
+        /// </summary>
+        public static void RetintAll()
+        {
+            for (int i = s_active.Count - 1; i >= 0; i--)
+                if (s_active[i]) s_active[i].ApplyColorSetTint();
+        }
+
         protected virtual void OnEnable()
         {
             if (!s_active.Contains(this)) s_active.Add(this);

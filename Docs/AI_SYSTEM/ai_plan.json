@@ -12,7 +12,8 @@
     "drive-manta-regatta": "trains a drive IN Regatta; the plan trains each vessel in its own Time game and races Regatta against those fixed AIs (AI_PLAN.md rule 4)",
     "drive-dolphin-regatta": "trains a drive IN Regatta; the plan trains each vessel in its own Time game and races Regatta against those fixed AIs (AI_PLAN.md rule 4)",
     "skimrace-squirrel-i3": "one intensity only; replaced by skimrace-squirrel-time, one genome scored on I1-I4 (AI_PLAN.md rule 2)",
-    "skimrace-squirrel-i4": "one intensity only; replaced by skimrace-squirrel-time, one genome scored on I1-I4 (AI_PLAN.md rule 2)"
+    "skimrace-squirrel-i4": "one intensity only; replaced by skimrace-squirrel-time, one genome scored on I1-I4 (AI_PLAN.md rule 2)",
+    "drive-manta-redline": "raced Regatta's point-mass model (full throttle, Regatta's steering, no nose lag), about 3x faster than the editor's AI Mantas, on the mean of ln seconds; replaced by redline-manta-time, the Redline simulator and the composite (AI_PLAN.md rule 2; 2026-11-03)"
   },
   "steps": [
     {"id": "time-arcade", "element": "Time", "layer": "arcade", "status": "live",

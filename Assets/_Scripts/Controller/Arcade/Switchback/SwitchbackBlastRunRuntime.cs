@@ -62,14 +62,17 @@ namespace CosmicShore.Gameplay
 
         bool _finished;
         int _blocksAtStart = -1;
+        string _runTag = "Switchback";   // the finish line's mode (Slingshot's Orrery reuses this runtime for its movers)
 
         /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
         /// <summary>True when <paramref name="p"/> is one of the course's moving prisms (once matched).</summary>
         public bool IsMover(Prism p) => p != null && _moverSet.Contains(p);
 
         public void Init(GameDataSO gameData, int intensity, int seed, int courseCount, System.Func<int> raceLength,
-                         SwitchbackFeatureLayout layout, Transform prismContainer, bool trackAllPrisms = false)
+                         SwitchbackFeatureLayout layout, Transform prismContainer, bool trackAllPrisms = false,
+                         string runTag = "Switchback")
         {
+            _runTag = runTag;
             _gameData = gameData;
             _intensity = intensity;
             _seed = seed;
@@ -312,7 +315,7 @@ namespace CosmicShore.Gameplay
 
             float time = Time.time - _gameData.TurnStartTime;
             int hits = _blocksAtStart >= 0 ? stats.BlocksDestroyed - _blocksAtStart : -1;
-            CSDebug.Log($"[Switchback] RUN blastRun intensity={_intensity} seed={_seed} time={time:F2}s " +
+            CSDebug.Log($"[{_runTag}] RUN blastRun intensity={_intensity} seed={_seed} time={time:F2}s " +
                         $"gates={threaded}/{length} prismsDestroyed={hits}" +
                         (_layout != null
                             ? $" stations={_layout.Stations.Count} keys={BlastRunKeyCrystals.Count} movers={_layout.Movers.Count}"

@@ -71,9 +71,9 @@ day after the channel it referred to had been deleted.
 | Grizzly | 4/4 | 3/4 | 3/4 | *(the one vessel `--gaps` still lists — see below)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
-| **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
+| **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13; the orbit alone since 2026-11-02 — Space = **Catch Orbit** (L5 **Accretion**, re-homed onto the orbit: stolen prisms grow the ripple +4% each, to +40%), Time = **Timed Slingshot** (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Heavy Launch** passive (L5 **Armoured Wake**); omni = **Fulmen**; `R_VesselActions/STOAT.md`, `STOAT_DIPOLE.md` §1e)* |
 | **Goby** | 4/4 *(its own, 2026-10-22)* | 4/4 | 3/4 *(Charge has no upgrade yet: open)* | *Garrett, 2026-10-22 (the Goby & Pistol's own kit, no longer the Squirrel's): Charge **Vortex Sting** (ring petals 1 -> 3), Mass **Dens** (x1 -> x2.5; L5 **Fortress**: danger and super-shielded den prisms), Space **Undertow** (pull reach 40 -> 200 u; L5 **Deep Undertow**: shielded too), Time **Quick Jump** (jump 9 s -> 3 s; L5 **Phase Dart**: darts pass through prisms). Written by `author_goby_assets.py` (GOBY_KIT).* |
-| **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
+| **Brittle Star** | **4/4** | **4/4** | **4/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); level 5 designed by Shombith 2026-11-03 and wired: Charge Thrown Sabers, Mass Shielded Trail, Space Explosive Rounds, Time Speed Roll — `Docs/Studios/BRITTLE_STAR.md` "Level-5 upgrades")* |
 | **Wrasse** | 4/4 | 4/4 | 4/4 | *(added 2026-10-17 as the Kite, renamed the Wrasse, card "Wrasse and Grouper", 2026-10-18 — `ElementalAbilityMaps/Wrasse.asset`, the Sparrow's map unchanged: the Wrasse is the Sparrow hull with the navigator seat, `Controller/Vessel/Crew/KITE_NAVIGATOR.md`; the navigator's own elements are its motes, not this map)* |
 | **Meerkat** | **4/4** | **4/4** | **4/4** | *(approved + shipped 2026-10-28: Garrett's design, approved by Yash 2026-10-28 - Space = **Soliton** on RT (the wormhole: its surface area by Space; it swallows prisms at its way in and fires them out as moving prisms; L5 **Steal**), Time = **Faster Ride** passive (every soliton's rush; L5 **Boost Out**), Mass = **Exit Portal** passive (six prisms on a hexagon; L5 **Danger Portal**), Charge = **Sentinel Mode** on Y (sentinels that zap rivals and shield their own prisms; L5 **Six Sentinels**). `R_VesselActions/MEERKAT.md` §8)* |
 
@@ -617,7 +617,7 @@ lifeform wither, danger skim bonus). The Thresher runs forked containers
 
 ### Stoat — the field dipole + pathfinder (round 15) — ALL FOUR APPROVED + SHIPPED (2026-10-13)
 
-> **Parked 2026-11-02 (Yash): the shipped Stoat flies the orbit alone** (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Today's labels: Space = Catch Orbit, Time = Timed Slingshot, Charge = Ripple, Mass = Orbit Mode. Mass's dial and the Accretion and Armoured Wake level-5s have nothing to act on until the kit is decided; Space, Time, Charge, Foresight and Siphon still work. This section is the parked kit's record.
+> **Removed 2026-11-02 (Yash): the Stoat flies the orbit alone; Mass and Gate mode are gone from the kit** (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Today's map: Space = Catch Orbit (orbit radius ×1 → ×1.4), Time = Timed Slingshot (the warp ×2.7 → ×5.6), Charge = Ripple (reach ×1 → ×2), Mass = **Heavy Launch** (the launch's kick ×1 → ×2.5; L5 Armoured Wake shields the launch's trail). Space's L5 Accretion is re-homed onto the orbit (`stoat/complete`, 2026-11-02): rival prisms that fall into the attractor while you orbit are stolen, each +4% to that pair's ripple reach, to +40% — **awaiting Garrett's sign-off**. The omni crystal is Fulmen (Overclock's code and asset are parked, not deleted: `author_stoat_assets.py` / `author_angler_assets.py` still reference its guid). This section is the removed kit's record.
 
 Approved 2026-10-09: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **Time = Pathfinder**
 (passive; Time scales the warp boost ×2.5 → ×5). The rest was decided by Garrett on 2026-10-13 against the
@@ -637,7 +637,7 @@ Claude's calls inside those decisions, each recorded in STOAT_DIPOLE.md and open
 (±15°, 30° falloff, a fifth of the kick outside it), the Mass-mode thickness numbers, the ripple's reach formula and
 its one petal per element, B as the mode button, Siphon and Armoured Wake as the two L5s the brief left open.
 
-### Brittle Star — modes + five turrets + ring detonation — ABILITIES SHIPPED, L5 OPEN (2026-10-14)
+### Brittle Star — modes + five turrets + ring detonation — ABILITIES SHIPPED, L5 WIRED (designed by Shombith 2026-11-03; the proposals below predate it)
 
 The four abilities are the class document's (Notion "Class - Brittle Star"), mapped by its own element personas:
 **Charge = Ring Detonation** (Rolling Thunder: "larger projectile size and larger AOE on support ring detonation"),

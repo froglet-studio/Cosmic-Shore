@@ -16,7 +16,7 @@ MonoBehaviour:
   - vessel: 6
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    tiltRollOnOneThumb: 1
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -402,22 +402,23 @@ MonoBehaviour:
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
-    displayOnlyElements: []
+    displayOnlyElements:
+    - 3
     extraButtons:
-    - input: 1
+    - input: 2
       behaviour: 0
       aimsWhileHeld: 0
-      icon: {fileID: 21300000, guid: 44138545f892d3e6c7a3f0d1b19255c2, type: 3}
+      icon: {fileID: 21300000, guid: 25d5c2bb6133b58ae02adde77bd01744, type: 3}
       tint: 3
       label: 
       primary: 1
-    - input: 6
+    - input: 1
       behaviour: 0
       aimsWhileHeld: 0
-      icon: {fileID: 21300000, guid: 15328e6bb0f2cce90c3e7202bb49abbf, type: 3}
-      tint: 2
+      icon: {fileID: 21300000, guid: 0502a91604f91e537779ecec3619bef8, type: 3}
+      tint: 3
       label: 
-      primary: 0
+      primary: 1
     throttleSlider: 0
     throttleSliderStart: 0.5
     glyphs: []
