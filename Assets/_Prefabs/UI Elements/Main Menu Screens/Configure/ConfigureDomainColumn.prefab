@@ -118,7 +118,7 @@ MonoBehaviour:
   avatarStrip: {fileID: 850961009118712141}
   addAiButton: {fileID: 429468378105994960}
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
+  colorSet: {fileID: 11400000, guid: 116ff08ebc0c4e6db955bab003a86ce4, type: 2}
   tile: {fileID: 69026362574238639}
   borderImage: {fileID: 614206722271871008}
   borderSelectedSprite: {fileID: 21300000, guid: 6a172fe8ed96165ca76d16f9cefb285c, type: 3}

@@ -20,7 +20,7 @@ namespace CosmicShore.Tests
     public class CrystalElementPlatesTests
     {
         const string OmniPrefabPath = "Assets/_Prefabs/Environment/Crystal.prefab";
-        const string PalettePath = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset";
+        const string PalettePath = "Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset";
         const string MaterialDir = "Assets/_Graphics/Materials/CrystalMaterials";
 
         static Mesh ShippedBody()
