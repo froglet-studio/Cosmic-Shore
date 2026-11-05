@@ -335,7 +335,17 @@ a step only a person with an account can do. Pipeline and console work in Phases
 
 ---
 
-## 11. Decisions for you before Phase 2
+## 11. Decisions (confirmed by Shombith, 2026-11-05)
+
+| Decision | Answer |
+|---|---|
+| Milestone | **Invite build v1, 2026-12-03.** Invite-only everywhere; public store pages come later. |
+| Platforms | **Windows / Steam (Playtest), iOS (TestFlight), Android (Google Play), Web Toybox.** macOS out. Amoebius out. |
+| Live flags | **Cloud Code / Cloud Save**, no new package: one flags document read at boot (kill switches, minimum version, the mode list), deployed through `ugs-deploy` with development first. |
+| Launch Console | **A FrogletTools editor window and a claude.ai artifact**, both reading one status file the pipelines write; designed on Frogma's *Launch Console* tab. |
+
+The questions as they were asked:
+
 
 1. **Milestone and date.** Working assumption "Invite build v1", 2026-12-03. Steam's store page cannot be live by then
    (about 39 days after the fee); a Steam **Playtest** invite can, if A1–A4 start this week.
