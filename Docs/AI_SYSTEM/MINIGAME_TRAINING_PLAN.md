@@ -584,9 +584,14 @@ I2-I4, and more courses.
 
 > "Let's make Manta AI training, what is the time game mode of manta?" (Yash, 2026-11-03)
 
-**The Manta's Time game is Redline** (`GameModes.Redline` 53, `Assets/_Scripts/Controller/Arcade/REDLINE.md`): three
+**The Manta's Time game is Redline** (`GameModes.Redline` 53, `Assets/_Scripts/Controller/Arcade/REDLINE.md`): five
 laps of an eight-ring circuit cut around the Manta's full-Soar turning circle, where every corner asks how much Soar it is
 worth. Nobody has raced it yet, so the AI trains on a model first and on people's races when there are some.
+
+**Correction (2026-11-04).** The race has been five laps (40 gates) since the 2026-10-26 ~90 s target pass; the model
+raced three until 2026-11-04, so every race time in this section's first half is a three-lap time. It now reads the
+laps from `RedlineCourseSource.DefaultLaps`. The five-lap numbers are in `REDLINE.md` §5.1 and in §13.1 below; the
+findings did not change.
 
 **What was wrong with the model the queue raced.** `drive-manta-redline` (Shombith's machine ran it 34,070 times)
 raced `manta_drive_sim.py`, which is Regatta's model: a point mass at full throttle with no nose lag. Its
@@ -620,7 +625,30 @@ the shipped bands' 24.91 and the Regatta genome's 24.94. It finished 5 of 6 at I
 4 of 6 for the shipped bands), but ran 3-6 s slower at I1-I3. A small gain, not promoted. The old job's 1.0 / 0.63
 scored 38.21 and finished none of the 12 races at I3-I4. The bands are a small lever; the nose lag is the big one.
 
+### 13.1 The ladder: Soar alone, introduced at I1, intense at I4 (Yash, 2026-11-04)
+
+> "I want a plan that gonna introduce the new player to the time ability of Manta in intensity 1, and in intensity 4,
+> it will get to intense. No other elemental abilities needed, only time." (Yash, 2026-11-04; "Build it")
+
+Built the same day (`REDLINE.md` §1, §4, §4a, §5.1):
+- **The course asks for Soar alone.** No corner of any seed is tighter than the 156 u both triggers released make, so
+  no level needs the Yastri pivot (Mass): one corner that costs Soar a level, 0 / 1 / 2 / 3 (I2 217 u at half Soar, I3
+  184 u and 228 u, I4 171 u, 199 u and a 233 u knife-edge), through mouths of 110 / 88 / 72 / 44 (`RedlineCourse`,
+  `RedlineCourseTests`, run out of Unity by `Tools/Build/redline_course_harness`).
+- **Only Time is fed.** The cell's omni crystal is off; Time crystals (the elemental set's, one level each, +3% Soar top
+  speed) sit 0 / 1 / 2 / 3 a lap, on the line at I2-I3 and inside the apexes at I4 (`RedlineTimeCrystals`, laid on
+  every peer by `RedlineController`, `RedlineTimeCrystalsTests`).
+- **I1 teaches.** The Test Flight Lesson already teaches the Time ability; Redline's Mentor tips now say hold Soar, ease
+  both triggers for a corner, wind it back early, and what a Time crystal does (`Tips_Redline.asset`). The card says
+  "both triggers".
+- **The AI** finishes every level on five laps: 183 / 181 / 193 / 538 s (24 of 24 model races). It does not steer for
+  the crystals: with the fleet nose lag the speed they buy made it miss more mouths (1 of 6 at I4 at a 150 u slack),
+  and a full-throttle floor buys nothing the ladder needs. **So I4 is intense for a person but not yet against the
+  AI**: with no nose lag it runs 95 s at I4. That is decision 7 again.
+
 **Next, in order.** (1) Run Redline in the editor at I1-I4 with AI Mantas (`Docs/UNITY_VERIFICATION_CHECKLIST.md`):
-they should finish and re-attack a missed mouth. (2) Yash races Redline at each intensity: every race is recorded and
-the sweep learns `MantaSoarAITuning_Redline` on its own after three finished races. (3) Decision 7 for the Manta's nose
-rate. (4) The searched drive is promoted with Yash's yes, and stage 2 of `REGATTA_BALANCE_PLAN.md` races it.
+they should finish and re-attack a missed mouth, and every corner should go with both triggers eased. (2) Yash races
+Redline at each intensity: every race is recorded and the sweep learns `MantaSoarAITuning_Redline` on its own after
+three finished races. (3) Decision 7 for the Manta's nose rate, which also unlocks the AI taking Time crystals
+(`RedlineController.aiTimeCrystalSlack`). (4) The searched drive is promoted with Yash's yes, and stage 2 of
+`REGATTA_BALANCE_PLAN.md` races it. (The card art was re-rendered for the new I2 course the same day.)

@@ -463,7 +463,7 @@ the mode preview's scale model is (`CellMiniatureBuilder`, `ModePreviewPlantingM
 by RUNNING that data. `Tools/Build/render_card_backgrounds.py` resolves each live card's arena off
 its own scene (`Cell.CellConfigs`, IntensityWise index 1; the preview definition as fallback),
 and `Tools/Build/card_art_harness/` compiles and runs the shipped generators against a faithful
-UnityEngine shim and rasterizes what they lay in the live palette (`OriginalColorSetSO`, base face
+UnityEngine shim and rasterizes what they lay in the live palette (`PhoticColorSetSO`, base face
 lerped to rim by fresnel - the prism shader's defining read). Every card states its **tier**:
 
 | tier | cards | what is drawn |

@@ -207,7 +207,7 @@ If `/ship` §3.55's detect step hits, run §3.55 in full and then add three chec
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once). The PR body carries D5's matrix and D2's sweep
+something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once), §5.6 (refresh the Fleet Codex). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
 "D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
 go in the report as rows, with where each one lives; a row that turned into a diff hunk on

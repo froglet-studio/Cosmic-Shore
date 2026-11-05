@@ -25,17 +25,22 @@ MonoBehaviour:
       guns. LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the
       mounted ring then regrows on its own. It blows on contact or its fuse in a disk as wide as the
       cell''s nucleus, bursting out of the ring as faceted volumes - five coiling arms led by
-      crystals, five crests and the ring''s own pentagon - still spinning, destroying every prism in
-      its plane and stripping petals from every rival hull it crosses (petals only - nothing is
-      moved). The card shows the spare stock. Charge is threat - one dial: the cords'' cut width and
-      the rounds'' size x1 -> x1.8 at level 10 (projectileScaleMultiplier), the disk''s thickness x1
-      -> x4 on top of its x4 base, 4 to 16 times the ring''s (blastScale).'
+      crystals, five crests and the ring''s own pentagon - still spinning, destroying every prism
+      within 40 u of the blast and every prism in its plane and stripping petals from every rival hull
+      it crosses (petals only - nothing is moved). The card shows the spare stock. Charge is threat -
+      one dial: the cords'' cut width and the rounds'' size x1 -> x1.8 at level 10
+      (projectileScaleMultiplier), the disk''s thickness x1 -> x4 on top of its x4 base, 4 to 16 times
+      the ring''s (blastScale).'
     Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Thrown Sabers
+    UpgradeDescription: 'With the cords held RIGID (RT held, the cords fully out), LT cuts all five off and throws them
+      along the lines they point - the right stick aims them as it aims the cords: centred they
+      converge ahead, pushed they fan out. Each flies on tumbling end over end, cutting every prism it
+      crosses and striking rival hulls for petals, then is gone; new cords grow back after a moment.
+      The ring is thrown only when the sabers cannot be (BrittleStarConfigSO.thrownSaber*).'
   - Element: 2
     AbilityLabel: Creation Mode
     AbilityDescription: 'B. A trail behind EACH of the ring''s five corners instead of the single small block from the
@@ -47,8 +52,9 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Shielded Trail
+    UpgradeDescription: 'Every ordinary prism the hull lays arrives SHIELDED - the base trail''s and Creation Mode''s
+      five corner trails'' alike (danger prisms stay danger prisms).'
   - Element: 3
     AbilityLabel: Space Mode
     AbilityDescription: 'X. FIVE GUNS: RT fires every turret, its pull setting the rate (analog, up to 90 rounds/s each;
@@ -66,8 +72,10 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Explosive Rounds
+    UpgradeDescription: 'Every round a prism stops BURSTS, destroying the prisms within 10 u of where it struck (any
+      domain - friendly fire; your own fresh trail is spared; a shield pops first). The round''s own
+      hit on a hull is the scored hit, as before (BrittleStarConfigSO.explosiveRoundRadius).'
   - Element: 4
     AbilityLabel: Speed Mode
     AbilityDescription: 'A. Ignite every thruster: the hull''s cruise speed x6, the base trail''s spacing stretched by
@@ -78,5 +86,7 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Speed Roll
+    UpgradeDescription: 'In Speed Mode the right stick ROLLS the hull instead of turning the ring: its x rolls about the
+      nose (220 deg/s), its y pulls the nose (90 deg/s), so the hull can roll and pull to change
+      direction at Speed Mode''s speed (BrittleStarConfigSO.speedRoll*).'

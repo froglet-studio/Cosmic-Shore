@@ -114,6 +114,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The aimed exit (2026-11-03): the heading the hull came in on (<paramref name="entryHeading"/>), turned
+        /// <paramref name="degrees"/> the way the orbit turns. The orbit's own axis is <paramref name="radial"/> (centre to hull)
+        /// × <paramref name="tangent"/> (the hull's heading round it), so a right orbit turns it right and a left one left, in
+        /// whatever plane the orbit flies. A degenerate orbit keeps the entry heading.
+        /// </summary>
+        public static Vector3 AimedExit(Vector3 entryHeading, Vector3 radial, Vector3 tangent, float degrees)
+        {
+            var axis = Vector3.Cross(radial, tangent);
+            if (axis.sqrMagnitude < 1e-8f || entryHeading.sqrMagnitude < 1e-8f) return entryHeading.normalized;
+            return (Quaternion.AngleAxis(degrees, axis.normalized) * entryHeading).normalized;
+        }
+
+        /// <summary>
+        /// How far the aimed exit turns, from the stick's sideways throw <paramref name="stickX"/> (right positive): at rest
+        /// the middle of <paramref name="min"/>..<paramref name="max"/>, a full throw toward the orbit's turn
+        /// (<paramref name="turnsRight"/>) the most, away from it the least.
+        /// </summary>
+        public static float ExitDegrees(float stickX, bool turnsRight, float min, float max)
+        {
+            float toward = Mathf.Clamp(turnsRight ? stickX : -stickX, -1f, 1f);
+            return Mathf.Lerp(min, max, 0.5f + 0.5f * toward);
+        }
+
+        /// <summary>
         /// Whether the stick has been FLICKED: it reached <paramref name="flickStick"/> within <paramref name="flickSeconds"/> of
         /// last being at rest (<paramref name="secondsSinceRest"/>). A slower push is steering.
         /// </summary>
@@ -313,5 +337,76 @@ namespace CosmicShore.Gameplay
         /// <summary>The pair's midpoint: <paramref name="aheadHorizons"/> horizon radii ahead of the hull.</summary>
         public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)
             => hullPosition + hullForward * (Mathf.Max(0f, horizonRadius) * Mathf.Max(0f, aheadHorizons));
+
+        // ------------------------------------------------------------------ Time mode: the trampoline (STOAT_DIPOLE.md §1b)
+
+        /// <summary>
+        /// Where the trampoline's white hole is laid: <paramref name="ahead"/> along the line the hull is flying - its turn
+        /// (<paramref name="turnAxis"/> at <paramref name="turnRate"/> rad/s) carried on, at most
+        /// <paramref name="predictMaxDegrees"/> - then <paramref name="line"/> × <paramref name="radius"/> to the side AWAY from
+        /// the bounce, so a hull flying on grazes the shell's near flank and is thrown toward the bounce.
+        /// </summary>
+        public static Vector3 TrampolineCentre(Vector3 position, Vector3 forward, Vector3 right, bool bounceRight, float ahead,
+            float radius, float line, Vector3 turnAxis, float turnRate, float speed, float predictMaxDegrees)
+        {
+            var p = position;
+            var f = forward.sqrMagnitude > 1e-8f ? forward.normalized : Vector3.forward;
+            ahead = Mathf.Max(0f, ahead);
+            float turn = Mathf.Min(Mathf.Max(0f, predictMaxDegrees) * Mathf.Deg2Rad, Mathf.Max(0f, turnRate) * ahead / Mathf.Max(1f, speed));
+            if (turn > 1e-4f && turnAxis.sqrMagnitude > 1e-8f)
+            {
+                const int steps = 12;
+                var step = Quaternion.AngleAxis(turn * Mathf.Rad2Deg / steps, turnAxis.normalized);
+                for (int i = 0; i < steps; i++) { p += f * (ahead / steps); f = step * f; }
+            }
+            else p += f * ahead;
+            var side = Vector3.ProjectOnPlane(right, f);
+            side = side.sqrMagnitude > 1e-8f ? side.normalized : right;
+            return p + side * ((bounceRight ? -1f : 1f) * Mathf.Max(0f, line) * Mathf.Max(0f, radius));
+        }
+
+        /// <summary>
+        /// The point on the shell's flank to fly at for a graze <paramref name="line"/> × <paramref name="radius"/> off the
+        /// centre, toward the bounce side, square to the line from <paramref name="position"/>: a hull steering at it touches
+        /// the near flank and is thrown toward the bounce. The autopilot's aim (it picks the line from the turn it wants).
+        /// </summary>
+        public static Vector3 TrampolineFlank(Vector3 position, Vector3 centre, Vector3 right, bool bounceRight, float line, float radius)
+        {
+            var to = centre - position;
+            var side = to.sqrMagnitude > 1e-8f ? Vector3.ProjectOnPlane(right, to.normalized) : right;
+            side = side.sqrMagnitude > 1e-8f ? side.normalized : right;
+            return centre + side * ((bounceRight ? 1f : -1f) * Mathf.Max(0f, line) * Mathf.Max(0f, radius));
+        }
+
+        /// <summary>The graze that gives a bounce of <paramref name="turnDegrees"/>, as a share of the radius off the centre:
+        /// 1 − turn / <paramref name="turnScale"/>, within 0.3..0.92 (deeper turns more; the shipped shell at 150 u/s turns a
+        /// 0.5 graze about 83°, 0.7 about 53°, 0.9 about 19°, head-on 180°: <c>stoat_orbit_sim.py</c>).</summary>
+        public static float TrampolineLineFor(float turnDegrees, float turnScale) =>
+            Mathf.Clamp(1f - Mathf.Max(0f, turnDegrees) / Mathf.Max(1f, turnScale), 0.3f, 0.92f);
+
+        /// <summary>The shell's spring, 1/s²: (π / <paramref name="softSeconds"/>)², so a head-on bounce lasts about
+        /// <paramref name="softSeconds"/>.</summary>
+        public static float TrampolineStiffness(float softSeconds) => Mathf.Pow(Mathf.PI / Mathf.Max(0.05f, softSeconds), 2f);
+
+        /// <summary>
+        /// One step inside the soft shell: the spring pushes <paramref name="velocity"/> out along the shell's normal by
+        /// stiffness × depth × <paramref name="dt"/>. The velocity is carried from the touch through the bounce, so a hull
+        /// flying straight in is slowed, stopped and sent back out (a head-on bounce); the hull flies its direction at its own
+        /// engine's speed. Outside the shell, <paramref name="velocity"/> unchanged.
+        /// </summary>
+        public static Vector3 TrampolineStep(Vector3 velocity, Vector3 radial, float radius, float softSeconds, float dt)
+        {
+            float d = radial.magnitude;
+            float depth = radius - d;
+            if (depth <= 0f || d < 1e-6f) return velocity;
+            return velocity + radial / d * (TrampolineStiffness(softSeconds) * depth * Mathf.Max(0f, dt));
+        }
+
+        /// <summary>The hull TOUCHES the shell: inside its radius and moving in (a hull already moving out passes free).</summary>
+        public static bool TrampolineTouches(Vector3 hull, Vector3 forward, Vector3 centre, float radius)
+        {
+            var radial = hull - centre;
+            return radial.sqrMagnitude < radius * radius && Vector3.Dot(forward, radial) < 0f;
+        }
     }
 }

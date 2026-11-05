@@ -5,30 +5,35 @@ plan's time-arcade step (Docs/AI_SYSTEM/AI_PLAN.md section 5; the search is Tool
 manta_drive_sim.py is Regatta's model: a point mass on Regatta's steering at full throttle with no nose lag. Redline
 differs on all three (measured 2026-11-03), so this one ports, line for line, what an AI Manta does there:
 
-    the course    RedlineCourse.ForIntensity through HeadlongCircuit.Generate (course_port.py, the float32 port)
+    the course    RedlineCourse.ForIntensity through HeadlongCircuit.Generate (course_port.py, the float32 port), the
+                  race's laps read from RedlineCourseSource.DefaultLaps (5), and the Time crystals of
+                  RedlineTimeCrystals (crystals_for): both held to the shipped C# by redline_course_harness's
+                  redline_parity.jsonl in --self-test
     the gate aim  GateRaceController.ArmRacers' aim provider with the Regatta steering, which RedlineController turns
                   on (AICommitFromApproachPoint, 2026-11-03): commit from the approach point, through the ring's
                   centre, break off and re-attack after a missed mouth. `regatta=False` is the old steering Redline
-                  flew before (commit at 420 u, a fly-through point on the axis, no re-attack): 4 of 12 races
-                  finished here against 12 of 12 (REDLINE.md section 5)
+                  flew before (commit at 420 u, a fly-through point on the axis, no re-attack). RedlineController's
+                  TryOverrideAim (a live Time crystal on the way, within aiTimeCrystalSlack; 0 as shipped) is asked first
     the pilot     AIPilot: the stick from the nose-to-target cross product (asin(2 sin^2 e) x sin e, TurnHardIfBehind),
                   roll stick = yaw stick, the SKILL THROTTLE (Lerp(0.2, 0.9, skill) + its creep, skill = intensity x
                   0.25 from ServerPlayerVesselInitializerWithAI; Redline sets no AIThrottleFloor, Regatta's is 1), the
-                  orbit break-off (turning-circle test, OrbitDetector, the escape point); no crystals
-                  (GateRaceController.AIDetoursForCrystals is false)
+                  orbit break-off (turning-circle test, OrbitDetector, the escape point); the platform's crystal detour
+                  never fires (GateRaceController.AIDetoursForCrystals is false, and it reads managed crystals only)
     the triggers  MantaAnalogTurnBoostExecutor.AutopilotTriggers (the Soar bands, MantaSoarAITuningSO), Soar = boost
                   multiplier 1 + 3 x min(LT, RT), Yastri yaw 60 deg/s x (RT - LT) about the hull's up
     the hull      VesselTransformer: roll (0.2 v + 100), yaw (0.2 v + 30), pitch (0.2 v + 50) deg/s about the NOSE's
                   axes onto the commanded rotation; the AI nose follows the command at LERP_AMOUNT 1.5/s; speed lerps
-                  1.5/s toward throttle x 180 x Soar (Manta.prefab: DefaultThrottleScaler 180, boostMultiplier 4,
-                  RotationThrottleScaler 0.2, Pitch 50, Yaw 30, Roll 100; AIPilot throttle 0.2-0.9, ram off)
+                  1.5/s toward throttle x 180 x Soar x the Time level's BoostSpeedMultiplier (Manta.prefab:
+                  DefaultThrottleScaler 180, boostMultiplier 4, RotationThrottleScaler 0.2, Pitch 50, Yaw 30, Roll 100;
+                  AIPilot throttle 0.2-0.9, ram off); a Time crystal is taken within its 10 u skimmer + 3.55 u
 
-triggers() MIRRORS MantaAnalogTurnBoostExecutor.AutopilotTriggers and stick() AIPilot's steering: change both together.
+triggers() MIRRORS MantaAnalogTurnBoostExecutor.AutopilotTriggers, stick() AIPilot's steering and crystals_for()
+RedlineTimeCrystals.Place: change both together.
 
-NOT modelled (LIMITS): rivals and their Yastri trails; crystals and the Kabloom; element levels (a Time level is speed on
-this hull); the lobby difficulty (GateRaceHandicap: Easy-Hard fly a late or misjudged BELIEF of the ring and the genome
-is the same; Legendary is this pilot); the spawn ring (a pilot starts 400 u before gate 0 on its axis, at rest, facing
-it); frame hitches. The editor is the measurement.
+NOT modelled (LIMITS): rivals and their Yastri trails; the Sting and Kabloom; the comeback's element levels; the lobby
+difficulty (GateRaceHandicap: Easy-Hard fly a late or misjudged BELIEF of the ring and the genome is the same; Legendary
+is this pilot); the spawn ring (a pilot starts 400 u before gate 0 on its axis, at rest, facing it); frame hitches; the
+Time level's speed is taken as linear in BoostSpeedMultiplier. The editor is the measurement.
 
     python3 Tools/Build/manta_redline_sim.py                  # the shipped AI, I1-I4 x 6 courses
     python3 Tools/Build/manta_redline_sim.py --what-ifs       # against the old steering, full throttle, no nose lag
@@ -57,16 +62,40 @@ REGATTA_STEERING = True                             # RedlineController.AICommit
 THROTTLE_FLOOR = 0.0                                # RedlineController sets no AIThrottleFloor (Regatta's is 1)
 COMMIT, LEAD, THROUGH = 420.0, 480.0, 320.0
 LEAD_SHARE_OF_LEG, LEAD_SHARE_OF_COMMIT = 0.4, 0.8
-LAPS = 3
+REPO = os.path.dirname(os.path.dirname(HERE))
+
+
+def _shipped_laps():
+    """RedlineCourseSource.DefaultLaps, read from the C# (5 since the 2026-10-26 ~90 s target pass; it was 3)."""
+    import re
+    path = os.path.join(REPO, "Assets", "_Scripts", "Controller", "Arcade", "Redline", "RedlineCourseSource.cs")
+    with open(path, encoding="utf-8") as fh:
+        m = re.search(r"DefaultLaps\s*=\s*(\d+)\s*;", fh.read())
+    if not m:
+        raise RuntimeError(f"RedlineCourseSource.DefaultLaps not found in {path}")
+    return int(m.group(1))
+
+
+LAPS = _shipped_laps()
+# Time crystals (RedlineTimeCrystals.cs, ported in crystals_for): one Time level each; on the Manta a Time level is Soar's
+# top speed, BoostSpeedMultiplier 1 -> 1.3 across levels 0-10 (the ability map; linear here). A crystal is taken when the
+# hull's near-field skimmer (Manta.prefab: Skimmer scale 20 x radius 0.5 = 10 u) touches the crystal (3.55 u,
+# ElementalCrystalSetSO.CrystalWorldScale), and grows back RedlineController.timeCrystalRegrowSeconds later.
+PER_LAP = (0, 1, 2, 3)
+ON_LINE_FRACTION, APEX_ALONG_EXIT, APEX_INSET = 0.5, 0.25, 70.0
+TIME_PER_LEVEL, MAX_LEVEL = 0.03, 10
+PICKUP = 10.0 + 3.55
+REGROW = 5.0
+AI_CRYSTAL_SLACK = 0.0                              # RedlineController.aiTimeCrystalSlack (off as shipped)
 # AIPilot's orbit break-off
 CAPTURE, RUN_SECONDS, BREAK_MIN, BREAK_MAX, CLOSING_COS, AWAY_BIAS = 18.0, 1.5, 0.6, 6.0, 0.5, 0.35
 SWEEP, PROGRESS, JUMP = 360.0, 0.9, 1.6
 MAX_DISTANCE = 50.0                                 # AIPilot._maxDistance (the stick's denominator floor)
 START_BACK = 400.0
 
-LIMITS = ("Redline offline (manta_redline_sim.py): the shipped course, gate aim, AIPilot stick / skill throttle / orbit "
-          "break-off, the Soar triggers and the hull's turn law and AI nose lag; one AI, no rivals or trails, no crystals, "
-          "no element levels, no lobby handicap (Legendary), a fixed start 400 u before gate 0")
+LIMITS = ("Redline offline (manta_redline_sim.py): the shipped course and Time crystals, gate aim, AIPilot stick / skill "
+          "throttle / orbit break-off, the Soar triggers, the hull's turn law and AI nose lag; one AI, no rivals or trails, "
+          "no lobby handicap (Legendary), a fixed start 400 u before gate 0, Time levels linear in BoostSpeedMultiplier")
 
 
 # ── vectors and quaternions (Unity's formulas: AngleAxis(90, up) * forward = right) ─────────────────────────────
@@ -242,6 +271,45 @@ class Orbit:
         return self.swept >= SWEEP
 
 
+def corner_radius(prev, p, nxt):
+    """RaceCourseGeometry.CornerRadius: half the shorter leg over tan(half the turn)."""
+    inbound, outbound = sub(p, prev), sub(nxt, p)
+    turn = angle(inbound, outbound)
+    if turn < 1e-4:
+        return float("inf")
+    return min(norm(inbound), norm(outbound)) * 0.5 / math.tan(math.radians(turn * 0.5))
+
+
+def crystals_for(course, intensity):
+    """RedlineTimeCrystals.Place, line for line: the lap's Time crystals, tightest corner first."""
+    gates = [tuple(g["p"]) for g in course["gates"]]
+    n = len(gates)
+    count = min(PER_LAP[max(1, min(4, int(intensity))) - 1], n) if n >= 3 else 0
+    if count <= 0:
+        return []
+    radius = [corner_radius(gates[(i - 1) % n], gates[i], gates[(i + 1) % n]) for i in range(n)]
+    order = sorted(range(n), key=lambda i: (radius[i], i))
+    out = []
+    for c in order[:count]:
+        prev, at, nxt = gates[(c - 1) % n], gates[c], gates[(c + 1) % n]
+        if intensity >= 4:
+            exit_ = sub(nxt, at)
+            along = add(at, mul(exit_, APEX_ALONG_EXIT))
+            inside = sub(mul(add(prev, nxt), 0.5), at)
+            d = unit(exit_)
+            inside = sub(inside, mul(d, dot(inside, d)))
+            out.append(add(along, mul(unit(inside), APEX_INSET)) if dot(inside, inside) > 1e-6 else along)
+        else:
+            out.append(add(prev, mul(sub(at, prev), ON_LINE_FRACTION)))
+    return out
+
+
+def seg_point(a, b, p):
+    ab = sub(b, a)
+    t = max(0.0, min(1.0, dot(sub(p, a), ab) / dot(ab, ab))) if dot(ab, ab) > 1e-12 else 0.0
+    return norm(sub(p, add(a, mul(ab, t))))
+
+
 def plane_crossing(prev, cur, centre, axis, radius):
     """RaceGateRing.PlaneCrossing: 0 none, 1 inside the mouth, -1 outside it."""
     a0, a1 = dot(sub(prev, centre), axis), dot(sub(cur, centre), axis)
@@ -253,14 +321,36 @@ def plane_crossing(prev, cur, centre, axis, radius):
 
 # ── one race ────────────────────────────────────────────────────────────────────────────────────────────────────
 
+def crystal_aim(pos, heading, ring, field, back_at, slack):
+    """RedlineController.TryOverrideAim: the live Time crystal ahead of the nose that costs least on the way to the next
+    ring, if that costs no more than `slack` over flying straight there; else None."""
+    if slack <= 0:
+        return None
+    direct = norm(sub(ring, pos))
+    best, aim = float("inf"), None
+    for c, p in enumerate(field):
+        if back_at[c] >= 0 or dot(sub(p, pos), heading) <= 0:
+            continue
+        cost = norm(sub(p, pos)) + norm(sub(ring, p))
+        if cost > direct + slack or cost >= best:
+            continue
+        best, aim = cost, p
+    return aim
+
+
 def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor=THROTTLE_FLOOR, nose_lag=True,
-         limit=400.0, dt=1 / 60, laps=LAPS, trace=None):
-    """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}). Returns {time (None = not finished), rings,
-    of, top, mean_speed, soar (mean boost), misses, breakoffs}."""
+         limit=900.0, dt=1 / 60, laps=LAPS, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None):
+    """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}), steering for a Time crystal on its way when it
+    costs under `crystal_slack` u (RedlineController.TryOverrideAim; `crystals`: True = RedlineTimeCrystals' field,
+    False = none, or a list of positions). Returns {time (None = not finished), rings, of, top, mean_speed, soar (mean
+    boost), misses, breakoffs, level (Time level at the end)}."""
     band, yband = bands or (BOOST_BAND, YASTRI_BAND)
     gates = [(tuple(g["p"]), unit(tuple(g["a"])), float(g["r"])) for g in course["gates"]]
     n = len(gates)
     total = n * max(1, laps)
+    field = crystals_for(course, intensity) if crystals is True else list(crystals or [])
+    back_at = [-1.0] * len(field)                                   # when a taken crystal is back (-1 = standing)
+    level = 0
     skill = max(0.0, min(1.0, intensity * 0.25))
     throttle = THROTTLE_LOW + (THROTTLE_HIGH - THROTTLE_LOW) * skill
     creep = CREEP_LOW + (CREEP_HIGH - CREEP_LOW) * skill
@@ -281,8 +371,9 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     while t < limit and idx < total:
         ring, ax, rad = gates[idx % n]
 
-        # GateRaceController's aim provider
-        if regatta and prev is not None and plane_crossing(prev, pos, ring, ax, rad) == -1:
+        # GateRaceController's aim provider: the mode's override first (RedlineController.TryOverrideAim)
+        aim = crystal_aim(pos, q_rot(q, FWD), ring, field, back_at, crystal_slack) if field else None
+        if aim is None and regatta and prev is not None and plane_crossing(prev, pos, ring, ax, rad) == -1:
             locked = -1                                             # re-latch the side, and AIPilot.BreakOffNow
             breakoffs += not extending
             extending, ext_t = True, 0.0
@@ -299,7 +390,9 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         commit = min(COMMIT, lead + 0.5 * r_min) if regatta else COMMIT
         to_ring = sub(ring, pos)
         approaching = dot(to_ring, to_ring) > commit * commit
-        if approaching:
+        if aim is not None:
+            target = aim
+        elif approaching:
             target = add(ring, mul(ax, side * lead))
         elif regatta and dot(to_ring, to_ring) > 1.0:
             target = add(ring, mul(unit(to_ring), THROUGH))
@@ -341,7 +434,8 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         nose_up = q_rot(q, UP)
         if abs(rt - lt) > 0.001:
             cmd = q_mul(q_axis((rt - lt) * YASTRI_YAW * dt, nose_up), cmd)
-        mult = 1 + (BOOST_MULT - 1) * boost if boost > 0.01 else 1.0
+        # VesselTransformer.CurrentBoostAmount: the Soar multiplier x the Time level's BoostSpeedMultiplier while boosting
+        mult = (1 + (BOOST_MULT - 1) * boost) * (1 + TIME_PER_LEVEL * level) if boost > 0.01 else 1.0
 
         # VesselTransformer.RotateShip: roll, yaw, pitch about the nose's axes onto the command; the nose follows
         k = v * ROT_THROTTLE
@@ -358,6 +452,12 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
             idx += 1
         elif crossing == -1:
             misses += 1
+        for c, p in enumerate(field):
+            if back_at[c] < 0 and seg_point(pos, newpos, p) <= PICKUP:
+                back_at[c] = t + REGROW
+                level = min(MAX_LEVEL, level + 1)
+            elif 0 <= back_at[c] <= t:
+                back_at[c] = -1.0
         prev, pos = pos, newpos
         top = max(top, v)
         soar_sum += boost
@@ -367,10 +467,11 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         if trace is not None and t >= next_trace:
             next_trace += 1.0
             trace.append(f"{t:6.1f}s ring {idx:2d}/{total} v {v:5.0f} thr {thr:.2f} soar {boost:.2f} stick {xs:+.2f},{ys:+.2f} "
-                         f"{'APPROACH' if approaching else 'through '} {'BREAK' if extending else ''} d {norm(to_ring):5.0f}")
+                         f"{'APPROACH' if approaching else 'through '} {'BREAK' if extending else ''} d {norm(to_ring):5.0f} "
+                         f"Time {level}")
     return {"time": round(t, 3) if idx >= total else None, "rings": idx, "of": total, "top": round(top),
             "mean_speed": round(speed_sum / max(1, frames), 1), "soar": round(soar_sum / max(1, frames), 3),
-            "misses": misses, "breakoffs": breakoffs}
+            "misses": misses, "breakoffs": breakoffs, "level": level}
 
 
 # ── courses ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -387,7 +488,8 @@ def table(label, rows):
     med = f"{fin[len(fin) // 2]:6.1f}" if fin else "     -"
     return (f"{label:<34} {len(fin):2d}/{len(rows)}  median {med} s  top {max(r['top'] for r in rows):4d}  "
             f"mean v {sum(r['mean_speed'] for r in rows) / len(rows):5.0f}  soar {sum(r['soar'] for r in rows) / len(rows):.2f}  "
-            f"misses {sum(r['misses'] for r in rows):3d}  breakoffs {sum(r['breakoffs'] for r in rows):3d}")
+            f"misses {sum(r['misses'] for r in rows):3d}  breakoffs {sum(r['breakoffs'] for r in rows):3d}  "
+            f"Time {sum(r['level'] for r in rows) / len(rows):.1f}")
 
 
 def self_test():
@@ -429,6 +531,30 @@ def self_test():
     old, now = race(c, 3, regatta=False), race(c, 3)
     if now["time"] is None or (old["time"] is not None and old["time"] < now["time"] * 1.5):
         bad.append(f"the old steering raced I3 course 1 about as well as the Regatta steering ({old['time']} vs {now['time']})")
+    # 6. parity with the SHIPPED C# (Tools/Build/redline_course_harness/redline_parity.jsonl, `run.sh --parity`): the
+    #    course port lays the same gates, and crystals_for places the same Time crystals on them
+    import json
+    import course_port as cp
+    parity = os.path.join(HERE, "redline_course_harness", "redline_parity.jsonl")
+    with open(parity, encoding="utf-8") as fh:
+        rows = [json.loads(line) for line in fh if line.strip()]
+    if not rows:
+        bad.append(f"no parity rows in {parity}")
+    for row in rows:
+        i, seed = row["intensity"], row["seed"]
+        ours = cp.course(cp.redline_settings(i), seed, rails=False)
+        off = max(norm(sub(tuple(a["p"]), tuple(b["p"]))) for a, b in zip(ours["gates"], row["gates"]))
+        if len(ours["gates"]) != len(row["gates"]) or off > 1.0:
+            bad.append(f"course_port: I{i} seed {seed} gates are {off:.2f} u off the C# (re-port RedlineCourse.ForIntensity)")
+        placed = crystals_for({"gates": row["gates"]}, i)
+        if len(placed) != len(row["crystals"]) or any(norm(sub(p, tuple(c))) > 0.05 for p, c in zip(placed, row["crystals"])):
+            bad.append(f"crystals_for: I{i} seed {seed} does not place RedlineTimeCrystals' crystals {placed} vs {row['crystals']}")
+    # 7. a Time crystal is a Time level: an AI that steers for them (RedlineController.aiTimeCrystalSlack 150) gains
+    #    levels, one with no field none, and the shipped AI (slack 0) takes only what its line crosses
+    c = course_for(3, 2)
+    with_field, without = race(c, 3, crystal_slack=150.0), race(c, 3, crystals=False)
+    if not (with_field["level"] > 0 and without["level"] == 0):
+        bad.append(f"the Time crystals fed no level ({with_field['level']} vs {without['level']})")
     print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
 

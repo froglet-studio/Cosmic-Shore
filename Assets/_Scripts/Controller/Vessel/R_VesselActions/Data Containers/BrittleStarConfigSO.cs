@@ -198,6 +198,13 @@ namespace CosmicShore.Gameplay
                  "Thunder's element: 'larger AOE on support ring detonation'.")]
         [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 4f, Element.Charge, 1f);
 
+        [Tooltip("The ring explosion's CORE (Shombith, 2026-11-03: the ring 'should perform an explosion which blows up " +
+                 "nearby' mass): every prism within this many world units of where the ring blows is destroyed at once " +
+                 "(any domain - friendly fire; your own fresh trail is spared; a shield pops first, super-shielded mass " +
+                 "refuses), and every rival hull inside it is scored as the disk scores it. The flat disk alone reached " +
+                 "only the prisms lying in the ring's plane. 0 = no core.")]
+        [SerializeField, Min(0f)] float ringBlastCoreRadius = 40f;
+
         [Header("Ring Detonation: the look (BrittleStarBlastForm - five-fold faceted volumes, from the ring that blew)")]
         [Tooltip("The front's radial width between crests, x its radius (Garrett, 2026-10-18: 'nothing in the environment " +
                  "should ever look flat' - every thickness of the look scales with the blast, so it reads as a volume at " +
@@ -225,6 +232,35 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 0.3f)] float ringBlastArmWiggle = 0.06f;
         [Tooltip("Degrees each arm's tip trails its root, curling back against the spin (a pinwheel).")]
         [SerializeField, Range(0f, 90f)] float ringBlastArmCurlDegrees = 30f;
+
+        // ------------------------------------------------------------------ level-5 upgrades (Shombith, 2026-11-03)
+        [Header("Level-5 upgrades (each gated on IsUpgradeActive for its element)")]
+        [Tooltip("SPACE L5 (Explosive Rounds): a round a prism stops bursts, destroying every prism within this many " +
+                 "world units of where it struck (any domain - friendly fire, as the rounds have it; your own fresh trail " +
+                 "is spared; a shield pops first). Prisms only: the round's own hit on a hull is already the scored hit.")]
+        [SerializeField, Min(0.5f)] float explosiveRoundRadius = 10f;
+        [Tooltip("SPACE L5: the most round bursts resolved in one frame; the rest of that frame's bursts are dropped " +
+                 "(five guns at 90 rounds/s each can stop hundreds of rounds a second).")]
+        [SerializeField, Range(1, 64)] int explosiveRoundMaxPerFrame = 12;
+        [Tooltip("CHARGE L5 (Thrown Sabers): with Charge Mode's cords held RIGID (RT held, the cords fully out), LT cuts " +
+                 "all five off and throws them along the lines they point - the right stick aims them as it aims the " +
+                 "cords (centred they converge ahead, pushed they fan out). The ring is thrown only when the sabers " +
+                 "cannot be. Each saber's speed, world units per second, on top of the hull's own velocity.")]
+        [SerializeField, Min(1f)] float thrownSaberSpeed = 220f;
+        [Tooltip("CHARGE L5: seconds a thrown saber flies, cutting every prism it crosses and striking rival hulls, " +
+                 "before it is gone.")]
+        [SerializeField, Min(0.05f)] float thrownSaberSeconds = 1.2f;
+        [Tooltip("CHARGE L5: a thrown saber's spin about its middle, degrees per second (it tumbles end over end in " +
+                 "the plane of its throw).")]
+        [SerializeField] float thrownSaberSpin = 720f;
+        [Tooltip("CHARGE L5: seconds before new cords can grow back out of the muzzles after a throw.")]
+        [SerializeField, Min(0f)] float thrownSaberRegrowSeconds = 1.5f;
+        [Tooltip("TIME L5 (Speed Roll): in Speed Mode the right stick ROLLS the hull instead of turning the ring - its " +
+                 "x is the roll, degrees per second at full deflection.")]
+        [SerializeField, Min(0f)] float speedRollDegreesPerSecond = 220f;
+        [Tooltip("TIME L5: the right stick's y PULLS the nose (pitch) at up to this many degrees per second, so a roll " +
+                 "then a pull turns the hull at Speed Mode's speed. 0 = roll only.")]
+        [SerializeField, Min(0f)] float speedRollPullDegreesPerSecond = 90f;
 
         // ------------------------------------------------------------------ the ring stock
         [Header("Ring stock (Garrett, 2026-10-16)")]
@@ -279,6 +315,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference chargeStoredEvent;
         [Tooltip("The guns overheat.")]
         [SerializeField] EventReference overheatEvent;
+        [Tooltip("SPACE L5: an explosive round bursts (one per burst, at the burst).")]
+        [SerializeField] EventReference explosiveRoundEvent;
+        [Tooltip("CHARGE L5: the five sabers are cut off and thrown.")]
+        [SerializeField] EventReference saberThrowEvent;
 
         // ------------------------------------------------------------------ accessors
         public float ModeBlendSeconds => modeBlendSeconds;
@@ -366,5 +406,16 @@ namespace CosmicShore.Gameplay
         public EventReference RingRebuildEvent => ringRebuildEvent;
         public EventReference ChargeStoredEvent => chargeStoredEvent;
         public EventReference OverheatEvent => overheatEvent;
+        public float RingBlastCoreRadius => ringBlastCoreRadius;
+        public float ExplosiveRoundRadius => explosiveRoundRadius;
+        public int ExplosiveRoundMaxPerFrame => explosiveRoundMaxPerFrame;
+        public float ThrownSaberSpeed => thrownSaberSpeed;
+        public float ThrownSaberSeconds => thrownSaberSeconds;
+        public float ThrownSaberSpin => thrownSaberSpin;
+        public float ThrownSaberRegrowSeconds => thrownSaberRegrowSeconds;
+        public float SpeedRollDegreesPerSecond => speedRollDegreesPerSecond;
+        public float SpeedRollPullDegreesPerSecond => speedRollPullDegreesPerSecond;
+        public EventReference ExplosiveRoundEvent => explosiveRoundEvent;
+        public EventReference SaberThrowEvent => saberThrowEvent;
     }
 }

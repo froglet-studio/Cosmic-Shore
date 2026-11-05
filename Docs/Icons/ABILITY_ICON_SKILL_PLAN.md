@@ -340,6 +340,13 @@ DONE 2026-11-01** (picked C, "the stock": "I like that c can display the resourc
 spare-ring slots, a held spare a solid pentagon and an empty slot an outline, so the one-colour card still counts; three
 sprites (`Core/BrittleStar_OmniStock0..2`) swapped by `BrittleStarHUDView.SetSpareRings` through the new
 `VesselHUDView.SetOmniAbilitySprite`. The Brittle Star is done; next the rhombus recut of the shipped hulls.
+**Brittle Star level-5 states DONE 2026-11-03** (Shombith designed the upgrades and picked "B A C C" of A/B/C each,
+shown in the lockup; `claude/brittle-stars-l5-updates-41j91p`; not yet seen by Garrett): each drawn as the act it unlocks
+and shown only while live (`BrittleStarHUDView.SetAbilityUpgraded` keeps the flags), in `BrittleStar_*` card states:
+Charge 5 Thrown Sabers B (the five sabers thrown out past their turrets, tumbling), Mass 5 Shielded Trail A (every block the fleet's
+shielded prism, white: the shielded tint vanished on the full blue plate), Space 5 Explosive Rounds C (a burst where the
+rounds meet, the rounds swapped to copies cleared round it), Time 5 Speed Roll C (the stretched trail swept round a turn
+under a roll arc). The losers' option sheets were deleted once picked.
 **The Honeyguide** (2026-11-01, round 1, not yet reviewed by Garrett; `cece/jolly-lovelace-t8y3a1`): Garrett, "so we will
 need an icon for each ability that can take over". Seventeen white sprites for the trigger redesign (Honeyguide Lab round
 8): the four element cards (Slip on Time, Peck on Space RT, Flit on Charge LT, Hive on Mass) in
@@ -390,6 +397,13 @@ rain. Gilded Wake's keys go wider and taper sooner. The same round set a FLEET r
 negative-space X (`motifs.prism_square_x`), motes are little circles. Cards already shipped with the rhombus (Angler,
 Manta, Rhino, Scarab, Sparrow, Squirrel) are a later recut. The omni card stays one white sprite. Next: the Brittle
 Star.
+**The Meerkat (2026-11-03, round 1, Yash):** its first row of its own (it wore the Stoat's HUD and four Stoat
+placeholders). `specs/meerkat.py`, `Docs/Icons/sheets/meerkat.png`: Sentinel Mode (the hull on sentry over the mouth it
+guards, its guard an arc), Exit Portal (the way out face-on, ringed by its six prisms), Soliton (the wormhole, an arch
+pinched to its throat between two open mouths), Faster Ride (the hull shooting out of a mouth, one chamfered bar), and
+the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
+`MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
+guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
 
 | Round | What | Why first |
 |---|---|---|

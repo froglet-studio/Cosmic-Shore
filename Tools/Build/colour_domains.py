@@ -21,7 +21,7 @@ convex and fill OKLab with no gaps, and the band is the same thickness on every 
   - an anchor does not rest in its own family, clear of the band (except the listed exceptions, each with its reason);
   - a UI theme colour named for a family (UITheme.asset cta, danger, controlActive, purchase, tooltip, selection) is
     not in that family, clear of the band (except the listed exceptions);
-  - one of the four Lime element shades (OriginalColorSetSO ElementalCrystalColors) is not in Lime, clear of the band;
+  - one of the four Lime element shades (PhoticColorSetSO ElementalCrystalColors) is not in Lime, clear of the band;
   - the measured shares written in the definitions are stale (more than 0.1 point off a fresh measurement);
   - the Colour Domains lab (Docs/Studios/ColourDomainsLab.html, the artifact's source) embeds a different truth.
 """
@@ -95,7 +95,7 @@ def live_anchors():
     if not m:
         raise SystemExit("colour_domains: KiteNavigatorView's Lime constant not found")
     s = vessel_colors.SCHEME
-    pal, lad, scheme, dc = "OriginalColorSetSO.asset", "ElementalBarsConfig.asset", "vessel_colors.py SCHEME", "OriginalColorSetSO.asset (domain_colors)"
+    pal, lad, scheme, dc = "PhoticColorSetSO.asset", "ElementalBarsConfig.asset", "vessel_colors.py SCHEME", "PhoticColorSetSO.asset (domain_colors)"
     return {
         "fire-0": (kite.peak1(kite.yaml_color(palette, "Danger")), pal + " Danger"),
         "fire-1": (kite.yaml_color(ladder, "fireColor"), lad + " fireColor"),
@@ -133,7 +133,7 @@ def element_shades():
     text = kite.read(kite.PALETTE)
     m = kite.PALETTE_RE.search(text)
     if not m:
-        raise SystemExit("colour_domains: OriginalColorSetSO.asset has no ElementalCrystalColors")
+        raise SystemExit("colour_domains: PhoticColorSetSO.asset has no ElementalCrystalColors")
     cols = re.findall(r"\{r: %s, g: %s, b: %s" % (kite.NUM, kite.NUM, kite.NUM), m.group(0))
     return [(name, tuple(float(v) for v in c)) for name, c in zip(kite.ELEMENTS, cols)]
 

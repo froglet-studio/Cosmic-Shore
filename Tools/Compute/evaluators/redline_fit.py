@@ -17,8 +17,9 @@ orbit break-off, the Soar triggers, and the hull's turn law with the AI nose lag
 
 The space is the drive's own asset fields by their names (BoostStickBand, YastriStickBand; [Range(0, 1)] on the SO),
 so a result is written into MantaSoarAITuning_Redline (MantaSoarAITuningSO.LoadForMode) without a rename. The mode's
-own AI (steering, throttle floor) is whatever the simulator mirrors from the job's ref: change Redline's AI and the
-simulator together, and a new epoch starts.
+own AI (steering, throttle floor, whether it steers for Time crystals) and its course (the Soar-only ladder, the Time
+crystal field, five laps) are whatever the simulator mirrors from the job's ref: change Redline and the simulator
+together, and a new epoch starts.
 
 Races: `seeds` fixed course seeds per intensity from `seedbase` (Redline deals a new course every match, so several are
 raced; fixed courses can be over-fit, so promotion re-races the winner against today's genomes on FRESH seeds).
@@ -30,7 +31,7 @@ args:
     intensities        Redline intensities raced together (default 1-4)
     seeds              fixed course seeds per intensity (default 4)
     seedbase           the first of them (default 1)
-    limit              seconds before a race counts as not finished (default 400)
+    limit              seconds before a race counts as not finished (default 900: five laps at I4 run 540 s)
     genomes            repo paths of every Manta Time genome to grow from (MantaSoarAITuning_* assets; a missing file
                        is skipped, so the Redline file the AI learning sweep will write joins on its own)
     stay_near_shipped  weight of the pull toward the nearest genome (0 turns it off)
@@ -39,7 +40,7 @@ import importlib.util
 import os
 import re
 
-VERSION = "1"
+VERSION = "2"   # 2 (2026-11-04): five laps, the Soar-only ladder, the Time crystal field
 SIM = "Tools/Build/manta_redline_sim.py"
 EXECUTOR = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MantaAnalogTurnBoostExecutor.cs"
 PREFAB = "Assets/_Prefabs/Spacevessels/Manta.prefab"
@@ -47,15 +48,16 @@ POL = "Assets/Resources/AIBoostPolicies/"
 GENOMES = [POL + "MantaSoarAITuning_Redline.asset", POL + "MantaSoarAITuning_Regatta.asset"]
 FIELDS = {"BoostStickBand": (0.0, 1.0), "YastriStickBand": (0.0, 1.0)}
 CODE = {"BoostStickBand": "aiBoostStickBand", "YastriStickBand": "aiYastriStickBand"}   # the executor's own fields
-PATHS = [SIM, EXECUTOR, PREFAB, POL]
-REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}, "limit": {"lo": 120, "hi": 900}}
+LAPS_SOURCE = "Assets/_Scripts/Controller/Arcade/Redline/RedlineCourseSource.cs"   # the sim reads DefaultLaps here
+PATHS = [SIM, EXECUTOR, PREFAB, POL, LAPS_SOURCE]
+REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}, "limit": {"lo": 300, "hi": 1500}}
 COMBINE_WORST = 0.5
 FLAT_OUT = 720.0          # RedlineCourse.MantaTopSpeed
 _CTX = {}
 
 
 def inputs(args):
-    return [SIM, EXECUTOR, PREFAB] + [g for g in genomes(args)]
+    return [SIM, EXECUTOR, PREFAB, LAPS_SOURCE] + [g for g in genomes(args)]
 
 
 def intensities(args):
@@ -148,14 +150,15 @@ def _key(ctx):
 def setup(ctx):
     import course_port as cp
     a, root = ctx["args"], ctx["root"]
+    sim = _load_sim(root)
     courses = {}
     for i in intensities(a):
         for s in course_seeds(a):
             c = cp.course(cp.redline_settings(i), cp.seed_for_intensity(20260915 + 104729 * s, i), rails=False)
-            path = sum(c["legLengths"]) * 3      # three laps of the loop (RedlineController.laps)
+            path = sum(c["legLengths"]) * sim.LAPS      # the race's laps (RedlineCourseSource.DefaultLaps)
             courses.setdefault(i, []).append((s, c, path / FLAT_OUT))
     _CTX.clear()
-    _CTX.update(key=_key(ctx), sim=_load_sim(root), courses=courses, genomes=every_genome(a, root), shipped=shipped(root))
+    _CTX.update(key=_key(ctx), sim=sim, courses=courses, genomes=every_genome(a, root), shipped=shipped(root))
 
 
 def baseline(args):
@@ -175,7 +178,7 @@ def evaluate(params, ctx):
     sim = _CTX["sim"]
     p = clamp({k: float(params.get(k, v)) for k, v in _CTX["shipped"].items()})
     bands = (p["BoostStickBand"], p["YastriStickBand"])
-    limit = float(a.get("limit", 400))
+    limit = float(a.get("limit", 900))
     med = lambda xs: round(sorted(xs)[len(xs) // 2], 1) if xs else None
     scores, metrics, every_finishes = {}, {}, True
     for i, races in _CTX["courses"].items():

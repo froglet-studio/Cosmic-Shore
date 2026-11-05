@@ -295,7 +295,7 @@ Follow-up fixes from the in-editor pass. Supersedes the v2 colour wiring above (
 
   > **Superseded (Unified Systems S0.1):** the standalone palette SO is deleted. The v2.1 tints
   > (brighter hues, 0.784-alpha translucency) are preserved verbatim as the named theme role
-  > `DomainColorSet.UIAccentColor` in `SO_ColorSet` (`OriginalColorSetSO.asset`), read via
+  > `DomainColorSet.UIAccentColor` in `SO_ColorSet` (`PhoticColorSetSO.asset`), read via
   > `ThemeManagerData.GetDomainUIAccentColor`. The cards no longer carry per-prefab palette refs -
   > `MaelstromSceneView` resolves the colour from `gameData.ThemeManagerData` and passes it down
   > (`Setup(..., Color domainColor)` / a `Func<Domains, Color>` on the round card);

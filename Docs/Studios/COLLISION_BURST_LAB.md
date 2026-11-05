@@ -31,7 +31,7 @@ many neighbours move in step, when it thins). Rounds 1–8 below measured the sq
 | `PrismInteractionLodConfig.asset` | the size-on-screen lines, the budget, the shape, the shed weights and skin offset, the bloom's rings, segments and peel noise |
 | `PrismClockAnimation.hlsl`, `MaterialPropertyAnimator.cs` | the steal's grade, `PrismColorLerp_float` (translated), and its 0.8 s length |
 | `PrismMotionConfig.asset`, `PrismMotion.cs` | the 64/48 and 256/192 ladder, debris restitution ⅓ and limit 200 |
-| `PrismCollisionBurstMaterial.mat`, `OriginalColorSetSO` | the look dials; Jade/Ruby/Gold/Blue inside/outside colours |
+| `PrismCollisionBurstMaterial.mat`, `PhoticColorSetSO` | the look dials; Jade/Ruby/Gold/Blue inside/outside colours |
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
