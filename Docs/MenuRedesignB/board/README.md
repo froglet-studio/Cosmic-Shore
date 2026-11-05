@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793902622-cd90` of **Frogma**: Rev 3 to Rev 53, 472 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793904653-d087` of **Frogma**: Rev 3 to Rev 55, 484 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,6 +545,15 @@ Copied on 2026-11-05 from canvas version `1793902622-cd90` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
+
+- [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
+- [`R54A.dc.html`](R54A.dc.html) - Rev 54 A - Showroom: the picked set's world fills the page under a big name, a rail of sets along its foot (recommended) - interactive
+- [`R54B.dc.html`](R54B.dc.html) - Rev 54 B - Paint chips: every set as a tall chip of its rim-over-face pairs, the picked one opens wide - interactive
+- [`R54C.dc.html`](R54C.dc.html) - Rev 54 C - Plinth: one domain's three prism tiers large on a plinth, sets left, domain and pigments right - interactive
+- [`R54D.dc.html`](R54D.dc.html) - Rev 54 D - Before / after: drag a divider across one world between the set you wear and the one you try - interactive
+- [`R54Notes.dc.html`](R54Notes.dc.html) - Rev 54 - notes: what changed from Rev 51, the four, how it maps to Unity, decisions
+
 #### Rev 51 - Colour sets in the Profile: pick Photic, Nocturne or Dart Frog, and the repaint between them
 
 - [`R51Compare.dc.html`](R51Compare.dc.html) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in progress and not started), its prisms in its own shipped colours
@@ -684,6 +693,15 @@ Copied on 2026-11-05 from canvas version `1793902622-cd90` of **Frogma**: Rev 3 
 - [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
 
 ### Tab: Phone  (`phone`)
+
+#### Rev 55 - Phone menus from the real screens: Home, Arcade, Configure, Hangar (replaces Rev 52's four menu boards)
+
+- [`R55Home.dc.html`](R55Home.dc.html) - Rev 55 Home - Home: the five-tab rail, the pilot chip, Up next, the four hubs; Go offline? and the party invite - interactive
+- [`R55Arcade.dc.html`](R55Arcade.dc.html) - Rev 55 Arcade - Arcade: the two feature cards and all 28 games, the party panel as a sheet - interactive
+- [`R55Configure.dc.html`](R55Configure.dc.html) - Rev 55 Configure - Configure: the picture and briefing left; class, intensity, the three teams and Start game right; controls in a sheet - interactive
+- [`R55ConfigureArena.dc.html`](R55ConfigureArena.dc.html) - Rev 55 ConfigureArena - Configure, Arena: the hull strip and Claim in place of the class
+- [`R55Hangar.dc.html`](R55Hangar.dc.html) - Rev 55 Hangar - Hangar: the vessel list, the hero and its unlock; abilities in a sheet; the spend window - interactive
+- [`R55Notes.dc.html`](R55Notes.dc.html) - Rev 55 - notes: what each board keeps from the real screen, what moves, and what it changes in Unity
 
 #### Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)
 

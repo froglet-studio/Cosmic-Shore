@@ -27,7 +27,7 @@ namespace CosmicShore.Launcher
         public static readonly string[] Themes = { "COSMIC", "JADE", "RUBY", "GOLD", "ICE", "MONO" };
 
         /// <remarks>JADE, RUBY and GOLD lead with the game's own domain colour: <c>SO_ColorSet.GetDomainSignalColor</c> on
-        /// <c>OriginalColorSetSO.asset</c>, the same values the Vessel Studio uses (<c>.claude/skills/vessel-studio/domain_colors.py
+        /// <c>PhoticColorSetSO.asset</c> (named OriginalColorSetSO until 2026-11-03), the same values the Vessel Studio uses (<c>.claude/skills/vessel-studio/domain_colors.py
         /// --check</c> holds all three in step).</remarks>
         public static void ApplyTheme(int theme)
         {

@@ -1096,7 +1096,12 @@ namespace CosmicShore.UI
             return i >= 0 && i < domainNames.Length ? domainNames[i] : string.Empty;
         }
 
-        Color DomainColor(Domains d) => colors ? colors.GetDomainSignalColor(d) : Color.white;
+        // The player's colour set when the theme is up (Docs/MENU_REDESIGN_B.md section 123).
+        Color DomainColor(Domains d)
+        {
+            var palette = ThemeManager.LiveOr(colors);
+            return palette ? palette.GetDomainSignalColor(d) : Color.white;
+        }
 
         SO_Vessel Vessel(VesselClassType cls) =>
             vessels && vessels.TryGetVesselByClass(cls, out var v, reportMissing: false) ? v : null;
