@@ -6,10 +6,10 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Lightweight static store for accessibility preferences (colorblind, subtitles, photosensitivity,
-    /// camera shake). PlayerPrefs-backed with change events so the consumers can subscribe and react.
-    /// <see cref="ColorblindMode"/> is consumed by <c>ThemeManager</c>, which wears the colour set made for
-    /// the mode (Docs/VesselModels/colour_sets.json, rule 5). The subtitle renderer (Dialogue System), the
-    /// flash-limiter and the camera shake driver are follow-ups, tracked in the settings handoff doc.
+    /// camera shake). PlayerPrefs-backed with change events so the eventual consumers - a colorblind
+    /// screen-space correction, the subtitle renderer (Dialogue System), the flash-limiter, and the
+    /// camera shake driver - can subscribe and react. The values persist today; wiring each consumer
+    /// is a follow-up feature, tracked in the settings handoff doc.
     /// </summary>
     public static class AccessibilitySettings
     {

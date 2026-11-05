@@ -19,6 +19,12 @@ namespace CosmicShore.UI
     /// (<see cref="ThemeManager.ApplyColorSet"/>). Leaving the tab or the Profile without applying puts the equipped set
     /// back. LB / RB step between the Record and Colour sets tabs.
     ///
+    /// <para>The rail is a window onto the whole catalog: its tiles show the sets from <c>_first</c> on, and the previous
+    /// and next buttons step the set shown and slide the window, so a catalog of any length is browsed through the same
+    /// tiles. The sets made for a vision (colour blindness, low vision, Contrast) sit in it beside the
+    /// others; Settings > General > Colour sets is only a breadcrumb that opens this page on them
+    /// (<see cref="ShowColourSetsWhenOpen"/>).</para>
+    ///
     /// <para>Every word is a field here, authored in the prefab, or the catalog's (<see cref="ColorSetCatalogSO"/>).</para>
     /// </summary>
     public class ProfileColorSetsPanel : MonoBehaviour
@@ -86,7 +92,9 @@ namespace CosmicShore.UI
         static readonly Domains[] DomainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
 
         bool _showing;
-        int _picked = -1;
+        int _picked = -1;      // the catalog index of the set shown
+        int _first;            // the catalog index on the rail's first tile
+        bool _openOnVisionSets;
         float _veilAlpha = -1f;
         GameObject _lastSelected;
 
@@ -103,8 +111,8 @@ namespace CosmicShore.UI
             if (nextButton) nextButton.onClick.AddListener(() => Step(+1));
             for (int i = 0; i < thumbs.Length; i++)
             {
-                int index = i;
-                if (thumbs[i].tile) thumbs[i].tile.onClick.AddListener(() => Pick(index));
+                int tile = i;
+                if (thumbs[i].tile) thumbs[i].tile.onClick.AddListener(() => Pick(_first + tile));
             }
             if (record)
             {
@@ -124,7 +132,21 @@ namespace CosmicShore.UI
         void OnEnable() => ThemeManager.ColorSetApplied += OnApplied;
         void OnDisable() => ThemeManager.ColorSetApplied -= OnApplied;
 
-        void OnRecordOpened() => SetPage(false);
+        void OnRecordOpened()
+        {
+            if (_openOnVisionSets) ShowColourSets();
+            else SetPage(false);
+        }
+
+        /// <summary>
+        /// Settings > General > Colour sets (the accessibility breadcrumb): the next time the Profile opens, it opens on
+        /// this page showing the first set made for a vision; if the Profile is already open, at once.
+        /// </summary>
+        public void ShowColourSetsWhenOpen()
+        {
+            _openOnVisionSets = true;
+            if (record && record.IsOpen) ShowColourSets();
+        }
 
         // Leaving the Profile without applying puts the equipped set back.
         void OnRecordClosed()
@@ -153,7 +175,7 @@ namespace CosmicShore.UI
             if (selected == _lastSelected) return;
             _lastSelected = selected;
             for (int i = 0; i < thumbs.Length; i++)
-                if (thumbs[i].tile && thumbs[i].tile.gameObject == selected && i != _picked) { Pick(i); break; }
+                if (thumbs[i].tile && thumbs[i].tile.gameObject == selected && _first + i != _picked) { Pick(_first + i); break; }
         }
 
         public void ShowRecord()
@@ -165,12 +187,51 @@ namespace CosmicShore.UI
         public void ShowColourSets()
         {
             var cat = Catalog;
-            _picked = cat ? Mathf.Max(0, cat.IndexOf(Equipped)) : -1;
+            int vision = _openOnVisionSets && cat ? cat.IndexOfFirstVisionSet() : -1;
+            _openOnVisionSets = false;
             SetPage(true);
-            Refresh();
+            if (vision >= 0)
+            {
+                // The breadcrumb's sets lead the rail and the first is shown (and previewed) on the cell.
+                _first = vision;
+                Pick(vision);
+            }
+            else
+            {
+                _picked = cat ? Mathf.Max(0, cat.IndexOf(Equipped)) : -1;
+                Reveal(_picked);
+                Refresh();
+            }
+            SelectTile(_picked);
+        }
+
+        /// <summary>
+        /// The rail's first tile for a catalog of <paramref name="count"/> sets seen through <paramref name="tiles"/>
+        /// tiles, moved as little as possible so <paramref name="index"/> is on a tile.
+        /// </summary>
+        public static int WindowStart(int first, int index, int tiles, int count)
+        {
+            if (tiles <= 0 || count <= tiles) return 0;
+            if (index < first) first = index;
+            else if (index >= first + tiles) first = index - tiles + 1;
+            return Mathf.Clamp(first, 0, count - tiles);
+        }
+
+        void Reveal(int index)
+        {
+            var cat = Catalog;
+            _first = WindowStart(_first, Mathf.Max(0, index), thumbs.Length, cat ? cat.Count : 0);
+        }
+
+        void SelectTile(int index)
+        {
             var events = EventSystem.current;
-            if (events && _picked >= 0 && _picked < thumbs.Length && thumbs[_picked].tile)
-                events.SetSelectedGameObject(thumbs[_picked].tile.gameObject);
+            int tile = index - _first;
+            if (events && tile >= 0 && tile < thumbs.Length && thumbs[tile].tile)
+            {
+                events.SetSelectedGameObject(thumbs[tile].tile.gameObject);
+                _lastSelected = thumbs[tile].tile.gameObject;
+            }
         }
 
         void SetPage(bool colourSets)
@@ -204,18 +265,18 @@ namespace CosmicShore.UI
         void Step(int by)
         {
             var cat = Catalog;
-            int n = cat ? Mathf.Min(cat.Count, thumbs.Length) : 0;
+            int n = cat ? cat.Count : 0;
             if (n == 0) return;
             int next = ((_picked < 0 ? 0 : _picked) + by % n + n) % n;
             Pick(next);
-            var events = EventSystem.current;
-            if (events && thumbs[next].tile) events.SetSelectedGameObject(thumbs[next].tile.gameObject);
+            SelectTile(next);
         }
 
         // Browsing previews the set on the real cell; nothing is saved until APPLY.
         void Pick(int index)
         {
             _picked = index;
+            Reveal(index);
             var entry = Catalog ? Catalog.Get(index) : null;
             if (entry != null && entry.unlocked && entry.colorSet && Manager) Manager.PreviewColorSet(entry.colorSet);
             Refresh();
@@ -244,11 +305,11 @@ namespace CosmicShore.UI
         {
             var cat = Catalog;
             var equipped = Equipped;
-            int count = cat ? Mathf.Min(cat.Count, thumbs.Length) : 0;
+            int count = cat ? cat.Count : 0;
             for (int i = 0; i < thumbs.Length; i++)
             {
                 var t = thumbs[i];
-                var entry = cat ? cat.Get(i) : null;
+                var entry = cat ? cat.Get(_first + i) : null;
                 if (t.group)
                 {
                     t.group.alpha = entry != null ? 1f : 0f;
@@ -259,7 +320,7 @@ namespace CosmicShore.UI
                 if (t.equippedMark) t.equippedMark.SetActive(entry.colorSet && entry.colorSet == equipped);
                 if (t.tile)
                 {
-                    t.tile.IsSelected = i == _picked;
+                    t.tile.IsSelected = _first + i == _picked;
                     t.tile.IsLocked = !entry.unlocked;
                 }
                 for (int d = 0; d < DomainOrder.Length; d++)
@@ -273,9 +334,8 @@ namespace CosmicShore.UI
             var shown = cat ? cat.Get(_picked) : null;
             if (nameText) nameText.text = shown?.displayName ?? string.Empty;
             if (lineText) lineText.text = shown?.line ?? string.Empty;
-            // A set worn from Settings > Colorblind mode can sit past the rail's tiles: it shows, with no "n of m".
             if (positionText)
-                positionText.text = shown != null && _picked < count
+                positionText.text = shown != null
                     ? TemplateText.Fill(positionTemplate, "index", (_picked + 1).ToString(), "count", count.ToString())
                     : string.Empty;
             var worn = cat ? cat.Get(cat.IndexOf(equipped)) : null;

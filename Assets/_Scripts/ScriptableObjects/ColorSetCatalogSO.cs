@@ -1,9 +1,23 @@
 using System;
-using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
+    /// <summary>
+    /// The vision a colour set is made for (Docs/VesselModels/colour_sets.json, rule 5). Saved in the catalog as an int:
+    /// never renumber.
+    /// </summary>
+    public enum ColourVision
+    {
+        None = 0,          // a set picked for its looks
+        Protanopia = 1,    // no red cones (protanomaly is the milder form)
+        Deuteranopia = 2,  // no green cones (deuteranomaly, the commonest)
+        Tritanopia = 3,    // no blue cones
+        Achromatopsia = 4, // no colour at all: lightness only
+        LowVision = 5,     // reduced contrast sensitivity, cataract
+        Contrast = 6,      // typical vision, the domains as far apart as the rules allow
+    }
+
     /// <summary>
     /// The colour sets a player can pick in the Profile (Docs/MENU_REDESIGN_B.md §122-123; Garrett's sets,
     /// Docs/VesselModels/colour_sets.json). Each entry names one <see cref="SO_ColorSet"/> and the words the
@@ -31,10 +45,9 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Jade, Ruby, Gold, Blue: each domain's rim over its face, as the Profile names them (\"Mint over " +
                      "Bronze\"). Empty shows nothing for that domain.")]
             public string[] pigments = Array.Empty<string>();
-            [Tooltip("The vision this set is made for (colour_sets.json rule 5). Off: a set picked for its looks. Any " +
-                     "other value: Settings > General > Colorblind mode wears this set when the player picks that mode, " +
-                     "and the mode's option shows this entry's name.")]
-            public ColorblindModeSetting vision = ColorblindModeSetting.Off;
+            [Tooltip("The vision this set is made for (colour_sets.json rule 5). None: a set picked for its looks. " +
+                     "Settings > General > Colour sets opens the Profile's rail on the first set made for a vision.")]
+            public ColourVision vision = ColourVision.None;
         }
 
         [Header("Sets, in card order")]
@@ -59,14 +72,24 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// The first entry made for <paramref name="vision"/>, or -1 (always -1 for <see cref="ColorblindModeSetting.Off"/>,
-        /// which no set is made for). A question, never an error.
+        /// The first entry made for <paramref name="vision"/>, or -1 (always -1 for <see cref="ColourVision.None"/>, which
+        /// no set is made for). A question, never an error.
         /// </summary>
-        public int IndexOfVision(ColorblindModeSetting vision)
+        public int IndexOfVision(ColourVision vision)
         {
-            if (vision == ColorblindModeSetting.Off || entries == null) return -1;
+            if (vision == ColourVision.None || entries == null) return -1;
             for (int i = 0; i < entries.Length; i++)
                 if (entries[i] != null && entries[i].vision == vision) return i;
+            return -1;
+        }
+
+        /// <summary>The first unlocked entry made for any vision, or -1: where Settings' breadcrumb opens the rail.</summary>
+        public int IndexOfFirstVisionSet()
+        {
+            if (entries == null) return -1;
+            for (int i = 0; i < entries.Length; i++)
+                if (entries[i] != null && entries[i].vision != ColourVision.None && entries[i].unlocked && entries[i].colorSet)
+                    return i;
             return -1;
         }
 

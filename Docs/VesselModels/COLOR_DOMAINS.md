@@ -121,8 +121,8 @@ shared pigment under any light, rim/face contrast, each rim still reading as its
 `Tools/Build/colour_sets.py --check` is the gate, `--report` adds colour-blind separation. A set made for a
 **vision** (2026-11-05: **Contrast** for typical vision, then **Protanopia**, **Deuteranopia**, **Tritanopia**,
 **Achromatopsia** and **Low Vision**) keeps a fifth rule: as that viewer sees the colours the asset paints, every two
-domains' rims, every two domains' faces, and each rim against its face stay `vision_margin` apart. Settings > General >
-Colorblind mode wears the set made for the mode picked. Shaped in the Colour Sets lab
+domains' rims, every two domains' faces, and each rim against its face stay `vision_margin` apart. They sit in the Profile's
+colour-set rail with the other sets; Settings > General > Colour sets is a breadcrumb that opens the rail on them. Shaped in the Colour Sets lab
 (https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
 by them.
 

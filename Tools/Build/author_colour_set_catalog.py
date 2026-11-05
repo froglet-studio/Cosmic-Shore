@@ -31,8 +31,9 @@ SCRIPT = "Assets/_Scripts/ScriptableObjects/ColorSetCatalogSO.cs"
 CATALOG_GUID = hashlib.md5(b"CosmicShore/ColorSetCatalog").hexdigest()
 
 # (id, palette asset, the name the Profile shows, its line, the vision it is made for). The words seed the asset once;
-# edit them in Unity. VISION is ColorblindModeSetting (Off 0, Protanopia 1, Deuteranopia 2, Tritanopia 3,
-# Achromatopsia 4, LowVision 5, Contrast 6): a set made for a vision is what Settings > Colorblind mode wears.
+# edit them in Unity. VISION is ColourVision (None 0, Protanopia 1, Deuteranopia 2, Tritanopia 3, Achromatopsia 4,
+# LowVision 5, Contrast 6). Every set, a vision set included, is picked in the Profile's colour-set rail; Settings >
+# General > Colour sets is a breadcrumb that opens the rail on the first set made for a vision.
 # PIGMENTS: Jade, Ruby, Gold, Blue, rim over face, from colour_sets.json (Photic has no pigments there: named by eye).
 SETS = (
     ("nocturne", "NocturneColorSetSO", "Nocturne", "Every prism a lantern: a glowing rim over a deep jewel face.", 0),
@@ -178,11 +179,11 @@ def validate(catalog, container, palette_guids, script_guid):
             errors.append(f"{CATALOG}: '{sid}' does not point at {asset}.asset ({palette_guids[sid]})")
         v = re.search(r"^    vision: (\d+)$", block, re.M)
         if not v or int(v.group(1)) != vision:
-            errors.append(f"{CATALOG}: '{sid}' must be made for vision {vision} (ColorblindModeSetting)")
+            errors.append(f"{CATALOG}: '{sid}' must be made for vision {vision} (ColourVision)")
     visions = [int(v) for v in re.findall(r"^    vision: (\d+)$", catalog, re.M) if int(v)]
     for v in sorted(set(visions)):
         if visions.count(v) > 1:
-            errors.append(f"{CATALOG}: {visions.count(v)} sets are made for vision {v}; Settings wears the first only")
+            errors.append(f"{CATALOG}: {visions.count(v)} sets are made for vision {v}; one set per vision")
     if f"  Catalog: {ref(CATALOG_GUID)}" not in container:
         errors.append(f"{CONTAINER}: Catalog is not wired to {CATALOG} ({CATALOG_GUID})")
     return errors

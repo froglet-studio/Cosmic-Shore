@@ -99,20 +99,14 @@ namespace CosmicShore.Data
     }
 
     /// <summary>
-    /// The vision a player's colours are made for. Domains (Jade/Ruby/Gold/Blue, plus Fire as danger and Lime as the
-    /// free pickup) are the board, so this is gameplay-critical accessibility, not cosmetic. Applied by wearing the
-    /// colour set made for that vision (<c>ColorSetCatalogSO.Entry.vision</c>; the sets are defined and measured in
-    /// <c>Docs/VesselModels/colour_sets.json</c>, rule 5), not by a screen-space filter: a filter can only remap the
-    /// colours a set already has, a set chooses colours the viewer can tell apart. Saved as an int: never renumber.
+    /// Colorblind correction. Domains (Jade/Ruby/Gold) are the board, so this is gameplay-critical
+    /// accessibility, not cosmetic. Applied as a screen-space color transform.
     /// </summary>
     public enum ColorblindModeSetting
     {
         Off = 0,
-        Protanopia = 1,    // no red cones (red-weak: protanomaly is the milder form)
-        Deuteranopia = 2,  // no green cones (green-weak: deuteranomaly, the commonest)
-        Tritanopia = 3,    // no blue cones (blue-weak)
-        Achromatopsia = 4, // no colour at all (rod monochromacy): lightness only
-        LowVision = 5,     // reduced contrast sensitivity, cataract: lightness carries more than hue
-        Contrast = 6,      // typical vision, the domains as far apart as the rules allow
+        Protanopia = 1,    // red-weak
+        Deuteranopia = 2,  // green-weak
+        Tritanopia = 3,    // blue-weak
     }
 }
