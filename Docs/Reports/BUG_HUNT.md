@@ -8,14 +8,17 @@ refreshed 2026-11-06 06:30Z, run log `runs/2026-11-06`). Mechanism: `Docs/DIAGNO
 
 - **Six people send errors from Unity**, each to their own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
   Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`).
-- **On the board: 344 open, 8 being checked after a fix, 79 resolved** (the ledger itself: 360 issues, from 667
+- **On the board: 343 open, 9 being checked after a fix, 79 resolved** (the ledger itself: 360 issues, from 667
   branches). No code fixes on 2026-11-06.
 - **New on 2026-11-06 (74 issues), mostly from Garrett's machine, 15:05-15:31:** about 60 Windows video-decoder
   errors (0xc00d5212; the machine's codecs, not the videos, which have not changed since 09-15), and a burst of
   DI / "Authentication not in build profile" errors. Also: `UrchinAnimation.Update` throws a NullReferenceException
   before the animation is set up, 40 sightings on Caleb's machine (E-75a12f0559, Garrett's vessels: `VesselAnimation`
-  keeps its initialised flag private, so the override cannot guard on it). A party-recovery ArgumentNullException
-  (E-0de9ec6c70, `PartyInviteController.cs:908`) is still to be investigated.
+  keeps its initialised flag private, so the override cannot guard on it; ticket #1773). The chain-fire gun error
+  (E-debe17fb43) is ticket #1774.
+- **Fixed on 2026-11-06:** the party recovery's "Recovery failed (ArgumentNullException)" (E-0de9ec6c70) came back
+  past the B38 guard on Caleb's Regatta: after Stop, UniTask resumed the flow while `Application.isPlaying` was still
+  true. A requested Stop now counts as Play ended (`93765d6aa8`).
 - **Fixed on 2026-11-05:** Astro League's AI crashed every tick on Andrew's machine (E-7e57c6fa76, E-24ec0fbf4b,
   `UnassignedReferenceException: teamSpawns`): the scene's `teamSpawns` list kept an empty third slot from the
   2026-09-15 resync while the mode has two teams, so a pilot clamped onto it. Removed in `65602ce4d7`.
