@@ -73,7 +73,7 @@ Assets/
 ├── _Scenes/                   # Game scenes organized by type
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
-├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
+├── Plugins/                   # CosmicShoreSoap (our SOAP), Demigiant (DOTween), NativeShare, etc.
 └── NiceVibrations/            # Haptic feedback
 ```
 
@@ -101,7 +101,7 @@ assembly at a time — full plan, measurement protocol and phase-2 candidates:
 |---|---|
 | `CosmicShore.Data` | `_Scripts/Data/` — enums, structs, small interfaces. The first extracted leaf: depends on no first-party code |
 | `CosmicShore.DisplayName` | `_Scripts/Utility/DisplayName/` — the display-name validator and its config SO. References `Data` |
-| `CosmicShore.SOAP` | `_Scripts/ScriptableObjects/SOAP/` — SOAP events, variables and listeners with plain-data payloads. References `Data`, `DisplayName`, `Obvious.Soap`. **A channel whose payload is a gameplay type (vessel, HUD, anything from `Controller/` or `UI/`) goes in `_Scripts/ScriptableObjects/SOAPGameplay/`**, which stays in `Assembly-CSharp` |
+| `CosmicShore.SOAP` | `_Scripts/ScriptableObjects/SOAP/` — SOAP events, variables and listeners with plain-data payloads. References `Data`, `DisplayName`, `CosmicShore.Soap.Core`. **A channel whose payload is a gameplay type (vessel, HUD, anything from `Controller/` or `UI/`) goes in `_Scripts/ScriptableObjects/SOAPGameplay/`**, which stays in `Assembly-CSharp` |
 | `CosmicShore.Foundation` | `_Scripts/Utility/Foundation/` — logging (`CSDebug`), math/geometry and mesh helpers, small general helpers. References `Data`, `UniTask`, `Unity.Mathematics` |
 
 **The rule that makes extraction safe, and safe in only one direction:** a predefined assembly
@@ -164,7 +164,7 @@ flight. Follow the checklist in `Docs/ASSEMBLY_SPLIT.md` § "Adding an asmdef": 
 leaf, check the three things that don't cross a boundary, `autoReferenced: true`, one asmdef per
 commit, and run `validate_project.py` + `check_conditional_compilation.py`.
 
-Third-party assemblies: `Obvious.Soap`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
+Third-party assemblies: `Lofelt.NiceVibrations`, `NativeShare.Runtime`. `CosmicShore.Soap.Core` (`Assets/Plugins/CosmicShoreSoap/`) is first-party: our SOAP, which replaced `Obvious.Soap` on 2026-11-06.
 
 ### Scene Inventory
 

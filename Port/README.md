@@ -127,7 +127,7 @@ same member names — except for these mechanical using-directive substitutions:
 | `using UnityEngine;` | `using CosmicShore.Engine;` |
 | `using Unity.Netcode;` | `using CosmicShore.Engine.Networking;` |
 | `using Unity.Collections;` | `using CosmicShore.Engine.Collections;` |
-| `using Obvious.Soap;` | `using CosmicShore.Engine.Soap;` |
+| `using CosmicShore.Soap;` (and `using Obvious.Soap;` on branches from before 2026-11-06) | `using CosmicShore.Engine.Soap;` |
 | `using Reflex.Attributes;` / `using Reflex.Core;` / `using Reflex.Injectors;` | `using CosmicShore.Engine.Injection;` |
 | `using Unity.Services.Authentication;` / `using Unity.Services.Core;` | `using CosmicShore.Engine.Services;` |
 | `using Unity.Services.Friends;` / `.Exceptions` / `.Models` / `.Notifications` | `using CosmicShore.Engine.Services.Friends;` (one flat placeholder namespace) |

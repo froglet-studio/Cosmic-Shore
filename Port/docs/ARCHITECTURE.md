@@ -61,7 +61,7 @@ Everything targets .NET 10 (`Directory.Build.props`). The solution is `Port/Cosm
    - `UnityEngine` → `CosmicShore.Engine`
    - `UnityEngine.UI` and `TMPro` → `CosmicShore.Engine.UI`
    - `Unity.Netcode` → `CosmicShore.Engine.Networking`
-   - `Obvious.Soap` → `CosmicShore.Engine.Soap`
+   - `CosmicShore.Soap` (our SOAP; `Obvious.Soap` before 2026-11-06) → `CosmicShore.Engine.Soap`
    - `FMODUnity` → `CosmicShore.Engine.Audio.Fmod`
    - the UGS SDKs → `CosmicShore.Engine.Services.*`
 

@@ -2,7 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;

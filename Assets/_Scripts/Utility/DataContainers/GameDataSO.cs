@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;

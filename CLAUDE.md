@@ -248,7 +248,7 @@ a mode. `/arcadegame` §6.
 - **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 373 C# files (2026-11-01, `find Assets/_Scripts/Tests/Editor -name '*.cs' | wc -l`; 397 under any `Tests/` folder in `Assets/_Scripts`) covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
 - **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/`
-- **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
+- **SOAP tests**: `Assets/_Scripts/Tests/Editor/SoapCoreTests.cs` (behaviour) and `SoapFormatTests.cs` (the asset format our SOAP shares with the Obvious plugin it replaced on 2026-11-06; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP)
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
 
 ### Build & CI

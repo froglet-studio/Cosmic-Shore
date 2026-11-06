@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Reflex.Injectors;
 using UnityEngine;

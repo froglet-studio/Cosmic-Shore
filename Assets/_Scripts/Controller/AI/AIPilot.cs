@@ -4,7 +4,7 @@ using System.Collections;
 using System;
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Data;
 using Reflex.Attributes;
 using System.Linq;
