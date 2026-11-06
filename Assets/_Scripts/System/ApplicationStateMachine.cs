@@ -34,6 +34,20 @@ namespace CosmicShore.Core
         readonly NetworkMonitorDataVariable _networkMonitorData;
         readonly bool _allowLog;
 
+        /// <summary>
+        /// The instance currently subscribed to every SOAP/static event below. This is a
+        /// Resolution.Lazy Reflex singleton with no disposal hook that runs when the Bootstrap
+        /// container is rebuilt - with Domain Reload + Scene Reload both off (this project's
+        /// Enter Play Mode settings), re-entering Bootstrap constructs a second machine without
+        /// tearing down the first one's subscriptions, so both react to every lifecycle event
+        /// and both write <see cref="_stateVariable"/>. The constructor comment above ("this
+        /// machine is constructed exactly once per app run") is the assumption that bug breaks.
+        /// Confirmed as a real, not merely theoretical, defect pattern on
+        /// <see cref="AnalyticsServiceFacade"/> via production PostHog data. Tearing down
+        /// whatever instance came before guarantees exactly one live subscriber.
+        /// </summary>
+        static ApplicationStateMachine _liveInstance;
+
         ApplicationStateData StateData => _stateVariable.Value;
 
         /// <summary>Current application state (convenience accessor).</summary>
@@ -111,6 +125,10 @@ namespace CosmicShore.Core
             _networkMonitorData = networkMonitorData;
             _allowLog = allowLog;
 
+            // Must run before SubscribeToSOAPEvents() - see _liveInstance.
+            _liveInstance?.Unsubscribe();
+            _liveInstance = this;
+
             // The backing SOAP variable is a ScriptableObject ASSET, so in the Editor its value
             // survives play-mode exit. A session that ended in ShuttingDown (every quit does -
             // AppManager.OnDisable/OnApplicationQuit → Shutdown) therefore poisons the NEXT play
@@ -153,6 +171,25 @@ namespace CosmicShore.Core
             // app state permanently (Docs/OFFLINE_MODE.md §3.5).
             if (_networkMonitorData?.Value?.OnNetworkFound != null)
                 _networkMonitorData.Value.OnNetworkFound.OnRaised += HandleNetworkFound;
+        }
+
+        /// <summary>Mirror image of <see cref="SubscribeToSOAPEvents"/>. See <see cref="_liveInstance"/>.</summary>
+        void Unsubscribe()
+        {
+            if (_gameData?.OnSessionStarted != null)
+                _gameData.OnSessionStarted.OnRaised -= HandleSessionStarted;
+
+            if (_gameData?.OnMiniGameEnd != null)
+                _gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
+
+            ApplicationLifecycleManager.OnAppPaused -= HandleAppPaused;
+            ApplicationLifecycleManager.OnAppQuitting -= HandleAppQuitting;
+
+            if (_networkMonitorData?.Value?.OnNetworkLost != null)
+                _networkMonitorData.Value.OnNetworkLost.OnRaised -= HandleNetworkLost;
+
+            if (_networkMonitorData?.Value?.OnNetworkFound != null)
+                _networkMonitorData.Value.OnNetworkFound.OnRaised -= HandleNetworkFound;
         }
 
         void HandleSessionStarted() => TransitionTo(ApplicationState.InGame);

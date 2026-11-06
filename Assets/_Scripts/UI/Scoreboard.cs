@@ -950,7 +950,10 @@ namespace CosmicShore.UI
             }
         }
 
-        bool _crystalsAwardedThisGame;
+        // Static: the wallet is one per player, so the latch is one per process. An instance field let
+        // a second live Scoreboard (a duplicate in the scene, or a stale one surviving Play/Stop/Play)
+        // pay the same game again 2-27 ms later (crystals_earned near-duplicates, 2026-10-16..19).
+        static bool _crystalsAwardedThisGame;
 
         void ClearCrystalAwardLatch() => _crystalsAwardedThisGame = false;
 
