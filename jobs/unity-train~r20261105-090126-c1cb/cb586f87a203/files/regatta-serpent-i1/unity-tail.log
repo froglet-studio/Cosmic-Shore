@@ -1,0 +1,80 @@
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+abort_threads: Failed aborting id: 000000000004E46C, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000004E46C, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4716
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793899358579,"processId":414868,"allocatedMemory":63111305,"memoryLabels":[{"Default":29313},{"Permanent":15236},{"NewDelete":183667},{"Thread":4238080},{"Manager":3113637},{"VertexData":8},{"Geometry":816},{"Texture":296},{"Shader":245685},{"Material":24},{"GfxDevice":59712},{"Audio":3040},{"Font":4722214},{"FreeType":159891},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":4047},{"Input":14984},{"JobScheduler":33024},{"TextLib":216},{"Mono":32},{"MonoCode":960},{"ScriptingNativeRuntime":155060},{"BaseObject":3230616},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":6878245},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":7979906},{"DynamicArray":537463},{"HashMap":193531},{"Utility":2661910},{"Curl":2559},{"PoolAlloc":10744},{"AI":80},{"TypeTree":13861},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":2692224},{"WebRequest":47457},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"Camera":17},{"Secure":2817},{"Image":16384},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":96},{"EditorUtility":5800391},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19569654},{"EditorGi":328},{"UnityConnect":29232},{"Upm":1896},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9778},{"CoreBusinessMetrics":2867},{"TLS":6894},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 0
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 204
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 204
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 127
+Compressing using quality level 204

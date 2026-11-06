@@ -1,0 +1,3561 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3dd9dff9d6f4d4e8c2d6f74378d739d, type: 3}
+  m_Name: SessionState
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingSessionStateSO
+  ScenarioKey: Serpent_Regatta_I3
+  LastWriteUtc: 2026-11-05T17:44:05.8393390Z
+  EpisodesCompleted: 52
+  EpisodesRequested: 50
+  Population:
+    populationSize: 24
+    eliteCount: 4
+    numericMutationRate: 0.3
+    numericMutationStrength: 0.18
+    structuralMutationRate: 0.04
+    noveltyWeight: 0.15
+    tournamentSize: 3
+    generation: 2
+    evaluationsThisGen: 4
+    nextCheckoutIndex: 4
+    population:
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 105.002495
+      - 0.92
+      - 0.3174736
+      - 0.6434429
+      - 69.35055
+      - 0.22064151
+      - 18.433714
+      - 0.29009905
+      - 0.7696259
+      - 0.7123233
+      - 0.010012931
+      - 0.19981849
+      - 34.862293
+      - 0.02750969
+      - 0.70873886
+      - 0.9702743
+      - 2.1570666
+      - 11.468897
+      - 13.629873
+      - 120.570015
+      - 0.09541966
+      - 0.7592721
+      - 0.33523113
+      - 59.92001
+      - 0.9541955
+      - 2.0912423
+      - 2.2174265
+      - 10.280586
+      - 0.42051336
+      - 0.41070873
+      - 0.8709891
+      - 1.5632424
+      - 0.29967186
+      - 0.8088602
+      - 0.7250161
+      - 5.0029235
+      - 0.55697036
+      - 0.86416805
+      - 0.9224441
+      - 0.57571006
+      - 0.29161674
+      - 0.9283526
+      - 116.69622
+      - 0.9230879
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 1
+      EvaluationCount: 2
+      Fitness: -160.43173
+      NoveltyScore: 16.2
+      Lineage: ?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 166.52982
+      - 0.936738
+      - 1.0723026
+      - 0.34146464
+      - 46.145775
+      - 0.3988505
+      - 4.989698
+      - 0.6359943
+      - 0.5143483
+      - 0.40537077
+      - 0.028571619
+      - 0.26237354
+      - 35.678852
+      - 0.82053626
+      - 0.83465344
+      - 0.94955313
+      - 2.485306
+      - 6.314703
+      - 15.256252
+      - 134.08829
+      - 0.0062612416
+      - 0.7569448
+      - 0.91094863
+      - 51.161133
+      - 0.9539947
+      - 1.0419594
+      - 3.2584586
+      - 13.239433
+      - 0.3879705
+      - 0.41691816
+      - 0.8653546
+      - 0.9037056
+      - 0.50001186
+      - 0.23715366
+      - 0.8136213
+      - 5.932927
+      - 0
+      - 0.4625612
+      - 0.7645293
+      - 1.433887
+      - 0.76823246
+      - 0.82252336
+      - 104.49991
+      - 0.731792
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 1
+      EvaluationCount: 2
+      Fitness: -157.73035
+      NoveltyScore: 14.7
+      Lineage: ?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 178.84756
+      - 0.93449223
+      - 0.08783698
+      - 0.985872
+      - 51.31205
+      - 0.56214845
+      - 13.114979
+      - 0.755924
+      - 0.8654503
+      - 0.30026445
+      - 0.01562635
+      - 0.20074856
+      - 34.3544
+      - 0.9442247
+      - 0.7440237
+      - 0.93398166
+      - 1.8806641
+      - 9.509186
+      - 6.423109
+      - 134.08829
+      - 0.026918743
+      - 0.26925915
+      - 0.113350034
+      - 28.669651
+      - 0.97129405
+      - 1.7544131
+      - 3.2234466
+      - 0.5
+      - 0.06197846
+      - 0.14947498
+      - 0.94644755
+      - 13.021887
+      - 0.9183459
+      - 0.057877734
+      - 0.75805277
+      - 14.4524355
+      - 0
+      - 0.8240371
+      - 0.92030185
+      - 1.433887
+      - 0.24350584
+      - 0.9749073
+      - 83.53087
+      - 0.731792
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 1
+      EvaluationCount: 2
+      Fitness: -162.70753
+      NoveltyScore: 14.9
+      Lineage: ?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 117.28148
+      - 0.94056237
+      - 0.32349247
+      - 0.9270501
+      - 78.06247
+      - 0.58837175
+      - 2
+      - 0.24589506
+      - 0.95133215
+      - 0.87340426
+      - 0.026121471
+      - 0.11048949
+      - 2.0775795
+      - 0.56501263
+      - 0.9878412
+      - 0.85008925
+      - 0.50430167
+      - 26.426508
+      - 29.886505
+      - 55.963505
+      - 0.26682004
+      - 0.020580173
+      - 0.4195401
+      - 17.845394
+      - 0.9322577
+      - 0.46250767
+      - 0.6275156
+      - 5.379782
+      - 0.8291044
+      - 0.5256311
+      - 0.77181375
+      - 15
+      - 0.8342206
+      - 0.12522757
+      - 0.78732497
+      - 9.47977
+      - 0.72916114
+      - 0.11821778
+      - 0.7513566
+      - 1.0130609
+      - 0.07916021
+      - 0.41354162
+      - 198.67717
+      - 0.88710874
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      - Drift
+      GenerationBorn: 1
+      EvaluationCount: 2
+      Fitness: -505.8832
+      NoveltyScore: 15.9
+      Lineage: ?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 165.91751
+      - 0.9845714
+      - 1.2356826
+      - 0.2
+      - 62.658928
+      - 0.4917867
+      - 25.768421
+      - 0.37352931
+      - 0.26840806
+      - 0.8050608
+      - 0.04098667
+      - 0.12205126
+      - 8.967633
+      - 0.45104104
+      - 0.9162978
+      - 0.9829999
+      - 2.718089
+      - 12.493063
+      - 4.5418043
+      - 115.26642
+      - 0.07479415
+      - 0.9992012
+      - 0.095611095
+      - 20.262287
+      - 0.93013805
+      - 0.51559234
+      - 2.5626006
+      - 8.124574
+      - 0.65304196
+      - 0.55530936
+      - 0.8478742
+      - 5.95761
+      - 0.31838495
+      - 1
+      - 0.7173315
+      - 8.930379
+      - 0.44586545
+      - 1
+      - 0.7493099
+      - 0.94810116
+      - 0.08198163
+      - 0.41115636
+      - 39.19108
+      - 0.82756466
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 83.24071
+      - 0.94158906
+      - 1.0943294
+      - 1
+      - 101.47683
+      - 0.5746415
+      - 5.666684
+      - 0.7911649
+      - 0.6204844
+      - 0.4047579
+      - 0.013515259
+      - 0.20074856
+      - 34.3544
+      - 0.9442247
+      - 0.88294053
+      - 0.9334201
+      - 0.4140767
+      - 26.152733
+      - 17.377104
+      - 109.418526
+      - 0.026918743
+      - 0.26925915
+      - 0.5256036
+      - 28.669651
+      - 0.97129405
+      - 1.7544131
+      - 3.840909
+      - 9.842613
+      - 0.11623572
+      - 0.14947498
+      - 0.94644755
+      - 15
+      - 0.9743222
+      - 0.4773808
+      - 0.8329188
+      - 12.843967
+      - 0
+      - 0.8240371
+      - 0.8806288
+      - 1.433887
+      - 0.6510176
+      - 0.9749073
+      - 115.31857
+      - 0.4979008
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 64.430824
+      - 0.98635393
+      - 0.93725765
+      - 0.26813424
+      - 101.47683
+      - 0.11995045
+      - 2
+      - 0.52398986
+      - 0.6204844
+      - 0.873308
+      - 0.04098667
+      - 0.08495321
+      - 37.90524
+      - 0.45104104
+      - 0.9162978
+      - 0.9334201
+      - 2.718089
+      - 11.651418
+      - 15.35988
+      - 53.062748
+      - 0.066318735
+      - 0.77680206
+      - 0.5256036
+      - 39.10976
+      - 0.94842005
+      - 2.4163065
+      - 4.1541405
+      - 5.194648
+      - 0.54834074
+      - 0.24412274
+      - 0.8478742
+      - 7.0264463
+      - 0.52218693
+      - 0.4773808
+      - 0.79101455
+      - 9.224124
+      - 0.44586545
+      - 0.9479753
+      - 0.7493099
+      - 0.1839835
+      - 0.08198163
+      - 0.98400694
+      - 98.701195
+      - 0.81622666
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 178.84756
+      - 0.93449223
+      - 0.08783698
+      - 0.78519523
+      - 57.7722
+      - 0.56214845
+      - 13.288932
+      - 0.755924
+      - 0.9406623
+      - 0.30026445
+      - 0.01562635
+      - 0.20074856
+      - 34.3544
+      - 0.9442247
+      - 0.7440237
+      - 0.93398166
+      - 1.0880979
+      - 9.509186
+      - 7.9509478
+      - 119.79416
+      - 0.0824025
+      - 0.26925915
+      - 0.21704409
+      - 28.669651
+      - 0.97129405
+      - 1.7544131
+      - 3.2234466
+      - 0.81585276
+      - 0.06197846
+      - 0.14947498
+      - 0.94644755
+      - 11.563657
+      - 0.92911285
+      - 0.057877734
+      - 0.75805277
+      - 12.166868
+      - 0
+      - 0.4886757
+      - 0.87033194
+      - 1.433887
+      - 0.17984033
+      - 0.9749073
+      - 83.53087
+      - 0.731792
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 93.35771
+      - 0.92
+      - 1.2356826
+      - 0.3698244
+      - 69.35055
+      - 0.22064151
+      - 20.428068
+      - 0.2521865
+      - 0.88857883
+      - 0.7123233
+      - 0.010012931
+      - 0.12205126
+      - 40
+      - 0
+      - 0.72968507
+      - 0.97937334
+      - 1.5935924
+      - 8.03842
+      - 6.438134
+      - 130.8721
+      - 0.1687902
+      - 0.9992012
+      - 0.8824289
+      - 59.92001
+      - 0.9541955
+      - 1.906268
+      - 2.5626006
+      - 10.280586
+      - 0.42051336
+      - 0.55530936
+      - 0.8709891
+      - 1.5632424
+      - 0.37527382
+      - 0.013205979
+      - 0.7250161
+      - 5.0029235
+      - 0.18399847
+      - 0.86416805
+      - 0.98109233
+      - 0.9145766
+      - 0
+      - 0.7913635
+      - 108.645355
+      - 0.32261658
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 117.28148
+      - 0.94056237
+      - 0.32349247
+      - 0.6175573
+      - 68.93605
+      - 0.5746415
+      - 3.761393
+      - 0.52398986
+      - 0.6204844
+      - 0.8265463
+      - 0.023612795
+      - 0.05642382
+      - 37.90524
+      - 0.9045011
+      - 0.88294053
+      - 0.8838531
+      - 0.50430167
+      - 26.426508
+      - 29.886505
+      - 55.963505
+      - 0.26682004
+      - 0.9498246
+      - 0.4195401
+      - 60.238712
+      - 0.9569371
+      - 0.46250767
+      - 0.8135309
+      - 9.842613
+      - 0.9614285
+      - 0.5858622
+      - 0.72519356
+      - 7.0264463
+      - 0.9743222
+      - 0.07008569
+      - 0.78732497
+      - 9.47977
+      - 0.68182904
+      - 0.9479753
+      - 0.8806288
+      - 0.1839835
+      - 0.6510176
+      - 0.41354162
+      - 200
+      - 0.8526279
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 94.61087
+      - 0.9845714
+      - 1.4314337
+      - 0.26813424
+      - 69.35055
+      - 0.4917867
+      - 18.433714
+      - 0.2521865
+      - 0.99152595
+      - 0.7123233
+      - 0.047079813
+      - 0.19981849
+      - 8.967633
+      - 0.02750969
+      - 0.7
+      - 0.9702743
+      - 2.718089
+      - 11.468897
+      - 9.183326
+      - 140.5812
+      - 0.04371527
+      - 0.9992012
+      - 0.33523113
+      - 60.046215
+      - 0.92782116
+      - 0.51559234
+      - 2.2174265
+      - 10.280586
+      - 0.4723154
+      - 0.469592
+      - 0.9837718
+      - 4.190647
+      - 0.8018254
+      - 0.8088602
+      - 0.879932
+      - 5.0029235
+      - 0.55697036
+      - 0.9749545
+      - 0.865862
+      - 0.766833
+      - 0.29161674
+      - 0.8947589
+      - 49.73567
+      - 0.32261658
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 200
+      - 0.936738
+      - 1.0723026
+      - 0.34146464
+      - 35.471077
+      - 0.3988505
+      - 2
+      - 0.46303505
+      - 0.5143483
+      - 0.40537077
+      - 0.029415509
+      - 0.26237354
+      - 35.678852
+      - 0.82053626
+      - 0.83465344
+      - 0.94955313
+      - 2.9235985
+      - 6.314703
+      - 18.382097
+      - 134.08829
+      - 0.03475126
+      - 0.7569448
+      - 0.91094863
+      - 51.161133
+      - 0.94846255
+      - 2.0150568
+      - 3.2584586
+      - 12.823865
+      - 0.20049977
+      - 0.41691816
+      - 0.8782783
+      - 1.6230795
+      - 0.6258761
+      - 0.23715366
+      - 0.8136213
+      - 5.932927
+      - 0
+      - 0.4625612
+      - 0.7645293
+      - 1.5
+      - 0.76823246
+      - 0.82252336
+      - 78.93606
+      - 0.731792
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 70.75311
+      - 0.9273867
+      - 0.6599127
+      - 0.8777345
+      - 89.17841
+      - 0.3988505
+      - 26.14174
+      - 0.6359943
+      - 0.5143483
+      - 0.40537077
+      - 0.033527553
+      - 0.26237354
+      - 9.591866
+      - 0.1615293
+      - 0.99
+      - 0.971576
+      - 1.245348
+      - 12.493063
+      - 4
+      - 153.95325
+      - 0.0057266597
+      - 0
+      - 0.35561502
+      - 20.927269
+      - 0.9585209
+      - 0.51559234
+      - 2.2235951
+      - 13.239433
+      - 0.2983889
+      - 0.87240124
+      - 0.9545918
+      - 10.272433
+      - 1
+      - 0.0277206
+      - 0.8136213
+      - 10.314386
+      - 0
+      - 0.4625612
+      - 0.7645293
+      - 0.6127072
+      - 0.23272201
+      - 0.41115636
+      - 104.49991
+      - 0.6209144
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 137.32796
+      - 0.98091847
+      - 0
+      - 0.9310589
+      - 84.38004
+      - 0.5185653
+      - 29.970026
+      - 0.018091952
+      - 0.3671771
+      - 0.8219502
+      - 0.017019425
+      - 0.035708662
+      - 39.998764
+      - 0.16197301
+      - 0.7482068
+      - 0.923943
+      - 1.4277291
+      - 10.238763
+      - 11.298818
+      - 115.82588
+      - 0.1611498
+      - 0.7070775
+      - 0.80625826
+      - 5.453946
+      - 0.8770417
+      - 0.20462428
+      - 5.116863
+      - 7.2893653
+      - 0.85506785
+      - 0.46681902
+      - 0.864944
+      - 1.5632424
+      - 0.31838495
+      - 0.7481444
+      - 0.86339337
+      - 5.0029235
+      - 0.48981208
+      - 0.6729141
+      - 0.84624934
+      - 0.49316007
+      - 0.25854307
+      - 0.74941164
+      - 200
+      - 0.46619636
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 71.770615
+      - 0.999
+      - 1.0513492
+      - 0.985872
+      - 88.61403
+      - 0.56214845
+      - 13.114979
+      - 0.43610954
+      - 0.8654503
+      - 0.4322701
+      - 0.01562635
+      - 0.32069984
+      - 34.3544
+      - 1
+      - 0.8726665
+      - 0.97031
+      - 1.8806641
+      - 1.9243865
+      - 15.968312
+      - 102.780174
+      - 0.1611498
+      - 0.26925915
+      - 0.113350034
+      - 28.669651
+      - 0.99813807
+      - 1.7305595
+      - 3.572954
+      - 0.5
+      - 0.06197846
+      - 0.14947498
+      - 0.94644755
+      - 4.3793497
+      - 0.31838495
+      - 0.057877734
+      - 0.7339958
+      - 2.5562522
+      - 0.793254
+      - 0.7108338
+      - 0.76468605
+      - 0.49316007
+      - 0.24350584
+      - 0
+      - 81.256676
+      - 0.18149447
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 105.002495
+      - 0.93656874
+      - 0.3174736
+      - 0.6434429
+      - 71.77624
+      - 0.59972835
+      - 29.970026
+      - 0.29009905
+      - 0.7696259
+      - 0.6202052
+      - 0.010012931
+      - 0.19981849
+      - 26.301556
+      - 0.21863782
+      - 0.70873886
+      - 0.97937334
+      - 2.718089
+      - 11.468897
+      - 13.629873
+      - 117.69031
+      - 0.09541966
+      - 0.8915551
+      - 0.583229
+      - 5.453946
+      - 0.92782116
+      - 0.51559234
+      - 2.2174265
+      - 10.280586
+      - 0.4434625
+      - 0.469592
+      - 0.82959205
+      - 4.2231226
+      - 0.29967186
+      - 0.8088602
+      - 0.83119565
+      - 1.9911735
+      - 0.55697036
+      - 0.86416805
+      - 0.8208444
+      - 0.57571006
+      - 0.29161674
+      - 0.41115636
+      - 116.69622
+      - 0.32261658
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 71.770615
+      - 0.9386893
+      - 0.32349247
+      - 0.26813424
+      - 104.21307
+      - 0.5088101
+      - 2
+      - 0.24589506
+      - 0.17589314
+      - 0.873308
+      - 0.022925468
+      - 0.32069984
+      - 2.0775795
+      - 0.45104104
+      - 0.9878412
+      - 0.97031
+      - 0.50430167
+      - 11.651418
+      - 21.23777
+      - 127.04407
+      - 0.26682004
+      - 0
+      - 0.095611095
+      - 17.845394
+      - 0.9322577
+      - 0.46250767
+      - 5.116863
+      - 4.146981
+      - 0.8291044
+      - 0.34829405
+      - 0.8478742
+      - 5.2017803
+      - 0.89186287
+      - 0.8029722
+      - 0.8138397
+      - 5.8717575
+      - 0.44586545
+      - 0.11821778
+      - 0.7493099
+      - 1.0130609
+      - 0.08198163
+      - 0.98400694
+      - 198.67717
+      - 0.9317034
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 98.43943
+      - 0.98635393
+      - 1.3737335
+      - 0.26813424
+      - 88.61403
+      - 0.32830158
+      - 29.970026
+      - 0.19022147
+      - 0.24858119
+      - 0.873308
+      - 0.021865867
+      - 0.32069984
+      - 6.0346365
+      - 0.23663068
+      - 0.8726665
+      - 0.97031
+      - 2.718089
+      - 17.433151
+      - 15.968312
+      - 127.04407
+      - 0.16553567
+      - 0.5169043
+      - 0.095611095
+      - 16.547085
+      - 0.9236361
+      - 1.7305595
+      - 5.116863
+      - 4.146981
+      - 0.6452103
+      - 0.24412274
+      - 0.864944
+      - 5.2017803
+      - 0.31838495
+      - 0.7481444
+      - 0.7729522
+      - 8.930379
+      - 0.793254
+      - 0.9749545
+      - 0.7695268
+      - 0.49316007
+      - 0.25854307
+      - 0.98400694
+      - 81.256676
+      - 0.9430703
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 200
+      - 0.94448394
+      - 0.08783698
+      - 0.985872
+      - 105.40013
+      - 0.56214845
+      - 4.989698
+      - 0.755924
+      - 0.5143483
+      - 0.30026445
+      - 0.02492927
+      - 0.05324297
+      - 34.672848
+      - 0.12794709
+      - 0.858673
+      - 0.93398166
+      - 2.2234514
+      - 4.6284595
+      - 15.256252
+      - 52.389454
+      - 0.026918743
+      - 0.26925915
+      - 0.8499898
+      - 28.669651
+      - 0.97129405
+      - 1.7544131
+      - 1.5836942
+      - 1.1172822
+      - 0
+      - 0.10271241
+      - 0.9125198
+      - 12.270021
+      - 0.8777087
+      - 0.057877734
+      - 0.7948803
+      - 13.390445
+      - 0
+      - 0.4625612
+      - 0.92030185
+      - 0.4734816
+      - 0.24350584
+      - 0.760546
+      - 155.10332
+      - 0.6247149
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 71.770615
+      - 0.99604946
+      - 1.0513492
+      - 0.985872
+      - 51.31205
+      - 0.44070172
+      - 29.970026
+      - 0.55321515
+      - 0.24858119
+      - 0.3
+      - 0.03045754
+      - 0.20074856
+      - 29.636522
+      - 0.9442247
+      - 0.8328428
+      - 0.93398166
+      - 2.7639952
+      - 9.509186
+      - 15.968312
+      - 143.8442
+      - 0.026918743
+      - 0.60947335
+      - 0.113350034
+      - 5.453946
+      - 0.97129405
+      - 1.7544131
+      - 3.2234466
+      - 0.5
+      - 0.06197846
+      - 0.14947498
+      - 0.864944
+      - 2.5741413
+      - 0.9183459
+      - 0.7481444
+      - 0.75805277
+      - 14.4524355
+      - 0.7524134
+      - 1
+      - 0.9277025
+      - 0.49316007
+      - 0.24350584
+      - 0.08294368
+      - 120.288345
+      - 0.8148973
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 166.52982
+      - 0.9503809
+      - 0
+      - 1
+      - 69.35055
+      - 0.58555573
+      - 18.433714
+      - 0.29009905
+      - 0.5143483
+      - 0.54887265
+      - 0.03264818
+      - 0.027184326
+      - 34.672848
+      - 0.02750969
+      - 0.70873886
+      - 0.9702743
+      - 2.1570666
+      - 11.468897
+      - 13.629873
+      - 52.389454
+      - 0.029194238
+      - 0.7569448
+      - 0.33523113
+      - 59.92001
+      - 0.9541955
+      - 1.4438312
+      - 2.2174265
+      - 10.280586
+      - 0.06197846
+      - 0.39248353
+      - 0.8709891
+      - 1.5632424
+      - 0.29967186
+      - 0.5797661
+      - 0.7250161
+      - 13.847698
+      - 0.55697036
+      - 0.4625612
+      - 0.9224441
+      - 0.4734816
+      - 0.24350584
+      - 0.10937965
+      - 171.96826
+      - 0.6174221
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 66.29032
+      - 0.9581725
+      - 0.786808
+      - 0.985872
+      - 51.31205
+      - 0.56214845
+      - 13.114979
+      - 0.4487142
+      - 0.8654503
+      - 0.3
+      - 0.01562635
+      - 0.16275658
+      - 34.3544
+      - 0.9442247
+      - 0.7440237
+      - 0.94023436
+      - 2.2796898
+      - 9.509186
+      - 17.250065
+      - 114.478935
+      - 0.026918743
+      - 0.7569448
+      - 0.113350034
+      - 24.021437
+      - 0.9652495
+      - 1.6583242
+      - 2.636088
+      - 0.5
+      - 0.6140921
+      - 0.14947498
+      - 0.76882964
+      - 13.021887
+      - 0.9183459
+      - 0.44506413
+      - 0.75805277
+      - 6.84598
+      - 0
+      - 0.77926266
+      - 0.7645293
+      - 0.510913
+      - 0.06498492
+      - 0.9749073
+      - 97.33902
+      - 0.731792
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 200
+      - 0.9845714
+      - 1.0723026
+      - 0.70419264
+      - 17.996208
+      - 0.02
+      - 20.824783
+      - 0.40274355
+      - 0.8876468
+      - 0.40537077
+      - 0.036955632
+      - 0.26237354
+      - 35.678852
+      - 0.82053626
+      - 0.99
+      - 0.93628335
+      - 2.485306
+      - 15.658708
+      - 5.1999526
+      - 134.08829
+      - 0.0062612416
+      - 0.75339967
+      - 0.91094863
+      - 54.968502
+      - 0.8700144
+      - 0.2
+      - 3.2584586
+      - 2.508049
+      - 0.3879705
+      - 0.41691816
+      - 0.96411586
+      - 0.9037056
+      - 0.87949365
+      - 0.0277206
+      - 0.915564
+      - 5.932927
+      - 0.102388784
+      - 0.049966022
+      - 0.74583566
+      - 1.433887
+      - 0.6563724
+      - 0.41115636
+      - 39.19108
+      - 0.5445698
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      - ThreatEngagement
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    - geneNames:
+      - target.aggressiveness
+      - target.deadzone
+      - target.lead_seconds
+      - target.steer_weight
+      - avoid.radius
+      - avoid.strength
+      - avoid.standoff
+      - avoid.arc_dot
+      - avoid.steer_weight
+      - throttle.base
+      - throttle.ramp_per_second
+      - throttle.ramp_cap
+      - throttle.brake_distance
+      - throttle.brake_strength
+      - throttle.ram_dot
+      - drift.enter_dot
+      - drift.exit_seconds
+      - drift.speed_floor
+      - skim.standoff
+      - skim.radius
+      - skim.strength
+      - skim.friendly_only
+      - boost.min_charge
+      - boost.min_clear_distance
+      - boost.lock_dot
+      - boost.hold_seconds
+      - boost.cooldown
+      - ability.btn1.cooldown
+      - ability.btn1.fire_locked
+      - ability.btn1.fire_threatened
+      - ability.btn1.lock_dot
+      - ability.btn2.cooldown
+      - ability.btn2.fire_locked
+      - ability.btn2.fire_threatened
+      - ability.btn2.lock_dot
+      - ability.btn3.cooldown
+      - ability.btn3.fire_locked
+      - ability.btn3.fire_threatened
+      - ability.btn3.lock_dot
+      - ability.hold_seconds
+      - threat.engage
+      - threat.evade
+      - threat.engagement_range
+      - threat.steer_weight
+      geneValues:
+      - 117.28148
+      - 0.9494585
+      - 0.32349247
+      - 0.9270501
+      - 49.89154
+      - 0.58837175
+      - 2
+      - 0.16598397
+      - 0.2541817
+      - 0.3
+      - 0.017019425
+      - 0.085286155
+      - 2.0775795
+      - 0.56501263
+      - 0.9878412
+      - 0.97031
+      - 2.718089
+      - 17.433151
+      - 26.306747
+      - 55.963505
+      - 0.26682004
+      - 0.16988397
+      - 0.14300394
+      - 22.09697
+      - 0.9236361
+      - 1.7305595
+      - 0.6275156
+      - 4.146981
+      - 0.95656824
+      - 0.5256311
+      - 0.77181375
+      - 4.3793497
+      - 0.8342206
+      - 0.7481444
+      - 0.78732497
+      - 9.47977
+      - 0.793254
+      - 0.11821778
+      - 0.88358563
+      - 0.720775
+      - 0.25854307
+      - 0.08294368
+      - 38.72655
+      - 0.88710874
+      enabledModules:
+      - TargetSeeking
+      - ObstacleAvoidance
+      - ThrottleControl
+      - Drift
+      - Skim
+      - BoostManagement
+      - AbilityScheduler
+      GenerationBorn: 2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
+      Lineage: ?+?+?+?
+    behaviorArchive: 5a2eca0e48760a837fcca8126e144a7494c2c514d6544a303fc36424400f6772875e34d118d45028398c564a24483035237cff945207548d222b6059e5b54bde10e34eea71c6ac32bf6c44c9fb68cf4a6f682634e58772c0afa3becd48a562c25207548de58772c024483035222b6059dc47d6e95335c3559251286ccf2a4a42f2d80eeb419c2521cdad01ae7ae73aec7a744d17582e9eda0d5aa57ddf2d9d7f545bdee4bf2ff54f1050658ce75fef1ffc4c8b0ed29ad7402df758849a80c6a4cf2a4a42dc47d6e91050658c5335c355
+  HallOfFameBest:
+    geneNames:
+    - target.aggressiveness
+    - target.deadzone
+    - target.lead_seconds
+    - target.steer_weight
+    - avoid.radius
+    - avoid.strength
+    - avoid.standoff
+    - avoid.arc_dot
+    - avoid.steer_weight
+    - throttle.base
+    - throttle.ramp_per_second
+    - throttle.ramp_cap
+    - throttle.brake_distance
+    - throttle.brake_strength
+    - throttle.ram_dot
+    - drift.enter_dot
+    - drift.exit_seconds
+    - drift.speed_floor
+    - skim.standoff
+    - skim.radius
+    - skim.strength
+    - skim.friendly_only
+    - boost.min_charge
+    - boost.min_clear_distance
+    - boost.lock_dot
+    - boost.hold_seconds
+    - boost.cooldown
+    - ability.btn1.cooldown
+    - ability.btn1.fire_locked
+    - ability.btn1.fire_threatened
+    - ability.btn1.lock_dot
+    - ability.btn2.cooldown
+    - ability.btn2.fire_locked
+    - ability.btn2.fire_threatened
+    - ability.btn2.lock_dot
+    - ability.btn3.cooldown
+    - ability.btn3.fire_locked
+    - ability.btn3.fire_threatened
+    - ability.btn3.lock_dot
+    - ability.hold_seconds
+    - threat.engage
+    - threat.evade
+    - threat.engagement_range
+    - threat.steer_weight
+    geneValues:
+    - 71.770615
+    - 0.98635393
+    - 1.0513492
+    - 0.26813424
+    - 71.77624
+    - 0.11995045
+    - 29.970026
+    - 0.409942
+    - 0.24858119
+    - 0.50512266
+    - 0.017019425
+    - 0.32069984
+    - 18.212383
+    - 0.23663068
+    - 0.8726665
+    - 0.97031
+    - 2.718089
+    - 2.76672
+    - 15.968312
+    - 140.5812
+    - 0.20174791
+    - 0.5887862
+    - 0.14300394
+    - 5.453946
+    - 0.92782116
+    - 1.7305595
+    - 5.116863
+    - 4.146981
+    - 0.85506785
+    - 0.66152227
+    - 0.864944
+    - 4.3793497
+    - 0.31838495
+    - 0.8029722
+    - 0.83119565
+    - 1.2659914
+    - 0.793254
+    - 0.9749545
+    - 0.861836
+    - 0.19257739
+    - 0.25854307
+    - 0.08294368
+    - 81.96471
+    - 0.38796362
+    enabledModules:
+    - TargetSeeking
+    - ObstacleAvoidance
+    - ThrottleControl
+    - Drift
+    - Skim
+    - BoostManagement
+    - AbilityScheduler
+    GenerationBorn: 0
+    EvaluationCount: 0
+    Fitness: 0
+    NoveltyScore: 0
+    Lineage: 
+  PendingSeed:
+    geneNames: []
+    geneValues: []
+    enabledModules: []
+    GenerationBorn: 0
+    EvaluationCount: 0
+    Fitness: 0
+    NoveltyScore: 0
+    Lineage: 
+  HasPendingSeed: 0
+  PendingSeedNote: 
+  PeopleLinePoints:
+  - {x: -56.44, y: 1202.48, z: -246.14}
+  - {x: -54.84, y: 1197.63, z: -237.55}
+  - {x: -54.64, y: 1192.37, z: -229.06}
+  - {x: -55.67, y: 1187, z: -220.69}
+  - {x: -57.41, y: 1181.87, z: -212.29}
+  - {x: -59.4, y: 1177.2, z: -203.68}
+  - {x: -62.12, y: 1172.72, z: -195.16}
+  - {x: -65.9, y: 1168.2, z: -187.1}
+  - {x: -70.5, y: 1163.16, z: -179.79}
+  - {x: -75.17, y: 1157.7, z: -172.84}
+  - {x: -79.43, y: 1152.05, z: -165.77}
+  - {x: -82.81, y: 1146.42, z: -158.24}
+  - {x: -85.01, y: 1141.02, z: -150.13}
+  - {x: -85.73, y: 1136.02, z: -141.53}
+  - {x: -84.87, y: 1131.5, z: -132.66}
+  - {x: -82.78, y: 1127.34, z: -123.82}
+  - {x: -78.46, y: 1123.86, z: -115.71}
+  - {x: -72.38, y: 1120.9, z: -108.34}
+  - {x: -66.3, y: 1117.95, z: -100.98}
+  - {x: -60.21, y: 1114.99, z: -93.61}
+  - {x: -54.13, y: 1112.04, z: -86.24}
+  - {x: -48.05, y: 1109.08, z: -78.88}
+  - {x: -41.97, y: 1106.13, z: -71.51}
+  - {x: -35.89, y: 1103.17, z: -64.14}
+  - {x: -29.81, y: 1100.21, z: -56.77}
+  - {x: -23.72, y: 1097.26, z: -49.41}
+  - {x: -17.64, y: 1094.3, z: -42.04}
+  - {x: -11.56, y: 1091.35, z: -34.67}
+  - {x: -5.48, y: 1088.39, z: -27.3}
+  - {x: 0.6, y: 1085.44, z: -19.94}
+  - {x: 6.68, y: 1082.48, z: -12.57}
+  - {x: 12.76, y: 1079.53, z: -5.2}
+  - {x: 18.85, y: 1076.57, z: 2.17}
+  - {x: 24.93, y: 1073.61, z: 9.53}
+  - {x: 31.01, y: 1070.66, z: 16.9}
+  - {x: 37.09, y: 1067.7, z: 24.27}
+  - {x: 43.17, y: 1064.75, z: 31.64}
+  - {x: 49.25, y: 1061.79, z: 39}
+  - {x: 55.34, y: 1058.84, z: 46.37}
+  - {x: 61.42, y: 1055.88, z: 53.74}
+  - {x: 67.5, y: 1052.92, z: 61.11}
+  - {x: 73.58, y: 1049.97, z: 68.47}
+  - {x: 79.66, y: 1047.01, z: 75.84}
+  - {x: 85.74, y: 1044.06, z: 83.21}
+  - {x: 91.83, y: 1041.1, z: 90.58}
+  - {x: 97.91, y: 1038.15, z: 97.94}
+  - {x: 103.99, y: 1035.19, z: 105.31}
+  - {x: 110.07, y: 1032.24, z: 112.68}
+  - {x: 116.15, y: 1029.28, z: 120.04}
+  - {x: 122.23, y: 1026.32, z: 127.41}
+  - {x: 128.32, y: 1023.37, z: 134.78}
+  - {x: 134.4, y: 1020.41, z: 142.15}
+  - {x: 140.48, y: 1017.46, z: 149.51}
+  - {x: 146.56, y: 1014.5, z: 156.88}
+  - {x: 152.64, y: 1011.55, z: 164.25}
+  - {x: 158.72, y: 1008.59, z: 171.62}
+  - {x: 164.8, y: 1005.64, z: 178.98}
+  - {x: 170.89, y: 1002.68, z: 186.35}
+  - {x: 176.97, y: 999.72, z: 193.72}
+  - {x: 183.05, y: 996.77, z: 201.09}
+  - {x: 189.13, y: 993.81, z: 208.45}
+  - {x: 195.21, y: 990.86, z: 215.82}
+  - {x: 201.29, y: 987.9, z: 223.19}
+  - {x: 207.38, y: 984.95, z: 230.56}
+  - {x: 213.46, y: 981.99, z: 237.92}
+  - {x: 219.54, y: 979.03, z: 245.29}
+  - {x: 225.62, y: 976.08, z: 252.66}
+  - {x: 231.7, y: 973.12, z: 260.03}
+  - {x: 237.78, y: 970.17, z: 267.39}
+  - {x: 243.87, y: 967.21, z: 274.76}
+  - {x: 249.95, y: 964.26, z: 282.13}
+  - {x: 256.03, y: 961.3, z: 289.5}
+  - {x: 262.11, y: 958.35, z: 296.86}
+  - {x: 268.19, y: 955.39, z: 304.23}
+  - {x: 274.27, y: 952.43, z: 311.6}
+  - {x: 280.35, y: 949.48, z: 318.96}
+  - {x: 286.44, y: 946.52, z: 326.33}
+  - {x: 292.25, y: 943.15, z: 333.72}
+  - {x: 297.1, y: 938.56, z: 341.13}
+  - {x: 300.5, y: 932.53, z: 348.32}
+  - {x: 301.82, y: 924.89, z: 354.58}
+  - {x: 301.09, y: 916.12, z: 359.23}
+  - {x: 298.27, y: 906.88, z: 361.4}
+  - {x: 293.86, y: 898.01, z: 360.6}
+  - {x: 288.62, y: 890.66, z: 356.51}
+  - {x: 283.57, y: 885.48, z: 349.71}
+  - {x: 280.03, y: 883.67, z: 340.61}
+  - {x: 278.57, y: 884.66, z: 330.86}
+  - {x: 280.09, y: 888.42, z: 321.8}
+  - {x: 284.74, y: 893.95, z: 315.08}
+  - {x: 291.7, y: 899.88, z: 311.29}
+  - {x: 300.22, y: 904.9, z: 311.12}
+  - {x: 309.08, y: 907.58, z: 314.66}
+  - {x: 316.86, y: 907.24, z: 320.7}
+  - {x: 322.7, y: 903.84, z: 327.94}
+  - {x: 325.26, y: 897.11, z: 334.76}
+  - {x: 325, y: 888.59, z: 339.77}
+  - {x: 321.89, y: 879.34, z: 341.48}
+  - {x: 317.1, y: 870.97, z: 339.43}
+  - {x: 311.85, y: 864.66, z: 333.88}
+  - {x: 311.08, y: 863.86, z: 332.9}
+  - {x: 123.72, y: 1099.35, z: -256.27}
+  - {x: 119.4, y: 1098.23, z: -247.32}
+  - {x: 115.08, y: 1097.12, z: -238.37}
+  - {x: 110.76, y: 1096, z: -229.42}
+  - {x: 106.44, y: 1094.9, z: -220.47}
+  - {x: 105.37, y: 1086.44, z: -215.71}
+  - {x: 104.48, y: 1077.57, z: -211.18}
+  - {x: 103.6, y: 1068.7, z: -206.65}
+  - {x: 102.71, y: 1059.83, z: -202.12}
+  - {x: 101.83, y: 1050.95, z: -197.59}
+  - {x: 100.94, y: 1042.08, z: -193.05}
+  - {x: 100.05, y: 1033.21, z: -188.52}
+  - {x: 99.17, y: 1024.34, z: -183.99}
+  - {x: 98.28, y: 1015.47, z: -179.46}
+  - {x: 97.4, y: 1006.6, z: -174.93}
+  - {x: 96.51, y: 997.73, z: -170.4}
+  - {x: 95.62, y: 988.86, z: -165.87}
+  - {x: 94.74, y: 979.99, z: -161.34}
+  - {x: 93.85, y: 971.12, z: -156.81}
+  - {x: 92.97, y: 962.25, z: -152.28}
+  - {x: 92.08, y: 953.38, z: -147.75}
+  - {x: 91.19, y: 944.51, z: -143.22}
+  - {x: 90.31, y: 935.64, z: -138.69}
+  - {x: 89.42, y: 926.77, z: -134.15}
+  - {x: 88.54, y: 917.9, z: -129.62}
+  - {x: 87.65, y: 909.03, z: -125.09}
+  - {x: 86.76, y: 900.15, z: -120.56}
+  - {x: 85.88, y: 891.28, z: -116.03}
+  - {x: 84.99, y: 882.41, z: -111.5}
+  - {x: 84.11, y: 873.54, z: -106.97}
+  - {x: 83.22, y: 864.67, z: -102.44}
+  - {x: 82.33, y: 855.8, z: -97.91}
+  - {x: 81.45, y: 846.93, z: -93.38}
+  - {x: 80.56, y: 838.06, z: -88.85}
+  - {x: 79.68, y: 829.19, z: -84.32}
+  - {x: 78.79, y: 820.32, z: -79.79}
+  - {x: 77.9, y: 811.45, z: -75.25}
+  - {x: 77.02, y: 802.58, z: -70.72}
+  - {x: 76.13, y: 793.71, z: -66.19}
+  - {x: 75.25, y: 784.84, z: -61.66}
+  - {x: 74.36, y: 775.97, z: -57.13}
+  - {x: 73.47, y: 767.1, z: -52.6}
+  - {x: 72.59, y: 758.23, z: -48.07}
+  - {x: 71.7, y: 749.35, z: -43.54}
+  - {x: 70.82, y: 740.48, z: -39.01}
+  - {x: 69.93, y: 731.61, z: -34.48}
+  - {x: 69.04, y: 722.74, z: -29.95}
+  - {x: 68.16, y: 713.87, z: -25.42}
+  - {x: 67.27, y: 705, z: -20.89}
+  - {x: 66.39, y: 696.13, z: -16.35}
+  - {x: 65.5, y: 687.26, z: -11.82}
+  - {x: 64.61, y: 678.39, z: -7.29}
+  - {x: 63.73, y: 669.52, z: -2.76}
+  - {x: 62.84, y: 660.65, z: 1.77}
+  - {x: 61.96, y: 651.78, z: 6.3}
+  - {x: 61.07, y: 642.91, z: 10.83}
+  - {x: 60.19, y: 634.04, z: 15.36}
+  - {x: 59.3, y: 625.17, z: 19.89}
+  - {x: 58.41, y: 616.3, z: 24.42}
+  - {x: 57.53, y: 607.43, z: 28.95}
+  - {x: 56.64, y: 598.55, z: 33.48}
+  - {x: 55.76, y: 589.68, z: 38.01}
+  - {x: 54.87, y: 580.81, z: 42.54}
+  - {x: 53.98, y: 571.94, z: 47.08}
+  - {x: 53.1, y: 563.07, z: 51.61}
+  - {x: 52.21, y: 554.2, z: 56.14}
+  - {x: 51.33, y: 545.33, z: 60.67}
+  - {x: 50.44, y: 536.46, z: 65.2}
+  - {x: 49.55, y: 527.59, z: 69.73}
+  - {x: 48.67, y: 518.72, z: 74.26}
+  - {x: 47.78, y: 509.85, z: 78.79}
+  - {x: 46.9, y: 500.98, z: 83.32}
+  - {x: 46.01, y: 492.11, z: 87.85}
+  - {x: 45.12, y: 483.24, z: 92.38}
+  - {x: 44.24, y: 474.37, z: 96.91}
+  - {x: 43.35, y: 465.5, z: 101.44}
+  - {x: 42.47, y: 456.63, z: 105.98}
+  - {x: 41.58, y: 447.75, z: 110.51}
+  - {x: 40.69, y: 438.88, z: 115.04}
+  - {x: 39.81, y: 430.01, z: 119.57}
+  - {x: 38.92, y: 421.14, z: 124.1}
+  - {x: 38.04, y: 412.27, z: 128.63}
+  - {x: 37.15, y: 403.4, z: 133.16}
+  - {x: 36.26, y: 394.53, z: 137.69}
+  - {x: 35.38, y: 385.66, z: 142.22}
+  - {x: 34.49, y: 376.79, z: 146.75}
+  - {x: 33.61, y: 367.92, z: 151.28}
+  - {x: 32.72, y: 359.05, z: 155.81}
+  - {x: 31.83, y: 350.18, z: 160.34}
+  - {x: 30.95, y: 341.31, z: 164.88}
+  - {x: 30.06, y: 332.44, z: 169.41}
+  - {x: 29.18, y: 323.57, z: 173.94}
+  - {x: 28.29, y: 314.7, z: 178.47}
+  - {x: 27.4, y: 305.83, z: 183}
+  - {x: 26.52, y: 296.95, z: 187.53}
+  - {x: 25.63, y: 288.08, z: 192.06}
+  - {x: 24.75, y: 279.21, z: 196.59}
+  - {x: 23.86, y: 270.34, z: 201.12}
+  - {x: 22.97, y: 261.47, z: 205.65}
+  - {x: 22.09, y: 252.6, z: 210.18}
+  - {x: 21.2, y: 243.73, z: 214.71}
+  - {x: 20.32, y: 234.86, z: 219.24}
+  - {x: 19.43, y: 225.99, z: 223.77}
+  - {x: 18.54, y: 217.12, z: 228.31}
+  - {x: 17.66, y: 208.25, z: 232.84}
+  - {x: 16.77, y: 199.38, z: 237.37}
+  - {x: 15.89, y: 190.51, z: 241.9}
+  - {x: 15, y: 181.64, z: 246.43}
+  - {x: 14.11, y: 172.77, z: 250.96}
+  - {x: 13.23, y: 163.9, z: 255.49}
+  - {x: 12.34, y: 155.03, z: 260.02}
+  - {x: 11.46, y: 146.16, z: 264.55}
+  - {x: 10.57, y: 137.28, z: 269.08}
+  - {x: 9.68, y: 128.41, z: 273.61}
+  - {x: 8.8, y: 119.54, z: 278.14}
+  - {x: 7.91, y: 110.67, z: 282.67}
+  - {x: 7.03, y: 101.8, z: 287.21}
+  - {x: 6.14, y: 92.93, z: 291.74}
+  - {x: 5.25, y: 84.06, z: 296.27}
+  - {x: 4.37, y: 75.19, z: 300.8}
+  - {x: 3.48, y: 66.32, z: 305.33}
+  - {x: 2.6, y: 57.45, z: 309.86}
+  - {x: 1.71, y: 48.58, z: 314.39}
+  - {x: 0.82, y: 39.71, z: 318.92}
+  - {x: -0.06, y: 30.84, z: 323.45}
+  - {x: -0.95, y: 21.97, z: 327.98}
+  - {x: -1.83, y: 13.1, z: 332.51}
+  - {x: -2.72, y: 4.23, z: 337.04}
+  - {x: -3.61, y: -4.64, z: 341.57}
+  - {x: -4.49, y: -13.52, z: 346.11}
+  - {x: -5.38, y: -22.39, z: 350.64}
+  - {x: -6.26, y: -31.26, z: 355.17}
+  - {x: -7.15, y: -40.13, z: 359.7}
+  - {x: -8.04, y: -49, z: 364.23}
+  - {x: -8.92, y: -57.87, z: 368.76}
+  - {x: -9.81, y: -66.74, z: 373.29}
+  - {x: -10.69, y: -75.61, z: 377.82}
+  - {x: -11.58, y: -84.48, z: 382.35}
+  - {x: -12.47, y: -93.35, z: 386.88}
+  - {x: -13.35, y: -102.22, z: 391.41}
+  - {x: -14.24, y: -111.09, z: 395.94}
+  - {x: -15.12, y: -119.96, z: 400.47}
+  - {x: -16.01, y: -128.83, z: 405.01}
+  - {x: -16.9, y: -137.7, z: 409.54}
+  - {x: -17.78, y: -146.57, z: 414.07}
+  - {x: -18.67, y: -155.44, z: 418.6}
+  - {x: -19.55, y: -164.32, z: 423.13}
+  - {x: -20.44, y: -173.19, z: 427.66}
+  - {x: -21.33, y: -182.06, z: 432.19}
+  - {x: -22.21, y: -190.93, z: 436.72}
+  - {x: -23.1, y: -199.8, z: 441.25}
+  - {x: -23.98, y: -208.67, z: 445.78}
+  - {x: -24.87, y: -217.54, z: 450.31}
+  - {x: -25.76, y: -226.41, z: 454.84}
+  - {x: -26.64, y: -235.28, z: 459.37}
+  - {x: -27.53, y: -244.15, z: 463.9}
+  - {x: -28.41, y: -253.02, z: 468.44}
+  - {x: -29.3, y: -261.89, z: 472.97}
+  - {x: -30.19, y: -270.76, z: 477.5}
+  - {x: -31.07, y: -279.63, z: 482.03}
+  - {x: -31.96, y: -288.5, z: 486.56}
+  - {x: -32.84, y: -297.37, z: 491.09}
+  - {x: -33.73, y: -306.24, z: 495.62}
+  - {x: -34.62, y: -315.12, z: 500.15}
+  - {x: -35.5, y: -323.99, z: 504.68}
+  - {x: -36.39, y: -332.86, z: 509.21}
+  - {x: -37.27, y: -341.73, z: 513.74}
+  - {x: -38.16, y: -350.6, z: 518.27}
+  - {x: -39.05, y: -359.47, z: 522.8}
+  - {x: -39.93, y: -368.34, z: 527.34}
+  - {x: -40.82, y: -377.21, z: 531.87}
+  - {x: -41.7, y: -386.08, z: 536.4}
+  - {x: -42.59, y: -394.95, z: 540.93}
+  - {x: -43.48, y: -403.82, z: 545.46}
+  - {x: -44.36, y: -412.69, z: 549.99}
+  - {x: -45.25, y: -421.56, z: 554.52}
+  - {x: -46.13, y: -430.43, z: 559.05}
+  - {x: -47.02, y: -439.3, z: 563.58}
+  - {x: -47.91, y: -448.17, z: 568.11}
+  - {x: -48.79, y: -457.04, z: 572.64}
+  - {x: -49.68, y: -465.92, z: 577.17}
+  - {x: -50.56, y: -474.79, z: 581.7}
+  - {x: -51.45, y: -483.66, z: 586.24}
+  - {x: -52.34, y: -492.53, z: 590.77}
+  - {x: -53.22, y: -501.4, z: 595.3}
+  - {x: -54.11, y: -510.27, z: 599.83}
+  - {x: -54.99, y: -519.14, z: 604.36}
+  - {x: -55.88, y: -528.01, z: 608.89}
+  - {x: -56.77, y: -536.88, z: 613.42}
+  - {x: -57.65, y: -545.75, z: 617.95}
+  - {x: -58.54, y: -554.62, z: 622.48}
+  - {x: -59.42, y: -563.49, z: 627.01}
+  - {x: -60.31, y: -572.36, z: 631.54}
+  - {x: -61.2, y: -581.23, z: 636.07}
+  - {x: -62.08, y: -590.1, z: 640.6}
+  - {x: -62.97, y: -598.97, z: 645.13}
+  - {x: -63.85, y: -607.84, z: 649.67}
+  - {x: -64.74, y: -616.72, z: 654.2}
+  - {x: -65.63, y: -625.59, z: 658.73}
+  - {x: -66.51, y: -634.46, z: 663.26}
+  - {x: -67.4, y: -643.33, z: 667.79}
+  - {x: -68.28, y: -652.2, z: 672.32}
+  - {x: -69.17, y: -661.07, z: 676.85}
+  - {x: -70.06, y: -669.94, z: 681.38}
+  - {x: -70.94, y: -678.81, z: 685.91}
+  - {x: -71.83, y: -687.68, z: 690.44}
+  - {x: -72.71, y: -696.55, z: 694.97}
+  - {x: -78.38, y: -704.52, z: 694.36}
+  - {x: -84.43, y: -712.42, z: 693.34}
+  - {x: -90.48, y: -720.31, z: 692.31}
+  - {x: -96.53, y: -728.21, z: 691.29}
+  - {x: -102.16, y: -735.86, z: 688.98}
+  - {x: -106.82, y: -742.92, z: 683.65}
+  - {x: -110.82, y: -749.87, z: 677.85}
+  - {x: -112.66, y: -756.44, z: 670.55}
+  - {x: -113.3, y: -763.02, z: 663.12}
+  - {x: -109.14, y: -770.01, z: 659.44}
+  - {x: -102.36, y: -777.28, z: 658.4}
+  - {x: -95.57, y: -784.56, z: 657.37}
+  - {x: -91.91, y: -792.67, z: 660.25}
+  - {x: -90.69, y: -801.2, z: 664.93}
+  - {x: -93.55, y: -809.82, z: 669.12}
+  - {x: -98.75, y: -818.18, z: 670.29}
+  - {x: -103.99, y: -825.39, z: 665.87}
+  - {x: -109.23, y: -832.57, z: 661.27}
+  - {x: -113.09, y: -839.51, z: 655.47}
+  - {x: -114.71, y: -846.12, z: 648.24}
+  - {x: -114.11, y: -852.54, z: 640.69}
+  - {x: -109.86, y: -859.52, z: 636.92}
+  - {x: -103.41, y: -867.15, z: 637.29}
+  - {x: -99.24, y: -875.14, z: 639.35}
+  - {x: -100.02, y: -883.75, z: 644.01}
+  - {x: -104.45, y: -892.2, z: 646.66}
+  - {x: -109.82, y: -899.87, z: 643.98}
+  - {x: -114.58, y: -907.06, z: 638.91}
+  - {x: -118.2, y: -914.01, z: 633.02}
+  - {x: -119.16, y: -920.49, z: 625.53}
+  - {x: -117.48, y: -926.94, z: 618.14}
+  - {x: -111.88, y: -934.3, z: 617.24}
+  - {x: -105.47, y: -941.93, z: 618.15}
+  - {x: -104.28, y: -950.39, z: 622.8}
+  - {x: -107.45, y: -958.95, z: 626.62}
+  - {x: -113.07, y: -967.1, z: 626.25}
+  - {x: -117.84, y: -974.2, z: 621.06}
+  - {x: -122.34, y: -981.25, z: 615.71}
+  - {x: -123.09, y: -987.74, z: 608.17}
+  - {x: -121.96, y: -994.13, z: 600.6}
+  - {x: -117.61, y: -1001.1, z: 596.93}
+  - {x: -111.37, y: -1008.81, z: 598.19}
+  - {x: -108.24, y: -1016.96, z: 601.3}
+  - {x: -110.29, y: -1025.53, z: 605.48}
+  - {x: -115.77, y: -1033.7, z: 605.81}
+  - {x: -120.77, y: -1040.99, z: 601.56}
+  - {x: -125.53, y: -1048.08, z: 596.35}
+  - {x: -127.71, y: -1054.74, z: 589.37}
+  - {x: -127.3, y: -1061.16, z: 581.79}
+  - {x: -123.12, y: -1068.16, z: 578.08}
+  - {x: -116.88, y: -1075.86, z: 579.45}
+  - {x: -113.34, y: -1083.99, z: 582.71}
+  - {x: -115.01, y: -1092.54, z: 587.01}
+  - {x: -119.96, y: -1100.87, z: 588.28}
+  - {x: -125.16, y: -1108.23, z: 584.32}
+  - {x: -130.26, y: -1115.43, z: 579.61}
+  - {x: -132.39, y: -1122.08, z: 572.5}
+  - {x: -131.9, y: -1128.48, z: 564.88}
+  - {x: -127.99, y: -1135.39, z: 560.64}
+  - {x: -121.69, y: -1143.08, z: 561.79}
+  - {x: -118.17, y: -1151.19, z: 564.85}
+  - {x: -119.86, y: -1159.75, z: 569.04}
+  - {x: -124.69, y: -1168.12, z: 570.48}
+  - {x: -129.52, y: -1175.45, z: 566.19}
+  - {x: -134.05, y: -1182.51, z: 560.75}
+  - {x: -136.09, y: -1189.18, z: 553.81}
+  - {x: -135.73, y: -1195.63, z: 546.27}
+  - {x: -132.2, y: -1202.52, z: 541.69}
+  - {x: -126.28, y: -1210.37, z: 543.54}
+  - {x: -121.82, y: -1218.38, z: 545.97}
+  - {x: -123.46, y: -1227.01, z: 550.63}
+  - {x: -128.69, y: -1235.34, z: 552.28}
+  - {x: -133.55, y: -1242.68, z: 547.9}
+  - {x: -138.21, y: -1249.69, z: 542.5}
+  - {x: -140.93, y: -1256.41, z: 535.77}
+  - {x: -141.09, y: -1262.91, z: 528.28}
+  - {x: -137.27, y: -1270.14, z: 525.69}
+  - {x: -132.17, y: -1278.2, z: 528.73}
+  - {x: -127.27, y: -1286.27, z: 531.79}
+  - {x: -129.55, y: -1294.95, z: 536.2}
+  - {x: -134.54, y: -1303.23, z: 537.68}
+  - {x: -135.52, y: -1301.09, z: 536.32}
+  - {x: -133.27, y: -1291.4, z: 535.28}
+  - {x: -131.02, y: -1281.71, z: 534.25}
+  - {x: -128.78, y: -1272.02, z: 533.22}
+  - {x: -126.53, y: -1262.33, z: 532.19}
+  - {x: -124.28, y: -1252.64, z: 531.15}
+  - {x: -122.04, y: -1242.95, z: 530.12}
+  - {x: -119.79, y: -1233.26, z: 529.09}
+  - {x: -117.54, y: -1223.57, z: 528.06}
+  - {x: -115.3, y: -1213.88, z: 527.02}
+  - {x: -113.05, y: -1204.19, z: 525.99}
+  - {x: -110.8, y: -1194.5, z: 524.96}
+  - {x: -108.55, y: -1184.81, z: 523.93}
+  - {x: -106.31, y: -1175.12, z: 522.9}
+  - {x: -104.06, y: -1165.43, z: 521.86}
+  - {x: -101.81, y: -1155.74, z: 520.83}
+  - {x: -99.57, y: -1146.05, z: 519.8}
+  - {x: -97.32, y: -1136.37, z: 518.77}
+  - {x: -95.07, y: -1126.68, z: 517.73}
+  - {x: -92.83, y: -1116.99, z: 516.7}
+  - {x: -90.58, y: -1107.3, z: 515.67}
+  - {x: -88.33, y: -1097.61, z: 514.64}
+  - {x: -86.09, y: -1087.92, z: 513.6}
+  - {x: -83.84, y: -1078.23, z: 512.57}
+  - {x: -81.59, y: -1068.54, z: 511.54}
+  - {x: -79.35, y: -1058.85, z: 510.51}
+  - {x: -77.1, y: -1049.16, z: 509.48}
+  - {x: -74.85, y: -1039.47, z: 508.44}
+  - {x: -72.61, y: -1029.78, z: 507.41}
+  - {x: -70.36, y: -1020.09, z: 506.38}
+  - {x: -68.11, y: -1010.4, z: 505.35}
+  - {x: -65.87, y: -1000.71, z: 504.31}
+  - {x: -63.62, y: -991.02, z: 503.28}
+  - {x: -61.37, y: -981.33, z: 502.25}
+  - {x: -59.13, y: -971.64, z: 501.22}
+  - {x: -56.88, y: -961.95, z: 500.18}
+  - {x: -54.63, y: -952.26, z: 499.15}
+  - {x: -52.39, y: -942.58, z: 498.12}
+  - {x: -50.14, y: -932.89, z: 497.09}
+  - {x: -47.89, y: -923.2, z: 496.06}
+  - {x: -45.65, y: -913.51, z: 495.02}
+  - {x: -43.4, y: -903.82, z: 493.99}
+  - {x: -41.15, y: -894.13, z: 492.96}
+  - {x: -38.91, y: -884.44, z: 491.93}
+  - {x: -36.66, y: -874.75, z: 490.89}
+  - {x: -34.41, y: -865.06, z: 489.86}
+  - {x: -32.17, y: -855.37, z: 488.83}
+  - {x: -29.92, y: -845.68, z: 487.8}
+  - {x: -27.67, y: -835.99, z: 486.76}
+  - {x: -25.43, y: -826.3, z: 485.73}
+  - {x: -23.18, y: -816.61, z: 484.7}
+  - {x: -20.93, y: -806.92, z: 483.67}
+  - {x: -18.69, y: -797.23, z: 482.64}
+  - {x: -16.44, y: -787.54, z: 481.6}
+  - {x: -14.19, y: -777.85, z: 480.57}
+  - {x: -11.95, y: -768.16, z: 479.54}
+  - {x: -9.7, y: -758.47, z: 478.51}
+  - {x: -7.45, y: -748.78, z: 477.47}
+  - {x: -5.21, y: -739.1, z: 476.44}
+  - {x: -2.96, y: -729.41, z: 475.41}
+  - {x: -0.71, y: -719.72, z: 474.38}
+  - {x: 1.53, y: -710.03, z: 473.35}
+  - {x: 3.78, y: -700.34, z: 472.31}
+  - {x: 6.03, y: -690.65, z: 471.28}
+  - {x: 8.27, y: -680.96, z: 470.25}
+  - {x: 10.52, y: -671.27, z: 469.22}
+  - {x: 12.77, y: -661.58, z: 468.18}
+  - {x: 15.01, y: -651.89, z: 467.15}
+  - {x: 17.26, y: -642.2, z: 466.12}
+  - {x: 19.51, y: -632.51, z: 465.09}
+  - {x: 21.75, y: -622.82, z: 464.05}
+  - {x: 24, y: -613.13, z: 463.02}
+  - {x: 26.25, y: -603.44, z: 461.99}
+  - {x: 28.49, y: -593.75, z: 460.96}
+  - {x: 30.74, y: -584.06, z: 459.93}
+  - {x: 32.99, y: -574.37, z: 458.89}
+  - {x: 35.23, y: -564.68, z: 457.86}
+  - {x: 37.48, y: -554.99, z: 456.83}
+  - {x: 39.73, y: -545.31, z: 455.8}
+  - {x: 41.97, y: -535.62, z: 454.76}
+  - {x: 44.22, y: -525.93, z: 453.73}
+  - {x: 46.47, y: -516.24, z: 452.7}
+  - {x: 48.71, y: -506.55, z: 451.67}
+  - {x: 50.96, y: -496.86, z: 450.63}
+  - {x: 53.21, y: -487.17, z: 449.6}
+  - {x: 55.46, y: -477.48, z: 448.57}
+  - {x: 57.7, y: -467.79, z: 447.54}
+  - {x: 59.95, y: -458.1, z: 446.51}
+  - {x: 62.2, y: -448.41, z: 445.47}
+  - {x: 64.44, y: -438.72, z: 444.44}
+  - {x: 66.69, y: -429.03, z: 443.41}
+  - {x: 68.94, y: -419.34, z: 442.38}
+  - {x: 71.18, y: -409.65, z: 441.34}
+  - {x: 73.43, y: -399.96, z: 440.31}
+  - {x: 75.68, y: -390.27, z: 439.28}
+  - {x: 77.92, y: -380.58, z: 438.25}
+  - {x: 80.17, y: -370.89, z: 437.21}
+  - {x: 82.42, y: -361.2, z: 436.18}
+  - {x: 84.66, y: -351.51, z: 435.15}
+  - {x: 86.91, y: -341.83, z: 434.12}
+  - {x: 89.16, y: -332.14, z: 433.09}
+  - {x: 91.4, y: -322.45, z: 432.05}
+  - {x: 93.65, y: -312.76, z: 431.02}
+  - {x: 95.9, y: -303.07, z: 429.99}
+  - {x: 98.14, y: -293.38, z: 428.96}
+  - {x: 100.39, y: -283.69, z: 427.92}
+  - {x: 103.71, y: -289.63, z: 428.05}
+  - {x: 107.26, y: -298.98, z: 428.43}
+  - {x: 110.81, y: -308.32, z: 428.8}
+  - {x: 114.36, y: -317.66, z: 429.18}
+  - {x: 117.91, y: -327, z: 429.56}
+  - {x: 121.46, y: -336.34, z: 429.94}
+  - {x: 125.01, y: -345.68, z: 430.31}
+  - {x: 128.56, y: -355.02, z: 430.69}
+  - {x: 132.11, y: -364.36, z: 431.07}
+  - {x: 135.66, y: -373.7, z: 431.45}
+  - {x: 139.21, y: -383.04, z: 431.83}
+  - {x: 142.76, y: -392.38, z: 432.21}
+  - {x: 146.31, y: -401.73, z: 432.59}
+  - {x: 149.86, y: -411.07, z: 432.96}
+  - {x: 153.41, y: -420.41, z: 433.34}
+  - {x: 156.96, y: -429.75, z: 433.72}
+  - {x: 160.51, y: -439.09, z: 434.09}
+  - {x: 164.06, y: -448.43, z: 434.47}
+  - {x: 167.61, y: -457.77, z: 434.85}
+  - {x: 171.16, y: -467.11, z: 435.23}
+  - {x: 174.71, y: -476.46, z: 435.6}
+  - {x: 178.26, y: -485.8, z: 435.98}
+  - {x: 181.81, y: -495.14, z: 436.36}
+  - {x: 185.36, y: -504.48, z: 436.74}
+  - {x: 188.91, y: -513.82, z: 437.11}
+  - {x: 192.46, y: -523.16, z: 437.49}
+  - {x: 196.01, y: -532.5, z: 437.87}
+  - {x: 199.56, y: -541.84, z: 438.25}
+  - {x: 203.11, y: -551.18, z: 438.63}
+  - {x: 206.66, y: -560.52, z: 439}
+  - {x: 210.21, y: -569.87, z: 439.38}
+  - {x: 213.76, y: -579.21, z: 439.76}
+  - {x: 217.31, y: -588.55, z: 440.14}
+  - {x: 220.86, y: -597.89, z: 440.51}
+  - {x: 224.41, y: -607.23, z: 440.89}
+  - {x: 227.96, y: -616.57, z: 441.27}
+  - {x: 231.51, y: -625.91, z: 441.65}
+  - {x: 235.06, y: -635.25, z: 442.02}
+  - {x: 238.61, y: -644.59, z: 442.4}
+  - {x: 242.16, y: -653.93, z: 442.78}
+  - {x: 245.71, y: -663.27, z: 443.16}
+  - {x: 249.26, y: -672.61, z: 443.54}
+  - {x: 252.81, y: -681.96, z: 443.92}
+  - {x: 256.36, y: -691.3, z: 444.29}
+  - {x: 259.91, y: -700.64, z: 444.67}
+  - {x: 263.46, y: -709.98, z: 445.05}
+  - {x: 267.01, y: -719.32, z: 445.43}
+  - {x: 270.56, y: -728.66, z: 445.81}
+  - {x: 274.11, y: -738, z: 446.18}
+  - {x: 277.66, y: -747.34, z: 446.56}
+  - {x: 281.21, y: -756.68, z: 446.94}
+  - {x: 284.76, y: -766.03, z: 447.32}
+  - {x: 288.31, y: -775.37, z: 447.69}
+  - {x: 291.86, y: -784.71, z: 448.07}
+  - {x: 295.41, y: -794.05, z: 448.45}
+  - {x: 298.97, y: -803.39, z: 448.82}
+  - {x: 302.51, y: -812.73, z: 449.2}
+  - {x: 306.06, y: -822.07, z: 449.58}
+  - {x: 309.61, y: -831.41, z: 449.96}
+  - {x: 313.16, y: -840.76, z: 450.34}
+  - {x: 316.71, y: -850.1, z: 450.71}
+  - {x: 320.26, y: -859.44, z: 451.09}
+  - {x: 323.81, y: -868.78, z: 451.47}
+  - {x: 327.36, y: -878.12, z: 451.85}
+  - {x: 330.91, y: -887.46, z: 452.22}
+  - {x: 334.46, y: -896.8, z: 452.6}
+  - {x: 338.01, y: -906.14, z: 452.98}
+  - {x: 341.56, y: -915.48, z: 453.36}
+  - {x: 345.11, y: -924.83, z: 453.74}
+  - {x: 348.65, y: -934.17, z: 454.12}
+  - {x: 352.19, y: -943.51, z: 454.5}
+  - {x: 355.73, y: -952.86, z: 454.88}
+  - {x: 359.26, y: -962.21, z: 455.25}
+  - {x: 362.79, y: -971.55, z: 455.63}
+  - {x: 366.33, y: -980.9, z: 456.01}
+  - {x: 369.86, y: -990.25, z: 456.39}
+  - {x: 373.38, y: -999.6, z: 456.77}
+  - {x: 376.91, y: -1008.95, z: 457.15}
+  - {x: 380.43, y: -1018.3, z: 457.53}
+  - {x: 383.96, y: -1027.65, z: 457.91}
+  - {x: 387.47, y: -1037, z: 458.3}
+  - {x: 390.89, y: -1046.39, z: 458.69}
+  - {x: 393.02, y: -1056.15, z: 459.22}
+  - {x: 394.84, y: -1065.95, z: 459.75}
+  - {x: 395.4, y: -1075.91, z: 460.27}
+  - {x: 393.79, y: -1085.66, z: 460.55}
+  - {x: 390.24, y: -1095.01, z: 460.55}
+  - {x: 385.43, y: -1103.71, z: 460.19}
+  - {x: 379.02, y: -1111.26, z: 459.2}
+  - {x: 370.48, y: -1115.86, z: 456.74}
+  - {x: 361.67, y: -1119.42, z: 453.78}
+  - {x: 352.61, y: -1121, z: 449.92}
+  - {x: 343.89, y: -1120.33, z: 445.12}
+  - {x: 335.3, y: -1119.16, z: 440.13}
+  - {x: 326.9, y: -1117.45, z: 434.98}
+  - {x: 318.57, y: -1115.37, z: 429.87}
+  - {x: 310.23, y: -1113.15, z: 424.82}
+  - {x: 301.83, y: -1110.68, z: 419.99}
+  - {x: 293.3, y: -1107.73, z: 415.69}
+  - {x: 284.73, y: -1104.62, z: 411.59}
+  - {x: 276.11, y: -1101.29, z: 407.78}
+  - {x: 267.47, y: -1097.7, z: 404.25}
+  - {x: 258.83, y: -1093.97, z: 400.85}
+  - {x: 250.25, y: -1090.04, z: 397.56}
+  - {x: 241.75, y: -1085.87, z: 394.33}
+  - {x: 233.31, y: -1081.57, z: 391.13}
+  - {x: 224.93, y: -1077.14, z: 387.94}
+  - {x: 216.61, y: -1072.59, z: 384.77}
+  - {x: 208.33, y: -1067.96, z: 381.6}
+  - {x: 200.08, y: -1063.28, z: 378.43}
+  - {x: 191.86, y: -1058.55, z: 375.26}
+  - {x: 183.67, y: -1053.77, z: 372.1}
+  - {x: 175.48, y: -1048.97, z: 368.94}
+  - {x: 167.31, y: -1044.16, z: 365.78}
+  - {x: 159.15, y: -1039.32, z: 362.62}
+  - {x: 151, y: -1034.46, z: 359.46}
+  - {x: 142.85, y: -1029.6, z: 356.3}
+  - {x: 134.7, y: -1024.73, z: 353.14}
+  - {x: 126.56, y: -1019.86, z: 349.98}
+  - {x: 118.42, y: -1014.98, z: 346.83}
+  - {x: 110.29, y: -1010.1, z: 343.67}
+  - {x: 102.15, y: -1005.22, z: 340.51}
+  - {x: 93.92, y: -1000.45, z: 337.43}
+  - {x: 85.28, y: -996.24, z: 334.66}
+  - {x: 76.49, y: -992.29, z: 332.03}
+  - {x: 67.27, y: -989.13, z: 329.8}
+  - {x: 57.49, y: -987.75, z: 328.38}
+  - {x: 47.61, y: -986.91, z: 327.18}
+  - {x: 37.65, y: -987.04, z: 326.34}
+  - {x: 27.79, y: -988.67, z: 325.97}
+  - {x: 17.97, y: -990.49, z: 325.67}
+  - {x: 8.26, y: -992.86, z: 325.52}
+  - {x: -1.3, y: -995.78, z: 325.52}
+  - {x: -10.82, y: -998.84, z: 325.56}
+  - {x: -20.29, y: -1002.07, z: 325.65}
+  - {x: -29.71, y: -1005.43, z: 325.76}
+  - {x: -39.11, y: -1008.82, z: 325.89}
+  - {x: -48.51, y: -1012.23, z: 326.03}
+  - {x: -57.94, y: -1015.55, z: 326.15}
+  - {x: -67.42, y: -1018.75, z: 326.24}
+  - {x: -77.07, y: -1021.35, z: 326.2}
+  - {x: -86.96, y: -1021.79, z: 325.6}
+  - {x: -96.91, y: -1021.37, z: 324.76}
+  - {x: -106.57, y: -1019.23, z: 323.39}
+  - {x: -115.3, y: -1014.94, z: 321.56}
+  - {x: -123.25, y: -1009.23, z: 319.51}
+  - {x: -130.16, y: -1002.29, z: 317.56}
+  - {x: -135.38, y: -994, z: 316.19}
+  - {x: -138.92, y: -984.67, z: 315.49}
+  - {x: -141.02, y: -974.93, z: 315.32}
+  - {x: -140.89, y: -965.07, z: 315.97}
+  - {x: -138.06, y: -955.61, z: 317.54}
+  - {x: -134.18, y: -946.59, z: 319.29}
+  - {x: -128.31, y: -938.76, z: 321.02}
+  - {x: -121.29, y: -931.8, z: 322.52}
+  - {x: -113.96, y: -925.13, z: 323.83}
+  - {x: -106.83, y: -919.27, z: 324.72}
+  PeopleLineStarts: 0000000065000000
+  PeopleLineNote: 652 points from 2 race(s)
+  HallOfFameBestFitness: -18.104797
+  FitnessHistory:
+    Capacity: 256
+    Head: 52
+    Count: 52
+    Values:
+    - -783.5783
+    - -482.5245
+    - -201.43729
+    - -212.2854
+    - -636.3993
+    - -784.151
+    - -457.3215
+    - -239.95505
+    - -731.4209
+    - -402.63257
+    - -805.9606
+    - -154.71606
+    - -622.07983
+    - -18.104797
+    - -161.2914
+    - -786.8345
+    - -345.11542
+    - -216.34888
+    - -330.742
+    - -175.97983
+    - -177.51329
+    - -144.66562
+    - -342.67828
+    - -1084.5089
+    - -798.15326
+    - -232.18832
+    - -238.8621
+    - -1200.6669
+    - -101.15106
+    - -107.848915
+    - -111.80849
+    - -97.576584
+    - -212.79285
+    - -266.17728
+    - -211.68658
+    - -186.24509
+    - -1072.2245
+    - -220.42632
+    - -290.52795
+    - -1591.9906
+    - -164.18207
+    - -492.3141
+    - -102.524956
+    - -130.4547
+    - -142.82129
+    - -529.8563
+    - -166.18626
+    - -249.98515
+    - -223.28688
+    - -214.30965
+    - -222.8901
+    - -903.9175
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    Generations: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000002000000020000000200000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  ScheduleIndex: 0
+  ScheduleSlotEpisodes: 0
+  ScheduleSlotElapsedSeconds: 0
+  ScheduleSlotAttempts: 0

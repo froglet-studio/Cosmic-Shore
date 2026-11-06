@@ -1,0 +1,14 @@
+{
+ "best_fitness": -18.10479736328125,
+ "diagnostics": "",
+ "episodes": 52,
+ "episodes_total": 52,
+ "generation": 2,
+ "loss": 18.10479736328125,
+ "people_line": "652 points from 2 race(s)",
+ "phase": "done",
+ "scenario": "Serpent_Regatta_I3",
+ "seed": "none: the seed named no gene the registry knows",
+ "unit_episodes": 50,
+ "updated": 1793900657.3711195
+}

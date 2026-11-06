@@ -1,0 +1,80 @@
+Unloading 579 unused Assets / (38.4 MB). Loaded Objects now: 38238.
+Memory consumption went from 0.75 GB to 0.71 GB.
+Total: 78.948500 ms (FindLiveObjects: 1.976300 ms CreateObjectMapping: 1.633700 ms MarkObjects: 74.271300 ms  DeleteObjects: 1.066100 ms)
+
+[ScriptCompilation] Requested script compilation because: Player settings modified
+[Licensing::Client] Successfully resolved entitlement details
+[ServicesCore]: System.OperationCanceledException: The operation was canceled.
+  at System.Threading.CancellationToken.ThrowOperationCanceledException () [0x00010] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.CancellationToken.ThrowIfCancellationRequested () [0x00008] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper unbox) System.Threading.CancellationToken.ThrowIfCancellationRequested()
+  at Unity.Services.Core.Scheduler.Internal.ActionScheduler.ExecuteExpiredActions () [0x000cc] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Runtime\Scheduler\ActionScheduler.cs:116 
+0x00007ffeceab4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffed02ef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffed02efbee (Unity) Stacktrace::GetStacktrace
+0x00007ffecea6587f (Unity) DebugStringToFile
+0x00007ffece921b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001e36f823fed (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001e36f823eb3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001e36f823aeb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001e49a0533d5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/.froglet-compute/unity/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001e49b1961cb (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object)
+0x000001e49531f18f (Mono JIT Code) Unity.Services.Core.Internal.CoreLogger:LogException (System.Exception) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Runtime/Core.Internal/Logging/CoreLogger.cs:19)
+0x000001e4bd9b873b (Mono JIT Code) Unity.Services.Core.Scheduler.Internal.ActionScheduler:ExecuteExpiredActions () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Runtime/Scheduler/ActionScheduler.cs:121)
+0x000001e34787d9f8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffeda886c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffeda7c8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffeda7c8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffecf2efdd4 (Unity) scripting_method_invoke
+0x00007ffecf2f6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffecf19ad44 (Unity) ExecutePlayerLoop
+0x00007ffecf19fc0f (Unity) PlayerLoop
+0x00007ffecfb156da (Unity) EditorPlayerLoop::Execute
+0x00007ffecfb2c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffecfb2b987 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffecfb2d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffecfb2896c (Unity) Application::TickTimer
+0x00007ffecf909f7c (Unity) MainMessageLoop
+0x00007ffecf911a12 (Unity) UnityMain
+0x00007ff7700a2f2a (Unity) __scrt_common_main_seh
+0x00007ff80823dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff80a57ee4c (ntdll) RtlUserThreadStart
+
+Pipeline Server stopped
+Unloading 40 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-19448-i6pnf9
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+Killing ADB server in 2.1144659 seconds.
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.0036034 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedAIIntensity.asset using Guid(490485287c38a2f4e9178566394efd69) (NativeFormatImporter) -> (artifact id: 'cf4f9e2229881d2c4812210b39ee5abb') in 0.0016217 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: '8f3fd7b2fad3fa2eadcdd59f5aad6498') in 0.0017069 seconds
+Refreshing native plugins compatible for Editor in 24.09 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.15 ms.
+Asset Pipeline Refresh (id=4ca618c05f3fa9a4c8699cc296125336): Total: 0.151 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 174 unused Assets / (55.0 KB). Loaded Objects now: 38281.
+Memory consumption went from 0.71 GB to 0.71 GB.
+Total: 91.631100 ms (FindLiveObjects: 2.273200 ms CreateObjectMapping: 2.368800 ms MarkObjects: 86.681900 ms  DeleteObjects: 0.306000 ms)
+
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+abort_threads: Failed aborting id: 0000000000065994, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000064298, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000065994, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000064298, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4752
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793901261513,"processId":19448,"allocatedMemory":33240553,"memoryLabels":[{"Default":29313},{"Permanent":15236},{"NewDelete":177579},{"Thread":4238080},{"Manager":3113613},{"VertexData":8},{"Geometry":816},{"Texture":296},{"Shader":79381},{"Material":24},{"GfxDevice":59712},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":2672},{"Input":14984},{"JobScheduler":33024},{"TextLib":216},{"Mono":32},{"MonoCode":64},{"ScriptingNativeRuntime":155060},{"BaseObject":1620864},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":18574},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":14120},{"DynamicArray":537111},{"HashMap":157411},{"Utility":2661910},{"Curl":2559},{"PoolAlloc":10744},{"AI":80},{"TypeTree":5341},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":6624},{"WebRequest":48784},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"Camera":17},{"Secure":2465},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":96},{"EditorUtility":262854},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19477928},{"EditorGi":328},{"UnityConnect":29232},{"Upm":1896},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9778},{"CoreBusinessMetrics":2867},{"TLS":3447},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}

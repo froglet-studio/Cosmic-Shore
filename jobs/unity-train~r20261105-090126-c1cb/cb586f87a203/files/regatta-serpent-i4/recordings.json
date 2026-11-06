@@ -1,0 +1,329 @@
+{"schema": "froglet-compute/unity-recordings/1", "replays_setup": "on", "replays_folder": "C:\\Users\\belac\\.froglet-compute\\runs\\unity-train~r20261105-090126-c1cb\\regatta-serpent-i4\\replays", "replays": [{"file": "Regatta_2026-11-05_09-53.cstheater", "kept": "last", "bytes": 1089502, "match": {"episodes_total": 48, "best_fitness": 16.749809265136719, "best_rose": false, "seen": 1793901224.382}, "summary": {
+    "Schema": "cosmic-shore.replay-summary/1",
+    "RecordingFile": "Regatta_2026-11-05_09-53.cstheater",
+    "GameMode": 56,
+    "GameModeName": "Regatta",
+    "SceneName": "MinigameRegatta",
+    "Intensity": 4,
+    "ArenaOrigin": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "RecordedAtUtcTicks": 639294979907706933,
+    "DurationSeconds": 123.6214599609375,
+    "EndedBecause": "",
+    "HasResults": false,
+    "WinnerName": "",
+    "WinnerDomain": 0,
+    "Pilots": [
+        {
+            "Name": "Bob",
+            "Domain": 2,
+            "VesselType": 6,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "WillOfFire",
+            "Domain": 4,
+            "VesselType": 6,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Shomboss",
+            "Domain": 2,
+            "VesselType": 6,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "RedshirtBrownpants",
+            "Domain": 1,
+            "VesselType": 7,
+            "IsAI": false,
+            "IsLocal": true
+        }
+    ],
+    "Results": [],
+    "Gates": [
+        {
+            "Index": 0,
+            "Position": {
+                "x": -0.00005073507782071829,
+                "y": 1070.31591796875,
+                "z": 0.00009441883594263345
+            },
+            "Axis": {
+                "x": 0.9363744258880615,
+                "y": -0.1681249737739563,
+                "z": 0.3081183433532715
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 1,
+            "Position": {
+                "x": 137.54586791992188,
+                "y": 639.7529296875,
+                "z": -107.1448745727539
+            },
+            "Axis": {
+                "x": 0.28810936212539675,
+                "y": -0.8645386099815369,
+                "z": -0.41178396344184878
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 2,
+            "Position": {
+                "x": 646.3153686523438,
+                "y": -23.822221755981447,
+                "z": -184.34259033203126
+            },
+            "Axis": {
+                "x": 0.032577674835920337,
+                "y": -0.7811286449432373,
+                "z": 0.6235196590423584
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 3,
+            "Position": {
+                "x": 134.492431640625,
+                "y": -640.5067749023438,
+                "z": 81.21923065185547
+            },
+            "Axis": {
+                "x": -0.9629648923873901,
+                "y": 0.1742428094148636,
+                "z": 0.20576219260692597
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 4,
+            "Position": {
+                "x": -528.6441650390625,
+                "y": -454.9474792480469,
+                "z": 435.44329833984377
+            },
+            "Axis": {
+                "x": -0.7690322995185852,
+                "y": 0.6389492750167847,
+                "z": 0.018254965543746949
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 5,
+            "Position": {
+                "x": -442.4668273925781,
+                "y": 329.03009033203127,
+                "z": 419.506103515625
+            },
+            "Axis": {
+                "x": -0.04075390100479126,
+                "y": 0.9638485312461853,
+                "z": 0.26331573724746706
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 6,
+            "Position": {
+                "x": -645.7186279296875,
+                "y": 810.29541015625,
+                "z": 204.2736053466797
+            },
+            "Axis": {
+                "x": -0.09319910407066345,
+                "y": 0.19872036576271058,
+                "z": -0.9756147265434265
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 7,
+            "Position": {
+                "x": -303.7286682128906,
+                "y": 591.1800537109375,
+                "z": -205.56607055664063
+            },
+            "Axis": {
+                "x": 0.7343441247940064,
+                "y": 0.678561806678772,
+                "z": -0.01710611768066883
+            },
+            "Radius": 54.0
+        }
+    ],
+    "CourseSeed": -1637296438
+}}, {"file": "Regatta_2026-11-05_09-53_2.cstheater", "kept": "last", "bytes": 854371, "match": {"episodes_total": 52, "best_fitness": 16.749809265136719, "best_rose": false, "seen": 1793901251.732}, "summary": {
+    "Schema": "cosmic-shore.replay-summary/1",
+    "RecordingFile": "Regatta_2026-11-05_09-53_2.cstheater",
+    "GameMode": 56,
+    "GameModeName": "Regatta",
+    "SceneName": "MinigameRegatta",
+    "Intensity": 4,
+    "ArenaOrigin": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "RecordedAtUtcTicks": 639294980234718040,
+    "DurationSeconds": 107.0015869140625,
+    "EndedBecause": "",
+    "HasResults": false,
+    "WinnerName": "",
+    "WinnerDomain": 0,
+    "Pilots": [
+        {
+            "Name": "TheRealCaleb",
+            "Domain": 2,
+            "VesselType": 6,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "WillOfFire",
+            "Domain": 4,
+            "VesselType": 6,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "Mark",
+            "Domain": 2,
+            "VesselType": 6,
+            "IsAI": true,
+            "IsLocal": false
+        },
+        {
+            "Name": "RedshirtBrownpants",
+            "Domain": 1,
+            "VesselType": 7,
+            "IsAI": false,
+            "IsLocal": true
+        }
+    ],
+    "Results": [],
+    "Gates": [
+        {
+            "Index": 0,
+            "Position": {
+                "x": -0.00005073507782071829,
+                "y": 1070.31591796875,
+                "z": 0.00009441883594263345
+            },
+            "Axis": {
+                "x": 0.9363744258880615,
+                "y": -0.1681249737739563,
+                "z": 0.3081183433532715
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 1,
+            "Position": {
+                "x": 137.54586791992188,
+                "y": 639.7529296875,
+                "z": -107.1448745727539
+            },
+            "Axis": {
+                "x": 0.28810936212539675,
+                "y": -0.8645386099815369,
+                "z": -0.41178396344184878
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 2,
+            "Position": {
+                "x": 646.3153686523438,
+                "y": -23.822221755981447,
+                "z": -184.34259033203126
+            },
+            "Axis": {
+                "x": 0.032577674835920337,
+                "y": -0.7811286449432373,
+                "z": 0.6235196590423584
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 3,
+            "Position": {
+                "x": 134.492431640625,
+                "y": -640.5067749023438,
+                "z": 81.21923065185547
+            },
+            "Axis": {
+                "x": -0.9629648923873901,
+                "y": 0.1742428094148636,
+                "z": 0.20576219260692597
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 4,
+            "Position": {
+                "x": -528.6441650390625,
+                "y": -454.9474792480469,
+                "z": 435.44329833984377
+            },
+            "Axis": {
+                "x": -0.7690322995185852,
+                "y": 0.6389492750167847,
+                "z": 0.018254965543746949
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 5,
+            "Position": {
+                "x": -442.4668273925781,
+                "y": 329.03009033203127,
+                "z": 419.506103515625
+            },
+            "Axis": {
+                "x": -0.04075390100479126,
+                "y": 0.9638485312461853,
+                "z": 0.26331573724746706
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 6,
+            "Position": {
+                "x": -645.7186279296875,
+                "y": 810.29541015625,
+                "z": 204.2736053466797
+            },
+            "Axis": {
+                "x": -0.09319910407066345,
+                "y": 0.19872036576271058,
+                "z": -0.9756147265434265
+            },
+            "Radius": 54.0
+        },
+        {
+            "Index": 7,
+            "Position": {
+                "x": -303.7286682128906,
+                "y": 591.1800537109375,
+                "z": -205.56607055664063
+            },
+            "Axis": {
+                "x": 0.7343441247940064,
+                "y": 0.678561806678772,
+                "z": -0.01710611768066883
+            },
+            "Radius": 54.0
+        }
+    ],
+    "CourseSeed": 2121667778
+}}], "flights_folder": "C:\\Users\\belac\\.froglet-compute\\runs\\unity-train~r20261105-090126-c1cb\\regatta-serpent-i4\\ai-flights", "flights": [], "third_eye": "not watched (Unity has no window)", "stills": [], "stills_note": "", "updated": 1793901251.737}
