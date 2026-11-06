@@ -28,6 +28,16 @@ on the "Menu Redesign B" canvas).
         old gradient Image is switched off, the two OfflineUIGates gate the new party panel, and the
         FTUE QuestGraphRunner's gameCards list names the 35 cards (7 rows of 5).
 
+    Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; PortraitRect in ArcadeView): the header right
+    under the band and the scroll filling the rest, at PC size, on the 1080-wide canvas; the left edge keeps the
+    100-unit friends-orb gutter (FriendsDrawerDock writes that authored edge back whenever the drawer moves), the right
+    edge 40. The scroll's CONTENT is the PC content (1750 wide: the feature cards side by side, ALL GAMES with its
+    dropdowns, the rows of 5 cards) scaled to the 930-wide viewport (0.53). Stacking the feature cards and laying the
+    games 3 across cannot be done by layout alone: both are one HorizontalLayoutGroup per row (Features; each
+    GameListRow, which ArcadeExploreView reads row by row), the cards are flexible (min width 0), and no PortraitRect
+    field raises a min width or turns a horizontal group vertical, so a narrower content only squeezes 5 cards into a
+    row (title about 38 units wide) and clips the vessel filter's 1694-wide line of tabs. See UP_* below.
+
 Built from the kit generator's node model and component bodies (author_ui_kit_prefabs.py), so every
 body is Unity's serialization and every colour a UIThemeSO token. References into nested instances
 are stripped stubs whose fileID is Unity's derived id (source XOR instance, applied per level).
@@ -820,6 +830,20 @@ EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
 CONTENT_W = EXPLORE_W - 10 - 12                     # viewport inset, content padding
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
 
+# Upright (section 138, Rev 63 B), the Arcade window on Menu_Main's 1080-wide canvas. The header and the body keep their
+# PC tops and heights (the header 108 under the top, right under the 84 band; the body from 196 to 40 over the bottom), so
+# the scroll fills the rest. The left edge keeps WINDOW_LEFT: the friends orb lives in that gutter, and FriendsDrawerDock
+# writes its authored left back whenever the drawer moves. The right edge is the content margin, 40.
+UP_W, UP_MARGIN = 1080, 40
+UP_HEIGHTS = (1800, 2080, 2337)               # safe heights checked: a short phone, a notched phone's safe area, 390 x 844
+UP_LEFT, UP_RIGHT = WINDOW_LEFT, UP_MARGIN
+UP_HEADER = R((0, 1), (1, 1), ((UP_LEFT - UP_RIGHT) / 2, -108), (-(UP_LEFT + UP_RIGHT), 64), (0.5, 1))
+UP_BODY = R((0, 0), (1, 1), ((UP_LEFT - UP_RIGHT) / 2, -78), (-(UP_LEFT + UP_RIGHT), -236))
+UP_VIEWPORT_W = UP_W - UP_LEFT - UP_RIGHT - 10     # the explore scroll's viewport (inset 5 + 5), upright
+PC_CONTENT_W = EXPLORE_W - 10                      # the scroll content's PC width (CONTENT_W plus its 6 + 6 padding)
+UP_CONTENT_SCALE = UP_VIEWPORT_W / PC_CONTENT_W    # the PC content fitted to the upright viewport (0.531)
+UP_TITLE_W = 680                                   # the header's title rect, clear of Replays and Back upright
+
 
 DOCK_GAP = 24
 
@@ -1299,6 +1323,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     # reversed, panel on the left) and the header - whose Back would close the window on the first
     # A press - comes last.
     body = root.child(N("Body", "Body", WINDOW_BODY))
+    body.add("portrait", 114, K.portrait_rect(UP_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
     # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
@@ -1312,6 +1337,8 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
         .add("mask", 114, rect_mask())
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    # Upright: the PC content (its PC width, top-left pivot) scaled to the viewport; its height stays the fitter's.
+    content.add("portrait", 114, K.portrait_rect(R((0, 1), None, (0, 0), (PC_CONTENT_W, 0), (0, 1)), scale=UP_CONTENT_SCALE))
 
     feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (CONTENT_W, FEATURE_H), (0, 1))))
     feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEATURE_H))
@@ -1359,10 +1386,11 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     header = root.child(N("Header", "Header", WINDOW_HEADER))
     drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
+    header.add("portrait", 114, K.portrait_rect(UP_HEADER))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
           "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
-          "TextLight")
+          "TextLight").add("portrait", 114, K.portrait_rect(R((0, 1), None, (0, -20), (UP_TITLE_W, 46), (0, 1))))
     replays_button(header)
     back_button(header)
     return root
@@ -1820,6 +1848,7 @@ def validate_prefabs(files, guids):
              for b in order]
     assert names.index("Body") < names.index("Header"), "the header (Back) must come after the body in focus order"
     check_window_inset(view, "ArcadeView")
+    check_upright(view)
     _, body_rt = doc_of(view, V("Body#rt"))
     first = re.search(r"^  - \{fileID: (-?\d+)\}", body_rt, re.M).group(1)
     assert first == str(V("Explore#rt")), "the explore scroll must be the body's first child (focus lands on a card)"
@@ -1934,6 +1963,75 @@ def check_window_inset(view_text, view_name):
             f"{view_name} {key.split('#')[0]} starts {left:g} px from the left edge, under the friends orb (needs {ORB_CLEARANCE})"
 
 
+def _pv2(doc, name):
+    m = re.search(r"^  %s: \{x: (-?[\d.e+-]+), y: (-?[\d.e+-]+)\}" % name, doc, re.M)
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def _pose(view_text, key):
+    """The upright pose a node's PortraitRect holds (rect dict, scale), asserting it is a real pose."""
+    cls, doc = doc_of(view_text, K.FileIds("ArcadeView")(f"{key}#portrait"))
+    assert cls == 114 and f"guid: {K.meta_guid('Assets/_Scripts/UI/PortraitRect.cs')}, type: 3}}" in doc, \
+        f"ArcadeView {key}: no upright pose (PortraitRect)"
+    assert "  drawAtPcScale: 0\n" in doc and "  movesRect: 1\n" in doc, f"ArcadeView {key}: not a posed block"
+    v = [_pv2(doc, n) for n in ("anchorMin", "anchorMax", "pivot", "anchoredPosition", "sizeDelta")]
+    scale = float(re.search(r"^  scale: ([\d.e+-]+)$", doc, re.M).group(1))
+    return dict(amin=v[0], amax=v[1], pivot=v[2], pos=v[3], size=v[4]), scale
+
+
+def _box(r, w, h):
+    """A rect's (left, bottom, right, top) in a parent w x h, origin bottom-left."""
+    (ax0, ay0), (ax1, ay1) = r["amin"], r["amax"]
+    (px, py), (x, y), (sx, sy) = r["pivot"], r["pos"], r["size"]
+    bw, bh = (ax1 - ax0) * w + sx, (ay1 - ay0) * h + sy
+    cx, cy = (ax0 + (ax1 - ax0) * px) * w + x, (ay0 + (ay1 - ay0) * py) * h + y
+    return (cx - bw * px, cy - bh * py, cx - bw * px + bw, cy - bh * py + bh)
+
+
+def check_upright(view_text):
+    """Section 138: the Arcade window upright on the 1080-wide canvas - the header under the band, the scroll filling the
+    rest, nothing outside the margins or under the friends orb, and the PC content scaled to fit the viewport."""
+    header, _ = _pose(view_text, "Header")
+    body, _ = _pose(view_text, "Body")
+    title, _ = _pose(view_text, "Header/Title")
+    content, scale = _pose(view_text, "Explore/Viewport/Content")
+    for h in UP_HEIGHTS:
+        hb, bb = _box(header, UP_W, h), _box(body, UP_W, h)
+        for name, (l, b, r, t) in (("header", hb), ("body", bb)):
+            assert l >= ORB_CLEARANCE - 0.01 and r <= UP_W - UP_MARGIN + 0.01, \
+                f"Arcade {name} upright spans x {l:g}..{r:g}: under the friends orb or outside the 40 margin"
+        assert hb[3] <= h - 84 + 0.01, "Arcade header upright reaches under the nav band"
+        assert bb[3] <= hb[1] + 0.01, f"Arcade body upright (top {bb[3]:g}) runs into the header (bottom {hb[1]:g})"
+        assert bb[1] >= UP_MARGIN - 0.01, "Arcade body upright runs off the bottom"
+        assert bb[3] - bb[1] >= 0.5 * h, "Arcade scroll upright does not fill the rest of the screen"
+        # In the header: the title clear of Replays and Back, which sit on its right edge.
+        hw = hb[2] - hb[0]
+        tl, _, tr, _ = _box(title, hw, hb[3] - hb[1])
+        buttons = back_width() + 12 + 16 + K.label_width("REPLAYS", "ButtonSmall") + 16
+        assert tr <= hw - buttons - 12 + 0.01, f"Arcade title upright (to {tr:g}) runs under Replays / Back (from {hw - buttons:g})"
+        # The scroll content: the PC content's own width, scaled to the viewport, so nothing inside re-flows or clips.
+        vw = (bb[2] - bb[0]) - 10
+        assert content["amin"] == content["amax"] == (0.0, 1.0) and content["pivot"] == (0.0, 1.0), \
+            "Arcade content upright must hang from the viewport's top-left at a fixed width"
+        assert abs(content["size"][0] - PC_CONTENT_W) < 0.01, "Arcade content upright is not the PC content width"
+        assert content["size"][0] * scale <= vw + 0.5, \
+            f"Arcade content upright draws {content['size'][0] * scale:g} wide in a {vw:g} viewport"
+        assert content["size"][0] * scale >= vw - 2, "Arcade content upright leaves the viewport part empty"
+    return dict(header=header, body=body, title=title, content=content, scale=scale)
+
+
+def upright_table(view_text):
+    h = UP_HEIGHTS[-1]
+    u = check_upright(view_text)
+    hb, bb = _box(u["header"], UP_W, h), _box(u["body"], UP_W, h)
+    tl, _, tr, _ = _box(u["title"], hb[2] - hb[0], 64)
+    vw = bb[2] - bb[0] - 10
+    return [f"header    x {hb[0]:7.1f}..{hb[2]:7.1f}  y {h - hb[3]:7.1f}..{h - hb[1]:7.1f} (from top)",
+            f"  title   x {hb[0] + tl:7.1f}..{hb[0] + tr:7.1f}",
+            f"body      x {bb[0]:7.1f}..{bb[2]:7.1f}  y {h - bb[3]:7.1f}..{h - bb[1]:7.1f} (from top)",
+            f"content   {PC_CONTENT_W:g} wide x scale {u['scale']:.4f} = {PC_CONTENT_W * u['scale']:.1f} in a {vw:g} viewport"]
+
+
 def drift(files):
     out = []
     for p, t in files.items():
@@ -2013,6 +2111,18 @@ def self_test(current, files, guids):
             "  oneVerbPerRow: 1\n", "  oneVerbPerRow: 0\n", 1)),
         "the body back under the friends orb": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20")),
+        "the body with no upright pose": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  - component: {{fileID: {K.FileIds('ArcadeView')('Body#portrait')}}}\n", "", 1).replace(
+            f"--- !u!114 &{K.FileIds('ArcadeView')('Body#portrait')}\n", "--- !u!114 &4242424242\n", 1)),
+        "the upright content scaled past the viewport": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Explore/Viewport/Content#portrait"), f"  scale: {K.f32(UP_CONTENT_SCALE)}\n",
+            "  scale: 0.6\n")),
+        "the upright body reaching into the orb's gutter": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Body#portrait"), f"  anchoredPosition: {K.v2(*UP_BODY['pos'])}\n",
+            f"  anchoredPosition: {K.v2(0, UP_BODY['pos'][1])}\n")),
+        "the upright title under Back": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Header/Title#portrait"), f"  sizeDelta: {K.v2(UP_TITLE_W, 46)}\n",
+            "  sizeDelta: {x: 760, y: 46}\n")),
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
         "the Join button loses its profile relay (pad focus shows no card)": prefab_plant(
             prefab_path("PartyOnlineRow"), lambda t: re.sub(

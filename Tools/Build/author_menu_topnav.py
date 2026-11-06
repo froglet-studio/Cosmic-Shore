@@ -103,6 +103,11 @@ RETIRED_ROOTS = {
 
 BAND_H = 84
 GAP = 56
+# Portrait menus (Docs/MENU_REDESIGN_B.md section 138, Rev 63 B): upright, Menu_Main's canvas is 1080 wide and the band
+# stays across the top as on PC. The centred row of LT, the five tabs and RT is measured against that width with the
+# 40-unit content margins; at its PC spacing it fits (865 of 1000), so it carries no upright pose. If a tab is added or
+# renamed past the width, give NavBarButtons a PortraitRect (layout_spacing / scale) instead of shrinking the PC row.
+PORTRAIT_W, PORTRAIT_MARGIN = 1080, 40
 
 HDR = re.compile(r"^--- !u!(\d+) &(-?\d+)( stripped)?[ \t]*$", re.M)
 
@@ -653,6 +658,12 @@ def validate(before_text, after_text, guids):
     assert all(roots[SCREEN_IDS[n]] != "0" for n in ("CODEX", "HANGAR", "HOME", "ARK", "PORT")), "a screen lost its panel"
     assert f"disabledScreens: {disabled_hex()}\n" in sw, "disabledScreens must be exactly the LOCKED tabs (none since section 90)"
     assert "m_SizeDelta: {x: 0, y: 84}" in sc.docs[NAVBAR["rt"]]
+    # 6. Upright (section 138): the row, centred in the band, fits the 1080-wide canvas inside its 40-unit margins.
+    row_w = float(re.search(r"m_SizeDelta: \{x: (-?[\d.]+)", sc.docs[BUTTONS["rt"]]).group(1))
+    assert "m_AnchorMin: {x: 0.5, y: 0.5}" in sc.docs[BUTTONS["rt"]] and "m_AnchorMax: {x: 0.5, y: 0.5}" in sc.docs[BUTTONS["rt"]], \
+        "NavBarButtons is no longer centred in the band"
+    assert row_w <= PORTRAIT_W - 2 * PORTRAIT_MARGIN, \
+        f"the nav row is {row_w:g} wide: it does not fit the upright 1080 canvas inside 40 margins (give it an upright pose)"
     assert "NavBarLineSprites: []" in sw and "NavBarLine: {fileID: 0}" in sw
 
 
@@ -699,6 +710,8 @@ def self_test(current, guids):
         "unrelated document edited": lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1),
         "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(3)}, type: 3}}", "guid: 0, type: 3}", 1),
         "the strip in the old order": lambda s: in_doc(s, SWITCHER, "  - id: 6\n", "  - id: 9\n"),
+        "the nav row too wide for the upright canvas": lambda s: in_doc(
+            s, BUTTONS["rt"], f"m_SizeDelta: {{x: {K.f32(row()[2])}, y: {BAND_H}}}", f"m_SizeDelta: {{x: 1200, y: {BAND_H}}}"),
         "CODEX locked again": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", f"disabledScreens: {disabled_hex()}06000000"),
     }
     failed = []
