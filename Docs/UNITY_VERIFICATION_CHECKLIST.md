@@ -21154,7 +21154,7 @@ end-reveal panels and Authentication.unity, plus an `AdaptiveCanvasScaler` (phon
    the one-column board (header and ladder left, reward top right, Play again bottom right), pause opens on screen.
 5. **Still without a phone layout**: the toasts, the picture-in-picture frame, and every Menu_Main screen.
 
-## 🔴 Phone menus: the fallback, the rail, Home, Arcade, Configure and Hangar (`claude/ui-phone-menus`, 2026-11-05) — NOT COMPILED
+## 🟡 Phone menus: every menu screen, the in-game HUD and Maelstrom (`claude/ui-phone-menus`, 2026-11-06) — COMPILED (unity_refcompile), NOT RUN IN EDITOR
 
 Not compiled (no .NET SDK, `unity_refcompile` SKIP; no editor). New: `PhoneRect` Draw At PC Scale, stack / grid / hide,
 LayoutElement minimum, Width Scale; `PhoneSheet`; `FriendsDrawerOpener`; `FriendsDrawer` phone sheet; `ArcadeExploreView` flat grid; `AdaptiveCanvasScaler.PhoneLayoutChanged`; tests `PhoneRectTests`,
