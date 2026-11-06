@@ -48,6 +48,17 @@
       "summary": "Deploy UGS scripts to the development environment",
       "updated_at": "2026-11-06T03:37:47Z"
     },
+    "ugs-production": {
+      "channel": "production",
+      "id": "ugs-production",
+      "kind": "deploy",
+      "platform": "liveops",
+      "result": "skipped",
+      "schema": 1,
+      "source": "Phase 1 audit (2026-11-05)",
+      "summary": "Never deployed; builds still point at development",
+      "updated_at": "2026-11-06T03:37:55Z"
+    },
     "unity-compile": {
       "details": {
         "last_success_commit": "40c9b74423",
@@ -64,6 +75,6 @@
       "updated_at": "2026-11-06T03:37:38Z"
     }
   },
-  "generated_at": "2026-11-06T03:37:49Z",
+  "generated_at": "2026-11-06T03:37:56Z",
   "schema": 1
 }
