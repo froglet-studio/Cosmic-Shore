@@ -54,7 +54,7 @@ namespace CosmicShore.Core
             if (vessel == null || !vessel.IsLockedByEntitlement)
                 return false;
 
-            if (vessel.UnlockCost > 0 || ServerEconomyGate.Enabled)
+            if (vessel.UnlockCost > 0 || ServerEconomyGate.IsActive)
             {
                 // The crystal wallet always persists, but the UNLOCK only persists while the
                 // progression backend gate is open (PersistUnlockToCloud returns early, and

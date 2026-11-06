@@ -16,6 +16,12 @@ namespace CosmicShore.Core
         public static readonly bool Enabled = false;
 
         /// <summary>
+        /// What every call site reads: the compiled gate above AND not killed by the live flags' <c>trust</c> kill
+        /// switch (Docs/LAUNCH/LIVE_FLAGS.md). A kill switch only ever turns it off.
+        /// </summary>
+        public static bool IsActive => LaunchFlags.Gate(Enabled, LaunchKillSwitch.Trust);
+
+        /// <summary>
         /// Whether a party host removes a guest whose pool pass is missing or does not verify. Off at first: a guest on
         /// a build from before the pass (or one whose sign-in could not reach the server) has none, and removing them
         /// would punish the honest. A guest whose pass verifies as another pool is removed either way.
@@ -122,7 +128,7 @@ namespace CosmicShore.Core
         /// </summary>
         public static async UniTask RefreshAsync()
         {
-            if (!FairPlayTrustGate.Enabled) return;
+            if (!FairPlayTrustGate.IsActive) return;
             try
             {
                 var result = await CloudCodeService.Instance
@@ -148,7 +154,7 @@ namespace CosmicShore.Core
         /// </summary>
         public static async UniTask<GuestCheck> VerifyGuestAsync(string guestId, string guestPass)
         {
-            if (!FairPlayTrustGate.Enabled || string.IsNullOrEmpty(guestId)) return GuestCheck.Unknown;
+            if (!FairPlayTrustGate.IsActive || string.IsNullOrEmpty(guestId)) return GuestCheck.Unknown;
             if (!IsPass(guestPass)) return GuestCheck.Unverified;
             try
             {
@@ -181,7 +187,7 @@ namespace CosmicShore.Core
         /// <summary>Opens an appeal with the player's own words (trimmed by the server). True when it is open.</summary>
         public static async UniTask<bool> AppealAsync(string text)
         {
-            if (!FairPlayTrustGate.Enabled) return false;
+            if (!FairPlayTrustGate.IsActive) return false;
             try
             {
                 var result = await CloudCodeService.Instance

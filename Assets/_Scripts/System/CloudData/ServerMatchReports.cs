@@ -14,6 +14,12 @@ namespace CosmicShore.Core
     public static class MatchReportGate
     {
         public static readonly bool Enabled = false;
+
+        /// <summary>
+        /// What every call site reads: the compiled gate above AND not killed by the live flags' <c>matchReports</c> kill
+        /// switch (Docs/LAUNCH/LIVE_FLAGS.md). A kill switch only ever turns it off.
+        /// </summary>
+        public static bool IsActive => LaunchFlags.Gate(Enabled, LaunchKillSwitch.MatchReports);
     }
 
     /// <summary>The client half of the match reports: <c>start</c> when a match begins, <c>end</c> when it finishes.</summary>

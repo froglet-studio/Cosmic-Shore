@@ -228,7 +228,7 @@ namespace CosmicShore.Core
         async UniTask SubmitToBoardAsync(
             string id, double seconds, AddPlayerScoreOptions options, CancellationToken ct)
         {
-            if (ServerScoreGate.Enabled)
+            if (ServerScoreGate.IsActive)
             {
                 await SubmitThroughServerAsync(id, seconds, ct);
                 return;

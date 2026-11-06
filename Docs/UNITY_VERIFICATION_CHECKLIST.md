@@ -21253,3 +21253,16 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🔴 Live flags: remote kill switches and the update-required screen (2026-11-06, Shombith, NOT RUN IN EDITOR)
+`LaunchFlags` / `LaunchFlagsService` (the `launch-flags` Cloud Code script read once after sign-in through `UgsRequestPolicy`, saved in PlayerPrefs `LaunchFlags.Json` / `LaunchFlags.FetchedAtUnix`), each server gate's `IsActive` (compiled `Enabled` AND not killed), `UpdateNoticeOverlay`, `Resources/LaunchFlagsConfig.asset`. Why: `Docs/LAUNCH/LIVE_FLAGS.md`; READINESS.md §10 #6 (second half) and #11. Affects: Yash's Cloud Code.
+Verified: `node Tools/UGS/CloudCode/launch-flags.test.cjs` 14 passed, with three negative controls (bad semver, kill-switch typo, unknown mode) failing as they should; every other UGS script test passes; `unity_refcompile` (player) RESULT OK. Not compiled or run in a Unity editor; `LaunchFlagsTests` (EditMode) has not run. Nothing deployed to UGS.
+- [ ] The project compiles; EditMode `LaunchFlagsTests` pass, and `FairPlayPhaseBTests` / `PlatformSignInAndEntitlementsTests` still pass.
+- [ ] `Assets/Resources/LaunchFlagsConfig.asset` opens in the inspector with every line filled (it was written as YAML).
+- [ ] With the script NOT deployed (today): boot to Menu_Main signed in. One `[LaunchFlags] The flags could not be fetched` warning, nothing else, the game plays as before.
+- [ ] Deploy `launch-flags.js` to **development** only, with `minimumVersion` set above this build's version (e.g. `9.0.0`; `recommendedVersion` at least as high). Boot a development build: after sign-in the blocking **update required** screen covers the menu, its reason line is in the danger colour, UPDATE opens the platform's link, QUIT (desktop) closes the game, Escape / B do nothing, the pad cannot move the selection onto the menu behind it, and a scene change keeps it up.
+- [ ] Same deploy, then boot with the network off: no wall (a saved answer never walls), offline play works.
+- [ ] Set `minimumVersion` back to `0.0.0` and `recommendedVersion` above the build: a dismissible **update available** notice; LATER (or B / Escape) closes it, it does not come back that run.
+- [ ] Set `message.title` / `.body`: the notice shows once, and not again on the next launch.
+- [ ] Kill economy: in a test build with `ServerEconomyGate.Enabled = true`, set `killSwitches.economy: true`, deploy to development, relaunch: no `economy` Cloud Code calls (Dashboard > Cloud Code > logs), the wallet answers locally; set it back to `false`, relaunch: the server's balance comes back.
+- [ ] Put the development script back to the defaults (`0.0.0`, every switch `false`) when done.

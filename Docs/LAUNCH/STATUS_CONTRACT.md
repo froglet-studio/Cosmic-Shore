@@ -78,7 +78,8 @@ characters gets through about 1.4% of the time (16 characters: about 11%), one s
 | `web-staging` | web | channel | the Toybox publish to the staging root |
 | `web-production` | web | channel | the Toybox promotion to `/play` |
 | `build-windows`, `build-ios`, `build-android`, `build-web` | that platform | build | the player build job |
-| `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code scripts, incl. launch-flags once that PR adds it to `deploy.sh`'s `SCRIPTS`) |
+| `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code scripts, `launch-flags` included: it is in `deploy.sh`'s `SCRIPTS`) |
+| `launch-flags` | liveops | gate | `launch-flags-check.yml` (the live flags document and every Cloud Code script test, `Docs/LAUNCH/LIVE_FLAGS.md`) |
 | `trunk-static` | quality | gate | the bleeding-edge guard's static checks |
 | `unity-compile` | quality | gate | the guard's Unity compile + EditMode run |
 | `smoke-<mode>` | quality | gate | the Unity per-mode smoke test |

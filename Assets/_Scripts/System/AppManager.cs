@@ -111,6 +111,9 @@ namespace CosmicShore.Core
         // GameDataSO's turn and end-screen events, and nothing else asks for it until the replay
         // browser does (Docs/REPLAYS.md).
         [Inject] ReplayService replayService;
+        // Eagerly resolved so its sign-in subscription exists from boot: the live flags (the remote kill switches, the
+        // minimum version) are fetched once after sign-in (Docs/LAUNCH/LIVE_FLAGS.md).
+        [Inject] LaunchFlagsService launchFlagsService;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -505,6 +508,12 @@ namespace CosmicShore.Core
             builder.RegisterFactory(
                 _ => new CosmicShore.Utility.UgsRequestPolicy(
                     hostConnectionData != null ? hostConnectionData.UgsRequestPolicySettings : null),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+            // The live flags (Docs/LAUNCH/LIVE_FLAGS.md): one Cloud Code read after sign-in, under the same policy.
+            builder.RegisterFactory(
+                c => new LaunchFlagsService(authenticationDataVariable, c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

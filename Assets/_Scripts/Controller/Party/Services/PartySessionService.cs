@@ -409,7 +409,7 @@ namespace CosmicShore.Gameplay
 
             // Fair play (phase B): this account's pool pass, shown only to this party, so its host can check the
             // account belongs in its pool (HostConnectionService.CheckJoinedMemberPoolAsync). Absent while the gate is off.
-            if (CosmicShore.Core.FairPlayTrustGate.Enabled && !string.IsNullOrEmpty(CosmicShore.Core.FairPlayTrust.Pass))
+            if (CosmicShore.Core.FairPlayTrustGate.IsActive && !string.IsNullOrEmpty(CosmicShore.Core.FairPlayTrust.Pass))
                 props[CosmicShore.Core.FairPlayTrust.PassPropertyKey] =
                     new PlayerProperty(CosmicShore.Core.FairPlayTrust.Pass, VisibilityPropertyOptions.Member);
             return props;
