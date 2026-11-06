@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 59 - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 20px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase}
+.btn.sm{height:40px;padding:0 14px;font-size:14px}
+.commit{background:#A600FF;color:#E6E9FF}
+.cta{background:#99FF80;color:#00010A}
+.def{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.off{background:rgba(0,4,31,.4);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.glass{background:rgba(0,4,31,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 900ms ease-in-out}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:60px;top:44px;display:flex;flex-direction:column;gap:4px"><span class="lab">Rev 59 - notes</span><span style="font-size:30px">The Ark's lobby: the Squads tab in the Ark's own hangar, six ways</span></div><div class="abs" style="left:60px;top:130px;width:860px;display:flex;flex-direction:column;gap:12px"><span class="lab">Asked (Shombith, 2026-11-05)</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">"Remove this completely. We want the inside of the Ark in more of a 3D view, with maybe a couch and prisms, but no characters or vessels, and cards can be on top of that. A new modernized AAA screen ... a seat saved for later when a player comes." Then: "see how our game looks, make it detailed, raw and scary, use in-game prisms, environments", "a noisy lobby with a lot of stuff", "take real game screenshots", "a board showing the HyperSea galaxy or sector location, and a window outside which we can see the cell", "maybe a zoomed in more aesthetic view, do not show a real couch", "check the actual model of the Ark: it should look like the inside".</p><span class="lab" style="margin-top:8px">How the room is made</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">It is the real Ark (ArkReverse.fbx, Garrett's model): its hangar in the prow, between the jaws - the bay of arched frames, the three launch pads for the three escorts (one per seat), the floor lights, the glowing back wall and its tunnel, the clam-jaw doors opened with the model's own hangaropen take - in the game's ship materials, the trim in the squad's domain. The hull's prisms sit in the model's own sockets at their real sizes. Amoebius was fixed so it runs the current game again, and the game was screenshotted in it (Compare, row 1): the prisms are the game's read (black faces, a fresnel rim), in Nocturne. Dressed raw and noisy: the squad's prisms hover over the pads (the kept seat an outline), the HyperSea board between the arches (the Sector chart, the Ark at Tumult; the galaxy opposite), heaps of debris, danger blades at the mouth, hanging chains, junk in the haze. Out of the open mouth: the cell.</p></div><div class="abs" style="left:1000px;top:130px;width:860px;display:flex;flex-direction:column;gap:12px"><span class="lab">The six</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">A Seat placards: each card over its pad's prism, a hairline down to it. B Rail: the hangar clear, the seats in one rail at the bottom. C The board wall: turned to the HyperSea board, the seats stacked right. D From the cell: outside, the real Ark with its mouth open, the seats in a column. E Slate: one glass slate lists the squad. F One seat at a time: the chosen seat large, LB / RB.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Every board is interactive: the domain chips relight the room (Jade, Ruby, Gold), the seat cards select (the Jade ring), the kept seat invites its friend (Lime) or seats an AI until then, Breakers is Kestrel's so its chips refuse, TAKE INTO ARENA is Ruby.</p><span class="lab" style="margin-top:8px">Recommendation: A</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">The three pads are the Ark's own seats for the squad, and A is the only one where each card visibly belongs to its pad, so the kept seat reads as the empty pad waiting for someone; the open mouth and the cell stay in view above the cards.</p><span class="lab" style="margin-top:8px">Differs from the build</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Today the tab is the Rev 31 deck on the menu's sea. This puts the Ark's hangar behind it: either a baked backdrop per domain (these renders) or the ArkReverse model's hangar as a small scene with the game's real prisms (it would breathe; the doors, the pads and the domain trim would react). Seat data, Make, Join, Edit and Take into are unchanged. The build waits on a pick.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -62,7 +62,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 59 mockups, awaiting a pick (section 134)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -5938,6 +5938,71 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
 - **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
   centred, and the underline sits at the row's foot.
 
-## 127. Rev 47 mockups: the Ark's Squads tab (2026-11-02; removed 2026-11-05)
+## 133. Rev 47 mockups: the Ark's Squads tab (2026-11-02; removed 2026-11-05)
 
-Six options for the Squads tab (the Ark in 3D, the nanobot swap or the Meerkat warp) were drawn on Menu Redesign C and removed from the canvas and this copy at Shombith's ask (2026-11-05: "None of it, Remove this completely"). The next round redraws the tab as the inside of the Ark. The colour bug it found in the build stays open as row 19 of the Design feedback queue (`Docs/UI_REDESIGN_TASKS.md`): `SquadNanobotSwap` tints the whole hull toward `TrailHighlightColor`.
+Six options for the Squads tab (the Ark in 3D, the nanobot swap or the Meerkat warp) were drawn on Menu Redesign C and removed from the canvas and this copy at Shombith's ask (2026-11-05: "None of it, Remove this completely"). The next round redraws the tab as the inside of the Ark (Rev 59, section 134). The colour bug it found in the build stays open as row 19 of the Design feedback queue (`Docs/UI_REDESIGN_TASKS.md`): `SquadNanobotSwap` tints the whole hull toward `TrailHighlightColor`.
+
+## 134. Rev 59 mockups: the Ark's lobby - the Squads tab in the Ark's own hangar (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-05/06):** "None of it, Remove this completely. We want to inside of the ark in more of a 3d
+view with maybe a couch and prisms but no characters or vessels and cards can be on top of that. Create a new modernized
+AAA screen for this part ... saved to for later when a player comes." Then, on the drafts: "This is like a k pop studio
+wtf. see how our game looks make it detailed raw and scary use in game prisms environments etc", "It can be a noisy lobby
+with a lot of stuff", "Take real game screenshots ... Not the card ones", "fix amoebius and take the screenshots
+yourself", "The lobby can have a board showing the hypersea galaxy or sector location and has a window outside which we
+can see the cell", "make it detailed take your time", "Maybe a zoomed in more aesthetic view do not show a real couch",
+"Check the actual model of the ark in the game it should look like the inside so make sense of that". Rev 47 (section
+127) was removed first.
+
+**The game it is built from.** Amoebius could not compile the game since about Oct 29; this branch fills the 72 missing
+Unity members (`Port/`, commit `fix(amoebius): the live game compiles and runs again`), and the screenshots were taken in
+it: the menu's live cell (HUD hidden with `set UI_Refactored Canvas enabled false`), prisms up close, the whole cell, the
+Rampage arena (the Compare board). What they showed: a prism is a near-black block whose bevelled edges carry a bright
+fresnel rim in its domain colour; the cell is lattice tubes of gridded blocks, lattice-disc flora and block trails in blue
+haze; the live palette is Garrett's Nocturne.
+
+**The room is the real Ark** (`ArkReverse.fbx`, `Docs/VesselModels/ArkReverse.md`): its **hangar** in the prow, between
+the jaws, rendered from the model itself (`Docs/MenuRedesignB/rounds/r59_ark_hangar_render.py`, Blender 5, seeded):
+- the model's bay of arched frames, its three launch pads for the three escorts (`hangar.slot.0..2`, one per seat), the
+  floor lights, the glowing back wall and the tunnel that curves down through the keel, and the clam-jaw doors opened with
+  the model's own `hangaropen` take; the outside camera shows the prow, the jaws and the neon-framed mouth;
+- in the game's ship materials (`vessel_colors.py`: the gunmetal body, glass, the engine ember) with the domain slot in
+  the squad's domain (Nocturne's `ShipColor1` / `ShipColor2`), drawn with VesselGraph's read;
+- the hull's prisms in the model's own sockets (`socket.*` bones, 108), each socket's kind at its real size (gills and
+  danger blades 3.6 x 1.6 x 9, octahedra 4.8, stellations 6.6), in Nocturne's block colours.
+
+Dressed with the game's own pieces, raw and noisy: the squad's prisms hover over the pads (no couch; the third seat is
+KEPT for a friend, its prism a dark outline until they come aboard); the HyperSea board between the arches (the Voyage
+Board's own Sector chart, the Ark at Tumult and its route, rendered from `Docs/Voyages/VoyageBoard/voyage-board.html` at
+2x with its chrome hidden; the galaxy on the opposite wall); heaps of prism debris along the walls; danger thickets at the
+mouth; hanging block chains; junk in the haze; out of the open mouth, the cell (the game's own picture of it) with lattice
+tubes and a block trail. Three close cameras with depth of field (in the hangar, at the board, from the cell) x three
+domains, graded darker (`r59_ark_lobby_grade.py`).
+
+**On the canvas:** tab **Menu Redesign A** (id `menu-redesign-c`), round "Rev 59 - The Ark's lobby ...". Copies:
+`Docs/MenuRedesignB/board/R59*.dc.html`; the boards' generator `r59_ark_lobby_boards.py`, the uploaded ids
+`r59_blobs.json`, the prism kit the render shares `r59_prismkit.py`, the HyperSea board's pictures
+`r59_voyage_board_shot.cjs`. The cards are text only and follow the style guide: the squad's domain is a team thing in Nocturne
+(`#21C0BD` / `#BD1BC8` / `#FF8F11`), the selected seat wears the Jade ring `#00D4FF`, TAKE INTO ARENA is Ruby `#A600FF`
+(no way back), the kept seat's INVITE is Lime (a call to action), elements have no colour. Every board is interactive: the
+domain chips relight the hangar (a cross-fade between the renders), the seat cards select, the kept seat invites its
+friend or seats an AI until then, Breakers is Kestrel's so its chips refuse.
+
+- **A - Seat placards (recommended):** each card hangs over its pad's prism, a hairline down to it. Recommended because
+  the pads are the Ark's own seats for the squad and only here does each card visibly belong to its pad, so the kept seat
+  reads as the empty pad waiting for someone; the open mouth and the cell stay in view above the cards.
+- **B - Rail:** the hangar clear, the three seats in one glass rail along the bottom.
+- **C - The board wall:** turned to the HyperSea board between the arches, the seats stacked on the right.
+- **D - From the cell:** outside, before the prow: the real Ark with its mouth open on the lit hangar, the seats in a
+  column.
+- **E - Slate:** one glass slate on the right lists the squad; the hangar and its pads fill the left.
+- **F - One seat at a time:** the chosen seat large, the other two as tabs; LB / RB step between them.
+
+**Differs from the build:** today the Squads tab is the Rev 31 deck on the menu's sea (section 95). This puts the Ark's
+hangar behind it: either baked backdrops per domain (these renders, cheapest) or the `ArkReverse` hangar as a small scene
+with the game's real prisms (it would breathe; the doors, the pads and the domain trim would react). Seat data, Make,
+Join, Edit and Take into are unchanged; the kept seat (an invited friend's place, an AI until they come) is new. The build
+waits on a pick.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
+only, its `hangaropen` take played), Voyage Board (rendered only) and Nocturne palette (read only).

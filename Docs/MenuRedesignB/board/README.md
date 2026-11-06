@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 to Rev 57, 478 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-06 from canvas version `1793938420-8751` of **Frogma**: Rev 3 to Rev 59, 489 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,6 +545,17 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 59 - The Ark's lobby: the Squads tab in the Ark's own hangar - the real ArkReverse model, its pads, the HyperSea board, the cell out of the mouth
+
+- [`R59Compare.dc.html`](R59Compare.dc.html) - Rev 59 - Compare: the game, the hangar, three domains
+- [`R59A.dc.html`](R59A.dc.html) - Rev 59 A - Seat placards (recommended) - interactive
+- [`R59B.dc.html`](R59B.dc.html) - Rev 59 B - Rail - interactive
+- [`R59C.dc.html`](R59C.dc.html) - Rev 59 C - The board wall - interactive
+- [`R59D.dc.html`](R59D.dc.html) - Rev 59 D - From the cell - interactive
+- [`R59E.dc.html`](R59E.dc.html) - Rev 59 E - Slate - interactive
+- [`R59F.dc.html`](R59F.dc.html) - Rev 59 F - One seat at a time - interactive
+- [`R59Notes.dc.html`](R59Notes.dc.html) - Rev 59 - Notes
+
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -718,5 +729,13 @@ Copied on 2026-11-05 from canvas version `1793911979-874b` of **Frogma**: Rev 3 
 - `R52Hud.dc.html` (not copied yet) - Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre
 - `R52Finish.dc.html` (not copied yet) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
 - `R52Notes.dc.html` (not copied yet) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
+
+### Tab: Launch Console  (`launch-console`)
+
+#### Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads
+
+- `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactive
+- `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
+- `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
 <!-- frogma.py readme: end -->
