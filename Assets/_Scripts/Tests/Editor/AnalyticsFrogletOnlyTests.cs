@@ -27,6 +27,8 @@ namespace CosmicShore.Tests
     ///    sends must be in it (the server's own test holds the same rule from the Python side).
     /// 4. A MODE WITH NO GENRE SENDS NO ELEMENT, rather than "None" or "", which a dashboard would
     ///    group as a fake element.
+    /// 5. THE MATCH SETUP (2026-11-07) IS COUNTED FROM THE LOCAL PLAYER'S SIDE: humans and AI on its
+    ///    domain (itself included) and on the others - what splits solo, co-op, competitive and teams vs AI.
     /// </summary>
     [TestFixture]
     public class AnalyticsFrogletOnlyTests
@@ -98,6 +100,29 @@ namespace CosmicShore.Tests
             Assert.That(schema, Does.Contain("game_completed.element"));
             Assert.That(schema, Does.Contain("game_completed.element_secondary"));
             Assert.That(schema, Does.Contain("freestyle_entered.vessel_class"));
+
+            // 2026-11-07: the match setup on game_started, from the local player's side.
+            Assert.That(schema, Does.Contain("game_started.domain"));
+            Assert.That(schema, Does.Contain("game_started.humans_on_my_domain"));
+            Assert.That(schema, Does.Contain("game_started.humans_on_other_domains"));
+            Assert.That(schema, Does.Contain("game_started.ai_on_my_domain"));
+            Assert.That(schema, Does.Contain("game_started.ai_on_other_domains"));
+            // game_started only: game_completed joins back on match_id.
+            Assert.That(Events[UGSKeys.EventGameCompleted]["parameters"][UGSKeys.ParamHumansOnMyDomain], Is.Null);
+        }
+
+        [Test]
+        public void MatchSetupKeysMatchTheSchema()
+        {
+            var p = new Dictionary<string, object>();
+            AnalyticsServiceFacade.DomainComposition.Count(Domains.Jade, null).AddTo(p, Domains.Jade);
+            var declared = ((JObject)Events[UGSKeys.EventGameStarted]["parameters"]).Properties().Select(x => x.Name).ToList();
+            foreach (var key in p.Keys)
+            {
+                Assert.That(declared, Does.Contain(key), "game_started." + key + " is in EVENT_SCHEMA.json");
+                Assert.That(UgsAnalyticsSink.FrogletOnlyFields, Does.Contain(UGSKeys.EventGameStarted + "." + key));
+            }
+            Assert.AreEqual(5, p.Count);
         }
 
         // ── 2. The filter ──────────────────────────────────────────────────────
@@ -226,6 +251,87 @@ namespace CosmicShore.Tests
             AnalyticsServiceFacade.AddGenreElements(p, a, b);
             Assert.AreEqual("Mass", p[UGSKeys.ParamElement]);
             Assert.AreEqual("Space", p[UGSKeys.ParamElementSecondary]);
+        }
+
+        // ── The match setup (game_started, from the local player's side) ───────
+
+        [Test]
+        public void MatchSetupCountsHumansAndAiPerDomain()
+        {
+            // The local human on Jade, another human on Jade, one on Ruby, 2 AI on Jade, 3 AI on Ruby.
+            var seats = new List<(Domains Domain, bool IsAI)>
+            {
+                (Domains.Jade, false), (Domains.Jade, false), (Domains.Ruby, false),
+                (Domains.Jade, true), (Domains.Jade, true),
+                (Domains.Ruby, true), (Domains.Ruby, true), (Domains.Ruby, true)
+            };
+
+            var c = AnalyticsServiceFacade.DomainComposition.Count(Domains.Jade, seats);
+            Assert.AreEqual(2, c.HumansOnMyDomain, "the local player is included");
+            Assert.AreEqual(1, c.HumansOnOtherDomains);
+            Assert.AreEqual(2, c.AiOnMyDomain);
+            Assert.AreEqual(3, c.AiOnOtherDomains);
+
+            var p = new Dictionary<string, object>();
+            c.AddTo(p, Domains.Jade);
+            Assert.AreEqual("Jade", p[UGSKeys.ParamDomain]);
+            Assert.AreEqual(2, p[UGSKeys.ParamHumansOnMyDomain]);
+            Assert.AreEqual(1, p[UGSKeys.ParamHumansOnOtherDomains]);
+            Assert.AreEqual(2, p[UGSKeys.ParamAiOnMyDomain]);
+            Assert.AreEqual(3, p[UGSKeys.ParamAiOnOtherDomains]);
+        }
+
+        [Test]
+        public void MatchSetupFromTheOtherSideMirrors()
+        {
+            // The same match seen by the Ruby human: its side and the other side swap.
+            var seats = new List<(Domains Domain, bool IsAI)>
+            {
+                (Domains.Jade, false), (Domains.Jade, false), (Domains.Ruby, false),
+                (Domains.Jade, true), (Domains.Jade, true),
+                (Domains.Ruby, true), (Domains.Ruby, true), (Domains.Ruby, true)
+            };
+
+            var c = AnalyticsServiceFacade.DomainComposition.Count(Domains.Ruby, seats);
+            Assert.AreEqual(1, c.HumansOnMyDomain);
+            Assert.AreEqual(2, c.HumansOnOtherDomains);
+            Assert.AreEqual(3, c.AiOnMyDomain);
+            Assert.AreEqual(2, c.AiOnOtherDomains);
+        }
+
+        [Test]
+        public void SoloAgainstAiCountsOnlyTheLocalHuman()
+        {
+            // Solo on Gold against 3 AI on Ruby: 1 / 0 / 0 / 3.
+            var seats = new List<(Domains Domain, bool IsAI)>
+            {
+                (Domains.Gold, false), (Domains.Ruby, true), (Domains.Ruby, true), (Domains.Ruby, true)
+            };
+
+            var c = AnalyticsServiceFacade.DomainComposition.Count(Domains.Gold, seats);
+            Assert.AreEqual(1, c.HumansOnMyDomain);
+            Assert.AreEqual(0, c.HumansOnOtherDomains);
+            Assert.AreEqual(0, c.AiOnMyDomain);
+            Assert.AreEqual(3, c.AiOnOtherDomains);
+        }
+
+        [Test]
+        public void MatchSetupWithNoSeatsCountsNothing()
+        {
+            var c = AnalyticsServiceFacade.DomainComposition.Count(Domains.Jade, null);
+            Assert.AreEqual(0, c.HumansOnMyDomain + c.HumansOnOtherDomains + c.AiOnMyDomain + c.AiOnOtherDomains);
+        }
+
+        [Test]
+        public void MatchSetupIsStrippedForUgsAndKeptForFroglet()
+        {
+            var payload = new Dictionary<string, object> { { "game_mode", "Joust" } };
+            AnalyticsServiceFacade.DomainComposition.Count(Domains.Jade,
+                new List<(Domains Domain, bool IsAI)> { (Domains.Jade, false), (Domains.Ruby, true) }).AddTo(payload, Domains.Jade);
+
+            Assert.IsTrue(UgsAnalyticsSink.TryFilterForUgs(UGSKeys.EventGameStarted, payload, out var ugs));
+            CollectionAssert.AreEquivalent(new[] { "game_mode" }, ugs.Keys);
+            Assert.AreEqual(6, payload.Count, "the shared payload keeps all five for Froglet Analytics");
         }
 
         [Test]

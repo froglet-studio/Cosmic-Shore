@@ -245,6 +245,8 @@ td.meter { width: 32%; min-width: 120px; }
 .chart .gmark:hover rect:not(.hit) { filter: brightness(1.2); }
 .chart svg { width: auto; max-width: 100%; }
 .donut-num { fill: var(--fs-text); font-size: 30px; font-family: var(--fs-font-body); }
+.chart .slice-label { fill: var(--fs-text); stroke: var(--fs-ground); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round;
+  font-family: var(--fs-font-body); font-size: 12px; pointer-events: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--fs-text); }
 .legend-item { display: inline-flex; align-items: center; gap: 7px; }
 .legend-item i { display: inline-block; width: 11px; height: 11px; flex: none; }

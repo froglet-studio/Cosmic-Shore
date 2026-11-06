@@ -96,5 +96,14 @@ namespace CosmicShore.Core
         public const string ParamSeconds            = "seconds";
         public const string ParamSecondsInFreestyle = "seconds_in_freestyle";
         public const string ParamSecondsSinceLaunch = "seconds_since_launch";
+
+        // ── Analytics parameters added 2026-11-07: the match setup on game_started ──
+        // From the LOCAL player's side (AnalyticsServiceFacade.DomainComposition), so the Overview
+        // can split solo / co-op / competitive / teams vs AI. Froglet-only: UgsAnalyticsSink strips all five.
+        public const string ParamDomain               = "domain";
+        public const string ParamHumansOnMyDomain     = "humans_on_my_domain";
+        public const string ParamHumansOnOtherDomains = "humans_on_other_domains";
+        public const string ParamAiOnMyDomain         = "ai_on_my_domain";
+        public const string ParamAiOnOtherDomains     = "ai_on_other_domains";
     }
 }

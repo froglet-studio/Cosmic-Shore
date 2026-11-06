@@ -21351,3 +21351,22 @@ keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP ass
 4. **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
 5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
    values set while playing no longer reach the asset.
+
+## 🔴 Analytics: Toybox (Freestyle) events, match elements, match setups by domain, the UGS Froglet-only filter (2026-11-07, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sweet-mayer-se51r6`; froglet-studio/Cosmic-Shore#1777 and the match-setups PR after it. Compiled with
+`unity_refcompile` (player and editor RESULT OK) and `gates.sh` ALL OK; the new edit-mode tests were compiled, not run.
+Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data health shows events as they arrive).
+
+1. **Run the edit-mode tests** in `AnalyticsFrogletOnlyTests` (all of them: the schema mirror, the UGS filter, the
+   freestyle payloads, the element payloads, the vessel log, the match-setup counts).
+2. **Grant analytics consent** (FrogletTools > Services > Analytics Consent (Dev)), enter Freestyle in Menu_Main, fly,
+   switch vessels twice in the Toybox's Vessel Changer, then start a match. Within about 30 s the console's Overview
+   "Freestyle (Toybox)" section shows the entry, the minutes and the two switches, and the profile lists both switches
+   (from -> to, seconds into the stretch) without "approx.".
+3. **Finish the match.** Matches > "By element" counts it under the mode's element "sent by the build"; Overview >
+   Match setups counts it (solo: by its AI count).
+4. **Play a 2-human match** (two editors or a build) once on one domain and once on two: Match setups shows Teams vs AI
+   and Competitive.
+5. **No `[Analytics]` warnings** in the Console, and the UGS dashboard still receives `game_started` and
+   `game_completed` (the Froglet-only fields are stripped for UGS; an undeclared parameter would make UGS drop the event).
