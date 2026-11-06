@@ -377,11 +377,14 @@ def _build_commit(record: dict, repo: Path, parent: str | None) -> str:
                "GIT_AUTHOR_NAME": "launch-status", "GIT_AUTHOR_EMAIL": "launch-status@users.noreply.github.com",
                "GIT_COMMITTER_NAME": "launch-status",
                "GIT_COMMITTER_EMAIL": "launch-status@users.noreply.github.com"}
-        _git(["read-tree", parent] if parent else ["read-tree", "--empty"], repo, env=env)
+        # The private index is never a checkout, so the caller's sparse patterns cannot apply to it; the -c flags
+        # make sure of it (a sparse or sparse-index caller repo must still rebuild every component).
+        dense = ["-c", "core.sparseCheckout=false", "-c", "core.sparseCheckoutCone=false", "-c", "index.sparse=false"]
+        _git([*dense, "read-tree", parent] if parent else [*dense, "read-tree", "--empty"], repo, env=env)
         for path, text in files.items():
             blob = _git(["hash-object", "-w", "--stdin"], repo, env=env, data=text.encode("utf-8")).stdout.strip()
-            _git(["update-index", "--add", "--cacheinfo", f"100644,{blob},{path}"], repo, env=env)
-        tree = _git(["write-tree"], repo, env=env).stdout.strip()
+            _git([*dense, "update-index", "--add", "--cacheinfo", f"100644,{blob},{path}"], repo, env=env)
+        tree = _git([*dense, "write-tree"], repo, env=env).stdout.strip()
         cmd = ["commit-tree", tree, "-m", f"status({cid}): {record['result']}"]
         if parent:
             cmd += ["-p", parent]
@@ -592,9 +595,34 @@ def _self_test_publish() -> list[str]:
             if _git(["rev-parse", f"refs/heads/{BRANCH}"], remote).stdout.strip() != tip:
                 problems.append("a refused publish still moved the branch")
 
+            # A SPARSE caller (cone mode, sparse index; a CI job that checked out only Tools/Launch) must still
+            # rebuild every component: its patterns must not reach the commit publish builds.
+            sparse = root / "sparse"
+            _git(["-c", "init.defaultBranch=main", "init", "-q", str(sparse)], root)
+            for rel in ("Tools/Launch/x.txt", "components/other.txt", "history/other.txt", "Assets/y.txt"):
+                (sparse / rel).parent.mkdir(parents=True, exist_ok=True)
+                (sparse / rel).write_text("x\n")
+            _git(["add", "-A"], sparse)
+            _git(["-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "base"], sparse)
+            _git(["sparse-checkout", "set", "--cone", "--sparse-index", "Tools/Launch"], sparse)
+            _git(["remote", "add", "origin", str(remote)], sparse)
+            heads_before = {sparse: _git(["for-each-ref", "--format=%(refname)", "refs/heads"], sparse).stdout.split()}
+            android = {**GOOD, "id": "android-prerelease", "platform": "android", "channel": "prerelease"}
+            publish(android, sparse, "origin", sleep=noop)
+            board = json.loads(remote_file("status.json"))
+            if sorted(board["components"]) != ["android-prerelease", "ios-prerelease", "web-staging"]:
+                problems.append(f"a sparse caller dropped components: board has {sorted(board['components'])}")
+            files = set(_git(["ls-tree", "-r", "--name-only", f"refs/heads/{BRANCH}"], remote).stdout.split())
+            expected = {"README.md", "status.json", "components/web-staging.json", "components/ios-prerelease.json",
+                        "components/android-prerelease.json", "history/web-staging.jsonl",
+                        "history/ios-prerelease.jsonl", "history/android-prerelease.jsonl"}
+            if files != expected:
+                problems.append(f"a sparse caller changed the branch's files: {sorted(files ^ expected)}")
+            callers.append(sparse)
+
             for caller in callers:
                 heads = _git(["for-each-ref", "--format=%(refname)", "refs/heads"], caller).stdout.split()
-                if heads:
+                if heads != heads_before.get(caller, []):
                     problems.append(f"publish left local branches behind: {heads}")
                 worktrees = _git(["worktree", "list", "--porcelain"], caller).stdout.count("worktree ")
                 if worktrees != 1:

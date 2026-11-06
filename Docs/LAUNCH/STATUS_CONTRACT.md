@@ -78,7 +78,7 @@ characters gets through about 1.4% of the time (16 characters: about 11%), one s
 | `web-staging` | web | channel | the Toybox publish to the staging root |
 | `web-production` | web | channel | the Toybox promotion to `/play` |
 | `build-windows`, `build-ios`, `build-android`, `build-web` | that platform | build | the player build job |
-| `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code, access policy, the launch flags) |
+| `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code scripts, incl. launch-flags once that PR adds it to `deploy.sh`'s `SCRIPTS`) |
 | `trunk-static` | quality | gate | the bleeding-edge guard's static checks |
 | `unity-compile` | quality | gate | the guard's Unity compile + EditMode run |
 | `smoke-<mode>` | quality | gate | the Unity per-mode smoke test |
@@ -112,6 +112,12 @@ Rules:
   the fetched tip and pushes `<commit>:refs/heads/launch-status`; a lost race is a refused non-fast-forward, and the
   next attempt rebuilds on the new tip. It fetches the whole (small) branch, never with `--depth`, so it never turns
   a full clone shallow. git's own error text is scrubbed of credentials before it is printed.
+- It is safe from a SPARSE checkout (a job that checked out only `Tools/Launch`): the private index is never a
+  checkout and runs with `core.sparseCheckout=false` and `index.sparse=false`, and the other components are read from
+  the fetched commit itself, so the rebuilt `status.json` keeps every component. (A worktree-based publish inherits
+  the caller's sparse patterns and drops them; found by the UGS deploy pipeline, PR #1748.)
+- The publishing job's checkout must keep its credentials (`persist-credentials` left at its default `true`), or the
+  push fails at once with an authentication error.
 
 ## Proof
 
@@ -125,8 +131,9 @@ key, a Unity serial, an AWS key id, a Google key, a query string in a summary, a
 a detail key, a Unicode line separator, a non-UTC or date-only `updated_at`, `schema: true` and a NaN detail. It then
 publishes end to end against a throwaway local bare remote: the first record (orphan branch + README), a second
 publisher winning the race between fetch and push (the loser retries and both records survive), a refused record
-(nothing pushed), a missing remote (fails at once, no retries); and checks that neither caller repo was left with a
-local branch, a worktree, a shallow file or a touched working tree.
+(nothing pushed), a missing remote (fails at once, no retries), a publish from a sparse cone checkout with a sparse
+index (all three components and all eight files survive); and checks that no caller repo was left with a new local
+branch, a worktree, a shallow file or a touched working tree.
 
 `python3 Tools/Launch/check_action_pins.py self-test` proves the pin check finds 13 unpinned shapes (a tag, quoted
 tags and branches, a short or upper-case sha, a sha with a suffix, no ref, a reusable workflow on a branch, a flow
