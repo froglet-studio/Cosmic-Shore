@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
-namespace CosmicShore.Editor
+namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// What the per-mode smoke test (<see cref="ModeSmokeLauncher"/>, Docs/LAUNCH/SMOKE_TEST.md) plays and how long
-    /// it waits. Editor-tool config, so it lives in an asset rather than a list in code
-    /// (<c>Assets/_SO_Assets/Launch/ModeSmokeConfig.asset</c>).
+    /// What the per-mode smoke test (<c>CosmicShore.Editor.ModeSmokeLauncher</c>, Docs/LAUNCH/SMOKE_TEST.md) plays and
+    /// how long it waits. Editor-tool config, so it lives in an asset rather than a list in code
+    /// (<c>Assets/_SO_Assets/Launch/ModeSmokeConfig.asset</c>); the class sits in the runtime assembly beside
+    /// <see cref="GameModePrefabKitSO"/> so the asset's fields are checked by the generated-asset audit. Nothing in the
+    /// game reads it, and no shipped scene or Resources folder references the asset, so it is not in a build.
     ///
     /// <para>The modes come from the shipped ROSTERS (the arcade and arena card lists a player launches from), so a new
     /// card is smoked the day it is listed, with nothing to register. A mode the harness cannot drive is named in
