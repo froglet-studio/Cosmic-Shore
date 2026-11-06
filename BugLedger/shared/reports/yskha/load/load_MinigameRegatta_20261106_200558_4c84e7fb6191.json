@@ -1,0 +1,101 @@
+{
+    "schemaVersion": 1,
+    "reportId": "4c84e7fb6191",
+    "timestamp": "2026-11-06T00:07:10.3808196Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/regatta-overnight-balance",
+    "gitCommitHash": "76c6835e69",
+    "trigger": "Return to menu — MinigameRegatta → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "INTERRUPTED — application terminated during load (recovered snapshot)",
+    "interrupted": true,
+    "sceneFrom": "MinigameRegatta",
+    "sceneTo": "MinigameRegatta",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 8.767399787902832,
+    "visualReadyMs": -1.0,
+    "waitMs": 1.0263996124267579,
+    "humanWaitMs": 0.0,
+    "workMs": 7.741000175476074,
+    "unattributedMs": 7.741000175476074,
+    "framesDuringLoad": 1,
+    "avgFpsDuringLoad": 114.05890655517578,
+    "worstFrameMs": 13.154400825500489,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 7.741000175476074,
+            "endMs": 8.767399787902832,
+            "durationMs": 1.0263996124267579,
+            "exclusiveMs": 1.0263996124267579,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 7.741000175476074,
+            "percent": 88.29299926757813,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 1.0263996124267579,
+            "percent": 11.707001686096192,
+            "spanCount": 1,
+            "waitMs": 1.0263996124267579
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 1.0263996124267579,
+            "exclusiveMs": 1.0263996124267579,
+            "maxSingleMs": 1.0263996124267579,
+            "isWait": true
+        }
+    ],
+    "stalls": [],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — MinigameRegatta → Menu_Main"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Active prisms when load ended",
+            "value": 7821
+        }
+    ],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
