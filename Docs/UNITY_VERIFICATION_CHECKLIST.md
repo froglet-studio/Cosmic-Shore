@@ -21345,3 +21345,13 @@ trampolineRadius 30, trampolineAiTurnScale 55, aiSlingMinTurnDegrees 50 (and its
 - [ ] Press RT in Slingshot: the dotted ball is half the size it was; grazing it turns you gently (about 20-30 deg), not a big swing.
 - [ ] Fly straight into it, fast: you are sent straight back, never through it.
 - [ ] Slingshot I1-I4: AI Stoats finish (model: 133-145 s, 0-3 rings missed a race; they bounce rarely).
+
+## 🔴 Party recovery: a requested Stop ends the flow (B38 again, E-0de9ec6c70) (2026-11-06, Yash, NOT RUN IN EDITOR)
+`PartyInviteController.IsPlaying` defaults to `UnityIsPlaying()`, which in the editor reads a requested Stop
+(`EditorApplication.isPlayingOrWillChangePlaymode` false) as Play ended; `PartyRecoveryAfterPlayTests` gains
+`UnityFlag_IsOff_InEditMode`. Why: `Docs/PartySystem/BUGS.md` B38 ("Again, 2026-11-06"). Commit `93765d6aa8`.
+Verified: `unity_refcompile` (0 project errors), `check_conditional_compilation.py`, `/ship` gates (all OK but
+`generated_assets`, which fails the same way without this change: its schema tool still reads the removed Obvious
+SOAP plugin). No Unity editor here: no compile in Unity, the EditMode test is unrun.
+- [ ] The project compiles; EditMode `PartyRecoveryAfterPlayTests` (4) pass.
+- [ ] Two machines: the joiner stops Play while "Bouncing to solo menu" (or right after a host drop) is on screen. No `Recovery failed` error in the console after Play stops.
