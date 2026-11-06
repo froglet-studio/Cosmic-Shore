@@ -63,6 +63,11 @@ HTTP:
     GET  /v1/overview                      adds setups (multiplayer then solo), setup_history, setup_notes
     GET  /v1/series?...&by=setup           every plays measure (and players, new players) by match setup
 
+  2026-11-07 (Shombith): sessions, balance, quits, invites, errors; backups.
+    GET  /v1/sessions|balance|quits|invites|errors?build&days&play&era    the five round-67 pages (README.md)
+    GET  /v1/series?measure=score|placement|win_pct|abandon_pct, by=ai_difficulty
+    GET  /v1/health                        adds new_events and backups (the last local copy; off-VM is Oracle's policy)
+
   The Notebook (a chat, a report and a notebook in one page; analytics_notebook.py holds its routes and rules):
     GET|POST|PUT|DELETE /v1/notebooks    POST /v1/notebooks/run (one cell)    POST /v1/notebooks/ask (Claude)
 

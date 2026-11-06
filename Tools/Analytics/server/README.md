@@ -81,7 +81,7 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `analytics_notebook.py` | The Notebook page's routes and rules: notebooks in `events.db` (no player ids), one cell run, Claude's turn over the notebook's re-run totals; `test_analytics_notebook.py` (19 tests) runs with `--self-test` |
 | `mode_elements.py` | Writes `mode_elements.json` (each mode's genre element) from the game's `ModeGenre.cs`, `GameModes.cs` and `ModePreviewLibrary.asset`; `--check` fails when it is stale, `--self-test` checks known answers and a negative control |
 | `mode_elements.json` | GENERATED: `game_mode` -> `[primary, secondary or null]`, the modes with no element, each mode's metric. The server reads only this file (the VM has no `Assets/`) |
-| `test_analytics_server.py` | 77 tests: `python3 analytics_server.py --self-test` |
+| `test_analytics_server.py` | 90 tests: `python3 analytics_server.py --self-test` (it runs the Notebook's too) |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
 | `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
@@ -112,12 +112,14 @@ rematched within 600 s, flight time), daily counts, rows per play, players in wi
 definitions from `replay_retention.sql` are used as written. Co-op, versus and mixed split once `game_started`
 carries the team fields; earlier matches read `multi_human_unknown`, never guessed. Each play also gets a match setup (below, Match setups).
 
-Nightly (05:00 UTC by default): raw events older than `retention_days` (395) are deleted, `events.db` is backed up
-(14 kept), the aggregates are rebuilt, and the overnight read is written.
+Nightly (05:00 UTC by default): raw events older than `retention_days` (395) are deleted, the aggregates are rebuilt,
+and the overnight read is written. The backup runs before it, at 04:40 UTC, from its own timer (below, Backups); the
+nightly job makes one itself only when none was made in the last 20 hours (a machine without the timer).
 
 ## Pages, and who sees player profiles
 
-Overview, **Players**, Retention, **FTUE**, Matches, **Economy**, **Social**, Data health, Ask Claude, Erasure.
+Overview, **Players**, Retention, **Sessions**, **FTUE**, Matches, **Balance**, **Quits**, **Economy**, **Social** (with
+**Invites**), **Errors**, Data health, Ask Claude, Erasure. The five in the next section came on 2026-11-07.
 
 - **Players**: active players per day, countries, platforms, the first-day funnel (reached the menu, started a match,
   finished one, finished the FTUE, came back another day), launch-to-menu time per platform, and how sessions end.
@@ -333,6 +335,98 @@ player id, no display name and no row the browser made up). The page is `console
 the review copy (`make_preview.py`) carries two sample notebooks (`console/notebook_sample.py`), and its Ask and Run
 say they need the server.
 
+## Sessions, balance, quits, invites and errors (2026-11-07)
+
+Asked for by Shombith on 2026-11-07: "till 3 is done (1 sessions/DAU-WAU-MAU, 2 balance: score/placement/AI difficulty, 3
+mid-match quits/frustration), approved 6 (invite attribution)", and the client errors that were a known gap. The game
+side (the events and fields below) is in `Assets/_Scripts/System/Instrumentation/`; every new field is Froglet-only
+(`"sinks": ["froglet"]`), so UGS never sees it. Everything here is counts in `aggregates.db`, no player id; who invited
+whom is worked out in `events.db` at the rebuild and only the counts are kept. Each answer carries `notes` saying what
+history it has, and `history` with the first day the new data arrived.
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v1/sessions?build&days&era` | reader | `tiles {dau, wau, mau, stickiness_pct, sessions, ended, sessions_per_player_day, median_session_min, p90_session_min}`, `per_day [{day, dau, wau, mau, stickiness_pct}]`, `sessions_per_day [{day, cold, resume, unknown}]`, `lengths` (6 buckets), `platforms`, `history.first_session_day`. DAU / WAU / MAU come from any event (so the PostHog history too), from `active_rolling`; sessions only from `session_started` / `session_ended` (builds after 2026-11-07). The Play filter does not reach it (`unfiltered: ["page"]`) |
+| `GET /v1/balance?build&days&play&era` | reader | `tiles {plays, finished, scored, avg_placement, win_pct, with_difficulty, placed}`, `by_difficulty` (plays, finished, scored, avg_score, avg_placement, win_pct, avg_behind_by, avg_players, quit_pct), `grid` (intensity x AI difficulty: plays, win_pct, avg_placement, quit_pct), `placements`, `by_mode`, `history` |
+| `GET /v1/quits?build&days&play&era` | reader | `tiles {plays, tracked_plays, quits, quit_pct, finished_pct, median_quit_s}`, `reasons`, `by_elapsed` (under 30 s ... 10+ min, and "not sent"), `by_mode`, `by_vessel`, `by_intensity`, `by_setup`, `chain {failed, quit_after, quit_mature, gone_7d, failed_mature, failed_gone_7d, quit_after_pct, gone_after_quit_pct, gone_after_fail_pct}`. The quit rate counts only plays of a build and version that sends `match_abandoned` (from the first day it sent it or `session_started`) |
+| `GET /v1/invites?build&days&era` | reader | `funnel` (sent, received, joined, played together within 24 h, invitee back by day 7 `of` the joins 7+ days old), `by_method` (`invite_id`: matched by the invite's own id, builds after 2026-11-07; `time`: older builds, received within 10 min naming the sender, joined within 30), `per_day`, `roles` (inviters, invitees and everyone's first-match cohorts: players, D1 %, D7 %) |
+| `GET /v1/errors?build&days&era` | reader | `tiles {occurrences, events, signatures, players, new_this_week}`, `by_frame` (top frame and type: occurrences, players, messages, first and last day, `new`), `by_type`, `by_build` (every build), `by_platform`, `by_version`, `by_scene`, `per_day`. No message text is sent or kept: only `message_hash` |
+| `GET /v1/series?measure=score\|placement\|win_pct\|abandon_pct` | reader | the average score and placement of finished plays, won %, quit % (tracked plays only); every plays split |
+| `GET /v1/series?...&by=ai_difficulty` | reader | every plays measure, players and new players by the AI difficulty the opponents were set to ("unknown" before 2026-11-07) |
+| `GET /v1/overview` | reader | adds `sessions` (the Sessions tiles) |
+| `GET /v1/health` | reader | adds `new_events` (each new event, and each new field on an older event: rows and when it last arrived) and `backups` (below) |
+
+New in `aggregates.db`: `plays` gains `score`, `placement`, `players_in_match`, `ai_difficulty`, `behind_by` (from
+`game_completed`), `abandoned`, `abandon_reason`, `abandon_elapsed` (from `match_abandoned`; a play is never both) and
+`quit_tracked`; new tables `sessions` (one row per session, no id), `session_players`, `active_rolling`, `invites`,
+`invite_roles`, `frustration`, `client_errors`, `client_error_signatures`; `player_counts` gains the dims
+`ai_difficulty`, `error` and `error_frame`. The frustration chain follows each player-day with a `repeated_game_fail`:
+a `match_abandoned` within 1 hour after it, then no event at all for the 7 days after the quit (counted once those
+days have passed), beside how many of all fail streaks were followed by 7 days away.
+
+The console: **Sessions** (DAU / WAU / MAU and stickiness over time, sessions per day by cold start or resume, session
+length, by platform), **Balance** (score, placement and wins by any split, wins against each AI difficulty, the intensity
+x difficulty grid, where players finish, by mode), **Quits** (quit rate by any split, how they left, how far in, the
+frustration chain), **Errors** (per day, the top frames with New marked, by type, build, platform, version, scene), and
+**Invites** on the Social page (the funnel, inviters and invitees against everyone, sent and joined per day). Overview
+gains a row of DAU, WAU, MAU, stickiness, sessions a player a day and median session. AI difficulty is an order, not an
+identity: like elements and setups it is drawn in one neutral hue in steps, never a domain or series colour.
+
+## Backups and restore
+
+Shombith, 2026-11-07: off-VM copies come from the **Oracle boot-volume backup policy** (daily at 05:00 UTC, 5 kept),
+set in the Oracle console, with no key on the VM. The server cannot see those copies; Data health says so ("off-VM:
+Oracle boot-volume policy (check in the Oracle console)").
+
+On the VM, `froglet-analytics-backup.timer` runs `analytics_server.py backup` at **04:40 UTC**, after the 04:20
+self-update and before Oracle's 05:00 copy, so each Oracle copy holds that night's consistent snapshot. A backup is
+one gzipped tar, `<data_dir>/backups/froglet-analytics-<UTC time>.tar.gz` (600), holding `events.db` and
+`aggregates.db` as SQLite's online backup API copied them (ingest and the rebuild keep running). The newest 14 are
+kept. Data health shows the last local backup, its file and how many are kept.
+
+```bash
+sudo systemctl start froglet-analytics-backup        # one now
+systemctl list-timers froglet-analytics-backup       # when the next runs
+journalctl -u froglet-analytics-backup               # what it printed
+```
+
+**Restore**, from whichever copy you have:
+
+1. **Oracle boot-volume backup**: in the Oracle console, restore the boot volume backup to a new volume and start an
+   instance from it (or attach it and copy `/var/lib/froglet-analytics/data/backups/` out). Everything on the disk comes
+   back as it was at 05:00 UTC that day.
+2. **A local backup** (the newest is in `/var/lib/froglet-analytics/data/backups/`; or one copied out of an Oracle
+   volume):
+
+```bash
+sudo systemctl stop froglet-analytics
+sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytics/config.json \
+  /var/lib/froglet-analytics/venv/bin/python /var/lib/froglet-analytics/repo/Tools/Analytics/server/analytics_server.py \
+  backup --restore /var/lib/froglet-analytics/data/backups/froglet-analytics-<time>.tar.gz
+sudo systemctl start froglet-analytics
+```
+
+The restore checks each database (`PRAGMA integrity_check`) before anything moves, refuses an archive that is not one
+of ours (anything but `events.db` and `aggregates.db`, or a path), refuses while the server answers on its port
+(`--force` overrides), and keeps the databases it replaces in `<data_dir>/before-restore-<time>/`. The aggregates are
+rebuilt within 5 minutes of the start anyway.
+
+**A bucket copy (dormant).** The backup can also PUT each archive to an S3-compatible bucket (Oracle Object Storage's
+S3 endpoint), signed with AWS Signature Version 4 in the standard library. It runs only when all four of these are in
+`/etc/froglet-analytics.env` (root, 600; never `config.json`, never logged, never returned by a route); none are set
+today:
+
+| Variable | What |
+|---|---|
+| `FA_BACKUP_ENDPOINT` | e.g. `https://<namespace>.compat.objectstorage.us-ashburn-1.oraclecloud.com` |
+| `FA_BACKUP_BUCKET` | the bucket |
+| `FA_BACKUP_ACCESS_KEY`, `FA_BACKUP_SECRET_KEY` | an Oracle "Customer Secret Key" pair |
+| `FA_BACKUP_REGION` | optional, default `us-ashburn-1` |
+| `FA_BACKUP_PREFIX` | optional, default `froglet-analytics/` |
+
+A failed upload keeps the local copy and is shown on Data health ("Bucket copy"). The tests check the signer against
+AWS's published example, and run a fake S3 server that checks every signature (a wrong secret is refused, 403).
+
 ## Claude, and what it can see
 
 - **The overnight read**: the aggregates per build (last 7 days against the 14, rematch by play type, match health,
@@ -343,7 +437,10 @@ say they need the server.
   the answer. Each reader gets 50 questions a day.
 - Claude never receives a player id, a display name or a raw event: it has no door to `events.db`. The tests check
   that the text sent to Claude holds no player id, and that the new tables (`player_counts`, `cohort_weeks`,
-  `cohort_days`, saved `t_` tables) hold none either. The Query Studio uses the same door.
+  `cohort_days`, saved `t_` tables) hold none either. The Query Studio uses the same door. Since 2026-11-07 a test
+  drives `/v1/ask` and then Query Studio's run of the SQL Claude wrote (`/v1/query`) over HTTP with a mocked Claude, and
+  checks that nothing sent to Claude holds `distinct_id`, `player_id` or any player's id, while those ids are in
+  `events.db` (so the check would see them if the door let them through).
 - Server-side fallbacks are on (`fallbacks: "default"`), so a declined request is retried on another model inside
   the same call.
 
@@ -392,5 +489,6 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 ## Not done yet
 
 - `build_kind` stamped by the client (would split development builds from release; today they count as release).
-- Off-VM backups (the nightly backup stays on the VM's disk).
+- Dashboard email: a dashboard's schedule ("mondays 09:00") is stored only; sending it was left out (Shombith,
+  2026-11-07: "Leave emails").
 - A last `import-posthog` run, once the builds that still send to PostHog are gone; then PostHog can be shut down.
