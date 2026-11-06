@@ -221,6 +221,25 @@ MonoBehaviour:
     - element: 3
       glyph: 2
     coreGlyphs: []
+  - vessel: 28
+    scheme: 0
+    liftDeferSeconds: 0.12
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 3
+      glyph: 1
+    coreGlyphs: []
   - vessel: 4
     scheme: 1
     liftDeferSeconds: 0

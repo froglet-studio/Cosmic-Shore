@@ -152,9 +152,67 @@ namespace CosmicShore.Gameplay
             if (!cam) return;
             _worldDots ??= new StoatPathfinderWorldDots();
             if (!_worldDots.Begin(cam)) return;
-            if (_sling && _sling.UsesSkim) AddSkimRings(cam, hull);
+            if (_sling && _sling.UsesTrampoline) AddTrampolineRings(cam, hull);
+            else if (_sling && _sling.UsesSkim) AddSkimRings(cam, hull);
             else AddRings(hull);
             _worldDots.End();
+        }
+
+        /// <summary>
+        /// Time mode's trampoline (STOAT_DIPOLE.md §1b), world dots only. The SHELL round the white hole as a ball: its outline
+        /// facing the camera and two great circles (the plane of your pass and the one square to it), so its size and where it
+        /// sits read in 3D. While you are in it, the DENT: the rim of the hollow your hull presses into the shell, lime. Each
+        /// bounce throws a RIPPLE ring growing out from the shell where you left it, fading.
+        /// </summary>
+        void AddTrampolineRings(Camera cam, Transform hull)
+        {
+            var sc = _sling ? _sling.Config : null;
+            if (!sc || !cam || !hull) return;
+            int n;
+            float age = _sling.BounceFxAge;
+            const float rippleSeconds = 0.6f;
+            if (age >= 0f && age < rippleSeconds)
+            {
+                var ripple = config.WarpedColor;
+                ripple.a *= 1f - age / rippleSeconds;
+                float r = _sling.BounceFxRadius * (1f + 1.5f * age / rippleSeconds);
+                n = StoatSlingMath.Ring(_sling.BounceFxCentre, _sling.BounceFxNormal, r, RingSegments, _ring);
+                _worldDots.Add(_ring, n, null, 0, ripple, sc.RingDotSize * 1.3f, sc.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+            }
+            if (!_sling.IsTrampolineUp) return;
+            var centre = _sling.TrampolineCentre;
+            float radius = _sling.TrampolineRadius;
+            bool touching = _sling.IsOrbiting;
+
+            var shell = touching ? config.WarpedColor : config.OpenColor;
+            shell.a *= touching ? 1f : sc.OrbitRingAlpha;
+            var facing = cam.transform.position - centre;
+            if (facing.sqrMagnitude > 1e-6f)
+            {
+                n = StoatSlingMath.Ring(centre, facing.normalized, radius, RingSegments, _ring);
+                _worldDots.Add(_ring, n, null, 0, shell, sc.RingDotSize, sc.RingDotSpacing, config.WorldDotMinPixels, closed: true);
+            }
+            var faint = shell;
+            faint.a *= sc.DetectionRingAlpha;
+            var pass = StoatSlingMath.RingNormal(hull.position, hull.forward, centre, hull.up);
+            n = StoatSlingMath.Ring(centre, pass, radius, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, faint, sc.RingDotSize, sc.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+            var across = Vector3.Cross(pass, centre - hull.position);
+            if (across.sqrMagnitude > 1e-6f)
+            {
+                n = StoatSlingMath.Ring(centre, across.normalized, radius, RingSegments, _ring);
+                _worldDots.Add(_ring, n, null, 0, faint, sc.RingDotSize, sc.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+            }
+
+            // The dent: the circle where the pressed-in hollow meets the shell, centred on the hull's normal.
+            float depth = _sling.DentDepth;
+            if (touching && depth > 0.05f)
+            {
+                var normal = _sling.DentNormal;
+                float rim = Mathf.Sqrt(Mathf.Max(0f, radius * radius - (radius - depth) * (radius - depth)));
+                n = StoatSlingMath.Ring(centre + normal * (radius - depth), normal, rim, RingSegments, _ring);
+                _worldDots.Add(_ring, n, null, 0, config.WarpedColor, sc.RingDotSize * 1.3f, sc.RingDotSpacing, config.WorldDotMinPixels, closed: true);
+            }
         }
 
         /// <summary>

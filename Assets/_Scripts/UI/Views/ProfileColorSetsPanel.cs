@@ -47,8 +47,13 @@ namespace CosmicShore.UI
         [Header("Step aside while the world shows")]
         [Tooltip("The pilot card, hidden while this page shows (the board gives the world its space).")]
         [SerializeField] private CanvasGroup pilotCard;
-        [Tooltip("The Profile's veil and its sea lines: switched off while this page shows, so the cell is seen.")]
-        [SerializeField] private Graphic[] veil = Array.Empty<Graphic>();
+        [Tooltip("The Profile's veil: dimmed to Veil While Showing while this page shows, so the cell is seen but sits " +
+                 "back behind the words.")]
+        [SerializeField] private Graphic veil;
+        [Tooltip("The veil's alpha while this page shows (the cell through it). Its own alpha comes back on leaving.")]
+        [Range(0f, 1f)] [SerializeField] private float veilWhileShowing = 0.55f;
+        [Tooltip("Switched off while this page shows: the veil's sea lines, which would draw over the cell.")]
+        [SerializeField] private Graphic[] hideWhileShowing = Array.Empty<Graphic>();
 
         [Header("Sets")]
         [Tooltip("Used when the theme manager is not up (a test scene). In the game, ThemeManagerDataContainer's catalog.")]
@@ -82,6 +87,7 @@ namespace CosmicShore.UI
 
         bool _showing;
         int _picked = -1;
+        float _veilAlpha = -1f;
         GameObject _lastSelected;
 
         ColorSetCatalogSO Catalog => ThemeManager.Data && ThemeManager.Data.Catalog ? ThemeManager.Data.Catalog : catalog;
@@ -182,7 +188,14 @@ namespace CosmicShore.UI
                 pilotCard.alpha = colourSets ? 0f : 1f;
                 pilotCard.interactable = pilotCard.blocksRaycasts = !colourSets;
             }
-            foreach (var g in veil)
+            if (veil)
+            {
+                if (_veilAlpha < 0f) _veilAlpha = veil.color.a;
+                var c = veil.color;
+                c.a = colourSets ? veilWhileShowing : _veilAlpha;
+                veil.color = c;
+            }
+            foreach (var g in hideWhileShowing)
                 if (g) g.enabled = !colourSets;
             if (recordTab) recordTab.IsSelected = !colourSets;
             if (colourSetsTab) colourSetsTab.IsSelected = colourSets;
