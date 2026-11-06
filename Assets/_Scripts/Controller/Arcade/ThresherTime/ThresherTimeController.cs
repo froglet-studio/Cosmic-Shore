@@ -1,42 +1,276 @@
+using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Thresher Time - the Thresher-only circuit race. A closed loop of switch rings is cut through
-    /// the cell and every pilot flies LAPS of it in order; the first domain whose lead runner
-    /// threads the last gate of the last lap wins, scored on finish TIME (golf).
+    /// Thresher Time - the Thresher-only target race. A closed loop of gates is cut through the cell and every pilot
+    /// flies LAPS of it in order; the first domain whose lead runner clears the last gate of the last lap wins, scored on
+    /// finish TIME (golf).
     ///
-    /// <para><b>The mode is a question about slinging.</b> The Thresher cruises at 125 u/s on a
-    /// fixed 120 deg/s turn - a 60 u circle. Everything past cruise comes from its plant: pull LT
-    /// all the way and the ball stops and becomes a pivot, the ship orbits it, RT winds the chain
-    /// in and spins the orbit up by angular momentum, and letting go throws the hull off the
-    /// circle at the orbit's speed - up to the ball's own 479 u/s ceiling. That launch is the
-    /// hull's OWN momentum: grip keeps it on the nose, so the hull turns all of it at the same
-    /// 120 deg/s, on a circle that grows with the speed (229 u at the ceiling), while the
-    /// throttle bleeds it back to cruise. Every corner asks <i>how much sling is this corner
-    /// worth?</i> - none of them at level 1, one at 2, two at 3, three at 4. See
-    /// <see cref="ThresherTimeCourse"/> for the curve and the ladder.</para>
+    /// <para><b>No rings: a target at every gate</b> (Yash, 2026-11-04). Each gate is a NEST
+    /// (<see cref="ThresherTimeNest"/>): a core inside a cage that arms itself with the intensity. The rings are still the
+    /// course (the objective arrow, the race toasts and the AI steer by them) but they are hidden; a gate opens when its
+    /// nest's core breaks, by anything - the ball, a chain cut, a charged blast, a ram, a steal - and the pilot whose
+    /// next gate it is clears it by being beside it then, or by flying through its wreck before it regrows
+    /// (<see cref="ThresherTimeNest.PassesNear"/>). Shorter regrows and a tighter credit radius make the high intensities
+    /// a race to break your own target, not to follow someone else's.</para>
     ///
-    /// <para><b>What the mode does NOT add:</b> no new ability, no cell of its own, no new scoring
-    /// metric and no circuit generator - Grizzly Time's shape (Redline's on Headlong's solver),
-    /// with <see cref="ThresherTimeCourse"/> supplying the Thresher's cut. The Thresher's shipped
-    /// kit is the racing: the Plant is the sling, the Winch is the wind-in, and the ball smashes
-    /// whatever a rival lays across the line.</para>
+    /// <para><b>The mode is still a question about slinging.</b> The Thresher cruises at 125 u/s on a fixed 120 deg/s
+    /// turn; everything past cruise comes from its plant (orbit the planted ball, wind the chain in, let go). A nest adds
+    /// the other half of its kit: plant beside a nest and the orbiting chain shreds the cage and charges the ball, and the
+    /// charged ball's next hit is a blast that opens the core. See THRESHERTIME.md.</para>
+    ///
+    /// <para><b>What the mode does NOT add:</b> no new ability, no new scoring metric, no change to the vessel (CLAUDE.md,
+    /// "A game mode never changes the vessel"). The nests are the mode's environment, laid on every peer from the
+    /// broadcast course like Serpentine's gates.</para>
     /// </summary>
     public class ThresherTimeController : GateRaceController
     {
         [Header("Thresher Time circuit")]
-        [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
-                 "length, so the circuit is laid with target/laps rings - one number authored " +
+        [Tooltip("Laps of the gate set that make one race. The authored gate target is the RACE " +
+                 "length, so the circuit is laid with target/laps gates - one number authored " +
                  "once, in the end-condition overrides, and the two can never disagree.")]
         [SerializeField, Min(1)] int laps = ThresherTimeCourseSource.DefaultLaps;
+
+        [Header("Targets (ThresherTimeNest)")]
+        [Tooltip("The prism every nest is laid from: the environment prism (SpawnablePrism). Authored by " +
+                 "Tools/Build/author_thresher_time_assets.py. Unset = the rings stay and no nests are laid, with a warning.")]
+        [SerializeField] Prism nestPrefab;
+        [Tooltip("On intensity 1-4: how near (u) a pilot must be to an opened nest to clear its gate - beside it when it " +
+                 "broke, or flying through its wreck before it regrows.")]
+        [SerializeField] float[] creditRadiusByIntensity = { 320f, 280f, 240f, 200f };
+        [Tooltip("On intensity 1-4: seconds an opened nest stays down before it grows back (it waits on while any hull " +
+                 "is inside its reach). Short at the top: break your own.")]
+        [SerializeField] float[] regrowSecondsByIntensity = { 3f, 3f, 2.5f, 2f };
+        [Tooltip("Prisms a breaking nest blows apart each frame, core outward.")]
+        [SerializeField, Min(1)] int nestBurstPerFrame = 48;
+        [Tooltip("Speed (u/s) a breaking nest's prisms fly apart at.")]
+        [SerializeField, Min(0f)] float nestBurstSpeed = 40f;
+        [Tooltip("Prisms a regrowing nest lays each frame.")]
+        [SerializeField, Min(1)] int nestRegrowPerFrame = 40;
+
+        [Header("Rewards")]
+        [Tooltip("A crystal sits in the core of every Nth nest (crack it open to take it); 0 = the cell's own crystals.")]
+        [SerializeField, Min(0)] int crystalEveryNthTarget = 3;
 
         protected override string ModeName => "Thresher Time";
 
         /// <summary>The Thresher's circuit (<see cref="ThresherTimeCourseSource"/>): Headlong's solver,
-        /// <see cref="ThresherTimeCourse.ForIntensity"/>'s settings, target/laps rings per lap.</summary>
+        /// <see cref="ThresherTimeCourse.ForIntensity"/>'s settings, target/laps gates per lap.</summary>
         protected override RaceCourseSource CreateCourseSource() =>
             new ThresherTimeCourseSource { Laps = laps };
+
+        /// <summary>Owner id no pilot carries: the prisms of the nests.</summary>
+        const string NestOwnerId = "ThresherTimeNest";
+
+        /// <summary>One gate's nest: its parts, the prisms laid for them (index for index), and its state.</summary>
+        sealed class GateNest
+        {
+            public int Gate;
+            public RaceGate Ring;
+            public int Intensity;
+            public readonly List<ThresherTimeNest.Part> Parts = new();
+            public readonly List<Prism> Prisms = new();
+            public Trail Trail;
+            public bool Standing;
+            public bool Bursting;
+            public bool Regrowing;
+            public int Cursor;
+            public float RegrowAt = -1f;
+        }
+
+        readonly List<GateNest> _nests = new();
+        Transform _nestRoot;
+        CrystalManager _keyManager;
+        static readonly ProfilerMarker s_tickMarker = new("ThresherTime.Nests");
+
+        public override void OnNetworkDespawn()
+        {
+            ClearNests();
+            if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
+            _keyManager = null;
+            base.OnNetworkDespawn();
+        }
+
+        // ── The nests (every peer) ────────────────────────────────────────
+
+        protected override void OnCourseRaised()
+        {
+            ClearNests();
+            if (!nestPrefab)
+            {
+                CSDebug.LogWarning("[ThresherTime] no nestPrefab - the rings stay and no targets are laid. " +
+                                   "Re-run Tools/Build/author_thresher_time_assets.py.");
+                return;
+            }
+
+            _nestRoot = new GameObject("ThresherTimeNests").transform;
+            int intensity = Intensity;
+            for (int i = 0; i < _course.Count; i++)
+            {
+                var nest = new GateNest { Gate = i, Ring = _course[i], Intensity = intensity, Trail = new Trail() };
+                ThresherTimeNest.Build(_course[i], i, intensity, nest.Parts);
+                for (int k = 0; k < nest.Parts.Count; k++) nest.Prisms.Add(LayPart(nest, k, forReveal: true));
+                nest.Standing = true;
+                _nests.Add(nest);
+                if (i < _rings.Count && _rings[i]) _rings[i].SetVisualHidden(true);
+            }
+
+            if (IsServer && crystalEveryNthTarget > 0) PlaceRewardCrystals();
+        }
+
+        /// <summary>The server puts a crystal in the core of every Nth nest (the crystal manager's course keys, Switchback's
+        /// seam): crack the nest open and fly through its heart to take it. It grows back in place.</summary>
+        void PlaceRewardCrystals()
+        {
+            var keys = new List<Vector3>();
+            for (int i = crystalEveryNthTarget - 1; i < _nests.Count; i += crystalEveryNthTarget)
+                keys.Add(_nests[i].Ring.Position);
+            if (keys.Count == 0) return;
+            _keyManager = Object.FindAnyObjectByType<CrystalManager>(FindObjectsInactive.Include);
+            if (_keyManager) _keyManager.SetCourseKeys(keys);
+            else CSDebug.LogWarning("[ThresherTime] no CrystalManager in the scene - the nests hold no crystals.");
+        }
+
+        Prism LayPart(GateNest nest, int k, bool forReveal)
+        {
+            var part = nest.Parts[k];
+            var prism = PrismTrailBuilder.LayOne(nestPrefab,
+                new PrismLay(new SpawnPoint(part.Position, part.Rotation, part.Scale), Domains.Blue, part.Kind),
+                _nestRoot, nest.Trail, NestOwnerId, watchForReveal: forReveal);
+            if (prism && !forReveal) prism.CompletesAsLiveRibbon = true;
+            return prism;
+        }
+
+        /// <summary>Still a prism of its nest: alive, and not taken (a stolen prism is re-owned, a destroyed one goes back
+        /// to the pool and is re-issued to somebody else).</summary>
+        static bool Holds(Prism prism) => prism && !prism.destroyed && prism.ownerID == NestOwnerId;
+
+        void ClearNests()
+        {
+            for (int g = 0; g < _nests.Count; g++)
+            {
+                var nest = _nests[g];
+                for (int k = 0; k < nest.Prisms.Count; k++)
+                {
+                    var prism = nest.Prisms[k];
+                    if (Holds(prism)) prism.Damage(Vector3.zero, Domains.Blue, string.Empty, devastate: true);
+                }
+            }
+            _nests.Clear();
+            if (_nestRoot) Destroy(_nestRoot.gameObject);
+            _nestRoot = null;
+        }
+
+        // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
+        void LateUpdate()
+        {
+            if (_nests.Count == 0) return;
+            using (s_tickMarker.Auto()) TickNests();
+        }
+
+        /// <summary>
+        /// Every peer, every frame: a standing nest whose core lost a block breaks (opening its gate); a breaking one
+        /// blows <see cref="nestBurstPerFrame"/> more prisms apart, core outward; an opened one grows back
+        /// <see cref="RegrowSeconds"/> later, once no hull is inside its reach.
+        /// </summary>
+        void TickNests()
+        {
+            float now = Time.time;
+            for (int g = 0; g < _nests.Count; g++)
+            {
+                var nest = _nests[g];
+                if (nest.Standing)
+                {
+                    for (int k = 0; k < nest.Parts.Count; k++)
+                    {
+                        if (!nest.Parts[k].Core) break;   // the core is listed first
+                        if (Holds(nest.Prisms[k])) continue;
+                        nest.Standing = false;
+                        nest.Bursting = true;
+                        nest.Cursor = 0;
+                        break;
+                    }
+                }
+
+                if (nest.Bursting)
+                {
+                    int budget = nestBurstPerFrame;
+                    while (budget > 0 && nest.Cursor < nest.Prisms.Count)
+                    {
+                        var prism = nest.Prisms[nest.Cursor++];
+                        if (!Holds(prism)) continue;
+                        Vector3 impact = (prism.transform.position - nest.Ring.Position).normalized * nestBurstSpeed;
+                        prism.Damage(impact, Domains.Blue, string.Empty, devastate: true);
+                        budget--;
+                    }
+                    if (nest.Cursor >= nest.Prisms.Count)
+                    {
+                        nest.Bursting = false;
+                        nest.RegrowAt = now + RegrowSeconds;
+                    }
+                    continue;
+                }
+
+                if (!nest.Standing && !nest.Regrowing && now >= nest.RegrowAt && !HullWithin(nest))
+                {
+                    nest.Regrowing = true;
+                    nest.Cursor = 0;
+                }
+
+                if (nest.Regrowing)
+                {
+                    int budget = nestRegrowPerFrame;
+                    while (budget > 0 && nest.Cursor < nest.Parts.Count)
+                    {
+                        int k = nest.Cursor++;
+                        if (Holds(nest.Prisms[k])) continue;
+                        nest.Prisms[k] = LayPart(nest, k, forReveal: false);
+                        budget--;
+                    }
+                    if (nest.Cursor >= nest.Parts.Count)
+                    {
+                        nest.Regrowing = false;
+                        nest.RegrowAt = -1f;
+                        nest.Standing = true;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Is any hull inside this nest's reach (so growing it back now would lay prisms on it)?</summary>
+        bool HullWithin(GateNest nest)
+        {
+            float reach = ThresherTimeNest.OuterReach(nest.Intensity) + 10f;
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var tf = players[i]?.Vessel?.Transform;
+                if (tf && (tf.position - nest.Ring.Position).sqrMagnitude < reach * reach) return true;
+            }
+            return false;
+        }
+
+        float CreditRadius => ByIntensity(creditRadiusByIntensity, 240f);
+        float RegrowSeconds => ByIntensity(regrowSecondsByIntensity, 3f);
+
+        float ByIntensity(float[] values, float fallback) =>
+            values is { Length: > 0 } ? values[Mathf.Clamp(Intensity, 1, values.Length) - 1] : fallback;
+
+        // ── Clearing a gate ───────────────────────────────────────────────
+
+        /// <summary>A gate with a nest is cleared once its nest is open (broken, not yet grown back) and the pilot passes
+        /// within <see cref="CreditRadius"/> of it - beside it as it broke, or through its wreck. The rings themselves no
+        /// longer count. Without nests (no prefab) the rings thread as before.</summary>
+        protected override bool ThreadsGate(int ringIndex, Vector3 prev, Vector3 cur)
+        {
+            if (ringIndex < 0 || ringIndex >= _nests.Count) return base.ThreadsGate(ringIndex, prev, cur);
+            var nest = _nests[ringIndex];
+            return !nest.Standing && ThresherTimeNest.PassesNear(nest.Ring.Position, prev, cur, CreditRadius);
+        }
     }
 }

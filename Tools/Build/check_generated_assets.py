@@ -434,7 +434,7 @@ class Audit:
             # a script in a package (UGUI Button/Image, TextMeshPro, Netcode...): Unity resolves it
             # through Library/PackageCache, which this audit never sees. The base tree already
             # references it, so the project depends on it either way.
-            self.unverified["script in a package (guid %s)" % guid] += 1
+            self.unverified["%s in a package (guid %s)" % ("shader" if path.endswith("m_Shader") else "script", guid)] += 1
             return []
         if not target:
             return [("guid", rel, "%s.%s -> guid %s resolves to no asset in Assets/" % (where, path, guid))]
@@ -666,18 +666,18 @@ def changed_assets(base):
 
 
 def external_script_guids(base, guids):
-    """m_Script guids the BASE tree references that resolve to no .cs/.dll under Assets/ on the base:
-    scripts that live in a package (UGUI, TextMeshPro, Netcode, Cinemachine, ...). Unity resolves
-    those through Library/PackageCache, which this audit never sees, so a NEW document that names
-    one is not a dangling reference - the project already depends on that script. A guid that DID
-    resolve under Assets/ on the base and no longer does is deliberately not in this set, so the
-    orphaned references of a deleted script still surface as findings."""
+    """m_Script and m_Shader guids the BASE tree references that resolve to nothing under Assets/ on the
+    base: scripts and shaders that live in a package (UGUI, TextMeshPro, Netcode, Cinemachine, ...; URP's
+    Lit shader). Unity resolves those through Library/PackageCache, which this audit never sees, so a NEW
+    document that names one is not a dangling reference - the project already depends on it. A guid
+    that DID resolve under Assets/ on the base and no longer does is deliberately not in this set, so the
+    orphaned references of a deleted script or shader still surface as findings."""
     def grep(pattern, *pathspec):
         r = subprocess.run(["git", "grep", "-h", "-o", "-E", pattern, base, "--", *pathspec],
                            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         return set(re.findall(r"[0-9a-f]{32}", r.stdout))
-    referenced = grep(r"m_Script: \{fileID: -?[0-9]+, guid: [0-9a-f]{32}", "Assets")
-    in_base_assets = grep(r"^guid: [0-9a-f]{32}", "Assets/*.cs.meta", "Assets/*.dll.meta")
+    referenced = grep(r"m_(Script|Shader): \{fileID: -?[0-9]+, guid: [0-9a-f]{32}", "Assets")
+    in_base_assets = grep(r"^guid: [0-9a-f]{32}", "Assets/*.meta")
     return frozenset(referenced - in_base_assets - set(guids))
 
 
@@ -825,7 +825,7 @@ def self_test(schema, base):
         ("type", "reference to an asset of the wrong class",
          sub(cfg, "Theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628", "Theme: {fileID: 11400000, guid: " + meta_guid(tree0, SWARM_PROFILE))),
         ("local", "in-file fileID that names no document", {tad: re.sub(r"m_GameObject: \{fileID: (\d+)\}", "m_GameObject: {fileID: 42}", tree0.read(tad), 1)}),
-        ("yaml", "broken YAML", sub(cfg, "  UnitScale: 2\n", "  UnitScale: [2\n")),
+        ("yaml", "broken YAML", sub(cfg, re.search(r"  UnitScale: [^\n]*\n", tree0.read(cfg)).group(0), "  UnitScale: [2\n")),
         ("yaml", "missing %TAG header", sub(cfg, "%TAG !u! tag:unity3d.com,2011:\n", "")),
         ("meta", "duplicate guid", {"Assets/_SO_Assets/Swarm Fauna/Dup.asset.meta": tree0.read(cfg + ".meta")}),
         # Dropped from BOTH: a Spawn Matrix row is a spawn path too, and every Swarm-cell species is on it.
@@ -868,6 +868,20 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
     print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
     ok &= not hit
+    # the same for a package SHADER (URP's Lit, which Resources/OrcaCrewLit.mat already names) on a new material
+    urp_lit = "933532a4fcc9baf4fa0491de14d08ed7"
+    mat_rel = "Assets/Resources/__SelfTestPackageShader.mat"
+    mat = ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!21 &2100000\nMaterial:\n  serializedVersion: 8\n"
+           "  m_Name: __SelfTestPackageShader\n  m_Shader: {fileID: 4800000, guid: " + urp_lit + ", type: 3}\n")
+    found, _ = run_audit(Tree(ROOT, {mat_rel: mat}), schema, base, [mat_rel], [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and urp_lit in f[2]]
+    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package shader guid on a new material is NOT a finding", hit[0][2][:110] if hit else ""))
+    ok &= not hit
+    unknown_shader = "0123456789abcdef0123456789abcdef"
+    found, _ = run_audit(Tree(ROOT, {mat_rel: mat.replace(urp_lit, unknown_shader)}), schema, base, [mat_rel], [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and unknown_shader in f[2]]
+    print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a shader guid nothing knows is still a finding", hit[0][2][:110] if hit else ""))
+    ok &= bool(hit)
     # Unity's [SerializeReference] registry is not a field; a `references` key without its shape is
     registry = "  references:\n    version: 2\n    RefIds: []\n"
     found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n" + registry}),

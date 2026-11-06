@@ -65,6 +65,69 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by
+`author_meerkat_assets.py`) replace the Stoat's HUD on `Meerkat.prefab`; four ability icons and the omni card (Soliton
+Network) from `Tools/Build/icon_kit/specs/meerkat.py`; a ThumbLifts touch profile (`author_touch_profiles.py`). Verified
+offline only: the two C# files compiled with Unity 6000.3.17f1's Roslyn against `Library/ScriptAssemblies` (no errors);
+`author_meerkat_assets.py --check` / `--self-test`, `icon_kit/author.py meerkat --check`, `verify.py --self-test`,
+`author_touch_profiles.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`, `check_ui_colors.py`
+all green. No editor run: another session had Unity open on this checkout; `unity_refcompile` cannot run on Windows.
+
+1. The project compiles; open `MeerkatHUDVariant.prefab`. **Pass:** no missing-script or missing-sprite warnings; the view's
+   four gauges (Sentinel, Portal, Soliton, Ride) and its omni sprite are wired.
+2. Toybox, Vessel Changer: the Meerkat. **Pass:** the row shows Sentinel Mode, Exit Portal, Soliton, Faster Ride (not the
+   Stoat's Ripple / Modes / orbit / path) and the omni card shows the three-tunnel network, not LOCKED.
+3. Fly it. **Pass:** the Space plate fills as the reticle grows back and turns lime once RT would form; the Time plate is lime
+   and empties through a ride; Y lights the Charge plate (lime) even with no sentinel standing, and it fills as sentinels
+   stand; the Mass plate shows the last portal's prisms still standing.
+4. Phone (or the Device Simulator with touch): two thumbs down, the right thumb bends the reticle. Lift the left thumb: the
+   soliton forms (held while riding: the small push). Lift the right: the straight shaft lengthens. Tap the Charge card:
+   Sentinel Mode toggles and no lift fires. **Pass:** each as described. The profile is a prototype that needs Garrett's
+   sign-off.
+5. An AI Meerkat and a remote Meerkat. **Pass:** their HUD never drives yours.
+6. **Its own hull** (`Meerkat.fbx`, swapped into `Meerkat.prefab` by guid; the assimp reader did not run offline). Reimport,
+   then fly it in the Toybox. **Pass:** the Meerkat draws its own hull (raised head, visor band, ear dishes, claws), not the
+   Stoat's; it lopes and banks with `StoatAnimation` (no part left at rest, nothing detached); the four element morphs show
+   as elements level; the jets sit on its nacelles; the class card, hangar preview and squad image show the new hull.
+   Sentinels (Y, then form a soliton) read as the hull standing guard. Judge whether it reads as a meerkat in flight.
+7. **The Rift** (round 28b, `MEERKAT.md` §7b; compiled with Unity's Roslyn against the project's assemblies, the six
+   `MeerkatRiftTests` not run). Toybox, the Meerkat, fly into an omni crystal. **Pass:** you go into the void for about
+   5 s: faster (about 2x), steering freely, flying through prisms and crystals without touching them, the Time card
+   counting down in lime; RT ends the run early. A tube stands along the path you flew, a mouth at each end; fly into its
+   way in and you slide it to its way out; it collapses about 45 s after it was laid, with Sentinel mode on or off.
+   `MeerkatSolitonConfig` > Omnicrystal · the Rift > `omniMode` Network brings round 27's network back. Run
+   `MeerkatRiftTests`. Known gaps: no swallow, exit portal or sentinel on a rift yet; other players do not see rifts.
+
+### 🔴 Switchback I4 gauntlet: 1.5x the prisms, zig-zag keys, plugged tunnels, sealed eyes, path rays (`claude/dreamy-dijkstra-iv7i0k`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** `SwitchbackBlastRun` I4 (Switchback only; `ScarabRallyController` turns it off and keeps the old I4):
+no bore, both eyes sealed (3 x 3 cubes, Danger heart), 2-3 keys a gate in a zig-zag each aimed at the next, a plugged
+tunnel on every segment (Pipe / Duct / Hoops / Helix / Cage), four new field shapes (frame, jack, hoop, ziggurat), caps
+x1.5 (5,100 prisms, 600 within 200 u, 42 movers); `SwitchbackPathRays` + `Resources/SwitchbackPathRay.mat` (rays down the
+route); the AI planner and executor take the keys in order (`StageFor`, through-the-key strike). `SWITCHBACK.md` "The
+I4 gauntlet". Layout revision 6.
+
+**Verified without the editor:** the shipped `SwitchbackBlastRunTests` + `SwitchbackBlastPlannerTests` headless
+(`switchback_sim_harness/run.sh tests`, all pass, four negative controls fire); I1-I3 layouts and AI races bit-identical
+to before, and the I4 with the gauntlet off bit-identical to the old I4 (64 seeds); `switchback_sim_harness` eval (every
+I4 race finishes at every level); reference compile (see the commit). NOT run: anything in Unity.
+
+**Verify in editor:**
+1. EditMode: `SwitchbackBlastRunTests`, `SwitchbackBlastPlannerTests` pass.
+2. Switchback I4, SEED: FIXED (45_504), fly it yourself: each blocked gate shows its rays (key to key to the door);
+   taking a key while drifting the nose onto the next ray clears that tunnel's plugs; ramming a sealed eye is a dead stop.
+   Report whether 2-3 blasts a gate feels right and how hard the pro line is.
+3. The same with 3 AI (Easy to Legendary): every AI finishes; Legendary takes most keys (AI Diagnose, F2, AI plan overlay).
+   The gauntlet's own nose-lag row (`aiNoseFollowGauntlet` 1.9 / 2.8 / 3.5 / 5) puts the AIs offline at 185 / 173 / 165 /
+   155 s; the soak says whether real races sit in the bands 175-195 / 165-185 / 155-175 / 145-165 or need scaling.
+4. Perf: `SwitchbackSoakRunner` at I4 (or a clean capture, `SWITCHBACK.md` "Performance"): frame time and live colliders
+   near the path against the I4 numbers of 2026-11-02 (`Docs/perf/SWITCHBACK_PRISM_BUDGET.md`).
+5. Scarab Rally I4: unchanged (open eyes, one key a gate, no rays).
+
+Froglet Tasks ticket: T-20261103-e945 (froglet-studio/Cosmic-Shore#1734), the same steps.
+
 ### 🔴 Nocturne is the default colour set; the previous default is Photic (`claude/nocturne-colour-set-lpulng`, 2026-11-05) — NOT EDITOR-VERIFIED
 
 **What landed:** `OriginalColorSetSO` renamed `PhoticColorSetSO` (guid kept); `NocturneColorSetSO` is now named by
@@ -143,6 +206,49 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
    solid petal. Same on an arena card's launch screen.
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
+
+### 🔴 Thresher Time: each intensity its own place, plants and creatures grown by the cell (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
+
+**What landed:** Thresher Time leaves the shared Skim Race cell for four cells of its own, picked by intensity
+(`IntensityWise`). Each cell grows plants (Spire, Gyroid, Cacti: 8 → 28 plants) and creatures (tadpoles up to sharks and
+piranha: 10 → 25 live), in the shell the course flies through. The mode lays nothing: every plant and creature comes
+from the cell's own spawner under the locked ecology rules, and the kit is unchanged. Rival-coloured ones are targets
+with crystal hearts; your own colour's are bumpers. Every config is copied from Skim Race, Serpentine's sources and
+Tollway, with only names and numbers changed; none of theirs is touched. `THRESHERTIME.md` §0.
+
+**Verified without the editor:** `author_thresher_time_assets.py --check` passes (the plants networked, the creature
+caps at 25 or under, the ladders rising, the band inside the course shell). NOT run: the editor import (the editor
+was in Play mode), any race.
+
+**Verify in editor:**
+1. Thresher Time I1 has a few Spires along the track and tadpoles. I4 is thick with Cacti, Spires and Gyroids, with
+   sharks and piranha. Plants come in all three colours.
+2. Smash a rival-coloured plant with the ball: it comes apart and its heart drops a crystal. A plant in your own
+   colour bounces the ball.
+3. Frame time at I4 with the nests stands up (Serpentine dropped Rampage's forests for frame time). Watch the profiler.
+4. The Test Flight preview shows each intensity's own place.
+
+### 🔴 Thresher Time: a nest to break at every gate instead of a ring (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
+
+**What landed:** the rings are hidden and every gate is a nest (`ThresherTimeNest`): a core inside a cage armoured more
+at each intensity (I1 seven blocks, no cage; I4 one 3.5 u block in a shielded cage with danger plates and a danger halo).
+Break the core by any means and the nest bursts; the pilot whose next gate it is clears it by passing within the credit
+radius (320 / 280 / 240 / 200 u) before it regrows (3 / 3 / 2.5 / 2 s). A crystal sits in every third core.
+`THRESHERTIME.md` §0. Affects: Garrett's Thresher Time (he created the mode, and asked for the ball to thread rings,
+which no longer applies while nests stand).
+
+**Verified without the editor:** the open editor on B: recompiled it through the Unity CLI with 0 errors and 0 warnings;
+`author_thresher_time_assets.py --check` passes and failed by name on a mutated card. NOT run: `ThresherTimeNestTests`
+(the CLI cannot run tests in an open editor with Unity Pipeline 0.5), any race.
+
+**Verify in editor:**
+1. EditMode: `ThresherTimeNestTests` and `ThresherTimeCourseTests` pass.
+2. Thresher Time I1: no rings show, a cluster of blocks stands at each gate; break one (ram or ball) and it bursts and the
+   objective arrow moves on. It grows back about 3 s later.
+3. I4: the cage is shielded (two hits a plate), danger plates debuff you, the core is small. Plant beside a nest and
+   orbit: the chain cuts the cage and the ball's next hit blasts the core.
+4. Every third nest holds a crystal you can take once it is open.
+5. AI Threshers (the soak or the AI Diagnose panel): they break their nests and finish at every intensity.
 
 ### 🔴 Thresher AI: the aimed launch, learned from Garrett's Thresher Time races (`Ys-bleeding-edge`, 2026-11-02) — NOT EDITOR-VERIFIED
 
@@ -20936,8 +21042,8 @@ Verified (flick launch, Mass power, earned speed, window AI included): Unity 600
 `RedlineController.AICommitFromApproachPoint => true` (new test `RedlineAISteeringTests`). Why and the measurements: `Assets/_Scripts/Controller/Arcade/REDLINE.md` §5.1, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §13. Model only: `Tools/Build/manta_redline_sim.py` (`--self-test` ok), compute job `redline-manta-time` (`redline_fit` self-test ok, `compute.py validate` and `compute.py self-test` ok). Plan step: time-arcade.
 Verified: Unity 6000.3.17f1 batch mode compiled the project with no errors; EditMode `RedlineAISteeringTests|SwitchbackAISteeringTests|MantaAutopilotDriveTests|RedlineCourseTests|MinigameAbilityAITests` 43/43 pass. `unity_refcompile` cannot run on Windows. Not played.
 - [x] The project compiles; EditMode `RedlineAISteeringTests` passes.
-- [ ] Arcade > Redline at I1 with three AI Mantas: every AI finishes the 24 rings. The model says about 110 s a race at I1-I3 (their throttle is the skill throttle, 37.5% at I1, so they are slow there) and about 330 s at I4. Note what you see.
-- [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I3 or I4 race.
+- [ ] Arcade > Redline at I1 with three AI Mantas: every AI finishes the 40 rings (five laps; the times first written here were the model's three-lap times). The model says about 183 s a race at I1-I3 (their throttle is the skill throttle, 37.5% at I1, so they are slow there) and about 540 s at I4. Note what you see.
+- [ ] I4 (44 u mouths): an AI that misses a mouth turns back and re-attacks it within a few seconds, instead of circling a point past the ring. Before this change the model's AI finished no I4 race.
 - [ ] The AIs do not weave on the long legs, and Soar there (the speed readout near 650 at I4).
 - [ ] Headlong is unchanged (it keeps the old steering).
 
@@ -21036,6 +21142,15 @@ says 0.28-0.50 s at the full kick (was 0.09-0.19 s).
 - [ ] A release just outside the lime still gives a noticeable kick; one before 30 deg still gives nothing.
 - [ ] Slingshot I1-I4: AI Stoats finish; note if they overshoot rings more than before (model: 66-94 s, 1-6 rings missed a race).
 
+## 🟡 Stoat: the aimed exit - a second in the orbit, out at 30-45 deg from your entry (2026-11-03, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The aimed exit". `StoatSlingConfig`: aimedExit on,
+exit 30-45 deg, window 0.8-1.4 s; maxOrbitDegrees 720; the AI's aiSlingMinTurnDegrees 20 (and its Slingshot copy).
+- [ ] Caught, the ring turns lime about a second in (0.8-1.4 s) and not before; a release in the first third of a second gives no kick.
+- [ ] Released in the lime, you leave on the heading you came in on turned 30-45 deg toward the orbit's side, wherever round the orbit you are.
+- [ ] Stick toward the turn at the release: about 45 deg; away: about 30; stick at rest: about 37.5.
+- [ ] The snap from the orbit's heading onto the exit does not jar the camera.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 113-125 s, slower than before: a sling costs about a second of circling).
+
 ## 🔴 Brittle Star level-5 upgrades and the ring explosion's core (2026-11-03, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `unity_refcompile` player + editor 0 errors in
@@ -21070,6 +21185,31 @@ tests were compiled, not run (the Prisma runner does not build on bleeding-edge 
 2. **Fly the Squirrel and drift hard, both ways.** The hull stays where it sits in the frame through the whole drift and
    its end; only a faint rumble shows. Then a Dolphin drift: same.
 3. **Boosts, stops and turns still feel the G**: a boost drops the camera back, a turn swings it out, the neck leans.
+
+## 🟡 Stoat: the trampoline - no orbit, a white hole's soft shell you bounce off (2026-11-04, Yash, NOT PLAYED, TESTS PASS)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The trampoline". `StoatSlingConfig`: trampoline on
+(ahead 140, radius 60, line 0.75, soft 0.35 s, life 4 s); aiSlingMinTurnDegrees 20 → 35 (and its Slingshot copy). Compiled
+(Assembly-CSharp and -Editor, 0 errors), and the EditMode tests RAN in the editor on B: (Ys-bleeding-edge 266f9bc7ab): every
+Stoat test 132/132, the five Trampoline* tests included; the Slingshot tests 19/19.
+- [x] EditMode `StoatSlingTests`: all pass, the five new Trampoline* tests included.
+- [ ] Press RT in Slingshot: a white hole appears ahead-left with a dotted ball round it; flying on, you graze it and are thrown right about 45 deg with a kick.
+- [ ] Steer into it deeper: a sharper turn; skim its edge: a gentle one; head-on: straight back. No pull toward it at any point.
+- [ ] While you are in it the ball turns lime and the dent's ring shows; a lime ripple grows off it at the bounce. The camera does not jar.
+- [ ] Let go of the trigger before touching it: it stays up. Fly past it: it pops (the Charge ripple) and nothing happens to you.
+- [ ] Slingshot I1-I4: AI Stoats bounce off their own shells and finish (model: 111-125 s, 0-8 rings missed a race).
+
+## 🔴 Redline teaches Soar alone: the Soar-only ladder, Time crystals, no omni crystal (2026-11-04, Yash, NOT RUN IN EDITOR)
+`RedlineCourse.ForIntensity` (floors 178 / 205 / 175 / 160 u, I4 profile 125/120/115), `RedlineTimeCrystals` + `RedlineController` (Time crystals laid on every peer, `aiTimeCrystalSlack` 0), the scene's `CrystalManager` count 0 and the card copy (`author_redline_assets.py`), `Tips_Redline.asset`. Why: `Assets/_Scripts/Controller/Arcade/REDLINE.md` §1, §4a, §5.1; `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §13.1. Plan step: time-arcade.
+Verified: `Tools/Build/redline_course_harness/run.sh --self-test` compiles the shipped course, crystals and both test files out of Unity, 20/20 pass, both negative controls fire; `manta_redline_sim.py --self-test` (parity with the C# gates and crystals); `author_redline_assets.py`, `author_drill_assets.py` and `author_mode_previews.py --check`; `compute.py validate` and `self-test`; the console-logging, conditional-compilation, using-directive, switch-label and enum-reference gates. The Unity editor open on this checkout (6000.3.17f1) recompiled these files with no compile error in its log; an EditMode run in Unity was not started (the editor was in use for play tests). `unity_refcompile` does not run on Windows. The card art was re-rendered (`render_card_backgrounds.py Redline --check` OK) through a local native-path copy of `card_art_harness/run.sh`, which first reproduced the committed Lantern Run and Serpent Gulag cards byte for byte. Not played.
+- [ ] The Redline card in the Arcade grid shows the new course (a wider I2 circuit), in the same style as the other race cards.
+- [ ] The project compiles; EditMode `RedlineCourseTests` and `RedlineTimeCrystalsTests` pass.
+- [ ] I1: no crystal anywhere, no corner makes you lift. I2-I4: every corner can be made with BOTH triggers eased together and the stick hard over; you never need to hold one trigger alone.
+- [ ] I4: one corner wants the triggers nearly off, one about a third, and a third you can just hold flat out on a clean line.
+- [ ] Time crystals: none at I1, then 1 / 2 / 3 a lap (I2-I3 halfway down the leg into a corner, I4 just inside the corner exits). One raises the Time petal by one and Soar's top speed visibly (about 3%); it is back about 5 s after you take it. Your Mass, Charge and Space petals never fill, and no omni crystal ever appears.
+- [ ] Two clients (MPPM): both see the same crystals in the same places.
+- [ ] AI Mantas finish I1-I4 and fly past the crystals without swerving for them. The model says about 183 / 181 / 193 / 538 s on five laps. Note what you see.
+- [ ] Test Flight (the card's preview), Mentor: the Redline tips read "Keep (Soar) held...", "Too tight for full Soar? Ease both triggers together...", "Soar takes two seconds to wind back up...", "From intensity 2, Time crystals...".
+- [ ] The card description reads "...easing both triggers to make one... Time crystals make it faster still."
 
 ## 🔴 Profile Colour sets tab and the colour-set repaint (Rev 51 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
 
@@ -21110,6 +21250,8 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 4. **Pick Dart Frog and press APPLY.** The loading screen reads "Changing colour set" and lifts on Dart Frog. The tile
    tick moves, Equipped shows, and leaving now keeps Dart Frog. Restart Play: the game starts in Dart Frog.
 5. **Check the words fit:** the 88-point name for the longest set name, and four pigment pairs on one row.
+6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
+   page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 ## 🔴 Selection to Jade, Ready / Play to Ruby (`claude/ui-jade-ruby`, 2026-11-05) — NOT COMPILED
 
