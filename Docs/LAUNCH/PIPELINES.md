@@ -51,8 +51,8 @@ id. Restrict each Environment's deployment branches and tags to `v*`, `rc-*` and
 | `ios-production` | **required** | none (an App Store Connect key later, optional) | none | release-promote (prints App Store Connect steps) |
 | `testflight` (exists) | required (it does today) | as `ios-testflight.yml` lists | | iOS TestFlight, unchanged |
 
-Repository variable (not a secret): `WEB_PIPELINE_WORKFLOW`, the file name of the web pipeline's workflow (it lands
-with `claude/launch-web-pipeline`).
+The web pipeline's own Environments (`toybox`, `toybox-production`) are listed in its workflow,
+`toybox-publish.yml` on `claude/launch-web-pipeline`.
 
 Why the UBA key is in three Environments: an upload job downloads its player from UBA itself. Passing the player
 between jobs as a workflow artifact would publish it, because **an artifact on a public repository can be downloaded
@@ -80,10 +80,17 @@ default):
 project's settings, so `CosmicShoreBuildPipeline.BuildWindowsRelease` / `BuildAndroidRelease` (which stamp the
 version, write `build_manifest.txt`, and set the shipping player settings) are what a person or `build_windows.sh`
 runs, not UBA. The WebGL target closes this gap with a Pre-Export Method; **Windows, Android and iOS have none yet**.
-Until they do, a UBA player is built from the committed Player Settings, and the version shown in game is the
-committed `bundleVersion`. The upload job writes `build_manifest.txt` (version, commit) next to the Windows player so
-the Steam build description still names the tag and commit. Follow-up: a `PreExport` per platform, as
-`WebToyboxBuild.PreExport` does (Shombith's area).
+Until they do, a UBA player is built from the committed Player Settings. The upload job writes `build_manifest.txt`
+(version, commit) next to the Windows player so the Steam build description still names the tag and commit.
+Follow-up: a `PreExport` per platform, as `WebToyboxBuild.PreExport` does (Shombith's area).
+
+**The build stamp** (`claude/launch-build-stamp`, in flight; `Docs/LAUNCH/BUILD_STAMP.md` there) is a build
+preprocessor, so it does run on UBA. It reads the commit from git and the version, build number, channel and UGS
+environment from `CS_BUILD_VERSION`, `CS_BUILD_NUMBER`, `CS_RELEASE_CHANNEL` and `CS_UGS_ENVIRONMENT`. On UBA those
+are the **target's** environment variables (Config > Environment variables), which are fixed per target, not per
+build: set `CS_RELEASE_CHANNEL` (`playtest`, `internal`, `testflight`) and leave `CS_UGS_ENVIRONMENT` unset so a
+release player talks to `production`. `uba.py start` sends only the commit and a label (the tag); whether UBA's
+start-build call can also carry per-build variables, so the stamp shows the tag's version, is **not verified**.
 
 API key: Unity Cloud > Build Automation > Settings > API key. The org and project ids are in the dashboard URL.
 
@@ -166,11 +173,14 @@ could automate pause / resume later (optional, not built).
 
 ### Web Toybox
 
-The web pipeline is another session's (`claude/launch-web-pipeline`): it builds, stages and records `build-web` /
-`web-staging` itself. Its contract is a `web-v*` tag or a dispatch with the release tag. This workflow dispatches it
-(`gh workflow run "$WEB_PIPELINE_WORKFLOW" -f tag=<tag>`): a tag pushed with the run's own token would start nothing,
-because GitHub does not trigger workflows from `GITHUB_TOKEN` pushes. Until the repository variable names the
-workflow, the web job fails with that message and the rest of the run carries on.
+The web pipeline is another session's (`claude/launch-web-pipeline`, `toybox-publish.yml`): it builds on UBA,
+stages, promotes and records `build-web`, `web-staging` and `web-production` itself. Its contract is a `web-v*` tag,
+or a dispatch with `action=stage` and a `commit`. This workflow dispatches
+`gh workflow run toybox-publish.yml -f action=stage -f commit=<the tag's sha> -f start_uba_build=true`. It has to:
+a tag pushed with the run's own token would start nothing, because GitHub does not trigger workflows from
+`GITHUB_TOKEN` pushes. It only stages; `/play` is that workflow's `promote`, behind `toybox-production`'s
+reviewers. Until that pipeline is on bleeding-edge, GitHub refuses the dispatch (the old workflow has no such
+inputs), and the web job fails alone.
 
 ## Status records
 
