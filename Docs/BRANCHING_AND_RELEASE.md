@@ -369,6 +369,10 @@ build itself.
 
 ### R5. Release builds are entirely manual
 
+**Being closed (2026-11):** a release tag now drives the player builds on Unity Build Automation and the
+pre-release uploads (`release-builds.yml`), and promotion runs behind a reviewer (`release-promote.yml`);
+`Docs/LAUNCH/PIPELINES.md`. None of it has run against a real store yet. The rest of this section still holds:
+
 Fine for now. When the first store submission approaches, the shape to build is
 a `release/<version>` branch cut from a known-good `master` commit, with only
 submission blockers cherry-picked onto it. A store review can take days and the
