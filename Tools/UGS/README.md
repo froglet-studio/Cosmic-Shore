@@ -24,7 +24,9 @@ or write to the backend goes through Shombith first.
 | `Commerce/entitlements.js` | Paid content, kept apart from fair play (R14): episode tokens and owned episodes in the protected key `PLAYER_ENTITLEMENTS`. A token is created only from an order its storefront confirmed, counted from the script's own `STORE` table, once per order | T3 |
 | `Commerce/entitlements.test.cjs` | `node Tools/UGS/Commerce/entitlements.test.cjs` | T3 |
 | (no file) | Game Center sign-in on iOS is a dashboard identity provider plus `Assets/Resources/MobileSignInConfig.asset`, below | T1 |
-| `deploy.sh` | The gate (every script's tests and the price check), then uploads the five scripts to one environment: `check`, `development [--dry-run]`, `production [--dry-run]` | all |
+| `CloudCode/launch-flags.js` | The live flags every build reads once after sign-in: the remote kill switches for the five gates, the minimum and recommended versions with their update links, disabled modes and an optional message. The flags are set only here (`Docs/LAUNCH/LIVE_FLAGS.md`) | launch |
+| `CloudCode/launch-flags.test.cjs` | `node Tools/UGS/CloudCode/launch-flags.test.cjs`: refuses an invalid flags document (semver, kill-switch names, GameModes names) | launch |
+| `deploy.sh` | The gate (every script's tests and the price check), then uploads the six scripts to one environment: `check`, `development [--dry-run]`, `production [--dry-run]` | all |
 | `ugs_manifest.py` | What a deploy uploads (deploy.sh's own `SCRIPTS` list, each file hashed) and what changed since the last deploy recorded for that environment; `self-test` | all |
 | `install_cli.sh` | Installs the pinned UGS CLI (2.0.0) from Unity's release and checks its sha256 before it runs | all |
 
@@ -34,6 +36,9 @@ The scripts in this folder do nothing until they are uploaded to UGS: the game c
 `weekly-score`, `match-report`, `trust`, `entitlements`), and until they exist on Unity's servers those calls fail. Each
 switch in the game stays off until its script is deployed, so **deploy first, then turn switches on**. Deploying is safe
 at any time: nothing calls a script while its switch is off.
+
+**The exception is `launch-flags`:** every build that signs in calls it, so deploying it changes the live flags for
+every player. Change it only as `Docs/LAUNCH/LIVE_FLAGS.md` §3 says (pull request, development, then production).
 
 "development" and "production" are the two UGS environments on Unity's servers, not git branches. Only commits already
 on **bleeding-edge** are deployed, and production only after development took the same commit.
@@ -63,7 +68,7 @@ What one run does (`.github/workflows/ugs-deploy.yml`):
    `policies_applied` (always 0), `manifest`, `ref` and one `h_<script>` hash per file. `rollback_to` is the commit of
    the deploy before it. The plan publishes nothing.
 
-Then check the dashboard: Cloud Code > Scripts, that environment: the five are there. Production after the editor
+Then check the dashboard: Cloud Code > Scripts, that environment: the six are there. Production after the editor
 checks pass with a switch on.
 
 Pull requests that touch `Tools/UGS/`, `author_economy_catalog.py` or the workflow run the plan alone, so a broken test
@@ -116,7 +121,7 @@ A rollback is a deploy of an older commit:
 3. Check the dashboard (Cloud Code > Scripts) and the game; then fix forward on bleeding-edge. The next normal deploy
    (ref `bleeding-edge`) puts the fix out the same way.
 
-Limits: a rollback re-uploads the five scripts as they were in that commit; it does not remove a script added since (it
+Limits: a rollback re-uploads the scripts as they were in that commit; it does not remove a script added since (it
 stays at its new version; remove it in the dashboard if it must go), and it does not undo data the scripts wrote. Only
 commits that carry this pipeline (`Tools/UGS/ugs_manifest.py`) can be deployed by the button; for an older one, check
 it out and run `deploy.sh` from a terminal. A rollback that changes a price must match the build players run: prices

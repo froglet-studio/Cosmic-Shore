@@ -1,0 +1,84 @@
+# Launch flags check: the live flags document and every Cloud Code script's tests, on each change, before any deploy.
+#
+# The live flags (kill switches, minimum version, disabled modes) live in Tools/UGS/CloudCode/launch-flags.js and change
+# only by a pull request (Docs/LAUNCH/LIVE_FLAGS.md). This runs every Tools/UGS/**/*.test.cjs, so a flags typo (a
+# version that is not semver, a kill switch the game does not know, a GameModes name that does not exist) fails on the
+# pull request, long before ugs-deploy would refuse it. It also re-checks that the game still reads each kill switch,
+# so it runs when the gates or GameModes change too.
+#
+# No secrets. The tests job is read-only; the publish job only writes the launch-status data branch (dry run on pull
+# requests). GitHub-hosted runner; fork pull requests are safe to run. Node and Python are the runner's own.
+name: Launch flags check
+
+on:
+  pull_request:
+    paths:
+      - "Tools/UGS/**"
+      - "Assets/_Scripts/System/CloudData/**"
+      - "Assets/_Scripts/System/Monetization/ServerEntitlements.cs"
+      - "Assets/_Scripts/Data/Enums/GameModes.cs"
+      - ".github/workflows/launch-flags-check.yml"
+  push:
+    branches: [bleeding-edge]
+    paths:
+      - "Tools/UGS/**"
+      - "Assets/_Scripts/System/CloudData/**"
+      - "Assets/_Scripts/System/Monetization/ServerEntitlements.cs"
+      - "Assets/_Scripts/Data/Enums/GameModes.cs"
+      - ".github/workflows/launch-flags-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: launch-flags-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            Tools/UGS
+            Assets/_Scripts/System/CloudData
+            Assets/_Scripts/System/Monetization
+            Assets/_Scripts/Data/Enums
+      - name: Every UGS script test (the flags document first)
+        run: |
+          set -uo pipefail
+          node --version
+          status=0
+          for t in Tools/UGS/CloudCode/launch-flags.test.cjs $(ls Tools/UGS/*/*.test.cjs | grep -v launch-flags); do
+            echo "::group::$t"
+            if node -- "$t"; then echo "PASS $t"; else echo "::error file=$t::tests failed"; status=1; fi
+            echo "::endgroup::"
+          done
+          exit $status
+
+  publish:
+    needs: tests
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write   # the launch-status data branch only; this job holds no other secret
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            Tools/Launch
+      - name: Publish launch status
+        env:
+          RESULT: ${{ needs.tests.result == 'success' && 'success' || 'failure' }}
+          DRY: ${{ github.event_name == 'pull_request' && '--dry-run' || '' }}
+        run: |
+          python3 Tools/Launch/launch_status.py publish $DRY \
+            --id launch-flags --platform liveops --kind gate --result "$RESULT" \
+            --summary "Live flags document and Cloud Code script tests: $RESULT"

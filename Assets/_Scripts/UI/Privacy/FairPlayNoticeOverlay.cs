@@ -55,7 +55,7 @@ namespace CosmicShore.UI
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Subscribe()
         {
-            if (!FairPlayTrustGate.Enabled) return;
+            if (!FairPlayTrustGate.IsActive) return;
             FairPlayTrust.OnNoticeChanged -= Show;
             FairPlayTrust.OnNoticeChanged += Show;
         }
