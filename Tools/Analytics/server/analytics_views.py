@@ -596,8 +596,8 @@ BALANCE_NOTES = {
     "score": "the player's own final score, from game_completed (builds after 2026-11-07); modes score on their own "
              "scales, so compare a mode with itself",
     "placement": "1 is best, among every player in the match, AI included (builds after 2026-11-07)",
-    "win_pct": "player_won from game_completed, of the finished matches that sent it",
-    "abandon_pct": "match_abandoned over the plays of builds that send it (from the first day a build and version sent "
+    "win_pct": "won is player_won from game_completed, of the finished matches that sent it",
+    "abandon_pct": "a quit is match_abandoned, over the plays of builds that send it (from the first day a build and version sent "
                    "match_abandoned or session_started); older builds never said when a player left",
 }
 MAX_KEYS = 8
@@ -1196,9 +1196,9 @@ def schema(agg_path, saved_tables=()):
 # invite attribution, and the client_exception known gap. Every function reads aggregates.db only.
 
 SESSION_BUCKETS = ((0, 60, "under 1 min"), (60, 300, "1-5 min"), (300, 900, "5-15 min"), (900, 1800, "15-30 min"),
-                   (1800, 3600, "30-60 min"), (3600, 10 ** 9, "60 min or more"))
+                   (1800, 3600, "30-60 min"), (3600, 10 ** 9, "60+ min"))
 ELAPSED_BUCKETS = ((0, 30, "under 30 s"), (30, 60, "30-60 s"), (60, 120, "1-2 min"), (120, 300, "2-5 min"),
-                   (300, 600, "5-10 min"), (600, 10 ** 9, "10 min or more"))
+                   (300, 600, "5-10 min"), (600, 10 ** 9, "10+ min"))
 SESSION_NOTES = [
     "DAU, WAU and MAU count players with any event that day, the 7 days to it and the 30 days to it, so they go back "
     "to the PostHog history; DAU on the tiles is the average day of the range (today, still running, left out)",
@@ -1221,7 +1221,7 @@ INVITE_NOTES = [
     "the first-match cohorts of the same range",
 ]
 ERROR_NOTES = [
-    "client_exception sends no message text, only a short hash of it with the digits taken out, the exception type, "
+    "a client error (client_exception) carries no message text, only a short hash of it with the digits taken out, the exception type, "
     "the first project frame and the scene; builds after 2026-11-07 send it, at most 20 a session, each error once",
     "occurrences fold in the repeats the game counted; players affected counts each player once in the range",
 ]
@@ -1427,11 +1427,11 @@ def invites(agg_path, build="release", days=90, play="all", era=None):
         "SELECT method, SUM(sent), SUM(received), SUM(joined), SUM(played_together), SUM(joined_mature), "
         "SUM(invitee_d7) FROM invites WHERE " + w + " GROUP BY method", a)}
     allm = [sum((v[i] or 0) for v in totals.values()) for i in range(6)]
-    funnel = [{"step": "sent", "label": "Invites sent", "count": allm[0]},
+    funnel = [{"step": "sent", "label": "Sent", "count": allm[0]},
               {"step": "received", "label": "Received", "count": allm[1]},
-              {"step": "joined", "label": "Joined the party", "count": allm[2]},
-              {"step": "played_together", "label": "Played a match together", "count": allm[3]},
-              {"step": "invitee_d7", "label": "Invitee back within 7 days", "count": allm[5],
+              {"step": "joined", "label": "Joined", "count": allm[2]},
+              {"step": "played_together", "label": "Played together", "count": allm[3]},
+              {"step": "invitee_d7", "label": "Back by day 7", "count": allm[5],
                "of": allm[4], "note": "of joins at least 7 days old"}]
     per = {}
     for d, sent, joined in db.execute("SELECT day, SUM(sent), SUM(joined) FROM invites WHERE " + w + " GROUP BY day", a):

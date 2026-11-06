@@ -259,6 +259,17 @@ class NotebookHttp(unittest.TestCase):
         self.assertEqual(self.call("POST", "/v1/notebooks/ask", {"question": "x", "filters": {"build": "mobile"}},
                                    key="kim-key")[0], 400)
 
+    def test_a_question_asked_while_claude_is_off_costs_nothing(self):
+        real = C._client
+        C._client = lambda: (None, "no Claude credentials on the server")
+        try:
+            status, out, _ = self.call("POST", "/v1/notebooks/ask", {"question": "Anything?"}, key="ian-key")
+        finally:
+            C._client = real
+        self.assertEqual((status, out["asks_left"], "off" in out), (200, 2, False))
+        self.assertIn("Claude is off", out["error"])
+        self.assertEqual(self.app.store.asks_today("ian"), 0)
+
     def test_the_console_serves_the_notebook_page(self):
         for path in ("/notebook.js", "/notebook.css"):
             import urllib.request
@@ -280,6 +291,7 @@ class NotebookReadSplit(NotebookHttp):
         pass
 
     test_a_save_with_a_player_id_column_is_400 = test_ask_answers_as_cells_and_counts_toward_the_daily_questions = \
+        test_a_question_asked_while_claude_is_off_costs_nothing = \
         test_the_console_serves_the_notebook_page = test_make_open_rename_duplicate_and_delete
 
     def test_run_one_cell(self):

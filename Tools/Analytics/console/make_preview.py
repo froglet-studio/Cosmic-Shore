@@ -84,7 +84,7 @@ def sample_events(seed=7):
         if r67:
             send(player, "session_started", t, platform, version, session_id=sid,
                  launch_kind="resume" if rng.random() < 0.25 and not first else "cold")
-            if rng.random() < 0.05:
+            if rng.random() < 0.2:
                 kind, frame, scene = rng.choice(FRAMES[:2] if rng.random() < 0.7 else FRAMES)
                 send(player, "client_exception", t + timedelta(seconds=rng.randint(5, 600)), platform, version,
                      exception_type=kind, top_frame=frame, scene=scene, message_hash=f"{abs(hash(frame)) % 16 ** 6:06x}",

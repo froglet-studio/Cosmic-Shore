@@ -528,7 +528,7 @@ def ask(store, agg_path, question, cells, filters, model=C.DEFAULT_MODEL, effort
     filters_text = describe_filters(store, filters)
     client, why = C._client()
     if client is None:
-        return {"error": "Claude is off on this server: " + why + "."}
+        return {"error": "Claude is off on this server: " + why + ".", "off": True}
     earlier = context(store, agg_path, cells, filters)
     system = NOTEBOOK_SYSTEM.format(schema=S.AGG_SCHEMA.strip(), today=S.day_of(S.now_ms()), filters=filters_text)
     user = scrub(store, json.dumps({"question": question, "earlier_cells": earlier}, default=str))
@@ -653,7 +653,8 @@ def _ask(h):
         return 429, {"error": "Today's questions are used up; the limit resets at 00:00 UTC."}
     result = ask(app.store, app.agg, body.get("question"), body.get("cells") or [], body.get("filters"),
                  app.config["claude_model"], app.config["claude_effort"])
-    if isinstance(body.get("question"), str) and body["question"].strip():   # an empty question costs nothing
+    # a question costs one of the day's when it reached Claude: not an empty one, not one asked while Claude is off
+    if isinstance(body.get("question"), str) and body["question"].strip() and not result.pop("off", False):
         app.store.log_ask(reader, ("[notebook] " + body["question"].strip())[:500], result.get("sql"),
                           "error" not in result and result.get("ok", True))
         used += 1

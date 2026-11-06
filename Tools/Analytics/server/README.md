@@ -78,6 +78,7 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `analytics_views.py` | The console's pages, read from `aggregates.db` only; the switchable charts (`/v1/series`); the guarded SQL runner for Ask and the Query Studio |
 | `analytics_geo.py` | Country from an IP address (DB-IP country table), the address not kept |
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
+| `analytics_notebook.py` | The Notebook page's routes and rules: notebooks in `events.db` (no player ids), one cell run, Claude's turn over the notebook's re-run totals; `test_analytics_notebook.py` (19 tests) runs with `--self-test` |
 | `mode_elements.py` | Writes `mode_elements.json` (each mode's genre element) from the game's `ModeGenre.cs`, `GameModes.cs` and `ModePreviewLibrary.asset`; `--check` fails when it is stale, `--self-test` checks known answers and a negative control |
 | `mode_elements.json` | GENERATED: `game_mode` -> `[primary, secondary or null]`, the modes with no element, each mode's metric. The server reads only this file (the VM has no `Assets/`) |
 | `test_analytics_server.py` | 77 tests: `python3 analytics_server.py --self-test` |
@@ -284,6 +285,53 @@ recorded" in the neutral grey; solo is one hue in steps, light to dark by AI cou
 written on the slices. While most multiplayer is not recorded the slice says "Builds before <the first day a build sent
 domains> did not send domains; new builds fill this in." Every series chart (Matches over time included) offers Split:
 Setup.
+
+## The Notebook (2026-11-07)
+
+Asked for by Shombith on 2026-11-07: "a chat session or report data session or notebook inside the analytics tool".
+One page, **Notebook**, is all three. A notebook is cells in order:
+
+- **Note**: text in a small markdown subset (`#` headings, `-` and `1.` lists, `**bold**`, `*italic*`, `` `code` ``,
+  fenced code), drawn as page elements, never as HTML.
+- **SQL**: one SELECT over `aggregates.db` through the Query Studio's own door (read-only, SELECT only, 200 rows,
+  stopped if it runs long; `events.db` cannot be reached), with its result table. Running one needs an admin key, as
+  the Query Studio does (every key is an admin's while `all_keys_admin` is on).
+- **Chart**: a SQL cell's result drawn as bars, line, pie, table or number (its X and Y columns picked), or one of
+  the console's switchable series (`/v1/series`: measure, split, over) under the notebook's filters.
+- **Question**: asked in the box pinned under the cells, as in a chat. Claude's answer comes back as cells: a note,
+  and when it wrote a query, that query already run and a chart of it. Claude is shown the question, the notebook's
+  filters, the aggregates schema and the earlier cells (the latest 16): their text, their queries and the totals
+  those return **re-run on the server** (never a result the browser sent), at most 40 rows a cell and 300 in all, so
+  "now split that by platform" builds on what is there. If its query fails the guard, Claude gets one retry with the
+  reason; when it runs, Claude writes the note from the rows. Same model, effort and error handling as the Ask box,
+  and each question counts toward the reader's 50 a day (one asked while Claude is off costs nothing).
+
+The notebook's filters are the header's while it is open: opening one sets the header to its build, range, play and
+era; Save keeps the header's. **Report** shows the outputs only, with the title, the date, the owner and the filters:
+**Print / Save as PDF** (a print stylesheet keeps the theme and hides the console around it) and **Copy as
+Markdown** (tables as Markdown tables, each query in a fenced block).
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v1/notebooks` | reader | the notebooks this key may see, as summaries (`cell_count`, no cells) |
+| `GET /v1/notebooks?id=` | reader | one, whole; 404 for someone else's private one |
+| `POST /v1/notebooks {name, visibility, filters, cells}` | reader | makes one, owned by the key's name; `{duplicate: <id>, name?}` copies one this key may see, as a private notebook of its own |
+| `PUT /v1/notebooks {id, name?, visibility?, filters?, cells?}` | owner | changes (renames, shares) one of the key's own; someone else's shared one is 403 (Duplicate it) |
+| `DELETE /v1/notebooks?id=` | owner | deletes; a key in `admin_keys` may delete a shared one |
+| `POST /v1/notebooks/run {cell, filters?}` | admin (sql), reader (chart) | runs one cell: `{output}` |
+| `POST /v1/notebooks/ask {question, cells, filters}` | reader | `{cells, asks_left}` or `{error}`; 429 when the day's questions are used up |
+
+`visibility` is `me`, `readers` or `admins`, as for saved queries: a private notebook is never listed, opened, changed
+or deleted by another key. Notebooks are kept in `events.db`, table `notebooks` (made by `analytics_notebook.py` on
+first use; in the nightly backup with the rest), at most 200, 80 cells each. **A notebook holds no player ids**: a save
+is refused when a SQL cell's result has a player-id column (`distinct_id`, `player_id`, `install_id`, `user_id`, ...)
+or when any text or value in it is the id of a player `events.db` knows; the text sent to Claude is checked the same
+way and any long id-shaped token is cut out too. The routes and rules are `analytics_notebook.py`; the tests,
+`test_analytics_notebook.py`, run with `--self-test` and include the negative controls (a SQL cell cannot read
+`events.db`; a result with `distinct_id` is refused; another reader cannot see a private notebook; the prompt holds no
+player id, no display name and no row the browser made up). The page is `console/notebook.js` and `notebook.css`;
+the review copy (`make_preview.py`) carries two sample notebooks (`console/notebook_sample.py`), and its Ask and Run
+say they need the server.
 
 ## Claude, and what it can see
 

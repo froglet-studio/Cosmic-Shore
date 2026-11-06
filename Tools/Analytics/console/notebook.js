@@ -355,7 +355,7 @@
     const b = nb.book, mine = isMine();
     const name = h("input", { class: "field sls nb-title", type: "text", maxlength: "80", value: b.name, "aria-label": "Notebook name" });
     name.addEventListener("input", () => { b.name = name.value; });
-    name.addEventListener("change", () => F.render());
+    // no redraw on change: a redraw on blur would swap out the button the reader is clicking
     const vis = h("div", { class: "mini-seg", role: "group", "aria-label": "Who sees it" }, h("span", { class: "mini-lab" }, "Who sees it"),
       VIS.map(([k, l]) => h("button", { type: "button", "aria-pressed": String(b.visibility === k), disabled: !mine || null,
         onclick: () => { b.visibility = k; F.render(); } }, l)));

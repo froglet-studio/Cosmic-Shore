@@ -319,7 +319,7 @@
     if (f.by === "element") return elementLabel(k);
     if (f.by === "setup") return SETUP_LONG[k] || String(k);
     if (f.by === "switch_source") return SWITCH_SOURCE[k] || String(k);
-    if (f.by === "ai_difficulty" && (k === "unknown" || !k)) return "Not sent (older builds)";
+    if (f.by === "ai_difficulty" && (k === "unknown" || !k)) return "Not sent";
     if ((f.by === "vessel_class" || f.by === "from_vessel_class") && k === "unknown") return "Not named (older builds)";
     return String(k);
   };
@@ -710,7 +710,7 @@
       body.replaceChildren(out);
       const uf = (frame.unfiltered || []).length && (state.play !== "all" || state.era) ? filterWord() : "";
       const hidden = frame.hidden && shown !== "table" ? `${frame.hidden} smaller parts are in the Table.` : "";
-      const notes = (frame.notes || []).map((n) => (typeof n === "string" ? n : n && (n.text || n.note || n.title))).filter(Boolean);
+      const notes = (frame.notes || []).map((n) => sentence(typeof n === "string" ? n : n && (n.text || n.note || n.title))).filter(Boolean);
       note.textContent = [uf && `Not split by ${uf}: ${frame.unfiltered.join(", ").replace(/_/g, " ")}.`, hidden, ...notes].filter(Boolean).join(" ");
       note.hidden = !note.textContent;
       if (cfg.compact && !note.hidden) { view.title = note.textContent; note.hidden = true; }   // a small tile keeps its room for the chart
@@ -990,6 +990,18 @@
         ["Multi-human", fmt(t.multi_human_matches), "matches with 2+ people", false, "multi_human_matches"],
       ]),
     ];
+    if (o.sessions) {                                    // round 67: DAU / WAU / MAU from any event; sessions from new builds
+      const se = o.sessions;
+      parts.push(tileRow([
+        ["DAU", fmt(se.dau), "players a day, on average", false, "sessions"],
+        ["WAU", fmt(se.wau), "last 7 days", false, "sessions"],
+        ["MAU", fmt(se.mau), "last 30 days", false, "sessions"],
+        ["Stickiness", pct(se.stickiness_pct), "DAU over MAU", false, "sessions"],
+        ["Sessions a player a day", se.sessions_per_player_day === null || se.sessions_per_player_day === undefined ? "–" : ratio(se.sessions_per_player_day),
+         se.sessions ? `${fmt(se.sessions)} sessions` : "from builds after 7 Nov", false, "sessions"],
+        ["Median session", minutes(se.median_session_min), "from builds after 7 Nov", false, "sessions"],
+      ]));
+    }
     if (mk || biz) {
       parts.push(h("div", { class: "grid2" },
         card("Marketing", "who arrives and from where",
@@ -1007,18 +1019,6 @@
             ["Whales", fmt(biz && biz.whales_2000), "players holding 2,000+", false, "business.whales_2000"],
             ["Earned per spent", biz && biz.crystals_spent ? ratio(biz.crystals_earned / biz.crystals_spent) : "–", "above 1 means saving"],
           ], "tiles-inner"))));
-    }
-    if (o.sessions) {                                    // round 67: DAU / WAU / MAU from any event; sessions from new builds
-      const se = o.sessions;
-      parts.push(tileRow([
-        ["DAU", fmt(se.dau), "players a day, on average", false, "sessions"],
-        ["WAU", fmt(se.wau), "last 7 days", false, "sessions"],
-        ["MAU", fmt(se.mau), "last 30 days", false, "sessions"],
-        ["Stickiness", pct(se.stickiness_pct), "DAU over MAU", false, "sessions"],
-        ["Sessions a player a day", se.sessions_per_player_day === null || se.sessions_per_player_day === undefined ? "–" : ratio(se.sessions_per_player_day),
-         se.sessions ? `${fmt(se.sessions)} sessions` : "from builds after 7 Nov", false, "sessions"],
-        ["Median session", minutes(se.median_session_min), "from builds after 7 Nov", false, "sessions"],
-      ]));
     }
     parts.push(seriesPanel("overview.series", "Matches over time", { measure: "matches", by: "play_type", over: "day", form: "bars" }));
     parts.push(...setupsSection(o));
@@ -2174,9 +2174,12 @@
   // Shombith, 2026-11-07: sessions and DAU / WAU / MAU, balance (score, placement, AI difficulty), mid-match quits and
   // frustration, invite attribution, and the client errors. Every number is a total from aggregates.db.
 
-  const notesBlock = (notes) => (notes || []).length ? h("div", { class: "notes-block" }, notes.map((n) => h("p", { class: "small" }, n))) : null;
+  const notesBlock = (notes) => (notes || []).length ? h("div", { class: "notes-block" }, notes.map((n) => h("p", { class: "small" }, sentence(n)))) : null;
   const sinceLine = (day, what) => h("p", { class: "small" }, day ? `${what} since ${shortDay(day)} ${String(day).slice(0, 4)}.` : `${what}: none received yet. Builds made after 7 Nov send them.`);
   const minutes = (m) => (m === null || m === undefined ? "–" : `${(Math.round(m * 10) / 10).toLocaleString("en-GB")} min`);
+  // A chart of something only new builds send starts on the first day it arrived, not weeks of zeros before it.
+  const fromFirst = (rows, day) => (day ? rows.filter((r) => r.day >= day) : rows);
+  const sentence = (n) => { const t0 = String(n || "").trim(); if (!t0) return ""; const t1 = t0[0].toUpperCase() + t0.slice(1); return /[.!?)]$/.test(t1) ? t1 : t1 + "."; };
   const ACTIVE_LABEL = { dau: "Daily (DAU)", wau: "Weekly (WAU)", mau: "Monthly (MAU)" };
 
   async function sessionsPage() {
@@ -2191,8 +2194,8 @@
         ["WAU", fmt(t.wau), "players in the last 7 days"],
         ["MAU", fmt(t.mau), "players in the last 30 days"],
         ["Stickiness", pct(t.stickiness_pct), "DAU over MAU"],
-        ["Sessions", fmt(t.sessions), rangeLabel()],
-        ["A player a day", t.sessions_per_player_day === null ? "–" : ratio(t.sessions_per_player_day), "sessions"],
+        ["Sessions", fmt(t.sessions), t.sessions_per_player_day === null || t.sessions_per_player_day === undefined ? rangeLabel()
+          : `${ratio(t.sessions_per_player_day)} a player a day`],
         ["Median session", minutes(t.median_session_min), t.p90_session_min === null ? "" : `p90 ${minutes(t.p90_session_min)}`],
       ]),
       chartPanel({ id: "sessions.active", title: "Daily, weekly and monthly players", note: `${state.build} builds, ${rangeLabel()} · any event, so the PostHog history too`,
@@ -2208,7 +2211,7 @@
         chartPanel({ id: "sessions.per_day", title: "Sessions per day", note: "cold start or back after 30+ min in the background",
           forms: ["bars", "line", "table"], defaults: { form: "bars" }, emptyText: "No sessions yet: builds after 7 Nov send session_started.",
           load: staticLoad(() => {
-            const rows = d.sessions_per_day || [], v = new Map();
+            const rows = fromFirst(d.sessions_per_day || [], (d.history || {}).first_session_day), v = new Map();
             const keys = ["cold", "resume"].concat(rows.some((r) => r.unknown) ? ["unknown"] : []);
             for (const r of rows) for (const k of keys) v.set(String(r.day) + SEP + k, r[k]);
             return makeFrame({ time: true, xs: rows.map((r) => r.day), keys, v, kind: "count",
@@ -2228,7 +2231,7 @@
 
   const ordinal = (n) => { const v = Number(n); const s0 = ["th", "st", "nd", "rd"], m = v % 100; return v + (s0[(m - 20) % 10] || s0[m] || s0[0]); };
   const BALANCE_MEASURES = [["win_pct", "Won %"], ["placement", "Placement"], ["score", "Score"], ["matches", "Matches"]];
-  const diffLabel = (k) => (!k || k === "unknown" ? "Not sent (older builds)" : String(k));
+  const diffLabel = (k) => (!k || k === "unknown" ? "Not sent" : String(k));
 
   function heatGrid(rows, measure, kind) {
     const ints = [...new Set(rows.map((r) => r.intensity))].sort((a, b) => (Number(a) || 99) - (Number(b) || 99));
@@ -2289,16 +2292,16 @@
           custom: { grid: { label: "Grid", draw: (f) => heatGrid(b.grid || [], f.measure, (gridMeasures.find((g) => g[0] === f.measure) || [])[2]) } },
           load: staticLoad(({ measure }) => Object.assign(makeFrame({ custom: true, measure }), { table: { columns: ["Intensity", "AI difficulty", "Plays", "Finished", "Won", "Placement", "Quit"],
             rows: (b.grid || []).map((r) => [r.intensity, diffLabel(r.ai_difficulty), fmt(r.plays), fmt(r.finished), pct(r.win_pct), r.avg_placement ?? "–", pct(r.quit_pct)]) } })) })),
+      card("By mode", "finished plays; behind by is the gap to the winner in a loss",
+        (b.by_mode || []).length ? table(["Mode", "Plays", "Score", "Placement", "Won", "Behind by", "Quit"], b.by_mode.map((r) => h("tr", {},
+          h("td", {}, r.game_mode), h("td", { class: "num" }, fmt(r.plays)), h("td", { class: "num" }, r.avg_score ?? "–"),
+          h("td", { class: "num" }, r.avg_placement ?? "–"), h("td", { class: "num" }, pct(r.win_pct)), h("td", { class: "num soft" }, r.avg_behind_by ?? "–"),
+          h("td", { class: "num" }, pct(r.quit_pct))))) : h("p", { class: "small" }, "No plays in this range.")),
       h("div", { class: "grid2" },
         chartPanel({ id: "balance.placements", title: "Where players finish", note: "plays by placement, AI included", forms: ["bars", "table"],
           emptyText: "No placements yet: builds after 7 Nov send them.",
           load: staticLoad(() => catFrame((b.placements || []).map((r) => ({ k: ordinal(r.placement), v: r.plays })), "k", "v", { kname: "Placement", vname: "Plays" })) }),
-        card("By mode", "finished plays; behind by is the gap to the winner in a loss",
-          (b.by_mode || []).length ? table(["Mode", "Plays", "Score", "Placement", "Won", "Behind by", "Quit"], b.by_mode.map((r) => h("tr", {},
-            h("td", {}, r.game_mode), h("td", { class: "num" }, fmt(r.plays)), h("td", { class: "num" }, r.avg_score ?? "–"),
-            h("td", { class: "num" }, r.avg_placement ?? "–"), h("td", { class: "num" }, pct(r.win_pct)), h("td", { class: "num soft" }, r.avg_behind_by ?? "–"),
-            h("td", { class: "num" }, pct(r.quit_pct))))) : h("p", { class: "small" }, "No plays in this range."))),
-      card("What these count", null, sinceLine(hi.first_difficulty_day, "AI difficulty"), notesBlock(b.notes)),
+        card("What these count", null, sinceLine(hi.first_difficulty_day, "AI difficulty"), notesBlock(b.notes))),
     ];
   }
 
@@ -2309,10 +2312,10 @@
     if (q.empty) return [empty("Nothing has been received yet.")];
     const t = q.tiles || {}, c = q.chain || {};
     const chain = [
-      { k: "failed", label: "Lost several in a row", v: c.failed, note: "player-days with a repeated_game_fail" },
-      { k: "quit_after", label: "Then quit a match within 1 h", v: c.quit_after },
-      { k: "quit_mature", label: "Of those, 7+ days ago", v: c.quit_mature },
-      { k: "gone_7d", label: "Then gone for 7 days", v: c.gone_7d },
+      { k: "failed", label: "Fail streaks", v: c.failed },
+      { k: "quit_after", label: "Quit within 1 h", v: c.quit_after },
+      { k: "quit_mature", label: "Quit 7+ days ago", v: c.quit_mature },
+      { k: "gone_7d", label: "Then gone 7 days", v: c.gone_7d },
     ];
     return [
       tileRow([
@@ -2365,7 +2368,7 @@
       sinceLine((e.history || {}).first_error_day, "Errors"),
       chartPanel({ id: "errors.per_day", title: "Errors per day", note: "occurrences, repeats included", forms: ["bars", "line", "table"],
         emptyText: "No errors in this range.",
-        load: staticLoad(() => timeFrame(e.per_day || [], "day", "occurrences", { label: () => "Occurrences" })) }),
+        load: staticLoad(() => timeFrame(fromFirst(e.per_day || [], (e.history || {}).first_error_day), "day", "occurrences", { label: () => "Occurrences" })) }),
       card("Where they happen", "the first project frame; New: first seen this week",
         (e.by_frame || []).length ? table(["Frame", "Type", "Occurrences", "Players", "Messages", "First seen", "Last seen"], e.by_frame.map((r) => h("tr", {},
           h("td", { class: "frame" }, h("span", { class: "code-inline" }, r.top_frame), r.new ? h("span", { class: "tag new-tag" }, "New") : null),
@@ -2444,7 +2447,7 @@
           statusRow(rejected === 0, `Rejected events, last ${state.healthDays} days`, fmt(rejected)),
           statusRow(!!(d.backups && d.backups.local_last_ms && Date.now() - d.backups.local_last_ms < 2 * day), "Nightly backup, on the VM",
             d.backups && d.backups.local_last_ms ? `${ago(d.backups.local_last_ms)} · ${fmt(d.backups.local_kept)} kept` : d.backup ? ago(d.backup.last_ms) : "never"),
-          statusRow(true, "Off-VM", (d.backups && d.backups.off_vm) || "Oracle boot-volume policy (check in the Oracle console)"),
+          h("p", { class: "small" }, `Off the VM: ${(d.backups && d.backups.off_vm) || "Oracle boot-volume policy (check in the Oracle console)"}. The server cannot see those copies.`),
           d.backups && d.backups.bucket_upload ? statusRow(!/failed/.test(d.backups.bucket_upload.detail || ""), "Bucket copy", `${ago(d.backups.bucket_upload.last_ms)} · ${d.backups.bucket_upload.detail}`) : null,
           statusRow(d.rebuild && Date.now() - d.rebuild.last_ms < 15 * 60 * 1000, "Numbers rebuilt", d.rebuild ? ago(d.rebuild.last_ms) : "never"),
           statusRow(true, "Deletions done", fmt(d.erasures_done)),
