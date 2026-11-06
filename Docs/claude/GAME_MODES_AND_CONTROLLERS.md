@@ -960,8 +960,14 @@ spec file each (`author_scarab_rally_assets.py`, `author_serpent_time_assets.py`
 - **Scarab Rally** is `SwitchbackController`'s open walk (24 rings, with I3 walls and I4 danger prisms), cut by
   `ScarabRallyCourse` for the Scarab's throttle, drift and juke. It has no ball; the ball game, Scarab Scramble, is
   now the Scarab's Mass card (`ModeGenre`).
-- **Serpent Time** and **Brittle Star Time** use Thresher Time's shape (8 rings x 2 laps on the shared
-  `HeadlongCircuit`), cut against a full pellet stack's ~100 u circle and Speed Mode's ~145 u circle.
+- **Serpent Time** uses Thresher Time's shape (8 rings x 2 laps on the shared `HeadlongCircuit`), cut against a full
+  pellet stack's ~100 u circle.
+- **Brittle Star Time is four movement questions, one per intensity** (Shombith, 2026-11-06; `BrittleStarTimeCourse`):
+  I1 Gearbox (Headlong's solver: hold Speed Mode or shift down), I2 Feather slalom (a weave between the cruise circle and
+  Speed Mode's: tap A for a speed between), I3 Coast-in hairpins (no brake: let go of Speed Mode ~106 u early and coast
+  in), I4 Corkscrew (a coil only a rolling Speed Mode holds; the card's `StartingElements` start I4 at Time 5, where
+  Speed Roll is live). 8 rings x 2 laps on every rung; its tests run offline in
+  `Tools/Build/brittle_star_time_course_harness/`.
 - **Serpent Time (shown as Serpentine since 2026-10-31) is the dirty race** (Shombith, 2026-10-27, `Docs/Studios/SERPENT_TIME.md`): each gate is ONE ring
   (72 / 60 / 50 / 42 u at I1-I4) closed by a mode-laid shape (`SerpentineGate`: Coil, Maw, Iris) with exits to thread
   and a gold core that, broken, disintegrates it; 48 regrowing debris prisms round every gate feed Seed Walls, the
@@ -1406,7 +1412,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── ThresherTimeController            — Thresher-only circuit race; Grizzly Time's octagon cut to the Thresher's 229u full-sling circle (plant, wind in, let go), 8 gates x 3 laps; AI races at cruise (never slings)
             ├── WrasseRunController               — the Wrasse and Grouper's circuit race; a ring counts only when the kite (the hull's IRingThreadProbe) threads it, 8 gates x 2 laps; Time loops fuel the Grouper's boosts
             ├── SerpentTimeController             — Serpentine: Serpent-only DIRTY circuit race; 8 gates x 2 laps, one ring a gate closed by a shape (Coil / Maw / Iris) with a gold core that disintegrates it felled by a hit to the heart, regrowing debris, a start behind gate 0, the cytoplasm as the race's current, a dirty AI
-            ├── BrittleStarTimeController         — Brittle Star-only circuit race; 8 gates x 2 laps cut against Speed Mode's ~145 u circle (0/1/2/3 corners it cannot hold)
+            ├── BrittleStarTimeController         — Brittle Star-only race; 8 gates x 2 laps, four movement rungs (Gearbox / Feather slalom / Coast-in hairpins / Corkscrew at Time 5)
             ├── LanternRunController            — Angler-only circuit race; 8 gates x 2 laps, two regrowing prism mass clusters a leg on each ring's axis (one per group): paint, throw, dash through the ring
             ├── RegattaController                 — the ARENA race: every playable hull, three domain-coloured super-shielded rails braided along a lapped circuit, a start line behind gate 0 (`IPlayerSpawnLine`); the grid balanced by the card's `StartingElements`
             └── WaystationController              — the Tiger Moth's Drop Tower race (since 2026-11-01: tower walls + hop autopilot added); before that the Butterfly-only migration race: an OPEN chain dealt into CLUSTERS (coils you weave) laid a FOLD apart, so the course is half flown and half teleported. A teleport threads NOTHING (`VesselTransformer.TeleportCount`), and an autopilot folds through the base's new `OnServerTick` seam

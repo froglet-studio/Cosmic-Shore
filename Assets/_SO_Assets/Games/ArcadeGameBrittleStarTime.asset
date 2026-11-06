@@ -15,10 +15,11 @@ MonoBehaviour:
   Mode: 74
   IsMultiplayer: 1
   DisplayName: Brittle Star Time
-  Description: Brittle Stars only, against the clock. Speed Mode lights all five arms
-    and runs you at six times cruise - but it turns wide. Hold it through the corners
-    you can, drop back to Cruise for the ones you cannot, and thread the rings. Two
-    laps. Fastest domain home wins.
+  Description: Brittle Stars only, against the clock. Speed Mode runs you at six times
+    cruise - but it turns wide. Every intensity asks one question of it. Gearbox - hold
+    Speed or shift down. Feather slalom - tap it in and out to weave. Coast-in hairpins -
+    let go early and coast into the turn. Corkscrew - start at Time 5 and roll to hold
+    Speed through the coil. Two laps. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: d216aa4dfdf7455c83f92e8c9d87a439, type: 3}
@@ -34,4 +35,12 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
+  StartingElements:
+  - Class: 16
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.5
   ComebackRatePerScoreDeficit: 0.45
