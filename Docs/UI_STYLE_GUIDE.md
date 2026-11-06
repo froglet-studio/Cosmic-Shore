@@ -171,8 +171,14 @@ perform these changes because it needs proper planning". So:
   text on a phone is a known cost; a screen that cannot be read or pressed on a phone is fixed on the PC layout itself
   (bigger text or targets for everyone), never with a phone-only layout.
 - **Portrait is unlocked for the menus only** (matches stay landscape: the flight cameras and touch controls are built for
-  it). How the PC UI looks when a phone is held upright is drawn on Frogma first (the Portrait tab) and picked before it
-  is built.
+  it). Upright, Menu_Main re-flows the same PC pieces at their PC sizes on a 1080 x 1920 canvas (Rev 63 B, picked and
+  built 2026-11-06, `Docs/MENU_REDESIGN_B.md` section 138): a piece's upright pose is a `PortraitRect` its generator
+  writes, and a screen with no pose yet is its PC layout fitted to the width. `MenuOrientation` allows the turn only
+  while the menu is Ready. A new upright pose is drawn on Frogma's Portrait tab first.
+- **Code that offsets a posed rect re-reads its rest on a turn.** Anything that captures a rect's position once and
+  writes offsets from it (`ConfigureCinema`, `ConfigurePilotsFit`) listens to `AdaptiveCanvasScaler.PortraitLayoutChanging`
+  (take the offset out while the old pose stands) and `PortraitLayoutChanged` (read the new pose), or it puts the PC pose
+  back over the upright one.
 
 - Backgrounds bleed to the edge; content sits inside `Screen.safeArea` with at least 24 units of padding
   (`SafeAreaFitter` on every canvas that carries player-facing content).
