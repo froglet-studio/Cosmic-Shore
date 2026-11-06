@@ -2517,6 +2517,14 @@ joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery faile
 Play stops.
 Ticket: T-20261025-6541 (#1527).
 
+**Again, 2026-11-06 (belac, `E-0de9ec6c70`, past the guard).** Caleb, a client in a six-pilot Regatta on
+`claude/regatta-overnight-balance` (which carries the fix), stopped Play during the recovery; the error came from
+line 908 (the catch's `LogError`) on UniTask's `ForceEditorPlayerLoopUpdate`. That loop only runs once
+`EditorApplication.isPlayingOrWillChangePlaymode` is false - i.e. once Stop has been requested - but
+`Application.isPlaying` stays true until Play has torn down, so `PlayEnded` read "still playing" and the
+Menu_Main load returned null. `IsPlaying` now defaults to `UnityIsPlaying()`: in the editor a requested Stop
+counts as ended. Held by `PartyRecoveryAfterPlayTests.UnityFlag_IsOff_InEditMode` (4 tests). Hand test unchanged.
+
 ## B46-B47 and B36 again - the tests of 2026-10-31 and 2026-11-01 (multiplayer sweep, 2026-11-01)
 
 Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Thresher and Serpent time trials),

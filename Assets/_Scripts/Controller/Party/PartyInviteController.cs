@@ -839,8 +839,21 @@ namespace CosmicShore.Gameplay
             data != null && data.IsPartyHost && !data.IsSpectating &&
             data.PartyMembers != null && data.PartyMembers.Count > 1;
 
-        /// <summary>Whether Play is running. Tests substitute it; it is Unity's own flag otherwise.</summary>
-        internal static Func<bool> IsPlaying { get; set; } = () => Application.isPlaying;
+        /// <summary>
+        /// Whether Play is running. Tests substitute it; it is Unity's own flag otherwise. In the editor a Stop that
+        /// is already requested counts as ended: <c>Application.isPlaying</c> stays true until Play has torn down,
+        /// and in that window UniTask resumes the awaiting flow from the editor's update loop, where a scene load
+        /// returns null (Bug Ledger E-0de9ec6c70 again on belac's 2026-11-06 Regatta, past the B38 guard).
+        /// </summary>
+        internal static Func<bool> IsPlaying { get; set; } = UnityIsPlaying;
+
+        internal static bool UnityIsPlaying()
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return false;
+#endif
+            return Application.isPlaying;
+        }
 
         /// <summary>
         /// True once Play has stopped or this controller is gone, so the flow that awaited must stop
