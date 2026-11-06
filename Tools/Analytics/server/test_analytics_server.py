@@ -547,6 +547,53 @@ class LiveKeys(unittest.TestCase):
         self.assertGreater(z(".gate"), z(".shell"))
 
 
+class KeyCommand(unittest.TestCase):
+    """2026-11-06: `key read admin` made a READ key named "admin"; Garrett signed in with it and saw no Admin pages."""
+
+    def config(self):
+        return dict(A.DEFAULTS, admin_keys={"admin": "fa_admin_x"}, read_keys={}, profile_readers=["garrett"])
+
+    def test_a_read_key_cannot_be_named_admin_or_reuse_another_kinds_name(self):
+        c = self.config()
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["read", "admin"])
+        lone = dict(self.config(), admin_keys={"shombith": "fa_admin_y"})   # no admin key named "admin" at all:
+        with self.assertRaises(ValueError):                                # the name itself is refused
+            A.key_command(lone, ["read", "admin"])
+        self.assertEqual(lone["read_keys"], {})
+        A.key_command(c, ["admin", "shombith"])
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["read", "shombith"])
+        self.assertEqual(c["read_keys"], {})
+
+    def test_make_list_and_delete(self):
+        c = self.config()
+        message, changed = A.key_command(c, ["read", "Garrett"])
+        self.assertTrue(changed and c["read_keys"]["garrett"].startswith("fa_read_") and "opens player profiles" in message)
+        listing, changed = A.key_command(c, ["list"])
+        self.assertFalse(changed)
+        self.assertIn("garrett", listing)
+        self.assertNotIn(c["read_keys"]["garrett"], listing)         # list never prints a secret
+        self.assertNotIn("fa_admin_x", listing)
+        A.key_command(c, ["delete", "garrett"])
+        self.assertNotIn("garrett", c["read_keys"])
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["delete", "garrett"])
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["read", "bad name!"])
+
+    def test_deleting_a_name_that_is_both_kinds_asks_which_and_never_drops_the_last_admin(self):
+        c = self.config()
+        c["read_keys"]["admin"] = "fa_read_stray"                    # what `key read admin` left on the VM
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["delete", "admin"])
+        self.assertEqual((c["admin_keys"], c["read_keys"]), ({"admin": "fa_admin_x"}, {"admin": "fa_read_stray"}))
+        A.key_command(c, ["delete", "read", "admin"])
+        self.assertEqual((c["admin_keys"], c["read_keys"]), ({"admin": "fa_admin_x"}, {}))
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["delete", "admin", "admin"])            # the only admin key stays
+
+
 class Http(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()

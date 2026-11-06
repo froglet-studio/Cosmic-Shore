@@ -216,11 +216,17 @@ sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytic
   /var/lib/froglet-analytics/venv/bin/python /var/lib/froglet-analytics/repo/Tools/Analytics/server/analytics_server.py key read ian
 ```
 
-It prints `read key for ian (shown once): fa_read_...`; paste the line or just the key into the console. The running
-server picks up a new or deleted key at the next request, with no restart. `key read admin` makes a READ key named
-"admin"; the admin key (Erasure, every profile) is the one `init` printed at setup, kept in `config.json` under
-`admin_keys` (`sudo cat /var/lib/froglet-analytics/config.json`). A reader in `profile_readers` can open player
-profiles; `key admin <name>` makes another admin key.
+It prints `READ key for ian (shown once): fa_read_...`; paste the line or just the key into the console. The running
+server picks up a new or deleted key at the next request, with no restart. A reader in `profile_readers` can open
+player profiles; `key admin <name>` makes an admin key (Query Studio, Dashboards, eras, Erasure, every profile). The
+console's sidebar says which kind signed in ("garrett · read key, profiles", "shombith · admin key").
+
+- `key list` prints every key's name and kind, never a secret.
+- `key delete [read|admin] <name>` removes one. A name that is both kinds must say which, and the last admin key
+  cannot be deleted.
+- A read key cannot be named "admin", and a name is one kind only: `key read admin` once made a READ key called
+  "admin", and the person signed in with it saw no Admin pages and no profiles (2026-11-06). The admin key `init`
+  made is in `config.json` under `admin_keys`.
 
 Locally, to try it:
 

@@ -2417,7 +2417,8 @@
       state.profiles = !!me.profiles;
       state.admin = !!me.admin;
       state.me = me.name || "";
-      $("who-name").textContent = me.name + (me.admin ? " · admin" : "");
+      // Say the key's kind in words: a read key that happens to be named "admin" once read as an admin (2026-11-06).
+      $("who-name").textContent = `${me.name} · ${me.admin ? "admin key" : me.profiles ? "read key, profiles" : "read key"}`;
     } catch (e) {}
   }
 

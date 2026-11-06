@@ -54,6 +54,7 @@ import gzip
 import hmac
 import json
 import os
+import re
 import secrets
 import sys
 import threading
@@ -728,6 +729,54 @@ def make_handler(app):
     return Handler
 
 
+KEY_NAME = re.compile(r"^[a-z0-9_.-]{1,40}$")
+
+
+def key_command(config, args):
+    """`key read <name>` | `key admin <name>` | `key delete <name>` | `key list`. Returns (what to print, whether the
+    config changed). A read key may not be named "admin" and a name is one kind of key only: a read key named "admin"
+    (made by `key read admin` while looking for the admin key) signed Garrett in as a reader called "admin", with no
+    Admin pages and no profiles (2026-11-06). Secrets are printed once, when made, and never by `list`."""
+    action = args[0]
+    if action == "list" and len(args) == 1:
+        rows = [(n, "admin") for n in sorted(config["admin_keys"])] + [(n, "read") for n in sorted(config["read_keys"])]
+        readers = set(config.get("profile_readers") or [])
+        lines = [f"  {n:<20} {kind} key{'' if kind == 'admin' else (', opens profiles' if n in readers else ', no profiles')}"
+                 for n, kind in rows]
+        return "Keys (names only; a secret is shown once, when it is made):\n" + ("\n".join(lines) or "  none"), False
+    usage = "use: key read <name> | key admin <name> | key delete [read|admin] <name> | key list"
+    if action == "delete" and len(args) == 3 and args[1] in ("read", "admin"):
+        kinds, args = [args[1] + "_keys"], [action, args[2]]
+    else:
+        kinds = ["read_keys", "admin_keys"]
+    if len(args) != 2 or action not in ("read", "admin", "delete"):
+        raise ValueError(usage)
+    name = args[1].strip().lower()
+    if not KEY_NAME.match(name):
+        raise ValueError("a name is 1-40 of a-z, 0-9, '.', '_' or '-' (use the person's name, e.g. garrett)")
+    if action == "delete":
+        found = [k for k in kinds if name in config[k]]
+        if not found:
+            raise ValueError(f"no key named {name} (see: key list)")
+        if len(found) > 1:      # e.g. the admin key and a stray read key both named "admin": never delete both at once
+            raise ValueError(f"{name} is both a read key and an admin key; say which: key delete read {name} or key delete admin {name}")
+        if found[0] == "admin_keys" and len(config["admin_keys"]) == 1:
+            raise ValueError("that is the only admin key; make another first (key admin <name>) so nobody is locked out")
+        del config[found[0]][name]
+        return f"deleted the {found[0].split('_')[0]} key named {name}; it stops working at its next request", True
+    field, other = ("read_keys", "admin_keys") if action == "read" else ("admin_keys", "read_keys")
+    if action == "read" and name == "admin":
+        raise ValueError("'admin' is not a reader's name: the admin key was printed by init and is in config.json "
+                         "under admin_keys; for a person, use their name (key read garrett, or key admin garrett)")
+    if name in config[other]:
+        raise ValueError(f"{name} already has a {other.split('_')[0]} key; delete it first (key delete {name})")
+    key = ("fa_read_" if action == "read" else "fa_admin_") + secrets.token_urlsafe(24)
+    config[field][name] = key
+    note = "" if action == "admin" else (" It opens player profiles." if name in (config.get("profile_readers") or [])
+                                         else " It cannot open player profiles: add the name to profile_readers for that.")
+    return f"{action.upper()} key for {name} (shown once): {key}{note}", True
+
+
 def serve(config):
     app = App(config, CONFIG_PATH)
     threading.Thread(target=app.background, daemon=True).start()
@@ -762,12 +811,15 @@ def main(argv):
         print("Admin key (erasure; keep it private):")
         print("  " + config["admin_keys"]["admin"])
         return 0
-    if command == "key" and len(argv) == 3 and argv[1] in ("read", "admin"):
-        field = "read_keys" if argv[1] == "read" else "admin_keys"
-        key = ("fa_read_" if argv[1] == "read" else "fa_admin_") + secrets.token_urlsafe(24)
-        config[field][argv[2]] = key
-        save_config(config)
-        print(f"{argv[1]} key for {argv[2]} (shown once): {key}")
+    if command == "key" and len(argv) >= 2:
+        try:
+            message, changed = key_command(config, argv[1:])
+        except ValueError as err:
+            print(f"key: {err}")
+            return 2
+        if changed:
+            save_config(config)
+        print(message)
         return 0
     if command == "serve":
         serve(config)
