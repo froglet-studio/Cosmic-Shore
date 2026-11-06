@@ -1,0 +1,71 @@
+{
+    "scene": "MinigameThresherTime",
+    "timestamp": "2026-11-04 04:59:02",
+    "label": "",
+    "secondsSinceSceneLoad": 109.11543273925781,
+    "floraObjectsInScene": 8,
+    "faunaObjectsInScene": 10,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Thresher Time Cell Config 1",
+            "spawnProfile": "Thresher Time Spawn Profile 1",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 362015.8125,
+            "liveEnvironmentVolume": 361991.34375,
+            "livePrismCount": 19242,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 128000.0,
+            "frenzyEnterVolume": 240000.0,
+            "frenzyExitVolume": 224000.0,
+            "frenzyEnterCount": 2000,
+            "frenzyExitCount": 1600,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 8,
+            "faunaLiveTotal": 10,
+            "flora": [
+                {
+                    "config": "Thresher Time I1 Spire Flora",
+                    "prefab": "SpireFlora",
+                    "live": 8,
+                    "initialBatch": 8,
+                    "seedFloor": 8,
+                    "cap": 8,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                }
+            ],
+            "fauna": [
+                {
+                    "config": "Thresher Time I1 Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 10,
+                    "initialBatch": 6,
+                    "cap": 10,
+                    "atCap": true,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
