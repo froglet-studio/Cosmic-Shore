@@ -208,8 +208,6 @@ static class Program
         }
     }
 
-    /// <summary>Course settings are value types built by ForIntensity; a spec may override the
-    /// fields a CONTROLLER sets at runtime (a gate count that lives in EndConditionOverrides).</summary>
     /// <summary>Brittle Star Time's lap as BrittleStarTimeCourseSource.Build lays it: the rung's own shape
     /// (BrittleStarTimeCourse.BuildLap) in the card's shell, else the Gearbox (Headlong's solver).</summary>
     static List<RaceGate> BrittleStarTimeLap(int seed, int intensity, JsonElement layer)
@@ -221,6 +219,8 @@ static class Program
             : HeadlongCircuit.Generate(seed, gearbox);
     }
 
+    /// <summary>Course settings are value types built by ForIntensity; a spec may override the
+    /// fields a CONTROLLER sets at runtime (a gate count that lives in EndConditionOverrides).</summary>
     static T Apply<T>(T settings, JsonElement layer)
     {
         if (!layer.TryGetProperty("settings", out var s)) return settings;
