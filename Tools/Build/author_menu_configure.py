@@ -1716,6 +1716,241 @@ def check_pilots_fit():
     return max(worst)
 
 
+# --------------------------------------------------------------------------------------------
+# Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; Docs/UI_STYLE_GUIDE.md section 8): when a phone is
+# held upright the canvas is 1080 wide (about 2337 tall on a 390 x 844-pt phone, 1920 on a 16:9 one) and every
+# PortraitRect takes its pose. The same pieces at their PC sizes, stacked down one 1000-wide column under the band:
+#   the header (title, star, Back, Leaderboard) - already stretched across the top, 40 in from each side
+#   the preview, full width at 16:9 (FLY over its bottom-left as on PC)
+#   (Arcade, Arena) the objective, the briefing, the controls panel, the open card widened to the column
+#   (Maelstrom) the briefing, the game pool, the settings column widened to the column, its launch row under it
+#   (Arcade, Arena) Status and START full width at the foot, anchored to the bottom edge
+# PC is untouched: every pose here acts only upright (PortraitRect puts the authored pose back on a turn to landscape).
+# --------------------------------------------------------------------------------------------
+
+UP_W, UP_M = 1080, 40                        # the upright canvas's width and the content margin
+UP_COL = UP_W - 2 * UP_M                     # the one column, 1000
+UP_HEIGHTS = (1920, 2337)                    # a 16:9 phone and a 390 x 844-pt one, matched to the width
+UP_PV_H = UP_COL * 9 // 16                   # the preview at 16:9: 562
+UP_GAP = 14                                  # between stacked blocks (the PC G_GAP)
+UP_TOP = TOP                                 # the preview starts where it does on PC, under the header
+UP_FOOT = 40                                 # START's gap to the bottom edge (the safe area adds the home bar)
+UP_INNER = UP_COL - G_PAD_L - G_PAD_R        # the open card's inner width upright: 922
+UP_MAEL_INNER = UP_COL - 2 * PAD             # the Maelstrom column's section width upright: 964
+UP_BRIEF_H = 64                              # two lines of Body, as under the Arcade's preview on PC
+UP_POOL_H = 180                              # the Maelstrom's game pool upright (a scroll list: rows scroll)
+# The friends orb draws over every window in the bottom-left corner (author_menu_arcade.ORB_*): the launch row starts
+# right of it, the gutter every hub window keeps on PC, and runs to the column's right edge.
+UP_LAUNCH_L = A.ORB_CLEARANCE
+UP_LAUNCH_W = UP_W - UP_M - UP_LAUNCH_L
+UP_ORB = (A.ORB_X, A.ORB_Y, A.ORB_SIZE + 4)       # the orb's box: x, y up from the bottom, size (plus air)
+
+
+def find_node(root, key):
+    """The node or instance with this key under root."""
+    if root.key == key:
+        return root
+    for ch in getattr(root, "children", []):
+        hit = find_node(ch, key)
+        if hit is not None:
+            return hit
+    return None
+
+
+def pose(root, key, r=None, **kw):
+    """Put a PortraitRect on `key` (a node, or a nested instance as an added component)."""
+    n = find_node(root, key)
+    assert n is not None, f"upright: no {key!r} to pose"
+    body = K.portrait_rect(r, **kw)
+    if A.is_instance(n):
+        assert not any(k == "portrait" for k, _, _ in n.added), f"upright: {key} posed twice"
+        n.added.append(("portrait", 114, body))
+    else:
+        assert not any(k == "portrait" for k, _, _ in n.comps), f"upright: {key} posed twice"
+        n.add("portrait", 114, body)
+
+
+def BL(x, y, w, h):
+    """A rect placed by its bottom-left corner, `y` up from the parent's bottom edge."""
+    return R((0, 0), None, (x, y), (w, h), (0, 0))
+
+
+def header_title_w():
+    """The title row upright: it stops short of Back and LEADERBOARD on the header's right."""
+    return UP_COL - (A.back_width() + 12 + K.button_size("LEADERBOARD", small=True)[0] + 12)
+
+
+def upright_blocks(kind):
+    """The column's blocks upright, top to bottom, as (key, (form, x, y, w, h), overlay): the arithmetic the poses and
+    the validation share. TL is from the canvas's top-left, BL from its bottom-left. `overlay` blocks sit over or beside
+    another (FLY over the preview, the Maelstrom's chips and START beside its status) and stay out of the stack check."""
+    y = UP_TOP
+    out = [("Preview", ("TL", UP_M, y, UP_COL, UP_PV_H), False)]
+    if kind in G_KINDS:
+        out.append(("Fly", ("TL", UP_M + 24, y + UP_PV_H - 58, 460, 44), True))
+    y += UP_PV_H + UP_GAP
+    if kind in G_KINDS:
+        out.append(("Objective", ("TL", UP_M, y, UP_COL, 48), False))
+        y += 48 + UP_GAP
+        out.append(("Briefing", ("TL", UP_M, y, UP_COL, UP_BRIEF_H), False))
+        y += UP_BRIEF_H + UP_GAP
+        out.append(("ControlsPanel", ("TL", UP_M, y, UP_COL, G_CTRL_H), False))
+        y += G_CTRL_H + UP_GAP
+        out.append(("Steps", ("TL", UP_M, y, UP_COL, g_card_h(kind)), False))
+        out.append(("Status", ("BL", UP_LAUNCH_L, UP_FOOT + G_START_H + 4, UP_LAUNCH_W, G_STATUS_H), False))
+        out.append(("Start", ("BL", UP_LAUNCH_L, UP_FOOT, UP_LAUNCH_W, G_START_H), False))
+    else:
+        out.append(("Briefing", ("TL", UP_M, y, UP_COL, UP_BRIEF_H), False))
+        y += UP_BRIEF_H + UP_GAP
+        out.append(("Pool", ("TL", UP_M, y, UP_COL, UP_POOL_H), False))
+        y += UP_POOL_H + UP_GAP
+        out.append(("Steps", ("TL", UP_M, y, UP_COL, column_height(kind)), False))
+        y += column_height(kind) + 20
+        # The launch row stays under the column, as on PC: ConfigurePilotsFit moves it down as a crowded domain grows.
+        sw, sh = K.button_size("START GAME")
+        left = UP_LAUNCH_W - sw - 20
+        out.append(("Status", ("TL", UP_LAUNCH_L, y, left, 26), False))
+        out.append(("Chips", ("TL", UP_LAUNCH_L, y + 32, left, 26), False))
+        out.append(("Start", ("TL", UP_M + UP_COL - sw, y, sw, sh), True))
+    return out
+
+
+def as_rect(spec):
+    form, x, y, w, h = spec
+    return TL(x, y, w, h) if form == "TL" else BL(x, y, w, h)
+
+
+def rail_line_poses(w, h, prefix):
+    """The open card's rail at a new width: the same lines (rail_border) re-placed. Only the horizontal runs change
+    length - every angle depends on the lean, knee and chamfer, never the width - so each line keeps its rotation."""
+    pts = H.rail_points(w, h, lean=CARD_LEAN, knee=CARD_KNEE, rail_y=0, chamfer=CARD_CHAMFER, start=CARD_RAIL)
+    segs = [(f"{prefix}/Line{i}", a, b) for i, (a, b) in enumerate(zip(pts, pts[1:]))]
+    x, y = pts[-1]
+    segs.append((f"{prefix}/Dash", (x - 30, y), (x - 14, y)))
+    out = []
+    for key, (x0, y0), (x1, y1) in segs:
+        length = math.hypot(x1 - x0, y1 - y0) + H.LINE_W
+        out.append((key, R((0, 1), None, ((x0 + x1) / 2, -(y0 + y1) / 2), (length, H.LINE_W))))
+    return out
+
+
+def upright_g_card(root, kind):
+    """The open card widened from 680 to the column: its sections take the new inner width (captions stay left, values
+    and the CLAIM button stay right), the pedestals share it, the AI row stays on the right, the rail is re-drawn."""
+    for key, r in rail_line_poses(UP_COL, g_card_h(kind), "Steps/Border"):
+        pose(root, key, r)
+    y = G_PAD_T
+    for name, h in g_content(kind):
+        if name == "intensity":
+            pose(root, "Step2", TL(G_PAD_L, y, UP_INNER, h))
+            pose(root, "Stepper", TL(0, SEC_HEAD, UP_INNER, G_INT_BODY_H))
+        elif name == "pilots":
+            seats, gap = G_SEATS[kind], PED_GAP[kind]
+            w, ph = (UP_INNER - (seats - 1) * gap) // seats, ped_h(kind)
+            pose(root, "Step3", TL(G_PAD_L, y, UP_INNER, h))
+            pose(root, "Lineup", TL(0, SEC_HEAD, UP_INNER, ph))
+            for i in range(seats):
+                pose(root, f"Seat{i + 1}", TL(i * (w + gap), 0, w, ph))
+        elif name == "vessel":
+            (cw, _), (gw, _) = K.button_size("CLAIM", small=True), K.button_size("CHANGE", small=True)
+            pose(root, "Step1", TL(G_PAD_L, y, UP_INNER, h))
+            pose(root, "Step1/Value", TL(184, (STRIP_HEAD - 24) // 2 - 2, UP_INNER - 184 - max(cw, gw) - 16, 24))
+            # The strip keeps its PC tiles and arrows, centred on the wider card.
+            pose(root, "HullStrip", TL((UP_INNER - G_INNER) // 2, STRIP_HEAD, G_INNER, HULL_H))
+        else:
+            pose(root, "AIRow", TL(G_PAD_L + UP_INNER - AIC_W, y, AIC_W, G_ACT_H))
+        y += h + G_SEC_GAP
+
+
+def upright_mael_column(root):
+    """The Maelstrom's settings column widened to the column: the sections take the width (captions left, values right,
+    the format rows stretch), and the intensity nodes, the domain columns and the AI row keep their PC sizes and
+    spacing, centred under their captions."""
+    y = PAD
+    nodes_w = 4 * NODE_W + 3 * NODE_GAP
+    cols_w = 3 * COL_W + 2 * COL_GAP
+    pose(root, "Step1", TL(PAD, y, UP_MAEL_INNER, INTENSITY_SEC_H))
+    nx = (UP_MAEL_INNER - nodes_w) // 2
+    for i in range(4):
+        pose(root, f"Intensity{i + 1}", TL(nx + i * (NODE_W + NODE_GAP), SEC_HEAD, NODE_W, NODE_H))
+    y += INTENSITY_SEC_H + SEC_GAP
+    ph = SEC_HEAD + PILOTS_BODY_H + AI_ROW_GAP + ai_row_h("maelstrom")
+    pose(root, "Step2", TL(PAD, y, UP_MAEL_INNER, ph))
+    cx = (UP_MAEL_INNER - cols_w) // 2
+    for i, (dname, _) in enumerate(DOMAINS):
+        pose(root, f"Domain{dname}", TL(cx + i * (COL_W + COL_GAP), SEC_HEAD, COL_W, TILE_H + 6 + SEAT_H))
+    pose(root, "AIRow", TL(cx, SEC_HEAD + PILOTS_BODY_H + AI_ROW_GAP, AIC_W, G_ACT_H))
+    y += ph + SEC_GAP
+    pose(root, "Format", TL(PAD, y, UP_MAEL_INNER, SEC_HEAD + 4 * FORMAT_ROW_H))
+
+
+def upright(root, kind):
+    """Every upright pose of one configure view (see the block comment above)."""
+    for key, spec, _ in upright_blocks(kind):
+        pose(root, key, as_rect(spec))
+    pose(root, "Header/TitleRow", TL(0, 20, header_title_w(), 46))
+    if kind in G_KINDS:
+        ctrl_w = UP_COL - 2 * PAD
+        pose(root, "Controls", TL(PAD, PAD, ctrl_w, G_CTRL_H - 2 * PAD))
+        cell_w = (ctrl_w - (CTRL_COLS - 1) * 28) // CTRL_COLS
+        pose(root, "Controls/Scroll/Viewport/Content", None, grid=dict(cell=(cell_w, CTRL_CELL_H)))
+        # Shown only while flying: centred over the preview's top, as on PC.
+        pose(root, "FlyingHint", R((0, 1), None, (UP_M + UP_COL / 2, -(UP_TOP + 34)), (820, 40)))
+        upright_g_card(root, kind)
+    else:
+        upright_mael_column(root)
+    return root
+
+
+def upright_rect(pr, canvas_h):
+    """A posed top-level block's (x, top, w, h) on an upright canvas `canvas_h` tall, from its PortraitRect body (the
+    blocks are children of full-canvas stretched parents; anchors are a point, never stretched)."""
+    num = lambda f: tuple(float(v) for v in re.search(r"  %s: \{x: ([-\d.e]+), y: ([-\d.e]+)\}" % f, pr).groups())
+    amin, amax, pv, pos, size = num("anchorMin"), num("anchorMax"), num("pivot"), num("anchoredPosition"), num("sizeDelta")
+    assert amin == amax, "upright: a top-level block stretched (its width would follow the canvas, not the pose)"
+    left = amin[0] * UP_W + pos[0] - pv[0] * size[0]
+    bottom = amin[1] * canvas_h + pos[1] - pv[1] * size[1]
+    return left, canvas_h - bottom - size[1], size[0], size[1]
+
+
+def check_upright(files):
+    """Every view's upright layout as committed: each block posed (movesRect) where upright_blocks puts it, inside the
+    1000-wide column, the stack in order with no overlaps on a 1920- and a 2337-tall canvas, the card's inner pieces
+    inside the column, and no view drawn as a fitted PC block (that is the fallback for screens with no pose)."""
+    guid = K.meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
+    for kind, name in VIEW_NAME.items():
+        text = files[prefab_path(name)]
+        F = K.FileIds(name)
+        assert "  drawAtPcScale: 1\n" not in text, f"{name}: drawn upright as the fitted PC layout (it has its own pose)"
+        for canvas_h in UP_HEIGHTS:
+            stack = []
+            for key, spec, overlay in upright_blocks(kind):
+                _, body = comp_doc(text, F(f"{key}#portrait"))
+                assert body and f"guid: {guid}" in body, f"{name}: {key} has no upright pose"
+                assert "  movesRect: 1\n" in body, f"{name}: {key}'s upright pose does not move it"
+                x, top, w, h = upright_rect(body, canvas_h)
+                assert x >= UP_M - 0.01 and x + w <= UP_W - UP_M + 0.01, \
+                    f"{name}: {key} upright spans x {x:g}-{x + w:g}, outside the column {UP_M}-{UP_W - UP_M}"
+                assert top >= UP_TOP - 0.01 and top + h <= canvas_h, \
+                    f"{name}: {key} upright spans y {top:g}-{top + h:g}, off a {canvas_h}-tall canvas"
+                ox, oy, osz = UP_ORB
+                assert x >= ox + osz - 0.01 or top + h <= canvas_h - (oy + osz) + 0.01, \
+                    f"{name}: {key} upright runs under the friends orb in the bottom-left corner on {canvas_h}"
+                if not overlay:
+                    stack.append((top, top + h, key))
+            for (t0, b0, k0), (t1, b1, k1) in zip(stack, stack[1:]):
+                assert b0 <= t1 + 0.01, f"{name}: upright {k0} (y {t0:g}-{b0:g}) overlaps {k1} (y {t1:g}-{b1:g}) on {canvas_h}"
+        # The pieces inside the widened card / column stay inside it.
+        inner = UP_INNER if kind in G_KINDS else UP_MAEL_INNER
+        for key in (("Step2", "Step3", "Lineup") + (("Step1", "HullStrip") if kind == "arena" else ())
+                    if kind in G_KINDS else ("Step1", "Step2", "Format")):
+            _, body = comp_doc(text, F(f"{key}#portrait"))
+            assert body, f"{name}: {key} has no upright pose"
+            x, _, w, _ = upright_rect(body, 0)
+            assert x >= 0 and x + w <= (UP_COL if key.startswith("Step") or key == "Format" else inner) + 0.01, \
+                f"{name}: {key} upright runs past its card ({x:g}-{x + w:g})"
+
+
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
     # Opaque (Shombith 2026-10-26: the Arcade window's title and cards read through the 0.95 veil, words over words).
@@ -1752,7 +1987,7 @@ def build_view(kind):
                     if kind in G_KINDS else "")))
 
     root.add("panel", 114, lambda ctx, go: panel_body(ctx, go, kind))
-    return root
+    return upright(root, kind)
 
 
 def vessel_names(ctx, kind):
@@ -2982,6 +3217,26 @@ def self_test(files):
             "  launchPanels: []", f"  launchPanels:\n  - {{fileID: {Mount('Menu_Main/Configure/arena', 'ConfigureArenaView').panel()}}}", 1)),
          lambda f: validate_scene(f[SCENE], f)),
     ]
+    # Section 138 (Rev 63 B): the upright layout.
+    MV = K.FileIds("ConfigureMaelstromView")
+    cases += [
+        ("the open card with no upright pose", lambda f: f.__setitem__(arena, re.sub(
+            r"^--- !u!114 &" + str(AV("Steps#portrait")) + r"\n(?:(?!--- ).*\n)*", "", f[arena], flags=re.M)), check_upright),
+        ("the preview wider than the column upright", lambda f: f.__setitem__(view, f[view].replace(
+            f"  sizeDelta: {{x: {UP_COL}, y: {UP_PV_H}}}\n", f"  sizeDelta: {{x: {UP_COL + 80}, y: {UP_PV_H}}}\n", 1)),
+         check_upright),
+        ("the controls panel overlapping the card upright", lambda f: f.__setitem__(view, re.sub(
+            r"(--- !u!114 &" + str(V("ControlsPanel#portrait")) + r"\n(?:(?!--- ).*\n)*?  sizeDelta: \{x: \d+, y: )\d+",
+            r"\g<1>400", f[view], count=1)), check_upright),
+        ("the Maelstrom view drawn as the fitted PC layout", lambda f: f.__setitem__(mael, f[mael].replace(
+            "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1)), check_upright),
+        ("START upright under the friends orb", lambda f: f.__setitem__(view, re.sub(
+            r"(--- !u!114 &" + str(V("Start#portrait")) + r"\n(?:(?!--- ).*\n)*?  anchoredPosition: \{x: )\d+",
+            r"\g<1>" + str(UP_M), f[view], count=1)), check_upright),
+        ("the Maelstrom pool upright but not moved", lambda f: f.__setitem__(mael, re.sub(
+            r"(--- !u!114 &" + str(MV("Pool#portrait")) + r"\n(?:(?!--- ).*\n)*?  movesRect: )1", r"\g<1>0", f[mael], count=1)),
+         check_upright),
+    ]
     lbv = prefab_path("LeaderboardView")
     cases += [
         ("overlapping reward bands", lambda f: f.__setitem__(lbv, f[lbv].replace("  minRank: 21\n", "  minRank: 20\n", 1)),
@@ -3002,6 +3257,7 @@ def main():
     args = ap.parse_args()
     files = outputs()
     validate_prefabs(files)
+    check_upright(files)
     validate_modal(files)
     validate_scene(files[SCENE], files)
     print(f"OK: {len(PREFABS)} configure prefabs, the modal prefab and Menu_Main validate")
