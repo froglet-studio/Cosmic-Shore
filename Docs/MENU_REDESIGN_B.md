@@ -31,6 +31,7 @@ section here. The build that follows a pick is verified against the picked board
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
 | Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118; built in section 119) | Shombith, 2026-11-02 (section 112) |
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
+| Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
