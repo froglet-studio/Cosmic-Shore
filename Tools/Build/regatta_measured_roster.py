@@ -65,6 +65,13 @@ BAL_REF = {"Manta": 23.94, "Rhino": 17.82, "Dolphin": 41.88, "Serpent": 241.68, 
 LINE_REF = {"Manta": 67.0, "Rhino": 95.0, "Dolphin": 97.4, "Serpent": 100.0, "Sparrow": 133.0}
 URCHIN = {"speed": 288.3, "free_speed": 112.7}
 
+# How much slower every AI but the rail rider gets as the tightest mouth shrinks: (110 / mouth) ^ MOUTH_ALPHA. Fitted
+# 2026-11-06 to Garrett's and the team's I4 grid races on the old circuit (54 u mouths): the Manta, Rhino, Serpent and
+# Squirrel AIs projected to 134-246 s against 92-125 s in the I1-calibrated model (about 1.85x; about 1.5x once the
+# grid's traffic, ~1.25x at I1, is taken out), while the Urchin's 61.5 s matched its rail model. Thin evidence (two clean
+# I4 races): replace it with Regatta Hull Benchmark races at I2-I4 when they exist.
+MOUTH_ALPHA = 0.6
+
 
 def card_levels():
     """{hull: {"1": level, ...}} from the card's StartingElements (a hull with no row is at 0)."""
@@ -87,6 +94,7 @@ def roster(bal_ref=None, line_ref=None, levels=None):
              "time_levels": {str(i): levels.get(h, {}).get(str(i), 0) for i in range(1, 5)}}
         if h in LINE_SPEED:
             d.update(speed=LINE_SPEED[h], share=0.35, line_ref=line_ref[h])
+        d.update(mouth_alpha=MOUTH_ALPHA, mouth_ref=MEASURED_ON["RingRadius"])
         out[h] = {"model": "measured", "drive": d}
     out["Urchin"] = {"model": "rail", "drive": dict(URCHIN)}
     return out

@@ -80,6 +80,12 @@ def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=
                           limit=limit, laps=laps)
             ratio = math.sqrt(ratio * lt / float(drive["line_ref"]))
             rings = lr["rings"]
+        # The race-line AIs miss more mouths as the mouth tightens, which neither model prices (both were calibrated on
+        # I1's 110 u mouths): x (mouth_ref / tightest mouth) ^ mouth_alpha, 1 on the course the anchor was measured on.
+        alpha = float(drive.get("mouth_alpha", 0.0))
+        if alpha:
+            tight = min(g["r"] for g in course["gates"])
+            ratio *= (float(drive.get("mouth_ref", tight)) / max(tight, 1.0)) ** alpha
         t = float(drive["anchor"]) * ratio
         return t, {"time": t if rings >= total else None, "rings": rings}
     if model == "balance":
