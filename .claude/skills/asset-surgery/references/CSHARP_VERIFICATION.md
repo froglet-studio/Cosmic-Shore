@@ -1194,7 +1194,8 @@ definition.
 this repo that resolves types across the SOAP/Unity boundary without the editor, and it caught
 a signature that would have been an editor-only error: **`Obvious.Soap`'s `ScriptableList<T>`
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
-does not accept one. Any helper taking a SOAP list must take `IList<T>`.
+did not accept one. (Our own SOAP replaced that plugin on 2026-11-06 and its `ScriptableList<T>`
+implements both, so a read-only parameter may now take `IReadOnlyList<T>`.)
 
 ### Trap: the refcompile cache's `UnityEngine.CoreModule.dll` COMPILES a harness and then throws at run time
 
