@@ -21189,3 +21189,9 @@ Menu_Main's Has Phone Layout is ON (step 9).
     gap on the left), Ready / countdown / scoreboard as step 4 of the phone layouts entry. PC unchanged.
 11. **Maelstrom on an iPhone**: the hub - round cards and standings left, preview, pilots and a large READY right, no
     pad hints; the summary readable with its buttons clear of the cards. PC unchanged.
+12. **Every other menu screen on an iPhone**, each against its line in `Docs/MENU_REDESIGN_B.md` section 129 (Built):
+    Ark (each tab; EDIT CARD opens the picker sheet), Port (FACTION opens the column), Profile (FLY TIME, AUDIO STUDIO
+    sheets; colour sets), the profile window (avatar grid, name field above the keyboard), Codex (READ opens the page),
+    Credits, Replays, Mission (each tab), Toy Box, Arena, Toy configure, Settings (each page; and from pause in a match,
+    centred), the purchase window and the weekly leaderboard. Then each on PC at 16:9: unchanged (the Codex page, the
+    Ark picker and the Port column sit under new holder objects, and Arena's cards are one grid, 4 across).

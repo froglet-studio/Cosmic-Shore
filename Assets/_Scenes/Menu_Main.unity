@@ -21191,7 +21191,6 @@ GameObject:
   - component: {fileID: 8647128109665290052}
   - component: {fileID: 8758355337821682525}
   - component: {fileID: 8758355337821682526}
-  - component: {fileID: 1049273415306720545}
   m_Layer: 5
   m_Name: ToyboxGameConfigureModal
   m_TagString: Untagged
@@ -21199,41 +21198,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1049273415306720545
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1669082606718284088}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!222 &1673479356923557994
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -37609,7 +37573,6 @@ GameObject:
   - component: {fileID: 2899345459383930635}
   - component: {fileID: 2899345459383930632}
   - component: {fileID: 2899345459383930630}
-  - component: {fileID: 822881101174476305}
   m_Layer: 5
   m_Name: ProfileModal
   m_TagString: Untagged
@@ -37617,41 +37580,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &822881101174476305
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2899345459383930628}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!114 &2899345459383930630
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38635,7 +38563,6 @@ GameObject:
   - component: {fileID: 3390724796386175533}
   - component: {fileID: 6151044292787378637}
   - component: {fileID: 8675064058193410727}
-  - component: {fileID: 120661980067088687}
   m_Layer: 5
   m_Name: PlayerDataSelectModal
   m_TagString: Untagged
@@ -38643,41 +38570,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &120661980067088687
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3006443216857350328}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!114 &3006867074418392838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65327,7 +65219,6 @@ GameObject:
   - component: {fileID: 3915953759907020893}
   - component: {fileID: 6411554931226249786}
   - component: {fileID: 6411554931226249785}
-  - component: {fileID: 638752430557327051}
   m_Layer: 5
   m_Name: LeaderboardConfigureModal
   m_TagString: Untagged
@@ -65335,41 +65226,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &638752430557327051
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6411554931226249784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!114 &6411554931226249785
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87650,7 +87506,6 @@ GameObject:
   - component: {fileID: 5823808243158720794}
   - component: {fileID: 1307328293950981414}
   - component: {fileID: 1697402598610725113}
-  - component: {fileID: 381845460442781827}
   m_Layer: 5
   m_Name: ProfileScreen
   m_TagString: Untagged
@@ -87658,41 +87513,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &381845460442781827
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8348156532203949861}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  drawAtPcScale: 1
-  pcHeight: 1080
-  pcCutTop: 84
-  phoneInsets: {x: 112, y: 8, z: 8, w: 8}
-  movesRect: 0
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 100, y: 100}
-  fontSize: 0
-  layoutSize: {x: 0, y: 0}
-  scale: 0
-  widthScale: 0
-  hideOnPhone: 0
-  stackChildren: 0
-  stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
-  stackSpacing: 0
-  stackOrder: []
-  gridCellSize: {x: 0, y: 0}
-  gridColumns: 0
-  gridSpacing: {x: -1, y: -1}
 --- !u!224 &8351366884563461853
 RectTransform:
   m_ObjectHideFlags: 0

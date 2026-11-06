@@ -6090,6 +6090,34 @@ unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards 
   line right; the pad hints leave the canvas. The summary is the PC layout in a 940-tall space (0.48); the invite cards
   the PC layout shrunk. Both AdaptiveCanvasScalers on the scene's canvas (a duplicate since #1569; Yash's, left in place)
   switch on.
+- **Every remaining Menu_Main screen has its own phone layout** (Shombith, 2026-11-05: "all corners of UI left"),
+  each written by its own generator, each leaving the fallback (`author_menu_phone.py` SCENE_RETIRED / PREFAB_RETIRED):
+  - **Ark** (`author_menu_ark.py`): the four tabs across the top; Converter title, recipe panel right, bar along the
+    foot; Squads list / header / the deck of three / View and Make bars, the Make picker a sheet behind EDIT CARD;
+    Artifacts list and detail; Decor slots. Unscaled, phone fonts.
+  - **Port** (`author_menu_port.py`): tabs; the feed full width with its field and SEND; the faction column a sheet
+    behind FACTION; the weekly board as configure's LeaderboardView. Pad controls off the canvas.
+  - **Profile screen** (`author_menu_profile.py`): header, RECORD / COLOUR SETS, the pilot card; favourites at 0.67;
+    FLY TIME and AUDIO STUDIO as sheets; the favourite-pilot picker; the colour-set showroom (tiles 0.55).
+  - **Profile window** (`author_menu_profile_window.py`): "How others see you" left, the avatar grid 6 x 3 or the
+    name page right, its field high, clear of the keyboard.
+  - **Codex** (`author_menu_codex.py`): the chapter tabs; the Elements orbit at 0.45 with its page a sheet behind READ;
+    the Field Guide book, page at 0.8 in two columns, the strip at 0.6.
+  - **Credits** and **Replays** (`author_menu_credits.py`, `author_menu_replays.py`): one shared phone window frame
+    (`phone_window_frame`), phone fonts, 44-tall Close; replay rows 100 tall, WATCH / DELETE at 1.25.
+  - **Mission, Toy Box, Arena** (`author_menu_mission.py`, `author_menu_toybox.py`, `author_menu_arena.py`): Arcade's
+    header and body; Arena's four cards one wrapping grid (4 across on PC, 3 at 0.6 on a phone); Toy Box's feature
+    cards stacked and toys 3 across at 0.64; Mission's tabs up into the header, Voyages at 0.6, Saga 0.65, Quests and
+    Episodes 0.5 (the quest words are small: Quests wants its own board).
+  - **Toy configure** (`author_menu_toyconfigure.py`): the Arcade configure window's sibling - preview, about, status,
+    NAVIGATE / SWITCH left, the variants panel right.
+  - **Settings** (`author_menu_settings.py`): the tabs a column down the left, the page right, 46-tall rows with 44-tall
+    controls; descriptions hidden; in a match the pause window centres it (`author_ingame_hud.pause_settings_phone`).
+    The account prompt draws at 0.62 (its heights are set in C# in PC units).
+  - **Purchase confirmation** (`author_menu_purchase.py`): an 800 x 450 region, the window centred right of the rail.
+  - **Weekly leaderboard** (`author_menu_configure.py` leaderboard section): best and rewards left, the board right.
+  The fallback is left only on full-canvas overlays (toasts, the freestyle HUD, loading and transition covers, the FTUE
+  instruction set). Arcade's phone cells were narrowed to 313 so three fit its 0.68 content.
 
 ## 130. Rev 56 mockups: the phone held upright (portrait), not built now (2026-11-05, awaiting board approval)
 

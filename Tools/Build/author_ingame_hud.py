@@ -2087,17 +2087,9 @@ def panel_text(text_):
 
 SETTINGS_MODAL = "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab"
 PHONE_RECT_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
-
-
-def root_phone_rect(path):
-    """The PhoneRect on a prefab's root (author_menu_phone.py's fallback marker), by its fileID."""
-    t = open(os.path.join(REPO, path), encoding="utf-8").read()
-    roots = re.findall(r"^--- !u!224 &-?\d+\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}\n(?:(?!--- ).*\n)*?  m_Father: \{fileID: 0\}", t, re.M)
-    assert len(roots) == 1, f"{path}: one root expected"
-    for m in re.finditer(r"^--- !u!114 &(-?\d+)\n((?:(?!--- ).*\n)*)", t, re.M):
-        if f"guid: {PHONE_RECT_GUID}" in m.group(2) and f"m_GameObject: {{fileID: {roots[0]}}}" in m.group(2):
-            return m.group(1)
-    raise AssertionError(f"{path}: its root has no PhoneRect")
+SETTINGS_OLD_ROOT_PHONE = "905863385838301029"      # the retired root fallback marker (SettingsModal.prefab)
+SETTINGS_WINDOW_PHONE = "1133331879533144154"       # the Window's PhoneRect, as SettingsModal.prefab sees it (nested)
+SETTINGS_MATCH_POSE = {"anchoredPosition.x": 0, "sizeDelta.x": -32}   # author_menu_settings.PHONE_MATCH_POSE
 
 
 def put_mod(doc, target, guid, path, value):
@@ -2112,17 +2104,19 @@ def put_mod(doc, target, guid, path, value):
 
 
 def pause_settings_phone(text_):
-    """The Settings window nested in the pause window carries Menu_Main's fallback marker on its root (a window right of
-    the rail, under the cut nav band). A match has no rail and no band: here it is the PC layout shrunk onto the whole
-    canvas (Docs/MENU_REDESIGN_B.md section 129)."""
+    """The Settings window nested in the pause window: its phone layout (author_menu_settings.py) puts the window right
+    of Menu_Main's rail; a match has no rail, so here the Window's PhoneRect is centred, 16 in from each side
+    (author_menu_settings.PHONE_MATCH_POSE). The root's old fallback overrides (pcCutTop / phoneInsets on the retired
+    root marker) are dropped (Docs/MENU_REDESIGN_B.md section 129)."""
     guid = K.meta_guid(SETTINGS_MODAL)
-    fid = root_phone_rect(SETTINGS_MODAL)
     p = Patch(text_, "Pause/Settings")
     pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {guid}" in d]
     assert len(pis) == 1, "the pause window should nest one SettingsModal"
     d = p.doc(pis[0])
-    for path, v in (("pcCutTop", 0), ("phoneInsets.x", 0), ("phoneInsets.y", 0), ("phoneInsets.z", 0), ("phoneInsets.w", 0)):
-        d = put_mod(d, fid, guid, path, v)
+    d = re.sub(r"    - target: \{fileID: %s, guid: %s,\s*type: 3\}\n      propertyPath: (?:pcCutTop|phoneInsets\.[xyzw])\n"
+               r"      value: .*\n      objectReference: .*\n" % (SETTINGS_OLD_ROOT_PHONE, guid), "", d)
+    for path, v in SETTINGS_MATCH_POSE.items():
+        d = put_mod(d, SETTINGS_WINDOW_PHONE, guid, path, v)
     p.replace(pis[0], d)
     return p.text()
 

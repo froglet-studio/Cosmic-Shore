@@ -37,23 +37,21 @@ MENU = "Assets/_Scenes/Menu_Main.unity"
 
 # Scene objects of Menu_Main with no phone board yet, by their (unique) name.
 SCENE_FALLBACK = [
-    "ProfileScreen",
-    "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
-    "ToyboxGameConfigureModal",
-    "ProfileModal", "LeaderboardConfigureModal", "PlayerDataSelectModal", "InitializingScreen", "SceneTransitionModal",
+    "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI", "InitializingScreen", "SceneTransitionModal",
 ]
 
 # Screens that are prefab instances directly under a container that is not itself a fallback block.
 PREFAB_FALLBACK = [
-    "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab",
     "Assets/_Prefabs/UI Elements/Quest/InGameInstructionSet.prefab",
 ]
 
 # Screens that HAD the fallback and now carry their own phone layout (their generators write it): the marker this tool
 # left on them is taken off, so a screen never carries both.
 SCENE_RETIRED = ["ArenaGameConfigureModal", "MaelstromGameConfigurationModal", "Hangar Screen",
-                 "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal", "ArkScreen", "PortScreen"]
-PREFAB_RETIRED = ["Assets/_Prefabs/ArcadeGameConfigureModal.prefab"]
+                 "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal", "ArkScreen", "PortScreen",
+                 "ProfileScreen", "ProfileModal", "PlayerDataSelectModal", "ToyboxGameConfigureModal",
+                 "LeaderboardConfigureModal"]
+PREFAB_RETIRED = ["Assets/_Prefabs/ArcadeGameConfigureModal.prefab", "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab"]
 
 # Scene objects of Menu_Main that HAVE a phone layout and no generator of their own to write it (the nav band is
 # patched in place by author_menu_topnav.py, which keeps other generators' components on it). R55 (section 129): the
