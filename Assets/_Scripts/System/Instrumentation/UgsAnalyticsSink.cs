@@ -54,6 +54,11 @@ namespace CosmicShore.Core
             UGSKeys.EventGameCompleted + "." + UGSKeys.ParamElement,
             UGSKeys.EventGameCompleted + "." + UGSKeys.ParamElementSecondary,
             UGSKeys.EventFreestyleEntered + "." + UGSKeys.ParamVesselClass,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamDomain,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamHumansOnMyDomain,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamHumansOnOtherDomains,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamAiOnMyDomain,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamAiOnOtherDomains,
         };
 
         /// <summary>
