@@ -101,6 +101,31 @@
       "type": "int",
       "privacy": "P0"
     },
+    "build_version": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "The version of the build this person last played, from the build stamp (BuildStamp, Docs/LAUNCH/BUILD_STAMP.md). Person property only - never an event parameter, so it costs zero UGS schema rows."
+    },
+    "build_number": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "The build number of that build (Android versionCode, iOS build number, a pipeline run number, or 'local'/'editor')."
+    },
+    "build_commit": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "The commit sha the build was made from ('editor' for an Editor run)."
+    },
+    "release_channel": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "The channel the build was made for (playtest, internal, testflight, web; 'local' when a person built it, 'editor' in the Editor)."
+    },
+    "ugs_environment": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "The UGS environment the build talks to: production or development. Splits real players from test players."
+    },
     "gdpr_deletion_requested": {
       "type": "bool",
       "privacy": "P0",

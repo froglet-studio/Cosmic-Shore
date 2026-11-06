@@ -96,12 +96,22 @@ Unity -quit -batchmode -nographics \
 
 Exits **non-zero on failure**, so a build server fails the job instead of publishing a half-written
 depot. Output lands in `Builds/Windows64/` (git-ignored) alongside a `build_manifest.txt` recording
-version, Unity version, configuration, scripting backend, commit, and UTC timestamp.
+version, build number, Unity version, configuration, scripting backend, commit, ref, release channel,
+UGS environment and UTC timestamp (the player's build stamp, below).
 
 ### UGS Build Automation
 Point the existing automated build config at the same `-executeMethod` target. Nothing bespoke is
 needed — pass `-buildCommit` so the manifest stays traceable, and archive `Builds/Windows64/` as the
 artefact that `Tools/Steam/upload.sh` consumes.
+
+### Build stamp and UGS environment
+Every player carries a build stamp (version, build number, commit, ref, release channel, UGS
+environment), shown on the settings screen and attached to crash reports and analytics person
+properties. A **release build talks to UGS `production`**, a development build to `development`,
+unless `-ugsEnvironment` / `CS_UGS_ENVIRONMENT` says otherwise; any other name fails the build. Pass
+`-buildNumber` and `-releaseChannel` (or `--build-number` / `--channel` to `build_windows.sh`, or the
+`CS_*` environment variables). `bundleVersion` is put back after every build, and `WINDOWS_BUILD` is
+passed for the build only. Every argument and variable: [`Docs/LAUNCH/BUILD_STAMP.md`](LAUNCH/BUILD_STAMP.md).
 
 ---
 

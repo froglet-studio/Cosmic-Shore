@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Core;
+using Unity.Services.Core.Environments;
 using Unity.Services.Authentication;
 #if UNITY_EDITOR
 using Unity.Multiplayer.PlayMode;
@@ -182,7 +183,16 @@ namespace CosmicShore.Core
             // so an off-thread continuation surfaces as EnsureRunningOnMainThread inside a
             // listener - swallowed by the async-void catch, leaving sign-in silently unfinished.
             // Docs/THREADING.md.
-            await UnityServices.InitializeAsync().AsMainThread();
+            //
+            // The UGS environment comes from the build stamp: release players talk to production,
+            // development builds and the Editor to development, unless the pipeline named one
+            // (BuildStamp.ResolveUgsEnvironment, Docs/LAUNCH/BUILD_STAMP.md). This is the ONLY
+            // UnityServices.InitializeAsync in the game; every other service rides on it.
+            var stamp = BuildStamp.Current;
+            CSDebug.LogVerbose(CSLogChannel.Boot,
+                $"[Auth] UGS environment '{stamp.ugsEnvironment}' (build {BuildStamp.Describe(stamp)}).");
+            var options = new InitializationOptions().SetEnvironmentName(stamp.ugsEnvironment);
+            await UnityServices.InitializeAsync(options).AsMainThread();
             SwitchMppmProfileIfNeeded();
             WireAuthEventsOnce();
 

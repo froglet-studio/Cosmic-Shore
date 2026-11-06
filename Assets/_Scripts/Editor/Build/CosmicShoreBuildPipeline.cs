@@ -20,8 +20,13 @@ namespace CosmicShore.Editor
     /// <code>
     /// Unity -quit -batchmode -nographics -projectPath &lt;proj&gt; \
     ///       -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildWindowsRelease \
-    ///       -buildOutput Builds/Windows64 -buildVersion 0.2.0 -logFile -
+    ///       -buildOutput Builds/Windows64 -buildVersion 0.2.0 [-buildNumber 42] [-buildCommit &lt;sha&gt;] \
+    ///       [-releaseChannel playtest] [-ugsEnvironment production] -logFile -
     /// </code>
+    /// The version, build number, commit, channel and UGS environment go into the player's build
+    /// stamp (<see cref="BuildStampProcessor"/>, Docs/LAUNCH/BUILD_STAMP.md), which also puts
+    /// <c>bundleVersion</c> back after the build. <see cref="WindowsDefine"/> is passed for this
+    /// build only and never written into <c>ProjectSettings.asset</c>.
     ///
     /// Exits non-zero on failure so the build server actually fails the job instead of publishing
     /// a half-written depot.
@@ -37,6 +42,8 @@ namespace CosmicShore.Editor
         /// <summary>
         /// Define added to Windows player builds, mirroring the LINUX_BUILD define on the Linux
         /// profile. Use it for desktop-only code paths that must not compile into mobile players.
+        /// Passed through <see cref="BuildPlayerOptions.extraScriptingDefines"/>, so it applies to
+        /// this build only (it used to be written into the Standalone defines and left there).
         /// </summary>
         const string WindowsDefine = "WINDOWS_BUILD";
 
@@ -75,15 +82,9 @@ namespace CosmicShore.Editor
             try
             {
                 string outputFolder = GetArg("-buildOutput") ?? DefaultOutputFolder;
-                string version = GetArg("-buildVersion");
                 bool useMono = HasFlag("-useMono");
 
-                if (!string.IsNullOrWhiteSpace(version))
-                {
-                    PlayerSettings.bundleVersion = version;
-                    Debug.Log($"[Build] Version stamped: {version}");
-                }
-
+                // -buildVersion / CS_BUILD_VERSION is applied (and put back) by BuildStampProcessor.
                 string[] scenes = RequireScenes();
 
                 ConfigurePlayerSettings(development, useMono);
@@ -100,6 +101,7 @@ namespace CosmicShore.Editor
                     options = development
                         ? BuildOptions.Development | BuildOptions.AllowDebugging
                         : BuildOptions.None,
+                    extraScriptingDefines = new[] { WindowsDefine },
                 };
 
                 Debug.Log($"[Build] Windows x64 {(development ? "Development" : "Release")} " +
@@ -125,6 +127,12 @@ namespace CosmicShore.Editor
                 Debug.LogError($"[Build] FAILED: {ex.Message}\n{ex}");
                 if (batch) EditorApplication.Exit(1);
                 else throw;
+            }
+            finally
+            {
+                // Puts bundleVersion back and removes the stamp even when the build failed
+                // (a failed build never reaches the postprocess callback).
+                BuildStampProcessor.Cleanup();
             }
         }
 
@@ -152,8 +160,6 @@ namespace CosmicShore.Editor
                     development ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
             }
 
-            AddDefineIfMissing(standalone, WindowsDefine);
-
             // Desktop players must never inherit the mobile "keep the screen awake" behaviour or a
             // portrait default; both are mobile-only concerns that read as bugs on PC.
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
@@ -163,17 +169,6 @@ namespace CosmicShore.Editor
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
             PlayerSettings.visibleInBackground = true;
             PlayerSettings.runInBackground = true;
-        }
-
-        static void AddDefineIfMissing(NamedBuildTarget target, string define)
-        {
-            string defines = PlayerSettings.GetScriptingDefineSymbols(target);
-            var parts = defines.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (parts.Contains(define)) return;
-
-            parts.Add(define);
-            PlayerSettings.SetScriptingDefineSymbols(target, string.Join(";", parts));
-            Debug.Log($"[Build] Added scripting define '{define}'.");
         }
 
         static string[] EnabledScenes() =>
@@ -202,13 +197,19 @@ namespace CosmicShore.Editor
         {
             try
             {
+                // The player's own stamp: Player Settings are already put back by now.
+                var stamp = BuildStampProcessor.LastStamp;
                 string manifest =
-                    $"version={PlayerSettings.bundleVersion}\n" +
+                    $"version={stamp?.version ?? PlayerSettings.bundleVersion}\n" +
+                    $"buildNumber={stamp?.buildNumber}\n" +
                     $"unity={Application.unityVersion}\n" +
                     $"configuration={(development ? "development" : "release")}\n" +
                     $"backend={PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone)}\n" +
-                    $"commit={GetArg("-buildCommit") ?? "unknown"}\n" +
-                    $"builtAtUtc={DateTime.UtcNow:o}\n";
+                    $"commit={stamp?.commit ?? GetArg("-buildCommit") ?? "unknown"}\n" +
+                    $"ref={stamp?.gitRef}\n" +
+                    $"channel={stamp?.channel}\n" +
+                    $"ugsEnvironment={stamp?.ugsEnvironment}\n" +
+                    $"builtAtUtc={stamp?.builtAtUtc ?? DateTime.UtcNow.ToString("o")}\n";
 
                 File.WriteAllText(Path.Combine(outputFolder, "build_manifest.txt"), manifest);
             }
