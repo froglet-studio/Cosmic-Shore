@@ -551,7 +551,14 @@ class KeyCommand(unittest.TestCase):
     """2026-11-06: `key read admin` made a READ key named "admin"; Garrett signed in with it and saw no Admin pages."""
 
     def config(self):
-        return dict(A.DEFAULTS, admin_keys={"admin": "fa_admin_x"}, read_keys={}, profile_readers=["garrett"])
+        return dict(A.DEFAULTS, admin_keys={"admin": "fa_admin_x"}, read_keys={}, profile_readers=["garrett"],
+                    all_keys_admin=False)
+
+    def test_with_every_key_an_admins_the_message_says_so(self):
+        c = dict(self.config(), all_keys_admin=True)
+        message, _ = A.key_command(c, ["read", "ian"])
+        self.assertIn("admin's", message)
+        self.assertIn("an admin's too", A.key_command(c, ["list"])[0])
 
     def test_a_read_key_cannot_be_named_admin_or_reuse_another_kinds_name(self):
         c = self.config()
@@ -594,11 +601,53 @@ class KeyCommand(unittest.TestCase):
             A.key_command(c, ["delete", "admin", "admin"])            # the only admin key stays
 
 
+class EveryKeyIsAdmin(unittest.TestCase):
+    """Shombith, 2026-11-06: "Give everyone who has a key an admin access there is no seperation between us." The
+    default; the split tests above run with all_keys_admin false."""
+
+    def test_with_the_default_a_read_key_is_an_admin_and_a_wrong_key_is_still_refused(self):
+        self.assertTrue(A.DEFAULTS["all_keys_admin"])
+        work = tempfile.mkdtemp()
+        try:
+            config = dict(A.DEFAULTS, data_dir=work, ingest_keys=["in-key"], read_keys={"garrett": "g-key"},
+                          admin_keys={"admin": "admin-key"})
+            app = A.App(config)
+            app.rebuild()                                                      # an (empty) aggregates db to query
+            server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(app))
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            base = f"http://127.0.0.1:{server.server_address[1]}"
+
+            def call(method, path, key, body=None):
+                request = urllib.request.Request(base + path, method=method, headers={"Authorization": "Bearer " + key,
+                                                 "Content-Type": "application/json"},
+                                                 data=json.dumps(body).encode() if body is not None else None)
+                try:
+                    with urllib.request.urlopen(request) as response:
+                        return response.status, json.loads(response.read())
+                except urllib.error.HTTPError as err:
+                    return err.code, json.loads(err.read() or b"{}")
+            status, me = call("GET", "/v1/me", "g-key")
+            self.assertEqual((status, me["name"], me["admin"], me["profiles"]), (200, "garrett", True, True))
+            self.assertEqual(call("POST", "/v1/query", "g-key", {"sql": "SELECT 1 AS one"})[0], 200)
+            self.assertEqual(call("GET", "/v1/people?build=release&days=7", "g-key")[0], 200)
+            self.assertEqual(call("GET", "/v1/me", "not-a-key")[0], 401)       # no key, no access, as before
+            app.config["all_keys_admin"] = False                               # the split comes back
+            status, me = call("GET", "/v1/me", "g-key")
+            self.assertEqual((me["admin"], me["profiles"]), (False, False))
+            self.assertEqual(call("POST", "/v1/query", "g-key", {"sql": "SELECT 1 AS one"})[0], 403)
+            server.shutdown()
+            server.server_close()
+            app.store.db.close()
+        finally:
+            shutil.rmtree(work)
+
+
 class Http(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
+        # These tests guard the read / admin split, which comes back when all_keys_admin is false.
         config = dict(A.DEFAULTS, data_dir=self.dir, ingest_keys=["in-key"], read_keys={"ian": "read-key"},
-                      admin_keys={"admin": "admin-key"}, allowed_origins=["https://dash.example"])
+                      admin_keys={"admin": "admin-key"}, allowed_origins=["https://dash.example"], all_keys_admin=False)
         self.app = A.App(config)
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(self.app))
         self.base = f"http://127.0.0.1:{self.server.server_address[1]}"

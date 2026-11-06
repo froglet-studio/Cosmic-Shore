@@ -221,6 +221,10 @@ server picks up a new or deleted key at the next request, with no restart. A rea
 player profiles; `key admin <name>` makes an admin key (Query Studio, Dashboards, eras, Erasure, every profile). The
 console's sidebar says which kind signed in ("garrett · read key, profiles", "shombith · admin key").
 
+- **Every key is an admin's** (Shombith, 2026-11-06: "Give everyone who has a key an admin access there is no seperation
+  between us"): while `all_keys_admin` is true (the default), any valid key gets the Admin pages, eras, saved queries,
+  dashboards, Erasure and every profile. Set `"all_keys_admin": false` in `config.json` to bring the read / admin split
+  and `profile_readers` back; the running server picks it up at the next request.
 - `key list` prints every key's name and kind, never a secret.
 - `key delete [read|admin] <name>` removes one. A name that is both kinds must say which, and the last admin key
   cannot be deleted.
