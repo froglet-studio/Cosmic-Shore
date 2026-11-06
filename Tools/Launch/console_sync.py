@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-DOC = "https://github.com/froglet-studio/Cosmic-Shore/blob/claude/exciting-pascal-t8ijbo/Docs/LAUNCH/READINESS.md"
+DOC = "https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/Docs/LAUNCH/READINESS.md"
 
 # rank, id, title, platform, decides, risk, size, needs_human, blocks, steps, readiness anchor
 CHECKLIST = [
@@ -105,11 +105,11 @@ CHECKLIST = [
     (15, "in-app-deletion", "In-app account deletion", "backend", "Shombith", "High", "M", False, True,
      "Delete in the app: UGS DeleteAccountAsync, Cloud Save and the PostHog person. Required by App Store 5.1.1(v) and "
      "Google Play.", "#3"),
-    (16, "ios-store-forms", "App Store Connect forms match the build", "ios", "Garrett / Caleb + counsel", "High", "S-M",
+    (16, "ios-store-forms", "App Store Connect forms match the build", "ios", "store admin (not named in any doc) + counsel", "High", "S-M",
      True, True, "App Privacy label (analytics, crash data, user id, display name, gameplay, birth year); age rating "
      "questionnaire; an external TestFlight group, Beta App Review, and a new public link (README.md still links the "
      "old bundle id's).", "#3"),
-    (17, "android-store-forms", "Play Console forms match the build", "android", "Garrett / Caleb + counsel", "High",
+    (17, "android-store-forms", "Play Console forms match the build", "android", "store admin (not named in any doc) + counsel", "High",
      "S-M", True, True, "Data safety (incl. the RECORD_AUDIO and BLUETOOTH_CONNECT permissions Vivox adds, or strip them "
      "if chat is text-only); IARC rating; target audience; ads; privacy policy and deletion URLs; confirm the account "
      "type (a Personal account needs a 12-tester, 14-day closed test).", "#4"),

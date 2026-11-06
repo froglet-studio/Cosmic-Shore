@@ -25,5 +25,10 @@ then send `/tmp/console-sync/writes.json` as one ArtifactData `batch` to the con
 
 Capabilities: `db` (rules: shared data read by every viewer, written by editors; `checklist` and `runbook` written by
 any viewer), `user` (names for "taken by"), `sample` ("Ask about the launch", answered only from the page's data).
-Action buttons are plain links to the workflow or dashboard; production steps wait for a reviewer there. The page
+The page's two repository links (the runbook and the readiness audit) point at the
+`claude/exciting-pascal-t8ijbo` branch on purpose: the published page has to work before that branch merges, and GitHub
+deletes the branch when it does. **The first republish after the merge switches them to `bleeding-edge`** (search
+`index.html` for `exciting-pascal`). `console_sync.py` already links the checklist rows to `bleeding-edge`; the rows
+seeded on 2026-11-05 still carry the branch link and the store-form owners as seeded, until the team edits them on
+the page. Action buttons are plain links to the workflow or dashboard; production steps wait for a reviewer there. The page
 holds no tokens. Metrics show "not connected" until an analytics source exists.

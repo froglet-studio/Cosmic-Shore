@@ -39,7 +39,7 @@ Times are US Eastern (the company's registered address is in Michigan); move the
 | 10:00 | Go/no-go on the console, platform by platform. Record it on each checklist item. | launch lead | Decision written per platform. |
 | 11:00 | Tag the release `v0.3.0` (or `rc-N` promoted) on the Go commit. | Shombith | Release notes drafted. |
 | 12:00 | Deploy to UGS `production` (the approved job): Cloud Code, access policy, launch flags with `minimumVersion` = this release. | Shombith | `ugs-production` green; flags shown on the console. |
-| 13:00 | Store forms checked against this build: App Store privacy label and age rating, Play Data safety and IARC, Steam content survey. | Garrett / Caleb | Each form's evidence link on its checklist item. |
+| 13:00 | Store forms checked against this build: App Store privacy label and age rating, Play Data safety and IARC, Steam content survey. | Garrett for the Steam survey (A3); the store admins for the mobile forms (no doc names them) | Each form's evidence link on its checklist item. |
 | 15:00 | Write the Discord launch post and the invite wave list (A6 wave policy). | Garrett | Draft posted for review. |
 
 ## T-0 (2026-12-03): launch
@@ -78,7 +78,7 @@ Times are US Eastern (the company's registered address is in Michigan); move the
 |---|---|---|---|
 | Windows / Steam | Steamworks App Admin > Builds: set the previous build live on the branch. | Minutes. | Players get it on next launch. |
 | iOS | Pause the phased release in App Store Connect; for TestFlight, expire the bad build and re-add the previous one to the group. Ship a fixed build. | Minutes to pause; a review cycle to fix. | Apple has no binary rollback. |
-| Android | Play Console: **Halt rollout**, then roll out the previous release to the track (the promote workflow's rollback input). | Minutes to halt. | Players who updated keep the bad build until the fix ships. |
+| Android | Play Console: **Halt rollout** (the promote workflow's `halt`, or its `rollback`, which halts and then prints the steps). Play cannot re-serve an older version code: build the earlier tag again (it gets a higher version code) and promote that. | Minutes to halt; a build to roll back. | Players who updated keep the bad build until the rebuilt one ships (`Docs/LAUNCH/PIPELINES.md`, PR #1751). |
 | Web | The publish workflow's **rollback** action points `toybox/latest.json` at the previous build (approved job). | One minute plus cache (`latest.json` is `no-cache`). | Builds are immutable on R2, so the old one is still there. |
 | UGS | Re-run `ugs-deploy` to production with the previous tag as `ref` (approved job). | Minutes. | Cloud Save data is not rolled back. |
 
@@ -97,10 +97,11 @@ what to do (update, wait), when we next post. No status page exists; Discord is 
 | Builds, CI, pipelines, editor tooling, Claude skills | Shombith | CLAUDE.md § Team ("Shombith heads tooling") |
 | UGS, backend, Steam code, sign-in, Cloud Save | Shombith | `Docs/TEAM.json` owners; CLAUDE.md ("Anything on UGS or the backend is Shombith's") |
 | Cloud Code changes | Yash does the work, through Shombith | CLAUDE.md § Team |
-| Multiplayer code | ask Shombith and Yash (no declared owner) | `who_works_where.py query Assets/_Scripts/Controller/Multiplayer` |
-| Steam business: entity, agreements, wave policy | Garrett (A1a, A1c, A3, A6) | `Docs/STEAM_BUSINESS_SETUP.md` |
+| Multiplayer code | ask Yash and Shombith (no declared owner) | `Docs/TEAM.json` roles (Yash: party / multiplayer hardening; Shombith: multiplayer scenes); `who_works_where.py query Assets/_Scripts/Controller/Multiplayer` |
+| Steam business: entity, agreements, content survey, wave policy | Garrett (A1a, A1c, A3; A6 the wave policy) | `Docs/STEAM_BUSINESS_SETUP.md`; `Docs/STEAM_PLAYTEST_RUNBOOK.md` § A6 |
 | Steam fee, partner account | Shombith (A1b, A2, A7) | `Docs/STEAM_BUSINESS_SETUP.md` |
-| Store page and capsules | Caleb (A4, A5) | `Docs/STEAM_BUSINESS_SETUP.md` |
+| Store page and capsules | Caleb builds, Shombith submits (A5) | `Docs/STEAM_PLAYTEST_RUNBOOK.md` § A5 |
+| Playtest child app | Shombith creates, Garrett signs off the name (A4) | `Docs/STEAM_PLAYTEST_RUNBOOK.md` § A4 |
 | AI training | Garrett | CLAUDE.md § AI training |
 
 Contacts are in the team's own channels (Discord); this file holds no phone numbers or emails.
