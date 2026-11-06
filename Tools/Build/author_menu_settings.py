@@ -259,7 +259,8 @@ def row_node(page, pk, i, kind, caption, desc, field, top):
     r.add("in", 114, M.entrance("Rise", by_sibling=True, distance=10))
     r.add("cg", 225, canvas_group(True))
     label(r.child(N(f"{k}/Label", "Label", TL(0, 14, 900, 26))), caption, "Body", "TextLight")
-    label(r.child(N(f"{k}/Desc", "Desc", TL(0, 44, 900, 20))), desc, "BodySmall", "NeutralLightest")
+    label(r.child(N(f"{k}/Desc", "Desc", TL(0, 44, 900, 20))), desc, "BodySmall", "NeutralLightest") \
+        .add("cg", 225, canvas_group(True))     # hidden on a phone (phone_layout)
     image_node(r, f"{k}/Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
     wiring = {}
     if kind == "dd":
@@ -303,7 +304,7 @@ def account_page(page, pk):
     ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Danger"), K.chrome_sprite("chrome_person"), preserve=True))
     label(g.child(N(f"{pk}/Guest/Text", "Text", TL(60, 0, PAGE_W - 80, 56))),
           "Guest pilot. Your progress lives on this device. Link an account to keep it if you reinstall or change devices.",
-          "Body", "TextLight")
+          "Body", "TextLight", wrap=True)     # one line in the PC rect; it wraps in the phone's narrow column
     label(page.child(N(f"{pk}/Caption", "LinkedCaption", TL(0, 164, 600, 18))), "Linked accounts", "Label", "NeutralLightest")
     rows = page.child(N(f"{pk}/Rows", "Rows", TL(0, 170, PAGE_W, 480)))
     for i, (name, _, _) in enumerate(ACCOUNT_ROWS):
@@ -470,7 +471,243 @@ def build_view():
              + "  defaultTab: 0\n  activeScale: 1.1\n  inactiveScale: 0.95\n  scaleLabels: 0\n"
              f"  titleText: {ref(ctx.c('Window/Title', 'tmp'))}\n"))
     root.add("bench", 114, lambda ctx, go: mono(go, S["bench"], "  intensity: 2\n"))
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/MENU_REDESIGN_B.md section 129). The same prefab opens in Menu_Main (rail on the left) and full
+# canvas in a match (through the pause window), so the window is a stretched rect: on a phone it runs from x 112 (clear
+# of the rail) to 16 short of the right edge, y 8 to 442; in a match the pause window's instance can widen it (see
+# PHONE_MATCH_POSE). Inside, in phone units: the five tabs a column down the left (hex 52 x 45 over the word, 104 x 60
+# each), the title and Close across the top, the version beside Close, and the open page right of the tabs, its rows 46
+# tall - the label left, the control (dropdown, ON / OFF, slider + value) 264 wide on the right, 44 tall; a row's
+# one-line description is hidden on a phone. The Account page is two columns (who you are, the linked accounts);
+# the account window over it is drawn at 0.62 of its PC size (AccountPromptWindow sets its height in PC units).
+# --------------------------------------------------------------------------------------------
+PH_X, PH_RIGHT, PH_Y = 112, 16, 8                 # the window's insets from the canvas (left, right, top / bottom)
+PH_WIN_W, PH_WIN_H = 800 - PH_X - PH_RIGHT, 450 - 2 * PH_Y      # 672 x 434 on the narrowest phone
+PH_TAB_X, PH_TAB_TOP, PH_TAB_W, PH_TAB_H, PH_TAB_GAP = 10, 10, 104, 60, 2
+PH_PAGE_X, PH_PAGE_TOP, PH_PAGE_BOTTOM = 128, 66, 12
+PH_PAGE_W, PH_PAGE_H = PH_WIN_W - PH_PAGE_X - 12, PH_WIN_H - PH_PAGE_TOP - PH_PAGE_BOTTOM   # 532 x 356
+PH_ROW, PH_CTRL_W, PH_CTRL_H = 46, 264, 44
+PH_NOTICE_H = 28
+PH_ACC_LEFT_W, PH_ACC_GAP = 200, 12
+PH_ACC_RIGHT_X = PH_ACC_LEFT_W + PH_ACC_GAP
+PH_ACC_RIGHT_W = PH_PAGE_W - PH_ACC_RIGHT_X       # 320
+PH_PROMPT_SCALE = 0.62
+PH_PROMPT_W = round(560 / PH_PROMPT_SCALE)        # 903 PC units: 560 on the phone, x 120 - 680 on an 800-wide canvas
+PH_PROMPT_BTN_H = 72                              # 44.6 on the phone
+CLOSE_W = 16 + K.label_width("B", "Label") + 24 + 10 + K.label_width("CLOSE", "ButtonSmall") + 16
+# In a match (no rail): the window centred, 16 in from each side - the values the pause window's override sets on the
+# Window's PhoneRect (author_ingame_hud.py), on its anchoredPosition.x and sizeDelta.x.
+PHONE_MATCH_POSE = {"anchoredPosition.x": 0, "sizeDelta.x": -32}
+# The links (General) in two rows on a phone, the tools (Performance) in one.
+PH_LINK_ROWS = (("BugReport", "Privacy", "DeleteData"), ("Credits", "Quit"))
+
+
+def phone_w(caption, role):
+    return K.label_width(caption, role) * K.PHONE_SIZES[role] / K.ROLES[role][2]
+
+
+def small_w(caption):
+    """A small button's width on a phone: its word at the phone size, 18 a side."""
+    return round(phone_w(caption, "ButtonSmall") + 36)
+
+
+def page_rows(name, rows):
+    """(top of the first row, the y below the last) of a page on a phone."""
+    top = PH_NOTICE_H + 2 if name == "Performance" else 0
+    return top, top + len(rows) * PH_ROW
+
+
+def phone_boxes():
+    """Every block's phone rect inside the window (window-local, top-left origin): (name, x, y, w, h, touch). Each page
+    is listed separately, since only one shows."""
+    boxes = [("Tabs", PH_TAB_X, PH_TAB_TOP, PH_TAB_W, len(PAGES) * (PH_TAB_H + PH_TAB_GAP) - PH_TAB_GAP, False),
+             ("a tab", PH_TAB_X, PH_TAB_TOP, PH_TAB_W, PH_TAB_H, True),
+             ("Close", PH_WIN_W - 12 - CLOSE_W, 12, CLOSE_W, 44, True),
+             ("Version", PH_WIN_W - 12 - CLOSE_W - 12 - 200, 26, 200, 16, False),
+             ("Title", PH_PAGE_X, 28, 190, 32, False)]
+    pages = {}
+    for name, _, rows in PAGES:
+        top, bottom = page_rows(name, rows)
+        items = [(f"{name} row {i + 1} control", PH_PAGE_W - PH_CTRL_W, top + i * PH_ROW + 1, PH_CTRL_W, PH_CTRL_H, True)
+                 for i in range(len(rows))]
+        if name == "General":
+            y = bottom + 12
+            for r, keys in enumerate(PH_LINK_ROWS):
+                x = 0
+                for k in keys:
+                    cap = next(c_ for kk, c_, _, _ in LINKS if kk == k)
+                    items.append((f"link {k}", x, y + r * 50, small_w(cap), 44, True))
+                    x += small_w(cap) + 8
+        if name == "Performance":
+            x = 0
+            for k, cap, _ in PERF_BUTTONS:
+                items.append((f"tool {k}", x, bottom + 4, small_w(cap), 44, True))
+                x += small_w(cap) + 14
+        if name == "Account":
+            y = ACCOUNT_ROWS_TOP + len(ACCOUNT_ROWS) * ACCOUNT_PITCH + ACCOUNT_ACTIONS_GAP
+            items += [("guest notice", 0, 50, PH_ACC_LEFT_W, 170, False),
+                      ("sign out", PH_ACC_RIGHT_X, y, small_w("SIGN OUT"), 44, True),
+                      ("delete account", PH_PAGE_W - small_w("DELETE ACCOUNT"), y, small_w("DELETE ACCOUNT"), 44, True)]
+            items += [(f"link {n}", PH_PAGE_W - small_w("LINK"), ACCOUNT_ROWS_TOP + i * ACCOUNT_PITCH + 20, small_w("LINK"), 44, True)
+                      for i, (n, _, _) in enumerate(ACCOUNT_ROWS)]
+        pages[name] = items
+    return boxes, pages
+
+
+def check_phone_boxes():
+    boxes, pages = phone_boxes()
+    assert PH_X >= 112, "settings phone: the window crosses the rail"
+    for name, x, y, w, h, touch in boxes:
+        assert x >= 0 and x + w <= PH_WIN_W + 0.01 and y >= 0 and y + h <= PH_WIN_H, f"settings phone: {name} leaves the window"
+        assert not touch or h >= 44, f"settings phone: {name} is {h} tall"
+    assert boxes[3][1] >= boxes[4][1] + boxes[4][3], "settings phone: the version runs into the title"
+    for page, items in pages.items():
+        for name, x, y, w, h, touch in items:
+            assert x >= 0 and x + w <= PH_PAGE_W + 0.01 and y >= 0 and y + h <= PH_PAGE_H, \
+                f"settings phone: {page}: {name} leaves the page ({x}, {y}, {w}, {h})"
+            assert not touch or h >= 44, f"settings phone: {page}: {name} is {h} tall"
+        for i, a in enumerate(items):
+            for b in items[i + 1:]:
+                overlap = a[1] < b[1] + b[3] and b[1] < a[1] + a[3] and a[2] < b[2] + b[4] and b[2] < a[2] + a[4]
+                assert not overlap, f"settings phone: {page}: {a[0]} and {b[0]} overlap"
+    for _, _, rows in PAGES:
+        for _, cap, _, _ in rows:
+            assert phone_w(cap, "Body") <= PH_PAGE_W - PH_CTRL_W - 8, f"settings phone: {cap!r} runs into its control"
+    for name, _, _ in PAGES:
+        assert phone_w(name.upper(), "Label") <= PH_TAB_W, f"settings phone: the {name} tab's word is wider than the tab"
+    assert phone_w("Some of these changes apply after you restart the game.", "Body") <= PH_PAGE_W - 20, \
+        "settings phone: the restart notice runs out of its frame"
+    assert PROMPT_H * PH_PROMPT_SCALE <= PH_WIN_H and PH_PROMPT_BTN_H * PH_PROMPT_SCALE >= 44, \
+        "settings phone: the account window does not fit, or its buttons are under 44"
+    btns = sum(K.button_size(cap, small=True)[0] + 80 for cap in ("FLY SHOMBOSS", "KEEP NOVA RUNNER", "CANCEL")) + 2 * 18
+    assert btns <= PH_PROMPT_W - 2 * PAD, "settings phone: the account window's buttons do not fit its width"
+
+
+def phone_layout(root):
+    """Give every block of the window its phone pose (see the comment above PH_X)."""
+    nodes = {}
+
+    def walk(n):
+        for c_ in n.children:
+            if not isinstance(c_, K.Instance):
+                nodes[c_.key] = c_
+                walk(c_)
+    walk(root)
+
+    def put(key, pose=None, **kw):
+        nodes[key].add("phone", 114, K.phone_rect(pose, **kw))
+
+    def right_of(x, y, w, h=PH_CTRL_H):
+        """A control's pose from the row's right edge: `x` units in from it, its left edge there."""
+        return R((1, 0.5), None, (-x, y), (w, h), (0, 0.5))
+
+    put("Window", R((0, 0), (1, 1), ((PH_X - PH_RIGHT) / 2, 0), (-(PH_X + PH_RIGHT), -2 * PH_Y)))
+    put("Window/Eyebrow", TL(PH_PAGE_X, 12, 190, 14))
+    put("Window/Title", TL(PH_PAGE_X, 28, 190, 32))
+    put("Window/Close", R((1, 1), None, (-12, -12), (CLOSE_W, 44), (1, 1)))
+    put("Window/Version", R((1, 1), None, (-(12 + CLOSE_W + 12), -26), (200, 16), (1, 1)))
+    # The tabs: a column, each tab node stacked 104 x 60 by the PhoneRect (the tab nodes carry none of their own).
+    put("Window/Tabs", TL(PH_TAB_X, PH_TAB_TOP, PH_TAB_W, len(PAGES) * (PH_TAB_H + PH_TAB_GAP)),
+        stack=dict(origin=(0, 0), item=(PH_TAB_W, PH_TAB_H), spacing=PH_TAB_GAP, order=[name for name, _, _ in PAGES]))
+    for name, _, _ in PAGES:
+        C.phone_tab_parts(nodes[f"Tabs/{name}"])
+
+    for name, _, rows in PAGES:
+        pk = f"Window/{name}"
+        put(pk, R((0, 1), (1, 1), ((PH_PAGE_X - 12) / 2, -PH_PAGE_TOP), (-(PH_PAGE_X + 12), PH_PAGE_H), (0.5, 1)))
+        top, bottom = page_rows(name, rows)
+        for i, (kind, _, _, _) in enumerate(rows):
+            k = f"{pk}/Row{i + 1}"
+            put(k, R((0, 1), (1, 1), (0, -(top + i * PH_ROW)), (0, PH_ROW), (0.5, 1)))
+            put(f"{k}/Label", R((0, 0.5), (1, 0.5), (-(PH_CTRL_W + 8) / 2, 0), (-(PH_CTRL_W + 8), 22)))
+            put(f"{k}/Desc", hide=True)
+            if kind == "dd":
+                put(f"{k}/Dropdown", right_of(PH_CTRL_W, 0, PH_CTRL_W))
+            elif kind == "tg":
+                for j, (side, word) in enumerate((("On", "ON"), ("Off", "OFF"))):
+                    put(f"{k}/{side}", right_of(PH_CTRL_W - j * 72, 0, 64))
+                    w = round(phone_w(word, "Button") + 2, 1)
+                    put(f"{k}/{side}/Label", R((0.5, 0.5), None, (0, 2), (w, 22)))
+                    put(f"{k}/{side}/Underline", R((0.5, 0), None, (0, 8), (w, 2), (0.5, 0)))
+            else:
+                put(f"{k}/Slider", right_of(PH_CTRL_W, 0, PH_CTRL_W - 64))
+                put(f"{k}/Value", R((1, 0.5), None, (0, 0), (52, PH_CTRL_H), (1, 0.5)))
+        if name == "Performance":
+            for n in ("Restart", "MenuOnly"):
+                put(f"{pk}/{n}", R((0, 1), (1, 1), (0, 0), (0, PH_NOTICE_H), (0.5, 1)))
+                put(f"{pk}/{n}/Text", R((0, 0), (1, 1), (0, 0), (-20, 0)))
+            put(f"{pk}/Tools", TL(0, bottom + 4, PH_PAGE_W, 44))
+            for k, cap, _ in PERF_BUTTONS:
+                put(f"{pk}/Tools/{k}", R((0, 0.5), None, (0, 0), (small_w(cap), 44), (0, 0.5)))
+        if name == "General":
+            # Two rows: the Links row's PhoneRect stacks nothing (each holder has its own pose) but turns its
+            # HorizontalLayoutGroup off on a phone, so the holders keep the poses below.
+            y = bottom + 12
+            put(f"{pk}/Links", TL(0, y, PH_PAGE_W, 94), stack=dict(origin=(0, 0), item=(0, 0)))
+            for r, keys in enumerate(PH_LINK_ROWS):
+                x = 0
+                for k in keys:
+                    cap = next(c_ for kk, c_, _, _ in LINKS if kk == k)
+                    put(f"{pk}/Links/{k}", TL(x, r * 50, small_w(cap), 44))
+                    x += small_w(cap) + 8
+        if name == "Account":
+            put(f"{pk}/Name", TL(0, 0, PH_ACC_LEFT_W, 26))
+            put(f"{pk}/Id", TL(0, 28, PH_ACC_LEFT_W, 16))
+            put(f"{pk}/Guest", TL(0, 50, PH_ACC_LEFT_W, 170))
+            put(f"{pk}/Guest/Icon", R((0, 1), None, (10, -10), (20, 20), (0, 1)))
+            put(f"{pk}/Guest/Text", TL(10, 36, PH_ACC_LEFT_W - 20, 124))
+            put(f"{pk}/Caption", TL(PH_ACC_RIGHT_X, 0, PH_ACC_RIGHT_W, 16))
+            # AccountSettingsView sets each row's y (rowsTop + i * rowPitch) and the actions row's; the poses agree.
+            put(f"{pk}/Rows", TL(PH_ACC_RIGHT_X, 0, PH_ACC_RIGHT_W, PH_PAGE_H))
+            for i, (n, _, _) in enumerate(ACCOUNT_ROWS):
+                rk = f"{pk}/Rows/{n}"
+                put(rk, TL(0, ACCOUNT_ROWS_TOP + i * ACCOUNT_PITCH, PH_ACC_RIGHT_W, ACCOUNT_PITCH))
+                put(f"{rk}/Name", TL(48, 18, PH_ACC_RIGHT_W - 48 - small_w("LINK") - 8, 22))
+                put(f"{rk}/Line", TL(48, 44, PH_ACC_RIGHT_W - 48 - small_w("LINK") - 8, 18))
+                put(f"{rk}/Link", R((1, 0.5), None, (0, 0), (small_w("LINK"), 44), (1, 0.5)))
+                put(f"{rk}/Linked", R((1, 0.5), None, (0, 0), (80, 20), (1, 0.5)))
+            y = ACCOUNT_ROWS_TOP + len(ACCOUNT_ROWS) * ACCOUNT_PITCH + ACCOUNT_ACTIONS_GAP
+            put(f"{pk}/Rows/Actions", TL(0, y, PH_ACC_RIGHT_W, 44))
+            put(f"{pk}/Rows/Actions/SignOut", R((0, 0.5), None, (0, 0), (small_w("SIGN OUT"), 44), (0, 0.5)))
+            put(f"{pk}/Rows/Actions/Delete", R((1, 0.5), None, (0, 0), (small_w("DELETE ACCOUNT"), 44), (1, 0.5)))
+
+    # The account window: its PC build at 0.62, narrowed to 560 on the phone (903 PC units), its parts re-posed in PC
+    # units to that width; the buttons 72 PC units tall so they are 44 on the phone.
+    inner = PH_PROMPT_W - 2 * PAD
+    card_w = (inner - 40) // 2
+    put("Prompt/Window", R((0.5, 0.5), None, (0, 0), (PH_PROMPT_W, PROMPT_H)), scale=PH_PROMPT_SCALE)
+    put("Prompt/Window/Eyebrow", TL(PAD, 40, inner, 18))
+    put("Prompt/Window/Title", TL(PAD, 64, inner, 46))
+    put("Prompt/Window/Body", TL(PAD, 118, inner, 48))
+    put("Prompt/Window/Cards", TL(PAD, 180, inner, 280))
+    for i, side in enumerate(("This", "Other")):
+        ck = f"Prompt/Window/Cards/{side}"
+        put(ck, TL(i * (card_w + 40), 0, card_w, 280))
+        put(f"{ck}/Caption", TL(28, 24, card_w - 56, 18))
+        put(f"{ck}/Name", TL(28, 52, card_w - 56, 36))
+        for j, stat in enumerate(("Crystals", "Vessels", "Quests")):
+            y = 110 + j * 52
+            put(f"{ck}/{stat}", TL(28, y, card_w - 56, 26))
+            put(f"{ck}/{stat}Rule", TL(28, y + 38, card_w - 56, 1))
+    put("Prompt/Window/Foot", R((0, 0), (1, 0), (0, PH_PROMPT_BTN_H + 52), (-2 * PAD, 40), (0.5, 0)))
+    put("Prompt/Window/Buttons", R((0, 0), (1, 0), (0, 36), (-2 * PAD, PH_PROMPT_BTN_H), (0.5, 0)))
+    for k, cap in (("Primary", "FLY SHOMBOSS"), ("Secondary", "KEEP NOVA RUNNER"), ("Cancel", "CANCEL")):
+        w, _ = K.button_size(cap, small=True)
+        put(f"Prompt/Window/Buttons/{k}", R(size=(w + 80, PH_PROMPT_BTN_H)), layout=(w + 80, PH_PROMPT_BTN_H))
+    check_phone_boxes()
+
+
+# The nodes the validation expects a phone pose on (a later edit that drops one fails the run).
+PHONE_KEYS = ("Window", "Window/Tabs", "Window/Close", "Window/Version", "Window/Title", "Tabs/General/Fill",
+              "Tabs/Account/Label", "Window/General", "Window/General/Row1", "Window/General/Row1/Desc",
+              "Window/General/Links", "Window/General/Links/Quit", "Window/Other/Row7/On", "Window/Other/Row7/Off",
+              "Window/Display/Row5/Slider", "Window/Performance/Restart", "Window/Performance/Tools",
+              "Window/Account/Rows", "Window/Account/Rows/Google", "Window/Account/Rows/Actions", "Window/Account/Guest/Text",
+              "Prompt/Window", "Prompt/Window/Buttons/Primary")
 
 
 def controller_body(ctx, wiring):
@@ -821,6 +1058,20 @@ def validate(files):
     _, pcg = A.doc_of(view, V("Prompt#cg"))
     assert "  m_Alpha: 0\n" in pcg and "  m_BlocksRaycasts: 0\n" in pcg, "the Account window ships shown (it would cover the settings)"
     assert view.count("guid: " + S["close"]) == 1, "SettingsView: Close must close through ModalWindowCloseButton"
+    # The phone layout (phone_layout): the blocks posed, the descriptions hidden, the window clear of the rail.
+    phone_guid = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+    for key in PHONE_KEYS:
+        _, body = A.doc_of(view, V(key + "#phone"))
+        assert body and phone_guid in body, f"SettingsView: {key} has no phone pose"
+    _, body = A.doc_of(view, V("Window#phone"))
+    assert f"  anchoredPosition: {{x: {K.f32((PH_X - PH_RIGHT) / 2)}, y: 0}}\n" in body and \
+        f"  sizeDelta: {{x: {-(PH_X + PH_RIGHT)}, y: {-2 * PH_Y}}}\n" in body, "SettingsView: the window's phone pose moved under the rail"
+    _, body = A.doc_of(view, V("Window/Tabs#phone"))
+    assert "  stackChildren: 1\n" in body, "SettingsView: the tabs are not a column on a phone"
+    _, body = A.doc_of(view, V("Window/General/Row1/Desc#phone"))
+    assert "  hideOnPhone: 1\n" in body and A.doc_of(view, V("Window/General/Row1/Desc#cg"))[1], \
+        "SettingsView: a row's description is not hidden on a phone (it needs its CanvasGroup)"
+    check_phone_boxes()
 
     modal = files[MODAL_PREFAB]
     assert f"guid: {OPTIONS_GUID}" not in modal, "SettingsModal.prefab still nests OptionsMenuContent"

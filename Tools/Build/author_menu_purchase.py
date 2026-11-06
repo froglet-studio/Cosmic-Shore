@@ -155,7 +155,90 @@ def build_view():
         holder.add("le", 114, le(pw=w, ph=bh))
         holder.children.append(P.Inst(f"{key}Button", "KitButton", f"{key}Button", STRETCH,
                                       K.button_mods("KitButton", variant, True, cap)))
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/MENU_REDESIGN_B.md section 129). The window's scene object sits in UNUSEDOBJECTS, a zero-size
+# rect at the canvas centre, and keeps a 1920 x 1080 size there, so on a phone the view's root takes an 800 x 450 pose
+# about the canvas centre (the narrowest phone canvas) and everything is posed in that region: the dim oversized to
+# cover any phone width, the balances top right, the window centred right of the 96-wide rail (x 112 - 784), its parts
+# in phone units with the phone type sizes, SPEND / CANCEL 48 tall on its bottom edge.
+# --------------------------------------------------------------------------------------------
+PH_REGION = (800, 450)
+PH_X, PH_RIGHT = 112, 16
+PH_WIN_W, PH_WIN_H, PH_PAD = 560, 170, 24
+PH_WIN_X = (PH_X + PH_REGION[0] - PH_RIGHT) / 2 - PH_REGION[0] / 2     # 48: centred in x 112 - 784
+PH_BTN_H, PH_BTN_GAP = 48, 12
+PH_TILE = 120
+PH_LINE_W = PH_WIN_W - 2 * PH_PAD - PH_TILE - 16                        # 376
+
+
+def phone_w(caption, role):
+    return K.label_width(caption, role) * K.PHONE_SIZES[role] / K.ROLES[role][2]
+
+
+def ph_btn_w(caption):
+    return round(phone_w(caption, "Button") + 40)
+
+
+def check_phone_boxes():
+    """Region-local (800 x 450, top-left origin) rects: clear of the rail, inside the region, 44+ touch targets."""
+    left = PH_REGION[0] / 2 + PH_WIN_X - PH_WIN_W / 2
+    top = (PH_REGION[1] - PH_WIN_H) / 2
+    bw, cw = ph_btn_w("SPEND 1,250"), ph_btn_w("CANCEL")
+    boxes = [("Balances", PH_REGION[0] - PH_RIGHT - 300, 10, 300, 40, False),
+             ("Window", left, top, PH_WIN_W, PH_WIN_H, False),
+             ("Buttons", left + PH_PAD, top + PH_WIN_H - PH_BTN_H / 2, bw + PH_BTN_GAP + cw, PH_BTN_H, True)]
+    for name, x, y, w, h, touch in boxes:
+        assert x >= PH_X and x + w <= PH_REGION[0] - PH_RIGHT and y >= 8 and y + h <= PH_REGION[1] - 8, \
+            f"purchase phone: {name} leaves the region"
+        assert not touch or h >= 44, f"purchase phone: {name} is under 44 tall"
+    assert boxes[0][2] + boxes[0][4] <= boxes[1][2], "purchase phone: the balances run into the window"
+    assert bw + PH_BTN_GAP + cw <= PH_WIN_W - 2 * PH_PAD, "purchase phone: SPEND and CANCEL do not fit the window"
+    assert phone_w("Spend 400 to unlock Manta?", "H2") + 18 + 3 * 10 <= PH_LINE_W, "purchase phone: the spend line runs into the tile"
+    assert PH_PAD + PH_LINE_W + 16 + PH_TILE + PH_PAD == PH_WIN_W, "purchase phone: the spend line and the tile disagree"
+
+
+def phone_layout(root):
+    nodes = {}
+
+    def walk(n):
+        for c_ in n.children:
+            if not isinstance(c_, K.Instance):
+                nodes[c_.key] = c_
+                walk(c_)
+    walk(root)
+
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    put(root, R((0.5, 0.5), None, (0, 0), PH_REGION))
+    put(nodes["Dim"], R((0.5, 0.5), None, (0, 0), (1400, 800)))       # wider than any phone canvas
+    put(nodes["Balances"], R((1, 1), None, (-PH_RIGHT, -10), (300, 40), (1, 1)))
+    for k in ("Balances/Crystals/Glyph", "Balances/Tickets/Glyph"):
+        put(nodes[k], layout=(18, 18))
+    put(nodes["Window"], R((0.5, 0.5), None, (PH_WIN_X, 0), (PH_WIN_W, PH_WIN_H)))
+    put(nodes["Window/Eyebrow"], TL(PH_PAD, 18, 300, 16))
+    put(nodes["Window/Line"], TL(PH_PAD, 38, PH_LINE_W, 30))
+    put(nodes["Window/Line/Glyph"], layout=(18, 18))
+    put(nodes["Window/Bar"], TL(PH_PAD, 84, PH_LINE_W, 6))
+    half = PH_LINE_W / 2
+    put(nodes["Window/Keep"], TL(PH_PAD, 98, half, 18))
+    put(nodes["Window/SpendOf"], TL(PH_PAD + half, 98, half, 18))
+    put(nodes["Window/Tile"], TR(PH_PAD, 18, PH_TILE, PH_TILE))
+    for k in ("CaptainImage", "GameImage", "TicketImage"):
+        put(nodes[f"Window/Tile/{k}"], R(size=(96, 96)))
+    bw, cw = ph_btn_w("SPEND 1,250"), ph_btn_w("CANCEL")
+    put(nodes["Window/Buttons"], R((0, 0), None, (PH_PAD, 0), (bw + PH_BTN_GAP + cw, PH_BTN_H), (0, 0.5)))
+    for key, w in (("Confirm", bw), ("Cancel", cw)):
+        put(nodes[f"Window/Buttons/{key}"], R((0, 0.5), None, (0, 0), (w, PH_BTN_H), (0, 0.5)), layout=(w, PH_BTN_H))
+    check_phone_boxes()
+
+
+PHONE_KEYS = ("root", "Dim", "Balances", "Window", "Window/Line", "Window/Tile", "Window/Buttons", "Window/Buttons/Confirm",
+              "Window/Buttons/Cancel")
 
 
 def prefab_outputs():
@@ -309,6 +392,16 @@ def validate(files):
         assert A.doc_of(view, F(key))[1], f"PurchaseConfirmView: {key} is missing"
     assert view.count(f"m_SourcePrefab: {{fileID: 100100000, guid: {C.prefab_guid('KitButton')}") == 2, \
         "PurchaseConfirmView needs exactly two KitButtons (Spend, Cancel)"
+    # The phone layout (phone_layout): the root posed to the phone region (its scene parent is a zero-size rect holding
+    # a 1920 x 1080 window, which a phone canvas would draw at the PC size), every block in it.
+    phone_guid = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+    for key in PHONE_KEYS:
+        body = A.doc_of(view, F(key + "#phone"))[1]
+        assert body and phone_guid in body, f"PurchaseConfirmView: {key} has no phone pose"
+    body = A.doc_of(view, F("root#phone"))[1]
+    assert "  movesRect: 1\n" in body and f"  sizeDelta: {{x: {PH_REGION[0]}, y: {PH_REGION[1]}}}\n" in body, \
+        "PurchaseConfirmView: the root is not posed to the phone region"
+    check_phone_boxes()
 
     sc_text = files[SCENE]
     sc = T.Scene(sc_text)

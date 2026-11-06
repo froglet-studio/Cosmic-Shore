@@ -193,7 +193,134 @@ def build_view():
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Toy", "H1", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
     header_back(hd)
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout: the Arcade configure window's sibling (author_menu_configure.phone_layout; Docs/MENU_REDESIGN_B.md
+# section 129). Right of the 96-wide rail, the header where Arcade's is; left, 252 wide: the live preview, About, the
+# status line and NAVIGATE / SWITCH at the foot (the window's START); right, from x 376 to the screen's edge: the variant
+# panel, its grid two columns of PC-authored tiles drawn at the scroll's width. No controls panel, so no sheet.
+# --------------------------------------------------------------------------------------------
+PH_RAIL, PH_X = A.PHONE_RAIL, A.PHONE_X          # 96, 112
+PH_TOP, PH_BOTTOM, PH_LEFT_W, PH_GAP = 72, 440, 252, 12
+PH_RIGHT_X = PH_X + PH_LEFT_W + PH_GAP           # 376: the variant panel's left edge
+PH_PANEL_H = PH_BOTTOM - PH_TOP                  # 368
+PH_PV_H = round(PH_LEFT_W * 506 / PANEL_W, 1)    # the preview keeps its 900 x 506 aspect
+PH_BTN_H, PH_BTN_GAP, PH_STATUS_H = 56, 12, 20
+PH_BTN_W = (PH_LEFT_W - PH_BTN_GAP) // 2         # NAVIGATE and SWITCH side by side
+PH_STATUS_TOP = PH_BOTTOM - PH_BTN_H - 8 - PH_STATUS_H
+PH_ABOUT_TOP = PH_TOP + PH_PV_H + 8
+PH_ABOUT_H = round(PH_STATUS_TOP - 8 - PH_ABOUT_TOP, 1)
+PH_IN = 14                                       # the variant panel's inner margin
+PH_SCROLL_TOP, PH_SCROLL_H = 62, 288
+PH_GRID_COLS = 2
+PH_GRID_SCALE = round((800 - 16 - PH_RIGHT_X - 2 * PH_IN) / (PH_GRID_COLS * TILE_W + GAP_X), 4)
+
+
+def phone_boxes():
+    """Every block's phone rect on the narrowest (800 x 450) canvas, top-left origin: (name, x, y, w, h, touch)."""
+    right_w = 800 - 16 - PH_RIGHT_X
+    back_w = A.back_width()
+    boxes = [
+        ("Header/Title", PH_X, 26, 480, 32, False),
+        ("Header/Back", 800 - 16 - back_w, 14, back_w, 48, True),
+        ("Preview", PH_X, PH_TOP, PH_LEFT_W, PH_PV_H, False),
+        ("About", PH_X, PH_ABOUT_TOP, PH_LEFT_W, PH_ABOUT_H, False),
+        ("Status", PH_X, PH_STATUS_TOP, PH_LEFT_W, PH_STATUS_H, False),
+        ("NavigateButton", PH_X, PH_BOTTOM - PH_BTN_H, PH_BTN_W, PH_BTN_H, True),
+        ("SwitchButton", PH_X + PH_BTN_W + PH_BTN_GAP, PH_BOTTOM - PH_BTN_H, PH_BTN_W, PH_BTN_H, True),
+        ("Variants", PH_RIGHT_X, PH_TOP, right_w, PH_PANEL_H, False),
+    ]
+    inner = [
+        ("Variants/Head/LayerBack", PH_RIGHT_X + PH_IN, PH_TOP + 10, K.button_size("BACK", small=True)[0], 44, True),
+        ("Variants/Scroll", PH_RIGHT_X + PH_IN, PH_TOP + PH_SCROLL_TOP, right_w - 2 * PH_IN, PH_SCROLL_H, False),
+        ("a variant tile", PH_RIGHT_X + PH_IN, PH_TOP + PH_SCROLL_TOP, TILE_W * PH_GRID_SCALE, TILE_H * PH_GRID_SCALE, True),
+    ]
+    return boxes, inner
+
+
+def check_phone_boxes():
+    """The arithmetic the brief asks for: inside the region right of the rail, no two top-level blocks overlap, every
+    touch target at least 44 tall on screen, and the grid's two columns fill the scroll's width."""
+    boxes, inner = phone_boxes()
+    for name, x, y, w, h, touch in boxes + inner:
+        assert x >= PH_X and x + w <= 800 - 16 + 0.01 and y >= 8 and y + h <= 442, f"phone: {name} leaves the region"
+        assert not touch or h >= 44, f"phone: {name} is {h:.1f} tall on screen, under 44"
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            if a[0].startswith("Header") and b[0].startswith("Header"):
+                continue
+            overlap = a[1] < b[1] + b[3] and b[1] < a[1] + a[3] and a[2] < b[2] + b[4] and b[2] < a[2] + a[4]
+            assert not overlap, f"phone: {a[0]} and {b[0]} overlap"
+    assert abs(PH_GRID_COLS * TILE_W + GAP_X - (800 - 16 - PH_RIGHT_X - 2 * PH_IN) / PH_GRID_SCALE) < 1, \
+        "phone: the variant grid's columns do not fill the scroll"
+    assert K.label_width("NAVIGATE", "Button") * K.PHONE_SIZES["Button"] / K.ROLES["Button"][2] + 16 <= PH_BTN_W, \
+        "phone: NAVIGATE does not fit its button"
+
+
+def phone_layout(root):
+    """Give every block of the window its phone pose (see the comment above)."""
+    def put(node, pose=None, **kw):
+        node.add("phone", 114, K.phone_rect(pose, **kw))
+
+    def kids(node):
+        return {n.key: n for n in node.children if isinstance(n, N)}
+
+    rail = R((0, 0), (0, 1), (PH_RAIL / 2, 0), (PH_RAIL, 0))
+    glass = R((0, 0), (1, 1), (PH_RAIL / 2, 0), (-PH_RAIL, 0))
+    top = kids(root)
+    put(top["NavDim"], rail)
+    put(top["Backdrop"], glass)
+
+    hd = top["Header"]
+    put(hd, R((0, 1), (1, 1), ((PH_X - 16) / 2, -10), (-(PH_X + 16), 52), (0.5, 1)))
+    h = kids(hd)
+    put(h["Header/Eyebrow"], R((0, 1), None, (0, 0), (300, 14), (0, 1)))
+    put(h["Header/Title"], R((0, 1), None, (0, -16), (480, 32), (0, 1)))
+    put(h["Back"], R((1, 0), None, (0, 0), (A.back_width(), 48), (1, 0)))
+
+    pv = top["Preview"]
+    put(pv, TL(PH_X, PH_TOP, PH_LEFT_W, PH_PV_H))
+    p = kids(pv)
+    put(p["Preview/CaptionBand"], R((0, 0), (1, 0), (0, 0), (-4, 28), (0.5, 0)))
+    put(p["Preview/Live"], R((0, 0), None, (8, 6), (110, 16), (0, 0)))
+    put(p["Preview/Caption"], R((1, 0), None, (-8, 6), (120, 16), (1, 0)))
+
+    ab = top["About"]
+    put(ab, TL(PH_X, PH_ABOUT_TOP, PH_LEFT_W, PH_ABOUT_H))
+    a = kids(ab)
+    put(a["About/Heading"], TL(12, 10, 228, 16))
+    put(a["About/Text"], TL(12, 30, 228, PH_ABOUT_H - 38))
+
+    # The variant panel's left edge stays at x 376 and its right follows the screen's edge, so the status line and the
+    # two buttons it carries (posed from its left edge into the left column) sit under About on every phone width.
+    vp = top["Variants"]
+    put(vp, R((0, 1), (1, 1), ((PH_RIGHT_X - 16) / 2, -PH_TOP), (-(PH_RIGHT_X + 16), PH_PANEL_H), (0.5, 1)))
+    v = kids(vp)
+    put(v["Variants/Head"], TL(PH_IN, 10, 300, 44))
+    hv = kids(v["Variants/Head"])
+    put(hv["Variants/Head/LayerBack"], R((0, 0.5), None, (0, 0), (K.button_size("BACK", small=True)[0], 44), (0, 0.5)))
+    put(hv["Variants/Head/Path"], R((0, 0.5), None, (0, 0), (210, 18), (0, 0.5)))
+    put(v["Variants/Count"], TR(PH_IN, 23, 80, 18))
+    put(v["Variants/Scroll"], R((0, 1), (1, 1), (0, -PH_SCROLL_TOP), (-2 * PH_IN, PH_SCROLL_H), (0.5, 1)))
+    content = kids(kids(v["Variants/Scroll"])["Variants/Scroll/Viewport"])["Variants/Scroll/Viewport/Content"]
+    put(content, width_scale=PH_GRID_SCALE, grid=dict(columns=PH_GRID_COLS))
+    put(v["Variants/Rule"], R((0, 1), (1, 1), (0, -(PH_SCROLL_TOP + PH_SCROLL_H + 6)), (-2 * PH_IN, 1), (0.5, 1)))
+    from_left = PH_X - PH_RIGHT_X                # -264: the left column, from the panel's left edge
+    put(v["Variants/Status"], R((0, 0), None, (from_left, PH_BTN_H + 8), (PH_LEFT_W, PH_STATUS_H), (0, 0)))
+    insts = {n.key: n for n in vp.children if not isinstance(n, N)}
+    for i, key in enumerate(("NavigateButton", "SwitchButton")):
+        insts[key].added.append(("phone", 114, K.phone_rect(
+            R((0, 0), None, (from_left + i * (PH_BTN_W + PH_BTN_GAP), 0), (PH_BTN_W, PH_BTN_H), (0, 0)))))
+    check_phone_boxes()
+
+
+PHONE_KEYS = ("NavDim", "Backdrop", "Header", "Header/Eyebrow", "Header/Title", "Back", "Preview", "Preview/CaptionBand",
+              "Preview/Live", "Preview/Caption", "About", "About/Heading", "About/Text", "Variants", "Variants/Head",
+              "Variants/Head/LayerBack", "Variants/Head/Path", "Variants/Count", "Variants/Scroll",
+              "Variants/Scroll/Viewport/Content", "Variants/Rule", "Variants/Status", "NavigateButton", "SwitchButton")
 
 
 def prefab_outputs():
@@ -362,6 +489,20 @@ def validate(files):
     assert cam and S["preview"] in cam, "ToyConfigureView: the preview surface carries no ToyPreviewCamera"
     _, raw = A.doc_of(view, K.FileIds("ToyConfigureView")("Preview/Surface#raw"))
     assert raw and C.RAW_IMAGE in raw, "ToyConfigureView: ToyPreviewCamera needs its RawImage"
+    # The phone layout: every block posed, the grid two columns on a phone, NAVIGATE / SWITCH in the left column.
+    phone_guid = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+    V = K.FileIds("ToyConfigureView")
+    for key in PHONE_KEYS:
+        _, body = A.doc_of(view, V(key + "#phone"))
+        assert body and phone_guid in body, f"ToyConfigureView: {key} has no phone pose"
+    _, body = A.doc_of(view, V("Variants/Scroll/Viewport/Content#phone"))
+    assert f"  gridColumns: {PH_GRID_COLS}\n" in body and "  widthScale: 0\n" not in body, \
+        "ToyConfigureView: the variant grid lost its phone columns"
+    for key in ("NavigateButton", "SwitchButton"):
+        _, body = A.doc_of(view, V(key + "#phone"))
+        assert f"anchoredPosition: {{x: {PH_X - PH_RIGHT_X}" in body or f"anchoredPosition: {{x: {PH_X - PH_RIGHT_X + PH_BTN_W + PH_BTN_GAP}" in body, \
+            f"ToyConfigureView: {key} is not in the left column on a phone"
+    check_phone_boxes()
 
     sc = T.Scene(files[SCENE])
     anchors = set(sc.order) | {"0"}

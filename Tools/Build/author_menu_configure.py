@@ -1989,7 +1989,156 @@ def build_leaderboard_row():
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("1:04.88", "Data", tok("TextLight"), align="right")) \
         .add("kt", 114, K.kit_text("Data", "TextLight", driven=True))
     image_node(root, "Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
+    lb_row_phone(root)
     return root
+
+
+# The weekly leaderboard's phone layout (Docs/MENU_REDESIGN_B.md section 129): the configure window's sibling. Right of
+# the 96-wide rail, the header where Arcade's is; left, 252 wide: Your best run and Rewards; right, from x 376 to the
+# screen's edge: the three tabs, the podium and the list. Every block is re-posed in phone units (its text takes the
+# phone type sizes); nothing is drawn at a PC scale.
+LB_PH_X, LB_PH_TOP, LB_PH_BOTTOM, LB_PH_LEFT_W, LB_PH_GAP = A.PHONE_X, 72, 440, 252, 12
+LB_PH_RIGHT_X = LB_PH_X + LB_PH_LEFT_W + LB_PH_GAP          # 376
+LB_PH_H = LB_PH_BOTTOM - LB_PH_TOP                          # 368
+LB_PH_BEST_H, LB_PH_BAND_PITCH, LB_PH_BAND_H, LB_PH_NOTE_H = 128, 32, 30, 34
+LB_PH_TAB_W, LB_PH_TAB_H = 80, 60
+LB_PH_PODIUM = ((66, 80), (74, 72), (74, 72))                # (top, height): first in the middle, a step higher
+LB_PH_LIST_TOP = 152
+LB_PH_ROW_H = 34
+
+
+def phone_tab_parts(n):
+    """A hex tab (tab_node) re-posed for a phone, 60 tall: the hex at 52 x 45 (its 88 x 76 aspect) over a 15-tall word
+    in the Label role's phone size. The tab node itself is posed by its parent (a pose, or a PhoneRect stack)."""
+    parts = {c_.key.rsplit("/", 1)[1]: c_ for c_ in n.children if not isinstance(c_, K.Instance)}
+    pose = {"FocusRing": R((0.5, 1), None, (0, 3), (59, 52), (0.5, 1)),
+            "Fill": R((0.5, 1), None, (0, 0), (52, 45), (0.5, 1)),
+            "Border": R((0.5, 1), None, (0, 0), (52, 45), (0.5, 1)),
+            "Icon": R((0.5, 1), None, (0, -12), (20, 20), (0.5, 1)),
+            "Label": R((0, 0), (1, 0), (0, 0), (0, 15), (0.5, 0))}
+    assert set(parts) == set(pose), f"{n.key}: tab_node's parts changed - re-pose them for the phone"
+    for k, p in pose.items():
+        parts[k].add("phone", 114, K.phone_rect(p))
+    return n
+
+
+def lb_row_phone(root):
+    """LeaderboardRow on a phone: 34 tall (its LayoutElement), rank, avatar, name and time in phone units."""
+    kids = {c_.key: c_ for c_ in root.children}
+    root.add("phone", 114, K.phone_rect(layout=(0, LB_PH_ROW_H)))
+    for k, p in (("Rank", R((0, 0.5), None, (10, 0), (44, 22), (0, 0.5))),
+                 ("AvatarBack", R((0, 0.5), None, (68, 0), (26, 26))), ("Avatar", R((0, 0.5), None, (68, 0), (24, 24))),
+                 ("Name", R((0, 0.5), None, (88, 0), (190, 20), (0, 0.5))),
+                 ("Time", R((1, 0.5), None, (-10, 0), (90, 22), (1, 0.5)))):
+        kids[k].add("phone", 114, K.phone_rect(p))
+
+
+def lb_phone_boxes():
+    """Every block's phone rect on the narrowest (800 x 450) canvas, top-left origin: (name, x, y, w, h)."""
+    right_w = 800 - 16 - LB_PH_RIGHT_X
+    rw_top = LB_PH_TOP + LB_PH_BEST_H + 8
+    third = right_w * 0.326
+    return [
+        ("Header", LB_PH_X, 10, 800 - 16 - LB_PH_X, 52),
+        ("Best", LB_PH_X, LB_PH_TOP, LB_PH_LEFT_W, LB_PH_BEST_H),
+        ("Rewards", LB_PH_X, rw_top, LB_PH_LEFT_W, LB_PH_BOTTOM - rw_top),
+        ("Tabs", LB_PH_RIGHT_X, LB_PH_TOP, len(TABS) * LB_PH_TAB_W, LB_PH_TAB_H),
+        ("Podium2", LB_PH_RIGHT_X, LB_PH_TOP + LB_PH_PODIUM[1][0], third, LB_PH_PODIUM[1][1]),
+        ("Podium1", LB_PH_RIGHT_X + right_w * 0.337, LB_PH_TOP + LB_PH_PODIUM[0][0], third, LB_PH_PODIUM[0][1]),
+        ("Podium3", LB_PH_RIGHT_X + right_w * 0.674, LB_PH_TOP + LB_PH_PODIUM[2][0], third, LB_PH_PODIUM[2][1]),
+        ("List", LB_PH_RIGHT_X, LB_PH_TOP + LB_PH_LIST_TOP, right_w, LB_PH_H - LB_PH_LIST_TOP),
+    ]
+
+
+def lb_check_phone_boxes():
+    boxes = lb_phone_boxes()
+    for name, x, y, w, h in boxes:
+        assert x >= LB_PH_X and x + w <= 800 - 16 + 0.01 and y >= 8 and y + h <= 442, f"leaderboard phone: {name} leaves the region"
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            overlap = a[1] < b[1] + b[3] and b[1] < a[1] + a[3] and a[2] < b[2] + b[4] and b[2] < a[2] + a[4]
+            assert not overlap, f"leaderboard phone: {a[0]} and {b[0]} overlap"
+    rows = 30 + len(REWARD_BANDS) * LB_PH_BAND_PITCH + 2 + LB_PH_NOTE_H
+    assert rows <= LB_PH_BOTTOM - (LB_PH_TOP + LB_PH_BEST_H + 8), "leaderboard phone: the reward bands do not fit their panel"
+    assert K.label_width("Your rank on this board and your best time this week. One attempt a day.", "BodySmall") \
+        * K.PHONE_SIZES["BodySmall"] / K.ROLES["BodySmall"][2] <= 3 * 228, "leaderboard phone: Your best run's line needs a fourth line"
+    assert LB_PH_TAB_H >= 44 and A.back_width() > 0, "leaderboard phone: a tab under 44 tall"
+    for _, _, cap in TABS:
+        assert K.label_width(cap.upper(), "Label") * K.PHONE_SIZES["Label"] / K.ROLES["Label"][2] <= LB_PH_TAB_W, \
+            f"leaderboard phone: {cap} does not fit its tab"
+
+
+def lb_phone_layout(root):
+    """Give every block of the weekly leaderboard its phone pose (see the comment above LB_PH_X)."""
+    nodes = {}
+
+    def walk(n):
+        for c_ in n.children:
+            if not isinstance(c_, K.Instance):
+                nodes[c_.key] = c_
+                walk(c_)
+    walk(root)
+
+    def put(key, pose=None, **kw):
+        nodes[key].add("phone", 114, K.phone_rect(pose, **kw))
+
+    glass = R((0, 0), (1, 1), (A.PHONE_RAIL / 2, 0), (-A.PHONE_RAIL, 0))
+    put("Veil", glass)
+    put("VeilSea", glass)
+
+    back_w = A.back_width()
+    put("Header", R((0, 1), (1, 1), ((LB_PH_X - 16) / 2, -10), (-(LB_PH_X + 16), 52), (0.5, 1)))
+    put("Header/Eyebrow", R((0, 1), None, (0, 0), (300, 14), (0, 1)))
+    put("Header/Title", R((0, 1), None, (0, -16), (300, 32), (0, 1)))
+    put("Back", R((1, 0), None, (0, 0), (back_w, 48), (1, 0)))
+    put("Header/Countdown", R((1, 0), None, (-(back_w + 12), 12), (110, 22), (1, 0)))
+    put("Header/EndsIn", R((1, 0), None, (-(back_w + 12 + 116), 15), (64, 16), (1, 0)))
+
+    put("Side", TL(LB_PH_X, LB_PH_TOP, LB_PH_LEFT_W, LB_PH_H))
+    put("Best", TL(0, 0, LB_PH_LEFT_W, LB_PH_BEST_H))
+    put("Best/Title", TL(12, 12, 228, 16))
+    put("Best/Rank", TL(12, 28, 90, 44))
+    put("Best/Time", TL(104, 42, 136, 22))
+    put("Best/Line", TL(12, 76, 228, 50))
+    rw_h = LB_PH_H - LB_PH_BEST_H - 8
+    put("Rewards", TL(0, LB_PH_BEST_H + 8, LB_PH_LEFT_W, rw_h))
+    put("Rewards/Title", TL(12, 10, 228, 16))
+    for i in range(len(REWARD_BANDS)):
+        k = f"Rewards/Band{i + 1}"
+        put(k, TL(8, 30 + i * LB_PH_BAND_PITCH, LB_PH_LEFT_W - 16, LB_PH_BAND_H))
+        put(f"{k}/Rank", R((0, 0.5), None, (8, 0), (126, 20), (0, 0.5)))
+        put(f"{k}/Mark/You", R((0, 0.5), None, (138, 0), (30, 14), (0, 0.5)))
+        put(f"{k}/Amount", R((1, 0.5), None, (-26, 0), (42, 20), (1, 0.5)))
+        put(f"{k}/Crystal", R((1, 0.5), None, (-8, 0), (14, 14), (1, 0.5)))
+    put("Rewards/Note", TL(12, 30 + len(REWARD_BANDS) * LB_PH_BAND_PITCH + 2, 228, LB_PH_NOTE_H))   # two lines
+
+    put("Board", R((0, 1), (1, 1), ((LB_PH_RIGHT_X - 16) / 2, -LB_PH_TOP), (-(LB_PH_RIGHT_X + 16), LB_PH_H), (0.5, 1)))
+    put("Tabs", TL(0, 0, len(TABS) * LB_PH_TAB_W, LB_PH_TAB_H))
+    for i, (key, _, _) in enumerate(TABS):
+        put(f"Tabs/{key}", TL(i * LB_PH_TAB_W, 0, LB_PH_TAB_W, LB_PH_TAB_H))
+        phone_tab_parts(nodes[f"Tabs/{key}"])
+    thirds = (((0.337, 1), (0.663, 1)), ((0, 1), (0.326, 1)), ((0.674, 1), (1, 1)))
+    for (key, _, _), (amin, amax), (top, height) in zip(PODIUM, thirds, LB_PH_PODIUM):
+        put(key, R(amin, amax, (0, -top), (0, height), (0.5, 1)))
+        put(f"{key}/Badge", R((0, 1), None, (20, -18), (26, 26)))
+        put(f"{key}/AvatarBack", R((1, 1), None, (-24, -20), (32, 32)))
+        put(f"{key}/Avatar", R((1, 1), None, (-24, -20), (30, 30)))
+        put(f"{key}/Name", R((0, 0), (1, 0), (0, 22), (-16, 18), (0.5, 0)))
+        put(f"{key}/Time", R((0, 0), None, (8, 4), (110, 16), (0, 0)))
+    put("List", R((0, 1), (1, 1), (0, -LB_PH_LIST_TOP), (0, LB_PH_H - LB_PH_LIST_TOP), (0.5, 1)))
+    put("List/HeadRank", TL(22, 10, 50, 14))
+    put("List/HeadPilot", TL(100, 10, 120, 14))
+    put("List/HeadTime", TR(22, 10, 80, 14))
+    put("List/HeadRule", R((0, 1), (1, 1), (0, -28), (-24, 1), (0.5, 1)))
+    put("List/Scroll", R((0, 0), (1, 1), (0, -14), (-24, -44)))
+    put("List/Empty", R((0.5, 0.5), None, (0, -14), (360, 70)))
+    put("List/Empty/Text", TL(0, 0, 360, 22))
+    put("List/Empty/Hint", TL(0, 26, 360, 44))       # two lines (it wraps; one line on PC)
+    lb_check_phone_boxes()
+
+
+LB_PHONE_KEYS = ("Veil", "VeilSea", "Header", "Back", "Side", "Best", "Rewards", "Rewards/Band5", "Board", "Tabs",
+                 "Tabs/World", "Tabs/World/Label", "Podium1", "Podium1/Name", "List", "List/Scroll", "List/Empty")
 
 
 def podium_slot(parent, key, rank, accent, amin, amax, top, height):
@@ -2108,7 +2257,8 @@ def build_leaderboard_view():
     label(empty.child(N("List/Empty/Text", "Text", TL(0, 0, 700, 36))), "No times yet - be the first.", "H3", "TextLight",
           align="center")
     label(empty.child(N("List/Empty/Hint", "Hint", TL(0, 44, 700, 40))),
-          "Finish this week's challenge to put a time on the board.", "Body", "NeutralLightest", align="center")
+          "Finish this week's challenge to put a time on the board.", "Body", "NeutralLightest", align="center",
+          wrap=True)   # one line in the PC rect; two on a phone
 
     left = root.child(N("Side", "Side", TL(40, LEFT_TOP, 420, COL_H)))
     best = left.child(N("Best", "Best", TL(0, 0, 420, 200)))
@@ -2129,7 +2279,7 @@ def build_leaderboard_view():
     for i, band in enumerate(REWARD_BANDS):
         reward_band(rw, i, *band)
     label(rw.child(N("Rewards/Note", "Note", TL(22, 300, 376, 22))), "Paid in crystals when the week closes.",
-          "BodySmall", "NeutralLightest")
+          "BodySmall", "NeutralLightest", wrap=True)   # one line in the PC rect; two on a phone
 
     hd = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     hd.add("in", 114, M.entrance("Rise", distance=10)).add("cg", 225, canvas_group(True))
@@ -2166,6 +2316,7 @@ def build_leaderboard_view():
             f"  bestTimeText: {ref(ctx.c('Best/Time', 'tmp'))}\n"
             f"  localRowBackground: {color('SurfaceDark')}\n"
             "  rowFadeDuration: 0.22\n  rowStagger: 0.04\n  maxStaggerTotal: 0.32\n  rowStartScale: 0.94\n"))
+    lb_phone_layout(root)
     return root
 
 
@@ -2686,6 +2837,14 @@ def validate_prefabs(files):
     assert ranges[-1][1] == 0, "the last reward band must be open-ended"
     tmpl = f"rowTemplate: {{fileID: {K.FileIds('LeaderboardRow')('root#rt')}, guid: {asset_guid('LeaderboardRow')}"
     assert tmpl in panel, "the row template is not the LeaderboardRow prefab"
+    # The phone layout (lb_phone_layout): the blocks posed, the row 34 tall on a phone.
+    phone_guid = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+    for key in LB_PHONE_KEYS:
+        _, body = comp_doc(board, BV(key + "#phone"))
+        assert body and phone_guid in body, f"LeaderboardView: {key} has no phone pose"
+    _, body = comp_doc(files[prefab_path("LeaderboardRow")], K.FileIds("LeaderboardRow")("root#phone"))
+    assert body and f"  layoutSize: {{x: 0, y: {LB_PH_ROW_H}}}\n" in body, "LeaderboardRow: no phone row height"
+    lb_check_phone_boxes()
 
     check_pilots_fit()
     for kind, view in VIEW_NAME.items():
