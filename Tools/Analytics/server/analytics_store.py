@@ -438,6 +438,14 @@ class Store:
             "COUNT(DISTINCT day) AS days_active, "
             "COUNT(DISTINCT CASE WHEN event='game_started' THEN match_id END) AS matches, "
             "COUNT(DISTINCT CASE WHEN event='game_completed' THEN match_id END) AS finished, "
+            # each player's play-type mix (play_type_of: 2+ humans is multiplayer, else 1+ AI is solo vs AI)
+            "COUNT(DISTINCT CASE WHEN event='game_started' AND CAST(json_extract(props, '$.player_count_human') "
+            "AS INTEGER) >= 2 THEN match_id END) AS multi, "
+            "COUNT(DISTINCT CASE WHEN event='game_started' AND COALESCE(CAST(json_extract(props, "
+            "'$.player_count_human') AS INTEGER), 0) < 2 AND CAST(json_extract(props, '$.player_count_ai') AS INTEGER) "
+            ">= 1 THEN match_id END) AS solo_vs_ai, "
+            "COUNT(DISTINCT CASE WHEN event='game_completed' AND json_extract(props, '$.player_won') IN (1, 'true') "
+            "THEN match_id END) AS won, "
             "GROUP_CONCAT(DISTINCT platform) AS platforms, GROUP_CONCAT(DISTINCT country) AS countries, "
             "GROUP_CONCAT(DISTINCT build_kind) AS builds, MAX(app_version) AS app_version "
             f"FROM events WHERE {where} GROUP BY distinct_id", args).fetchall()
@@ -451,7 +459,9 @@ class Store:
             name = str(props.get("display_name") or "")
             if needle and needle not in r["distinct_id"].lower() and needle not in name.lower():
                 continue
-            out.append({**dict(r), "display_name": name, "crystal_balance": props.get("crystal_balance"),
+            row = dict(r)
+            row["solo"] = max(0, (row["matches"] or 0) - (row["multi"] or 0) - (row["solo_vs_ai"] or 0))
+            out.append({**row, "display_name": name, "crystal_balance": props.get("crystal_balance"),
                         "platforms": sorted(filter(None, (r["platforms"] or "").split(","))),
                         "countries": sorted(filter(None, (r["countries"] or "").split(",")))})
         out.sort(key=lambda p: p["last_ms"], reverse=True)

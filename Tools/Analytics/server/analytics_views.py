@@ -40,9 +40,21 @@ def _built_ms(db):
 
 
 WINDOWS = (1, 7, 14, 30, 90, 365)
+# The console's Play filter (Shombith, 2026-11-06: "need features to filter solo vs ai, multiplayer"): a group of play
+# types, as SQL on the plays / returns tables' play_type. Tables without a play type (players_in_window, daily_plays,
+# daily_events) are not filtered; a page lists those as "unfiltered" so the console can say so.
+PLAYS = {"all": "", "solo_vs_ai": "play_type = 'solo_vs_ai'", "solo": "play_type = 'solo_alone'",
+         "multi": "play_type IN ('coop', 'adversarial', 'mixed', 'multi_human_unknown')"}
 
 
-def overview(agg_path, build="release", days=90):
+def _play(play):
+    if play not in PLAYS:
+        raise ValueError(f"play must be one of {list(PLAYS)}")
+    return f" AND ({PLAYS[play]})" if PLAYS[play] else ""
+
+
+def overview(agg_path, build="release", days=90, play="all"):
+    pf = _play(play)
     if days not in WINDOWS:
         raise ValueError(f"days must be one of {WINDOWS}")
     db = _open(agg_path)
@@ -53,14 +65,14 @@ def overview(agg_path, build="release", days=90):
     window = q("SELECT players FROM players_in_window WHERE build_kind=? AND days=?", build, days)
     distinct_players = window[0][0] if window else 0
     plays = q("SELECT COUNT(*) AS n, SUM(completed) AS done, COUNT(DISTINCT match_id) AS matches, "
-              "SUM(CASE WHEN humans>=2 THEN 1 ELSE 0 END) AS multi FROM plays WHERE build_kind=? AND day>=?",
+              "SUM(CASE WHEN humans>=2 THEN 1 ELSE 0 END) AS multi FROM plays WHERE build_kind=? AND day>=?" + pf,
               build, since)[0]
-    multi_matches = q("SELECT COUNT(DISTINCT match_id) FROM plays WHERE build_kind=? AND day>=? AND humans>=2",
+    multi_matches = q("SELECT COUNT(DISTINCT match_id) FROM plays WHERE build_kind=? AND day>=? AND humans>=2" + pf,
                       build, since)[0][0]
     rpp = q("SELECT SUM(rows), SUM(plays) FROM daily_plays WHERE build_kind=? AND day>=?", build, since)[0]
-    by_type = retention_by_play_type(db, build, since)
+    by_type = retention_by_play_type(db, build, since, play)
     solo_ai = next((r for r in by_type if r["play_type"] == "solo_vs_ai"), None)
-    health = q("SELECT build_kind, COUNT(*), SUM(completed) FROM plays WHERE day>=? GROUP BY build_kind", since)
+    health = q("SELECT build_kind, COUNT(*), SUM(completed) FROM plays WHERE day>=?" + pf + " GROUP BY build_kind", since)
     rpp_by_build = {r[0]: (round(1.0 * r[1] / r[2], 2) if r[2] else None) for r in
                     q("SELECT build_kind, SUM(rows), SUM(plays) FROM daily_plays WHERE day>=? GROUP BY build_kind",
                       since)}
@@ -69,7 +81,8 @@ def overview(agg_path, build="release", days=90):
         "SELECT event, SUM(rows) AS rows, SUM(near_dup_rows) AS near_duplicates FROM daily_events "
         "WHERE build_kind=? AND day>=? GROUP BY event ORDER BY rows DESC LIMIT 12", (build, yesterday))]
     result = {
-        "build": build, "days": days, "built_ms": _built_ms(db),
+        "build": build, "days": days, "play": play, "built_ms": _built_ms(db),
+        "unfiltered": [] if play == "all" else ["players", "rows_per_play", "events_24h"],
         "tiles": {
             "players": distinct_players or 0,
             "matches": plays["matches"] or 0,
@@ -88,14 +101,15 @@ def overview(agg_path, build="release", days=90):
     return result
 
 
-def retention_by_play_type(db, build, since):
+def retention_by_play_type(db, build, since, play="all"):
+    pf = _play(play)
     rows = db.execute(
         "SELECT play_type, COUNT(*) AS plays, COUNT(DISTINCT match_id) AS matches, SUM(completed) AS completed, "
         "SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END) AS rematches FROM plays "
-        "WHERE build_kind=? AND day>=? GROUP BY play_type", (build, since)).fetchall()
+        "WHERE build_kind=? AND day>=?" + pf + " GROUP BY play_type", (build, since)).fetchall()
     returns = {r[0]: r for r in db.execute(
         "SELECT play_type, SUM(players), SUM(returned_d1), SUM(returned_d7) FROM returns "
-        "WHERE build_kind=? AND first_day>=? GROUP BY play_type", (build, since))}
+        "WHERE build_kind=? AND first_day>=?" + pf + " GROUP BY play_type", (build, since))}
     out = []
     for r in rows:
         ret = returns.get(r["play_type"])
@@ -109,16 +123,17 @@ def retention_by_play_type(db, build, since):
     return out
 
 
-def retention(agg_path, build="release", days=90):
+def retention(agg_path, build="release", days=90, play="all"):
+    pf = _play(play)
     db = _open(agg_path)
     if db is None:
         return _empty(build, days)
     since = _since(days)
-    result = {"build": build, "days": days, "built_ms": _built_ms(db),
-              "by_play_type": retention_by_play_type(db, build, since),
+    result = {"build": build, "days": days, "play": play, "built_ms": _built_ms(db),
+              "by_play_type": retention_by_play_type(db, build, since, play),
               "cohorts": [dict(r) for r in db.execute(
                   "SELECT first_day, play_type, players, returned_d1, returned_d7 FROM returns "
-                  "WHERE build_kind=? AND first_day>=? ORDER BY first_day", (build, since))]}
+                  "WHERE build_kind=? AND first_day>=?" + pf + " ORDER BY first_day", (build, since))]}
     db.close()
     return result
 
@@ -133,26 +148,28 @@ def _every_day(since, days, by_day):
     return out
 
 
-def matches(agg_path, build="release", days=90):
+def matches(agg_path, build="release", days=90, play="all"):
+    pf = _play(play)
     db = _open(agg_path)
     if db is None:
         return _empty(build, days)
     since = _since(days)
     result = {
-        "build": build, "days": days, "built_ms": _built_ms(db),
+        "build": build, "days": days, "play": play, "built_ms": _built_ms(db),
+        "unfiltered": [] if play == "all" else ["signals"],
         "per_day": _every_day(since, days, {r["day"]: dict(r) for r in db.execute(
             "SELECT day, COUNT(DISTINCT match_id) AS matches, COUNT(*) AS plays, SUM(completed) AS completed "
-            "FROM plays WHERE build_kind=? AND day>=? GROUP BY day ORDER BY day", (build, since))}),
+            "FROM plays WHERE build_kind=? AND day>=?" + pf + " GROUP BY day ORDER BY day", (build, since))}),
         "by_mode": [dict(r) for r in db.execute(
             "SELECT game_mode, COUNT(*) AS plays, SUM(completed) AS completed, "
             "ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
             "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, "
             "ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s FROM plays "
-            "WHERE build_kind=? AND day>=? GROUP BY game_mode ORDER BY plays DESC", (build, since))],
+            "WHERE build_kind=? AND day>=?" + pf + " GROUP BY game_mode ORDER BY plays DESC", (build, since))],
         "by_vessel": [dict(r) for r in db.execute(
             "SELECT vessel_class, COUNT(*) AS plays, ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
             "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s "
-            "FROM plays WHERE build_kind=? AND day>=? GROUP BY vessel_class ORDER BY plays DESC", (build, since))],
+            "FROM plays WHERE build_kind=? AND day>=?" + pf + " GROUP BY vessel_class ORDER BY plays DESC", (build, since))],
         "signals": [dict(r) for r in db.execute(
             "SELECT game_mode, SUM(favorited) AS favorited, SUM(unfavorited) AS unfavorited, SUM(fails) AS fails, "
             "SUM(shares) AS shares FROM mode_signals WHERE build_kind=? AND day>=? GROUP BY game_mode "
@@ -160,10 +177,10 @@ def matches(agg_path, build="release", days=90):
         "pause": dict(db.execute(
             "SELECT ROUND(AVG(pause_seconds), 1) AS avg_pause_s, ROUND(AVG(duration_seconds), 1) AS avg_duration_s, "
             "ROUND(100.0 * SUM(CASE WHEN pause_seconds > 30 THEN 1 ELSE 0 END) / NULLIF(COUNT(pause_seconds), 0), 1) "
-            "AS paused_over_30s_pct FROM plays WHERE build_kind=? AND day>=?", (build, since)).fetchone()),
+            "AS paused_over_30s_pct FROM plays WHERE build_kind=? AND day>=?" + pf, (build, since)).fetchone()),
         "by_intensity": [dict(r) for r in db.execute(
             "SELECT intensity, COUNT(*) AS plays, ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct "
-            "FROM plays WHERE build_kind=? AND day>=? GROUP BY intensity ORDER BY intensity", (build, since))],
+            "FROM plays WHERE build_kind=? AND day>=?" + pf + " GROUP BY intensity ORDER BY intensity", (build, since))],
     }
     db.close()
     return result

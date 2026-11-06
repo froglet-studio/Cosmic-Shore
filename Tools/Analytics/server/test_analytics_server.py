@@ -41,8 +41,9 @@ def ev(event, player, ms, **props):
 
 
 def started(player, match, ms, humans=1, ai=2, **extra):
-    return ev("game_started", player, ms, match_id=match, player_count_human=humans, player_count_ai=ai,
-              game_mode="SkimRace", intensity=2, vessel_class="Squirrel", **extra)
+    props = dict(game_mode="SkimRace", intensity=2, vessel_class="Squirrel")
+    props.update(extra)
+    return ev("game_started", player, ms, match_id=match, player_count_human=humans, player_count_ai=ai, **props)
 
 
 def completed(player, match, ms, **extra):
@@ -179,6 +180,42 @@ class Aggregates(StoreCase):
         notes = C.rule_notes(V.digest_facts(self.store.agg_path))
         self.assertEqual(notes[0]["severity"], "problem")
         self.assertIn("1.25", notes[0]["body"])
+
+
+class PlayFilter(StoreCase):
+    """Shombith, 2026-11-06: "need features to filter solo vs ai, multiplayer"; "need filters and sorting"."""
+
+    def setUp(self):
+        super().setUp()
+        self.store.ingest([
+            started("a", "m1", T0, humans=1, ai=2), completed("a", "m1", T0 + 60_000, player_won=True),
+            started("a", "m2", T0 + 120_000, humans=1, ai=0), completed("a", "m2", T0 + 180_000),
+            started("b", "m3", T0, humans=2, ai=0, game_mode="Joust"),
+            started("c", "m3", T0, humans=2, ai=0, game_mode="Joust"),
+            started("b", "m4", T0 + 300_000, humans=1, ai=3),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_each_play_group_counts_only_its_own_matches(self):
+        agg = self.store.agg_path
+        self.assertEqual(V.overview(agg, "release", 7)["tiles"]["matches"], 4)
+        self.assertEqual(V.overview(agg, "release", 7, "solo_vs_ai")["tiles"]["matches"], 2)
+        self.assertEqual(V.overview(agg, "release", 7, "solo")["tiles"]["matches"], 1)
+        multi = V.overview(agg, "release", 7, "multi")
+        self.assertEqual((multi["tiles"]["matches"], multi["tiles"]["multi_human_matches"]), (1, 1))
+        self.assertIn("players", multi["unfiltered"])           # the console says which tiles ignore the filter
+        self.assertEqual(V.overview(agg, "release", 7)["unfiltered"], [])
+        self.assertEqual({r["game_mode"] for r in V.matches(agg, "release", 7, "multi")["by_mode"]}, {"Joust"})
+        self.assertEqual({r["play_type"] for r in V.retention(agg, "release", 7, "solo")["by_play_type"]},
+                         {"solo_alone"})
+        with self.assertRaises(ValueError):
+            V.overview(agg, "release", 7, "everyone")
+
+    def test_the_players_list_carries_each_players_play_mix_and_wins(self):
+        people = {p["distinct_id"]: p for p in self.store.people_list("release", 7)["people"]}
+        a, b = people["a"], people["b"]
+        self.assertEqual((a["solo_vs_ai"], a["solo"], a["multi"], a["won"]), (1, 1, 0, 1))
+        self.assertEqual((b["solo_vs_ai"], b["solo"], b["multi"], b["won"]), (1, 0, 1, 0))
 
 
 class AskDoor(StoreCase):

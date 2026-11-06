@@ -20,7 +20,7 @@ HTTP:
     GET  /                       the console page (Tools/Analytics/console/; public: it holds no data and asks for a key)
     GET  /healthz                {"ok": true} (public, for uptime checks)
     GET  /v1/me                  {"name", "admin"} for the key sent
-    GET  /v1/overview?build=release&days=90          the console's Overview page      } Authorization:
+    GET  /v1/overview?build=release&days=90[&play=all|solo_vs_ai|solo|multi]   Overview (play: Retention, Matches too)      } Authorization:
     GET  /v1/retention?build=..&days=..              Retention                        } Bearer <read key>
     GET  /v1/matches?build=..&days=..                Matches                          }
     GET  /v1/health?days=30                          Data health                      }
@@ -358,15 +358,18 @@ def make_handler(app):
                 return self._send(400, {"error": f"build must be one of {list(S.BUILD_KINDS)}"})
             if days not in V.WINDOWS:
                 return self._send(400, {"error": f"days must be one of {list(V.WINDOWS)}"})
+            play = (parse_qs(urlparse(self.path).query).get("play") or ["all"])[0] or "all"
+            if play not in V.PLAYS:
+                return self._send(400, {"error": f"play must be one of {list(V.PLAYS)}"})
             try:
                 if path == "/v1/overview":
-                    page = V.overview(app.agg, build, days)
+                    page = V.overview(app.agg, build, days, play)
                     page["digest"] = app.store.latest_digest()
                     return self._send(200, page)
                 if path == "/v1/retention":
-                    return self._send(200, V.retention(app.agg, build, days))
+                    return self._send(200, V.retention(app.agg, build, days, play))
                 if path == "/v1/matches":
-                    return self._send(200, V.matches(app.agg, build, days))
+                    return self._send(200, V.matches(app.agg, build, days, play))
                 if path == "/v1/health":
                     return self._send(200, V.health(app.agg, app.store.health_facts(), days))
                 if path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
