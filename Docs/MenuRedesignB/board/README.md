@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793938420-8751` of **Frogma**: Rev 3 to Rev 59, 489 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-06 from canvas version `1793959117-ddb7` of **Frogma**: Rev 3 to Rev 61, 490 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,16 +545,19 @@ Copied on 2026-11-06 from canvas version `1793938420-8751` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
+
+- [`R61A.dc.html`](R61A.dc.html) - Rev 61 A - Beside the Ark (recommended) - interactive
+- [`R61B.dc.html`](R61B.dc.html) - Rev 61 B - The leader, close - interactive
+- [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
+- [`R61D.dc.html`](R61D.dc.html) - Rev 61 D - Across the bay - interactive
+- [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
+- [`R61F.dc.html`](R61F.dc.html) - Rev 61 F - Beside the Ark, with the map - interactive
+
 #### Rev 59 - The Ark's lobby: the Squads tab in the Ark's own hangar - the real ArkReverse model, its pads, the HyperSea board, the cell out of the mouth
 
-- [`R59Compare.dc.html`](R59Compare.dc.html) - Rev 59 - Compare: the game, the hangar, three domains
-- [`R59A.dc.html`](R59A.dc.html) - Rev 59 A - Seat placards (recommended) - interactive
-- [`R59B.dc.html`](R59B.dc.html) - Rev 59 B - Rail - interactive
 - [`R59C.dc.html`](R59C.dc.html) - Rev 59 C - The board wall - interactive
 - [`R59D.dc.html`](R59D.dc.html) - Rev 59 D - From the cell - interactive
-- [`R59E.dc.html`](R59E.dc.html) - Rev 59 E - Slate - interactive
-- [`R59F.dc.html`](R59F.dc.html) - Rev 59 F - One seat at a time - interactive
-- [`R59Notes.dc.html`](R59Notes.dc.html) - Rev 59 - Notes
 
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
@@ -693,6 +696,10 @@ Copied on 2026-11-06 from canvas version `1793938420-8751` of **Frogma**: Rev 3 
 - [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
 
 ### Tab: Phone  (`phone`)
+
+#### Rev 60 - Phone: what is left - the Quests page, and the Codex orbit, account prompt and Port weekly board
+
+- `R60Phone.dc.html` (not copied yet) - Rev 60 Phone - the Quests page on a phone (interactive), and three spots now and proposed - interactive
 
 #### Rev 57 - One UI, three layouts: every screen on PC, phone landscape and phone portrait, side by side
 
