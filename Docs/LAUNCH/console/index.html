@@ -210,7 +210,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     const c = comps();
     const gateIds = p.key === 'launch' ? Object.keys(c).filter((id) => GATES.some(([g]) => g === id) || id.startsWith('smoke-')) : [];
     const failed = [...p.channels, p.build, ...gateIds].filter(Boolean).filter((id) => c[id] && c[id].result === 'failure');
-    const stale = [...p.channels].filter((id) => c[id] && (hoursSince(c[id].updated_at) || 0) > STALE_HOURS * 7);
+    const stale = [...p.channels].filter((id) => c[id] && (hoursSince((c[id].details && c[id].details.event_date) || c[id].updated_at) || 0) > STALE_HOURS * 7);
     const blockers = openBlockers(p.key);
     const idle = blockers.filter((i) => i.status !== 'in-progress');
     if (!items.length && !board) return ['s-unknown', 'Unknown', 'waiting for data'];
@@ -249,8 +249,9 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     const v = el('td', 'num'); v.textContent = [c.version, c.build && `(${c.build})`, c.commit && c.commit.slice(0, 9)].filter(Boolean).join(' ') || '—';
     const r = el('td'); r.append(el('span', `chip r-${c.result}`, c.result));
     if (c.summary) r.append(el('div', 'small muted', c.summary));
-    const a = el('td', 'src'); const h = hoursSince(c.updated_at);
-    const when = el('span', h != null && h > STALE_HOURS ? 'stale' : '', age(c.updated_at)); a.append(when);
+    const at = (c.details && c.details.event_date) || c.updated_at;
+    const a = el('td', 'src'); const h = hoursSince(at);
+    const when = el('span', h != null && h > STALE_HOURS ? 'stale' : '', age(at)); a.append(when);
     const link = safeUrl(c.run_url) || safeUrl(c.link);
     a.append(document.createTextNode(' · '));
     if (link) { const l = el('a', '', c.source || 'run'); l.href = link; l.target = '_blank'; l.rel = 'noopener'; a.append(l); } else a.append(document.createTextNode(c.source || ''));
