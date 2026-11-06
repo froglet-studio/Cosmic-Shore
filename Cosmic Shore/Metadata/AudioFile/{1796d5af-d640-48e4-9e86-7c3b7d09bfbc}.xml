@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.02.00">
-	<object class="AudioFile" id="{4c3f669c-73ed-4f23-bb7e-616a58cd3a63}">
+	<object class="AudioFile" id="{1796d5af-d640-48e4-9e86-7c3b7d09bfbc}">
 		<property name="assetPath">
-			<value>morning star swinging loop.wav</value>
+			<value>morning star release.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>48</value>
@@ -11,7 +11,7 @@
 			<value>2</value>
 		</property>
 		<property name="length">
-			<value>8.3077083333333341</value>
+			<value>1.2307708333333334</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{10bfe9dd-695d-4131-b664-efde45fc55f0}</destination>
