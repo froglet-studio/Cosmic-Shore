@@ -1,5 +1,17 @@
 {
   "components": {
+    "android-prerelease": {
+      "build": "412826",
+      "channel": "prerelease",
+      "id": "android-prerelease",
+      "kind": "channel",
+      "platform": "android",
+      "result": "success",
+      "schema": 1,
+      "source": "Phase 1 audit (2026-11-05)",
+      "summary": "Internal testing; uploaded by hand",
+      "updated_at": "2026-11-06T03:38:15Z"
+    },
     "ios-prerelease": {
       "channel": "prerelease",
       "commit": "e69a542a83",
@@ -91,6 +103,6 @@
       "version": "2"
     }
   },
-  "generated_at": "2026-11-06T03:38:06Z",
+  "generated_at": "2026-11-06T03:38:17Z",
   "schema": 1
 }
