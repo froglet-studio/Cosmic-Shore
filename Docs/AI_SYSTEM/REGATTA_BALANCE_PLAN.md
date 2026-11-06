@@ -25,6 +25,43 @@ collaborator's idle machine works on (`Docs/Compute/README.md`); the live state 
 "Time games" are the cards whose genre petal is Time (`ModeGenre.cs`: a race - crystals, goals, switches threaded).
 A hull's OWN Time game is a single-hull arcade card; Regatta is the arena Time game they all share.
 
+## The direction since 2026-11-06 (Garrett): trained AIs first, a wide search, a pool of courses, one Regatta
+
+Garrett played the searched circuits of `claude/regatta-overnight-balance` on 2026-11-06 twice. Gates threaded when
+the AI Urchin finished its 24: on the old I4 circuit Squirrel (AI) 11, Serpent 11, Rhino 7, Manta 6; on the branch's
+new circuits Squirrel (Garrett) 14, Serpent 10, Rhino 5, Manta 4, Dolphin 3. The corrected roster model had predicted
+12-17 for every steering hull. The search had tightened corners and mouths to slow the fast hulls, which levels the
+field in a model of AIs racing alone and breaks their steering in a six-AI grid, while the Urchin rides through on its
+rail. **The branch's searched circuits are not to be shipped.** Garrett's direction, in order (the plan in full:
+https://claude.ai/artifact/FdaKFy6jGwwTfcKp16hjE7):
+
+1. **"Step one is making sure that each AI is trained well, otherwise training a course against AI that are so
+   imbalanced will not work."** No course search until every Regatta hull's Time AI passes all four: independent
+   restarts agree within 2% and none improves in its last 20% of evaluations; it beats every existing genome for that
+   hull on the composite over I1-I4 of its own game; it is within 15% of the best human finished time where one
+   exists; in the real game it misses no ring mouths alone AND in a six-AI grid, the model within 10%. Today no hull
+   passes: the Rhino's search has converged (three runs by hand, within 0.1%, about 28 / 31 / 36 s at I1-I3 against
+   the shipped drive's about 101 s mean) but stalls on one of three I4 seeds; the Manta, Dolphin and Squirrel searches
+   are running by hand (Compute is paused); the Urchin, Stoat, Serpent, Sparrow, Scarab and Thresher need models.
+2. **The search space is much more than ring angles and spacing**: rail sections (super-shielded, shielded, plain),
+   gaps, detours, alternate gates, crystals on the racing line ("use sparingly, it is likely noise"), lifeforms. "Other
+   ways of reducing the spread without introducing too much chaos."
+3. **Search for several local minima** and shuffle between them: **arena games lose their intensities**; Regatta is ONE
+   level that draws a course from a pool each match. Arena vessel selection becomes four options (Pick, Random, Draft
+   with snake order, Random from a saved squad: the hull and maybe the pilot, never the element), built in its own
+   thread. Arcade games keep I1-I4; that is where the AIs train.
+4. **A pool passes only if its spreads cancel, never accumulate**: 1.25x on one course "is a lot" and acceptable only
+   when the hull at the top of one course is at the bottom of another; each hull's mean time across the pool is held
+   within about 1.10x of the others, and a hull fastest on every course fails the pool. A chaos penalty (each hull's
+   time varying across seeds) keeps a coin-flip course out.
+5. **Time levels last.** "If they still require tuning then it is probably something the vessel needs": a proposal to
+   Garrett with the numbers, confirmed by him before any push.
+
+Stages 2 and 3 above are read through this: stage 2 is the pool search on the widened space, against the trained AIs;
+stage 3 is the last resort. The work runs as parallel threads, one brief each, in
+`/mnt/project-files/regatta-training/BRIEFS.md` (the project's shared folder); every thread's numbers are model numbers
+until an editor race says otherwise, and the editor is not available in the cloud.
+
 ## Where it starts (the models, today's shipped numbers, 2026-10-26)
 
 `regatta_course` on today's circuits, each hull on its offline model (`Tools/Compute/evaluators/race_models.py`):
@@ -100,3 +137,4 @@ weight (0.02 per level of mean) keeps the tuning as small as the gap allows. **P
 | 2026-10-26 | Plan set (Garrett). Compute system, the three evaluators and the stage 1-3 jobs built (`Docs/Compute/README.md`); today's spread measured (2.05-2.18x) |
 | 2026-11-02 | The Stoat is the next hull, on the orbit alone (Yash). `regatta_balance.py`'s `stoat_model` follows the kit (its Time 10 race 48.5 → 49.4 s at I1; the card's level is unchanged). No compute job yet: it needs Slingshot races first, then a `drive_fit` model from `stoat_orbit_sim.py` |
 | 2026-11-02 | The Thresher is the hull after the Stoat (Yash). The hulls Yash picks to race Regatta: Squirrel, Dolphin, Stoat, Thresher (the Sparrow stays on the card). The rule holds: the Thresher trains in Thresher Time first, and Regatta's card and design wait for that (`MINIGAME_TRAINING_PLAN.md` §12) |
+| 2026-11-06 | **Garrett's two playtests of the searched circuits** (branch `claude/regatta-overnight-balance`): worse than the old circuit and 2-5x worse than the corrected model (the section above). Those circuits are not shipped. **Direction reset (Garrett)**: trained AIs first (the four-part test), a much wider course space, several local minima shuffled in ONE Regatta level (arena intensities go), spreads that cancel across the pool, Time levels last and only with his yes. Thirteen threads started on the briefs; `drive-rhino-headlong` run by hand three times (converged at I1-I3, stalls on one I4 seed); the Manta, Dolphin and Squirrel searches running by hand |

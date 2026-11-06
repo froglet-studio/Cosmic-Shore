@@ -106,7 +106,7 @@ the AI, the same callsign weights its targets.
 | Step | Element | What it produces | State (2026-11-02) |
 |---|---|---|---|
 | `time-arcade` | Time | each vessel's universal Time genome (section 5) | **live** |
-| `time-arena-course` | Time | Regatta's course features, searched against the fixed Time genomes: the course that levels the fastest and slowest | blocked on `time-arcade` (jobs `regatta-course-i1..i4`, which wait on the Squirrel, Rhino and Manta Time genomes) |
+| `time-arena-course` | Time | Regatta's course features, searched against the fixed Time genomes: a POOL of courses whose spreads cancel, shuffled in one Regatta level (Garrett, 2026-11-06; `REGATTA_BALANCE_PLAN.md` "The direction since 2026-11-06") | blocked on `time-arcade` (jobs `regatta-course-i1..i4` and the pool search, which wait on every Regatta hull's Time genome passing the four-part test) |
 | `time-arena-elements` | Time | the smallest elemental tuning that closes what the course leaves: each vessel's Time baseline | blocked (job `regatta-elements`) |
 | `charge-arcade` | Charge | each vessel's universal Charge genome, from mirror matches in its Charge arcade game, scored on petals taken | next: needs the per-attacker petal ledger (SILENCE section 6) |
 | `charge-arena` | Charge | Broadside balanced until every vessel's petal plateau is the same | blocked |
@@ -181,11 +181,18 @@ trainer (studyholic, Garrett, Shombith). Decision 2 below proposes the same gate
    universal Dolphin Time genome carry one nose rate per level instead, once that genome exists? The Manta asks the
    same (2026-11-03): in Redline's model the fleet nose lag makes the AI 1.7x (I1) to 5x (I4) slower than one with
    none, more than any Soar band buys (`REDLINE.md` §5.1).
+8. **Arena games lose their intensities** (Garrett, 2026-11-06). Regatta becomes ONE level drawing a course from a pool;
+   arena vessel selection becomes Pick / Random / Draft (snake) / Random from a saved squad. The ladder is unchanged
+   where it matters to this plan: each vessel still trains on its arcade game's I1-I4 (rule 2's composite), and the
+   arena is balanced against those fixed genomes. What changes is the arena's own structure: a pool of courses whose
+   spreads cancel (`REGATTA_BALANCE_PLAN.md`), not four courses. Crystals may sit on Regatta's racing line, sparingly,
+   and the rule that a racing AI never detours for a crystal holds (it flies through them).
 
 ## 8. Status log
 
 | Date | What moved |
 |---|---|
+| 2026-11-06 | **Garrett**: the Regatta direction reset (decision 8; `REGATTA_BALANCE_PLAN.md` "The direction since 2026-11-06"). His two playtests of circuits searched against untrained AIs made the grid worse; no course search until every Regatta hull's Time genome passes the four-part "well trained" test; a wider course space, a pool of courses with cancelling spreads in one Regatta level, Time levels last with his yes. `time-arena-course`'s title updated here and in `ai_plan.json` |
 | 2026-11-04 | Manta (`time-arcade`, Yash: "only time"): Redline's ladder teaches Soar alone, I1 to I4 (`REDLINE.md` §1): no corner under the 156 u Soar alone makes, one costing corner a level, the omni crystal off and Time crystals 0-3 a lap. The model now races Redline's five laps (it raced three) and the crystals, held to the shipped C# by `redline_course_harness`; `redline-manta-time` is a new epoch (evaluator v2). The AI finishes all 24 model races (183-538 s) but does not steer for the crystals: the speed made it miss more I4 mouths. Its I4 pace waits on the nose rate (decision 7; Switchback's per-intensity nose rows are the precedent) |
 | 2026-11-03 | Dolphin (`time-arcade`, Yash): Switchback I4 is now the GAUNTLET (`SWITCHBACK.md` "The I4 gauntlet": 1.5x the prisms, 2-3 keys a gate in a zig-zag, plugged tunnels, sealed eyes). The planner takes the keys in order (`StageFor`). New I4 bands for the gauntlet (Yash: "yes"): 175-195 / 165-185 / 155-175 / 145-165 s, landed by its own nose-lag row `aiNoseFollowGauntlet` 1.9 / 2.8 / 3.5 / 5 (offline 185 / 173 / 165 / 155 s); `switchback-dolphin-time`'s I4 baselines were measured on the old I4 |
 | 2026-11-03 | Manta (`time-arcade`, Yash): the universal search `redline-manta-time` is queued on a new Redline model, `manta_redline_sim.py`, checked against the editor's AI Mantas in Regatta (I1 lap 28 s in the model, 23-28 s in Hard races); `drive-manta-redline` is retired (its model was ~3x too fast, and its best bands finish none of I3-I4 here). Redline's AI flies the Regatta steering (12 of 12 model races finished, 4 of 12 before). The AI nose lag is the biggest lever left (1.7-5x), which is decision 7's question for the Manta too (`MINIGAME_TRAINING_PLAN.md` section 13) |
