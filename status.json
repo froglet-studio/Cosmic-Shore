@@ -14,8 +14,23 @@
       "source": "Phase 1 audit (2026-11-05)",
       "summary": "Static checks green; Unity compile skipped (no licence)",
       "updated_at": "2026-11-06T03:37:32Z"
+    },
+    "unity-compile": {
+      "details": {
+        "last_success_commit": "40c9b74423",
+        "last_success_date": "2026-10-06"
+      },
+      "id": "unity-compile",
+      "kind": "gate",
+      "link": "https://github.com/froglet-studio/Cosmic-Shore/actions/runs/37488258879",
+      "platform": "quality",
+      "result": "failure",
+      "schema": 1,
+      "source": "Phase 1 audit (2026-11-05)",
+      "summary": "No Unity compile in CI since 2026-10-06; PR 1695 waits on the unity-ci licence secrets. The link is the LAST successful compile (2026-10-06), not a failing run",
+      "updated_at": "2026-11-06T03:37:38Z"
     }
   },
-  "generated_at": "2026-11-06T03:37:33Z",
+  "generated_at": "2026-11-06T03:37:39Z",
   "schema": 1
 }
