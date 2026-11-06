@@ -386,7 +386,219 @@ def build_view():
             v.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Pilot/CrystalsValue', 'tmp'))}\n"))
         else:
             label(card.child(N(f"Pilot/{key}Value", f"{key}Value", TL(x + 18, 80, 200, 40))), val, "H1", "TextLight")
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (section 129; Docs/UI_STYLE_GUIDE.md section 8). On the 800 x 450 phone canvas the nav band is the
+# 96-wide rail on the left, so everything sits right of it (x 112 .. W-16, y 8 .. 442):
+#   the header row (y 8-52)    Your pilot, RECORD | COLOUR SETS (no LB / RB keycaps on touch), MY REPLAYS, BACK
+#   the pilot card (y 58-156)  the avatar, the name, CHANGE AVATAR / RENAME and the five stats in two rows
+#   the record (y 162-442)     the favourites at the PC look (0.672), FLY TIME and AUDIO STUDIO under them: each opens
+#                              its panel as a sheet over a dim (PhoneSheet) in the same place, laid out in phone units;
+#                              the favourite-pilot picker lays its tiles out in the same place
+#   Colour sets                the Showroom window fills y 58-438 (the pilot card steps aside there)
+# The pages stay under the pilot card on purpose: the record is drawn before the pilot card (the PC focus order), so a
+# sheet that reached over the card would be drawn under it. Every word in phone units takes its role's phone size.
+# --------------------------------------------------------------------------------------------
+PHONE_SHEET = K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs")
+PHONE_SHEETS = (("ByVessel", "FLY TIME", "Record/ByVessel"), ("Studio", "AUDIO STUDIO", "Record/Studio"))
+PH_X, PH_R, PH_FOOT = 112, 16, 442          # the region right of the 96-wide rail (author_menu_arcade.PHONE_X)
+PH_BTN = 44                                  # a phone touch target's height
+PH_HEAD_Y = 8                                # the header row: title, tabs, MY REPLAYS, BACK
+PH_PILOT_Y, PH_PILOT_H = 58, 98              # the pilot card under it
+PH_PAGE_Y = 162                              # the record's pages (favourites, the two sheets, the picker) under that
+PH_FAV_SCALE = 0.672                         # the favourites panel (1000 x 320) drawn at the PC look, 672 x 215
+PH_OPEN_Y = 390                              # the row of sheet buttons under the favourites
+
+
+def phone_w(caption):
+    """A phone-only button's width: the PC small button's (the phone type is smaller, so the word fits)."""
+    return round(16 + K.label_width(caption, "ButtonSmall") + 16, 1)
+
+
+PHONE_OPEN = {}
+_x = PH_X
+for _key, _cap, _ in PHONE_SHEETS:
+    PHONE_OPEN[_key] = (_x, PH_OPEN_Y, phone_w(_cap), PH_BTN)
+    _x += phone_w(_cap) + 12
+CLOSE_W = phone_w("CLOSE")
+PH_STATS = {"Flight": (392, 4, 136), "Since": (528, 4, 136), "Games": (392, 50, 80), "Sessions": (472, 50, 80),
+            "Crystals": (552, 50, 112)}
+PH_STUDIO_TRANSPORT = (("Back", ("BACK",)), ("Pause", ("PAUSE", "PLAY")), ("Skip", ("SKIP",)),
+                       ("Shuffle", ("SHUFFLE", "SHUFFLE: ON", "SHUFFLE: OFF")), ("Stop", ("STOP MUSIC", "START MUSIC")))
+PH_TILE_W, PH_TILE_H, PH_TILE_GAP = 156, 160, 16
+PH_SET_SCALE = 0.55                          # a colour-set tile (204 x 84) drawn at its PC look, 112 x 46
+
+
+def ph_label_w(caption, role="ButtonSmall"):
+    """A caption's width at its role's phone size (the PC width scaled by phone size / PC size)."""
+    return K.label_width(caption, role) * K.PHONE_SIZES[role] / K.ROLES[role][2]
+
+
+def ph_holder_w(words):
+    """A transport button's width on a phone: its longest word at the phone size inside the button's 18 + 18 padding."""
+    return round(max(ph_label_w(w) for w in words) + 36 + 4, 1)
+
+
+def find(node, key):
+    if getattr(node, "key", None) == key:
+        return node
+    for ch in getattr(node, "children", []):
+        hit = find(ch, key)
+        if hit is not None:
+            return hit
+    return None
+
+
+def put(root, key, pose=None, **kw):
+    """Give the node `key` its phone pose (a PhoneRect, added on an instance's root through m_AddedComponents)."""
+    n = find(root, key)
+    assert n is not None, f"phone layout: no node {key!r}"
+    body = K.phone_rect(pose, **kw)
+    if isinstance(n, K.Instance):
+        assert not any(k == "phone" for k, _, _ in n.added), f"phone layout: {key} posed twice"
+        n.added.append(("phone", 114, body))
+    else:
+        assert not any(k == "phone" for k, _, _ in n.comps), f"phone layout: {key} posed twice"
+        n.add("phone", 114, body)
+    return n
+
+
+def phone_layout(root):
+    off = lambda w, h: TL(-4000, 0, w, h)              # off the canvas on a phone (a pad prompt on a touch screen)
+    region = lambda y, h: R((0, 1), (1, 1), ((PH_X - PH_R) / 2, -y), (-(PH_X + PH_R), h), (0.5, 1))
+    side = R((0, 0), (1, 1), (48, 0), (-96, 0))         # right of the rail, full height
+    for key in ("Veil", "VeilSea"):
+        put(root, key, side)
+
+    # The header row.
+    put(root, "Header", TL(PH_X, PH_HEAD_Y, 140, PH_BTN))
+    put(root, "Header/Eyebrow", TL(0, 0, 140, 14))
+    put(root, "Header/Title", TL(0, 14, 140, 30))
+    kw, kh = K.label_width("LB", "Label") + 24, K.line_height("Label") + 8
+    rec_w, col_w = K.label_width("RECORD", "Button"), K.label_width("COLOUR SETS", "Button")
+    put(root, "Tabs", TL(PH_TABS_X, PH_HEAD_Y, rec_w + 28 + col_w, PH_BTN))
+    put(root, "TabsLB", off(kw, kh))
+    put(root, "TabsRB", off(kw, kh))
+    put(root, "Tabs/RecordTab", TL(0, 0, rec_w, PH_BTN))
+    put(root, "Tabs/ColourSetsTab", TL(rec_w + 28, 0, col_w, PH_BTN))
+    back_w = K.button_size("BACK", small=True)[0]
+    put(root, "Back", TR(PH_R, PH_HEAD_Y, back_w, PH_BTN))
+    put(root, "Replays", TR(PH_R + back_w + 8, PH_HEAD_Y, K.button_size("MY REPLAYS", small=True)[0], PH_BTN))
+
+    # The pilot card.
+    put(root, "Pilot", region(PH_PILOT_Y, PH_PILOT_H))
+    put(root, "Pilot/Avatar", TL(10, 10, 78, 78))
+    put(root, "Pilot/Eyebrow", TL(100, 6, 200, 14))
+    put(root, "Pilot/Name", TL(100, 18, 270, 34))
+    put(root, "Pilot/Buttons", TL(100, 52, 270, PH_BTN))
+    for key, cap in (("ChangeAvatar", "CHANGE AVATAR"), ("Rename", "RENAME")):
+        put(root, key, R((0, 0.5), None, (0, 0), (K.button_size(cap, small=True)[0], PH_BTN), (0, 0.5)))
+    put(root, "Pilot/Divider", TL(380, 10, 1, 78))
+    for key, (x, y, w) in PH_STATS.items():
+        put(root, f"Pilot/{key}Rule", TL(x, y + 2, 2, 40))
+        put(root, f"Pilot/{key}Label", TL(x + 8, y, w - 10, 14))
+        if key == "Crystals":
+            put(root, "Pilot/CrystalIcon", TL(x + 8, y + 20, 16, 16))
+            put(root, "Pilot/CrystalsValue", TL(x + 28, y + 14, w - 30, 28))
+        else:
+            put(root, f"Pilot/{key}Value", TL(x + 8, y + 14, w - 10, 28))
+
+    # The record: the favourites at the PC look, the two sheets and the picker in phone units, all under the card.
+    put(root, "Record", STRETCH)
+    put(root, "Record/Favourites", TL(PH_X, PH_PAGE_Y, 1000, 320), scale=PH_FAV_SCALE)
+    put(root, "ChangePilot", R((0, 0), None, (20, 20), (K.button_size("CHANGE", small=True)[0], round(PH_BTN / PH_FAV_SCALE, 1)), (0, 0)))
+    by = "Record/ByVessel"
+    put(root, by, TL(PH_X, PH_PAGE_Y, 672, PH_BYVESSEL_H))
+    put(root, f"{by}/Eyebrow", TL(16, 14, 300, 14))
+    for i in range(VESSEL_ROWS):
+        k = f"{by}/Row{i}"
+        put(root, k, TL(12, 56 + i * 22, 648, 20))
+        put(root, f"{k}/Icon", R((0, 0.5), None, (14, 0), (18, 18)))
+        put(root, f"{k}/Name", R((0, 0.5), None, (30, 0), (160, 20), (0, 0.5)))
+        put(root, f"{k}/Track", R((0, 0.5), (1, 0.5), (40, 0), (-300, 6)))
+        put(root, f"{k}/Time", R((1, 0.5), None, (-6, 0), (100, 20), (1, 0.5)))
+    put(root, f"{by}/Empty", TL(16, 60, 640, 20))
+    st = "Record/Studio"
+    put(root, st, TL(PH_X, PH_PAGE_Y, 672, PH_STUDIO_H))
+    put(root, f"{st}/Eyebrow", TL(16, 8, 200, 14))
+    put(root, f"{st}/Count", R((1, 1), None, (-(8 + CLOSE_W + 12), -8), (300, 14), (1, 1)))
+    put(root, f"{st}/Title", TL(16, 24, 300, 24))
+    put(root, f"{st}/Artist", TL(324, 30, 240, 16))
+    put(root, f"{st}/Progress", TL(16, 52, 640, 3))
+    put(root, f"{st}/Transport", TL(16, 58, PH_TRANSPORT_W, PH_BTN))
+    for key, words in PH_STUDIO_TRANSPORT:
+        w = ph_holder_w(words)
+        put(root, f"{st}/Transport/{key}", R((0, 0.5), None, (0, 0), (w, PH_BTN), (0, 0.5)), layout=(w, 0))
+    put(root, f"{st}/Notice", TL(16, 106, 640, 18))
+    for i in range(len(TRACKS)):
+        k = f"{st}/Row{i}"
+        put(root, k, TL(*PH_TRACK[i]))
+        put(root, f"{k}/Tick", R((0, 0.5), None, (17, 0), (26, 26)))
+        put(root, f"{k}/Number", R((0, 0.5), None, (-4000, 0), (40, 24), (0, 0.5)))
+        put(root, f"{k}/Title", R((0, 1), (1, 1), (16, -4), (-36, 22), (0.5, 1)))
+        put(root, f"{k}/Playing", R((1, 0), None, (-6, 3), (80, 12), (1, 0)))
+
+    pk = "Record/Picker"
+    put(root, f"{pk}/Eyebrow", TL(PH_X + 16, PH_PAGE_Y + 6, 300, 14))
+    put(root, f"{pk}/Title", TL(PH_X + 16, PH_PAGE_Y + 20, 300, 30))
+    put(root, f"{pk}/Vessel", TR(32, PH_PAGE_Y + 10, 300, PH_BTN))
+    put(root, f"{pk}/Vessel/Name", R((0.5, 0.5), None, (0, 0), (180, 36)))
+    for key, cap, ax in (("PickerPrev", "LB", 0), ("PickerNext", "RB", 1)):
+        put(root, key, R((ax, 0.5), None, (0, 0), (K.button_size(cap, small=True)[0], PH_BTN), (ax, 0.5)))
+    for i in range(PILOT_TILES):
+        k = f"{pk}/Tile{i}"
+        put(root, k, TL(PH_X + i * (PH_TILE_W + PH_TILE_GAP), PH_PICKER_TILES_Y, PH_TILE_W, PH_TILE_H))
+        put(root, f"{k}/Portrait", R((0.5, 1), None, (0, -10), (76, 76), (0.5, 1)))
+        put(root, f"{k}/Name", R((0.5, 1), None, (0, -90), (PH_TILE_W - 10, 24), (0.5, 1)))
+        put(root, f"{k}/Line", R((0.5, 1), None, (0, -116), (PH_TILE_W - 10, 16), (0.5, 1)))
+        put(root, f"{k}/Favourite", R((0.5, 1), None, (0, -136), (PH_TILE_W - 10, 14), (0.5, 1)))
+    put(root, f"{pk}/Buttons", TL(PH_X, PH_OPEN_Y, 672, PH_BTN))
+    for key, cap in (("Set", "SET AS FAVOURITE"), ("Back", "BACK")):
+        put(root, f"{pk}/Buttons/{key}", R((0, 0.5), None, (0, 0), (K.button_size(cap, small=True)[0], PH_BTN), (0, 0.5)))
+
+    # Colour sets: the Showroom window under the header row, its words and rail in phone units.
+    kh = "ColourSets/Hero"
+    put(root, "ColourSets", STRETCH)
+    put(root, kh, region(PH_PILOT_Y, PH_HERO_H))
+    put(root, f"{kh}/Fade", R((0, 0), (1, 0), (0, 0), (0, 210), (0.5, 0)))
+    put(root, f"{kh}/Position", TL(16, 12, 90, 14))
+    put(root, f"{kh}/Wearing", TL(110, 12, 300, 14))
+    put(root, f"{kh}/Private", TR(16, 12, 260, 16))
+    put(root, f"{kh}/Eyebrow", TL(16, 162, 200, 14))
+    put(root, f"{kh}/Name", TL(16, 176, 640, 48), font=PH_NAME_SIZE)
+    put(root, f"{kh}/Line", TL(16, 226, 640, 20))
+    for d in range(len(DOMAIN_NAMES)):
+        x, y = 16 + d * 160, 252
+        put(root, f"{kh}/Pair{d}/Domain", TL(x, y + 1, 40, 14))
+        put(root, f"{kh}/Pair{d}/Rim", TL(x + 42, y, 16, 16))
+        put(root, f"{kh}/Pair{d}/Face", TL(x + 58, y, 16, 16))
+        put(root, f"{kh}/Pair{d}/Words", TL(x + 80, y, 76, 16))
+    arrow_w = K.button_size("<", small=True)[0]
+    put(root, "ColourPrev", TL(16, PH_RAIL_Y, arrow_w, PH_SET_H))
+    for i in range(COLOUR_SET_CARDS):
+        x = PH_SET_X0 + i * PH_SET_PITCH
+        put(root, f"{kh}/Set{i}", TL(x, PH_RAIL_Y, 204, 84), scale=PH_SET_SCALE)
+        put(root, f"{kh}/Set{i}Name", TL(x, PH_RAIL_Y + 50, 96, 14))
+        put(root, f"{kh}/Set{i}Tick", TL(x + 98, PH_RAIL_Y + 50, 14, 14))
+    put(root, "ColourNext", TL(PH_SET_X0 + COLOUR_SET_CARDS * PH_SET_PITCH, PH_RAIL_Y, arrow_w, PH_SET_H))
+    put(root, "ApplyColourSet", R((1, 0), None, (-16, 16), (K.button_size("APPLY")[0], PH_BTN), (1, 0)))
+    put(root, f"{kh}/Equipped", R((1, 0), None, (-16, 23), (220, 30), (1, 0)))
+
+
+PH_TABS_X = 260
+PH_BYVESSEL_H = 56 + VESSEL_ROWS * 22 + 8
+PH_STUDIO_H = PH_FOOT - PH_PAGE_Y            # 280
+PH_TRANSPORT_W = round(sum(ph_holder_w(w) for _, w in PH_STUDIO_TRANSPORT) + 14 * (len(PH_STUDIO_TRANSPORT) - 1), 1)
+# The nine tracks in three columns of three, down each column; a row is a full phone touch target.
+PH_TRACK = [(16 + (i // 3) * 216, 128 + (i % 3) * 48, 208, PH_BTN) for i in range(len(TRACKS))]
+PH_PICKER_TILES_Y = PH_PAGE_Y + 60
+PH_HERO_H = 380
+PH_NAME_SIZE = 40                            # the hero name on a phone (88 on PC, past Display on purpose)
+PH_RAIL_Y, PH_SET_X0, PH_SET_PITCH = 280, 68, 120
+PH_SET_H = round(84 * PH_SET_SCALE, 1)
 
 
 # --------------------------------------------------------------------------------------------
@@ -593,6 +805,113 @@ def tile_nodes(parent, key, sliver=10, raycast=True):
 RECORD_TINT = 0.6
 
 
+# The phone layout's sheets (section 129): on a phone FLY TIME and AUDIO STUDIO open their panels over a dim.
+def phone_button(parent, key, name, caption, r):
+    """A phone-only button (Default glass): inactive in the prefab, PhoneSheet shows it on a phone only."""
+    b = parent.child(N(key, name, r))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    b.child(N(f"{key}/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    b.child(N(f"{key}/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    b.child(N(f"{key}/Label", "Label", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, K.tmp(caption, "ButtonSmall", content, align="center")) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("audio", 114, A.menu_audio(2))
+    b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
+                                              + A.calls([(ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
+    return b
+
+
+def sheet_dim(parent, key):
+    """The dim behind a sheet on a phone (a tap on it closes the sheet); transparent and click-through on PC."""
+    d = parent.child(N(key, key.split("/")[-1], STRETCH))
+    d.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
+        .add("cg", 225, canvas_group(False)) \
+        .add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable(0)
+                                                  + f"  m_TargetGraphic: {ref(ctx.c(key, 'img'))}\n" + A.calls([])))
+    return d
+
+
+def sheet(panel_node, key, name):
+    """Make a record panel a sheet on a phone: its own CanvasGroup, a phone-only CLOSE, and the PhoneSheet."""
+    panel_node.add("cg", 225, canvas_group(True))
+    phone_button(panel_node, f"{key}/Close", "Close", "CLOSE", TR(8, 6, CLOSE_W, PH_BTN))
+    dim = f"Record/{name}Dim"
+    panel_node.add("sheet", 114, lambda ctx, go: mono(go, PHONE_SHEET,
+                   f"  panel: {ref(ctx.c(key, 'cg'))}\n  dim: {ref(ctx.c(dim, 'cg'))}\n"
+                   f"  openButton: {ref(ctx.c(f'Record/{name}Open', 'button'))}\n"
+                   f"  closeButton: {ref(ctx.c(f'{key}/Close', 'button'))}\n"
+                   f"  dimButton: {ref(ctx.c(dim, 'button'))}\n"))
+
+# --------------------------------------------------------------------------------------------
+# The phone layout's sheets (section 129): FLY TIME and AUDIO STUDIO are sheets on a phone
+# --------------------------------------------------------------------------------------------
+PHONE_SHEET = K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs")
+PHONE_SHEETS = (("ByVessel", "FLY TIME", "Record/ByVessel"), ("Studio", "AUDIO STUDIO", "Record/Studio"))
+PH_X, PH_R, PH_FOOT = 112, 16, 442          # the region right of the 96-wide rail (author_menu_arcade.PHONE_X)
+PH_BTN = 44                                  # a phone touch target's height
+PH_HEAD_Y = 8                                # the header row: title, tabs, MY REPLAYS, BACK
+PH_PILOT_Y, PH_PILOT_H = 58, 98              # the pilot card under it
+PH_PAGE_Y = 162                              # the record's pages (favourites, the two sheets, the picker) under that
+PH_FAV_SCALE = 0.672                         # the favourites panel (1000 x 320) drawn at the PC look, 672 x 215
+PH_OPEN_Y = 390                              # the row of sheet buttons under the favourites
+
+
+def phone_w(caption):
+    """A phone-only button's width: the PC small button's (the phone type is smaller, so the word fits)."""
+    return round(16 + K.label_width(caption, "ButtonSmall") + 16, 1)
+
+
+PHONE_OPEN = {}
+_x = PH_X
+for _key, _cap, _ in PHONE_SHEETS:
+    PHONE_OPEN[_key] = (_x, PH_OPEN_Y, phone_w(_cap), PH_BTN)
+    _x += phone_w(_cap) + 12
+CLOSE_W = phone_w("CLOSE")
+
+
+def phone_button(parent, key, name, caption, r):
+    """A phone-only button (Default glass): inactive in the prefab, PhoneSheet shows it on a phone only."""
+    b = parent.child(N(key, name, r))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    b.child(N(f"{key}/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    b.child(N(f"{key}/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    b.child(N(f"{key}/Label", "Label", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, K.tmp(caption, "ButtonSmall", content, align="center")) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("audio", 114, A.menu_audio(2))
+    b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
+                                              + A.calls([(ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
+    return b
+
+
+def sheet_dim(parent, key):
+    """The dim behind a sheet on a phone (a tap on it closes the sheet); transparent and click-through on PC."""
+    d = parent.child(N(key, key.split("/")[-1], STRETCH))
+    d.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
+        .add("cg", 225, canvas_group(False)) \
+        .add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable(0)
+                                                  + f"  m_TargetGraphic: {ref(ctx.c(key, 'img'))}\n" + A.calls([])))
+    return d
+
+
+def sheet(panel_node, key, name):
+    """Make a record panel a sheet on a phone: its own CanvasGroup, a phone-only CLOSE, and the PhoneSheet."""
+    panel_node.add("cg", 225, canvas_group(True))
+    phone_button(panel_node, f"{key}/Close", "Close", "CLOSE", TR(8, 6, CLOSE_W, PH_BTN))
+    dim = f"Record/{name}Dim"
+    panel_node.add("sheet", 114, lambda ctx, go: mono(go, PHONE_SHEET,
+                   f"  panel: {ref(ctx.c(key, 'cg'))}\n  dim: {ref(ctx.c(dim, 'cg'))}\n"
+                   f"  openButton: {ref(ctx.c(f'Record/{name}Open', 'button'))}\n"
+                   f"  closeButton: {ref(ctx.c(f'{key}/Close', 'button'))}\n"
+                   f"  dimButton: {ref(ctx.c(dim, 'button'))}\n"))
+
+
 def build_record(root):
     W_, X2 = 1000, 1060
     # The record's panels, laid out from the top of the canvas (the Record rect starts under the nav at 84).
@@ -626,6 +945,11 @@ def build_record(root):
     w, h = K.button_size("CHANGE", small=True)
     fp.children.append(small("ChangePilot", "ChangePilot", "Default", "CHANGE", R((0, 0), None, (20, 20), (w, h), (0, 0))))
 
+    # Section 129 (phone): FLY TIME and AUDIO STUDIO open those two panels as sheets over a dim; on PC the buttons are
+    # hidden and the panels show as authored (PhoneSheet). The buttons and dims are placed in phone units.
+    for key, caption, _ in PHONE_SHEETS:
+        phone_button(rec, f"Record/{key}Open", f"{key}Open", caption, TL(*PHONE_OPEN[key]))
+    sheet_dim(rec, "Record/ByVesselDim")
     # Fly time by vessel
     by = panel(rec, "Record/ByVessel", "ByVessel", TL(40, top(714), W_, 326), "Fly time by vessel", "NeutralLightest")
     for i in range(VESSEL_ROWS):
@@ -640,7 +964,9 @@ def build_record(root):
         fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive")))
         label(row.child(N(f"{k}/Time", "Time", R((1, 0.5), None, (0, 0), (160, 26), (1, 0.5)))), "", "Data", "TextLight", align="right")
     label(by.child(N("Record/ByVessel/Empty", "Empty", TL(24, 60, W_ - 48, 24))), "", "Body", "NeutralLightest")
+    sheet(by, "Record/ByVessel", "ByVessel")
 
+    sheet_dim(rec, "Record/StudioDim")
     build_studio(rec, X2, top(376))
     build_picker(rec)
     rec.add("record", 114, lambda ctx, go: mono(go, S["record"], record_body(ctx)))
@@ -688,6 +1014,7 @@ def build_studio(rec, x, y):
         r.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10,
                                        primary=[c(f"{k}/Title", "tmp")]))
     st.add("studio", 114, lambda ctx, go: mono(go, S["studio"], studio_body(ctx)))
+    sheet(st, k0, "Studio")
 
 
 def build_picker(rec):
@@ -1243,6 +1570,94 @@ def validate(files):
     for gone in ("m_Name: Episodes\n", "m_Name: Quests\n", "m_Name: Expand\n"):
         assert gone not in view, f"ProfileView still has {gone.split(': ')[1].strip()} (Rev 13)"
     validate_rev10(files, sc)
+    validate_phone(view)
+
+
+def phone_geometry():
+    """The phone layout's arithmetic on the 800 x 450 canvas (x, y, w, h in canvas units): nothing under the rail or
+    past the foot, nothing in a row overlapping, every touch target 44 tall on screen."""
+    W = 800
+    region = (PH_X, PH_HEAD_Y, W - PH_R - PH_X, PH_FOOT - PH_HEAD_Y)
+    back_w, rw = K.button_size("BACK", small=True)[0], K.button_size("MY REPLAYS", small=True)[0]
+    tabs_w = K.label_width("RECORD", "Button") + 28 + K.label_width("COLOUR SETS", "Button")
+    header = [("Header", (PH_X, PH_HEAD_Y, 140, PH_BTN)), ("Tabs", (PH_TABS_X, PH_HEAD_Y, tabs_w, PH_BTN)),
+              ("Replays", (W - PH_R - back_w - 8 - rw, PH_HEAD_Y, rw, PH_BTN)), ("Back", (W - PH_R - back_w, PH_HEAD_Y, back_w, PH_BTN))]
+    card_w = W - PH_X - PH_R
+    pilot = [("Avatar", (10, 10, 78, 78)), ("Name", (100, 18, 270, 34)), ("Buttons", (100, 52, 270, PH_BTN)),
+             ("Divider", (380, 10, 1, 78))] + [(k, (x, y, w, 42)) for k, (x, y, w) in PH_STATS.items()]
+    record = [("Favourites", (PH_X, PH_PAGE_Y, 1000 * PH_FAV_SCALE, 320 * PH_FAV_SCALE))] + \
+             [(f"{k}Open", PHONE_OPEN[k]) for k, _, _ in PHONE_SHEETS]
+    studio = [("Eyebrow", (16, 8, 200, 14)), ("Title", (16, 24, 300, 24)), ("Artist", (324, 30, 240, 16)),
+              ("Close", (card_w - 8 - CLOSE_W, 6, CLOSE_W, PH_BTN)), ("Transport", (16, 58, PH_TRANSPORT_W, PH_BTN)),
+              ("Notice", (16, 106, 640, 18))] + [(f"Row{i}", r) for i, r in enumerate(PH_TRACK)]
+    by = [("Close", (card_w - 8 - CLOSE_W, 6, CLOSE_W, PH_BTN))] + [(f"Row{i}", (12, 56 + i * 22, 648, 20)) for i in range(VESSEL_ROWS)]
+    picker = [("Title", (PH_X + 16, PH_PAGE_Y + 20, 300, 30)), ("Vessel", (W - 32 - 300, PH_PAGE_Y + 10, 300, PH_BTN)),
+              ("Buttons", (PH_X, PH_OPEN_Y, 672, PH_BTN))] + \
+             [(f"Tile{i}", (PH_X + i * (PH_TILE_W + PH_TILE_GAP), PH_PICKER_TILES_Y, PH_TILE_W, PH_TILE_H)) for i in range(PILOT_TILES)]
+    hero = [("Position", (16, 12, 90, 14)), ("Wearing", (110, 12, 300, 14)), ("Name", (16, 176, 640, 48)),
+            ("Line", (16, 226, 640, 20)), ("Pairs", (16, 252, 4 * 160 - 4, 16)),
+            ("Prev", (16, PH_RAIL_Y, K.button_size("<", small=True)[0], PH_SET_H)),
+            ("Next", (PH_SET_X0 + COLOUR_SET_CARDS * PH_SET_PITCH, PH_RAIL_Y, K.button_size(">", small=True)[0], PH_SET_H)),
+            ("Names", (PH_SET_X0, PH_RAIL_Y + 50, (COLOUR_SET_CARDS - 1) * PH_SET_PITCH + 112, 14)),
+            ("Apply", (card_w - 16 - K.button_size("APPLY")[0], PH_HERO_H - 16 - PH_BTN, K.button_size("APPLY")[0], PH_BTN))] + \
+           [(f"Set{i}", (PH_SET_X0 + i * PH_SET_PITCH, PH_RAIL_Y, 204 * PH_SET_SCALE, 84 * PH_SET_SCALE)) for i in range(COLOUR_SET_CARDS)]
+    return dict(region=region, header=header, pilot=(card_w, PH_PILOT_H, pilot), record=record,
+                studio=(card_w, PH_STUDIO_H, studio), byvessel=(card_w, PH_BYVESSEL_H, by), picker=picker,
+                hero=(card_w, PH_HERO_H, hero))
+
+
+def _inside(name, r, box):
+    x, y, w, h = r
+    bx, by, bw, bh = box
+    assert x >= bx - 0.01 and y >= by - 0.01 and x + w <= bx + bw + 0.01 and y + h <= by + bh + 0.01, \
+        f"phone layout: {name} {r} leaves {box}"
+
+
+def _apart(blocks):
+    for i, (a, ra) in enumerate(blocks):
+        for b, rb in blocks[i + 1:]:
+            ax, ay, aw, ah = ra
+            bx, by, bw, bh = rb
+            assert ax + aw <= bx + 0.01 or bx + bw <= ax + 0.01 or ay + ah <= by + 0.01 or by + bh <= ay + 0.01, \
+                f"phone layout: {a} {ra} overlaps {b} {rb}"
+
+
+def validate_phone(view):
+    """Section 129: the profile's phone layout. The sheets are wired, their phone-only buttons ship hidden (PC never
+    shows them), the screen carries no PC-scale fallback, and the arithmetic holds on the 800 x 450 canvas."""
+    V = K.FileIds("ProfileView")
+    for name, _, key in PHONE_SHEETS:
+        _, body = A.doc_of(view, V(f"{key}#sheet"))
+        assert body and f"guid: {PHONE_SHEET}" in body, f"ProfileView: {key} is not a PhoneSheet (section 129)"
+        for field, src in (("panel", f"{key}#cg"), ("dim", f"Record/{name}Dim#cg"), ("openButton", f"Record/{name}Open#button"),
+                           ("closeButton", f"{key}/Close#button"), ("dimButton", f"Record/{name}Dim#button")):
+            assert f"  {field}: {{fileID: {V(src)}}}\n" in body, f"ProfileView: the {name} sheet's {field} is not wired (section 129)"
+        for btn in (f"Record/{name}Open", f"{key}/Close"):
+            _, go = A.doc_of(view, V(f"{btn}#go"))
+            assert go and "  m_IsActive: 0\n" in go, f"ProfileView: {btn} ships shown (a phone-only button; PC would show it)"
+        _, dim = A.doc_of(view, V(f"Record/{name}Dim#cg"))
+        assert dim and "  m_Alpha: 0\n" in dim and "  m_BlocksRaycasts: 0\n" in dim, f"ProfileView: the {name} dim ships shown on PC"
+    phone = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+    bodies = [m.group(1) for m in re.finditer(r"^--- !u!114 &-?\d+\n((?:(?!^--- ).*\n)*)", view, re.M) if f"guid: {phone}" in m.group(1)]
+    assert len(bodies) >= 150, f"ProfileView: {len(bodies)} PhoneRects; the phone layout is missing"
+    assert not any("  drawAtPcScale: 1\n" in b for b in bodies), "ProfileView: a PC-scale fallback inside the phone layout"
+    g = phone_geometry()
+    for name, r in g["header"] + g["record"] + g["picker"]:
+        _inside(name, r, g["region"])
+    for part in ("pilot", "studio", "byvessel", "hero"):
+        w, h, blocks = g[part]
+        for name, r in blocks:
+            _inside(f"{part}/{name}", r, (0, 0, w, h))
+        _apart([b for b in blocks if b[0] != "Divider"])
+    for key, y, h in (("pilot", PH_PILOT_Y, PH_PILOT_H), ("studio", PH_PAGE_Y, PH_STUDIO_H), ("hero", PH_PILOT_Y, PH_HERO_H)):
+        _inside(key, (PH_X, y, g[key][0], h), g["region"])
+    _apart(g["header"])
+    _apart(g["record"])
+    _apart(g["picker"])
+    assert PH_PILOT_Y + PH_PILOT_H < PH_PAGE_Y, "phone layout: the record's pages reach under the pilot card"
+    # Touch targets, on screen.
+    assert round(round(PH_BTN / PH_FAV_SCALE, 1) * PH_FAV_SCALE, 1) >= PH_BTN, "the favourites' CHANGE is under 44 on a phone"
+    assert PH_SET_H >= 44 and all(r[3] >= 44 for _, r in g["studio"][2] if _.startswith("Row")), "a phone touch target under 44"
 
 
 def validate_rev10(files, sc):
@@ -1318,6 +1733,11 @@ def _show(text_, key):
     return text_[:i] + text_[i:j].replace("  m_Alpha: 0\n", "  m_Alpha: 1\n").replace("  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n") + text_[j:]
 
 
+def _activate(text_, key):
+    fid = K.FileIds("ProfileView")(key)
+    return re.sub(r"(^--- !u!1 &%s\n(?:(?!^--- ).*\n)*?  m_IsActive: )0" % fid, r"\g<1>1", text_, count=1, flags=re.M)
+
+
 def self_test(files):
     def expect(label_, mutate):
         bad = dict(files)
@@ -1356,6 +1776,12 @@ def self_test(files):
             f[prefab_path("NowPlayingCard")].replace("  restingOn:\n  - 2\n", "  restingOn:\n  - 5\n"))),
         ("a caption that breaks the YAML", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace("      value: SHUFFLE\n", "      value: SHUFFLE: ON\n", 1))),
+        ("a phone sheet without its CLOSE", lambda f: f.__setitem__(prefab_path("ProfileView"), f[prefab_path("ProfileView")].replace(
+            f"  closeButton: {{fileID: {K.FileIds('ProfileView')('Record/Studio/Close#button')}}}\n", "  closeButton: {fileID: 0}\n"))),
+        ("AUDIO STUDIO shown on PC", lambda f: f.__setitem__(prefab_path("ProfileView"), _activate(
+            f[prefab_path("ProfileView")], "Record/StudioOpen#go"))),
+        ("the PC-scale fallback inside the phone layout", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace("  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
         ("a dangling profile reference", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  profileIconImage: {fileID: 0}",
                                                                                           "  profileIconImage: {fileID: 5397632936483963836}", 1))),
     ]

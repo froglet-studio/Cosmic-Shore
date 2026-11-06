@@ -307,7 +307,95 @@ def build_view():
     x = tab_node(win, "Avatar", "Avatar", X0)
     tab_node(win, "Name", "Display name", x)
     close_button(win)
+    phone_layout(root)
     return root
+
+
+# --------------------------------------------------------------------------------------------
+# The phone layout (section 129; Docs/UI_STYLE_GUIDE.md section 8). On the 800 x 450 phone canvas the window fills the
+# region right of the 96-wide rail (x 112 .. W-16, y 8 .. 442, 672 x 434 at 800), laid out in phone units so every
+# word takes its role's phone size: "How others see you" is a 200-wide column on the left, the tabs and CLOSE across
+# the top of the rest, the avatar grid 6 x 3 at 64 (or the name field, the four rules in one column and the message),
+# and DONE / SUBMIT CANCEL at the foot. The name field sits high so the phone's keyboard does not cover it.
+# The window is never scaled (its Pop entrance owns the scale).
+# --------------------------------------------------------------------------------------------
+PH_X, PH_R, PH_TOP, PH_FOOT, PH_BTN = 112, 16, 8, 442, 44
+PH_W, PH_H = 800 - PH_X - PH_R, PH_FOOT - PH_TOP          # 672 x 434 at 800 wide
+PH_SIDE, PH_X0 = 200, 216                                 # the preview column, and where the pages start
+PH_CW = PH_W - PH_X0 - 12                                 # 444
+PH_CELL, PH_GAP = 64, 12
+PH_GRID_Y, PH_RULES_Y = 66, 180
+PH_FOOT_Y = 12                                            # the footer buttons, up from the window's foot
+
+
+def phone_layout(root):
+    def put(key, pose=None, **kw):
+        n = P.find(root, key)
+        assert n is not None, f"phone layout: no node {key!r}"
+        body = K.phone_rect(pose, **kw)
+        if isinstance(n, K.Instance):
+            n.added.append(("phone", 114, body))
+        else:
+            assert not any(k == "phone" for k, _, _ in n.comps), f"phone layout: {key} posed twice"
+            n.add("phone", 114, body)
+
+    foot = lambda x, cap: R((0, 0), None, (x, PH_FOOT_Y), (K.button_size(cap)[0], PH_BTN), (0, 0))
+    put("Window", R((0, 1), (1, 1), ((PH_X - PH_R) / 2, -PH_TOP), (-(PH_X + PH_R), PH_H), (0.5, 1)))
+    pv = "Window/Preview"
+    put(pv, TL(0, 0, PH_SIDE, PH_H))
+    put(f"{pv}/Caption", TL(0, 24, PH_SIDE, 14))
+    put(f"{pv}/Avatar", TL((PH_SIDE - 112) / 2, 46, 112, 112))
+    put(f"{pv}/Name", TL(8, 166, PH_SIDE - 16, 28))
+    put(f"{pv}/Online", TL(0, 198, PH_SIDE, 14))
+    put(f"{pv}/Slot", TL(12, PH_H - 16 - 48, PH_SIDE - 24, 48))
+    put(f"{pv}/Slot/Avatar", TL(6, 6, 36, 36))
+    put(f"{pv}/Slot/Name", TL(50, 6, PH_SIDE - 24 - 58, 20))
+    put(f"{pv}/Slot/Role", TL(50, 28, PH_SIDE - 24 - 58, 14))
+    av_w, nm_w = K.label_width("AVATAR", "Button"), K.label_width("DISPLAY NAME", "Button")
+    put("Window/Tabs/Avatar", TL(PH_X0, 10, av_w, PH_BTN))
+    put("Window/Tabs/Name", TL(PH_X0 + av_w + 28, 10, nm_w, PH_BTN))
+    put("Window/Close", TR(12, 10, close_width(), PH_BTN))   # its fitter keeps the size (44.2 tall on a phone too)
+    put("Window/AvatarPage/Grid", TL(PH_X0, PH_GRID_Y, PH_CW, 3 * PH_CELL + 2 * PH_GAP),
+        grid=dict(cell=(PH_CELL, PH_CELL), columns=6, spacing=(PH_GAP, PH_GAP)))
+    put("Window/AvatarPage/SaveNote", TL(PH_X0, PH_GRID_Y + 3 * PH_CELL + 2 * PH_GAP + 12, PH_CW, 16))
+    put("Done", foot(PH_X0, "DONE"))
+    put("Window/NamePage/Title", TL(PH_X0, 66, PH_CW, 28))
+    put("Window/NamePage/FieldLabel", TL(PH_X0, 102, 300, 14))
+    put("Window/NamePage/Field", TL(PH_X0, 120, PH_CW, 48))
+    for i in range(len(RULES)):
+        y = PH_RULES_Y + i * 20
+        put(f"Window/NamePage/Rule{i + 1}Mark", TL(PH_X0, y + 2, 12, 12))
+        put(f"Window/NamePage/Rule{i + 1}", TL(PH_X0 + 20, y, PH_CW - 20, 16))
+    put("Window/NamePage/Message", TL(PH_X0, 268, PH_CW, 40))
+    put("Window/NamePage/Message/Text", TL(12, 0, PH_CW - 24, 40))
+    put("Window/NamePage/Checking", TL(PH_X0, 268, PH_CW, 40))
+    put("Submit", foot(PH_X0, "SUBMIT"))
+    put("Cancel", foot(PH_X0 + K.button_size("SUBMIT")[0] + 12, "CANCEL"))
+
+
+def close_width():
+    return 16 + (K.label_width("B", "Label") + 24) + 10 + K.label_width("CLOSE", "ButtonSmall") + 16
+
+
+def validate_phone():
+    """The window's phone arithmetic on the 800 x 450 canvas (window units, 672 x 434): inside the window, the page
+    blocks apart, every button 44 tall."""
+    av_w, nm_w = K.label_width("AVATAR", "Button"), K.label_width("DISPLAY NAME", "Button")
+    foot_y = PH_H - PH_FOOT_Y - PH_BTN
+    top = [("Preview", (0, 0, PH_SIDE, PH_H)), ("AvatarTab", (PH_X0, 10, av_w, PH_BTN)),
+           ("NameTab", (PH_X0 + av_w + 28, 10, nm_w, PH_BTN)), ("Close", (PH_W - 12 - close_width(), 10, close_width(), PH_BTN))]
+    avatar = top + [("Grid", (PH_X0, PH_GRID_Y, 6 * PH_CELL + 5 * PH_GAP, 3 * PH_CELL + 2 * PH_GAP)),
+                    ("SaveNote", (PH_X0, PH_GRID_Y + 3 * PH_CELL + 2 * PH_GAP + 12, PH_CW, 16)),
+                    ("Done", (PH_X0, foot_y, K.button_size("DONE")[0], PH_BTN))]
+    sw = K.button_size("SUBMIT")[0]
+    name = top + [("Title", (PH_X0, 66, PH_CW, 28)), ("FieldLabel", (PH_X0, 102, 300, 14)), ("Field", (PH_X0, 120, PH_CW, 48)),
+                  ("Rules", (PH_X0, PH_RULES_Y, PH_CW, len(RULES) * 20)), ("Message", (PH_X0, 268, PH_CW, 40)),
+                  ("Submit", (PH_X0, foot_y, sw, PH_BTN)), ("Cancel", (PH_X0 + sw + 12, foot_y, K.button_size("CANCEL")[0], PH_BTN))]
+    for page in (avatar, name):
+        for n, r in page:
+            P._inside(n, r, (0, 0, PH_W, PH_H))
+        P._apart(page)
+    assert PH_CELL >= PH_BTN and PH_X0 >= PH_SIDE, "the avatar cells or the preview column broke on a phone"
 
 
 BUILDERS = {"ProfileAvatarButton": build_avatar_button, "ProfileWindowView": build_view}
@@ -520,6 +608,16 @@ def validate(files):
         C.wired(view, inp, field, want, "the name field")
     assert "m_OnSubmit:\n    m_PersistentCalls:\n      m_Calls: []" in inp, "the name field carries a persistent submit call"
     assert view.count("guid: " + S["close"]) == 1, "the window needs exactly one ModalWindowCloseButton"
+    # Section 129: the window's phone layout (its own; no PC-scale fallback inside it).
+    phone = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+    _, wr = A.doc_of(view, K.FileIds("ProfileWindowView")("Window#phone"))
+    assert wr and f"guid: {phone}" in wr and "  movesRect: 1\n" in wr and "  scale: 0\n" in wr, \
+        "ProfileWindowView: the window has no phone pose (or is scaled: its Pop entrance owns the scale)"
+    _, gr = A.doc_of(view, K.FileIds("ProfileWindowView")("Window/AvatarPage/Grid#phone"))
+    assert gr and f"  gridCellSize: {{x: {PH_CELL}, y: {PH_CELL}}}\n" in gr and "  gridColumns: 6\n" in gr, \
+        "ProfileWindowView: the avatar grid has no phone cells"
+    assert "  drawAtPcScale: 1\n" not in view, "ProfileWindowView: a PC-scale fallback inside the phone layout"
+    validate_phone()
 
     sc = T.Scene(files[SCENE])
     anchors = set(sc.order) | {"0"}
@@ -580,6 +678,10 @@ def self_test(files):
         ("a stub pointing at an object the view lacks", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"m_CorrespondingSourceObject: {{fileID: {K.FileIds('ProfileWindowView')('Window/NamePage#cg')},",
             "m_CorrespondingSourceObject: {fileID: 12345,", 1))),
+        ("the avatar grid without its phone cells", lambda f: f.__setitem__(view, f[view].replace(
+            f"  gridCellSize: {{x: {PH_CELL}, y: {PH_CELL}}}\n", "  gridCellSize: {x: 0, y: 0}\n"))),
+        ("the PC-scale fallback inside the window", lambda f: f.__setitem__(view, f[view].replace(
+            "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
