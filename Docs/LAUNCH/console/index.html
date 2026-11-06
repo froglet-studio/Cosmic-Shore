@@ -46,7 +46,7 @@ a { color: var(--jade); } a:focus-visible, button:focus-visible, select:focus-vi
 .s-risk { border-color: var(--fire); border-style: dashed; } .s-risk .state { color: var(--fire); } .s-risk .dot { background: linear-gradient(135deg, var(--fire) 50%, transparent 50%); }
 .s-nogo { border-color: var(--fire); } .s-nogo .state { color: var(--fire); } .s-nogo .dot { background: var(--fire); }
 .s-unknown .state { color: var(--off); }
-.pill[aria-pressed="true"] { outline: 2px solid var(--jade); outline-offset: 2px; }
+.pill[aria-pressed="true"] { background: var(--raised); box-shadow: inset 0 -4px 0 var(--jade); }
 /* Tables become cards on a phone */
 .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .tbl th { text-align: left; font-weight: 500; color: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px; border-bottom: 1px solid var(--line); }
@@ -210,13 +210,13 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     const c = comps();
     const gateIds = p.key === 'launch' ? Object.keys(c).filter((id) => GATES.some(([g]) => g === id) || id.startsWith('smoke-')) : [];
     const failed = [...p.channels, p.build, ...gateIds].filter(Boolean).filter((id) => c[id] && c[id].result === 'failure');
-    const stale = [...p.channels].filter((id) => c[id] && (hoursSince((c[id].details && c[id].details.event_date) || c[id].updated_at) || 0) > STALE_HOURS * 7);
+    const stale = [...p.channels, p.build].filter(Boolean).filter((id) => c[id] && (c[id].result !== 'success' || (hoursSince((c[id].details && c[id].details.event_date) || c[id].updated_at) || 0) > STALE_HOURS));
     const blockers = openBlockers(p.key);
     const idle = blockers.filter((i) => i.status !== 'in-progress');
     if (!items.length && !board) return ['s-unknown', 'Unknown', 'waiting for data'];
     if (failed.length) return ['s-nogo', 'No-go', `${failed.length} failed run${failed.length > 1 ? 's' : ''}`];
     if (idle.length) return ['s-nogo', 'No-go', `${blockers.length} open blocker${blockers.length > 1 ? 's' : ''}`];
-    if (blockers.length || stale.length) return ['s-risk', 'At risk', blockers.length ? `${blockers.length} blocker${blockers.length > 1 ? 's' : ''} in progress` : 'data is old'];
+    if (blockers.length || stale.length) return ['s-risk', 'At risk', blockers.length ? `${blockers.length} blocker${blockers.length > 1 ? 's' : ''} in progress` : 'last run is old or did not succeed'];
     return ['s-go', 'Go', 'no open blockers'];
   }
 
