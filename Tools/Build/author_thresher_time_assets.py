@@ -61,6 +61,10 @@ SCRIPT_PATHS = {
     # The Belfry (2026-11-07, Yash: "it should be about the time element"): the clockwork course.
     "ThresherBelfry":          f"{MODE_DIR}/ThresherBelfry.cs",
     "ThresherBelfryTests":     "Assets/_Scripts/Tests/Editor/ThresherBelfryTests.cs",
+    # The Belfry's AI (2026-11-07, plan step time-arcade): lead the swinging ring, duck the maces. Its own folder so
+    # check_ai_no_state_writes.py walks it.
+    "ThresherBelfryAI":        f"{MODE_DIR}/AI/ThresherBelfryAI.cs",
+    "ThresherBelfryAITests":   "Assets/_Scripts/Tests/Editor/ThresherBelfryAITests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/THRESHERTIME.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset"
@@ -269,6 +273,7 @@ def header(script_guid: str, name: str) -> str:
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
 g.folder_meta(MODE_DIR)
+g.folder_meta(f"{MODE_DIR}/AI")
 g.text_meta(DOC)
 
 # ── 2. Scoring rule ──────────────────────────────────────────────────────────
@@ -407,6 +412,16 @@ NESTS_AT_GATES = 0
 BELFRY = 1
 BELFRY_REGROW_SECONDS = 6
 NEXT_TARGET_BLOOM_SECONDS = 0.35
+# THE BELFRY AI (ThresherBelfryAI, plan step time-arcade): authored here, in the controller's declaration order, because
+# they sit inside this generator's block of the scene - an editor save writes them there, and a block that left them out
+# would strip them on the next run. The C# defaults are the same numbers (checked below).
+BELFRY_AI_FIELDS = (
+    ("belfryAILead", 1), ("belfryAIDuck", 1), ("belfryAIDodgePlain", 0),
+    ("belfryAILeadMinSpeed", 125), ("belfryAILeadMaxSpeed", 5000),
+    ("belfryAILatchRadius", 135), ("belfryAIRelatchSeconds", 0.3),
+    ("belfryAIDuckHorizon", 1.6), ("belfryAIDuckHullRadius", 8), ("belfryAIDuckMargin", 8),
+    ("belfryAIDuckCarrot", 20), ("belfryAINoDuckNearRing", 120),
+)
 TARGET_FIELDS = (
     f"  nestsAtGates: {NESTS_AT_GATES}\n"
     f"  nestPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
@@ -419,6 +434,7 @@ TARGET_FIELDS = (
     f"  belfry: {BELFRY}\n"
     f"  belfryPrismPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
     f"  belfryRegrowSeconds: {BELFRY_REGROW_SECONDS}\n"
+    + "".join(f"  {k}: {v}\n" for k, v in BELFRY_AI_FIELDS) +
     f"  crystalEveryNthTarget: {CRYSTAL_EVERY_NTH_TARGET}\n")
 
 
@@ -543,6 +559,14 @@ if not SPAWNABLE_PRISM:
 for name, ladder in (("credit radius", CREDIT_RADIUS_BY_INTENSITY), ("regrow seconds", REGROW_SECONDS_BY_INTENSITY)):
     if len(ladder) != 4 or list(ladder) != sorted(ladder, reverse=True):
         errors.append(f"the {name} ladder {ladder} must be four values that never grow with the intensity")
+# The Belfry AI's authored numbers are its C# defaults (a field reset in the inspector lands where the scene says).
+for _k, _v in BELFRY_AI_FIELDS:
+    _m = re.search(rf"\b{_k}\s*=\s*(true|false|[0-9.]+)f?\s*;", _ctrl)
+    _code = None if not _m else (1 if _m.group(1) == "true" else 0 if _m.group(1) == "false" else float(_m.group(1)))
+    if _code is None and isinstance(_v, int) and _v == 0 and re.search(rf"\bbool {_k};", _ctrl):
+        _code = 0   # a bool with no initializer is false
+    if _code is None or float(_code) != float(_v):
+        errors.append(f"ThresherTimeController.{_k}: the C# default ({_code}) is not the authored {_v}")
 if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherBelfry"])):
     errors.append("ThresherBelfry.cs is missing - the controller builds the clockwork from it")
 if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherTimeNest"])):

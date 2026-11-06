@@ -13,7 +13,8 @@ namespace CosmicShore.Editor
     /// <code>Unity -batchmode -nographics -projectPath . -executeMethod CosmicShore.Editor.ThresherTimeSoakLauncher.Run
     ///   -ttSoak "1:3" -ttSoakAimed 1 -ttSoakOut Logs/tt_soak.jsonl -ttSoakTag aimed -ttSoakTimeScale 2 -ttSoakQuit</code>
     /// <c>-ttSoak "intensities:races"</c> (<c>"1,2,3,4:1"</c> plays one race at each intensity in one session),
-    /// <c>-ttSoakAimed 0</c> races with the aimed launch off (the A/B's "before"), <c>-ttSoakSeed</c> the first course
+    /// <c>-ttSoakAimed 0</c> races with the aimed launch off (the A/B's "before"), <c>-ttSoakBelfryAI 0</c> with the
+    /// Belfry AI off (the AI flies at the swinging ring's live pose and does not duck), <c>-ttSoakSeed</c> the first course
     /// seed (each race the next). Without <c>-batchmode</c> the races play in the Game view and the AI Diagnose panel opens
     /// on each one, to watch the AIs. It opens Bootstrap and enters Play; <see cref="ThresherTimeSoakRunner"/> does the
     /// rest. The SwitchbackSoakLauncher's shape.
@@ -62,6 +63,7 @@ namespace CosmicShore.Editor
                 Intensities = Array.ConvertAll(parts[0].Split(','), x => int.Parse(x, CultureInfo.InvariantCulture)),
                 Races = int.Parse(parts.Length > 1 ? parts[1] : "2", CultureInfo.InvariantCulture),
                 Aimed = Arg("-ttSoakAimed", "1") != "0",
+                BelfryAI = Arg("-ttSoakBelfryAI", "1") != "0",
                 FirstSeed = int.Parse(Arg("-ttSoakSeed", "7001"), CultureInfo.InvariantCulture),
                 OutputFile = Arg("-ttSoakOut", "Logs/tt_soak.jsonl"),
                 Tag = Arg("-ttSoakTag", ""),

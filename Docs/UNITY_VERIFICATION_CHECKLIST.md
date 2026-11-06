@@ -231,6 +231,30 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 Thresher AI: reads the Belfry's clock - leads the swinging ring, ducks danger maces (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** `ThresherBelfryAI` (`ThresherTime/AI/`): an arrival-time solve aims an AI Thresher where a swinging
+ring will be when it gets there (latched close in, fading to the gate far out; planted, it leads for the straight 4.8x
+launch), and an emergency steer ducks it under a danger mace whose head will be on its path. An adversarial review
+(34 agents) confirmed 8 defects before commit, all fixed (the worst: a launch led for the orbit's speed threaded 6/32 at
+I4). Serialized on the controller (`belfryAILead`, `belfryAIDuck`, ...). The soak
+gains `-ttSoakBelfryAI 0|1`, `ducks` and `belfryBroken`. `check_ai_no_state_writes.py` now walks `ThresherTime/AI`
+(proved: a planted `s.Speed = 1f` there fails it). Plan step: time-arcade.
+
+**Verified:** the changed and new files compile with Unity's own Roslyn (`Editor/Data/DotNetSdkRoslyn/csc.dll`,
+LangVersion 9, the project's 142 define symbols) against the project's built assemblies, runtime and tests, 0 errors.
+The open editor could NOT recompile (a Multiplayer Play Mode session was running; `unity recompile` answered
+"up_to_date" with the 04:05 assemblies). The flier thresholds were measured offline by a Python twin. NOT run: the
+EditMode tests, any race.
+
+**Verify in editor:**
+1. EditMode: `ThresherBelfryAITests` (14 tests) and `ThresherBelfryTests` pass.
+2. Soak A/B, same seeds: `-ttSoak "1,2,3,4:6" -ttSoakBelfryAI 0 -ttSoakTag before` then `-ttSoakBelfryAI 1 -ttSoakTag
+   after`. Expected: every race finishes; I1 no slower; I3-I4 faster, with fewer `offRingMedian` misses; `ducks` > 0 at
+   I3-I4 and 0 at I1-I2; `belfryBroken` lower.
+3. Watch one I4 race (the soak without `-batchmode`): AI Threshers meet the swinging rings and dip under the maces.
+4. Profiler: `ThresherTime.BelfryAI` stays well under 0.05 ms a frame.
+
 ### 🔴 Thresher Time: the Belfry, a clockwork course (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** every ring swings on a chain across the flight line (faster and wider each intensity); maces swing

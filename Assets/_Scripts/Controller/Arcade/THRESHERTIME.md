@@ -42,8 +42,38 @@ where its part now is (`belfryRegrowSeconds`). Authored by the generator (`belfr
 chased, maces cross the line and clear it with a negative control, shutters stay in the mouth and never shut, closed
 form, the budget).
 
-**Not tuned yet:** the AI flies at the ring's live pose but does not lead it or dodge maces, so its times at I3-I4 are
-expected to fall until it learns (`Docs/AI_SYSTEM/AI_PLAN.md`, step `time-arcade`).
+**The AI reads the clock** (`AI/ThresherBelfryAI.cs`, plan step `time-arcade`, 2026-11-07):
+- **It leads the ring.** It solves for the time it reaches a swinging ring (`|Bob(now + tau) - p| + turn cost = v tau`,
+  one root because the ring is slower than the pilot, found by bisection on a bracket that provably holds it) and aims
+  where the ring will be then (read one frame back, as the race scores it). Far out the aim fades to the gate; inside
+  135 u the solved arrival is latched so the aim holds still. `ChooseAIGate` hands the race the led gate, so the
+  sling's aim follows it too. The turn cost is measured to where the pilot is already heading (last frame's aim), not
+  to the gate. **With an aimed launch coming (planted, launch view up) it leads for the launch**: the next move is a
+  straight shot at the config's boost times its exit buff (4.8 x 2) over the orbit's speed, so the solve takes that
+  speed and no turn (the spinning nose is not a turn). A plain let-go (no launch view) leaves on the tangent at the
+  orbit's speed, and is led as flying. Speeds are converted to the Belfry clock's
+  seconds by `Time.timeScale` (the clock is the server's real time; hulls move in game time).
+- **It ducks danger maces.** A mace swings in the plane square to its straight and never comes more than its head's
+  reach below its hang point, so a pilot whose path meets a head on its way through steers for the point 30.5 u below
+  the hang point AT the mace's plane (`AIEmergencySteerFor`), clear of the head and chain at every angle; the straight
+  path there crosses the plane the full 30.5 u down however late the threat is seen. Past the plane the point runs 20 u
+  ahead of the hull (`belfryAIDuckCarrot`), so it is never behind it. Plain (I2) maces are not ducked
+  (`belfryAIDodgePlain`). A level's timing error on a mace's beat is 0.60 / 0.35 / 0.15 / 0.03 s, Easy to Legendary;
+  the rings' error is the race's own handicap.
+- **Why lead at all:** a ring slower than the pilot can be chased, and with a perfect nose chasing hits it. But the
+  AI's nose lags (turn rate grows with the angle off) and an aimed launch is flown straight, and then the chase misses.
+  Offline (32 phases a rung):
+  - lagging nose, led: 32/32 at every intensity, median miss 0.2 / 0.6 / 1.7 / 4.9 u (I1-I4); chased: 12/32 at I4;
+  - aimed launch led for the launch, flown on the hull's real profile (boost x exit buff, easing back to cruise at
+    1.5/s): 32/32, median 0.4-1.4 u; led for the orbit's speed with the spinning nose (the first build, caught in
+    review): 8/32 at I4.
+  `ThresherBelfryAITests` holds each, with its negative control.
+- **Known limits** (from the review, not fixed): the launch is led from where the hull is, not from the point on the
+  circle it will leave from; during the Thresher's hit-stop (time scale 0.05) the clock-scaled speed falls under the
+  ring's and the solve may pick a far root for those few frames; a mace threat first seen inside the last 20 u before
+  its plane cannot be dived under (the hull cannot drop 30 u in 20 u).
+- **Not yet raced in Unity.** The A/B is `-ttSoakBelfryAI 0|1` (the soak also reports ducks and broken Belfry prisms).
+  The AI numbers are authored by the generator (`BELFRY_AI_FIELDS`, checked equal to the C# defaults).
 
 ## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
 

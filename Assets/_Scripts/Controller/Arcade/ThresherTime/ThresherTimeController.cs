@@ -72,6 +72,34 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a broken Belfry prism (a chain link, a mace, a shutter bar) takes to grow back where its part now is.")]
         [SerializeField, Min(0.5f)] float belfryRegrowSeconds = 6f;
 
+        [Header("Belfry AI (ThresherBelfryAI; plan step time-arcade)")]
+        [Tooltip("The AI meets a swinging ring where it will BE when the AI arrives (an arrival-time solve), fading to the " +
+                 "gate on a long leg. Off: it flies at the ring's live pose.")]
+        [SerializeField] bool belfryAILead = true;
+        [Tooltip("The AI ducks under a mace whose head will be on its path as it passes (one duck clears both of an I4 " +
+                 "straight's opposed maces).")]
+        [SerializeField] bool belfryAIDuck = true;
+        [Tooltip("Duck plain (I2) maces too, not only danger-headed ones. Off: a plain mace costs a bump, a duck can cost more.")]
+        [SerializeField] bool belfryAIDodgePlain;
+        [Tooltip("The slowest and fastest speeds (u/s) the lead assumes the pilot arrives at. The floor stays above the " +
+                 "ring's top speed so the arrival solve always has one root.")]
+        [SerializeField, Min(120f)] float belfryAILeadMinSpeed = 125f;
+        [SerializeField, Min(120f)] float belfryAILeadMaxSpeed = 5000f;
+        [Tooltip("Inside this distance (u) of the ring's rest point the solved arrival is LATCHED: kept unless a fresh solve " +
+                 "moves it by more than the relatch time, so the aim does not jitter.")]
+        [SerializeField, Min(0f)] float belfryAILatchRadius = 135f;
+        [SerializeField, Min(0f)] float belfryAIRelatchSeconds = 0.3f;
+        [Tooltip("How far ahead (s) the AI looks for a mace on its path. Covers the nose lag of a side-step.")]
+        [SerializeField, Min(0.1f)] float belfryAIDuckHorizon = 1.6f;
+        [Tooltip("The hull's radius and a safety margin (u) the duck point keeps below a mace's lowest spike.")]
+        [SerializeField, Min(0f)] float belfryAIDuckHullRadius = 8f;
+        [SerializeField, Min(0f)] float belfryAIDuckMargin = 8f;
+        [Tooltip("Past the mace's plane, how far ahead of the pilot (u) the duck point runs along the duck line. Before " +
+                 "the plane the duck point is AT the plane, so the path to it crosses the plane the full clearance down.")]
+        [SerializeField, Min(1f)] float belfryAIDuckCarrot = 20f;
+        [Tooltip("No ducking within this distance (u) of the next ring: the ring comes first.")]
+        [SerializeField, Min(0f)] float belfryAINoDuckNearRing = 120f;
+
         [Header("Rewards")]
         [Tooltip("A crystal sits in the core of every Nth nest (crack it open to take it); 0 = the cell's own crystals.")]
         [SerializeField, Min(0)] int crystalEveryNthTarget = 3;
@@ -223,6 +251,7 @@ namespace CosmicShore.Gameplay
         void RaiseBelfry()
         {
             ThresherBelfry.Build(_course, Intensity, _belfry);
+            IndexMacesByLeg();
             if (!belfryPrismPrefab)
             {
                 CSDebug.LogWarning("[ThresherTime] no belfryPrismPrefab - the rings swing but no chains, maces or shutters " +
@@ -266,7 +295,11 @@ namespace CosmicShore.Gameplay
                 var prism = _belfryPrisms[k];
                 if (!Holds(prism, BelfryOwnerId))
                 {
-                    if (_belfryLostAt[k] < 0f) _belfryLostAt[k] = now;
+                    if (_belfryLostAt[k] < 0f)
+                    {
+                        _belfryLostAt[k] = now;
+                        BelfryPrismsBroken++;
+                    }
                     else if (now - _belfryLostAt[k] >= belfryRegrowSeconds)
                     {
                         _belfryPrisms[k] = LayBelfryPart(k, t, forReveal: false);
@@ -288,14 +321,191 @@ namespace CosmicShore.Gameplay
             _belfryPrisms.Clear();
             _belfryLostAt.Clear();
             _belfry.Clear();
+            _legMaceStart = _legMaceCount = System.Array.Empty<int>();
             if (_belfryRoot) Destroy(_belfryRoot.gameObject);
             _belfryRoot = null;
         }
 
         /// <summary>The AI flies at the ring where it IS: the swinging ring's live pose, so its steering and its miss test
         /// read the same mouth the race counts.</summary>
-        protected override RaceGate ChooseAIGate(IPlayer pilot, int threaded, int ringIndex, RaceGate gate) =>
-            ringIndex >= 0 && ringIndex < _belfry.Rings.Count ? ThresherBelfry.GateAt(_belfry, ringIndex, SharedTime) : gate;
+        protected override RaceGate ChooseAIGate(IPlayer pilot, int threaded, int ringIndex, RaceGate gate)
+        {
+            if (ringIndex < 0 || ringIndex >= _belfry.Rings.Count) return gate;
+            float now = SharedTime;
+            // With the commit-from-approach miss test on, the gate must stay the LIVE mouth (the miss test reads it) and the
+            // lead rides on the lane offset instead (AILaneOffset).
+            if (!belfryAILead || AICommitFromApproachPoint) return ThresherBelfry.GateAt(_belfry, ringIndex, now);
+            return new RaceGate(LedCentre(pilot, ringIndex, now), gate.Axis, gate.Radius);
+        }
+
+        protected override Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate)
+        {
+            if (!belfryAILead || !AICommitFromApproachPoint || ringNo < 0 || ringNo >= _belfry.Rings.Count) return Vector3.zero;
+            return LedCentre(pilot, ringNo, SharedTime) - gate.Position;
+        }
+
+        // ── The Belfry AI (server: the AI runs where its pilots are simulated) ──
+
+        readonly Dictionary<IPlayer, ThresherBelfryAI.Pilot> _aiPilots = new();
+        int[] _legMaceStart = System.Array.Empty<int>();
+        int[] _legMaceCount = System.Array.Empty<int>();
+        static readonly ProfilerMarker s_aiMarker = new("ThresherTime.BelfryAI");
+
+        /// <summary>Prisms of the Belfry that broke this match (a hull, a ball or a blast took a chain link, a mace or a
+        /// shutter bar). The soak reports it.</summary>
+        public int BelfryPrismsBroken { get; private set; }
+
+        /// <summary>Switches the Belfry AI (lead and duck) for an A/B soak (<c>-ttSoakBelfryAI</c>).</summary>
+        public void SetBelfryAI(bool on)
+        {
+            belfryAILead = on;
+            belfryAIDuck = on;
+        }
+
+        /// <summary>What the Belfry AI is doing for <paramref name="pilot"/> (a viewer, the soak).</summary>
+        public bool TryGetBelfryDiag(IPlayer pilot, out ThresherBelfryAI.Diag diag, out int ducks)
+        {
+            if (pilot != null && _aiPilots.TryGetValue(pilot, out var state))
+            {
+                diag = state.Diag;
+                ducks = state.Ducks;
+                return true;
+            }
+            diag = default;
+            ducks = 0;
+            return false;
+        }
+
+        /// <summary>Maces are built leg by leg, so each leg's maces are one contiguous span.</summary>
+        void IndexMacesByLeg()
+        {
+            int n = _belfry.Rings.Count;
+            _legMaceStart = new int[n];
+            _legMaceCount = new int[n];
+            for (int i = 0; i < n; i++) _legMaceStart[i] = -1;
+            for (int m = 0; m < _belfry.Maces.Count; m++)
+            {
+                int leg = _belfry.Maces[m].Gate;
+                if (leg < 0 || leg >= n) continue;
+                if (_legMaceStart[leg] < 0) _legMaceStart[leg] = m;
+                _legMaceCount[leg]++;
+            }
+        }
+
+        ThresherBelfryAI.Pilot StateFor(IPlayer pilot)
+        {
+            if (pilot == null) return null;
+            if (_aiPilots.TryGetValue(pilot, out var state)) return state;
+            // One per armed AI for the match, seeded from the seat so a replay of the same seat reads the clock the same.
+            state = new ThresherBelfryAI.Pilot { Rng = new System.Random(unchecked((int)pilot.PlayerNetId * 7919 + Intensity)) };
+            _aiPilots[pilot] = state;
+            return state;
+        }
+
+        protected override void OnRacerArmed(IPlayer pilot) => StateFor(pilot);
+
+        /// <summary>Game seconds per Belfry-clock second. The clock is the server's real time (Netcode's ServerTime runs on
+        /// unscaled time) and the hulls move in game time, so a speed in the clock's seconds is the hull's times this.</summary>
+        static float ClockScale => Time.timeScale > 1e-3f ? Time.timeScale : 1f;
+
+        /// <summary>Is an AIMED launch coming - planted, with the launch view up (the executor's own gate for the boosted
+        /// launch; a plain let-go leaves on the tangent at the orbit's speed)? <paramref name="launchSpeedFactor"/> is that
+        /// launch's speed over the orbit's: the config's boost times its exit buff. A read of the executor, never a write.</summary>
+        static bool AimedLaunchComing(ThresherBelfryAI.Pilot state, IVesselStatus status, out float launchSpeedFactor)
+        {
+            launchSpeedFactor = ThresherTimeCourse.LaunchBoost;
+            if (state == null) return false;
+            if (!state.Thresher)
+            {
+                var executors = status?.ActionHandler ? status.ActionHandler.Executors : null;
+                state.Thresher = executors ? executors.Get<ThresherExecutor>() : null;
+                if (!state.Thresher) return false;
+            }
+            var cfg = state.Thresher.Config;
+            if (cfg) launchSpeedFactor = cfg.LaunchBoost * cfg.LaunchExitSpeedMultiplier;
+            return state.Thresher.IsPivoting && state.Thresher.LaunchViewUp;
+        }
+
+        /// <summary>The led ring centre for <paramref name="pilot"/> (the live pose when its hull cannot be read). With an
+        /// aimed launch coming it leads for that launch (straight, at the launch's speed with its exit buff); otherwise for
+        /// its own speed and nose.</summary>
+        Vector3 LedCentre(IPlayer pilot, int ring, float now)
+        {
+            var vessel = pilot?.Vessel;
+            var tf = vessel?.Transform;
+            var status = vessel?.VesselStatus;
+            if (!tf || status == null) return _belfry.Rings[ring].BobAt(now);
+            using (s_aiMarker.Auto())
+            {
+                var state = StateFor(pilot);
+                bool aimed = AimedLaunchComing(state, status, out float launchSpeedFactor);
+                ThresherBelfryAI.LeadInputs(aimed, status.Speed, tf.forward, launchSpeedFactor,
+                                            belfryAILeadMinSpeed, belfryAILeadMaxSpeed, ClockScale, out float v, out Vector3 nose);
+                return ThresherBelfryAI.Aim(state, _belfry, ring, tf.position, nose, v, now, Time.unscaledDeltaTime,
+                                            belfryAILatchRadius, belfryAIRelatchSeconds);
+            }
+        }
+
+        /// <summary>Every armed AI gets a duck: one closure for the match, over its state.</summary>
+        protected override AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot)
+        {
+            var state = StateFor(pilot);
+            return (Vector3 position, Vector3 velocity, Vector3 forward, out Vector3 steerTo) =>
+                TryDuck(pilot, state, position, velocity, out steerTo);
+        }
+
+        bool TryDuck(IPlayer pilot, ThresherBelfryAI.Pilot state, Vector3 position, Vector3 velocity, out Vector3 steerTo)
+        {
+            steerTo = default;
+            if (!belfryAIDuck || state == null || _belfry.Maces.Count == 0 || _legMaceStart.Length == 0) return false;
+            if (!belfryAIDodgePlain && !_belfry.Spec.MaceDanger) return false;
+            using var _ = s_aiMarker.Auto();
+            float clear = ThresherBelfry.HeadReach + belfryAIDuckHullRadius + belfryAIDuckMargin;
+
+            // Hold a duck until the hull is past the mace it was ducking.
+            if (state.DuckMace >= 0 && state.DuckMace < _belfry.Maces.Count)
+            {
+                var held = _belfry.Maces[state.DuckMace];
+                float along = Vector3.Dot(position - ThresherBelfryAI.Hang(held), held.Forward);
+                if (along <= ThresherBelfry.HeadReach)
+                {
+                    steerTo = ThresherBelfryAI.DuckPoint(held, clear, along, belfryAIDuckCarrot);
+                    return true;
+                }
+                state.DuckMace = -1;
+            }
+
+            var stats = pilot?.RoundStats;
+            if (stats == null) return false;
+            int n = _belfry.Rings.Count;
+            int ring = RingIndexFor(stats.SwitchesThreaded);
+            if (ring < 0 || ring >= n) return false;
+            if ((ThresherBelfryAI.Rest(_belfry.Rings[ring]) - position).sqrMagnitude < belfryAINoDuckNearRing * belfryAINoDuckNearRing)
+                return false;
+            int leg = (ring - 1 + n) % n;
+            int first = _legMaceStart[leg];
+            if (first < 0) return false;
+
+            // A fresh belief about the beat for each mace this pilot meets (its difficulty's timing error).
+            if (state.BiasMace != first)
+            {
+                state.BiasMace = first;
+                float error = ThresherBelfryAI.TimingErrorSeconds(gameData.AIDifficultyFor(pilot));
+                state.Bias = ((float)state.Rng.NextDouble() * 2f - 1f) * error;
+            }
+
+            float band = ThresherBelfry.HeadReach + belfryAIDuckHullRadius + belfryAIDuckMargin;
+            // The horizon and the reach are in the clock's seconds, like the mace's swing: the velocity is converted.
+            if (!ThresherBelfryAI.MaceThreat(_belfry, first, _legMaceCount[leg], position, velocity * ClockScale, SharedTime,
+                                              belfryAIDuckHorizon, 400f, state.Bias, band, clear, out int mace))
+                return false;
+            state.DuckMace = mace;
+            state.Ducks++;
+            var hit = _belfry.Maces[mace];
+            steerTo = ThresherBelfryAI.DuckPoint(hit, clear, Vector3.Dot(position - ThresherBelfryAI.Hang(hit), hit.Forward),
+                                                 belfryAIDuckCarrot);
+            return true;
+        }
 
         /// <summary>
         /// Every peer, every frame: a standing nest whose core lost a block breaks (opening its gate); a breaking one

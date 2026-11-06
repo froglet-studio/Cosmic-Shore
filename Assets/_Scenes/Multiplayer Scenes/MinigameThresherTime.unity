@@ -851,6 +851,18 @@ MonoBehaviour:
   belfry: 1
   belfryPrismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   belfryRegrowSeconds: 6
+  belfryAILead: 1
+  belfryAIDuck: 1
+  belfryAIDodgePlain: 0
+  belfryAILeadMinSpeed: 125
+  belfryAILeadMaxSpeed: 5000
+  belfryAILatchRadius: 135
+  belfryAIRelatchSeconds: 0.3
+  belfryAIDuckHorizon: 1.6
+  belfryAIDuckHullRadius: 8
+  belfryAIDuckMargin: 8
+  belfryAIDuckCarrot: 20
+  belfryAINoDuckNearRing: 120
   crystalEveryNthTarget: 3
 --- !u!114 &1628508347
 MonoBehaviour:
