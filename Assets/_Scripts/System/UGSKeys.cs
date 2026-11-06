@@ -55,6 +55,12 @@ namespace CosmicShore.Core
         public const string EventFtuePhaseCompleted = "ftue_phase_completed";
         public const string EventFtueCompleted      = "ftue_completed";
 
+        // Phase 2 - Freestyle (the Toybox). Froglet Analytics ONLY (2026-11-06): both events are
+        // "sinks": ["froglet"] in Docs/Analytics/EVENT_SCHEMA.json, and UgsAnalyticsSink drops them,
+        // so UGS needs no Event Manager row for either.
+        public const string EventFreestyleEnded         = "freestyle_ended";
+        public const string EventFreestyleVesselChanged = "freestyle_vessel_changed";
+
         // Phase 2 - economy
         public const string EventCrystalsEarned        = "crystals_earned";
         public const string EventCrystalsSpent         = "crystals_spent";
@@ -78,5 +84,17 @@ namespace CosmicShore.Core
 
         // Phase 3 - observability
         public const string EventCloudSaveFailed = "cloud_save_failed";
+
+        // ── Analytics parameters added 2026-11-06 ──
+        // The Froglet-only ones (element, element_secondary on game_started / game_completed,
+        // vessel_class on freestyle_entered) are stripped by UgsAnalyticsSink before UGS sees them.
+        public const string ParamElement            = "element";
+        public const string ParamElementSecondary   = "element_secondary";
+        public const string ParamVesselClass        = "vessel_class";
+        public const string ParamFromVesselClass    = "from_vessel_class";
+        public const string ParamVesselsFlown       = "vessels_flown";
+        public const string ParamSeconds            = "seconds";
+        public const string ParamSecondsInFreestyle = "seconds_in_freestyle";
+        public const string ParamSecondsSinceLaunch = "seconds_since_launch";
     }
 }
