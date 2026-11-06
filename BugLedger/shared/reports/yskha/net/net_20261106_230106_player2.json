@@ -1,0 +1,67 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "Player2",
+  "isVirtualPlayer": true,
+  "why": "MPPM virtual player",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1e6060f3d0",
+  "playStartedUtc": "2026-11-06T23:01:06.0392630Z",
+  "playEndedUtc": "2026-11-06T23:01:12.2583437Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-06T23:01:12.1203791Z",
+    "durationSeconds": 0.0,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "none",
+    "counters": {
+        "requests": 0,
+        "lobbyReads": 0,
+        "retries": 0,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 0,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 0,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 0,
+        "presencePush": 0,
+        "lobbyReadsPerSecond": 0.0
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 0
+    },
+    "lifecycle": [],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 1,
+    "warnings": 4,
+    "dropped": 0,
+    "lines": [
+      {"t": 3.2, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 3.964, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 4.059, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:147)"},
+      {"t": 4.109, "type": "log", "msg": "Reflex LogLevel set to Info"},
+      {"t": 4.113, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 4.121, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 4.126, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 4.361, "type": "warning", "msg": "[PrismTimerManager] No instance found in scene - auto-created. Consider adding one to the scene to avoid this overhead.", "at": "CosmicShore.Gameplay.PrismTimerManager:EnsureInstance () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismTimerManager.cs:66)"},
+      {"t": 5.725, "type": "error", "msg": "[FmodSafe] CreateInstance failed for '{03de9ea9-9b51-400a-b0cb-8bcc12a12697} (event:/Music/Music)' (EventNotFoundException: [FMOD] Event not found: {03de9ea9-9b51-400a-b0cb-8bcc12a12697} (event:/Music/Music)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.", "at": "CosmicShore.Gameplay.Audio.FmodSafe:TryCreateInstance (FMODUnity.EventReference,FMOD.Studio.EventInstance&,UnityEngine.Object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/FmodSafe.cs:67)"},
+      {"t": 5.731, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:146)"},
+      {"t": 5.74, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."}
+    ]
+  }
+}

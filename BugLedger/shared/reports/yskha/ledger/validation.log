@@ -436,3 +436,7 @@
 2026-11-06T22:35:59.073Z editor load: play=False capture=True minPlay=15s issues=55
 2026-11-06T22:50:08.156Z PlayMode session ended (849s play run, exiting play mode): 0 fix(es) waiting; counted: none
 2026-11-06T22:56:14.735Z PlayMode session ended (278s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-06T23:02:27.725Z EditMode session ended (26min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-e339480c7b E-8909c619e5 E-e5bc8c31c5 E-cc96cf57a7 E-da229941e0 E-95c66ce0f8 E-1e5d2008e7 E-6b5f8a87a5 E-c6177045e1 E-a771e8a767
+2026-11-06T23:02:40.267Z scripts compiled clean: closed 5 compile error(s)
+2026-11-06T23:02:40.270Z editor load: play=False capture=True minPlay=15s issues=57
+2026-11-06T23:08:31.024Z PlayMode session ended (23s play run, exiting play mode): 0 fix(es) waiting; counted: none

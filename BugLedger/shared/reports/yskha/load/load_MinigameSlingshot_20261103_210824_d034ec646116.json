@@ -1,0 +1,101 @@
+{
+    "schemaVersion": 1,
+    "reportId": "d034ec646116",
+    "timestamp": "2026-11-03T20:09:50.4769810Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "Ys-bleeding-edge",
+    "gitCommitHash": "2a85f22b2e",
+    "trigger": "Return to menu — MinigameSlingshot → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "INTERRUPTED — application terminated during load (recovered snapshot)",
+    "interrupted": true,
+    "sceneFrom": "MinigameSlingshot",
+    "sceneTo": "MinigameSlingshot",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 3.617000102996826,
+    "visualReadyMs": -1.0,
+    "waitMs": 0.5585000514984131,
+    "humanWaitMs": 0.0,
+    "workMs": 3.058500051498413,
+    "unattributedMs": 3.058500051498413,
+    "framesDuringLoad": 1,
+    "avgFpsDuringLoad": 276.4721984863281,
+    "worstFrameMs": 16.152006149291993,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 3.058500051498413,
+            "endMs": 3.617000102996826,
+            "durationMs": 0.5585000514984131,
+            "exclusiveMs": 0.5585000514984131,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 3.058500051498413,
+            "percent": 84.55902862548828,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 0.5585000514984131,
+            "percent": 15.440974235534668,
+            "spanCount": 1,
+            "waitMs": 0.5585000514984131
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 0.5585000514984131,
+            "exclusiveMs": 0.5585000514984131,
+            "maxSingleMs": 0.5585000514984131,
+            "isWait": true
+        }
+    ],
+    "stalls": [],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — MinigameSlingshot → Menu_Main"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Active prisms when load ended",
+            "value": 4937
+        }
+    ],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
