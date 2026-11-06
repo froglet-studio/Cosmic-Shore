@@ -1,0 +1,265 @@
+# Release promote: move a tested pre-release build to its production channel, widen or halt a staged rollout, or
+# roll back. Manual only, one platform per run, each behind the `<platform>-production` Environment, which must
+# have Required reviewers (the preflight job refuses one that does not). Docs/LAUNCH/PIPELINES.md has the flow.
+#
+#   windows  Valve does not let a build script set the `default` branch live
+#            (https://partner.steamgames.com/doc/sdk/uploading), so this job PRINTS the exact App Admin steps and
+#            records `windows-production` as waiting on a person. It automates nothing on Steam.
+#   android  Play internal -> a closed track or production, with a staged rollout (userFraction); rollout widens it,
+#            halt stops it, resume restarts it (Tools/Launch/play.py). Rollback = halt + a new build of the earlier
+#            tag (a completed Play release cannot be withdrawn and version codes only go up).
+#   ios      App Store phased release pause / resume and rollback are App Store Connect steps; printed, recorded.
+#
+# The status job publishes `<platform>-production` (Docs/LAUNCH/STATUS_CONTRACT.md) whatever happened.
+
+name: Release promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which store"
+        required: true
+        type: choice
+        options: [windows, android, ios]
+      action:
+        description: "promote: pre-release -> production. rollout: widen a staged rollout. halt / resume: stop or restart it. rollback: go back to an earlier tag"
+        required: true
+        type: choice
+        options: [promote, rollout, halt, resume, rollback]
+      version:
+        description: "The release tag being promoted (v0.3.0 or rc-<label>); for rollback, the tag that is live now"
+        required: true
+        type: string
+      version_code:
+        description: "Android only: the version code on the internal track to promote (Release builds' summary shows it)"
+        required: false
+        type: string
+      track:
+        description: "Android only: the target track (production, or a closed track such as alpha)"
+        required: false
+        type: string
+        default: production
+      user_fraction:
+        description: "Android production only: share of users, e.g. 0.05 for 5%. 1 means everyone and needs allow_full"
+        required: false
+        type: string
+      allow_full:
+        description: "Android only: allow a 100% production rollout"
+        type: boolean
+        default: false
+      rollback_to:
+        description: "rollback only: the earlier release tag to return to"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-promote-${{ inputs.platform }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Inputs and the production Environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      version: ${{ steps.inputs.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
+      - name: Check the inputs
+        id: inputs
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          OPERATION: ${{ inputs.action }}
+          VERSION_TAG: ${{ inputs.version }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          TRACK: ${{ inputs.track }}
+          FRACTION: ${{ inputs.user_fraction }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          for v in "$VERSION_TAG" "$ROLLBACK_TO"; do
+            if printf '%s' "$v" | grep -q '[^A-Za-z0-9._-]'; then fail "A tag input holds characters a release tag never has."; fi
+          done
+          VERSION=$(python3 Tools/Launch/release_notes.py check-tag "$VERSION_TAG")
+          if [ "$OPERATION" = rollback ]; then
+            [ -n "$ROLLBACK_TO" ] || fail "rollback needs rollback_to: the earlier release tag to return to."
+            python3 Tools/Launch/release_notes.py check-tag "$ROLLBACK_TO" > /dev/null
+          fi
+          if [ "$PLATFORM" = windows ] && [ "$OPERATION" != promote ] && [ "$OPERATION" != rollback ]; then
+            fail "Steam has no staged rollout: on windows use promote or rollback."
+          fi
+          if [ "$PLATFORM" = android ]; then
+            printf '%s' "$TRACK" | grep -Eq '^[a-z][a-z0-9:_-]{0,63}$' || fail "track is not a Play track name."
+            [ "$TRACK" != internal ] || fail "Release builds owns the internal track; promote targets another track."
+            if [ "$OPERATION" = promote ]; then
+              printf '%s' "$VERSION_CODE" | grep -Eq '^[1-9][0-9]{0,9}$' || fail "promote on android needs version_code (a number)."
+            fi
+            if [ "$OPERATION" = promote ] || [ "$OPERATION" = rollout ]; then
+              if [ "$TRACK" = production ] || [ "$OPERATION" = rollout ]; then
+                printf '%s' "$FRACTION" | grep -Eq '^(0?\.[0-9]+|1(\.0+)?)$' || fail "user_fraction is a share between 0 and 1, e.g. 0.05."
+              fi
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "$PLATFORM $OPERATION $VERSION_TAG ($VERSION)"
+      - name: The production Environment exists and needs a reviewer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PLATFORM: ${{ inputs.platform }}
+        run: python3 Tools/Launch/environments.py check "$PLATFORM-production:reviewers"
+
+  windows:
+    name: Steam default branch (App Admin steps)
+    needs: preflight
+    if: inputs.platform == 'windows'
+    runs-on: ubuntu-latest
+    environment: windows-production
+    timeout-minutes: 5
+    steps:
+      - name: Print the App Admin steps
+        env:
+          OPERATION: ${{ inputs.action }}
+          VERSION_TAG: ${{ inputs.version }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+        run: |
+          case "$OPERATION" in
+            promote) WANT="$VERSION_TAG" ;;
+            rollback) WANT="$ROLLBACK_TO" ;;
+            *) echo "::error::Steam has no staged rollout: $OPERATION does not apply. Use promote or rollback."; exit 1 ;;
+          esac
+          {
+            echo "### Steam: set $WANT live on the Playtest app's default branch (a person does this)"
+            echo ""
+            echo "Valve does not let a build script set \`default\` live, so nothing here touches Steam."
+            echo ""
+            echo "1. Steamworks > the Playtest app > SteamPipe > Builds."
+            echo "2. Find the build whose description reads \`Cosmic Shore $WANT ... [playtest] -> internal\` (Release builds uploaded it to \`internal\`; it has been smoke-tested there)."
+            echo "3. In its row, choose **default** in 'Set build live on branch' and click **Preview Change**, then **Set Build Live Now**."
+            echo "4. Every tester with Playtest access gets it on their next launch. To undo, repeat with the previous build's row (rollback)."
+            echo "5. Record what you did: it shows on the Launch Console as soon as the next pipeline run, or re-run this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "App Admin steps written to the run summary."
+
+  android:
+    name: Google Play production
+    needs: preflight
+    if: inputs.platform == 'android'
+    runs-on: ubuntu-latest
+    environment: android-production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false, persist-credentials: false }
+      - name: Change the track
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          OPERATION: ${{ inputs.action }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          TRACK: ${{ inputs.track }}
+          FRACTION: ${{ inputs.user_fraction }}
+          ALLOW_FULL: ${{ inputs.allow_full }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+        run: |
+          set -euo pipefail
+          full=(); [ "$ALLOW_FULL" = true ] && full=(--allow-full)
+          case "$OPERATION" in
+            promote)
+              frac=(); [ -n "$FRACTION" ] && frac=(--user-fraction "$FRACTION")
+              python3 Tools/Launch/play.py promote --version-code "$VERSION_CODE" --to-track "$TRACK" "${frac[@]}" "${full[@]}" --release-name "$VERSION" ;;
+            rollout) python3 Tools/Launch/play.py rollout --track "$TRACK" --user-fraction "$FRACTION" "${full[@]}" ;;
+            halt)    python3 Tools/Launch/play.py halt --track "$TRACK" ;;
+            resume)  python3 Tools/Launch/play.py resume --track "$TRACK" ;;
+            rollback)
+              python3 Tools/Launch/play.py halt --track "$TRACK" || echo "::warning::No staged rollout to halt on $TRACK (a completed release cannot be withdrawn)."
+              {
+                echo "### Android rollback to $ROLLBACK_TO"
+                echo "The staged rollout on $TRACK is halted: no new installs of the current build."
+                echo "Play cannot re-serve an older version code. To return to $ROLLBACK_TO:"
+                echo "1. Actions > Release builds > Run workflow: tag $ROLLBACK_TO, platforms android. Its new build carries a higher version code (minutes since 2026-01-01)."
+                echo "2. Test it on the internal track, then run this workflow: promote, that version code, $TRACK."
+              } >> "$GITHUB_STEP_SUMMARY" ;;
+          esac
+          python3 Tools/Launch/play.py status --track "$TRACK"
+
+  ios:
+    name: App Store (App Store Connect steps)
+    needs: preflight
+    if: inputs.platform == 'ios'
+    runs-on: ubuntu-latest
+    environment: ios-production
+    timeout-minutes: 5
+    steps:
+      - name: Print the App Store Connect steps
+        env:
+          OPERATION: ${{ inputs.action }}
+          VERSION_TAG: ${{ inputs.version }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+        run: |
+          {
+            echo "### iOS: $OPERATION for $VERSION_TAG (a person does this in App Store Connect)"
+            case "$OPERATION" in
+              promote) echo "Apps > Cosmic Shore > the version for $VERSION_TAG > choose the TestFlight build > Phased Release for Automatic Updates: **on** > Add for Review. After approval, Release this version." ;;
+              halt)    echo "Apps > Cosmic Shore > App Store > the live version > Phased Release > **Pause Phased Release** (up to 30 days in total)." ;;
+              resume)  echo "Apps > Cosmic Shore > App Store > the live version > Phased Release > **Resume Phased Release**." ;;
+              rollout) echo "Apple's phased release widens itself over 7 days (1, 2, 5, 10, 20, 50, 100%). **Release to All Users** ends it early." ;;
+              rollback) echo "The App Store cannot go back to $ROLLBACK_TO. Pause the phased release, then ship a new build of $ROLLBACK_TO (Release builds > tag $ROLLBACK_TO, platforms ios) with a higher build number and request an expedited review." ;;
+            esac
+            echo ""
+            echo "Automating this needs an App Store Connect API key in the ios-production Environment; it is optional and not built (Docs/LAUNCH/PIPELINES.md, iOS)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "App Store Connect steps written to the run summary."
+
+  status:
+    name: Launch status
+    needs: [preflight, windows, android, ios]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # the launch-status branch; this job holds no other secret
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { fetch-depth: 1, sparse-checkout: Tools/Launch, lfs: false }
+      - name: Publish the production record
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          OPERATION: ${{ inputs.action }}
+          VERSION_TAG: ${{ inputs.version }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+          TRACK: ${{ inputs.track }}
+          FRACTION: ${{ inputs.user_fraction }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          PREFLIGHT: ${{ needs.preflight.result }}
+          R_WINDOWS: ${{ needs.windows.result }}
+          R_ANDROID: ${{ needs.android.result }}
+          R_IOS: ${{ needs.ios.result }}
+        run: |
+          set -euo pipefail
+          case "$PLATFORM" in windows) r=$R_WINDOWS ;; android) r=$R_ANDROID ;; *) r=$R_IOS ;; esac
+          args=(publish --id "$PLATFORM-production" --platform "$PLATFORM" --kind channel --channel production)
+          if [ "$PREFLIGHT" != success ]; then
+            args+=(--result failure --summary "$OPERATION refused before reaching the store: bad input or the $PLATFORM-production Environment is missing or has no reviewer")
+          elif [ "$r" != success ]; then
+            case "$r" in cancelled) res=cancelled ;; *) res=failure ;; esac
+            args+=(--result "$res" --summary "$OPERATION $VERSION_TAG on $PLATFORM: $r")
+          elif [ "$PLATFORM" = android ]; then
+            args+=(--result success --summary "Play $TRACK: $OPERATION $VERSION_TAG${FRACTION:+ at $FRACTION}" --detail "track=$TRACK" --detail "action=$OPERATION")
+            [ -n "$VERSION_CODE" ] && args+=(--build "$VERSION_CODE")
+          else
+            # Steam and the App Store are changed by a person; the record says it is waiting on them.
+            args+=(--result running --summary "Waiting on a person: $OPERATION $VERSION_TAG in the $PLATFORM store dashboard (steps in the run)" --detail "action=$OPERATION")
+          fi
+          [ -n "$VERSION" ] && args+=(--version "$VERSION")
+          [ -n "$ROLLBACK_TO" ] && args+=(--rollback-to "$ROLLBACK_TO")
+          python3 Tools/Launch/launch_status.py "${args[@]}"
