@@ -224,7 +224,7 @@
     return wrap;
   }
 
-  // `series` (0-3) marks a row as one of up to four categories: it takes the colour set's domain colour in that slot
+  // `series` (0-3) marks a row as one of up to four categories: it takes the theme's domain rim in that slot
   // (Jade, Ruby, Gold, Blue; themes.css --series-1..4). Without it the meter is plain data (the set's Blue).
   function meter(value, series) {
     const v = Math.max(0, Math.min(100, value || 0));
@@ -732,17 +732,19 @@
     } catch (e) {}
   }
 
-  // The look is the game's colour set (theme.js, make_themes.py): one pick, in the rail.
+  // The theme is a colour set from the game (theme.js, make_themes.py): one pick, in the rail. Each swatch is a
+  // domain's two pigments as the game draws a prism: the glowing rim over the deep face.
   function looks() {
     const T = window.FA_THEMES, box = $("looks");
     if (!T || !box) return;
     const now = T.current();
-    const sets = h("div", { class: "sets", role: "group", "aria-label": "Colour set" }, ...T.sets.map((s) =>
-      h("button", { type: "button", class: "set", title: s.line, "aria-pressed": String(s.id === now),
-                    onclick: () => { T.pick(s.id); looks(); } },
-        h("span", { class: "swatch", "aria-hidden": "true" }, ...s.swatch.map((c) => h("i", { style: `background:${c}` }))),
-        s.name)));
-    box.replaceChildren(h("span", { class: "lab" }, "Colour set"), sets);
+    const list = h("div", { class: "sets", role: "group", "aria-label": "Theme" }, ...T.themes.map((t) =>
+      h("button", { type: "button", class: "set", title: `${t.line} ${t.pigments.join(", ")}.`, "aria-pressed": String(t.id === now),
+                    onclick: () => { T.pick(t.id); looks(); } },
+        h("span", { class: "swatch", "aria-hidden": "true" },
+          ...t.swatch.map(([rim, face]) => h("i", { style: `background:${face};box-shadow:inset 0 3px 0 ${rim}` }))),
+        t.name)));
+    box.replaceChildren(h("span", { class: "lab" }, "Theme"), list);
     const strip = document.querySelector(".brand .strip");
     if (strip) strip.replaceChildren(...[1, 2, 3, 4].map((n) => h("i", { style: `background:var(--series-${n})` })));
   }

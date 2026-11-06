@@ -1,20 +1,27 @@
-"""The console's look, taken from the game (Shombith, 2026-11-06: "the color set should inspire the theme of this UI
-too and there shouldnt be a different themes tab but bring the sea lines in the bg").
+"""The console's themes, taken from the game's colour sets (Shombith, 2026-11-06: "the color set should inspire the theme
+of this UI too", "the whole UI should change and color sets should be named themes", "dart frog had a metallic brown
+right in the game so that theme should be here too", and "bring the sea lines in the bg").
 
     python3 Tools/Analytics/console/make_themes.py            # write themes.css and theme.js beside this file
     python3 Tools/Analytics/console/make_themes.py --check    # exit 1 if either file drifted from the game
     python3 Tools/Analytics/console/make_themes.py --self-test
 
-One ground, the style guide's Deep Sea (Docs/UI/froglet-tokens.json, written from the game's UITheme by
-Tools/Build/froglet_style.py). The theme is the colour set: as in the game, "a colour set changes how you see the
-HyperSea". Every set players can pick (Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset: Nocturne, Photic, Dart
-Frog) paints:
-- the sea lines behind every page (the menu's SeaLines shader, Docs/MENU_REDESIGN_B.md section 67: its cyan, periwinkle and
-  violet become the set's Jade, Blue and Ruby), the wash under them and the glow above;
-- the data (its Blue), the selection and focus (its Jade), the brand strip and the category meters (Jade, Ruby, Gold, Blue).
-A domain's colour is its TrailHighlightColor, the field the Vessel Studio reads (.claude/skills/vessel-studio/
-domain_colors.py). Where a mark or text colour is too faint on a panel, its OKLab lightness moves until it reaches 3:1
-(marks, focus) or 4.5:1 (text); the hue stays the game's. Fire is a problem and Lime is healthy in every set.
+A theme is one of the colour sets players pick in the game (Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset:
+Nocturne, Photic, Dart Frog). Every domain in a set is two pigments, a glowing RIM over a deep FACE (Docs/PALETTE.md,
+Docs/VesselModels/colour_sets.json: Lagoon over Plum, Mint over Bronze, ...). The values are read from the shipped
+SO_ColorSet assets, which are linear HDR, and brought to the screen the way Docs/PALETTE.md section 3 and the Frogma
+colour-set round (Docs/MenuRedesignB/rounds/r51_profile_colour_sets.py) read them: a soft shoulder above 1.0, then the
+sRGB curve. The rim is a domain's TrailHighlightColor, its face the OutsideBlockColor.
+
+The whole UI follows the theme:
+- the ground, panels, lines and text keep the style guide's Deep Sea lightness steps (Docs/UI/froglet-tokens.json) and
+  take the hue of the set's signature face (its Jade face: Plum, Deep cyan, Bronze), so Dart Frog is metallic bronze;
+- panels are drawn like the game's prisms: the signature rim, faint, over the face, with a light sheen (console.css);
+- the call to action and danger are the set's own (EnvironmentColors BrightCTA and Danger);
+- the selection and focus are its Jade rim, the data its Blue rim, the four category colours its four rims, and the
+  sea lines behind every page (the menu's SeaLines, Docs/MENU_REDESIGN_B.md section 67) its Jade, Blue and Ruby rims.
+Where a mark or text colour is too faint on a panel, its OKLab lightness moves until it reaches 3:1 (marks, focus) or
+4.5:1 (text); the hue stays the game's.
 """
 import json
 import math
@@ -30,7 +37,10 @@ CATALOG = os.path.join(PALETTES, "ColorSetCatalog.asset")
 CONTAINER = os.path.join(REPO, "Assets", "_SO_Assets", "ThemeManagerDataContainer.asset")
 OUT_CSS = os.path.join(HERE, "themes.css")
 OUT_JS = os.path.join(HERE, "theme.js")
-GROUND = "deep-sea"
+BASE = "deep-sea"           # the lightness steps every theme keeps
+# The UI tokens a theme re-hues from its signature face, with the most chroma each may carry.
+TINTED = {"ground": 0.05, "ground-deep": 0.035, "surface": 0.06, "surface-raised": 0.08, "line": 0.08,
+          "text": 0.02, "text-soft": 0.05, "text-off": 0.03}
 # The sea's numbers, from the game's Sea_Window material (Tools/Build/author_ui_lattice.py SEA): lines 46 apart, a
 # 480-unit loop, amplitude 9, three layers (far, middle, near) with their alpha, width and seconds a loop.
 SEA = {"spacing": 46, "loop": 480, "amplitude": 9,
@@ -117,6 +127,30 @@ def nudge(rgb, ground, amount=0.08):
     return from_oklab(max(0.0, min(1.0, L + (amount if luminance(ground) < 0.18 else -amount))), a, b)
 
 
+def screen(linear):
+    """A shipped (linear HDR) colour on screen: a soft shoulder above 1.0, then the sRGB curve (Docs/PALETTE.md 3)."""
+    out = []
+    for x in linear:
+        x = max(0.0, x)
+        if x > 1:
+            x = x / (1 + 0.25 * (x - 1))
+        out.append(_gam(min(1.0, x)))
+    return tuple(out)
+
+
+def tint(token, face, cap):
+    """The token's lightness with the face's hue, at the token's own chroma (never more than `cap`)."""
+    L, a, b = to_oklab(token)
+    _, fa, fb = to_oklab(face)
+    c, h = min(math.hypot(a, b), cap), math.atan2(fb, fa)
+    return from_oklab(L, c * math.cos(h), c * math.sin(h))
+
+
+def hue(rgb):
+    _, a, b = to_oklab(rgb)
+    return math.degrees(math.atan2(b, a)) % 360
+
+
 # ------------------------------------------------------------------ the game's colour sets
 
 def guid_path(guid):
@@ -126,31 +160,38 @@ def guid_path(guid):
     raise SystemExit(f"make_themes: no colour set asset has guid {guid}")
 
 
-def set_colors(text):
-    """Each domain's TrailHighlightColor, the field the Vessel Studio's domain_colors.py reads."""
-    out = {}
+def read_set(text):
+    """Each domain's rim and face on screen, and the set's own call to action and danger."""
+    def colour(block_text, field):
+        m = re.search(field + r": \{r: %s, g: %s, b: %s" % (NUM, NUM, NUM), block_text)
+        if not m:
+            raise SystemExit(f"make_themes: a colour set has no {field}")
+        return screen(tuple(float(x) for x in m.groups()))
+    out = {"rim": {}, "face": {}}
     for key, block in DOMAINS:
         i = text.find("  " + block + ":")
         if i < 0:
             raise SystemExit(f"make_themes: a colour set has no {block} block")
-        m = re.search(r"TrailHighlightColor: \{r: %s, g: %s, b: %s" % (NUM, NUM, NUM), text[i:i + 6000])
-        if not m:
-            raise SystemExit(f"make_themes: {block} has no TrailHighlightColor")
-        out[key] = tuple(max(0.0, min(1.0, float(x))) for x in m.groups())
+        out["rim"][key] = colour(text[i:i + 6000], "TrailHighlightColor")
+        out["face"][key] = colour(text[i:i + 6000], "OutsideBlockColor")
+    i = text.find("  EnvironmentColors:")
+    out["cta"] = colour(text[i:i + 4000], "BrightCTA")
+    out["danger"] = colour(text[i:i + 4000], "Danger")
     return out
 
 
 def catalog():
-    """The sets players can pick, in the catalog's order: [{id, name, line, colors}]."""
+    """The sets players can pick, in the catalog's order: [{id, name, line, pigments, colours}]."""
     text = open(CATALOG, encoding="utf-8").read()
     sets = []
     for m in re.finditer(r"^  - id: (\S+)\n    colorSet: \{fileID: \d+, guid: (\w+), type: \d+\}\n    displayName: (.+)\n"
-                         r"    line: (.+)\n", text, re.M):
+                         r"    line: (.+)\n(?:    unlocked: \d+\n)?(?:    pigments:\n((?:    - .+\n)+))?", text, re.M):
         line = m.group(4).strip()
         if line[:1] in "'\"":
             line = line[1:-1].replace("''", "'")
-        sets.append({"id": m.group(1), "name": m.group(3).strip(), "line": line,
-                     "colors": set_colors(open(guid_path(m.group(2)), encoding="utf-8").read())})
+        pigments = [p.strip()[2:].strip() for p in (m.group(5) or "").splitlines()]
+        sets.append({"id": m.group(1), "name": m.group(3).strip(), "line": line, "pigments": pigments,
+                     "colours": read_set(open(guid_path(m.group(2)), encoding="utf-8").read())})
     if not sets:
         raise SystemExit("make_themes: ColorSetCatalog lists no colour sets")
     return sets
@@ -170,80 +211,105 @@ def live_set(sets):
 
 # ------------------------------------------------------------------ the files
 
+def theme_tokens(base, c):
+    """Every UI token for one theme, as hex, plus the rims and faces."""
+    face, rims = c["face"]["jade"], c["rim"]
+    t = {k: tint(hx(base[k]), face, cap) for k, cap in TINTED.items()}
+    surface, ground = t["surface"], t["ground"]
+    t["text-soft"] = fit(t["text-soft"], surface, TEXT)
+    marks = {k: fit(fit(v, ground, MARK), surface, MARK) for k, v in rims.items()}
+    out = {f"--fs-{k}": to_hex(v) for k, v in t.items()}
+    out.update({
+        "--fs-cta": to_hex(fit(c["cta"], surface, MARK)), "--fs-cta-fill": to_hex(c["cta"]),
+        "--fs-danger": to_hex(fit(c["danger"], surface, TEXT)),
+        "--fs-selection": to_hex(marks["jade"]), "--fs-control": to_hex(marks["jade"]),
+        "--fs-jade": to_hex(marks["jade"]), "--fs-ruby": to_hex(marks["ruby"]),
+        "--fs-gold": to_hex(marks["gold"]), "--fs-gold-fill": to_hex(rims["gold"]),
+        "--fs-purchase": to_hex(marks["gold"]), "--fs-purchase-fill": to_hex(rims["gold"]),
+        "--fs-on-fill": to_hex(t["ground"]),
+    })
+    out.update({f"--cs-{k}": to_hex(v) for k, v in marks.items()})
+    out.update({f"--series-{n}": f"var(--cs-{k})" for n, (k, _) in enumerate(DOMAINS, 1)})
+    data = marks["blue"]
+    out.update({"--data": to_hex(data), "--data-hot": to_hex(nudge(data, ground)),
+                "--data-text": to_hex(fit(data, surface, TEXT)),
+                # the prism look for panels: the signature rim, faint, over the face
+                "--rim": to_hex(rims["jade"]), "--face": to_hex(face),
+                # the sea: the shader's cyan / periwinkle / violet become the set's Jade, Blue and Ruby rims
+                "--sea-1": to_hex(rims["jade"]), "--sea-2": to_hex(rims["blue"]), "--sea-3": to_hex(rims["ruby"]),
+                "--sea-wash": to_hex(mix(ground, face, 0.3)), "--sea-glow": to_hex(rims["jade"])})
+    report = {"text": contrast(t["text"], surface), "text-soft": contrast(t["text-soft"], surface),
+              "danger": contrast(hx(out["--fs-danger"]), surface), "cta": contrast(hx(out["--fs-cta"]), surface),
+              **{k: contrast(v, surface) for k, v in marks.items()}, "data-text": contrast(hx(out["--data-text"]), surface),
+              "surface-hue": hue(surface)}
+    return out, report
+
+
 def build(tokens=None, sets=None, default=None):
     tokens = tokens or json.load(open(TOKENS, encoding="utf-8"))
     sets = sets or catalog()
     default = default or live_set(sets)
-    theme = tokens["themes"][GROUND]
-    ground, surface = hx(theme["ground"]), hx(theme["surface"])
+    base = tokens["themes"][BASE]
     head = ("/* themes.css - GENERATED by Tools/Analytics/console/make_themes.py from the game; do not edit by hand.\n"
-            "   The ground is Deep Sea (Docs/UI/froglet-tokens.json). The theme is the game's colour set (ColorSetCatalog):\n"
-            "   it paints the sea lines, their wash and glow, the data, the selection and the category colours. */\n")
-    rows = [f"  --fs-{k}: {v};" for k, v in theme.items()] + ["  color-scheme: dark;"]
-    css, report = [head, ":root {\n" + "\n".join(rows) + "\n}\n"], []
+            "   A theme is a colour set players pick in the game (ColorSetCatalog). Its signature face re-hues the Deep Sea\n"
+            "   ground, panels, lines and text; its rims, call to action and danger paint everything else. */\n")
+    rows = [f"  --fs-{k}: {v};" for k, v in base.items()] + ["  color-scheme: dark;"]
+    css, reports = [head, ":root {\n" + "\n".join(rows) + "\n}\n"], {}
     for s_ in sets:
-        c = s_["colors"]
-        mark = {k: fit(fit(v, ground, MARK), surface, MARK) for k, v in c.items()}   # charts sit on panels
-        data = mark["blue"]
-        rows = [f"  --cs-{k}: {to_hex(v)};" for k, v in mark.items()]
-        rows += [f"  --cs-swatch-{k}: {to_hex(v)};" for k, v in c.items()]
-        rows += [f"  --series-{n}: var(--cs-{k});" for n, (k, _) in enumerate(DOMAINS, 1)]
-        rows += [f"  --data: {to_hex(data)};", f"  --data-hot: {to_hex(nudge(data, ground))};",
-                 f"  --data-text: {to_hex(fit(data, surface, TEXT))};",
-                 f"  --fs-selection: {to_hex(mark['jade'])};",
-                 # the sea: the shader's left / middle / right line colours become the set's Jade, Blue and Ruby; the
-                 # wash (the shader's #081654 at the top) and the glow (#3D8CFF) lean to the set's Blue.
-                 f"  --sea-1: {to_hex(c['jade'])};", f"  --sea-2: {to_hex(c['blue'])};", f"  --sea-3: {to_hex(c['ruby'])};",
-                 f"  --sea-wash: {to_hex(mix(ground, c['blue'], 0.16))};",
-                 f"  --sea-glow: {to_hex(c['blue'])};"]
-        sel = f'[data-cs-set="{s_["id"]}"]'
+        vals, reports[s_["id"]] = theme_tokens(base, s_["colours"])
+        sel = f'[data-fs-theme="{s_["id"]}"]'
         if s_["id"] == default:
-            sel = ":root:not([data-cs-set]), " + sel     # the game's own set, before theme.js runs
-        css.append(f"{sel} {{\n" + "\n".join(rows) + "\n}\n")
-        report.append((s_["id"], {k: round(contrast(v, surface), 2) for k, v in mark.items()},
-                       round(contrast(fit(data, surface, TEXT), surface), 2)))
+            sel = ":root:not([data-fs-theme]), " + sel     # the game's own set, before theme.js runs
+        css.append(f"{sel} {{\n" + "\n".join(f"  {k}: {v};" for k, v in vals.items()) + "\n}\n")
     meta = {"default": default, "sea": SEA,
-            "sets": [{"id": x["id"], "name": x["name"], "line": x["line"],
-                      "swatch": [to_hex(x["colors"][k]) for k, _ in DOMAINS]} for x in sets]}
+            "themes": [{"id": x["id"], "name": x["name"], "line": x["line"], "pigments": x["pigments"],
+                        "swatch": [[to_hex(x["colours"]["rim"][k]), to_hex(x["colours"]["face"][k])] for k, _ in DOMAINS]}
+                       for x in sets]}
     js = ("/* theme.js - GENERATED by Tools/Analytics/console/make_themes.py; do not edit by hand.\n"
-          "   Loaded in <head> so the page draws in the reader's colour set from the first frame. The choice is kept in\n"
-          "   this browser only; with none, the set is the one the game runs on. */\n"
+          "   Loaded in <head> so the page draws in the reader's theme from the first frame. The choice is kept in this\n"
+          "   browser only; with none, the theme is the colour set the game runs on. */\n"
           "(function () {\n"
           f"  var T = {json.dumps(meta, ensure_ascii=False, separators=(',', ':'))};\n"
           "  var root = document.documentElement;\n"
-          "  function has(id) { for (var i = 0; i < T.sets.length; i++) { if (T.sets[i].id === id) return true; } return false; }\n"
-          "  var set = null;\n"
-          "  try { set = localStorage.getItem('fa-set'); } catch (e) {}\n"
-          "  if (!has(set)) set = T.default;\n"
-          "  root.setAttribute('data-cs-set', set);\n"
-          "  T.current = function () { return root.getAttribute('data-cs-set'); };\n"
+          "  function has(id) { for (var i = 0; i < T.themes.length; i++) { if (T.themes[i].id === id) return true; } return false; }\n"
+          "  var theme = null;\n"
+          "  try { theme = localStorage.getItem('fa-theme'); } catch (e) {}\n"
+          "  if (!has(theme)) theme = T.default;\n"
+          "  root.setAttribute('data-fs-theme', theme);\n"
+          "  T.current = function () { return root.getAttribute('data-fs-theme'); };\n"
           "  T.pick = function (id) {\n"
           "    if (!has(id)) return;\n"
-          "    root.setAttribute('data-cs-set', id);\n"
-          "    try { localStorage.setItem('fa-set', id); } catch (e) {}\n"
+          "    root.setAttribute('data-fs-theme', id);\n"
+          "    try { localStorage.setItem('fa-theme', id); } catch (e) {}\n"
           "  };\n"
           "  window.FA_THEMES = T;\n"
           "})();\n")
-    return "\n".join(css), js, report
+    return "\n".join(css), js, reports
 
 
 def self_test():
-    tokens = json.load(open(TOKENS, encoding="utf-8"))
-    css, js, report = build(tokens)
+    css, js, reports = build()
     bad = []
-    for sid, marks, text in report:
-        bad += [f"{sid} {k} {v}:1" for k, v in marks.items() if v < MARK]
-        if text < TEXT:
-            bad.append(f"{sid} data text {text}:1")
-    if any(x in css for x in ("hypersea", "cosmic-shore", "data-fs-theme")):
-        bad.append("a second ground crept back in (one ground: Deep Sea)")
-    # a faint colour on a light ground must come out darker, with its hue
+    floors = {"text": 7.0, "text-soft": TEXT, "danger": TEXT, "data-text": TEXT, "cta": MARK,
+              **{k: MARK for k, _ in DOMAINS}}
+    for sid, r in reports.items():
+        bad += [f"{sid} {k} {r[k]:.2f}:1 < {f}" for k, f in floors.items() if r[k] < f]
+    # Shombith: "dart frog had a metallic brown right in the game" - its panels must be bronze, not navy
+    if "dartfrog" in reports and not 25 <= reports["dartfrog"]["surface-hue"] <= 90:
+        bad.append(f"Dart Frog's panels are hue {reports['dartfrog']['surface-hue']:.0f}, not bronze")
+    if len({round(r["surface-hue"]) for r in reports.values()}) < len(reports):
+        bad.append("two themes share one panel colour: the whole UI must change with the theme")
+    # the linear assets must reach the screen as the palette doc's swatches (Dart Frog Jade: Mint over Bronze #774325)
+    for x in catalog():
+        if x["id"] == "dartfrog" and to_hex(x["colours"]["face"]["jade"]) != "#774325":
+            bad.append(f"Dart Frog's Jade face reads {to_hex(x['colours']['face']['jade'])}, not Bronze #774325")
+        if f'data-fs-theme="{x["id"]}"' not in css or f'"id":"{x["id"]}"' not in js:
+            bad.append(f"theme {x['id']} missing from the output")
+    if any(w in css for w in ("hypersea", "cosmic-shore")):
+        bad.append("a second ground crept back in")
     faint = fit(hx("#B9F5F2"), hx("#FFFFFF"), MARK)
     if contrast(faint, hx("#FFFFFF")) < MARK or not faint[1] > faint[0]:
         bad.append("fit() did not darken a faint teal into a teal at 3:1")
-    for s in catalog():
-        if f'data-cs-set="{s["id"]}"' not in css or f'"id":"{s["id"]}"' not in js:
-            bad.append(f"set {s['id']} missing from the output")
     print("make_themes self-test: " + ("ok" if not bad else "FAILED " + "; ".join(bad)))
     return 0 if not bad else 1
 
@@ -251,7 +317,7 @@ def self_test():
 def main(argv):
     if "--self-test" in argv:
         return self_test()
-    css, js, report = build()
+    css, js, reports = build()
     if "--check" in argv:
         stale = [p for p, body in ((OUT_CSS, css), (OUT_JS, js))
                  if not os.path.exists(p) or open(p, encoding="utf-8").read() != body]
@@ -263,8 +329,8 @@ def main(argv):
     for p, body in ((OUT_CSS, css), (OUT_JS, js)):
         with open(p, "w", encoding="utf-8") as handle:
             handle.write(body)
-    for sid, marks, text in report:
-        print(f"{sid:9s} marks on panel " + " ".join(f"{k} {v}" for k, v in marks.items()) + f"  data text {text}")
+    for sid, r in reports.items():
+        print(f"{sid:9s} panel hue {r['surface-hue']:5.0f}  " + " ".join(f"{k} {v:.2f}" for k, v in r.items() if k != "surface-hue"))
     print("make_themes: wrote themes.css and theme.js")
     return 0
 
