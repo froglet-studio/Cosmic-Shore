@@ -224,9 +224,12 @@
     return wrap;
   }
 
-  function meter(value) {
+  // `series` (0-3) marks a row as one of up to four categories: it takes the theme's domain rim in that slot
+  // (Jade, Ruby, Gold, Blue; themes.css --series-1..4). Without it the meter is plain data (the set's Blue).
+  function meter(value, series) {
     const v = Math.max(0, Math.min(100, value || 0));
-    return h("div", { class: "meter-track" }, h("div", { class: "meter-fill", style: `width:${v}%` }));
+    const fill = series === undefined ? "" : `;background:var(--series-${(series % 4) + 1})`;
+    return h("div", { class: "meter-track" }, h("div", { class: "meter-fill", style: `width:${v}%${fill}` }));
   }
 
   function table(columns, rows) {
@@ -283,10 +286,10 @@
   }
 
   function playTypeRows(list) {
-    return list.map((r) => h("tr", {},
+    return list.map((r, i) => h("tr", {},
       h("td", {}, playType(r.play_type)), h("td", {}, fmt(r.matches)),
       h("td", { class: r.completed ? "" : "soft" }, r.completed ? pct(r.rematch_pct) : "–"),
-      h("td", { class: "meter" }, meter(r.rematch_pct)),
+      h("td", { class: "meter" }, meter(r.rematch_pct, i)),
       h("td", { class: r.d1_pct === null ? "soft" : "" }, pct(r.d1_pct)),
       h("td", { class: r.d7_pct === null ? "soft" : "" }, pct(r.d7_pct))));
   }
@@ -309,7 +312,7 @@
             table(["Build", "Starts", "Finished", "", "Rows per play"], o.match_health_by_build.map((r) => h("tr", {},
               h("td", {}, r.build), h("td", {}, fmt(r.starts)),
               h("td", { class: r.starts >= 10 && r.finished_pct < 20 ? "bad" : "" }, pct(r.finished_pct)),
-              h("td", { class: "meter" }, meter(r.finished_pct)),
+              h("td", { class: "meter" }, meter(r.finished_pct, Math.max(0, BUILDS.findIndex(([b]) => b === r.build)))),
               h("td", { class: r.rows_per_play > 1.05 ? "bad" : "" }, ratio(r.rows_per_play)))))),
           card("Events, last 24 hours", state.build,
             o.events_24h.length
@@ -729,6 +732,53 @@
     } catch (e) {}
   }
 
+  // The theme is a colour set from the game (theme.js, make_themes.py): one pick, in the rail. Each swatch is a
+  // domain's two pigments as the game draws a prism: the glowing rim over the deep face.
+  function looks() {
+    const T = window.FA_THEMES, box = $("looks");
+    if (!T || !box) return;
+    const now = T.current();
+    const list = h("div", { class: "sets", role: "group", "aria-label": "Theme" }, ...T.themes.map((t) =>
+      h("button", { type: "button", class: "set", title: `${t.line} ${t.pigments.join(", ")}.`, "aria-pressed": String(t.id === now),
+                    onclick: () => { T.pick(t.id); looks(); } },
+        h("span", { class: "swatch", "aria-hidden": "true" },
+          ...t.swatch.map(([rim, face]) => h("i", { style: `background:${face};box-shadow:inset 0 3px 0 ${rim}` }))),
+        t.name)));
+    box.replaceChildren(h("span", { class: "lab" }, "Theme"), list);
+    const strip = document.querySelector(".brand .strip");
+    if (strip) strip.replaceChildren(...[1, 2, 3, 4].map((n) => h("i", { style: `background:var(--series-${n})` })));
+  }
+
+  // The sea lines: the menu's SeaLines shader (Assets/_Graphics/Materials/Shaders/UI/UISeaLines.cginc, SeaLine) as one
+  // mask tile per layer, one loop wide. Line i rests at i * spacing, lives in layer i mod 3, and is two sines whose
+  // periods divide the loop, with its own amplitude and phase.
+  function sea() {
+    const T = window.FA_THEMES, layers = document.querySelectorAll(".sea-layer");
+    if (!T || !T.sea || layers.length !== 3) return;
+    const { spacing, loop, amplitude } = T.sea, tall = 2400, k1 = 2 * Math.PI / loop, k2 = 3 * k1;
+    const mod3 = (x) => x - 3 * Math.floor(x / 3);
+    T.sea.layers.forEach((layer, n) => {
+      let lines = "";
+      for (let i = 0; i * spacing <= tall + spacing; i++) {
+        if (mod3(i) !== n) continue;
+        const a1 = amplitude * (1 + 0.45 * mod3(i * 7)), a2 = amplitude * (0.45 + 0.22 * mod3(i * 5));
+        const pts = [];
+        for (let x = 0; x <= loop; x += 6) {
+          pts.push(`${x},${(i * spacing + a1 * Math.sin(k1 * x + i * 0.9) + a2 * Math.sin(k2 * x + i * 1.7)).toFixed(1)}`);
+        }
+        lines += `<polyline points='${pts.join(" ")}' fill='none' stroke='#fff' stroke-opacity='${layer.alpha}' stroke-width='${layer.width}'/>`;
+      }
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${loop}' height='${tall}' viewBox='0 0 ${loop} ${tall}'>${lines}</svg>`;
+      const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+      const el = layers[n];
+      el.style.webkitMaskImage = url; el.style.maskImage = url;
+      el.style.webkitMaskSize = `${loop}px ${tall}px`; el.style.maskSize = `${loop}px ${tall}px`;
+      el.style.animationDuration = `${layer.seconds}s`;   // the shader's 90 / 68 / 45 s, far to near
+    });
+  }
+
+  sea();
+  looks();
   window.addEventListener("hashchange", route);
   whoAmI().then(route);
 })();

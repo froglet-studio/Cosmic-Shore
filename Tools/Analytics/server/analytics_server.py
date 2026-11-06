@@ -61,7 +61,9 @@ CONSOLE_DIR = os.path.normpath(os.path.join(HERE, "..", "console"))
 CONSOLE_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
                  "/index.html": ("index.html", "text/html; charset=utf-8"),
                  "/console.css": ("console.css", "text/css; charset=utf-8"),
-                 "/console.js": ("console.js", "text/javascript; charset=utf-8")}
+                 "/console.js": ("console.js", "text/javascript; charset=utf-8"),
+                 "/themes.css": ("themes.css", "text/css; charset=utf-8"),
+                 "/theme.js": ("theme.js", "text/javascript; charset=utf-8")}
 CONSOLE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                "font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; "
                "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")

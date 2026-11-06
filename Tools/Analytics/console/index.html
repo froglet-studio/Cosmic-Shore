@@ -10,12 +10,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="themes.css">
 <link rel="stylesheet" href="console.css">
 </head>
 <body>
+<div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
 <div class="shell">
   <nav class="rail" aria-label="Pages">
-    <div class="brand"><span class="lab">Froglet</span><span class="h3">Analytics</span></div>
+    <div class="brand"><span class="lab">Froglet</span><span class="h3">Analytics</span><span class="strip" aria-hidden="true"></span></div>
     <a class="nav" href="#overview" data-page="overview">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z"/></svg>Overview</a>
     <a class="nav" href="#players" data-page="players">
@@ -36,6 +39,7 @@
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg>Ask Claude</a>
     <a class="nav" href="#erasure" data-page="erasure">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>Erasure</a>
+    <div class="looks" id="looks" aria-label="Theme"></div>
     <div class="who">
       <span class="lab">Signed in</span>
       <span class="small" id="who-name">Not signed in</span>

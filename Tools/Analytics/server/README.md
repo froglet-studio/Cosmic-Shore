@@ -5,18 +5,16 @@ Oracle VM, and serves the **Froglet Analytics console**: the dashboard picked on
 pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §137). Claude writes
 three notes about the numbers each night and answers questions in the Ask box. UGS Analytics is unchanged.
 
-Status (2026-11-06): live on the Oracle VM. The game sends to it directly (PostHog removed from the game).
-Not yet on the VM; the game is not yet pointed at it.
+Status (2026-11-06): live on the Oracle VM, following `bleeding-edge` and updating itself nightly. The game sends to it
+directly (PostHog removed from the game). PostHog's history is in: 66,746 events over 91 days from early August 2026,
+every day matching PostHog's own count. Where it stands, what is unchecked and what it waits on:
+`Docs/Reports/ANALYTICS.md`.
 
 ## The console page
 
-`Tools/Analytics/console/` (`index.html`, `console.css`, `console.js`): plain HTML, CSS and JS with no build step and
-no library, drawn to the Frogma style guide (Deep Sea, Aldrich and Chakra Petch, cut corners; data in blue-68, a
-problem in Fire, healthy as the Lime tick, the picked filter and focus in Jade). The server serves it at `/` with a
-strict Content-Security-Policy. It asks once for the reader's key and keeps it in that browser. GitHub Pages can host
-the same three files; open it there as `https://<pages>/?api=https://analytics.<the VM>` and add the Pages origin to
-`allowed_origins`. The page holds no data. The CSS uses `froglet.css`'s token names; link that file instead of the
-inline copy once `claude/ui-style-guide` merges.
+`Tools/Analytics/console/` (`index.html`, `console.css`, `console.js`, and the generated `themes.css` and `theme.js`): plain HTML, CSS and JS with no build step and no library, drawn to the Frogma style guide (Aldrich and Chakra Petch, cut corners; a problem in Fire, healthy as the Lime tick). Its **theme** is one of the game's colour sets, picked in the sidebar: **Nocturne**, **Photic** or **Dart Frog**, and the whole UI changes with it. The set's signature face (Plum, Deep cyan, Bronze) re-hues the ground, panels, lines and text at the style guide's Deep Sea lightness steps (Dart Frog is metallic bronze); panels are drawn like the game's prisms, a faint rim over the face; the set's rims paint the sea lines behind every page (the menu's SeaLines, its three slow layers), the data, the selection and focus, and the four category colours where a chart compares play types or builds; its own call to action and danger keep their meanings. `make_themes.py` writes the themes from the game's `ColorSetCatalog` (the assets read as linear HDR) and `froglet-tokens.json`, every text and mark colour fitted to 4.5:1 or 3:1. Re-run it when a colour set changes; `--check` and the server's self-test fail when the files drift. The choice is kept in that browser; with none, the theme is the colour set the game runs on. The server serves the page at `/` with a strict Content-Security-Policy. It asks once for the reader's key and keeps it in that browser. GitHub Pages can host
+the same five files; open it there as `https://<pages>/?api=https://analytics.<the VM>` and add the Pages origin to
+`allowed_origins`. The page holds no data.
 
 ## How the game reaches it (nothing to fill in)
 
@@ -50,7 +48,12 @@ sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytic
   import-posthog --project <id> --dry-run
 ```
 
-Drop `--dry-run` to store; it rebuilds the numbers when it finishes.
+Drop `--dry-run` to store; it rebuilds the numbers when it finishes. Our PostHog project is `224840` (EU cloud).
+
+It reads one count per day first, skips empty days, and checks each day it reads against that count (`days_short` in
+the summary). It pages by `timestamp`, because PostHog answers 400 to `OFFSET` on queries made with a personal API
+key, and waits when PostHog rate-limits it. Run it once more after the builds that still send to PostHog have died
+out: it adds only what is missing. Then delete the personal key in PostHog.
 
 ## Updates (nightly, by itself)
 
@@ -173,4 +176,4 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 
 - `build_kind` stamped by the client (would split development builds from release; today they count as release).
 - Off-VM backups (the nightly backup stays on the VM's disk).
-- PostHog's history is loaded by running `import-posthog` once (above); nothing does it automatically.
+- A last `import-posthog` run, once the builds that still send to PostHog are gone; then PostHog can be shut down.

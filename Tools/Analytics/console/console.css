@@ -1,33 +1,20 @@
-/* The Froglet Analytics console, drawn to the Frogma style guide (Deep Sea).
-   Tokens use the names of Docs/UI/froglet.css (Tools/Build/froglet_style.py, on claude/ui-style-guide); once that file
-   is on bleeding-edge, link it and delete this :root block. Six families, one meaning each: data is Blue (blue-68),
-   a problem is Fire, healthy is the Lime tick, the picked filter and focus are Jade (selection). Nothing is rounded. */
+/* The Froglet Analytics console, drawn to the Frogma style guide. Every colour comes from the THEME (themes.css,
+   make_themes.py): one of the game's colour sets. Its signature face re-hues the Deep Sea ground, panels, lines and
+   text (Dart Frog is metallic bronze); panels are drawn like the game's prisms, a faint glowing rim over the face with
+   a light sheen; its rims paint the sea lines behind every page, the data, the selection and focus and the category
+   colours; its own call to action and danger keep their meanings. Nothing is rounded. */
 :root {
-  --fs-ground: #00041F;
-  --fs-ground-deep: #00010A;
-  --fs-surface: #222645;
-  --fs-line: #434C89;
-  --fs-text: #E6E9FF;
-  --fs-text-soft: #747BAD;
-  --fs-text-off: #5C5F70;
-  --fs-cta: #99FF80;
-  --fs-danger: #FF4B3A;
-  --fs-selection: #00D4FF;
-  --fs-blue-68: #758FFB;
-  --fs-blue-84: #B9C9FA;
   --fs-font-body: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
   --fs-font-label: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
   --fs-sliver-large: 14px;
   --fs-sliver-small: 10px;
   --fs-dur-micro: 120ms;
-  --data: var(--fs-blue-68);
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
-body { background: var(--fs-ground); color: var(--fs-text); font-family: var(--fs-font-body); font-size: 16px; }
+body { background: var(--fs-ground); position: relative; color: var(--fs-text); font-family: var(--fs-font-body); font-size: 16px; }
 button, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--fs-selection); outline-offset: 2px; }
 
@@ -41,14 +28,17 @@ button, input { font: inherit; color: inherit; }
 .danger { color: var(--fs-danger); }
 .sl { clip-path: polygon(var(--fs-sliver-large) 0, 100% 0, 100% calc(100% - var(--fs-sliver-large)), calc(100% - var(--fs-sliver-large)) 100%, 0 100%, 0 var(--fs-sliver-large)); }
 .sls { clip-path: polygon(var(--fs-sliver-small) 0, 100% 0, 100% calc(100% - var(--fs-sliver-small)), calc(100% - var(--fs-sliver-small)) 100%, 0 100%, 0 var(--fs-sliver-small)); }
-.panel { background: var(--fs-surface); box-shadow: inset 0 0 0 1px var(--fs-line); }
+.panel { background:
+    linear-gradient(160deg, color-mix(in srgb, var(--fs-surface-raised) 34%, transparent) 0%, transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fs-surface) 92%, transparent), color-mix(in srgb, var(--fs-surface) 86%, var(--fs-ground-deep)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rim) 28%, var(--fs-line)), inset 0 1px 0 color-mix(in srgb, var(--rim) 45%, transparent); }
 
 /* preview mode only (make_preview.py): says the numbers are invented */
 .preview-note { margin: 0; padding: 10px 16px; background: var(--fs-surface); box-shadow: inset 3px 0 0 var(--fs-text-soft); font-size: 14px; color: var(--fs-text); }
 
 /* the shell: a rail of pages and the page */
 .shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100%; }
-.rail { background: var(--fs-ground-deep); box-shadow: inset -1px 0 0 var(--fs-line); padding: 32px 14px 24px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.rail { background: color-mix(in srgb, var(--fs-ground-deep) 82%, transparent); box-shadow: inset -1px 0 0 var(--fs-line); padding: 32px 14px 24px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
 .brand { display: flex; flex-direction: column; gap: 4px; padding: 0 16px 24px; }
 .nav { font-family: var(--fs-font-label); font-weight: 600; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--fs-text-soft); text-decoration: none; display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 16px; transition: color var(--fs-dur-micro); }
 .nav svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; flex: none; }
@@ -105,7 +95,7 @@ td.meter { width: 32%; min-width: 120px; }
 .chart .grid { stroke: var(--fs-line); stroke-width: 1; }
 .chart .target { stroke: var(--fs-text-soft); stroke-width: 1; stroke-dasharray: 4 6; }
 .chart .mark { fill: var(--data); }
-.chart .mark:hover, .chart .mark.hot { fill: var(--fs-blue-84); }
+.chart .mark:hover, .chart .mark.hot { fill: var(--data-hot); }
 .chart .line { fill: none; stroke: var(--data); stroke-width: 2; }
 .chart .hit { fill: transparent; cursor: crosshair; }
 .tip { position: absolute; pointer-events: none; background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-line); padding: 6px 10px; font-size: 13px; white-space: nowrap; transform: translate(-50%, -110%); }
@@ -127,7 +117,7 @@ td.meter { width: 32%; min-width: 120px; }
 /* buttons, fields, windows */
 .btn { font-family: var(--fs-font-label); font-weight: 600; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; border: 0; height: 48px; padding: 0 26px; cursor: pointer; transition: filter var(--fs-dur-micro); }
 .btn:active { transform: translateY(2px); filter: brightness(.85); }
-.btn:disabled { background: var(--fs-text-off); color: #25262D; cursor: not-allowed; box-shadow: none; }
+.btn:disabled { background: var(--fs-text-off); color: var(--fs-ground); cursor: not-allowed; box-shadow: none; }
 .btn.default { background: var(--fs-text); color: var(--fs-ground); }
 .btn.danger-btn { background: transparent; color: var(--fs-danger); box-shadow: inset 0 0 0 2px var(--fs-danger); }
 .field { background: var(--fs-ground); border: 0; box-shadow: inset 0 0 0 1px var(--fs-line); height: 48px; padding: 0 16px; width: 100%; color: var(--fs-text); }
@@ -136,7 +126,7 @@ td.meter { width: 32%; min-width: 120px; }
 .chips { display: flex; gap: 10px; flex-wrap: wrap; }
 .chip { background: var(--fs-surface); border: 0; box-shadow: inset 0 0 0 1px var(--fs-line); padding: 10px 14px; cursor: pointer; text-align: left; font-size: 14px; }
 .chip:hover { box-shadow: inset 0 0 0 1px var(--fs-text-soft); }
-.code { background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-line); padding: 14px 16px; margin: 0; font-family: var(--fs-font-body); font-size: 13px; line-height: 1.6; color: var(--fs-blue-84); white-space: pre-wrap; overflow-x: auto; }
+.code { background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-line); padding: 14px 16px; margin: 0; font-family: var(--fs-font-body); font-size: 13px; line-height: 1.6; color: var(--data-text); white-space: pre-wrap; overflow-x: auto; }
 .gate { position: fixed; inset: 0; background: rgba(0, 1, 10, .86); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .gate[hidden] { display: none; }
 .window { width: min(480px, 100%); background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-text); padding: 28px 32px; display: flex; flex-direction: column; gap: 12px; }
@@ -155,3 +145,35 @@ td.meter { width: 32%; min-width: 120px; }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* the theme picker, in the rail (themes.css, theme.js) */
+.looks { display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 20px; margin-top: auto; }
+.sets { display: flex; flex-direction: column; gap: 2px; }
+.set { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 8px; border: 0; background: transparent; color: var(--fs-text-soft); cursor: pointer; text-align: left; font-size: 14px; transition: color var(--fs-dur-micro); }
+.set:hover { color: var(--fs-text); }
+.set[aria-pressed="true"] { color: var(--fs-text); background: var(--fs-surface); box-shadow: inset 2px 0 0 var(--fs-selection); }
+.swatch { display: flex; gap: 2px; flex: none; }
+.swatch i { width: 12px; height: 18px; display: block; }
+.looks + .who { margin-top: 0; }
+.brand .strip { display: flex; gap: 3px; margin-top: 8px; }
+.brand .strip i { display: block; width: 26px; height: 3px; }
+
+/* the sea behind every page: the menu's SeaLines (Docs/MENU_REDESIGN_B.md section 67) in the theme's rims.
+   A wash leaning to the set's Blue, a glow high up, then three layers of lines that slide one 480-unit loop in
+   90 / 68 / 45 s (far to near). Each layer is the set's Jade -> Blue -> Ruby, cut to its lines by a mask tile that
+   console.js draws from the shader's own maths; the tile repeats every loop, so no seam ever passes. */
+.sea { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 22%, color-mix(in srgb, var(--sea-glow) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--sea-wash) 0%, color-mix(in srgb, var(--sea-wash) 40%, var(--fs-ground)) 50%, var(--fs-ground) 100%); }
+.sea-lines { position: absolute; inset: 0;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%); }
+.sea-layer { position: absolute; inset: 0; background: linear-gradient(90deg, var(--sea-1), var(--sea-2) 50%, var(--sea-3));
+  -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; -webkit-mask-position: 0 0; mask-position: 0 0; }
+.sea-layer:nth-child(1) { animation: sea-slide 90s linear infinite; }
+.sea-layer:nth-child(2) { animation: sea-slide 68s linear infinite; }
+.sea-layer:nth-child(3) { animation: sea-slide 45s linear infinite; }
+@keyframes sea-slide { from { -webkit-mask-position: 0 0; mask-position: 0 0; } to { -webkit-mask-position: -480px 0; mask-position: -480px 0; } }
+@media (prefers-reduced-motion: reduce) { .sea-layer { animation: none; } }
+.shell { position: relative; z-index: 1; }
