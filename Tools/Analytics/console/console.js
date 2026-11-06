@@ -22,10 +22,14 @@
     eras: { title: "Eras", build: true, days: DAYS, play: false, era: false },
     playtypes: { title: "Solo vs AI, Solo, Multiplayer", build: true, days: DAYS, play: false, era: true },
     retention: { title: "Retention", build: true, days: DAYS, play: true, era: true },
+    sessions: { title: "Sessions", build: true, days: DAYS, play: false, era: true },
     matches: { title: "Matches", build: true, days: DAYS, play: true, era: true },
+    balance: { title: "Balance", build: true, days: DAYS, play: true, era: true },
+    quits: { title: "Quits", build: true, days: DAYS, play: true, era: true },
     ftue: { title: "FTUE", build: true, days: DAYS },
     economy: { title: "Economy", build: true, days: DAYS },
     social: { title: "Social", build: true, days: DAYS },
+    errors: { title: "Errors", build: true, days: DAYS, play: false, era: true },
     health: { title: "Data health", build: false, days: [14, 30, 90] },
     ask: { title: "Ask Claude", build: false, days: null },
     query: { title: "Query Studio", build: true, days: DAYS, play: true, era: true, admin: true },
@@ -221,11 +225,13 @@
     // Freestyle (the Toybox): its own panel offers these; the match charts do not
     freestyle_entries: ["Toybox entries", "count"], freestyle_players: ["Toybox players", "count"],
     freestyle_minutes: ["Toybox minutes", "count"], freestyle_switches: ["Vessel switches", "count"],
+    // Balance and Quits (round 67): game_completed's score and placement, player_won, match_abandoned
+    score: ["Score", "avg"], placement: ["Placement", "avg"], win_pct: ["Won %", "pct"], abandon_pct: ["Quit %", "pct"],
   };
   const MATCH_MEASURES = ["matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events"];
   const SPLITS = [["none", "None"], ["play_type", "Play type"], ["setup", "Setup"], ["element", "Element"], ["era", "Era"], ["platform", "Platform"],
                   ["country", "Country"], ["game_mode", "Mode"], ["vessel_class", "Vessel"], ["build_kind", "Build"],
-                  ["intensity", "Intensity"], ["from_vessel_class", "Switched from"], ["switch_source", "Source"]];
+                  ["intensity", "Intensity"], ["ai_difficulty", "AI difficulty"], ["from_vessel_class", "Switched from"], ["switch_source", "Source"]];
   const MATCH_SPLITS = SPLITS.map(([k]) => k).filter((k) => !["from_vessel_class", "switch_source"].includes(k));
   // ELEMENTS HAVE NO COLOUR (LOCKED): an element split is one neutral hue in steps (the text token mixed into the
   // ground), with its name beside every mark; never Jade, Ruby, Gold, Blue or the domain series colours.
@@ -251,6 +257,14 @@
     solo_with_ai_team: "color-mix(in srgb, var(--data) 62%, var(--fs-ground))",
   };
   const OVERS = [["day", "Day"], ["week", "Week"], ["none", "Total"]];
+  // AI difficulty is an order, not an identity: one neutral hue in steps, light (easiest) to dark (hardest), "not sent"
+  // the faintest. Like elements, it never wears a domain or series colour.
+  function difficultyColour(f, k) {
+    if (k === "unknown" || !k || k === "other") return `color-mix(in srgb, var(--fs-text) 24%, var(--fs-ground))`;
+    const named = (f.keys || []).filter((x) => x && x !== "unknown" && x !== "other");
+    const i = Math.max(0, named.indexOf(k)), n = Math.max(1, named.length - 1);
+    return `color-mix(in srgb, var(--fs-text) ${Math.round(100 - 62 * i / n)}%, var(--fs-ground))`;
+  }
 
   function makeFrame(o) {
     const f = Object.assign({ time: false, xs: [null], keys: [null], by: "none", kind: "count", v: new Map(),
@@ -305,6 +319,7 @@
     if (f.by === "element") return elementLabel(k);
     if (f.by === "setup") return SETUP_LONG[k] || String(k);
     if (f.by === "switch_source") return SWITCH_SOURCE[k] || String(k);
+    if (f.by === "ai_difficulty" && (k === "unknown" || !k)) return "Not sent (older builds)";
     if ((f.by === "vessel_class" || f.by === "from_vessel_class") && k === "unknown") return "Not named (older builds)";
     return String(k);
   };
@@ -323,12 +338,13 @@
     if (f.by === "era" && eraById(k)) return eraColour(eraById(k));
     if (f.by === "element") return elementColour(k);
     if (f.by === "setup") return SETUP_COLOUR[k] || OTHER;
+    if (f.by === "ai_difficulty") return difficultyColour(f, k);
     if (f.keys.length === 1 && (k === null || !f.time)) return "var(--data)";
     return i < 4 ? `var(--series-${i + 1})` : OTHER;
   }
   // At most four named series and "Other" for a picture (the Table shows every one).
   function folded(f) {
-    if (f.keys.length <= 5 || f.by === "play_type" || f.by === "era" || f.by === "element" || f.by === "setup") return f;
+    if (f.keys.length <= 5 || f.by === "play_type" || f.by === "era" || f.by === "element" || f.by === "setup" || f.by === "ai_difficulty") return f;
     const keep = f.keys.filter((k) => k !== "other").slice(0, 4), rest = f.keys.filter((k) => !keep.includes(k));
     if (f.kind !== "count") return makeFrame(Object.assign({}, f, { keys: keep, hidden: rest.length }));
     const v = new Map(f.v);
@@ -500,7 +516,7 @@
     const shown = items.slice(0, limit);
     const max = f.kind === "pct" ? 100 : Math.max(1, ...shown.map((r) => Number(r[1]) || 0));
     const tip = tipFor(box);
-    const entity = f.by === "play_type" || f.by === "era" || f.by === "element" || f.by === "setup" || f.colours;   // otherwise one series: colour is not identity
+    const entity = f.by === "play_type" || f.by === "era" || f.by === "element" || f.by === "setup" || f.by === "ai_difficulty" || f.colours;   // otherwise one series: colour is not identity
     const rows = h("div", { class: "hbars" }, shown.map(([k, v], i) => {
       const colour = entity ? keyColour(f, k, i) : "var(--data)";
       const fill = h("div", { class: "hbar-fill", style: `width:${Math.max(0, Math.min(100, 100 * (Number(v) || 0) / max))}%;background:${colour}` });
@@ -518,7 +534,7 @@
   // labels: each slice of 6% or more carries its share on the mark (text in the text token, haloed by the ground).
   function drawDonut(f0, W, box, { centre, max = 200, labels = false } = {}) {
     let items = f0.time ? f0.keys.map((k) => [k, f0.total(k)]) : f0.keys.map((k) => [k, Number(f0.get(null, k)) || 0]);
-    const entity = f0.by === "play_type" || f0.by === "era" || f0.by === "element" || f0.by === "setup" || f0.colours;
+    const entity = f0.by === "play_type" || f0.by === "era" || f0.by === "element" || f0.by === "setup" || f0.by === "ai_difficulty" || f0.colours;
     if (!entity && items.length > 4) {
       const rest = items.slice(4);
       items = items.slice(0, 4).concat([["other", sum(rest, (r) => r[1])]]);
@@ -655,7 +671,7 @@
         formCtl = h("label", { class: "mini-seg" }, h("span", { class: "mini-lab" }, "Form"), sel);
       } else formCtl = seg("Form", formOpts, shown || pick.form, (v) => { pick.form = v; remember(); paint(); });
       const parts = [formCtl];
-      if (cfg.measures) parts.push(seg("Measure", cfg.measures.filter(([k]) => !rejected.has(combo(k, "none", pick.over)) || k === pick.measure),
+      if (cfg.measures) parts.push(seg(cfg.measureLabel || "Measure", cfg.measures.filter(([k]) => !rejected.has(combo(k, "none", pick.over)) || k === pick.measure),
         pick.measure, (v) => { pick.measure = v; remember(); load(); }));
       if (cfg.overs) parts.push(seg("Over", OVERS.filter(([k]) => cfg.overs.includes(k)), pick.over, (v) => { pick.over = v; remember(); load(); }));
       if (cfg.splits) {
@@ -758,6 +774,9 @@
     "players.series": "Active players", "overview.playtype": "Rematch and return by play type", "overview.health": "Match health by build",
     "overview.setups.multiplayer": "Match setups, multiplayer", "overview.setups.solo": "Match setups, solo",
     "overview.setups.series": "Match setups over time",
+    "sessions.active": "Daily, weekly and monthly players", "sessions.per_day": "Sessions per day", "sessions.length": "Session length",
+    "balance.split": "Score, placement and wins", "balance.difficulty": "Won against each AI difficulty", "balance.grid": "Intensity by AI difficulty",
+    "quits.split": "Quit rate", "quits.series": "Quits over time", "errors.split": "Errors by", "social.invites": "Invite funnel",
   };
   const chartTitle = (id) => CHART_TITLES[id] || String(id || "").replace(/[._]/g, " ");
   const presetable = (cfg) => !cfg.compact && cfg.views !== false && !/^(profile|dash|query)\./.test(cfg.id) && !(state.page === "players" && state.person);
@@ -988,6 +1007,18 @@
             ["Whales", fmt(biz && biz.whales_2000), "players holding 2,000+", false, "business.whales_2000"],
             ["Earned per spent", biz && biz.crystals_spent ? ratio(biz.crystals_earned / biz.crystals_spent) : "–", "above 1 means saving"],
           ], "tiles-inner"))));
+    }
+    if (o.sessions) {                                    // round 67: DAU / WAU / MAU from any event; sessions from new builds
+      const se = o.sessions;
+      parts.push(tileRow([
+        ["DAU", fmt(se.dau), "players a day, on average", false, "sessions"],
+        ["WAU", fmt(se.wau), "last 7 days", false, "sessions"],
+        ["MAU", fmt(se.mau), "last 30 days", false, "sessions"],
+        ["Stickiness", pct(se.stickiness_pct), "DAU over MAU", false, "sessions"],
+        ["Sessions a player a day", se.sessions_per_player_day === null || se.sessions_per_player_day === undefined ? "–" : ratio(se.sessions_per_player_day),
+         se.sessions ? `${fmt(se.sessions)} sessions` : "from builds after 7 Nov", false, "sessions"],
+        ["Median session", minutes(se.median_session_min), "from builds after 7 Nov", false, "sessions"],
+      ]));
     }
     parts.push(seriesPanel("overview.series", "Matches over time", { measure: "matches", by: "play_type", over: "day", form: "bars" }));
     parts.push(...setupsSection(o));
@@ -2135,6 +2166,255 @@
         ["Multi-human matches", fmt(so.multi_human_matches)]]),
       chartPanel({ id: "social.events", title: "Every social event", forms: ["bars", "pie", "table"], defaults: { form: "bars" },
         load: staticLoad(() => catFrame(Object.entries(t).map(([k, v]) => ({ k: k.replace(/_/g, " "), v })), "k", "v", { kname: "Event", vname: "Count" })) }),
+      ...await invitesSection(),
+    ];
+  }
+
+  // ------------------------------------------------------------------ Round 67: Sessions, Balance, Quits, Errors, Invites
+  // Shombith, 2026-11-07: sessions and DAU / WAU / MAU, balance (score, placement, AI difficulty), mid-match quits and
+  // frustration, invite attribution, and the client errors. Every number is a total from aggregates.db.
+
+  const notesBlock = (notes) => (notes || []).length ? h("div", { class: "notes-block" }, notes.map((n) => h("p", { class: "small" }, n))) : null;
+  const sinceLine = (day, what) => h("p", { class: "small" }, day ? `${what} since ${shortDay(day)} ${String(day).slice(0, 4)}.` : `${what}: none received yet. Builds made after 7 Nov send them.`);
+  const minutes = (m) => (m === null || m === undefined ? "–" : `${(Math.round(m * 10) / 10).toLocaleString("en-GB")} min`);
+  const ACTIVE_LABEL = { dau: "Daily (DAU)", wau: "Weekly (WAU)", mau: "Monthly (MAU)" };
+
+  async function sessionsPage() {
+    const d = await api(`/v1/sessions?${filterQuery()}`);
+    setUpdated(d.built_ms);
+    state.unfiltered = d.unfiltered || [];
+    if (d.empty) return [empty("Nothing has been received yet.")];
+    const t = d.tiles || {}, per = d.per_day || [];
+    return [
+      tileRow([
+        ["DAU", fmt(t.dau), "players a day, on average"],
+        ["WAU", fmt(t.wau), "players in the last 7 days"],
+        ["MAU", fmt(t.mau), "players in the last 30 days"],
+        ["Stickiness", pct(t.stickiness_pct), "DAU over MAU"],
+        ["Sessions", fmt(t.sessions), rangeLabel()],
+        ["A player a day", t.sessions_per_player_day === null ? "–" : ratio(t.sessions_per_player_day), "sessions"],
+        ["Median session", minutes(t.median_session_min), t.p90_session_min === null ? "" : `p90 ${minutes(t.p90_session_min)}`],
+      ]),
+      chartPanel({ id: "sessions.active", title: "Daily, weekly and monthly players", note: `${state.build} builds, ${rangeLabel()} · any event, so the PostHog history too`,
+        measures: [["active", "DAU · WAU · MAU"], ["stickiness", "Stickiness"]], forms: ["line", "table"], defaults: { form: "line" },
+        emptyText: "Nobody in this range.",
+        load: staticLoad(({ measure }) => {
+          if (measure === "stickiness") return timeFrame(per, "day", "stickiness_pct", { kind: "pct", label: () => "Stickiness (DAU / MAU)" });
+          const v = new Map();
+          for (const r of per) for (const k of ["dau", "wau", "mau"]) v.set(String(r.day) + SEP + k, r[k]);
+          return makeFrame({ time: true, xs: per.map((r) => r.day), keys: ["dau", "wau", "mau"], v, kind: "count", label: (k) => ACTIVE_LABEL[k] || k });
+        }) }),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "sessions.per_day", title: "Sessions per day", note: "cold start or back after 30+ min in the background",
+          forms: ["bars", "line", "table"], defaults: { form: "bars" }, emptyText: "No sessions yet: builds after 7 Nov send session_started.",
+          load: staticLoad(() => {
+            const rows = d.sessions_per_day || [], v = new Map();
+            const keys = ["cold", "resume"].concat(rows.some((r) => r.unknown) ? ["unknown"] : []);
+            for (const r of rows) for (const k of keys) v.set(String(r.day) + SEP + k, r[k]);
+            return makeFrame({ time: true, xs: rows.map((r) => r.day), keys, v, kind: "count",
+              label: (k) => ({ cold: "Cold start", resume: "Resumed", unknown: "Not sent" })[k] || k });
+          }) }),
+        chartPanel({ id: "sessions.length", title: "Session length", note: t.ended ? `${fmt(t.ended)} ended sessions` : "sessions that ended",
+          forms: ["bars", "table"], defaults: { form: "bars" }, emptyText: "No ended sessions yet.",
+          load: staticLoad(() => catFrame(d.lengths || [], "bucket", "sessions", { kname: "Length", vname: "Sessions", label: (k) => String(k) })) })),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "sessions.platform", title: "By platform", measures: [["sessions", "Sessions"], ["median_session_min", "Median min"]],
+          forms: ["bars", "table"], emptyText: "No sessions yet.",
+          load: staticLoad(({ measure }) => catFrame(d.platforms || [], "platform", measure,
+            { kind: measure === "sessions" ? "count" : "avg", kname: "Platform", vname: measure === "sessions" ? "Sessions" : "Median minutes" })) }),
+        card("What these count", null, sinceLine((d.history || {}).first_session_day, "Sessions"), notesBlock(d.notes))),
+    ];
+  }
+
+  const ordinal = (n) => { const v = Number(n); const s0 = ["th", "st", "nd", "rd"], m = v % 100; return v + (s0[(m - 20) % 10] || s0[m] || s0[0]); };
+  const BALANCE_MEASURES = [["win_pct", "Won %"], ["placement", "Placement"], ["score", "Score"], ["matches", "Matches"]];
+  const diffLabel = (k) => (!k || k === "unknown" ? "Not sent (older builds)" : String(k));
+
+  function heatGrid(rows, measure, kind) {
+    const ints = [...new Set(rows.map((r) => r.intensity))].sort((a, b) => (Number(a) || 99) - (Number(b) || 99));
+    const diffs = [...new Set(rows.map((r) => r.ai_difficulty))];
+    const order = (d) => (d === "unknown" ? 1 : 0);
+    diffs.sort((a, b) => order(a) - order(b));
+    const cell = Object.fromEntries(rows.map((r) => [r.intensity + SEP + r.ai_difficulty, r]));
+    const vals = rows.map((r) => Number(r[measure])).filter((v) => Number.isFinite(v));
+    const max = Math.max(1, ...vals), min = Math.min(0, ...vals);
+    const style = (v) => {
+      if (v === null || v === undefined) return "";
+      const share = 10 + 80 * (kind === "pct" ? Math.max(0, Math.min(100, v)) / 100 : (v - min) / ((max - min) || 1));
+      return `background:color-mix(in srgb, var(--data) ${share.toFixed(0)}%, var(--fs-ground));color:${share > 58 ? "var(--fs-ground)" : "var(--fs-text)"}`;
+    };
+    const text = (v) => (v === null || v === undefined ? "" : kind === "pct" ? pct(v) : kind === "avg" ? (Math.round(v * 100) / 100).toLocaleString("en-GB") : fmt(v));
+    return table(["Intensity"].concat(diffs.map(diffLabel)), ints.map((i) => h("tr", {},
+      h("td", {}, i === "unknown" ? "Not sent" : `Intensity ${i}`),
+      diffs.map((dname) => {
+        const r = cell[i + SEP + dname];
+        const v = r ? r[measure] : null;
+        return h("td", { class: "heat", style: style(v), title: r ? `Intensity ${i}, ${diffLabel(dname)}: ${fmt(r.plays)} plays · won ${pct(r.win_pct)} · placement ${r.avg_placement ?? "–"} · quit ${pct(r.quit_pct)}` : "" }, r ? text(v) : "");
+      }))));
+  }
+
+  async function balancePage() {
+    const b = await api(`/v1/balance?${filterQuery()}`);
+    setUpdated(b.built_ms);
+    state.unfiltered = b.unfiltered || [];
+    if (b.empty) return [empty("Nothing has been received yet.")];
+    const t = b.tiles || {}, hi = b.history || {};
+    const diffRows = b.by_difficulty || [];
+    const gridMeasures = [["win_pct", "Won %", "pct"], ["plays", "Plays", "count"], ["avg_placement", "Placement", "avg"], ["quit_pct", "Quit %", "pct"]];
+    return [
+      tileRow([
+        ["Plays", fmt(t.plays), rangeLabel()],
+        ["Won", pct(t.win_pct), "of finished plays that said"],
+        ["Avg placement", t.avg_placement === null || t.avg_placement === undefined ? "–" : ratio(t.avg_placement), "1 is best"],
+        ["With a score", fmt(t.scored), "finished plays"],
+        ["With AI difficulty", fmt(t.with_difficulty), "plays that sent it"],
+      ]),
+      sinceLine(hi.first_score_day, "Scores and placements"),
+      chartPanel({ id: "balance.split", title: "Score, placement and wins", note: `${state.build} builds, ${rangeLabel()} · score is per mode's own scale`,
+        measures: BALANCE_MEASURES, splits: ["ai_difficulty", "game_mode", "vessel_class", "intensity", "play_type", "setup", "element", "none"],
+        overs: ["none", "week", "day"], forms: ["bars", "line", "table"], load: seriesLoad(),
+        defaults: { measure: "win_pct", by: "ai_difficulty", over: "none", form: "bars" }, emptyText: "No finished matches in this range." }),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "balance.difficulty", title: "Won against each AI difficulty", note: "as the game names it",
+          measures: [["win_pct", "Won %"], ["avg_placement", "Placement"], ["quit_pct", "Quit %"], ["plays", "Plays"]],
+          forms: ["bars", "table"], emptyText: "No plays in this range.",
+          load: staticLoad(({ measure }) => Object.assign(catFrame(diffRows, "ai_difficulty", measure, {
+            by: "ai_difficulty", kind: /pct$/.test(measure) ? "pct" : measure === "plays" ? "count" : "avg", kname: "AI difficulty",
+            vname: measure.replace(/_/g, " "), label: diffLabel,
+            tips: Object.fromEntries(diffRows.map((r) => [r.ai_difficulty, `${fmt(r.plays)} plays · won ${pct(r.win_pct)} · placement ${r.avg_placement ?? "–"}`])) }),
+            { table: { columns: ["AI difficulty", "Plays", "Finished", "Won", "Placement", "Score", "Behind by", "Quit"], rows: diffRows.map((r) =>
+              [diffLabel(r.ai_difficulty), fmt(r.plays), fmt(r.finished), pct(r.win_pct), r.avg_placement ?? "–", r.avg_score ?? "–", r.avg_behind_by ?? "–", pct(r.quit_pct)]) } })) }),
+        chartPanel({ id: "balance.grid", title: "Intensity by AI difficulty", note: "the darker, the higher", measures: gridMeasures.map(([k, l]) => [k, l]),
+          forms: ["table"], isEmpty: () => !(b.grid || []).length, emptyText: "No plays in this range.",
+          custom: { grid: { label: "Grid", draw: (f) => heatGrid(b.grid || [], f.measure, (gridMeasures.find((g) => g[0] === f.measure) || [])[2]) } },
+          load: staticLoad(({ measure }) => Object.assign(makeFrame({ custom: true, measure }), { table: { columns: ["Intensity", "AI difficulty", "Plays", "Finished", "Won", "Placement", "Quit"],
+            rows: (b.grid || []).map((r) => [r.intensity, diffLabel(r.ai_difficulty), fmt(r.plays), fmt(r.finished), pct(r.win_pct), r.avg_placement ?? "–", pct(r.quit_pct)]) } })) })),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "balance.placements", title: "Where players finish", note: "plays by placement, AI included", forms: ["bars", "table"],
+          emptyText: "No placements yet: builds after 7 Nov send them.",
+          load: staticLoad(() => catFrame((b.placements || []).map((r) => ({ k: ordinal(r.placement), v: r.plays })), "k", "v", { kname: "Placement", vname: "Plays" })) }),
+        card("By mode", "finished plays; behind by is the gap to the winner in a loss",
+          (b.by_mode || []).length ? table(["Mode", "Plays", "Score", "Placement", "Won", "Behind by", "Quit"], b.by_mode.map((r) => h("tr", {},
+            h("td", {}, r.game_mode), h("td", { class: "num" }, fmt(r.plays)), h("td", { class: "num" }, r.avg_score ?? "–"),
+            h("td", { class: "num" }, r.avg_placement ?? "–"), h("td", { class: "num" }, pct(r.win_pct)), h("td", { class: "num soft" }, r.avg_behind_by ?? "–"),
+            h("td", { class: "num" }, pct(r.quit_pct))))) : h("p", { class: "small" }, "No plays in this range."))),
+      card("What these count", null, sinceLine(hi.first_difficulty_day, "AI difficulty"), notesBlock(b.notes)),
+    ];
+  }
+
+  async function quitsPage() {
+    const q = await api(`/v1/quits?${filterQuery()}`);
+    setUpdated(q.built_ms);
+    state.unfiltered = q.unfiltered || [];
+    if (q.empty) return [empty("Nothing has been received yet.")];
+    const t = q.tiles || {}, c = q.chain || {};
+    const chain = [
+      { k: "failed", label: "Lost several in a row", v: c.failed, note: "player-days with a repeated_game_fail" },
+      { k: "quit_after", label: "Then quit a match within 1 h", v: c.quit_after },
+      { k: "quit_mature", label: "Of those, 7+ days ago", v: c.quit_mature },
+      { k: "gone_7d", label: "Then gone for 7 days", v: c.gone_7d },
+    ];
+    return [
+      tileRow([
+        ["Quit rate", pct(t.quit_pct), "of plays from builds that tell"],
+        ["Quits", fmt(t.quits), rangeLabel()],
+        ["Plays counted", fmt(t.tracked_plays), `of ${fmt(t.plays)} in the range`],
+        ["Finished", pct(t.finished_pct), "of the plays counted"],
+        ["Time in", t.median_quit_s === null || t.median_quit_s === undefined ? "–" : seconds(t.median_quit_s), "median, before quitting"],
+        ["Quit after a fail streak", pct(c.quit_after_pct), "within 1 h", false, "chain"],
+      ]),
+      sinceLine((q.history || {}).first_quit_day, "Quits"),
+      chartPanel({ id: "quits.split", title: "Quit rate", note: `${state.build} builds, ${rangeLabel()} · only builds that send match_abandoned`,
+        measures: [["abandon_pct", "Quit %"], ["finished_pct", "Finished %"], ["matches", "Matches"]],
+        splits: ["game_mode", "vessel_class", "intensity", "setup", "ai_difficulty", "play_type", "element", "none"], overs: ["none", "week", "day"],
+        forms: ["bars", "line", "table"], load: seriesLoad(), defaults: { measure: "abandon_pct", by: "game_mode", over: "none", form: "bars" },
+        emptyText: "No plays from builds that send quits in this range." }),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "quits.reasons", title: "How they left", forms: ["pie", "bars", "table"], defaults: { form: "pie" }, donut: { labels: true, centre: "quits", max: 180 },
+          emptyText: "No quits in this range.",
+          load: staticLoad(() => catFrame(q.reasons || [], "reason", "quits", { kname: "Reason", vname: "Quits",
+            label: (k) => ({ quit_to_menu: "Quit to the menu", app_quit: "Closed the app", disconnect: "Disconnected", unknown: "Not sent" })[k] || String(k) })) }),
+        chartPanel({ id: "quits.elapsed", title: "How far in", note: "time into the match when they left", forms: ["bars", "table"],
+          emptyText: "No quits in this range.",
+          load: staticLoad(() => catFrame(q.by_elapsed || [], "bucket", "quits", { kname: "Time in", vname: "Quits", label: (k) => String(k) })) })),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "quits.chain", title: "Frustration chain", note: "counts only; the 7-day step waits until 7 days have passed", tag: true,
+          forms: ["bars", "table"], emptyText: "No repeated fails in this range.",
+          load: staticLoad(() => catFrame(chain, "k", "v", { kname: "Step", vname: "Count", label: (k) => (chain.find((x) => x.k === k) || {}).label || k })),
+          after: statRow([["Gone 7 days after a fail", pct(c.gone_after_fail_pct)], ["After a fail and a quit", pct(c.gone_after_quit_pct)],
+                          ["Fails 7+ days old", fmt(c.failed_mature)]]) }),
+        card("What these count", null, notesBlock(q.notes))),
+    ];
+  }
+
+  async function errorsPage() {
+    const e = await api(`/v1/errors?${filterQuery()}`);
+    setUpdated(e.built_ms);
+    state.unfiltered = e.unfiltered || [];
+    if (e.empty) return [empty("Nothing has been received yet.")];
+    const t = e.tiles || {};
+    const splits = [["by_type", "Type"], ["by_build", "Build"], ["by_platform", "Platform"], ["by_version", "Version"], ["by_scene", "Scene"]];
+    return [
+      tileRow([
+        ["Occurrences", fmt(t.occurrences), rangeLabel(), t.occurrences > 0],
+        ["Error events", fmt(t.events), "one per error per session"],
+        ["Distinct errors", fmt(t.signatures), "type, frame and message hash"],
+        ["Players affected", fmt(t.players), "each once"],
+        ["New this week", fmt(t.new_this_week), "first seen in the last 7 days", t.new_this_week > 0],
+      ]),
+      sinceLine((e.history || {}).first_error_day, "Errors"),
+      chartPanel({ id: "errors.per_day", title: "Errors per day", note: "occurrences, repeats included", forms: ["bars", "line", "table"],
+        emptyText: "No errors in this range.",
+        load: staticLoad(() => timeFrame(e.per_day || [], "day", "occurrences", { label: () => "Occurrences" })) }),
+      card("Where they happen", "the first project frame; New: first seen this week",
+        (e.by_frame || []).length ? table(["Frame", "Type", "Occurrences", "Players", "Messages", "First seen", "Last seen"], e.by_frame.map((r) => h("tr", {},
+          h("td", { class: "frame" }, h("span", { class: "code-inline" }, r.top_frame), r.new ? h("span", { class: "tag new-tag" }, "New") : null),
+          h("td", {}, r.exception_type), h("td", { class: "num bad" }, fmt(r.occurrences)), h("td", { class: "num" }, fmt(r.players)),
+          h("td", { class: "num soft" }, fmt(r.messages)), h("td", {}, shortDay(r.first_day)), h("td", {}, shortDay(r.last_day)))))
+          : h("p", { class: "small" }, "None. No client errors in this range.")),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "errors.split", title: "Errors by", measureLabel: "By", measures: splits, forms: ["bars", "pie", "table"],
+          emptyText: "No errors in this range.",
+          load: staticLoad(({ measure }) => catFrame(e[measure] || [], "key", "occurrences", { kname: (splits.find((x) => x[0] === measure) || [, ""])[1], vname: "Occurrences",
+            colours: measure === "by_build" ? Object.fromEntries(BUILDS.map(([b0], i) => [b0, `var(--series-${i + 1})`])) : null })) }),
+        card("What these count", null, notesBlock(e.notes))),
+    ];
+  }
+
+  // Invites, on the Social page: GET /v1/invites (attribution is worked out on the server; only counts arrive).
+  async function invitesSection() {
+    let v;
+    try { v = await api(`/v1/invites?${filterQuery(PAGES.social)}`); }
+    catch (err) { return [h("h2", { class: "h3 section-title" }, "Invites"), empty(err.message)]; }
+    if (v.empty) return [];
+    const steps = v.funnel || [], roles = v.roles || [];
+    const top = (steps[0] || {}).count || 0;
+    return [
+      h("h2", { class: "h3 section-title" }, "Invites"),
+      h("p", { class: "small" }, (v.history || {}).first_invite_id_day
+        ? `Followed by their invite id since ${shortDay(v.history.first_invite_id_day)}; older invites are matched by time.`
+        : "Every invite so far is from builds before 7 Nov, matched by time: the invitee's receipt names the sender within 10 minutes, and the join comes within 30."),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "social.invites", title: "Invite funnel", note: rangeLabel(), forms: ["bars", "table"], emptyText: "No invites in this range.",
+          load: staticLoad(() => Object.assign(catFrame(steps, "step", "count", { kname: "Step", vname: "Invites",
+            label: (k) => (steps.find((x) => x.step === k) || {}).label || k,
+            tips: Object.fromEntries(steps.map((x) => [x.step, `${pct(top ? 100 * x.count / top : null)} of invites sent${x.of !== undefined ? ` · of ${fmt(x.of)} joins 7+ days old` : ""}`])) }),
+            { table: { columns: ["Step", "Invites", "Of sent"], rows: steps.map((x) => [x.label, fmt(x.count), pct(top ? 100 * x.count / top : null)]) } })) }),
+        chartPanel({ id: "social.roles", title: "Do invites bring people back?", note: "inviters and invitees against everyone",
+          measures: [["d7_pct", "D7 %"], ["d1_pct", "D1 %"], ["players", "Players"]], forms: ["bars", "table"], emptyText: "No joined invites in this range.",
+          isEmpty: () => !roles.some((r) => r.players),
+          load: staticLoad(({ measure }) => Object.assign(catFrame(roles, "role", measure, { kind: measure === "players" ? "count" : "pct", kname: "Who", vname: measure,
+            label: (k) => (roles.find((r) => r.role === k) || {}).label || k,
+            colours: { inviter: "var(--series-1)", invitee: "var(--series-2)", everyone: "var(--fs-text-off)" } }),
+            { table: { columns: ["Who", "Players", "7+ days old", "D1", "D7"], rows: roles.map((r) => [r.label, fmt(r.players), fmt(r.mature), pct(r.d1_pct), pct(r.d7_pct)]) } })) })),
+      chartPanel({ id: "social.invites.per_day", title: "Invites sent and joined", forms: ["line", "table"], defaults: { form: "line" },
+        emptyText: "No invites in this range.",
+        load: staticLoad(() => {
+          const rows = v.per_day || [], m = new Map();
+          for (const r of rows) { m.set(String(r.day) + SEP + "sent", r.sent); m.set(String(r.day) + SEP + "joined", r.joined); }
+          return makeFrame({ time: true, xs: rows.map((r) => r.day), keys: ["sent", "joined"], v: m, kind: "count", label: (k) => (k === "sent" ? "Sent" : "Joined") });
+        }) }),
+      notesBlock(v.notes),
     ];
   }
 
@@ -2162,7 +2442,10 @@
           statusRow(d.last_event_ms && Date.now() - d.last_event_ms < day, "Last event received", ago(d.last_event_ms)),
           statusRow(worst === null || worst <= 1.05, "Rows per play, latest day", ratio(worst)),
           statusRow(rejected === 0, `Rejected events, last ${state.healthDays} days`, fmt(rejected)),
-          statusRow(d.backup && Date.now() - d.backup.last_ms < 2 * day, "Nightly backup", d.backup ? ago(d.backup.last_ms) : "never"),
+          statusRow(!!(d.backups && d.backups.local_last_ms && Date.now() - d.backups.local_last_ms < 2 * day), "Nightly backup, on the VM",
+            d.backups && d.backups.local_last_ms ? `${ago(d.backups.local_last_ms)} · ${fmt(d.backups.local_kept)} kept` : d.backup ? ago(d.backup.last_ms) : "never"),
+          statusRow(true, "Off-VM", (d.backups && d.backups.off_vm) || "Oracle boot-volume policy (check in the Oracle console)"),
+          d.backups && d.backups.bucket_upload ? statusRow(!/failed/.test(d.backups.bucket_upload.detail || ""), "Bucket copy", `${ago(d.backups.bucket_upload.last_ms)} · ${d.backups.bucket_upload.detail}`) : null,
           statusRow(d.rebuild && Date.now() - d.rebuild.last_ms < 15 * 60 * 1000, "Numbers rebuilt", d.rebuild ? ago(d.rebuild.last_ms) : "never"),
           statusRow(true, "Deletions done", fmt(d.erasures_done)),
           statusRow(true, "Editor share of matches", pct(d.editor_share_pct)),
@@ -2183,6 +2466,11 @@
             ? table(["Key", "Failures", "Last"], d.cloud_save_failures.map((r) => h("tr", {}, h("td", {}, r.key),
                 h("td", { class: "bad" }, fmt(r.count)), h("td", {}, r.last_day))))
             : h("p", { class: "small" }, "None.")),
+        card("New events", "this round's events and fields: when each last arrived",
+          (d.new_events || []).length ? table(["Event", "Field", "Rows", "Last received"], d.new_events.map((r) => h("tr", {},
+            h("td", {}, r.event), h("td", { class: r.field ? "" : "soft" }, r.field || "the event"), h("td", { class: "num" }, fmt(r.rows)),
+            h("td", { class: r.last_received_ms ? "" : "soft" }, r.last_received_ms ? ago(r.last_received_ms) : "not yet"))))
+            : h("p", { class: "small" }, "The numbers have not been rebuilt since this server was updated.")),
         card("Matches with no element", "every match ever, by mode: a mode with no genre or an old name",
           (d.modes_without_element || []).length
             ? table(["Mode", "Plays", "From PostHog"], d.modes_without_element.slice(0, 20).map((r) => h("tr", {}, h("td", {}, r.game_mode),
@@ -2664,7 +2952,9 @@
   }
 
   const PAGE_FNS = () => ({ overview, players, cohorts, eras: erasPage, playtypes: playtypesPage, retention, matches, health,
-    ftue: ftuePage, economy: economyPage, social: socialPage, query: queryPage, dashboards: dashboardsPage });
+    ftue: ftuePage, economy: economyPage, social: socialPage, query: queryPage, dashboards: dashboardsPage,
+    sessions: sessionsPage, balance: balancePage, quits: quitsPage, errors: errorsPage, ...EXTRA_PAGES });
+  const EXTRA_PAGES = {};                              // pages in their own file register here (FA_CONSOLE.register)
 
   let renderTicket = 0;
   async function render() {
@@ -2807,6 +3097,13 @@
       el.style.animationDuration = `${layer.seconds}s`;   // the shader's 90 / 68 / 45 s, far to near
     });
   }
+
+  // Pages that live in their own file (notebook.js) register here and draw with the console's own pieces.
+  window.FA_CONSOLE = {
+    register(name, meta, page) { PAGES[name] = meta; EXTRA_PAGES[name] = page; },
+    h, api, card, empty, table, chartPanel, seriesPanel, staticLoad, resultFrame, barList, statRow, fmt, when, store, state,
+    render, setUpdated, pageFilters, filtersText, eraById, MEASURES, MATCH_MEASURES, MATCH_SPLITS, DAYS, SNAPSHOT,
+  };
 
   sea();
   looks();

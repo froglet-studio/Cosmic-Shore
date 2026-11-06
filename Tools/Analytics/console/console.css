@@ -453,3 +453,11 @@ table.presets td.actions .btn { height: 34px; padding: 0 12px; font-size: 13px; 
 td.nowrap { white-space: nowrap; }
 @media (max-width: 760px) { td.nowrap { white-space: normal; } .tag.approx { margin-left: 0; } }
 table.presets td:first-child { min-width: 240px; } table.presets td:nth-child(2) { min-width: 150px; }
+
+/* Round 67 (Sessions, Balance, Quits, Errors, Invites): theme tokens only */
+.notes-block { display: flex; flex-direction: column; gap: 6px; }
+.notes-block p { margin: 0; }
+.code-inline { font-family: var(--fs-font-body); font-size: 12px; color: var(--data-text); overflow-wrap: anywhere; }
+td.frame { min-width: 180px; max-width: 420px; }
+.tag.new-tag { margin-left: 8px; color: var(--fs-danger); box-shadow: inset 0 0 0 1px var(--fs-danger); }
+@media (max-width: 760px) { td.frame { min-width: 140px; } .tag.new-tag { margin-left: 0; display: inline-block; margin-top: 4px; } }

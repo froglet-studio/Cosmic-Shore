@@ -1,0 +1,87 @@
+/* The Notebook page (notebook.js). Theme tokens only (themes.css, console.css): no family colour on a cell; the call to
+   action (Ask, Save with changes, Run) wears the theme's CTA, everything else the ground, surface, line and text. */
+
+.nb-bar { display: flex; gap: 10px 14px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.nb-bar-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.nb-btn { height: 40px; padding: 0 16px; font-size: 14px; }
+.nb-title { flex: 1 1 280px; width: auto; min-width: 0; font-size: 20px; }
+.nb-pick { max-width: 340px; }
+
+.nb-cells { display: flex; flex-direction: column; gap: 16px; }
+.nb-cell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nb-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 28px; }
+.nb-kind { display: inline-flex; gap: 8px; align-items: center; }
+.nb-by { font-family: var(--fs-font-label); font-weight: 600; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--fs-text); padding: 2px 7px; box-shadow: inset 0 0 0 1px var(--fs-line); }
+.nb-actions { display: flex; gap: 2px; flex-wrap: wrap; opacity: .72; transition: opacity var(--fs-dur-micro); }
+.nb-cell:hover .nb-actions, .nb-cell:focus-within .nb-actions { opacity: 1; }
+.nb-act { border: 0; background: transparent; color: var(--fs-text-soft); font-family: var(--fs-font-label); font-weight: 600;
+  font-size: 12px; letter-spacing: .08em; text-transform: uppercase; height: 28px; min-width: 28px; padding: 0 8px; cursor: pointer; }
+.nb-act:hover { color: var(--fs-text); box-shadow: inset 0 0 0 1px var(--fs-line); }
+.nb-act.run { color: var(--fs-cta); }
+.nb-act.x { font-size: 16px; }
+.nb-act:disabled { opacity: .35; cursor: default; box-shadow: none; }
+
+/* a person's question sits right, like a chat; Claude's cells carry a quiet rule on the left and its name */
+.nb-k-ask { align-items: flex-end; }
+.nb-k-ask .nb-head { width: 100%; }
+.nb-bubble { max-width: min(680px, 100%); padding: 12px 18px; background: var(--fs-surface); box-shadow: inset -3px 0 0 var(--fs-text-soft), inset 0 0 0 1px var(--fs-line);
+  display: flex; flex-direction: column; gap: 6px; }
+.by-claude > .card { box-shadow: inset 3px 0 0 var(--fs-text-soft), inset 0 0 0 1px color-mix(in srgb, var(--rim) 28%, var(--fs-line)); }
+.nb-note { cursor: text; }
+.nb-sql { cursor: text; }
+.nb-pending .card { animation: nb-breathe 1.6s ease-in-out infinite; }
+@keyframes nb-breathe { 50% { opacity: .55; } }
+
+.nb-md { display: flex; flex-direction: column; gap: 10px; }
+.nb-md p, .nb-md h2, .nb-md h3, .nb-md h4 { margin: 0; }
+.nb-h4 { font-size: 17px; font-weight: 400; }
+.nb-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; line-height: 1.5; }
+.nb-code { font-family: var(--fs-font-body); font-size: .9em; background: var(--fs-ground-deep); color: var(--data-text); padding: 1px 6px; }
+.nb-edit { min-height: 140px; }
+.nb-result { display: flex; flex-direction: column; gap: 6px; }
+.nb-result .table-wrap { max-height: 360px; overflow: auto; }
+.nb-adders { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nb-empty .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* the ask box, pinned under the cells */
+.nb-dock { position: sticky; bottom: 12px; z-index: 5; padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 6px;
+  background: var(--fs-surface); box-shadow: inset 0 0 0 1px var(--fs-line), 0 -12px 28px var(--fs-ground); }
+.nb-dock-row { display: flex; gap: 10px; align-items: flex-end; }
+.nb-ask-input { flex: 1; min-width: 0; height: 48px; min-height: 48px; padding: 13px 16px; resize: none; font: inherit; line-height: 1.4; color: var(--fs-text); }
+.nb-send { flex: none; }
+
+/* Report: the outputs only */
+.nb-report { padding: 28px 32px; display: flex; flex-direction: column; gap: 22px; }
+.nb-report-head { display: flex; flex-direction: column; gap: 6px; padding-bottom: 16px; border-bottom: 1px solid var(--fs-line); }
+.nb-report-title { overflow-wrap: anywhere; }
+.nb-report .card { background: transparent; box-shadow: none; clip-path: none; padding: 0; }
+.nb-report .switches, .nb-report .chart-note { display: none; }
+.nb-report .nb-result .table-wrap { max-height: none; }
+.nb-r { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.nb-r-ask { padding-top: 14px; border-top: 1px solid var(--fs-line); }
+.nb-r-ask .h3 { margin: 0; }
+.nb-r-query summary { cursor: pointer; }
+.nb-copy { min-height: 200px; }
+
+@media (max-width: 760px) {
+  .nb-title { flex-basis: 100%; font-size: 18px; }
+  .nb-pick { max-width: none; flex: 1; }
+  .nb-bar > .mini-seg { width: 100%; }
+  .nb-btn { padding: 0 12px; }
+  .nb-report { padding: 18px 16px; }
+  .nb-dock { bottom: 8px; padding: 10px; }
+  .nb-dock .small { display: none; }           /* the phone keeps its height for the cells */
+}
+
+@media print {
+  body.nb-printing { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: var(--fs-ground); }
+  body.nb-printing .rail, body.nb-printing .top, body.nb-printing .sea, body.nb-printing .preview-note,
+  body.nb-printing .unfiltered, body.nb-printing .nb-report-bar, body.nb-printing .nb-copy { display: none !important; }
+  body.nb-printing .shell { display: block; }
+  body.nb-printing .main { padding: 0; }
+  body.nb-printing .nb-report { clip-path: none; }
+  .nb-r { break-inside: avoid; }
+  .nb-r-query { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .nb-pending .card { animation: none; } }
