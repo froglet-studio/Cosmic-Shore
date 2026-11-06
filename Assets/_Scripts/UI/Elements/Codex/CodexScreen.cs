@@ -220,13 +220,18 @@ namespace CosmicShore.UI
         }
 
         Color[] _lifePalette;
+        SO_ColorSet _lifePaletteSource;
 
         /// <summary>The picture's tint: <see cref="pictureDomains"/> as the HUD paints them (SO_ColorSet's signal colours).</summary>
         Color[] LifePalette()
         {
-            if (_lifePalette != null || !colorSet || pictureDomains is not { Length: > 0 }) return _lifePalette;
+            // The live palette (the player's colour set, section 123); recomputed when a set is applied.
+            var palette = CosmicShore.Gameplay.ThemeManager.LiveOr(colorSet);
+            if ((_lifePalette != null && _lifePaletteSource == palette) || !palette || pictureDomains is not { Length: > 0 })
+                return _lifePalette;
+            _lifePaletteSource = palette;
             _lifePalette = new Color[pictureDomains.Length];
-            for (int i = 0; i < pictureDomains.Length; i++) _lifePalette[i] = colorSet.GetDomainSignalColor(pictureDomains[i]);
+            for (int i = 0; i < pictureDomains.Length; i++) _lifePalette[i] = palette.GetDomainSignalColor(pictureDomains[i]);
             return _lifePalette;
         }
 

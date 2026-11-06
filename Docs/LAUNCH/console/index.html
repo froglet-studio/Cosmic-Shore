@@ -1,0 +1,559 @@
+<title>Cosmic Shore Launch Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@400;500;600&display=swap">
+<style>
+/* Layout: a go/no-go header, then one column of panels that becomes two on wide screens.
+   Tokens: the Froglet themes (Docs/UI/froglet.css). Deep Sea is the dark theme, Shore its light twin.
+   Families keep one meaning each: Lime = go / call to action, Fire = no-go, Ruby = no way back, Jade = selection. */
+:root {
+  --ground: #F4F5FF; --ground-deep: #E6E9FF; --surface: #FFFFFF; --raised: #DDE1F7; --line: #B8C0F0;
+  --text: #00041F; --soft: #434C89; --off: #6B7092;
+  --lime: #487C1F; --lime-fill: #99FF80; --fire: #CD373A; --ruby: #893BFF; --jade: #007D73; --on-fill: #00041F;
+  --font-body: 'Chakra Petch', 'Aldrich', system-ui, sans-serif; --font-head: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --cut: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #00041F; --ground-deep: #00010A; --surface: #121638; --raised: #222645; --line: #434C89;
+  --text: #E6E9FF; --soft: #9AA0CF; --off: #7A7F9E;
+  --lime: #99FF80; --lime-fill: #99FF80; --fire: #FF4B3A; --ruby: #B866FF; --jade: #00D4FF; --on-fill: #00041F; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #00041F; --ground-deep: #00010A; --surface: #121638; --raised: #222645; --line: #434C89;
+  --text: #E6E9FF; --soft: #9AA0CF; --off: #7A7F9E;
+  --lime: #99FF80; --lime-fill: #99FF80; --fire: #FF4B3A; --ruby: #B866FF; --jade: #00D4FF; --on-fill: #00041F; color-scheme: dark }
+body { background: var(--ground); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; display: grid; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-head); font-weight: 400; margin: 0; text-wrap: balance; }
+h1 { font-size: 26px; letter-spacing: .02em; } h2 { font-size: 19px; } h3 { font-size: 16px; }
+a { color: var(--jade); } a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+.cut { clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+.muted { color: var(--soft); } .small { font-size: 13px; } .num { font-variant-numeric: tabular-nums; }
+.src { font-size: 12px; color: var(--off); }
+.grid2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+/* Go / no-go header */
+.top { display: grid; gap: 12px; background: var(--ground-deep); border: 1px solid var(--line); padding: 16px; }
+.top .row { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; }
+.days { font-family: var(--font-head); font-size: 40px; line-height: 1; }
+.pills { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.pill { display: grid; gap: 2px; padding: 10px 12px; border: 2px solid var(--line); background: var(--surface); text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.pill .state { font-family: var(--font-head); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.pill .why { font-size: 12px; color: var(--soft); }
+.dot { width: 10px; height: 10px; flex: none; border: 2px solid currentColor; }
+.s-go { border-color: var(--lime); } .s-go .state { color: var(--lime); } .s-go .dot { background: var(--lime); }
+.s-risk { border-color: var(--fire); border-style: dashed; } .s-risk .state { color: var(--fire); } .s-risk .dot { background: linear-gradient(135deg, var(--fire) 50%, transparent 50%); }
+.s-nogo { border-color: var(--fire); } .s-nogo .state { color: var(--fire); } .s-nogo .dot { background: var(--fire); }
+.s-unknown .state { color: var(--off); }
+.pill[aria-pressed="true"] { background: var(--raised); box-shadow: inset 0 -4px 0 var(--jade); }
+/* Tables become cards on a phone */
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th { text-align: left; font-weight: 500; color: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.tbl td { padding: 8px; border-bottom: 1px solid var(--raised); vertical-align: top; }
+.scroll { overflow-x: auto; }
+.chip { display: inline-block; padding: 1px 8px; border: 1px solid var(--line); font-size: 12px; white-space: nowrap; }
+.r-success { color: var(--lime); border-color: var(--lime); } .r-failure { color: var(--fire); border-color: var(--fire); }
+.r-running, .r-skipped, .r-cancelled { color: var(--soft); }
+.stale { color: var(--fire); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised); color: var(--text); font: 500 14px var(--font-body); text-decoration: none; cursor: pointer; }
+.btn.cta { background: var(--lime-fill); color: var(--on-fill); border-color: var(--lime-fill); }
+.btn.commit { background: transparent; color: var(--ruby); border-color: var(--ruby); }
+.btn[disabled] { opacity: .5; cursor: default; }
+/* Checklist */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+select, input[type="text"], input[type="url"], input[type="date"], textarea { font: inherit; color: var(--text); background: var(--ground); border: 1px solid var(--line); padding: 6px 8px; min-height: 36px; max-width: 100%; }
+.items { display: grid; gap: 8px; }
+.item { border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 6px; background: var(--ground); }
+.item .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.item .rank { font-family: var(--font-head); color: var(--soft); min-width: 2ch; }
+.item .title { font-weight: 600; flex: 1 1 260px; min-width: 0; }
+.item.done .title { text-decoration: line-through; color: var(--soft); }
+.item .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--soft); }
+.item .edit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.item details summary { cursor: pointer; color: var(--soft); font-size: 13px; }
+.steps { white-space: pre-wrap; font-size: 13px; margin: 6px 0 0; }
+.human { color: var(--fire); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.empty { border: 1px dashed var(--line); padding: 14px; color: var(--soft); font-size: 14px; }
+/* Runbook timeline */
+.tl { display: grid; gap: 10px; }
+.tl .phase { display: grid; grid-template-columns: 64px 1fr; gap: 10px; }
+.tl .when { font-family: var(--font-head); color: var(--soft); padding-top: 2px; }
+.tl ol { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+/* Metrics */
+.metrics { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.metric { border: 1px dashed var(--line); padding: 10px 12px; display: grid; gap: 2px; }
+.metric .v { font-family: var(--font-head); font-size: 24px; color: var(--off); }
+.ask { display: grid; gap: 8px; } .ask textarea { min-height: 64px; width: 100%; box-sizing: border-box; }
+.answer { white-space: pre-wrap; font-size: 14px; border-left: 2px solid var(--jade); padding-left: 10px; }
+@media (prefers-reduced-motion: no-preference) { .pill, .btn { transition: border-color .15s, background .15s; } }
+</style>
+
+<div class="wrap">
+  <section class="top cut" aria-labelledby="t-title">
+    <div class="row">
+      <div><div class="eyebrow">Cosmic Shore · Launch Console</div><h1 id="t-title">Mobile first, then Steam</h1></div>
+      <div class="small" style="display:grid;gap:2px"><span><strong>Mobile release</strong> (iOS, Android): when activation is ready. Date not set.</span><span><strong>Steam keys</strong>: March 2027, before GDC. <span class="days num" id="days" style="font-size:28px">—</span> days to 1 Mar 2027.</span></div>
+      <div class="small" id="verdict">Loading the board…</div>
+    </div>
+    <div class="pills" id="pills" role="group" aria-label="Status per platform"></div>
+    <div class="src" id="boardsrc">Status comes from the launch-status branch, synced into this page.</div>
+  </section>
+
+  <section class="panel cut" id="platform" aria-labelledby="p-title">
+    <header><h2 id="p-title">Platform</h2><span class="src" id="p-src"></span></header>
+    <div id="p-body" class="grid2"></div>
+  </section>
+
+  <section class="panel cut" id="checklist" aria-labelledby="c-title">
+    <header><h2 id="c-title">Launch checklist</h2><span class="src" id="c-count"></span></header>
+    <div class="filters">
+      <label class="small" for="f-plat">Platform</label>
+      <select id="f-plat"><option value="">All</option></select>
+      <label class="small" for="f-status">Status</label>
+      <select id="f-status"><option value="">Not done</option><option value="all">All</option><option value="open">Open</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="done">Done</option></select>
+      <label class="small"><input type="checkbox" id="f-human"> Needs a human</label>
+    </div>
+    <div class="items" id="items"><div class="empty">The checklist loads from this page's shared store. If it stays empty, the console has not been seeded yet.</div></div>
+    <div class="src">Anyone who can open this page can take an item, change its status and add evidence. Owners are the area's decider, not an assignee: an item is nobody's until someone takes it.</div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel cut" id="liveops" aria-labelledby="l-title">
+      <header><h2 id="l-title">Live ops</h2><span class="src">UGS, flags and the web build</span></header>
+      <div id="l-body"></div>
+    </section>
+    <section class="panel cut" id="gates" aria-labelledby="g-title">
+      <header><h2 id="g-title">Quality gates</h2><span class="src">each with its source and age</span></header>
+      <div id="g-body"></div>
+    </section>
+  </div>
+
+  <section class="panel cut" id="runbook" aria-labelledby="r-title">
+    <header><h2 id="r-title">Launch day runbook</h2><a class="small" href="https://github.com/froglet-studio/Cosmic-Shore/blob/claude/exciting-pascal-t8ijbo/Docs/LAUNCH/RUNBOOK.md">Full runbook</a></header>
+    <div class="tl" id="tl"><div class="empty">The timeline loads from this page's shared store.</div></div>
+    <h3>If something breaks: roll back</h3>
+    <div class="scroll"><table class="tbl" id="rollback"><thead><tr><th>Platform</th><th>Roll back by</th><th>Start here</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel cut" id="metrics" aria-labelledby="m-title">
+      <header><h2 id="m-title">After launch</h2><span class="src">no analytics source is connected to this page yet</span></header>
+      <div class="metrics" id="m-body"></div>
+    </section>
+    <section class="panel cut" id="changelog" aria-labelledby="ch-title">
+      <header><h2 id="ch-title">Changelog</h2><span class="src">from each release's generated notes</span></header>
+      <div id="ch-body"><div class="empty">No release has been tagged through the release pipeline yet. Each tagged build's notes land here.</div></div>
+    </section>
+  </div>
+
+  <section class="panel cut" id="askp" aria-labelledby="a-title" hidden>
+    <header><h2 id="a-title">Ask about the launch</h2><span class="src">Claude answers from this page's status and checklist only</span></header>
+    <div class="ask">
+      <label for="q" class="small">Question</label>
+      <textarea id="q" placeholder="What blocks the iOS invite build, and who decides each item?"></textarea>
+      <div class="actions"><button class="btn cta" id="askbtn" type="button">Ask</button><span class="small muted" id="askstate"></span></div>
+      <div class="answer" id="answer" hidden></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const REPO = 'https://github.com/froglet-studio/Cosmic-Shore';
+  const WF = (f) => `${REPO}/actions/workflows/${f}`;
+  const MILESTONE_DATE = '2027-03-01'; // Steam keys by March 2027, before GDC (Shombith, 2026-11-06). The mobile release has no date: it waits on activation.
+  const STALE_HOURS = 48;
+  // Each platform: the component ids it shows (Docs/LAUNCH/STATUS_CONTRACT.md), its actions and its rollback.
+  const PLATFORMS = [
+    { key: 'windows', name: 'Windows / Steam', channels: ['windows-prerelease', 'windows-production'], build: 'build-windows',
+      actions: [['Build', WF('release-builds.yml'), 'cta'], ['Upload to Playtest internal', WF('release-builds.yml'), 'cta'], ['Promote', WF('release-promote.yml'), 'commit'], ['Roll back', WF('release-promote.yml'), 'commit'], ['Steamworks', 'https://partner.steamgames.com/apps', '']],
+      rollback: 'Set the previous build live on the branch in Steamworks App Admin > Builds' },
+    { key: 'ios', name: 'iOS', channels: ['ios-prerelease', 'ios-production'], build: 'build-ios',
+      actions: [['Build', WF('release-builds.yml'), 'cta'], ['Upload to TestFlight', WF('ios-testflight.yml'), 'cta'], ['Promote', 'https://appstoreconnect.apple.com/apps', 'commit'], ['Roll back', 'https://appstoreconnect.apple.com/apps', 'commit']],
+      rollback: 'Pause the phased release in App Store Connect; ship a fixed build (Apple has no binary rollback)' },
+    { key: 'android', name: 'Android', channels: ['android-prerelease', 'android-production'], build: 'build-android',
+      actions: [['Build', WF('release-builds.yml'), 'cta'], ['Upload to internal', WF('release-builds.yml'), 'cta'], ['Promote', WF('release-promote.yml'), 'commit'], ['Halt rollout', WF('release-promote.yml'), 'commit'], ['Play Console', 'https://play.google.com/console', '']],
+      rollback: 'Halt the staged rollout in Play Console, then roll out the previous release' },
+    { key: 'web', name: 'Web Toybox', channels: ['web-staging', 'web-production'], build: 'build-web',
+      actions: [['Stage', WF('toybox-publish.yml'), 'cta'], ['Promote to /play', WF('toybox-publish.yml'), 'commit'], ['Roll back', WF('toybox-publish.yml'), 'commit'], ['Open /play', 'https://www.froglet.games/play', '']],
+      rollback: 'Point toybox/latest.json at the previous build (the publish workflow’s rollback action)' },
+    { key: 'liveops', name: 'Live ops', channels: ['ugs-development', 'ugs-production'], build: null,
+      actions: [['Deploy to development', WF('ugs-deploy.yml'), 'cta'], ['Deploy to production', WF('ugs-deploy.yml'), 'commit'], ['UGS dashboard', 'https://cloud.unity.com', '']],
+      rollback: 'Deploy the previous tag to the environment (ugs-deploy with an older ref)' },
+    { key: 'backend', name: 'Backend', channels: [], build: null,
+      actions: [['UGS dashboard', 'https://cloud.unity.com', ''], ['Multiplayer start here', `${REPO}/blob/bleeding-edge/Docs/MULTIPLAYER_START_HERE.md`, '']],
+      rollback: 'Kill switch in the launch flags (deploy to production), then fix forward' },
+    { key: 'launch', name: 'Launch-wide', channels: [], build: null,
+      actions: [['Readiness audit', `${REPO}/blob/claude/exciting-pascal-t8ijbo/Docs/LAUNCH/READINESS.md`, ''], ['Froglet Tasks', 'https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f', '']],
+      rollback: '' },
+  ];
+  const GATES = [['trunk-static', 'Trunk static checks'], ['unity-compile', 'Unity compile + EditMode']];
+  // "Work on this in Claude": a new Claude Code session on the repo whose first message is the platform's launch-flow skill.
+  // The skills live on SKILL_REF; switch it to 'bleeding-edge' once PR #1758 merges.
+  const REPO_GIT = 'https://github.com/froglet-studio/Cosmic-Shore';
+  const SKILL_REF = 'claude/exciting-pascal-t8ijbo';
+  const CCR = 'Claude Code Remote';
+  const skillFor = (key) => `/launch-flow-${key === 'launch' ? 'launch-wide' : key}`;
+  let mcp = null, chat = { key: null, open: false, envs: null, envId: '', state: '', note: '', link: null, busy: false };
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  let board = null, boardMeta = null, items = [], runbook = [], changelog = [], quality = null, selected = 'windows';
+  let db = null, user = null, me = null, names = {};
+
+  const hoursSince = (iso) => { const t = Date.parse(iso || ''); return isNaN(t) ? null : (Date.now() - t) / 36e5; };
+  const age = (iso) => { const h = hoursSince(iso); if (h == null) return 'age unknown'; if (h < 1) return 'under an hour ago'; if (h < 48) return `${Math.round(h)} h ago`; return `${Math.round(h / 24)} days ago`; };
+  const safeUrl = (u) => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u)) ? u : null;
+
+  // Days left: the milestone date the team set, counted in UTC.
+  const daysLeft = Math.ceil((Date.parse(MILESTONE_DATE + 'T00:00:00Z') - Date.now()) / 864e5);
+  $('#days').textContent = String(daysLeft);
+
+  function comps() { return (board && board.components) || {}; }
+  // An item on 'mobile' (activation) blocks both the iOS and the Android release.
+  function openBlockers(key) { return items.filter((i) => (i.platform === key || (i.platform === 'mobile' && (key === 'ios' || key === 'android'))) && i.blocks && i.status !== 'done'); }
+  function platformState(p) {
+    const c = comps();
+    const gateIds = p.key === 'launch' ? Object.keys(c).filter((id) => GATES.some(([g]) => g === id) || id.startsWith('smoke-')) : [];
+    const failed = [...p.channels, p.build, ...gateIds].filter(Boolean).filter((id) => c[id] && c[id].result === 'failure');
+    const stale = [...p.channels, p.build].filter(Boolean).filter((id) => c[id] && (c[id].result !== 'success' || (hoursSince((c[id].details && c[id].details.event_date) || c[id].updated_at) || 0) > STALE_HOURS));
+    const blockers = openBlockers(p.key);
+    const idle = blockers.filter((i) => i.status !== 'in-progress');
+    if (!items.length && !board) return ['s-unknown', 'Unknown', 'waiting for data'];
+    if (failed.length) return ['s-nogo', 'No-go', `${failed.length} failed run${failed.length > 1 ? 's' : ''}`];
+    if (idle.length) return ['s-nogo', 'No-go', `${blockers.length} open blocker${blockers.length > 1 ? 's' : ''}`];
+    if (blockers.length || stale.length) return ['s-risk', 'At risk', blockers.length ? `${blockers.length} blocker${blockers.length > 1 ? 's' : ''} in progress` : 'last run is old or did not succeed'];
+    return ['s-go', 'Go', 'no open blockers'];
+  }
+
+  function renderPills() {
+    const box = $('#pills'); box.replaceChildren();
+    let worst = 's-go';
+    for (const p of PLATFORMS) {
+      const [cls, state, why] = platformState(p);
+      if (cls === 's-nogo' || (cls === 's-risk' && worst === 's-go')) worst = cls;
+      const b = el('button', `pill cut ${cls}`); b.type = 'button'; b.setAttribute('aria-pressed', String(p.key === selected));
+      const s = el('span', 'state'); s.append(el('span', 'dot'), document.createTextNode(state));
+      b.append(el('span', '', p.name), s, el('span', 'why', why));
+      b.addEventListener('click', () => { selected = p.key; renderAll(); $('#platform').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      box.append(b);
+    }
+    const total = items.filter((i) => i.blocks && i.status !== 'done').length;
+    $('#verdict').textContent = !items.length && !board ? 'Waiting for the board to load.'
+      : worst === 's-go' ? 'Go: nothing open blocks the invite build.'
+      : `${worst === 's-nogo' ? 'No-go' : 'At risk'}: ${total} open launch blocker${total === 1 ? '' : 's'} across every platform.`;
+    $('#boardsrc').textContent = board
+      ? `Pipeline status from the launch-status branch, generated ${age(board.generated_at)}; synced into this page ${age(boardMeta && boardMeta.synced_at)}. Blockers are this page's checklist.`
+      : 'No pipeline status synced yet. Blockers are this page’s checklist.';
+  }
+
+  function compRow(id, label) {
+    const c = comps()[id];
+    const tr = el('tr');
+    tr.append(el('td', '', label));
+    if (!c) { const td = el('td', 'muted', 'No run recorded'); td.colSpan = 3; tr.append(td); return tr; }
+    const v = el('td', 'num'); v.textContent = [c.version, c.build && `(${c.build})`, c.commit && c.commit.slice(0, 9)].filter(Boolean).join(' ') || '—';
+    const r = el('td'); r.append(el('span', `chip r-${c.result}`, c.result));
+    if (c.summary) r.append(el('div', 'small muted', c.summary));
+    const at = (c.details && c.details.event_date) || c.updated_at;
+    const a = el('td', 'src'); const h = hoursSince(at);
+    const when = el('span', h != null && h > STALE_HOURS ? 'stale' : '', age(at)); a.append(when);
+    const link = safeUrl(c.run_url) || safeUrl(c.link);
+    a.append(document.createTextNode(' · '));
+    if (link) { const l = el('a', '', c.source || 'run'); l.href = link; l.target = '_blank'; l.rel = 'noopener'; a.append(l); } else a.append(document.createTextNode(c.source || ''));
+    tr.append(v, r, a); return tr;
+  }
+
+  function renderPlatform() {
+    const p = PLATFORMS.find((x) => x.key === selected) || PLATFORMS[0];
+    $('#p-title').textContent = p.name;
+    const body = $('#p-body'); body.replaceChildren();
+    const left = el('div'); left.style.display = 'grid'; left.style.gap = '10px'; left.style.minWidth = '0';
+    if (p.channels.length || p.build) {
+      left.append(el('h3', '', 'Channels and the last run'));
+      const wrap = el('div', 'scroll'); const t = el('table', 'tbl');
+      const th = el('thead'); const hr = el('tr'); ['', 'Version', 'Result', 'Age · source'].forEach((h) => hr.append(el('th', '', h))); th.append(hr);
+      const tb = el('tbody'); p.channels.forEach((id) => tb.append(compRow(id, id.split('-').slice(1).join(' ') || id)));
+      if (p.build) tb.append(compRow(p.build, 'last build'));
+      t.append(th, tb); wrap.append(t); left.append(wrap);
+    }
+    left.append(el('h3', '', 'Start here'));
+    const acts = el('div', 'actions');
+    for (const [label, href, kind] of p.actions) { const a = el('a', `btn cut ${kind}`, label); a.href = href; a.target = '_blank'; a.rel = 'noopener'; acts.append(a); }
+    left.append(acts, el('div', 'src', 'Each button opens the workflow or dashboard where the action runs. Production steps wait for a reviewer’s approval there; this page holds no tokens.'));
+    left.append(claudeBox(p));
+    const right = el('div'); right.style.display = 'grid'; right.style.gap = '8px'; right.style.minWidth = '0';
+    const blockers = openBlockers(p.key);
+    right.append(el('h3', '', blockers.length ? `Open blockers (${blockers.length})` : 'Open blockers'));
+    if (!blockers.length) right.append(el('div', 'empty', items.length ? 'None open for this platform.' : 'The checklist has not loaded.'));
+    blockers.sort((a, b) => (a.rank || 99) - (b.rank || 99)).forEach((i) => right.append(itemCard(i, true)));
+    body.append(left, right);
+    $('#p-src').textContent = '';
+  }
+
+  function claudeBox(p) {
+    const box = el('div'); box.style.display = 'grid'; box.style.gap = '8px'; box.style.minWidth = '0';
+    const cmd = skillFor(p.key);
+    box.append(el('h3', '', 'Work on this in Claude'));
+    box.append(el('div', 'small muted', `A chat of its own for ${p.name}: it lists the open blockers, says where the platform stands and plans the fix, then works the item you pick.`));
+    if (chat.key !== p.key) chat = { key: p.key, open: false, envs: chat.envs, envId: chat.envId, state: '', note: '', link: null, busy: false };
+    const row = el('div', 'actions');
+    if (mcp && !chat.open && !chat.link) {
+      const start = el('button', 'btn cut cta', 'Start a chat'); start.type = 'button';
+      start.addEventListener('click', () => { chat.open = true; chat.state = ''; renderPlatform(); loadEnvs(); });
+      row.append(start);
+    }
+    const copy = el('button', 'btn cut', 'Copy command'); copy.type = 'button';
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(cmd); chat.note = `Copied ${cmd}. Paste it into a new Claude Code session on this repository.`; }
+      catch (e) { chat.note = `Copy ${cmd} by hand and paste it into a new Claude Code session.`; }
+      renderPlatform();
+    });
+    const open = el('a', 'btn cut', 'Open Claude Code'); open.href = 'https://claude.ai/code'; open.target = '_blank'; open.rel = 'noopener';
+    row.append(copy, open); box.append(row);
+    box.append(el('code', 'small', cmd));
+    if (chat.open && !chat.link) {
+      const panel = el('div', 'item cut');
+      panel.append(el('div', 'small', `This starts a new Claude Code session on froglet-studio/Cosmic-Shore (branch ${SKILL_REF}) as you, with ${cmd} as its first message. It plans first and changes nothing until you pick an item in that chat.`));
+      const lab = el('label', 'small', 'Environment'); lab.htmlFor = 'envsel';
+      const sel = el('select'); sel.id = 'envsel';
+      if (!chat.envs) sel.append(new Option('Loading environments…', ''));
+      else chat.envs.forEach((e) => sel.append(new Option(e.name || e.environment_id, e.environment_id)));
+      if (chat.envId) sel.value = chat.envId;
+      sel.addEventListener('change', () => { chat.envId = sel.value; });
+      const go = el('button', 'btn cut cta', chat.busy ? 'Starting…' : 'Start session'); go.type = 'button';
+      go.disabled = chat.busy || !chat.envs || !chat.envs.length;
+      go.addEventListener('click', () => startChat(p));
+      const cancel = el('button', 'btn cut', 'Cancel'); cancel.type = 'button';
+      cancel.addEventListener('click', () => { chat.open = false; chat.state = ''; renderPlatform(); });
+      const r = el('div', 'edit'); r.append(lab, sel, go, cancel); panel.append(r);
+      box.append(panel);
+    }
+    if (chat.link) { const a = el('a', 'btn cut cta', 'Open the new chat'); a.href = chat.link; a.target = '_blank'; a.rel = 'noopener'; box.append(a); }
+    if (chat.state) box.append(el('div', 'small', chat.state));
+    if (chat.note) box.append(el('div', 'small muted', chat.note));
+    if (!mcp) box.append(el('div', 'src', 'Starting a chat from here needs the Claude Code Remote connector on this page; copy the command instead.'));
+    return box;
+  }
+
+  function mcpProblem(e, writing) {
+    const c = e && e.code;
+    if (c === 'server_not_connected' || c === 'server_not_found') return 'Claude Code Remote is not connected for you. Add it under claude.ai Settings > Connectors, or copy the command.';
+    if (c === 'needs_reauth') return 'Claude Code Remote needs you to sign in again (claude.ai Settings > Connectors).';
+    if (c === 'approval_required' || c === 'consent_required' || c === 'not_granted') return 'Starting a chat needs your approval for this page. Open the console on claude.ai and allow it when asked.';
+    if (c === 'blocked_by_policy') return 'Your organization does not let this page use Claude Code Remote. Copy the command instead.';
+    if (c === 'tool_error') return 'Claude Code Remote refused: ' + String((e && e.message) || '').slice(0, 200);
+    if (writing && (c === 'server_unavailable' || c === 'upstream_error')) return 'No answer came back, so the session may have started anyway. Check claude.ai/code before starting another.';
+    if (c === 'cancelled') return 'Cancelled.';
+    return `That did not work (${c || 'unknown'}). Copy the command instead.`;
+  }
+
+  async function loadEnvs() {
+    if (chat.envs || !mcp) return;
+    try {
+      const r = await mcp.callTool(CCR, 'list_environments', { limit: 20 });
+      const list = (r && r.payload && r.payload.environments) || [];
+      chat.envs = list.filter((e) => e && typeof e.environment_id === 'string' && (!e.state || e.state === 'active'));
+      if (!chat.envId && chat.envs.length) chat.envId = (chat.envs.find((e) => /default/i.test(e.name || '')) || chat.envs[0]).environment_id;
+      if (!chat.envs.length) chat.state = 'No cloud environment is available to you. Copy the command instead.';
+    } catch (e) { chat.state = mcpProblem(e, false); chat.envs = []; }
+    renderPlatform();
+  }
+
+  async function startChat(p) {
+    if (chat.busy || !chat.envId) return;
+    chat.busy = true; chat.state = ''; renderPlatform();
+    const cmd = skillFor(p.key);
+    try {
+      const r = await mcp.callTool(CCR, 'create_session', { prompt: cmd, title: `Launch flow: ${p.name}`, source_url: REPO_GIT, source_revision: SKILL_REF, environment_id: chat.envId });
+      const text = JSON.stringify((r && (r.payload ?? r.structuredContent)) ?? r ?? '');
+      const m = text.match(/session_[A-Za-z0-9]{8,}/);
+      chat.link = m ? `https://claude.ai/code/${m[0]}` : 'https://claude.ai/code';
+      chat.state = m ? `Started. ${cmd} is its first message.` : 'Started. It is at the top of your Claude Code sessions.';
+      chat.open = false;
+    } catch (e) { chat.state = mcpProblem(e, true); }
+    chat.busy = false; renderPlatform();
+  }
+
+  function itemCard(i, compact) {
+    const card = el('div', `item cut${i.status === 'done' ? ' done' : ''}`);
+    const head = el('div', 'head');
+    head.append(el('span', 'rank num', i.rank ? `#${i.rank}` : ''), el('span', 'title', i.title || '(untitled)'));
+    if (i.needsHuman) head.append(el('span', 'human', 'Needs a human'));
+    card.append(head);
+    const meta = el('div', 'meta');
+    const plat = PLATFORMS.find((p) => p.key === i.platform);
+    [plat ? plat.name : (i.platform === 'mobile' ? 'iOS + Android' : i.platform), i.owner && `Decides: ${i.owner}`, i.risk && `Risk ${i.risk}`, i.size && `Size ${i.size}`, i.due && `Due ${i.due}`].filter(Boolean).forEach((t) => meta.append(el('span', '', t)));
+    const taker = i.takenBy ? (names[i.takenBy] || 'someone') : null;
+    meta.append(el('span', '', taker ? `Taken by ${taker}` : 'Not taken'));
+    card.append(meta);
+    if (!compact) {
+      const edit = el('div', 'edit');
+      const st = el('select'); st.setAttribute('aria-label', 'Status');
+      ['open', 'in-progress', 'blocked', 'done'].forEach((v) => { const o = new Option(v.replace('-', ' '), v); st.append(o); });
+      st.value = i.status || 'open';
+      st.addEventListener('change', () => write(i.id, { status: st.value }));
+      edit.append(st);
+      if (me && me.id) {
+        const mine = i.takenBy === me.id;
+        const tb = el('button', 'btn', mine ? 'Release' : (i.takenBy ? 'Take over' : 'Take it')); tb.type = 'button';
+        tb.addEventListener('click', () => write(i.id, { takenBy: mine ? null : me.id }));
+        edit.append(tb);
+      }
+      const due = el('input'); due.type = 'date'; due.value = i.due || ''; due.setAttribute('aria-label', 'Due date');
+      due.addEventListener('change', () => { if (!due.value || due.validity.valid) write(i.id, { due: due.value || null }); });
+      const ev = el('input'); ev.type = 'url'; ev.placeholder = 'Evidence link (https://…)'; ev.value = i.evidence || ''; ev.setAttribute('aria-label', 'Evidence link'); ev.style.flex = '1 1 220px';
+      ev.addEventListener('change', () => { const v = ev.value.trim(); if (!v || safeUrl(v)) write(i.id, { evidence: v || null }); else ev.setCustomValidity('Use an https:// link'); });
+      edit.append(due, ev);
+      card.append(edit);
+    }
+    const ev = safeUrl(i.evidence);
+    if (ev && compact) { const a = el('a', 'small', 'Evidence'); a.href = ev; a.target = '_blank'; a.rel = 'noopener'; card.append(a); }
+    if (i.steps || i.source) {
+      const d = el('details'); d.append(el('summary', '', i.needsHuman ? 'The exact steps' : 'Details'));
+      if (i.steps) d.append(el('p', 'steps', i.steps));
+      const src = safeUrl(i.source); if (src) { const a = el('a', 'small', 'Where this comes from'); a.href = src; a.target = '_blank'; a.rel = 'noopener'; d.append(a); }
+      card.append(d);
+    }
+    return card;
+  }
+
+  async function write(id, patch) {
+    if (!db) return;
+    try { await db.collection('checklist').doc(id).update({ ...patch, updatedBy: me && me.id || null, updatedAt: new Date().toISOString() }); }
+    catch (e) { $('#c-count').textContent = e && e.code === 'invalid_argument' ? 'You can view this checklist but not change it.' : 'That change did not save. Try again.'; }
+  }
+
+  function renderChecklist() {
+    const fp = $('#f-plat'), fs = $('#f-status'), fh = $('#f-human');
+    if (fp.options.length === 1) PLATFORMS.forEach((p) => fp.append(new Option(p.name, p.key)));
+    const list = items.filter((i) => (!fp.value || i.platform === fp.value)
+      && (fs.value === 'all' || (fs.value === '' ? i.status !== 'done' : i.status === fs.value))
+      && (!fh.checked || i.needsHuman)).sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    const box = $('#items'); box.replaceChildren();
+    if (!items.length) box.append(el('div', 'empty', 'No checklist items yet. They are seeded from the readiness audit’s ranked blockers.'));
+    else if (!list.length) box.append(el('div', 'empty', 'Nothing matches these filters.'));
+    list.forEach((i) => box.append(itemCard(i, false)));
+    const done = items.filter((i) => i.status === 'done').length;
+    $('#c-count').textContent = items.length ? `${done} of ${items.length} done · ${items.filter((i) => i.needsHuman && i.status !== 'done').length} waiting on a human` : '';
+  }
+
+  function renderLiveops() {
+    const c = comps(); const box = $('#l-body'); box.replaceChildren();
+    const t = el('table', 'tbl'); const tb = el('tbody');
+    [['ugs-development', 'UGS development'], ['ugs-production', 'UGS production'], ['web-production', 'Web at /play'], ['web-staging', 'Web staging']].forEach(([id, l]) => tb.append(compRow(id, l)));
+    t.append(tb); const w = el('div', 'scroll'); w.append(t); box.append(w);
+    const flags = c['ugs-production'] && c['ugs-production'].details;
+    const f = el('div', 'small'); f.style.marginTop = '8px';
+    if (flags && (flags.minimum_version || flags.kill_switches)) {
+      f.append(el('div', '', `Minimum client version: ${flags.minimum_version || 'none set'}`));
+      f.append(el('div', '', `Kill switches on: ${flags.kill_switches || 'none'}`));
+    } else f.append(el('div', 'muted', 'Launch flags (minimum version, kill switches) appear here once a production deploy records them.'));
+    box.append(f);
+  }
+
+  function renderGates() {
+    const c = comps(); const box = $('#g-body'); box.replaceChildren();
+    const t = el('table', 'tbl'); const tb = el('tbody');
+    GATES.forEach(([id, l]) => tb.append(compRow(id, l)));
+    Object.keys(c).filter((id) => id.startsWith('smoke-')).sort().forEach((id) => tb.append(compRow(id, `Smoke: ${id.slice(6)}`)));
+    if (!Object.keys(c).some((id) => id.startsWith('smoke-'))) { const tr = el('tr'); tr.append(el('td', '', 'Smoke per mode')); const td = el('td', 'muted', 'No smoke run recorded'); td.colSpan = 3; tr.append(td); tb.append(tr); }
+    t.append(tb); const w = el('div', 'scroll'); w.append(t); box.append(w);
+    const q = el('div', 'small'); q.style.display = 'grid'; q.style.gap = '4px';
+    if (quality) {
+      [['QA backlog open', quality.qa_open], ['of which P0', quality.qa_p0], ['EditMode failures at last full run', quality.editmode_failures], ['Unverified editor checks', quality.verification_red]].forEach(([k, v]) => { if (v != null) q.append(el('div', 'num', `${k}: ${v}`)); });
+      q.append(el('div', 'src', `${quality.source || ''} · as of ${quality.as_of || 'unknown'}`));
+    }
+    q.append(el('div', 'muted', 'Crash-free rate and performance budgets: not connected.'));
+    box.append(q);
+  }
+
+  function renderRunbook() {
+    const box = $('#tl'); box.replaceChildren();
+    const order = ['T-7', 'T-1', 'T-0', 'T+1', 'T+7'];
+    if (!runbook.length) box.append(el('div', 'empty', 'No runbook steps yet.'));
+    for (const ph of order) {
+      const steps = runbook.filter((s) => s.phase === ph).sort((a, b) => (a.order || 0) - (b.order || 0));
+      if (!steps.length) continue;
+      const row = el('div', 'phase'); row.append(el('div', 'when', ph));
+      const ol = el('ol');
+      steps.forEach((s) => { const li = el('li'); li.append(document.createTextNode(s.step || ''));
+        const m = el('span', 'small muted', ` · ${s.owner || 'whoever takes it'}`); li.append(m);
+        const st = el('select'); st.setAttribute('aria-label', 'Step status'); st.style.marginLeft = '8px';
+        ['todo', 'done', 'skipped'].forEach((v) => st.append(new Option(v, v))); st.value = s.status || 'todo';
+        st.addEventListener('change', async () => { try { await db.collection('runbook').doc(s.id).update({ status: st.value, updatedAt: new Date().toISOString() }); } catch (e) { st.value = s.status || 'todo'; } });
+        li.append(st); ol.append(li); });
+      row.append(ol); box.append(row);
+    }
+    const tb = $('#rollback tbody'); tb.replaceChildren();
+    PLATFORMS.filter((p) => p.rollback).forEach((p) => {
+      const tr = el('tr'); tr.append(el('td', '', p.name), el('td', '', p.rollback));
+      const td = el('td'); const rb = p.actions.find((a) => /roll back|halt|previous|deploy to production/i.test(a[0])) || p.actions[p.actions.length - 1];
+      const a = el('a', '', rb[0]); a.href = rb[1]; a.target = '_blank'; a.rel = 'noopener'; td.append(a); tr.append(td); tb.append(tr);
+    });
+  }
+
+  function renderMetrics() {
+    const box = $('#m-body'); box.replaceChildren();
+    ['D1 retention', 'D7 retention', 'Crash-free sessions', 'Installs: Steam', 'Installs: iOS', 'Installs: Android', 'Website to install'].forEach((m) => {
+      const d = el('div', 'metric cut'); d.append(el('span', 'small muted', m), el('span', 'v', 'not connected')); box.append(d);
+    });
+  }
+
+  function renderChangelog() {
+    const box = $('#ch-body'); if (!changelog.length) return; box.replaceChildren();
+    changelog.sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8).forEach((r) => {
+      const d = el('details'); const s = el('summary'); s.append(el('strong', '', r.tag || r.id), document.createTextNode(` · ${r.date || ''}`)); d.append(s);
+      d.append(el('p', 'steps', r.notes || '')); const u = safeUrl(r.url); if (u) { const a = el('a', 'small', 'The release'); a.href = u; a.target = '_blank'; a.rel = 'noopener'; d.append(a); }
+      box.append(d);
+    });
+  }
+
+  function renderAll() { renderPills(); renderPlatform(); renderChecklist(); renderLiveops(); renderGates(); renderRunbook(); renderChangelog(); }
+  ['#f-plat', '#f-status', '#f-human'].forEach((s) => $(s).addEventListener('change', renderChecklist));
+  renderMetrics(); renderAll();
+
+  async function resolveNames() {
+    if (!user) return;
+    const ids = [...new Set(items.map((i) => i.takenBy).filter(Boolean))];
+    if (!ids.length) return;
+    const ps = await user.profiles(ids);
+    ids.forEach((id) => { names[id] = (ps[id] && ps[id].name) || 'someone'; });
+    renderAll();
+  }
+
+  (async () => {
+    claude.use('mcp').then((m) => { mcp = m; renderPlatform(); });
+    db = await claude.use('db');
+    user = await claude.use('user');
+    if (user) { try { me = await user.me(); } catch (e) { me = null; } }
+    if (!db) { $('#verdict').textContent = 'This view cannot reach the console’s shared store.'; return; }
+    const err = () => { $('#boardsrc').textContent = 'The shared store stopped answering. Reload the page.'; };
+    db.doc('status/board').onSnapshot((s) => { board = s.exists ? s.data() : null; boardMeta = board; renderAll(); }, err);
+    db.doc('status/quality').onSnapshot((s) => { quality = s.exists ? s.data() : null; renderGates(); }, err);
+    db.collection('checklist').onSnapshot((q) => { items = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderAll(); resolveNames(); }, err);
+    db.collection('runbook').onSnapshot((q) => { runbook = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderRunbook(); }, err);
+    db.collection('changelog').onSnapshot((q) => { changelog = q.docs.map((d) => ({ id: d.id, ...d.data() })); renderChangelog(); }, err);
+  })();
+
+  // Ask Claude: answers only from what this page shows. Hidden when the viewer cannot use it.
+  (async () => {
+    const sample = await claude.use('sample');
+    if (!sample) return;
+    $('#askp').hidden = false;
+    let ctl = null;
+    $('#askbtn').addEventListener('click', async () => {
+      const q = $('#q').value.trim(); if (!q) return;
+      if (ctl) ctl.abort(); ctl = new AbortController();
+      const out = $('#answer'); out.hidden = false; out.textContent = ''; $('#askstate').textContent = 'Thinking…';
+      const ctx = { milestones: 'Mobile release (iOS, Android) when activation is ready, no date set; Steam keys by March 2027, before GDC', steamCountdownTo: MILESTONE_DATE, components: comps(),
+        checklist: items.map(({ rank, title, platform, owner, status, needsHuman, risk, size, steps }) => ({ rank, title, platform, owner, status, needsHuman, risk, size, steps })) };
+      const prompt = `You help the Cosmic Shore team read their launch console. Answer the question using ONLY the JSON below (pipeline status and the launch checklist). Say plainly when the data does not answer it. Be brief; name the checklist rank (#n) and who decides. Never invent numbers or dates.\n\nJSON:\n${JSON.stringify(ctx)}\n\nQuestion: ${q}`;
+      try { const r = await sample(prompt, { signal: ctl.signal, onText: ({ text }) => { out.textContent = text; $('#askstate').textContent = ''; } }); out.textContent = r.text; $('#askstate').textContent = ''; }
+      catch (e) { $('#askstate').textContent = e && e.code === 'rate_limited' ? 'Too many questions at once. Wait a minute.' : e && e.code === 'cancelled' ? '' : 'No answer came back.'; if (e && e.text) out.textContent = e.text; }
+    });
+  })();
+})();
+</script>

@@ -111,7 +111,17 @@ namespace CosmicShore.UI
         PlayerDataService Profiles => PlayerDataService.Instance;
         GameObject _returnFocus;
 
-        public bool IsOpen => group && group.alpha > 0f;
+        /// <summary>True while the record is open, including while the Colour sets tab hides it (§126).</summary>
+        public bool IsOpen => _open;
+
+        /// <summary>Raised when the record opens (the Profile coming up) and when it closes (the Profile going).</summary>
+        public event System.Action Opened, Closed;
+
+        bool _open;
+        bool _hidden;
+
+        /// <summary>True while the favourite-pilot picker is up (it owns LB / RB then).</summary>
+        public bool IsPickerOpen => picker && picker.IsOpen;
 
         void Awake()
         {
@@ -143,6 +153,7 @@ namespace CosmicShore.UI
             Refresh();
             SetShown(true);
             if (events && changePilotButton) events.SetSelectedGameObject(changePilotButton.gameObject);
+            Opened?.Invoke();
         }
 
         public void Close()
@@ -151,6 +162,17 @@ namespace CosmicShore.UI
             SetShown(false);
             var events = EventSystem.current;
             if (events && _returnFocus) events.SetSelectedGameObject(_returnFocus);
+            Closed?.Invoke();
+        }
+
+        /// <summary>
+        /// Hides the open record without closing it: the Profile's Colour sets tab shows the cell where the record was
+        /// (Rev 54 A, §126). The record stays open (<see cref="IsOpen"/>), so leaving the Profile still closes it.
+        /// </summary>
+        public void SetHidden(bool hidden)
+        {
+            _hidden = hidden;
+            SetShown(_open);
         }
 
         /// <summary>Closes the favourite-pilot picker if it is open; true when it was (Back answers the picker first).</summary>
@@ -297,10 +319,12 @@ namespace CosmicShore.UI
 
         void SetShown(bool on)
         {
+            _open = on;
             if (!group) return;
-            group.alpha = on ? 1f : 0f;
-            group.interactable = on;
-            group.blocksRaycasts = on;
+            bool visible = on && !_hidden;
+            group.alpha = visible ? 1f : 0f;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
         }
 
         static void Set(TMP_Text t, string s)

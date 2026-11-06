@@ -2,7 +2,7 @@
 
 Our own analytics backend, replacing PostHog (Shombith, 2026-11-05). It takes the game's events, keeps them on our
 Oracle VM, and serves the **Froglet Analytics console**: the dashboard picked on Frogma as Rev 50 **B** (a rail of
-pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §122). Claude writes
+pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §137). Claude writes
 three notes about the numbers each night and answers questions in the Ask box. UGS Analytics is unchanged.
 
 Status (2026-11-05): the server, its tests and the console page are written and were run locally on sample data.

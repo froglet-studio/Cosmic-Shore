@@ -30,11 +30,19 @@ Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
   `#385060` and Gold `#53416C` (HSV value 0.33-0.42, against Photic's 0.60-0.73). The Squirrel, Angler and Butterfly HUDs
   use it. Check that those icons stay legible.
 - **Not moved by the switch, because they read Photic:** the vessel hull materials (`vessel_colors.py`), the rendered card
-  art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and Amoebius.
+  art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and the Amoebius launcher's three
+  accent colours (`Port/src/CosmicShore.Launcher/Neon.cs`, kept matched to Photic by `domain_colors.py --check`).
+  Amoebius itself follows the live palette since 2026-11-05: its player loads whatever `ThemeManagerDataContainer.ColorSet`
+  names, and its client windows read that asset by guid (`SkimRaceTheme.CreateColorSet`, `LivePaletteTests`).
 - **The icon kit's shielded colours are a hand table** (`Tools/Build/icon_kit/states.py` `SHIELDED`, light blues and
   golds that predate the switch), so its states sheets and the Fleet Codex's L5 art (`fleet_codex.py` `L5_SHIELDED`)
   no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
   `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
+
+- **Nocturne's Gold domain is in the forbidden band.** `#FF8F11` sits between Gold and Fire on the colour chart
+  (`colour_domains.py classify '#FF8F11'`), where Photic's `#FFA700` rested inside Gold. The style guide's tokens read
+  the live palette since 2026-11-05 (`Tools/Build/froglet_style.py`, `Docs/UI_STYLE_GUIDE.md`) and report it as open
+  rather than failing; moving the colour or reshaping Gold is Garrett's decision.
 
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain

@@ -15,7 +15,10 @@ WHAT THIS MODE IS. Redline is the Manta-only CIRCUIT race: a closed loop of swit
 through the cell, flown in LAPS by every pilot, and the first DOMAIN whose LEAD RUNNER threads
 the last gate of the last lap wins. Every corner is cut against the Manta's FULL-BOOST turn
 radius - the 237u circle it holds with both triggers flat - so a corner is one question: how
-much Soar is it worth? See Assets/_Scripts/Controller/Arcade/REDLINE.md.
+much Soar is it worth? Since 2026-11-04 it teaches the Time ability (Soar) ALONE: no corner
+needs the Yastri pivot, the cell's omni crystal is off (the scene's CrystalManager spawns
+none), and the only pickups are the Time crystals RedlineController lays from the course
+(RedlineTimeCrystals). See Assets/_Scripts/Controller/Arcade/REDLINE.md.
 
 THE DONOR IS HEADLONG, and that is the point rather than a shortcut. Headlong is already a lapped
 gate race in the barren race cell with an EQUATORIAL spawn ring (gate 0 on its pole - the
@@ -56,6 +59,8 @@ G_SCRIPT = {
     "RedlineController":  guid("script/RedlineController"),
     "RedlineCourse":      guid("script/RedlineCourse"),
     "RedlineCourseTests": guid("script/RedlineCourseTests"),
+    "RedlineTimeCrystals":      guid("script/RedlineTimeCrystals"),
+    "RedlineTimeCrystalsTests": guid("script/RedlineTimeCrystalsTests"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -172,6 +177,8 @@ SCRIPT_PATHS = {
     "RedlineController":  "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs",
     "RedlineCourse":      "Assets/_Scripts/Controller/Arcade/Redline/RedlineCourse.cs",
     "RedlineCourseTests": "Assets/_Scripts/Tests/Editor/RedlineCourseTests.cs",
+    "RedlineTimeCrystals":      "Assets/_Scripts/Controller/Arcade/Redline/RedlineTimeCrystals.cs",
+    "RedlineTimeCrystalsTests": "Assets/_Scripts/Tests/Editor/RedlineTimeCrystalsTests.cs",
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
@@ -216,10 +223,11 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameRedline") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Redline
-  Description: Mantas only, flat out. Both triggers buried is four times cruise and a
-    turning circle you can hold through most of the lap - but the corners that will not
-    take it are cut to the metre, and easing a trigger to make one costs you two seconds
-    of winding the Soar back up. Laps, until somebody stops lifting.
+  Description: Mantas only, flat out. Both triggers buried is Soar - four times cruise
+    and a turning circle you can hold through most of the lap. The corners that will not
+    take it are cut to the metre, and easing both triggers to make one costs you two
+    seconds of winding the Soar back up. Time crystals make it faster still. Laps, until
+    somebody stops lifting.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {aml.card_background('Redline')}, type: 3}}
@@ -312,6 +320,19 @@ scene, _scene_errors = aml.committed_scene(
 # What the mode INHERITED from the donor is still what it needs - checked on the scene it ships.
 _scene_errors += [f"MinigameRedline.unity no longer provides: {why}"
                   for probe, why in INHERITED_PROBES if not re.search(probe, scene, re.M)]
+
+# 4d. TIME ONLY (2026-11-04): the cell's omni crystal feeds all four elements and fires the Manta's omni crystal
+# effects, so the scene's CrystalManager spawns NONE (CrystalCountMode.FixedCount = 0, a count of 0). The only pickups
+# are the Time crystals RedlineController lays from the course. Authored on the committed scene, idempotent: the block
+# is found by the omni crystal prefab it points at, and must read 0 / 0 exactly once afterwards.
+OMNI_CRYSTAL = "54802b89e00a0ed4281025fa5e770811"
+_mgr = re.compile(r"(  crystalPrefab: \{fileID: 5535990081244205891, guid: " + OMNI_CRYSTAL +
+                  r",\n    type: 3\}\n(?:  [^\n]*\n)*?)  crystalCountMode: \d+\n  fixedCrystalCount: \d+\n")
+scene, _n_mgr = _mgr.subn(r"\g<1>  crystalCountMode: 0\n  fixedCrystalCount: 0\n", scene)
+if _n_mgr != 1:
+    _scene_errors.append(f"the scene's CrystalManager block (crystalPrefab = the omni Crystal) was found {_n_mgr} times, not once")
+elif len(re.findall(r"^  crystalCountMode: 0\n  fixedCrystalCount: 0\n", scene, re.M)) != 1:
+    _scene_errors.append("the scene's CrystalManager does not read crystalCountMode 0 / fixedCrystalCount 0")
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity.meta",
@@ -427,14 +448,18 @@ if MAX_PLAUSIBLE_SPEED * 2 <= 936:
 
 # GUID hygiene: nothing this script mints may collide with an asset it does not own.
 all_new = set(G_SCRIPT.values()) | set(G_ASSET.values()) | {guid("doc/REDLINE.md"), guid("folder/Redline")}
-owned_metas = {os.path.join(ROOT, p) for p in files if p.endswith(".meta")}
+# Normalised on both sides: on Windows os.path.join(ROOT, "Assets/...") keeps the forward slashes while os.walk
+# yields backslashes, so without it every meta this script owns read as a foreign asset and --check reported
+# eight false "collisions" there (2026-11-04).
+_norm = lambda p: os.path.normcase(os.path.normpath(p))
+owned_metas = {_norm(os.path.join(ROOT, p)) for p in files if p.endswith(".meta")}
 existing_guids = set()
 for dirpath, _dirs, fnames in os.walk(os.path.join(ROOT, "Assets")):
     for fn in fnames:
         if not fn.endswith(".meta"):
             continue
         full = os.path.join(dirpath, fn)
-        if full in owned_metas:
+        if _norm(full) in owned_metas:
             continue
         try:
             with open(full, encoding="utf-8", errors="ignore") as fh:

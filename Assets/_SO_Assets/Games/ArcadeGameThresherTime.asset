@@ -15,10 +15,11 @@ MonoBehaviour:
   Mode: 66
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Your speed is your sling - pull LT all
-    the way to plant the ball and swing round it, pull RT to wind the chain in and spin up,
-    let go to fly off at up to nearly four times cruise. A sling is your own momentum, so
-    every corner asks how much of it you can carry. Three laps. Fastest domain home wins.
+  Description: Threshers only, against the clock. Every gate is a nest to break - the ball,
+    a chain cut, a charged blast or a ram all crack its core, and the gate opens. Plant beside
+    a nest and your orbiting chain shreds its cage and charges the ball, then let go and smash
+    the core. Every third nest hides a crystal. Higher levels arm the cage with danger and
+    shielded plates and regrow it fast. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 41be1af0f0ee4bd7a8b9d6c5b5f27424, type: 3}

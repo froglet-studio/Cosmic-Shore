@@ -31,7 +31,8 @@ section here. The build that follows a pick is verified against the picked board
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
 | Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118; built in section 119) | Shombith, 2026-11-02 (section 112) |
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
-| Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 122) |
+| Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
+| Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5721,7 +5722,225 @@ that make it a true design board like grouping and sectioning stuff."
   that element only, gates it (`check --only`), publishes that one file, replies in the thread and resolves it. Comments
   on different boards run in parallel; the session records the changes in the repo once at the end (`/frogma` §4.5).
 
-## 122. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
+## 121. The Froglet UI style guide on Frogma's first tab; every old area in a section (2026-11-03, awaiting decisions D1-D8)
+
+**Asked (Shombith, 2026-11-03):** "give them that ofcourse" (sections for the 11 old areas), then "take garretts color chart
+for the game from his PR and lets write UI rules according to that and other UI rules that is required and that should
+be shown on the first page of frogma", with the earlier brief: one UI style guide for the whole team, a UI checklist PR
+template and CODEOWNERS, the five screens that break it most, and "new themes ... all froglet specific ... so any UI
+task, artifact diagrams or presentation, website, codex should all follow these rules".
+
+- **Every board on the Menu Redesign tab is in a section** (version `1793722789-316f`). `frogma.py collect` moved the
+  interleaved old areas onto shelves at the tab's bottom, each keeping its inner layout and getting its section: In-game
+  HUD (Item 12's four areas, Maelstrom with the end of match), Menu (Items 0-11, each item's notes board joined to its
+  item), and Rev 3. Rev 4, 7 and 15 got theirs in place once the strays left. 0 boards outside a section.
+- **The Style Guide tab is Frogma's first page and the board opens on it** (version `1793723216-5530`): ten boards
+  (`SG*.dc.html`) drawn by `Docs/MenuRedesignB/rounds/style_guide_boards.py` from the tokens: start here, colour (the six
+  families), themes, type, shape and space, buttons and states, cards / windows / toasts, motion, do and don't, the UI
+  checklist and the five screens.
+- **The guide in words:** `Docs/UI_STYLE_GUIDE.md`. **Tokens:** `Docs/UI/froglet.css` and `froglet-tokens.json`, written
+  from `UITheme.asset`, `OriginalColorSetSO` and `colour_domains.json` by `Tools/Build/froglet_style.py` (`--check`).
+  Themes: Deep Sea (the game's own, default) and Shore (its light twin, each family re-picked inside itself at 4.5:1).
+- **Wired into PRs:** `.github/pull_request_template.md` (UI checklist section), `.github/workflows/ui-checklist.yml` +
+  `Tools/Build/check_ui_pr.py`, and CODEOWNERS for the UI paths (Shombith).
+- **Found while writing it** (decisions in the guide's section 13): the selection blue sits in the forbidden band (D3);
+  five STYLE_FOUNDATION light / dark domain variants fall outside their family (D4); the UI domain tokens and the game
+  palette disagree (D2); STYLE_FOUNDATION section 3 still says focus is CTA green (D5).
+- `/frogma-show` opens the board in one call.
+- **Decisions (Shombith, 2026-11-05)**, recorded in the guide's section 13: D1 Deep Sea and Shore; D2 the domains as the
+  colour board shows them; D3 Jade is what you can claim and reclaim (selection, focus, hull picks, friends) and Ruby is
+  no way back (Ready); D4 the whole colour chart on the Style Guide (`SGChart`, the wheel from
+  `Docs/UI/colour-wheel.png` and each family's shades) with in-family replacements for STYLE_FOUNDATION's five
+  out-of-family variants; D5 CTA always lime; D6 phones on their own 800 x 450 scale; D7 the UI checklist required;
+  D8 a prompt for the codex re-skin. The Style Guide republished as version `1793891384-6434` (11 boards).
+
+
+## 122. Rev 51 mockups: colour sets in the Profile, and the repaint between them (2026-11-05; Shombith picked A, built in section 123)
+
+**Asked (Shombith, 2026-11-05):** "create mockups inside profile where we can change these themes from there. remember
+it will be something that the player unlocks with quest system. So it should something inside the profile view, once
+done bring up the loading screen like when cell is change that the theme is changing and apply the theme." Then, while
+it was drawn: "For now all color sets are unlocked since quest is not planned properly". The sets are Garrett's
+(`Docs/VesselModels/colour_sets.json`, `Docs/PALETTE.md` section 1): Nocturne (the default since 2026-11-03), Photic
+(the original) and Dart Frog, plus the planned colour-blind sets, drawn here as one card, Clear Sight.
+
+**On the canvas:** tab Menu Redesign A, section "Rev 51 - Colour sets in the Profile" (version `1793896538-6258`; Rev 50
+went to the Froglet Analytics tab while this round was drawn, so it moved to 51). Copies in `Docs/MenuRedesignB/board/`,
+drawn by `Docs/MenuRedesignB/rounds/r51_profile_colour_sets.py <root> 51`. Every prism, vessel, trail and crystal on the
+boards is the set's SHIPPED value read from its `SO_ColorSet` asset (linear HDR, tone-clamped for a screen).
+- **R51Compare:** each set's card in each state it can show: equipped, owned (every set, for now), and the two Later
+  columns, quest in progress and quest not started.
+- **R51A (recommended, interactive):** the built Profile (Rev 13) gains a third tab, Record | Colour sets | Audio
+  Studio on LB / RB. Four set cards, each with a small cell in its colours, beside a big preview of the cell in the
+  picked set and its four rim-over-face pairs. APPLY (lime) plays the loading screen, then the toast; the cell behind
+  the Profile's veil is drawn in the equipped set.
+- **R51B (interactive):** the set you wear sits on the pilot card with CHANGE (X); the picker is a Colour sets window
+  over the Profile (APPLY / CANCEL straddling its foot). The smallest change to the built screen.
+- **R51C:** a shelf of four large cards under the pilot card, each its own preview; the record moves below.
+- **R51Loading:** the cell-change veil (`EnvironmentLoadVeil`, section 47.4) with its words for a set change: CHANGING
+  COLOUR SET, the set's name, old -> new rim and face per domain, the omni crystal's hex filling with the new set over
+  the old, and the four steps (mixing the palette, repainting prisms, recolouring vessels and trails, opening the cell).
+- **R51Applied:** back in the Profile with Dart Frog equipped, the toast "Colour set applied", the cell behind repainted.
+- **R51Locked, R51Unlock (Later, once quests are planned):** a set a quest has not given yet (grey, the quest's goals,
+  OPEN VOYAGE), and the Voyage window's claim handing over a set (USE IT NOW repaints at once, LATER leaves it in the
+  Profile). Quest 4 / Maelstrom is an example, not a plan.
+- **R51Notes:** the options, unlocked-for-now, what the repaint does in Unity, decisions.
+
+A is recommended: one more tab on the screen that is built, nothing else moves, and the preview is large enough to judge
+a palette; it is the Voyage window's LB / RB tab pattern.
+
+**Differs from the build:** the Profile has no colour sets today, and the game has one palette, chosen by the slot on
+`ThemeManagerDataContainer.asset`. Building a pick means: a per-player chosen set (saved like the other profile
+settings); `ThemeManager` rebuilding its four domain material sets and handing the set to `GameToastAPI` and `PrismLit`
+again (today it does that once, at Awake); and reloading the menu cell under the existing veil, since prisms take
+their material when they spawn. The hull materials, card art, studios and the launcher still read Photic
+(`Docs/PALETTE.md` section 1), so a set is not a full repaint until they have a per-set path.
+
+**Decisions waiting:** which option; the word ("Colour sets", Garrett's, since "theme" is the style guide's Deep Sea /
+Shore); later, which quests give which sets; Dart Frog is on the paid track in `colour_sets.json` (Garrett's call);
+whether the UI's domain colours follow the set (style guide D2 says a domain is the live palette).
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity". Built in section 123.
+
+## 123. Built: Rev 51 A, the Profile's Colour sets tab and the repaint (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". Every set is unlocked (the quests are not planned yet). Compiled against the
+Unity reference assemblies (`Tools/Build/unity_refcompile`, 0 errors in project code); not opened in the editor.
+
+**The switch** (the one palette slot stays the truth):
+- `ColorSetCatalogSO` (`Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset`, written by
+  `Tools/Build/author_colour_set_catalog.py`, `--check` / `--self-test`): one entry per set, with an id, its
+  `SO_ColorSet`, the name and line the Profile shows (authored in the asset), and `unlocked` (all on).
+  `ThemeManagerDataContainer.Catalog` points at it.
+- `ColorSetPreference`: the pick is saved on the device (PlayerPrefs). A set changes how this player sees the game,
+  nothing anyone else sees.
+- `ThemeManager`: at Awake it puts the saved pick (if it is in the catalog and unlocked) into
+  `ThemeManagerDataContainer.ColorSet`, then builds the four domain material sets as before. `ApplyColorSet` puts a
+  new set in the slot and repaints the SAME material instances in place (`PaintDomainMaterialSet`, split out of
+  `GenerateDomainMaterialSet`), hands the set to `GameToastAPI` and `PrismLit` again, saves the pick and raises
+  `ColorSetApplied`. Live prisms change colour without a rebuild because they draw with those shared materials.
+  `OnDestroy` puts the authored palette back in the slot, so an editor play session never leaves the asset pointing at
+  another set.
+- The four menu views that held a palette of their own (`CodexScreen`, `ConfigureSeatPedestal`, `KitDomainTile`,
+  `SquadsPage`) now paint with `ThemeManager.LiveOr(theirs)`.
+
+**The loading screen:** `EnvironmentLoadVeil.ShowColourSetChange(name, line, repaint)`, the cell-change veil in a
+colour-set mode: "Changing colour set", the set's name and line, and four steps from
+`EnvironmentLoadVeilContentSO.colourSetSteps` (Mixing the palette, Repainting prisms, Recolouring vessels and trails,
+Opening the cell) plus `colourSetTip`. The repaint runs once the screen is opaque; the steps light 0.3 s apart and the
+veil lifts. No load gate is taken. Words authored by `Tools/Build/author_load_veil_content.py` (its checks now hold the
+four colour-set steps too).
+
+**The Profile** (`Tools/Build/author_menu_profile.py`, `ProfileView.prefab`):
+- Two word tabs, RECORD and COLOUR SETS (`KitTextTab`), in the header row beside "Your pilot". **Departure from the
+  board:** the board drew them under the pilot card with a third tab, Audio Studio. In the header the approved record
+  keeps every position, and Audio Studio stays on the Record page where Rev 13 put it. A third tab is one generator
+  change if wanted.
+- `ProfileColorSetsPanel` on the `ColourSets` layer over the record's panels: three set cards (name, line, the four
+  domains' prism swatches, Equipped with the lime tick / Owned / "Unlocks with a quest"), the picked set's preview
+  (Jade, Ruby, Gold, Blue at Prism, Shielded, Super-shielded, plus the vessel colour; HDR shown at its hue), and APPLY
+  (Cta) straddling the preview's foot, hidden while the shown set is equipped. Opening the Profile again returns to
+  Record.
+
+**Not built:** the board's per-card cell pictures and big cell preview (swatches stand in), Clear Sight (no asset
+yet), LB / RB on the tabs (the picker uses them), and the Later boards (quest locks and the claim window).
+
+**Not repainted by a switch:** what reads Photic by path (hull materials, card art, the studios, the launcher accents;
+Docs/PALETTE.md section 1), a vessel's own material copies until it respawns, and a live crystal's tint until it next
+re-tints. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+## 124. Fix: APPLY reaches the live world; LB / RB on the Profile's tabs (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith, on section 123 as built: "I apply it but the color of the game does not change at all, I have to restart the
+game in order for it to be applied", and "lb rb stuff is missing".
+
+- **Why nothing changed.** `ThemeManager.ApplyColorSet` repainted the domain materials in place, but prisms draw through
+  Entities Graphics and each prism entity COPIES its bright, dark and spread out of its material when it is created
+  (`PrismRenderService.Create`). The copies kept the old set until every prism respawned, which is what a restart did.
+  Crystals do the same into their own property blocks (`Crystal.ApplyColorSetTint`).
+- **The fix.** `ApplyColorSet` now calls `PrismRenderService.RestampColors(<the repainted materials>)`, one pass over the
+  prism entities that re-reads the three colours for every entity on a repainted material, and `Crystal.RetintAll()`.
+  Both run behind the veil. Vessels and settled MeshRenderer prisms (the no-Entities-Graphics path) draw the shared
+  material and already changed. A prism its owner shades (`ApplyColorShade`) takes the raw new colours until its next
+  material sync.
+- **LB / RB.** The tab row has the LB and RB keycaps the board drew (`KitKeycap`), and `ProfileColorSetsPanel` steps
+  between the tabs on the pad's shoulders while the Profile is up, as the Codex and the Hangar step theirs. It stands
+  down while the favourite-pilot picker is open (it owns LB / RB; `ProfileRecordWindow.IsPickerOpen`) or a window over
+  the Profile has the pad.
+- Compiled against the Unity reference assemblies (0 errors in project code); the hand test in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` now expects the colours to change the moment the veil lifts.
+
+## 125. Rev 54 mockups: colour sets, more modern - the set's world leads (2026-11-05; Shombith picked A, built in section 126)
+
+**Asked (Shombith, 2026-11-05):** "give me a few better modern mockups, I do not love these".
+
+**On the canvas:** tab Menu Redesign A, section "Rev 54 - Colour sets in the Profile, more modern" (version
+`1793902693-58fe`; Rev 53 went to the Phone tab while this was drawn). Copies in `Docs/MenuRedesignB/board/`, drawn by
+`Docs/MenuRedesignB/rounds/r54_colour_sets_modern.py <root> 54`. What changes from Rev 51: one scene for every set drawn
+in depth (near prisms large and sharp, far ones small and soft, each set's rims lighting the sea, a vessel's trail and a
+free crystal; the same seeded positions for every set, so only the colours change), less text, and the tabs with LB / RB.
+- **R54Compare:** the three sets in the new scene, and the four ways to pick one.
+- **R54A Showroom (recommended, interactive):** the picked set's world fills the page under a big name and its four
+  rim-over-face pairs; a rail of set thumbnails along its foot; APPLY bottom right. One decision per screen, like a
+  modern cosmetics screen.
+- **R54B Paint chips (interactive):** every set at once as a tall chip of its four pairs; the picked one opens wide
+  into its world.
+- **R54C Plinth (interactive):** one domain's three prism tiers large on a plinth, so the shielded tiers can be judged;
+  sets on the left, the domain switch and its rim / face / vessel / trail on the right.
+- **R54D Before / after (interactive):** a divider dragged across one world between the set you wear and the one you
+  try; a rail to choose what to try.
+- **R54Notes:** what changed, the four, how it maps to Unity (the scene is the real menu cell behind the Profile, or a
+  small render for B and C), decisions.
+
+A is recommended: the world sells the set, the rail keeps every set one press away, and it needs no new rendering in
+Unity if the cell behind the Profile previews the set being browsed.
+
+**Decisions waiting:** which option; whether browsing previews on the real cell (no extra render, but the cell repaints
+as you browse) or only APPLY repaints; Audio Studio as its own tab or kept on Record.
+
+**Picked (Shombith, 2026-11-05):** "go with A, build it in Unity and open the PR". Built in section 126.
+
+## 126. Built: Rev 54 A, the Showroom - the Colour sets tab is a window onto the real cell (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith: "go with A, build it in Unity". It replaces section 123's cards and preview panel. The tabs, LB / RB, the
+catalog, the veil's colour-set mode and section 124's re-stamp stay.
+
+- **The world is the real cell.** While Colour sets shows, `ProfileColorSetsPanel` switches off the Profile's veil and
+  its sea lines, hides the pilot card and hides the record without closing it (`ProfileRecordWindow.SetHidden`), so the
+  menu cell is seen through a framed window with a fade under the words. No render texture and no second scene.
+- **Browsing previews on the cell.** This answers section 125's open question; the board's notes recommended it.
+  Picking a set, pressing < or >, or moving the pad onto a tile calls `ThemeManager.PreviewColorSet`, which repaints
+  in place and re-stamps without saving. APPLY raises the cell-change veil, then `ApplyColorSet` saves the pick and
+  makes it `Equipped`. If another load holds the screen, APPLY wears the set at once. Leaving the tab or the Profile
+  without applying puts the equipped set back: `ProfileRecordWindow` now raises `Opened` and `Closed`.
+- **On the cell:**
+  - "2 of 3" and "Wearing Nocturne" (authored templates);
+  - "Only you see your colour set";
+  - "Colour set", the set's name at 88 (the board's size, past the type scale's Display 48 on purpose), its line, and
+    the four domains' rim and face swatches with their pigment words;
+  - the rail: <, three set tiles (the four rim-over-face swatches, the name, the lime tick on the worn set), >;
+  - APPLY (Cta), or Equipped when the set shown is the one worn.
+- **Pigment words** are authored in the catalog (`ColorSetCatalogSO.Entry.pigments`; `author_colour_set_catalog.py`
+  added them to the asset once, and its checks hold four per set).
+- **Departures from the board:** the tabs stay in the header row (as built in section 123). Audio Studio stays on
+  Record; that decision is still open. The thumbnails are swatch tiles, not pictures of the cell.
+- Compiled against the Unity reference assemblies; `author_menu_profile.py` and `author_colour_set_catalog.py` pass
+  `--check` and `--self-test`. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+### 126.1 Fix: a backing under the words, the tab words level with LB / RB (2026-11-05, NOT RUN IN EDITOR)
+
+Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
+- **Backing.** The real cell is much brighter and busier than the board's drawn sea, so the 92 % fade alone left the
+  name, pigments and rail on the world. The hero now has a solid band (SurfaceBlack at 88 %) under the words and the
+  rail, with the fade above it. The Profile's veil is dimmed to 55 % while Colour sets shows
+  (`ProfileColorSetsPanel.veilWhileShowing`) instead of switched off, so the cell is seen but sits back; its sea lines
+  stay off.
+- **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
+  centred, and the underline sits at the row's foot.
+
+## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
 
 - **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
   show me mockups of the dashboard, follow the style guide." The decision it follows: leave PostHog for our own ingest
@@ -5756,4 +5975,3 @@ that make it a true design board like grouping and sectioning stuff."
 - **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
   Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
   there); the page itself is not built yet.
-

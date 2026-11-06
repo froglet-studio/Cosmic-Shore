@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
     /// stick does nothing; on the way out it leaves with the velocity it had × the exit multiplier (the slingshot), and the
     /// turn picks up from that heading.</para>
     ///
+    /// <para><b>The Rift</b> (round 28): into the void the hull is phased too and flies faster
+    /// (<see cref="ComputeThrottleTarget"/>), steering as ever.</para>
+    ///
     /// <para><b>The AI shaping its reticle</b> holds its line (the page's left stick at rest while the right one bends):
     /// <see cref="MeerkatSolitonExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
     /// </summary>
@@ -32,7 +35,7 @@ namespace CosmicShore.Gameplay
             get
             {
                 var wormhole = Wormhole;
-                return wormhole && (wormhole.IsRiding || wormhole.IsInNetwork);
+                return wormhole && (wormhole.IsRiding || wormhole.IsInNetwork || wormhole.IsInVoid);   // round 28: the void too
             }
         }
 
@@ -48,6 +51,18 @@ namespace CosmicShore.Gameplay
             base.Initialize(vessel);
             _resolved = false;
             _rodeLastFrame = false;
+        }
+
+        /// <summary>
+        /// Round 28, the Rift: into the void the hull heads for <see cref="MeerkatSolitonExecutor.VoidSpeedFactor"/> × its
+        /// cruise (<c>riftSpeed</c> × the Time rush), eased toward it by the platform's own throttle smoothing, and back to
+        /// cruise when the run ends.
+        /// </summary>
+        protected override float ComputeThrottleTarget()
+        {
+            float target = base.ComputeThrottleTarget();
+            var wormhole = Wormhole;
+            return wormhole && wormhole.IsInVoid ? target * wormhole.VoidSpeedFactor : target;
         }
 
         MeerkatSolitonExecutor Wormhole
