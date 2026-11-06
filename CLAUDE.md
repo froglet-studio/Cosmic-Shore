@@ -206,6 +206,11 @@ The ladder is the element's arcade intensities, then its arena game balanced aga
 
 A new round grows from every genome that exists. No AI is trained inside an arena game.
 
+**Froglet Compute is PAUSED (Shombith, 2026-11-06): analytics has the priority.** Until he switches it back on, queue
+no compute job, send no run and install no agent; the console's hourly sync scheduled task is paused, and the rule below
+waits with it. Train or check an AI by hand only as the AI plan allows. The hourly AI learning sweep (`ai_learn.py`) is
+separate and unchanged.
+
 **Froglet Compute is the default way to train an AI** (Shombith, 2026-11-02). A search, a Unity trainer run or a
 re-run of a learner goes on the team's machines through Compute, never as a sweep a session runs by hand or a trainer
 session in one person's editor: a new search is a `/compute-job` (its job names its plan step), a Unity trainer run
