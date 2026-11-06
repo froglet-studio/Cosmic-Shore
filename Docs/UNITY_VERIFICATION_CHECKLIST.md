@@ -67,8 +67,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
 
-**What landed:** `Assets/_Scripts/Editor/Launch/` (`ModeSmokeLauncher`, `ModeSmokeDriver`, `ModeSmokeReport`,
-`ModeSmokeConfigSO`), the config `Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` (hand-authored YAML: rosters
+**What landed:** `Assets/_Scripts/Editor/Launch/` (`ModeSmokeLauncher`, `ModeSmokeDriver`, `ModeSmokeReport`),
+`Assets/_Scripts/ScriptableObjects/ModeSmokeConfigSO.cs`, the config `Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` (hand-authored YAML: rosters
 ArcadeGames + ArenaGames, Maelstrom excluded, quick set SkimRace / Joust / Switchback),
 `Assets/_Scripts/Tests/Editor/ModeSmokeReportTests.cs`, `Tools/Launch/smoke_report.py`. Doc: `Docs/LAUNCH/SMOKE_TEST.md`.
 Verified offline only: the reference compile (editor config) and `smoke_report.py self-test` (negative control: a
