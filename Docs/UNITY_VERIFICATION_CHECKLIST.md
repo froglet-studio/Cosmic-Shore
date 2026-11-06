@@ -21298,3 +21298,8 @@ Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`,
    upright again; start a match from Configure and the match is landscape; back in the menu it turns again.
 5. **Turning while a window is open**: open Arcade and Configure, rotate back and forth; each takes its pose and gives it
    back.
+6. **Configure while turning**: fly the preview, press FULL SCREEN (upright it grows to the window, landscape it opens the
+   tray), rotate mid-flight; the frame, the objective bar and START come back to the right place. Add three pilots to a
+   domain upright: the column grows and START moves down, not off the screen.
+7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
+   in the same grid.

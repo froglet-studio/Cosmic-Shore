@@ -96,6 +96,9 @@ namespace CosmicShore.UI
         public void Apply(bool upright)
         {
             if (upright == Upright) return;
+            // An entrance playing now offsets the rect: land it first, so the authored pose read (or put back) is the rest
+            // pose and the entrance does not carry on from the old one.
+            if (TryGetComponent(out KitEntrance entrance) && entrance.IsPlaying) entrance.Finish();
             var r = Rect;
             if (upright)
             {

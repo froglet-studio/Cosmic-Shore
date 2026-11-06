@@ -318,6 +318,7 @@ GameObject:
   - component: {fileID: 951527812659943533}
   - component: {fileID: 306127904319733622}
   - component: {fileID: 316310080012312141}
+  - component: {fileID: 1118320481319943548}
   m_Layer: 5
   m_Name: Preview
   m_TagString: Untagged
@@ -389,6 +390,33 @@ MonoBehaviour:
   doubleTapToFocus: 1
   doubleTapSeconds: 0.4
   guideTarget: {fileID: 319114659214574448}
+--- !u!114 &1118320481319943548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 449320430221492058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -196}
+  sizeDelta: {x: 1000, y: 562}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1043885116670850714
 GameObject:
   m_ObjectHideFlags: 0
@@ -1779,6 +1807,7 @@ GameObject:
   - component: {fileID: 373793466270391403}
   - component: {fileID: 519163268376081946}
   - component: {fileID: 510665122717706261}
+  - component: {fileID: 895709490332828165}
   m_Layer: 5
   m_Name: Steps
   m_TagString: Untagged
@@ -1844,6 +1873,33 @@ MonoBehaviour:
   staggerIndex: 0
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &895709490332828165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 746636665431002876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -1070}
+  sizeDelta: {x: 1000, y: 578}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1111048916652090239
 GameObject:
   m_ObjectHideFlags: 0
@@ -1973,6 +2029,7 @@ GameObject:
   - component: {fileID: 538604626130154482}
   - component: {fileID: 134980266254735462}
   - component: {fileID: 376517519678182566}
+  - component: {fileID: 367988208272479071}
   m_Layer: 5
   m_Name: Line0
   m_TagString: Untagged
@@ -2037,6 +2094,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &367988208272479071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 395453272393003774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: -468.18}
+  sizeDelta: {x: 221.14, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &683833597232122118
 GameObject:
   m_ObjectHideFlags: 0
@@ -2048,6 +2132,7 @@ GameObject:
   - component: {fileID: 1051268930473605177}
   - component: {fileID: 1046132367611619793}
   - component: {fileID: 992553162362793568}
+  - component: {fileID: 417773234190470199}
   m_Layer: 5
   m_Name: Line1
   m_TagString: Untagged
@@ -2112,6 +2197,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &417773234190470199
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683833597232122118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 480, y: -578}
+  sizeDelta: {x: 961.5, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &819840021419795031
 GameObject:
   m_ObjectHideFlags: 0
@@ -2123,6 +2235,7 @@ GameObject:
   - component: {fileID: 611517385541784574}
   - component: {fileID: 25021661265982364}
   - component: {fileID: 72467788896205613}
+  - component: {fileID: 466632018485840125}
   m_Layer: 5
   m_Name: Line2
   m_TagString: Untagged
@@ -2187,6 +2300,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &466632018485840125
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 819840021419795031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 980, y: -421.94}
+  sizeDelta: {x: 316.17267, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &312642707143462488
 GameObject:
   m_ObjectHideFlags: 0
@@ -2198,6 +2338,7 @@ GameObject:
   - component: {fileID: 120004720986781299}
   - component: {fileID: 300192977960492661}
   - component: {fileID: 683801333151203404}
+  - component: {fileID: 896853711348645558}
   m_Layer: 5
   m_Name: Line3
   m_TagString: Untagged
@@ -2262,6 +2403,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &896853711348645558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 312642707143462488}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 1000, y: -147.94}
+  sizeDelta: {x: 237.38, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1047429264606855982
 GameObject:
   m_ObjectHideFlags: 0
@@ -2273,6 +2441,7 @@ GameObject:
   - component: {fileID: 187670000293118259}
   - component: {fileID: 577579983050210639}
   - component: {fileID: 1146763840910440833}
+  - component: {fileID: 557754219578773658}
   m_Layer: 5
   m_Name: Line4
   m_TagString: Untagged
@@ -2337,6 +2506,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &557754219578773658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1047429264606855982}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 985, y: -15}
+  sizeDelta: {x: 43.926407, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &933112577426868200
 GameObject:
   m_ObjectHideFlags: 0
@@ -2348,6 +2544,7 @@ GameObject:
   - component: {fileID: 595138020044314446}
   - component: {fileID: 913090225987812411}
   - component: {fileID: 585561511763909406}
+  - component: {fileID: 7068588792017137}
   m_Layer: 5
   m_Name: Line5
   m_TagString: Untagged
@@ -2412,6 +2609,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7068588792017137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 933112577426868200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 835, y: 0}
+  sizeDelta: {x: 271.5, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1035559722294024076
 GameObject:
   m_ObjectHideFlags: 0
@@ -2423,6 +2647,7 @@ GameObject:
   - component: {fileID: 356576519991793415}
   - component: {fileID: 162792318799479305}
   - component: {fileID: 376986413923732011}
+  - component: {fileID: 622099209197261994}
   m_Layer: 5
   m_Name: Dash
   m_TagString: Untagged
@@ -2487,6 +2712,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &622099209197261994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1035559722294024076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 678, y: 0}
+  sizeDelta: {x: 17.5, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &261455557609412684
 GameObject:
   m_ObjectHideFlags: 0
@@ -2573,6 +2825,7 @@ GameObject:
   - component: {fileID: 704157186474473567}
   - component: {fileID: 81389875075529568}
   - component: {fileID: 923419069056407456}
+  - component: {fileID: 953541668233165295}
   m_Layer: 5
   m_Name: Step2
   m_TagString: Untagged
@@ -2635,6 +2888,33 @@ MonoBehaviour:
   staggerIndex: 1
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &953541668233165295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 605246663744404828}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 26, y: -14}
+  sizeDelta: {x: 922, y: 62}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &394287328627508330
 GameObject:
   m_ObjectHideFlags: 0
@@ -3044,6 +3324,7 @@ GameObject:
   m_Component:
   - component: {fileID: 412811587196026827}
   - component: {fileID: 354969451701607249}
+  - component: {fileID: 1023056664005189991}
   m_Layer: 5
   m_Name: Stepper
   m_TagString: Untagged
@@ -3101,6 +3382,33 @@ MonoBehaviour:
   - 4
   unlockLine: Play {level} to unlock
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+--- !u!114 &1023056664005189991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 273532456198090005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -28}
+  sizeDelta: {x: 922, y: 34}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &485211418204068552
 GameObject:
   m_ObjectHideFlags: 0
@@ -5431,6 +5739,7 @@ GameObject:
   - component: {fileID: 515073489556591486}
   - component: {fileID: 618405651629586166}
   - component: {fileID: 549139056358280465}
+  - component: {fileID: 433880742516820463}
   m_Layer: 5
   m_Name: Step3
   m_TagString: Untagged
@@ -5494,6 +5803,33 @@ MonoBehaviour:
   staggerIndex: 2
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &433880742516820463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 501810439423983445}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 26, y: -92}
+  sizeDelta: {x: 922, y: 294}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &516503145832335788
 GameObject:
   m_ObjectHideFlags: 0
@@ -5903,6 +6239,7 @@ GameObject:
   m_Component:
   - component: {fileID: 593734849230803295}
   - component: {fileID: 18733302066663145}
+  - component: {fileID: 354620283391946853}
   m_Layer: 5
   m_Name: Lineup
   m_TagString: Untagged
@@ -5974,6 +6311,33 @@ MonoBehaviour:
   - Jade
   - Ruby
   - Gold
+--- !u!114 &354620283391946853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 690918329375004255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -28}
+  sizeDelta: {x: 922, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &100994606096715651
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6077,13 +6441,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 441166712059326220}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &849385458522842 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 100994606096715651}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &441166712059326220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 671929553640207505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 148, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &2807524659784185
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6187,13 +6581,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 424413387895774747}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &446058649428565093 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 2807524659784185}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &424413387895774747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 593379197907686123}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 154, y: 0}
+  sizeDelta: {x: 148, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &414107221136430408
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6297,13 +6721,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 398613286601931451}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &153456286589903058 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 414107221136430408}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &398613286601931451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975827579878338138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 308, y: 0}
+  sizeDelta: {x: 148, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &757530232186038237
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6407,13 +6861,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 495144872420294975}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &735344178526680294 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 757530232186038237}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &495144872420294975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195532659080748239}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 462, y: 0}
+  sizeDelta: {x: 148, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &1122469735111562218
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6517,13 +7001,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7140379987077260}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &997017026837051453 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 1122469735111562218}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7140379987077260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 551183081887508728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 616, y: 0}
+  sizeDelta: {x: 148, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &529828560550190200
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6627,13 +7141,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 599264322957159970}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &1090566420998493224 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 529828560550190200}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &599264322957159970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1112307836796069738}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 770, y: 0}
+  sizeDelta: {x: 148, y: 266}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &572123544696296459
 GameObject:
   m_ObjectHideFlags: 0
@@ -7038,6 +7582,7 @@ GameObject:
   - component: {fileID: 1024299595268444460}
   - component: {fileID: 207624193517590391}
   - component: {fileID: 411044019605537418}
+  - component: {fileID: 385475201240116541}
   m_Layer: 5
   m_Name: Step1
   m_TagString: Untagged
@@ -7101,6 +7646,33 @@ MonoBehaviour:
   staggerIndex: 3
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &385475201240116541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1116181299321917041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 26, y: -402}
+  sizeDelta: {x: 922, y: 98}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &644592280610512178
 GameObject:
   m_ObjectHideFlags: 0
@@ -7267,6 +7839,7 @@ GameObject:
   - component: {fileID: 816001452292999132}
   - component: {fileID: 488949790384869330}
   - component: {fileID: 284543892029609761}
+  - component: {fileID: 1079642219249528424}
   m_Layer: 5
   m_Name: Value
   m_TagString: Untagged
@@ -7409,6 +7982,33 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 0
   colorDrivenExternally: 0
+--- !u!114 &1079642219249528424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1011396703514219404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 184, y: -5}
+  sizeDelta: {x: 625.4, y: 24}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &792171175339460292
 GameObject:
   m_ObjectHideFlags: 0
@@ -7866,6 +8466,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 823649668850304566}
+  - component: {fileID: 1064898646213330193}
   m_Layer: 5
   m_Name: HullStrip
   m_TagString: Untagged
@@ -7900,6 +8501,33 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -38}
   m_SizeDelta: {x: 602, y: 60}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &1064898646213330193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1115319472993586653}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 160, y: -38}
+  sizeDelta: {x: 602, y: 60}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &1010080206520046075
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9963,6 +10591,7 @@ GameObject:
   - component: {fileID: 359549123780596004}
   - component: {fileID: 1148085237670964797}
   - component: {fileID: 759936600733549789}
+  - component: {fileID: 274270202031259785}
   m_Layer: 5
   m_Name: AIDifficulty
   m_TagString: Untagged
@@ -10063,6 +10692,33 @@ MonoBehaviour:
   plateSelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
   plateUnselectedColor: {r: 0.2627451, g: 0.29803923, b: 0.5372549, a: 1}
   plateSelectedMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
+--- !u!114 &274270202031259785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 218348849930869637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 566, y: -516}
+  sizeDelta: {x: 382, y: 44}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1069980693522346804
 GameObject:
   m_ObjectHideFlags: 0
@@ -11576,6 +12232,7 @@ GameObject:
   - component: {fileID: 167111816870729896}
   - component: {fileID: 253373852854348913}
   - component: {fileID: 1082427920132266451}
+  - component: {fileID: 18187037844647538}
   m_Layer: 5
   m_Name: ControlsPanel
   m_TagString: Untagged
@@ -11637,6 +12294,33 @@ MonoBehaviour:
   staggerIndex: 3
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &18187037844647538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 535412095572405697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -912}
+  sizeDelta: {x: 1000, y: 144}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &656004055312691864
 GameObject:
   m_ObjectHideFlags: 0
@@ -11873,6 +12557,7 @@ GameObject:
   - component: {fileID: 104911140483764763}
   - component: {fileID: 146450600975799216}
   - component: {fileID: 861427309405553424}
+  - component: {fileID: 352157110178488723}
   m_Layer: 5
   m_Name: Controls
   m_TagString: Untagged
@@ -11977,6 +12662,33 @@ MonoBehaviour:
   rowDwellSeconds: 2.2
   sweepRampFraction: 0.25
   cooldownFraction: 0.6
+--- !u!114 &352157110178488723
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 426287618212963657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 18, y: -18}
+  sizeDelta: {x: 964, y: 108}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &141087292761726893
 GameObject:
   m_ObjectHideFlags: 0
@@ -12454,6 +13166,7 @@ GameObject:
   - component: {fileID: 652156206998438542}
   - component: {fileID: 868419040176993769}
   - component: {fileID: 1052874976490971130}
+  - component: {fileID: 467966987788414911}
   m_Layer: 5
   m_Name: Content
   m_TagString: Untagged
@@ -12518,6 +13231,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &467966987788414911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 811512500023686985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 468, y: 34}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &254802916240894626
 GameObject:
   m_ObjectHideFlags: 0
@@ -12528,6 +13268,7 @@ GameObject:
   m_Component:
   - component: {fileID: 456494912019943762}
   - component: {fileID: 127824421134465493}
+  - component: {fileID: 869577267584977868}
   m_Layer: 5
   m_Name: Status
   m_TagString: Untagged
@@ -12568,6 +13309,33 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &869577267584977868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 254802916240894626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 0, y: 0}
+  pivot: {x: 0, y: 0}
+  anchoredPosition: {x: 100, y: 124}
+  sizeDelta: {x: 940, y: 24}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &538770486562553016
 GameObject:
   m_ObjectHideFlags: 0
@@ -12930,6 +13698,7 @@ GameObject:
   - component: {fileID: 773760731818474329}
   - component: {fileID: 627586278703971295}
   - component: {fileID: 491423725564152744}
+  - component: {fileID: 765322595102849980}
   m_Layer: 5
   m_Name: Start
   m_TagString: Untagged
@@ -12989,6 +13758,33 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &765322595102849980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627939477819314525}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 0, y: 0}
+  pivot: {x: 0, y: 0}
+  anchoredPosition: {x: 100, y: 40}
+  sizeDelta: {x: 940, y: 80}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &296409149236965254
 GameObject:
   m_ObjectHideFlags: 0
@@ -13831,6 +14627,7 @@ GameObject:
   - component: {fileID: 161282552431518964}
   - component: {fileID: 921683037219607506}
   - component: {fileID: 944897874781720110}
+  - component: {fileID: 785516218503285992}
   m_Layer: 5
   m_Name: Fly
   m_TagString: Untagged
@@ -13918,6 +14715,33 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &785516218503285992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 751538894104633349}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 64, y: -700}
+  sizeDelta: {x: 460, y: 44}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &819868265453055768
 GameObject:
   m_ObjectHideFlags: 0
@@ -14862,6 +15686,7 @@ GameObject:
   - component: {fileID: 32347063726293867}
   - component: {fileID: 701253737090838635}
   - component: {fileID: 619270049361694393}
+  - component: {fileID: 1126354184409897883}
   m_Layer: 5
   m_Name: Objective
   m_TagString: Untagged
@@ -14943,6 +15768,33 @@ MonoBehaviour:
   objectiveText: {fileID: 570740540278352364}
   pulseScale: 1.35
   pulseSeconds: 0.35
+--- !u!114 &1126354184409897883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544296406029173639}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -772}
+  sizeDelta: {x: 1000, y: 48}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &591842304676777450
 GameObject:
   m_ObjectHideFlags: 0
@@ -15716,6 +16568,7 @@ GameObject:
   - component: {fileID: 235479661601302966}
   - component: {fileID: 29861942057717417}
   - component: {fileID: 604856319205684394}
+  - component: {fileID: 1105799349750118111}
   m_Layer: 5
   m_Name: Briefing
   m_TagString: Untagged
@@ -15792,6 +16645,33 @@ MonoBehaviour:
   dwellSeconds: 6
   fadeSeconds: 0.4
   descriptionExtraDwell: 3
+--- !u!114 &1105799349750118111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 792601949761897768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -834}
+  sizeDelta: {x: 1000, y: 64}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &479359768805601372
 GameObject:
   m_ObjectHideFlags: 0
@@ -16183,6 +17063,7 @@ GameObject:
   m_Component:
   - component: {fileID: 164481301589939128}
   - component: {fileID: 18943649084114461}
+  - component: {fileID: 180872505679003514}
   m_Layer: 5
   m_Name: TitleRow
   m_TagString: Untagged
@@ -16237,6 +17118,33 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &180872505679003514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972803816646812636}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -20}
+  sizeDelta: {x: 715.3, y: 46}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1130829143691743921
 GameObject:
   m_ObjectHideFlags: 0
@@ -17509,6 +18417,7 @@ GameObject:
   - component: {fileID: 730240847220244104}
   - component: {fileID: 217746488864164494}
   - component: {fileID: 180122154357777807}
+  - component: {fileID: 978584454976907173}
   m_Layer: 5
   m_Name: FlyingHint
   m_TagString: Untagged
@@ -17576,6 +18485,33 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &978584454976907173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 286767908173982397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 540, y: -230}
+  sizeDelta: {x: 820, y: 40}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &263765477896409942
 GameObject:
   m_ObjectHideFlags: 0
@@ -19053,3 +19989,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90fda6ea96effaa1e6dcec9e3c7b6c2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &671929553640207505 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 100994606096715651}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &593379197907686123 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 2807524659784185}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &975827579878338138 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 414107221136430408}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &195532659080748239 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 757530232186038237}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &551183081887508728 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 1122469735111562218}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1112307836796069738 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 529828560550190200}
+  m_PrefabAsset: {fileID: 0}

@@ -5976,7 +5976,7 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
   Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
   there); the page itself is not built yet.
 
-## 138. Rev 63 mockups: portrait menus, the same PC UI with the phone held upright (2026-11-06, awaiting a pick)
+## 138. Rev 63 mockups: portrait menus, the same PC UI with the phone held upright (2026-11-06, picked B, built)
 
 **Asked** (Shombith, 2026-11-06, after trying the phone layouts in the Device Simulator): "I think we should rather stick
 to PC UI how it is and delete the boards mobile UI ... this is too time costly to perform these changes because it needs
@@ -6001,5 +6001,23 @@ Home, Arcade and Configure on an upright phone (390 x 844 points), with its own 
 - **R63Notes:** what each costs, how big the words are, the rotation lock (menus allow portrait; a match locks landscape
   before it loads).
 
-**Differs from the build:** nothing is built yet. After the pick, each picked screen gets its portrait pose in its own
-generator, and the rotation lock goes in the scene flow.
+**Picked:** B (Shombith, 2026-11-06: "go with B, build it").
+
+**Built** (`claude/ui-portrait`):
+- The mechanism: `PortraitRect` holds a piece's upright pose (or marks a screen as its PC layout fitted to the width,
+  Draw At PC Scale); `AdaptiveCanvasScaler.hasPortraitLayout` switches Menu_Main to 1080 x 1920 matched to the width
+  when the screen is taller than wide, in play mode, and raises `PortraitLayoutChanging` / `PortraitLayoutChanged`;
+  `MenuOrientation` allows auto-rotation only while the menu is Ready and locks landscape-left otherwise.
+- The poses, each written by its own generator (`K.portrait_rect`): the nav band needs none (its row is 865 wide); Home's
+  four hubs became a GridLayoutGroup, 4 across on PC and 2 x 2 upright; Arcade's header and body stack, its game grid is
+  one flat GridLayoutGroup (5 across PC, 3 across upright) and the featured cards stack; Configure (Arcade, Arena,
+  Maelstrom) stacks the preview (1000 x 562), the steps card (widened to 1000) and START; Hangar stacks header, balance and
+  Selected, with the list and the dossier side by side below.
+- The rest (Ark, Port, Profile, Codex, Replays, Credits, Settings, the hub windows and the small modals) is its PC layout
+  fitted to the width (`author_menu_portrait.py` and the screens' own generators).
+- `ConfigureCinema` and `ConfigurePilotsFit` re-read their rest poses on a turn; FULL SCREEN grows the frame to the
+  window upright instead of opening the tray; an entrance playing during a turn lands first.
+
+**Differs from the board:** Arcade keeps a 100-unit left gutter (the friends drawer's dock); Hangar's dossier keeps its PC
+size (710 x 1026) beside the list instead of under it; Configure and Maelstrom leave empty space at the bottom on tall
+phones; START sits from x 100. Not judged in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Portrait menus").

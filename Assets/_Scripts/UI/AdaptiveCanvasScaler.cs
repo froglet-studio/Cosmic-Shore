@@ -66,6 +66,10 @@ namespace CosmicShore.UI
         /// <summary>Whether this canvas is laid out upright right now.</summary>
         public bool UsesPortraitLayout { get; private set; }
 
+        /// <summary>Raised just before the canvas switches to or from its upright layout (true = upright), while every
+        /// PortraitRect still stands in its old pose: code that offsets a posed rect puts it back here.</summary>
+        public event Action<bool> PortraitLayoutChanging;
+
         /// <summary>Raised after the canvas switches to or from its upright layout (true = upright).</summary>
         public event Action<bool> PortraitLayoutChanged;
         private int _lastWidth;
@@ -164,6 +168,7 @@ namespace CosmicShore.UI
         private void SetPortrait(bool upright)
         {
             if (upright == UsesPortraitLayout) return;
+            PortraitLayoutChanging?.Invoke(upright);
             UsesPortraitLayout = upright;
             var rects = GetComponentsInChildren<PortraitRect>(true);
             int blocks = 0;

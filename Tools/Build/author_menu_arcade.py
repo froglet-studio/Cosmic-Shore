@@ -31,12 +31,10 @@ on the "Menu Redesign B" canvas).
     Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; PortraitRect in ArcadeView): the header right
     under the band and the scroll filling the rest, at PC size, on the 1080-wide canvas; the left edge keeps the
     100-unit friends-orb gutter (FriendsDrawerDock writes that authored edge back whenever the drawer moves), the right
-    edge 40. The scroll's CONTENT is the PC content (1750 wide: the feature cards side by side, ALL GAMES with its
-    dropdowns, the rows of 5 cards) scaled to the 930-wide viewport (0.53). Stacking the feature cards and laying the
-    games 3 across cannot be done by layout alone: both are one HorizontalLayoutGroup per row (Features; each
-    GameListRow, which ArcadeExploreView reads row by row), the cards are flexible (min width 0), and no PortraitRect
-    field raises a min width or turns a horizontal group vertical, so a narrower content only squeezes 5 cards into a
-    row (title about 38 units wide) and clips the vessel filter's 1694-wide line of tabs. See UP_* below.
+    edge 40. The scroll's content re-flows at the viewport's width (918 inside its padding): the two feature cards are one
+    GridLayoutGroup, 2 across on PC and stacked upright; the games are ONE wrapping GridLayoutGroup (the cards its own
+    children; ArcadeExploreView reads either shape), 5 across on PC at the old rows' card width and 3 across upright; an
+    option line of the vessel filter wider than 918 is scaled to fit. See UP_* below.
 
 Built from the kit generator's node model and component bodies (author_ui_kit_prefabs.py), so every
 body is Unity's serialization and every colour a UIThemeSO token. References into nested instances
@@ -85,7 +83,8 @@ MASK63 = 0x7FFFFFFFFFFFFFFF
 SCROLL_RECT, RECT_MASK_2D, MASK = H.SCROLL_RECT, H.RECT_MASK_2D, H.MASK
 KIT_RECT_MASK_2D = H.KIT_RECT_MASK_2D
 BUTTON = T.BUTTON
-PACKAGE = H.PACKAGE | {BUTTON}
+GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"   # UnityEngine.UI.GridLayoutGroup (the game grid, the feature row)
+PACKAGE = H.PACKAGE | {BUTTON, GRID_LAYOUT}
 
 # --- project scripts ----------------------------------------------------------------------------
 def script(path):
@@ -828,6 +827,7 @@ WINDOW_BODY = R((0, 0), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -78), (-(WIND
 WINDOW_HEADER = R((0, 1), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -108), (-(WINDOW_LEFT + WINDOW_RIGHT), 64), (0.5, 1))
 EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
 CONTENT_W = EXPLORE_W - 10 - 12                     # viewport inset, content padding
+GRID_CELL_W = round((CONTENT_W - (5 - 1) * 10) / 5, 2)   # what the old rows of five gave each game card (339.6)
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
 
 # Upright (section 138, Rev 63 B), the Arcade window on Menu_Main's 1080-wide canvas. The header and the body keep their
@@ -841,7 +841,9 @@ UP_HEADER = R((0, 1), (1, 1), ((UP_LEFT - UP_RIGHT) / 2, -108), (-(UP_LEFT + UP_
 UP_BODY = R((0, 0), (1, 1), ((UP_LEFT - UP_RIGHT) / 2, -78), (-(UP_LEFT + UP_RIGHT), -236))
 UP_VIEWPORT_W = UP_W - UP_LEFT - UP_RIGHT - 10     # the explore scroll's viewport (inset 5 + 5), upright
 PC_CONTENT_W = EXPLORE_W - 10                      # the scroll content's PC width (CONTENT_W plus its 6 + 6 padding)
-UP_CONTENT_SCALE = UP_VIEWPORT_W / PC_CONTENT_W    # the PC content fitted to the upright viewport (0.531)
+UP_CONTENT_W = UP_VIEWPORT_W - 12                  # the content's inner width upright (its 6 + 6 padding): 918
+UP_COLS = 3                                        # the game grid upright (Rev 63 B: "grids 3 across")
+UP_CELL_W = (UP_CONTENT_W - (UP_COLS - 1) * 10) // UP_COLS   # 299
 UP_TITLE_W = 680                                   # the header's title rect, clear of Replays and Back upright
 
 
@@ -1293,6 +1295,9 @@ def option_row(content, key, names):
     for li, line in enumerate(lines):
         holder = row.child(N(f"{key}/Line{li}", f"Line{li}", R((0, 1), None, (0, 0), (CONTENT_W, OPT_ROW_H), (0, 1))))
         holder.add("hlg", 114, K.hv_layout(False, (0, 0, 2, 2), 14, 3, (0, 0), (0, 0)))
+        lw = sum(K.label_width(names[i].upper(), "Label") + 16 for i in line) + 14 * (len(line) - 1)
+        if lw > UP_CONTENT_W:   # upright the line is scaled to the 918-wide column (it hangs from its top-left)
+            holder.add("portrait", 114, K.portrait_rect(scale=round(UP_CONTENT_W / lw, 4)))
         for i in line:
             n = names[i]
             H.text_tab(holder, f"{key}/Tab{i}", f"Tab{i}", n.upper(), "Label", K.label_width(n.upper(), "Label") + 16, 30)
@@ -1337,11 +1342,18 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
         .add("mask", 114, rect_mask())
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
-    # Upright: the PC content (its PC width, top-left pivot) scaled to the viewport; its height stays the fitter's.
-    content.add("portrait", 114, K.portrait_rect(R((0, 1), None, (0, 0), (PC_CONTENT_W, 0), (0, 1)), scale=UP_CONTENT_SCALE))
+    # Upright the content re-flows at the viewport's width (918 inside its padding): the feature cards stack and the games
+    # go 3 across (their grids' upright columns below); nothing is scaled down.
 
     feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (CONTENT_W, FEATURE_H), (0, 1))))
-    feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEATURE_H))
+    # One GridLayoutGroup (was a row): the two cards side by side on PC (their old width), one above the other upright.
+    feats.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+              "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+              "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+              f"  m_CellSize: {{x: {FEATURE_W}, y: {FEATURE_H}}}\n  m_Spacing: {{x: 20, y: 20}}\n"
+              "  m_Constraint: 1\n  m_ConstraintCount: 2\n")).add("le", 114, le(ph=FEATURE_H))
+    feats.add("portrait", 114, K.portrait_rect(layout=(0, 2 * FEATURE_H + 20),
+                                               grid=dict(columns=1, cell=(UP_CONTENT_W, FEATURE_H))))
 
     def weekly_extra(n):
         cd = n.child(N("Weekly/Countdown", "Countdown", R((0, 0), None, (26, 22), (420, 26), (0, 0))))
@@ -1373,13 +1385,18 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     label(empty.child(N("EmptyFilter/Line", "Line", STRETCH)), "No games match this filter.", "BodySmall", "NeutralLightest")
 
     grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (CONTENT_W, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
-    grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 0, (1, 1), (1, 0)))
+    # ONE wrapping grid, the cards its own children (ArcadeExploreView reads either shape): GRID_COLS across on PC at
+    # the width the old rows gave each card, UP_COLS across upright (section 138). A fitter sizes it to its rows.
+    grid.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+             "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+             f"  m_CellSize: {{x: {K.f32(GRID_CELL_W)}, y: {CARD_H}}}\n  m_Spacing: {{x: 10, y: 10}}\n"
+             f"  m_Constraint: 1\n  m_ConstraintCount: {GRID_COLS}\n")).add("csf", 114, K.fitter(0, 2))
+    grid.add("portrait", 114, K.portrait_rect(grid=dict(columns=UP_COLS, cell=(UP_CELL_W, CARD_H))))
     for r in range(GRID_ROWS):
-        row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + 10)), (CONTENT_W, CARD_H), (0, 1))))
-        row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 0, (1, 1), (1, 1))).add("le", 114, le(ph=CARD_H))
         for col in range(GRID_COLS):
-            row.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
-                                     R((0, 1), None, (col * (CARD_W + 10), 0), (CARD_W, CARD_H), (0, 1))))
+            grid.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
+                                      R((0, 1), None, (col * (GRID_CELL_W + 10), -r * (CARD_H + 10)), (GRID_CELL_W, CARD_H), (0, 1))))
     # Rev 3 (2026-10-16): the party panel left every window for ONE friends drawer on Menu_Main
     # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
@@ -1840,9 +1857,11 @@ def validate_prefabs(files, guids):
     for row in ("ElementRow", "VesselRow"):
         assert "  m_Alpha: 0\n" in doc_of(view, V(f"{row}#cg"))[1] and "  m_IgnoreLayout: 1\n" in doc_of(view, V(f"{row}#le"))[1], \
             f"{row} must start closed and out of the layout"
-    for r in range(GRID_ROWS):
-        _, row = doc_of(view, V(f"Row{r + 1}#rt"))
-        assert len(re.findall(r"^  - \{fileID:", row, re.M)) == GRID_COLS, f"grid row {r + 1} does not hold {GRID_COLS} cards"
+    _, grid_rt = doc_of(view, V("Grid#rt"))
+    assert len(re.findall(r"^  - \{fileID:", grid_rt, re.M)) == GRID_ROWS * GRID_COLS, \
+        f"the grid does not hold its {GRID_ROWS * GRID_COLS} cards directly (one wrapping GridLayoutGroup)"
+    assert f"  m_ConstraintCount: {GRID_COLS}\n" in doc_of(view, V("Grid#grid"))[1], f"the grid is not {GRID_COLS} across on PC"
+    assert "  m_ConstraintCount: 2\n" in doc_of(view, V("Features#grid"))[1], "the feature cards are not side by side on PC"
     order = [doc_of(view, k)[1] for k in re.findall(r"^  - \{fileID: (-?\d+)\}", doc_of(view, V("root#rt"))[1], re.M)]
     names = [re.search(r"m_Name: (.*)", doc_of(view, re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1))[1]).group(1)
              for b in order]
@@ -1994,7 +2013,10 @@ def check_upright(view_text):
     header, _ = _pose(view_text, "Header")
     body, _ = _pose(view_text, "Body")
     title, _ = _pose(view_text, "Header/Title")
-    content, scale = _pose(view_text, "Explore/Viewport/Content")
+    content, scale = None, 1.0
+    for key, cols in (("Grid", UP_COLS), ("Features", 1)):
+        cls, doc = doc_of(view_text, K.FileIds("ArcadeView")(f"{key}#portrait"))
+        assert cls == 114 and f"  gridColumns: {cols}\n" in doc, f"ArcadeView {key}: not {cols} across upright"
     for h in UP_HEIGHTS:
         hb, bb = _box(header, UP_W, h), _box(body, UP_W, h)
         for name, (l, b, r, t) in (("header", hb), ("body", bb)):
@@ -2009,14 +2031,11 @@ def check_upright(view_text):
         tl, _, tr, _ = _box(title, hw, hb[3] - hb[1])
         buttons = back_width() + 12 + 16 + K.label_width("REPLAYS", "ButtonSmall") + 16
         assert tr <= hw - buttons - 12 + 0.01, f"Arcade title upright (to {tr:g}) runs under Replays / Back (from {hw - buttons:g})"
-        # The scroll content: the PC content's own width, scaled to the viewport, so nothing inside re-flows or clips.
+        # The scroll content re-flows at the viewport's width: the games 3 across and the feature cards stacked fit it.
         vw = (bb[2] - bb[0]) - 10
-        assert content["amin"] == content["amax"] == (0.0, 1.0) and content["pivot"] == (0.0, 1.0), \
-            "Arcade content upright must hang from the viewport's top-left at a fixed width"
-        assert abs(content["size"][0] - PC_CONTENT_W) < 0.01, "Arcade content upright is not the PC content width"
-        assert content["size"][0] * scale <= vw + 0.5, \
-            f"Arcade content upright draws {content['size'][0] * scale:g} wide in a {vw:g} viewport"
-        assert content["size"][0] * scale >= vw - 2, "Arcade content upright leaves the viewport part empty"
+        assert UP_COLS * UP_CELL_W + (UP_COLS - 1) * 10 <= vw - 12 + 0.01, \
+            f"Arcade games upright ({UP_COLS} x {UP_CELL_W}) do not fit the {vw - 12:g}-wide content"
+        assert UP_CONTENT_W <= vw - 12 + 0.01, "Arcade feature cards upright are wider than the content"
     return dict(header=header, body=body, title=title, content=content, scale=scale)
 
 
@@ -2029,7 +2048,7 @@ def upright_table(view_text):
     return [f"header    x {hb[0]:7.1f}..{hb[2]:7.1f}  y {h - hb[3]:7.1f}..{h - hb[1]:7.1f} (from top)",
             f"  title   x {hb[0] + tl:7.1f}..{hb[0] + tr:7.1f}",
             f"body      x {bb[0]:7.1f}..{bb[2]:7.1f}  y {h - bb[3]:7.1f}..{h - bb[1]:7.1f} (from top)",
-            f"content   {PC_CONTENT_W:g} wide x scale {u['scale']:.4f} = {PC_CONTENT_W * u['scale']:.1f} in a {vw:g} viewport"]
+            f"content   re-flows at {vw - 12:g}: games {UP_COLS} x {UP_CELL_W} across, feature cards stacked {UP_CONTENT_W} wide"]
 
 
 def drift(files):
@@ -2114,9 +2133,8 @@ def self_test(current, files, guids):
         "the body with no upright pose": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
             f"  - component: {{fileID: {K.FileIds('ArcadeView')('Body#portrait')}}}\n", "", 1).replace(
             f"--- !u!114 &{K.FileIds('ArcadeView')('Body#portrait')}\n", "--- !u!114 &4242424242\n", 1)),
-        "the upright content scaled past the viewport": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
-            t, K.FileIds("ArcadeView")("Explore/Viewport/Content#portrait"), f"  scale: {K.f32(UP_CONTENT_SCALE)}\n",
-            "  scale: 0.6\n")),
+        "the games back to 5 across upright": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Grid#portrait"), f"  gridColumns: {UP_COLS}\n", "  gridColumns: 5\n")),
         "the upright body reaching into the orb's gutter": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("Body#portrait"), f"  anchoredPosition: {K.v2(*UP_BODY['pos'])}\n",
             f"  anchoredPosition: {K.v2(0, UP_BODY['pos'][1])}\n")),
