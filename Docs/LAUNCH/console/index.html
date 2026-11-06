@@ -190,6 +190,13 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
       rollback: '' },
   ];
   const GATES = [['trunk-static', 'Trunk static checks'], ['unity-compile', 'Unity compile + EditMode']];
+  // "Work on this in Claude": a new Claude Code session on the repo whose first message is the platform's launch-flow skill.
+  // The skills live on SKILL_REF; switch it to 'bleeding-edge' once PR #1758 merges.
+  const REPO_GIT = 'https://github.com/froglet-studio/Cosmic-Shore';
+  const SKILL_REF = 'claude/exciting-pascal-t8ijbo';
+  const CCR = 'Claude Code Remote';
+  const skillFor = (key) => `/launch-flow-${key === 'launch' ? 'launch-wide' : key}`;
+  let mcp = null, chat = { key: null, open: false, envs: null, envId: '', state: '', note: '', link: null, busy: false };
   const $ = (s) => document.querySelector(s);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
@@ -276,6 +283,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     const acts = el('div', 'actions');
     for (const [label, href, kind] of p.actions) { const a = el('a', `btn cut ${kind}`, label); a.href = href; a.target = '_blank'; a.rel = 'noopener'; acts.append(a); }
     left.append(acts, el('div', 'src', 'Each button opens the workflow or dashboard where the action runs. Production steps wait for a reviewer’s approval there; this page holds no tokens.'));
+    left.append(claudeBox(p));
     const right = el('div'); right.style.display = 'grid'; right.style.gap = '8px'; right.style.minWidth = '0';
     const blockers = openBlockers(p.key);
     right.append(el('h3', '', blockers.length ? `Open blockers (${blockers.length})` : 'Open blockers'));
@@ -283,6 +291,90 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     blockers.sort((a, b) => (a.rank || 99) - (b.rank || 99)).forEach((i) => right.append(itemCard(i, true)));
     body.append(left, right);
     $('#p-src').textContent = '';
+  }
+
+  function claudeBox(p) {
+    const box = el('div'); box.style.display = 'grid'; box.style.gap = '8px'; box.style.minWidth = '0';
+    const cmd = skillFor(p.key);
+    box.append(el('h3', '', 'Work on this in Claude'));
+    box.append(el('div', 'small muted', `A chat of its own for ${p.name}: it lists the open blockers, says where the platform stands and plans the fix, then works the item you pick.`));
+    if (chat.key !== p.key) chat = { key: p.key, open: false, envs: chat.envs, envId: chat.envId, state: '', note: '', link: null, busy: false };
+    const row = el('div', 'actions');
+    if (mcp && !chat.open && !chat.link) {
+      const start = el('button', 'btn cut cta', 'Start a chat'); start.type = 'button';
+      start.addEventListener('click', () => { chat.open = true; chat.state = ''; renderPlatform(); loadEnvs(); });
+      row.append(start);
+    }
+    const copy = el('button', 'btn cut', 'Copy command'); copy.type = 'button';
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(cmd); chat.note = `Copied ${cmd}. Paste it into a new Claude Code session on this repository.`; }
+      catch (e) { chat.note = `Copy ${cmd} by hand and paste it into a new Claude Code session.`; }
+      renderPlatform();
+    });
+    const open = el('a', 'btn cut', 'Open Claude Code'); open.href = 'https://claude.ai/code'; open.target = '_blank'; open.rel = 'noopener';
+    row.append(copy, open); box.append(row);
+    box.append(el('code', 'small', cmd));
+    if (chat.open && !chat.link) {
+      const panel = el('div', 'item cut');
+      panel.append(el('div', 'small', `This starts a new Claude Code session on froglet-studio/Cosmic-Shore (branch ${SKILL_REF}) as you, with ${cmd} as its first message. It plans first and changes nothing until you pick an item in that chat.`));
+      const lab = el('label', 'small', 'Environment'); lab.htmlFor = 'envsel';
+      const sel = el('select'); sel.id = 'envsel';
+      if (!chat.envs) sel.append(new Option('Loading environments…', ''));
+      else chat.envs.forEach((e) => sel.append(new Option(e.name || e.environment_id, e.environment_id)));
+      if (chat.envId) sel.value = chat.envId;
+      sel.addEventListener('change', () => { chat.envId = sel.value; });
+      const go = el('button', 'btn cut cta', chat.busy ? 'Starting…' : 'Start session'); go.type = 'button';
+      go.disabled = chat.busy || !chat.envs || !chat.envs.length;
+      go.addEventListener('click', () => startChat(p));
+      const cancel = el('button', 'btn cut', 'Cancel'); cancel.type = 'button';
+      cancel.addEventListener('click', () => { chat.open = false; chat.state = ''; renderPlatform(); });
+      const r = el('div', 'edit'); r.append(lab, sel, go, cancel); panel.append(r);
+      box.append(panel);
+    }
+    if (chat.link) { const a = el('a', 'btn cut cta', 'Open the new chat'); a.href = chat.link; a.target = '_blank'; a.rel = 'noopener'; box.append(a); }
+    if (chat.state) box.append(el('div', 'small', chat.state));
+    if (chat.note) box.append(el('div', 'small muted', chat.note));
+    if (!mcp) box.append(el('div', 'src', 'Starting a chat from here needs the Claude Code Remote connector on this page; copy the command instead.'));
+    return box;
+  }
+
+  function mcpProblem(e, writing) {
+    const c = e && e.code;
+    if (c === 'server_not_connected' || c === 'server_not_found') return 'Claude Code Remote is not connected for you. Add it under claude.ai Settings > Connectors, or copy the command.';
+    if (c === 'needs_reauth') return 'Claude Code Remote needs you to sign in again (claude.ai Settings > Connectors).';
+    if (c === 'approval_required' || c === 'consent_required' || c === 'not_granted') return 'Starting a chat needs your approval for this page. Open the console on claude.ai and allow it when asked.';
+    if (c === 'blocked_by_policy') return 'Your organization does not let this page use Claude Code Remote. Copy the command instead.';
+    if (c === 'tool_error') return 'Claude Code Remote refused: ' + String((e && e.message) || '').slice(0, 200);
+    if (writing && (c === 'server_unavailable' || c === 'upstream_error')) return 'No answer came back, so the session may have started anyway. Check claude.ai/code before starting another.';
+    if (c === 'cancelled') return 'Cancelled.';
+    return `That did not work (${c || 'unknown'}). Copy the command instead.`;
+  }
+
+  async function loadEnvs() {
+    if (chat.envs || !mcp) return;
+    try {
+      const r = await mcp.callTool(CCR, 'list_environments', { limit: 20 });
+      const list = (r && r.payload && r.payload.environments) || [];
+      chat.envs = list.filter((e) => e && typeof e.environment_id === 'string' && (!e.state || e.state === 'active'));
+      if (!chat.envId && chat.envs.length) chat.envId = (chat.envs.find((e) => /default/i.test(e.name || '')) || chat.envs[0]).environment_id;
+      if (!chat.envs.length) chat.state = 'No cloud environment is available to you. Copy the command instead.';
+    } catch (e) { chat.state = mcpProblem(e, false); chat.envs = []; }
+    renderPlatform();
+  }
+
+  async function startChat(p) {
+    if (chat.busy || !chat.envId) return;
+    chat.busy = true; chat.state = ''; renderPlatform();
+    const cmd = skillFor(p.key);
+    try {
+      const r = await mcp.callTool(CCR, 'create_session', { prompt: cmd, title: `Launch flow: ${p.name}`, source_url: REPO_GIT, source_revision: SKILL_REF, environment_id: chat.envId });
+      const text = JSON.stringify((r && (r.payload ?? r.structuredContent)) ?? r ?? '');
+      const m = text.match(/session_[A-Za-z0-9]{8,}/);
+      chat.link = m ? `https://claude.ai/code/${m[0]}` : 'https://claude.ai/code';
+      chat.state = m ? `Started. ${cmd} is its first message.` : 'Started. It is at the top of your Claude Code sessions.';
+      chat.open = false;
+    } catch (e) { chat.state = mcpProblem(e, true); }
+    chat.busy = false; renderPlatform();
   }
 
   function itemCard(i, compact) {
@@ -433,6 +525,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
   }
 
   (async () => {
+    claude.use('mcp').then((m) => { mcp = m; renderPlatform(); });
     db = await claude.use('db');
     user = await claude.use('user');
     if (user) { try { me = await user.me(); } catch (e) { me = null; } }

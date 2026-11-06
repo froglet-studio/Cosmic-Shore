@@ -23,7 +23,13 @@ python3 Tools/Launch/console_sync.py board --out /tmp/console-sync
 then send `/tmp/console-sync/writes.json` as one ArtifactData `batch` to the console's URL. `seed` ran once on
 2026-11-05; it refuses to run again from the same folder because it would overwrite the team's edits.
 
-Capabilities: `db` (rules: shared data read by every viewer, written by editors; `checklist` and `runbook` written by
+**Work on this in Claude** (each platform panel): after a confirm step it calls the Claude Code Remote connector's
+`create_session`, as the viewer, to start a new Claude Code session on this repository whose first message is
+`/launch-flow-<platform>` (`.claude/skills/launch-flow*`), and links to it; `list_environments` fills the environment
+picker. **Copy command** is the fallback when the connector is not available. The skills live on `SKILL_REF` in
+`index.html` (`claude/exciting-pascal-t8ijbo` until PR #1758 merges; then `bleeding-edge`).
+
+Capabilities: `mcp` (Claude Code Remote: `list_environments`, `create_session`), `db` (rules: shared data read by every viewer, written by editors; `checklist` and `runbook` written by
 any viewer), `user` (names for "taken by"), `sample` ("Ask about the launch", answered only from the page's data).
 The page's two repository links (the runbook and the readiness audit) point at the
 `claude/exciting-pascal-t8ijbo` branch on purpose: the published page has to work before that branch merges, and GitHub
