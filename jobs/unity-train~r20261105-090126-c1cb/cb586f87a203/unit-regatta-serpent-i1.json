@@ -1,5 +1,5 @@
 {
- "done": true,
+ "done": false,
  "files": [
   "status.json",
   "result.json",
@@ -11,6 +11,6 @@
  ],
  "progress": 1.04,
  "score": -46.7071533203125,
- "sha": "fc05289807489778963a12a702ff961816bc7d1d",
- "updated": 1793899371
+ "sha": "c574fa82ea978d374da048e948aaa64f4df24370",
+ "updated": 1793978719
 }
