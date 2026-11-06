@@ -58,6 +58,9 @@ SCRIPT_PATHS = {
     # The targets (2026-11-04, Yash: "it should not have rings, it should have objects that it can break").
     "ThresherTimeNest":        f"{MODE_DIR}/ThresherTimeNest.cs",
     "ThresherTimeNestTests":   "Assets/_Scripts/Tests/Editor/ThresherTimeNestTests.cs",
+    # The Belfry (2026-11-07, Yash: "it should be about the time element"): the clockwork course.
+    "ThresherBelfry":          f"{MODE_DIR}/ThresherBelfry.cs",
+    "ThresherBelfryTests":     "Assets/_Scripts/Tests/Editor/ThresherBelfryTests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/THRESHERTIME.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset"
@@ -281,11 +284,11 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "ThresherTi
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameThresherTime") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Fly through every ring in order - your
-    next one glows lime. Your speed is your sling - pull LT all the way to plant the ball and
-    swing round it, pull RT to wind the chain in and spin up, let go to fly off at up to nearly
-    four times cruise. Every corner asks how much of that momentum you can carry. Two laps.
-    Fastest domain home wins.
+  Description: Threshers only, in the Belfry. Every ring swings on a chain - fly through
+    them in order, your next one glows lime, and time your sling to meet it. Pull LT all the
+    way to plant the ball and swing round it, RT to wind the chain in and spin up, let go to
+    fly. Higher levels swing faster, hang maces across the straights and slide shutters across
+    every ring. Two laps. Fastest domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('ThresherTime')}, type: 3}}
@@ -397,6 +400,13 @@ def floats(values) -> str:
 # NESTS_AT_GATES: off since 2026-11-07 (Yash: "I dont wanna break anything in here, just pass through waypoints, and win
 # the track"). The rings are the gates again - thread one, your next one lime - and the nest code stays behind this switch.
 NESTS_AT_GATES = 0
+# THE BELFRY: on since 2026-11-07. Every ring swings on a chain, maces cross the straights from I2, danger shutters slide
+# across every mouth at I4 - all a closed-form function of the shared clock (ThresherBelfry.SpecFor holds the ladder,
+# ThresherBelfryTests holds it to its promises). A broken chain link, mace or shutter bar grows back after
+# BELFRY_REGROW_SECONDS where its part now is.
+BELFRY = 1
+BELFRY_REGROW_SECONDS = 6
+NEXT_TARGET_BLOOM_SECONDS = 0.35
 TARGET_FIELDS = (
     f"  nestsAtGates: {NESTS_AT_GATES}\n"
     f"  nestPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
@@ -405,6 +415,10 @@ TARGET_FIELDS = (
     "  nestBurstPerFrame: 48\n"
     "  nestBurstSpeed: 40\n"
     "  nestRegrowPerFrame: 40\n"
+    f"  nextTargetBloomSeconds: {NEXT_TARGET_BLOOM_SECONDS}\n"
+    f"  belfry: {BELFRY}\n"
+    f"  belfryPrismPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+    f"  belfryRegrowSeconds: {BELFRY_REGROW_SECONDS}\n"
     f"  crystalEveryNthTarget: {CRYSTAL_EVERY_NTH_TARGET}\n")
 
 
@@ -445,7 +459,7 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Thresher']}
-  ObjectiveText: Thread the lime ring - plant, wind in, let go
+  ObjectiveText: Time your sling - meet the swinging lime ring
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -529,6 +543,8 @@ if not SPAWNABLE_PRISM:
 for name, ladder in (("credit radius", CREDIT_RADIUS_BY_INTENSITY), ("regrow seconds", REGROW_SECONDS_BY_INTENSITY)):
     if len(ladder) != 4 or list(ladder) != sorted(ladder, reverse=True):
         errors.append(f"the {name} ladder {ladder} must be four values that never grow with the intensity")
+if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherBelfry"])):
+    errors.append("ThresherBelfry.cs is missing - the controller builds the clockwork from it")
 if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherTimeNest"])):
     errors.append("ThresherTimeNest.cs is missing - the controller lays its nests from it")
 

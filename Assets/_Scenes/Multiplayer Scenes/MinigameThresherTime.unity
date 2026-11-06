@@ -847,6 +847,10 @@ MonoBehaviour:
   nestBurstPerFrame: 48
   nestBurstSpeed: 40
   nestRegrowPerFrame: 40
+  nextTargetBloomSeconds: 0.35
+  belfry: 1
+  belfryPrismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  belfryRegrowSeconds: 6
   crystalEveryNthTarget: 3
 --- !u!114 &1628508347
 MonoBehaviour:

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Netcode;
 using Unity.Profiling;
 using UnityEngine;
 
@@ -61,6 +62,16 @@ namespace CosmicShore.Gameplay
                  "ring stays hidden; the lime ring is the gate races' own \"this one is yours next\" mark.")]
         [SerializeField, Min(0.01f)] float nextTargetBloomSeconds = 0.35f;
 
+        [Header("The Belfry (ThresherBelfry)")]
+        [Tooltip("On (the shipped setting since 2026-11-07): the clockwork course - every ring swings on a chain, maces " +
+                 "swing across the straights from I2, danger shutters slide across every mouth at I4, all on the shared " +
+                 "clock. Off: the rings stand still.")]
+        [SerializeField] bool belfry;
+        [Tooltip("The prism the Belfry's chains, maces and shutters are laid from: the environment prism (SpawnablePrism).")]
+        [SerializeField] Prism belfryPrismPrefab;
+        [Tooltip("Seconds a broken Belfry prism (a chain link, a mace, a shutter bar) takes to grow back where its part now is.")]
+        [SerializeField, Min(0.5f)] float belfryRegrowSeconds = 6f;
+
         [Header("Rewards")]
         [Tooltip("A crystal sits in the core of every Nth nest (crack it open to take it); 0 = the cell's own crystals.")]
         [SerializeField, Min(0)] int crystalEveryNthTarget = 3;
@@ -99,6 +110,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ClearNests();
+            ClearBelfry();
             if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
             _keyManager = null;
             base.OnNetworkDespawn();
@@ -109,6 +121,8 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearNests();
+            ClearBelfry();
+            if (belfry) RaiseBelfry();
             if (!nestsAtGates) return;   // the rings are the gates
             if (!nestPrefab)
             {
@@ -157,7 +171,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Still a prism of its nest: alive, and not taken (a stolen prism is re-owned, a destroyed one goes back
         /// to the pool and is re-issued to somebody else).</summary>
-        static bool Holds(Prism prism) => prism && !prism.destroyed && prism.ownerID == NestOwnerId;
+        static bool Holds(Prism prism) => Holds(prism, NestOwnerId);
+
+        static bool Holds(Prism prism, string owner) => prism && !prism.destroyed && prism.ownerID == owner;
 
         void ClearNests()
         {
@@ -178,9 +194,108 @@ namespace CosmicShore.Gameplay
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
         {
+            if (_belfry.Parts.Count > 0 || _belfry.Rings.Count > 0)
+                using (s_belfryMarker.Auto()) TickBelfry();
             if (_nests.Count == 0) return;
             using (s_tickMarker.Auto()) TickNests();
         }
+
+        // ── The Belfry (every peer, posed off the shared clock) ───────────
+
+        const string BelfryOwnerId = "ThresherTimeBelfry";
+        readonly ThresherBelfry.Layout _belfry = new();
+        readonly List<Prism> _belfryPrisms = new();
+        readonly List<float> _belfryLostAt = new();
+        readonly Trail _belfryTrail = new();
+        Transform _belfryRoot;
+        static readonly ProfilerMarker s_belfryMarker = new("ThresherTime.Belfry");
+
+        /// <summary>The time every peer poses the clockwork at: the server's, so every machine sees the same swing.</summary>
+        static float SharedTime
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return nm != null && nm.IsListening ? nm.ServerTime.TimeAsFloat : Time.time;
+            }
+        }
+
+        void RaiseBelfry()
+        {
+            ThresherBelfry.Build(_course, Intensity, _belfry);
+            if (!belfryPrismPrefab)
+            {
+                CSDebug.LogWarning("[ThresherTime] no belfryPrismPrefab - the rings swing but no chains, maces or shutters " +
+                                   "are laid. Re-run Tools/Build/author_thresher_time_assets.py.");
+                return;
+            }
+            _belfryRoot = new GameObject("ThresherTimeBelfry").transform;
+            float t = SharedTime;
+            for (int k = 0; k < _belfry.Parts.Count; k++)
+            {
+                _belfryPrisms.Add(LayBelfryPart(k, t, forReveal: true));
+                _belfryLostAt.Add(-1f);
+            }
+        }
+
+        Prism LayBelfryPart(int k, float t, bool forReveal)
+        {
+            var part = _belfry.Parts[k];
+            ThresherBelfry.PoseAt(_belfry, part, t, out var position, out var rotation);
+            var prism = PrismTrailBuilder.LayOne(belfryPrismPrefab,
+                new PrismLay(new SpawnPoint(position, rotation, Vector3.one * part.Size), Domains.Blue, part.Kind),
+                _belfryRoot, _belfryTrail, BelfryOwnerId, watchForReveal: forReveal);
+            if (prism && !forReveal) prism.CompletesAsLiveRibbon = true;
+            return prism;
+        }
+
+        /// <summary>
+        /// Every peer, every frame: move each ring to its pendulum's bob (the ring IS the gate, so its mouth, its lime and
+        /// the objective arrow go with it), pose every standing chain link, mace and shutter bar, and grow a broken one
+        /// back <see cref="belfryRegrowSeconds"/> later where its part now is.
+        /// </summary>
+        void TickBelfry()
+        {
+            float t = SharedTime;
+            float now = Time.time;
+            for (int i = 0; i < _belfry.Rings.Count && i < _rings.Count; i++)
+                if (_rings[i]) _rings[i].transform.position = _belfry.Rings[i].BobAt(t);
+
+            for (int k = 0; k < _belfryPrisms.Count; k++)
+            {
+                var prism = _belfryPrisms[k];
+                if (!Holds(prism, BelfryOwnerId))
+                {
+                    if (_belfryLostAt[k] < 0f) _belfryLostAt[k] = now;
+                    else if (now - _belfryLostAt[k] >= belfryRegrowSeconds)
+                    {
+                        _belfryPrisms[k] = LayBelfryPart(k, t, forReveal: false);
+                        _belfryLostAt[k] = -1f;
+                    }
+                    continue;
+                }
+                ThresherBelfry.PoseAt(_belfry, _belfry.Parts[k], t, out var position, out var rotation);
+                prism.transform.SetPositionAndRotation(position, rotation);
+                prism.NotifyPositionChanged();
+            }
+        }
+
+        void ClearBelfry()
+        {
+            for (int k = 0; k < _belfryPrisms.Count; k++)
+                if (Holds(_belfryPrisms[k], BelfryOwnerId))
+                    _belfryPrisms[k].Damage(Vector3.zero, Domains.Blue, string.Empty, devastate: true);
+            _belfryPrisms.Clear();
+            _belfryLostAt.Clear();
+            _belfry.Clear();
+            if (_belfryRoot) Destroy(_belfryRoot.gameObject);
+            _belfryRoot = null;
+        }
+
+        /// <summary>The AI flies at the ring where it IS: the swinging ring's live pose, so its steering and its miss test
+        /// read the same mouth the race counts.</summary>
+        protected override RaceGate ChooseAIGate(IPlayer pilot, int threaded, int ringIndex, RaceGate gate) =>
+            ringIndex >= 0 && ringIndex < _belfry.Rings.Count ? ThresherBelfry.GateAt(_belfry, ringIndex, SharedTime) : gate;
 
         /// <summary>
         /// Every peer, every frame: a standing nest whose core lost a block breaks (opening its gate); a breaking one

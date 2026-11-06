@@ -231,6 +231,29 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 Thresher Time: the Belfry, a clockwork course (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** every ring swings on a chain across the flight line (faster and wider each intensity); maces swing
+across the straights from I2 (danger heads from I3, two opposed a straight at I4); danger shutters slide across every
+mouth at I4. All closed form on the server clock (`ThresherBelfry`, `ThresherTimeController.TickBelfry`). The ring is
+still the gate: thread its live mouth, the next one lime, the arrow follows it. `THRESHERTIME.md` §0a.
+
+**Verified:** the open editor compiled it (`unity recompile`, 0 errors, 0 warnings; `ThresherBelfry` and
+`ThresherBelfryTests` are in the built assemblies); `author_thresher_time_assets.py --check` OK. NOT run:
+`ThresherBelfryTests` (the CLI cannot run tests in an open editor), any race, any frame-time measure.
+
+**Verify in editor:**
+1. EditMode: `ThresherBelfryTests` and `ThresherTimeCourseTests` pass.
+2. Thresher Time I1: each ring hangs on a chain and swings gently; your next one is lime and the arrow tracks it as it
+   moves; fly through it and it counts.
+3. I2: a plain mace swings across every other straight; I3 every straight, with a danger head (it debuffs).
+4. I4: two maces a straight swinging against each other, and two danger bars sliding across each ring; there is always
+   a gap between the bars.
+5. Break a chain link or a mace spike: it grows back about 6 s later, where that part now is, without popping in.
+6. Two machines (MPPM): the rings and maces swing in the same place on both.
+7. Frame time at I4 (about 450 moving prisms): `ThresherTime.Belfry` in the profiler.
+8. AI Threshers finish at every intensity (expected slower at I3-I4: they do not lead the ring or dodge maces yet).
+
 ### 🔴 Thresher Time: the rings are the gates again, nests off (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** Yash: "on passing through rings, doesn't register ... I dont wanna break anything in here, just pass

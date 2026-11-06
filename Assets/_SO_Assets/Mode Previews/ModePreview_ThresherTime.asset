@@ -28,7 +28,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 14
-  ObjectiveText: Thread the lime ring - plant, wind in, let go
+  ObjectiveText: Time your sling - meet the swinging lime ring
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

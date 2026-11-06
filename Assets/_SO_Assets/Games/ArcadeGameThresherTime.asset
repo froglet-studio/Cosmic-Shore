@@ -15,11 +15,11 @@ MonoBehaviour:
   Mode: 66
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Fly through every ring in order - your
-    next one glows lime. Your speed is your sling - pull LT all the way to plant the ball and
-    swing round it, pull RT to wind the chain in and spin up, let go to fly off at up to nearly
-    four times cruise. Every corner asks how much of that momentum you can carry. Two laps.
-    Fastest domain home wins.
+  Description: Threshers only, in the Belfry. Every ring swings on a chain - fly through
+    them in order, your next one glows lime, and time your sling to meet it. Pull LT all the
+    way to plant the ball and swing round it, RT to wind the chain in and spin up, let go to
+    fly. Higher levels swing faster, hang maces across the straights and slide shutters across
+    every ring. Two laps. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 41be1af0f0ee4bd7a8b9d6c5b5f27424, type: 3}

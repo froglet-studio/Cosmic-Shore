@@ -9,6 +9,42 @@
 > through waypoints, and win the track". The nests of §0 (2026-11-04 to 11-07) stay in the code behind
 > `nestsAtGates`, authored OFF; the places (§0's plants and creatures) stay on.
 
+## 0a. The Belfry: a clockwork course (Yash, 2026-11-07)
+
+> "can't we make the time game of thresher different, it should be about the time element"
+
+The fleet's Time is rate and mobility (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`), and the Thresher's Time makes its
+spin wind up to launch speed sooner (the Plant). So the course runs on a clock, and winding up sooner is catching a window
+a slower pilot misses. Nothing about the vessel changes: the clock is the track's (`ThresherBelfry`).
+
+- **Every ring swings.** A ring hangs on a chain from a pivot further out from the cell's centre and swings across the
+  flight line, in its own mouth plane. At the middle of its swing it is exactly on its gate. It is still the gate:
+  thread its live mouth to clear it, your next one lime, and the objective arrow follows it. The AI flies at the ring
+  where it is (`ChooseAIGate`).
+- **Maces** (a chain and a morning-star head: a core and six spikes) swing across the straights. Each head crosses the
+  line at the middle of its swing and clears it, head and hull, at either end. That gap is the window.
+- **Shutters** (I4): two danger bars slide across every mouth on their own beat. They never meet: at their closest
+  each stays 15% of the mouth's radius out from the middle.
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Ring chain / swing / period | 200 u / 12° / 9 s | 190 u / 20° / 7.5 s | 175 u / 28° / 6 s | 160 u / 34° / 5 s |
+| Ring sweep across the line, top speed | ±42 u, 29 u/s | ±65 u, 55 u/s | ±82 u, 90 u/s | ±89 u, 119 u/s |
+| Maces | none | 1 on every other straight, plain | 1 a straight, danger head | 2 a straight, swinging against each other, danger heads |
+| Shutters | - | - | - | danger bars, 3.5 s beat |
+| Moving prisms | ~40 | ~100 | ~160 | ~450 |
+
+A ring's top speed stays under the Thresher's 125 u/s cruise at every rung, so a ring can always be chased down.
+Everything is a closed-form function of the course and the SERVER clock (Switchback's movers' pattern), so every peer
+lays and poses the same prisms and nothing is replicated. A broken chain link, mace or shutter bar grows back 6 s later
+where its part now is (`belfryRegrowSeconds`). Authored by the generator (`belfry`, `belfryPrismPrefab`); tests:
+`ThresherBelfryTests` (the rest pose is the gate, the swing stays in the mouth plane, the ladder only climbs, a ring can be
+chased, maces cross the line and clear it with a negative control, shutters stay in the mouth and never shut, closed
+form, the budget).
+
+**Not tuned yet:** the AI flies at the ring's live pose but does not lead it or dodge maces, so its times at I3-I4 are
+expected to fall until it learns (`Docs/AI_SYSTEM/AI_PLAN.md`, step `time-arcade`).
+
 ## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
 
 > "It should not have rings, it should have objects that it can break as target, and then move to another object
@@ -140,7 +176,7 @@ lap (`ThresherTimeCourseTests`; percentages are of the 479 u/s top speed via
 | 3 | **2** of 8 | 136 u · **59%** | 149 u · 65% | 306 u · 100% | 58 | ~5.1 k u |
 | 4 | **3** of 8 | 101 u · **44%** | 118 u · 52% | 201 u · 88% | 46 | ~5.2 k u |
 
-A three-lap race is ~15 k u: two minutes at cruise. How much under that a good slinger gets is the
+A two-lap race is ~10 k u: about 80 s at cruise (three laps, ~15 k u, until 2026-10-26). How much under that a good slinger gets is the
 open play-test question (§8).
 
 ## 2. What the mode does NOT add
@@ -165,7 +201,7 @@ A corner's radius on this metric is `(shorter leg / 2) / tan(turn / 2)`. The Thr
 circle (**229 u**) is within 8% of the Grizzly's full-launch circle (211 u), so the cut is Grizzly
 Time's, re-measured against the Thresher's curve with the shipped solver compiled out of editor:
 
-- **Eight gates a lap** on Headlong's **800 u** base circle, three laps a race (24 gate threadings).
+- **Eight gates a lap** on Headlong's **800 u** base circle, two laps a race (16 gate threadings; three laps and 24 until 2026-10-26).
 - **Grizzly Time's corner profiles and `AngularSpread`s** (REDLINE.md §4: spread is the reach dial).
   Measured against 229 u they give the same 0 / 1 / 2 / 3 ladder; each level's hardest corner costs
   ≥ 8 points of top speed more than the last (100 / 71 / 59 / 44%).
