@@ -265,6 +265,36 @@ iOS-only path above was checked: each `UnityEngine.iOS.DeviceGeneration` member
 and NativeShare paths are fully qualified or have their usings, and no asmdef excludes iOS. That is
 a checked list, not a compile. The iOS player build is still the only proof.
 
+### Privacy manifest (`PrivacyInfo.xcprivacy`)
+
+App Store Connect rejects an upload that calls a required-reason API without declaring why (ITMS-91053). The app's
+manifest is `Assets/_Scripts/Editor/Build/iOS/PrivacyInfo.xcprivacy` (launch blocker #14). It sits in an `Editor/`
+folder so Unity never treats it as a plugin; `IosPrivacyManifestPostprocess` writes it into every iOS Xcode project as a
+resource of the app target, and merges it into a `PrivacyInfo.xcprivacy` already at the project root instead of adding a
+second one (two files of that name in one target do not build). The merge only adds, and an appended project re-run
+writes the same bytes.
+
+| Category | Reason | Why the game calls it |
+|---|---|---|
+| UserDefaults | `CA92.1` | `PlayerPrefs` is `NSUserDefaults` on iOS; only this app reads what it wrote |
+| FileTimestamp | `C617.1` | `File.GetLastWriteTimeUtc` on replays saved in the app's own container (`TheaterDirector`) |
+| SystemBootTime | `35F9.1` | `Stopwatch` / `Time.realtimeSinceStartup` (`mach_absolute_time`): elapsed time inside the app |
+
+`PrivacyManifestTests` scans the shipped C# (not `Editor/`, not `Tests/`) for each category's calls and fails when the
+manifest stops declaring one the code uses, so a new `DriveInfo` or `GetCreationTime` call fails a test until it gets
+its reason.
+
+The **collected data** section (user id and display name, Cloud Save gameplay, analytics events, faction chat text,
+Cloud Diagnostics crash reports; none used for tracking; the birth year stays on the device) is what the code sends
+today. The App Privacy label in App Store Connect (launch blocker #16) must say the same, and counsel confirms both before
+a submission.
+
+**Native SDKs, measured 2026-11-06:** `LofeltHaptics.framework` (Nice Vibrations, a dynamic framework) references
+`stat`, `fstat` and `mach_absolute_time` and ships no manifest of its own. The app manifest declares both categories; if
+Apple's first upload still names the framework, it needs a manifest inside its bundle, or the replacement planned for
+the 16 KB page-size ticket (launch item #26). FMOD's iOS libraries, NativeShare and `GameCenterSignIn.mm` reference
+none of the required-reason APIs.
+
 ---
 
 ## 3. Cross-platform multiplayer (iOS ↔ Android ↔ Windows)
