@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Editor/Launch/` (`ModeSmokeLauncher`, `ModeSmokeDriver`, `ModeSmokeReport`,
+`ModeSmokeConfigSO`), the config `Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` (hand-authored YAML: rosters
+ArcadeGames + ArenaGames, Maelstrom excluded, quick set SkimRace / Joust / Switchback),
+`Assets/_Scripts/Tests/Editor/ModeSmokeReportTests.cs`, `Tools/Launch/smoke_report.py`. Doc: `Docs/LAUNCH/SMOKE_TEST.md`.
+Verified offline only: the reference compile (editor config) and `smoke_report.py self-test` (negative control: a
+result with an exception publishes a failure). Nothing has played a mode with it: no Unity editor in that session.
+
+1. Open the project. **Pass:** it compiles; `ModeSmokeConfig.asset` opens in the Inspector with two rosters, one
+   exclusion (Maelstrom, with its reason) and three quick modes (Skim Race, Joust, Switchback). If the asset shows
+   a missing script, re-create it from `Create > Cosmic Shore > Launch > Mode Smoke Config` with those values.
+2. Test Runner, EditMode: run `ModeSmokeReportTests`. **Pass:** all green.
+3. `FrogletTools > Build > Mode Smoke Test > Run Quick Set`, hands off the editor. **Pass:** for each of Skim Race,
+   Joust and Switchback the editor enters Play from Bootstrap, reaches the menu, loads the mode with 3 hulls, every
+   hull flies itself at 4x, the end screen comes up, Play exits and the next mode starts; the Console ends with
+   `[ModeSmoke] done: 3 passed, 0 failed`. Open `Logs/ModeSmoke/summary.json`: `aiSeats` = `seats` = 3,
+   `movingSeats` >= 1, `gameEnded` true, `errors` and `exceptions` 0, `gameSeconds` near the mode's usual length. A
+   mode that fails names its first failed check in `failure` and its errors in `firstErrors`: report what it shows,
+   do not loosen the check.
+4. Negative control: duplicate the config (`Assets/_SO_Assets/Launch/ModeSmokeConfig.asset` -> a scratch copy), add an
+   override for Joust with `Match Budget Seconds` 30, and run headless (step 5) with `-smokeModes Joust -smokeConfig
+   <the copy's path>`. **Pass:** exit code 1, Joust `failed` with "the game-over event never fired within 30 game
+   seconds", `smoke_report.py check` prints a `failure` row. Delete the copy.
+5. Close the editor and run the same three headless, from a terminal in the checkout:
+   `Unity -batchmode -projectPath . -executeMethod CosmicShore.Editor.ModeSmokeLauncher.Run -smokeModes quick -smokeOut Logs/ModeSmokeBatch -smokeQuit -logFile -`.
+   **Pass:** exit code 0, `Logs/ModeSmokeBatch/junit.xml` lists 3 testcases with no failure; then
+   `python3 Tools/Launch/smoke_report.py check Logs/ModeSmokeBatch` prints three `success` rows. Try once more with
+   `-nographics` and record whether any mode fails only there (CI will run that way).
+6. Afterwards: `PlayerPrefs` `CosmicShore.OfflinePreferred` is back to what it was before the run.
+
+---
+
 ### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by

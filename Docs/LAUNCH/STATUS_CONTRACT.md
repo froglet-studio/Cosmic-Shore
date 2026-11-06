@@ -65,7 +65,7 @@ is public, and the 2026-10-12 `USYM_UPLOAD_AUTH_TOKEN` leak came from a log nobo
 | `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code, access policy, the launch flags) |
 | `trunk-static` | quality | gate | the bleeding-edge guard's static checks |
 | `unity-compile` | quality | gate | the guard's Unity compile + EditMode run |
-| `smoke-<mode>` | quality | gate | the Unity per-mode smoke test |
+| `smoke-<mode>` | quality | gate | the Unity per-mode smoke test, one per rostered mode, `<mode>` in kebab case (`smoke-skim-race`); written by `Tools/Launch/smoke_report.py` (`Docs/LAUNCH/SMOKE_TEST.md`) |
 | `release-<tag>` → use `release` | release | build | the release workflow (tag, release notes) |
 
 A new pipeline adds its id to this table in the same PR.
