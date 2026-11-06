@@ -31,6 +31,21 @@ HTTP:
     POST /v1/ask        {"question": "..."}          Ask Claude                       }
     POST /v1/erase      {"player_id": "..."}         Erasure (admin key)
 
+  Rev 65 (Shombith, 2026-11-06). era=<id> on overview, retention, matches, playtypes, cohorts, people, series and
+  dashboard tiles replaces the days window with the era's range, source and builds:
+    GET  /v1/eras[?build=]                 eras with events/players/matches, events per week by era, milestones
+    PUT  /v1/eras {"eras": [...], "milestones"?: [...]}           (admin) replaces the list
+    GET  /v1/eras/compare?a=&b=[&build=]   two eras side by side
+    GET  /v1/cohorts?build&days&play&era   weekly cohorts, lifespan tiles; lifespans (player rows) for profile readers
+    GET  /v1/playtypes?build&days&era      solo vs AI / solo / multiplayer, the party funnel
+    GET  /v1/series?measure&by&over&build&days&play&era          one switchable chart (400 if not answerable)
+    GET  /v1/schema                        (admin) aggregates.db tables, saved tables included
+    POST /v1/query {"sql"}                 (admin) the Ask box's read-only guard; aggregates.db only
+    GET  /v1/queries | POST (admin) | DELETE ?id= (admin)         saved queries; as_table makes t_<name>
+    GET  /v1/dashboards | PUT (admin) | DELETE ?id= (admin)      dashboards of tiles
+    GET  /v1/dashboards/tile?source=query:<id>|builtin:<name>&build&days&play&era
+    GET  /v1/segments | POST | DELETE ?id= (profile readers)     saved player filters
+
 Data lives in data_dir (events.db raw, aggregates.db for reading). Standard library only, except the two Claude
 features, which need `pip install anthropic` and ANTHROPIC_API_KEY. Run behind Caddy for HTTPS
 (setup-analytics-vm.sh). README.md beside this file has the whole picture.
@@ -175,6 +190,7 @@ class App:
         self.geo_path = config["geo_csv"] or os.path.join(config["data_dir"], "dbip-country-lite.csv.gz")
         self.geo = G.CountryLookup(self.geo_path)
         self.stop = threading.Event()
+        self.rebuild_lock = threading.Lock()
 
     def _stamp(self):
         try:
@@ -207,7 +223,8 @@ class App:
         return self.store.agg_path
 
     def rebuild(self):
-        plays = self.store.rebuild_aggregates()
+        with self.rebuild_lock:            # the background loop and a request (erase, eras, a saved table) share tmp
+            plays = self.store.rebuild_aggregates()
         self.store.mark_job("rebuild", f"{plays} plays")
         return plays
 
@@ -245,9 +262,217 @@ class App:
             self.stop.wait(REBUILD_EVERY_S)
 
 
+# ---------------------------------------------------------------- Rev 65 routes: (status, payload) from a handler
+
+ADMIN_ONLY = (403, {"error": "That needs an admin key."})
+PROFILES_ONLY = (403, {"error": "Player profiles need an admin key or a profile reader's key."})
+
+
+def _app(h):
+    return h.app_ref
+
+
+def _people(h):
+    q = h._params()
+    build = q.get("build") or None
+    if build and build not in S.BUILD_KINDS:
+        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    days = int(q["days"]) if (q.get("days") or "").isdigit() else 90
+    play = q.get("play") or "all"
+    if play not in V.PLAYS:
+        raise S.Invalid(f"play must be one of {list(V.PLAYS)}")
+    era = h._era_param(q)
+    extra = {}
+    if era:
+        extra = {"since": era["from"], "until": min(era["to"], S.day_of(S.now_ms())), "source": era["source"],
+                 "builds": era["builds"] or None}
+    page = _app(h).store.people_list(build, min(max(days, 1), 400), q.get("q") or "", play=play, **extra)
+    page["era"] = era["id"] if era else None
+    page["unfiltered"] = []
+    return 200, page
+
+
+def _eras_get(h):
+    q = h._params()
+    build = q.get("build") or None
+    if build and build not in S.BUILD_KINDS:
+        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    store = _app(h).store
+    return 200, V.eras_page(_app(h).agg, store.eras(), store.milestones(), build)
+
+
+def _eras_put(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    body = h._body()
+    if not isinstance(body, dict) or "eras" not in body:
+        raise S.Invalid("send {\"eras\": [...], \"milestones\"?: [...]}")
+    eras = _app(h).store.set_eras(body["eras"], body.get("milestones"), h._admin())
+    _app(h).rebuild()                         # the era spans (players per era) are counted in the rebuild
+    return 200, {"eras": eras, "milestones": _app(h).store.milestones()}
+
+
+def _eras_compare(h):
+    q = h._params()
+    a, b = h._era_param(q, "a"), h._era_param(q, "b")
+    if not a or not b:
+        raise S.Invalid("name two eras: ?a=<era id>&b=<era id>")
+    build = q.get("build") or None
+    if build and build not in S.BUILD_KINDS:
+        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    return 200, V.eras_compare(_app(h).agg, a, b, build)
+
+
+def _cohorts(h):
+    build, days, play, era = h._scope_params(h._params())
+    page = V.cohorts(_app(h).agg, build, days, play, era)
+    if h._profiles_allowed():
+        sc = V.Scope(build, days, play, era)
+        page["lifespans"] = _app(h).store.lifespans(build, sc.since, sc.until, sc.source,
+                                                    era["builds"] or None if era else None, play)
+    else:
+        page["unfiltered"] = page.get("unfiltered", []) + ["lifespans"]
+    return 200, page
+
+
+def _playtypes(h):
+    build, days, play, era = h._scope_params(h._params())
+    page = V.playtypes(_app(h).agg, build, days, era)
+    if play != "all":
+        page["unfiltered"] = ["play"]           # this page is the play types side by side
+    return 200, page
+
+
+def _series(h):
+    q = h._params()
+    build, days, play, era = h._scope_params(q)
+    return 200, V.series(_app(h).agg, q.get("measure") or "matches", q.get("by") or "none", q.get("over") or "day",
+                         build, days, play, era, _app(h).store.eras())
+
+
+def _saved_tables(store):
+    return {q["table"] for q in store.queries() if q["as_table"]}
+
+
+def _schema(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    return 200, V.schema(_app(h).agg, _saved_tables(_app(h).store))
+
+
+def _query_run(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    body = h._body()
+    if not isinstance(body, dict) or not isinstance(body.get("sql"), str):
+        raise S.Invalid("send {\"sql\": \"SELECT ...\"}")
+    out = V.run_readonly_sql(_app(h).agg, body["sql"])
+    return 200, {"columns": out["columns"], "rows": out["rows"], "ms": out["ms"], "truncated": out["truncated"]}
+
+
+def _queries_get(h):
+    admin = h._admin()
+    return 200, {"queries": _app(h).store.queries(None if admin else h._reader(), bool(admin))}
+
+
+def _queries_post(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    app = _app(h)
+    saved = app.store.save_query(h._body(), h._admin(), lambda sql: V.run_readonly_sql(app.agg, sql))
+    if saved["as_table"]:
+        app.rebuild()                          # a save makes the table now; the rebuild keeps it fresh after
+    return 200, saved
+
+
+def _queries_delete(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    app = _app(h)
+    found = app.store.query(h._params().get("id") or "")
+    if not found:
+        return 404, {"error": "No saved query with that id."}
+    app.store.delete_query(found["id"])
+    if found["as_table"]:
+        app.rebuild()
+    return 200, {"deleted": found["id"]}
+
+
+def _dashboards_get(h):
+    return 200, {"dashboards": _app(h).store.dashboards(h._admin() or h._reader(), bool(h._admin()))}
+
+
+def _dashboards_put(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    return 200, _app(h).store.save_dashboard(h._body(), h._admin())
+
+
+def _dashboards_delete(h):
+    if not h._admin():
+        return ADMIN_ONLY
+    if not _app(h).store.delete_dashboard(h._params().get("id") or ""):
+        return 404, {"error": "No dashboard with that id."}
+    return 200, {"deleted": h._params()["id"]}
+
+
+def _tile(h):
+    q = h._params()
+    build, days, play, era = h._scope_params(q)
+    source = q.get("source") or ""
+    app = _app(h)
+    if source.startswith("builtin:"):
+        if source[8:] not in S.BUILTIN_TILES:
+            raise S.Invalid(f"builtin tiles are {', '.join(S.BUILTIN_TILES)}")
+        return 200, V.builtin_tile(app.agg, source[8:], build, days, play, era)
+    if source.startswith("query:"):
+        admin = h._admin()
+        visible = {x["id"]: x for x in app.store.queries(None if admin else h._reader(), bool(admin))}
+        found = visible.get(source[6:])
+        if not found:
+            return 404, {"error": "No saved query with that id that this key may read."}
+        out = V.run_readonly_sql(app.agg, found["sql"])
+        # a saved query is its own SQL: the page's build, days, play and era do not reach it
+        return 200, {"columns": out["columns"], "rows": out["rows"], "truncated": out["truncated"],
+                     "unfiltered": ["build", "days", "play", "era"]}
+    raise S.Invalid("source must be query:<saved query id> or builtin:<name>")
+
+
+def _segments_get(h):
+    if not h._profiles_allowed():
+        return PROFILES_ONLY
+    name = h._admin() or h._reader()
+    return 200, {"segments": _app(h).store.segments(name, bool(h._admin()))}
+
+
+def _segments_post(h):
+    if not h._profiles_allowed():
+        return PROFILES_ONLY
+    return 200, _app(h).store.save_segment(h._body(), h._admin() or h._reader(), bool(h._admin()))
+
+
+def _segments_delete(h):
+    if not h._profiles_allowed():
+        return PROFILES_ONLY
+    done = _app(h).store.delete_segment(h._params().get("id") or "", h._admin() or h._reader(), bool(h._admin()))
+    if done is None:
+        return 404, {"error": "No segment with that id."}
+    return 200, {"deleted": h._params()["id"]}
+
+
+REV65_GET = {"/v1/eras": _eras_get, "/v1/eras/compare": _eras_compare, "/v1/cohorts": _cohorts,
+             "/v1/playtypes": _playtypes, "/v1/series": _series, "/v1/schema": _schema, "/v1/queries": _queries_get,
+             "/v1/dashboards": _dashboards_get, "/v1/dashboards/tile": _tile, "/v1/segments": _segments_get}
+REV65_POST = {"/v1/query": _query_run, "/v1/queries": _queries_post, "/v1/segments": _segments_post}
+REV65_PUT = {"/v1/eras": _eras_put, "/v1/dashboards": _dashboards_put}
+REV65_DELETE = {"/v1/queries": _queries_delete, "/v1/dashboards": _dashboards_delete,
+                "/v1/segments": _segments_delete}
+
+
 def make_handler(app):
     class Handler(BaseHTTPRequestHandler):
         server_version = "FrogletAnalytics/1"
+        app_ref = app
 
         def log_message(self, fmt, *args):  # one short line per request, no bodies, no keys
             sys.stderr.write("%s %s\n" % (self.command, self.path.split("?")[0]))
@@ -260,7 +485,7 @@ def make_handler(app):
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Vary", "Origin")
                 self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
-                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
         def _send(self, status, payload):
             body = json.dumps(payload, default=str).encode()
@@ -298,6 +523,33 @@ def make_handler(app):
             admin = _match_key(self._bearer(), app.config["admin_keys"])
             reader = _match_key(self._bearer(), app.config["read_keys"])
             return bool(admin or (reader and reader in app.config["profile_readers"]))
+
+        def _admin(self):
+            return _match_key(self._bearer(), app.config["admin_keys"])
+
+        def _params(self):
+            return {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+
+        def _scope_params(self, q):
+            """build, days, play and era from the query string; S.Invalid (400) on any bad value."""
+            build = q.get("build") or "release"
+            if build not in S.BUILD_KINDS:
+                raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+            days = q.get("days") or "90"
+            if not days.isdigit() or int(days) not in V.WINDOWS:
+                raise S.Invalid(f"days must be one of {list(V.WINDOWS)}")
+            play = q.get("play") or "all"
+            if play not in V.PLAYS:
+                raise S.Invalid(f"play must be one of {list(V.PLAYS)}")
+            return build, int(days), play, self._era_param(q)
+
+        def _era_param(self, q, name="era"):
+            if not q.get(name):
+                return None
+            era = app.store.era(q[name])
+            if era is None:
+                raise S.Invalid(f"no era with id {q[name]}")
+            return era
 
         def _query(self):
             q = parse_qs(urlparse(self.path).query)
@@ -343,6 +595,8 @@ def make_handler(app):
                 admin = _match_key(self._bearer(), app.config["admin_keys"])
                 return self._send(200, {"name": admin or self._reader(), "admin": bool(admin),
                                         "profiles": self._profiles_allowed()})
+            if path in REV65_GET:
+                return self._guarded(REV65_GET[path], self)
             if path in ("/v1/people", "/v1/person"):
                 if not self._profiles_allowed():
                     return self._send(403, {"error": "Player profiles need an admin key or a profile reader's key."})
@@ -350,9 +604,7 @@ def make_handler(app):
                 if path == "/v1/person":
                     found = app.store.person((q.get("id") or [""])[0])
                     return self._send(200, found) if found else self._send(404, {"error": "No player with that id."})
-                build = (q.get("build") or [""])[0] or None
-                days = int((q.get("days") or ["90"])[0]) if (q.get("days") or ["90"])[0].isdigit() else 90
-                return self._send(200, app.store.people_list(build, min(days, 400), (q.get("q") or [""])[0]))
+                return self._guarded(_people, self)
             build, days = self._query()
             if build not in S.BUILD_KINDS:
                 return self._send(400, {"error": f"build must be one of {list(S.BUILD_KINDS)}"})
@@ -362,20 +614,28 @@ def make_handler(app):
             if play not in V.PLAYS:
                 return self._send(400, {"error": f"play must be one of {list(V.PLAYS)}"})
             try:
+                era = self._era_param(self._params())
+            except S.Invalid as exc:
+                return self._send(400, {"error": str(exc)})
+            try:
                 if path == "/v1/overview":
-                    page = V.overview(app.agg, build, days, play)
+                    page = V.overview(app.agg, build, days, play, era)
                     page["digest"] = app.store.latest_digest()
                     return self._send(200, page)
                 if path == "/v1/retention":
-                    return self._send(200, V.retention(app.agg, build, days, play))
+                    return self._send(200, V.retention(app.agg, build, days, play, era))
                 if path == "/v1/matches":
-                    return self._send(200, V.matches(app.agg, build, days, play))
+                    return self._send(200, V.matches(app.agg, build, days, play, era))
                 if path == "/v1/health":
-                    return self._send(200, V.health(app.agg, app.store.health_facts(), days))
+                    page = V.health(app.agg, app.store.health_facts(), days)
+                    page["unfiltered"] = ["page"] if (play != "all" or era) else []
+                    return self._send(200, page)
                 if path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
                     view = {"/v1/audience": V.audience, "/v1/ftue": V.ftue, "/v1/economy": V.economy,
                             "/v1/social": V.social}[path]
-                    return self._send(200, view(app.agg, build, days))
+                    page = view(app.agg, build, days)
+                    page["unfiltered"] = ["page"] if (play != "all" or era) else []   # these pages read neither
+                    return self._send(200, page)
                 if path == "/v1/digest":
                     return self._send(200, app.store.latest_digest() or {})
             except Exception:
@@ -392,7 +652,39 @@ def make_handler(app):
                 return self._ask()
             if path == "/v1/erase":
                 return self._erase()
+            if path in REV65_POST:
+                if self._reader() is None:
+                    return self._send(401, {"error": "A read key is needed (Authorization: Bearer <key>)."})
+                return self._guarded(REV65_POST[path], self)
             return self._send(404, {"error": "No such endpoint."})
+
+        def do_PUT(self):
+            return self._write(REV65_PUT)
+
+        def do_DELETE(self):
+            return self._write(REV65_DELETE)
+
+        def _write(self, routes):
+            app.reload_keys()
+            path = urlparse(self.path).path.rstrip("/")
+            if path not in routes:
+                return self._send(404, {"error": "No such endpoint."})
+            if self._reader() is None:
+                return self._send(401, {"error": "A read key is needed (Authorization: Bearer <key>)."})
+            return self._guarded(routes[path], self)
+
+        def _guarded(self, route, handler):
+            """Run a Rev 65 route: a bad value is 400 with the reason, never a 500."""
+            try:
+                status, payload = route(handler)
+            except (S.Invalid, V.BadRequest, V.UnsafeQuery) as exc:
+                return self._send(400, {"error": str(exc)})
+            except PermissionError as exc:
+                return self._send(403, {"error": str(exc)})
+            except Exception:
+                traceback.print_exc()
+                return self._send(500, {"error": "The server failed to build that page; see its log."})
+            return self._send(status, payload)
 
         def _ingest(self):
             client = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
