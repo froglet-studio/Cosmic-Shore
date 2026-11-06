@@ -440,3 +440,7 @@
 2026-11-06T23:02:40.267Z scripts compiled clean: closed 5 compile error(s)
 2026-11-06T23:02:40.270Z editor load: play=False capture=True minPlay=15s issues=57
 2026-11-06T23:08:31.024Z PlayMode session ended (23s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-06T23:11:58.853Z editor load: play=False capture=True minPlay=15s issues=58
+2026-11-06T23:12:52.774Z PlayMode session ended (19s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-06T23:13:56.330Z PlayMode session ended (29s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-06T23:14:31.893Z PlayMode session ended (13s play run, exiting play mode): not counted (capture=True, long enough=False)

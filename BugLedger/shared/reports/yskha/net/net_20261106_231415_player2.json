@@ -1,0 +1,97 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "Player2",
+  "isVirtualPlayer": true,
+  "why": "MPPM virtual player",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1e6060f3d0",
+  "playStartedUtc": "2026-11-06T23:14:15.6119918Z",
+  "playEndedUtc": "2026-11-06T23:14:32.5250759Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-06T23:14:30.1487696Z",
+    "durationSeconds": 2.072521924972534,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "none",
+    "counters": {
+        "requests": 8,
+        "lobbyReads": 2,
+        "retries": 1,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 1,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 0,
+        "presenceForceReset": 0,
+        "offlineFallback": 0,
+        "partyRosterPush": 0,
+        "presencePush": 0,
+        "lobbyReadsPerSecond": 0.9650079011917114
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 0,
+        "budgetExhaustions": 0,
+        "rateLimited": 1
+    },
+    "lifecycle": [
+        {
+            "t": 0.000010200000360782724,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.0000518000015290454,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 0,
+    "warnings": 18,
+    "dropped": 0,
+    "lines": [
+      {"t": 1.531, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 1.681, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 1.711, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:147)"},
+      {"t": 1.749, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 1.751, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 1.752, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 1.894, "type": "warning", "msg": "[PrismTimerManager] No instance found in scene - auto-created. Consider adding one to the scene to avoid this overhead.", "at": "CosmicShore.Gameplay.PrismTimerManager:EnsureInstance () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismTimerManager.cs:66)"},
+      {"t": 3.019, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:146)"},
+      {"t": 3.02, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 3.926, "type": "log", "msg": "Container Bootstrap (1265757457) disposed"},
+      {"t": 3.93, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 4.62, "type": "warning", "msg": "[FriendsInitializer] Friends service did not come up; will retry on the next sign-in event.", "at": "CosmicShore.Gameplay.FriendsInitializer/<InitializeFriendsAsync>d__28:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Party/FriendsInitializer.cs:285)"},
+      {"t": 4.792, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 4.795, "type": "warning", "msg": "[AppState] Invalid transition: None → MainMenu", "at": "CosmicShore.Core.ApplicationStateMachine:LogWarning (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/ApplicationStateMachine.cs:311)"},
+      {"t": 5.757, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 6.196, "type": "log", "msg": "Container Authentication (-1259331812) disposed"},
+      {"t": 6.747, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.749, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.752, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.754, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.756, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.758, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.763, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.765, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)"},
+      {"t": 6.767, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 8.244, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 8.246, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 8.248, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 8.249, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "CosmicShore.UI.GameCard:UpdateCardView () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/GameCard.cs:162)"},
+      {"t": 8.299, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."}
+    ]
+  }
+}
