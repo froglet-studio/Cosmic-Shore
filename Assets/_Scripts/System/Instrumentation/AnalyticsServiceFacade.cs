@@ -72,7 +72,7 @@ namespace CosmicShore.Core
         /// </summary>
         readonly List<IAnalyticsSink> _sinks = new();
 
-        readonly PostHogAnalyticsSink _postHogSink;
+        readonly FrogletAnalyticsSink _frogletSink;
 
         /// <summary>
         /// The one instance currently subscribed to every persistent SOAP/static event below.
@@ -154,11 +154,13 @@ namespace CosmicShore.Core
 
             _sinks.Add(new UgsAnalyticsSink(Log));
 
-            var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
-            if (postHogConfig != null && postHogConfig.Enabled)
+            // Our own analytics server (Tools/Analytics/server/), which replaced PostHog on
+            // 2026-11-06. The asset ships pointed at the server; nothing is filled in by hand.
+            var frogletConfig = Resources.Load<FrogletAnalyticsConfigSO>("FrogletAnalyticsConfig");
+            if (frogletConfig != null && frogletConfig.Enabled)
             {
-                _postHogSink = new PostHogAnalyticsSink(postHogConfig, Log, BuildSinkEnvelope);
-                _sinks.Add(_postHogSink);
+                _frogletSink = new FrogletAnalyticsSink(frogletConfig, Log, BuildSinkEnvelope);
+                _sinks.Add(_frogletSink);
             }
 
             AuthData.OnSignedIn.OnRaised += HandleSignedIn;
@@ -479,7 +481,7 @@ namespace CosmicShore.Core
         ///
         /// Collection is opt-in: both the COPPA age gate and consent default to denied, so an
         /// unanswered privacy flow silently drops every event before it reaches any sink - both
-        /// UGS and PostHog go quiet at once, which looks like a backend or key problem and is
+        /// UGS and Froglet Analytics go quiet at once, which looks like a backend or key problem and is
         /// not. That failure has already cost this project one debugging session, so it warns
         /// rather than whispering behind a verbose-logging flag.
         /// </summary>
@@ -499,7 +501,7 @@ namespace CosmicShore.Core
                 : "collection has not started yet";
 
             Debug.LogWarning(
-                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or PostHog until this " +
+                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or Froglet Analytics until this " +
                 $"is resolved. First dropped event: '{eventName}'. " +
                 (NeedsPrivacyFlow
                     ? "No privacy consent UI is reachable in this scene; in the editor use " +
@@ -511,7 +513,7 @@ namespace CosmicShore.Core
         public int DroppedEventCount => _droppedEvents;
 
         /// <summary>
-        /// Identity + build context that PostHog has no way to collect on its own.
+        /// Identity + build context that Froglet Analytics has no way to collect on its own.
         ///
         /// This is deliberately NOT applied to every event in the facade. UGS Analytics
         /// already auto-collects the player id, platform and app version as core data, and it
@@ -519,7 +521,7 @@ namespace CosmicShore.Core
         /// Event Manager - where events and parameters, once created, can never be deleted and
         /// count against a 1,500-per-environment cap. Stamping six redundant fields onto 28
         /// events would have cost 168 permanent, unnecessary schema rows for data UGS already
-        /// has. So the envelope is a PostHog concern and lives in the PostHog sink.
+        /// has. So the envelope is a Froglet Analytics concern and lives in the Froglet Analytics sink.
         /// See Docs/Analytics/DATA_ARCHITECTURE.md §7.1.
         /// </summary>
         public IDictionary<string, object> BuildSinkEnvelope() => new Dictionary<string, object>
@@ -532,7 +534,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// The canonical identity: the UGS player id. Immutable, and the same key as Cloud
-        /// Save and Leaderboards, so PostHog joins to both with no mapping table. Display name
+        /// Save and Leaderboards, so Froglet Analytics joins to both with no mapping table. Display name
         /// is a person PROPERTY (see <see cref="IdentifyPlayer"/>), never the identity - it is
         /// mutable and two players can choose the same one.
         /// </summary>
@@ -581,7 +583,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Mirrors cloud-save state onto the PostHog person, so events can be segmented by
+        /// Mirrors cloud-save state onto the Froglet Analytics person, so events can be segmented by
         /// player state without a join. Grouped exactly like PLAYER_PROFILE, which is what
         /// makes this mapping mechanical rather than a hand-maintained list.
         ///
@@ -640,7 +642,7 @@ namespace CosmicShore.Core
                 properties["unlocked_mode_count"] = progression.UnlockedModes.Count;
 
             // Send only when something actually CHANGED. Every identify is a billable event on
-            // the PostHog side, and OnProfileChanged is raised by things that do not always move
+            // the Froglet Analytics side, and OnProfileChanged is raised by things that do not always move
             // a person property - RefreshProfileVisuals raises it for a pure UI repaint. Before
             // the profile-change hook existed every caller was a segment boundary (collection
             // start, pause, quit, freestyle exit) and this could not matter; now it can.
@@ -847,7 +849,7 @@ namespace CosmicShore.Core
             humanIds.Sort(StringComparer.Ordinal);
 
             // Comma-joined, not an array: UGS Analytics parameters accept only scalar values.
-            // The PostHog sink splits this back into a real array (commit 4).
+            // The Froglet Analytics sink splits this back into a real array (commit 4).
             parameters["player_ids"] = string.Join(",", humanIds);
             parameters["player_count_human"] = humanIds.Count;
             parameters["player_count_ai"] = aiCount;
@@ -856,7 +858,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Stamps the client's completion time in both forms: epoch milliseconds for
         /// arithmetic, ISO-8601 for day/week/month bucketing without a per-query conversion.
-        /// UGS and PostHog both stamp their own ingest time; this is the CLIENT time, which is
+        /// UGS and Froglet Analytics both stamp their own ingest time; this is the CLIENT time, which is
         /// what "timestamp at completion" means.
         /// </summary>
         static void AddCompletionTimestamp(IDictionary<string, object> parameters)
@@ -887,7 +889,7 @@ namespace CosmicShore.Core
                 RecordSessionEnded("pause");
                 IdentifyPlayer();
                 Flush();
-                _postHogSink?.SaveQueue();
+                _frogletSink?.SaveQueue();
             }
             else
             {
@@ -901,7 +903,7 @@ namespace CosmicShore.Core
             RecordSessionEnded("quit");
             IdentifyPlayer();
             Flush();
-            _postHogSink?.SaveQueue();
+            _frogletSink?.SaveQueue();
         }
 
         void RecordSessionEnded(string reason)

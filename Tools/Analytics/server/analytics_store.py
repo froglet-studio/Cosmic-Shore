@@ -249,20 +249,24 @@ class Store:
             "ON CONFLICT(day, reason, event) DO UPDATE SET count = count + 1",
             (day, reason, (event or "")[:MAX_EVENT_NAME]))
 
-    def ingest(self, batch, received=None, country=None):
-        """Store a PostHog-shaped batch ([{event, properties, timestamp}]). Returns counts per outcome.
-        Nothing raises for one bad event: it is counted under rejects and the rest of the batch is stored."""
+    def ingest(self, batch, received=None, country=None, trusted=False, max_age_days=OLDEST_ACCEPTED_DAYS):
+        """Store a batch in the game's wire format ([{event, properties, timestamp}]). Returns counts per outcome.
+        Nothing raises for one bad event: it is counted under rejects and the rest of the batch is stored.
+
+        `trusted` is for the server's own import of history (import_posthog.py), never for HTTP: each item may then
+        carry its own "country", its receive time is its event time, and events up to `max_age_days` old are kept."""
         received = received or now_ms()
         today = day_of(received)
         result = {"accepted": 0, "rejected": 0, "resent": 0, "near_duplicates": 0, "erased": 0}
         with self.lock:
             for item in batch:
-                outcome = self._ingest_one(item, received, today, country)
+                item_country = (item.get("country") or country) if trusted and isinstance(item, dict) else country
+                outcome = self._ingest_one(item, received, today, item_country, trusted, max_age_days)
                 result[outcome] = result.get(outcome, 0) + 1
             self.db.commit()
         return result
 
-    def _ingest_one(self, item, received, today, country=None):
+    def _ingest_one(self, item, received, today, country=None, trusted=False, max_age_days=OLDEST_ACCEPTED_DAYS):
         if not isinstance(item, dict):
             self._reject(today, "not_an_object", "")
             return "rejected"
@@ -282,9 +286,11 @@ class Store:
             self._reject(today, "no_player_id", event)
             return "rejected"
         ts = parse_timestamp(item.get("timestamp")) or parse_timestamp(props.get("timestamp_utc_ms")) or received
-        if ts < received - OLDEST_ACCEPTED_DAYS * 86400 * 1000 or ts > received + FUTURE_SLACK_MS:
+        if ts < received - max_age_days * 86400 * 1000 or ts > received + FUTURE_SLACK_MS:
             self._reject(today, "bad_timestamp", event)
             return "rejected"
+        if trusted:
+            received = ts                   # history keeps its own time, so "last event received" stays true
 
         if event == "$identify":
             return self._identify(distinct_id, props, received, country)

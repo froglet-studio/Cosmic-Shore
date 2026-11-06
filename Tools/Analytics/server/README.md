@@ -5,7 +5,7 @@ Oracle VM, and serves the **Froglet Analytics console**: the dashboard picked on
 pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §137). Claude writes
 three notes about the numbers each night and answers questions in the Ask box. UGS Analytics is unchanged.
 
-Status (2026-11-05): the server, its tests and the console page are written and were run locally on sample data.
+Status (2026-11-06): live on the Oracle VM. The game sends to it directly (PostHog removed from the game).
 Not yet on the VM; the game is not yet pointed at it.
 
 ## The console page
@@ -18,19 +18,48 @@ the same three files; open it there as `https://<pages>/?api=https://analytics.<
 `allowed_origins`. The page holds no data. The CSS uses `froglet.css`'s token names; link that file instead of the
 inline copy once `claude/ui-style-guide` merges.
 
-## How the game reaches it, with no code change
+## How the game reaches it (nothing to fill in)
 
-`PostHogAnalyticsSink` posts `{api_key, batch: [...]}` to `<host>/batch/`. This server accepts exactly that shape at
-`/batch/`. Cutting over is two fields on `Assets/Resources/PostHogConfig.asset`:
+PostHog is gone from the game (Shombith, 2026-11-06). `FrogletAnalyticsSink` posts `{api_key, batch: [...]}` to
+`<serverUrl>/batch/`, and `Assets/Resources/FrogletAnalyticsConfig.asset` ships already pointed at the server:
 
-| Field | Value |
+| Field | Committed value |
 |---|---|
-| `host` | `https://analytics.<the VM>` (what the setup script prints) |
-| `projectApiKey` | the ingest key `analytics_server.py init` printed |
+| `serverUrl` | `https://analytics.130-210-34-146.sslip.io` |
+| `ingestKey` | the public key in `Tools/Analytics/server/ingest_key.public` |
 
-Running both side by side (PostHog and ours) for the comparison weeks needs a second sink instance with its own
-config, a small change to `AnalyticsServiceFacade` (one more `PostHogAnalyticsSink` built from a second config asset).
-Not written yet; it is C# and needs the Unity verify rule.
+The ingest key is write-only and public by design (it ships in every build, as PostHog's project key did); the
+server reads the same file, so no key is copied by hand, and a test fails if the two ever differ. The server checks
+every event against the schema and rate-limits each sender; reading needs a read key that never ships. If the
+server's address changes (a domain of our own), `serverUrl` is the one value to change, in one commit. Events a
+device had queued for PostHog are sent here on its first start with the new sink.
+
+## The older data (PostHog's history)
+
+`import_posthog.py` copies PostHog's history in, once: every event the game sends and every `$identify`, one day at a
+time, through the same checks as live events, with their own timestamps. Everything PostHog added is dropped (every
+`$` property except `$set`, so no IP address is stored); the country comes from PostHog's own lookup, two letters.
+Running it again stores nothing twice. The October double-sends come in as they happened, flagged, and every count
+collapses them. It needs a PostHog **personal** API key with the `query:read` scope, in `POSTHOG_PERSONAL_API_KEY`,
+and the project id:
+
+```bash
+sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytics/config.json \
+  POSTHOG_PERSONAL_API_KEY="$POSTHOG_PERSONAL_API_KEY" \
+  /var/lib/froglet-analytics/venv/bin/python /var/lib/froglet-analytics/repo/Tools/Analytics/server/analytics_server.py \
+  import-posthog --project <id> --dry-run
+```
+
+Drop `--dry-run` to store; it rebuilds the numbers when it finishes.
+
+## Updates (nightly, by itself)
+
+`self-update.sh`, installed as `/usr/local/bin/froglet-analytics-update` and run by `froglet-analytics-update.timer`
+at 04:20 UTC: it fetches the branch the server follows (`/var/lib/froglet-analytics/branch`), switches to
+`bleeding-edge` by itself once that branch has merged, runs the server's tests on new code, and restarts the service
+only if they pass (a failure keeps the running code and is retried the next night). Log:
+`journalctl -u froglet-analytics-update`; run it now: `sudo froglet-analytics-update`. Checked in a sandbox through
+up to date, update, failing tests (kept the old code), merged branch (moved to bleeding-edge) and deleted branch.
 
 ## Pieces
 
@@ -41,9 +70,12 @@ Not written yet; it is C# and needs the Unity verify rule.
 | `analytics_views.py` | The console's pages, read from `aggregates.db` only; the guarded SQL runner for Ask |
 | `analytics_geo.py` | Country from an IP address (DB-IP country table), the address not kept |
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
-| `test_analytics_server.py` | 24 tests: `python3 analytics_server.py --self-test` |
+| `test_analytics_server.py` | 28 tests: `python3 analytics_server.py --self-test` |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
+| `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
+| `self-update.sh` | The nightly self-update (tests before it restarts) |
+| `ingest_key.public` | The public, write-only ingest key every build ships with |
 | `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy |
 
 Standard library only, except the two Claude features (`pip install anthropic`, `ANTHROPIC_API_KEY`). Without them
@@ -139,7 +171,6 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 
 ## Not done yet
 
-- The second sink for the side-by-side weeks, and `build_kind` stamped by the client (which would split development
-  builds from release).
+- `build_kind` stamped by the client (would split development builds from release; today they count as release).
 - Off-VM backups (the nightly backup stays on the VM's disk).
-- Loading PostHog's history once, with the 50 ms duplicates dropped.
+- PostHog's history is loaded by running `import-posthog` once (above); nothing does it automatically.

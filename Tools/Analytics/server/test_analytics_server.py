@@ -17,6 +17,7 @@ sys.path.insert(0, HERE)
 
 import analytics_claude as C  # noqa: E402
 import analytics_geo as G  # noqa: E402
+import import_posthog as P  # noqa: E402
 import analytics_server as A  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
@@ -304,6 +305,70 @@ class SchemaCoversTheGame(unittest.TestCase):
         self.assertEqual(missing, set(), "add these to Docs/Analytics/EVENT_SCHEMA.json")
 
 
+class PostHogHistory(StoreCase):
+    def fake_posthog(self, rows_by_day):
+        calls = []
+
+        def post(url, body, key):
+            calls.append((url, body["query"]["query"], key))
+            q = body["query"]["query"]
+            day = q.split("toDate(timestamp) = '")[1][:10]
+            offset = int(q.rsplit("OFFSET ", 1)[1])
+            wanted = {n.strip(" '") for n in q.split("event IN (", 1)[1].split(")", 1)[0].split(",")}
+            rows = [r for r in rows_by_day.get(day, []) if r[0] in wanted][offset:offset + P.PAGE]
+            return {"columns": ["event", "distinct_id", "timestamp", "properties"], "results": rows}
+        return post, calls
+
+    def test_history_comes_in_once_without_ips_and_keeps_its_own_time(self):
+        old = S.now_ms() - 40 * 86400 * 1000
+        older = S.now_ms() - 200 * 86400 * 1000                # older than live ingest accepts (90 days)
+        day = lambda ms: S.day_of(ms)
+        props = lambda **k: json.dumps(dict({"$ip": "81.2.3.4", "$geoip_country_code": "se", "$lib": "web",
+                                             "platform": "WindowsPlayer", "app_version": "0.2.1"}, **k))
+        rows = {day(old): [["game_started", "p1", iso(old), props(match_id="m1", player_count_human=1)],
+                           ["$identify", "p1", iso(old + 5), json.dumps({"$set": {"display_name": "Kes"}})]],
+                day(older): [["game_completed", "p1", iso(older), props(match_id="m0")],
+                             ["$pageview", "p1", iso(older), props()]]}
+        post, calls = self.fake_posthog(rows)
+        totals = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=365, post=post,
+                       log=lambda *_: None)
+        self.assertEqual(totals["rows"], 3)                     # $pageview is never asked for
+        self.assertEqual(totals["accepted"], 3)
+        self.assertNotIn("$pageview", calls[0][1])
+        dump = "\n".join(self.store.db.iterdump())
+        self.assertNotIn("81.2.3.4", dump)
+        self.assertNotIn("$lib", dump)
+        self.assertEqual(self.rows("SELECT country, received_ms = ts_ms FROM events WHERE match_id='m1'")[0], ("SE", 1))
+        self.assertEqual(self.rows("SELECT json_extract(props, '$.display_name') FROM people")[0][0], "Kes")
+        again = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=365, post=post,
+                      log=lambda *_: None)
+        self.assertEqual(again["resent"], 2)                   # stored once; $identify updates the person again
+
+    def test_live_http_ingest_cannot_claim_a_country_or_old_time(self):
+        older = S.now_ms() - 200 * 86400 * 1000
+        item = started("p9", "m9", older)
+        item["country"] = "ZZ"
+        out = self.store.ingest([item])
+        self.assertEqual(out["rejected"], 1)                   # too old for live ingest
+        fresh = started("p9", "m10", T0)
+        fresh["country"] = "ZZ"
+        self.store.ingest([fresh], country="SE")
+        self.assertEqual(self.rows("SELECT country FROM events WHERE match_id='m10'")[0][0], "SE")
+
+
+class PublicKey(unittest.TestCase):
+    def test_the_game_and_the_server_ship_the_same_ingest_key(self):
+        asset = os.path.join(HERE, "..", "..", "..", "Assets", "Resources", "FrogletAnalyticsConfig.asset")
+        if not os.path.exists(asset):
+            self.skipTest("no Unity assets in this checkout (the VM's sparse checkout)")
+        text = open(asset).read()
+        key = text.split("ingestKey:", 1)[1].split("\n", 1)[0].strip()
+        self.assertTrue(key.startswith("fa_in_public_"))
+        self.assertEqual(key, A.public_ingest_key())
+        url = text.split("serverUrl:", 1)[1].split("\n", 1)[0].strip()
+        self.assertTrue(url.startswith("https://"), url)
+
+
 class Http(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
@@ -383,6 +448,11 @@ class Http(unittest.TestCase):
         self.assertEqual(self.call("GET", "/v1/person?id=nope", key="admin-key")[0], 404)
         for path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
             self.assertEqual(self.call("GET", path + "?days=30", key="read-key")[0], 200, path)
+
+    def test_the_committed_public_key_is_accepted(self):
+        status, out, _ = self.call("POST", "/batch/", {"api_key": A.public_ingest_key(),
+                                                      "batch": [started("p1", "m1", T0)]})
+        self.assertEqual((status, out["accepted"]), (200, 1))
 
     def test_healthz_is_public(self):
         self.assertEqual(self.call("GET", "/healthz")[:2], (200, {"ok": True}))

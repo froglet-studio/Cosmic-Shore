@@ -2,10 +2,14 @@
 # Froglet Analytics on the Oracle VM (the same machine as Froglet Compute, as its own service and its own user).
 # Run on the VM, as a user with sudo:
 #
-#   export GITHUB_TOKEN=...                      a token that can read froglet-studio/Cosmic-Shore (same kind as Compute's)
+#   export GITHUB_TOKEN=...                      a read-only token for froglet-studio/Cosmic-Shore. Needed the first time;
+#                                                saved to /var/lib/froglet-analytics/github-token (600) for the nightly
+#                                                self-update, so a re-run needs nothing.
 #   export ANALYTICS_DOMAIN=analytics.froglet.studio   optional; its A record pointing at this VM.
 #                                                Default: analytics.<public-ip-with-dashes>.sslip.io
-#   export ANALYTICS_BRANCH=bleeding-edge        optional; the branch the server runs from
+#   export ANALYTICS_BRANCH=bleeding-edge        optional; the branch the server runs from (a re-run keeps the saved
+#                                                one). Once that branch merges, the nightly self-update moves to
+#                                                bleeding-edge by itself.
 #   export ANALYTICS_ORIGINS="https://froglet-studio.github.io"   optional; dashboard origins allowed to read (CORS)
 #   export ANALYTICS_PROFILE_READERS="ian garrett caleb"   optional; each gets a read key (printed once, when made)
 #                                                and may open player profiles. Anyone already listed keeps their key.
@@ -16,23 +20,24 @@
 # Safe to run again: it updates the checkout, keeps the data and the keys, and restarts the service.
 set -euo pipefail
 say() { printf '\n== %s\n' "$*"; }
-: "${GITHUB_TOKEN:?set GITHUB_TOKEN to a token that can read the repository}"
-BRANCH="${ANALYTICS_BRANCH:-bleeding-edge}"
 SVC=froglet-analytics
 BASE=/var/lib/froglet-analytics
 REPO="$BASE/repo"
+GITHUB_TOKEN="${GITHUB_TOKEN:-$(sudo cat "$BASE/github-token" 2>/dev/null || true)}"
+BRANCH="${ANALYTICS_BRANCH:-$(sudo cat "$BASE/branch" 2>/dev/null || echo bleeding-edge)}"
 PORT=8787
 APT="sudo DEBIAN_FRONTEND=noninteractive apt-get"
 
-say "1/6 packages: git, python3, python3-venv, caddy"
+say "1/7 packages: git, python3, python3-venv, caddy"
 $APT update -qq >/dev/null
 $APT install -y -qq git python3 python3-venv caddy curl ca-certificates sqlite3 >/dev/null
 
-say "2/6 a service user and a sparse checkout (the server and the event schema only)"
+say "2/7 a service user and a sparse checkout (the server and the event schema only)"
 id "$SVC" >/dev/null 2>&1 || sudo useradd --system --create-home --home-dir "$BASE" --shell /usr/sbin/nologin "$SVC"
 sudo chown "$SVC:$SVC" "$BASE" && sudo chmod 700 "$BASE"
 as() { sudo -u "$SVC" -H "$@"; }
-AUTH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/froglet-studio/Cosmic-Shore.git"
+AUTH_URL="https://github.com/froglet-studio/Cosmic-Shore.git"
+[ -n "$GITHUB_TOKEN" ] && AUTH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/froglet-studio/Cosmic-Shore.git"
 if [ ! -d "$REPO/.git" ]; then
   as git clone --quiet --single-branch --filter=blob:limit=1m --no-checkout --branch "$BRANCH" "$AUTH_URL" "$REPO"
   as git -C "$REPO" sparse-checkout set --no-cone /Tools/Analytics/server/ /Tools/Analytics/console/ /Docs/Analytics/EVENT_SCHEMA.json
@@ -44,12 +49,17 @@ else
   as git -C "$REPO" checkout --quiet -B "$BRANCH" "origin/$BRANCH"
 fi
 as git -C "$REPO" remote set-url origin "https://github.com/froglet-studio/Cosmic-Shore.git"
+echo "$BRANCH" | sudo -u "$SVC" tee "$BASE/branch" >/dev/null
+if [ -n "$GITHUB_TOKEN" ]; then
+  printf '%s' "$GITHUB_TOKEN" | sudo -u "$SVC" tee "$BASE/github-token" >/dev/null
+  sudo chmod 600 "$BASE/github-token"
+fi
 
-say "3/6 the Claude SDK in its own environment (only the overnight read and the Ask box use it)"
+say "3/7 the Claude SDK in its own environment (only the overnight read and the Ask box use it)"
 [ -x "$BASE/venv/bin/python" ] || as python3 -m venv "$BASE/venv"
 as "$BASE/venv/bin/pip" install --quiet --upgrade anthropic
 
-say "4/6 the config and the keys (kept if they exist)"
+say "4/7 the config and the keys (kept if they exist)"
 IP="$(curl -fsS https://api.ipify.org || curl -fsS https://ifconfig.me)"
 DOMAIN="${ANALYTICS_DOMAIN:-analytics.${IP//./-}.sslip.io}"
 export FROGLET_ANALYTICS_CONFIG="$BASE/config.json"
@@ -82,7 +92,7 @@ if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
 fi
 sudo touch /etc/froglet-analytics.env && sudo chmod 600 /etc/froglet-analytics.env
 
-say "5/6 the service"
+say "5/7 the service"
 sudo tee /etc/systemd/system/froglet-analytics.service >/dev/null <<UNIT
 [Unit]
 Description=Froglet Analytics (ingest, the console's read API, the overnight read)
@@ -109,7 +119,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now froglet-analytics.service >/dev/null
 sudo systemctl restart froglet-analytics.service
 
-say "6/6 HTTPS: Caddy at https://$DOMAIN (its own file, beside the Compute console)"
+say "6/7 HTTPS: Caddy at https://$DOMAIN (its own file, beside the Compute console)"
 sudo mkdir -p /etc/caddy/conf.d
 sudo tee /etc/caddy/conf.d/froglet-analytics.caddy >/dev/null <<CADDY
 $DOMAIN {
@@ -125,7 +135,35 @@ grep -q 'import /etc/caddy/conf.d/\*.caddy' /etc/caddy/Caddyfile 2>/dev/null \
 sudo systemctl enable --now caddy >/dev/null
 sudo systemctl reload caddy || sudo systemctl restart caddy
 
+say "7/7 the nightly self-update (04:20 UTC; follows bleeding-edge once this branch merges)"
+sudo install -m 755 "$REPO/Tools/Analytics/server/self-update.sh" /usr/local/bin/froglet-analytics-update
+sudo tee /etc/systemd/system/froglet-analytics-update.service >/dev/null <<UNIT
+[Unit]
+Description=Froglet Analytics nightly self-update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/froglet-analytics-update
+UNIT
+sudo tee /etc/systemd/system/froglet-analytics-update.timer >/dev/null <<UNIT
+[Unit]
+Description=Froglet Analytics nightly self-update
+
+[Timer]
+OnCalendar=*-*-* 04:20:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+sudo systemctl daemon-reload
+sudo systemctl enable --now froglet-analytics-update.timer >/dev/null
+
 sleep 3
 curl -fsS "http://127.0.0.1:$PORT/healthz" >/dev/null && echo "server: up on 127.0.0.1:$PORT" || echo "server: NOT answering; journalctl -u $SVC"
 echo "address: https://$DOMAIN   (the console page, the dashboard API, and the game's analytics host)"
+echo "branch:  $BRANCH   (nightly self-update: systemctl list-timers froglet-analytics-update; log: journalctl -u froglet-analytics-update)"
 echo "keys:    sudo cat $BASE/config.json   (a reader's key: sudo -u $SVC env FROGLET_ANALYTICS_CONFIG=$BASE/config.json $BASE/venv/bin/python $REPO/Tools/Analytics/server/analytics_server.py key read ian)"

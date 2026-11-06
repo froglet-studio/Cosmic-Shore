@@ -8,6 +8,9 @@
     python3 analytics_server.py rebuild              rebuild aggregates.db now
     python3 analytics_server.py erase <player id>    delete everything about one player
     python3 analytics_server.py key read <name>      add a dashboard read key for a person (printed once)
+    python3 analytics_server.py import-posthog --project <id> [--days 365] [--dry-run]
+                                                     copy PostHog's history in, once (import_posthog.py; needs
+                                                     POSTHOG_PERSONAL_API_KEY with the query:read scope)
     python3 analytics_server.py --self-test          the tests (test_analytics_server.py)
 
 HTTP:
@@ -104,6 +107,19 @@ def save_config(config, path=CONFIG_PATH):
     os.chmod(path, 0o600)
 
 
+PUBLIC_KEY_FILE = os.path.join(HERE, "ingest_key.public")
+
+
+def public_ingest_key(path=PUBLIC_KEY_FILE):
+    """The write-only key committed to the repo and shipped in every build, so the game reaches the server with
+    nothing filled in by hand. Its twin is Assets/Resources/FrogletAnalyticsConfig.asset (a test keeps them equal)."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return handle.read().strip()
+    except OSError:
+        return ""
+
+
 def schema_events(path):
     with open(path, encoding="utf-8") as handle:
         return list(json.load(handle)["events"])
@@ -145,6 +161,9 @@ class App:
         self.store = S.Store(config["data_dir"], schema_events(config["schema_path"]), config["extra_events"])
         self.limit = RateLimit(config["ingest_per_minute"])
         self.ingest_keys = {f"ingest{i}": k for i, k in enumerate(config["ingest_keys"])}
+        public = public_ingest_key()
+        if public:                           # the key every build ships with (FrogletAnalyticsConfig.asset)
+            self.ingest_keys["public"] = public
         self.geo_path = config["geo_csv"] or os.path.join(config["data_dir"], "dbip-country-lite.csv.gz")
         self.geo = G.CountryLookup(self.geo_path)
         self.stop = threading.Event()
@@ -428,6 +447,18 @@ def main(argv):
     if command == "nightly":
         print(json.dumps(app.nightly(), indent=2, default=str))
         return 0
+    if command == "import-posthog":
+        import argparse
+        import import_posthog as P
+        parser = argparse.ArgumentParser(prog="analytics_server.py import-posthog")
+        parser.add_argument("--project", required=True, help="the PostHog project id (Project settings)")
+        parser.add_argument("--days", type=int, default=365)
+        parser.add_argument("--host", default=P.DEFAULT_HOST)
+        parser.add_argument("--dry-run", action="store_true")
+        code = P.main(app.store, config, parser.parse_args(argv[1:]))
+        if code == 0 and "--dry-run" not in argv:
+            print(f"{app.rebuild()} plays after the import")
+        return code
     if command == "erase" and len(argv) == 2:
         print(f"{app.store.erase(argv[1], 'cli')} rows deleted")
         app.rebuild()
