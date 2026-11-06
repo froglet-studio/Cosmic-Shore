@@ -6175,3 +6175,29 @@ menu), Cancel a Neutral Lightest one (Leave, Decline), Cta a Lime one with Lime 
 Purchase Gold (Unlock), Inactive grey (Voyage, Unlocked); Start game and Play again stay the opaque Ruby Commit. The
 fourth hub reads Voyage, as built. Nothing about the desktop build changed: the boards had the colours wrong, not the
 game.
+
+## 135. Rev 60 mockups: the Quests page on a phone, and the last phone spots (2026-11-06, awaiting board approval)
+
+**Asked** (Shombith): "draw the Quests page phone board on Frogma and anything else that is left". The build (section 129)
+left four places where the phone shows the PC look too small: Mission's Quests page (five cards at 0.5, words 7-9
+units), the Codex orbit (names about 8 units), the Settings account prompt (0.62, its heights set in C#) and the Port's
+weekly board (configure's LeaderboardView at about 0.42).
+
+**On the canvas:** the Phone tab, "Rev 60 - Phone: what is left", ONE board (the canvas is at its 512-file limit):
+`R60Phone` (copy in `Docs/MenuRedesignB/board/`).
+- **Quests (interactive, at 1.6x):** one row of quest cards at the phone's own text size, 220 x 318, three in view and the
+  fourth peeking; arrows (and a swipe) step it, two dashes say which half shows. A card: the mode's art and number, its
+  state, the title, a two-line description, the two goals (tick or diamond), and one 44-tall button: Claim (Lime) when
+  done, Play quest (Jade) with the intensity bars, or Locked. The tabs sit in the header as built; the episode's progress
+  is the Lime line over the row. The five quests are Episode 1's (GameModeQuestList: Scurry, Hex Race, Joust, Maelstrom,
+  Vessel Hangar), with their goal words.
+- **Codex orbit, now and proposed:** the orbit stays the picture; the four elements are also a column of 56-tall rows at
+  phone size, each opening its page (the READ sheet).
+- **Account prompt, now and proposed:** a bottom sheet, the words left, Apple, Google and Not now right (48 / 44 tall).
+- **Port weekly board, now and proposed:** this week's facts left; World / Regional / Friends chips, a podium of three and
+  34-tall rows right - the leaderboard window's own phone layout placed in the Port's body.
+
+**Differs from the build:** Quests: `author_menu_mission.py` drops the 0.5 page scale and lays VoyageQuestCard out at phone
+size in a horizontal ScrollRect (the PC track stays). Codex: `author_menu_codex.py` adds the phone-only element rows.
+Account prompt: `AccountPromptWindow` takes phone heights (a C# change) and `author_menu_settings.py` the sheet pose.
+Port: `author_menu_port.py` hosts LeaderboardView without the PC-scale block, re-posed for the Port's body.

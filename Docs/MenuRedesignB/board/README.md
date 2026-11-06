@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793912824-f511` of **Frogma**: Rev 3 to Rev 57, 478 boards on 7 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-06 from canvas version `1793955152-540f` of **Frogma**: Rev 3 to Rev 60, 490 boards on 8 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,6 +545,17 @@ Copied on 2026-11-05 from canvas version `1793912824-f511` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 59 - The Ark's lobby: the Squads tab in the Ark's own hangar - the real ArkReverse model, its pads, the HyperSea board, the cell out of the mouth
+
+- `R59Compare.dc.html` (not copied yet) - Rev 59 - Compare: the game, the hangar, three domains
+- `R59A.dc.html` (not copied yet) - Rev 59 A - Seat placards (recommended) - interactive
+- `R59B.dc.html` (not copied yet) - Rev 59 B - Rail - interactive
+- `R59C.dc.html` (not copied yet) - Rev 59 C - The board wall - interactive
+- `R59D.dc.html` (not copied yet) - Rev 59 D - From the cell - interactive
+- `R59E.dc.html` (not copied yet) - Rev 59 E - Slate - interactive
+- `R59F.dc.html` (not copied yet) - Rev 59 F - One seat at a time - interactive
+- `R59Notes.dc.html` (not copied yet) - Rev 59 - Notes
+
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -683,6 +694,10 @@ Copied on 2026-11-05 from canvas version `1793912824-f511` of **Frogma**: Rev 3 
 
 ### Tab: Phone  (`phone`)
 
+#### Rev 60 - Phone: what is left - the Quests page, and the Codex orbit, account prompt and Port weekly board
+
+- [`R60Phone.dc.html`](R60Phone.dc.html) - Rev 60 Phone - the Quests page on a phone (interactive), and three spots now and proposed - interactive
+
 #### Rev 57 - One UI, three layouts: every screen on PC, phone landscape and phone portrait, side by side
 
 - [`R57Compare.dc.html`](R57Compare.dc.html) - Rev 57 Compare - sign-in, Home, Arcade, Configure, Hangar, in game and the finish, on PC, phone landscape and phone portrait
@@ -718,5 +733,13 @@ Copied on 2026-11-05 from canvas version `1793912824-f511` of **Frogma**: Rev 3 
 - [`R52Hud.dc.html`](R52Hud.dc.html) - Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre
 - [`R52Finish.dc.html`](R52Finish.dc.html) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
 - [`R52Notes.dc.html`](R52Notes.dc.html) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
+
+### Tab: Launch Console  (`launch-console`)
+
+#### Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads
+
+- `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactive
+- `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
+- `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
 <!-- frogma.py readme: end -->
