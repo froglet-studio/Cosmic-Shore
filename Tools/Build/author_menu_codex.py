@@ -316,6 +316,7 @@ def orbit_layout(content):
     # On a phone the reading panel is a sheet behind a phone-only READ button, over a dim a tap closes (PhoneSheet; see
     # phone_layout). On PC the button is hidden, the dim transparent and the sheet a plain stretched wrapper.
     read_button(lay)
+    element_rows(lay)
     dim = lay.child(N("PageDim", "PageDim", STRETCH))
     dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
         .add("cg", 225, H.canvas_group(False)) \
@@ -679,8 +680,11 @@ def build_view():
 # content is drawn at 1 there (its units are phone units) and each block at its own scale, its PC-authored parts kept:
 #   row 1 (0 .. 48)      the chapter row at 0.92 (tabs 48 tall), FLORA / FAUNA right of it at 0.92 while ECOLOGY is
 #                        open; the chapter's title and count are not drawn (the lit tab names the chapter)
-#   ELEMENTS (56 .. 434) the orbit across the whole width at 0.45 (front entry 71 x 84, back 42 x 50); the reading panel
-#                        is a sheet on the right (340 wide, at 0.85) behind a phone-only READ button, over a dim
+#   ELEMENTS (56 .. 434) the orbit as the picture on the left at 0.27 (360 wide); right of it the phone-only column
+#                        of four 56-tall element rows at the phone's text size (Rev 60, section 135: each row picks
+#                        its element and opens its page). The reading panel is a sheet on the right (340 wide, at
+#                        0.85) over a dim, opened by a row or by the phone-only READ button (for Omni, prisms and
+#                        spindles, which are picked on the orbit)
 #   ECOLOGY / LEXICON    the book (56 .. 316): the plate at 0.267 (160 x 260), the page right of it at 0.8; the strip
 #                        under it (324 .. 434) at 0.6 (tiles 90 x 90)
 # Every number below is frame units on the narrowest (800-wide) phone canvas; a wider phone widens the book and centres
@@ -692,7 +696,13 @@ PH_ROW_H = 48                                 # the chapter row's height on scre
 PH_TAB_SCALE = round(PH_ROW_H / TAB_H, 4)     # 0.9231: the chapter and FLORA / FAUNA tabs 48 tall
 PH_BODY_TOP = 56                              # both layouts start under the chapter row
 PH_BODY_H = PH_H - PH_BODY_TOP                # 378
-PH_ORBIT_SCALE = 0.45
+PH_ORBIT_SCALE = 0.27
+PH_ORBIT_W = 360                              # the orbit's zone on screen, left of the element rows
+PH_ROWS_X, PH_ROWS_RIGHT = PH_ORBIT_W + 12, 0
+PH_ELEMENT_ROW_H, PH_ELEMENT_ROW_GAP = 56, 8
+PH_ROW_NAME_FONT, PH_ROW_LINE_FONT = K.PHONE_SIZES["H3"], K.PHONE_SIZES["BodySmall"]   # 16 and 13
+PH_ROW_NAME_W = 84
+OFF_CANVAS = -4000                            # the rows' PC pose: off the canvas (they are phone-only)
 PH_SHEET_W, PH_SHEET_SCALE = 340, 0.85        # the ELEMENTS reading sheet, on screen
 PH_STRIP_SCALE, PH_STRIP_GAP = 0.6, 8
 PH_STRIP_H = round(STRIP_H * PH_STRIP_SCALE, 2)                 # 110.4
@@ -720,6 +730,55 @@ def read_button(lay):
     b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, C.A.selectable()
                                               + f"  m_TargetGraphic: {ref(ctx.c('Read/Fill', 'img'))}\n" + C.A.calls([])))
     return b
+
+
+def element_rows(lay):
+    """The phone-only ELEMENTS rows (Rev 60, section 135): one 56-tall row per element - its name and its one line, the
+    same words CodexScreen.words gives the orbit (elementNames, elementLines) - whose tap picks that element
+    (CodexScreen.SelectEntry, what tapping it on the orbit does) and opens its page (the sheet, PhoneSheet.Open). On PC
+    the column sits off the canvas and its buttons are no navigation stops, so nothing on PC changes; on a phone
+    phone_layout poses it right of the orbit. Its texts carry no KitText (the Content's phone scale would keep a KitText
+    at its PC size): KitThemedGraphic paints them and PhoneRect gives them their phone sizes."""
+    names, lines = dict(WORDS)["elementNames"], dict(WORDS)["elementLines"]
+    rows = lay.child(N("ElementRows", "ElementRows", TL(OFF_CANVAS, 0, 300, 248)))
+    for i, el in enumerate(ELEMENTS):
+        k = f"ElementRows/{el}"
+        top = i * (PH_ELEMENT_ROW_H + PH_ELEMENT_ROW_GAP)
+        row = rows.child(N(k, el, R((0, 1), (1, 1), (0, -top), (0, PH_ELEMENT_ROW_H), (0.5, 1))))
+        row.child(N(f"{k}/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image(tok("SurfaceVeryDark", 0.88), K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
+            .add("th", 114, H.themed("SurfaceVeryDark", 0.88))
+        row.child(N(f"{k}/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True)) \
+            .add("th", 114, H.themed("SurfaceDark"))
+        name = row.child(N(f"{k}/Name", "Name", R((0, 0), (0, 1), (14 + PH_ROW_NAME_W / 2, 0), (PH_ROW_NAME_W, 0))))
+        name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text(names[i], "H3", tok("TextLight"))) \
+            .add("th", 114, H.themed("TextLight"))
+        H.ellipsize(name)
+        line = row.child(N(f"{k}/Line", "Line", R((0, 0), (1, 1), ((14 + PH_ROW_NAME_W + 12 - 14) / 2, 0),
+                                                   (-(14 + PH_ROW_NAME_W + 12 + 14), 0))))
+        line.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text(lines[i], "BodySmall", tok("NeutralLightest"))) \
+            .add("th", 114, H.themed("NeutralLightest"))
+        H.ellipsize(line)
+        row.add("button", 114, (lambda idx, key: lambda ctx, go: mono(go, A.BUTTON, C.A.selectable(0)
+                + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
+                + row_calls(ctx.c("root", "screen"), idx, ctx.c("PageSheet", "sheet"))))(i, k))
+    return rows
+
+
+def row_calls(screen, index, sheet):
+    """A row's click: CodexScreen.SelectEntry(index), then PhoneSheet.Open (nothing on PC)."""
+    def call(target, type_name, method, mode, arg):
+        return (f"      - m_Target: {{fileID: {target}}}\n"
+                f"        m_TargetAssemblyTypeName: {type_name}, Assembly-CSharp\n"
+                f"        m_MethodName: {method}\n        m_Mode: {mode}\n        m_Arguments:\n"
+                "          m_ObjectArgument: {fileID: 0}\n"
+                "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n"
+                f"          m_IntArgument: {arg}\n          m_FloatArgument: 0\n          m_StringArgument: \n"
+                "          m_BoolArgument: 0\n        m_CallState: 2\n")
+    return ("  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:\n"
+            + call(screen, "CosmicShore.UI.CodexScreen", "SelectEntry", 3, index)
+            + call(sheet, "CosmicShore.UI.PhoneSheet", "Open", 1, 0))
 
 
 def phone_layout(root):
@@ -759,9 +818,17 @@ def phone_layout(root):
 
     # ELEMENTS: the orbit across the body, the reading panel a sheet on the right.
     orbit = kid(content, "OrbitLayout")
-    put(kid(orbit, "Orbit"), R((0.5, 1), None, (0, -PH_BODY_TOP), (round(PH_W / PH_ORBIT_SCALE, 2),
-                                                                   round(PH_BODY_H / PH_ORBIT_SCALE, 2)), (0.5, 1)),
+    put(kid(orbit, "Orbit"), TL(0, PH_BODY_TOP, round(PH_ORBIT_W / PH_ORBIT_SCALE, 2), round(PH_BODY_H / PH_ORBIT_SCALE, 2)),
         scale=PH_ORBIT_SCALE)
+    rows_h = len(ELEMENTS) * PH_ELEMENT_ROW_H + (len(ELEMENTS) - 1) * PH_ELEMENT_ROW_GAP
+    put(kid(orbit, "ElementRows"), R((0, 1), (1, 1), ((PH_ROWS_X - PH_ROWS_RIGHT) / 2, -PH_BODY_TOP),
+                                     (-(PH_ROWS_X + PH_ROWS_RIGHT), rows_h), (0.5, 1)))
+    for c in kid(orbit, "ElementRows").children:
+        for part in c.children:
+            if part.key.endswith("/Name"):
+                put(part, None, font=PH_ROW_NAME_FONT)
+            elif part.key.endswith("/Line"):
+                put(part, None, font=PH_ROW_LINE_FONT)
     put(kid(orbit, "Read"), R((1, 0), None, (0, 0), (READ_W, READ_H), (1, 0)))
     page = kid(kid(orbit, "PageSheet"), "Page")
     put(page, R((1, 1), None, (0, -PH_BODY_TOP), (round(PH_SHEET_W / PH_SHEET_SCALE, 2), round(PH_BODY_H / PH_SHEET_SCALE, 2)),
@@ -1004,8 +1071,30 @@ def validate(files):
     assert f"{{fileID: {V('Page#rt')}}}" in sheet_kids, "the ELEMENTS page must sit inside its sheet"
     lay_kids = re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)",
                                                        A.doc_of(view, V("OrbitLayout#rt"))[1], re.M).group(1))
-    assert lay_kids == [str(V(f"{k}#rt")) for k in ("Orbit", "Read", "PageDim", "PageSheet")], \
-        "the orbit layout's order: the orbit (focus lands on an entry), READ under the dim, the sheet over both"
+    assert lay_kids == [str(V(f"{k}#rt")) for k in ("Orbit", "Read", "ElementRows", "PageDim", "PageSheet")], \
+        "the orbit layout's order: the orbit (focus lands on an entry), READ and the element rows under the dim, the sheet over all"
+    # Section 135: the phone's element rows - one per element, its words, its tap picking that element and opening the sheet.
+    rows_rt = A.doc_of(view, V("ElementRows#rt"))[1]
+    assert f"m_AnchoredPosition: {{x: {OFF_CANVAS}, " in rows_rt, "the element rows are phone-only: off the canvas on PC"
+    names, lines = dict(WORDS)["elementNames"], dict(WORDS)["elementLines"]
+    for i, el in enumerate(ELEMENTS):
+        k = f"ElementRows/{el}"
+        _, b = A.doc_of(view, V(f"{k}#button"))
+        assert b and A.BUTTON in b, f"the {el} row carries no Button"
+        assert "    m_Mode: 0\n" in b, f"the {el} row is a navigation stop (it sits off the canvas on PC)"
+        calls = re.findall(r"m_Target: \{fileID: (-?\d+)\}\n.*?m_MethodName: (\w+)\n        m_Mode: (\d)\n.*?m_IntArgument: (-?\d+)",
+                           b, re.S)
+        assert calls == [(str(V("root#screen")), "SelectEntry", "3", str(i)), (str(V("PageSheet#sheet")), "Open", "1", "0")], \
+            f"the {el} row must pick element {i} (CodexScreen.SelectEntry) and open the page sheet (PhoneSheet.Open)"
+        for part, want, font in (("Name", names[i], PH_ROW_NAME_FONT), ("Line", lines[i], PH_ROW_LINE_FONT)):
+            _, t = A.doc_of(view, V(f"{k}/{part}#tmp"))
+            assert t and f"  m_text: {ystr(want)}\n" in t, f"the {el} row's {part.lower()} must be CodexScreen's word ({want})"
+            _, ph = A.doc_of(view, V(f"{k}/{part}#phone"))
+            assert ph and f"  fontSize: {K.f32(font)}\n" in ph, f"the {el} row's {part.lower()} needs its phone size ({font})"
+            assert not A.doc_of(view, V(f"{k}/{part}#kt"))[1], \
+                f"the {el} row's {part.lower()} must carry no KitText (the Content's scale would keep it at its PC size)"
+    _, rph = A.doc_of(view, V("ElementRows#phone"))
+    assert rph and "  movesRect: 1\n" in rph, "the element rows have no phone pose"
     for key in ("Frame", "Frame/Content", "Chapters", "Head/Ecology", "Orbit", "Page", "Guide/Book", "Guide/Page", "Guide/Strip"):
         _, ph = A.doc_of(view, V(f"{key}#phone"))
         assert ph and "  movesRect: 1\n" in ph, f"{key} has no phone pose"
@@ -1099,6 +1188,17 @@ def self_test(files):
             f"  openButton: {{fileID: {V('Read#button')}}}\n", "  openButton: {fileID: 0}\n", 1))),
         ("the PC-scale fallback back on the root", lambda f: f.__setitem__(view, f[view].replace(
             "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
+        ("the Mass row picking Charge", lambda f: f.__setitem__(view, f[view].replace(
+            "        m_MethodName: SelectEntry\n        m_Mode: 3\n        m_Arguments:\n          m_ObjectArgument: {fileID: 0}\n"
+            "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n          m_IntArgument: 1\n",
+            "        m_MethodName: SelectEntry\n        m_Mode: 3\n        m_Arguments:\n          m_ObjectArgument: {fileID: 0}\n"
+            "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n          m_IntArgument: 0\n", 1))),
+        ("a row that no longer opens the page", lambda f: f.__setitem__(view, f[view].replace(
+            "        m_MethodName: Open\n", "        m_MethodName: Close\n", 1))),
+        ("the element rows drawn on PC", lambda f: f.__setitem__(view, f[view].replace(
+            f"m_AnchoredPosition: {{x: {OFF_CANVAS}, ", "m_AnchoredPosition: {x: 0, ", 1))),
+        ("a row's line drifted from CodexScreen's words", lambda f: f.__setitem__(view, f[view].replace(
+            "  m_text: What you build\n", "  m_text: What you make\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

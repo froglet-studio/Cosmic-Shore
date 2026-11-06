@@ -285,6 +285,16 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>The open chapter's picked entry; -1 before one is picked.</summary>
+        public int SelectedIndex => _selected;
+
+        /// <summary>
+        /// Pick entry <paramref name="index"/> of the open chapter, exactly as tapping it on the orbit or the strip does
+        /// (its page opens; the orbit turns it to the front). The phone's ELEMENTS rows call it (Docs/MENU_REDESIGN_B.md
+        /// section 135). An index outside the chapter does nothing.
+        /// </summary>
+        public void SelectEntry(int index) => Select(index);
+
         void Select(int index)
         {
             var items = Items(_stop);
