@@ -15,8 +15,9 @@ MonoBehaviour:
   Mode: 66
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Every gate is a nest to break - the ball,
-    a chain cut, a charged blast or a ram all crack its core, and the gate opens. Plant beside
+  Description: Threshers only, against the clock. Your next target is the nest ringed in
+    lime. Break it - the ball, a chain cut, a charged blast or a ram all crack its core - and
+    fly through the ring to open the gate. Plant beside
     a nest and your orbiting chain shreds its cage and charges the ball, then let go and smash
     the core. Every third nest hides a crystal. Higher levels arm the cage with danger and
     shielded plates and regrow it fast. Fastest domain home wins.

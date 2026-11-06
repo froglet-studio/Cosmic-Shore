@@ -281,8 +281,9 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "ThresherTi
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameThresherTime") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Every gate is a nest to break - the ball,
-    a chain cut, a charged blast or a ram all crack its core, and the gate opens. Plant beside
+  Description: Threshers only, against the clock. Your next target is the nest ringed in
+    lime. Break it - the ball, a chain cut, a charged blast or a ram all crack its core - and
+    fly through the ring to open the gate. Plant beside
     a nest and your orbiting chain shreds its cage and charges the ball, then let go and smash
     the core. Every third nest hides a crystal. Higher levels arm the cage with danger and
     shielded plates and regrow it fast. Fastest domain home wins.
@@ -440,7 +441,7 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Thresher']}
-  ObjectiveText: Break every nest - plant, swing the chain, smash the core
+  ObjectiveText: Break the nest ringed in lime - plant, swing the chain, smash the core
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

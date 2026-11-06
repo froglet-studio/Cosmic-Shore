@@ -21,6 +21,14 @@ steal all do - and the whole nest bursts. A gate is cleared by the pilot whose n
 once no hull is inside it. The metric is still `SwitchesThreaded` and the scoring rule, turn monitor, toasts and
 comeback are unchanged, so the card stays a Time game (`ModeGenre`).
 
+**Your target is ringed in lime** (Yash, 2026-11-07: "very hard for me to find out the target"). Eight blue nests
+look alike, so the one that is YOUR next gate shows its ring again, round the nest, in the lime every gate race uses
+for "yours next". It blooms in when it becomes yours and withers out when you clear it; every other ring stays hidden
+(`ThresherTimeController.OnLocalNextGateChanged`, `RaceGateRing.SetVisualShown`). It is drawn on your machine only,
+like every gate race's lime ring. The ring's mouth (96 / 72 / 58 / 46 u at I1-I4) is wider than the nest at every
+intensity and well inside the credit radius, so the mark tells the truth: fly through it and you ram the core, or,
+once it is open, you clear the gate. The objective arrow still points the way to it.
+
 **The Thresher's way through a nest** (THRESHER.md §2-2a): plant beside it and orbit, so the chain sweeps the cage,
 slicing plates and banking energy in the ball; then let go and hit the core with the charged ball, whose blast
 (45 u at rest, 180 u at 30 slices) opens it. A ram through the cage works too, slower and through danger plates.

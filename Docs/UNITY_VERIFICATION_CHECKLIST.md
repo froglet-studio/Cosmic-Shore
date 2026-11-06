@@ -231,6 +231,22 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 Thresher Time: your next nest is ringed in lime (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the local pilot's next gate shows its ring again round its nest, in the gate races' lime "yours
+next" colour. It blooms in over 0.35 s (`nextTargetBloomSeconds`) and the old one withers out; every other ring stays
+hidden. `RaceGateRing.SetVisualShown` is new (bloom in, or wither and hide; the latest call wins). The card text and
+the preview objective now say "the nest ringed in lime". `THRESHERTIME.md` §0.
+
+**Verified without the editor:** `author_thresher_time_assets.py --check` passes. NOT verified: the C# compile (the open editor's `unity recompile` timed out after 540 s without a result; its console showed no compile errors, which proves nothing) and `unity_refcompile` (Linux-only on this machine).
+
+**Verify in editor:**
+1. Thresher Time at any intensity: one lime ring stands round one nest, the one the objective arrow points to. No
+   other ring shows.
+2. Break that nest and fly through: the ring withers, and the next nest's ring blooms in lime.
+3. At I4 the lime ring clears the nest's danger halo, and you can read it from across the cell.
+4. Finish the race: no lime ring is left standing.
+
 ### 🔴 Thresher Time: each intensity its own place, plants and creatures grown by the cell (`Ys-bleeding-edge`, 2026-11-04) — NOT EDITOR-VERIFIED
 
 **What landed:** Thresher Time leaves the shared Skim Race cell for four cells of its own, picked by intensity

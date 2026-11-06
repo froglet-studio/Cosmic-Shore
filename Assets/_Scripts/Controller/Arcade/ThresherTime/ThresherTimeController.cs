@@ -53,6 +53,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Prisms a regrowing nest lays each frame.")]
         [SerializeField, Min(1)] int nestRegrowPerFrame = 40;
 
+        [Tooltip("Seconds the lime ring round YOUR next nest takes to bloom in, and the old one to wither out. Every other " +
+                 "ring stays hidden; the lime ring is the gate races' own \"this one is yours next\" mark.")]
+        [SerializeField, Min(0.01f)] float nextTargetBloomSeconds = 0.35f;
+
         [Header("Rewards")]
         [Tooltip("A crystal sits in the core of every Nth nest (crack it open to take it); 0 = the cell's own crystals.")]
         [SerializeField, Min(0)] int crystalEveryNthTarget = 3;
@@ -260,6 +264,24 @@ namespace CosmicShore.Gameplay
 
         float ByIntensity(float[] values, float fallback) =>
             values is { Length: > 0 } ? values[Mathf.Clamp(Intensity, 1, values.Length) - 1] : fallback;
+
+        // ── Which nest is yours (local, never replicated) ─────────────────
+
+        /// <summary>
+        /// The rings are hidden, so eight blue nests looked alike and nothing said which was yours (Yash, 2026-11-07: "very
+        /// hard for me to find out the target"). The local pilot's next gate shows its ring again, round its nest, in the
+        /// lime every gate race paints "yours next" (the base controller paints it; this only un-hides it). The ring's
+        /// mouth (96 / 72 / 58 / 46 u) is wider than the nest at every intensity and well inside the credit radius, so it
+        /// frames the target and tells the truth: fly through it, and you ram the core or clear the opened gate.
+        /// </summary>
+        protected override void OnLocalNextGateChanged(int previousRing, int nextRing)
+        {
+            if (_nests.Count == 0) return;   // no nests: the rings were never hidden
+            if (previousRing >= 0 && previousRing < _rings.Count && _rings[previousRing])
+                _rings[previousRing].SetVisualShown(false, nextTargetBloomSeconds);
+            if (nextRing >= 0 && nextRing < _rings.Count && _rings[nextRing])
+                _rings[nextRing].SetVisualShown(true, nextTargetBloomSeconds);
+        }
 
         // ── Clearing a gate ───────────────────────────────────────────────
 

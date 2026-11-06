@@ -28,7 +28,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 14
-  ObjectiveText: Break every nest - plant, swing the chain, smash the core
+  ObjectiveText: Break the nest ringed in lime - plant, swing the chain, smash the core
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
