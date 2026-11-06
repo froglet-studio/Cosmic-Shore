@@ -32,6 +32,22 @@
       "summary": "Static checks green; Unity compile skipped (no licence)",
       "updated_at": "2026-11-06T03:37:32Z"
     },
+    "ugs-development": {
+      "channel": "development",
+      "commit": "2c450aacb3",
+      "details": {
+        "event_date": "2026-11-01"
+      },
+      "id": "ugs-development",
+      "kind": "deploy",
+      "platform": "liveops",
+      "result": "success",
+      "run_url": "https://github.com/froglet-studio/Cosmic-Shore/actions/runs/41330402144",
+      "schema": 1,
+      "source": "Phase 1 audit (2026-11-05)",
+      "summary": "Deploy UGS scripts to the development environment",
+      "updated_at": "2026-11-06T03:37:47Z"
+    },
     "unity-compile": {
       "details": {
         "last_success_commit": "40c9b74423",
@@ -48,6 +64,6 @@
       "updated_at": "2026-11-06T03:37:38Z"
     }
   },
-  "generated_at": "2026-11-06T03:37:43Z",
+  "generated_at": "2026-11-06T03:37:49Z",
   "schema": 1
 }
