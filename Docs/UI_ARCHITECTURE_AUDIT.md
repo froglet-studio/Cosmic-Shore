@@ -11,7 +11,7 @@
 **Reading conventions:**
 - Paths are relative to the repo root (e.g. `Assets/_Scripts/UI/ScreenSwitcher.cs`).
 - "Domain" = team. The three playable teams are **Jade, Ruby, Gold**; **Blue** is the "no team / neutral" sentinel and is never a playable side.
-- "SOAP" = the project's ScriptableObject-based event/variable system (Obvious.Soap). UI elements frequently subscribe to SOAP events wired in the inspector — relevant because rebuilding a prefab means rewiring those references (see §5).
+- "SOAP" = the project's ScriptableObject-based event/variable system (Obvious.Soap when this was written; our own `CosmicShore.Soap` since 2026-11-06, same asset format). UI elements frequently subscribe to SOAP events wired in the inspector — relevant because rebuilding a prefab means rewiring those references (see §5).
 - "SO" = ScriptableObject, a Unity data asset.
 
 ---

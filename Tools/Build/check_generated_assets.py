@@ -183,9 +183,17 @@ def load_schema(rsp):
     out = os.path.join(os.path.dirname(rsp), "schema.json")
     # Assembly-CSharp first (its references bring the package types), then every other assembly
     # whose sources live in Assets/ - parsed from SOURCE so their editor-only fields are seen too
+    # The output folder is reused per working tree, so an assembly deleted from Assets/ leaves its old .rsp
+    # behind (Obvious.Soap's, when that plugin was removed on 2026-11-06), naming sources that are gone and
+    # failing the Schema tool. Every live assembly's .rsp is rewritten when its file list changes, so an .rsp
+    # with a missing source is a dead one: skip it.
+    assets_prefix = os.path.join(ROOT, "Assets") + os.sep
     others = []
     for o in sorted(glob.glob(os.path.join(os.path.dirname(rsp), "*.rsp"))):
-        if o != rsp and any(l.strip().strip('"').startswith(os.path.join(ROOT, "Assets") + os.sep) for l in open(o)):
+        if o == rsp:
+            continue
+        srcs = [s for s in (l.strip().strip('"') for l in open(o)) if s.startswith(assets_prefix)]
+        if srcs and all(os.path.exists(s) for s in srcs):
             others.append(o)
     r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, out, rsp] + others, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT, text=True)

@@ -21379,19 +21379,24 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
-## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, COMPILED AND EDITMODE-TESTED IN EDITOR, NOT PLAYED)
+## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, EDITOR-TESTED AND PLAYED; STEPS 3-4 OPEN)
 
-Branch `Ys-bleeding-edge`; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP. `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/`
-keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP asset changed. Compiled in the open editor and
-`SoapCoreTests` / `SoapFormatTests` pass there; nothing has been played.
+Branch `Ys-bleeding-edge`, commit `7437d4210d`, PR froglet-studio/Cosmic-Shore#1771; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP.
+`Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/` keeps the plugin's script GUIDs and field names, so no
+scene, prefab or SOAP asset changed. Compiled in the open editor (6000.3.17f1); `SoapCoreTests` / `SoapFormatTests` 11/11; the
+full EditMode suite 5145/5179 with none of the 34 failures in SOAP code. Steps 1, 2 and 5 are done: Play from Bootstrap to
+Menu_Main (0 errors, no `_SO_Assets` change after Stop) and Yash's 9 Regatta races and Thresher Time on 2026-11-07 (the
+bug-ledger report from them has no SOAP error). `unity_refcompile`, `gates.sh` and the Amoebius build were not run (Windows,
+no .NET 10 SDK). The refcompile output folder kept the deleted plugin's `Obvious.Soap.rsp`, which failed
+`check_generated_assets.py`'s schema step on a reused tree; that gate now skips an `.rsp` whose sources are gone.
 
-1. **Boot from Bootstrap into Menu_Main.** Sign-in, the boot status and the menu screens come up as before; the console has no
+1. [x] **Boot from Bootstrap into Menu_Main.** Sign-in, the boot status and the menu screens come up as before; the console has no
    `MissingReferenceException`, "missing script" or `NullReferenceException` from a listener.
-2. **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
+2. [x] **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
    return to the menu works.
-3. **Open Settings and move the music, SFX and haptics sliders.** They change the sound and stay where you left them.
-4. **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
-5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
+3. [ ] **Open Settings and move the music, SFX and haptics sliders.** They change the sound and stay where you left them.
+4. [ ] **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
+5. [x] **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
    values set while playing no longer reach the asset.
 
 ## 🟡 Stoat: the trampoline's shell halved, 60 → 30 u (2026-11-07, Yash, NOT PLAYED)

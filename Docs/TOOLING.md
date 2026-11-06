@@ -362,7 +362,7 @@ Toast Notification scaffold items, `Create Butterfly Vessel`, and `Strip Crystal
 | `FrogletTools/Vessels/Wire *`, `Bake *`, `Plan/Swap Vessel Rig` | `FrogletTools/Vessels/Wiring/…` |
 | `FrogletTools/Vessels/Audit *`, `Validate *` | `FrogletTools/Vessels/Audits/…` |
 
-Third-party menus (FMOD, Obvious Soap, Primitive Plus, **Quick Scene Pro**) were left
+Third-party menus (FMOD, Obvious Soap until it was removed on 2026-11-06, Primitive Plus, **Quick Scene Pro**) were left
 exactly where they were — they are not ours to move, and the registry never picks them up because
 their paths do not start with `FrogletTools/`.
 
