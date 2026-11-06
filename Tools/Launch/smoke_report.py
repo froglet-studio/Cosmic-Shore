@@ -128,7 +128,7 @@ def record_for(m: dict, summary: dict) -> dict:
         "summary": line[:launch_status.MAX_TEXT],
     }
     commit = str(summary.get("commit") or os.environ.get("GITHUB_SHA") or "")
-    if launch_status.SHA_RE.match(commit):
+    if launch_status.SHA_RE.fullmatch(commit):
         record["commit"] = commit
     if os.environ.get("GITHUB_RUN_ID") and os.environ.get("GITHUB_REPOSITORY"):
         server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
@@ -317,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"dry run: {len(recs)} record(s) valid, nothing pushed")
         return 0
     for r in recs:
-        launch_status.publish(r, Path(args.repo), args.remote, push=True)
+        launch_status.publish(r, Path(args.repo), args.remote)
     return 0
 
 
