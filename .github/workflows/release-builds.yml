@@ -61,7 +61,7 @@ concurrency:
 
 env:
   # What a pull-request rehearsal plans for. The negative control sets an invalid platform here.
-  REHEARSAL_PLATFORMS: "windows,macos"
+  REHEARSAL_PLATFORMS: "windows,android,ios,web"
 
 jobs:
   resolve:
