@@ -17,7 +17,7 @@ namespace CosmicShore.UI
         public const float PointsPerInch = 160f;
 
         /// <summary>The phone canvas reference (STYLE_FOUNDATION §4's mobile column is authored at this size).</summary>
-        public static readonly Vector2 PhoneReference = new(800f, 450f);
+        public static readonly Vector2 PhoneReference = new(960f, 540f);
 
         /// <summary>The PC canvas reference every shipped canvas is authored at.</summary>
         public static readonly Vector2 PcReference = new(1920f, 1080f);

@@ -99,7 +99,7 @@ def mark(p, go, name):
 
 # Menu_Main's canvas: every screen now has a phone layout or the fallback, so it switches (Shombith, 2026-11-05).
 SCALER_GUID = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
-PHONE_FIELDS = "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n"
+PHONE_FIELDS = "  hasPhoneLayout: 1\n" + K.PHONE_REFERENCE_YAML
 
 
 def switch_on(p):

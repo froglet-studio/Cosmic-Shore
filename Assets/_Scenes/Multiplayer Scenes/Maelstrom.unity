@@ -2083,7 +2083,7 @@ MonoBehaviour:
   safeZone: {fileID: 0}
   safeZoneMaxAspect: 1.7777778
   hasPhoneLayout: 1
-  phoneReferenceResolution: {x: 800, y: 450}
+  phoneReferenceResolution: {x: 960, y: 540}
 --- !u!1 &1565475376
 GameObject:
   m_ObjectHideFlags: 0
@@ -9285,7 +9285,7 @@ MonoBehaviour:
   safeZone: {fileID: 0}
   safeZoneMaxAspect: 1.7777778
   hasPhoneLayout: 1
-  phoneReferenceResolution: {x: 800, y: 450}
+  phoneReferenceResolution: {x: 960, y: 540}
 --- !u!114 &7378645249950064289
 MonoBehaviour:
   m_ObjectHideFlags: 0

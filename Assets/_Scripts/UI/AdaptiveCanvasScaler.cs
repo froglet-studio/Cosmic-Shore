@@ -63,8 +63,8 @@ namespace CosmicShore.UI
                  "column. Leave off until the phone layout exists: off keeps the PC layout scaled down.")]
         [SerializeField] private bool hasPhoneLayout;
 
-        [Tooltip("The canvas reference on a phone. Docs/UI_STYLE_GUIDE.md §8: 800 x 450.")]
-        [SerializeField] private Vector2 phoneReferenceResolution = new(800f, 450f);
+        [Tooltip("The canvas reference on a phone. Docs/UI_STYLE_GUIDE.md §8: 960 x 540 (800 x 450 until 2026-11-06).")]
+        [SerializeField] private Vector2 phoneReferenceResolution = new(960f, 540f);
 
         private CanvasScaler _scaler;
         private PhoneRect[] _pcBlocks = System.Array.Empty<PhoneRect>();

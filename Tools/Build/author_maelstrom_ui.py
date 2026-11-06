@@ -543,7 +543,7 @@ def phone_layout(p):
         if d.startswith("--- !u!114 ") and f"guid: {SCALER}, type: 3}}" in d:
             d = re.sub(r"  hasPhoneLayout: \d\n  phoneReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", d)
             d = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)",
-                       lambda m: m.group(1) + "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n", d, count=1)
+                       lambda m: m.group(1) + "  hasPhoneLayout: 1\n" + K.PHONE_REFERENCE_YAML, d, count=1)
             p.replace(fid, d)
 
 

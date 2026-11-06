@@ -86377,7 +86377,7 @@ MonoBehaviour:
   safeZone: {fileID: 0}
   safeZoneMaxAspect: 1.7777778
   hasPhoneLayout: 1
-  phoneReferenceResolution: {x: 800, y: 450}
+  phoneReferenceResolution: {x: 960, y: 540}
 --- !u!114 &8162524333873462026
 MonoBehaviour:
   m_ObjectHideFlags: 0

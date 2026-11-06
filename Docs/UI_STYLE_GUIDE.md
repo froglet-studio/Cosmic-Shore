@@ -166,8 +166,12 @@ An iPad sideways (820 points tall) lands body at about 13.7 pt, which is fine.
 
 **So (decided, D6):** one set of components, two scales.
 - **PC, console and iPad** (screen 600 points tall or more): the 1920 x 1080 canvas and the PC type column (section 3).
-- **Phones** (under 600 points tall): an 800 x 450 canvas reference and STYLE_FOUNDATION's mobile column (H1 24,
-  body 16, buttons 16, small buttons 12), which puts body text near 14 pt and buttons near 44 pt. The same kit prefabs
+- **Phones** (under 600 points tall): a **960 x 540** canvas reference (800 x 450 until 2026-11-06; Shombith, after
+  trying it in the Device Simulator: "texts are so much bigger") and STYLE_FOUNDATION's mobile column (H1 24, body 16,
+  buttons 16, small buttons 12), which puts body text near 12 pt on a 390-point-tall phone. The phone layouts were
+  authored on 800 x 450 and are anchored to the canvas edges, so they keep working on the larger canvas; a top-anchored
+  screen leaves more room under it. `K.PHONE_REFERENCE` (author_ui_kit_prefabs.py) writes the value into every phone
+  canvas. The same kit prefabs
   and tokens, laid out for the smaller canvas: menus stack, side panels become full-screen sheets, and a screen that
   must work on phones gets a phone board on Frogma before it is built.
 - **How it is built** (2026-11-05): `PhoneScale.IsPhone` is the rule (short side under 600 points, a point being
@@ -260,7 +264,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 | D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
 | D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |
 | D5 | Focus and CTA | **CTA is always lime**: the important thing the screen asks the player to do that they can still change. Focus and selection are Jade (D3), never lime. Play, which launches a game, is Ruby like Ready (Frogma comment, 2026-11-05). |
-| D6 | Phones | One component set, two scales: phones (under 600 points tall) get an 800 x 450 canvas and the mobile type column (section 8). |
+| D6 | Phones | One component set, two scales: phones (under 600 points tall) get a 960 x 540 canvas (800 x 450 until 2026-11-06) and the mobile type column (section 8). |
 | D7 | The UI checklist | A required check (section 11 has the one-time step). |
 | D8 | The codex and studios | Move them onto Deep Sea and Shore in a separate change; the prompt for it is below. |
 

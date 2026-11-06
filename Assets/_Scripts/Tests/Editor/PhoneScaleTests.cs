@@ -42,7 +42,7 @@ namespace CosmicShore.Tests
 
         [Test]
         public void TheReferencesAreTheGuides() =>
-            Assert.AreEqual(new Vector2(800f, 450f), PhoneScale.PhoneReference);
+            Assert.AreEqual(new Vector2(960f, 540f), PhoneScale.PhoneReference);
 
         [Test]
         public void ThePhoneColumnIsStyleFoundationsMobileColumn()

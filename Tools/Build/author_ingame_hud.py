@@ -1999,7 +1999,7 @@ def switch_on(p):
     assert len(found) == 1, f"GameCanvas: expected one AdaptiveCanvasScaler, found {len(found)}"
     d = re.sub(r"  hasPhoneLayout: \d\n  phoneReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", p.doc(found[0]))
     assert "  safeZoneMaxAspect: " in d, "GameCanvas: the AdaptiveCanvasScaler body changed shape"
-    d = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)", lambda m: m.group(1) + "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n",
+    d = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)", lambda m: m.group(1) + "  hasPhoneLayout: 1\n" + K.PHONE_REFERENCE_YAML,
                d, count=1)
     p.replace(found[0], d)
 

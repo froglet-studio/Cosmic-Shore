@@ -554,6 +554,11 @@ def phone_rect(pose=None, font=0, layout=(0, 0), scale=0, pc_block=False, hide=F
 # A menu window with no phone layout yet (Menu_Main, under the 84 nav band on PC): on a phone the band is the 96-wide rail,
 # so the window's PC layout less the band fills the region right of the rail (Docs/MENU_REDESIGN_B.md section 129).
 PHONE_RAIL_INSETS = (112, 8, 8, 8)
+# The phone canvas's reference resolution (AdaptiveCanvasScaler.phoneReferenceResolution on every phone canvas).
+# 960 x 540 since 2026-11-06 (Shombith, after trying 800 x 450 in the Device Simulator: "texts are so much bigger"):
+# the same layouts, the menus and text about 17 % smaller on the screen. Docs/UI_STYLE_GUIDE.md section 8.
+PHONE_REFERENCE = (960, 540)
+PHONE_REFERENCE_YAML = "  phoneReferenceResolution: {x: %d, y: %d}\n" % PHONE_REFERENCE
 PHONE_NAV_BAND = 84
 
 

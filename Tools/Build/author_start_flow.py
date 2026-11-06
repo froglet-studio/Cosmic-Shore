@@ -648,7 +648,7 @@ def auth_text(text_):
     canvas_go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(I["canvas_rt"])).group(1)
     p.add_comp(canvas_go, "adaptive", 114, lambda ctx, go: K.mono(go, ADAPTIVE,
         "  referenceAspect: 1.7777778\n  blendRange: 0.15\n  safeZone: {fileID: 0}\n  safeZoneMaxAspect: 1.7777778\n"
-        "  hasPhoneLayout: 1\n  phoneReferenceResolution: {x: 800, y: 450}\n"))
+        "  hasPhoneLayout: 1\n" + K.PHONE_REFERENCE_YAML))
 
     # Pilot-name panel: the window; the field and the error line move into it.
     nw = name_window()
