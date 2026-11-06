@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -48,7 +49,25 @@ namespace CosmicShore.UI
         [Tooltip("Maximum aspect ratio the safe zone may span before being pinned to a centered region. Default 16:9.")]
         [SerializeField] private float safeZoneMaxAspect = 16f / 9f;
 
+        [Header("Portrait (Docs/MENU_REDESIGN_B.md section 138)")]
+        [Tooltip("This canvas's screens have an upright layout (Rev 63 B: the same PC UI re-flowed). In play mode, when the " +
+                 "screen is taller than it is wide, the canvas switches to the Portrait Reference Resolution matched to the " +
+                 "width and every PortraitRect under it takes its upright pose. Off: the PC layout is matched to the width.")]
+        [SerializeField] private bool hasPortraitLayout;
+        [Tooltip("The canvas reference when upright: 1080 x 1920, the PC pieces at their PC sizes on a 1080-wide canvas.")]
+        [SerializeField] private Vector2 portraitReferenceResolution = new(1080f, 1920f);
+
         private CanvasScaler _scaler;
+        private Vector2 _authoredReference;
+        private bool _authoredReferenceRead;
+        private PortraitRect[] _pcBlocks = Array.Empty<PortraitRect>();
+        private float _pcBlocksFitWidth = -1f;
+
+        /// <summary>Whether this canvas is laid out upright right now.</summary>
+        public bool UsesPortraitLayout { get; private set; }
+
+        /// <summary>Raised after the canvas switches to or from its upright layout (true = upright).</summary>
+        public event Action<bool> PortraitLayoutChanged;
         private int _lastWidth;
         private int _lastHeight;
 
@@ -66,6 +85,19 @@ namespace CosmicShore.UI
 
         private void Update()
         {
+            // The canvas rect takes its new size a frame after the reference changes: re-fit the PC-layout blocks once it
+            // has, and on any later resize. A float compare per frame while upright, nothing otherwise.
+            if (UsesPortraitLayout && _pcBlocks.Length > 0)
+            {
+                float w = ((RectTransform)transform).rect.width;
+                if (!Mathf.Approximately(w, _pcBlocksFitWidth))
+                {
+                    _pcBlocksFitWidth = w;
+                    for (int i = 0; i < _pcBlocks.Length; i++)
+                        if (_pcBlocks[i]) _pcBlocks[i].FitPcBlock();
+                }
+            }
+
             // Fallback for transitions that don't resize the canvas rect on the same frame
             // (monitor hops, some fullscreen toggles). Cost: two int compares.
             if (Screen.width == _lastWidth && Screen.height == _lastHeight) return;
@@ -100,6 +132,24 @@ namespace CosmicShore.UI
 
             float aspect = (float)width / height;
 
+            if (!_authoredReferenceRead)
+            {
+                _authoredReference = _scaler.referenceResolution;
+                _authoredReferenceRead = true;
+            }
+            bool upright = hasPortraitLayout && Application.isPlaying && height > width
+                           && _scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            if (upright)
+            {
+                if (_scaler.referenceResolution != portraitReferenceResolution) _scaler.referenceResolution = portraitReferenceResolution;
+                if (!Mathf.Approximately(_scaler.matchWidthOrHeight, 0f)) _scaler.matchWidthOrHeight = 0f;
+                SetPortrait(true);
+                ApplySafeZone(aspect);
+                return;
+            }
+            if (_scaler.referenceResolution != _authoredReference) _scaler.referenceResolution = _authoredReference;
+            SetPortrait(false);
+
             if (_scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
             {
                 // 1 at/above the reference aspect, 0 at/below (reference - blendRange), linear between.
@@ -109,6 +159,25 @@ namespace CosmicShore.UI
             }
 
             ApplySafeZone(aspect);
+        }
+
+        private void SetPortrait(bool upright)
+        {
+            if (upright == UsesPortraitLayout) return;
+            UsesPortraitLayout = upright;
+            var rects = GetComponentsInChildren<PortraitRect>(true);
+            int blocks = 0;
+            for (int i = 0; i < rects.Length; i++)
+            {
+                rects[i].Apply(upright);
+                if (rects[i].DrawsAtPcScale) blocks++;
+            }
+            _pcBlocks = new PortraitRect[upright ? blocks : 0];
+            if (upright)
+                for (int i = 0, n = 0; i < rects.Length; i++)
+                    if (rects[i].DrawsAtPcScale) _pcBlocks[n++] = rects[i];
+            _pcBlocksFitWidth = -1f;
+            PortraitLayoutChanged?.Invoke(upright);
         }
 
         private void ApplySafeZone(float aspect)

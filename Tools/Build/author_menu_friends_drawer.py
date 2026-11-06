@@ -428,7 +428,9 @@ def validate_dock(sc, ctx, hub):
             rt = re.search(r"^--- !u!224 &%s\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}" % fid, text_, re.M)
             go = rt and re.search(r"^--- !u!1 &%s\n(?:(?!--- ).*\n)*?  m_Name: (\w+)" % rt.group(1), text_, re.M)
             names.add(go.group(1) if go else None)
-        assert names == {"Header", "Body"}, f"{path}: the dock must push the Header and the Body, pushes {names}"
+        # The Voyage window's dock also pushes its VoyagePages (the Mission window's own generator owns that wiring).
+        assert names == {"Header", "Body"} or names == {"Header", "Body", "VoyagePages"}, \
+            f"{path}: the dock must push the Header and the Body, pushes {names}"
 
 
 def validate_profile(sc, ctx):
