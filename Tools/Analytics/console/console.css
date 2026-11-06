@@ -127,7 +127,7 @@ td.meter { width: 32%; min-width: 120px; }
 .chip { background: var(--fs-surface); border: 0; box-shadow: inset 0 0 0 1px var(--fs-line); padding: 10px 14px; cursor: pointer; text-align: left; font-size: 14px; }
 .chip:hover { box-shadow: inset 0 0 0 1px var(--fs-text-soft); }
 .code { background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-line); padding: 14px 16px; margin: 0; font-family: var(--fs-font-body); font-size: 13px; line-height: 1.6; color: var(--data-text); white-space: pre-wrap; overflow-x: auto; }
-.gate { position: fixed; inset: 0; background: rgba(0, 1, 10, .86); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.gate { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--fs-ground-deep) 86%, transparent); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .gate[hidden] { display: none; }
 .window { width: min(480px, 100%); background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-text); padding: 28px 32px; display: flex; flex-direction: column; gap: 12px; }
 

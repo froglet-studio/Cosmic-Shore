@@ -2,11 +2,13 @@
 Claude is replaced by a fake, so no key and no network are needed)."""
 import json
 import os
+import re
 import shutil
 import sqlite3
 import sys
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -443,6 +445,54 @@ class ConsoleThemes(unittest.TestCase):
         for name in ("themes.css", "theme.js"):
             self.assertIn("/" + name, A.CONSOLE_FILES)
             self.assertIn(f'"{name}"', open(os.path.join(console, "index.html"), encoding="utf-8").read().replace("src=", "").replace("href=", ""))
+
+
+class LiveKeys(unittest.TestCase):
+    """Shombith, 2026-11-06: a key made with `key read <name>` on the VM was refused - the running server had read
+    config.json once, at start."""
+
+    def test_a_key_made_after_the_server_started_works_without_a_restart(self):
+        work = tempfile.mkdtemp()
+        try:
+            path = os.path.join(work, "config.json")
+            config = dict(A.DEFAULTS, data_dir=work, ingest_keys=["in-key"], admin_keys={"admin": "admin-key"})
+            A.save_config(config, path)
+            app = A.App(A.load_config(path), path)
+            server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(app))
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            base = f"http://127.0.0.1:{server.server_address[1]}"
+
+            def me(key):
+                request = urllib.request.Request(base + "/v1/me", headers={"Authorization": "Bearer " + key})
+                try:
+                    with urllib.request.urlopen(request) as response:
+                        return response.status, json.loads(response.read())
+                except urllib.error.HTTPError as err:
+                    return err.code, {}
+            self.assertEqual(me("fa_read_new")[0], 401)
+            later = A.load_config(path)                         # what `key read ian` does, while the server runs
+            later["read_keys"]["ian"] = "fa_read_new"
+            later["profile_readers"] = ["ian"]
+            A.save_config(later, path)
+            os.utime(path, ns=(time.time_ns() + 10**9,) * 2)   # a new mtime even on a coarse clock
+            status, body = me("fa_read_new")
+            self.assertEqual((status, body.get("name"), body.get("profiles")), (200, "ian", True))
+            self.assertEqual(me("admin-key")[0], 200)           # the keys it had still work
+            server.shutdown()
+            server.server_close()
+            app.store.db.close()
+        finally:
+            shutil.rmtree(work)
+
+    def test_the_key_screen_sits_above_the_page(self):
+        """The sea lines put the page on z-index 1; a key screen without its own z-index sat under it, visible but
+        unclickable, so no key could be typed or pasted."""
+        css = open(os.path.join(HERE, "..", "console", "console.css"), encoding="utf-8").read()
+        def z(selector):
+            block = css.split("\n" + selector + " {", 1)[1].split("}", 1)[0]
+            m = re.search(r"z-index:\s*(-?\d+)", block)
+            return int(m.group(1)) if m else 0
+        self.assertGreater(z(".gate"), z(".shell"))
 
 
 class Http(unittest.TestCase):
