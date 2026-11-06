@@ -4,7 +4,9 @@
 plan; the Launch Console and the pipelines come after scope is confirmed). Seven parallel read-only audits plus spot
 checks; every headline row marked **✔ re-checked** was read again by hand before it went in this file.
 
-- **Working milestone: "Invite build v1", 2026-12-03** (4 weeks from the audit). Not yet confirmed: see §10.
+- **Milestones (Shombith, 2026-11-06; replaces the working "Invite build v1, 2026-12-03"):** **mobile first** (iOS,
+  Android, with the Web Toybox), as soon as **activation** is ready, date set then; **Steam second**, with Steam keys
+  by **March 2027, before GDC**. See §11.
 - **Platforms:** Windows / Steam, iOS, Android, Web Toybox. **macOS: recommended out** (§2). **Amoebius: out of the
   launch** (Shombith, 2026-11-05: "No launch from amoebius"); it ships nothing and no launch gate depends on it.
 - **What this file is not:** a fix. Nothing here was changed. Every row names its evidence so it can be re-measured;
@@ -281,6 +283,7 @@ a step only a person with an account can do. Pipeline and console work in Phases
 
 | # | Must be true on launch day | Risk | Effort | Who | Phase |
 |---|---|---|---|---|---|
+| 0 | **Activation is ready: the mobile release's gate** (`Docs/ACTIVATION.md` §6: play the training guide once in the editor, declare the funnel events, watch 3-5 first-timers, decide the Main Quest, fill the tips, then flip `DefaultAllUnlocked` and `CloudEnabled`; target D1 ≥ 35 %, D7 ≥ 15 %). | Very high | M–L | Shombith (leads activation; Caleb heads FTUE) | Human + content |
 | 1 | **Release builds talk to UGS `production`**, chosen by the build pipeline; the production dashboard has the board, the 28 events / 67 parameters, the identity providers and Moderation. | Very high | S + human | Shombith | P2 + Human |
 | 2 | **Repo security settings**: no routine bypass on trunk, required checks, `ugs-production` Environment with reviewers holding the UGS secrets, `testflight`/`toybox` restricted to `bleeding-edge` with reviewers, the 7 old iOS secrets deleted, `USYM_UPLOAD_AUTH_TOKEN` rotated and recorded, agents on a separate account. | Very high | S (human, minutes each) | Shombith (admin) | Human (+ #1693) |
 | 3 | **Steamworks partner account, fee, base app and Playtest child app exist** (A1–A4), entity name and bank match. Starts every Steam clock. | Very high | S (human) | Garrett + Shombith | Human |
@@ -335,11 +338,11 @@ a step only a person with an account can do. Pipeline and console work in Phases
 
 ---
 
-## 11. Decisions (confirmed by Shombith, 2026-11-05)
+## 11. Decisions (confirmed by Shombith, 2026-11-05; milestones revised 2026-11-06)
 
 | Decision | Answer |
 |---|---|
-| Milestone | **Invite build v1, 2026-12-03.** Invite-only everywhere; public store pages come later. |
+| Milestones | **Revised 2026-11-06:** **mobile release** (iOS, Android; the Web Toybox alongside) as soon as **activation** is ready (`Docs/ACTIVATION.md` §6), which is the only thing holding mobile; no date until then. **Steam** with Steam keys by **March 2027, before GDC**. (Was: Invite build v1, 2026-12-03.) |
 | Platforms | **Windows / Steam (Playtest), iOS (TestFlight), Android (Google Play), Web Toybox.** macOS out. Amoebius out. |
 | Live flags | **Cloud Code / Cloud Save**, no new package: one flags document read at boot (kill switches, minimum version, the mode list), deployed through `ugs-deploy` with development first. |
 | Launch Console | **A FrogletTools editor window and a claude.ai artifact**, both reading one status file the pipelines write; designed on Frogma's *Launch Console* tab. |

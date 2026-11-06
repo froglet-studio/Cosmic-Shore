@@ -1,7 +1,10 @@
-# Launch runbook: Invite build v1
+# Launch runbook
 
-**Target: Invite build v1, 2026-12-03 (T-0).** Platforms: Windows (Steam Playtest), iOS (TestFlight external), Android
-(Google Play), Web Toybox. Live board: the **Launch Console** (https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2) and
+**Two launches (Shombith, 2026-11-06).** **Mobile first:** iOS (TestFlight external, then the App Store) and Android
+(Google Play), with the Web Toybox, as soon as **activation** is ready (`Docs/ACTIVATION.md` §6; nothing else blocks
+mobile); its date is set when activation passes. **Steam second:** Windows (Steam), with Steam keys in hand in
+**March 2027, before GDC**. The same T-7 … T+7 steps below run once for each launch, with only that launch's
+platforms; T-0 is that launch's day. Live board: the **Launch Console** (https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2) and
 **FrogletTools > Launch > Launch Console** in Unity. What is ready and what is not: `Docs/LAUNCH/READINESS.md`. How the
 pipelines run: `Docs/LAUNCH/PIPELINES.md`. What can change without a new build: `Docs/LAUNCH/LIVE_UPDATES.md`.
 
@@ -21,7 +24,7 @@ Times are US Eastern (the company's registered address is in Michigan); move the
   crash; the privacy, deletion and age-rating forms do not match the build.
 - A platform that is not ready **ships later on its own**. The invite wave goes to the platforms that are Go.
 
-## T-7 (2026-11-26): freeze and stage
+## T-7: freeze and stage
 
 | When | Step | Decides | Done when |
 |---|---|---|---|
@@ -32,7 +35,7 @@ Times are US Eastern (the company's registered address is in Michigan); move the
 | 16:00 | Deploy launch flags and Cloud Code to UGS `development`; play the candidate against it. | Shombith (Yash for Cloud Code) | `ugs-development` green; one match per platform played. |
 | T-7 → T-2 | Play the candidate on every platform: menu, sign in, a match, the invite flow, leave and rejoin. Log every defect on the checklist or the QA backlog. | the team | Checklist items closed or marked accepted risk. |
 
-## T-1 (2026-12-02): decide
+## T-1: decide
 
 | When | Step | Decides | Done when |
 |---|---|---|---|
@@ -42,7 +45,7 @@ Times are US Eastern (the company's registered address is in Michigan); move the
 | 13:00 | Store forms checked against this build: App Store privacy label and age rating, Play Data safety and IARC, Steam content survey. | Garrett for the Steam survey (A3); the store admins for the mobile forms (no doc names them) | Each form's evidence link on its checklist item. |
 | 15:00 | Write the Discord launch post and the invite wave list (A6 wave policy). | Garrett | Draft posted for review. |
 
-## T-0 (2026-12-03): launch
+## T-0: launch
 
 | When | Step | Decides | Done when |
 |---|---|---|---|
@@ -55,7 +58,7 @@ Times are US Eastern (the company's registered address is in Michigan); move the
 | 10:00–14:00 | Watch: Cloud Diagnostics crashes, join failures (B35-shape bounces), UGS rate-limit errors, Discord. One person on watch at all times; hand-over in Discord. | whoever takes it | Watch log in the Discord thread. |
 | 14:00 | Android: raise the rollout to 100 % if crash-free holds. | Shombith / Yash | Rollout at 100 %. |
 
-## T+1 (2026-12-04) and T+7 (2026-12-10)
+## T+1 and T+7
 
 - **T+1, 11:00:** read crashes, join failures and D1 by platform. Decide on a hotfix (see Incidents). Close the freeze.
 - **T+7, 11:00:** D7 read-out by platform and wave (`invite_wave`); decide the next wave's size; file what the launch

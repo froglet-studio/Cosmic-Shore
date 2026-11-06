@@ -93,8 +93,8 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
 <div class="wrap">
   <section class="top cut" aria-labelledby="t-title">
     <div class="row">
-      <div><div class="eyebrow">Cosmic Shore · Launch Console</div><h1 id="t-title">Invite build v1</h1></div>
-      <div><span class="days num" id="days">—</span> <span class="muted">days to <span id="tdate">3 Dec 2026</span></span></div>
+      <div><div class="eyebrow">Cosmic Shore · Launch Console</div><h1 id="t-title">Mobile first, then Steam</h1></div>
+      <div class="small" style="display:grid;gap:2px"><span><strong>Mobile release</strong> (iOS, Android): when activation is ready. Date not set.</span><span><strong>Steam keys</strong>: March 2027, before GDC. <span class="days num" id="days" style="font-size:28px">—</span> days to 1 Mar 2027.</span></div>
       <div class="small" id="verdict">Loading the board…</div>
     </div>
     <div class="pills" id="pills" role="group" aria-label="Status per platform"></div>
@@ -163,7 +163,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
 (() => {
   const REPO = 'https://github.com/froglet-studio/Cosmic-Shore';
   const WF = (f) => `${REPO}/actions/workflows/${f}`;
-  const MILESTONE_DATE = '2026-12-03';
+  const MILESTONE_DATE = '2027-03-01'; // Steam keys by March 2027, before GDC (Shombith, 2026-11-06). The mobile release has no date: it waits on activation.
   const STALE_HOURS = 48;
   // Each platform: the component ids it shows (Docs/LAUNCH/STATUS_CONTRACT.md), its actions and its rollback.
   const PLATFORMS = [
@@ -205,7 +205,8 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
   $('#days').textContent = String(daysLeft);
 
   function comps() { return (board && board.components) || {}; }
-  function openBlockers(key) { return items.filter((i) => i.platform === key && i.blocks && i.status !== 'done'); }
+  // An item on 'mobile' (activation) blocks both the iOS and the Android release.
+  function openBlockers(key) { return items.filter((i) => (i.platform === key || (i.platform === 'mobile' && (key === 'ios' || key === 'android'))) && i.blocks && i.status !== 'done'); }
   function platformState(p) {
     const c = comps();
     const gateIds = p.key === 'launch' ? Object.keys(c).filter((id) => GATES.some(([g]) => g === id) || id.startsWith('smoke-')) : [];
@@ -292,7 +293,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
     card.append(head);
     const meta = el('div', 'meta');
     const plat = PLATFORMS.find((p) => p.key === i.platform);
-    [plat ? plat.name : i.platform, i.owner && `Decides: ${i.owner}`, i.risk && `Risk ${i.risk}`, i.size && `Size ${i.size}`, i.due && `Due ${i.due}`].filter(Boolean).forEach((t) => meta.append(el('span', '', t)));
+    [plat ? plat.name : (i.platform === 'mobile' ? 'iOS + Android' : i.platform), i.owner && `Decides: ${i.owner}`, i.risk && `Risk ${i.risk}`, i.size && `Size ${i.size}`, i.due && `Due ${i.due}`].filter(Boolean).forEach((t) => meta.append(el('span', '', t)));
     const taker = i.takenBy ? (names[i.takenBy] || 'someone') : null;
     meta.append(el('span', '', taker ? `Taken by ${taker}` : 'Not taken'));
     card.append(meta);
@@ -454,7 +455,7 @@ select, input[type="text"], input[type="url"], input[type="date"], textarea { fo
       const q = $('#q').value.trim(); if (!q) return;
       if (ctl) ctl.abort(); ctl = new AbortController();
       const out = $('#answer'); out.hidden = false; out.textContent = ''; $('#askstate').textContent = 'Thinking…';
-      const ctx = { milestone: 'Invite build v1', date: MILESTONE_DATE, components: comps(),
+      const ctx = { milestones: 'Mobile release (iOS, Android) when activation is ready, no date set; Steam keys by March 2027, before GDC', steamCountdownTo: MILESTONE_DATE, components: comps(),
         checklist: items.map(({ rank, title, platform, owner, status, needsHuman, risk, size, steps }) => ({ rank, title, platform, owner, status, needsHuman, risk, size, steps })) };
       const prompt = `You help the Cosmic Shore team read their launch console. Answer the question using ONLY the JSON below (pipeline status and the launch checklist). Say plainly when the data does not answer it. Be brief; name the checklist rank (#n) and who decides. Never invent numbers or dates.\n\nJSON:\n${JSON.stringify(ctx)}\n\nQuestion: ${q}`;
       try { const r = await sample(prompt, { signal: ctl.signal, onText: ({ text }) => { out.textContent = text; $('#askstate').textContent = ''; } }); out.textContent = r.text; $('#askstate').textContent = ''; }

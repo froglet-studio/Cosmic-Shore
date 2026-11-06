@@ -32,6 +32,12 @@ DOC = "https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/Docs/LA
 
 # rank, id, title, platform, decides, risk, size, needs_human, blocks, steps, readiness anchor
 CHECKLIST = [
+    (0, "activation", "Activation ready: the gate for the mobile release", "mobile",
+     "Shombith (leads activation; Caleb heads FTUE)", "Very high", "M-L", True, True,
+     "Docs/ACTIVATION.md section 6, in order: play the training guide once in the editor; declare the activation "
+     "events in UGS and build the funnel; watch three to five first-timers; decide the rest of the Main Quest; fill the "
+     "Mentor tips and card Tips; then flip DefaultAllUnlocked and ProgressionBackendGate.CloudEnabled. Target: D1 >= 35 % "
+     "and D7 >= 15 % across two invite waves. (Added 2026-11-06: mobile ships when activation is ready.)", "#0"),
     (1, "ugs-production-env", "Release builds talk to UGS production", "liveops", "Shombith", "Very high", "S", True, True,
      "Code: release builds pick `production` through the build stamp (PR claude/launch-build-stamp).\n"
      "UGS dashboard, production environment: create the weekly_challenge board (same sort and reset as development), "
@@ -200,7 +206,7 @@ def self_test() -> int:
     global CHECKLIST
     ids = [row[1] for row in CHECKLIST]
     assert len(ids) == len(set(ids)), "duplicate checklist id"
-    platforms = {"windows", "ios", "android", "web", "liveops", "backend", "launch"}
+    platforms = {"windows", "ios", "android", "web", "liveops", "backend", "launch", "mobile"}
     bad = [row[1] for row in CHECKLIST if row[3] not in platforms]
     assert not bad, f"unknown platform on {bad}"
     with tempfile.TemporaryDirectory() as tmp:

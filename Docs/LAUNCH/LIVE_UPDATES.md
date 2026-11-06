@@ -1,7 +1,7 @@
 # Live updates: what changes without a store release
 
 The short answer: **server-side behaviour changes live; anything in the binary needs a new build.** This file says
-which is which for Cosmic Shore as it stands for Invite build v1 (2026-12-03), how each live change is made, and the
+which is which for Cosmic Shore as it stands for the mobile release (when activation is ready) and Steam (March 2027), how each live change is made, and the
 safety rails around it. Measured 2026-11-06 against `bleeding-edge` plus the open launch PRs; the PR each piece
 depends on is named, because until it merges that piece does not exist.
 
