@@ -24,6 +24,19 @@ check (section 4).
 - **The server updates itself every night at 04:20 UTC** from `bleeding-edge`. New code runs the server's tests first:
   if they fail, it keeps the code that was running.
 
+## 1.5 Rev 65, built (2026-11-06)
+
+Shombith picked all seven Rev 65 screens (`Docs/MENU_REDESIGN_B.md` section 141) and asked for switches inside every
+chart. Built on `claude/sweet-mayer-se51r6`:
+- **Every chart has its own switches:** form (bars / line / pie / table), measure, and split (play type, era, platform,
+  country, mode, vessel, build, intensity), from one endpoint, `/v1/series`.
+- **Players:** filters, sorting, saved segments and CSV. **Profile:** one long page, every old section plus charts.
+- **Cohorts:** lifespans and return by week. **Play types:** solo vs AI, solo and multiplayer side by side.
+- **Eras:** the plan chart. Old PostHog data (told apart exactly, by source), Pre-beta editor testing and the planned
+  betas. An Era filter on every page, and any two eras compared.
+- **Admins:** Query Studio (saved queries and nightly tables, read-only over the totals) and Dashboards.
+- **Rev 66** (section 142) has more ideas drawn, awaiting a pick: Live now, Alerts, Funnels, Release compare, Player compare.
+
 ## 2. Where everything is
 
 | What | Where |

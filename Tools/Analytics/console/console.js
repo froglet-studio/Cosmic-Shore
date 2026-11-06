@@ -19,7 +19,7 @@
     overview: { title: "Overview", build: true, days: DAYS, play: true, era: true },
     players: { title: "Players", build: true, days: DAYS, play: true, era: true },
     cohorts: { title: "Cohorts and lifespans", build: true, days: DAYS, play: true, era: true },
-    eras: { title: "Eras", build: true, days: null, play: false, era: false },
+    eras: { title: "Eras", build: true, days: DAYS, play: false, era: false },
     playtypes: { title: "Solo vs AI, Solo, Multiplayer", build: true, days: DAYS, play: false, era: true },
     retention: { title: "Retention", build: true, days: DAYS, play: true, era: true },
     matches: { title: "Matches", build: true, days: DAYS, play: true, era: true },
@@ -477,7 +477,7 @@
   }
 
   // A donut for one whole in at most six parts (the fifth and sixth fold into Other).
-  function drawDonut(f0, W, box, { centre } = {}) {
+  function drawDonut(f0, W, box, { centre, max = 200 } = {}) {
     let items = f0.time ? f0.keys.map((k) => [k, f0.total(k)]) : f0.keys.map((k) => [k, Number(f0.get(null, k)) || 0]);
     const entity = f0.by === "play_type" || f0.by === "era" || f0.colours;
     if (!entity && items.length > 4) {
@@ -485,7 +485,7 @@
       items = items.slice(0, 4).concat([["other", sum(rest, (r) => r[1])]]);
     }
     const total = sum(items, (r) => r[1]);
-    const size = Math.min(200, Math.max(140, W * 0.42)), R = size / 2, r0 = R * 0.62;
+    const size = Math.min(max, Math.max(Math.min(140, max), W * 0.42)), R = size / 2, r0 = R * 0.62;
     const svg = s("svg", { width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: "img", "aria-label": "Donut chart" });
     const tip = tipFor(box);
     let a = -Math.PI / 2;
@@ -505,8 +505,8 @@
       svg.append(path);
       a = a1;
     });
-    svg.append(s("text", { class: "donut-num", x: R, y: R + 6, "text-anchor": "middle" }, fmt(Math.round(total))),
-      s("text", { class: "axis", x: R, y: R + 26, "text-anchor": "middle" }, centre || (MEASURES[f0.measure] || ["total"])[0].toLowerCase()));
+    svg.append(s("text", { class: "donut-num", x: R, y: R + (size < 130 ? 8 : 6), "text-anchor": "middle", style: size < 130 ? "font-size:22px" : null }, fmt(Math.round(total))));
+    if (size >= 130) svg.append(s("text", { class: "axis", x: R, y: R + 26, "text-anchor": "middle" }, centre || (MEASURES[f0.measure] || ["total"])[0].toLowerCase()));
     const leg = h("div", { class: "donut-legend" }, items.map(([k, v], i) => h("div", { class: "donut-key" },
       h("i", { style: `background:${entity ? keyColour(f0, k, i) : k === "other" ? OTHER : `var(--series-${i + 1})`}` }),
       h("span", {}, keyLabel(f0, k)), h("span", { class: "num" }, `${valueText(f0, v)} · ${pct(total ? 100 * v / total : 0)}`))));
@@ -527,9 +527,12 @@
   }
 
   function drawNumber(f) {
-    const v = f.keys.length === 1 && !f.time ? f.get(null, f.keys[0]) : f.kind === "count" ? sum(f.keys, (k) => f.total(k)) : f.get(f.xs[f.xs.length - 1], f.keys[0]);
+    const days = f.time ? f.xs.map((x) => f.get(x, f.keys[0])).filter((v) => v !== null && v !== undefined) : [];
+    const v = f.keys.length === 1 && !f.time ? f.get(null, f.keys[0]) : f.kind === "count" ? sum(f.keys, (k) => f.total(k))
+      : days.length ? sum(days) / days.length : null;
     return h("div", { class: "big-number" }, h("span", { class: "value num" }, valueText(f, v)),
-      h("span", { class: "small" }, f.time ? (f.kind === "count" ? "in all" : `latest, ${xLabel(f, f.xs[f.xs.length - 1])}`) : keyLabel(f, f.keys[0])));
+      h("span", { class: "small" }, f.time ? (f.kind === "count" ? `in all, ${xLabel(f, f.xs[0])} to ${xLabel(f, f.xs[f.xs.length - 1])}` : `the average of ${days.length} days`)
+        : keyLabel(f, f.keys[0])));
   }
 
   // ------------------------------------------------------------------ the chart switches
@@ -596,8 +599,14 @@
     }
     function drawSwitches() {
       const forms = formsFor(frame, cfg);
-      const parts = [seg("Form", forms.map((x) => [x, (cfg.custom && cfg.custom[x] && cfg.custom[x].label) || FORM_LABEL[x]]), pick.form,
-        (v) => { pick.form = v; remember(); paint(); })];
+      const formOpts = forms.map((x) => [x, (cfg.custom && cfg.custom[x] && cfg.custom[x].label) || FORM_LABEL[x]]);
+      let formCtl;
+      if (cfg.compact && formOpts.length > 1) {          // a small tile: the forms as one select
+        const sel = h("select", { class: "mini-select", "aria-label": "Chart form" }, formOpts.map(([v, l]) => h("option", { value: v, selected: v === pick.form || null }, l)));
+        sel.addEventListener("change", () => { pick.form = sel.value; remember(); paint(); });
+        formCtl = h("label", { class: "mini-seg" }, h("span", { class: "mini-lab" }, "Form"), sel);
+      } else formCtl = seg("Form", formOpts, pick.form, (v) => { pick.form = v; remember(); paint(); });
+      const parts = [formCtl];
       if (cfg.measures) parts.push(seg("Measure", cfg.measures.filter(([k]) => !rejected.has(combo(k, "none", pick.over)) || k === pick.measure),
         pick.measure, (v) => { pick.measure = v; remember(); load(); }));
       if (cfg.overs) parts.push(seg("Over", OVERS.filter(([k]) => cfg.overs.includes(k)), pick.over, (v) => { pick.over = v; remember(); load(); }));
@@ -719,9 +728,11 @@
       h("div", { class: "card-head" }, h("span", { class: "lab" }, title), note ? h("span", { class: "small" }, note) : null),
       ...body);
   }
+  // A number is unfiltered when the page lists it, or a part of it ("business" covers "business.crystals_earned").
+  const isUnfiltered = (field) => !!field && (state.unfiltered || []).some((u) => u === field || u.startsWith(field + ".") || field.startsWith(u + "."));
   function ucard(field, title, note, ...body) {
     const el = card(title, note, ...body);
-    if (state.unfiltered.includes(field)) { const t = ufTag(); if (t) el.firstChild.append(t); }
+    if (isUnfiltered(field)) { const t = ufTag(); if (t) el.firstChild.append(t); }
     return el;
   }
 
@@ -732,7 +743,7 @@
       h("div", { class: "tile panel sl" + (bad ? " bad" : "") },
         h("span", { class: "lab" }, label), h("span", { class: "value num" }, value),
         note ? h("span", { class: "small" }, note) : null,
-        field && state.unfiltered.includes(field) ? ufTag() : null)));
+        isUnfiltered(field) ? ufTag() : null)));
   }
 
   // A stacked bar of a play mix [[group, count]...] with the group colours (2px gaps between parts).
@@ -829,17 +840,17 @@
       parts.push(h("div", { class: "grid2" },
         card("Marketing", "who arrives and from where",
           tileRow([
-            ["New players", fmt(newPlayers), rangeLabel(), false, "marketing"],
-            ["Top country", top(mk && mk.by_country, "country") ? country(top(mk.by_country, "country")) : "–", "most players"],
-            ["Top platform", fmt(top(mk && mk.by_platform, "platform")), "most players"],
-            ["Shares", fmt(shares), "share_triggered"],
-            ["Invites sent", fmt(mk && mk.invites_sent), "party invites"],
+            ["New players", fmt(newPlayers), rangeLabel(), false, "marketing.new_players_per_day"],
+            ["Top country", top(mk && mk.by_country, "country") ? country(top(mk.by_country, "country")) : "–", "most players", false, "marketing.by_country"],
+            ["Top platform", fmt(top(mk && mk.by_platform, "platform")), "most players", false, "marketing.by_platform"],
+            ["Shares", fmt(shares), "share_triggered", false, "marketing.shares"],
+            ["Invites sent", fmt(mk && mk.invites_sent), "party invites", false, "marketing.invites_sent"],
           ], "tiles-inner")),
         card("Business", "crystals, counts only",
           tileRow([
-            ["Crystals earned", fmt(biz && biz.crystals_earned), rangeLabel()],
-            ["Crystals spent", fmt(biz && biz.crystals_spent), rangeLabel()],
-            ["Whales", fmt(biz && biz.whales_2000), "players holding 2,000+"],
+            ["Crystals earned", fmt(biz && biz.crystals_earned), rangeLabel(), false, "business.crystals_earned"],
+            ["Crystals spent", fmt(biz && biz.crystals_spent), rangeLabel(), false, "business.crystals_spent"],
+            ["Whales", fmt(biz && biz.whales_2000), "players holding 2,000+", false, "business.whales_2000"],
             ["Earned per spent", biz && biz.crystals_spent ? ratio(biz.crystals_earned / biz.crystals_spent) : "–", "above 1 means saving"],
           ], "tiles-inner"))));
     }
@@ -1240,7 +1251,7 @@
     const d = days.indexOf(Math.max(...days));
     let best = 0, at = 0;
     for (let i = 0; i < 24; i++) { const w = hours[i] + hours[(i + 1) % 24] + hours[(i + 2) % 24] + hours[(i + 3) % 24]; if (w > best) { best = w; at = i; } }
-    return `Busiest: ${WEEKDAYS[d]}s, and ${String(at).padStart(2, "0")}:00 to ${String((at + 4) % 24).padStart(2, "0")}:00 UTC.`;
+    return `Busiest: ${["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"][d]}, and ${String(at).padStart(2, "0")}:00 to ${String((at + 4) % 24).padStart(2, "0")}:00 UTC.`;
   }
 
   // The match timeline: a lane per mode (the five most played, then Other), a bar per match from its start for its
@@ -1324,7 +1335,7 @@
       tileRow([
         ["Matches", fmt(total), `${fmt(act.days_active)} active days`],
         ["Finished", total ? pct(Math.round(100 * finished / total)) : "–", `${fmt(finished)} of ${fmt(total)}`],
-        ["Won", total ? pct(Math.round(100 * won / total)) : "–", `${fmt(won)} matches`],
+        ["Won", total ? pct(Math.round(100 * won / total)) : "–", `${fmt(won)} ${won === 1 ? "match" : "matches"}`],
         ["At the controls", seconds(flight), total ? `${seconds(flight / total)} a match` : null],
         ["Rematch", pct(rematch === null ? null : Math.round(rematch)), "within 10 min of finishing"],
         ["Crystals", fmt(e.balance), `${fmt(e.earned)} earned · ${fmt(e.spent)} spent`],
@@ -1481,7 +1492,7 @@
         ["D7 return", pct(t.d7_pct), "cohorts 7+ days old"],
         ["Lapsed", fmt(t.lapsed_14d), "no play in 14 days", t.lapsed_14d > 0],
       ], "tiles-5"),
-      h("div", { class: "grid-cohorts" },
+      h("div", { class: lifespans ? "grid-cohorts" : "page" },
         lifespans
           ? chartPanel({ id: "cohorts.lifespans", title: "Every player's lifespan", note: `sorted by first seen · click a name for the profile${lifespans.length > 60 && !showAll ? ` · the newest 60 of ${fmt(lifespans.length)}` : ""}`,
               forms: [], isEmpty: () => !shownSpans.length, emptyText: "Nobody in this range.",
@@ -1531,7 +1542,7 @@
     eras.forEach((e, i) => {
       const y = T + i * lane, c = eraColour(e), a = isoMs(e.from), b = isoMs(e.to) + DAY_MS;
       svg.append(s("text", { class: "axis label strong", x: 0, y: y + 14 }, e.name.length > (narrow ? 15 : 28) ? e.name.slice(0, narrow ? 14 : 27) + "…" : e.name),
-        s("text", { class: "axis tiny", x: 0, y: y + 28 }, `${(e.kind === "planned" ? "planned" : e.source || "").toUpperCase()} · ${e.from.slice(5)} to ${e.to.slice(5)}`));
+        s("text", { class: "axis tiny", x: 0, y: y + 28 }, `${(e.kind === "planned" ? "planned" : e.source || "").toUpperCase()}${narrow ? "" : ` · ${e.from.slice(5)} to ${e.to.slice(5)}`}`));
       const g = s("g", {});
       const bx = xAt(a), bw = Math.max(3, xAt(b) - bx), by = y + 4, bh = 18;
       if (e.kind === "planned") g.append(s("rect", { x: bx + 1, y: by + 1, width: bw - 2, height: bh - 2, style: `fill:none;stroke:${c};stroke-width:1.5;stroke-dasharray:5 4` }));
@@ -1570,7 +1581,7 @@
       r.addEventListener("mouseleave", () => tip(null));
       svg.append(r);
     });
-    svg.append(s("text", { class: "axis", x: L - 8, y: yBars + 8, "text-anchor": "end" }, fmt(max)));
+    svg.append(s("text", { class: "axis", x: L + 4, y: yBars + 10 }, fmt(max)));
     if (today >= from && today <= to) {
       const x = xAt(today);
       svg.append(s("line", { class: "today", x1: x, x2: x, y1: T - 6, y2: yBars + barsH }),
@@ -1920,7 +1931,8 @@
 
   const QB_FNS = [["count", "Count rows"], ["count_distinct", "Count distinct"], ["sum", "Sum"], ["avg", "Average"], ["min", "Min"], ["max", "Max"], ["pct", "Share % (of 0/1)"]];
   const QB_OPS = ["=", "!=", ">", ">=", "<", "<=", "LIKE", "IS NULL", "IS NOT NULL"];
-  const qs = { tab: "builder", sql: "", result: null, running: false, schema: null, saved: null, qb: null, x: null, y: null, ask: null };
+  const qs = { tab: "builder", sql: "", result: null, running: false, schema: null, saved: null, qb: null, x: null, y: null, ask: null,
+               keep: "query", vis: "readers" };
   const ident = (n) => (/^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : `"${String(n).replace(/"/g, '""')}"`);
   const lit = (v) => (/^-?\d+(\.\d+)?$/.test(String(v).trim()) ? String(v).trim() : `'${String(v).replace(/'/g, "''")}'`);
 
@@ -2094,7 +2106,7 @@
     // save and the saved list
     const name = h("input", { class: "field sls", type: "text", maxlength: "40", placeholder: "name_in_lower_case", "aria-label": "Name", value: qs.saveName || "" });
     name.addEventListener("input", () => { qs.saveName = name.value; });
-    const pickSeg = (label, options, k) => h("div", { class: "mini-seg", role: "group", "aria-label": label }, h("span", { class: "mini-lab" }, label),
+    const pickSeg = (label, options, k) => h("div", { class: "mini-seg stack", role: "group", "aria-label": label }, h("span", { class: "mini-lab" }, label),
       options.map(([v, l]) => h("button", { type: "button", "aria-pressed": String((qs[k] || options[0][0]) === v), onclick: () => { qs[k] = v; render(); } }, l)));
     const saveStatus = h("p", { class: "small", "aria-live": "polite" }, qs.saveStatus || "");
     const saveBtn = h("button", { type: "button", class: "btn sls default", onclick: async () => {
@@ -2114,10 +2126,10 @@
       saveBtn, saveStatus,
       h("span", { class: "lab" }, "Saved queries"),
       saved.length ? h("div", { class: "saved-list" }, saved.map((q) => h("div", { class: "saved-row" },
-        h("button", { type: "button", class: "link name", title: q.sql, onclick: () => { qs.sql = q.sql; qs.tab = "sql"; qs.x = q.x; qs.y = q.y; qs.saveName = q.name; qs.loaded = { id: q.id, name: q.name };
+        h("div", { class: "saved-name" }, h("button", { type: "button", class: "link name", title: q.sql, onclick: () => { qs.sql = q.sql; qs.tab = "sql"; qs.x = q.x; qs.y = q.y; qs.saveName = q.name; qs.loaded = { id: q.id, name: q.name };
           qs.keep = q.as_table ? "table" : "query"; qs.vis = q.visibility || "readers";
           if (q.chart) store.set("fa-chart-query.result", { form: CHART_FORM[q.chart] || "bars" }); runQuery(); } }, q.name),
-        h("span", { class: "small" }, [q.owner, q.visibility, q.as_table ? q.table || `t_${q.name}` : null].filter(Boolean).join(" · ")),
+          h("span", { class: "small" }, [q.owner, q.visibility, q.as_table ? q.table || `t_${q.name}` : null].filter(Boolean).join(" · "))),
         h("button", { type: "button", class: "x", "aria-label": `Delete ${q.name}`, onclick: async () => {
           try { await api(`/v1/queries?id=${encodeURIComponent(q.id)}`, null, "DELETE"); render(); } catch (e) { alertLine(saveCard, e.message); }
         } }, "×")))) : h("p", { class: "small" }, qs.saved && qs.saved.error ? qs.saved.error : "None yet."));
@@ -2147,12 +2159,19 @@
 
   function tileView(tile) {
     const form = CHART_FORM[tile.chart] || "bars";
-    return chartView({ id: `dash.${ds.current}.${tile.id}`, forms: ["bars", "line", "pie", "table", "number"], defaults: { form }, height: 110 + 120 * ((tile.h || 1) - 1),
+    const room = 224 * (tile.h || 1) - 14 - 112;           // the tile's height less its head and switches
+    return chartView({ id: `dash.${ds.current}.${tile.id}`, forms: ["bars", "line", "pie", "table", "number"], defaults: { form }, height: Math.max(90, room), compact: true,
+      donut: { max: Math.max(96, room), centre: "" }, limit: Math.max(3, Math.floor(room / 22)),
       load: async () => {
         const r = await cached(`/v1/dashboards/tile?${filterQuery(PAGES.dashboards, { source: tile.source })}`);
-        const f = resultFrame(r, (r.columns || [])[0], (r.columns || [])[1]);
-        if (tile.source === "builtin:play_mix") { f.by = "play_type"; }
-        return f;
+        if (tile.source === "builtin:play_mix") {         // the raw play types folded into the three groups
+          const by = {};
+          for (const [k, n] of r.rows || []) by[groupOf(k) || k] = (by[groupOf(k) || k] || 0) + (Number(n) || 0);
+          return Object.assign(catFrame(GROUPS.map(([g]) => ({ g, n: by[g] || 0 })), "g", "n", { by: "play_type", measure: "matches", kname: "Play type", vname: "Matches" }),
+            { unfiltered: r.unfiltered || [] });
+        }
+        const cols = r.columns || [];                    // a builtin's measure is its last column; a query's, its second
+        return Object.assign(resultFrame(r, cols[0], tile.source.startsWith("builtin:") ? cols[cols.length - 1] : cols[1]), { unfiltered: r.unfiltered || [] });
       } });
   }
 
@@ -2208,8 +2227,8 @@
         h("button", { type: "button", "aria-label": "Taller", disabled: t.h >= 3 || null, onclick: () => { t.h++; render(); } }, "H+"),
         h("button", { type: "button", "aria-label": "Remove tile", onclick: () => { board.tiles.splice(i, 1); render(); } }, "×")) : null;
       return h("section", { class: "card panel sl dash-tile", style: `--w:${Math.max(1, Math.min(4, t.w || 1))};--h:${Math.max(1, Math.min(3, t.h || 1))}` },
-        h("div", { class: "card-head" }, h("span", { class: "lab" }, t.title || t.source), h("span", { class: "small" }, t.source.replace(/^builtin:|^query:/, "")), tools),
-        tileView(t));
+        h("div", { class: "card-head" }, h("span", { class: "lab" }, t.title || t.source), h("span", { class: "small" }, t.source.replace(/^builtin:|^query:/, ""))),
+        tools, tileView(t));
     }));
     if (ds.editing) {
       const sources = BUILTINS.map(([v, l, c]) => [v, `${l} (console)`, c]).concat(queries.map((q) => [`query:${q.id}`, `${q.name} (saved query)`, q.chart || "table"]));
@@ -2320,11 +2339,9 @@
         note.textContent = `This page reads every play type and its own range: ${ignored.join(" and ") || "the Play and Era filters"} ${ignored.length > 1 ? "do" : "does"} not reach it.`;
       } else {
         note.hidden = !(uf.length && filtering);
-        note.textContent = note.hidden ? "" : `Not split by ${filterWord()} on this page: ${uf.join(", ").replace(/_/g, " ")}. Those numbers carry the "all" tag.`;
+        note.textContent = note.hidden ? "" : `Not split by ${filterWord()} on this page: ${uf.join(", ").replace(/[_.]/g, " ")}. Those numbers carry the "all" tag.`;
       }
-      const y = window.scrollY;
       page.replaceChildren(...parts.filter(Boolean));
-      if (state.keepScroll) { window.scrollTo(0, y); state.keepScroll = false; }
     } catch (e) {
       if (ticket !== renderTicket) return;
       if (e.message !== "unauthorised") page.replaceChildren(empty(e.message === "Failed to fetch"

@@ -208,7 +208,8 @@ ASKS = [
 
 
 def snapshot(store, agg):
-    get = {"/v1/me": {"name": "preview", "admin": False, "profiles": True}, "/v1/digest": store.latest_digest() or {}}
+    get = {"/v1/me": {"name": "preview", "admin": True, "profiles": True}, "/v1/digest": store.latest_digest() or {}}
+    rev65(store, agg, get)
     for build in BUILDS:
         for days in PAGE_DAYS:
             q = f"?build={build}&days={days}"
@@ -237,6 +238,50 @@ def snapshot(store, agg):
     return {"get": get, "ask": ask,
             "note": f"Preview on invented sample data, frozen at {built}. No server is behind this page: every player, "
                     f"name and number is made up, Erasure is off, and Ask knows its three example questions only."}
+
+
+SERIES_BUILDS, SERIES_DAYS = ("release", "editor"), (30, 90)
+SAMPLE_DASHBOARD = {"id": "launch_week", "name": "Launch week", "owner": "preview", "shared": "readers", "email": None,
+                    "tiles": [{"id": f"t{i}", "source": f"builtin:{name}", "title": title, "chart": chart, "w": w, "h": h}
+                              for i, (name, title, chart, w, h) in enumerate((
+                                  ("new_players", "New players", "number", 1, 1), ("d1_return", "D1 return", "number", 1, 1),
+                                  ("ftue_finished", "FTUE finished", "number", 1, 1), ("rows_per_play", "Rows per play", "number", 1, 1),
+                                  ("matches_per_day", "Matches per day", "bars", 2, 2), ("play_mix", "Play mix", "pie", 2, 2)))]}
+
+
+def rev65(store, agg, get):
+    """The Rev 65 pages (eras, cohorts, play types, every chart's switches, Query Studio, dashboards) as the preview's
+    frozen answers, keyed by the exact URLs console.js asks for (URLSearchParams order: build, days, then the rest).
+    Writes stay off: the page answers them with "saving is off in this preview"."""
+    from urllib.parse import urlencode
+    eras, milestones = store.eras(), store.milestones()
+    get["/v1/eras"] = V.eras_page(agg, eras, milestones)
+    data = [e for e in eras if e.get("kind") != "planned"]
+    if len(data) >= 2:
+        get["/v1/eras/compare?" + urlencode({"a": data[0]["id"], "b": data[1]["id"], "build": "release"})] = \
+            V.eras_compare(agg, data[0], data[1], "release")
+    for build in BUILDS:
+        for days in PAGE_DAYS:
+            q = urlencode({"build": build, "days": days})
+            page = V.cohorts(agg, build, days)
+            sc = V.Scope(build, days, "all", None)
+            page["lifespans"] = store.lifespans(build, sc.since, sc.until, sc.source, None, "all")
+            get["/v1/cohorts?" + q] = page
+            get["/v1/playtypes?" + q] = V.playtypes(agg, build, days)
+            for tile in SAMPLE_DASHBOARD["tiles"]:
+                get["/v1/dashboards/tile?" + urlencode({"build": build, "days": days, "source": tile["source"]})] = \
+                    V.builtin_tile(agg, tile["source"].split(":", 1)[1], build, days)
+    for build in SERIES_BUILDS:
+        for days in SERIES_DAYS:
+            for measure in V.SERIES_MEASURES:
+                for by in V.SERIES_ANSWERS[measure]:
+                    for over in V.SERIES_OVER:
+                        url = "/v1/series?" + urlencode({"build": build, "days": days, "measure": measure, "by": by, "over": over})
+                        get[url] = V.series(agg, measure, by, over, build, days, "all", None, eras)
+    get["/v1/schema"] = V.schema(agg)
+    get["/v1/queries"] = {"queries": []}
+    get["/v1/segments"] = {"segments": []}
+    get["/v1/dashboards"] = {"dashboards": [SAMPLE_DASHBOARD]}
 
 
 def page_content(snap):

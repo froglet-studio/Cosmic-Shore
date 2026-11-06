@@ -578,7 +578,9 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
     check_series(measure, by, over)
     sc = Scope(build, days, play, era, BUILD_KINDS if by == "build_kind" else None)
     db = _open(agg_path)
-    base = {"measure": measure, "by": by, "over": over, "build": build, "days": days, "play": play, **sc.describe()}
+    base = {"measure": measure, "by": by, "over": over, "build": build, "days": days, "play": play, **sc.describe(),
+            # the splits this measure can take, so the console offers only those (no 400 to find out)
+            "answerable_by": list(SERIES_ANSWERS[measure])}
     if db is None:
         return {**base, "points": [], "keys": [], "unfiltered": [], "empty": True}
     if by == "era":

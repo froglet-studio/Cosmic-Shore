@@ -182,6 +182,21 @@ class Aggregates(StoreCase):
         self.assertIn("1.25", notes[0]["body"])
 
 
+class SeriesAnswerable(StoreCase):
+    def test_a_series_lists_the_splits_its_measure_can_take(self):
+        self.store.ingest([started("a", "m1", T0), completed("a", "m1", T0 + 60_000)])
+        self.store.rebuild_aggregates()
+        events = V.series(self.store.agg_path, "events", "none", "day", "release", 7)
+        self.assertEqual(sorted(events["answerable_by"]), sorted(V.SERIES_ANSWERS["events"]))
+        self.assertNotIn("platform", events["answerable_by"])
+        for by in V.SERIES_BY:                              # what it lists is exactly what it answers
+            if by in events["answerable_by"]:
+                V.series(self.store.agg_path, "events", by, "day", "release", 7)
+            else:
+                with self.assertRaises(V.BadRequest):
+                    V.series(self.store.agg_path, "events", by, "day", "release", 7)
+
+
 class PlayFilter(StoreCase):
     """Shombith, 2026-11-06: "need features to filter solo vs ai, multiplayer"; "need filters and sorting"."""
 
@@ -849,7 +864,7 @@ class Rev65Http(unittest.TestCase):
         self.assertEqual((status, {p["key"]: p["value"] for p in out["points"]}),
                          (200, {"solo_vs_ai": 1, "multi_human_unknown": 1}))
         self.assertEqual(set(out), {"measure", "by", "over", "build", "days", "play", "from", "to", "source", "era",
-                                    "points", "keys", "unfiltered", "notes"})
+                                    "points", "keys", "unfiltered", "notes", "answerable_by"})
         status, out, _ = self.call("GET", "/v1/series?measure=events&by=country", key="read-key")
         self.assertEqual(status, 400)                               # negative control: events have no country
         self.assertIn("cannot be split by country", out["error"])
