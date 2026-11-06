@@ -239,7 +239,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 
 | # | Question | Decision |
 |---|---|---|
-| D1 | Theme names | **Deep Sea** (dark, default) and **Shore** (light). |
+| D1 | Theme names | **Deep Sea** (dark, default) and **Shore** (light). The analytics console names them **HyperSea** and **Cosmic Shore** and adds the game's colour sets (Nocturne, Photic, Dart Frog: each domain's trail colour, fitted to 3:1, for its charts, selection and swatches), generated from the game by `Tools/Analytics/console/make_themes.py` (Shombith, 2026-11-06). Fire and Lime keep their meanings in every set. |
 | D2 | Domain colours | As the colour board shows them: a domain is the live game palette (Nocturne since 2026-11-03: Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF8F11`); the UI's Jade, Ruby and Gold tokens mean their uses (control and selection, commit, purchase). |
 | D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
 | D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |

@@ -244,15 +244,20 @@ def page_content(snap):
     with open(os.path.join(HERE, "index.html"), encoding="utf-8") as handle:
         html = handle.read()
     body = html.split("<body>", 1)[1].split('<script src="console.js"></script>', 1)[0]
+    with open(os.path.join(HERE, "theme.js"), encoding="utf-8") as handle:
+        theme_js = handle.read()
+    with open(os.path.join(HERE, "themes.css"), encoding="utf-8") as handle:
+        css = handle.read() + "\n"
     with open(os.path.join(HERE, "console.css"), encoding="utf-8") as handle:
-        css = handle.read()
+        css += handle.read()
     with open(os.path.join(HERE, "console.js"), encoding="utf-8") as handle:
         js = handle.read()
     data = json.dumps(snap, separators=(",", ":"), default=str).replace("</", "<\\/")
-    return (f"<title>Froglet Analytics</title>\n"
+    return (f'<meta charset="utf-8">\n<title>Froglet Analytics</title>\n'
             f'<link rel="preconnect" href="https://fonts.googleapis.com">\n'
             f'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
             f'<link rel="stylesheet" href="{FONTS}">\n'
+            f"<script>\n{theme_js}</script>\n"
             f"<style>\n{css}\n</style>\n{body.strip()}\n"
             f'<script type="application/json" id="fa-snapshot">{data}</script>\n'
             f"<script>\n{js}\n</script>\n")

@@ -224,9 +224,12 @@
     return wrap;
   }
 
-  function meter(value) {
+  // `series` (0-3) marks a row as one of up to four categories: it takes the colour set's domain colour in that slot
+  // (Jade, Ruby, Gold, Blue; themes.css --series-1..4). Without it the meter is plain data (the set's Blue).
+  function meter(value, series) {
     const v = Math.max(0, Math.min(100, value || 0));
-    return h("div", { class: "meter-track" }, h("div", { class: "meter-fill", style: `width:${v}%` }));
+    const fill = series === undefined ? "" : `;background:var(--series-${(series % 4) + 1})`;
+    return h("div", { class: "meter-track" }, h("div", { class: "meter-fill", style: `width:${v}%${fill}` }));
   }
 
   function table(columns, rows) {
@@ -283,10 +286,10 @@
   }
 
   function playTypeRows(list) {
-    return list.map((r) => h("tr", {},
+    return list.map((r, i) => h("tr", {},
       h("td", {}, playType(r.play_type)), h("td", {}, fmt(r.matches)),
       h("td", { class: r.completed ? "" : "soft" }, r.completed ? pct(r.rematch_pct) : "–"),
-      h("td", { class: "meter" }, meter(r.rematch_pct)),
+      h("td", { class: "meter" }, meter(r.rematch_pct, i)),
       h("td", { class: r.d1_pct === null ? "soft" : "" }, pct(r.d1_pct)),
       h("td", { class: r.d7_pct === null ? "soft" : "" }, pct(r.d7_pct))));
   }
@@ -309,7 +312,7 @@
             table(["Build", "Starts", "Finished", "", "Rows per play"], o.match_health_by_build.map((r) => h("tr", {},
               h("td", {}, r.build), h("td", {}, fmt(r.starts)),
               h("td", { class: r.starts >= 10 && r.finished_pct < 20 ? "bad" : "" }, pct(r.finished_pct)),
-              h("td", { class: "meter" }, meter(r.finished_pct)),
+              h("td", { class: "meter" }, meter(r.finished_pct, Math.max(0, BUILDS.findIndex(([b]) => b === r.build)))),
               h("td", { class: r.rows_per_play > 1.05 ? "bad" : "" }, ratio(r.rows_per_play)))))),
           card("Events, last 24 hours", state.build,
             o.events_24h.length
@@ -729,6 +732,24 @@
     } catch (e) {}
   }
 
+  // The look: the ground (HyperSea / Cosmic Shore) and the game's colour set, from theme.js (make_themes.py).
+  function looks() {
+    const T = window.FA_THEMES, box = $("looks");
+    if (!T || !box) return;
+    const now = T.current();
+    const grounds = h("div", { class: "seg", role: "group", "aria-label": "Theme" });
+    segment(grounds, T.grounds, now.ground, (id) => { T.pick("ground", id); looks(); });
+    const sets = h("div", { class: "sets", role: "group", "aria-label": "Colour set" }, ...T.sets.map((s) =>
+      h("button", { type: "button", class: "set", title: s.line, "aria-pressed": String(s.id === now.set),
+                    onclick: () => { T.pick("set", s.id); looks(); } },
+        h("span", { class: "swatch", "aria-hidden": "true" }, ...s.swatch.map((c) => h("i", { style: `background:${c}` }))),
+        s.name)));
+    box.replaceChildren(h("span", { class: "lab" }, "Theme"), grounds, h("span", { class: "lab" }, "Colour set"), sets);
+    const strip = document.querySelector(".brand .strip");
+    if (strip) strip.replaceChildren(...[1, 2, 3, 4].map((n) => h("i", { style: `background:var(--series-${n})` })));
+  }
+
+  looks();
   window.addEventListener("hashchange", route);
   whoAmI().then(route);
 })();

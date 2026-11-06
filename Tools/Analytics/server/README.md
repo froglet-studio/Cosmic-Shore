@@ -12,13 +12,9 @@ every day matching PostHog's own count. Where it stands, what is unchecked and w
 
 ## The console page
 
-`Tools/Analytics/console/` (`index.html`, `console.css`, `console.js`): plain HTML, CSS and JS with no build step and
-no library, drawn to the Frogma style guide (Deep Sea, Aldrich and Chakra Petch, cut corners; data in blue-68, a
-problem in Fire, healthy as the Lime tick, the picked filter and focus in Jade). The server serves it at `/` with a
-strict Content-Security-Policy. It asks once for the reader's key and keeps it in that browser. GitHub Pages can host
-the same three files; open it there as `https://<pages>/?api=https://analytics.<the VM>` and add the Pages origin to
-`allowed_origins`. The page holds no data. The CSS uses `froglet.css`'s token names; link that file instead of the
-inline copy once `claude/ui-style-guide` merges.
+`Tools/Analytics/console/` (`index.html`, `console.css`, `console.js`, and the generated `themes.css` and `theme.js`): plain HTML, CSS and JS with no build step and no library, drawn to the Frogma style guide (Aldrich and Chakra Petch, cut corners; a problem in Fire, healthy as the Lime tick). The reader picks the look in the sidebar: **HyperSea** (dark, the style guide's Deep Sea) or **Cosmic Shore** (light, its Shore), in one of the game's colour sets (**Nocturne**, **Photic**, **Dart Frog**). The set paints the data (its Blue), the selection and focus (its Jade), and the four category colours (Jade, Ruby, Gold, Blue) where a chart compares play types or builds. `make_themes.py` writes the themes from the game's `ColorSetCatalog` and `froglet-tokens.json`, each colour fitted to 3:1 (marks) or 4.5:1 (text). Re-run it when a colour set changes; `--check` and the server's self-test fail when the files drift. The choice is kept in that browser; with none, the ground follows the viewer's light/dark setting and the set is the one the game runs on. The server serves the page at `/` with a strict Content-Security-Policy. It asks once for the reader's key and keeps it in that browser. GitHub Pages can host
+the same five files; open it there as `https://<pages>/?api=https://analytics.<the VM>` and add the Pages origin to
+`allowed_origins`. The page holds no data.
 
 ## How the game reaches it (nothing to fill in)
 

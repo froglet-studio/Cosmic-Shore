@@ -429,6 +429,22 @@ class PublicKey(unittest.TestCase):
         self.assertTrue(url.startswith("https://"), url)
 
 
+class ConsoleThemes(unittest.TestCase):
+    def test_the_console_themes_match_the_game_and_are_served(self):
+        console = os.path.join(HERE, "..", "console")
+        if not os.path.exists(os.path.join(HERE, "..", "..", "..", "Assets", "_SO_Assets", "Color Palettes")):
+            self.skipTest("no Unity assets in this checkout (the VM's sparse checkout)")
+        sys.path.insert(0, console)
+        import make_themes as T
+        self.assertEqual(T.self_test(), 0)
+        css, js, _ = T.build()
+        self.assertEqual(open(T.OUT_CSS, encoding="utf-8").read(), css, "run Tools/Analytics/console/make_themes.py")
+        self.assertEqual(open(T.OUT_JS, encoding="utf-8").read(), js, "run Tools/Analytics/console/make_themes.py")
+        for name in ("themes.css", "theme.js"):
+            self.assertIn("/" + name, A.CONSOLE_FILES)
+            self.assertIn(f'"{name}"', open(os.path.join(console, "index.html"), encoding="utf-8").read().replace("src=", "").replace("href=", ""))
+
+
 class Http(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
