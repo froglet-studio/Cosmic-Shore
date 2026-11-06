@@ -29,8 +29,16 @@ namespace CosmicShore.UI
         [SerializeField] CanvasGroup group;
         [Tooltip("The window; its foot and buttons are anchored to its bottom edge, so the confirmations shorten it.")]
         [SerializeField] RectTransform window;
+        [Tooltip("The window's height for the link conflict (with the pilot cards), in PC canvas units.")]
         [SerializeField] float conflictHeight = 680f;
+        [Tooltip("The window's height for the sign-out / delete confirmations, in PC canvas units.")]
         [SerializeField] float confirmHeight = 330f;
+        [Header("On a phone (Docs/MENU_REDESIGN_B.md section 135)")]
+        [Tooltip("The window's height for the link conflict while its canvas is in the phone layout, in phone canvas " +
+                 "units (800 x 450): the window is a bottom sheet there, posed by its PhoneRect.")]
+        [SerializeField] float phoneConflictHeight = 300f;
+        [Tooltip("The window's height for the confirmations while its canvas is in the phone layout, in phone canvas units.")]
+        [SerializeField] float phoneConfirmHeight = 220f;
         [SerializeField] TMP_Text eyebrow;
         [SerializeField] TMP_Text title;
         [SerializeField] TMP_Text body;
@@ -47,8 +55,34 @@ namespace CosmicShore.UI
 
         Action _primary, _secondary;
         GameObject _returnFocus;
+        AdaptiveCanvasScaler _scaler;
+        bool _phone;
+        bool _showingConflict;
 
         public bool IsOpen => group && group.alpha > 0f;
+
+        /// <summary>Whether the window takes its phone heights (its canvas is in the phone layout).</summary>
+        public bool UsesPhoneHeights => _phone;
+
+        /// <summary>The height the window takes for the conflict (<paramref name="conflict"/>) or a confirmation, in the
+        /// current layout's canvas units.</summary>
+        public float HeightFor(bool conflict) =>
+            _phone ? (conflict ? phoneConflictHeight : phoneConfirmHeight) : (conflict ? conflictHeight : confirmHeight);
+
+        void OnEnable()
+        {
+            _scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+            if (_scaler) _scaler.PhoneLayoutChanged += OnPhoneLayout;
+            OnPhoneLayout(_scaler && _scaler.UsesPhoneLayout);
+        }
+
+        /// <summary>Switch between the PC heights and the phone ones. The canvas raises this after its PhoneRects have
+        /// taken their poses, so the height set here is the last word; the open window is re-sized at once.</summary>
+        public void OnPhoneLayout(bool phone)
+        {
+            _phone = phone;
+            if (IsOpen) SetHeight(HeightFor(_showingConflict));
+        }
 
         void Awake()
         {
@@ -58,7 +92,12 @@ namespace CosmicShore.UI
             SetShown(false);
         }
 
-        void OnDisable() => SetShown(false);
+        void OnDisable()
+        {
+            if (_scaler) _scaler.PhoneLayoutChanged -= OnPhoneLayout;
+            _scaler = null;
+            SetShown(false);
+        }
 
         public void ShowConflict(string eyebrowLine, string titleLine, string bodyLine, string footLine,
                                  string thisCaption, PilotSummary thisSummary, string otherCaption, PilotSummary otherSummary,
@@ -66,7 +105,8 @@ namespace CosmicShore.UI
         {
             Fill(eyebrowLine, titleLine, bodyLine, footLine);
             if (cards) cards.SetActive(true);
-            SetHeight(conflictHeight);
+            _showingConflict = true;
+            SetHeight(HeightFor(true));
             FillCard(thisPilot, thisCaption, thisSummary);
             FillCard(otherPilot, otherCaption, otherSummary);
             Open(primaryCaption, onPrimary, secondaryCaption, onSecondary, cancelCaption);
@@ -76,7 +116,8 @@ namespace CosmicShore.UI
         {
             Fill(string.Empty, titleLine, bodyLine, string.Empty);
             if (cards) cards.SetActive(false);
-            SetHeight(confirmHeight);
+            _showingConflict = false;
+            SetHeight(HeightFor(false));
             Open(confirmCaption, onConfirm, null, null, cancelCaption);
         }
 

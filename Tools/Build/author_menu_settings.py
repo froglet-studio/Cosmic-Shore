@@ -369,7 +369,8 @@ def prompt_node(root):
     M.bracket_nodes(win, "Prompt/Window/Bracket", inset=14)
     inner = PROMPT_W - 2 * PAD
     label(win.child(N("Prompt/Window/Eyebrow", "Eyebrow", TL(PAD, 40, inner, 18))), "Link Google", "Label", "NeutralLightest")
-    label(win.child(N("Prompt/Window/Title", "Title", TL(PAD, 64, inner, 46))), "This Google account already has a pilot", "H2", "TextLight")
+    label(win.child(N("Prompt/Window/Title", "Title", TL(PAD, 64, inner, 46))), "This Google account already has a pilot", "H2", "TextLight",
+          wrap=True)     # one line in the PC rect; two in the phone sheet's words column
     label(win.child(N("Prompt/Window/Body", "Body", TL(PAD, 118, inner, 48))),
           "Pilots cannot be merged. Choose which one to fly; the other stays where it is.", "Body", "NeutralLightest",
           valign="top", wrap=True)
@@ -407,6 +408,7 @@ def prompt_body(ctx):
                 f"    questsDone: {ref(ctx.c(f'{ck}/Quests', 'tmp'))}\n")
     return (f"  group: {ref(ctx.c('Prompt', 'cg'))}\n  window: {ref(ctx.rt('Prompt/Window'))}\n"
             f"  conflictHeight: {PROMPT_H}\n  confirmHeight: {PROMPT_CONFIRM_H}\n"
+            f"  phoneConflictHeight: {PH_SHEET_H}\n  phoneConfirmHeight: {PH_SHEET_CONFIRM_H}\n"
             + "".join(f"  {f}: {ref(ctx.c(f'Prompt/Window/{k}', 'tmp'))}\n"
                       for f, k in (("eyebrow", "Eyebrow"), ("title", "Title"), ("body", "Body"), ("foot", "Foot")))
             + f"  cards: {ref(ctx.go('Prompt/Window/Cards'))}\n"
@@ -495,9 +497,15 @@ PH_NOTICE_H = 28
 PH_ACC_LEFT_W, PH_ACC_GAP = 200, 12
 PH_ACC_RIGHT_X = PH_ACC_LEFT_W + PH_ACC_GAP
 PH_ACC_RIGHT_W = PH_PAGE_W - PH_ACC_RIGHT_X       # 320
-PH_PROMPT_SCALE = 0.62
-PH_PROMPT_W = round(560 / PH_PROMPT_SCALE)        # 903 PC units: 560 on the phone, x 120 - 680 on an 800-wide canvas
-PH_PROMPT_BTN_H = 72                              # 44.6 on the phone
+# The account window on a phone (Rev 60, section 135): a bottom sheet x 112 .. W-16, 300 tall for the conflict and 220
+# for a confirmation (AccountPromptWindow's phone heights), the words left and the buttons a column on the right.
+PH_SHEET_H, PH_SHEET_CONFIRM_H, PH_SHEET_PAD = 300, 220, 20
+PH_SHEET_W = PH_WIN_W                             # 672 on the narrowest phone
+PH_SHEET_RIGHT_W, PH_SHEET_GAP = 260, 24
+PH_SHEET_LEFT_W = PH_SHEET_W - 2 * PH_SHEET_PAD - PH_SHEET_RIGHT_W - PH_SHEET_GAP     # 348
+PH_SHEET_BUTTONS = (("Primary", 0, 48), ("Secondary", 56, 48), ("Cancel", 112, 44))   # (holder, top, height)
+PH_SHEET_BTNS_H = PH_SHEET_BUTTONS[-1][1] + PH_SHEET_BUTTONS[-1][2]                    # 156
+PH_CARDS_TOP, PH_CARD_H = 140, 140
 CLOSE_W = 16 + K.label_width("B", "Label") + 24 + 10 + K.label_width("CLOSE", "ButtonSmall") + 16
 # In a match (no rail): the window centred, 16 in from each side - the values the pause window's override sets on the
 # Window's PhoneRect (author_ingame_hud.py), on its anchoredPosition.x and sizeDelta.x.
@@ -581,10 +589,25 @@ def check_phone_boxes():
         assert phone_w(name.upper(), "Label") <= PH_TAB_W, f"settings phone: the {name} tab's word is wider than the tab"
     assert phone_w("Some of these changes apply after you restart the game.", "Body") <= PH_PAGE_W - 20, \
         "settings phone: the restart notice runs out of its frame"
-    assert PROMPT_H * PH_PROMPT_SCALE <= PH_WIN_H and PH_PROMPT_BTN_H * PH_PROMPT_SCALE >= 44, \
-        "settings phone: the account window does not fit, or its buttons are under 44"
-    btns = sum(K.button_size(cap, small=True)[0] + 80 for cap in ("FLY SHOMBOSS", "KEEP NOVA RUNNER", "CANCEL")) + 2 * 18
-    assert btns <= PH_PROMPT_W - 2 * PAD, "settings phone: the account window's buttons do not fit its width"
+    check_sheet_boxes()
+
+
+def check_sheet_boxes():
+    """The account sheet (sheet-local, top-left origin, 672 wide): inside the sheet for both heights, the words column
+    clear of the buttons column, buttons 48 / 44, the captions and the title fit (the title in two lines)."""
+    assert PH_SHEET_H <= 450 - PH_Y and PH_SHEET_CONFIRM_H >= 16 + PH_SHEET_BTNS_H + 16, "settings phone: the sheet's heights"
+    right_x = PH_SHEET_W - PH_SHEET_PAD - PH_SHEET_RIGHT_W
+    assert PH_SHEET_PAD + PH_SHEET_LEFT_W + PH_SHEET_GAP == right_x, "settings phone: the sheet's columns overlap"
+    assert PH_CARDS_TOP >= 90 + 44 and PH_CARDS_TOP + PH_CARD_H <= PH_SHEET_H - 16, "settings phone: the pilot cards do not fit"
+    assert 52 + 2 * 28 + 22 <= PH_CARD_H, "settings phone: a pilot card's stats run out of it"
+    for (_, y, h), (_, ny, _) in zip(PH_SHEET_BUTTONS, PH_SHEET_BUTTONS[1:]):
+        assert y + h <= ny, "settings phone: the sheet's buttons overlap"
+    assert [h for _, _, h in PH_SHEET_BUTTONS] == [48, 48, 44], "settings phone: the sheet's buttons are 48 / 48 / 44"
+    assert 16 + PH_SHEET_BTNS_H + 8 + 30 <= PH_SHEET_H - 16, "settings phone: no room for the foot under the buttons"
+    for cap in ("FLY SHOMBOSS", "KEEP NOVA RUNNER", "CANCEL"):
+        assert phone_w(cap, "ButtonSmall") + 36 <= PH_SHEET_RIGHT_W, f"settings phone: {cap} does not fit its button"
+    assert phone_w("This Google account already has a pilot", "H2") <= 2 * PH_SHEET_LEFT_W, "settings phone: the title needs a third line"
+    assert phone_w("Quests done", "Body") <= 108, "settings phone: a stat caption runs into its value"
 
 
 def phone_layout(root):
@@ -675,29 +698,34 @@ def phone_layout(root):
             put(f"{pk}/Rows/Actions/SignOut", R((0, 0.5), None, (0, 0), (small_w("SIGN OUT"), 44), (0, 0.5)))
             put(f"{pk}/Rows/Actions/Delete", R((1, 0.5), None, (0, 0), (small_w("DELETE ACCOUNT"), 44), (1, 0.5)))
 
-    # The account window: its PC build at 0.62, narrowed to 560 on the phone (903 PC units), its parts re-posed in PC
-    # units to that width; the buttons 72 PC units tall so they are 44 on the phone.
-    inner = PH_PROMPT_W - 2 * PAD
-    card_w = (inner - 40) // 2
-    put("Prompt/Window", R((0.5, 0.5), None, (0, 0), (PH_PROMPT_W, PROMPT_H)), scale=PH_PROMPT_SCALE)
-    put("Prompt/Window/Eyebrow", TL(PAD, 40, inner, 18))
-    put("Prompt/Window/Title", TL(PAD, 64, inner, 46))
-    put("Prompt/Window/Body", TL(PAD, 118, inner, 48))
-    put("Prompt/Window/Cards", TL(PAD, 180, inner, 280))
+    # The account window (Rev 60, section 135): a bottom sheet right of the rail, posed in phone units at phone type
+    # sizes; AccountPromptWindow sets its height (phoneConflictHeight / phoneConfirmHeight) on a phone. Words on the
+    # left (eyebrow, title, body, the two pilot cards in the conflict), the buttons a column on the right: the two
+    # choices 48 tall, Cancel (its glass) 44, the foot line under them.
+    put("Prompt/Window", R((0, 0), (1, 0), ((PH_X - PH_RIGHT) / 2, 0), (-(PH_X + PH_RIGHT), PH_SHEET_H), (0.5, 0)))
+    put("Prompt/Window/Eyebrow", TL(PH_SHEET_PAD, 16, PH_SHEET_LEFT_W, 16))
+    put("Prompt/Window/Title", TL(PH_SHEET_PAD, 34, PH_SHEET_LEFT_W, 52))
+    put("Prompt/Window/Body", TL(PH_SHEET_PAD, 90, PH_SHEET_LEFT_W, 44))
+    put("Prompt/Window/Cards", TL(PH_SHEET_PAD, PH_CARDS_TOP, PH_SHEET_LEFT_W, PH_CARD_H))
+    card_w = (PH_SHEET_LEFT_W - 12) // 2
     for i, side in enumerate(("This", "Other")):
         ck = f"Prompt/Window/Cards/{side}"
-        put(ck, TL(i * (card_w + 40), 0, card_w, 280))
-        put(f"{ck}/Caption", TL(28, 24, card_w - 56, 18))
-        put(f"{ck}/Name", TL(28, 52, card_w - 56, 36))
+        put(ck, TL(i * (card_w + 12), 0, card_w, PH_CARD_H))
+        put(f"{ck}/Caption", TL(10, 8, card_w - 20, 16))
+        put(f"{ck}/Name", TL(10, 24, card_w - 20, 24))
         for j, stat in enumerate(("Crystals", "Vessels", "Quests")):
-            y = 110 + j * 52
-            put(f"{ck}/{stat}", TL(28, y, card_w - 56, 26))
-            put(f"{ck}/{stat}Rule", TL(28, y + 38, card_w - 56, 1))
-    put("Prompt/Window/Foot", R((0, 0), (1, 0), (0, PH_PROMPT_BTN_H + 52), (-2 * PAD, 40), (0.5, 0)))
-    put("Prompt/Window/Buttons", R((0, 0), (1, 0), (0, 36), (-2 * PAD, PH_PROMPT_BTN_H), (0.5, 0)))
-    for k, cap in (("Primary", "FLY SHOMBOSS"), ("Secondary", "KEEP NOVA RUNNER"), ("Cancel", "CANCEL")):
-        w, _ = K.button_size(cap, small=True)
-        put(f"Prompt/Window/Buttons/{k}", R(size=(w + 80, PH_PROMPT_BTN_H)), layout=(w + 80, PH_PROMPT_BTN_H))
+            y = 52 + j * 28
+            put(f"{ck}/{stat}Caption", TL(10, y, 108, 22))
+            put(f"{ck}/{stat}", TL(10, y, card_w - 20, 22))
+            put(f"{ck}/{stat}Rule", TL(10, y + 25, card_w - 20, 1))
+    # The column: the row's PhoneRect stacks nothing (each holder has its own pose) but turns its HorizontalLayoutGroup
+    # off on a phone, so the holders keep the poses below.
+    put("Prompt/Window/Buttons", R((1, 1), None, (-PH_SHEET_PAD, -16), (PH_SHEET_RIGHT_W, PH_SHEET_BTNS_H), (1, 1)),
+        stack=dict(origin=(0, 0), item=(0, 0)))
+    for k, y, h in PH_SHEET_BUTTONS:
+        put(f"Prompt/Window/Buttons/{k}", TL(0, y, PH_SHEET_RIGHT_W, h), layout=(PH_SHEET_RIGHT_W, h))
+    put("Prompt/Window/Foot", R((1, 1), None, (-PH_SHEET_PAD, -(16 + PH_SHEET_BTNS_H + 8)),
+                                (PH_SHEET_RIGHT_W, PH_SHEET_H - 16 - PH_SHEET_BTNS_H - 8 - 16), (1, 1)))
     check_phone_boxes()
 
 
@@ -1071,6 +1099,17 @@ def validate(files):
     _, body = A.doc_of(view, V("Window/General/Row1/Desc#phone"))
     assert "  hideOnPhone: 1\n" in body and A.doc_of(view, V("Window/General/Row1/Desc#cg"))[1], \
         "SettingsView: a row's description is not hidden on a phone (it needs its CanvasGroup)"
+    # The account sheet (section 135): unscaled, on the bottom edge, its heights in AccountPromptWindow, the buttons a column.
+    _, body = A.doc_of(view, V("Prompt/Window#phone"))
+    assert "  scale: 0\n" in body and "  anchorMin: {x: 0, y: 0}\n" in body and "  anchorMax: {x: 1, y: 0}\n" in body, \
+        "SettingsView: the account window is not a bottom sheet on a phone (or is drawn at a PC scale)"
+    assert f"  phoneConflictHeight: {PH_SHEET_H}\n  phoneConfirmHeight: {PH_SHEET_CONFIRM_H}\n" in pw, \
+        "AccountPromptWindow: its phone heights are not the sheet's"
+    _, body = A.doc_of(view, V("Prompt/Window/Buttons#phone"))
+    assert "  stackChildren: 1\n" in body, "SettingsView: the account window's buttons stay a row on a phone"
+    for k, y, h in PH_SHEET_BUTTONS:
+        _, body = A.doc_of(view, V(f"Prompt/Window/Buttons/{k}#phone"))
+        assert body and f"  sizeDelta: {{x: {PH_SHEET_RIGHT_W}, y: {h}}}\n" in body, f"SettingsView: the sheet's {k} button is not {h} tall"
     check_phone_boxes()
 
     modal = files[MODAL_PREFAB]
@@ -1108,6 +1147,13 @@ def _stand_in_mark(text_):
     return text_[:i] + text_[i:j].replace("  m_Sprite: {fileID: 0}", "  m_Sprite: " + K.sprite_ref(K.chrome_sprite("chrome_provider_google"))) + text_[j:]
 
 
+def _prompt_phone(text_, old, new, key="Prompt/Window"):
+    """Rewrite one line of a prompt node's PhoneRect (a negative control)."""
+    fid = K.FileIds(VIEW)(key + "#phone")
+    m = re.search(r"^--- !u!114 &%s\n.*?(?=^--- |\Z)" % fid, text_, re.M | re.S)
+    return text_.replace(m.group(0), m.group(0).replace(old, new, 1), 1)
+
+
 def self_test(files):
     def expect(label_, mutate):
         bad = dict(files)
@@ -1134,6 +1180,11 @@ def self_test(files):
         ("an Account row missing", lambda f: f.__setitem__(view, re.sub(r"  - provider: 4\n    root: .*\n    mark: .*\n    line: .*\n    linkButton: .*\n    linkedMark: .*\n", "", f[view]))),
         ("the Account window ships shown", lambda f: f.__setitem__(view, _show_prompt(f[view]))),
         ("a settings link back on the old site", lambda f: f.__setitem__(view, f[view].replace(STORE_SITE, "https://cosmicshore.com", 1))),
+        ("the account sheet back at a PC scale", lambda f: f.__setitem__(view, _prompt_phone(f[view], "  scale: 0\n", "  scale: 0.62\n"))),
+        ("the account window's phone heights dropped", lambda f: f.__setitem__(view, f[view].replace(
+            f"  phoneConflictHeight: {PH_SHEET_H}\n", "  phoneConflictHeight: 680\n", 1))),
+        ("the sheet's Cancel under 44", lambda f: f.__setitem__(view, _prompt_phone(f[view], "  sizeDelta: {x: 260, y: 44}\n",
+                                                                                     "  sizeDelta: {x: 260, y: 36}\n", "Prompt/Window/Buttons/Cancel"))),
         ("OptionsMenuContent left nested", lambda f: f.__setitem__(MODAL_PREFAB, f[MODAL_PREFAB] + f"# guid: {OPTIONS_GUID}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)
