@@ -1,11 +1,80 @@
-# Thresher Time — the Thresher-only circuit race
+# Thresher Time — the Thresher-only target race
 
-> `GameModes.ThresherTime = 66`. A closed loop of switch rings is cut through the cell and every
-> pilot flies **three laps** of it in order; the first **domain** whose **lead runner** threads the
-> last gate of the last lap wins, on finish **time** (golf). Grizzly Time's shape (itself Redline's
-> on Headlong's solver), cut against the Thresher's sling. The hull: `R_VesselActions/THRESHER.md`.
-> **A gate is threaded by the hull OR the ball** (Garrett, 2026-10-19; `IRingThreadProbe`, THRESHER.md
-> §5b): the same mouth test on the ball's segment, so a chain swung through the lit ring counts.
+> `GameModes.ThresherTime = 66`. A closed loop of gates is cut through the cell and every pilot flies
+> **two laps** of it in order; the first **domain** whose **lead runner** clears the last gate of the last lap
+> wins, on finish **time** (golf). Grizzly Time's shape (itself Redline's on Headlong's solver), cut against the
+> Thresher's sling. The hull: `R_VesselActions/THRESHER.md`. **Since 2026-11-04 every gate is a NEST to break,
+> not a ring to thread** (§0). Before that a gate was threaded by the hull or the ball (Garrett, 2026-10-19;
+> `IRingThreadProbe`, THRESHER.md §5b); that rule stands only when the mode has no nests.
+
+## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
+
+> "It should not have rings, it should have objects that it can break as target, and then move to another object
+> ... I definitely want the Intensity 4 of Thresher's time game to be intensely hard and rewarding as possible."
+
+**The loop.** The rings are still the course (the objective arrow, the race toasts, the AI's steering read them),
+but they are hidden (`RaceGateRing.SetVisualHidden`). At each one stands a **nest** (`ThresherTimeNest`): a core of
+blocks inside a cage of plates. Break any core block - the ball, a chain cut, a charged blast, a ram, a Mass Mode
+steal all do - and the whole nest bursts. A gate is cleared by the pilot whose next gate it is passing within the
+**credit radius** of an open nest: beside it as it broke, or through its wreck before it grows back
+(`ThresherTimeNest.PassesNear`, `ThresherTimeController.ThreadsGate`). It grows back after the **regrow** time,
+once no hull is inside it. The metric is still `SwitchesThreaded` and the scoring rule, turn monitor, toasts and
+comeback are unchanged, so the card stays a Time game (`ModeGenre`).
+
+**The Thresher's way through a nest** (THRESHER.md §2-2a): plant beside it and orbit, so the chain sweeps the cage,
+slicing plates and banking energy in the ball; then let go and hit the core with the charged ball, whose blast
+(45 u at rest, 180 u at 30 slices) opens it. A ram through the cage works too, slower and through danger plates.
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Core | 7 x 6 u blocks | 3 x 5 u | 1 x 5 u | 1 x 3.5 u |
+| Cage | none | 2 rings, plain | 3 rings, every 3rd plate danger | 4 rings + 2 latitude rings, shielded, every 4th danger, a danger halo across the approach |
+| Prisms a nest | 7 | 37 | 49 | 110 |
+| Credit radius | 320 u | 280 u | 240 u | 200 u |
+| Regrow | 3 s | 3 s | 2.5 s | 2 s |
+
+Short regrows and a tight radius at the top make I4 a race to break your OWN nest, not to follow someone through
+theirs. **Reward:** a crystal sits in the core of every third nest (`crystalEveryNthTarget`, the crystal manager's
+course keys, Switchback's seam), so cracking it open and flying through its heart takes it.
+
+Authored by `Tools/Build/author_thresher_time_assets.py` (the controller's target block in the scene, the card and
+preview text). Tests: `ThresherTimeNestTests` (core first, the armour ladder, the budget, closed form, the credit
+rule with a negative control).
+
+**Plants and creatures: each intensity is its own place, grown by the cell** (Yash, 2026-11-04: "some floras to
+destroy, some faunas to kill", and "never break Garrett's rule"). The mode lays no plant and no creature. It picks
+which cell each intensity races in, Serpentine's and Tollway's way, and that cell's own spawner grows them under the
+locked ecology law (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`):
+- plants roll Jade, Ruby or Gold;
+- creatures take the cell's controlling colour;
+- everything blooms in and withers out, and nothing has a timer.
+
+A pilot meets them with the kit as it is (a mode never changes the vessel). A **rival-coloured** plant or creature is
+a target: the ball, the chain or a blast takes it apart, and its heart is a crystal, which feeds the element bars. One
+in **your own colour** is a bumper your ball bounces off. So the gates never depend on a colour roll: the nests are the
+gates, and the living things are the hazards and the rewards along the line.
+
+| | I1 Shallows | I2 Kelp Line | I3 Hunting Grounds | I4 The Thicket |
+|---|---|---|---|---|
+| Plants | 8 Spire | 8 Spire, 4 Gyroid | 10 Cacti, 6 Gyroid | 14 Cacti, 8 Spire, 6 Gyroid |
+| Creatures (live cap) | tadpoles 10 | tadpoles 14, brittlestars 6 | sharks 3, piranha 10, tadpoles 10 | sharks 3, piranha 12, brittlestars 4, tadpoles 6 |
+
+The plants grow in the shell the course is cut through (480-1,080 u of the 1,200 u membrane), so they line the
+track. Every config is an existing one copied with only its name and numbers changed, re-read from its source on
+every run. No other mode's cell, plant or creature is touched:
+- the cell and spawn profile are Skim Race's;
+- the creatures are Serpentine's four;
+- the plants are Tollway's networked court species (Spire and Cacti at a 40-prism budget).
+
+The files are in `Assets/_SO_Assets/Cell Configs/Thresher Time Cell/`, and the scene's Cell is `IntensityWise`. The
+plants replicate (`NetworkSynced`). The creatures are as networked as every creature in the game today, which is not
+at all: no fauna config has `NetworkSynced` on yet. So each peer grows its own, as it already did in the Skim Race
+cell this mode used before.
+
+**AI.** No AI change: the gate-race steering already flies at the ring's centre, which is the core, and the hull's
+ram breaks it; the sling AI keeps slinging. Whether it breaks nests well is for the soak to measure
+(`ThresherTimeSoakRunner`), and the Thresher's Time genome has to be learned again on the new mode
+(`Docs/AI_SYSTEM/AI_PLAN.md`, step `time-arcade`).
 
 ## 1. What the mode is asking
 

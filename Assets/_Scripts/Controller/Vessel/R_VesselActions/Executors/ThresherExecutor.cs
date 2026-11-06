@@ -177,6 +177,12 @@ namespace CosmicShore.Gameplay
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
+        /// <summary>The ball's velocity (world units/s); zero before the chain is seeded.</summary>
+        public Vector3 BallVelocity => _solver?.BallVelocity ?? Vector3.zero;
+        /// <summary>This frame's analog LT (Plant) depth 0..1 as PollTriggers read it (a press reads 1).</summary>
+        public float LeftTriggerDepth => _settings.Analog ? _ltDepth : (_plantHeld ? 1f : 0f);
+        /// <summary>This frame's analog RT (Winch) depth 0..1 as PollTriggers read it (a press reads 1).</summary>
+        public float RightTriggerDepth => _settings.Analog ? _rtDepth : (_payOut ? 1f : 0f);
 
         /// <summary>The ball threads race rings as the hull does (Garrett, 2026-10-19: "the thresher should
         /// activate rings like in its racing game with either the vessel or the ball"). The epoch changes on
@@ -317,11 +323,18 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ input edges
 
-        public void BeginPayOut() => _payOut = true;
-        public void EndPayOut() => _payOut = false;
+        /// <summary>RT (Winch) pressed / released - the raw input edges, on every peer (they round-trip through
+        /// <c>R_VesselActionHandler</c>). Listened to by <see cref="CosmicShore.Gameplay.Audio.ThresherAudioController"/>.</summary>
+        public event Action WinchPressed, WinchReleased;
+        /// <summary>LT (Plant) pressed / released - the raw input edges, on every peer.</summary>
+        public event Action PlantPressed, PlantReleased;
+
+        public void BeginPayOut() { _payOut = true; WinchPressed?.Invoke(); }
+        public void EndPayOut() { _payOut = false; WinchReleased?.Invoke(); }
 
         public void BeginPlant()
         {
+            PlantPressed?.Invoke();
             if (_solver == null) return;
             _plantHeld = true;
             // Analog triggers: the press is only a fallback depth (a source with no analog channel, a remote
@@ -331,6 +344,7 @@ namespace CosmicShore.Gameplay
 
         public void EndPlant()
         {
+            PlantReleased?.Invoke();
             if (_solver == null) return;
             _plantHeld = false;
             if (_settings.Analog)

@@ -10,7 +10,7 @@ namespace CosmicShore.UI
     /// Fields are grouped rather than flat, and the grouping is load-bearing - see
     /// Docs/Analytics/DATA_ARCHITECTURE.md §2.1. Each group maps 1:1 to a privacy class
     /// (so a GDPR export or erasure operates on a group, not a field hunt) and 1:1 to a
-    /// PostHog person-property prefix (so the mirror is mechanical, not hand-maintained).
+    /// Froglet Analytics person-property prefix (so the mirror is mechanical, not hand-maintained).
     ///
     /// Sole writer: <see cref="PlayerDataService"/>.
     /// </summary>
@@ -34,12 +34,12 @@ namespace CosmicShore.UI
     {
         /// <summary>
         /// UGS authentication PlayerId. The canonical identity everywhere: Cloud Save,
-        /// Leaderboards, UGS Analytics, and the PostHog distinct_id.
+        /// Leaderboards, UGS Analytics, and the Froglet Analytics distinct_id.
         /// </summary>
         public string UserId = "";
 
         /// <summary>
-        /// Player-chosen free text. Searchable in PostHog, but never the identity key -
+        /// Player-chosen free text. Searchable in Froglet Analytics, but never the identity key -
         /// it is mutable and not unique.
         /// </summary>
         public string DisplayName = "";

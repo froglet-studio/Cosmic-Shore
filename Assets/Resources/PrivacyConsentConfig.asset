@@ -16,7 +16,7 @@ MonoBehaviour:
   ageTitle: Before you fly
   ageBody: What year were you born?
   consentTitle: Help us improve Cosmic Shore
-  consentBody: "We'd like to collect anonymous gameplay data - which modes you play, how long you fly, and how the game performs - to work out what to fix and what to build next.\n\nThis is processed by Unity Gaming Services and PostHog (EU). It includes your player ID and display name. It is never sold, and never used for advertising.\n\nYou can change this any time in Settings."
+  consentBody: "We'd like to collect anonymous gameplay data - which modes you play, how long you fly, and how the game performs - to work out what to fix and what to build next.\n\nThis is processed by Unity Gaming Services and by Froglet's own analytics server. It includes your player ID, your display name and the country you connect from (worked out from your connection, which is not stored). It is never sold, and never used for advertising.\n\nYou can change this any time in Settings."
   acceptLabel: I agree
   declineLabel: No thanks
   continueLabel: Continue

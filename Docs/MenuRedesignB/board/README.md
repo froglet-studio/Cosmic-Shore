@@ -14,11 +14,27 @@ canvas's `project/` files (Artifact read) into this folder.
 - **What was decided:** `Docs/MENU_REDESIGN_B.md` records each round, which option was picked and what was built.
   The pick for a round is the board the doc names, not the last one on its page.
 
-<!-- design_board.py readme: generated below, edit the text above -->
+<!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design Board**: Rev 3 to Rev 49, 434 boards on 4 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-05 from canvas version `1793914445-0ac1` of **Frogma**: Rev 3 to Rev 57, 478 boards on 8 tabs. The canvas opens on the tab `launch-console`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
+
+### Tab: Style Guide  (`style-guide`)
+
+#### Frogma style guide - the rules every screen, board, deck and page follows
+
+- [`SGReadMe.dc.html`](SGReadMe.dc.html) - Style Guide - start here: one look for everything Froglet makes
+- [`SGColour.dc.html`](SGColour.dc.html) - Style Guide 1 - Colour: the six families (Garrett's colour chart)
+- [`SGChart.dc.html`](SGChart.dc.html) - Style Guide 1b - The colour chart: the wheel, the forbidden band, the shades to choose from
+- [`SGThemes.dc.html`](SGThemes.dc.html) - Style Guide 2 - Themes: Deep Sea and Shore, domains as one accent
+- [`SGType.dc.html`](SGType.dc.html) - Style Guide 3 - Type and numbers
+- [`SGShape.dc.html`](SGShape.dc.html) - Style Guide 4 - Shape, space, layers and the safe area
+- [`SGButtons.dc.html`](SGButtons.dc.html) - Style Guide 5 - Buttons and their states
+- [`SGWindows.dc.html`](SGWindows.dc.html) - Style Guide 6 - Cards, windows and toasts
+- [`SGMotion.dc.html`](SGMotion.dc.html) - Style Guide 7 - Motion
+- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
+- [`SGChecklist.dc.html`](SGChecklist.dc.html) - Style Guide 9 - The UI checklist and the five screens to fix
 
 ### Tab: Menu Redesign  (`menu-redesign`)
 
@@ -245,7 +261,6 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R15VoyageD.dc.html`](R15VoyageD.dc.html) - Rev 15 - D, Track into the voyages: a slim Episode 1 strip, the old quest cards, and the track carrying on into Tandava
 - [`R15VoyageE.dc.html`](R15VoyageE.dc.html) - Rev 15 - E, Voyages at the side: Episode 1 as a chip beside the title, the old full-height quest cards, Tandava and Epis
 - [`R15VoyageF.dc.html`](R15VoyageF.dc.html) - Rev 15 - F, Tracker first: the Episode 1 strip, the old quest cards across the width, the voyages as a band underneath
-- [`HomeNotes.dc.html`](HomeNotes.dc.html) - Item 6 · Home · what changes
 
 #### Rev 14 - Voyage + quest tracker
 
@@ -314,7 +329,6 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R7FriendProfile.dc.html`](R7FriendProfile.dc.html) - Rev 7 - an online friend's profile: hover (or focus) their avatar in the party panel and a card pops beside it - avatar,
 - [`R7Loading.dc.html`](R7Loading.dc.html) - Rev 7 - changing cell: instead of black, the living lattice, an omni crystal filling as the cell builds, ENTERING GARLAN
 - [`R7Notes.dc.html`](R7Notes.dc.html) - Rev 7 - what changes, and the questions for the owner
-- [`ModesNotes.dc.html`](ModesNotes.dc.html) - Item 8 · Arena, Toy Box, Mission, Toy configure · what changes
 
 #### Rev 6 - Elemental
 
@@ -340,7 +354,6 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R4HangarStage.dc.html`](R4HangarStage.dc.html) - Rev 4 - Hangar stage: a lit hangar bay (holo floor, rings, lights, motes) instead of a black box; RT pressed - the Sparr
 - [`R4HangarUpgrade.dc.html`](R4HangarUpgrade.dc.html) - Rev 4 - Hangar upgrades: every element has an UPGRADE button with its crystal price; Mass selected
 - [`R4HangarUpgradeAnim.dc.html`](R4HangarUpgradeAnim.dc.html) - Rev 4 - Hangar upgrade animation (loops): press UPGRADE - crystals fly to the hull, the next pip fills white then Mass b
-- [`ArkNotes.dc.html`](ArkNotes.dc.html) - Item 7 · Ark · what changes
 
 #### Rev 3
 
@@ -367,7 +380,8 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R3HudRhino.dc.html`](R3HudRhino.dc.html) - Rev 3 - Rhino HUD: its own icons, element colours drifting like a lava lamp
 - [`R3HudSerpent.dc.html`](R3HudSerpent.dc.html) - Rev 3 - Serpent HUD: its own icons, element colours drifting like a lava lamp
 - [`R3HudButterfly.dc.html`](R3HudButterfly.dc.html) - Rev 3 - Butterfly HUD: its own icons, element colours drifting like a lava lamp
-- [`SystemNotes.dc.html`](SystemNotes.dc.html) - Items 9, 10, 11 · what changes
+- [`ProfileNotes.dc.html`](ProfileNotes.dc.html) - Item 5 · Profile · what changes
+- [`LeaderboardEmpty.dc.html`](LeaderboardEmpty.dc.html) - Item 4 · Weekly leaderboard · no times yet
 
 #### Start flow
 
@@ -382,11 +396,18 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`StartLoading.dc.html`](StartLoading.dc.html) - Start - Boot world loading (built)
 - [`StartNotes.dc.html`](StartNotes.dc.html) - Start - Notes
 
+#### Item 12 - Ready, pause, connecting
+
+- [`HudReady.dc.html`](HudReady.dc.html) - Item 12 - Ready and countdown - interactive
+- [`HudPause.dc.html`](HudPause.dc.html) - Item 12 - Pause
+- [`HudConnecting.dc.html`](HudConnecting.dc.html) - Item 12 - Connecting, building the arena
+
 #### Item 12 - Match HUD
 
 - [`HudMatch.dc.html`](HudMatch.dc.html) - Item 12 - Match HUD - interactive (press the feed for a toast, a score to punch it)
 - [`HudCardStates.dc.html`](HudCardStates.dc.html) - Item 12 - Ability card states at 2x
 - [`HudNotes.dc.html`](HudNotes.dc.html) - Item 12 - In-game HUD - what changes
+- [`ArcadeNotes.dc.html`](ArcadeNotes.dc.html) - Item 3 · Arcade · what changes
 
 #### Item 12 - Every vessel's HUD
 
@@ -400,12 +421,6 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`HudSerpent.dc.html`](HudSerpent.dc.html) - Item 12 - Serpent HUD (its own icons, style-B chrome; 1.5x annotation)
 - [`HudButterfly.dc.html`](HudButterfly.dc.html) - Item 12 - Butterfly HUD (its own icons, style-B chrome; 1.5x annotation)
 
-#### Item 12 - Ready, pause, connecting
-
-- [`HudReady.dc.html`](HudReady.dc.html) - Item 12 - Ready and countdown - interactive
-- [`HudPause.dc.html`](HudPause.dc.html) - Item 12 - Pause
-- [`HudConnecting.dc.html`](HudConnecting.dc.html) - Item 12 - Connecting, building the arena
-
 #### Item 12 - End of match, spectating
 
 - [`HudEndReveal.dc.html`](HudEndReveal.dc.html) - Item 12 - Match end reveal
@@ -414,14 +429,17 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`MaelstromHub.dc.html`](MaelstromHub.dc.html) - Maelstrom - Hub between rounds
 - [`MaelstromStats.dc.html`](MaelstromStats.dc.html) - Maelstrom - Stats (tournament decided)
 - [`MaelstromSummary.dc.html`](MaelstromSummary.dc.html) - Maelstrom - Summary
-- [`ConfigureNotes.dc.html`](ConfigureNotes.dc.html) - Item 4 · Configure · what changes
 - [`WeeklyLeaderboard.dc.html`](WeeklyLeaderboard.dc.html) - Item 4 · Weekly leaderboard · interactive, revision 2 (podium, live countdown, tabs)
-- [`LeaderboardEmpty.dc.html`](LeaderboardEmpty.dc.html) - Item 4 · Weekly leaderboard · no times yet
+- [`ConfigureNotes.dc.html`](ConfigureNotes.dc.html) - Item 4 · Configure · what changes
 
-#### In-game HUD
+#### Item 0 · Component kit
 
-- [`MaelstromNotes.dc.html`](MaelstromNotes.dc.html) - Maelstrom - Notes
-- [`ProfileNotes.dc.html`](ProfileNotes.dc.html) - Item 5 · Profile · what changes
+- [`MenuKit.dc.html`](MenuKit.dc.html) - Item 0 · Component kit (approved; reference copy)
+
+#### Menu
+
+- [`HangarNotes.dc.html`](HangarNotes.dc.html) - Item 2 · Hangar · what changes
+- [`HomeNotes.dc.html`](HomeNotes.dc.html) - Item 6 · Home · what changes
 
 #### Item 1 · Top nav
 
@@ -436,11 +454,7 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`HangarSpend.dc.html`](HangarSpend.dc.html) - Item 2 · Hangar · spend crystals (enough)
 - [`HangarShort.dc.html`](HangarShort.dc.html) - Item 2 · Hangar · spend crystals (not enough)
 - [`HangarNoArt.dc.html`](HangarNoArt.dc.html) - Item 2 · Hangar · vessel with no preview art or abilities (Scarab)
-
-#### Menu
-
-- [`HangarNotes.dc.html`](HangarNotes.dc.html) - Item 2 · Hangar · what changes
-- [`ArcadeNotes.dc.html`](ArcadeNotes.dc.html) - Item 3 · Arcade · what changes
+- [`ArkNotes.dc.html`](ArkNotes.dc.html) - Item 7 · Ark · what changes
 
 #### Item 3 · Arcade + party panel
 
@@ -448,6 +462,7 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`ArcadeSolo.dc.html`](ArcadeSolo.dc.html) - Item 3 · Arcade · solo, friends online, gamepad focus on a card
 - [`ArcadeNoFriends.dc.html`](ArcadeNoFriends.dc.html) - Item 3 · Arcade · solo, no friends online
 - [`ArcadePicks.dc.html`](ArcadePicks.dc.html) - Item 3 · Arcade · favourites, party picks, locked look (illustration)
+- [`ModesNotes.dc.html`](ModesNotes.dc.html) - Item 8 · Arena, Toy Box, Mission, Toy configure · what changes
 
 #### Item 4 · Game configure + weekly leaderboard
 
@@ -458,6 +473,7 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`ConfigureWeeklySpent.dc.html`](ConfigureWeeklySpent.dc.html) - Item 4 · Configure · weekly challenge, already played today
 - [`ConfigureGuest.dc.html`](ConfigureGuest.dc.html) - Item 4 · Configure · party guest after Ready
 - [`ConfigureLocked.dc.html`](ConfigureLocked.dc.html) - Item 4 · Configure · Joust, Add AI armed, locked intensity pressed
+- [`SystemNotes.dc.html`](SystemNotes.dc.html) - Items 9, 10, 11 · what changes
 
 #### Item 5 · Profile + profile window
 
@@ -467,6 +483,13 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`ProfileName.dc.html`](ProfileName.dc.html) - Item 5 · Profile window · display name, valid
 - [`ProfileNameError.dc.html`](ProfileNameError.dc.html) - Item 5 · Profile window · display name, invalid
 - [`ProfileNameTaken.dc.html`](ProfileNameTaken.dc.html) - Item 5 · Profile window · display name taken
+
+#### Item 6 · Home
+
+- [`Home.dc.html`](Home.dc.html) - Item 6 · Home · interactive, revision 2 (Up next cards, hub icons, lamp asks to go offline)
+- [`HomeInvite.dc.html`](HomeInvite.dc.html) - Item 6 · Home · party invite arriving
+- [`HomeFocus.dc.html`](HomeFocus.dc.html) - Item 6 · Home · gamepad focus on Arena
+- [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online
 
 #### Item 7 · Ark (Elemental Converter)
 
@@ -492,23 +515,13 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`SettingsPerformance.dc.html`](SettingsPerformance.dc.html) - Item 9 · Settings · Performance after a hand change (Custom, restart notice)
 - [`SettingsOther.dc.html`](SettingsOther.dc.html) - Item 9 · Settings · Other
 - [`Credits.dc.html`](Credits.dc.html) - Item 9 · Credits
+- [`MaelstromNotes.dc.html`](MaelstromNotes.dc.html) - Maelstrom - Notes
 
 #### Items 10 + 11 · Closed surfaces, toasts
 
 - [`ClosedSurfaces.dc.html`](ClosedSurfaces.dc.html) - Item 10 · Closed surfaces as a player meets them
 - [`PurchaseConfirm.dc.html`](PurchaseConfirm.dc.html) - Item 10 · Purchase confirmation (blind, unreachable today)
 - [`Toasts.dc.html`](Toasts.dc.html) - Item 11 · Menu toasts · interactive, revision 2 (raise any message; lifetime drains)
-
-#### Item 6 · Home
-
-- [`Home.dc.html`](Home.dc.html) - Item 6 · Home · interactive, revision 2 (Up next cards, hub icons, lamp asks to go offline)
-- [`HomeInvite.dc.html`](HomeInvite.dc.html) - Item 6 · Home · party invite arriving
-- [`HomeFocus.dc.html`](HomeFocus.dc.html) - Item 6 · Home · gamepad focus on Arena
-- [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online
-
-#### Item 0 · Component kit
-
-- [`MenuKit.dc.html`](MenuKit.dc.html) - Item 0 · Component kit (approved; reference copy)
 
 ### Tab: Compute Console  (`compute-console`)
 
@@ -530,16 +543,37 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R42C.dc.html`](R42C.dc.html) - Rev 42 C - Ledger: the light edition, paper grey, stills as thin bands, dense rows
 - [`R42Notes.dc.html`](R42Notes.dc.html) - Rev 42 - notes: what each look changes against the built page, and what stays
 
-### Tab: Menu Redesign C  (`menu-redesign-c`)
+### Tab: Menu Redesign A  (`menu-redesign-c`)
+
+#### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
+
+- [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
+- [`R54A.dc.html`](R54A.dc.html) - Rev 54 A - Showroom: the picked set's world fills the page under a big name, a rail of sets along its foot (recommended) - interactive
+- [`R54B.dc.html`](R54B.dc.html) - Rev 54 B - Paint chips: every set as a tall chip of its rim-over-face pairs, the picked one opens wide - interactive
+- [`R54C.dc.html`](R54C.dc.html) - Rev 54 C - Plinth: one domain's three prism tiers large on a plinth, sets left, domain and pigments right - interactive
+- [`R54D.dc.html`](R54D.dc.html) - Rev 54 D - Before / after: drag a divider across one world between the set you wear and the one you try - interactive
+- [`R54Notes.dc.html`](R54Notes.dc.html) - Rev 54 - notes: what changed from Rev 51, the four, how it maps to Unity, decisions
+
+#### Rev 51 - Colour sets in the Profile: pick Photic, Nocturne or Dart Frog, and the repaint between them
+
+- [`R51Compare.dc.html`](R51Compare.dc.html) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in
+- [`R51A.dc.html`](R51A.dc.html) - Rev 51 A - Profile tabs: Record | Colour sets | Audio Studio on LB / RB; the set cards beside a big live preview (recomm - interactive
+- [`R51B.dc.html`](R51B.dc.html) - Rev 51 B - Pilot card chip: the colour set sits on the pilot card and opens a Colour sets window - interactive
+- [`R51C.dc.html`](R51C.dc.html) - Rev 51 C - Shelf: a full-width row of large set cards under the pilot card, the record below it
+- [`R51Locked.dc.html`](R51Locked.dc.html) - Rev 51 Locked - Later, once quests are planned: a set its quest has not given yet - which quest, how far you are, where
+- [`R51Unlock.dc.html`](R51Unlock.dc.html) - Rev 51 Unlock - Later, once quests are planned: the quest claim in the Voyage window hands over the colour set
+- [`R51Loading.dc.html`](R51Loading.dc.html) - Rev 51 Loading - Changing colour set: the cell-change loading screen, repainting the HyperSea
+- [`R51Applied.dc.html`](R51Applied.dc.html) - Rev 51 Applied - Applied: back in the Profile, every prism, vessel and trail in the new set, the cell behind it repainte
+- [`R51Notes.dc.html`](R51Notes.dc.html) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, d
 
 #### Rev 49 - Voyage card I (picked): four more inviting looks, just the card
 
-- [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recommended) - interactive
+- [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme - interactive
 - [`R49B.dc.html`](R49B.dc.html) - Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive
 - [`R49C.dc.html`](R49C.dc.html) - Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive
 - [`R49D.dc.html`](R49D.dc.html) - Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive
 - [`R49Notes.dc.html`](R49Notes.dc.html) - Rev 49 - notes: what was asked, what all four share, the recommendation
-- [`R49ACrew.dc.html`](R49ACrew.dc.html) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
+- [`R49ACrew.dc.html`](R49ACrew.dc.html) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv - interactive
 - [`R49BCrew.dc.html`](R49BCrew.dc.html) - Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
 - [`R49CCrew.dc.html`](R49CCrew.dc.html) - Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
 - [`R49DCrew.dc.html`](R49DCrew.dc.html) - Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
@@ -547,17 +581,6 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R49BStory.dc.html`](R49BStory.dc.html) - Rev 49 B - Hangar light, level 3, the story (optional) - interactive
 - [`R49CStory.dc.html`](R49CStory.dc.html) - Rev 49 C - Route poster, level 3, the story (optional) - interactive
 - [`R49DStory.dc.html`](R49DStory.dc.html) - Rev 49 D - Split art, level 3, the story (optional) - interactive
-
-#### Rev 47 - Ark Squads: real domain colours, the Ark in 3D, nanobots or the Meerkat warp (six ways)
-
-- [`R47Compare.dc.html`](R47Compare.dc.html) - Rev 47 - The colour fix (built tint against ship colours, per hull and domain) and the two domain changes frame by frame
-- [`R47A.dc.html`](R47A.dc.html) - Rev 47 A - Escort: the Ark centre stage, its three escorts round it, seats along the bottom - nanobot swap (recommended) - interactive
-- [`R47B.dc.html`](R47B.dc.html) - Rev 47 B - Hangar: seats stacked left, the Ark large right - Meerkat warp - interactive
-- [`R47C.dc.html`](R47C.dc.html) - Rev 47 C - The deck, kept: the built deck, the Ark turning above it - nanobot swap - interactive
-- [`R47D.dc.html`](R47D.dc.html) - Rev 47 D - Bays: the Ark over three launch bays, an escort in each - Meerkat warp - interactive
-- [`R47E.dc.html`](R47E.dc.html) - Rev 47 E - Dossier: the Ark on the left half, three seat rows right - nanobot swap - interactive
-- [`R47F.dc.html`](R47F.dc.html) - Rev 47 F - Cinema: the Ark fills the screen, the squad floats over it - Meerkat warp - interactive
-- [`R47Notes.dc.html`](R47Notes.dc.html) - Rev 47 - notes: what was wrong with the colours, the Ark render, the recommendation
 
 #### Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)
 
@@ -648,4 +671,56 @@ Copied on 2026-11-02 from canvas version `1793656480-cfc4` of **Froglet Design B
 - [`R45B.dc.html`](R45B.dc.html) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control - interactive
 - [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
 
-<!-- design_board.py readme: end -->
+### Tab: Froglet Analytics  (`froglet-analytics`)
+
+#### Rev 50 - Froglet Analytics dashboard: our own backend replaces PostHog, three ways to read it
+
+- [`R50Compare.dc.html`](R50Compare.dc.html) - Rev 50 - the top of each option side by side: the overnight read, the console rail, the ask bar
+- [`R50A.dc.html`](R50A.dc.html) - Rev 50 A - Morning read: Claude's overnight read on top, then the numbers and charts on one page (recommended) - interac - interactive
+- [`R50B.dc.html`](R50B.dc.html) - Rev 50 B - Console: a left rail of pages (Overview, Retention, Matches, Data health, Ask, Erasure), dense overview
+- [`R50C.dc.html`](R50C.dc.html) - Rev 50 C - Ask first: one question box on top, Claude's answer with its query, pinned charts below - interactive
+- [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
+
+### Tab: Phone  (`phone`)
+
+#### Rev 57 - One UI, three layouts: every screen on PC, phone landscape and phone portrait, side by side
+
+- `R57Compare.dc.html` (not copied yet) - Rev 57 Compare - sign-in, Home, Arcade, Configure, Hangar, in game and the finish, on PC, phone landscape and phone portrait
+
+#### Rev 56 - Phone in portrait too: the same screens on a 450 x 800 canvas, for the day a mobile game is played upright (Honeyguide and Ratel); not built now
+
+- `R56Portrait.dc.html` (not copied yet) - Rev 56 Portrait - Home, Arcade, Configure, Hangar, sign-in and the finish held upright, and how the game tells a phone (and portrait) apart
+
+#### Rev 55 - Phone menus from the real screens: Home, Arcade, Configure, Hangar (replaces Rev 52's four menu boards)
+
+- `R55Home.dc.html` (not copied yet) - Rev 55 Home - Home: the five-tab rail, the pilot chip, Up next, the four hubs; Go offline? and the party invite - intera - interactive
+- `R55Arcade.dc.html` (not copied yet) - Rev 55 Arcade - Arcade: the two feature cards and all 28 games, the party panel as a sheet - interactive
+- `R55Configure.dc.html` (not copied yet) - Rev 55 Configure - Configure: the picture and briefing left; class, intensity, the three teams and Start game right; con - interactive
+- `R55ConfigureArena.dc.html` (not copied yet) - Rev 55 ConfigureArena - Configure, Arena: the hull strip and Claim in place of the class
+- `R55Hangar.dc.html` (not copied yet) - Rev 55 Hangar - Hangar: the vessel list, the hero and its unlock; abilities in a sheet; the spend window - interactive
+- `R55Notes.dc.html` (not copied yet) - Rev 55 - notes: what each board keeps from the real screen, what moves, and what it changes in Unity
+
+#### Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)
+
+- `R53SignIn.dc.html` (not copied yet) - Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)
+- `R53HudLifts.dc.html` (not copied yet) - Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them
+- `R53HudTotems.dc.html` (not copied yet) - Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb
+- `R53Notes.dc.html` (not copied yet) - Rev 53 - notes: what changed from Rev 52 and why
+
+#### Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish
+
+- `R52Compare.dc.html` (not copied yet) - Rev 52 - the same Home on a phone: today's PC layout shrunk vs the phone scale, at true size
+- `R52SignIn.dc.html` (not copied yet) - Rev 52 SignIn - Sign-in: the welcome and Play as guest, one column
+- `R52Home.dc.html` (not copied yet) - Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interac - interactive
+- `R52Arcade.dc.html` (not copied yet) - Rev 52 Arcade - Arcade: eight cards in a 4 x 2 grid, the game of the week marked
+- `R52Configure.dc.html` (not copied yet) - Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interact - interactive
+- `R52Hangar.dc.html` (not copied yet) - Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive
+- `R52Hud.dc.html` (not copied yet) - Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre
+- `R52Finish.dc.html` (not copied yet) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
+- `R52Notes.dc.html` (not copied yet) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
+
+### Tab: Launch Console  (`launch-console`)
+
+No boards yet.
+
+<!-- frogma.py readme: end -->

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Froglet Analytics</title>
+<!-- The Froglet Analytics console: Frogma Rev 50 B, picked by Shombith 2026-11-05 (Docs/MENU_REDESIGN_B.md §122).
+     Served by Tools/Analytics/server/analytics_server.py at "/", or from any static host (GitHub Pages) with
+     ?api=https://<the server> in the address. It holds no data: every number comes from the server's read API. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="themes.css">
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
+<div class="shell">
+  <nav class="rail" aria-label="Pages">
+    <div class="brand"><span class="lab">Froglet</span><span class="h3">Analytics</span><span class="strip" aria-hidden="true"></span></div>
+    <a class="nav" href="#overview" data-page="overview">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z"/></svg>Overview</a>
+    <a class="nav" href="#players" data-page="players">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M2 17c0-3 2.2-5 5-5s5 2 5 5"/><circle cx="14" cy="6" r="2.5"/><path d="M13 11.5c2.8 0 5 1.8 5 5"/></svg>Players</a>
+    <a class="nav" href="#retention" data-page="retention">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M3 3v4h4"/></svg>Retention</a>
+    <a class="nav" href="#matches" data-page="matches">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V9M8 17V4M13 17v-6M18 17V7"/></svg>Matches</a>
+    <a class="nav" href="#ftue" data-page="ftue">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V3l12 4-12 4"/></svg>FTUE</a>
+    <a class="nav" href="#economy" data-page="economy">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l6 8-6 8-6-8z"/></svg>Economy</a>
+    <a class="nav" href="#social" data-page="social">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="6" cy="10" r="3"/><circle cx="14" cy="10" r="3"/></svg>Social</a>
+    <a class="nav" href="#health" data-page="health">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h4l2-5 4 10 2-5h4"/></svg>Data health</a>
+    <a class="nav" href="#ask" data-page="ask">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg>Ask Claude</a>
+    <a class="nav" href="#erasure" data-page="erasure">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>Erasure</a>
+    <div class="looks" id="looks" aria-label="Theme"></div>
+    <div class="who">
+      <span class="lab">Signed in</span>
+      <span class="small" id="who-name">Not signed in</span>
+      <button type="button" class="link" id="sign-out">Change key</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <header class="top">
+      <div class="title">
+        <span class="lab" id="eyebrow">Overview</span>
+        <h1 class="h1" id="page-title">Overview</h1>
+      </div>
+      <div class="filters" id="filters">
+        <div class="seg" role="group" aria-label="Build" id="seg-build"></div>
+        <div class="seg" role="group" aria-label="Range" id="seg-days"></div>
+        <span class="small num" id="updated"></span>
+      </div>
+    </header>
+    <p class="preview-note sls" id="preview-note" hidden></p>
+    <div id="page" class="page" aria-live="polite"></div>
+  </main>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form class="window sl" id="gate-form">
+    <span class="lab">Froglet Analytics</span>
+    <h2 class="h2">Your read key</h2>
+    <p class="small">Shombith gives each reader a key. It stays in this browser only.</p>
+    <label class="lab" for="gate-key">Key</label>
+    <input id="gate-key" class="field sls" type="password" autocomplete="off" required>
+    <p class="small danger" id="gate-error" hidden></p>
+    <div class="row"><button class="btn sls default" type="submit">Sign in</button></div>
+  </form>
+</div>
+
+<script src="console.js"></script>
+</body>
+</html>

@@ -72,7 +72,24 @@ namespace CosmicShore.Core
         /// </summary>
         readonly List<IAnalyticsSink> _sinks = new();
 
-        readonly PostHogAnalyticsSink _postHogSink;
+        readonly FrogletAnalyticsSink _frogletSink;
+
+        /// <summary>
+        /// The one instance currently subscribed to every persistent SOAP/static event below.
+        /// This is a Resolution.Lazy Reflex singleton, but Reflex has no disposal hook that runs
+        /// when a container is rebuilt - and with this project's Enter Play Mode settings
+        /// (Domain Reload + Scene Reload both off, see ProjectSettings/EditorSettings.asset),
+        /// re-entering Bootstrap constructs a SECOND facade without ever tearing down the first
+        /// one's subscriptions (same class of risk ReconnectService's own doc comment calls out:
+        /// "re-loading that scene would spawn a duplicate of every other [persistent root]").
+        /// Confirmed in production PostHog data: every subscribed handler below fired at ~2x the
+        /// rate of every directly-called Record* method, with distinct event uuids and identical
+        /// match_id/distinct_id pairs a few milliseconds apart.
+        ///
+        /// Tearing down whatever instance came before guarantees exactly one live subscriber
+        /// regardless of how many times this gets constructed in one process.
+        /// </summary>
+        static AnalyticsServiceFacade _liveInstance;
 
         bool _collecting;
         bool _isConnected = true;
@@ -131,13 +148,19 @@ namespace CosmicShore.Core
             _hostConnectionData = hostConnectionData;
             _allowLog = allowLog;
 
+            // Must run before a single subscription is wired - see _liveInstance.
+            _liveInstance?.Unsubscribe();
+            _liveInstance = this;
+
             _sinks.Add(new UgsAnalyticsSink(Log));
 
-            var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
-            if (postHogConfig != null && postHogConfig.Enabled)
+            // Our own analytics server (Tools/Analytics/server/), which replaced PostHog on
+            // 2026-11-06. The asset ships pointed at the server; nothing is filled in by hand.
+            var frogletConfig = Resources.Load<FrogletAnalyticsConfigSO>("FrogletAnalyticsConfig");
+            if (frogletConfig != null && frogletConfig.Enabled)
             {
-                _postHogSink = new PostHogAnalyticsSink(postHogConfig, Log, BuildSinkEnvelope);
-                _sinks.Add(_postHogSink);
+                _frogletSink = new FrogletAnalyticsSink(frogletConfig, Log, BuildSinkEnvelope);
+                _sinks.Add(_frogletSink);
             }
 
             AuthData.OnSignedIn.OnRaised += HandleSignedIn;
@@ -164,15 +187,19 @@ namespace CosmicShore.Core
             _hostConnectionData.OnPartyJoinCompleted.OnRaised += HandlePartyJoined;
 
             // ── Phase 2: static C# events (exist regardless of scene) ──
-            GameSetting.OnChangeMusicEnabledStatus      += v => HandleSettingChanged("music_enabled", v);
-            GameSetting.OnChangeSFXEnabledStatus        += v => HandleSettingChanged("sfx_enabled", v);
-            GameSetting.OnChangeHapticsEnabledStatus    += v => HandleSettingChanged("haptics_enabled", v);
-            GameSetting.OnChangeInvertYEnabledStatus    += v => HandleSettingChanged("invert_y", v);
-            GameSetting.OnChangeInvertThrottleEnabledStatus += v => HandleSettingChanged("invert_throttle", v);
-            GameSetting.OnChangeJoystickVisualsStatus   += v => HandleSettingChanged("joystick_visuals", v);
-            GameSetting.OnChangeMusicLevel              += v => HandleSettingChanged("music_level", v);
-            GameSetting.OnChangeSFXLevel                += v => HandleSettingChanged("sfx_level", v);
-            GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
+            // Named handlers rather than inline lambdas: Unsubscribe() below needs the exact
+            // same delegate it subscribed with, and a freshly-written lambda expression at the
+            // unsubscribe site is not guaranteed to compare equal to the one used at subscribe
+            // time (relying on compiler delegate-caching for correctness is fragile).
+            GameSetting.OnChangeMusicEnabledStatus      += HandleMusicEnabledChanged;
+            GameSetting.OnChangeSFXEnabledStatus        += HandleSfxEnabledChanged;
+            GameSetting.OnChangeHapticsEnabledStatus    += HandleHapticsEnabledChanged;
+            GameSetting.OnChangeInvertYEnabledStatus    += HandleInvertYChanged;
+            GameSetting.OnChangeInvertThrottleEnabledStatus += HandleInvertThrottleChanged;
+            GameSetting.OnChangeJoystickVisualsStatus   += HandleJoystickVisualsChanged;
+            GameSetting.OnChangeMusicLevel              += HandleMusicLevelChanged;
+            GameSetting.OnChangeSFXLevel                += HandleSfxLevelChanged;
+            GameSetting.OnChangeHapticsLevel            += HandleHapticsLevelChanged;
             FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
             UGSCloudSaveProvider.OnSaveFailed           += HandleCloudSaveFailed;
             FTUEEventManager.OnQuestNodeCompleted       += HandleFtueStepCompleted;
@@ -194,6 +221,74 @@ namespace CosmicShore.Core
             // the handlers only set a flag and re-run the guarded StartCollectionIfReady, so a
             // genuine event arriving afterwards is a no-op.
             ReconcileWithAlreadyAnnouncedState();
+        }
+
+        /// <summary>
+        /// Mirror image of the constructor's subscription block - every <c>+=</c> above has its
+        /// matching <c>-=</c> here. Called on the OUTGOING instance by the next constructor,
+        /// never by this one; see <see cref="_liveInstance"/>.
+        /// </summary>
+        void Unsubscribe()
+        {
+            var auth = AuthData;
+            if (auth != null) auth.OnSignedIn.OnRaised -= HandleSignedIn;
+
+            var network = NetworkData;
+            if (network != null)
+            {
+                network.OnNetworkFound.OnRaised -= HandleNetworkFound;
+                network.OnNetworkLost.OnRaised -= HandleNetworkLost;
+            }
+
+            if (_gameData != null)
+            {
+                _gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+                _gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
+            }
+
+            if (_lifecycleEvents != null)
+            {
+                _lifecycleEvents.OnAppPaused.OnRaised -= HandleAppPaused;
+                _lifecycleEvents.OnAppQuitting.OnRaised -= HandleAppQuitting;
+            }
+
+            if (_menuFreestyleEvents != null)
+                _menuFreestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleFreestyleEntered;
+
+            if (_friendsData != null)
+            {
+                _friendsData.OnFriendRequestSent.OnRaised -= HandleFriendRequestSent;
+                _friendsData.OnFriendRequestReceived.OnRaised -= HandleFriendRequestReceived;
+                _friendsData.OnFriendAdded.OnRaised -= HandleFriendAdded;
+            }
+
+            if (_hostConnectionData != null)
+            {
+                _hostConnectionData.OnInviteSent.OnRaised -= HandlePartyInviteSent;
+                _hostConnectionData.OnInviteReceived.OnRaised -= HandlePartyInviteReceived;
+                _hostConnectionData.OnPartyJoinCompleted.OnRaised -= HandlePartyJoined;
+            }
+
+            GameSetting.OnChangeMusicEnabledStatus      -= HandleMusicEnabledChanged;
+            GameSetting.OnChangeSFXEnabledStatus        -= HandleSfxEnabledChanged;
+            GameSetting.OnChangeHapticsEnabledStatus    -= HandleHapticsEnabledChanged;
+            GameSetting.OnChangeInvertYEnabledStatus    -= HandleInvertYChanged;
+            GameSetting.OnChangeInvertThrottleEnabledStatus -= HandleInvertThrottleChanged;
+            GameSetting.OnChangeJoystickVisualsStatus   -= HandleJoystickVisualsChanged;
+            GameSetting.OnChangeMusicLevel               -= HandleMusicLevelChanged;
+            GameSetting.OnChangeSFXLevel                 -= HandleSfxLevelChanged;
+            GameSetting.OnChangeHapticsLevel             -= HandleHapticsLevelChanged;
+            FavoriteSystem.OnFavoriteChanged            -= HandleFavoriteChanged;
+            UGSCloudSaveProvider.OnSaveFailed           -= HandleCloudSaveFailed;
+            FTUEEventManager.OnQuestNodeCompleted       -= HandleFtueStepCompleted;
+            FTUEEventManager.OnQuestPhaseCompleted      -= HandleFtuePhaseCompleted;
+            FTUEEventManager.OnQuestCompleted           -= HandleFtueCompleted;
+
+            if (_uiActionsWired && UserActionSystem.Instance != null)
+                UserActionSystem.Instance.OnUserActionCompleted -= HandleUserAction;
+
+            if (_profileRefreshWired && PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged -= HandleProfileChanged;
         }
 
         /// <summary>
@@ -386,7 +481,7 @@ namespace CosmicShore.Core
         ///
         /// Collection is opt-in: both the COPPA age gate and consent default to denied, so an
         /// unanswered privacy flow silently drops every event before it reaches any sink - both
-        /// UGS and PostHog go quiet at once, which looks like a backend or key problem and is
+        /// UGS and Froglet Analytics go quiet at once, which looks like a backend or key problem and is
         /// not. That failure has already cost this project one debugging session, so it warns
         /// rather than whispering behind a verbose-logging flag.
         /// </summary>
@@ -406,7 +501,7 @@ namespace CosmicShore.Core
                 : "collection has not started yet";
 
             Debug.LogWarning(
-                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or PostHog until this " +
+                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or Froglet Analytics until this " +
                 $"is resolved. First dropped event: '{eventName}'. " +
                 (NeedsPrivacyFlow
                     ? "No privacy consent UI is reachable in this scene; in the editor use " +
@@ -418,7 +513,7 @@ namespace CosmicShore.Core
         public int DroppedEventCount => _droppedEvents;
 
         /// <summary>
-        /// Identity + build context that PostHog has no way to collect on its own.
+        /// Identity + build context that Froglet Analytics has no way to collect on its own.
         ///
         /// This is deliberately NOT applied to every event in the facade. UGS Analytics
         /// already auto-collects the player id, platform and app version as core data, and it
@@ -426,7 +521,7 @@ namespace CosmicShore.Core
         /// Event Manager - where events and parameters, once created, can never be deleted and
         /// count against a 1,500-per-environment cap. Stamping six redundant fields onto 28
         /// events would have cost 168 permanent, unnecessary schema rows for data UGS already
-        /// has. So the envelope is a PostHog concern and lives in the PostHog sink.
+        /// has. So the envelope is a Froglet Analytics concern and lives in the Froglet Analytics sink.
         /// See Docs/Analytics/DATA_ARCHITECTURE.md §7.1.
         /// </summary>
         public IDictionary<string, object> BuildSinkEnvelope() => new Dictionary<string, object>
@@ -439,7 +534,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// The canonical identity: the UGS player id. Immutable, and the same key as Cloud
-        /// Save and Leaderboards, so PostHog joins to both with no mapping table. Display name
+        /// Save and Leaderboards, so Froglet Analytics joins to both with no mapping table. Display name
         /// is a person PROPERTY (see <see cref="IdentifyPlayer"/>), never the identity - it is
         /// mutable and two players can choose the same one.
         /// </summary>
@@ -488,7 +583,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Mirrors cloud-save state onto the PostHog person, so events can be segmented by
+        /// Mirrors cloud-save state onto the Froglet Analytics person, so events can be segmented by
         /// player state without a join. Grouped exactly like PLAYER_PROFILE, which is what
         /// makes this mapping mechanical rather than a hand-maintained list.
         ///
@@ -547,7 +642,7 @@ namespace CosmicShore.Core
                 properties["unlocked_mode_count"] = progression.UnlockedModes.Count;
 
             // Send only when something actually CHANGED. Every identify is a billable event on
-            // the PostHog side, and OnProfileChanged is raised by things that do not always move
+            // the Froglet Analytics side, and OnProfileChanged is raised by things that do not always move
             // a person property - RefreshProfileVisuals raises it for a pure UI repaint. Before
             // the profile-change hook existed every caller was a segment boundary (collection
             // start, pause, quit, freestyle exit) and this could not matter; now it can.
@@ -754,7 +849,7 @@ namespace CosmicShore.Core
             humanIds.Sort(StringComparer.Ordinal);
 
             // Comma-joined, not an array: UGS Analytics parameters accept only scalar values.
-            // The PostHog sink splits this back into a real array (commit 4).
+            // The Froglet Analytics sink splits this back into a real array (commit 4).
             parameters["player_ids"] = string.Join(",", humanIds);
             parameters["player_count_human"] = humanIds.Count;
             parameters["player_count_ai"] = aiCount;
@@ -763,7 +858,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Stamps the client's completion time in both forms: epoch milliseconds for
         /// arithmetic, ISO-8601 for day/week/month bucketing without a per-query conversion.
-        /// UGS and PostHog both stamp their own ingest time; this is the CLIENT time, which is
+        /// UGS and Froglet Analytics both stamp their own ingest time; this is the CLIENT time, which is
         /// what "timestamp at completion" means.
         /// </summary>
         static void AddCompletionTimestamp(IDictionary<string, object> parameters)
@@ -794,7 +889,7 @@ namespace CosmicShore.Core
                 RecordSessionEnded("pause");
                 IdentifyPlayer();
                 Flush();
-                _postHogSink?.SaveQueue();
+                _frogletSink?.SaveQueue();
             }
             else
             {
@@ -808,7 +903,7 @@ namespace CosmicShore.Core
             RecordSessionEnded("quit");
             IdentifyPlayer();
             Flush();
-            _postHogSink?.SaveQueue();
+            _frogletSink?.SaveQueue();
         }
 
         void RecordSessionEnded(string reason)
@@ -981,6 +1076,17 @@ namespace CosmicShore.Core
                 { "value", value?.ToString() ?? string.Empty },
                 { "seconds_since_launch", SecondsSinceLaunch }
             });
+
+        // One named handler per GameSetting static event - see the subscription comment above.
+        void HandleMusicEnabledChanged(bool v) => HandleSettingChanged("music_enabled", v);
+        void HandleSfxEnabledChanged(bool v) => HandleSettingChanged("sfx_enabled", v);
+        void HandleHapticsEnabledChanged(bool v) => HandleSettingChanged("haptics_enabled", v);
+        void HandleInvertYChanged(bool v) => HandleSettingChanged("invert_y", v);
+        void HandleInvertThrottleChanged(bool v) => HandleSettingChanged("invert_throttle", v);
+        void HandleJoystickVisualsChanged(bool v) => HandleSettingChanged("joystick_visuals", v);
+        void HandleMusicLevelChanged(float v) => HandleSettingChanged("music_level", v);
+        void HandleSfxLevelChanged(float v) => HandleSettingChanged("sfx_level", v);
+        void HandleHapticsLevelChanged(float v) => HandleSettingChanged("haptics_level", v);
 
         void HandleFriendRequestSent(FriendData f) =>
             RecordEvent(UGSKeys.EventFriendRequestSent, new Dictionary<string, object>

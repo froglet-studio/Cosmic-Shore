@@ -538,7 +538,7 @@ No LeanTween/PrimeTween/iTween; no Timeline used for UI.
 
 | Layer | Centralized? | Where |
 |---|---|---|
-| **Domain (team) colors** — the single most disciplined color system | ✅ | `SO_ColorSet` → live asset `Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset`, wired through `ThemeManagerDataContainer.asset`. Two unused alternates exist (`CosmicWaveColorSetSO`, `PastelColorSetSO`). |
+| **Domain (team) colors** — the single most disciplined color system | ✅ | `SO_ColorSet` → live asset `Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset`, wired through `ThemeManagerDataContainer.asset`. Two unused alternates exist (`CosmicWaveColorSetSO`, `PastelColorSetSO`). |
 | Prism / crystal / trail / ship material colors | ✅ | Same asset, applied by `ThemeManager` (materials only — it never touches a Button/Image/TMP style) |
 | Elemental petal-bar colors + juice timings | ✅ | `ElementalBarsConfigSO` → `Assets/Resources/ElementalBarsConfig.asset` |
 | In-game HUD motion (card entrances, score punches, fades) + score gain/loss colors | ✅ | `HUDAnimationSettingsSO` (`Assets/_Scripts/UI/HUDAnimationSettingsSO.cs`) — with hardcoded fallbacks when unassigned |
@@ -610,7 +610,7 @@ Ability icons per vessel: `SO_VesselAbility` assets carry `IconActive`/`IconInac
 
 | Source | Path | Scope |
 |---|---|---|
-| `SO_ColorSet` live asset | `Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset` | Domain identity, prism tiers, crystals, trails, `UIAccentColor` |
+| `SO_ColorSet` live asset | `Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset` | Domain identity, prism tiers, crystals, trails, `UIAccentColor` |
 | `EnvironmentColorSet` (nested in the same asset) | same | Sky/light/dark, crystal CTA lime, danger rim |
 | `ElementalBarsConfigSO` | `Assets/Resources/ElementalBarsConfig.asset` | Petal tick colors (fire/grey/white/blue/lime), debuff/joust/drift tints |
 | `HUDAnimationSettingsSO` | script default + optional asset | Score gain/loss green/red, countdown-urgent red |
@@ -1816,7 +1816,7 @@ Three things it deliberately does not do:
 ## 5.8 Where the raw materials live (for the design team)
 
 - **Fonts:** §1.5 — Aldrich (primary), Chakra Petch, Liberation Sans (default-leak), White Rabbit, Black Acute, Abel; mostly inside the vendored TMP folder.
-- **Colors:** §1.4/§1.5 — domain identity in `OriginalColorSetSO.asset` (read `Docs/PALETTE.md` before editing); petal ladder in `ElementalBarsConfig.asset`; everything else scattered as literals.
+- **Colors:** §1.4/§1.5 — domain identity in `PhoticColorSetSO.asset` (read `Docs/PALETTE.md` before editing); petal ladder in `ElementalBarsConfig.asset`; everything else scattered as literals.
 - **Sprites/icons:** §1.5 directory map (`Assets/_Graphics/…`).
 - **UI prefabs:** the path index at the end of §2, plus `Assets/_Prefabs/UI Elements/VesselHUD/` and the two GameCanvas forks.
 - **Motion:** DOTween + `HUDAnimationSettingsSO` + `ElementalBarsConfigSO` + modal Animator states (§1.4).

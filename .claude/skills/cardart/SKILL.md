@@ -107,7 +107,7 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
 ## 4. What this is NOT
 
 It is not the game's renderer and does not claim to be: it draws the SAME geometry in the SAME
-palette (`OriginalColorSetSO` — base face lerped to rim by fresnel, the prism shader's defining
+palette (`PhoticColorSetSO` — base face lerped to rim by fresnel, the prism shader's defining
 read, `Docs/PALETTE.md` §2) with ACES and a bloom. A MODEL-tier plant is a glyph and a staged
 pilot is staging — say so when showing a card. What stays editor-only is whether it LOOKS right
 in the grid beside the others; that is the one playtest this needs.

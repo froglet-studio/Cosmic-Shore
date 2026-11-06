@@ -382,14 +382,15 @@ def headlong_settings(intensity):
 
 
 def redline_settings(intensity):
-    """RedlineCourse.ForIntensity (the Manta's circuit), same shell as headlong_settings."""
+    """RedlineCourse.ForIntensity (the Manta's circuit, the Soar-only ladder of 2026-11-04), same shell as
+    headlong_settings. Change both together; redline_course_harness's sweep checks them against each other."""
     i = min(max(int(intensity), 1), 4) - 1
     full = 720.0 / ((720.0 * 0.2 + 30.0) * math.pi / 180.0)   # RedlineCourse.FullBoostRadius
     return {
         "GateCount": 8, "BaseRadius": 820.0,
         "CornerProfile": [[90, 72, 58, 48, 38, 28, 16, 10], [118, 92, 66, 40, 22, 12, 6, 4],
-                          [135, 112, 78, 22, 7, 3, 2, 1], [150, 124, 86, 0, 0, 0, 0, 0]][i],
-        "CornerRadiusFactor": 0.0, "CornerFloorRadius": [0.75, 0.45, 0.42, 0.38][i] * full,
+                          [135, 112, 78, 22, 7, 3, 2, 1], [125, 120, 115, 0, 0, 0, 0, 0]][i],
+        "CornerRadiusFactor": 0.0, "CornerFloorRadius": [0.75 * full, 205.0, 175.0, 160.0][i],
         "RadialSwing": 0.42, "AngularSpread": [1.2, 3.0, 2.8, 4.8][i],
         "LateralPerturbation": [160.0, 200.0, 240.0, 280.0][i], "RingRadius": [110.0, 88.0, 72.0, 44.0][i],
         "AxisJitterDegrees": [20.0, 28.0, 36.0, 44.0][i], "MaxPresentDegrees": [50.0, 72.0, 76.0, 80.0][i],

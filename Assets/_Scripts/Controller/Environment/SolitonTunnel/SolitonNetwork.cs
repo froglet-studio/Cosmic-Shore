@@ -34,6 +34,12 @@ namespace CosmicShore.Gameplay
         public readonly int Seq;
         /// <summary><see cref="Alive"/> as a delegate, made once (the flight asks it every frame).</summary>
         public readonly System.Func<int, bool> AliveFn;
+        /// <summary>Round 28: a RIFT (<see cref="LayRift"/>), the path a Meerkat flew into the void, laid as one channel that
+        /// anyone rides from its way in.</summary>
+        public bool IsRift { get; private set; }
+        /// <summary>How long its channels stay once laid (s); below 0, its config's <see cref="SolitonTunnelConfigSO.StaySeconds"/>.
+        /// A rift's is <c>riftLife</c>.</summary>
+        public double StayOverride = -1;
 
         SolitonNetwork(List<SolitonTunnelMath.Channel> channels, SolitonTunnelMath.D3 up, ISolitonTunnelMaker maker,
             SolitonTunnelConfigSO config, Color tint, int seq, double formSeconds)
@@ -84,6 +90,42 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Round 28, the RIFT (the page's <c>riftLay</c> + <c>riftEnd</c>, Yash 2026-11-03: "Yes, prototype the Rift"): the path
+        /// <paramref name="points"/> a hull flew into the void, laid at once as ONE channel with a mouth at each end (its way
+        /// in where the run began, its way out where it ended), throat radius <paramref name="b"/> and mouth radius
+        /// <paramref name="m"/>, standing <paramref name="staySeconds"/> before it collapses (a sentinel never holds it, round
+        /// 28b). Null when the path is too short to lay.
+        /// </summary>
+        public static SolitonNetwork LayRift(SolitonTunnelConfigSO cfg, ISolitonTunnelMaker maker, int seq,
+            IReadOnlyList<Vector3> points, float b, float m, float staySeconds)
+        {
+            if (points == null || points.Count < 2) return null;
+            var d = new SolitonTunnelMath.D3[points.Count];
+            for (int i = 0; i < d.Length; i++) d[i] = D(points[i]);
+            var path = SolitonTunnelMath.PolyFrom(d);
+            if (path == null) return null;
+            double bb = System.Math.Max(0.25, b), mm = System.Math.Max(bb, m);
+            var channel = new SolitonTunnelMath.Channel
+            {
+                Index = 0, Path = path, L = path.L, B = bb, M = mm, Za = 0, Zb = 0, D = 1, Seed = seq * 7.31 + 1.3,
+                MouthIn = true, MouthOut = true,
+            };
+            var tint = cfg ? cfg.Tint(maker != null ? maker.DomainColour : Color.white, maker != null) : Color.clear;
+            var up = path.N[0];
+            var net = new SolitonNetwork(new List<SolitonTunnelMath.Channel> { channel }, up, maker, cfg, tint, seq, 0.05)
+            {
+                IsRift = true, StayOverride = System.Math.Max(0, staySeconds),
+            };
+            // it grew behind its maker during the run: whole and open, its rider (the maker) already out
+            net.Life[0] = new SolitonTunnelMath.Life { Phase = SolitonTunnelMath.Phase.Stay, S0 = 0, S1 = path.L, Grow = 1, Out = true };
+            s_live.Add(net);
+            return net;
+        }
+
+        /// <summary>A rift a rider can go into: whole, not collapsing, not fading.</summary>
+        public bool RiftStanding => IsRift && Life.Length > 0 && Life[0].Phase == SolitonTunnelMath.Phase.Stay && !Life[0].Dying;
+
+        /// <summary>
         /// Round 26: the cell a network fills - the nearest active <see cref="Cell"/>'s centre (the world's origin without one)
         /// and the larger of its own radius (<see cref="Cell.SenseRadius"/>) and, in a race, the race shell
         /// (<see cref="RaceCourseSource.DefaultOuterRadius"/>, 1080 u) and the farthest ring + 60 u; with neither, the race
@@ -113,9 +155,10 @@ namespace CosmicShore.Gameplay
             return any;
         }
 
-        /// <summary>A channel's life this frame by its own config (a held network never starts its stay).</summary>
+        /// <summary>A channel's life this frame by its own config (a held network never starts its stay; a rift stays its
+        /// <see cref="StayOverride"/>).</summary>
         public bool Step(double dt) =>
-            Step(Held ? double.PositiveInfinity : Config.StaySeconds, Config.CollapseSeconds, dt);
+            Step(Held ? double.PositiveInfinity : StayOverride >= 0 ? StayOverride : Config.StaySeconds, Config.CollapseSeconds, dt);
 
         /// <summary>Its rider is out: every open channel starts its stay.</summary>
         public void RiderOut()

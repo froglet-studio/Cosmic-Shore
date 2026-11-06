@@ -1831,3 +1831,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: any page whose purpose is a CHOICE (a pick, a tuning, a vote) declares `db` and carries a save button and a plain-text readout from its first publish; read the latest save by `savedAt`, and say which one you took.
 - Evidence: the page's `picks` collection (three documents, 2026-10-31 20:31-20:33); `kite_mote_colors.py` `PICKED`.
 - Promoted: no
+
+### L-STU-163 — Judge a colour by the share of the object it paints, not by its swatch
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `claude/nocturne-colour-set` · By: the 2026-11-03 colour-sets session · Date: 2026-11-03
+- What happened: Dart Frog passed every rule, and its lab showed rim and face as equal swatches with a glowing edge drawn wide. In Unity it was "not quite there": a prism's body is the face and the rim is a thin fresnel line, so Jade read as tan, Ruby as teal and Blue as green. Nothing in the page could show that. A small numpy render of the shader's real formula, lerp(face, rim, fresnel) with bloom and ACES, showed it at once. Darkening Dart Frog's faces barely helped; designing faces in one night-dark band from the start gave Nocturne, which Garrett made the default the same day.
+- Do instead: before tuning colours on a page, render them with the shipped shader's formula, on the real shape, beside what ships today. Weight every colour by the area it covers. Use the rule gate to prove a palette is legal, and the render to judge whether it reads.
+- Evidence: `author_colour_set_assets.py` (face fields take the pigment's own lightness); `colour_sets.json` `nocturne`.
+- Promoted: no
