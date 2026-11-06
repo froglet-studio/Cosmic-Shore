@@ -49,7 +49,10 @@ whatever the flags say; turning a feature on is still a build change (`Tools/UGS
 
 **Only this run's server answer can raise the update wall or the notices.** A saved answer applies its kill switches
 but never walls: a player who is offline is never locked out of offline play. A flag change reaches a player at their
-next sign-in (the next launch, or a reconnect that signs in again); a running session is not re-polled.
+next launch: the flags are fetched once per run (a reconnect does not fetch again) and a running session is not
+re-polled. The fetch runs alongside the other sign-in work, so a choice made AT sign-in (the presence lobby's pool, the
+party's fair-play guard, the first wallet check) may still see the saved answer; it follows the new flags from the next
+launch. Choices made later (each match's reports, each spend, each weekly post) follow them at once.
 The browser Toybox never signs in, so it never reads the flags.
 
 ## 3. How to change a flag
