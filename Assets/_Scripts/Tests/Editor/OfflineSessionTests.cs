@@ -11,7 +11,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using NUnit.Framework;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.TestTools;

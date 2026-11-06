@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
     {
         [Inject] AudioSystem _audioSystem;
 
-        [SerializeField] public Obvious.Soap.ScriptableEventNoParam OnMiniGameTurnEnd;
+        [SerializeField] public CosmicShore.Soap.ScriptableEventNoParam OnMiniGameTurnEnd;
 
         [Tooltip("The ramp asset this hull binds - read only for TopSpeed before the ramp has been " +
                  "armed once. Optional: once a ramp has run, the asset that armed it is used.")]

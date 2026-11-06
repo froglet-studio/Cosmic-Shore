@@ -1,7 +1,7 @@
 using System;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 namespace CosmicShore.Gameplay

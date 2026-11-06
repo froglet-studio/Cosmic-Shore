@@ -18,7 +18,7 @@ which prompt executes it.
 |---|---|---|---|
 | **1** | FMOD in-game credit | **Build it** | ✅ **DONE 12 Sep 2026** — [`CREDITS_SCREEN_PROMPT.md`](prompts/CREDITS_SCREEN_PROMPT.md) executed; evidence in register §7. Not yet opened in the editor. |
 | **2** | FMOD licence tier | **Buy if the thresholds say so** | §2 below — money, not code |
-| **3** | Obvious SOAP | **Owner is adding the licence file** | §2 — nothing to build |
+| **3** | Obvious SOAP | **Removed 2026-11-06** (Yash): replaced by our own SOAP, `Assets/Plugins/CosmicShoreSoap/` | no receipt needed any more |
 | **4** | NiceVibrations plugin | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
 | **5** | NiceVibrations demo art in the shipped menu | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | ✅ **DONE 12 Sep 2026** — both replaced first-party and removed; see §4 row 6 and `THIRD_PARTY_REGISTER.md` §2.1 |
@@ -37,7 +37,7 @@ engineering work.
 | Item | Vendor | Licence doc in tree | What has to be bought or produced | If we do not |
 |---|---|---|---|---|
 | **FMOD Studio** | Firelight Technologies | ✅ EULA present | **A tier decision, not necessarily a purchase.** Free commercial use is capped at **dev budget < $600k USD** *and* **gross revenue + funding < $200k USD/yr**. Froglet Inc. is a Delaware C-corp shipping paid Steam EA — confirm both, buy the Indie/Basic tier if either is exceeded. | Distributing without a tier that covers us. Independent of this, the **credit line is required on every tier** (§1 row 1). |
-| **Obvious SOAP 2.7.0** | Obvious Games | ❌ **none** | **The receipt.** The README's *"Thanks for purchasing Soap :)"* shows someone bought it; the tree carries no EULA. Owner is adding it. | **Not removable** — 128 first-party files use it; it is the project's primary architecture. This is a receipt problem only. |
+| **Obvious SOAP 2.7.0** | Obvious Games | ❌ **none** | **The receipt.** The README's *"Thanks for purchasing Soap :)"* shows someone bought it; the tree carries no EULA. Owner is adding it. | **Superseded 2026-11-06:** removed. The pattern stays; the plugin was replaced by first-party code with the same asset format, so the receipt question is closed. |
 | **NiceVibrations 4.1.1** | Lofelt / More Mountains | ❌ **no product EULA** (the two licence-looking files are a Rust crate list and a CC audio notice) | **Nothing — we are replacing it.** Buy a seat *only* if mobile pattern haptics are wanted back before launch. | Nothing, once row 4 lands. |
 | ~~**Shift — Complete Sci-Fi UI**~~ | Michsky | ❌ none | ✅ **Nothing — replaced and removed 12 Sep 2026.** No purchase needed. | — |
 | ~~**PrimitivePlus**~~ | unknown (ns `PrimitivePlus`) | ❌ none | ✅ **Nothing — replaced and removed 12 Sep 2026.** No purchase needed, which is just as well: the vendor was never identifiable from the tree. | — |
@@ -96,7 +96,7 @@ the folder — for something that was settled.
 | SDK | Ships? | First-party coupling (measured) | Disposition |
 |---|---|---|---|
 | **FMOD** | ships | the whole audio layer | **KEEP** — credit line + tier |
-| **Obvious SOAP** | ships | **128** files | **KEEP** — receipt only |
+| **Obvious SOAP** | ships | **128** files | **REMOVED 2026-11-06** — replaced by `Assets/Plugins/CosmicShoreSoap/` |
 | **NiceVibrations** | ships (incl. Demo, 30 `.cs`) | ~~**1** file, **5** API symbols~~ → **0** | ✅ **REPLACED** (row 4). Folder still ships for rows 4b/5 |
 | ├ demo sprites | ship | ~~6 usages in 5 shipped locations~~ → **0** | ✅ **REPLACED** (row 5) — `_Graphics/UI/Chrome/` |
 | └ `HapticSamples/*.wav` | ship | ~~4 clips on legacy `AudioClip` fields~~ → **0** | ✅ **REPLACED** (row 5) — FMOD `EventReference`s, shipped empty |

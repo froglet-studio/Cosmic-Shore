@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
+
+**What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:
+- At rest: `gaugeToken` = `NeutralLightest` (#747BAD). It was a hand-picked #97A6C2, so the rest is a little darker and bluer.
+- Ready: `readyToken` = `Cta` (#99FF80). It was #9DFF2E.
+
+`MeerkatHUDVariant.prefab` wires `theme` to `UITheme.asset`. `author_meerkat_assets.py` writes the same lines and checks them. This closes #1733's UI checklist "Theme tokens" line for the Meerkat. The other six vessel HUDs with their own colour pair (Angler, Brittle Star, Goby, Shrike, Starling, Stoat) are unchanged: whether they move too is Shombith's call.
+
+**Verified without the editor:**
+- `MeerkatHUDView.cs` compiled alone with Unity 6000.3.17f1's Roslyn against the editor's current `Assembly-CSharp.dll`: 0 errors. A negative control (a misspelt token) fails with CS0117.
+- The generator's `patch_hud_variant` turns the committed prefab into the new one exactly and is idempotent.
+- `check_hud_variant` passes on the new prefab and flags the old one.
+
+NOT run: the full project compile, any EditMode test, a play.
+
+**Verify in editor:**
+1. Open `MeerkatHUDVariant.prefab`: the view's `theme` is `UITheme`, `gaugeToken` is NeutralLightest, `readyToken` is Cta, and no missing-field warning shows.
+2. Fly the Meerkat from the Toybox Vessel Changer:
+   - The gauges rest in the theme's neutral.
+   - The Charge card turns lime with Sentinel Mode on.
+   - The Space card turns lime once RT would form a soliton.
+   - The Time card turns lime while riding.
+3. Judge the darker resting gauge against the other cards on the row. If it reads too dark, pick another token in the inspector; no code change is needed.
+
 ### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by
@@ -21282,3 +21306,18 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, COMPILED AND EDITMODE-TESTED IN EDITOR, NOT PLAYED)
+
+Branch `Ys-bleeding-edge`; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP. `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/`
+keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP asset changed. Compiled in the open editor and
+`SoapCoreTests` / `SoapFormatTests` pass there; nothing has been played.
+
+1. **Boot from Bootstrap into Menu_Main.** Sign-in, the boot status and the menu screens come up as before; the console has no
+   `MissingReferenceException`, "missing script" or `NullReferenceException` from a listener.
+2. **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
+   return to the menu works.
+3. **Open Settings and move the music, SFX and haptics sliders.** They change the sound and stay where you left them.
+4. **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
+5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
+   values set while playing no longer reach the asset.

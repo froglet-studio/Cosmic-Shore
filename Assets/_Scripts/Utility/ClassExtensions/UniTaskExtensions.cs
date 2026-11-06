@@ -28,7 +28,7 @@ namespace CosmicShore.Utility
         // after `await someUgsTask` runs on ThreadPool. From there:
         //   • Any UnityEngine.Object access (incl. `== null` → op_Equality
         //     → GetInstanceID → EnsureRunningOnMainThread) throws.
-        //   • Any Obvious.Soap ScriptableEvent.Raise() invokes its listeners
+        //   • Any CosmicShore.Soap ScriptableEvent.Raise() invokes its listeners
         //     inline on ThreadPool, and any listener touching Unity state crashes.
         //
         // UniTask's own primitives are unreliable on this UniTask version
