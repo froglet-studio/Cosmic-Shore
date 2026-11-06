@@ -101,8 +101,19 @@
       "summary": "Hand upload 2026-10-22 on the r2.dev host; commit unknown",
       "updated_at": "2026-11-06T03:38:04Z",
       "version": "2"
+    },
+    "windows-prerelease": {
+      "channel": "prerelease",
+      "id": "windows-prerelease",
+      "kind": "channel",
+      "platform": "windows",
+      "result": "skipped",
+      "schema": 1,
+      "source": "Phase 1 audit (2026-11-05)",
+      "summary": "No Steamworks app yet (A1-A4)",
+      "updated_at": "2026-11-06T03:38:27Z"
     }
   },
-  "generated_at": "2026-11-06T03:38:17Z",
+  "generated_at": "2026-11-06T03:38:29Z",
   "schema": 1
 }
