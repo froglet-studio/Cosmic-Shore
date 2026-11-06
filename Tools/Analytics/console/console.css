@@ -411,3 +411,21 @@ table.people td:first-child { white-space: normal; min-width: 150px; }
 .dash-tile .donut-legend { gap: 6px; }
 .dash-tile .donut-key .num { display: none; }
 .tile .uf-tag { white-space: normal; align-self: flex-start; }
+
+/* ranked bars that replace comma lists (barList): label, bar, count; "Other" in grey */
+.barlist { display: flex; flex-direction: column; gap: 4px; }
+.barlist-row { display: grid; grid-template-columns: 8.5em minmax(60px, 1fr) auto; gap: 10px; align-items: center; min-height: 22px; }
+.barlist-label { font-size: 14px; color: var(--fs-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barlist-track { display: block; height: 10px; }
+.barlist-bar { display: block; height: 10px; background: var(--data); }
+.barlist-bar.other { background: var(--fs-text-off); }
+.barlist-n { font-size: 14px; color: var(--fs-text); text-align: right; min-width: 3ch; }
+.bargroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 24px; }
+.bargroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.statrow { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 6px; }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat-v { font-size: 22px; color: var(--fs-text); }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip-link { border: 0; background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-line); color: var(--fs-text); font-size: 12px; padding: 3px 8px; cursor: pointer; }
+.chip-link:hover, .chip-link:focus-visible { box-shadow: inset 0 0 0 1px var(--fs-selection); }
+.more { color: var(--fs-text-soft); }

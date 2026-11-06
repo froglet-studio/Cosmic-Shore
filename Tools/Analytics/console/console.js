@@ -1155,7 +1155,7 @@
       const rows = shown.map((p) => h("tr", {},
         h("td", {}, h("button", { type: "button", class: "link name", onclick: () => open(p.distinct_id) }, p.display_name || "(no name)"),
           h("div", { class: "small id" }, p.distinct_id)),
-        h("td", {}, (p.countries || []).map(country).join(", ") || "–"), h("td", {}, (p.platforms || []).join(", ") || "–"),
+        h("td", {}, firstOf((p.countries || []).map(country))), h("td", {}, firstOf(p.platforms || [])),
         h("td", {}, lifespanBar(p, win, 120)),
         h("td", {}, mixBar([["solo_vs_ai", p.solo_vs_ai || 0], ["solo", p.solo || 0], ["multi", p.multi || 0]], { width: 96 })),
         h("td", {}, fmt(p.matches)), h("td", {}, p.matches ? pct(Math.round(100 * (p.finished || 0) / p.matches)) : "–"),
@@ -1209,8 +1209,7 @@
           a.launches.length ? table(["Platform", "Launches", "Typical", "Slowest 10%"], a.launches.map((l) => h("tr", {},
             h("td", {}, l.platform), h("td", {}, fmt(l.launches)), h("td", {}, seconds(l.p50_seconds)),
             h("td", { class: l.p90_seconds > 30 ? "bad" : "" }, seconds(l.p90_seconds))))) : h("p", { class: "small" }, "No launches yet."),
-          a.session_ends.length ? h("p", { class: "small" }, "How sessions ended: " +
-            a.session_ends.map((e) => `${e.reason.replace(/_/g, " ")} ${fmt(e.count)}`).join(", ") + ".") : null)),
+          a.session_ends.length ? barGroup("How sessions ended", barList(a.session_ends.map((e) => [e.reason, e.count]))) : null)),
     ];
   }
 
@@ -1220,7 +1219,39 @@
     return h("div", { class: "kv" }, pairs.filter((p) => p[1] !== null && p[1] !== undefined && p[1] !== "").map(([k, v]) =>
       h("div", { class: "kv-row" }, h("span", { class: "lab" }, k), h("span", { class: "small", style: "color:var(--fs-text)" }, v))));
   }
-  const listOf = (obj, f) => Object.entries(obj || {}).map(([k, n]) => `${f ? f(k) : k} (${fmt(n)})`).join(", ") || "–";
+  // A count breakdown as ranked bars, largest first: one row per item (label, bar, count), at most `top` rows and the
+  // rest folded into "Other (n)". Replaces every "A (3), B (2), C (1)" comma list (Shombith, 2026-11-06: "Anywhere where
+  // there is data like this REMOVE and make it better").
+  function barList(obj, labelOf, opts) {
+    const o = Object.assign({ top: 8, empty: "–" }, opts || {});
+    let rows = (Array.isArray(obj) ? obj : Object.entries(obj || {})).map(([k, n]) => [k, Number(n) || 0]).filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1]);
+    if (!rows.length) return h("p", { class: "small" }, o.empty);
+    if (rows.length > o.top) {
+      const rest = rows.slice(o.top - 1);
+      rows = rows.slice(0, o.top - 1).concat([[`Other (${rest.length})`, rest.reduce((t, r) => t + r[1], 0), true]]);
+    }
+    const max = Math.max(...rows.map((r) => r[1]));
+    const total = rows.reduce((t, r) => t + r[1], 0);
+    return h("div", { class: "barlist" }, ...rows.map(([k, n, other]) => {
+      const label = other ? k : (labelOf ? labelOf(k) : String(k).replace(/_/g, " "));
+      return h("div", { class: "barlist-row", title: `${label}: ${fmt(n)} (${Math.round(100 * n / total)}%)` },
+        h("span", { class: "barlist-label" }, label),
+        h("span", { class: "barlist-track" }, h("span", { class: "barlist-bar" + (other ? " other" : ""), style: `width:${Math.max(2, 100 * n / max)}%` })),
+        h("span", { class: "barlist-n num" }, fmt(n)));
+    }));
+  }
+  function firstOf(list) {
+    if (!list.length) return "–";
+    return h("span", { title: list.join(" · ") }, list[0], list.length > 1 ? h("span", { class: "small more" }, ` +${list.length - 1}`) : null);
+  }
+  function barGroup(title, body) {
+    return h("div", { class: "bargroup" }, h("span", { class: "lab" }, title), body);
+  }
+  function statRow(items) {
+    return h("div", { class: "statrow" }, ...items.filter(([, v]) => v !== null && v !== undefined && v !== "").map(([k, v]) =>
+      h("div", { class: "stat" }, h("span", { class: "lab" }, k), h("span", { class: "stat-v num" }, v))));
+  }
   const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const isWin = (w) => w === true || w === "true" || w === 1;
 
@@ -1373,10 +1404,12 @@
           chartPanel({ id: "profile.sources", title: "Earned by source", forms: ["bars", "pie", "table"], emptyText: "Nothing earned yet.",
             load: staticLoad(() => catFrame((e.by_source || []).slice().sort((a, b) => b.earned - a.earned), "source", "earned", { kname: "Source", vname: "Crystals" })) }))),
       h("div", { class: "grid2" },
-        card("Where and on what", null, kv([
-          ["Countries", listOf(w.countries, country)], ["Platforms", listOf(w.platforms)], ["App versions", listOf(w.app_versions)],
-          ["Builds", listOf(w.builds)], ["Devices (installs)", fmt(Object.keys(w.installs || {}).length)],
-          ["Launch to menu, typical", seconds(act.launch_to_menu_p50)], ["Sessions ended", listOf(act.session_ends)]])),
+        card("Where and on what", "events from each, most first",
+          statRow([["Devices (installs)", fmt(Object.keys(w.installs || {}).length)], ["Launch to menu, typical", seconds(act.launch_to_menu_p50)]]),
+          h("div", { class: "bargroups" },
+            barGroup("Countries", barList(w.countries, country)), barGroup("Platforms", barList(w.platforms)),
+            barGroup("App versions", barList(w.app_versions)), barGroup("Builds", barList(w.builds)),
+            barGroup("How sessions ended", barList(act.session_ends, null, { empty: "No session ends." })))),
         card("Profile the game sent", "the latest person properties", person.length
           ? kv(person.map(([k, v]) => [k.replace(/_/g, " "), typeof v === "object" ? JSON.stringify(v) : String(v)]))
           : h("p", { class: "small" }, "None yet."))),
@@ -1384,11 +1417,19 @@
         measures: [["events", "Events"], ["matches", "Matches"]], emptyText: "No activity.", height: 170,
         load: staticLoad(({ measure }) => timeFrame(act.per_day || [], "day", measure, { measure })) }),
       h("div", { class: "grid2" },
-        card("How they play", null, kv([["Modes", listOf(m.by_mode)], ["Vessels", listOf(m.by_vessel)],
-          ["Play types", listOf(m.by_play_type, playType)], ["Matches won", fmt(m.won)], ["Time at the controls", seconds(m.flight_seconds)]])),
         card("Unlocks", `${(e.unlocks || []).length}`, (e.unlocks || []).length
           ? table(["When", "Kind", "What"], e.unlocks.map((u) => h("tr", {}, h("td", {}, when(u.ts_ms)), h("td", {}, u.kind), h("td", {}, u.name))))
-          : h("p", { class: "small" }, "Nothing unlocked."))),
+          : h("p", { class: "small" }, "Nothing unlocked.")),
+        card("Friends and parties", "who with: open a player's profile", Object.keys(p.social || {}).length
+          ? table(["What", "Times", "With"], Object.entries(p.social).sort((a, b) => b[1].count - a[1].count).map(([k, v]) => h("tr", {},
+              h("td", {}, k.replace(/_/g, " ")), h("td", { class: "num" }, fmt(v.count)),
+              h("td", {}, v.with.length ? h("span", { class: "chips" }, ...v.with.slice(0, 6).map((other) =>
+                // friends and parties name players (open their profile); shares and favourites name a mode (plain)
+                /^(friend|party)_/.test(k)
+                  ? h("button", { type: "button", class: "chip-link", title: other, onclick: () => { state.person = other; render(); window.scrollTo(0, 0); } },
+                      other.length > 14 ? other.slice(0, 12) + "…" : other)
+                  : h("span", { class: "tag" }, other)), v.with.length > 6 ? h("span", { class: "small" }, `+${v.with.length - 6}`) : null) : "–"))))
+          : h("p", { class: "small" }, "No friends or parties yet."))),
       card("Every match", `latest ${Math.min(list.length, 100)} of ${fmt(total)}${filterNote ? " · " + filterNote : ""}`, list.length
         ? table(["When", "Mode", "Int.", "Vessel", "Play type", "Humans / AI", "Finished", "Won", "Flight", "Length", "Rematched"],
             list.map((x) => h("tr", {}, h("td", {}, when(x.ts_ms)), h("td", {}, x.game_mode || "–"), h("td", {}, x.intensity ?? "–"),
@@ -1405,10 +1446,10 @@
         card("FTUE", `${p.ftue.length} steps`, p.ftue.length ? table(["When", "Phase", "Step", "After launch"], p.ftue.map((f) => h("tr", {},
           h("td", {}, when(f.ts_ms)), h("td", {}, f.phase_index ?? "–"), h("td", {}, f.step), h("td", {}, seconds(f.seconds_since_launch)))))
           : h("p", { class: "small" }, "No FTUE steps recorded.")),
-        card("Friends, parties, settings", null, kv([
-          ...Object.entries(p.social || {}).map(([k, v]) => [k.replace(/_/g, " "), `${fmt(v.count)}${v.with.length ? ": " + v.with.slice(0, 6).join(", ") : ""}`]),
-          ...Object.entries(p.settings || {}).map(([k, v]) => [`setting ${k.replace(/_/g, " ")}`, `${v.value} (${when(v.ts_ms).slice(0, 10)})`]),
-          ["Sessions ended", listOf(act.session_ends)], ["Launch to menu, typical", seconds(act.launch_to_menu_p50)]]))),
+        card("Settings", "the latest value of each", Object.keys(p.settings || {}).length
+          ? table(["Setting", "Value", "Changed"], Object.entries(p.settings).sort((a, b) => b[1].ts_ms - a[1].ts_ms).map(([k, v]) => h("tr", {},
+              h("td", {}, k.replace(/_/g, " ")), h("td", {}, String(v.value)), h("td", {}, dayOf(v.ts_ms)))))
+          : h("p", { class: "small" }, "No settings changed."))),
       card("Event timeline", `latest ${p.recent_events.length} of ${fmt(act.events)} events · ${fmt(act.flagged_duplicates)} flagged as duplicates`,
         table(["When", "Event", "Build", "Platform", "Country", "Detail"], p.recent_events.map((x) => h("tr", {}, h("td", {}, when(x.ts_ms)),
           h("td", {}, x.event), h("td", {}, x.build), h("td", {}, x.platform || "–"), h("td", {}, x.country || "–"),
