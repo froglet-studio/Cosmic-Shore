@@ -47,6 +47,7 @@ MODES = ["SkimRace", "Joust", "CrystalCapture", "Bloomrush", "HexRace", "Regatta
 SERVER_LIVE_DAYS = 1         # events older than this came in with the PostHog import (stored as history)
 NEW_BUILD_DAYS = 8           # builds this recent send element, the Toybox's vessel, freestyle_ended and vessel switches
 IDENTIFY_DAYS = 25           # builds since 12 Oct re-identify after each Toybox flight (selected_vessel)
+DOMAIN_DAYS = 3              # builds this recent send the match setup (domain, humans_on_*_domain(s), ai_on_*_domain(s))
 VESSELS = ["Squirrel", "Sparrow", "Manta", "Dolphin", "Rhino", "Urchin"]
 
 
@@ -120,6 +121,11 @@ def sample_events(seed=7):
                 props["element"] = table[mode][0]
                 if table[mode][1]:
                     props["element_secondary"] = table[mode][1]
+            if start > now - timedelta(days=DOMAIN_DAYS) and humans == 1:      # ... and the solo setup
+                ai = props["player_count_ai"]
+                teammates = 1 if ai >= 2 and rng.random() < 0.35 else 0
+                props.update(domain="Jade", humans_on_my_domain=1, humans_on_other_domains=0,
+                             ai_on_my_domain=teammates, ai_on_other_domains=ai - teammates)
             send(player, "game_started", t, platform, version, **props)
             if double:
                 send(player, "game_started", t + timedelta(milliseconds=2), platform, version, **props)
@@ -163,6 +169,27 @@ def sample_events(seed=7):
         send(player, "session_ended", t + timedelta(seconds=30), platform, version,
              reason=rng.choice(["quit", "quit", "background", "background", "crash"]), app_state="menu")
 
+    def party(t, seats, ai=None, rounds=2):
+        """A party's matches from builds that send the setup: seats [(player, domain)] share one match id; `ai` is
+        {domain: AI pilots on it}. Each player's game_started counts the sides from their own seat."""
+        ai = ai or {}
+        humans, bots = len(seats), sum(ai.values())
+        for _ in range(rounds):
+            match, mode, length = f"m-party-{seats[0][0]}-{t.timestamp():.0f}", rng.choice(MODES), rng.randint(90, 200)
+            winner = rng.choice(seats)[1]
+            for player, domain in seats:
+                mine = sum(1 for _, d in seats if d == domain)
+                send(player, "game_started", t, "WindowsPlayer", "0.2.1", match_id=match, player_count_human=humans,
+                     player_count_ai=bots, game_mode=mode, intensity=rng.randint(1, 4), vessel_class=rng.choice(VESSELS),
+                     domain=domain, humans_on_my_domain=mine, humans_on_other_domains=humans - mine,
+                     ai_on_my_domain=ai.get(domain, 0), ai_on_other_domains=bots - ai.get(domain, 0))
+                if rng.random() < 0.85:
+                    paused = rng.choice([0, 0, 6])
+                    send(player, "game_completed", t + timedelta(seconds=length), "WindowsPlayer", "0.2.1", match_id=match,
+                         flight_time_seconds=length - paused - 2, duration_seconds=length, player_won=domain == winner,
+                         game_mode=mode)
+            t += timedelta(seconds=length + rng.choice([60, 120, 900]))
+
     def identify_at(player, t, vessel):
         players[player][1].append({"event": "$identify", "timestamp": iso(t), "properties": {
             "distinct_id": player, "$set": {"selected_vessel": vessel, "preferred_vessel": vessel}}})
@@ -197,9 +224,25 @@ def sample_events(seed=7):
             send(guest, "friend_request_received", t + timedelta(minutes=20), "WindowsPlayer", "0.2.1", from_id=host)
             if i < 2:
                 send(guest, "friend_added", t + timedelta(minutes=21), "WindowsPlayer", "0.2.1", friend_id=host)
-        for player in (host, guest):
+        for player in (host, guest):                 # older builds: no domain fields, so "teams not recorded"
             session(player, t, "WindowsPlayer", "0.2.1", False, 0.9, humans=2, wallet=wallets[player],
-                    team={"humans_on_my_domain": 2 if coop else 1, "humans_on_other_domains": 0 if coop else 1})
+                    team={"humans_on_my_domain": 2 if coop else 1, "humans_on_other_domains": 0 if coop else 1}
+                    if t > now - timedelta(days=DOMAIN_DAYS) else None)
+    # parties on builds that send the setup: 1v1, a three-way free-for-all, 2v2, two against the AI, two against one
+    p = lambda i: f"sample-player-{i:02d}"
+    for hours, seats, ai in ((30, [(p(3), "Jade"), (p(13), "Ruby")], {"Gold": 2}),
+                             (8, [(p(9), "Jade"), (p(19), "Ruby"), (p(21), "Gold")], None),
+                             (52, [(p(4), "Jade"), (p(5), "Jade"), (p(14), "Ruby"), (p(15), "Ruby")], None),
+                             (20, [(p(6), "Jade"), (p(16), "Jade")], {"Ruby": 3}),
+                             (5, [(p(6), "Jade"), (p(16), "Jade")], {"Ruby": 2, "Jade": 1}),
+                             (44, [(p(7), "Jade"), (p(8), "Jade"), (p(17), "Ruby")], {"Ruby": 1})):
+        party(now - timedelta(hours=hours), seats, ai, rounds=rng.choice([1, 2]))
+    for i in range(6):                       # more multiplayer from before the setup was sent: most of it, as live data is
+        t = now - timedelta(days=rng.randint(4, 60), hours=rng.randint(1, 8))
+        for player in (p(i + 18), p(i + 2)):
+            session(player, t, "WindowsPlayer", "0.2.1", t < fixed, 0.85, humans=2, wallet=wallets[player])
+    for i in range(20, 25):                  # release players on builds that send the solo setup (AI teammates too)
+        session(p(i), now - timedelta(hours=rng.randint(3, 60)), "Android", "0.2.1", False, 0.7, wallet=wallets[p(i)])
     for i in range(25):
         identify(f"sample-player-{i:02d}", CALLSIGNS[i] + " (sample)", wallets[f"sample-player-{i:02d}"])
     for i in range(6):                       # the team in the editor

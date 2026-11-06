@@ -825,6 +825,9 @@ namespace CosmicShore.Core
         /// that dropped during scene load); deriving it from replicated state and sorting is
         /// deterministic on every peer. AI is excluded and counted separately.
         /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+        ///
+        /// The same loop counts the match setup per domain from the local player's side
+        /// (<see cref="DomainComposition"/>); game_started only, game_completed joins back on match_id.
         /// </summary>
         void AddMatchEnvelope(IDictionary<string, object> parameters)
         {
@@ -834,6 +837,12 @@ namespace CosmicShore.Core
 
             var humanIds = new List<string>();
             int aiCount = 0;
+
+            // The match setup from the LOCAL player's side: every pilot counted below (each AI, each
+            // human in player_ids) with its domain and whether an AI flies it. Only collected when
+            // there is a local player - see DomainComposition.
+            var local = _gameData.LocalPlayer;
+            var seats = local != null ? new List<(Domains Domain, bool IsAI)>() : null;
 
             var players = _gameData.Players;
             if (players != null)
@@ -846,16 +855,23 @@ namespace CosmicShore.Core
                     if (player.IsInitializedAsAI)
                     {
                         aiCount++;
+                        seats?.Add((player.Domain, true));
                         continue;
                     }
 
                     string id = player.UgsPlayerId;
-                    if (!string.IsNullOrEmpty(id) && !humanIds.Contains(id))
-                        humanIds.Add(id);
+                    if (string.IsNullOrEmpty(id) || humanIds.Contains(id))
+                        continue;
+
+                    humanIds.Add(id);
+                    seats?.Add((player.Domain, false));
                 }
             }
 
             humanIds.Sort(StringComparer.Ordinal);
+
+            if (local != null)
+                DomainComposition.Count(local.Domain, seats).AddTo(parameters, local.Domain);
 
             // Comma-joined, not an array: UGS Analytics parameters accept only scalar values.
             // The Froglet Analytics sink splits this back into a real array (commit 4).
@@ -1316,6 +1332,73 @@ namespace CosmicShore.Core
         {
             if (_allowLog)
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Analytics] {message}");
+        }
+
+        /// <summary>
+        /// A match's setup from the LOCAL player's side, for game_started's <c>domain</c>,
+        /// <c>humans_on_my_domain</c>, <c>humans_on_other_domains</c>, <c>ai_on_my_domain</c> and
+        /// <c>ai_on_other_domains</c> (Shombith 2026-11-07: the Overview's split of solo, co-op,
+        /// competitive and teams vs AI, in multiplayer and solo alike). Froglet Analytics only - the
+        /// UGS sink strips all five.
+        ///
+        /// <para>The seats are the pilots <see cref="AddMatchEnvelope"/> already counts: every AI
+        /// (as in <c>player_count_ai</c>) and every human once by UGS id (as in <c>player_ids</c>), so
+        /// humans_on_my_domain + humans_on_other_domains = player_count_human and the two AI counts sum
+        /// to player_count_ai. The local player is one of those humans, so it is in humans_on_my_domain.
+        /// The fields are omitted when there is no local player: with no side to stand on, every
+        /// pilot would read as an opponent.</para>
+        ///
+        /// Pure counting on domains; no Unity calls, so the edit-mode tests drive it directly.
+        /// </summary>
+        public readonly struct DomainComposition
+        {
+            public readonly int HumansOnMyDomain;
+            public readonly int HumansOnOtherDomains;
+            public readonly int AiOnMyDomain;
+            public readonly int AiOnOtherDomains;
+
+            public DomainComposition(int humansOnMyDomain, int humansOnOtherDomains, int aiOnMyDomain, int aiOnOtherDomains)
+            {
+                HumansOnMyDomain = humansOnMyDomain;
+                HumansOnOtherDomains = humansOnOtherDomains;
+                AiOnMyDomain = aiOnMyDomain;
+                AiOnOtherDomains = aiOnOtherDomains;
+            }
+
+            /// <summary>Counts <paramref name="seats"/> (the local player's own seat included) against <paramref name="localDomain"/>.</summary>
+            public static DomainComposition Count(Domains localDomain, IEnumerable<(Domains Domain, bool IsAI)> seats)
+            {
+                int humansMine = 0, humansOther = 0, aiMine = 0, aiOther = 0;
+                if (seats != null)
+                {
+                    foreach (var (domain, isAI) in seats)
+                    {
+                        bool mine = domain == localDomain;
+                        if (isAI)
+                        {
+                            if (mine) aiMine++;
+                            else aiOther++;
+                        }
+                        else
+                        {
+                            if (mine) humansMine++;
+                            else humansOther++;
+                        }
+                    }
+                }
+
+                return new DomainComposition(humansMine, humansOther, aiMine, aiOther);
+            }
+
+            /// <summary>Writes the five game_started fields; <c>domain</c> is the Domains enum name.</summary>
+            public void AddTo(IDictionary<string, object> parameters, Domains localDomain)
+            {
+                parameters[UGSKeys.ParamDomain] = localDomain.ToString();
+                parameters[UGSKeys.ParamHumansOnMyDomain] = HumansOnMyDomain;
+                parameters[UGSKeys.ParamHumansOnOtherDomains] = HumansOnOtherDomains;
+                parameters[UGSKeys.ParamAiOnMyDomain] = AiOnMyDomain;
+                parameters[UGSKeys.ParamAiOnOtherDomains] = AiOnOtherDomains;
+            }
         }
 
         /// <summary>

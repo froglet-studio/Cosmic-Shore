@@ -181,6 +181,41 @@
             "froglet"
           ],
           "description": "The mode's second genre element when it has two (Brood Rush: Mass and Space); absent otherwise. Froglet Analytics only (2026-11-06): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "domain": {
+          "type": "string",
+          "description": "The local player's domain (Jade, Ruby, Gold, ...). Froglet Analytics only (2026-11-07): the UGS sink strips it. From the LOCAL player's side; absent when there is no local player.",
+          "sinks": [
+            "froglet"
+          ]
+        },
+        "humans_on_my_domain": {
+          "type": "int",
+          "description": "Humans on the local player's domain, the local player included. Froglet Analytics only (2026-11-07): the UGS sink strips it. From the LOCAL player's side; absent when there is no local player.",
+          "sinks": [
+            "froglet"
+          ]
+        },
+        "humans_on_other_domains": {
+          "type": "int",
+          "description": "Humans on every other domain. 0 = every human is on one team. Froglet Analytics only (2026-11-07): the UGS sink strips it. From the LOCAL player's side; absent when there is no local player.",
+          "sinks": [
+            "froglet"
+          ]
+        },
+        "ai_on_my_domain": {
+          "type": "int",
+          "description": "AI pilots on the local player's domain (AI teammates). Froglet Analytics only (2026-11-07): the UGS sink strips it. From the LOCAL player's side; absent when there is no local player.",
+          "sinks": [
+            "froglet"
+          ]
+        },
+        "ai_on_other_domains": {
+          "type": "int",
+          "description": "AI pilots on every other domain (AI opponents). Froglet Analytics only (2026-11-07): the UGS sink strips it. From the LOCAL player's side; absent when there is no local player.",
+          "sinks": [
+            "froglet"
+          ]
         }
       }
     },
