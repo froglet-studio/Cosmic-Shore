@@ -106,7 +106,9 @@ Copy this list into the AI's doc and tick it.
   There the AI's nose lag (the fleet's 1.5/s, which every AI hull keeps) cost more than every other skill difference,
   so the four levels finished together. Switchback writes each AI pilot's nose follow rate
   (`VesselTransformer.AINoseFollowPerSecond`, from `GateRaceController.OnRacerArmed`) from a row per intensity
-  (`aiNoseFollowByIntensity`), set to Yash's time bands (I4: Easy 130-150 s ... Legendary 100-120 s, 10 s steps).
+  (`aiNoseFollowByIntensity`), set to Yash's time bands (10 s steps). The I4 gauntlet (2026-11-03) has its own row,
+  `aiNoseFollowGauntlet`, on its own bands (Easy 175-195 s ... Legendary 145-165 s); the per-intensity I4 row stays
+  for a mode that reuses Switchback's course without the gauntlet (Scarab Rally).
   It breaks two rules above on purpose: Legendary is faster than the shipped pilot, and the setting is per intensity.
   The hull's kit is unchanged (the nose rate is a per-pilot dial, as people's pad / touch / keyboard rates are), and
   every other mode leaves it unset. Do not copy it to another mode without the AI owner's yes; `AI_PLAN.md` §7 holds
@@ -225,6 +227,18 @@ the same source as the studios' `studio-domains.js`): game Ruby is magenta, neve
 - **A difficulty ladder the lag flattens decides nothing.** Where the nose lag is the slowest thing in the race, levels
   that differ only in judgement finish together (Switchback: I4 172 / 169 / 169 / 172 s). Measure the ladder before
   shipping it (§3.1).
+- **A key off the AI's line is missed if the strike aims past it along the FIRE line.** A commit drift locks the course
+  onto `desired` at the moment it commits, so aiming at `key + fire * 40` (right while the key sat on the line) passes an
+  off-line key 13-24 u wide when the fire line turns from the approach (Switchback's I4 gauntlet, 2026-11-03). Aim
+  THROUGH the key along the approach and let the drift look swing the nose onto the fire line
+  (`SwitchbackBlastAI.GateBlastAim`).
+- **A plan costed over one obstacle's box undercounts the plan that ignores the obstacle.** Splitting a gate into several
+  keys made "thread straight to the ring" look cheap at the first key, because only that key's box was counted; the AI
+  skipped every first key. Cost each plan over the whole way to the ring (`SwitchbackBlastPlanner.PathPenalty`).
+- **Run a mode's EditMode tests headless before Unity does.** When the tested code is pure (layout, planner), compile
+  the SHIPPED test file against the harness's Unity shim with an NUnit shim (`switchback_sim_harness/run.sh tests`:
+  `NUnitShim.cs` expands `[Values]`, `TestRunner.cs` reports PASS/FAIL), then negative-control the new tests by planting
+  the defect each guards.
 
 ## 6. Keep it alive
 
