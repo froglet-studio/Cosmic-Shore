@@ -169,6 +169,11 @@ namespace CosmicShore.Gameplay
         // the retired Classic ladder, so the learners keep them apart (learn_drives_from_flights.py SHIPPED_FAMILY).
         // Empty in a mode without families. The JSON key stays "funType" so old and new flights read the same.
         string _funType = "";
+        // The build the race was flown on (git HEAD of this editor, read once a session): the learners keep a race only
+        // when its build has the hull's current kit (learn_drives_from_flights.py KIT_SINCE: the Stoat's trampoline
+        // reached bleeding-edge two days after it was committed, so a flight's date cannot say which kit it raced).
+        // Editor only: a player build has no checkout, and a device must not spawn git.
+        static string s_buildCommit, s_buildBranch;
         bool _recording, _turnWasRunning;
         // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
         // game end, a frame or a ClientRpc after the turn stops), or after ResultWaitSeconds without one.
@@ -829,6 +834,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
             sb.Append("\"courseSeed\":").Append(_courseSeed).Append(",\"courseIntensity\":").Append(_courseIntensity).Append(',');
             if (_funType.Length > 0) sb.Append("\"funType\":\"").Append(_funType).Append("\",");
+            AppendBuild(sb);
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
             sb.Append("\"ended\":\"").Append(why).Append("\",");
             sb.Append("\"raceTarget\":").Append(target).Append(",\"rings\":").Append(rings).Append(',');
@@ -1094,6 +1100,21 @@ namespace CosmicShore.Gameplay
                     sb.Append('"').Append(Esc(p.Name)).Append("\":\"").Append(_gameData.AIDifficultyFor(p).ToString()).Append('"');
                 }
             sb.Append("},");
+        }
+
+        /// <summary>Writes "gitCommitHash" and "gitBranch" (the editor's checkout) once read; nothing in a player build or when
+        /// git cannot answer, so a learner treats the race as one with no known build.</summary>
+        static void AppendBuild(StringBuilder sb)
+        {
+            if (!Application.isEditor) return;
+            if (s_buildCommit == null)
+            {
+                s_buildCommit = BenchmarkReport.TryRunGit("rev-parse --short=10 HEAD");
+                s_buildBranch = BenchmarkReport.TryRunGit("rev-parse --abbrev-ref HEAD");
+            }
+            if (string.IsNullOrEmpty(s_buildCommit) || s_buildCommit == "unknown") return;
+            sb.Append("\"gitCommitHash\":\"").Append(Esc(s_buildCommit)).Append("\",");
+            sb.Append("\"gitBranch\":\"").Append(Esc(s_buildBranch ?? "")).Append("\",");
         }
 
         static string Esc(string s) => string.IsNullOrEmpty(s) ? "" : s.Replace("\\", "\\\\").Replace("\"", "\\\"");

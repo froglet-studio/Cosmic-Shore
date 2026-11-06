@@ -1,6 +1,6 @@
 {
  "note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: when a learner changes, every flight is learned from again. Delete a line to relearn it. 'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: each is learned from once its reason goes away. A flight whose learner failed is in neither, so the next sweep tries it again.",
- "learners": "6fa4c33b42fd7a33",
+ "learners": "01590e9bfbaa9686",
  "flights": [
   "BugLedger/shared/reports/belac/flights/flight_SkimRace_Squirrel_20261019_102720.json",
   "BugLedger/shared/reports/belac/flights/flight_SkimRace_Squirrel_20261105_103605.json",
@@ -206,6 +206,9 @@
   "BugLedger/shared/reports/yskha/flights/flight_ThresherTime_Thresher_20261031_232637.json",
   "BugLedger/shared/reports/yskha/flights/flight_ThresherTime_Thresher_20261104_045949.json",
   "BugLedger/shared/reports/yskha/flights/flight_ThresherTime_Thresher_20261107_015644.json",
+  "BugLedger/shared/reports/yskha/flights/flight_ThresherTime_Thresher_20261107_032537.json",
+  "BugLedger/shared/reports/yskha/flights/flight_ThresherTime_Thresher_20261107_032732.json",
+  "BugLedger/shared/reports/yskha/flights/flight_ThresherTime_Thresher_20261107_033520.json",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_072546.json",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_072749.json",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073008.json",
