@@ -846,18 +846,7 @@ namespace CosmicShore.Core
 
             bool resolved = TryResolveLocalWin(out bool won);
 
-            // Balance (Froglet Analytics only): where the player finished and against which AI level.
-            // Each field is left out when the game cannot say, never guessed.
-            if (TryCollectScores(out var scores, out int localIndex))
-            {
-                parameters[UGSKeys.ParamPlayersInMatch] = scores.Count;
-                if (MatchStanding.TryResolve(scores, localIndex, resolved ? won : (bool?)null, out var standing))
-                    standing.AddTo(parameters);
-            }
-
-            string aiDifficulty = ResolveOpponentAiDifficulty();
-            if (aiDifficulty != null)
-                parameters[UGSKeys.ParamAiDifficulty] = aiDifficulty;
+            AddBalanceFields(parameters, resolved ? won : (bool?)null);
 
             if (resolved)
             {
@@ -914,6 +903,33 @@ namespace CosmicShore.Core
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Balance (Froglet Analytics only): where the player finished and against which AI level. Each
+        /// field is left out when the game cannot say, never guessed. Reading a roster that is being torn
+        /// down must never cost the match its game_completed, so a failure here drops only these fields,
+        /// the same way <see cref="TryResolveLocalWin"/> drops player_won.
+        /// </summary>
+        void AddBalanceFields(IDictionary<string, object> parameters, bool? localWon)
+        {
+            try
+            {
+                if (TryCollectScores(out var scores, out int localIndex))
+                {
+                    parameters[UGSKeys.ParamPlayersInMatch] = scores.Count;
+                    if (MatchStanding.TryResolve(scores, localIndex, localWon, out var standing))
+                        standing.AddTo(parameters);
+                }
+
+                string aiDifficulty = ResolveOpponentAiDifficulty();
+                if (aiDifficulty != null)
+                    parameters[UGSKeys.ParamAiDifficulty] = aiDifficulty;
+            }
+            catch (Exception)
+            {
+                // Roster not readable at this moment - send the match without its balance fields.
+            }
         }
 
         /// <summary>
@@ -1050,16 +1066,26 @@ namespace CosmicShore.Core
 
             float? scoreAtQuit = null;
             int? placementAtQuit = null;
-            var localStats = _gameData.LocalRoundStats;
-            if (localStats != null)
+            string aiDifficulty = null;
+            try
             {
-                scoreAtQuit = localStats.Score;
-                placementAtQuit = PlacementAtQuit(localStats);
+                var localStats = _gameData.LocalRoundStats;
+                if (localStats != null)
+                {
+                    scoreAtQuit = localStats.Score;
+                    placementAtQuit = PlacementAtQuit(localStats);
+                }
+
+                aiDifficulty = ResolveOpponentAiDifficulty();
+            }
+            catch (Exception)
+            {
+                // A roster mid-teardown: the abandon is still recorded, without these fields.
             }
 
             RecordEvent(UGSKeys.EventMatchAbandoned, BuildMatchAbandonedParameters(start,
                 Mathf.RoundToInt(Time.realtimeSinceStartup - _gameStartTime), flightSeconds, reason,
-                ResolveOpponentAiDifficulty(), scoreAtQuit, placementAtQuit));
+                aiDifficulty, scoreAtQuit, placementAtQuit));
         }
 
         /// <summary>
