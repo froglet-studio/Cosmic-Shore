@@ -1,8 +1,11 @@
 # Launch tools check: every tool under Tools/Launch/ proves itself on each change.
 #
 # Each Tools/Launch/*.py that has a `self-test` subcommand runs it. A self-test includes its negative control
-# (a record or input the tool must refuse), so a tool that stops refusing fails here.
-# No secrets, read-only token, GitHub-hosted runner. Fork pull requests are safe to run.
+# (records or inputs the tool must refuse), so a tool that stops refusing fails here. launch_status.py's self-test
+# also publishes end to end against a throwaway local remote (never GitHub).
+# Then every launch workflow (launch-*.y*ml, release*.y*ml) must pin its third-party actions to a commit sha
+# (Tools/Launch/check_action_pins.py).
+# No secrets, read-only token not kept on disk, GitHub-hosted runner. Fork pull requests are safe to run.
 name: Launch tools check
 
 on:
@@ -10,13 +13,17 @@ on:
     paths:
       - "Tools/Launch/**"
       - ".github/workflows/launch-*.yml"
+      - ".github/workflows/launch-*.yaml"
       - ".github/workflows/release*.yml"
+      - ".github/workflows/release*.yaml"
   push:
     branches: [bleeding-edge]
     paths:
       - "Tools/Launch/**"
       - ".github/workflows/launch-*.yml"
+      - ".github/workflows/launch-*.yaml"
       - ".github/workflows/release*.yml"
+      - ".github/workflows/release*.yaml"
   workflow_dispatch:
 
 permissions:
@@ -31,9 +38,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Sparse + depth 1: only Tools/Launch, .github and the root files are checked out, and with a sparse checkout
+      # this action fetches with --filter=blob:none, so the Unity project's blobs are never downloaded.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
+          persist-credentials: false
           sparse-checkout: |
             Tools/Launch
             .github
@@ -44,21 +54,17 @@ jobs:
         run: |
           set -euo pipefail
           status=0
+          ran=0
           for tool in Tools/Launch/*.py; do
+            [ -f "$tool" ] || continue
             if grep -q '"self-test"' "$tool"; then
+              ran=$((ran + 1))
               echo "::group::$tool"
               if python3 "$tool" self-test; then echo "PASS $tool"; else echo "::error file=$tool::self-test failed"; status=1; fi
               echo "::endgroup::"
             fi
           done
+          if [ "$ran" -eq 0 ]; then echo "::error::no launch tool self-test ran (is Tools/Launch checked out?)"; exit 1; fi
           exit $status
       - name: Every launch workflow pins third-party actions to a commit
-        run: |
-          set -euo pipefail
-          # A `uses:` that names a tag or branch instead of a 40-character sha fails this check (local actions excepted).
-          bad=$(grep -HnE '^\s*-?\s*uses:\s*[^ ./][^@]*@' .github/workflows/launch-*.yml .github/workflows/release*.yml 2>/dev/null \
-                | grep -vE '@[0-9a-f]{40}(\s|$)' || true)
-          if [ -n "$bad" ]; then
-            echo "::error::Unpinned actions in launch workflows:"; echo "$bad"; exit 1
-          fi
-          echo "All launch workflow actions are pinned to a commit."
+        run: python3 Tools/Launch/check_action_pins.py check
