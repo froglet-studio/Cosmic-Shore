@@ -3956,24 +3956,6 @@
       "page": "launch-console",
       "title": "Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact"
     },
-    "R59C.dc.html": {
-      "x": 0,
-      "y": 43684,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 59 C - The board wall - interactive",
-      "is_interactive": true
-    },
-    "R59D.dc.html": {
-      "x": 2100,
-      "y": 43684,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 59 D - From the cell - interactive",
-      "is_interactive": true
-    },
     "R60Phone.dc.html": {
       "x": 0,
       "y": 25080,
@@ -3983,26 +3965,8 @@
       "title": "Rev 60 Phone - the Quests page on a phone (interactive), and three spots now and proposed - interactive",
       "is_interactive": true
     },
-    "R61A.dc.html": {
-      "x": 0,
-      "y": 46224,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 61 A - Beside the Ark (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R61B.dc.html": {
-      "x": 2100,
-      "y": 46224,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 61 B - The leader, close - interactive",
-      "is_interactive": true
-    },
     "R61C.dc.html": {
-      "x": 4200,
+      "x": 0,
       "y": 46224,
       "w": 1920,
       "h": 1080,
@@ -4010,31 +3974,67 @@
       "title": "Rev 61 C - On the pads - interactive",
       "is_interactive": true
     },
-    "R61D.dc.html": {
-      "x": 0,
-      "y": 47484,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 61 D - Across the bay - interactive",
-      "is_interactive": true
-    },
     "R61E.dc.html": {
       "x": 2100,
-      "y": 47484,
+      "y": 46224,
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
       "title": "Rev 61 E - The map wall - interactive",
       "is_interactive": true
     },
-    "R61F.dc.html": {
-      "x": 4200,
-      "y": 47484,
+    "R62A.dc.html": {
+      "x": 0,
+      "y": 48764,
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 61 F - Beside the Ark, with the map - interactive",
+      "title": "Rev 62 A - The pads (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R62B.dc.html": {
+      "x": 2100,
+      "y": 48764,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 B - The map wall - interactive",
+      "is_interactive": true
+    },
+    "R62C.dc.html": {
+      "x": 4200,
+      "y": 48764,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 C - Down the bay - interactive",
+      "is_interactive": true
+    },
+    "R62D.dc.html": {
+      "x": 0,
+      "y": 50024,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 D - The porthole row - interactive",
+      "is_interactive": true
+    },
+    "R62E.dc.html": {
+      "x": 2100,
+      "y": 50024,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 E - Across the bay - interactive",
+      "is_interactive": true
+    },
+    "R62F.dc.html": {
+      "x": 4200,
+      "y": 50024,
+      "w": 1920,
+      "h": 1080,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 F - At a porthole - interactive",
       "is_interactive": true
     }
   },
@@ -4160,8 +4160,8 @@
     "sec-rev57-2",
     "sec-rev58",
     "sec-rev60",
-    "sec-rev59",
     "sec-rev61",
+    "sec-rev62",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4233,9 +4233,9 @@
     "rev56",
     "rev57",
     "rev58",
-    "rev59",
     "rev60",
-    "rev61"
+    "rev61",
+    "rev62"
   ],
   "notes": {
     "hud_end": {
@@ -6582,15 +6582,6 @@
       },
       "page": "launch-console"
     },
-    "rev59": {
-      "kind": "title1",
-      "text": "Rev 59 - The Ark's lobby: the Squads tab in the Ark's own hangar - the real ArkReverse model, its pads, the HyperSea board, the cell out of the mouth",
-      "x": 0,
-      "y": 43284,
-      "w": 240,
-      "maxW": 6120,
-      "page": "menu-redesign-c"
-    },
     "rev60": {
       "kind": "title1",
       "text": "Rev 60 - Phone: what is left - the Quests page, and the Codex orbit, account prompt and Port weekly board",
@@ -6615,21 +6606,6 @@
       },
       "page": "phone"
     },
-    "sec-rev59": {
-      "kind": "rect",
-      "x": -160,
-      "y": 43124,
-      "w": 6440,
-      "h": 1800,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
     "rev61": {
       "kind": "title1",
       "text": "Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)",
@@ -6644,11 +6620,35 @@
       "x": -160,
       "y": 45664,
       "w": 6440,
-      "h": 3060,
+      "h": 1800,
       "css": {
         "background": "rgba(166, 0, 255, 0.06)",
         "border-style": "solid",
         "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "menu-redesign-c"
+    },
+    "rev62": {
+      "kind": "title1",
+      "text": "Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels",
+      "x": 0,
+      "y": 48364,
+      "w": 240,
+      "maxW": 6120,
+      "page": "menu-redesign-c"
+    },
+    "sec-rev62": {
+      "kind": "rect",
+      "x": -160,
+      "y": 48204,
+      "w": 6440,
+      "h": 3060,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
@@ -7137,15 +7137,15 @@
     "R58Docked.dc.html",
     "R58Narrow.dc.html",
     "R58Notes.dc.html",
-    "R59C.dc.html",
-    "R59D.dc.html",
     "R60Phone.dc.html",
-    "R61A.dc.html",
-    "R61B.dc.html",
     "R61C.dc.html",
-    "R61D.dc.html",
     "R61E.dc.html",
-    "R61F.dc.html"
+    "R62A.dc.html",
+    "R62B.dc.html",
+    "R62C.dc.html",
+    "R62D.dc.html",
+    "R62E.dc.html",
+    "R62F.dc.html"
   ],
   "pages": [
     {

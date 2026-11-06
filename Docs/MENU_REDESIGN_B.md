@@ -62,7 +62,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads with the Ark and its escorts: Rev 61 mockups (filmed, section 136), awaiting a pick; Rev 59 read as a cartoon (section 134)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels, awaiting a pick (section 137)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -6007,7 +6007,7 @@ waits on a pick.
 Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
 only, its `hangaropen` take played), Voyage Board (rendered only) and Nocturne palette (read only).
 
-## 136. Rev 61 mockups: the Ark's lobby, filmed - the real Ark and the squad's real vessels, no cartoon (2026-11-06, awaiting a pick)
+## 136. Rev 61 mockups: the Ark's lobby, filmed - the real Ark and the squad's real vessels, no cartoon (2026-11-06; C and E liked and kept, followed up in section 137)
 
 **Asked (Shombith, 2026-11-06, on Rev 59):** "I liked D and in C the map ... can you also show the vessels beside the ark
 and then another inside ... current one looks like they are from a cartoon please we need to fix that first. Cannot be
@@ -6059,3 +6059,47 @@ Join, Edit and Take into are unchanged; the kept seat is new. The build waits on
 
 Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model and the Sparrow and
 Dolphin models (rendered only), Voyage Board (rendered only) and Nocturne palette (read only).
+
+## 137. Rev 62 mockups: the Ark's lobby by the game's own light - C and E kept, portholes, no vessels (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-06, on Rev 61):** "I like C and E. Keep both and follow that style design and create more
+mock-ups, do not show the 3D vessel models. Maybe it can have spaceship small windows where we see the outside. We will
+use no lightning just the natural game lightning as you know."
+
+**Kept:** Rev 61 C (On the pads) and E (The map wall) stay on the canvas as they are. Rev 61 A, B, D and F, and Rev 59 C
+and D (which Rev 61 replaced), were taken off the canvas to make room under its 512-file cap; their copies stay in
+`Docs/MenuRedesignB/board/`.
+
+**What changed** (`Docs/MenuRedesignB/rounds/r62_ark_ports_render.py`, from r61's, Blender 5, Cycles, seeded):
+- **No light rig.** Every lamp of Rev 61 is gone. The room is lit only by what the game has: the cell (its picture as
+  the sky) coming in through the open mouth and the portholes, and the game's own glow, which is the prisms' rims, the
+  hull's domain trim and the HyperSea board's screen. The same AgX view, lit hull panels and prism read as Rev 61.
+- **Portholes.** Twelve along both side walls at eye height over the heaps, and two in the back wall either side of the
+  tunnel; none behind the HyperSea board or the galaxy. Each is placed on the model's real wall (a ray cast from the
+  bay's axis onto `ArkReverse`). It is a heavy ring of the hull's metal with eight bolts, and its pane is a portal: it
+  shows the cell in the direction you look through it, so it has true parallax, and its light comes into the room.
+- **No vessel models.** Each taken seat is a prism over its launch pad in the squad's domain, with a small core and a
+  ring of shards; the kept seat is a dark outline.
+
+**On the canvas:** tab **Menu Redesign A** (id `menu-redesign-c`), round "Rev 62 - The Ark's lobby by the game's own
+light ...", beside Rev 61 C and E. Six option boards (the canvas is at its file cap; the generator
+`r62_ark_lobby_boards.py` writes Compare and Notes too with `--all`); the uploaded ids are in `r62_blobs.json`. Six
+views x three domains. Cards, colours and interaction as Rev 61 (style guide: the domain in Nocturne, the Jade
+selection ring, Ruby TAKE INTO, Lime INVITE, elements without colour).
+
+- **A - The pads (recommended):** Rev 61 C by the game's light: from the door down the pads, the seats' prisms, the
+  portholes and the back wall's tunnel; seats on the right. Recommended because it is the view picked, and the pads
+  read as the squad's seats with the kept one waiting.
+- **B - The map wall:** Rev 61 E by the game's light: the HyperSea board between portholes; seats on the right.
+- **C - Down the bay:** from the back wall, high: the bay to the open mouth, portholes down both walls.
+- **D - The porthole row:** along the starboard wall, its portholes receding with the cell outside; seats on the left.
+- **E - Across the bay:** from the starboard corner, the pads before the board.
+- **F - At a porthole:** close at the glass, the cell outside, the room dark around it.
+
+**Differs from the build:** today the Squads tab is the Rev 31 deck on the menu's sea (section 95). This puts the Ark's
+hangar behind it by the game's own light: baked backdrops per domain (these renders) or the `ArkReverse` hangar as a
+small scene with the game's real prisms, lit only by the cell and the game's materials. Seat data, Make, Join, Edit and
+Take into are unchanged; the kept seat is new. The build waits on a pick.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
+only), Voyage Board (rendered only) and Nocturne palette (read only).

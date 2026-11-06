@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793959117-ddb7` of **Frogma**: Rev 3 to Rev 61, 490 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-06 from canvas version `1793977764-d468` of **Frogma**: Rev 3 to Rev 62, 490 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,19 +545,19 @@ Copied on 2026-11-06 from canvas version `1793959117-ddb7` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
+
+- [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
+- [`R62B.dc.html`](R62B.dc.html) - Rev 62 B - The map wall - interactive
+- [`R62C.dc.html`](R62C.dc.html) - Rev 62 C - Down the bay - interactive
+- [`R62D.dc.html`](R62D.dc.html) - Rev 62 D - The porthole row - interactive
+- [`R62E.dc.html`](R62E.dc.html) - Rev 62 E - Across the bay - interactive
+- [`R62F.dc.html`](R62F.dc.html) - Rev 62 F - At a porthole - interactive
+
 #### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
 
-- [`R61A.dc.html`](R61A.dc.html) - Rev 61 A - Beside the Ark (recommended) - interactive
-- [`R61B.dc.html`](R61B.dc.html) - Rev 61 B - The leader, close - interactive
 - [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
-- [`R61D.dc.html`](R61D.dc.html) - Rev 61 D - Across the bay - interactive
 - [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
-- [`R61F.dc.html`](R61F.dc.html) - Rev 61 F - Beside the Ark, with the map - interactive
-
-#### Rev 59 - The Ark's lobby: the Squads tab in the Ark's own hangar - the real ArkReverse model, its pads, the HyperSea board, the cell out of the mouth
-
-- [`R59C.dc.html`](R59C.dc.html) - Rev 59 C - The board wall - interactive
-- [`R59D.dc.html`](R59D.dc.html) - Rev 59 D - From the cell - interactive
 
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
