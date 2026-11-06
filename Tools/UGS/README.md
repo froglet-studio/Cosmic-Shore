@@ -46,8 +46,8 @@ deployed from **bleeding-edge**, development first.
    Unity Environments Admin, Cloud Code Script Publisher and Cloud Code Editor; then Add key) and put its key id and secret in GitHub as repository secrets `UGS_CLI_SERVICE_KEY_ID` and
    `UGS_CLI_SERVICE_SECRET_KEY` (repository Settings > Secrets and variables > Actions > New repository secret).
 2. GitHub > Actions > **Deploy UGS scripts** > Run workflow > branch `bleeding-edge`, environment `development` > Run.
-   It tests every script, checks the vessel prices and uploads the five scripts (`.github/workflows/ugs-deploy.yml`).
-3. Dashboard > Cloud Code > Scripts, development environment: the five are there.
+   It tests every script, checks the vessel prices and uploads the six scripts (`.github/workflows/ugs-deploy.yml`).
+3. Dashboard > Cloud Code > Scripts, development environment: the six are there (`launch-flags` among them).
 4. After the editor checks pass with a switch on, run it again with `production`.
 
 **From a terminal instead:** `npm install -g ugs`, `ugs login` with the same key, then
