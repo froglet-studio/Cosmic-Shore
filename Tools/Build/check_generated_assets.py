@@ -459,6 +459,14 @@ class Audit:
             out.append(("script", rel, "%s m_Script fileID %s is not 11500000 for a .cs script" % (where, s.get("fileID"))))
         full = self.schema.script_class(target)
         stem = os.path.splitext(os.path.basename(target))[0]
+        if not full and "/Editor/" in "/" + target:
+            # An editor-only asset (an editor tool's ScriptableObject config) binds a class in
+            # Assembly-CSharp-Editor, which the PLAYER schema never compiles. Unity loads it in the
+            # editor, so it is not a missing script: check the file still declares the class named
+            # like it (what Unity binds), and count its fields as unverified rather than failing them.
+            if re.search(r"\bclass\s+%s\b" % re.escape(stem), self.tree.read(target) or ""):
+                self.unverified["fields of an Editor-folder script (%s)" % stem] += 1
+                return out
         if not full:
             if any(t in self.schema.by_file for t in [target]) or self.tree.exists(target):
                 out.append(("script", rel, "%s m_Script %s declares no class named %s (Unity: 'The associated "
@@ -862,6 +870,25 @@ def self_test(schema, base):
     # a package script (UGUI Image, which lives in Library/PackageCache, never under Assets/) named by a
     # NEW document is not a dangling guid; the "reference to an unknown guid" control above proves a
     # guid the base tree never saw is still one
+    # an editor-only asset whose m_Script is an Editor-folder ScriptableObject (absent from the player
+    # schema) is not a missing script; the same asset is one once the file stops declaring that class
+    ed_cs = "Assets/_Scripts/Editor/ShaderHintSSU.cs"
+    ed_asset = "Assets/_SO_Assets/SelfTestEditorOnly.asset"
+    ed_yaml = ("%%YAML 1.1\n%%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+               "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+               "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+               "  m_Script: {fileID: 11500000, guid: %s, type: 3}\n  m_Name: SelfTestEditorOnly\n  m_EditorClassIdentifier: \n"
+               % meta_guid(tree0, ed_cs))
+    ed_overlay = {ed_asset: ed_yaml, ed_asset + ".meta": "fileFormatVersion: 2\nguid: %s\n" % ("e" * 32)}
+    found, _ = run_audit(Tree(ROOT, ed_overlay), schema, base, added + [ed_asset], [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "script" and ed_asset in f[1]]
+    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "Editor-folder ScriptableObject on an editor asset is NOT a finding", hit[0][2][:110] if hit else ""))
+    ok &= not hit
+    renamed = dict(ed_overlay, **sub(ed_cs, "class ShaderHintSSU", "class ShaderHintSSURenamed"))
+    found, _ = run_audit(Tree(ROOT, renamed), schema, base, added + [ed_asset], [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "script" and ed_asset in f[1]]
+    print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "Editor-folder script that no longer declares its class", hit[0][2][:110] if hit else ""))
+    ok &= bool(hit)
     ugui_image = "fe87c0e1cc204ed48ad3b37840f39efc"
     pkg = sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_Script: {fileID: 11500000, guid: " + ugui_image + "}  # ", 1)
     found, _ = run_audit(Tree(ROOT, pkg), schema, base, added, [], [], lambda r: None)
