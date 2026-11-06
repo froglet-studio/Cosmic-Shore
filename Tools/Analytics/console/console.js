@@ -230,8 +230,8 @@
   // ELEMENTS HAVE NO COLOUR (LOCKED): an element split is one neutral hue in steps (the text token mixed into the
   // ground), with its name beside every mark; never Jade, Ruby, Gold, Blue or the domain series colours.
   const ELEMENT_ORDER = ["Charge", "Mass", "Space", "Time", "Omni", "none"];
-  const ELEMENT_SHADE = { Charge: 100, Mass: 80, Space: 62, Time: 46, Omni: 36 };
-  const elementColour = (k) => (ELEMENT_SHADE[k] ? `color-mix(in srgb, var(--fs-text) ${ELEMENT_SHADE[k]}%, var(--fs-ground))` : "var(--fs-text-off)");
+  const ELEMENT_SHADE = { Charge: 100, Mass: 78, Space: 60, Time: 45, Omni: 35, none: 24 };
+  const elementColour = (k) => `color-mix(in srgb, var(--fs-text) ${ELEMENT_SHADE[k] || ELEMENT_SHADE.none}%, var(--fs-ground))`;
   const elementLabel = (k) => (!k || k === "none" ? "No element" : String(k));
   const SWITCH_SOURCE = { event: "Exact (game event)", recovered: "Recovered (approx.)" };
   const OVERS = [["day", "Day"], ["week", "Week"], ["none", "Total"]];
@@ -260,8 +260,11 @@
       const at = String(time ? p.x : null) + SEP + String(keyOf(p.key));
       v.set(at, merge ? (v.get(at) || 0) + (p.value || 0) : p.value);
     }
+    const notes = (r.notes || []).slice();
+    if (Array.isArray(r.secondary) && r.secondary.length)   // two-element modes: their second element, listed apart
+      notes.unshift(`As a second element: ${r.secondary.map((x) => `${x.key} ${fmt(x.value)} matches`).join(", ")}.`);
     return makeFrame({ time, xs, keys: ks, by: r.by || "none", kind, v, measure: r.measure, unfiltered: r.unfiltered || [],
-                       answerable: Array.isArray(r.answerable_by) ? r.answerable_by : null, notes: r.notes || [] });
+                       answerable: Array.isArray(r.answerable_by) ? r.answerable_by : null, notes });
   }
   // From plain rows: [{x, value}] over time, or [{key, value}] by category.
   function timeFrame(rows, xKey, valueKey, extra) {
@@ -667,6 +670,7 @@
       const notes = (frame.notes || []).map((n) => (typeof n === "string" ? n : n && (n.text || n.note || n.title))).filter(Boolean);
       note.textContent = [uf && `Not split by ${uf}: ${frame.unfiltered.join(", ").replace(/_/g, " ")}.`, hidden, ...notes].filter(Boolean).join(" ");
       note.hidden = !note.textContent;
+      if (cfg.compact && !note.hidden) { view.title = note.textContent; note.hidden = true; }   // a small tile keeps its room for the chart
     }
     async function load() {
       const ticket = ++loading;
@@ -1025,16 +1029,15 @@
         chartPanel({ id: "overview.freestyle.switches", title: "Vessels switched to in the Toybox", note: "the vessel they changed into", tag,
           measures: [["freestyle_switches", "Switches"]], splits: ["vessel_class", "from_vessel_class", "switch_source", "none", "era", "build_kind"],
           overs: ["none", "week", "day"], load: seriesLoad(), defaults: { measure: "freestyle_switches", by: "vessel_class", over: "none", form: "bars" },
-          emptyText: "No vessel switches in this range. Exact switches come from builds after 6 Nov; recovered ones from the identify history (builds since 12 Oct).",
-          after: h("p", { class: "small" }, "Exact: the game's freestyle_vessel_changed (builds after 2026-11-06). Recovered: the selected vessel changed between two profile updates (builds since 2026-10-12), at about that time; several switches between two updates read as one.") })),
+          emptyText: "No vessel switches in this range. Exact switches come from builds after 6 Nov; recovered ones from the identify history (builds since 12 Oct)." })),
       h("div", { class: "grid2" },
         chartPanel({ id: "overview.freestyle.vessels", title: "Vessels flown in the Toybox", note: "per vessel, in this range", tag,
-          measures: [["minutes", "Minutes"], ["switches_in", "Switched to"], ["stretches", "Stretches ended in"], ["entries", "Entered in"]],
+          measures: [["minutes", "Minutes"], ["switches_in", "Switched to"], ["stretches", "Ended in"], ["entries", "Entered in"]],
           forms: ["bars", "pie", "table"], emptyText: "No vessels named yet: builds after 6 Nov name them.",
           load: staticLoad(({ measure }) => {
             const rows = (f.vessels || []).map((v) => Object.assign({}, v, { switches_in: (v.switches_to || 0) + (v.recovered_to || 0) }))
               .filter((v) => v.vessel_class !== "unknown" || measure === "entries").sort((a, b) => (b[measure] || 0) - (a[measure] || 0));
-            return Object.assign(catFrame(rows, "vessel_class", measure, { by: "vessel_class", kname: "Vessel", vname: measure.replace(/_/g, " ") }),
+            return Object.assign(catFrame(rows.filter((v) => (v[measure] || 0) > 0), "vessel_class", measure, { by: "vessel_class", kname: "Vessel", vname: measure.replace(/_/g, " ") }),
               { table: { columns: ["Vessel", "Minutes", "Stretches", "Entered in", "Switched to", "Switched from"], rows: rows.map((v) =>
                 [v.vessel_class === "unknown" ? "Not named (older builds)" : v.vessel_class, fmt(v.minutes), fmt(v.stretches), fmt(v.entries),
                  fmt(v.switches_in), fmt((v.switches_from || 0) + (v.recovered_from || 0))]) } });
@@ -1334,7 +1337,7 @@
         const b = h("button", { type: "button", class: "sort" + (on ? " on" : ""), onclick: () => {
           const now = filtersNow();
           saveFilters(Object.assign(now, { sort: k, dir: now.sort === k && now.dir === "desc" ? "asc" : "desc" })); redraw();
-        } }, label + (k === "lifespan" ? ` · ${rangeLabel().replace("last ", "")}` : ""), on ? h("span", { class: "arrow", "aria-hidden": "true" }, f.dir === "asc" ? " ▲" : " ▼") : null);
+        } }, label, on ? h("span", { class: "arrow", "aria-hidden": "true" }, f.dir === "asc" ? " ▲" : " ▼") : null);
         return h("th", { scope: "col", "aria-sort": on ? (f.dir === "asc" ? "ascending" : "descending") : null }, b);
       }));
       const open = (id) => { state.person = id; render(); window.scrollTo(0, 0); };
@@ -1342,8 +1345,8 @@
         h("td", {}, h("button", { type: "button", class: "link name", onclick: () => open(p.distinct_id) }, p.display_name || "(no name)"),
           h("div", { class: "small id" }, p.distinct_id)),
         h("td", {}, firstOf((p.countries || []).map(country))), h("td", {}, firstOf(p.platforms || [])),
-        h("td", {}, lifespanBar(p, win, 120)),
-        h("td", {}, mixBar([["solo_vs_ai", p.solo_vs_ai || 0], ["solo", p.solo || 0], ["multi", p.multi || 0]], { width: 96 })),
+        h("td", {}, lifespanBar(p, win, 88)),
+        h("td", {}, mixBar([["solo_vs_ai", p.solo_vs_ai || 0], ["solo", p.solo || 0], ["multi", p.multi || 0]], { width: 72 })),
         h("td", {}, fmt(p.matches)), h("td", {}, p.matches ? pct(Math.round(100 * (p.finished || 0) / p.matches)) : "–"),
         h("td", {}, fmt(p.won)),
         h("td", { title: p.freestyle_seconds ? `${seconds(p.freestyle_seconds)} flown there (builds after 6 Nov)` : "Toybox entries" }, fmt(p.freestyle_entries || 0)),
@@ -1534,7 +1537,7 @@
         h("p", { class: "small" }, note)),
       card("Vessel switches in the Toybox", list.length ? `${fmt(list.length)} in order, oldest first${fs.recovered_switches ? ` · ${fmt(fs.recovered_switches)} recovered (approx.)` : ""}` : null,
         list.length ? h("div", { class: "scroll-y" }, table(["When", "From", "", "To", "Into the stretch"], list.map((x) => h("tr", {},
-          h("td", {}, when(x.ts_ms), x.approx ? h("span", { class: "tag approx", title: "Recovered from the identify history: when the profile was sent, not the click" }, "approx.") : null),
+          h("td", { class: "nowrap" }, when(x.ts_ms), x.approx ? h("span", { class: "tag approx", title: "Recovered from the identify history: when the profile was sent, not the click" }, "approx.") : null),
           h("td", {}, x.from || "–"), h("td", { class: "soft", "aria-hidden": "true" }, "→"), h("td", {}, x.to || "–"),
           h("td", { class: x.seconds_in_freestyle === null || x.seconds_in_freestyle === undefined ? "soft" : "" }, seconds(x.seconds_in_freestyle))))))
           : h("p", { class: "small" }, "No switches. Exact switches exist only from builds after 2026-11-06, recovered ones from builds since 2026-10-12; the PostHog history before that has entries, not vessels.")));
@@ -2524,7 +2527,7 @@
     const list = state.presets || [];
     const out = h("span", { class: "small", "aria-live": "polite" });
     const addTo = async (p) => {
-      const tile = { id: `t${Date.now().toString(36)}`, source: `preset:${p.id}`, title: p.name.slice(0, 80), chart: FORM_CHART[p.settings.form] || "bars", w: 2, h: 1 };
+      const tile = { id: `t${Date.now().toString(36)}`, source: `preset:${p.id}`, title: p.name.slice(0, 80), chart: FORM_CHART[p.settings.form] || "bars", w: 2, h: 2 };
       if (ds.editing && ds.draft) { ds.draft.tiles.push(tile); render(); return; }
       const target = board || { name: "Saved views", shared: "me", email: null, tiles: [] };
       try {
@@ -2537,7 +2540,7 @@
       try { await api(`/v1/presets?id=${encodeURIComponent(p.id)}`, null, "DELETE"); state.presets = list.filter((x) => x.id !== p.id); render(); }
       catch (e) { out.className = "small danger"; out.textContent = e.message; }
     };
-    return card("Saved presets", list.length ? `${fmt(list.length)} views · yours and the public ones` : null,
+    return card("Saved presets", list.length ? `${fmt(list.length)} ${list.length === 1 ? "view" : "views"} · yours and the public ones` : null,
       list.length ? h("div", { class: "table-wrap" }, h("table", { class: "presets" },
         h("thead", {}, h("tr", {}, ["View", "Chart", "Owner", "Who sees it", ""].map((c) => h("th", { scope: "col" }, c)))),
         h("tbody", {}, list.map((p) => h("tr", {},

@@ -448,3 +448,6 @@ table.presets td.actions .btn { height: 34px; padding: 0 12px; font-size: 13px; 
   table.presets td.actions { white-space: normal; text-align: left; }
   table.presets td.actions .btn { margin: 4px 6px 0 0; }
 }
+td.nowrap { white-space: nowrap; }
+@media (max-width: 760px) { td.nowrap { white-space: normal; } .tag.approx { margin-left: 0; } }
+table.presets td:first-child { min-width: 240px; } table.presets td:nth-child(2) { min-width: 150px; }

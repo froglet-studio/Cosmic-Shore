@@ -727,8 +727,8 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
     if by == "element":
         notes.append("a match's element is the one its build sent (from 2026-11-06), else its mode's genre from the "
                      "game's ModeGenre (mode_elements.json), so older matches and the PostHog history have one too; a "
-                     "two-element mode counts under its first (Brood Rush: Mass, and Space as its second); none: a "
-                     "mode with no genre or an old mode name")
+                     "two-element mode counts under its first (Brood Rush: Mass, and Space as its second); a "
+                     "mode with no genre or an old mode name reads No element (key none)")
     if measure in FREESTYLE_NOTES:
         notes.append(FREESTYLE_NOTES[measure])
     out = {**base, "points": points, "keys": out_keys, "unfiltered": unfiltered, "notes": notes}
