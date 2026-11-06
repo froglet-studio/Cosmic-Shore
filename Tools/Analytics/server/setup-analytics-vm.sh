@@ -38,7 +38,8 @@ sudo chown "$SVC:$SVC" "$BASE" && sudo chmod 700 "$BASE"
 as() { sudo -u "$SVC" -H "$@"; }
 AUTH_URL="https://github.com/froglet-studio/Cosmic-Shore.git"
 [ -n "$GITHUB_TOKEN" ] && AUTH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/froglet-studio/Cosmic-Shore.git"
-if [ ! -d "$REPO/.git" ]; then
+# $BASE is 700 and owned by the service user, so every test of a path inside it runs as that user.
+if ! as test -d "$REPO/.git"; then
   as git clone --quiet --single-branch --filter=blob:limit=1m --no-checkout --branch "$BRANCH" "$AUTH_URL" "$REPO"
   as git -C "$REPO" sparse-checkout set --no-cone /Tools/Analytics/server/ /Tools/Analytics/console/ /Docs/Analytics/EVENT_SCHEMA.json
   as git -C "$REPO" checkout --quiet "$BRANCH"
@@ -56,7 +57,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
 fi
 
 say "3/7 the Claude SDK in its own environment (only the overnight read and the Ask box use it)"
-[ -x "$BASE/venv/bin/python" ] || as python3 -m venv "$BASE/venv"
+as test -x "$BASE/venv/bin/python" || as python3 -m venv "$BASE/venv"
 as "$BASE/venv/bin/pip" install --quiet --upgrade anthropic
 
 say "4/7 the config and the keys (kept if they exist)"

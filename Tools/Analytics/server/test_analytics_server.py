@@ -309,15 +309,49 @@ class PostHogHistory(StoreCase):
     def fake_posthog(self, rows_by_day):
         calls = []
 
+        def when(text):
+            from datetime import datetime
+            return datetime.fromisoformat(text.replace("Z", "+00:00"))
+
         def post(url, body, key):
             calls.append((url, body["query"]["query"], key))
             q = body["query"]["query"]
-            day = q.split("toDate(timestamp) = '")[1][:10]
-            offset = int(q.rsplit("OFFSET ", 1)[1])
+            # Like PostHog: OFFSET is refused on queries made with a personal API key (HTTP 400 there).
+            self.assertNotIn("OFFSET", q)
             wanted = {n.strip(" '") for n in q.split("event IN (", 1)[1].split(")", 1)[0].split(",")}
-            rows = [r for r in rows_by_day.get(day, []) if r[0] in wanted][offset:offset + P.PAGE]
-            return {"columns": ["event", "distinct_id", "timestamp", "properties"], "results": rows}
+            if "count()" in q:
+                first = q.split("toDate(timestamp) >= '")[1][:10]
+                counts = {d: sum(r[0] in wanted for r in rs) for d, rs in rows_by_day.items() if d >= first}
+                return {"columns": ["day", "count()"], "results": [[d, n] for d, n in sorted(counts.items()) if n]}
+            day = q.split("toDate(timestamp) = '")[1][:10]
+            limit = int(q.rsplit("LIMIT ", 1)[1].split()[0])
+            rows = [r for r in rows_by_day.get(day, []) if r[0] in wanted]
+            for op in (">", "="):
+                marker = f"timestamp {op} toDateTime('"
+                if marker in q:
+                    at = when(q.split(marker, 1)[1].split("'", 1)[0])
+                    rows = [r for r in rows if (when(r[2]) > at if op == ">" else when(r[2]) == at)]
+            rows.sort(key=lambda r: when(r[2]))
+            return {"columns": ["event", "distinct_id", "timestamp", "properties"], "results": rows[:limit]}
         return post, calls
+
+    def test_paging_by_timestamp_loses_and_repeats_nothing_across_a_page_edge(self):
+        base = S.now_ms() - 10 * 86400 * 1000
+        base -= base % 86400000 - 3600 * 1000                   # 01:00 UTC, so every row is on one day
+        stamps = [base, base + 1, base + 1, base + 1, base + 2, base + 3, base + 3]   # ties straddle each page edge
+        rows = {S.day_of(base): [["game_started", f"p{i}", iso(ms), json.dumps({"match_id": f"m{i}"})]
+                                 for i, ms in enumerate(stamps)]}
+        post, calls = self.fake_posthog(rows)
+        page, P.PAGE = P.PAGE, 2
+        try:
+            totals = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=12, post=post,
+                           log=lambda *_: None)
+        finally:
+            P.PAGE = page
+        self.assertEqual(totals["rows"], len(stamps))
+        self.assertEqual((totals["days"], totals["days_short"]), (1, 0))
+        self.assertEqual(sorted(r[0] for r in self.rows("SELECT match_id FROM events")),
+                         sorted(f"m{i}" for i in range(len(stamps))))
 
     def test_history_comes_in_once_without_ips_and_keeps_its_own_time(self):
         old = S.now_ms() - 40 * 86400 * 1000
@@ -343,6 +377,32 @@ class PostHogHistory(StoreCase):
         again = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=365, post=post,
                       log=lambda *_: None)
         self.assertEqual(again["resent"], 2)                   # stored once; $identify updates the person again
+
+    def test_a_rate_limited_query_waits_and_asks_again(self):
+        answers = [urllib.error.HTTPError("u", 429, "slow", {"Retry-After": "7"}, None),
+                   urllib.error.HTTPError("u", 429, "slow", {}, None)]
+        waits = []
+
+        class Reply:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self):
+                return b'{"results": [[1]]}'
+
+        def urlopen(request, timeout):
+            if answers:
+                raise answers.pop(0)
+            return Reply()
+        real, P.urllib.request.urlopen = P.urllib.request.urlopen, urlopen
+        try:
+            self.assertEqual(P._post("https://x/q", {}, "k", sleep=waits.append), {"results": [[1]]})
+        finally:
+            P.urllib.request.urlopen = real
+        self.assertEqual(waits, [7, 60])
 
     def test_live_http_ingest_cannot_claim_a_country_or_old_time(self):
         older = S.now_ms() - 200 * 86400 * 1000
