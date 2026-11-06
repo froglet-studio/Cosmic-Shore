@@ -26,9 +26,13 @@ namespace CosmicShore.Gameplay
     /// domain. Painting them all neutral would make every rail hostile to every rider. The twist
     /// (one turn per lap) is what keeps the three lanes the same length.</para>
     ///
-    /// <para><b>No food web, by design.</b> Shielded mass is never food anyway, but the barren
-    /// spawn profile is referenced for Skein's second reason: fauna are per-peer, and a race
-    /// whose obstacles differ per machine is not a race.</para>
+    /// <para><b>Lifeforms are a course SETTING, off by default.</b> The shipped courses reference the
+    /// barren spawn profile (Skein's reason: a race whose obstacles differ per machine is not a race).
+    /// A course may instead prepare planting sites beside the spine and ask its cell for a fauna
+    /// corridor (<see cref="RegattaLifeformSiteSettings"/>, <c>Tools/Build/regatta_lifeforms.py</c>);
+    /// the species and counts are then its cell config's own spawn profile, with networked plants
+    /// (FloraNetworkSync) so every peer roots the same plant at the same site. The arena never
+    /// spawns a lifeform itself: the Cell owns the ecology.</para>
     ///
     /// <para><b>The seed lives HERE.</b> The controller re-derives the rings from
     /// <see cref="CourseSeed"/> and <see cref="CourseIntensity"/> through the same pure call
@@ -36,7 +40,7 @@ namespace CosmicShore.Gameplay
     /// it can do so during the spawn chain off the prefab ASSET (nothing here has to be spawned
     /// to answer). The cost, as in Skein: a given intensity is the same circuit every match.</para>
     /// </summary>
-    public class SpawnableRegattaRails : CellEnvironmentSpawnableBase
+    public class SpawnableRegattaRails : CellEnvironmentSpawnableBase, ICellFaunaCorridorSource
     {
         [Header("Regatta")]
         [Tooltip("Which rung of the ladder this variant lays. One prefab per intensity; the cell " +
@@ -66,11 +70,29 @@ namespace CosmicShore.Gameplay
                  "ribbon is continuous and flush rather than overlapping.")]
         [SerializeField, Min(1f)] float prismSpacing = 8f;
 
+        [Header("Lifeforms (off by default - Tools/Build/regatta_lifeforms.py)")]
+        [Tooltip("Where this course's lifeforms may live: planting sites per leg beside the spine and the " +
+                 "fauna corridor round it. WHICH species and HOW MANY are the cell config's spawn profile. " +
+                 "Empty sites and a 0 corridor are the shipped course exactly. Written by " +
+                 "Tools/Build/author_regatta_assets.py - never by hand.")]
+        [SerializeField] RegattaLifeformSiteSettings lifeforms = new();
+
         readonly List<RaceGate> _gates = new();
         readonly List<int> _laneLayStart = new();
         readonly List<int> _laneLayCount = new();
 
         public int CourseIntensity => courseIntensity;
+
+        public RegattaLifeformSiteSettings Lifeforms => lifeforms;
+
+        /// <summary>The seed the planting sites are sown from - the circuit's own, offset so the sites are
+        /// not correlated with the ring draws.</summary>
+        public int SiteSeed => unchecked(CourseSeed * 31 + courseIntensity);
+
+        /// <summary>Sites prepared on the last build (cell-local). Empty on every shipped course.</summary>
+        public int SownSiteCount { get; private set; }
+
+        public override bool PreparesPlantingSites => lifeforms != null && lifeforms.HasSites;
 
         /// <summary>The seed the circuit is generated from: the authored pin, else the base
         /// spawnable's seed, else the course's default.</summary>
@@ -129,9 +151,35 @@ namespace CosmicShore.Gameplay
                 _laneLayCount.Add(_cachedLays.Count - start);
             }
 
+            // Prepared ground beside the spine, through the base's Sow so the spawn clearance applies to a
+            // root exactly as it does to a prism. None on a shipped course (lifeforms authors no sites).
+            SownSiteCount = 0;
+            if (lifeforms != null && lifeforms.HasSites)
+            {
+                var sites = new List<FloraPlantingSite>(lifeforms.RequestedSites);
+                RegattaLifeformSites.Sow(_gates, lifeforms, laneOffset, SiteSeed, sites);
+                int before = _plantingSites?.Count ?? 0;
+                foreach (var site in sites) Sow(site.Position, site.Up, site.Kind);
+                SownSiteCount = (_plantingSites?.Count ?? 0) - before;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Regatta] Circuit seed {CourseSeed} intensity {courseIntensity}: {_gates.Count} rings, " +
-                $"{layout.LanePositions.Count} rails, {_cachedLays.Count} prisms, spine {layout.SpineLength:F0} u.");
+                $"{layout.LanePositions.Count} rails, {_cachedLays.Count} prisms, spine {layout.SpineLength:F0} u, " +
+                $"{SownSiteCount} planting sites.");
+        }
+
+        /// <summary>The fauna corridor round the spine, when this course authors one (cell-local, closed).
+        /// Pure off the prefab's own seed, so it needs no build.</summary>
+        public bool TryGetFaunaCorridor(List<Vector3> pathLocal, out float radius, out bool closed, out float goalStandoff)
+        {
+            pathLocal?.Clear();
+            radius = lifeforms != null ? lifeforms.faunaCorridorRadius : 0f;
+            goalStandoff = lifeforms != null ? lifeforms.faunaCorridorStandoff : 0f;
+            closed = true;
+            if (pathLocal == null || radius <= 0f) return false;
+            pathLocal.AddRange(RegattaLifeformSites.SpineSamples(BuildGatesNow(), 16));
+            return pathLocal.Count > 2;
         }
 
         /// <summary>
@@ -198,6 +246,7 @@ namespace CosmicShore.Gameplay
 
         protected override int BuildParameterHash() =>
             System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
-                                    laneTwistTurnsPerLap, prismSpacing, /* layout revision */ 2);
+                                    laneTwistTurnsPerLap, prismSpacing, lifeforms?.ParameterHash() ?? 0,
+                                    /* layout revision */ 2);
     }
 }
