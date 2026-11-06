@@ -54,6 +54,7 @@ import gzip
 import hmac
 import json
 import os
+import re
 import secrets
 import sys
 import threading
@@ -104,6 +105,10 @@ DEFAULTS = {
     "ask_daily_limit": 50,
     "ingest_per_minute": 600,
     "profile_readers": [],             # read-key names that may open player profiles (admin keys always may)
+    # Shombith, 2026-11-06: "Give everyone who has a key an admin access there is no seperation between us." While
+    # true, every read key is an admin key too (Admin pages, eras, saved queries, dashboards, Erasure, every profile).
+    # Set it false in config.json to bring the read / admin split back; profile_readers then applies again.
+    "all_keys_admin": True,
     "geo_csv": "",                     # DB-IP country lite file; default <data_dir>/dbip-country-lite.csv.gz
 }
 
@@ -173,7 +178,7 @@ class RateLimit:
 
 
 # What `key read|admin <name>` and a hand edit of config.json can change while the server runs.
-LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins")
+LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins", "all_keys_admin")
 
 
 class App:
@@ -520,12 +525,13 @@ def make_handler(app):
                 _match_key(self._bearer(), app.config["admin_keys"])
 
         def _profiles_allowed(self):
-            admin = _match_key(self._bearer(), app.config["admin_keys"])
             reader = _match_key(self._bearer(), app.config["read_keys"])
-            return bool(admin or (reader and reader in app.config["profile_readers"]))
+            return bool(self._admin() or (reader and reader in app.config["profile_readers"]))
 
         def _admin(self):
-            return _match_key(self._bearer(), app.config["admin_keys"])
+            """The admin's name, or None. With all_keys_admin (the default) any valid key is an admin's."""
+            return _match_key(self._bearer(), app.config["admin_keys"]) or \
+                (_match_key(self._bearer(), app.config["read_keys"]) if app.config.get("all_keys_admin") else None)
 
         def _params(self):
             return {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
@@ -592,7 +598,7 @@ def make_handler(app):
             if self._reader() is None:
                 return self._send(401, {"error": "A read key is needed (Authorization: Bearer <key>)."})
             if path == "/v1/me":
-                admin = _match_key(self._bearer(), app.config["admin_keys"])
+                admin = self._admin()
                 return self._send(200, {"name": admin or self._reader(), "admin": bool(admin),
                                         "profiles": self._profiles_allowed()})
             if path in REV65_GET:
@@ -715,7 +721,7 @@ def make_handler(app):
             return self._send(200, result)
 
         def _erase(self):
-            if _match_key(self._bearer(), app.config["admin_keys"]) is None:
+            if self._admin() is None:
                 return self._send(401, {"error": "An admin key is needed to erase a player."})
             body = self._body() or {}
             player = body.get("player_id")
@@ -726,6 +732,58 @@ def make_handler(app):
             return self._send(200, {"rows_deleted": deleted})
 
     return Handler
+
+
+KEY_NAME = re.compile(r"^[a-z0-9_.-]{1,40}$")
+
+
+def key_command(config, args):
+    """`key read <name>` | `key admin <name>` | `key delete <name>` | `key list`. Returns (what to print, whether the
+    config changed). A read key may not be named "admin" and a name is one kind of key only: a read key named "admin"
+    (made by `key read admin` while looking for the admin key) signed Garrett in as a reader called "admin", with no
+    Admin pages and no profiles (2026-11-06). Secrets are printed once, when made, and never by `list`."""
+    action = args[0]
+    if action == "list" and len(args) == 1:
+        rows = [(n, "admin") for n in sorted(config["admin_keys"])] + [(n, "read") for n in sorted(config["read_keys"])]
+        readers = set(config.get("profile_readers") or [])
+        everyone = config.get("all_keys_admin")
+        lines = [f"  {n:<20} {kind} key" + ("" if kind == "admin" else
+                 " (an admin's too: all_keys_admin)" if everyone else (", opens profiles" if n in readers else ", no profiles"))
+                 for n, kind in rows]
+        return "Keys (names only; a secret is shown once, when it is made):\n" + ("\n".join(lines) or "  none"), False
+    usage = "use: key read <name> | key admin <name> | key delete [read|admin] <name> | key list"
+    if action == "delete" and len(args) == 3 and args[1] in ("read", "admin"):
+        kinds, args = [args[1] + "_keys"], [action, args[2]]
+    else:
+        kinds = ["read_keys", "admin_keys"]
+    if len(args) != 2 or action not in ("read", "admin", "delete"):
+        raise ValueError(usage)
+    name = args[1].strip().lower()
+    if not KEY_NAME.match(name):
+        raise ValueError("a name is 1-40 of a-z, 0-9, '.', '_' or '-' (use the person's name, e.g. garrett)")
+    if action == "delete":
+        found = [k for k in kinds if name in config[k]]
+        if not found:
+            raise ValueError(f"no key named {name} (see: key list)")
+        if len(found) > 1:      # e.g. the admin key and a stray read key both named "admin": never delete both at once
+            raise ValueError(f"{name} is both a read key and an admin key; say which: key delete read {name} or key delete admin {name}")
+        if found[0] == "admin_keys" and len(config["admin_keys"]) == 1:
+            raise ValueError("that is the only admin key; make another first (key admin <name>) so nobody is locked out")
+        del config[found[0]][name]
+        return f"deleted the {found[0].split('_')[0]} key named {name}; it stops working at its next request", True
+    field, other = ("read_keys", "admin_keys") if action == "read" else ("admin_keys", "read_keys")
+    if action == "read" and name == "admin":
+        raise ValueError("'admin' is not a reader's name: the admin key was printed by init and is in config.json "
+                         "under admin_keys; for a person, use their name (key read garrett, or key admin garrett)")
+    if name in config[other]:
+        raise ValueError(f"{name} already has a {other.split('_')[0]} key; delete it first (key delete {name})")
+    key = ("fa_read_" if action == "read" else "fa_admin_") + secrets.token_urlsafe(24)
+    config[field][name] = key
+    note = "" if action == "admin" else (
+        " Every key is an admin's while all_keys_admin is on (the default), so this one is too." if config.get("all_keys_admin")
+        else " It opens player profiles." if name in (config.get("profile_readers") or [])
+        else " It cannot open player profiles: add the name to profile_readers for that.")
+    return f"{action.upper()} key for {name} (shown once): {key}{note}", True
 
 
 def serve(config):
@@ -762,12 +820,15 @@ def main(argv):
         print("Admin key (erasure; keep it private):")
         print("  " + config["admin_keys"]["admin"])
         return 0
-    if command == "key" and len(argv) == 3 and argv[1] in ("read", "admin"):
-        field = "read_keys" if argv[1] == "read" else "admin_keys"
-        key = ("fa_read_" if argv[1] == "read" else "fa_admin_") + secrets.token_urlsafe(24)
-        config[field][argv[2]] = key
-        save_config(config)
-        print(f"{argv[1]} key for {argv[2]} (shown once): {key}")
+    if command == "key" and len(argv) >= 2:
+        try:
+            message, changed = key_command(config, argv[1:])
+        except ValueError as err:
+            print(f"key: {err}")
+            return 2
+        if changed:
+            save_config(config)
+        print(message)
         return 0
     if command == "serve":
         serve(config)
