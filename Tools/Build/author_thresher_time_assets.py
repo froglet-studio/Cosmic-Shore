@@ -281,12 +281,11 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "ThresherTi
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameThresherTime") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Your next target is the nest ringed in
-    lime. Break it - the ball, a chain cut, a charged blast or a ram all crack its core - and
-    fly through the ring to open the gate. Plant beside
-    a nest and your orbiting chain shreds its cage and charges the ball, then let go and smash
-    the core. Every third nest hides a crystal. Higher levels arm the cage with danger and
-    shielded plates and regrow it fast. Fastest domain home wins.
+  Description: Threshers only, against the clock. Fly through every ring in order - your
+    next one glows lime. Your speed is your sling - pull LT all the way to plant the ball and
+    swing round it, pull RT to wind the chain in and spin up, let go to fly off at up to nearly
+    four times cruise. Every corner asks how much of that momentum you can carry. Two laps.
+    Fastest domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('ThresherTime')}, type: 3}}
@@ -395,7 +394,11 @@ def floats(values) -> str:
 # The controller's target fields, authored into the committed scene (2026-11-04). The block is the generator's: on
 # the first run it goes in right after the controller's field block; after that it is replaced in place, so a re-tune
 # here is one edit plus a re-run (never a hand edit of the scene).
+# NESTS_AT_GATES: off since 2026-11-07 (Yash: "I dont wanna break anything in here, just pass through waypoints, and win
+# the track"). The rings are the gates again - thread one, your next one lime - and the nest code stays behind this switch.
+NESTS_AT_GATES = 0
 TARGET_FIELDS = (
+    f"  nestsAtGates: {NESTS_AT_GATES}\n"
     f"  nestPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
     f"  creditRadiusByIntensity:\n{floats(CREDIT_RADIUS_BY_INTENSITY)}"
     f"  regrowSecondsByIntensity:\n{floats(REGROW_SECONDS_BY_INTENSITY)}"
@@ -406,7 +409,8 @@ TARGET_FIELDS = (
 
 
 def with_target_fields(text: str) -> str:
-    start = text.find("  nestPrefab: ")
+    start = text.find("  nestsAtGates: ")
+    if start < 0: start = text.find("  nestPrefab: ")
     if start < 0:
         assert text.count(NEW_FIELDS) == 1, "the controller's field block is not in the scene exactly once"
         return text.replace(NEW_FIELDS, NEW_FIELDS + TARGET_FIELDS, 1)
@@ -431,7 +435,7 @@ g.emit_scene(SCENE_NAME, G_SCENE, scene)
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
 g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "ModePreview_ThresherTime") + f"""  Mode: {MODE_ID}
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Thresher''s full-sling circle, laid
-    at match start with a nest to break at every gate, so a preview has no gates. It teaches the
+    as rings at match start, so a preview has no gates. It teaches the
     plant - wind in - let go sling in each intensity''s own place, its plants and creatures grown
     by the cell.'
   PreviewCell: {{fileID: 11400000, guid: {OWN_CELLS[1]}, type: 2}}
@@ -441,7 +445,7 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Thresher']}
-  ObjectiveText: Break the nest ringed in lime - plant, swing the chain, smash the core
+  ObjectiveText: Thread the lime ring - plant, wind in, let go
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

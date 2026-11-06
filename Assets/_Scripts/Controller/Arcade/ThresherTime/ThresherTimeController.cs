@@ -37,6 +37,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1)] int laps = ThresherTimeCourseSource.DefaultLaps;
 
         [Header("Targets (ThresherTimeNest)")]
+        [Tooltip("Off (the shipped setting since 2026-11-07, Yash: \"I dont wanna break anything in here, just pass through " +
+                 "waypoints\"): the rings are the gates - thread one to clear it, your next one lime - and no nests are laid. " +
+                 "On: a nest to break stands at every gate and the rings hide (THRESHERTIME.md section 0).")]
+        [SerializeField] bool nestsAtGates;
         [Tooltip("The prism every nest is laid from: the environment prism (SpawnablePrism). Authored by " +
                  "Tools/Build/author_thresher_time_assets.py. Unset = the rings stay and no nests are laid, with a warning.")]
         [SerializeField] Prism nestPrefab;
@@ -105,6 +109,7 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearNests();
+            if (!nestsAtGates) return;   // the rings are the gates
             if (!nestPrefab)
             {
                 CSDebug.LogWarning("[ThresherTime] no nestPrefab - the rings stay and no targets are laid. " +

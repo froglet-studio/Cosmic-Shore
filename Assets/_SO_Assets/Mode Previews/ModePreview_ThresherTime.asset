@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 66
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Thresher''s full-sling circle, laid
-    at match start with a nest to break at every gate, so a preview has no gates. It teaches the
+    as rings at match start, so a preview has no gates. It teaches the
     plant - wind in - let go sling in each intensity''s own place, its plants and creatures grown
     by the cell.'
   PreviewCell: {fileID: 11400000, guid: f0f68a084b097e27528ae9194989a854, type: 2}
@@ -28,7 +28,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 14
-  ObjectiveText: Break the nest ringed in lime - plant, swing the chain, smash the core
+  ObjectiveText: Thread the lime ring - plant, wind in, let go
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

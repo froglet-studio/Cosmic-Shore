@@ -231,6 +231,18 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 Thresher Time: the rings are the gates again, nests off (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** Yash: "on passing through rings, doesn't register ... I dont wanna break anything in here, just pass
+through waypoints". `ThresherTimeController.nestsAtGates` (authored 0) skips the nests, so the rings show and count as
+before 2026-11-04, the next one lime. The card and preview text say so. The places (plants and creatures) stay.
+
+**Verified:** `unity recompile` in the open editor, 0 errors and 0 warnings; `author_thresher_time_assets.py --check` OK.
+
+**Verify in editor:**
+1. Thresher Time at any intensity: every ring shows, your next one lime, and no blue nests stand in them.
+2. Fly through a ring: it counts (the objective arrow moves on, the lap counter climbs) without breaking anything.
+
 ### 🔴 B48: a reaped party session now rebuilds through the menu reload, not in place (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** when UGS reports this machine's party session gone (`auto-recovering to solo session`),

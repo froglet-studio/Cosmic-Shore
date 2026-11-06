@@ -3,9 +3,11 @@
 > `GameModes.ThresherTime = 66`. A closed loop of gates is cut through the cell and every pilot flies
 > **two laps** of it in order; the first **domain** whose **lead runner** clears the last gate of the last lap
 > wins, on finish **time** (golf). Grizzly Time's shape (itself Redline's on Headlong's solver), cut against the
-> Thresher's sling. The hull: `R_VesselActions/THRESHER.md`. **Since 2026-11-04 every gate is a NEST to break,
-> not a ring to thread** (§0). Before that a gate was threaded by the hull or the ball (Garrett, 2026-10-19;
-> `IRingThreadProbe`, THRESHER.md §5b); that rule stands only when the mode has no nests.
+> Thresher's sling. The hull: `R_VesselActions/THRESHER.md`. **Since 2026-11-07 the rings are the gates again**: fly
+> through each in order (your next one lime), threaded by the hull or the ball (Garrett, 2026-10-19;
+> `IRingThreadProbe`, THRESHER.md §5b). Yash, after flying the nests: "I dont wanna break anything in here, just pass
+> through waypoints, and win the track". The nests of §0 (2026-11-04 to 11-07) stay in the code behind
+> `nestsAtGates`, authored OFF; the places (§0's plants and creatures) stay on.
 
 ## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
 
