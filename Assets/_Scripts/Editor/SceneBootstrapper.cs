@@ -24,6 +24,12 @@ namespace CosmicShore.Editor
     /// This provides the editor the chance to create AssetDatabase cache entries for the Network Prefabs assigned to the NetworkManager.
     /// If we are entering play mode directly from Bootstrap scene, no additional steps need to be taken and the scene is loaded normally.
     ///
+    /// Save prompt: "Scene(s) Have Been Modified" is asked only when play must switch to Bootstrap
+    /// (OpenScene discards unsaved edits). Measured 2026-11-07, the scene that kept turning dirty after
+    /// every play session was dirtied by Cinemachine's Save During Play (a per-user preference: on every
+    /// play exit it registers an undo on each virtual camera, changed or not) and its camera lens values
+    /// by CameraAspectFit's render hook outliving the session (now play-only).
+    ///
     /// Scene dirty suppression:
     /// The Bootstrap scene contains Cinemachine cameras, URP camera data, and NetworkManager
     /// components whose OnValidate() modifies serialized state on every domain reload and
@@ -190,47 +196,50 @@ namespace CosmicShore.Editor
 
             if (change == PlayModeStateChange.ExitingEditMode)
             {
+                Scene activeScene = EditorSceneManager.GetActiveScene();
+
                 // Record dirty state before play so we can distinguish user changes
                 // from OnValidate noise after play-mode exit.
-                s_wasSceneDirtyBeforePlay = EditorSceneManager.GetActiveScene().isDirty;
+                s_wasSceneDirtyBeforePlay = activeScene.isDirty;
 
                 // cache previous scene so we return to this scene after play session, if possible
-                s_previousScene = EditorSceneManager.GetActiveScene().path;
+                s_previousScene = activeScene.path;
 
-                if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                if (string.IsNullOrEmpty(s_bootstrapScenePath) ||
+                    !System.Array.Exists(EditorBuildSettings.scenes, scenes => scenes.path == s_bootstrapScenePath))
                 {
-                    // user either hit "Save" or "Don't Save" in the dialog - we can continue to exit edit mode (current scene) and open bootstrap scene
-                    if (!string.IsNullOrEmpty(s_bootstrapScenePath) &&
-                        System.Array.Exists(EditorBuildSettings.scenes, scenes => scenes.path == s_bootstrapScenePath))
-                    {
-                        Scene activeScene = EditorSceneManager.GetActiveScene();
-
-                        s_restartingToSwitchScene = activeScene.path == string.Empty || !s_bootstrapScenePath.Contains(activeScene.path);
-
-                        // we only manually inject Bootstrap scene if we are in a blank empty scene,
-                        // or if the active scene is not already Bootstrap scene.
-                        if (s_restartingToSwitchScene)
-                        {
-                            EditorApplication.isPlaying = false;
-
-                            // scene is included in build settings; open it
-                            EditorSceneManager.OpenScene(s_bootstrapScenePath);
-
-                            EditorApplication.isPlaying = true;
-                        }
-                        else
-                        {
-                            // Already on Bootstrap scene. After the save dialog, the scene
-                            // is clean. Record that so post-play suppression works correctly.
-                            s_wasSceneDirtyBeforePlay = false;
-                        }
-                    }
+                    return;
                 }
-                else
+
+                // We only inject the Bootstrap scene from a blank scene or from another scene.
+                bool switchToBootstrap = activeScene.path == string.Empty || !s_bootstrapScenePath.Contains(activeScene.path);
+                if (!switchToBootstrap)
+                {
+                    // Already on Bootstrap: play starts from this scene as it is. Unity keeps unsaved
+                    // edits across a play session and restores them on exit, so there is nothing to
+                    // save first. Asking here showed "Scene(s) Have Been Modified" before every play
+                    // whenever play-mode exit had left the scene dirty (Cinemachine's Save During Play
+                    // registers an undo on every virtual camera at play exit, which dirties the scene
+                    // even when it changes nothing).
+                    return;
+                }
+
+                // Switching scenes discards unsaved edits, so this is the one case that asks.
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 {
                     // user either hit "Cancel" or exited window; don't open bootstrap scene & return to editor
                     EditorApplication.isPlaying = false;
+                    return;
                 }
+
+                // user either hit "Save" or "Don't Save" in the dialog - stop, open bootstrap scene, play again
+                s_restartingToSwitchScene = true;
+                EditorApplication.isPlaying = false;
+
+                // scene is included in build settings; open it
+                EditorSceneManager.OpenScene(s_bootstrapScenePath);
+
+                EditorApplication.isPlaying = true;
             }
             else if (change == PlayModeStateChange.EnteredEditMode)
             {

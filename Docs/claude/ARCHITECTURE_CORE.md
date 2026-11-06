@@ -161,6 +161,16 @@ Key classes:
 - `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
 - `FriendsServiceFacade` (`_Scripts/System/FriendsServiceFacade.cs`) — pure C# class (DI lazy singleton). Single-writer facade for UGS Friends service. Syncs relationship data into `FriendsDataSO`. Supports friend requests, management, presence, and refresh.
 
+**Play in the editor always starts from Bootstrap** (`Assets/_Scripts/Editor/SceneBootstrapper.cs`, toggle under
+FrogletTools > Scenes > Testing Multiplayer). It asks "Scene(s) Have Been Modified" only when it must switch to
+Bootstrap, because opening Bootstrap discards unsaved edits; playing from Bootstrap itself never asks (Unity keeps
+unsaved edits across Play). With domain reload off (Enter Play Mode Options 3), anything a play session subscribes
+to a static event outlives Stop and runs in edit mode, so a static render or update hook that writes scene objects
+needs an `Application.isPlaying` guard (`CameraAspectFit` and `OrthographicLens` have one). A Bootstrap that turns
+dirty after every Play with no edit is Cinemachine's **Save During Play** (a per-user preference, the checkbox on
+any CinemachineCamera): with it on, every Play exit registers an undo on each virtual camera and dirties the scene
+even when nothing changed (measured 2026-11-07); leave it off unless you are tuning a camera in Play.
+
 See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues. See `Docs/SCENES.md` for the complete scene inventory, game mode reference, and game launch pipeline documentation.
 
 ### Authentication & Session Flow

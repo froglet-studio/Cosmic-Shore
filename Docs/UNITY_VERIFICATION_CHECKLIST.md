@@ -21379,7 +21379,20 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
-## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, EDITOR-TESTED AND PLAYED; STEPS 3-4 OPEN)
+## ✅ No save prompt before every Play; scene cameras untouched after Play (2026-11-07, Yash, VERIFIED IN EDITOR)
+
+`SceneBootstrapper` asks "Scene(s) Have Been Modified" only when it must switch to Bootstrap; `CameraAspectFit` fits
+cameras only while playing. Why (measured with `ObjectChangeEvents` and a `sceneDirtied` stack trace): Cinemachine's
+Save During Play (per-user preference) registers an undo on every virtual camera at each Play exit, dirtying Bootstrap
+with no change, and `CameraAspectFit`'s render hook outlived Stop (domain reload off) and rewrote the four Bootstrap
+cameras to a physical 36 x 20.25 lens in edit mode. Compiled in the open editor (0 errors); `unity_refcompile` and
+`gates.sh` not run (Windows).
+- [x] Save During Play off: Play from a clean Bootstrap to Menu_Main and Stop. Scene stays clean; cameras keep focal 50, not physical.
+- [x] Save During Play on: Play and Stop leaves Bootstrap dirty (Cinemachine); the next Play starts with no prompt.
+- [x] A two-editor party session (MPPM) and Stop: Bootstrap clean, cameras untouched.
+- [ ] Play from Menu_Main (not Bootstrap) with an unsaved edit: the prompt still appears, and Save / Don't Save / Cancel each behave.
+
+## ✅ Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, EDITOR-TESTED AND PLAYED, ALL STEPS DONE 2026-11-07)
 
 Branch `Ys-bleeding-edge`, commit `7437d4210d`, PR froglet-studio/Cosmic-Shore#1771; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP.
 `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/` keeps the plugin's script GUIDs and field names, so no
@@ -21394,8 +21407,14 @@ no .NET 10 SDK). The refcompile output folder kept the deleted plugin's `Obvious
    `MissingReferenceException`, "missing script" or `NullReferenceException` from a listener.
 2. [x] **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
    return to the menu works.
-3. [ ] **Open Settings and move the music, SFX and haptics sliders.** They change the sound and stay where you left them.
-4. [ ] **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
+3. [x] **Open Settings and move the music and SFX sliders.** They change the sound and stay where you left them. (2026-11-07,
+   driven in Play: the panel's injected app-state variable read the menu and left the sliders unlocked; 0.30 / 0.45 reached
+   `GameSetting`, PlayerPrefs, the 30 / 45 readouts and `AudioSystem` (0.06 / 0.09); a close and reopen kept them; restored to
+   1 / 1 / 1; 0 console errors. There is no haptics slider: `SettingsView.prefab` leaves `hapticsSlider` empty and has since
+   before this change, so haptics is its on/off toggle only.)
+4. [x] **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
+   (2026-11-07, main editor + MPPM Player 2: invite, toast, accept, 2/4 slots on both, leave back to solo; no party or SOAP
+   error. `Docs/PartySystem/MPPM_SESSION_LOG.md` Session 8.)
 5. [x] **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
    values set while playing no longer reach the asset.
 
