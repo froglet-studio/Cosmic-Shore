@@ -6203,3 +6203,21 @@ Account prompt: `AccountPromptWindow` takes phone heights (a C# change) and `aut
 Port: `author_menu_port.py` hosts LeaderboardView without the PC-scale block, re-posed for the Port's body.
 
 **Approved (Shombith, 2026-11-06):** "approved, build all four".
+
+**Built (2026-11-06, `claude/ui-phone-menus`):**
+- **Quests** (`author_menu_mission.py`): Episode 1's quests are a horizontal ScrollRect (its new Content holds the cards;
+  QuestTrackView spawns there). On a phone each VoyageQuestCard is 200 x 318 at phone text sizes, three in view, the
+  fourth peeking; two phone-only 44 x 44 arrows and the dashes step it (`PhoneScrollStepper`, new, tested). On PC the row
+  is exactly five cards and nothing scrolls.
+- **Codex** (`author_menu_codex.py`): a phone-only column of four 56-tall element rows beside the orbit (now 0.27, the
+  picture); a row calls `CodexScreen.SelectEntry(i)` (new) and opens the READ sheet. READ stays for Omni, prisms and
+  spindles. The rows show the authored element lines, not the board's sample words; no selected-row outline yet.
+- **Account prompt** (`author_menu_settings.py`, `AccountPromptWindow`): a bottom sheet, the words left, the window's own
+  three buttons right (48 / 48 / 44); phone heights 300 / 220 as serialized fields. The board's Apple / Google buttons
+  were not built: this window is the link-conflict choice and the sign-out / delete confirmation, not a sign-in (a
+  provider sign-in is the Account rows' LINK). A confirmation leaves an empty 56-unit slot where its hidden second
+  button sits.
+- **Port weekly board** (`author_menu_port.py`): LeaderboardView's own phone layout in the Port (no PC-scale block); the
+  Port's facts top left, Your best under them; Rewards hidden on the Port's phone layout (still on PC and in the
+  Leaderboard window).
+

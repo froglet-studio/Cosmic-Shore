@@ -21195,3 +21195,9 @@ Menu_Main's Has Phone Layout is ON (step 9).
     Credits, Replays, Mission (each tab), Toy Box, Arena, Toy configure, Settings (each page; and from pause in a match,
     centred), the purchase window and the weekly leaderboard. Then each on PC at 16:9: unchanged (the Codex page, the
     Ark picker and the Port column sit under new holder objects, and Arena's cards are one grid, 4 across).
+13. **Rev 60 (section 135), on an iPhone**: Mission's Quests is one row of phone-sized cards, three in view and the fourth
+    peeking; swipe and the arrows step it (`PhoneScrollStepper`). The Codex rows (Charge, Mass, Space, Time) each open their
+    page. The account prompt is a bottom sheet (`AccountPromptWindow` phone heights 300 / 220). The Port's weekly board is
+    the leaderboard window's own phone layout (Rewards hidden there). On PC: Quests five across, no arrows, no Codex rows,
+    the account window and the Port board unchanged. Run `PhoneScrollStepperTests`, `CodexScreenTests`,
+    `AccountPromptWindowTests`.
