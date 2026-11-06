@@ -41,8 +41,9 @@ def ev(event, player, ms, **props):
 
 
 def started(player, match, ms, humans=1, ai=2, **extra):
-    return ev("game_started", player, ms, match_id=match, player_count_human=humans, player_count_ai=ai,
-              game_mode="SkimRace", intensity=2, vessel_class="Squirrel", **extra)
+    props = dict(game_mode="SkimRace", intensity=2, vessel_class="Squirrel")
+    props.update(extra)
+    return ev("game_started", player, ms, match_id=match, player_count_human=humans, player_count_ai=ai, **props)
 
 
 def completed(player, match, ms, **extra):
@@ -179,6 +180,57 @@ class Aggregates(StoreCase):
         notes = C.rule_notes(V.digest_facts(self.store.agg_path))
         self.assertEqual(notes[0]["severity"], "problem")
         self.assertIn("1.25", notes[0]["body"])
+
+
+class SeriesAnswerable(StoreCase):
+    def test_a_series_lists_the_splits_its_measure_can_take(self):
+        self.store.ingest([started("a", "m1", T0), completed("a", "m1", T0 + 60_000)])
+        self.store.rebuild_aggregates()
+        events = V.series(self.store.agg_path, "events", "none", "day", "release", 7)
+        self.assertEqual(sorted(events["answerable_by"]), sorted(V.SERIES_ANSWERS["events"]))
+        self.assertNotIn("platform", events["answerable_by"])
+        for by in V.SERIES_BY:                              # what it lists is exactly what it answers
+            if by in events["answerable_by"]:
+                V.series(self.store.agg_path, "events", by, "day", "release", 7)
+            else:
+                with self.assertRaises(V.BadRequest):
+                    V.series(self.store.agg_path, "events", by, "day", "release", 7)
+
+
+class PlayFilter(StoreCase):
+    """Shombith, 2026-11-06: "need features to filter solo vs ai, multiplayer"; "need filters and sorting"."""
+
+    def setUp(self):
+        super().setUp()
+        self.store.ingest([
+            started("a", "m1", T0, humans=1, ai=2), completed("a", "m1", T0 + 60_000, player_won=True),
+            started("a", "m2", T0 + 120_000, humans=1, ai=0), completed("a", "m2", T0 + 180_000),
+            started("b", "m3", T0, humans=2, ai=0, game_mode="Joust"),
+            started("c", "m3", T0, humans=2, ai=0, game_mode="Joust"),
+            started("b", "m4", T0 + 300_000, humans=1, ai=3),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_each_play_group_counts_only_its_own_matches(self):
+        agg = self.store.agg_path
+        self.assertEqual(V.overview(agg, "release", 7)["tiles"]["matches"], 4)
+        self.assertEqual(V.overview(agg, "release", 7, "solo_vs_ai")["tiles"]["matches"], 2)
+        self.assertEqual(V.overview(agg, "release", 7, "solo")["tiles"]["matches"], 1)
+        multi = V.overview(agg, "release", 7, "multi")
+        self.assertEqual((multi["tiles"]["matches"], multi["tiles"]["multi_human_matches"]), (1, 1))
+        self.assertIn("players", multi["unfiltered"])           # the console says which tiles ignore the filter
+        self.assertEqual(V.overview(agg, "release", 7)["unfiltered"], [])
+        self.assertEqual({r["game_mode"] for r in V.matches(agg, "release", 7, "multi")["by_mode"]}, {"Joust"})
+        self.assertEqual({r["play_type"] for r in V.retention(agg, "release", 7, "solo")["by_play_type"]},
+                         {"solo_alone"})
+        with self.assertRaises(ValueError):
+            V.overview(agg, "release", 7, "everyone")
+
+    def test_the_players_list_carries_each_players_play_mix_and_wins(self):
+        people = {p["distinct_id"]: p for p in self.store.people_list("release", 7)["people"]}
+        a, b = people["a"], people["b"]
+        self.assertEqual((a["solo_vs_ai"], a["solo"], a["multi"], a["won"]), (1, 1, 0, 1))
+        self.assertEqual((b["solo_vs_ai"], b["solo"], b["multi"], b["won"]), (1, 0, 1, 0))
 
 
 class AskDoor(StoreCase):
@@ -582,6 +634,355 @@ class Http(unittest.TestCase):
 
     def test_healthz_is_public(self):
         self.assertEqual(self.call("GET", "/healthz")[:2], (200, {"ok": True}))
+
+
+DAY = 86400 * 1000
+
+
+def day(ms):
+    return S.day_of(ms)
+
+
+def era(era_id, start, end, source="any", **extra):
+    return dict({"id": era_id, "name": era_id.replace("_", " ").title(), "from": start, "to": end, "source": source,
+                 "kind": "data", "builds": [], "colour": "jade"}, **extra)
+
+
+class Rev65Store(StoreCase):
+    """Rev 65 (Shombith, 2026-11-06): eras, cohorts, play types, the switchable charts, from the aggregates."""
+
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        # PostHog history: stored by the import (trusted), so received_ms == ts_ms
+        self.store.ingest([started("h1", "o1", old), completed("h1", "o1", old + 60_000),
+                           started("h2", "o2", old, humans=2, ai=0)], trusted=True, max_age_days=365)
+        # the same day as live data too: source must come from how the event arrived, not from its date
+        self.store.ingest([started("h3", "o3", T0 - 3600_000)], trusted=True, max_age_days=365)
+        self.store.ingest([
+            started("p1", "m1", T0), completed("p1", "m1", T0 + 60_000),
+            started("p1", "m2", T0 + 120_000),
+            started("p2", "m3", T0, humans=2, ai=0, game_mode="Joust"),
+            started("p3", "m3", T0, humans=2, ai=0, game_mode="Joust"),
+            completed("p2", "m3", T0 + 90_000), completed("p3", "m3", T0 + 90_000),
+            started("p2", "m4", T0 + 200_000, humans=2, ai=0), started("p3", "m4", T0 + 200_000, humans=2, ai=0),
+            ev("party_invite_sent", "p2", T0 - 1000), ev("party_joined", "p3", T0 - 500),
+            ev("crystals_earned", "p1", T0 + 70_000, amount=50, source="game_placement", balance=50),
+            ev("crystals_earned", "p1", T0 + 80_000, amount=25, source="daily", balance=75),
+        ], country="SE")
+        self.store.set_eras([era("history", day(old - DAY), day(T0), "imported"),
+                             era("testing", day(T0 - DAY), day(T0 + 30 * DAY), "live")], None, "admin")
+        self.store.rebuild_aggregates()
+        return {e["id"]: e for e in self.store.eras()}
+
+    def test_imported_events_are_told_apart_exactly_not_by_date(self):
+        eras = self.seed()
+        agg = sqlite3.connect(self.store.agg_path)
+        flags = dict(agg.execute("SELECT match_id, imported FROM plays"))
+        self.assertEqual({k: flags[k] for k in ("o1", "o2", "o3", "m1")}, {"o1": 1, "o2": 1, "o3": 1, "m1": 0})
+        history = V.overview(self.store.agg_path, "release", 90, "all", eras["history"])
+        self.assertEqual(history["tiles"]["matches"], 3)          # o3 is on a live day and still counts as history
+        self.assertEqual(history["tiles"]["players"], 3)
+        testing = V.overview(self.store.agg_path, "release", 90, "all", eras["testing"])
+        self.assertEqual(testing["tiles"]["matches"], 4)          # o3 is inside its dates but was imported
+        self.assertEqual((testing["source"], testing["from"]), ("live", eras["testing"]["from"]))
+        page = V.eras_page(self.store.agg_path, list(eras.values()), [])
+        counts = {e["id"]: (e["events"], e["players"], e["matches"]) for e in page["eras"]}
+        self.assertEqual(counts["history"], (4, 3, 3))
+        self.assertEqual(counts["testing"][1:], (3, 4))
+        self.assertEqual(sum(w["events"] for w in page["weekly"]), 4 + counts["testing"][0])
+
+    def test_the_defaults_are_made_once_and_an_empty_list_stays_empty(self):
+        self.store.ingest([started("h1", "o1", S.now_ms() - 20 * DAY)], trusted=True, max_age_days=365)
+        self.store.db.execute("DELETE FROM store_meta")
+        self.store.db.commit()
+        again = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA))
+        eras = {e["id"]: e for e in again.eras()}
+        self.assertEqual(list(eras), ["posthog", "pre_beta", "closed_beta", "steam"])
+        self.assertEqual(eras["posthog"]["from"], day(S.now_ms() - 20 * DAY))   # the first imported day
+        self.assertEqual((eras["closed_beta"]["kind"], eras["steam"]["colour"]), ("planned", "ruby"))
+        self.assertEqual(again.milestones()[0]["name"], "Server live, PostHog off")
+        again.set_eras([], None, "admin")
+        again.db.close()
+        third = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA))
+        self.assertEqual(third.eras(), [])
+        third.db.close()
+
+    def test_bad_eras_are_refused_with_a_reason(self):
+        for bad, why in (([era("Bad Id", "2026-01-01", "2026-01-02")], "id"),
+                         ([era("x", "2026-02-01", "2026-01-01")], "from must be on or before"),
+                         ([era("x", "2026-02-30", "2026-03-01")], "real date"),
+                         ([era("x", "2026-01-01", "2026-01-02", "posthog")], "source"),
+                         ([era("x", "2026-01-01", "2026-01-02", builds=["mobile"])], "builds"),
+                         ([era("x", "2026-01-01", "2026-01-02"), era("x", "2026-01-01", "2026-01-02")], "twice")):
+            with self.assertRaisesRegex(S.Invalid, why):
+                S.validate_eras(bad)
+        with self.assertRaises(S.Invalid):
+            self.store.era("../x")
+
+    def test_series_splits_and_refuses_what_the_aggregates_cannot_answer(self):
+        eras = self.seed()
+        agg = self.store.agg_path
+        by_play = V.series(agg, "matches", "play_type", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in by_play["points"]},
+                         {"solo_vs_ai": 3, "multi_human_unknown": 2})
+        players = V.series(agg, "players", "none", "none", "release", 90)
+        self.assertEqual(players["points"], [{"x": None, "key": None, "value": 6}])
+        per_day = V.series(agg, "matches", "none", "day", "release", 7)
+        self.assertEqual(len(per_day["points"]), 7)                # every day, zeros included
+        week = V.series(agg, "players", "none", "week", "release", 7)
+        self.assertTrue(all(p["x"] == S.week_of(p["x"]) for p in week["points"]))
+        by_era = V.series(agg, "players", "era", "none", "release", 90, eras=list(eras.values()))
+        self.assertEqual({p["key"]: p["value"] for p in by_era["points"]}, {"history": 3, "testing": 3})
+        multi = V.series(agg, "players", "none", "none", "release", 90, "multi")
+        self.assertEqual(multi["points"][0]["value"], 3)           # h2, p2, p3 played multiplayer
+        by_country = V.series(agg, "finished_pct", "country", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in by_country["points"]}, {"SE": 50.0, "unknown": 0.0})
+        for measure, by in (("events", "platform"), ("events", "game_mode"), ("matches", "everything")):
+            with self.assertRaises(V.BadRequest, msg=(measure, by)):
+                V.series(agg, measure, by, "day", "release", 7)
+        with self.assertRaises(V.BadRequest):
+            V.series(agg, "revenue", "none", "day", "release", 7)
+
+    def test_a_split_with_many_keys_keeps_eight_and_other(self):
+        self.store.ingest([started(f"p{i}", f"m{i}", T0, game_mode=f"Mode{i:02d}") for i in range(11)])
+        self.store.rebuild_aggregates()
+        out = V.series(self.store.agg_path, "matches", "game_mode", "none", "release", 7)
+        self.assertEqual(len(out["keys"]), 9)
+        self.assertEqual(out["keys"][-1], "other")
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}["other"], 3)
+        self.assertEqual(sum(p["value"] for p in out["points"]), 11)
+
+    def test_cohorts_play_types_and_tiles(self):
+        eras = self.seed()
+        agg = self.store.agg_path
+        page = V.cohorts(agg, "release", 90)
+        cohorts = {c["cohort"]: c for c in page["weekly"]}
+        self.assertEqual(cohorts[S.week_of(day(S.now_ms() - 30 * DAY))]["weeks"][:2], [100.0, 0.0])
+        self.assertEqual(page["tiles"]["players"], 6)
+        self.assertEqual(page["tiles"]["median_lifespan_days"], 1)
+        self.assertEqual(V.cohorts(agg, "release", 90, "multi")["tiles"]["players"], 3)
+        types = V.playtypes(agg, "release", 7)
+        self.assertEqual(types["share"], {"solo_vs_ai": 3, "solo": 0, "multi": 2})   # o3 (history) is in the week
+        self.assertEqual(V.playtypes(agg, "release", 7, eras["testing"])["share"]["solo_vs_ai"], 2)
+        self.assertEqual([f["count"] for f in types["funnel"]], [1, 1, 2, 1, 1])
+        self.assertIn("2+ of the humans finished", types["funnel_note"])
+        self.assertEqual(V.builtin_tile(agg, "play_mix", "release", 7)["rows"],
+                         [["solo_vs_ai", 3], ["multi_human_unknown", 2]])
+        with self.assertRaises(V.BadRequest):
+            V.builtin_tile(agg, "revenue")
+        marketing = V.overview(agg, "release", 7)["marketing"]
+        self.assertEqual((marketing["invites_sent"], marketing["by_country"]),
+                         (1, [{"country": "SE", "players": 3}, {"country": "unknown", "players": 1}]))
+        self.assertEqual(V.overview(agg, "release", 7)["business"]["crystals_earned"], 75)
+
+    def test_players_profiles_and_lifespans_carry_the_new_fields(self):
+        eras = self.seed()
+        multi = {p["distinct_id"] for p in self.store.people_list("release", 90, play="multi")["people"]}
+        self.assertEqual(multi, {"h2", "p2", "p3"})
+        one = self.store.people_list("release", 90)["people"][0]
+        self.assertEqual(one["active_days"], [day(T0)])
+        live = self.store.people_list("release", 90, since=eras["testing"]["from"], source="live")["people"]
+        self.assertEqual({p["distinct_id"] for p in live}, {"p1", "p2", "p3"})
+        p = self.store.person("p1")
+        self.assertEqual(p["lifespan_days"], 1)
+        self.assertEqual(p["economy"]["by_source"], [{"source": "game_placement", "earned": 50},
+                                                     {"source": "daily", "earned": 25}])
+        self.assertEqual(sum(map(sum, p["activity"]["by_hour_weekday"])), 2)
+        self.assertEqual(len(p["activity"]["by_hour_weekday"]), 7)
+        self.assertEqual(p["matches"]["recent"][-1]["duration_seconds"], 110)
+        self.assertIn("h3", {x["distinct_id"] for x in self.store.lifespans("release", day(T0 - DAY))})
+        spans = {x["distinct_id"]: x for x in self.store.lifespans("release", day(T0 - DAY), source="live")}
+        self.assertEqual(set(spans), {"p1", "p2", "p3"})            # h3 came in with the history
+        self.assertEqual((spans["p2"]["mostly"], spans["p1"]["mostly"]), ("multi", "solo_vs_ai"))
+
+    def test_the_new_aggregates_hold_no_player_ids(self):
+        self.seed()
+        dump = "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+        for player in ("h1", "h2", "h3", "p1", "p2", "p3"):
+            self.assertNotIn(f"'{player}'", dump)
+
+
+class Rev65Http(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        Http.setUp(self)
+        self.app.config["read_keys"]["kim"] = "kim-key"
+        self.app.config["profile_readers"] = ["ian"]
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            started("p1", "m1", T0), completed("p1", "m1", T0 + 60_000),
+            started("p2", "m2", T0, humans=2, ai=0), started("p3", "m2", T0, humans=2, ai=0)]})
+        self.app.store.ingest([started("h1", "o1", S.now_ms() - 30 * DAY)], trusted=True, max_age_days=365)
+        self.app.rebuild()
+
+    def put_eras(self, key="admin-key", eras=None):
+        eras = eras if eras is not None else [era("history", day(S.now_ms() - 40 * DAY), day(T0), "imported"),
+                                              era("testing", day(T0 - DAY), day(T0 + 30 * DAY), "live")]
+        return self.call("PUT", "/v1/eras", {"eras": eras}, key=key)
+
+    def test_eras_are_read_by_readers_and_written_by_admins_only(self):
+        status, page, _ = self.call("GET", "/v1/eras", key="read-key")
+        self.assertEqual(status, 200)
+        self.assertEqual([e["id"] for e in page["eras"]], ["posthog", "pre_beta", "closed_beta", "steam"])
+        self.assertEqual(page["milestones"][0]["day"], "2026-11-06")
+        self.assertEqual(self.put_eras(key="read-key")[0], 403)      # negative control: a reader cannot write eras
+        self.assertEqual(self.put_eras(eras=[era("Bad Id", "2026-01-01", "2026-01-02")])[0], 400)
+        self.assertEqual(self.put_eras(eras=[era("x", "2026-02-01", "2026-01-01")])[0], 400)
+        self.assertEqual(self.call("PUT", "/v1/eras", {"nope": []}, key="admin-key")[0], 400)
+        status, out, _ = self.put_eras()
+        self.assertEqual((status, [e["id"] for e in out["eras"]]), (200, ["history", "testing"]))
+        self.assertEqual(out["eras"][0]["owner"], "admin")
+        page = self.call("GET", "/v1/eras", key="read-key")[1]
+        self.assertEqual({e["id"]: e["matches"] for e in page["eras"]}, {"history": 1, "testing": 2})
+        status, cmp, _ = self.call("GET", "/v1/eras/compare?a=history&b=testing", key="read-key")
+        self.assertEqual((status, cmp["a"]["players"], cmp["b"]["players"]), (200, 1, 3))
+        for key in ("matches", "new_players", "editor_share_pct", "finished_pct", "rematch_pct", "d1_pct",
+                    "rows_per_play"):
+            self.assertIn(key, cmp["b"])
+        self.assertEqual(self.call("GET", "/v1/eras/compare?a=history", key="read-key")[0], 400)
+        self.assertEqual(self.call("GET", "/v1/eras/compare?a=history&b=nope", key="read-key")[0], 400)
+
+    def test_the_era_filter_reaches_every_page_and_a_bad_era_is_400(self):
+        self.put_eras()
+        for path in ("/v1/overview", "/v1/retention", "/v1/matches", "/v1/playtypes", "/v1/cohorts",
+                     "/v1/series?measure=players&by=platform&over=week", "/v1/people",
+                     "/v1/dashboards/tile?source=builtin:matches_per_day"):
+            sep = "&" if "?" in path else "?"
+            status, page, _ = self.call("GET", path + sep + "era=testing", key="admin-key")
+            self.assertEqual(status, 200, path)
+            self.assertEqual(self.call("GET", path + sep + "era=nope", key="admin-key")[0], 400, path)
+            self.assertEqual(self.call("GET", path + sep + "era=Bad%20Id", key="admin-key")[0], 400, path)
+        overview = self.call("GET", "/v1/overview?days=7&era=history", key="read-key")[1]
+        self.assertEqual((overview["tiles"]["matches"], overview["source"]), (1, "imported"))
+        self.assertIn("events_24h", overview["unfiltered"])
+        people = self.call("GET", "/v1/people?era=history", key="admin-key")[1]
+        self.assertEqual([p["distinct_id"] for p in people["people"]], ["h1"])
+
+    def test_series_answers_a_chart_and_refuses_an_unanswerable_pair(self):
+        status, out, _ = self.call("GET", "/v1/series?measure=matches&by=play_type&over=none&days=7", key="read-key")
+        self.assertEqual((status, {p["key"]: p["value"] for p in out["points"]}),
+                         (200, {"solo_vs_ai": 1, "multi_human_unknown": 1}))
+        self.assertEqual(set(out), {"measure", "by", "over", "build", "days", "play", "from", "to", "source", "era",
+                                    "points", "keys", "unfiltered", "notes", "answerable_by"})
+        status, out, _ = self.call("GET", "/v1/series?measure=events&by=country", key="read-key")
+        self.assertEqual(status, 400)                               # negative control: events have no country
+        self.assertIn("cannot be split by country", out["error"])
+        for bad in ("measure=revenue", "by=colour", "over=month", "days=5", "play=everyone", "build=mobile"):
+            self.assertEqual(self.call("GET", "/v1/series?" + bad, key="read-key")[0], 400, bad)
+
+    def test_the_query_runner_is_admin_only_and_never_reaches_events_db(self):
+        sql = {"sql": "SELECT play_type, COUNT(*) AS n FROM plays GROUP BY play_type"}
+        self.assertEqual(self.call("POST", "/v1/query", sql, key="read-key")[0], 403)
+        status, out, _ = self.call("POST", "/v1/query", sql, key="admin-key")
+        self.assertEqual((status, out["columns"]), (200, ["play_type", "n"]))
+        self.assertIn("ms", out)
+        raw = os.path.join(self.dir, "events.db")
+        for bad in ("SELECT * FROM events", "SELECT * FROM people", f"ATTACH DATABASE '{raw}' AS raw",
+                    "SELECT * FROM pragma_database_list", "SELECT 1; DELETE FROM plays", "DELETE FROM plays"):
+            status, out, _ = self.call("POST", "/v1/query", {"sql": bad}, key="admin-key")
+            self.assertEqual(status, 400, bad)
+        self.assertEqual(self.call("GET", "/v1/schema", key="read-key")[0], 403)
+        tables = {t["name"]: t for t in self.call("GET", "/v1/schema", key="admin-key")[1]["tables"]}
+        self.assertNotIn("events", tables)
+        self.assertIn("match_id", tables["plays"]["columns"])
+        self.assertEqual(tables["plays"]["rows"], 4)
+
+    def test_saved_queries_and_their_tables(self):
+        body = {"name": "mix", "sql": "SELECT play_type, COUNT(*) AS n FROM plays GROUP BY play_type",
+                "chart": "donut", "x": "play_type", "y": "n", "visibility": "readers", "as_table": True}
+        self.assertEqual(self.call("POST", "/v1/queries", body, key="read-key")[0], 403)   # negative control
+        for bad in ({**body, "chart": "radar"}, {**body, "visibility": "world"}, {**body, "name": "Mix It"},
+                    {**body, "sql": "SELECT * FROM events"}, {**body, "sql": "DROP TABLE plays"}):
+            self.assertEqual(self.call("POST", "/v1/queries", bad, key="admin-key")[0], 400, bad)
+        status, saved, _ = self.call("POST", "/v1/queries", body, key="admin-key")
+        self.assertEqual((status, saved["table"], saved["owner"]), (200, "t_mix", "admin"))
+        self.assertEqual(self.call("POST", "/v1/queries", {**body, "visibility": "me"}, key="admin-key")[0], 400)
+        mine = self.call("POST", "/v1/queries", {**body, "name": "secret", "as_table": False, "visibility": "me"},
+                         key="admin-key")[1]
+        tables = {t["name"]: t for t in self.call("GET", "/v1/schema", key="admin-key")[1]["tables"]}
+        self.assertEqual((tables["t_mix"]["saved"], tables["t_mix"]["rows"]), (True, 2))
+        out = self.call("POST", "/v1/query", {"sql": "SELECT SUM(n) FROM t_mix"}, key="admin-key")[1]
+        self.assertEqual(out["rows"], [[4]])
+        self.assertEqual([q["id"] for q in self.call("GET", "/v1/queries", key="read-key")[1]["queries"]],
+                         [saved["id"]])                              # a reader sees the shared one, not "me"
+        self.assertEqual(len(self.call("GET", "/v1/queries", key="admin-key")[1]["queries"]), 2)
+        self.assertEqual(self.call("DELETE", "/v1/queries?id=" + mine["id"], key="read-key")[0], 403)
+        self.assertEqual(self.call("DELETE", "/v1/queries?id=" + saved["id"], key="admin-key")[0], 200)
+        self.assertEqual(self.call("DELETE", "/v1/queries?id=" + saved["id"], key="admin-key")[0], 404)
+        tables = {t["name"] for t in self.call("GET", "/v1/schema", key="admin-key")[1]["tables"]}
+        self.assertNotIn("t_mix", tables)
+
+    def test_dashboards_and_their_tiles(self):
+        query = self.call("POST", "/v1/queries", {"name": "starts", "sql": "SELECT COUNT(*) AS n FROM plays",
+                                                  "chart": "number", "visibility": "readers"}, key="admin-key")[1]
+        board = {"name": "Launch week", "shared": "readers", "email": "mondays 09:00", "tiles": [
+            {"id": "a", "source": "builtin:new_players", "title": "New players", "chart": "line", "w": 2, "h": 1},
+            {"id": "b", "source": "query:" + query["id"], "title": "Starts", "chart": "number", "w": 1, "h": 1}]}
+        self.assertEqual(self.call("PUT", "/v1/dashboards", board, key="read-key")[0], 403)   # negative control
+        for bad in ({**board, "shared": "world"}, {**board, "tiles": [{**board["tiles"][0], "w": 5}]},
+                    {**board, "tiles": [{**board["tiles"][0], "source": "builtin:revenue"}]},
+                    {**board, "tiles": [{**board["tiles"][1], "source": "query:q_nope"}]}):
+            self.assertEqual(self.call("PUT", "/v1/dashboards", bad, key="admin-key")[0], 400)
+        status, saved, _ = self.call("PUT", "/v1/dashboards", board, key="admin-key")
+        self.assertEqual((status, saved["email"], saved["owner"]), (200, {"email": "mondays 09:00"}, "admin"))
+        self.call("PUT", "/v1/dashboards", {**board, "name": "Private", "shared": "admins"}, key="admin-key")
+        seen = self.call("GET", "/v1/dashboards", key="read-key")[1]["dashboards"]
+        self.assertEqual([d["name"] for d in seen], ["Launch week"])
+        self.assertEqual(len(self.call("GET", "/v1/dashboards", key="admin-key")[1]["dashboards"]), 2)
+        status, tile, _ = self.call("GET", "/v1/dashboards/tile?source=query:" + query["id"], key="read-key")
+        self.assertEqual((status, tile["rows"]), (200, [[4]]))
+        status, tile, _ = self.call("GET", "/v1/dashboards/tile?source=builtin:matches_per_day&days=7", key="read-key")
+        self.assertEqual((status, tile["columns"], sum(r[1] for r in tile["rows"])), (200, ["day", "matches"], 2))
+        self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=builtin:revenue", key="read-key")[0], 400)
+        self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=query:q_nope", key="read-key")[0], 404)
+        renamed = self.call("PUT", "/v1/dashboards", {**board, "id": saved["id"], "name": "Launch"}, key="admin-key")[1]
+        self.assertEqual((renamed["id"], renamed["created_ms"]), (saved["id"], saved["created_ms"]))
+        self.assertEqual(self.call("DELETE", "/v1/dashboards?id=" + saved["id"], key="read-key")[0], 403)
+        self.assertEqual(self.call("DELETE", "/v1/dashboards?id=" + saved["id"], key="admin-key")[0], 200)
+
+    def test_segments_belong_to_profile_readers_and_only_admins_share(self):
+        seg = {"name": "Lapsed solo", "filters": {"play": "solo_vs_ai", "last_seen": ">14d"}}
+        self.assertEqual(self.call("POST", "/v1/segments", seg, key="kim-key")[0], 403)    # no profiles for kim
+        self.assertEqual(self.call("GET", "/v1/segments", key="kim-key")[0], 403)
+        self.assertEqual(self.call("POST", "/v1/segments", {**seg, "shared": True}, key="read-key")[0], 403)
+        self.assertEqual(self.call("POST", "/v1/segments", {**seg, "filters": "play=solo"}, key="read-key")[0], 400)
+        status, mine, _ = self.call("POST", "/v1/segments", seg, key="read-key")
+        self.assertEqual((status, mine["owner"], mine["shared"]), (200, "ian", False))
+        shared = self.call("POST", "/v1/segments", {**seg, "name": "Everyone's", "shared": True}, key="admin-key")[1]
+        self.assertEqual({s["name"] for s in self.call("GET", "/v1/segments", key="read-key")[1]["segments"]},
+                         {"Lapsed solo", "Everyone's"})
+        self.assertEqual(self.call("DELETE", "/v1/segments?id=" + shared["id"], key="read-key")[0], 403)
+        self.assertEqual(self.call("DELETE", "/v1/segments?id=" + mine["id"], key="read-key")[0], 200)
+        self.assertEqual(self.call("DELETE", "/v1/segments?id=" + shared["id"], key="admin-key")[0], 200)
+        self.assertEqual(self.call("DELETE", "/v1/segments?id=s_gone", key="admin-key")[0], 404)
+
+    def test_cohort_lifespans_need_profiles_and_the_old_routes_keep_their_shape(self):
+        status, page, _ = self.call("GET", "/v1/cohorts?days=90", key="kim-key")
+        self.assertEqual(status, 200)
+        self.assertNotIn("lifespans", page)
+        self.assertIn("lifespans", page["unfiltered"])
+        page = self.call("GET", "/v1/cohorts?days=90", key="read-key")[1]     # ian reads profiles
+        self.assertEqual({p["distinct_id"] for p in page["lifespans"]}, {"h1", "p1", "p2", "p3"})
+        self.assertEqual(set(page["tiles"]), {"median_lifespan_days", "d1_pct", "d7_pct", "lapsed_14d", "players"})
+        types = self.call("GET", "/v1/playtypes?days=7", key="kim-key")[1]
+        self.assertEqual(set(types["groups"]), {"solo_vs_ai", "solo", "multi"})
+        self.assertEqual(self.call("GET", "/v1/people?play=everyone", key="read-key")[0], 400)
+        people = self.call("GET", "/v1/people?days=7&play=multi", key="read-key")[1]
+        self.assertEqual({p["distinct_id"] for p in people["people"]}, {"p2", "p3"})
+        self.assertTrue(all("active_days" in p for p in people["people"]))
+        person = self.call("GET", "/v1/person?id=p1", key="read-key")[1]
+        for key in ("lifespan_days", "where", "activity", "matches", "economy", "ftue", "settings", "social"):
+            self.assertIn(key, person)
+        self.assertIn("by_hour_weekday", person["activity"])
+        self.assertIn("by_source", person["economy"])
+        overview = self.call("GET", "/v1/overview?days=7", key="kim-key")[1]
+        for key in ("tiles", "rematch_by_play_type", "match_health_by_build", "events_24h", "digest", "marketing",
+                    "business"):
+            self.assertIn(key, overview)
+        self.assertEqual(overview["unfiltered"], [])
+        _, _, headers = self.call("GET", "/v1/eras", key="read-key", origin="https://dash.example")
+        self.assertIn("PUT", headers.get("Access-Control-Allow-Methods"))
 
 
 if __name__ == "__main__":

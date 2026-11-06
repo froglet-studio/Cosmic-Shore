@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 65 - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050003}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#A8869A}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#F5E6EE;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#F5E6EE;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:20px;color:#F5E6EE;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:17px;line-height:1.45;color:#F5E6EE;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:14px;line-height:1.4;color:#A8869A;margin:0}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:linear-gradient(160deg,rgba(112,64,95,.34) 0%,rgba(112,64,95,0) 38%),linear-gradient(180deg,rgba(60,29,49,.92),rgba(52,25,43,.9));box-shadow:inset 0 0 0 1px #7A5068,inset 0 1px 0 rgba(101,225,223,.45)}
+.nav{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:#A8869A;text-decoration:none;display:flex;align-items:center;gap:12px;height:42px;padding:0 16px}
+.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;flex:none}
+.nav.on{color:#F5E6EE;background:#3C1D31;box-shadow:inset 2px 0 0 #65E1DF}
+.seg{display:flex;padding:0 4px;background:#3C1D31;box-shadow:inset 0 0 0 1px #70405F}
+.seg button{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:0;background:transparent;color:#A8869A;height:38px;padding:0 9px;white-space:nowrap}
+.seg button.on{color:#F5E6EE;box-shadow:inset 0 -2px 0 #65E1DF}
+.chip{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:0;background:#3C1D31;color:#F5E6EE;box-shadow:inset 0 0 0 1px #70405F}
+.chip.on{box-shadow:inset 0 0 0 1px #65E1DF,inset 0 -2px 0 #65E1DF}
+.chip i{font-style:normal;color:#A8869A}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;border:0;height:42px;padding:0 20px;display:inline-flex;align-items:center;gap:10px}
+.btn.cta{background:#C4F637;color:#13010C}
+.btn.def{background:#F5E6EE;color:#13010C}
+.btn.ghost{background:transparent;color:#F5E6EE;box-shadow:inset 0 0 0 1px #70405F}
+.th{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#A8869A;text-align:left;padding:8px 10px;border-bottom:1px solid #70405F;white-space:nowrap}
+.th.sort{color:#F5E6EE}
+.td{font-family:'Aldrich',sans-serif;font-size:14px;color:#F5E6EE;padding:8px 10px;border-bottom:1px solid rgba(112,64,95,.6);font-variant-numeric:tabular-nums;white-space:nowrap}
+.field{background:#050003;box-shadow:inset 0 0 0 1px #70405F;height:40px;display:flex;align-items:center;padding:0 14px;color:#A8869A;font-family:'Aldrich',sans-serif;font-size:15px}
+.code{background:#050003;box-shadow:inset 0 0 0 1px #70405F;padding:10px 14px;font-family:'Aldrich',monospace;font-size:13px;line-height:1.45;color:#7BA0FF;white-space:pre;margin:0}
+.tag{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;box-shadow:inset 0 0 0 1px #70405F;color:#A8869A}
+</style>
+</helmet>
+<div style="width:1920px;height:900px;box-sizing:border-box;position:relative;overflow:hidden;background:#13010C;color:#F5E6EE;font-family:'Aldrich',sans-serif;padding:44px 56px;display:flex;flex-direction:column;gap:18px"><span class="lab">Rev 65 · notes</span><h1 class="h1">Froglet Analytics, the full tool</h1><p class="body" style="color:#A8869A;max-width:1500px">Asked (Shombith, 2026-11-06): filters and sorting on Players; "different analytical tools like pie charts, gantt charts etc for business development" instead of lists; the data in named eras ("Old Posthog data", "Pre Beta Editor testing results", on "a plan chart"); a solo vs AI / multiplayer filter; "the best analytical tool ever"; "give control to admins more like creating new tables queries". Seven screens of one tool, not seven options: pick the ones to build, or change any. Drawn in the console's default theme, Nocturne, with the sea lines; every number is sample data.</p><table style="border-collapse:collapse;width:100%"><thead><tr><th class="th">Screen</th><th class="th">What it adds</th><th class="th">What the server has, and what is new</th></tr></thead><tbody><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Players</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Filters (country, platform, active, matches, has played multiplayer, crystals), click-to-sort columns, saved segments, CSV export; each row gets a lifespan bar and a play-mix bar.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Server ready: /v1/people now carries each player's play mix and wins (4a729d91d6). Segments are new: saved filters.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Profile</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Six tiles, a play-type donut, ranked modes and vessels, an hour x weekday heatmap, a Gantt match timeline (lane per mode, filled = finished, square = win), the crystal balance line and earnings by source; the transaction table moves behind a link.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Server ready: /v1/person already returns every match with its time, mode, vessel, play type, finish and win, and every crystal change with its balance.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Cohorts</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Every player's lifespan as a Gantt (first to last seen, coloured by how they mostly play, ticks on play days, faded when lapsed) and a weekly cohort return heatmap.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">New view: lifespans from the people list; the heatmap from a weekly returns table (new aggregate).</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Eras</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Named date ranges an admin sets (Old PostHog data, Pre-beta editor testing, then the betas from the launch plan) on a plan chart over the weeks' events; an Era filter on every page; any two eras compared.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Server: eras in the config, applied like the build filter; imported PostHog events are told apart exactly (they arrive with their own old timestamp). New.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Play types</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Solo vs AI, Solo and Multiplayer side by side (matches per day, finished, rematch, D1, D7, minutes, top modes), the multiplayer invite-to-replay funnel, the share donut.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Server ready: the play filter (play=solo_vs_ai|solo|multi) on Overview, Retention and Matches (4a729d91d6). The funnel needs party events counted per party (new aggregate).</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Query Studio</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Admins build a query (From / Where / Group by / Measure / Order), or write SQL, or ask Claude; see it as bars, line, donut, Gantt, table or a number; save it as a query or as a table rebuilt nightly; share it; pin it; get an alert.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">New: saved queries and tables in the store, rebuilt by the nightly job; the same read-only guard the Ask box has (authorizer, 2 s, 200 rows). Player-level tables admin-only.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Dashboards</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Anyone's own boards of tiles from saved queries or any chart in the console, drag and resize, shared with readers or admins, emailed on a schedule.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">New: dashboards in the store; email needs a mail sender on the VM (a decision).</td></tr></tbody></table><p class="small" style="max-width:1600px">Charts: categories wear the colour set's four rims in a fixed order (Jade solo vs AI, Gold solo, Ruby multiplayer; Blue for plain data), each with a legend and labels, so colour is never the only cue; the game's rims are brighter than the usual chart band, so labels stay on. A donut is used only for one whole in three parts; anything with more parts is ranked bars. Lifespans and the match timeline are Gantt charts on a time axis. A sequential heatmap is one hue, light to dark.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

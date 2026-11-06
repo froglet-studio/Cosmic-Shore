@@ -11,10 +11,12 @@ Standard library only. See Tools/Analytics/server/README.md for the whole servic
 import hashlib
 import json
 import os
+import re
+import secrets
 import sqlite3
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 NEAR_DUPLICATE_MS = 50          # the facade double-send lands 1-3 ms apart (Ian, 2026-10-29); 50 ms is his query's window
 REMATCH_GAP_S = 600             # a rematch: the same player starts another match within 10 min of finishing one
@@ -25,6 +27,118 @@ FUTURE_SLACK_MS = 24 * 3600 * 1000
 WINDOWS = (1, 7, 14, 30, 90, 365)
 BUILD_KINDS = ("release", "development", "editor", "port")
 TIMESTAMP_KEYS = ("timestamp_utc_ms", "timestamp_utc_iso", "completed_utc_ms", "completed_utc_iso")
+SOURCES = ("any", "imported", "live")   # imported = PostHog history: stored by ingest(trusted=True), received_ms == ts_ms
+PLAY_GROUP_OF = {"solo_vs_ai": "solo_vs_ai", "solo_alone": "solo"}  # every other play type is "multi"
+ACTIVE_DAYS_MAX = 120
+
+# Eras (Rev 65; Shombith: "Old Posthog data", "Pre Beta Editor testing results", "a plan chart"): named date ranges an
+# admin sets. Made once, on the first start that finds none; after that only PUT /v1/eras changes them.
+ID_PATTERN = re.compile(r"^[a-z0-9_]{1,40}$")
+ERA_COLOURS = ("jade", "ruby", "gold", "blue")
+ERA_KINDS = ("data", "planned")
+MAX_ERAS = 30
+DEFAULT_ERAS = [
+    {"id": "posthog", "name": "Old PostHog data", "from": None, "to": "2026-11-05", "source": "imported",
+     "kind": "data", "builds": [], "colour": "blue",
+     "note": "PostHog import: every event that arrived with its own old timestamp"},
+    {"id": "pre_beta", "name": "Pre-beta editor testing", "from": "2026-11-06", "to": "2026-12-15", "source": "live",
+     "kind": "data", "builds": [], "colour": "jade",
+     "note": "Froglet Analytics, editor and test builds, until the beta starts"},
+    {"id": "closed_beta", "name": "Closed beta, mobile", "from": "2027-01-11", "to": "2027-02-26", "source": "live",
+     "kind": "planned", "builds": [], "colour": "gold", "note": "starts when activation is ready"},
+    {"id": "steam", "name": "Steam with keys", "from": "2027-03-01", "to": "2027-03-31", "source": "live",
+     "kind": "planned", "builds": [], "colour": "ruby", "note": "by March 2027, before GDC"},
+]
+DEFAULT_POSTHOG_FROM = "2026-08-08"
+DEFAULT_MILESTONES = [{"name": "Server live, PostHog off", "day": "2026-11-06"},
+                      {"name": "Activation ready", "day": "2027-01-11"}, {"name": "GDC", "day": "2027-03-16"}]
+QUERY_CHARTS = ("bars", "line", "donut", "gantt", "table", "number")
+VISIBILITIES = ("me", "readers", "admins")
+BUILTIN_TILES = ("new_players", "d1_return", "ftue_finished", "rows_per_play", "matches_per_day", "play_mix")
+MAX_SAVED = 200
+MAX_TILES = 24
+MAX_FILTERS_BYTES = 8 * 1024
+
+
+class Invalid(ValueError):
+    """A request the server refuses with 400 and this reason."""
+
+
+def iso_day(value, field):
+    if not isinstance(value, str) or not re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        raise Invalid(f"{field} must be a date like 2026-11-06")
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        raise Invalid(f"{field} is not a real date: {value}") from None
+    return value
+
+
+def week_of(day):
+    """The Monday of the ISO week a day falls in."""
+    d = date.fromisoformat(day)
+    return (d - timedelta(days=d.weekday())).isoformat()
+
+
+def _text(value, field, limit=80, required=True):
+    if value is None and not required:
+        return ""
+    if not isinstance(value, str) or (required and not value.strip()) or len(value) > limit:
+        raise Invalid(f"{field} must be text of 1 to {limit} characters")
+    return value.strip()
+
+
+def validate_eras(eras, milestones=None):
+    """The checked list PUT /v1/eras stores. Raises Invalid with the reason."""
+    if not isinstance(eras, list) or len(eras) > MAX_ERAS:
+        raise Invalid(f"eras must be a list of at most {MAX_ERAS}")
+    out, seen = [], set()
+    for i, era in enumerate(eras):
+        if not isinstance(era, dict):
+            raise Invalid(f"era {i} must be an object")
+        era_id = era.get("id")
+        if not isinstance(era_id, str) or not ID_PATTERN.match(era_id):
+            raise Invalid(f"era {i}: id must match [a-z0-9_]{{1,40}}")
+        if era_id in seen:
+            raise Invalid(f"era id {era_id} is used twice")
+        seen.add(era_id)
+        start, end = iso_day(era.get("from"), f"{era_id}.from"), iso_day(era.get("to"), f"{era_id}.to")
+        if start > end:
+            raise Invalid(f"{era_id}: from must be on or before to")
+        source = era.get("source", "any")
+        if source not in SOURCES:
+            raise Invalid(f"{era_id}.source must be one of {list(SOURCES)}")
+        kind = era.get("kind", "data")
+        if kind not in ERA_KINDS:
+            raise Invalid(f"{era_id}.kind must be one of {list(ERA_KINDS)}")
+        builds = era.get("builds") or []
+        if not isinstance(builds, list) or any(b not in BUILD_KINDS for b in builds):
+            raise Invalid(f"{era_id}.builds must be a list of {list(BUILD_KINDS)} (empty = every build)")
+        colour = era.get("colour", "blue")
+        if colour not in ERA_COLOURS:
+            raise Invalid(f"{era_id}.colour must be one of {list(ERA_COLOURS)}")
+        out.append({"id": era_id, "name": _text(era.get("name"), f"{era_id}.name"), "from": start, "to": end,
+                    "source": source, "kind": kind, "builds": sorted(set(builds)), "colour": colour,
+                    "note": _text(era.get("note"), f"{era_id}.note", 200, required=False)})
+    checked_milestones = None
+    if milestones is not None:
+        if not isinstance(milestones, list) or len(milestones) > MAX_ERAS:
+            raise Invalid(f"milestones must be a list of at most {MAX_ERAS}")
+        checked_milestones = []
+        for i, mark in enumerate(milestones):
+            if not isinstance(mark, dict):
+                raise Invalid(f"milestone {i} must be an object")
+            checked_milestones.append({"name": _text(mark.get("name"), f"milestone {i}.name"),
+                                       "day": iso_day(mark.get("day"), f"milestone {i}.day")})
+    return out, checked_milestones
+
+
+def _new_id(prefix):
+    return prefix + secrets.token_hex(5)
+
+
+def _visible(visibility, owner, name, admin):
+    return owner == name or visibility == "readers" or (admin and visibility == "admins")
 
 RAW_SCHEMA = """
 CREATE TABLE IF NOT EXISTS events(
@@ -78,6 +192,30 @@ CREATE TABLE IF NOT EXISTS asks(
     question TEXT NOT NULL, sql TEXT, ok INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS jobs(name TEXT PRIMARY KEY, last_ms INTEGER NOT NULL, detail TEXT);
+CREATE TABLE IF NOT EXISTS store_meta(key TEXT PRIMARY KEY, value TEXT);
+-- What people make in the console (Rev 65). None of it is player data; it stays here, never in aggregates.db.
+CREATE TABLE IF NOT EXISTS eras(
+    id TEXT PRIMARY KEY, position INTEGER NOT NULL, name TEXT NOT NULL, from_day TEXT NOT NULL, to_day TEXT NOT NULL,
+    source TEXT NOT NULL, kind TEXT NOT NULL, builds TEXT NOT NULL, colour TEXT NOT NULL, note TEXT NOT NULL,
+    owner TEXT NOT NULL, created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS milestones(
+    position INTEGER PRIMARY KEY, name TEXT NOT NULL, day TEXT NOT NULL, owner TEXT NOT NULL,
+    created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS segments(
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, owner TEXT NOT NULL, shared INTEGER NOT NULL, filters TEXT NOT NULL,
+    created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS saved_queries(
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, sql TEXT NOT NULL, chart TEXT NOT NULL, x TEXT, y TEXT,
+    visibility TEXT NOT NULL, as_table INTEGER NOT NULL, owner TEXT NOT NULL,
+    created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS dashboards(
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, shared TEXT NOT NULL, tiles TEXT NOT NULL, email TEXT,
+    owner TEXT NOT NULL, created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
 """
 
 # The aggregates the dashboard and the Ask box read. Kept in one string so Claude is shown exactly this schema.
@@ -91,20 +229,23 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
     rematched INTEGER,           -- 1 when they started another match within 600 s of completing this one; NULL if not completed
     flight_time_seconds REAL, duration_seconds REAL,
     won INTEGER,                 -- player_won from game_completed; NULL if not completed
-    pause_seconds REAL           -- duration_seconds - flight_time_seconds: paused or away from the controls
+    pause_seconds REAL,          -- duration_seconds - flight_time_seconds: paused or away from the controls
+    imported INTEGER,            -- 1: PostHog history (import_posthog.py, stored with its own time); 0: sent here live
+    country TEXT                 -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
 );
-CREATE TABLE daily_events(       -- rows received per day, build and event
-    day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER
+CREATE TABLE daily_events(       -- rows received per day, build, event and source (imported 1 = PostHog history)
+    day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER
 );
 CREATE TABLE daily_plays(        -- game_started rows against distinct (player, match) pairs: 1.0 is healthy
-    day TEXT, build_kind TEXT, rows INTEGER, plays INTEGER, rows_per_play REAL
+    day TEXT, build_kind TEXT, rows INTEGER, plays INTEGER, rows_per_play REAL, imported INTEGER
 );
 CREATE TABLE daily_players(day TEXT, build_kind TEXT, players INTEGER, new_players INTEGER);
 CREATE TABLE players_in_window(  -- distinct players seen in the last N days (N = 1, 7, 14, 30, 90, 365)
     build_kind TEXT, days INTEGER, players INTEGER
 );
 CREATE TABLE returns(            -- players by the play type of their first play; only cohorts 7+ days old
-    first_day TEXT, build_kind TEXT, play_type TEXT, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER
+    first_day TEXT, build_kind TEXT, play_type TEXT, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
+    imported INTEGER             -- the source of that first play (1 = PostHog history)
 );
 CREATE TABLE players_by_platform(  -- distinct players per platform seen in the last N days
     build_kind TEXT, platform TEXT, days INTEGER, players INTEGER
@@ -142,7 +283,27 @@ CREATE TABLE settings(           -- each player's latest value of each setting (
 );
 CREATE TABLE cloud_save_failures(day TEXT, build_kind TEXT, key TEXT, count INTEGER);
 CREATE TABLE rejects(day TEXT, reason TEXT, event TEXT, count INTEGER);
+CREATE TABLE player_counts(      -- distinct players per span, counted once each; NO player id
+    span TEXT,                   -- day | week | window:<N> (last N days) | era:<id> | era_week:<id>
+    x TEXT,                      -- the day, or the week's Monday, for day and week spans; '' otherwise
+    build_kind TEXT,             -- or '*': every build, each player once
+    source TEXT,                 -- any | imported (PostHog history) | live; an era's spans carry the era's source
+    dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | country | game_mode | vessel_class | intensity
+    players INTEGER,             -- players active in the span with that key (a player on two platforms counts in both)
+    new_players INTEGER          -- of those, players whose first day (in this source) falls inside the span
+);
+CREATE INDEX player_counts_span ON player_counts(span, source, dim);
+CREATE TABLE cohort_weeks(       -- players by the week of their first day, active k weeks later (week_index 0 = that week)
+    cohort TEXT, build_kind TEXT, source TEXT, play_group TEXT, week_index INTEGER, players INTEGER
+);
+CREATE TABLE cohort_days(        -- players by first day and lifespan (first day to last, both counted)
+    first_day TEXT, build_kind TEXT, source TEXT,
+    play_group TEXT,             -- all | solo_vs_ai | solo | multi (played at least one match of that group)
+    lifespan_days INTEGER, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
+    lapsed_14d INTEGER           -- not seen in the last 14 days
+);
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
+-- Saved query tables (Query Studio, "as table") are added after these as t_<name>, rebuilt with the rest.
 """
 
 
@@ -240,6 +401,241 @@ class Store:
             if "country" not in columns:
                 self.db.execute(f"ALTER TABLE {table} ADD COLUMN country TEXT")
         self.db.commit()
+        self._seed_eras()
+
+    def _seed_eras(self):
+        """The four eras of the launch plan, written once. A later empty list is the admins' choice and stays."""
+        with self.lock:
+            if self.db.execute("SELECT 1 FROM store_meta WHERE key='eras_seeded'").fetchone():
+                return
+            first = self.db.execute("SELECT MIN(day) FROM events WHERE received_ms = ts_ms").fetchone()[0]
+            eras = [dict(e, **({"from": first or DEFAULT_POSTHOG_FROM} if e["from"] is None else {}))
+                    for e in DEFAULT_ERAS]
+            if eras[0]["from"] > eras[0]["to"]:
+                eras[0]["from"] = eras[0]["to"]
+            self._write_eras(eras, DEFAULT_MILESTONES, "default")
+            self.db.execute("INSERT INTO store_meta(key, value) VALUES('eras_seeded', ?)", (str(now_ms()),))
+            self.db.commit()
+
+    # ---------------------------------------------------------------- eras, segments, queries, dashboards (Rev 65)
+
+    def _write_eras(self, eras, milestones, owner):
+        now = now_ms()
+        before = {r[0]: (r[1], r[2]) for r in self.db.execute("SELECT id, owner, created_ms FROM eras")}
+        self.db.execute("DELETE FROM eras")
+        for i, era in enumerate(eras):
+            made_by, made = before.get(era["id"], (owner, now))
+            self.db.execute("INSERT INTO eras VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                            (era["id"], i, era["name"], era["from"], era["to"], era["source"], era["kind"],
+                             json.dumps(era["builds"]), era["colour"], era.get("note") or "", made_by, made, now))
+        if milestones is not None:
+            self.db.execute("DELETE FROM milestones")
+            for i, mark in enumerate(milestones):
+                self.db.execute("INSERT INTO milestones VALUES(?,?,?,?,?,?)", (i, mark["name"], mark["day"], owner, now, now))
+
+    def set_eras(self, eras, milestones, owner):
+        checked, marks = validate_eras(eras, milestones)
+        with self.lock:
+            self._write_eras(checked, marks, owner)
+            self.db.commit()
+        return self.eras()
+
+    def eras(self):
+        with self.lock:
+            rows = self.db.execute("SELECT id, name, from_day, to_day, source, kind, builds, colour, note, owner, "
+                                   "created_ms, updated_ms FROM eras ORDER BY position").fetchall()
+        return [{"id": r[0], "name": r[1], "from": r[2], "to": r[3], "source": r[4], "kind": r[5],
+                 "builds": json.loads(r[6]), "colour": r[7], "note": r[8], "owner": r[9], "created_ms": r[10],
+                 "updated_ms": r[11]} for r in rows]
+
+    def era(self, era_id):
+        """One era by id; Invalid for a malformed id, None for one that does not exist."""
+        if not isinstance(era_id, str) or not ID_PATTERN.match(era_id):
+            raise Invalid("era must be an era id ([a-z0-9_]{1,40})")
+        return next((e for e in self.eras() if e["id"] == era_id), None)
+
+    def milestones(self):
+        with self.lock:
+            return [{"name": r[0], "day": r[1]} for r in
+                    self.db.execute("SELECT name, day FROM milestones ORDER BY position")]
+
+    def segments(self, name, admin):
+        with self.lock:
+            rows = self.db.execute("SELECT id, name, owner, shared, filters, created_ms, updated_ms FROM segments "
+                                   "WHERE owner = ? OR shared = 1 ORDER BY name", (name,)).fetchall()
+        return [{"id": r[0], "name": r[1], "owner": r[2], "shared": bool(r[3]), "filters": json.loads(r[4]),
+                 "created_ms": r[5], "updated_ms": r[6]} for r in rows]
+
+    def save_segment(self, body, name, admin):
+        if not isinstance(body, dict):
+            raise Invalid("send {name, filters, shared?}")
+        label = _text(body.get("name"), "name")
+        filters = body.get("filters")
+        if not isinstance(filters, dict):
+            raise Invalid("filters must be an object")
+        raw = json.dumps(filters, sort_keys=True)
+        if len(raw.encode()) > MAX_FILTERS_BYTES:
+            raise Invalid(f"filters must be under {MAX_FILTERS_BYTES // 1024} KB")
+        shared = body.get("shared", False)
+        if not isinstance(shared, bool):
+            raise Invalid("shared must be true or false")
+        if shared and not admin:
+            raise PermissionError("Only an admin key can share a segment.")
+        now = now_ms()
+        with self.lock:
+            if self.db.execute("SELECT COUNT(*) FROM segments").fetchone()[0] >= MAX_SAVED:
+                raise Invalid(f"at most {MAX_SAVED} segments; delete one first")
+            seg_id = _new_id("s_")
+            self.db.execute("INSERT INTO segments VALUES(?,?,?,?,?,?,?)",
+                            (seg_id, label, name, int(shared), raw, now, now))
+            self.db.commit()
+        return {"id": seg_id, "name": label, "owner": name, "shared": shared, "filters": filters,
+                "created_ms": now, "updated_ms": now}
+
+    def delete_segment(self, seg_id, name, admin):
+        """True when deleted; None when no such segment; PermissionError when it is someone else's."""
+        with self.lock:
+            row = self.db.execute("SELECT owner FROM segments WHERE id=?", (seg_id,)).fetchone()
+            if not row:
+                return None
+            if row[0] != name and not admin:
+                raise PermissionError("Only its owner or an admin can delete a segment.")
+            self.db.execute("DELETE FROM segments WHERE id=?", (seg_id,))
+            self.db.commit()
+        return True
+
+    def _query_row(self, r):
+        return {"id": r[0], "name": r[1], "sql": r[2], "chart": r[3], "x": r[4], "y": r[5], "visibility": r[6],
+                "as_table": bool(r[7]), "table": ("t_" + r[1]) if r[7] else None, "owner": r[8],
+                "created_ms": r[9], "updated_ms": r[10]}
+
+    def queries(self, name=None, admin=True):
+        """Saved queries: every one for an admin; shared and own for a reader."""
+        with self.lock:
+            rows = self.db.execute("SELECT id, name, sql, chart, x, y, visibility, as_table, owner, created_ms, "
+                                   "updated_ms FROM saved_queries ORDER BY name").fetchall()
+        out = [self._query_row(r) for r in rows]
+        return out if admin and name is None else [q for q in out if admin or _visible(q["visibility"], q["owner"], name, False)]
+
+    def query(self, query_id):
+        return next((q for q in self.queries() if q["id"] == query_id), None)
+
+    def save_query(self, body, owner, check):
+        """Validate and store a saved query. `check(sql)` runs it through the read-only guard (raises on failure)."""
+        if not isinstance(body, dict):
+            raise Invalid("send {name, sql, chart, x, y, visibility, as_table}")
+        label = _text(body.get("name"), "name")
+        as_table = body.get("as_table", False)
+        if not isinstance(as_table, bool):
+            raise Invalid("as_table must be true or false")
+        if as_table and not ID_PATTERN.match(label):
+            raise Invalid("a query saved as a table needs a name matching [a-z0-9_]{1,40} (the table is t_<name>)")
+        chart = body.get("chart", "table")
+        if chart not in QUERY_CHARTS:
+            raise Invalid(f"chart must be one of {list(QUERY_CHARTS)}")
+        visibility = body.get("visibility", "me")
+        if visibility not in VISIBILITIES:
+            raise Invalid(f"visibility must be one of {list(VISIBILITIES)}")
+        x, y = (_text(body.get(k), k, 80, required=False) or None for k in ("x", "y"))
+        sql = body.get("sql")
+        if not isinstance(sql, str) or not sql.strip() or len(sql) > 8000:
+            raise Invalid("sql must be one SELECT of at most 8,000 characters")
+        check(sql)
+        query_id = body.get("id")
+        if query_id is not None and (not isinstance(query_id, str) or not re.match(r"^[a-z0-9_]{1,40}$", query_id)):
+            raise Invalid("id must match [a-z0-9_]{1,40}")
+        now = now_ms()
+        with self.lock:
+            existing = self.db.execute("SELECT owner, created_ms FROM saved_queries WHERE id=?",
+                                       (query_id,)).fetchone() if query_id else None
+            if as_table and self.db.execute("SELECT 1 FROM saved_queries WHERE as_table=1 AND name=? AND id IS NOT ?",
+                                            (label, query_id)).fetchone():
+                raise Invalid(f"another saved query already makes the table t_{label}")
+            if not existing and self.db.execute("SELECT COUNT(*) FROM saved_queries").fetchone()[0] >= MAX_SAVED:
+                raise Invalid(f"at most {MAX_SAVED} saved queries; delete one first")
+            query_id = query_id or _new_id("q_")
+            made_by, made = existing if existing else (owner, now)
+            self.db.execute("INSERT OR REPLACE INTO saved_queries VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                            (query_id, label, sql.strip(), chart, x, y, visibility, int(as_table), made_by, made, now))
+            self.db.commit()
+        return self.query(query_id)
+
+    def delete_query(self, query_id):
+        with self.lock:
+            gone = self.db.execute("DELETE FROM saved_queries WHERE id=?", (query_id,)).rowcount
+            self.db.commit()
+        return bool(gone)
+
+    def dashboards(self, name, admin):
+        with self.lock:
+            rows = self.db.execute("SELECT id, name, shared, tiles, email, owner, created_ms, updated_ms "
+                                   "FROM dashboards ORDER BY name").fetchall()
+        out = [{"id": r[0], "name": r[1], "shared": r[2], "tiles": json.loads(r[3]),
+                "email": json.loads(r[4]) if r[4] else None, "owner": r[5], "created_ms": r[6], "updated_ms": r[7]}
+               for r in rows]
+        return [d for d in out if _visible(d["shared"], d["owner"], name, admin)]
+
+    def save_dashboard(self, body, owner):
+        if not isinstance(body, dict):
+            raise Invalid("send {id?, name, shared, tiles}")
+        label = _text(body.get("name"), "name")
+        shared = body.get("shared", "me")
+        if shared not in VISIBILITIES:
+            raise Invalid(f"shared must be one of {list(VISIBILITIES)}")
+        tiles = body.get("tiles")
+        if not isinstance(tiles, list) or len(tiles) > MAX_TILES:
+            raise Invalid(f"tiles must be a list of at most {MAX_TILES}")
+        known = {q["id"] for q in self.queries()}
+        checked, ids = [], set()
+        for i, tile in enumerate(tiles):
+            if not isinstance(tile, dict):
+                raise Invalid(f"tile {i} must be an object")
+            tile_id = tile.get("id")
+            if not isinstance(tile_id, str) or not re.match(r"^[A-Za-z0-9_-]{1,40}$", tile_id) or tile_id in ids:
+                raise Invalid(f"tile {i}: id must be unique text matching [A-Za-z0-9_-]{{1,40}}")
+            ids.add(tile_id)
+            source = tile.get("source")
+            if not isinstance(source, str) or not (
+                    (source.startswith("builtin:") and source[8:] in BUILTIN_TILES)
+                    or (source.startswith("query:") and source[6:] in known)):
+                raise Invalid(f"tile {tile_id}: source must be query:<saved query id> or builtin:<one of "
+                              f"{', '.join(BUILTIN_TILES)}>")
+            chart = tile.get("chart", "bars")
+            if chart not in QUERY_CHARTS:
+                raise Invalid(f"tile {tile_id}: chart must be one of {list(QUERY_CHARTS)}")
+            w, h = tile.get("w", 1), tile.get("h", 1)
+            if not (isinstance(w, int) and not isinstance(w, bool) and 1 <= w <= 4) or \
+                    not (isinstance(h, int) and not isinstance(h, bool) and 1 <= h <= 3):
+                raise Invalid(f"tile {tile_id}: w must be 1 to 4 and h 1 to 3")
+            checked.append({"id": tile_id, "source": source, "title": _text(tile.get("title"), f"tile {tile_id}.title",
+                                                                             80, required=False),
+                            "chart": chart, "w": w, "h": h})
+        email = body.get("email")
+        if email is not None and not (isinstance(email, str) and len(email) <= 40):
+            raise Invalid("email is a schedule like \"mondays 09:00\" (stored only; nothing is sent yet)")
+        dash_id = body.get("id")
+        if dash_id is not None and (not isinstance(dash_id, str) or not re.match(r"^[a-z0-9_]{1,40}$", dash_id)):
+            raise Invalid("id must match [a-z0-9_]{1,40}")
+        now = now_ms()
+        with self.lock:
+            existing = self.db.execute("SELECT owner, created_ms FROM dashboards WHERE id=?",
+                                       (dash_id,)).fetchone() if dash_id else None
+            if not existing and self.db.execute("SELECT COUNT(*) FROM dashboards").fetchone()[0] >= MAX_SAVED:
+                raise Invalid(f"at most {MAX_SAVED} dashboards; delete one first")
+            dash_id = dash_id or _new_id("d_")
+            made_by, made = existing if existing else (owner, now)
+            self.db.execute("INSERT OR REPLACE INTO dashboards VALUES(?,?,?,?,?,?,?,?)",
+                            (dash_id, label, shared, json.dumps(checked),
+                             json.dumps({"email": email}) if email else None, made_by, made, now))
+            self.db.commit()
+        return {"id": dash_id, "name": label, "shared": shared, "tiles": checked,
+                "email": {"email": email} if email else None, "owner": made_by, "created_ms": made, "updated_ms": now}
+
+    def delete_dashboard(self, dash_id):
+        with self.lock:
+            gone = self.db.execute("DELETE FROM dashboards WHERE id=?", (dash_id,)).rowcount
+            self.db.commit()
+        return bool(gone)
 
     # ---------------------------------------------------------------- ingest
 
@@ -425,21 +821,48 @@ class Store:
         db.row_factory = sqlite3.Row
         return db
 
-    def people_list(self, build=None, days=90, search="", limit=500):
-        """One row per player seen in the last `days`: who, where, on what, how much. Newest first."""
-        since = day_of(now_ms() - (days - 1) * 86400 * 1000)
-        db = self._read()
+    @staticmethod
+    def _range_where(build, since, until, source, builds):
         where, args = "day >= ?", [since]
+        if until:
+            where += " AND day <= ?"
+            args.append(until)
         if build:
             where += " AND build_kind = ?"
             args.append(build)
+        if builds:
+            where += f" AND build_kind IN ({','.join('?' * len(builds))})"
+            args += list(builds)
+        if source == "imported":
+            where += " AND received_ms = ts_ms"
+        elif source == "live":
+            where += " AND received_ms <> ts_ms"
+        return where, args
+
+    def people_list(self, build=None, days=90, search="", limit=500, play="all", since=None, until=None,
+                    source="any", builds=None):
+        """One row per player seen in the range (the last `days`, or since..until for an era): who, where, on what,
+        how much, and the days they were active (at most the latest 120). `play` keeps players who played at least
+        one match of that group. Newest first."""
+        since = since or day_of(now_ms() - (days - 1) * 86400 * 1000)
+        where, args = self._range_where(build, since, until, source, builds)
+        db = self._read()
         rows = db.execute(
             "SELECT distinct_id, MIN(ts_ms) AS first_ms, MAX(ts_ms) AS last_ms, COUNT(*) AS events, "
             "COUNT(DISTINCT day) AS days_active, "
             "COUNT(DISTINCT CASE WHEN event='game_started' THEN match_id END) AS matches, "
             "COUNT(DISTINCT CASE WHEN event='game_completed' THEN match_id END) AS finished, "
+            # each player's play-type mix (play_type_of: 2+ humans is multiplayer, else 1+ AI is solo vs AI)
+            "COUNT(DISTINCT CASE WHEN event='game_started' AND CAST(json_extract(props, '$.player_count_human') "
+            "AS INTEGER) >= 2 THEN match_id END) AS multi, "
+            "COUNT(DISTINCT CASE WHEN event='game_started' AND COALESCE(CAST(json_extract(props, "
+            "'$.player_count_human') AS INTEGER), 0) < 2 AND CAST(json_extract(props, '$.player_count_ai') AS INTEGER) "
+            ">= 1 THEN match_id END) AS solo_vs_ai, "
+            "COUNT(DISTINCT CASE WHEN event='game_completed' AND json_extract(props, '$.player_won') IN (1, 'true') "
+            "THEN match_id END) AS won, "
             "GROUP_CONCAT(DISTINCT platform) AS platforms, GROUP_CONCAT(DISTINCT country) AS countries, "
-            "GROUP_CONCAT(DISTINCT build_kind) AS builds, MAX(app_version) AS app_version "
+            "GROUP_CONCAT(DISTINCT build_kind) AS builds, MAX(app_version) AS app_version, "
+            "GROUP_CONCAT(DISTINCT day) AS active_days "
             f"FROM events WHERE {where} GROUP BY distinct_id", args).fetchall()
         people = {r["distinct_id"]: (json.loads(r["props"]), r["country"]) for r in db.execute(
             "SELECT distinct_id, props, country FROM people")}
@@ -451,11 +874,50 @@ class Store:
             name = str(props.get("display_name") or "")
             if needle and needle not in r["distinct_id"].lower() and needle not in name.lower():
                 continue
-            out.append({**dict(r), "display_name": name, "crystal_balance": props.get("crystal_balance"),
+            row = dict(r)
+            row["solo"] = max(0, (row["matches"] or 0) - (row["multi"] or 0) - (row["solo_vs_ai"] or 0))
+            if play != "all" and not row.get(play):
+                continue
+            row["active_days"] = sorted(filter(None, (r["active_days"] or "").split(",")))[-ACTIVE_DAYS_MAX:]
+            out.append({**row, "display_name": name, "crystal_balance": props.get("crystal_balance"),
                         "platforms": sorted(filter(None, (r["platforms"] or "").split(","))),
                         "countries": sorted(filter(None, (r["countries"] or "").split(",")))})
         out.sort(key=lambda p: p["last_ms"], reverse=True)
-        return {"days": days, "build": build, "total": len(out), "people": out[:limit]}
+        return {"days": days, "build": build, "play": play, "since": since, "until": until, "total": len(out),
+                "people": out[:limit]}
+
+    def lifespans(self, build, since, until=None, source="any", builds=None, play="all", limit=500):
+        """Cohorts page, profile readers only: each player whose first day (in this build and source) falls in the
+        range, with their first and last day, active days and the play group they played most."""
+        where, args = self._range_where(build, "0000-00-00", None, source, builds)
+        db = self._read()
+        rows = db.execute(
+            "SELECT distinct_id, MIN(day) AS first_day, MAX(day) AS last_day, GROUP_CONCAT(DISTINCT day) AS days, "
+            "COUNT(DISTINCT CASE WHEN event='game_started' AND CAST(json_extract(props, '$.player_count_human') "
+            "AS INTEGER) >= 2 THEN match_id END) AS multi, "
+            "COUNT(DISTINCT CASE WHEN event='game_started' AND COALESCE(CAST(json_extract(props, "
+            "'$.player_count_human') AS INTEGER), 0) < 2 AND CAST(json_extract(props, '$.player_count_ai') AS INTEGER) "
+            ">= 1 THEN match_id END) AS solo_vs_ai, "
+            "COUNT(DISTINCT CASE WHEN event='game_started' THEN match_id END) AS matches "
+            f"FROM events WHERE {where} GROUP BY distinct_id", args).fetchall()
+        names = {r[0]: json.loads(r[1]).get("display_name") or "" for r in
+                 db.execute("SELECT distinct_id, props FROM people")}
+        db.close()
+        out = []
+        for r in rows:
+            if r["first_day"] < since or (until and r["first_day"] > until):
+                continue
+            mix = {"multi": r["multi"] or 0, "solo_vs_ai": r["solo_vs_ai"] or 0,
+                   "solo": max(0, (r["matches"] or 0) - (r["multi"] or 0) - (r["solo_vs_ai"] or 0))}
+            if play != "all" and not mix[play]:
+                continue
+            mostly = max(("solo_vs_ai", "solo", "multi"), key=lambda g: mix[g]) if r["matches"] else None
+            out.append({"distinct_id": r["distinct_id"], "display_name": names.get(r["distinct_id"], ""),
+                        "first_day": r["first_day"], "last_day": r["last_day"],
+                        "lifespan_days": (date.fromisoformat(r["last_day"]) - date.fromisoformat(r["first_day"])).days + 1,
+                        "active_days": sorted((r["days"] or "").split(","))[-ACTIVE_DAYS_MAX:], "mostly": mostly})
+        out.sort(key=lambda p: (p["first_day"], p["distinct_id"]))
+        return out[:limit]
 
     def person(self, distinct_id):
         """Everything stored about one player, arranged for their profile page."""
@@ -489,6 +951,7 @@ class Store:
                 "ai": as_int(p.get("player_count_ai")), "finished": bool(done),
                 "won": dp.get("player_won") if done else None,
                 "flight_time_seconds": as_float(dp.get("flight_time_seconds")),
+                "duration_seconds": as_float(dp.get("duration_seconds")),
                 "rematched": bool(done and following is not None
                                   and 0 <= (following - done[0]["ts_ms"]) / 1000 <= REMATCH_GAP_S),
             })
@@ -532,6 +995,16 @@ class Store:
             d["matches"] += 1 if e["event"] == "game_started" and e["match_id"] in starts \
                 and starts[e["match_id"]][0]["ts_ms"] == e["ts_ms"] else 0
         person_props = json.loads(row["props"]) if row else {}
+        by_hour_weekday = [[0] * 24 for _ in range(7)]          # match starts, weekday 0 = Monday, UTC hours
+        for e, _ in starts.values():
+            at = datetime.fromtimestamp(e["ts_ms"] / 1000, tz=timezone.utc)
+            by_hour_weekday[at.weekday()][at.hour] += 1
+        earned_by = {}
+        for x in economy:
+            if x["event"] == "crystals_earned":
+                earned_by[str(x["source"] or "unknown")] = earned_by.get(str(x["source"] or "unknown"), 0) + (x["amount"] or 0)
+        lifespan = ((date.fromisoformat(events[-1]["day"]) - date.fromisoformat(events[0]["day"])).days + 1
+                    if events else None)
         return {
             "player_id": distinct_id,
             "display_name": person_props.get("display_name") or "",
@@ -546,7 +1019,9 @@ class Store:
                          "events_by_name": _counts(e["event"] for e in events),
                          "flagged_duplicates": sum(e["near_dup"] for e in events),
                          "session_ends": ends,
-                         "launch_to_menu_p50": _percentile(launches, 0.5)},
+                         "launch_to_menu_p50": _percentile(launches, 0.5),
+                         "by_hour_weekday": by_hour_weekday},
+            "lifespan_days": lifespan,
             "matches": {"total": len(matches), "finished": sum(m["finished"] for m in matches),
                         "won": sum(1 for m in matches if m["won"] in (True, "true")),
                         "flight_seconds": round(sum(m["flight_time_seconds"] or 0 for m in matches), 1),
@@ -558,7 +1033,9 @@ class Store:
                         "spent": sum(x["amount"] or 0 for x in economy if x["event"] in ("crystals_spent", "vessel_unlocked")),
                         "balance": next((x["balance"] for x in reversed(economy) if x["balance"] is not None),
                                         person_props.get("crystal_balance")),
-                        "recent": list(reversed(economy))[:60], "unlocks": unlocks},
+                        "recent": list(reversed(economy))[:60], "unlocks": unlocks,
+                        "by_source": [{"source": k, "earned": v} for k, v in
+                                      sorted(earned_by.items(), key=lambda kv: -kv[1])]},
             "ftue": ftue, "settings": settings, "social": social,
             "recent_events": [{"ts_ms": e["ts_ms"], "event": e["event"], "build": e["build_kind"],
                                "platform": e["platform"], "country": e["country"],
@@ -579,13 +1056,14 @@ class Store:
         out.executescript(AGG_SCHEMA)
 
         # plays: one per (player, match) from game_started, first start wins (duplicates collapse here)
+        # imported: PostHog history is exactly the rows ingest(trusted=True) stored with received_ms == ts_ms
         starts = {}
-        for distinct_id, match_id, ts, build, platform, version, props in reader.execute(
-                "SELECT distinct_id, match_id, ts_ms, build_kind, platform, app_version, props FROM events "
-                "WHERE event='game_started' AND match_id IS NOT NULL ORDER BY ts_ms"):
+        for distinct_id, match_id, ts, build, platform, version, props, imported, country in reader.execute(
+                "SELECT distinct_id, match_id, ts_ms, build_kind, platform, app_version, props, received_ms = ts_ms, "
+                "country FROM events WHERE event='game_started' AND match_id IS NOT NULL ORDER BY ts_ms"):
             key = (distinct_id, match_id)
             if key not in starts:
-                starts[key] = (ts, build, platform, version, json.loads(props))
+                starts[key] = (ts, build, platform, version, json.loads(props), imported, country)
         dones = {}
         for distinct_id, match_id, ts, props in reader.execute(
                 "SELECT distinct_id, match_id, ts_ms, props FROM events "
@@ -599,7 +1077,7 @@ class Store:
         for distinct_id, plays in by_player.items():
             plays.sort()
             for index, (start_ts, match_id) in enumerate(plays):
-                ts, build, platform, version, props = starts[(distinct_id, match_id)]
+                ts, build, platform, version, props, imported, country = starts[(distinct_id, match_id)]
                 done = dones.get((distinct_id, match_id))
                 rematched = None
                 if done:
@@ -614,16 +1092,17 @@ class Store:
                              as_int(props.get("player_count_human")), as_int(props.get("player_count_ai")),
                              1 if done else 0, rematched, flight, duration,
                              (1 if won is True or won == "true" else 0) if done and won is not None else None,
-                             max(0.0, duration - flight) if flight is not None and duration is not None else None))
-        out.executemany("INSERT INTO plays VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                             max(0.0, duration - flight) if flight is not None and duration is not None else None,
+                             imported, country))
+        out.executemany("INSERT INTO plays VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
 
-        out.executemany("INSERT INTO daily_events VALUES(?,?,?,?,?,?)", reader.execute(
-            "SELECT day, build_kind, event, COUNT(*), SUM(near_dup), COUNT(DISTINCT distinct_id) FROM events "
-            "GROUP BY day, build_kind, event").fetchall())
-        out.executemany("INSERT INTO daily_plays VALUES(?,?,?,?,?)", reader.execute(
+        out.executemany("INSERT INTO daily_events VALUES(?,?,?,?,?,?,?)", reader.execute(
+            "SELECT day, build_kind, event, COUNT(*), SUM(near_dup), COUNT(DISTINCT distinct_id), received_ms = ts_ms "
+            "FROM events GROUP BY day, build_kind, event, received_ms = ts_ms").fetchall())
+        out.executemany("INSERT INTO daily_plays VALUES(?,?,?,?,?,?)", reader.execute(
             "SELECT day, build_kind, COUNT(*), COUNT(DISTINCT distinct_id || '|' || match_id), "
-            "ROUND(1.0 * COUNT(*) / COUNT(DISTINCT distinct_id || '|' || match_id), 2) FROM events "
-            "WHERE event='game_started' AND match_id IS NOT NULL GROUP BY day, build_kind").fetchall())
+            "ROUND(1.0 * COUNT(*) / COUNT(DISTINCT distinct_id || '|' || match_id), 2), received_ms = ts_ms FROM events "
+            "WHERE event='game_started' AND match_id IS NOT NULL GROUP BY day, build_kind, received_ms = ts_ms").fetchall())
 
         first_day = {}
         days_seen = {}
@@ -653,29 +1132,34 @@ class Store:
 
         first_play = {}
         for (distinct_id, match_id), start in sorted(starts.items(), key=lambda kv: kv[1][0]):
-            first_play.setdefault((distinct_id, start[1]), (day_of(start[0]), play_type_of(start[4])))
+            first_play.setdefault((distinct_id, start[1]), (day_of(start[0]), play_type_of(start[4]), start[5]))
         mature = day_of(now_ms() - 7 * 86400 * 1000)
         cohorts = {}
-        for (distinct_id, build), (day, play_type) in first_play.items():
+        for (distinct_id, build), (day, play_type, imported) in first_play.items():
             if day > mature:
                 continue
             seen = days_seen.get((distinct_id, build), set())
             start = datetime.strptime(day, "%Y-%m-%d")
             next_day = (start + timedelta(days=1)).strftime("%Y-%m-%d")
             week = {(start + timedelta(days=n)).strftime("%Y-%m-%d") for n in range(1, 8)}
-            entry = cohorts.setdefault((day, build, play_type), [0, 0, 0])
+            entry = cohorts.setdefault((day, build, play_type, imported), [0, 0, 0])
             entry[0] += 1
             entry[1] += 1 if next_day in seen else 0
             entry[2] += 1 if seen & week else 0
-        out.executemany("INSERT INTO returns VALUES(?,?,?,?,?,?)",
-                        [(d, b, p, v[0], v[1], v[2]) for (d, b, p), v in sorted(cohorts.items())])
+        out.executemany("INSERT INTO returns VALUES(?,?,?,?,?,?,?)",
+                        [(d, b, p, v[0], v[1], v[2], i) for (d, b, p, i), v in sorted(cohorts.items())])
         _rebuild_details(reader, out, first_day, days_seen)
+        eras = [dict(id=r[0], start=r[1], end=r[2], source=r[3], builds=json.loads(r[4])) for r in reader.execute(
+            "SELECT id, from_day, to_day, source, builds FROM eras ORDER BY position")]
+        _rebuild_spans(reader, out, starts, eras)
         out.executemany("INSERT INTO rejects VALUES(?,?,?,?)",
                         reader.execute("SELECT day, reason, event, count FROM rejects").fetchall())
         out.executemany("INSERT INTO meta VALUES(?,?)", [("built_ms", str(now_ms()))])
         out.commit()
-        out.close()
+        saved = reader.execute("SELECT name, sql FROM saved_queries WHERE as_table=1 ORDER BY name").fetchall()
         reader.close()
+        _materialise_saved(tmp, out, saved)
+        out.close()
         os.replace(tmp, self.agg_path)
         return len(rows)
 
@@ -851,3 +1335,127 @@ def _rebuild_details(reader, out, first_day, days_seen):
         _add(counted, (build, setting, value), 1)
     out.executemany("INSERT INTO settings VALUES(?,?,?,?)", [k + tuple(v) for k, v in counted.items()])
     out.executemany("INSERT INTO cloud_save_failures VALUES(?,?,?,?)", [k + tuple(v) for k, v in save_failures.items()])
+
+
+def play_group_of(play_type):
+    return PLAY_GROUP_OF.get(play_type, "multi")
+
+
+def _rebuild_spans(reader, out, starts, eras):
+    """player_counts, cohort_weeks and cohort_days: distinct players per day, week, last-N-days window and era, split
+    by platform, country, play type, mode, vessel and intensity, for every source (any / imported / live). Player ids
+    are used here only to count each player once; nothing written to `out` carries one."""
+    since = {n: day_of(now_ms() - (n - 1) * 86400 * 1000) for n in WINDOWS}
+    act = {}   # player -> build -> day -> imported flag -> {(dim, key)}
+    for player, build, day, flag, platform, country in reader.execute(
+            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, platform, country FROM events "
+            "GROUP BY distinct_id, build_kind, day, received_ms = ts_ms, platform, country"):
+        act.setdefault(player, {}).setdefault(build, {}).setdefault(day, {}).setdefault(flag, set()).update(
+            (("none", ""), ("platform", platform or "unknown"), ("country", country or "unknown")))
+    for (player, _match), (ts, build, _platform, _version, props, flag, _country) in starts.items():
+        play_type = play_type_of(props)
+        intensity = as_int(props.get("intensity"))
+        act.setdefault(player, {}).setdefault(build, {}).setdefault(day_of(ts), {}).setdefault(flag, set()).update(
+            (("play_type", play_type), ("play_group", play_group_of(play_type)),
+             ("game_mode", str(props.get("game_mode") or "unknown")),
+             ("vessel_class", str(props.get("vessel_class") or "unknown")),
+             ("intensity", str(intensity) if intensity is not None else "unknown")))
+
+    counts, weeks_out, days_out = {}, {}, {}
+
+    def bump(span, x, build, source, keys, new):
+        for dim, key in keys:
+            row = counts.setdefault((span, x, build, source, dim, key), [0, 0])
+            row[0] += 1
+            row[1] += new
+
+    def view(builds, by_build, source):
+        per_day = {}
+        for build in builds:
+            for day, flags in by_build[build].items():
+                for flag, keys in flags.items():
+                    if source == "any" or (source == "imported") == bool(flag):
+                        per_day.setdefault(day, set()).update(keys)
+        return per_day
+
+    for player, by_build in act.items():
+        for build in list(by_build) + ["*"]:
+            builds = [build] if build != "*" else list(by_build)
+            for source in SOURCES:
+                per_day = view(builds, by_build, source)
+                if not per_day:
+                    continue
+                first, last = min(per_day), max(per_day)
+                weeks = {}
+                for day, keys in per_day.items():
+                    bump("day", day, build, source, keys, int(day == first))
+                    weeks.setdefault(week_of(day), set()).update(keys)
+                for week, keys in weeks.items():
+                    bump("week", week, build, source, keys, int(week == week_of(first)))
+                for n, start in since.items():
+                    keys = set().union(*(k for d, k in per_day.items() if d >= start))
+                    if keys:
+                        bump(f"window:{n}", "", build, source, keys, int(first >= start))
+                if build == "*":
+                    continue
+                cohort = week_of(first)
+                indexes = {(date.fromisoformat(w) - date.fromisoformat(cohort)).days // 7 for w in weeks}
+                groups = {"all"} | {k for keys in per_day.values() for dim, k in keys if dim == "play_group"}
+                start = date.fromisoformat(first)
+                d1 = int((start + timedelta(days=1)).isoformat() in per_day)
+                d7 = int(any((start + timedelta(days=n)).isoformat() in per_day for n in range(1, 8)))
+                life = (date.fromisoformat(last) - start).days + 1
+                for group in groups:
+                    for k in indexes:
+                        weeks_out[(cohort, build, source, group, k)] = weeks_out.get((cohort, build, source, group, k), 0) + 1
+                    _add(days_out, (first, build, source, group, life), 1, d1, d7, int(last < since[14]))
+        for era in eras:
+            allowed = [b for b in by_build if not era["builds"] or b in era["builds"]]
+            for build in allowed + (["*"] if allowed else []):
+                per_day = view([build] if build != "*" else allowed, by_build, era["source"])
+                inside = {d: k for d, k in per_day.items() if era["start"] <= d <= era["end"]}
+                if not inside:
+                    continue
+                first = min(per_day)
+                new = era["start"] <= first <= era["end"]
+                bump("era:" + era["id"], "", build, era["source"], set().union(*inside.values()), int(new))
+                weeks = {}
+                for day, keys in inside.items():
+                    weeks.setdefault(week_of(day), set()).update(keys)
+                for week, keys in weeks.items():
+                    bump("era_week:" + era["id"], week, build, era["source"], keys, int(new and week == week_of(first)))
+    out.executemany("INSERT INTO player_counts VALUES(?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in counts.items()])
+    out.executemany("INSERT INTO cohort_weeks VALUES(?,?,?,?,?,?)", [k + (v,) for k, v in weeks_out.items()])
+    out.executemany("INSERT INTO cohort_days VALUES(?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in days_out.items()])
+
+
+MAX_TABLE_ROWS = 10_000
+
+
+def _materialise_saved(tmp_path, out, saved):
+    """Query Studio's "save as table": each such saved query runs through the same read-only guard as the Ask box,
+    against the fresh aggregates, and its rows become t_<name> beside them. A query that fails is skipped and named
+    in meta (saved_table_errors), so one bad query never stops the rebuild."""
+    import analytics_views as V
+    errors = {}
+    for name, sql in saved:
+        if not ID_PATTERN.match(name):
+            errors[name] = "the name is not a table name"
+            continue
+        try:
+            result = V.run_readonly_sql(tmp_path, sql, max_rows=MAX_TABLE_ROWS)
+        except V.UnsafeQuery as exc:
+            errors[name] = str(exc)
+            continue
+        columns, used = [], set()
+        for i, col in enumerate(result["columns"]):
+            label = re.sub(r"[^A-Za-z0-9_]", "_", str(col)).strip("_")[:40] or f"c{i}"
+            while label.lower() in used:
+                label += "_"
+            used.add(label.lower())
+            columns.append(label)
+        out.execute(f'CREATE TABLE "t_{name}"({", ".join(chr(34) + c + chr(34) for c in columns)})')
+        if result["rows"]:
+            out.executemany(f'INSERT INTO "t_{name}" VALUES({",".join("?" * len(columns))})', result["rows"])
+    out.execute("INSERT OR REPLACE INTO meta VALUES('saved_table_errors', ?)", (json.dumps(errors),))
+    out.commit()
