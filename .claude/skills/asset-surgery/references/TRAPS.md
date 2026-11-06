@@ -1173,3 +1173,14 @@ so its `--check` goes red for a change nobody made on purpose. Use `[ToggleUI]` 
 uniform branch, and keep `[Toggle]` for a real keyword variant. Seen 2026-10-28 on `OmniCrystalFresnelShader`'s
 `_ElementShades` (`cece/serene-cannon-93olp5`), caught before it shipped.
 
+
+- **An instance override whose `target` fileID is not a document of the source prefab is NOT necessarily dead.**
+  An object inside a prefab NESTED in that source is addressed by its derived id (`(srcFid ^ nestedInstanceFid) &
+  0x7FFFFFFFFFFFFFFF`), and the source file holds a document for it only when something there references it
+  (a `stripped` stand-in). Pruning "overrides that target nothing in the prefab" on `GameCanvas`'s pause instance
+  (2026-11-05, `claude/ui-phone-menus`) would have deleted **60 live overrides** (the nested `Options_Menu_Panel`
+  toggles) and kept only 1 truly dead one. Liveness = the source's documents UNION the derived ids of every nested
+  instance's objects, recursively; compute that set before deleting any override. The same derived id is how a
+  generator ADDS a component to a nested object from the outer prefab (`m_AddedComponents` with
+  `targetCorrespondingSourceObject` = the id as the source sees it, plus a `stripped` GameObject stand-in -
+  `author_ingame_hud.add_instance_phone`).
