@@ -92,7 +92,7 @@ wide: Display 48, H1 36, H2 28, H3 22, Body 18, Body small 15, Button 18, Button
 - Any number that changes while you watch (score, timer, count, rank, balance) is tabular (`<mspace>` in TMP,
   `font-variant-numeric: tabular-nums` on the web) so it never jitters.
 - **Do:** the Rev 33 D countdown and the HUD timer hold their width as the digits change.
-- **Phones get their own scale (D6).** Section 8 explains why and what that means.
+- **Phones show the PC UI (D6, changed 2026-11-06).** Section 8 explains why and what that means.
 
 ## 4. Shape and spacing
 
@@ -158,20 +158,27 @@ presence orb and party bonds, avatars and art. Respect "reduce motion" (froglet.
 
 ## 8. Safe area and phone layout
 
-**Why a phone needs its own scale (D6).** Every canvas today scales the 1920 x 1080 layout to the screen's height
-(`CanvasScaler`, reference 1920 x 1080, match height). On a PC monitor that is right. On a phone held sideways the screen
-is about 390 points tall, so the whole layout shrinks to 36 %: body text (18 units) lands at about **6.5 pt** and a
-52-unit button at about 19 pt tall, where 11 pt text and 44 pt touch targets are the floor people can read and press.
-An iPad sideways (820 points tall) lands body at about 13.7 pt, which is fine.
+**Phones show the PC UI (D6, changed 2026-11-06).** Every canvas scales the 1920 x 1080 layout to the screen's height
+(`CanvasScaler`, reference 1920 x 1080, match height). On a phone held sideways the screen is about 390 points tall, so
+the whole layout shrinks to about 36 %: body text (18 units) lands near **6.5 pt** and a 52-unit button near 19 pt. An
+iPad sideways (820 points tall) lands body near 13.7 pt, which is fine.
 
-**So (decided, D6):** one set of components, two scales.
-- **PC, console and iPad** (screen 600 points tall or more): the 1920 x 1080 canvas and the PC type column (section 3).
-- **Phones** (under 600 points tall): an 800 x 450 canvas reference and STYLE_FOUNDATION's mobile column (H1 24,
-  body 16, buttons 16, small buttons 12), which puts body text near 14 pt and buttons near 44 pt. The same kit prefabs
-  and tokens, laid out for the smaller canvas: menus stack, side panels become full-screen sheets, and a screen that
-  must work on phones gets a phone board on Frogma before it is built.
-- Until the phone scale is built (section 13, the Unity follow-up), a phone shows the PC layout scaled down: test it,
-  and log any screen that cannot be read in the UI checklist's Safe area line.
+A separate phone scale (an 800 x 450, later 960 x 540, canvas with phone layouts for every screen) was drawn on Frogma,
+built and tried in the Device Simulator (#1739, #1741, #1744, sections 127-135 of `Docs/MENU_REDESIGN_B.md` on those
+branches). Shombith dropped it on 2026-11-06: "we should rather stick to PC UI how it is ... this is too time costly to
+perform these changes because it needs proper planning". So:
+- **Every device shows the PC UI**, scaled to the screen by the canvas's `CanvasScaler` / `AdaptiveCanvasScaler`. Small
+  text on a phone is a known cost; a screen that cannot be read or pressed on a phone is fixed on the PC layout itself
+  (bigger text or targets for everyone), never with a phone-only layout.
+- **Portrait is unlocked for the menus only** (matches stay landscape: the flight cameras and touch controls are built for
+  it). Upright, Menu_Main re-flows the same PC pieces at their PC sizes on a 1080 x 1920 canvas (Rev 63 B, picked and
+  built 2026-11-06, `Docs/MENU_REDESIGN_B.md` section 138): a piece's upright pose is a `PortraitRect` its generator
+  writes, and a screen with no pose yet is its PC layout fitted to the width. `MenuOrientation` allows the turn only
+  while the menu is Ready. A new upright pose is drawn on Frogma's Portrait tab first.
+- **Code that offsets a posed rect re-reads its rest on a turn.** Anything that captures a rect's position once and
+  writes offsets from it (`ConfigureCinema`, `ConfigurePilotsFit`) listens to `AdaptiveCanvasScaler.PortraitLayoutChanging`
+  (take the offset out while the old pose stands) and `PortraitLayoutChanged` (read the new pose), or it puts the PC pose
+  back over the upright one.
 
 - Backgrounds bleed to the edge; content sits inside `Screen.safeArea` with at least 24 units of padding
   (`SafeAreaFitter` on every canvas that carries player-facing content).
@@ -244,7 +251,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 | D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
 | D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |
 | D5 | Focus and CTA | **CTA is always lime**: the important thing the screen asks the player to do that they can still change. Focus and selection are Jade (D3), never lime. Play, which launches a game, is Ruby like Ready (Frogma comment, 2026-11-05). |
-| D6 | Phones | One component set, two scales: phones (under 600 points tall) get an 800 x 450 canvas and the mobile type column (section 8). |
+| D6 | Phones | Every device shows the PC UI (2026-11-06; the separate phone scale was built, tried and dropped). Portrait is unlocked for the menus only, its look picked on Frogma first (section 8). |
 | D7 | The UI checklist | A required check (section 11 has the one-time step). |
 | D8 | The codex and studios | Move them onto Deep Sea and Shore in a separate change; the prompt for it is below. |
 
@@ -253,8 +260,8 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
    token on `UIThemeSO` for Ready; the fallback in `UITheme.Resolve` and `SelectionStyleTests`; the generators that
    assert the sky blue (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`) and the SelectionRim materials they write;
    `colour_domains.json` `ui_tokens.selection` -> jade (Garrett's file: say so in the PR).
-2. **The phone scale** (D6): a phone canvas reference of 800 x 450 and the mobile type column, applied by one
-   component on every player-facing canvas, with the menus' phone layouts drawn on Frogma first.
+2. **Portrait menus** (D6): the menus rotate with the phone (matches stay landscape), showing the same PC UI in the way
+   picked on Frogma's Portrait tab.
 
 **The prompt for D8** (paste into a new session):
 

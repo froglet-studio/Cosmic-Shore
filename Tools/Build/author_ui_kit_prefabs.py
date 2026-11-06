@@ -504,6 +504,25 @@ def kit_text(role, color_token="TextLight", driven=False):
                                 f"  colorDrivenExternally: {1 if driven else 0}\n")
 
 
+def portrait_rect(pose=None, scale=0, layout=(0, 0), pc_block=False, hide=False, grid=None, layout_spacing=-1):
+    """A PortraitRect (Assets/_Scripts/UI/PortraitRect.cs, Docs/MENU_REDESIGN_B.md section 138): a piece's place when a
+    phone is held upright, on the 1080-wide canvas (a rect() dict, or None to leave the rect where a layout group puts
+    it), an upright uniform scale (0 leaves it), an upright LayoutElement size (0 leaves an axis), `pc_block` for a screen
+    with no upright pose (its PC layout fitted to the width), `hide` (needs a CanvasGroup nothing else drives),
+    `grid` = dict(cell, columns, spacing) for its GridLayoutGroup and `layout_spacing` for its H/V LayoutGroup."""
+    guid = meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
+    r = pose or rect()
+    v2 = lambda xy: "{x: %s, y: %s}" % (f32(xy[0]), f32(xy[1]))
+    gr = grid or {}
+    return lambda ctx, go: mono(go, guid,
+                                f"  drawAtPcScale: {1 if pc_block else 0}\n  pcWidth: 1920\n"
+                                f"  movesRect: {1 if pose else 0}\n  anchorMin: {v2(r['amin'])}\n  anchorMax: {v2(r['amax'])}\n"
+                                f"  pivot: {v2(r['pivot'])}\n  anchoredPosition: {v2(r['pos'])}\n  sizeDelta: {v2(r['size'])}\n"
+                                f"  scale: {f32(scale)}\n  layoutSize: {v2(layout)}\n  hideInPortrait: {1 if hide else 0}\n"
+                                f"  gridCellSize: {v2(gr.get('cell', (0, 0)))}\n  gridColumns: {gr.get('columns', 0)}\n"
+                                f"  gridSpacing: {v2(gr.get('spacing', (-1, -1)))}\n  layoutSpacing: {f32(layout_spacing)}\n")
+
+
 def themed(token, alpha=1.0):
     return lambda ctx, go: mono(go, kit_script("KitThemedGraphic"),
                                 f"  theme: {ref(11400000, THEME, 2)}\n  token: {TOKEN_INDEX[token]}\n"

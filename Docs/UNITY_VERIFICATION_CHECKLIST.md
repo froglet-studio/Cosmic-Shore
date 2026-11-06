@@ -21282,3 +21282,24 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🟡 Portrait menus (`claude/ui-portrait`, 2026-11-06) — COMPILED (unity_refcompile), NOT RUN IN EDITOR
+
+Rev 63 B (`Docs/MENU_REDESIGN_B.md` section 138): every device shows the PC UI; a phone held upright in the menus lays
+Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`, `AdaptiveCanvasScaler.hasPortraitLayout`
+(Menu_Main only), `MenuOrientation`; tests `PortraitRectTests`.
+
+1. **Compile, then run** `PortraitRectTests`.
+2. **PC and landscape phones unchanged**: Menu_Main at 16:9 and an iPhone sideways look exactly as before.
+3. **Upright, Device Simulator (iPhone, rotate to portrait) in play mode**: the menu turns; Home, Arcade, Configure
+   (Arcade, Arena, Maelstrom) and Hangar are laid out top to bottom in the PC pieces; every other screen and window is its
+   PC layout fitted to the width; nothing spills off the sides.
+4. **The lock**: tap the cell to fly (freestyle) and the screen goes back to landscape; leave freestyle and it may turn
+   upright again; start a match from Configure and the match is landscape; back in the menu it turns again.
+5. **Turning while a window is open**: open Arcade and Configure, rotate back and forth; each takes its pose and gives it
+   back.
+6. **Configure while turning**: fly the preview, press FULL SCREEN (upright it grows to the window, landscape it opens the
+   tray), rotate mid-flight; the frame, the objective bar and START come back to the right place. Add three pilots to a
+   domain upright: the column grows and START moves down, not off the screen.
+7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
+   in the same grid.

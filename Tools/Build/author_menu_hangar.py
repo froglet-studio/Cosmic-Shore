@@ -1104,6 +1104,141 @@ def stage_fx(clip):
     return fx
 
 
+# --------------------------------------------------------------------------------------------
+# Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; Docs/UI_STYLE_GUIDE.md section 8): when a phone is
+# held upright the canvas is 1080 wide (about 2337 tall on a 390 x 844-pt phone, 1920 on a 16:9 one) and every
+# PortraitRect takes its pose. The Content keeps its CONTENT_SCALE (section 83) upright too, so every piece is drawn at
+# the size it has on PC; the poses below are in content units (the content is 1080 / 0.88 = 1227 wide upright, and
+# (canvas height - TOP_BAR) / 0.88 tall). Top to bottom:
+#   the header (kicker, title, line) and the balance, under the band
+#   the selected vessel, full width and stretched: the 3D vessel takes whatever height the phone has
+#   its foot: the vibe bars on the left, UNLOCK on the right (UNLOCK moves off the stage's top-right corner)
+#   the vessel list (a column: a vertical layout group and scroll; a pose cannot make it a strip) beside the dossier,
+#   both anchored to the bottom; the dossier keeps its PC 710 x 1026 because its open cradle is a sprite drawn at
+#   exactly that size and its rail lines are rotated to match (a wider dossier would tear the fill from the rail), and
+#   its pages scroll inside it as on PC. The list stops above the friends orb, as on PC.
+# The spend popup is a 640-wide dialog centred on the whole screen: it fits upright as it is.
+# PC is untouched: every pose here acts only upright.
+# --------------------------------------------------------------------------------------------
+
+UP_CANVAS_W = 1080
+UP_HEIGHTS = (1920, 2337)                             # a 16:9 phone and a 390 x 844-pt one, matched to the width
+UP_CW = UP_CANVAS_W / CONTENT_SCALE                   # the content's width upright, in content units (1227.3)
+UP_SIDE = 40 / CONTENT_SCALE                          # the 40-px screen margin, in content units
+UP_COL = UP_CW - 2 * UP_SIDE                          # the column (1136.4)
+UP_HEADER_TOP, UP_HEADER_H = HEADER_TOP, CENTRE_TOP - HEADER_TOP - 10
+UP_BALANCE_W = 340                                    # room kept for the balance (glyph, OMNICRYSTALS, the pill)
+UP_SELECTED_TOP = CENTRE_TOP
+UP_GAP = 24
+UP_FOOT = 40                                          # the dossier's gap to the bottom edge (PC's 40)
+UP_ROW_H = DOSSIER_H                                  # the list and the dossier, side by side
+UP_ROW_BOTTOM = UP_FOOT                               # the row sits on the bottom edge
+UP_SELECTED_BOTTOM = UP_ROW_BOTTOM + UP_ROW_H + UP_GAP  # the selected zone stops above the row (from the bottom)
+UP_LIST_W = UP_COL - DOSSIER_W - UP_GAP               # the list takes what the dossier leaves (402)
+UP_HERO_MIN = HERO_H                                  # the 3D vessel never shorter than its PC design height
+
+
+def up_content_h(canvas_h):
+    return (canvas_h - TOP_BAR) / CONTENT_SCALE
+
+
+def up_find(root, key):
+    if root.key == key:
+        return root
+    for ch in getattr(root, "children", []):
+        hit = up_find(ch, key)
+        if hit is not None:
+            return hit
+    return None
+
+
+def up_pose(root, key, r):
+    n = up_find(root, key)
+    assert n is not None and not isinstance(n, K.Instance), f"upright: no node {key!r} to pose"
+    assert not any(k == "portrait" for k, _, _ in n.comps), f"upright: {key} posed twice"
+    n.add("portrait", 114, K.portrait_rect(r))
+
+
+def up_stretch(top, bottom, left=UP_SIDE, right=UP_SIDE):
+    """A rect stretched over the content, `top` / `bottom` in from those edges, `left` / `right` from the sides."""
+    return R((0, 0), (1, 1), ((left - right) / 2, (bottom - top) / 2), (-(left + right), -(top + bottom)))
+
+
+def upright_blocks():
+    """Each posed block: (key, rect, parent) - parent "content" (the scaled Content) or "selected" (the selected zone)."""
+    return [
+        ("Header", R((0, 1), (1, 1), (-UP_BALANCE_W / 2, -UP_HEADER_TOP), (-(2 * UP_SIDE + UP_BALANCE_W), UP_HEADER_H),
+                     (0.5, 1)), "content"),
+        ("Header/Balance", R((1, 1), None, (-UP_SIDE, -16), (220, 40), (1, 1)), "content"),
+        ("Selected", up_stretch(UP_SELECTED_TOP, UP_SELECTED_BOTTOM), "content"),
+        ("Unlock", R((1, 0), None, (0, (VIBE_H - 60) / 2), (300, 60), (1, 0)), "selected"),
+        ("List", R((0, 0), None, (UP_SIDE, LIST_BOTTOM), (UP_LIST_W, UP_ROW_BOTTOM + UP_ROW_H - LIST_BOTTOM), (0, 0)), "content"),
+        ("Abilities", R((1, 0), None, (-UP_SIDE, UP_ROW_BOTTOM), (DOSSIER_W, DOSSIER_H), (1, 0)), "content"),
+    ]
+
+
+def upright(root):
+    for key, r, _ in upright_blocks():
+        up_pose(root, key, r)
+    return root
+
+
+def up_box(pr, parent_w, parent_h):
+    """(left, top, w, h) of a PortraitRect pose inside a parent (y down from the parent's top)."""
+    num = lambda f: tuple(float(v) for v in re.search(r"  %s: \{x: ([-\d.e]+), y: ([-\d.e]+)\}" % f, pr).groups())
+    amin, amax, pv, pos, size = num("anchorMin"), num("anchorMax"), num("pivot"), num("anchoredPosition"), num("sizeDelta")
+    w = (amax[0] - amin[0]) * parent_w + size[0]
+    h = (amax[1] - amin[1]) * parent_h + size[1]
+    left = amin[0] * parent_w + pos[0] - pv[0] * w + (amax[0] - amin[0]) * pv[0] * parent_w
+    bottom = amin[1] * parent_h + pos[1] - pv[1] * h + (amax[1] - amin[1]) * pv[1] * parent_h
+    return left, parent_h - bottom - h, w, h
+
+
+def check_upright(files):
+    """The Hangar upright, as committed, on a 1920- and a 2337-tall canvas: every block posed (movesRect), inside the
+    column (40 px each side), the header beside the balance, the selected zone under them with the 3D vessel at least
+    its PC height, the list beside the dossier under it and above the friends orb, the vibe bars beside UNLOCK, and the
+    Content still drawn at CONTENT_SCALE (the pieces keep their PC size)."""
+    text = files[f"{OUT_DIR}/HangarView.prefab"]
+    F = K.FileIds("HangarView")
+    guid = K.meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
+    assert "  drawAtPcScale: 1\n" not in text, "HangarView: drawn upright as the fitted PC layout (it has its own pose)"
+    _, content_rt = doc_of(text, F("Frame/Content#rt"))
+    assert f"m_LocalScale: {{x: {K.f32(CONTENT_SCALE)}, y: {K.f32(CONTENT_SCALE)}, z: 1}}" in content_rt, \
+        "HangarView: the Content is no longer drawn at CONTENT_SCALE (the upright poses are in its units)"
+    poses = {}
+    for key, _, _ in upright_blocks():
+        _, body = doc_of(text, F(f"{key}#portrait"))
+        assert body and f"guid: {guid}" in body, f"HangarView: {key} has no upright pose"
+        assert "  movesRect: 1\n" in body, f"HangarView: {key}'s upright pose does not move it"
+        poses[key] = body
+    eps = 0.01
+    for canvas_h in UP_HEIGHTS:
+        ch = up_content_h(canvas_h)
+        box = {k: up_box(b, UP_CW, ch) for k, b in poses.items() if k != "Unlock"}
+        for k, (x, y, w, h) in box.items():
+            assert x >= UP_SIDE - eps and x + w <= UP_CW - UP_SIDE + eps, \
+                f"HangarView: {k} upright spans x {x:.1f}-{x + w:.1f}, outside the column ({canvas_h} tall)"
+            assert y >= 0 and y + h <= ch + eps and w > 0 and h > 0, f"HangarView: {k} upright is off the screen ({canvas_h})"
+        hx, hy, hw, hh = box["Header"]
+        bx, by, bw, bh = box["Header/Balance"]
+        assert hx + hw <= bx + eps, f"HangarView: the header runs under the balance upright ({hx + hw:.1f} > {bx:.1f})"
+        sx, sy, sw, sh = box["Selected"]
+        assert sy >= max(hy + hh, by + bh) - eps, "HangarView: the selected vessel overlaps the header upright"
+        assert sh - (VIBE_H + 8) >= UP_HERO_MIN - eps, \
+            f"HangarView: the 3D vessel is {sh - VIBE_H - 8:.0f} tall upright on {canvas_h} (under {UP_HERO_MIN})"
+        lx, ly, lw, lh = box["List"]
+        dx, dy, dw, dh = box["Abilities"]
+        assert ly >= sy + sh - eps and dy >= sy + sh - eps, "HangarView: the list or the dossier overlaps the selected vessel"
+        assert lx + lw <= dx + eps, f"HangarView: the list runs under the dossier upright ({lx + lw:.1f} > {dx:.1f})"
+        assert ch - (ly + lh) >= LIST_BOTTOM - eps, "HangarView: the list reaches down over the friends orb upright"
+        assert (dw, dh) == (DOSSIER_W, DOSSIER_H), "HangarView: the dossier resized upright (its cradle sprite would tear)"
+        ux, uy, uw, uh = up_box(poses["Unlock"], sw, sh)
+        assert VIBE_W <= ux - eps and ux + uw <= sw + eps and uy + uh <= sh + eps, \
+            "HangarView: UNLOCK overlaps the vibe bars or leaves the selected zone upright"
+        assert uy >= sh - (VIBE_H + 8) - eps, "HangarView: UNLOCK sits over the 3D vessel upright (it belongs at its foot)"
+
+
 def build_view(row_guid):
     """Rev 24 (Shombith 2026-10-26, option C taken forward): the vessel list on the LEFT; the vessel's header (it follows
     the tab) over the 3D vessel and the vibe bars in the centre; the dossier on the right in the old Hangar's open angled
@@ -1312,7 +1447,7 @@ def build_view(row_guid):
                       "  unlockFreeWord: UNLOCK - FREE\n  spendTemplate: '{cost} to unlock {vessel}'\n"
                       "  confirmTemplate: CONFIRM - {cost}\n  shortfallTemplate: You need {amount} more OmniCrystals.\n")
     root.add("detail", 114, detail_body)
-    return root
+    return upright(root)
 
 
 # The detail view's fields, each with the class / script its target must be (validation).
@@ -1665,6 +1800,7 @@ def validate_prefabs(files, guids):
     assert re.search(r"^  cardArt: \{fileID: 11400000, guid: " + K.meta_guid(CARD_ART) + r", type: 2\}$", tbody, re.M), \
         "HangarVesselTile.cardArt must name the Hangar card art table (author_hangar_card_art.py)"
     assert f"guid: {M._lattice_guid('hull_lit_mat')}" not in tile, "the colourful card art must not be drawn with Hull_Lit"
+    check_upright(files)
 
 
 def validate_scene(before_text, after_text, files, guids):
@@ -1811,6 +1947,21 @@ def self_test(current, files, guids):
         "the stage with no vessel table": view_plant(lambda t: t.replace(
             f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}", "prefabs: {fileID: 0, guid: 0", 1)),
     }
+    plants.update({
+        # Section 138 (Rev 63 B): the upright layout.
+        "the selected vessel left in its PC place upright": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Selected#portrait")), "  movesRect: 1\n", "  movesRect: 0\n")),
+        "the list run under the dossier upright": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("List#portrait")), f"  sizeDelta: {{x: {K.f32(UP_LIST_W)}",
+            f"  sizeDelta: {{x: {K.f32(UP_LIST_W + 60)}")),
+        "UNLOCK back over the stage upright": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Unlock#portrait")), "  anchorMin: {x: 1, y: 0}\n  anchorMax: {x: 1, y: 0}\n",
+            "  anchorMin: {x: 1, y: 1}\n  anchorMax: {x: 1, y: 1}\n")),
+        "the dossier widened upright": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Abilities#portrait")), f"  sizeDelta: {{x: {DOSSIER_W}", "  sizeDelta: {x: 900")),
+        "the Hangar drawn as the fitted PC layout upright": view_plant(lambda t: t.replace(
+            "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1)),
+    })
     failed = []
     for name, fn in plants.items():
         try:

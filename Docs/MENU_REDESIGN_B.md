@@ -5975,3 +5975,49 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
 - **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
   Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
   there); the page itself is not built yet.
+
+## 138. Rev 63 mockups: portrait menus, the same PC UI with the phone held upright (2026-11-06, picked B, built)
+
+**Asked** (Shombith, 2026-11-06, after trying the phone layouts in the Device Simulator): "I think we should rather stick
+to PC UI how it is and delete the boards mobile UI ... this is too time costly to perform these changes because it needs
+proper planning but we do need support for potrait mode unlocked as well so lets just work on that same UI just
+potrait". Decided with him the same day:
+- the phone layouts are removed completely: #1739 (phone scale), #1741 (sign-in, finish, HUD) and #1744 (every menu,
+  the HUD and Maelstrom, Rev 60) closed without merging; their branches stay on origin as the record;
+- Frogma's Phone tab boards (Rev 52-60, 22 boards) deleted from the canvas; the tab is now **Portrait**;
+- portrait is unlocked for the **menus only**; matches stay landscape;
+- the portrait look is drawn first and picked before anything is built.
+`Docs/UI_STYLE_GUIDE.md` section 8 and D6 now say every device shows the PC UI.
+
+**On the canvas:** the Portrait tab, "Rev 63 - Portrait menus" (copies in `Docs/MenuRedesignB/board/`). Each board shows
+Home, Arcade and Configure on an upright phone (390 x 844 points), with its own words beside them:
+- **R63A Scale to width:** the PC layout as it is, the 1920-wide screen shrunk to the phone's width; body text about
+  3.7 pt. No screen changes; not readable.
+- **R63B Re-flow, band on top (recommended):** the same PC pieces at their PC sizes on a 1080-wide canvas: the nav band
+  on top as on PC, panels stacked, grids 3 across, the hubs 2 x 2; body text about 6.5 pt, the size the PC UI already has
+  on a phone held sideways. A portrait pose per screen: Home, Arcade, Configure and Hangar first, the rest as A.
+- **R63C Re-flow, band at the bottom:** as B, the nav band a tab bar under the thumb; moves the band away from the PC
+  place.
+- **R63Notes:** what each costs, how big the words are, the rotation lock (menus allow portrait; a match locks landscape
+  before it loads).
+
+**Picked:** B (Shombith, 2026-11-06: "go with B, build it").
+
+**Built** (`claude/ui-portrait`):
+- The mechanism: `PortraitRect` holds a piece's upright pose (or marks a screen as its PC layout fitted to the width,
+  Draw At PC Scale); `AdaptiveCanvasScaler.hasPortraitLayout` switches Menu_Main to 1080 x 1920 matched to the width
+  when the screen is taller than wide, in play mode, and raises `PortraitLayoutChanging` / `PortraitLayoutChanged`;
+  `MenuOrientation` allows auto-rotation only while the menu is Ready and locks landscape-left otherwise.
+- The poses, each written by its own generator (`K.portrait_rect`): the nav band needs none (its row is 865 wide); Home's
+  four hubs became a GridLayoutGroup, 4 across on PC and 2 x 2 upright; Arcade's header and body stack, its game grid is
+  one flat GridLayoutGroup (5 across PC, 3 across upright) and the featured cards stack; Configure (Arcade, Arena,
+  Maelstrom) stacks the preview (1000 x 562), the steps card (widened to 1000) and START; Hangar stacks header, balance and
+  Selected, with the list and the dossier side by side below.
+- The rest (Ark, Port, Profile, Codex, Replays, Credits, Settings, the hub windows and the small modals) is its PC layout
+  fitted to the width (`author_menu_portrait.py` and the screens' own generators).
+- `ConfigureCinema` and `ConfigurePilotsFit` re-read their rest poses on a turn; FULL SCREEN grows the frame to the
+  window upright instead of opening the tray; an entrance playing during a turn lands first.
+
+**Differs from the board:** Arcade keeps a 100-unit left gutter (the friends drawer's dock); Hangar's dossier keeps its PC
+size (710 x 1026) beside the list instead of under it; Configure and Maelstrom leave empty space at the bottom on tall
+phones; START sits from x 100. Not judged in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Portrait menus").
