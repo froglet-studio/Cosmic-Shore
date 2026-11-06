@@ -338,8 +338,16 @@ REGATTA_RAILS = {"LaneOffset": 22.0, "TwistTurnsPerLap": 1.0, "PrismSpacing": 8.
 LANE_COUNT = 3
 
 
+SEED_STRIDE = 104729
+SEED_STEPS = [0, 0, 0, 0]     # RegattaCourse.ShippedSeedSteps: which circuit each intensity lays
+
+
+def seed_step_for(intensity):
+    return SEED_STEPS[min(max(int(intensity), 1), 4) - 1]
+
+
 def seed_for_intensity(base_seed, intensity):
-    v = (int(base_seed) + 7919 * min(max(int(intensity), 1), 4)) & 0xFFFFFFFF
+    v = (int(base_seed) + SEED_STRIDE * seed_step_for(intensity) + 7919 * min(max(int(intensity), 1), 4)) & 0xFFFFFFFF
     return v - (1 << 32) if v >= (1 << 31) else v
 
 

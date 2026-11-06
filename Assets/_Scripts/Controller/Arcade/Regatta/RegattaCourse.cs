@@ -108,7 +108,20 @@ namespace CosmicShore.Gameplay
         public static readonly Domains[] LaneDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         public static int SeedForIntensity(int baseSeed, int intensity) =>
-            unchecked(baseSeed + 7919 * Mathf.Clamp(intensity, 1, 4));
+            unchecked(baseSeed + SeedStride * SeedStepFor(intensity) + 7919 * Mathf.Clamp(intensity, 1, 4));
+
+        /// <summary>The stride between two circuits of one intensity: a sweep walks <c>baseSeed + k x SeedStride</c>.</summary>
+        public const int SeedStride = 104729;
+
+        /// <summary>
+        /// Which circuit each intensity lays, as a step along <see cref="SeedStride"/> from the base seed: the circuit a
+        /// course search picked for that rung (the Regatta balance plan's stage 2, Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md).
+        /// 0 is the circuit the base seed always laid. Tools/Compute/evaluators/course_port.py mirrors this table.
+        /// </summary>
+        public static int SeedStepFor(int intensity) =>
+            ShippedSeedSteps[Mathf.Clamp(intensity, 1, 4) - 1];
+
+        static readonly int[] ShippedSeedSteps = { 0, 0, 0, 0 };
 
         /// <summary>
         /// The circuit per intensity. <b>Intensity is what mix of corners a lap asks for</b> -

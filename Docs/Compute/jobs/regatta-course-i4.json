@@ -1,16 +1,11 @@
 {
- "after": [
-  "drive-rhino-headlong",
-  "redline-manta-time",
-  "skimrace-squirrel-time"
- ],
+ "after": [],
  "algorithm": {
   "name": "sep-cmaes",
   "sigma0": 0.15
  },
  "area_owner": "Yash (Regatta AI and course)",
- "asked_by": "Garrett 2026-10-26 (the Regatta balance plan; Yash follows it)",
- "blocked_reason": "stage 2 starts once stage 1 is promoted and the roster's drives are the trained ones (/regatta-balance)",
+ "asked_by": "Garrett 2026-10-26 (the Regatta balance plan); started 2026-11-06 on the MEASURED roster (Garrett: a new course evolved to minimise the spread, then the elements)",
  "convergence": {
   "min_evals": 3000,
   "min_improvement": 0.002,
@@ -19,25 +14,121 @@
  "evaluator": {
   "args": {
    "intensity": 4,
-   "limit": 400,
+   "limit": 600,
+   "report_only": [
+    "Sparrow"
+   ],
    "roster": {
     "Dolphin": {
-     "model": "dolphin_drive"
+     "drive": {
+      "anchor": 97.5,
+      "bal_ref": 41.88,
+      "line_ref": 97.4,
+      "share": 0.35,
+      "speed": 146.2,
+      "time_levels": {
+       "1": 0,
+       "2": 0,
+       "3": 0,
+       "4": 0
+      }
+     },
+     "model": "measured"
     },
     "Manta": {
-     "asset": "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset",
-     "model": "manta_drive"
+     "drive": {
+      "anchor": 67.0,
+      "bal_ref": 23.94,
+      "line_ref": 67.0,
+      "share": 0.35,
+      "speed": 210.5,
+      "time_levels": {
+       "1": -5,
+       "2": -5,
+       "3": -5,
+       "4": -5
+      }
+     },
+     "model": "measured"
     },
     "Rhino": {
-     "asset": "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset",
-     "model": "rhino_drive"
+     "drive": {
+      "anchor": 95.0,
+      "bal_ref": 17.82,
+      "line_ref": 95.0,
+      "share": 0.35,
+      "speed": 148.0,
+      "time_levels": {
+       "1": 0,
+       "2": 0,
+       "3": 0,
+       "4": 0
+      }
+     },
+     "model": "measured"
+    },
+    "Serpent": {
+     "drive": {
+      "anchor": 100.0,
+      "bal_ref": 241.68,
+      "line_ref": 100.0,
+      "share": 0.35,
+      "speed": 142.4,
+      "time_levels": {
+       "1": 10,
+       "2": 10,
+       "3": 10,
+       "4": 10
+      }
+     },
+     "model": "measured"
+    },
+    "Sparrow": {
+     "drive": {
+      "anchor": 133.0,
+      "bal_ref": 73.62,
+      "line_ref": 133.0,
+      "share": 0.35,
+      "speed": 107.3,
+      "time_levels": {
+       "1": 10,
+       "2": 10,
+       "3": 10,
+       "4": 10
+      }
+     },
+     "model": "measured"
     },
     "Squirrel": {
-     "model": "balance"
+     "drive": {
+      "anchor": 75.0,
+      "bal_ref": 48.54,
+      "time_levels": {
+       "1": 10,
+       "2": 10,
+       "3": 10,
+       "4": 10
+      }
+     },
+     "model": "measured"
+    },
+    "Stoat": {
+     "drive": {
+      "anchor": 70.0,
+      "bal_ref": 75.72,
+      "time_levels": {
+       "1": 3,
+       "2": 3,
+       "3": 3,
+       "4": 3
+      }
+     },
+     "model": "measured"
     },
     "Urchin": {
      "drive": {
-      "speed": 300
+      "free_speed": 112.7,
+      "speed": 288.3
      },
      "model": "rail"
     }
@@ -61,11 +152,12 @@
  ],
  "plan": "regatta-balance",
  "promote": "A PROPOSAL for Yash (Regatta's course and AI): the best settings become RegattaCourse.ForIntensity's row for this intensity (and its seed); then regatta_course_harness/run.sh and export_course.sh regenerate the measurements, author_regatta_assets.py --check, and the Regatta AIs are re-raced in the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md).",
- "ref": "origin/ai",
+ "ref": "origin/bleeding-edge",
  "requires": [
   "python3",
   "numpy"
  ],
+ "roster_note": "Every Regatta-ready hull anchored at its measured editor race (Regatta Hull Benchmark, I1, 2026-11-03) and moved by the line and lap models (Tools/Build/regatta_measured_roster.py); Time at the card's I1 levels (stage 3 sets them). The Sparrow is raced and reported but left out of the disparity: its 2x gap is its AI (rail rams), which no course or Time level closes.",
  "schema": "froglet-compute/job/1",
  "space": [
   {
@@ -164,11 +256,17 @@
    "lo": 0,
    "name": "seed",
    "type": "int"
+  },
+  {
+   "hi": 0.5,
+   "init": 0,
+   "lo": 0.0,
+   "name": "NeutralShare"
   }
  ],
  "stage": 2,
- "status": "blocked",
+ "status": "ready",
  "title": "The Regatta I4 circuit that levels the field",
- "updated": "2026-11-03",
+ "updated": "2026-11-06",
  "value": 9
 }

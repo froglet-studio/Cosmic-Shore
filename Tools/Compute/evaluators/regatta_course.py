@@ -10,6 +10,10 @@ finish closest together:
          + 2 x how far the mean race moved outside [0.8, 1.25] x today's (in ln)   a race stays a race
          + 2 x how far the hardest corner fell under 0.85 x today's (in ln)        an intensity keeps its character
 
+and the NeutralShare (RegattaCourse.NeutralShareFor): the middle share of every leg's rail laid in no team's colour,
+where a rail rider (the Urchin) flies free. No corner shape reaches the Urchin - the rail rides every corner - so this
+is the course's one lever on it (2026-11-06).
+
 The circuit is the shipped generator (course_port.py, gated against the C# harness); each hull races it with the model
 named in `roster` (race_models.py), with the drive numbers stage 1 promoted (or today's shipped ones).
 
@@ -21,6 +25,7 @@ args:
     intensity  1-4
     roster     {hull: {"model": race_models model, "drive": {asset field: value} | "asset": repo path}}
     limit      seconds before a race counts as not finished
+    report_only  hulls raced and reported but left out of the disparity (a hull whose gap is its AI, not the course)
 """
 import math
 import os
@@ -28,7 +33,7 @@ import os
 import course_port as cp
 import race_models as rm
 
-VERSION = "1"
+VERSION = "2"   # 2 (2026-11-06): NeutralShare joins the space; the rail rider leaves its rail on it
 PATHS = ["Tools/Build/", "Assets/Resources/AIBoostPolicies/", "Assets/Resources/RaceLines/",
          "Assets/_Prefabs/Spacevessels/", "Assets/_SO_Assets/", "Assets/Resources/"]
 SHIP_SEED = cp.REGATTA_DEFAULT_SEED
@@ -56,7 +61,9 @@ def settings_from(params, intensity):
                 "MaxPresentDegrees", "RadialSwing"):
         if key in params:
             s[key] = float(params[key])
-    base_seed = SHIP_SEED + 104729 * int(params.get("seed", 0))
+    # `seed` is the ABSOLUTE circuit step (RegattaCourse.SeedStepFor's value), so seed_for_intensity's shipped step is
+    # taken back out: the shipped course is seed = cp.seed_step_for(intensity).
+    base_seed = SHIP_SEED + cp.SEED_STRIDE * (int(params.get("seed", cp.seed_step_for(intensity))) - cp.seed_step_for(intensity))
     return s, base_seed
 
 
@@ -70,9 +77,11 @@ def _drives(root, roster):
     return out
 
 
-def race_all(course, intensity, roster, drives, limit):
+def race_all(course, intensity, roster, drives, limit, neutral=0.0):
     times, raw = {}, {}
     for hull, h in roster.items():
+        if h["model"] == "rail":
+            drives = dict(drives, **{hull: dict(drives[hull], neutral=neutral)})
         c = rm.balance_course(course) if h["model"] == "balance" else course
         if h["model"] == "balance":
             c = dict(c, gates=course["gates"])
@@ -86,9 +95,18 @@ def setup(ctx):
     i = int(a["intensity"])
     _CTX["drives"] = _drives(ctx["root"], a["roster"])
     ship = cp.regatta_course(i)
-    times, _ = race_all(ship, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)))
+    times, _ = race_all(ship, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)), ship_neutral(i))
     _CTX["ship_mean"] = sum(times.values()) / len(times)
     _CTX["ship_hardest"] = max(ship["turnDegrees"])
+
+
+# RegattaCourse.NeutralShareFor as shipped (I1 0.3 since 2026-11-03; I2-I4 0): the middle share of every leg's rail in
+# no team's colour. The one course lever on the rail RIDER: the Squirrel skims any colour and the rest fly beside it.
+SHIP_NEUTRAL = {1: 0.3, 2: 0.0, 3: 0.0, 4: 0.0}
+
+
+def ship_neutral(intensity):
+    return SHIP_NEUTRAL.get(int(intensity), 0.0)
 
 
 def baseline(args):
@@ -96,7 +114,8 @@ def baseline(args):
     p = {f"corner{k}": float(v) for k, v in enumerate(s["CornerProfile"])}
     p.update({k: float(s[k]) for k in ("RingRadius", "CornerFloorRadius", "AngularSpread", "LateralPerturbation",
                                        "AxisJitterDegrees", "MaxPresentDegrees", "RadialSwing")})
-    p["seed"] = 0
+    p["seed"] = cp.seed_step_for(args["intensity"])
+    p["NeutralShare"] = ship_neutral(args["intensity"])
     return p
 
 
@@ -107,8 +126,10 @@ def evaluate(params, ctx):
     i = int(a["intensity"])
     s, base_seed = settings_from(params, i)
     course = cp.course(s, cp.seed_for_intensity(base_seed, i))
-    times, raw = race_all(course, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)))
-    fastest, slowest = min(times.values()), max(times.values())
+    neutral = float(params.get("NeutralShare", ship_neutral(i)))
+    times, raw = race_all(course, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)), neutral)
+    scored = {h: t for h, t in times.items() if h not in set(a.get("report_only") or ())}
+    fastest, slowest = min(scored.values()), max(scored.values())
     disparity = math.log(slowest / fastest)
     cover = rm.rail_coverage(course)
     mean = sum(times.values()) / len(times)
@@ -121,7 +142,7 @@ def evaluate(params, ctx):
         "seconds": {h: round(t, 1) for h, t in times.items()},
         "dnf": [h for h, r in raw.items() if r.get("time") is None], "rail_fails": cover,
         "mean_vs_shipped": round(mean / _CTX["ship_mean"], 3), "hardest_turn": round(hardest, 1),
-        "seed": cp.seed_for_intensity(base_seed, i), "settings": s,
+        "seed": cp.seed_for_intensity(base_seed, i), "settings": s, "neutral_share": round(neutral, 3),
         "limits": {h: rm.MODEL_LIMITS[r["model"]] for h, r in a["roster"].items()}}}
 
 
