@@ -81,7 +81,7 @@ characters gets through about 1.4% of the time (16 characters: about 11%), one s
 | `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code scripts, incl. launch-flags once that PR adds it to `deploy.sh`'s `SCRIPTS`) |
 | `trunk-static` | quality | gate | the bleeding-edge guard's static checks |
 | `unity-compile` | quality | gate | the guard's Unity compile + EditMode run |
-| `smoke-<mode>` | quality | gate | the Unity per-mode smoke test |
+| `smoke-<mode>` | quality | gate | the Unity per-mode smoke test, one per rostered mode, `<mode>` in kebab case (`smoke-skim-race`); written by `Tools/Launch/smoke_report.py` (`Docs/LAUNCH/SMOKE_TEST.md`) |
 | `release-<tag>` → use `release` | release | build | the release workflow (tag, release notes) |
 
 A new pipeline adds its id to this table in the same PR.
