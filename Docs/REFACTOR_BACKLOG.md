@@ -284,3 +284,19 @@ empty `SlowExplosionImpactorDataContainer`; `ScriptableEventSkimmerDebuffApplied
 Serpent cannot collect crystals; AI never rolls; profiler markers only in SkimRace AI; Termite/
 Falcon/Shrike have no near-field skimmer (confirm intent before wiring); Scoring R7/R11/R12 and
 NetDiag TODO-1..8; toy unlock persistence. `author_pilot_assets.py --check` is red since the Meerkat reached bleeding-edge (10-27): it has no pilots or artifacts in `Docs/Pilots/pilots_and_artifacts.json` (content, not a defect; Garrett's `Pilots/CALLSIGNS.md` may replace the roster first).
+
+## Launch pass rows (2026-11-06, `claude/exciting-pascal-t8ijbo`, PR #1758)
+
+Seen while building the launch pipelines (PRs #1747-#1758); recorded, not fixed. Re-run each command before acting.
+
+| Row | Shape | Evidence (2026-11-06, `origin/bleeding-edge` @ `15f1d3ae0b`) | Size | Owner to ask |
+|---|---|---|---|---|
+| L1 `CSLogChannel` is full: a new channel cannot be added | a silent ceiling | `git show origin/bleeding-edge:Assets/_Scripts/Utility/Foundation/CSDebug.cs \| grep -cE "= *1 *<< *[0-9]+"` → 32, highest `1 << 31`; #1757 shipped its window with no channel for this reason. Widen to `long` (and every `int` mask that stores it) | S-M | Shombith (tooling) |
+| L2 The boot-gate bypass (privacy overlay, username skip by reflection) exists in three copies | two members sharing one rule | `git grep -n "PrivacyCons" origin/bleeding-edge -- '*Soak*.cs'` → `SwitchbackSoakRunner.cs:116`, `ThresherTimeSoakRunner.cs:181`; the third is `ModeSmokeDriver` on #1754. One helper all three call | S | Yash (the soak runners), Shombith |
+| L3 Party-session player properties are at UGS's limit of 10 when the fair-play pass is on | a silent clamp waiting | stated in #1755's code comment and doc; the next new key must retire one first. Count them before adding any | S | Yash / Shombith |
+| L4 `launch_status.py` refuses a sha256 digest as a "long token" | a check broader than its purpose | `#1750` self-test; a pipeline that needs a digest gets its own `digest` field with a hex-64 rule rather than loosening the token pattern | S | Shombith |
+| L5 The launch workflows pin `actions/checkout` v4.2.2 and `setup-python` v5.6.0, which warn on Node 20 | dependency age | every launch run's annotations; re-pin to the Node 24 releases by sha in one PR | S | Shombith |
+| L6 The console's repository links and `SKILL_REF` name `claude/exciting-pascal-t8ijbo` | debt this branch created | `grep -n "exciting-pascal" Docs/LAUNCH/console/index.html`; switch to `bleeding-edge` and republish once #1758 merges (console README says so) | S | whoever republishes |
+
+Not refactors (incompleteness, a report): `LaunchFlags.disabledModes` is read and unused because no menu door checks it
+(#1756, `Docs/LAUNCH/LIVE_UPDATES.md` §1); hiding a mode remotely needs the menu owners to choose the doors.
