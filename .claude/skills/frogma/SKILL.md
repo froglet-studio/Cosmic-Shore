@@ -235,6 +235,11 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   locally before publishing (`node .claude/skills/frogma/render_local.cjs <dir> <out> <boards...>`: a stand-in for the
   canvas runtime, holes / `sc-for` / `sc-if` / handlers, `CLICK=` presses through a flow; `/_blob/` images show broken) and look for an overlay covering the
   very control it points at. Rev 36's `clear_of()` moves a panel off its target.
+- **A `<button>` inside a `<button>` splits the board** (Rev 60, 2026-11-06). A tappable card holding its own Claim / Play
+  button is the natural markup, and the HTML parser closes the outer button at the inner one, so the card's other
+  children fall out and land elsewhere on the board (cards drawn above the phone frame). `check` passes it; only a local
+  render shows it. Make the card a `<div>`, put a transparent `<button class="pick" style="position:absolute;inset:0">`
+  as its first child for the pick, and give the content above it `pointer-events:none` except the inner button's row.
 - **The sliver clips what straddles it** (Rev 51, 2026-11-05). `.sl` is a `clip-path`, so a window's buttons placed to
   straddle its foot (style guide §6) are cut in half when they are children of the `.sl` element: the check passes,
   the board shows half a button. Put the sliver on a background layer (`<div class="abs sl panel" style="inset:0">`)
