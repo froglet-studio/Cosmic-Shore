@@ -107,3 +107,13 @@ wears); never type one.
   the PR body's Affects line from `who_works_where.py`, and CI once.
 - v3: merge from Unity, for the core four only, when checks are green.
 - Both need a decision on where a GitHub token is stored (`EditorPrefs` is plain text on disk).
+
+## 7. Debt seen while building it (rows, not fixes; `/ship` §3.6, 2026-11-06)
+
+| Row | Evidence | Blocking question |
+|---|---|---|
+| Two corner-sliver drawers | `FrogletSeaTheme.Sliver` (this branch) and `FrogletEditorPalette.DrawSliver` on `claude/launch-console-editor` (`git grep -n "static void DrawSliver" origin/claude/launch-console-editor`) draw the same shape | Once both land, which one does the palette keep? (tooling: Shombith) |
+| Two Python finders | `FrogletPython.Find` and `QASessionWindow.FindPython` (`Assets/_Scripts/Editor/QA/QASessionWindow.cs:242`, private) run the same `python3` / `python` / `py -3` lookup | May the QA Session window call `FrogletPython`? Ask its owner first |
+| `unity_refcompile` keeps stale `.rsp` files | After #1771 deleted the SOAP plugin, `Obvious.Soap.rsp` stayed in the output folder and failed `generated_assets` (`.claude/skills/asset-surgery/references/CSHARP_VERIFICATION.md`, the stale `.rsp` trap) | Prune per build, or have `check_generated_assets.py` skip an `.rsp` whose sources are gone? |
+| The body font is read from a TextMesh Pro folder | `FrogletSeaTheme.BodyFontPath` = `Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/ALDRICH-REGULAR.TTF`; if that file moves, text silently falls back to the editor font | Should Aldrich get a home beside Chakra Petch (`Assets/_Graphics/Fonts/`)? |
+

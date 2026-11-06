@@ -327,7 +327,7 @@ namespace CosmicShore.Editor.Froglet
                 ThemeMenu();
             y += 30;
             GUI.Label(new Rect(Pad, y, w - 2 * Pad, 16),
-                "Commit, pull and push without leaving Unity. The /ship checks run before every commit and push.", FrogletSeaTheme.BodySoft);
+                "Commit, pull and push without leaving Unity. The /ship checks run before every commit and push.", FrogletSeaTheme.Subtitle);
             return y + 26;
         }
 
