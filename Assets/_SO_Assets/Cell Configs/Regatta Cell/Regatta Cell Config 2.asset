@@ -15,8 +15,8 @@ MonoBehaviour:
   CellName: Regatta
   Description: 'Regatta at intensity 2 of 4 (CellTypeChoiceOptions.IntensityWise, list order =
     intensity): a closed circuit of 8 rings with three super-shielded rails - one per
-    playable domain - braided along it, 2002 (6,6,8) prisms (each length fitted flush to its
-    neighbours, 569,237 volume) on a 5336u spine, mouths 85u, no corner under 134u. The
+    playable domain - braided along it, 2029 (6,6,8) prisms (each length fitted flush to its
+    neighbours, 577,244 volume) on a 5409u spine, mouths 80u, no corner under 161u. The
     standard nucleus is the crystal respawn volume and the inner shell; the spawn profile is
     the Barren cell''s (no flora, no fauna - shielded mass is never food, and a race whose
     obstacles differ per peer is not a race). PhaseThresholds ride the rails'' MEASURED
@@ -34,11 +34,11 @@ MonoBehaviour:
   EnvironmentPrefab: {fileID: 5260000000000303, guid: 901cd2271813377510b15d1a4ecb9534, type: 3}
   EnvironmentIntensity: 2
   PhaseThresholds:
-    RestlessEnter: 2702
-    RestlessExit: 2502
-    FrenzyEnter: 5602
-    FrenzyExit: 5002
-    RestlessEnterVolume: 629237
-    RestlessExitVolume: 609237
-    FrenzyEnterVolume: 969237
-    FrenzyExitVolume: 889237
+    RestlessEnter: 2729
+    RestlessExit: 2529
+    FrenzyEnter: 5629
+    FrenzyExit: 5029
+    RestlessEnterVolume: 637244
+    RestlessExitVolume: 617244
+    FrenzyEnterVolume: 977244
+    FrenzyExitVolume: 897244

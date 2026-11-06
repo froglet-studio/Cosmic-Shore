@@ -21122,7 +21122,8 @@ Squirrel at rest. Ran here: `unity_refcompile` (0 errors in changed files; 21 pr
 in the cloud checkout), the course harness (60-seed sweep and gate coverage OK), `course_port --self-test`,
 `author_regatta_assets.py --check`, `regatta_measured_roster.py --check`. Not run: any Unity editor race.
 
-- [ ] Regatta at each of I1-I4 loads, lays 8 rings and 3 rails, and the rails pass through every mouth (I4's mouth is 48 u, was 54).
-- [ ] Mid-leg, each rail turns Blue (no team's colour) at every intensity; an Urchin leaves its rail there.
-- [ ] FrogletTools > AI > Regatta Hull Benchmark, each hull alone at I2 and I3: no hull misses a mouth the old circuits did not; the Urchin finishes mid-field (model: 78-93 s), not first.
+- [ ] Regatta at each of I1-I4 loads, lays 8 rings and 3 rails, and the rails pass through every mouth (mouths 106 / 80 / 81 / 68 u; the round-1 48 u I4 was replaced).
+- [ ] Mid-leg, each rail turns Blue (no team's colour) for 40-66% of the leg; an Urchin leaves its rail there.
+- [ ] Before testing, the ring mouth at I4 reads 68 u (the flight file's ringList radius): a 54 u mouth means the editor is still on the old circuit.
+- [ ] FrogletTools > AI > Regatta Hull Benchmark, each hull alone at I2 and I3: no hull misses a mouth the old circuits did not; the Urchin finishes mid-field (model: 107-111 s at I2-I4), not first.
 - [ ] A full six-AI grid at I3: the race reads as close (model spread 1.4x with the Sparrow out).

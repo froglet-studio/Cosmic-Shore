@@ -21,12 +21,16 @@ levels by stage 3. Spread, slowest / fastest with the Sparrow left out (with it 
 
 | | Before | After |
 |---|---:|---:|
-| I1 | 1.49x (1.99x) | 1.44x (1.93x) |
-| I2 | 2.18x (2.91x) | 1.42x (1.88x) |
-| I3 | 2.24x (2.89x) | 1.42x (1.89x) |
-| I4 | 2.25x (2.89x) | 1.41x (1.88x) |
+| I1 | 1.49x | 1.45x |
+| I2 | 2.25x | 1.41x |
+| I3 | 2.64x | 1.42x |
+| I4 | 3.10x | 1.41x |
 
-The Urchin moves to the middle of the field at every intensity (78-93 s); the Stoat starts at Time 3 everywhere (the card
+**A second round the same day.** Garrett played I4 and the Urchin still won by a street: his editor had the OLD circuit,
+but his race also showed what the first round got wrong. The race-line AIs collapse at tight mouths (the Manta AI 6
+gates in 61 s) while the rail-riding Urchin never misses; the first round, calibrated on I1, kept I4's mouth tight. The
+second round prices that and widens the I2-I4 mouths (80 / 81 / 68 u) and raises the neutral stretch to 59-66% of each leg.
+The Urchin moves to the middle of the field at every intensity (75-111 s); the Stoat starts at Time 3 everywhere (the card
 had Time 10 at I2-I4, a 50 s hull). Full numbers: `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`, "Where it stands (2026-11-06)".
 
 **How to test.** Pull the branch; Arcade > Regatta at I2 or I3 with six AIs including an Urchin and a Manta: the

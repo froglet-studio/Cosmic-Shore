@@ -57,12 +57,18 @@ rail, 113 off it). The Sparrow is raced and reported but not scored: its ~2x gap
 in a session to prove the evaluator, then promoted with Garrett's ask): a new circuit per intensity (new corners, floor,
 spread, swing, mouth, presentation, seed step) and a neutral share at every intensity.
 
-| | Shipped before (Sparrow out / in) | Promoted (Sparrow out / in) | Urchin before -> after | Hardest corner |
-|---|---:|---:|---:|---:|
-| I1 | 1.49x / 1.99x | **1.44x** / 1.93x | 74 -> 75 s (neutral 0.3 -> 0.40) | 98 deg |
-| I2 | 2.18x / 2.91x | **1.42x** / 1.88x | 57 -> 78 s (0 -> 0.26) | 110 deg |
-| I3 | 2.24x / 2.89x | **1.42x** / 1.89x | 62 -> 93 s (0 -> 0.42) | 114 deg |
-| I4 | 2.25x / 2.89x | **1.41x** / 1.88x | 62 -> 90 s (0 -> 0.40) | 119 deg |
+| | Before | Promoted (second round) | Urchin before -> after | Mouth | Neutral | Hardest corner |
+|---|---:|---:|---:|---:|---:|---:|
+| I1 | 1.49x | **1.45x** | 74 -> 75 s | 110 -> 106 u | 0.3 -> 0.40 | 98 deg |
+| I2 | 2.25x | **1.41x** | 57 -> 108 s | 88 -> 80 u | 0 -> 0.59 | 102 deg |
+| I3 | 2.64x | **1.42x** | 61 -> 107 s | 72 -> 81 u | 0 -> 0.59 | 119 deg |
+| I4 | 3.10x | **1.41x** | 62 -> 111 s | 54 -> 68 u | 0 -> 0.66 | 122 deg |
+
+Spreads with the Sparrow out, on the roster with tight mouths priced (below). **Round 1 was wrong at I2-I4**: it
+calibrated on I1 only, so it kept I4's mouth tight (48 u) and a neutral share of 0.4. Garrett's I4 race on the old
+circuit (Urchin 24 gates in 61.5 s; the Manta AI 6, the Rhino 7, the Serpent and Squirrel 11) showed the race-line AIs
+collapse at tight mouths while the rail-riding Urchin never misses; `regatta_measured_roster.MOUTH_ALPHA` (0.6, fitted
+to two clean I4 grid races, thin) prices that, and round 2 widened the I2-I4 mouths and raised the neutral share.
 
 Every hull threads all 24 rings on every promoted circuit in the race-line model; the harness's 60-seed sweep and gate
 coverage pass; `course_port --self-test` matches the C# harness.
@@ -137,4 +143,5 @@ weight (0.02 per level of mean) keeps the tuning as small as the gap allows. **P
 | 2026-11-02 | The Stoat is the next hull, on the orbit alone (Yash). `regatta_balance.py`'s `stoat_model` follows the kit (its Time 10 race 48.5 → 49.4 s at I1; the card's level is unchanged). No compute job yet: it needs Slingshot races first, then a `drive_fit` model from `stoat_orbit_sim.py` |
 | 2026-11-02 | The Thresher is the hull after the Stoat (Yash). The hulls Yash picks to race Regatta: Squirrel, Dolphin, Stoat, Thresher (the Sparrow stays on the card). The rule holds: the Thresher trains in Thresher Time first, and Regatta's card and design wait for that (`MINIGAME_TRAINING_PLAN.md` §12) |
 | 2026-11-03 | **Measured in the real game** (Garrett's balance pass; branch `claude/regatta-overnight-balance`; `Docs/Reports/REGATTA_AI.md` 2026-11-03 has the table). The Regatta Hull Benchmark races each AI alone headless, I1. The models were 2-4x faster than the editor because they have no missed mouths: the AI line is now capped at 0.35 of the way out and seven hulls finish with no miss. Stoat AI fixed (a stuck trigger; a Regatta warp variant). The Urchin is levelled by a course feature, `RegattaCourse.NeutralShareFor` (I1 0.3: 51 -> 73-76 s). Card at I1: Stoat Time 3, Squirrel Time 10 (measured; `author_regatta_assets.py` `MEASURED_TIME`). Solo spread of the competent field at I1: 1.5x (Manta 62-72 to Serpent 98-102) from 2.9x; Sparrow 117-150 s is the outlier. Time is spent on Sparrow, Scarab, Serpent (10) and Manta (-5); the Rhino's Time slows its AI (misses). No AI was trained in Regatta: bug fixes and card values, proposals for Yash. I2-I4 not measured |
-| 2026-11-06 | **Stages 2 and 3 run and promoted on the measured roster** (Garrett's ask; branch `claude/regatta-overnight-balance`). New circuits at I1-I4 and a neutral rail at every intensity: spread (Sparrow out) 1.49 / 2.18 / 2.24 / 2.25x -> 1.44 / 1.42 / 1.42 / 1.41x; the Urchin from first by 13-22 s at I2-I4 to mid-field. Card: Stoat Time 3 everywhere, Squirrel at rest. `regatta_course` VERSION 2; the four course jobs ready on the measured roster, starting from the promoted circuits. Model numbers: editor races of the new circuits are next |
+| 2026-11-06 | **Stages 2 and 3 run and promoted on the measured roster** (round 1; superseded at I2-I4 by round 2, next row) (Garrett's ask; branch `claude/regatta-overnight-balance`). New circuits at I1-I4 and a neutral rail at every intensity: spread (Sparrow out) 1.49 / 2.18 / 2.24 / 2.25x -> 1.44 / 1.42 / 1.42 / 1.41x; the Urchin from first by 13-22 s at I2-I4 to mid-field. Card: Stoat Time 3 everywhere, Squirrel at rest. `regatta_course` VERSION 2; the four course jobs ready on the measured roster, starting from the promoted circuits. Model numbers: editor races of the new circuits are next |
+| 2026-11-06 | **Round 2 at I2-I4** after Garrett's I4 race showed the Urchin still far ahead (it was the old circuit, but round 1's I4 would not have fixed it either). The roster now prices tight mouths for every AI but the rail rider (`MOUTH_ALPHA` 0.6, from the team's I4 grid races). Promoted: I2-I4 mouths 80 / 81 / 68 u, neutral 0.59 / 0.59 / 0.66; spread 1.41-1.42x, the Urchin mid-field (107-111 s). Benchmark races at I2-I4 are what would replace the thin fit |

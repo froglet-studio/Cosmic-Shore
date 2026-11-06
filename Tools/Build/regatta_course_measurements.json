@@ -5,7 +5,7 @@
   "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
   "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs"
  ],
- "sourceHash": "94e1ee2a74146da62a4b265a77d853ad412d9874691f7a25ae01de1bf775bc08",
+ "sourceHash": "b99e740c29b60bcd6bbcd76231409e630914917ac471d78b6de4fe847b494db9",
  "intensities": {
   "1": {
    "seed": 359590794,
@@ -50,129 +50,129 @@
    ]
   },
   "2": {
-   "seed": 109401132,
+   "seed": 102279560,
    "rings": 8,
-   "ringRadius": 85,
-   "cornerFloor": 133.8,
-   "spineLength": 5336.2,
+   "ringRadius": 80,
+   "cornerFloor": 160.8,
+   "spineLength": 5409.4,
    "laneLengths": [
-    5343.0,
-    5325.9,
-    5345.9
+    5418.3,
+    5408.0,
+    5407.1
    ],
-   "railVolume": 569237,
-   "minPrismLength": 7.386,
-   "prismCount": 2002,
-   "minLaneSeparation": 38.07,
-   "maxSpacingError": 0.016,
+   "railVolume": 577244,
+   "minPrismLength": 7.356,
+   "prismCount": 2029,
+   "minLaneSeparation": 38.08,
+   "maxSpacingError": 0.013,
    "cornerRadii": [
-    508.6,
-    823.3,
-    154.1,
-    385.8,
-    207.1,
-    700.4,
-    602.7,
-    599.6
+    574.1,
+    165.2,
+    295.7,
+    189.1,
+    623.8,
+    612.4,
+    530.6,
+    603.1
    ],
    "legLengths": [
-    1001.3,
-    436.7,
-    436.1,
-    419.5,
-    353.2,
-    654.8,
-    741.5,
-    1011.6
+    448.4,
+    410.2,
+    403.8,
+    349.1,
+    704.5,
+    969.9,
+    972.6,
+    844.0
    ],
    "gate0": [
-    -0.0,
-    715.14,
-    0.0
+    0.0,
+    803.31,
+    -0.0
    ]
   },
   "3": {
-   "seed": 123547466,
+   "seed": 171722806,
    "rings": 8,
-   "ringRadius": 59,
-   "cornerFloor": 127.9,
-   "spineLength": 5410.6,
+   "ringRadius": 81,
+   "cornerFloor": 109.4,
+   "spineLength": 5350.9,
    "laneLengths": [
-    5413.1,
-    5407.3,
-    5416.3
+    5352.3,
+    5362.8,
+    5342.9
    ],
-   "railVolume": 578176,
-   "minPrismLength": 7.232,
-   "prismCount": 2030,
-   "minLaneSeparation": 38.08,
-   "maxSpacingError": 0.018,
+   "railVolume": 572292,
+   "minPrismLength": 7.538,
+   "prismCount": 2007,
+   "minLaneSeparation": 38.09,
+   "maxSpacingError": 0.007,
    "cornerRadii": [
-    618.2,
-    681.5,
-    624.2,
-    648.2,
-    132.2,
-    701.5,
-    444.5,
-    962.8
+    1606.0,
+    114.7,
+    768.2,
+    508.2,
+    881.4,
+    544.3,
+    686.0,
+    612.9
    ],
    "legLengths": [
-    758.2,
-    778.6,
-    808.3,
-    431.1,
-    405.8,
-    620.7,
-    623.5,
-    748.1
+    387.7,
+    389.4,
+    688.8,
+    716.7,
+    700.5,
+    698.9,
+    805.1,
+    778.0
    ],
    "gate0": [
-    -0.0,
-    786.63,
-    -0.0
+    0.0,
+    750.66,
+    0.0
    ]
   },
   "4": {
-   "seed": 59356508,
+   "seed": 110987905,
    "rings": 8,
-   "ringRadius": 48,
-   "cornerFloor": 106.9,
-   "spineLength": 5296.9,
+   "ringRadius": 68,
+   "cornerFloor": 100.5,
+   "spineLength": 5260.0,
    "laneLengths": [
-    5314.7,
-    5283.4,
-    5298.1
+    5265.2,
+    5266.4,
+    5254.7
    ],
-   "railVolume": 565727,
-   "minPrismLength": 7.373,
-   "prismCount": 1986,
+   "railVolume": 562123,
+   "minPrismLength": 7.387,
+   "prismCount": 1973,
    "minLaneSeparation": 38.09,
-   "maxSpacingError": 0.009,
+   "maxSpacingError": 0.011,
    "cornerRadii": [
-    1301.0,
-    111.9,
-    702.7,
-    498.5,
-    814.0,
-    644.8,
-    652.6,
-    651.0
+    869.2,
+    562.9,
+    698.1,
+    629.0,
+    875.1,
+    110.3,
+    879.8,
+    545.9
    ],
    "legLengths": [
-    383.2,
-    392.0,
-    660.3,
-    657.4,
-    754.7,
-    738.4,
-    738.3,
-    740.7
+    711.8,
+    705.0,
+    725.2,
+    736.0,
+    398.3,
+    394.2,
+    688.5,
+    689.8
    ],
    "gate0": [
-    -0.0,
-    751.08,
-    -0.0
+    0.0,
+    740.49,
+    0.0
    ]
   }
  }

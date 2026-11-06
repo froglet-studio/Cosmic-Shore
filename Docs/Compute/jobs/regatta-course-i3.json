@@ -24,6 +24,8 @@
       "anchor": 97.5,
       "bal_ref": 41.88,
       "line_ref": 97.4,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "share": 0.35,
       "speed": 146.2,
       "time_levels": {
@@ -40,6 +42,8 @@
       "anchor": 67.0,
       "bal_ref": 23.94,
       "line_ref": 67.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "share": 0.35,
       "speed": 210.5,
       "time_levels": {
@@ -56,6 +60,8 @@
       "anchor": 95.0,
       "bal_ref": 17.82,
       "line_ref": 95.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "share": 0.35,
       "speed": 148.0,
       "time_levels": {
@@ -72,6 +78,8 @@
       "anchor": 100.0,
       "bal_ref": 241.68,
       "line_ref": 100.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "share": 0.35,
       "speed": 142.4,
       "time_levels": {
@@ -88,6 +96,8 @@
       "anchor": 133.0,
       "bal_ref": 73.62,
       "line_ref": 133.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "share": 0.35,
       "speed": 107.3,
       "time_levels": {
@@ -103,6 +113,8 @@
      "drive": {
       "anchor": 75.0,
       "bal_ref": 48.54,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "time_levels": {
        "1": 0,
        "2": 0,
@@ -116,6 +128,8 @@
      "drive": {
       "anchor": 70.0,
       "bal_ref": 75.72,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
       "time_levels": {
        "1": 3,
        "2": 3,
@@ -157,109 +171,109 @@
   "python3",
   "numpy"
  ],
- "roster_note": "Every Regatta-ready hull anchored at its measured editor race (Regatta Hull Benchmark, I1, 2026-11-03) and moved by the line and lap models (Tools/Build/regatta_measured_roster.py); Time at the card's I1 levels (stage 3 sets them). The Sparrow is raced and reported but left out of the disparity: its 2x gap is its AI (rail rams), which no course or Time level closes. Starts from the circuit promoted 2026-11-06 (RegattaCourse.ForIntensity); the card's Time levels as promoted (Stoat 3, Squirrel 0).",
+ "roster_note": "Every Regatta-ready hull anchored at its measured editor race (Regatta Hull Benchmark, I1, 2026-11-03) and moved by the line and lap models (Tools/Build/regatta_measured_roster.py); Time at the card's I1 levels (stage 3 sets them). The Sparrow is raced and reported but left out of the disparity: its 2x gap is its AI (rail rams), which no course or Time level closes. Starts from the circuit promoted 2026-11-06 (second round, tight mouths priced: regatta_measured_roster.MOUTH_ALPHA); the card's Time levels as promoted (Stoat 3, Squirrel 0).",
  "schema": "froglet-compute/job/1",
  "space": [
   {
    "hi": 210.5,
-   "init": 97.9,
+   "init": 77.3,
    "lo": 67.5,
    "name": "corner0"
   },
   {
    "hi": 176.0,
-   "init": 147.2,
+   "init": 156.2,
    "lo": 56.0,
    "name": "corner1"
   },
   {
    "hi": 125.0,
-   "init": 71.8,
+   "init": 79.3,
    "lo": 39.0,
    "name": "corner2"
   },
   {
    "hi": 41.0,
-   "init": 30.0,
+   "init": 30.7,
    "lo": 11.0,
    "name": "corner3"
   },
   {
    "hi": 18.5,
-   "init": 4.8,
+   "init": 5.2,
    "lo": 3.5,
    "name": "corner4"
   },
   {
    "hi": 12.5,
-   "init": 3.5,
+   "init": 7.8,
    "lo": 1.5,
    "name": "corner5"
   },
   {
    "hi": 11.0,
-   "init": 2.2,
+   "init": 1.9,
    "lo": 1.0,
    "name": "corner6"
   },
   {
    "hi": 9.5,
-   "init": 2.6,
+   "init": 1.6,
    "lo": 0.5,
    "name": "corner7"
   },
   {
-   "hi": 90,
-   "init": 59.0,
+   "hi": 110.0,
+   "init": 81.0,
    "lo": 58,
    "name": "RingRadius"
   },
   {
    "hi": 192.0,
-   "init": 127.9,
+   "init": 109.4,
    "lo": 80.0,
    "name": "CornerFloorRadius"
   },
   {
    "hi": 6.0,
-   "init": 5.7,
+   "init": 5.85,
    "lo": 0.5,
    "name": "AngularSpread"
   },
   {
    "hi": 400.0,
-   "init": 337.1,
+   "init": 360.2,
    "lo": 60.0,
    "name": "LateralPerturbation"
   },
   {
    "hi": 50.0,
-   "init": 28.1,
+   "init": 6.8,
    "lo": 0.0,
    "name": "AxisJitterDegrees"
   },
   {
    "hi": 85.0,
-   "init": 71.4,
+   "init": 55.3,
    "lo": 40.0,
    "name": "MaxPresentDegrees"
   },
   {
    "hi": 0.6,
-   "init": 0.473,
+   "init": 0.446,
    "lo": 0.2,
    "name": "RadialSwing"
   },
   {
    "hi": 4095,
-   "init": 986,
+   "init": 1446,
    "lo": 0,
    "name": "seed",
    "type": "int"
   },
   {
-   "hi": 0.5,
-   "init": 0.42,
+   "hi": 0.7,
+   "init": 0.59,
    "lo": 0.0,
    "name": "NeutralShare"
   }
