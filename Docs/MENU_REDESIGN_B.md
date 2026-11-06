@@ -6176,7 +6176,7 @@ Purchase Gold (Unlock), Inactive grey (Voyage, Unlocked); Start game and Play ag
 fourth hub reads Voyage, as built. Nothing about the desktop build changed: the boards had the colours wrong, not the
 game.
 
-## 135. Rev 60 mockups: the Quests page on a phone, and the last phone spots (2026-11-06, awaiting board approval)
+## 135. Rev 60 mockups: the Quests page on a phone, and the last phone spots (2026-11-06, approved)
 
 **Asked** (Shombith): "draw the Quests page phone board on Frogma and anything else that is left". The build (section 129)
 left four places where the phone shows the PC look too small: Mission's Quests page (five cards at 0.5, words 7-9
@@ -6201,3 +6201,5 @@ weekly board (configure's LeaderboardView at about 0.42).
 size in a horizontal ScrollRect (the PC track stays). Codex: `author_menu_codex.py` adds the phone-only element rows.
 Account prompt: `AccountPromptWindow` takes phone heights (a C# change) and `author_menu_settings.py` the sheet pose.
 Port: `author_menu_port.py` hosts LeaderboardView without the PC-scale block, re-posed for the Port's body.
+
+**Approved (Shombith, 2026-11-06):** "approved, build all four".
