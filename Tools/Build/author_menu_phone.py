@@ -50,17 +50,19 @@ PREFAB_FALLBACK = [
 SCENE_RETIRED = ["ArenaGameConfigureModal", "MaelstromGameConfigurationModal", "Hangar Screen",
                  "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal", "ArkScreen", "PortScreen",
                  "ProfileScreen", "ProfileModal", "PlayerDataSelectModal", "ToyboxGameConfigureModal",
-                 "LeaderboardConfigureModal"]
+                 "LeaderboardConfigureModal", "HomeScreen", "ArcadeScreenModal"]
 PREFAB_RETIRED = ["Assets/_Prefabs/ArcadeGameConfigureModal.prefab", "Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab"]
 
 # Scene objects of Menu_Main that HAVE a phone layout and no generator of their own to write it (the nav band is
 # patched in place by author_menu_topnav.py, which keeps other generators' components on it). R55 (section 129): the
-# band is the rail down the left, 96 wide, its tabs stacked Home first.
+# band is the rail down the left, 96 wide, its tabs in the PC band's order: Codex, Hangar, Home, Ark, Port (Shombith,
+# 2026-11-06: "the order will be codex, hangar, home ark and port just like in the PC version do not change order").
+# The band's LT / RT arrows leave the canvas on a phone (author_menu_topnav.py writes their PhoneRect).
 RAIL_W, TAB_H = 96, 56
 SCENE_PHONE = {
     "NavBar": dict(pose=K.rect((0, 0), (0, 1), (RAIL_W / 2, 0), (RAIL_W, 0))),
     "NavBarButtons": dict(pose=K.STRETCH, stack=dict(origin=(0, -10), item=(RAIL_W, TAB_H), spacing=2,
-                                                     order=["HomeLink", "CodexLink", "HangarLink", "ArkLink", "PortLink"])),
+                                                     order=["CodexLink", "HangarLink", "HomeLink", "ArkLink", "PortLink"])),
 }
 PHONE_GUID = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
 
@@ -133,7 +135,22 @@ def outputs():
     return out
 
 
+def pc_block_names(text_):
+    """The names of Menu_Main's objects that carry the PC-scale fallback (drawAtPcScale: 1)."""
+    gos = {m.group(1): m.group(2) for m in re.finditer(r"^--- !u!1 &(-?\d+)\n(?:(?!--- ).*\n)*?  m_Name: (.*)\n", text_, re.M)}
+    out = []
+    for m in re.finditer(r"^--- !u!114 &-?\d+\n((?:(?!--- ).*\n)*)", text_, re.M):
+        body = m.group(1)
+        if f"guid: {PHONE_GUID}" in body and "  drawAtPcScale: 1\n" in body:
+            out.append(gos.get(re.search(r"m_GameObject: \{fileID: (-?\d+)\}", body).group(1), "?"))
+    return sorted(out)
+
+
 def validate(out):
+    # A screen that leaves the fallback must lose its marker: a stale one draws its new phone layout shrunk (HomeScreen
+    # and ArcadeScreenModal shipped that way on 2026-11-06 - Home's hubs a third of their size, its chip off screen).
+    stale = sorted(set(pc_block_names(out[MENU])) - set(SCENE_FALLBACK))
+    assert not stale, f"Menu_Main: {stale} still draw at the PC scale but are not on the fallback list (add them to SCENE_RETIRED)"
     for path, text_ in out.items():
         n = text_.count(f"guid: {PHONE_GUID}, type: 3}}")
         if path in PREFAB_RETIRED:

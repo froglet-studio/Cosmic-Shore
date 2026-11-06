@@ -6058,6 +6058,13 @@ buttons), `author_menu_topnav.py` the rail; each screen then leaves `author_menu
 on a phone; the phone rail runs Home, Codex, Hangar, Ark, Port (Home first, the rest in today's order; the PC nav band is
 unchanged); Up next keeps both cards. The Home, Arcade, Hangar and Notes boards were redrawn with the rail in that order.
 
+**Rail order changed (Shombith, 2026-11-06, in the Device Simulator):** "the order will be codex, hangar, home ark and port
+just like in the PC version do not change order or anything". The phone rail now runs Codex, Hangar, Home, Ark, Port, as
+the PC band does; the LT / RT arrows leave the canvas on a phone. The same pass found Home and the Arcade window still
+carrying the PC-scale fallback under their own phone layouts (so Home's hubs drew a third of their size and its chip
+fell off the screen); `author_menu_phone.py` now removes them and fails if any object draws at the PC scale without
+being on its fallback list.
+
 **Built (2026-11-05, `claude/ui-phone-menus`):**
 - **Rail and Home**: the nav band is a 96-wide rail down the left (`author_menu_topnav.py`, `author_menu_phone.py`), Home's
   chip, Settings, Up next and hub row take their R55Home poses (`author_menu_home.py`).

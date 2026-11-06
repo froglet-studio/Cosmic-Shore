@@ -316,6 +316,7 @@ class Ids:
                        "trigger", "availability")} for _, link, _ in TABS]
         self.keys = [{k: str(f(f"Key{a['side']}#{k}")) for k in ("inst", "stub", "stub_label_kt", "stub_border_th", "hover")}
                      for a in ARROWS]
+        self.arrow_phone = [str(f(f"Arrow{a['side']}#phone")) for a in ARROWS]   # LT / RT off the canvas on a phone
         # The tabs as they were keyed before section 84 (by place, 0-4) are all retired; Tab4 was PROFILE (Rev 13).
         self.retired = {str(f(f"Tab{i}#{k}")) for i in range(5) for k in
                         ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "stub_lock", "stub_label",
@@ -329,7 +330,7 @@ class Ids:
             out |= set(t.values())
         for k in self.keys:
             out |= set(k.values())
-        return out
+        return out | set(self.arrow_phone)
 
     def all(self):
         out = set(self.band.values()) | set(self.rule.values())
@@ -337,7 +338,7 @@ class Ids:
             out |= {v for k, v in t.items() if i in LOCKED_I or k not in ("stub_lock", "stub_label", "availability")}
         for k in self.keys:
             out |= set(k.values())
-        return out
+        return out | set(self.arrow_phone)
 
 
 def kit_src(prefab, key):
@@ -509,7 +510,15 @@ def transform(text):
     for a_index, a in enumerate(ARROWS):
         k = ids.keys[a_index]
         x = xs[0] if a_index == 0 else xs[-1]
-        sc.replace(a["go"], go_doc(a["go"], a["name"], [a["rt"], a["cr"], a["img"], a["btn"], k["hover"]]))
+        # On a phone the band is the rail (author_menu_phone.py, section 129) and LT / RT have no place on it: the arrow
+        # leaves the canvas, and having a PhoneRect it is left out of the rail's stack (pads still switch tabs).
+        ph = ids.arrow_phone[a_index]
+        sc.replace(a["go"], go_doc(a["go"], a["name"], [a["rt"], a["cr"], a["img"], a["btn"], k["hover"], ph]))
+        ph_doc = body(ph, 114, K.phone_rect(K.rect((0, 0), None, (-4000, -4000), (10, 10), (0, 0))), a["go"], ids.ctx)
+        if sc.has(ph):
+            sc.replace(ph, ph_doc)
+        else:
+            sc.insert_after(a["btn"], ph, ph_doc)
         sc.replace(a["rt"], rt_doc(a["rt"], a["go"], [k["stub"]], BUTTONS["rt"],
                                     K.rect((0, 1), None, (x, -BAND_H / 2), keycap_size(a["key"]))))
         sc.replace(a["img"], body(a["img"], 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True), a["go"], ids.ctx))
