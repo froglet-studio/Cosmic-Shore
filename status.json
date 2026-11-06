@@ -1,5 +1,22 @@
 {
   "components": {
+    "ios-prerelease": {
+      "channel": "prerelease",
+      "commit": "e69a542a83",
+      "details": {
+        "event_date": "2026-10-13"
+      },
+      "id": "ios-prerelease",
+      "kind": "channel",
+      "platform": "ios",
+      "result": "success",
+      "run_url": "https://github.com/froglet-studio/Cosmic-Shore/actions/runs/38373220571",
+      "schema": 1,
+      "source": "Phase 1 audit (2026-11-05)",
+      "summary": "Last TestFlight upload 2026-10-13 from a hand export",
+      "updated_at": "2026-11-06T03:37:42Z",
+      "version": "0.2.0"
+    },
     "trunk-static": {
       "commit": "1ac6f87ae0",
       "details": {
@@ -31,6 +48,6 @@
       "updated_at": "2026-11-06T03:37:38Z"
     }
   },
-  "generated_at": "2026-11-06T03:37:39Z",
+  "generated_at": "2026-11-06T03:37:43Z",
   "schema": 1
 }
