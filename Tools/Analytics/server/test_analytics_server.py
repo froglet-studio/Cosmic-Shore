@@ -1347,5 +1347,200 @@ class PresetsHttp(unittest.TestCase):
         self.assertEqual(people[0]["freestyle_entries"], 1)
 
 
+
+# ---------------------------------------------------------------- 2026-11-07: match setups
+
+# (props, setup) - every rule of analytics_store.setup_of, old builds' props included (no domain fields)
+SETUP_TABLE = (
+    # multiplayer, with the domain fields (builds from 2026-11-07)
+    ({"player_count_human": 2, "humans_on_my_domain": 1, "humans_on_other_domains": 1}, "competitive"),
+    ({"player_count_human": 4, "humans_on_my_domain": 1, "humans_on_other_domains": 3}, "competitive"),
+    ({"player_count_human": 4, "humans_on_my_domain": 2, "humans_on_other_domains": 2}, "teams"),
+    ({"player_count_human": 3, "humans_on_my_domain": 2, "humans_on_other_domains": 1}, "teams"),
+    ({"player_count_human": 2, "humans_on_my_domain": 2, "humans_on_other_domains": 0, "ai_on_other_domains": 3},
+     "teams_vs_ai"),
+    ({"player_count_human": 3, "humans_on_my_domain": 3, "humans_on_other_domains": 0}, "teams_vs_ai"),
+    ({"player_count_human": "2", "humans_on_my_domain": "1", "humans_on_other_domains": "1"}, "competitive"),
+    # multiplayer without them: older builds and the PostHog history, never guessed
+    ({"player_count_human": 2, "player_count_ai": 2}, "multi_unrecorded"),
+    ({"player_count_human": 2, "humans_on_other_domains": 1}, "multi_unrecorded"),          # no side of my own
+    ({"player_count_human": 2, "humans_on_my_domain": 1, "humans_on_other_domains": -1}, "multi_unrecorded"),
+    ({"player_count_human": 2, "humans_on_my_domain": True, "humans_on_other_domains": True}, "multi_unrecorded"),
+    # solo, old props: by the AI count (player_count_ai, else ai_count)
+    ({"player_count_human": 1, "player_count_ai": 0}, "solo_alone"),
+    ({"player_count_human": 1}, "solo_alone"),
+    ({}, "solo_alone"),
+    ({"player_count_human": 1, "player_count_ai": 1}, "solo_vs_1_ai"),
+    ({"player_count_human": 1, "player_count_ai": 2}, "solo_vs_2_ai"),
+    ({"player_count_human": 1, "player_count_ai": 3}, "solo_vs_3plus_ai"),
+    ({"player_count_human": 1, "player_count_ai": 7}, "solo_vs_3plus_ai"),
+    ({"player_count_human": 1, "ai_count": 2}, "solo_vs_2_ai"),                                # ai_count stands in
+    ({"player_count_human": 1, "player_count_ai": 0, "ai_count": 3}, "solo_alone"),            # the real count wins
+    ({"player_count_human": 1, "player_count_ai": "nonsense", "ai_count": 1}, "solo_vs_1_ai"),
+    # solo, new props: opponents are the AI on other domains; AI teammates are a slice of their own
+    ({"player_count_human": 1, "player_count_ai": 3, "humans_on_my_domain": 1, "humans_on_other_domains": 0,
+      "ai_on_my_domain": 0, "ai_on_other_domains": 3}, "solo_vs_3plus_ai"),
+    ({"player_count_human": 1, "player_count_ai": 3, "humans_on_my_domain": 1, "humans_on_other_domains": 0,
+      "ai_on_my_domain": 1, "ai_on_other_domains": 2}, "solo_with_ai_team"),
+    ({"player_count_human": 1, "player_count_ai": 1, "ai_on_my_domain": 1, "ai_on_other_domains": 0}, "solo_with_ai_team"),
+    ({"player_count_human": 1, "player_count_ai": 0, "ai_on_my_domain": 0, "ai_on_other_domains": 0}, "solo_alone"),
+)
+
+
+def check_setup_table(classify):
+    """Every row of SETUP_TABLE through `classify`; raises AssertionError naming the first row it gets wrong."""
+    for props, want in SETUP_TABLE:
+        got = classify(props)[0]
+        if got != want:
+            raise AssertionError(f"{props} -> {got}, expected {want}")
+
+
+class Setups(StoreCase):
+    """Shombith, 2026-11-07: "a sliced grouping in overview with competitive, teams, teams vs ai as per the domains in
+    both multiplayer and for solo like the same how many AIs"."""
+
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        team = lambda mine, other, **ai: dict(humans_on_my_domain=mine, humans_on_other_domains=other, domain="Jade", **ai)
+        # the PostHog history: no domain fields, so its multiplayer reads not recorded; solo still has its AI count
+        self.store.ingest([started("u1", "o1", old, humans=2, ai=0), started("u2", "o1", old, humans=2, ai=0),
+                           completed("u1", "o1", old + 60_000),
+                           ev("game_started", "u3", old, match_id="o2", player_count_human=1, ai_count=1,
+                              game_mode="SkimRace")], trusted=True, max_age_days=365)
+        self.store.ingest([
+            started("p1", "m1", T0, ai=0), completed("p1", "m1", T0 + 60_000),
+            started("p1", "m2", T0 + 120_000, ai=1),
+            started("p2", "m3", T0, ai=2), started("p2", "m4", T0 + 300_000, ai=5),
+            started("p3", "m5", T0, ai=3, **team(1, 0, ai_on_my_domain=1, ai_on_other_domains=2)),
+            started("p3", "m6", T0 + 300_000, ai=2, **team(1, 0, ai_on_my_domain=0, ai_on_other_domains=2)),
+            started("q1", "c1", T0, humans=2, ai=0, **team(1, 1)), started("q2", "c1", T0, humans=2, ai=0, **team(1, 1)),
+            completed("q1", "c1", T0 + 60_000, player_won=False), completed("q2", "c1", T0 + 60_000, player_won=True),
+            *[started(f"t{i}", "k1", T0, humans=4, ai=0, **team(2, 2)) for i in range(4)],
+            started("v1", "a1", T0, humans=2, ai=3, **team(2, 0, ai_on_my_domain=0, ai_on_other_domains=3)),
+            started("v2", "a1", T0, humans=2, ai=3, **team(2, 0, ai_on_my_domain=0, ai_on_other_domains=3)),
+            # uneven: the pair are Teams, the one is Competitive, so the match counts in both
+            started("x1", "e1", T0, humans=3, ai=0, **team(2, 1)), started("x2", "e1", T0, humans=3, ai=0, **team(2, 1)),
+            started("x3", "e1", T0, humans=3, ai=0, **team(1, 2)),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_each_setup_comes_from_its_props_and_old_props_are_never_guessed(self):
+        check_setup_table(S.setup_of)
+        self.assertEqual(S.setup_of({"player_count_human": 2, "humans_on_my_domain": 2, "humans_on_other_domains": 0,
+                                     "ai_on_my_domain": 1, "ai_on_other_domains": 3}), ("teams_vs_ai", 2, 0, 1, 3))
+        self.assertEqual(S.setup_of({"player_count_human": 2}), ("multi_unrecorded", None, None, None, None))
+        for props, want in SETUP_TABLE:                     # a setup's group always matches the play type's
+            group = "multi" if (S.as_int(props.get("player_count_human")) or 0) >= 2 else None
+            self.assertEqual(V.SETUP_GROUP[want] == "multiplayer", group == "multi", props)
+        self.assertEqual(S.SETUP_IDS[:4], ("competitive", "teams", "teams_vs_ai", "multi_unrecorded"))  # multiplayer first
+
+    def test_a_broken_classification_fails_the_table(self):
+        # negative control: swap Competitive and Teams, and the same check must fail
+        def broken(props):
+            got = S.setup_of(props)
+            swap = {"competitive": "teams", "teams": "competitive"}
+            return (swap.get(got[0], got[0]),) + got[1:]
+        with self.assertRaisesRegex(AssertionError, "expected competitive"):
+            check_setup_table(broken)
+        with self.assertRaisesRegex(AssertionError, "expected solo_vs_2_ai"):     # and with ai_count ignored
+            check_setup_table(lambda props: S.setup_of({k: v for k, v in props.items() if k != "ai_count"}))
+
+    def test_plays_store_the_setup_and_the_counts(self):
+        self.seed()
+        agg = sqlite3.connect(self.store.agg_path)
+        rows = {r[0]: r[1:] for r in agg.execute(
+            "SELECT match_id || ':' || COALESCE(humans_mine, -1), setup, humans_mine, humans_other, ai_mine, ai_other "
+            "FROM plays")}
+        self.assertEqual(rows["o1:-1"], ("multi_unrecorded", None, None, None, None))
+        self.assertEqual(rows["o2:-1"], ("solo_vs_1_ai", None, None, None, None))     # ai_count, the old fallback
+        self.assertEqual(rows["m5:1"], ("solo_with_ai_team", 1, 0, 1, 2))
+        self.assertEqual(rows["a1:2"], ("teams_vs_ai", 2, 0, 0, 3))
+        self.assertEqual(rows["e1:2"][0], "teams")
+        self.assertEqual(rows["e1:1"][0], "competitive")
+        play_types = dict(agg.execute("SELECT match_id, play_type FROM plays WHERE match_id IN ('o1', 'c1', 'm1')"))
+        self.assertEqual(play_types, {"o1": "multi_human_unknown", "c1": "adversarial", "m1": "solo_alone"})  # as it was
+
+    def test_overview_lists_every_setup_in_order_with_its_counts(self):
+        self.seed()
+        page = V.overview(self.store.agg_path, "release", 90)
+        setups = page["setups"]
+        self.assertEqual([s["setup"] for s in setups], list(S.SETUP_IDS))
+        self.assertEqual([s["group"] for s in setups], ["multiplayer"] * 4 + ["solo"] * 5)
+        got = {s["setup"]: (s["matches"], s["plays"], s["players"]) for s in setups}
+        self.assertEqual(got, {"competitive": (2, 3, 3), "teams": (2, 6, 6), "teams_vs_ai": (1, 2, 2),
+                               "multi_unrecorded": (1, 2, 2), "solo_alone": (1, 1, 1), "solo_vs_1_ai": (2, 2, 2),
+                               "solo_vs_2_ai": (2, 2, 2), "solo_vs_3plus_ai": (1, 1, 1), "solo_with_ai_team": (1, 1, 1)})
+        one = {s["setup"]: s for s in setups}
+        self.assertEqual((one["competitive"]["finished_pct"], one["competitive"]["win_pct"]), (66.7, 50.0))
+        self.assertEqual((one["teams"]["finished_pct"], one["teams"]["win_pct"]), (0.0, None))
+        self.assertEqual(one["solo_with_ai_team"]["label"], "With AI teammates")
+        self.assertEqual(page["setup_history"]["first_domain_day"], day(T0))
+        self.assertEqual((page["setup_history"]["multi_plays"], page["setup_history"]["multi_unrecorded_pct"]), (13, 15.4))
+        self.assertTrue(any("Teams not recorded" in n for n in page["setup_notes"]))
+        solo = {s["setup"]: s["matches"] for s in V.overview(self.store.agg_path, "release", 90, "solo")["setups"]}
+        # the Play filter reaches the setups. Its Solo is play_type solo_alone (player_count_ai 0 or missing), so the
+        # PostHog play that sent only ai_count is in it, and its setup says what it really was: vs 1 AI
+        self.assertEqual({k: n for k, n in solo.items() if n}, {"solo_alone": 1, "solo_vs_1_ai": 1})
+        multi = {s["setup"]: s["players"] for s in V.overview(self.store.agg_path, "release", 90, "multi")["setups"]}
+        self.assertEqual((multi["teams"], multi["solo_vs_1_ai"]), (6, 0))
+        history = V.overview(self.store.agg_path, "release", 90, "all",
+                             {"id": "h", "from": day(S.now_ms() - 40 * DAY), "to": day(T0), "source": "imported", "builds": []})
+        self.assertEqual({s["setup"]: s["matches"] for s in history["setups"] if s["matches"]},
+                         {"multi_unrecorded": 1, "solo_vs_1_ai": 1})          # the history: solo yes, teams not recorded
+
+    def test_series_splits_every_plays_measure_by_setup(self):
+        self.seed()
+        agg = self.store.agg_path
+        out = V.series(agg, "matches", "setup", "none", "release", 90)
+        self.assertEqual(out["keys"], list(S.SETUP_IDS))                       # the setups' own order
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}["teams"], 2)
+        self.assertTrue(any("never guessed" in n for n in out["notes"]))
+        for measure in V.PLAY_MEASURES + ("players", "new_players"):
+            self.assertIn("setup", V.series(agg, measure, "none", "day", "release", 7)["answerable_by"])
+            V.series(agg, measure, "setup", "week", "release", 30)
+        for measure in ("events",) + V.FREESTYLE_MEASURES:                      # negative control: not a match
+            with self.assertRaises(V.BadRequest):
+                V.series(agg, measure, "setup", "day", "release", 7)
+        players = {p["key"]: p["value"] for p in V.series(agg, "players", "setup", "none", "release", 90)["points"]}
+        self.assertEqual((players["teams"], players["competitive"]), (6, 3))
+        solo = V.series(agg, "players", "setup", "none", "release", 90, "solo_vs_ai")
+        self.assertEqual(solo["keys"], ["solo_vs_1_ai", "solo_vs_2_ai", "solo_vs_3plus_ai", "solo_with_ai_team"])
+        self.assertNotIn("play", solo["unfiltered"])
+        pct = {p["key"]: p["value"] for p in V.series(agg, "finished_pct", "setup", "none", "release", 90)["points"]}
+        self.assertEqual((pct["competitive"], pct["solo_alone"]), (66.7, 100.0))
+
+    def test_the_setups_hold_no_player_ids(self):
+        self.seed()
+        dump = "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+        for player in ("u1", "p1", "q1", "t0", "v1", "x3"):
+            self.assertNotIn(f"'{player}'", dump)
+
+
+class SetupsHttp(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        Http.setUp(self)
+        team = dict(humans_on_my_domain=1, humans_on_other_domains=1)
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            started("p1", "m1", T0, ai=2), started("q1", "c1", T0, humans=2, ai=0, **team),
+            started("q2", "c1", T0, humans=2, ai=0, **team)]})
+        self.app.rebuild()
+
+    def test_overview_and_series_carry_the_setups_and_bad_input_is_400(self):
+        status, page, _ = self.call("GET", "/v1/overview?days=7", key="read-key")
+        self.assertEqual(status, 200)
+        self.assertEqual([(s["setup"], s["matches"]) for s in page["setups"] if s["matches"]],
+                         [("competitive", 1), ("solo_vs_2_ai", 1)])
+        status, out, _ = self.call("GET", "/v1/series?measure=matches&by=setup&over=none&days=7", key="read-key")
+        self.assertEqual((status, {p["key"]: p["value"] for p in out["points"]}), (200, {"competitive": 1, "solo_vs_2_ai": 1}))
+        for bad in ("measure=events&by=setup", "measure=freestyle_entries&by=setup", "by=setups", "by=setup&days=5",
+                    "by=setup&play=teams"):
+            status, out, _ = self.call("GET", "/v1/series?" + bad, key="read-key")
+            self.assertEqual(status, 400, bad)
+            self.assertTrue(out["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,8 @@ import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 
+from analytics_store import DOMAINS_FROM, SETUP_IDS, SETUPS
+
 PLAY_TYPES = ("solo_vs_ai", "solo_alone", "coop", "adversarial", "mixed", "multi_human_unknown")
 MAX_ASK_ROWS = 200
 MAX_ASK_STEPS = 5_000_000       # sqlite progress-handler ticks: a runaway query is stopped, not waited on
@@ -179,6 +181,7 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
         f"SELECT kind, SUM(amount) FROM economy WHERE build_kind IN ({marks}) AND day BETWEEN ? AND ? GROUP BY kind",
         *sc.builds, sc.since, sc.until)}
     whales = q("SELECT COALESCE(SUM(players), 0) FROM balances WHERE build_kind=? AND bucket='2,000+'", build)[0][0]
+    setups, setup_history = _setups(db, sc)
     result = {
         "build": build, "days": days, "play": play, "built_ms": _built_ms(db), **sc.describe(),
         "unfiltered": sc.unfiltered(["players", "rows_per_play", "events_24h", "marketing", "business"],
@@ -205,9 +208,42 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
         "business": {"crystals_earned": crystals.get("earned", 0),
                      "crystals_spent": crystals.get("spent", 0) + crystals.get("unlock", 0),
                      "whales_2000": whales},
+        # Match setups (Shombith, 2026-11-07): multiplayer first, then solo, every setup listed (zeros included)
+        "setups": setups, "setup_history": setup_history, "setup_notes": SETUP_NOTES,
     }
     db.close()
     return result
+
+
+def _setups(db, sc):
+    """Overview's match setups in SETUPS order: matches, plays, finished / rematch / won % and players for each, and
+    what history the multiplayer ones have. Players come from player_counts (a player in two setups is in both)."""
+    w, a = sc.where()
+    got = {r[0]: r for r in db.execute(
+        "SELECT COALESCE(setup, 'multi_unrecorded'), COUNT(DISTINCT match_id), COUNT(*), SUM(completed), "
+        "SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END), SUM(won), COUNT(won) FROM plays WHERE " + w + " GROUP BY 1", a)}
+    players = {}
+    if sc.builds:
+        marks = ",".join("?" * len(sc.builds))
+        players = dict(db.execute(
+            f"SELECT key, SUM(players) FROM player_counts WHERE span=? AND source=? AND dim='setup' "
+            f"AND build_kind IN ({marks}) GROUP BY key", (sc.span_none, sc.source, *sc.builds)).fetchall())
+    allowed = set(PLAY_SETUPS.get(sc.play, SETUP_IDS))      # the Play filter: a setup outside its group has no one
+    out = []
+    for setup, group, label in SETUPS:
+        r = got.get(setup) or (setup, 0, 0, 0, 0, 0, 0)
+        out.append({"setup": setup, "label": label, "group": group, "matches": r[1] or 0, "plays": r[2] or 0,
+                    "finished_pct": _pct(r[3] or 0, r[2] or 0), "rematch_pct": _pct(r[4] or 0, r[3] or 0),
+                    "win_pct": _pct(r[5] or 0, r[6] or 0),
+                    "players": (players.get(setup) or 0) if setup in allowed else 0})
+    multi = [s for s in out if s["group"] == "multiplayer"]
+    first = db.execute("SELECT MIN(day) FROM plays WHERE humans_other IS NOT NULL AND build_kind IN "
+                       f"({','.join('?' * len(sc.builds)) or 'NULL'})", sc.builds).fetchone()[0]
+    history = {"domains_from": DOMAINS_FROM, "first_domain_day": first,
+               "multi_plays": sum(s["plays"] for s in multi),
+               "multi_unrecorded_plays": next(s["plays"] for s in multi if s["setup"] == "multi_unrecorded")}
+    history["multi_unrecorded_pct"] = _pct(history["multi_unrecorded_plays"], history["multi_plays"])
+    return out, history
 
 
 def retention_by_play_type(db, build, since, play="all", scope=None):
@@ -490,7 +526,7 @@ FREESTYLE_MEASURES = ("freestyle_entries", "freestyle_players", "freestyle_minut
 SERIES_MEASURES = ("matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events") + \
     FREESTYLE_MEASURES
 MATCH_BY = ("none", "play_type", "era", "platform", "country", "game_mode", "vessel_class", "build_kind", "intensity",
-            "element")
+            "element", "setup")
 SERIES_BY = MATCH_BY + ("from_vessel_class", "switch_source")
 SERIES_OVER = ("day", "week", "none")
 PLAY_MEASURES = ("matches", "finished_pct", "rematch_pct", "flight_min")
@@ -516,13 +552,31 @@ FREESTYLE_NOTES = {
                           "recovered ones from the identify history (builds since 2026-10-12, time approximate, several "
                           "switches between two profile updates read as one)",
 }
-PLAYS_KEY = {"play_type": "play_type", "platform": "COALESCE(platform, 'unknown')",
+PLAYS_KEY = {"play_type": "play_type", "setup": "COALESCE(setup, 'multi_unrecorded')",
+             "platform": "COALESCE(platform, 'unknown')",
              "element": "COALESCE(element, 'none')",
              "country": "COALESCE(country, 'unknown')", "game_mode": "COALESCE(game_mode, 'unknown')",
              "vessel_class": "COALESCE(vessel_class, 'unknown')",
              "intensity": "COALESCE(CAST(intensity AS TEXT), 'unknown')", "build_kind": "build_kind"}
 GROUP_TYPES = {"solo_vs_ai": ("solo_vs_ai",), "solo": ("solo_alone",),
                "multi": ("coop", "adversarial", "mixed", "multi_human_unknown")}
+# The setups inside each Play filter group (a play's setup and its play type read the same player_count_human and
+# player_count_ai, so they agree; only a build that sent ai_count without player_count_ai can differ).
+SETUP_GROUP = {s[0]: s[1] for s in SETUPS}
+SETUP_LABEL = {s[0]: s[2] for s in SETUPS}
+PLAY_SETUPS = {"solo": ("solo_alone",), "solo_vs_ai": ("solo_vs_1_ai", "solo_vs_2_ai", "solo_vs_3plus_ai", "solo_with_ai_team"),
+               "multi": tuple(s[0] for s in SETUPS if s[1] == "multiplayer")}
+SETUP_NOTES = [
+    "a match's setup is read from each player's side of game_started: Competitive is one human on their domain against "
+    "other humans, Teams is 2+ humans on their domain against other humans, Teams vs AI is every human on one domain",
+    "the multiplayer setups need the domain fields builds send from " + DOMAINS_FROM + " (humans_on_my_domain, "
+    "humans_on_other_domains); older multiplayer matches and the PostHog history read Teams not recorded, never guessed",
+    "the solo setups count the AI from player_count_ai (ai_count when it is missing), so old matches and the PostHog "
+    "history have them too; with the domain fields, vs N AI counts only the AI on other domains, and With AI teammates "
+    "(ai_on_my_domain 1+) exists only from builds of " + DOMAINS_FROM,
+    "an uneven match (2 humans against 1) is Teams from the pair's side and Competitive from the one's, so its match "
+    "counts in both; plays and finished, rematch and won percentages count each player once",
+]
 MAX_KEYS = 8
 WEEK_SQL = "date({col}, '-6 days', 'weekday 1')"
 
@@ -570,6 +624,8 @@ def _player_cells(db, sc, measure, by, over, era_key):
         dim, keys = "play_group", [sc.play]                 # players who played that group
     elif by == "play_type" and sc.play != "all":
         keys = list(GROUP_TYPES[sc.play])
+    elif by == "setup" and sc.play != "all":
+        keys = list(PLAY_SETUPS[sc.play])
     if column == "players" and over == "week":
         span, x_col = sc.span_week, "x"
     elif column == "players" and over == "none":
@@ -679,6 +735,8 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
         keys = sorted(totals, key=lambda k: (not str(k).isdigit(), int(k) if str(k).isdigit() else 0, str(k)))
     elif by == "element":
         keys = sorted(totals, key=lambda k: (ELEMENT_ORDER.index(k) if k in ELEMENT_ORDER else 99, str(k)))
+    elif by == "setup":
+        keys = sorted(totals, key=lambda k: (SETUP_IDS.index(k) if k in SETUP_IDS else 99, str(k)))
     else:
         keys = sorted(totals, key=lambda k: (-totals[k], str(k)))
     if measure in COUNT_MEASURES and by not in ("none", "era"):
@@ -713,7 +771,7 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
         secondary = _secondary_elements(agg_path, sc, parts)
     unfiltered = []
     if play != "all" and (measure in ("events",) + FREESTYLE_MEASURES or (measure in ("players", "new_players")
-                                                                          and by not in ("none", "play_type"))):
+                                                                          and by not in ("none", "play_type", "setup"))):
         unfiltered.append("play")
     if by == "build_kind":
         unfiltered.append("build")
@@ -729,6 +787,8 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
                      "game's ModeGenre (mode_elements.json), so older matches and the PostHog history have one too; a "
                      "two-element mode counts under its first (Brood Rush: Mass, and Space as its second); a "
                      "mode with no genre or an old mode name reads No element (key none)")
+    if by == "setup":
+        notes += SETUP_NOTES
     if measure in FREESTYLE_NOTES:
         notes.append(FREESTYLE_NOTES[measure])
     out = {**base, "points": points, "keys": out_keys, "unfiltered": unfiltered, "notes": notes}

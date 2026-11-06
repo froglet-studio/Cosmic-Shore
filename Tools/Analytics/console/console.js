@@ -223,7 +223,7 @@
     freestyle_minutes: ["Toybox minutes", "count"], freestyle_switches: ["Vessel switches", "count"],
   };
   const MATCH_MEASURES = ["matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events"];
-  const SPLITS = [["none", "None"], ["play_type", "Play type"], ["element", "Element"], ["era", "Era"], ["platform", "Platform"],
+  const SPLITS = [["none", "None"], ["play_type", "Play type"], ["setup", "Setup"], ["element", "Element"], ["era", "Era"], ["platform", "Platform"],
                   ["country", "Country"], ["game_mode", "Mode"], ["vessel_class", "Vessel"], ["build_kind", "Build"],
                   ["intensity", "Intensity"], ["from_vessel_class", "Switched from"], ["switch_source", "Source"]];
   const MATCH_SPLITS = SPLITS.map(([k]) => k).filter((k) => !["from_vessel_class", "switch_source"].includes(k));
@@ -234,6 +234,22 @@
   const elementColour = (k) => `color-mix(in srgb, var(--fs-text) ${ELEMENT_SHADE[k] || ELEMENT_SHADE.none}%, var(--fs-ground))`;
   const elementLabel = (k) => (!k || k === "none" ? "No element" : String(k));
   const SWITCH_SOURCE = { event: "Exact (game event)", recovered: "Recovered (approx.)" };
+  // Match setups (Shombith, 2026-11-07; analytics_store.setup_of): categories, not elements or domains. Multiplayer takes
+  // the theme's series colours in a fixed order, "not recorded" the neutral grey; solo is one hue (the set's data
+  // colour) in steps, light to dark by AI count, AI teammates darkest. Labels sit on the marks.
+  const SETUP_ORDER = ["competitive", "teams", "teams_vs_ai", "multi_unrecorded", "solo_alone", "solo_vs_1_ai", "solo_vs_2_ai",
+                       "solo_vs_3plus_ai", "solo_with_ai_team"];
+  const SETUP_SHORT = { competitive: "Competitive", teams: "Teams", teams_vs_ai: "Teams vs AI", multi_unrecorded: "Teams not recorded",
+                        solo_alone: "Alone", solo_vs_1_ai: "vs 1 AI", solo_vs_2_ai: "vs 2 AI", solo_vs_3plus_ai: "vs 3+ AI",
+                        solo_with_ai_team: "With AI teammates" };
+  const SETUP_LONG = Object.assign({}, SETUP_SHORT, { solo_alone: "Solo, alone", solo_vs_1_ai: "Solo vs 1 AI", solo_vs_2_ai: "Solo vs 2 AI",
+                                                       solo_vs_3plus_ai: "Solo vs 3+ AI", solo_with_ai_team: "Solo with AI teammates" });
+  const SETUP_COLOUR = {
+    competitive: "var(--series-1)", teams: "var(--series-2)", teams_vs_ai: "var(--series-3)", multi_unrecorded: "var(--fs-text-off)",
+    solo_alone: "color-mix(in srgb, var(--data) 25%, var(--fs-text))", solo_vs_1_ai: "color-mix(in srgb, var(--data) 50%, var(--fs-text))",
+    solo_vs_2_ai: "color-mix(in srgb, var(--data) 75%, var(--fs-text))", solo_vs_3plus_ai: "var(--data)",
+    solo_with_ai_team: "color-mix(in srgb, var(--data) 62%, var(--fs-ground))",
+  };
   const OVERS = [["day", "Day"], ["week", "Week"], ["none", "Total"]];
 
   function makeFrame(o) {
@@ -287,6 +303,7 @@
     if (f.by === "country") return country(k);
     if (f.by === "intensity") return `Intensity ${k}`;
     if (f.by === "element") return elementLabel(k);
+    if (f.by === "setup") return SETUP_LONG[k] || String(k);
     if (f.by === "switch_source") return SWITCH_SOURCE[k] || String(k);
     if ((f.by === "vessel_class" || f.by === "from_vessel_class") && k === "unknown") return "Not named (older builds)";
     return String(k);
@@ -305,12 +322,13 @@
     }
     if (f.by === "era" && eraById(k)) return eraColour(eraById(k));
     if (f.by === "element") return elementColour(k);
+    if (f.by === "setup") return SETUP_COLOUR[k] || OTHER;
     if (f.keys.length === 1 && (k === null || !f.time)) return "var(--data)";
     return i < 4 ? `var(--series-${i + 1})` : OTHER;
   }
   // At most four named series and "Other" for a picture (the Table shows every one).
   function folded(f) {
-    if (f.keys.length <= 5 || f.by === "play_type" || f.by === "era" || f.by === "element") return f;
+    if (f.keys.length <= 5 || f.by === "play_type" || f.by === "era" || f.by === "element" || f.by === "setup") return f;
     const keep = f.keys.filter((k) => k !== "other").slice(0, 4), rest = f.keys.filter((k) => !keep.includes(k));
     if (f.kind !== "count") return makeFrame(Object.assign({}, f, { keys: keep, hidden: rest.length }));
     const v = new Map(f.v);
@@ -482,7 +500,7 @@
     const shown = items.slice(0, limit);
     const max = f.kind === "pct" ? 100 : Math.max(1, ...shown.map((r) => Number(r[1]) || 0));
     const tip = tipFor(box);
-    const entity = f.by === "play_type" || f.by === "era" || f.by === "element" || f.colours;   // otherwise one series: colour is not identity
+    const entity = f.by === "play_type" || f.by === "era" || f.by === "element" || f.by === "setup" || f.colours;   // otherwise one series: colour is not identity
     const rows = h("div", { class: "hbars" }, shown.map(([k, v], i) => {
       const colour = entity ? keyColour(f, k, i) : "var(--data)";
       const fill = h("div", { class: "hbar-fill", style: `width:${Math.max(0, Math.min(100, 100 * (Number(v) || 0) / max))}%;background:${colour}` });
@@ -497,9 +515,10 @@
   }
 
   // A donut for one whole in at most six parts (the fifth and sixth fold into Other).
-  function drawDonut(f0, W, box, { centre, max = 200 } = {}) {
+  // labels: each slice of 6% or more carries its share on the mark (text in the text token, haloed by the ground).
+  function drawDonut(f0, W, box, { centre, max = 200, labels = false } = {}) {
     let items = f0.time ? f0.keys.map((k) => [k, f0.total(k)]) : f0.keys.map((k) => [k, Number(f0.get(null, k)) || 0]);
-    const entity = f0.by === "play_type" || f0.by === "era" || f0.by === "element" || f0.colours;
+    const entity = f0.by === "play_type" || f0.by === "era" || f0.by === "element" || f0.by === "setup" || f0.colours;
     if (!entity && items.length > 4) {
       const rest = items.slice(4);
       items = items.slice(0, 4).concat([["other", sum(rest, (r) => r[1])]]);
@@ -509,6 +528,7 @@
     const svg = s("svg", { width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: "img", "aria-label": "Donut chart" });
     const tip = tipFor(box);
     let a = -Math.PI / 2;
+    const marks = [];
     items.forEach(([k, v], i) => {
       if (!v) return;
       const da = 2 * Math.PI * v / total, a1 = a + da;
@@ -523,8 +543,14 @@
       path.addEventListener("mouseenter", () => { path.classList.add("hot"); tip(`${keyLabel(f0, k)}: ${valueText(f0, v)} (${pct(100 * v / total)})`, R + R * 0.8 * Math.cos(mid), R + R * 0.8 * Math.sin(mid)); });
       path.addEventListener("mouseleave", () => { path.classList.remove("hot"); tip(null); });
       svg.append(path);
+      if (labels && v / total >= 0.06) {
+        const rm = (R + r0) / 2;
+        marks.push(s("text", { class: "slice-label num", x: R + rm * Math.cos(mid), y: R + rm * Math.sin(mid) + 4, "text-anchor": "middle" },
+          `${Math.round(100 * v / total)}%`));
+      }
       a = a1;
     });
+    marks.forEach((m) => svg.append(m));
     svg.append(s("text", { class: "donut-num", x: R, y: R + (size < 130 ? 8 : 6), "text-anchor": "middle", style: size < 130 ? "font-size:22px" : null }, fmt(Math.round(total))));
     if (size >= 130) svg.append(s("text", { class: "axis", x: R, y: R + 26, "text-anchor": "middle" }, centre || (MEASURES[f0.measure] || ["total"])[0].toLowerCase()));
     const leg = h("div", { class: "donut-legend" }, items.map(([k, v], i) => h("div", { class: "donut-key" },
@@ -591,7 +617,7 @@
     if (allowed.includes("bars") && (!f.time || stackable)) out.push("bars");
     if (allowed.includes("line") && f.time && f.xs.length >= 2) out.push("line");
     const pieParts = f.time ? parts : f.keys.length;
-    if (allowed.includes("pie") && pieParts >= 2 && pieParts <= 6 && f.kind === "count") out.push("pie");
+    if (allowed.includes("pie") && pieParts >= (cfg.pieMin || 2) && pieParts <= 6 && f.kind === "count" && f.whole !== false) out.push("pie");
     if (allowed.includes("number")) out.push("number");
     if (allowed.includes("table")) out.push("table");
     return out.filter((x, i) => out.indexOf(x) === i);
@@ -609,7 +635,7 @@
     const body = h("div", { class: "chart-body" });
     const note = h("p", { class: "small chart-note", hidden: true });
     const view = h("div", { class: "chart-view" }, switches, body, note);
-    let frame = null, loading = 0;
+    let frame = null, loading = 0, shown = null;            // shown: the form drawn (pick.form when this frame allows it)
     const remember = () => store.set("fa-chart-" + cfg.id, pick);
     const combo = (m, b, o) => `${m}|${b}|${o}`;
 
@@ -624,10 +650,10 @@
       const formOpts = forms.map((x) => [x, (cfg.custom && cfg.custom[x] && cfg.custom[x].label) || FORM_LABEL[x]]);
       let formCtl;
       if (cfg.compact && formOpts.length > 1) {          // a small tile: the forms as one select
-        const sel = h("select", { class: "mini-select", "aria-label": "Chart form" }, formOpts.map(([v, l]) => h("option", { value: v, selected: v === pick.form || null }, l)));
+        const sel = h("select", { class: "mini-select", "aria-label": "Chart form" }, formOpts.map(([v, l]) => h("option", { value: v, selected: v === (shown || pick.form) || null }, l)));
         sel.addEventListener("change", () => { pick.form = sel.value; remember(); paint(); });
         formCtl = h("label", { class: "mini-seg" }, h("span", { class: "mini-lab" }, "Form"), sel);
-      } else formCtl = seg("Form", formOpts, pick.form, (v) => { pick.form = v; remember(); paint(); });
+      } else formCtl = seg("Form", formOpts, shown || pick.form, (v) => { pick.form = v; remember(); paint(); });
       const parts = [formCtl];
       if (cfg.measures) parts.push(seg("Measure", cfg.measures.filter(([k]) => !rejected.has(combo(k, "none", pick.over)) || k === pick.measure),
         pick.measure, (v) => { pick.measure = v; remember(); load(); }));
@@ -650,23 +676,24 @@
     }
     function paint() {
       const forms = formsFor(frame, cfg);
-      if (!forms.includes(pick.form)) pick.form = forms.includes(cfg.defaults && cfg.defaults.form) ? cfg.defaults.form : forms[0];
+      if (!pick.form) pick.form = forms.includes(cfg.defaults && cfg.defaults.form) ? cfg.defaults.form : forms[0];
+      shown = forms.includes(pick.form) ? pick.form : forms.includes(cfg.defaults && cfg.defaults.form) ? cfg.defaults.form : forms[0];
       drawSwitches();
       if (!frame) return;
       const empty = cfg.isEmpty ? cfg.isEmpty(frame) : (!frame.custom && frame.keys.every((k) => frame.xs.every((x) => !frame.get(x, k))));
-      if (empty && pick.form !== "table") { body.replaceChildren(h("p", { class: "small" }, cfg.emptyText || "Nothing in this range.")); return; }
-      const custom = cfg.custom && cfg.custom[pick.form];
+      if (empty && shown !== "table") { body.replaceChildren(h("p", { class: "small" }, cfg.emptyText || "Nothing in this range.")); return; }
+      const custom = cfg.custom && cfg.custom[shown];
       let out;
       if (custom) out = responsive((w, box) => custom.draw(frame, w, box));
-      else if (pick.form === "table") out = drawTable(frame);
-      else if (pick.form === "number") out = drawNumber(frame);
-      else if (pick.form === "pie") out = responsive((w, box) => drawDonut(frame, w, box, cfg.donut || {}));
-      else if (pick.form === "line") out = responsive((w, box) => drawLines(frame, w, box, { height: cfg.height || 220, target: cfg.target }));
+      else if (shown === "table") out = drawTable(frame);
+      else if (shown === "number") out = drawNumber(frame);
+      else if (shown === "pie") out = responsive((w, box) => drawDonut(frame, w, box, cfg.donut || {}));
+      else if (shown === "line") out = responsive((w, box) => drawLines(frame, w, box, { height: cfg.height || 220, target: cfg.target }));
       else if (frame.time) out = responsive((w, box) => drawTimeBars(frame, w, box, { height: cfg.height || 220 }));
       else out = responsive((w, box) => drawHBars(frame, w, box, { limit: cfg.limit || 12 }));
       body.replaceChildren(out);
       const uf = (frame.unfiltered || []).length && (state.play !== "all" || state.era) ? filterWord() : "";
-      const hidden = frame.hidden && pick.form !== "table" ? `${frame.hidden} smaller parts are in the Table.` : "";
+      const hidden = frame.hidden && shown !== "table" ? `${frame.hidden} smaller parts are in the Table.` : "";
       const notes = (frame.notes || []).map((n) => (typeof n === "string" ? n : n && (n.text || n.note || n.title))).filter(Boolean);
       note.textContent = [uf && `Not split by ${uf}: ${frame.unfiltered.join(", ").replace(/_/g, " ")}.`, hidden, ...notes].filter(Boolean).join(" ");
       note.hidden = !note.textContent;
@@ -707,7 +734,7 @@
       }
     }
     view.reload = load;
-    view.pick = () => Object.assign({}, pick);
+    view.pick = () => Object.assign({}, pick, shown ? { form: shown } : {});
     load();
     return view;
   }
@@ -729,6 +756,8 @@
     "overview.freestyle.switches": "Vessels switched to in the Toybox", "overview.freestyle.vessels": "Vessels flown in the Toybox",
     "retention.series": "Players and rematches over time", "matches.series": "Matches per day", "matches.element": "By element",
     "players.series": "Active players", "overview.playtype": "Rematch and return by play type", "overview.health": "Match health by build",
+    "overview.setups.multiplayer": "Match setups, multiplayer", "overview.setups.solo": "Match setups, solo",
+    "overview.setups.series": "Match setups over time",
   };
   const chartTitle = (id) => CHART_TITLES[id] || String(id || "").replace(/[._]/g, " ");
   const presetable = (cfg) => !cfg.compact && cfg.views !== false && !/^(profile|dash|query)\./.test(cfg.id) && !(state.page === "players" && state.person);
@@ -961,6 +990,7 @@
           ], "tiles-inner"))));
     }
     parts.push(seriesPanel("overview.series", "Matches over time", { measure: "matches", by: "play_type", over: "day", form: "bars" }));
+    parts.push(...setupsSection(o));
     parts.push(...await freestyleSection());
     parts.push(h("div", { class: "grid2" },
       playTypePanel("overview.playtype", "Rematch and return by play type", null, o.rematch_by_play_type || []),
@@ -986,6 +1016,51 @@
           load: staticLoad(() => catFrame(mk.by_platform, "platform", "players", { kname: "Platform", vname: "Players" })) }) : null));
     }
     return parts;
+  }
+
+  // ------------------------------------------------------------------ Match setups
+  // Shombith, 2026-11-07: "a sliced grouping in overview with competitive, teams, teams vs ai as per the domains in both
+  // multiplayer and for solo like the same how many AIs". Two slices side by side (GET /v1/overview's setups), each a
+  // switchable chart, and the setups over time (GET /v1/series?by=setup).
+  const SETUP_MEASURES = [["matches", "Matches"], ["players", "Players"], ["finished_pct", "Finished %"], ["rematch_pct", "Rematch %"]];
+
+  function setupSlice(group, title, rows, note, after) {
+    const vname = (m) => (SETUP_MEASURES.find((x) => x[0] === m) || [, m])[1];
+    return chartPanel({ id: `overview.setups.${group}`, title, note, forms: ["pie", "bars", "table"], defaults: { form: "pie" }, pieMin: 1,
+      measures: SETUP_MEASURES, donut: { centre: "", labels: true, max: 180 },
+      emptyText: group === "multiplayer" ? "No multiplayer matches in this range." : "No solo matches in this range.",
+      load: staticLoad(({ measure }) => Object.assign(catFrame(rows, "setup", measure, {
+        by: "setup", measure, kind: /pct$/.test(measure) ? "pct" : "count", kname: "Setup", vname: vname(measure),
+        label: (k) => SETUP_SHORT[k] || String(k),
+        whole: measure !== "players",                        // a player in two setups is in both: not a whole, no pie
+        notes: measure === "players" ? ["A player who played two setups counts in both, so these do not add up to the players."] : [],
+        tips: Object.fromEntries(rows.map((r) => [r.setup, `${fmt(r.plays)} plays · finished ${pct(r.finished_pct)} · won ${pct(r.win_pct)}`])) }),
+        { table: { columns: ["Setup", "Matches", "Plays", "Players", "Finished", "Rematch", "Won"], rows: rows.map((r) =>
+          [SETUP_SHORT[r.setup] || r.setup, fmt(r.matches), fmt(r.plays), fmt(r.players), pct(r.finished_pct), pct(r.rematch_pct), pct(r.win_pct)]) } })),
+      after });
+  }
+
+  function setupsSection(o) {
+    const list = Array.isArray(o.setups) ? o.setups.slice().sort((a, b) => SETUP_ORDER.indexOf(a.setup) - SETUP_ORDER.indexOf(b.setup)) : null;
+    if (!list) return [];
+    const hi = o.setup_history || {};
+    const from = String(hi.first_domain_day || hi.domains_from || "2026-11-07");
+    const since = `${shortDay(from)} ${from.slice(0, 4)}`;
+    const multi = list.filter((r) => r.group === "multiplayer"), solo = list.filter((r) => r.group === "solo");
+    const multiNote = hi.multi_plays && hi.multi_unrecorded_pct > 50
+      ? h("p", { class: "small" }, `Builds before ${since} did not send domains; new builds fill this in. ` +
+          `${pct(hi.multi_unrecorded_pct)} of multiplayer plays here are not recorded.`)
+      : h("p", { class: "small" }, "From each player's side: Competitive is one human on their domain against other humans, Teams is two or more together against humans, Teams vs AI is every human on one domain.");
+    const soloNote = h("p", { class: "small" }, "By the AI they played against, so the PostHog history has it too. " +
+      `With AI teammates (an AI on their own domain) exists only from builds of ${since}.`);
+    return [
+      h("h2", { class: "h3 section-title" }, "Match setups"),
+      h("p", { class: "small" }, "Who a match was played with, by the domains every pilot was on. A match counts once in each setup its players saw; an uneven one (two against one) is Teams for the pair and Competitive for the one."),
+      h("div", { class: "grid2" },
+        setupSlice("multiplayer", "Multiplayer", multi, "two or more humans", multiNote),
+        setupSlice("solo", "Solo", solo, "one human, by how many AI", soloNote)),
+      seriesPanel("overview.setups.series", "Match setups over time", { measure: "matches", by: "setup", over: "week", form: "bars" }),
+    ];
   }
 
   // ------------------------------------------------------------------ Freestyle (the Toybox)
