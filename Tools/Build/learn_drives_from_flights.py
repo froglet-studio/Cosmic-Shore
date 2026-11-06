@@ -340,6 +340,14 @@ def pct(vals, q):
     return vals[lo] + (vals[hi] - vals[lo]) * (k - lo)
 
 
+def yaw_off_nose(fwd, up, to):
+    """The target's bearing off the nose on the hull's own horizontal, in degrees: StoatSlingMath.TryAutopilotSide's
+    |atan2(local.x, local.z)|, with local.x along the hull's right (Unity's up x forward) and local.z along its nose."""
+    right = (up[1] * fwd[2] - up[2] * fwd[1], up[2] * fwd[0] - up[0] * fwd[2], up[0] * fwd[1] - up[1] * fwd[0])
+    x, z = sum(a * b for a, b in zip(to, right)), sum(a * b for a, b in zip(to, fwd))
+    return abs(math.degrees(math.atan2(x, z))) if abs(x) + abs(z) > 1e-9 else 0.0
+
+
 def angle(a, b):
     la, lb = math.sqrt(sum(x * x for x in a)), math.sqrt(sum(x * x for x in b))
     if la < 1e-9 or lb < 1e-9:
@@ -427,6 +435,56 @@ def on_shipped_family(f):
     return family == shipped
 
 
+# A hull whose KIT changed learns from the races flown on the new kit only: a race on the old kit measures presses the
+# hull no longer makes the same way, and writing it would undo the owner's tuning of the new one. The Stoat's Time mode
+# became the trampoline (Yash, 8abe1fe83b, 2026-11-04 02:13 IST: no orbit, a white hole's soft shell you bounce off),
+# and the sweep held back the orbit races' numbers twice (Docs/Reports/AI_LEARNING.md, 2026-11-03 and 2026-11-06).
+# A race counts only when its BUILD had the kit: the flight's "gitCommitHash" (HumanFlightRecorder, 2026-11-07) must
+# contain "commit" (git merge-base --is-ancestor). The date cannot say it: the trampoline reached bleeding-edge two days
+# after it was committed and development still lacks it, so 9 Stoat Regatta races flown after the commit raced the orbit
+# (the review of 2026-11-07). A flight from before the recorder named its build is judged by hand in JUDGED_KIT (the
+# nearest load report before it names the build); any other flight without a known build is left out.
+# "unread": the fields the new kit's AI no longer reads, never written (StoatSlingExecutor.AutopilotTrampoline reads
+# aiSlingMinTurnDegrees, aiSlingMinDistance and aiSlingIntervalSeconds, and its press squeezes at autopilotHold01; it
+# presses and lets go at once, so it has no release cone).
+KIT_SINCE = {
+    "Stoat": {"commit": "8abe1fe83b", "kit": "the trampoline (8abe1fe83b)",
+              "unread": {"StoatSlingConfig": ("aiReleaseConeDegrees",)}},
+}
+JUDGED_KIT = {
+    # Yash, I3, 2026-11-07 02:08 IST: the nearest Slingshot load before it is on Ys-bleeding-edge after 8abe1fe83b, and
+    # its presses swept 129 deg where the orbit races' swept 54-81.
+    "flight_Slingshot_Stoat_20261107_020837.json": True,
+}
+_KIT_CACHE = {}
+
+
+def build_has(commit, build):
+    """True / False when the build is known to contain / lack the commit; None when this clone cannot tell."""
+    if not build or build == "unknown":
+        return None
+    key = (commit, build)
+    if key not in _KIT_CACHE:
+        import subprocess
+        git = lambda *a: subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True).returncode
+        if git("cat-file", "-e", f"{build}^{{commit}}") != 0 or git("cat-file", "-e", f"{commit}^{{commit}}") != 0:
+            _KIT_CACHE[key] = None
+        else:
+            _KIT_CACHE[key] = git("merge-base", "--is-ancestor", commit, build) == 0
+    return _KIT_CACHE[key]
+
+
+def on_current_kit(f):
+    """True when the flight was flown on a build with its hull's current kit (or the hull's kit never changed)."""
+    kit = KIT_SINCE.get(f.get("hull"))
+    if not kit:
+        return True
+    has = build_has(kit["commit"], f.get("gitCommitHash"))
+    if has is not None:
+        return has
+    return bool(JUDGED_KIT.get(os.path.basename(f.get("name") or "")))
+
+
 def is_race(f):
     """A race: its flight carries the course's rings (or is Regatta, whose old flights have the course generator)."""
     return bool(f.get("ringList")) or f.get("mode") == "Regatta"
@@ -473,8 +531,9 @@ def samples_of(f):
         dist = math.sqrt(sum(x * x for x in to))
         speed = g("speed")
         fwd = (g("fx"), g("fy"), g("fz"))
+        up = (g("ux"), g("uy", 1.0), g("uz"))
         out.append({
-            "nose": angle(fwd, to), "dist": dist, "fwd": fwd, "trig": max(g("lt"), g("rt")), "tm": int(g("timeMode", -1)),
+            "nose": angle(fwd, to), "noseYaw": yaw_off_nose(fwd, up, to), "dist": dist, "fwd": fwd, "trig": max(g("lt"), g("rt")), "tm": int(g("timeMode", -1)),
             "t": g("t"), "angle": angle(course, to), "stick": max(abs(g("xSum")), abs(g("ySum"))),
             "steer": abs(g("xSum")) + abs(g("ySum")) + abs(g("yDiff")), "yaw": g("xSum"),
             "runway": dist / max(speed, 1.0), "speed": speed, "ring": int(g("rings")), "state": int(g("state")), "held": g("held") > 0.5,
@@ -687,8 +746,21 @@ def measure_stoat(S, held=False):
                           often you press, and how far round you let it carry you (heading swept while held)
       StoatSlingConfig  - Time mode's catch sling: the turn and distance you sling at, how often, your squeeze, and
                           where the ring is when you let go"""
+    # S may join several flights; each restarts its clock, so a "t" that goes back starts a new flight (seg): an open
+    # press closes at the flight's end and no gap or switch is measured across two flights (a gap there is negative).
+    seg = [0] * len(S)
+    for i in range(1, len(S)):
+        seg[i] = seg[i - 1] + (1 if S[i]["t"] < S[i - 1]["t"] else 0)
     eps, start, peak, swept = [], None, 0.0, 0.0
+
+    def close(end):
+        eps.append({"press": S[start], "release": S[end], "dur": S[end]["t"] - S[start]["t"], "peak": peak,
+                    "swept": swept, "tm": S[start]["tm"], "seg": seg[start]})
+
     for i, s in enumerate(S):
+        if start is not None and seg[i] != seg[start]:
+            close(i - 1)
+            start = None
         on = s["trig"] > TRIGGER_ON and s["held"] == held
         if on and start is None:
             start, peak, swept = i, s["trig"], 0.0
@@ -696,15 +768,17 @@ def measure_stoat(S, held=False):
             peak = max(peak, s["trig"])
             swept += angle(S[i - 1]["fwd"], s["fwd"])
         elif start is not None:
-            eps.append({"press": S[start], "release": S[i - 1], "dur": S[i - 1]["t"] - S[start]["t"], "peak": peak,
-                        "swept": swept, "tm": S[start]["tm"]})
+            close(i - 1)
             start = None
+    if start is not None:
+        close(len(S) - 1)
     # timeMode: 0 Mass, 1 Time (the catch sling), 2 Drive (the warp pair, its own mode: its squeezes are not slings)
-    switches = [S[i] for i in range(1, len(S)) if S[i]["held"] == held and S[i]["tm"] != S[i - 1]["tm"] and S[i - 1]["tm"] >= 0]
+    switches = [dict(S[i], seg=seg[i]) for i in range(1, len(S))
+                if seg[i] == seg[i - 1] and S[i]["held"] == held and S[i]["tm"] != S[i - 1]["tm"] and S[i - 1]["tm"] >= 0]
     into_time = [s for s in switches if s["tm"] == 1]
 
     def gaps(evts):
-        return [b["t"] - a["t"] for a, b in zip(evts, evts[1:])]
+        return [b["t"] - a["t"] for a, b in zip(evts, evts[1:]) if a.get("seg") == b.get("seg")]
 
     out = {"StoatModeAction": {"switches": len(switches)}, "StoatDipoleConfig": {}, "StoatSlingConfig": {}}
     if len(into_time) >= MIN_EPISODES // 2 + 1:
@@ -717,7 +791,7 @@ def measure_stoat(S, held=False):
         out["StoatDipoleConfig"].update({
             "autopilotHold01": statistics.median(e["peak"] for e in mass),
             "autopilotMinDistance": pct([e["press"]["dist"] for e in mass], 0.2),
-            "autopilotIntervalSeconds": pct(gaps([e["press"] for e in mass]), 0.1),
+            "autopilotIntervalSeconds": pct(gaps([dict(e["press"], seg=e["seg"]) for e in mass]), 0.1),
             "autopilotMinHoldSeconds": pct([e["dur"] for e in mass], 0.1),
             "autopilotMaxHoldSeconds": pct([e["dur"] for e in mass], 0.95),
             "autopilotMaxOrbitDegrees": pct([e["swept"] for e in mass], 0.9),
@@ -727,9 +801,11 @@ def measure_stoat(S, held=False):
     if len(sling) >= MIN_EPISODES:
         out["StoatSlingConfig"].update({
             "autopilotHold01": statistics.median(e["peak"] for e in sling),
-            "aiSlingMinTurnDegrees": pct([e["press"]["nose"] for e in sling], 0.2),
+            # the bearing TryAutopilotSide gates on: off the nose on the hull's horizontal, not the 3D angle (a ring
+            # above the nose is no turn to it)
+            "aiSlingMinTurnDegrees": pct([e["press"].get("noseYaw", e["press"]["nose"]) for e in sling], 0.2),
             "aiSlingMinDistance": pct([e["press"]["dist"] for e in sling], 0.2),
-            "aiSlingIntervalSeconds": pct(gaps([e["press"] for e in sling]), 0.1),
+            "aiSlingIntervalSeconds": pct(gaps([dict(e["press"], seg=e["seg"]) for e in sling]), 0.1),
             "aiReleaseConeDegrees": statistics.median(e["release"]["nose"] for e in sling),
         })
     return out
@@ -867,8 +943,10 @@ def learn_hull(hull, flights, each_intensity=False):
     elif hull == "Stoat":
         person = measure_stoat([s for _, S in used for s in S])
         ai = measure_stoat(every, held=True)
+        unread = (KIT_SINCE.get(hull) or {}).get("unread", {})
         for asset, m in person.items():
-            got = {k: clamp(k, v) for k, v in m.items() if k in RANGES and v is not None}
+            got = {k: clamp(k, v) for k, v in m.items()
+                   if k in RANGES and v is not None and k not in unread.get(asset, ())}
             if got:
                 learned[asset] = got
     else:
@@ -1038,6 +1116,9 @@ def report(results, wrote):
         if R.get("retired"):
             lines.append(f"{R['retired']} more race(s) here were flown on a retired course (another mouth radius) and are "
                          "left out; the variant already written stays until this course has its own.\n")
+        if R.get("old_kit"):
+            lines.append(f"{R['old_kit']} more race(s) here were flown on a build without {KIT_SINCE[R['hull']]['kit']} (or "
+                         "on one no record names) and are left out: they measure presses it no longer makes.\n")
         if R.get("other_family"):
             lines.append(f"{R['other_family']} more race(s) here were flown on another course family (one other than "
                          f"{SHIPPED_FAMILY.get(MODE)}) and are left out: every family is its own world.\n")
@@ -1142,6 +1223,7 @@ def run(sources, write):
     HULLS.update({h: v for h, v in all_hulls().items() if h not in HULLS})
     by_hull = {h: [] for h in HULLS}
     other_family = {}
+    old_kit = {}
     parsed = []
     for name, text in sources:
         f, err = parse(name, text)
@@ -1154,10 +1236,13 @@ def run(sources, write):
         if not on_shipped_family(f):
             other_family[f["hull"]] = other_family.get(f["hull"], 0) + 1
             continue
+        if not on_current_kit(f):
+            old_kit[f["hull"]] = old_kit.get(f["hull"], 0) + 1
+            continue
         if S:
             by_hull[f["hull"]].append((f, S))
     if MODE == "Regatta":
-        lines, line_report = learn_race_lines(parsed)
+        lines, line_report = learn_race_lines([f for f in parsed if on_shipped_family(f) and on_current_kit(f)])
         print("race lines (where each hull crosses the rings; Resources/RaceLines):")
         for hull, r in line_report.items():
             print(f"  {hull}: {r}")
@@ -1166,10 +1251,11 @@ def run(sources, write):
     from learn_from_flights import finished_of
     results = []
     for h, fl in by_hull.items():
-        if not fl and (MODE != "Regatta" or "signal" in HULLS[h] or HULLS[h].get("why")):
+        if not fl and not old_kit.get(h) and (MODE != "Regatta" or "signal" in HULLS[h] or HULLS[h].get("why")):
             continue   # a hull with no flights here: no section
         R = learn_hull(h, fl)
         R["other_family"] = other_family.get(h, 0)
+        R["old_kit"] = old_kit.get(h, 0)
         R["intensities"] = {}
         for f, _ in fl:
             n, d = R["intensities"].get(int(f.get("intensity") or 0), (0, 0))
@@ -1183,6 +1269,7 @@ def run(sources, write):
                 spread = learn_hull(R["hull"], by_hull[R["hull"]], each_intensity=True)
                 spread["intensities"] = R["intensities"]
                 spread["other_family"] = R["other_family"]
+                spread["old_kit"] = R["old_kit"]
                 results[k] = spread
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
     if MODE in PER_INTENSITY_MODES:
@@ -1239,6 +1326,21 @@ def self_test_rocket_and_rings():
         "a judged Blast Run race without the field"
     assert on_shipped_family({"mode": "Regatta", "name": "a.json", "funType": "BlastRun"}), \
         "negative control: a mode without families keeps every race"
+    # The kit is the BUILD's (KIT_SINCE): 76c6835e69 is claude/regatta-overnight-balance, where Yash flew 8 Stoat Regatta
+    # races on 2026-11-06, two days after the trampoline was committed and without it; c459f4423f has it.
+    if build_has("8abe1fe83b", "c459f4423f") is not None:
+        assert on_current_kit({"hull": "Stoat", "gitCommitHash": "c459f4423f"}), "a build with the trampoline"
+        assert not on_current_kit({"hull": "Stoat", "gitCommitHash": "8abe1fe83b~1", "name": "x/flight_Slingshot_Stoat_20261107_020837.json"}), \
+            "a build without it, whatever the flight's date or name says"
+    assert not on_current_kit({"hull": "Stoat", "date": "2026-11-07 03:00:00", "name": "a.json"}), \
+        "a Stoat race with no known build cannot show it flew the trampoline"
+    assert not on_current_kit({"hull": "Stoat", "gitCommitHash": "unknown", "name": "a.json"}), "an unknown build is no build"
+    assert on_current_kit({"hull": "Stoat", "name": "x/flight_Slingshot_Stoat_20261107_020837.json"}), "a judged race"
+    assert on_current_kit({"hull": "Dolphin", "date": "2026-10-01 00:00:00"}), \
+        "negative control: a hull whose kit never changed keeps every race"
+    assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (0, 50, 100)) - 0.0) < 1e-6, "a ring above the nose is no turn"
+    assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (100, 0, 100)) - 45.0) < 1e-6, "a ring 45 deg to the right"
+    assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (-1, 0, -100)) - 180.0) < 1.0, "a ring behind is a full turn"
     assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
     S = [{"t": i * 0.1, "held": False, "dist": 100.0 + 10 * i, "nose": float(i % 10)} for i in range(100)]
     events = [[i * 0.1, 2, 1] for i in range(0, 100, 10)] + [[i * 0.1 + 0.05, 2, 0] for i in range(0, 100, 10)]
@@ -1396,9 +1498,10 @@ def self_test():
             else:
                 held_trig = 0.7 if rng.random() < 0.2 else 0.0
                 tm = 1 if rng.random() < 0.5 else 0
-            fx, fy = math.cos(math.radians(nose)), math.sin(math.radians(nose))
-            # the ring lies straight down +x from the pilot: the forward vector swings nose degrees off it
-            rows.append([t, 0, 0, 0, fx, fy, 0, 0, 0, 1, 100, 1, 0, 0, 0, 0, 1, 0, held_trig, 0, 1, 0, 0, 0, 0, tm, dist])
+            fx, fz = math.cos(math.radians(nose)), math.sin(math.radians(nose))
+            # the ring lies straight down +x from the pilot: the forward vector swings nose degrees off it, on the
+            # hull's horizontal (up is +y), so the bearing the AI gates on is the nose angle
+            rows.append([t, 0, 0, 0, fx, 0, fz, 0, 1, 0, 100, 1, 0, 0, 0, 0, 1, 0, held_trig, 0, 1, 0, 0, 0, 0, tm, dist])
         return {"schema": "cosmic-shore.flight/3", "mode": MODE, "hull": "Stoat", "ended": "race over", "finished": True,
                 "raceSeconds": seconds, "raceTarget": 24, "rings": 24, "ringList": [[0, 1000.0, 0, 0, 1, 0, 0, 60.0]],
                 "columns": ["t", "x", "y", "z", "fx", "fy", "fz", "ux", "uy", "uz", "speed", "boost", "xSum", "ySum", "xDiff", "yDiff",
@@ -1410,14 +1513,26 @@ def self_test():
             s_["dist"] = r[-1]
         return S
 
-    st = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i) for i in range(3)]])["learned"]
+    R = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i) for i in range(3)]])
+    st = R["learned"]
     sl, md = st.get("StoatSlingConfig", {}), st.get("StoatModeAction", {})
     assert sl and 38 <= sl["aiSlingMinTurnDegrees"] <= 50 and sl["aiSlingMinDistance"] >= 195 and abs(sl["autopilotHold01"] - 0.7) < 1e-6, st
-    assert sl["aiReleaseConeDegrees"] <= 18, st          # the last held sample, a tenth of a second before the 15 deg let-go
+    # the last held sample, a tenth of a second before the 15 deg let-go: still MEASURED (the report shows it) ...
+    assert R["person"]["StoatSlingConfig"]["aiReleaseConeDegrees"] <= 18, R["person"]
+    # ... and never written: the trampoline's AI lets go at once and reads no release cone (KIT_SINCE "unread")
+    assert "aiReleaseConeDegrees" not in sl, st
     assert md and 34 <= md["autopilotTimeModeDegrees"] <= 40, st
-    sloppy = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i, sloppy=True) for i in range(3)]])["learned"]
-    rs = sloppy.get("StoatSlingConfig", {})   # negative control: a pilot slinging at random does not look like the rule
-    assert rs.get("aiReleaseConeDegrees", 0) > 40 and rs.get("aiSlingMinTurnDegrees", 99) < 35, ("negative control", sloppy)
+    # Three flights pooled: each restarts its clock, and no gap is measured across two of them (it would be negative and
+    # pin the interval to its floor). The pilot above presses at most every 1.5 s, and its gaps are 2 s or more.
+    assert sl["aiSlingIntervalSeconds"] >= 1.5, ("a gap across two flights", sl)
+    short = [{"t": i / 10, "held": False, "trig": 0.7 if i % 50 < 10 else 0.0, "tm": 1, "fwd": (0, 0, 1), "nose": 40.0,
+              "noseYaw": 40.0, "dist": 300.0} for _ in range(3) for i in range(160)]
+    assert abs(measure_stoat(short)["StoatSlingConfig"]["aiSlingIntervalSeconds"] - 5.0) < 1e-6, \
+        "three 16 s flights pressing every 5 s: 5 s (pooled across flights it was -15)"
+    sloppy = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i, sloppy=True) for i in range(3)]])
+    rs = sloppy["person"].get("StoatSlingConfig", {})   # negative control: a pilot slinging at random does not look like the rule
+    assert rs.get("aiReleaseConeDegrees", 0) > 40 and sloppy["learned"].get("StoatSlingConfig", {}).get("aiSlingMinTurnDegrees", 99) < 35, \
+        ("negative control", sloppy["learned"])
     paths = [p for p, _ in variant_texts("Stoat", st)]
     assert any(p.endswith("StoatSlingConfig_Regatta.asset") for p in paths) and any(p.endswith("StoatModeAction_Regatta.asset") for p in paths), paths
     _, text = variant_texts("Stoat", {"StoatSlingConfig": {"aiSlingMinTurnDegrees": 42.0, "notAField": 3}})[0]

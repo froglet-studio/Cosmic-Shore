@@ -61,6 +61,12 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
    `Ys-bleeding-edge` (`chore(ai-learn): <modes> from <n> new races`), and push (fetch, merge, push; retry on a race).
    Never push to `bleeding-edge`, never open a pull request.
 
+**A hull whose kit changed** (2026-11-07): the learner keeps a race only when the build it was flown on has the hull's
+current kit (`learn_drives_from_flights.py` `KIT_SINCE`; each flight names its build in `gitCommitHash` since that day,
+and older flights are judged by hand in `JUDGED_KIT`). A kit change by a vessel's owner gets a `KIT_SINCE` row in the same
+change, so the sweep never writes numbers from the old kit over the owner's tuning of the new one. The Stoat's trampoline
+(8abe1fe83b) is the first.
+
 ## 3. What a session owes the loop
 
 - **A new learner joins `ai_learn.py`** (`plan` and `run_learners`), with a case in its `--self-test`. A learner

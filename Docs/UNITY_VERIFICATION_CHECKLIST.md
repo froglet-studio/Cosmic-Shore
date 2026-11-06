@@ -21411,3 +21411,19 @@ Verified: `unity_refcompile` (0 project errors), `check_conditional_compilation.
 SOAP plugin). No Unity editor here: no compile in Unity, the EditMode test is unrun.
 - [ ] The project compiles; EditMode `PartyRecoveryAfterPlayTests` (4) pass.
 - [ ] Two machines: the joiner stops Play while "Bouncing to solo menu" (or right after a host drop) is on screen. No `Recovery failed` error in the console after Play stops.
+
+## Flight recordings name their build; the Stoat learns from trampoline races only (2026-11-07) - NOT EDITOR-VERIFIED
+
+**Files:** `Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs` (`AppendBuild`: `"gitCommitHash"` and
+`"gitBranch"` of the editor's checkout, read once a session, editor only), `Tools/Build/learn_drives_from_flights.py`
+(`KIT_SINCE`, `JUDGED_KIT`, `on_current_kit`, `yaw_off_nose`, the per-flight press gaps in `measure_stoat`). Yash asked
+for the Slingshot learner to learn from trampoline races only (8abe1fe83b). A flight's date could not say which kit it
+raced (the trampoline reached bleeding-edge two days after it was committed), so the learner now checks the race's
+build. `/verify-unity` did not run: no editor in the session. The reference compile passes (player and editor, 0 errors
+in project code), and so do `learn_drives_from_flights.py --self-test` (with a negative control for the press gaps:
+-15 s pooled across flights before, 5 s now) and `ai_learn.py --self-test`.
+
+1. Fly any race in the editor (Slingshot with the Stoat, for example) and finish or leave it. **Pass:** the new
+   `flight_*.json` has `"gitCommitHash":"<10 hex>"` and `"gitBranch":"<your branch>"` after `courseIntensity`/`funType`,
+   matching `git rev-parse --short=10 HEAD`, and the console shows no error and no hitch at race end.
+2. In a player build (dev build), finish a race. **Pass:** the flight has no `gitCommitHash` field and no error.
