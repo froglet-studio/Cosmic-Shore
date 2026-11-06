@@ -5937,3 +5937,47 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
   stay off.
 - **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
   centred, and the underline sits at the row's foot.
+
+## 132. Rev 58 mockups: the Launch Console as a Unity editor window (2026-11-06, awaiting board approval)
+
+**Asked (Shombith, 2026-11-05, `Docs/LAUNCH/READINESS.md` §11):** the Launch Console is "a FrogletTools editor window
+and a claude.ai artifact, both reading one status file the pipelines write; designed on Frogma's *Launch Console* tab".
+Its job: answer "can we land, and what's in the way?" in five seconds, and give every launch action one place to start.
+The artifact (https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2, source `Docs/LAUNCH/console/index.html` on
+`claude/exciting-pascal-t8ijbo`) is the layout, platforms and action links the window mirrors.
+
+**On the canvas:** tab Launch Console, section "Rev 58 - Launch Console in the Unity editor: the window docked, narrow,
+and what it reads" (version `1793936842-4017`; the tab's first round). Copies in `Docs/MenuRedesignB/board/`. Real data
+only: `status.json` on `launch-status` @ `8a36d99` (8 records, the Phase 1 audit's seeds) and READINESS.md (measured
+2026-11-05).
+- **R58Docked (interactive):** the window docked as a tab at a typical size (1240 x 990) between the Hierarchy and the
+  Inspector. The go/no-go header (milestone, date, days left, Refresh, "Checklist and Needs a human: open the
+  console"), the verdict line, one pill per platform (Windows / Steam, iOS, Android, Web Toybox, Live ops, Backend,
+  Launch-wide), the source line; the picked platform's panel (channel versions, last run, result, age and source, the
+  open blockers from READINESS §10, the action buttons and how to roll back); quality gates; "Needs a human, in order".
+  Press a pill to change the panel; Refresh.
+- **R58Narrow (interactive):** the window docked at 440 beside the Inspector: the pills become rows, the actions two to
+  a row, the gates and the human list fold.
+- **R58Notes:** what the window reads, the pill rule, where it departs from the artifact and the guide.
+
+The build follows R58Docked, switching to the narrow layout below 640 px, unless a pick says otherwise.
+
+**The pill rule (as drawn and built):** a record's failure is No-go; a success older than 48 h is At risk (its age counts
+from `details.event_date` when the record carries one, else from `updated_at`: the eight seeds were written on
+2026-11-06 for events up to 24 days old); skipped, cancelled or running is At risk; a fresh success is Go. A platform is
+the worst of its records and the audit's verdict for it (READINESS §0, held in the config with its date). Today:
+4 no-go (Windows, iOS, Live ops, Launch-wide), 3 at risk (Android, Web, Backend).
+
+**Departs from the guide:** the window draws in Unity's editor font and greys through `FrogletEditorPalette`, not
+Aldrich on Deep Sea; the families keep their meanings (Lime go and the build steps, Fire no-go, At risk a dashed Fire
+edge with its words, Ruby Promote / Roll back / Halt / Deploy to production, Jade the line under the picked pill) and the
+corner sliver stays on cards, pills and buttons. The palette's own `Ok/Warn/Error` disagree with the families: Design
+feedback queue #19 in `Docs/UI_REDESIGN_TASKS.md`.
+
+**Found in the artifact (not changed here; it is `claude/exciting-pascal-t8ijbo`'s):** the picked pill's outline
+(`.pill[aria-pressed=true]{outline...}`) sits outside the element, so the pill's own `clip-path` sliver clips it away and
+the pick does not show; and the artifact's pill counts a channel stale only past 48 h x 7, against 48 h for a row.
+
+**Built:** `FrogletTools > Launch > Launch Console` (`Assets/_Scripts/Editor/Launch/`), NOT RUN IN EDITOR; see
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`. Differs from the boards in one place: the header is the palette's `Banner`, whose stripe is the Build
+category's colour (`Docs/TOOLING.md` §3: a window's banner matches its card on the board), not the Jade stripe drawn.

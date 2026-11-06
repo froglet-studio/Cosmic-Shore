@@ -52,6 +52,12 @@ player-compiled, and editor-only asmdefs (`Obvious.Soap.Editor`, `FMODUnityEdito
 assemblies) and the test framework are not compiled. Use it to catch errors in editor branches. A
 green editor run is weaker evidence than a green player run.
 
+**A sparse checkout needs the precompiled DLLs.** A worktree checked out with only `/Assets/**/*.cs`, `.asmdef` and
+their metas has no `Assets/Plugins/**/*.dll`, so DOTween, FMOD and the other precompiled plugins are missing and
+the run reports ~1,100 errors in `DOTweenModule*.cs` (none in your files, but `RESULT: FAILED`). Add
+`git sparse-checkout add '/Assets/**/*.dll' '/Assets/**/*.dll.meta'` (30 files, about 40 MB, measured 2026-11-06)
+and run again; take the patterns out afterwards if disk is short.
+
 ## What it does
 
 A small re-implementation of Unity's script pipeline (`build.py`):

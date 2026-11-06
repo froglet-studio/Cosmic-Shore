@@ -21253,3 +21253,29 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🔴 Launch Console editor window (Rev 58) (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/launch-console-editor`; `Docs/MENU_REDESIGN_B.md` §132, `Docs/LAUNCH/STATUS_CONTRACT.md` § The editor
+window. Compiled with `unity_refcompile` (editor config, approximate); never opened in the editor. The config asset
+(`Assets/_SO_Assets/Launch/Editor/LaunchConsoleConfig.asset`) and its folder metas were written by hand as YAML.
+
+1. **The asset imports.** Select `LaunchConsoleConfig.asset`: the Inspector shows a LaunchConsoleConfigSO with
+   "Invite build v1", 2026-12-03, seven platforms, 25 blockers, 11 human steps. No "script missing" warning.
+2. **Run the EditMode tests** `CosmicShore.Tests.LaunchConsoleStatusTests` (11 tests, 15 cases): all pass, including the two that
+   load the asset.
+3. **Open FrogletTools > Launch > Launch Console.** It appears on the Froglet Master Tool board under Build & Release
+   with a DOCS chip. Within a few seconds the toolbar reads "Fetched under an hour ago"; the editor never stalls.
+4. **Against Rev 58 Docked** (Frogma, Launch Console tab): the verdict reads NO-GO; seven pills, Windows / Steam, iOS,
+   Live ops and Launch-wide solid Fire "NO-GO", Android, Web Toybox and Backend dashed Fire "AT RISK" (while the branch
+   still holds the 8a36d99 seeds); every pill and button has two cut corners; the picked pill has a Jade line under it.
+5. **Press each pill.** The panel changes: channels with version, result chip, age and source (iOS TestFlight reads
+   "24 days ago" in Fire); the action buttons are Lime (Build, Upload ...), Ruby (Promote, Roll back, Halt rollout,
+   Deploy to production) or plain; the right column lists that platform's READINESS §10 blockers with HUMAN tags.
+6. **Press an action button and a source link.** Each opens the right page in the browser (the workflow page, the
+   dashboard, the run); nothing else happens. "Checklist and Needs a human: open the console" opens the artifact.
+7. **Narrow it below 640 px** (dock it beside the Inspector): pills become rows, actions two to a row, Quality gates
+   and Needs a human fold (against Rev 58 Narrow).
+8. **Offline:** turn the network off and press Refresh. The toolbar shows the fetch error in Fire, and the source
+   line says it shows the checkout's last copy. Nothing is logged unless status.json cannot be parsed.
+9. **Light skin:** the families switch to their Shore shades (darker Lime, Fire, Ruby, Jade) and stay readable.
