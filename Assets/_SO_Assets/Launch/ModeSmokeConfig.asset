@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45177de612c747a6abda1dfcf01db86f, type: 3}
+  m_Name: ModeSmokeConfig
+  m_EditorClassIdentifier: 
+  rosters:
+  - {fileID: 11400000, guid: 402ca7eefc2aeb64baaa140c43312bcd, type: 2}
+  - {fileID: 11400000, guid: 45f4a55e49b44cc7ac47e0bf96411234, type: 2}
+  excluded:
+  - Mode: 36
+    Reason: Maelstrom chains the other modes (a shuffle of Skim Race, Joust and Crystal Capture across scene loads) and ends on the whole shuffle; each member mode is smoked on its own. A Maelstrom smoke needs a driver that follows its scene changes.
+  quickModes:
+  - 33
+  - 34
+  - 45
+  defaultIntensity: 1
+  defaultPlayers: 3
+  aiDifficulty: 4
+  timeScale: 4
+  overrides: []
+  matchBudgetSeconds: 600
+  bootTimeoutSeconds: 180
+  sceneTimeoutSeconds: 180
+  startTimeoutSeconds: 120
+  exitTimeoutSeconds: 60
+  movingDistance: 10
