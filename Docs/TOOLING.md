@@ -163,6 +163,7 @@ public static void Open() { ... }
 - **Every colour comes from `FrogletEditorPalette`.** No literal `Color(...)`, no hex, no
   `GUI.color` juggling in tool code. A widget the palette lacks gets **added to the palette**, not
   hand-rolled in the window.
+- **A themed window draws through `FrogletSeaTheme`** instead (Shombith, 2026-11-06): the game's colour sets (Nocturne, Photic, Dart Frog) as editor themes over the menu's sea lines, with the style guide's corner sliver and meanings (lime = the call to action, the Jade rim = selection and focus, Fire = danger). Its colours are GENERATED from the shipped colour sets by `Tools/Build/author_editor_themes.py` (through the analytics console's `make_themes.py`; `--check` is a /ship gate), never typed. Source Control is the first window that wears it (`Docs/SOURCE_CONTROL.md` §3a).
 - **The banner accent is the tool's category colour** — `FrogletEditorPalette.ColorFor(<category>)`
   — so a window and its card on the board agree. Semantic colours (`Ok` / `Warn` / `Error` /
   `Info` / `Muted`) are reserved for **state**, never for decoration: a green button means the
@@ -488,6 +489,7 @@ rider's own velocity, no stick steering). A single tunnel or a **Soliton Network
 | Pending Tool Changes window | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipWindow.cs` |
 | git CLI wrapper (quoting-safe, no wildcards; finds GitHub Desktop's git) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Source Control window / git operations / python runner | `Assets/_Scripts/Editor/FrogletTools/FrogletSourceControlWindow.cs`, `FrogletSourceControl.cs`, `FrogletPython.cs`; rules `Tools/Build/push_checks.py`, gates `Tools/Build/ship_gates.py`; tests `Assets/_Scripts/Tests/Editor/FrogletSourceControlTests.cs` |
+| Editor themes from the game's colour sets (kit / generated colours / writer) | `Assets/_Scripts/Editor/FrogletTools/FrogletSeaTheme.cs`, `FrogletSeaTheme.Themes.cs` (generated); `Tools/Build/author_editor_themes.py` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
 | Crystal hull fusion baker | `Assets/_Scripts/Editor/CrystalHullFusionBaker.cs` |
 | AI Training window | `Assets/_Scripts/Utility/AITraining/Editor/TrainingEditorWindow.cs` |

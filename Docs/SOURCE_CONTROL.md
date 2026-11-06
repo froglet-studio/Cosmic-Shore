@@ -75,6 +75,19 @@ project itself.
   sign-in window; on macOS the keychain answers. If a push says authentication failed, push once from GitHub Desktop
   or a terminal so the credential is stored, then use the window. **Not yet tried on a collaborator's machine.**
 
+## 3a. The look (2026-11-06)
+
+Shombith asked for it "modern, in the Photic colour set and the sea lines theme". The window wears `FrogletSeaTheme`:
+the game's colour sets as editor themes (the **Theme** button top right: Photic by default, Nocturne, Dart Frog, and
+*Still sea* for no motion), the menu's SeaLines behind everything (three layers drifting 90 / 68 / 45 s a loop, in the
+set's Jade, Blue and Ruby rims, over its deep wash), panels lit like the game's prisms with the style guide's corner
+sliver, Chakra Petch for labels and Aldrich for text. Meanings follow the style guide: **Commit**, **Push** and
+**Create** are the set's lime call to action; **Pull**, **Switch**, **Open pull request** and the selection are its Jade
+rim; **Discard** and every stop are Fire; additions in a diff are the Blue rim. The sea animates only while the window
+is focused or under the mouse (about 15 frames a second) and holds still otherwise. Colours come from
+`Tools/Build/author_editor_themes.py` (generated from the shipped colour sets, the same numbers the analytics console
+wears); never type one.
+
 ## 5. Files
 
 | Role | Path |
@@ -86,6 +99,7 @@ project itself.
 | Push checks (the rules) | `Tools/Build/push_checks.py` |
 | The /ship gate list | `Tools/Build/ship_gates.py` (`gates.sh` calls it) |
 | Edit-mode tests | `Assets/_Scripts/Tests/Editor/FrogletSourceControlTests.cs` |
+| Theme kit / generated colours / writer | `Assets/_Scripts/Editor/FrogletTools/FrogletSeaTheme.cs`, `FrogletSeaTheme.Themes.cs`; `Tools/Build/author_editor_themes.py` |
 
 ## 6. Next (v2, v3 — not built)
 

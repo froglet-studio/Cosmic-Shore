@@ -21317,6 +21317,13 @@ the new edit-mode tests were compiled, not run. Best done on a Windows machine w
    editor stays responsive the whole time.
 10. **Enter Play mode, press Pull.** It refuses ("Stop Play mode"). Leave Play mode.
 11. **Delete the test branch** on GitHub afterwards.
+12. **The look (Photic, sea lines; added 2026-11-06).** The window is a deep navy sea with three layers of wavy lines
+    drifting slowly right to left (cyan to periwinkle to magenta across the width), faded at top and bottom; panels
+    with cut top-left / bottom-right corners; Commit and Push in lime with dark text; Pull / Switch / Open pull request
+    in cyan outline; Discard in red outline. Labels in Chakra Petch caps. Hover a button: it brightens. Inside the
+    Changes list nothing paints outside its panel when scrolled. Theme > Nocturne and Dart Frog re-colour everything;
+    Theme > Still sea stops the motion. With the window unfocused the editor's CPU is not raised (the sea holds).
+    Text fields show a cyan border when focused; type in Summary, Description and the branch filter.
 
 ## 🔴 Profile Colour sets: the Showroom on the real cell (Rev 54 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
 
