@@ -20,7 +20,7 @@
      "title": "Each vessel's universal Time AI: one genome per vessel, trained on its own Time arcade game(s), scored on all four intensities at once, grown from every genome that exists",
      "jobs": [{"plan": "regatta-balance", "stage": 1}, {"plan": "ai-training"}]},
     {"id": "time-arena-course", "element": "Time", "layer": "arena", "status": "blocked",
-     "title": "Regatta's course features, searched against the FIXED universal Time AIs of every vessel: the course that levels the fastest and slowest",
+     "title": "Regatta's course features, searched against the FIXED universal Time AIs of every vessel: a pool of courses whose spreads cancel, shuffled in one Regatta level (Garrett, 2026-11-06)",
      "after": ["time-arcade"], "jobs": [{"plan": "regatta-balance", "stage": 2}]},
     {"id": "time-arena-elements", "element": "Time", "layer": "arena", "status": "blocked",
      "title": "The smallest elemental tuning that closes what the course leaves: each vessel's Time baseline",
