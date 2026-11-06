@@ -357,3 +357,46 @@ The questions as they were asked:
    Build Automation for player builds driven from Actions. No self-hosted runner on this public repo.
 5. **The Launch Console's form.** A FrogletTools editor window (your note), a claude.ai artifact (the original brief,
    phone-readable, with a live checklist store), or both reading one status file.
+
+---
+
+## 12. Where each blocker stands (Phase 2, 2026-11-06)
+
+Every PR below is open into `bleeding-edge`, **not merged**, and depends on the status-contract PR. No C# in them has
+been run in the Unity editor; each adds its editor steps to `Docs/UNITY_VERIFICATION_CHECKLIST.md`. This session's
+proxy refuses tag pushes and ref deletes, so the tag-triggered pipelines have run only as pull-request rehearsals.
+
+| # | Blocker | PR | Proven | Still needs |
+|---|---|---|---|---|
+| – | The status contract (every pipeline's record, the console's data) | [#1750](https://github.com/froglet-studio/Cosmic-Shore/pull/1750) | run [42158056726](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42158056726) green; negative control [#1752](https://github.com/froglet-studio/Cosmic-Shore/pull/1752) red on both checks; 8 real records on `launch-status` | merge |
+| 1, 5 | Release builds on UGS production; every build identified | [#1749](https://github.com/froglet-studio/Cosmic-Shore/pull/1749) | refcompile player + editor OK; negative control fails to compile | editor check; the production environment set up (human, §10 #1) |
+| 4 | Unity compile gates trunk | [#1695](https://github.com/froglet-studio/Cosmic-Shore/pull/1695) (an earlier session's) | reference-compile path proven there | the `unity-ci` licence secrets |
+| 6 | Old and new clients never meet | [#1755](https://github.com/froglet-studio/Cosmic-Shore/pull/1755) | refcompile OK; 16/16 tests in a stand-alone harness; two negative controls | the two-editor test |
+| 6, 11 | Minimum-version gate, kill switches | [#1756](https://github.com/froglet-studio/Cosmic-Shore/pull/1756) | run [42160372613](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42160372613) green; three negative controls; refcompile OK | editor check; `disabledModes` needs the menu owners |
+| 7 | Production UGS deploys gated | [#1748](https://github.com/froglet-studio/Cosmic-Shore/pull/1748) | run [42157122987](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42157122987) green; negative control run [42121172001](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42121172001) red at the gate | `ugs-development` / `ugs-production` Environments |
+| 13 | Web staging, promote, rollback | [#1753](https://github.com/froglet-studio/Cosmic-Shore/pull/1753) | run [42158295337](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42158295337) green; 33 self-test checks; 8 mutants killed; fake-R2 refusals | `toybox-production`; DNS; `adopt --version 2`; a first real stage |
+| 8, 14, 17 | Tag → release notes → player builds → pre-release channels; promote and rollback | [#1747](https://github.com/froglet-studio/Cosmic-Shore/pull/1747), [#1751](https://github.com/froglet-studio/Cosmic-Shore/pull/1751) | rehearsal [42157116324](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42157116324) green (76 PRs); malformed-tag control [42157168367](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42157168367); builds run [42157929803](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42157929803) stops at the missing Environments; platform control [42158099693](https://github.com/froglet-studio/Cosmic-Shore/actions/runs/42158099693) | UBA targets; the Environments below; a real tag run; two decisions (SteamPipe from CI; the iOS hand-off) |
+| 19 | Per-mode smoke test in Unity | [#1754](https://github.com/froglet-studio/Cosmic-Shore/pull/1754) | refcompile player + editor OK; report self-test with its negative control | a Unity run (licence or an editor) |
+| – | The Launch Console | this branch (`claude/exciting-pascal-t8ijbo`) | live artifact, 38 store documents | sharing it with the team |
+
+### Environments and secrets to create (names only; values never go in the repo)
+
+| Environment | Reviewers | Secrets | Variables | For |
+|---|---|---|---|---|
+| `unity-ci` | – (deployment branches `bleeding-edge`, `development`) | `UNITY_EMAIL`, `UNITY_PASSWORD` (+ `UNITY_SERIAL` for a Pro seat) | – | #1695, the smoke test |
+| `ugs-development` | – (branch `bleeding-edge`) | `UGS_CLI_SERVICE_KEY_ID`, `UGS_CLI_SERVICE_SECRET_KEY` | – | #1748 |
+| `ugs-production` | **required**, prevent self-review | the same two (better: a separate production service account) | – | #1748 |
+| `toybox` (exists) | – | its 8 secrets as now | allow `web-v*` tags | #1753 |
+| `toybox-production` | **required** | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (better: a second R2 token) | – | #1753 |
+| `uba-builds` | – | `UBA_API_KEY`, `UBA_ORG_ID`, `UBA_PROJECT_ID` | `UBA_WINDOWS_TARGET`, `UBA_ANDROID_TARGET`, `UBA_IOS_TARGET` | #1751 |
+| `steam-prerelease` | – | `STEAM_CONFIG_VDF`, `STEAM_USER` + the UBA secrets | `STEAM_PLAYTEST_APPID`, `STEAM_PLAYTEST_DEPOTID` | #1751 (opt-in; a decision) |
+| `play-prerelease` | – | `PLAY_SERVICE_ACCOUNT_JSON` + the UBA secrets | – | #1751 |
+| `windows-production`, `ios-production` | **required** | – | – | #1751 |
+| `android-production` | **required** | `PLAY_SERVICE_ACCOUNT_JSON` | – | #1751 |
+| `testflight` (exists) | confirm **required** + branch `bleeding-edge` | its 7 secrets | – | `ios-testflight.yml` |
+
+After moving a secret into an Environment, delete its repository-level copy: an Environment without its own copy falls
+back to the repository's.
+
+**Branches to delete by hand** (the session's proxy refuses ref deletes): `ci-scratch/launch-tools-negative`,
+`scratch/ugs-plan-negative-control`.

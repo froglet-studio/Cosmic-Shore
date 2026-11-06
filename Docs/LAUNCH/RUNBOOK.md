@@ -65,9 +65,11 @@ Times are US Eastern (the company's registered address is in Michigan); move the
 
 **First, stop the bleeding with what does not need a new build.** In order of speed:
 
-1. **A broken feature with a server gate** (economy, scores, match reports, trust, entitlements) or a broken mode: turn
-   it off with a kill switch or `disabledModes` in the launch flags and deploy to UGS production through the approved
-   job (minutes; `Docs/LAUNCH/LIVE_UPDATES.md`).
+1. **A broken feature with a server gate** (economy, scores, match reports, trust, entitlements): turn it off with its
+   kill switch in the launch flags and deploy to UGS production through the approved job (minutes;
+   `Docs/LAUNCH/LIVE_UPDATES.md`). This works only for a gate the build ships ON; all five ship off today, so for the
+   invite build this step applies only if one is switched on. A broken **mode** cannot be hidden remotely yet
+   (`disabledModes` is read but no menu checks it): it needs a build, or a `message` telling players to avoid it.
 2. **A broken build that players must not keep using:** raise `minimumVersion` to the fixed release once it is on every
    store; until then use `recommendedVersion` and the message field.
 3. **Roll the platform back:**
