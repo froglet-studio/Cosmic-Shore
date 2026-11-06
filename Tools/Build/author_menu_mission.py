@@ -308,9 +308,12 @@ def build_view():
 
 
 def build_voyage_quest_card():
-    """The Profile's old quest card (author_menu_profile.build_quest_card), compact: five across Episode 1. On a phone the
-    Quests page is drawn at PH_QUESTS_SCALE, so the footer grows into the gap over it and CLAIM and PLAY QUEST grow to
-    PH_QUEST_BUTTON_H, a thumb's height there."""
+    """The Profile's old quest card (author_menu_profile.build_quest_card), compact: five across Episode 1. Its preferred
+    width is QUEST_W, so the Quests row's content (sized to its cards) is exactly the PC row and nothing scrolls on PC.
+    On a phone (Docs/MENU_REDESIGN_B.md section 135, the approved R60Phone board) it is PH_QCARD_W x PH_QCARD_H at the
+    phone's own text sizes (its KitTexts take their phone sizes): the art band and number, the state, the title, two lines
+    of description, the two goals and one 44-tall button (Claim, Play quest with the intensity bars, or Locked). The track's
+    node and segment leave the card there: the episode's progress line runs over the row instead."""
     root = P.build_quest_card("VoyageQuestCard", QUEST_W, QUEST_H, QUEST_ART_H, QUEST_GAP, compact=True)
     found = {}
 
@@ -319,12 +322,59 @@ def build_voyage_quest_card():
         for ch in getattr(n, "children", ()):
             walk(ch)
     walk(root)
-    pad = 16
-    found["Body/Footer"].add("phone", 114, K.phone_rect(R((0, 0), (1, 0), (0, pad), (-2 * pad, PH_QUEST_FOOTER_H), (0.5, 0))))
-    found["Body/Footer/Claim"].add("phone", 114, K.phone_rect(R((0, 0), (1, 0), (0, 0), (0, PH_QUEST_BUTTON_H), (0.5, 0))))
-    found["PlayButton"].added = list(getattr(found["PlayButton"], "added", [])) + [
-        ("phone", 114, K.phone_rect(R((0, 0), (1, 0), (0, 0), (0, PH_QUEST_BUTTON_H), (0.5, 0))))]
+    root.comps = [(k, c, (le(mw=0, fw=1, pw=QUEST_W, ph=QUEST_H) if k == "le" else b)) for k, c, b in root.comps]
+    for key, pose in quest_card_poses():
+        if key == "PlayButton":
+            found[key].added = list(getattr(found[key], "added", [])) + [("phone", 114, pose)]
+        else:
+            found[key].add("phone", 114, pose)
     return root
+
+
+PH_QCARD_W, PH_QCARD_H, PH_QCARD_PAD = 200, 318, 12       # a quest card on a phone (R60Phone: ~220 x 318; 200 keeps a peek)
+PH_QCARD_ART_H, PH_QCARD_FOOT_H = 88, 44
+PH_QCARD_TEXT_W = PH_QCARD_W - 2 * PH_QCARD_PAD
+
+
+def quest_card_poses():
+    """(node key, PhoneRect body) for VoyageQuestCard on a phone, in phone units (top-left y down inside the card)."""
+    W, tl, tr = PH_QCARD_TEXT_W, C.TL, C.TR
+    fill = R((0, 0), (1, 1), (0, 0), (0, 0))
+    off = R((0, 1), None, OFF, (10, 2), (0, 1))
+    out = [
+        ("root", K.phone_rect(layout=(PH_QCARD_W, PH_QCARD_H))),
+        ("Segment", K.phone_rect(off)),
+        ("Node", K.phone_rect(off)),
+        ("Body", K.phone_rect(fill)),
+        ("Body/Art", K.phone_rect(tl(2, 2, PH_QCARD_W - 4, PH_QCARD_ART_H))),
+        ("Body/Art/Numeral", K.phone_rect(tl(10, 4, 80, 40))),
+        ("Body/Art/Completed", K.phone_rect(tr(8, 8, 96, 22))),
+        ("Body/Art/Lock", K.phone_rect(R((0.5, 0.5), None, (0, 0), (24, 28)))),
+        ("Body/State", K.phone_rect(tl(PH_QCARD_PAD, 98, W, 14))),
+        ("Body/Title", K.phone_rect(tl(PH_QCARD_PAD, 114, W, 22))),
+        ("Body/Description", K.phone_rect(tl(PH_QCARD_PAD, 138, W, 34))),
+        ("Body/Rule", K.phone_rect(tl(PH_QCARD_PAD, 176, W, 1))),
+        ("Body/Goals", K.phone_rect(tl(PH_QCARD_PAD, 184, W, 66))),
+        # One 44-tall button at the foot: Claim, Play quest (the intensity bars left of it), or the Locked line.
+        ("Body/Footer", K.phone_rect(R((0, 0), (1, 0), (0, PH_QCARD_PAD), (-2 * PH_QCARD_PAD, PH_QCARD_FOOT_H), (0.5, 0)))),
+        ("Body/Footer/Claim", K.phone_rect(fill)),
+        ("Body/Footer/Play/Meter", K.phone_rect(R((0, 1), None, OFF, (10, 10), (0, 0.5)))),
+        ("PlayButton", K.phone_rect(R((0, 0), (1, 1), (PH_QCARD_BARS_W / 2, 0), (-PH_QCARD_BARS_W, 0)))),
+        ("Body/Footer/Locked", K.phone_rect(fill)),
+    ]
+    for i in range(2):
+        k = f"Body/Goals/Row{i + 1}"
+        out += [(k, K.phone_rect(tl(0, i * 34, W, 32))),
+                (f"{k}/Done", K.phone_rect(tl(0, 1, 12, 12))),
+                (f"{k}/Pending", K.phone_rect(tl(2, 3, 8, 8))),
+                (f"{k}/Caption", K.phone_rect(tl(18, 0, W - 18, 14))),
+                (f"{k}/Description", K.phone_rect(tl(18, 15, W - 18, 16)))]
+    for i in range(4):
+        out.append((f"Body/Footer/Play/Bar{i + 1}", K.phone_rect(R((0, 0), None, (4 + i * 6, 14), (4, 6 + 3 * i), (0, 0)))))
+    return out
+
+
+PH_QCARD_BARS_W = 32           # the intensity bars' strip left of PLAY QUEST
 
 
 # --------------------------------------------------------------------------------------------
@@ -337,8 +387,9 @@ def build_voyage_quest_card():
 # the whole body (672 x 368 on an 800-wide phone):
 #     Voyages   the map column and the voyage cards drawn at PH_VOYAGES_SCALE, re-flowed to the phone's width
 #     Saga      the two voyage cards at PH_SAGA_SCALE, SET SAIL a thumb's height
-#     Quests    Episode 1's five quest cards at PH_QUESTS_SCALE (VoyageQuestCard's footer grows on a phone)
-#     Episodes  the locked Episode 2 at PH_QUESTS_SCALE
+#     Quests    Episode 1's quest cards at phone size in ONE row that scrolls sideways (section 135, R60Phone): three in
+#               view and the fourth peeking, arrows and dashes over it (PhoneScrollStepper), the progress line above it
+#     Episodes  the locked Episode 2 at PH_EPISODES_SCALE
 # --------------------------------------------------------------------------------------------
 
 PHONE_RAIL, PHONE_X = A.PHONE_RAIL, A.PHONE_X
@@ -349,9 +400,14 @@ PH_BUTTON_H, PH_BUTTON_GAP, PH_TAB_GAP = 48, 12, 8
 PH_TOP_RIGHT = A.back_width() + PH_BUTTON_GAP           # the tabs end this far left of the header's right edge
 PH_TOP_RISE = 72 - 62                                    # the body starts 10 under the header's foot
 PH_VOYAGES_SCALE, PH_MAP_W, PH_MAP_GAP = 0.6, 520, 20
-PH_SAGA_SCALE, PH_QUESTS_SCALE = 0.65, 0.5
+PH_SAGA_SCALE, PH_EPISODES_SCALE = 0.65, 0.5
 PH_SAIL_Y, PH_SAIL_H = 10, 68                            # 68 x PH_SAGA_SCALE >= 44
-PH_QUEST_FOOTER_H, PH_QUEST_BUTTON_H = 140, 88           # 88 x PH_QUESTS_SCALE >= 44
+# The Quests page (section 135): the episode's line (0 - 44), the progress line (46 - 49), the row (50 - 368).
+EP1 = "MissionView/VoyagePages/QuestsPage/Panel/Episodes/Episode1"
+PH_EP_ROW_H, PH_PROGRESS_Y, PH_PROGRESS_H, PH_ROW_Y = 44, 46, 3, 50
+PH_EP_TITLE_W, PH_STEP_W, PH_DASH_W, PH_DASH_GAP = 160, 148, 22, 4
+PH_STEP = PH_QCARD_W + QUEST_GAP                          # one press moves the row one card
+QUESTS_PC_W = EPISODES_W - 56                             # the PC row (Episode 1 less its 28 + 28 inset): 1184
 PH_BRACKET, PH_BRACKET_IN = 12, 10                       # a 48-tall tab's corner brackets: 12 square, centred 10 in
 OFF = (-4000, 0)                                         # off the canvas: the pad's LB / RB keycaps, the title
 
@@ -380,9 +436,9 @@ def phone_poses():
         # The other three pages fill the body; each page's panel keeps its PC layout, drawn smaller.
         ("MissionView/VoyagePages", K.phone_rect(PH_BODY)),
         ("MissionView/VoyagePages/SagaPage/Panel", K.phone_rect(scale=PH_SAGA_SCALE)),
-        ("MissionView/VoyagePages/QuestsPage/Panel", K.phone_rect(scale=PH_QUESTS_SCALE)),
-        ("MissionView/VoyagePages/EpisodesPage/Panel", K.phone_rect(scale=PH_QUESTS_SCALE)),
+        ("MissionView/VoyagePages/EpisodesPage/Panel", K.phone_rect(scale=PH_EPISODES_SCALE)),
     ]
+    out += quests_page_poses()
     for i, tab in enumerate(VW.TABS):
         t = f"MissionView/Body/Top/{tab}Tab"
         out.append((t, K.phone_rect(R((i / 4, 0), ((i + 1) / 4, 1), (0, 0), (-PH_TAB_GAP, 0)))))
@@ -397,13 +453,142 @@ def phone_poses():
     return out
 
 
+def quests_page_poses():
+    """The Quests page at phone size: the panel, the episode and its row fill the page; the glass frame and the "Quests"
+    head leave (the tab names the page); the title and its count on the top line, the progress line under it, the row."""
+    fill = K.phone_rect(R((0, 0), (1, 1), (0, 0), (0, 0)))
+    off = K.phone_rect(R((0, 1), None, OFF, (10, 10), (0, 1)))
+    tl = C.TL
+    out = [
+        ("MissionView/VoyagePages/QuestsPage/Panel", fill),
+        ("MissionView/VoyagePages/QuestsPage/Panel/Episodes", fill),
+        ("MissionView/VoyagePages/QuestsPage/Panel/Episodes/Head", off),
+        (EP1, fill),
+        (f"{EP1}/Title", K.phone_rect(tl(0, (PH_EP_ROW_H - 22) / 2, PH_EP_TITLE_W, 22))),
+        (f"{EP1}/Summary", K.phone_rect(tl(PH_EP_TITLE_W + 12, (PH_EP_ROW_H - 18) / 2, 120, 18))),
+        (f"{EP1}/Bar", K.phone_rect(R((0, 1), (1, 1), (0, -PH_PROGRESS_Y), (0, PH_PROGRESS_H), (0.5, 1)))),
+        (f"{EP1}/Quests", K.phone_rect(R((0, 0), (1, 1), (0, -PH_ROW_Y / 2), (0, -PH_ROW_Y)))),
+    ]
+    out += [(f"{EP1}/{n}", off) for n in ("Fill", "Border", "Bracket TL", "Bracket TR", "Bracket BR", "Bracket BL")]
+    return out
+
+
 PHONE_IDS = K.FileIds("MissionView/Phone")
+STEPPER = K.meta_guid("Assets/_Scripts/UI/PhoneScrollStepper.cs")
+HLG_GUID = VW.GUID["hlg"]
+
+
+def quests_nodes():
+    """The nodes the Quests row adds to MissionView: the row's content (the cards' container, sized to its cards) and
+    the phone-only arrows and dashes (PhoneScrollStepper; hidden and not interactable on PC)."""
+    content = N("Quests/Content", "Content", R((0, 0), (0, 1), (0, 0), (QUESTS_PC_W, 0), (0, 0.5)))
+    content.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), QUEST_GAP, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(2, 0))
+
+    step = N("QuestStep", "QuestStep", R((1, 1), None, (-28, -18), (PH_STEP_W, PH_TOUCH), (1, 1)))
+    step.add("cg", 225, canvas_group(False))
+    step.add("phone", 114, K.phone_rect(R((1, 1), None, (0, 0), (PH_STEP_W, PH_TOUCH), (1, 1))))
+    for i in range(2):
+        image_node(step, f"QuestStep/Dash{i + 1}", f"Dash{i + 1}",
+                   R((0, 0.5), None, (i * (PH_DASH_W + PH_DASH_GAP), 0), (PH_DASH_W, 3), (0, 0.5)), "TextLight")
+    border, fillc, glyph = K.button_palette("Default", False)
+    for i, side in enumerate(("Prev", "Next")):
+        k = f"QuestStep/{side}"
+        b = step.child(N(k, side, R((0, 0.5), None, (2 * (PH_DASH_W + PH_DASH_GAP) + 4 + i * (PH_TOUCH + 4), 0),
+                                    (PH_TOUCH, PH_TOUCH), (0, 0.5))))
+        f = b.child(N(f"{k}/Fill", "Fill", STRETCH))
+        f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+        bd = b.child(N(f"{k}/Border", "Border", STRETCH))
+        bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+        g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(16, 16))))
+        g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(glyph, K.chrome_sprite("chrome_chevron"), preserve=True))
+        g.rot = 180 if side == "Prev" else 0
+        b.add("button", 114, (lambda kk: lambda ctx, go: mono(go, A.BUTTON, A.selectable(nav_mode=0)
+                                                                 + f"  m_TargetGraphic: {ref(ctx.c(f'{kk}/Fill', 'img'))}\n"
+                                                                 "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"))(k))
+    return content, step
+
+
+def stepper_body(scroll_fid):
+    return lambda ctx, go: mono(go, STEPPER,
+                                f"  scroll: {{fileID: {scroll_fid}}}\n  step: {K.f32(PH_STEP)}\n"
+                                f"  controls: {ref(ctx.c('QuestStep', 'cg'))}\n"
+                                f"  previous: {ref(ctx.c('QuestStep/Prev', 'button'))}\n"
+                                f"  next: {ref(ctx.c('QuestStep/Next', 'button'))}\n"
+                                "  dashes:\n" + "".join(f"  - {ref(ctx.c(f'QuestStep/Dash{i + 1}', 'img'))}\n" for i in range(2))
+                                + "  dimAlpha: 0.3\n")
+
+
+def put_comp(pf, go, fid, cls, body):
+    """Add (or re-add) a component document right after its GameObject, last in its component list."""
+    g = pf.by[go]
+    if fid in pf.by:
+        pf.remove(fid)
+        g.body = g.body.replace(f"  - component: {{fileID: {fid}}}\n", "")
+    pf.add(cls, fid, body, after=go)
+    g.body = re.sub(r"(  m_Component:\n(?:  - component: .*\n)*)", lambda m: m.group(1) + f"  - component: {{fileID: {fid}}}\n",
+                    g.body, count=1)
+
+
+def emit_under(pf, ctx, node, parent_go):
+    """Emit a kit node subtree as the last child of parent_go (its documents right after the parent's RectTransform),
+    replacing an earlier copy of the same subtree."""
+    go = str(ctx.go(node.key))
+    if go in pf.by:
+        pf.delete(go)
+    prt = pf.rt(parent_go)
+    out = []
+    ctx.register(node)
+    A.emit_node(ctx, node, prt, out)
+    anchor = prt
+    for d in (K.unity_empty_scalars(d) for d in out):
+        head, body = d.split("\n", 1)
+        m = re.match(r"--- !u!(\d+) &(-?\d+)$", head)
+        anchor = pf.add(m.group(1), m.group(2), body, after=anchor).fid
+    pf.set_children(prt, pf.children(prt) + [str(ctx.rt(node.key))])
+    return go
+
+
+def quests_patch(pf):
+    """The Quests row (section 135): Episode 1's Quests becomes a horizontal ScrollRect (its own rect the viewport, a
+    RectMask2D, a clear Image a swipe lands on) whose content is a new child that holds the cards with the row's old
+    layout and is sized to them - exactly the PC row, so nothing scrolls on PC. Quests' own HorizontalLayoutGroup stays
+    on disk switched off; QuestTrackView spawns the cards into the content. The phone-only arrows and dashes go last."""
+    ctx = P.Ctx("MissionView/Phone")
+    ep1, quests = pf.find(EP1), pf.find(f"{EP1}/Quests")
+    content, step = quests_nodes()
+    emit_under(pf, ctx, content, quests)
+    hlg = pf.comp(quests, HLG_GUID)
+    assert hlg, "MissionView: Episode 1's Quests lost its HorizontalLayoutGroup (the row's PC layout to copy)"
+    pf.set(hlg, "m_Enabled", "0")
+    scroll = str(PHONE_IDS(f"{EP1}/Quests#scroll"))
+    put_comp(pf, quests, str(PHONE_IDS(f"{EP1}/Quests#cr")), "222", K.canvas_renderer()(ctx, quests))
+    put_comp(pf, quests, str(PHONE_IDS(f"{EP1}/Quests#img")), "114", K.image((1.0, 1.0, 1.0, 0.0), raycast=True)(ctx, quests))
+    put_comp(pf, quests, str(PHONE_IDS(f"{EP1}/Quests#mask")), "114", mono(
+        quests, A.KIT_RECT_MASK_2D, f"  m_Padding: {{x: 0, y: {-ROW_MASK_SPILL}, z: 0, w: {-ROW_MASK_SPILL}}}\n  m_Softness: {{x: 0, y: 0}}\n"))
+    put_comp(pf, quests, scroll, "114", mono(
+        quests, A.SCROLL_RECT,
+        f"  m_Content: {{fileID: {ctx.rt('Quests/Content')}}}\n  m_Horizontal: 1\n  m_Vertical: 0\n"
+        "  m_MovementType: 2\n  m_Elasticity: 0.1\n  m_Inertia: 1\n  m_DecelerationRate: 0.135\n"
+        f"  m_ScrollSensitivity: 30\n  m_Viewport: {{fileID: {pf.rt(quests)}}}\n"
+        "  m_HorizontalScrollbar: {fileID: 0}\n  m_VerticalScrollbar: {fileID: 0}\n"
+        "  m_HorizontalScrollbarVisibility: 2\n  m_VerticalScrollbarVisibility: 2\n"
+        "  m_HorizontalScrollbarSpacing: -3\n  m_VerticalScrollbarSpacing: -3\n"
+        "  m_OnValueChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"))
+    track = pf.comp(ep1, P.S["track"])
+    assert track, "MissionView: Episode 1 carries no QuestTrackView"
+    pf.set(track, "questItemContainer", f"{{fileID: {ctx.rt('Quests/Content')}}}")
+    sgo = emit_under(pf, ctx, step, ep1)
+    put_comp(pf, sgo, str(ctx.c("QuestStep", "stepper")), "114", stepper_body(scroll)(ctx, sgo))
+
+
+ROW_MASK_SPILL = 40            # the row's mask reaches this far above and below it: the cards' rise-in is not cut on PC
 
 
 def phone_patch(text_):
     """MissionView.prefab (author_voyage_window.py's layout) with its phone poses: each PhoneRect removed and re-added
     right after its GameObject, last in its component list."""
     pf = VW.Prefab(text_)
+    quests_patch(pf)
     for path, fn in phone_poses():
         go = pf.find(path)
         fid = str(PHONE_IDS(f"{path}#phone"))
@@ -464,7 +649,7 @@ def validate_phone(text_):
     cards_w = PH_W / PH_VOYAGES_SCALE - PH_MAP_W - PH_MAP_GAP
     assert cards_w >= 2 * 260 and VW.EDGE_H + VW.EDGE_GAP < vy["sizeDelta"][1] / 2, "MissionView: the voyage columns do not fit a phone"
     # The pages' panels (their PC sizes, read off disk) drawn inside the body.
-    for page, scale in (("SagaPage", PH_SAGA_SCALE), ("QuestsPage", PH_QUESTS_SCALE), ("EpisodesPage", PH_QUESTS_SCALE)):
+    for page, scale in (("SagaPage", PH_SAGA_SCALE), ("EpisodesPage", PH_EPISODES_SCALE)):
         path = f"MissionView/VoyagePages/{page}/Panel"
         assert float(ph[path]["scale"]) == scale, f"MissionView: {page} is not drawn at {scale} on a phone"
         size = re.search(r"m_SizeDelta: \{x: (\S+), y: (\S+)\}", pf.by[pf.rt(pf.find(path))].body)
@@ -477,7 +662,105 @@ def validate_phone(text_):
             pf.by[pf.rt(pf.find(f"MissionView/VoyagePages/SagaPage/Panel/{card}/{n}"))].body
             for n in ("Form1", "Form2", "Form3", "Form4"))))
         assert sail["anchoredPosition"][1] + sail["sizeDelta"][1] < lowest, f"MissionView: {card}'s SET SAIL covers its forms"
+    validate_quests(pf, ph)
     return pf
+
+
+def validate_quest_card(card):
+    """VoyageQuestCard: QUEST_W preferred on PC (the PC row exactly), every part posed at phone size on a phone, the parts
+    stacked top to bottom without overlapping and inside the card, the one button 44 tall."""
+    Q = K.FileIds("VoyageQuestCard")
+    _, lb = A.doc_of(card, Q("root#le"))
+    assert lb and f"  m_PreferredWidth: {QUEST_W}\n" in lb, "VoyageQuestCard: its preferred width is not the PC row's card"
+    poses = {}
+    for key, _ in quest_card_poses():
+        fid = Q(f"{key}#phone")
+        _, d = A.doc_of(card, fid)
+        if key == "PlayButton":
+            d = next((m.group(2) for m in re.finditer(r"^--- !u!114 &(-?\d+)\n((?:(?!--- ).*\n)*)", card, re.M)
+                      if f"guid: {A_PHONE_GUID}" in m.group(2) and "  anchoredPosition: {x: %s, y: 0}\n" % K.f32(PH_QCARD_BARS_W / 2)
+                      in m.group(2)), None)
+        assert d and f"guid: {A_PHONE_GUID}" in d, f"VoyageQuestCard: {key} has no phone pose"
+        poses[key] = d
+    assert f"  layoutSize: {{x: {PH_QCARD_W}, y: {PH_QCARD_H}}}\n" in poses["root"], "VoyageQuestCard: not its phone size in the row"
+    assert f"  sizeDelta: {{x: -{2 * PH_QCARD_PAD}, y: {PH_QCARD_FOOT_H}}}\n" in poses["Body/Footer"] and PH_QCARD_FOOT_H >= PH_TOUCH, \
+        "VoyageQuestCard: the phone button is under a thumb's height"
+    # Top to bottom (y down from the card's top): art, state, title, description, rule, goals, then the footer.
+    spans = []
+    for key in ("Body/Art", "Body/State", "Body/Title", "Body/Description", "Body/Rule", "Body/Goals"):
+        y = -float(re.search(r"  anchoredPosition: \{x: \S+, y: (\S+)\}", poses[key]).group(1))
+        h = float(re.search(r"  sizeDelta: \{x: \S+, y: (\S+)\}", poses[key]).group(1))
+        spans.append((key, y, y + h))
+    for (ka, _, a_end), (kb, b_top, _) in zip(spans, spans[1:]):
+        assert a_end <= b_top, f"VoyageQuestCard: on a phone {ka} runs into {kb}"
+    foot_top = PH_QCARD_H - PH_QCARD_PAD - PH_QCARD_FOOT_H
+    assert spans[-1][2] <= foot_top, "VoyageQuestCard: on a phone the goals run into the button"
+    assert 2 * 34 - 2 <= 66, "VoyageQuestCard: the two goal rows do not fit their block"
+
+
+def quest_count():
+    text_ = open(os.path.join(REPO, "Assets/_SO_Assets/GameModeQuest/GameModeQuestList.asset"), encoding="utf-8").read()
+    return len(re.findall(r"^  - \{fileID: 11400000, guid: \w+, type: 2\}$", text_, re.M))
+
+
+def validate_quests(pf, ph):
+    """The Quests row (section 135): a horizontal ScrollRect over a content the cards fill; on PC the row is exactly the
+    five cards (nothing scrolls); on a phone three cards and a peek, the controls phone-only and wired."""
+    ep1, quests = pf.find(EP1), pf.find(f"{EP1}/Quests")
+    content = pf.child(quests, "Content")
+    assert content, "MissionView: the Quests row has no Content (the cards' container)"
+    crt = pf.rt(content)
+    track = pf.by[pf.comp(ep1, P.S["track"])].body
+    assert VW.Prefab.field(track, "questItemContainer") == crt, "QuestTrackView does not spawn the cards into the row's content"
+    scroll = pf.comp(quests, A.SCROLL_RECT)
+    assert scroll, "MissionView: the Quests row does not scroll"
+    sb = pf.by[scroll].body
+    assert "  m_Horizontal: 1\n" in sb and "  m_Vertical: 0\n" in sb and "  m_MovementType: 2\n" in sb, \
+        "MissionView: the Quests row must scroll sideways only, clamped"
+    assert VW.Prefab.field(sb, "m_Content") == crt and VW.Prefab.field(sb, "m_Viewport") == pf.rt(quests), \
+        "MissionView: the Quests ScrollRect is not wired to its content and viewport"
+    assert pf.comp(quests, A.KIT_RECT_MASK_2D), "MissionView: the Quests row is not masked"
+    hlg = pf.by[pf.comp(quests, HLG_GUID)].body
+    assert "  m_Enabled: 0\n" in hlg, "MissionView: Quests' own row layout is on again (it would fight the content)"
+    chlg = pf.comp(content, HLG_GUID)
+    assert chlg and "  m_Enabled: 1\n" in pf.by[chlg].body, "MissionView: the row's content does not lay its cards out"
+    assert f"  m_Spacing: {QUEST_GAP}\n" in pf.by[chlg].body, "MissionView: the row's gap is not the PC row's"
+    fit = [c for c in pf.comps(content) if "m_HorizontalFit:" in pf.by[c].body]
+    assert fit and "  m_HorizontalFit: 2\n" in pf.by[fit[0]].body, "MissionView: the row's content is not sized to its cards"
+    # PC: the cards (preferred QUEST_W each) fill the row exactly - nothing scrolls, the window looks as it did.
+    n = quest_count()
+    qsize = re.search(r"m_SizeDelta: \{x: (\S+), y: (\S+)\}", pf.by[pf.rt(quests)].body)
+    assert float(qsize.group(1)) == -56 and QUESTS_PC_W == EPISODES_W - 56, "MissionView: the PC row's width moved"
+    assert n * QUEST_W + (n - 1) * QUEST_GAP <= QUESTS_PC_W, f"MissionView: {n} quests overflow the PC row (it would scroll on PC)"
+    # Phone: three cards in view and the next one peeking, the row under the progress line inside the page.
+    assert 3 * PH_QCARD_W + 3 * QUEST_GAP < PH_W < 4 * PH_QCARD_W + 3 * QUEST_GAP, "MissionView: the phone row does not show three and a peek"
+    assert PH_ROW_Y + PH_QCARD_H <= PH_BODY_H and PH_PROGRESS_Y >= PH_EP_ROW_H and PH_PROGRESS_Y + PH_PROGRESS_H <= PH_ROW_Y, \
+        "MissionView: the Quests page's line, progress line and row overlap or leave the page"
+    assert ph[f"{EP1}/Quests"]["sizeDelta"] == (0, -PH_ROW_Y), "MissionView: the phone row is not under the lines"
+    assert "  scale: 0\n" in pf.by[[c for c in pf.comps(pf.find("MissionView/VoyagePages/QuestsPage/Panel"))
+                                     if f"guid: {A_PHONE_GUID}" in pf.by[c].body][0]].body, \
+        "MissionView: the Quests page is drawn scaled on a phone again (section 135: phone size)"
+    title = pf.by[VW.tmp_of(pf, pf.find(f"{EP1}/Title"))].body
+    words = re.search(r"^  m_text: (.*)$", title, re.M).group(1)
+    assert K.label_width(words, "H3") * 16 / 22 <= PH_EP_TITLE_W, f"MissionView: {words!r} does not fit its phone line"
+    assert PH_EP_TITLE_W + 12 + 120 + 12 <= PH_W - PH_STEP_W, "MissionView: the episode's line runs under the arrows"
+    # The phone-only controls: hidden on PC, wired, thumb-sized.
+    step = pf.child(ep1, "QuestStep")
+    assert step, "MissionView: the Quests row has no arrows"
+    cg = [c for c in pf.comps(step) if pf.by[c].cls == "225"]
+    assert cg and "  m_Alpha: 0\n" in pf.by[cg[0]].body and "  m_Interactable: 0\n" in pf.by[cg[0]].body, \
+        "MissionView: the Quests arrows show on PC (they are phone-only)"
+    st = pf.comp(step, STEPPER)
+    assert st, "MissionView: the Quests arrows have no PhoneScrollStepper"
+    stb = pf.by[st].body
+    assert VW.Prefab.field(stb, "scroll") == scroll and VW.Prefab.field(stb, "controls") == cg[0], "PhoneScrollStepper is not wired"
+    for side in ("previous", "next"):
+        b = VW.Prefab.field(stb, side)
+        assert b and b != "0" and "    m_Mode: 0\n" in pf.by[b].body, f"PhoneScrollStepper.{side} is unwired or in pad navigation"
+    assert len(re.findall(r"^  - \{fileID: [1-9]\d*\}$", stb, re.M)) == 2, "PhoneScrollStepper needs its two dashes"
+    assert float(re.search(r"^  step: (\S+)$", stb, re.M).group(1)) == PH_STEP, "PhoneScrollStepper does not step one card"
+    sp = phone_fields(pf, step)
+    assert sp and sp["sizeDelta"] == (PH_STEP_W, PH_TOUCH) and PH_TOUCH >= 44, "MissionView: the Quests arrows are not 44 tall on a phone"
 
 
 def prefab_outputs():
@@ -629,14 +912,7 @@ def validate(files):
                   "goalsGroup", "node", "segment"):
         assert re.search(r"^  " + field + r": \{fileID: [1-9-]", rb, re.M), f"VoyageQuestCard: {field} is not wired"
     assert len(re.findall(r"^  - group: \{fileID: [1-9]", rb, re.M)) == 2, "VoyageQuestCard needs its two goal rows"
-    # On a phone (the Quests page at PH_QUESTS_SCALE) CLAIM and PLAY QUEST are a thumb's height, the footer clear of the goals.
-    Q = K.FileIds("VoyageQuestCard")
-    for key in ("Body/Footer/Claim", "Body/Footer"):
-        _, d = A.doc_of(card, Q(f"{key}#phone"))
-        assert d and f"guid: {A_PHONE_GUID}" in d, f"VoyageQuestCard: {key} has no phone pose"
-    n = card.count(f"sizeDelta: {{x: 0, y: {PH_QUEST_BUTTON_H}}}\n")
-    assert n == 2 and PH_QUEST_BUTTON_H * PH_QUESTS_SCALE >= PH_TOUCH, "VoyageQuestCard: CLAIM / PLAY QUEST under a thumb's height on a phone"
-    assert 16 + PH_QUEST_FOOTER_H <= QUEST_H - (QUEST_ART_H + 16 + 106 + 80), "VoyageQuestCard: the phone footer covers the goals"
+    validate_quest_card(card)
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "MissionView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "MissionView: Back must close through ModalWindowCloseButton"
 
@@ -712,6 +988,10 @@ def self_test(files):
         ("a quest card that cannot claim", lambda f: f.__setitem__(prefab_path("VoyageQuestCard"), re.sub(
             r"(  claimButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("VoyageQuestCard")]))),
         ("filler text back in the header", lambda f: f.__setitem__(view, f[view].replace("m_text: Voyage\n", "m_text: Where your story goes next\n", 1))),
+        ("a quest card wider than the PC row's", lambda f: f.__setitem__(prefab_path("VoyageQuestCard"), f[prefab_path("VoyageQuestCard")].replace(
+            f"  m_PreferredWidth: {QUEST_W}\n", "  m_PreferredWidth: 260\n", 1))),
+        ("the phone quest button under a thumb", lambda f: f.__setitem__(prefab_path("VoyageQuestCard"), f[prefab_path("VoyageQuestCard")].replace(
+            f"  sizeDelta: {{x: -{2 * PH_QCARD_PAD}, y: {PH_QCARD_FOOT_H}}}\n", f"  sizeDelta: {{x: -{2 * PH_QCARD_PAD}, y: 30}}\n", 1))),
         ("the voyages column frozen", lambda f: f.__setitem__(view, f[view].replace("  m_Vertical: 1\n", "  m_Vertical: 0\n", 1))),
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
     ]
@@ -729,14 +1009,27 @@ def self_test(files):
             print(f"  MISSED: {label_}")
             return False
         top = str(PHONE_IDS("MissionView/Body/Top#phone"))
+        _pf = VW.Prefab(phone)
+        quests_rt = _pf.rt(_pf.find(f"{EP1}/Quests"))
+        quests_hlg = _pf.comp(_pf.find(f"{EP1}/Quests"), HLG_GUID)
+        step_cg = str(P.Ctx("MissionView/Phone").c("QuestStep", "cg"))
         phone_cases = [
             ("a phone pose dropped", lambda t: t.replace(f"  - component: {{fileID: {top}}}\n", "")),
             ("SET SAIL back to its PC height on a phone", lambda t: t.replace(
                 f"  sizeDelta: {{x: -48, y: {PH_SAIL_H}}}\n", "  sizeDelta: {x: -48, y: 51.4}\n", 1)),
             ("the tabs under Back", lambda t: t.replace(f"  sizeDelta: {{x: {K.f32(-PH_TOP_RIGHT)}, y: {PH_BUTTON_H}}}\n",
                                                         f"  sizeDelta: {{x: -20, y: {PH_BUTTON_H}}}\n")),
-            ("the quests page at the saga's scale", lambda t: t.replace(
-                f"  scale: {K.f32(PH_QUESTS_SCALE)}\n", f"  scale: {K.f32(PH_SAGA_SCALE)}\n", 1)),
+            ("the episodes page at the saga's scale", lambda t: t.replace(
+                f"  scale: {K.f32(PH_EPISODES_SCALE)}\n", f"  scale: {K.f32(PH_SAGA_SCALE)}\n", 1)),
+            ("the cards spawned into Quests, not the row's content", lambda t: re.sub(
+                r"(  questItemContainer: \{fileID: )-?\d+", lambda m: m.group(1) + quests_rt, t, count=1)),
+            ("the Quests row scrolling up and down", lambda t: t.replace(
+                "  m_Horizontal: 1\n  m_Vertical: 0\n", "  m_Horizontal: 0\n  m_Vertical: 1\n", 1)),
+            ("Quests' own row layout switched back on", lambda t: re.sub(
+                r"(--- !u!114 &%s\n(?:(?!--- ).*\n)*?  m_Enabled: )0" % quests_hlg, r"\g<1>1", t, count=1)),
+            ("the arrows shown on PC", lambda t: re.sub(
+                r"(--- !u!225 &%s\nCanvasGroup:\n(?:(?!--- ).*\n)*?  m_Alpha: )0" % step_cg, r"\g<1>1", t, count=1)),
+            ("the stepper with no next arrow", lambda t: re.sub(r"(  next: \{fileID: )-?\d+", r"\g<1>0", t, count=1)),
         ]
         ok = all([ok] + [expect_phone(l, m) for l, m in phone_cases])
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
