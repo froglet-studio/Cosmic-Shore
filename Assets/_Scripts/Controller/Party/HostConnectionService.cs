@@ -2615,12 +2615,27 @@ namespace CosmicShore.Gameplay
                 // Clear party-member UI slots + raise OnPartyMemberLeft per member.
                 _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
-                // Only toast when a real party dropped - solo recovery is silent.
+                // Recreate a fresh solo Relay session the way every other route back to a solo menu does: tear down,
+                // reload Menu_Main, then create (PartyInviteController.RecoverFromSessionGoneAsync). Restarting the host
+                // IN PLACE left the menu's spawner unable to find the new host Player, so the pilot was never paired
+                // and the next match seated them on the wrong domain (Docs/PartySystem/BUGS.md B48). In place is kept
+                // only for a scene with no controller to do it.
+                var controller = PartyInviteController.Instance;
+                if (controller != null)
+                {
+                    // False: a join or leave is running and makes its own session - nothing to do here.
+                    if (!await controller.RecoverFromSessionGoneAsync()) return;
+                }
+                else
+                {
+                    await EnsurePartySessionAsync();
+                }
+
+                // Only toast when a real party dropped - solo recovery is silent. Raised AFTER the recovery: the
+                // Menu_Main reload recreates the scene-bound listeners, and a notice raised before it is dropped
+                // (the same reason BounceToSoloMenuAsync shows its toast last).
                 if (hadRemoteMembers)
                     _eventBus.RaiseHostConnectionLost();
-
-                // Recreate a fresh solo Relay session.
-                await EnsurePartySessionAsync();
             }
             finally
             {

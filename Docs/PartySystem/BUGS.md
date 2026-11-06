@@ -57,6 +57,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 | B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
 | B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time | 🟡 |
+| B48 | After the party lobby drops a host (`Party session gone server-side ... auto-recovering to solo session`), the menu's spawner logs `FindUnprocessedPlayerByOwnerClientId(0) returned NULL` and the pilot is never paired again; the next match seated a pilot who picked Jade on Gold, with no Jade column on the scoreboard (Yash, Thresher Time, 2026-11-07) | Fixed 2026-11-07 (section below): the session-gone recovery restarted the host IN PLACE on the live menu; it now takes the same teardown + Menu_Main reload + solo session as every other route back to a solo menu. Not editor-verified | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2642,3 +2643,37 @@ clones are waiting and neither of those, a Profiler capture of that swap on that
 off) is what decides it. Changing the prism pool or the lay budgets before that is guessing (CLAUDE.md, Debugging
 Methodology); that work is Yash's (`EnvironmentPrismPool`) and the perf branch's.
 
+## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
+
+**Seen.** Yash, solo in the editor, opened Thresher Time and placed himself on Jade with AIs on Ruby and Gold
+(`launch_preferences.data` recorded exactly that: Domain 1, AIDomains [2, 4], DomainCount 3). In the match the
+scoreboard showed two columns: Gold with him and an AI, and Ruby with the other AI. No Jade column. Seconds before
+the launch the editor log reads, in order:
+
+1. `[HostConnectionService] The presence lobby removed us or was deleted - rejoining at once`
+2. `[HostConnectionService] Party session gone server-side (SessionException): Player is not part of an active lobby. - auto-recovering to solo session.`
+3. `[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId(0) returned NULL`
+4. `[AppState] Invalid transition: None → LoadingGame`, then the Thresher Time load.
+
+**Root cause.** `HostConnectionService.HandleDefiniteSessionGoneAsync` cleared the dead session and called
+`EnsurePartySessionAsync`, which shuts the NetworkManager down and starts a new host IN PLACE, on the live Menu_Main
+with the old `gameData`. The leave path and the failed-join bounce were rewritten long ago (B3.b, the "architectural
+fix" above) to tear down first and reload Menu_Main BEFORE the solo session, precisely so the scene's
+`ServerPlayerVesselInitializer` catches the new host Player exactly once. The session-gone recovery never got that
+rewrite. So the spawner found no unprocessed Player for owner 0 (line 3), nothing paired the pilot, and the menu
+launched a match from a lobby whose local player and roster were the dead session's. The match spawner itself is
+right (a Jade human is always in the active set, and the placed AIs keep their domains). What the scoreboard drew is
+what that unpaired state hands it: `MultiplayerHUD` draws `gameData.LocalPlayer`'s domain first and groups by
+`Player.Domain`. Which of the two was wrong on that machine (the human's `Player.Domain`, or `LocalPlayer` pointing at
+the Gold AI that shares the host's client id) the log cannot say, because the launch channels are off by default.
+The fix removes the unpaired state both come from.
+
+**Fix.** `HandleDefiniteSessionGoneAsync` now calls `PartyInviteController.RecoverFromSessionGoneAsync`, which runs
+`RecoverFromFailedTransitionAsync`: destroy the player and vessel, reset the runtime data, leave, shut down, reload
+Menu_Main, then create the solo session. It is silent for a solo player, lands on Home (`MenuReturnCard.Clear`), and
+stands down when a join or leave is already running (that transition makes its own session). The
+host-connection-lost notice for a real party is raised AFTER the recovery, so the reloaded menu's listeners get it.
+In place is kept only for a scene with no `PartyInviteController`.
+
+**Not verified.** No editor compile result and no repro run: a session can only be reaped by UGS itself. Repro for
+the owner (live UGS): `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "B48".

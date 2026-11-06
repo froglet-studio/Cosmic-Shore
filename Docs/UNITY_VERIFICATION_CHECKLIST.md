@@ -231,6 +231,27 @@ one was not permitted), so this C# is checked by eye only: one serialized `Sprit
 2. Select `ConfigureView` in the prefab: VesselControlsPanel shows **Element Shapes** with the four sprites.
 3. Console clean.
 
+### 🔴 B48: a reaped party session now rebuilds through the menu reload, not in place (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** when UGS reports this machine's party session gone (`auto-recovering to solo session`),
+`HostConnectionService.HandleDefiniteSessionGoneAsync` now runs `PartyInviteController.RecoverFromSessionGoneAsync`
+(destroy player and vessel, reset runtime data, leave, shut down, reload Menu_Main, then the solo session) instead of
+restarting the host in place. In place, the menu's spawner never found the new host Player
+(`FindUnprocessedPlayerByOwnerClientId(0) returned NULL`), and a match launched next seated the pilot on the wrong
+domain. `Docs/PartySystem/BUGS.md` B48. Affects: the party layer (Shombith's backend area; Yash's party hardening).
+
+**Verified:** the open editor compiled it through `unity recompile` (0 errors, 0 warnings). Read-checked: `LeavePartySessionAsync` skips a null
+session, and every refresh path stands down while `PartyInviteController.IsTransitioning`.
+
+**Verify (live UGS, the owner's go-ahead):**
+1. Play in the editor and sit in Menu_Main until the log shows `Party session gone server-side ... auto-recovering to
+   solo session` (B33's carry-over usually triggers it about 30 s into a second Play without a domain reload).
+2. Expected now: Menu_Main reloads once, you land on Home with one vessel, and NO `FindUnprocessedPlayerByOwnerClientId(0)
+   returned NULL` follows.
+3. Open Thresher Time, pick Jade, place AIs on Ruby and Gold, launch: the scoreboard shows three columns, you on Jade.
+4. Negative control: the same steps on the commit before this one show the NULL line, and the wrong-domain scoreboard
+   when it reproduces.
+
 ### 🔴 Thresher Time: your next nest is ringed in lime (`Ys-bleeding-edge`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** the local pilot's next gate shows its ring again round its nest, in the gate races' lime "yours
