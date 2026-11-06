@@ -67,4 +67,6 @@ jobs:
           if [ "$ran" -eq 0 ]; then echo "::error::no launch tool self-test ran (is Tools/Launch checked out?)"; exit 1; fi
           exit $status
       - name: Every launch workflow pins third-party actions to a commit
+        # Runs even when a self-test failed, so one red check never hides the other.
+        if: ${{ !cancelled() }}
         run: python3 Tools/Launch/check_action_pins.py check
