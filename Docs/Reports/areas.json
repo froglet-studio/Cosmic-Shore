@@ -845,6 +845,58 @@
         "Run every Tools/Build/author_*_assets.py --check (Docs/Reports/CI.md section 5); each RED line is a failing gate.",
         "Read the latest Amoebius parity CI run for the port's compile errors."
       ]
+    },
+    "analytics": {
+      "title": "Froglet Analytics (own server and console, replaced PostHog)",
+      "aliases": [
+        "analytics",
+        "froglet analytics",
+        "analytics server",
+        "analytics console",
+        "posthog",
+        "player profiles"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Ian",
+        "Garrett",
+        "Caleb"
+      ],
+      "audience": [
+        "everyone"
+      ],
+      "branch": "bleeding-edge",
+      "summary": "Froglet's own analytics server on the Oracle VM and its console (Frogma Rev 50 B), replacing PostHog (Shombith, 2026-11-05/06, after Ian's #1639 emails). Schema-checked ingest, the #1639 double-send flag, country without IP, player profiles for profile readers, Claude over totals only, PostHog history imported, nightly self-update from bleeding-edge. Backend, so changes go through Shombith.",
+      "paths": [
+        "Tools/Analytics",
+        "Docs/Analytics",
+        "Assets/_Scripts/System/Instrumentation",
+        "Assets/Resources/FrogletAnalyticsConfig.asset",
+        "Assets/Resources/PrivacyConsentConfig.asset"
+      ],
+      "docs": [
+        "Tools/Analytics/server/README.md",
+        "Docs/Analytics/DATA_ARCHITECTURE.md",
+        "Docs/Analytics/EVENT_SCHEMA.json"
+      ],
+      "artifacts": [
+        {
+          "name": "Analytics Console (review copy)",
+          "url": "https://claude.ai/artifact/4VXqkw5287tfjhdxSqMbRb"
+        },
+        {
+          "name": "Server hosting proposal",
+          "url": "https://claude.ai/artifact/6GEFxRUjByH1qmQ3RwiBdk"
+        }
+      ],
+      "report": "Docs/Reports/ANALYTICS.md",
+      "taskAreas": [
+        "Analytics"
+      ],
+      "test": [
+        "python3 Tools/Analytics/server/analytics_server.py --self-test",
+        "In the editor: grant consent, play one match, see the player on the console's Players page within 30 s"
+      ]
     }
   }
 }

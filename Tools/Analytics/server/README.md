@@ -5,8 +5,10 @@ Oracle VM, and serves the **Froglet Analytics console**: the dashboard picked on
 pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §137). Claude writes
 three notes about the numbers each night and answers questions in the Ask box. UGS Analytics is unchanged.
 
-Status (2026-11-06): live on the Oracle VM. The game sends to it directly (PostHog removed from the game).
-Not yet on the VM; the game is not yet pointed at it.
+Status (2026-11-06): live on the Oracle VM, following `bleeding-edge` and updating itself nightly. The game sends to it
+directly (PostHog removed from the game). PostHog's history is in: 66,746 events over 91 days from early August 2026,
+every day matching PostHog's own count. Where it stands, what is unchecked and what it waits on:
+`Docs/Reports/ANALYTICS.md`.
 
 ## The console page
 
@@ -50,7 +52,12 @@ sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytic
   import-posthog --project <id> --dry-run
 ```
 
-Drop `--dry-run` to store; it rebuilds the numbers when it finishes.
+Drop `--dry-run` to store; it rebuilds the numbers when it finishes. Our PostHog project is `224840` (EU cloud).
+
+It reads one count per day first, skips empty days, and checks each day it reads against that count (`days_short` in
+the summary). It pages by `timestamp`, because PostHog answers 400 to `OFFSET` on queries made with a personal API
+key, and waits when PostHog rate-limits it. Run it once more after the builds that still send to PostHog have died
+out: it adds only what is missing. Then delete the personal key in PostHog.
 
 ## Updates (nightly, by itself)
 
@@ -173,4 +180,4 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 
 - `build_kind` stamped by the client (would split development builds from release; today they count as release).
 - Off-VM backups (the nightly backup stays on the VM's disk).
-- PostHog's history is loaded by running `import-posthog` once (above); nothing does it automatically.
+- A last `import-posthog` run, once the builds that still send to PostHog are gone; then PostHog can be shut down.
