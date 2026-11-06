@@ -21264,6 +21264,36 @@ errors); `author_menu_profile.py`, `author_colour_set_catalog.py` and `author_lo
    wear it. Note what does not (a vessel hull keeps Photic: its materials read Photic by path).
 7. **Leave the Profile on COLOUR SETS, go Home, open it again.** It opens on RECORD.
 
+## 🔴 Source Control window: GitHub Desktop's work inside Unity, with the push checks (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/froglet-source-control`; `Docs/SOURCE_CONTROL.md`. Compiled with `unity_refcompile` (editor config,
+0 errors in the 5 changed files; a planted error in the window failed it, as it should). The git operations ran for
+real in a console harness that compiles the same `FrogletGit.cs` / `FrogletSourceControl.cs` / `FrogletPython.cs`
+against throwaway repos (36 checks: commit of ticked files only, names with `[ ] *` and non-ASCII, discard, publish,
+pull, a conflicting update undone and named, a clean update, switching to a GitHub-only branch, the python checks
+through the C# runner). `push_checks.py --self-test` and `ship_gates.py --self-test` pass. Not opened in the editor;
+the new edit-mode tests were compiled, not run. Best done on a Windows machine with only GitHub Desktop installed.
+
+1. **Run the edit-mode tests** `FrogletSourceControlTests` (all).
+2. **Open FrogletTools > Build > Source Control.** The banner, the branch pill, ↓↑, and the bleeding-edge pill show;
+   the board (Froglet Master Tool) has a Source Control card in Build. On a machine with only GitHub Desktop (no git
+   on PATH) the window still works (it uses Desktop's git).
+3. **Change a prefab and a script, add a new image.** Changes lists them; the image and its `.meta` are one row; click
+   a row: its diff shows (+ green, - red); double-click pings it in the Project window.
+4. **Branches > New branch** `yourname/source-control-test` > Create: you are on it, started from bleeding-edge.
+5. **Untick the script, type a summary, Commit.** The checks run, then only the prefab and image commit; the script
+   stays in Changes. History shows the commit as UNPUSHED.
+6. **Drop a `steam_appid.txt` in the project root, tick it, Commit.** A warning dialog names it; Show me opens the
+   Checks tab; Discard these deletes it.
+7. **Push (Publish branch).** It pushes; the pill reads ↓0 ↑0. If it says authentication failed, note it (that is the
+   credential gap in `Docs/SOURCE_CONTROL.md` §4).
+8. **Open pull request.** GitHub's compare page opens for the branch into bleeding-edge, with the template. Close it
+   without opening.
+9. **Checks > Run /ship gates.** Lines stream in; it ends ALL OK or names the failing gate (about 2 minutes); the
+   editor stays responsive the whole time.
+10. **Enter Play mode, press Pull.** It refuses ("Stop Play mode"). Leave Play mode.
+11. **Delete the test branch** on GitHub afterwards.
+
 ## 🔴 Profile Colour sets: the Showroom on the real cell (Rev 54 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/sleepy-dirac-ytn1ph`; Docs/MENU_REDESIGN_B.md sections 124 and 126. It replaces the Rev 51 A layout in
