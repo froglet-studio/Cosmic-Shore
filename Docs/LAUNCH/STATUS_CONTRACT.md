@@ -141,3 +141,26 @@ mapping, a docker tag, a short docker digest, `uses :`, a sha hidden in a traili
 local actions and commented-out lines. `.github/workflows/launch-tools-check.yml` runs every launch tool's self-test
 on each change under `Tools/Launch/` or to a `launch-*` / `release*` workflow (`.yml` or `.yaml`), then fails any
 launch workflow whose third-party actions are not pinned to a commit sha.
+
+## The editor window
+
+**FrogletTools > Launch > Launch Console** (`Assets/_Scripts/Editor/Launch/`) is the console's editor twin, drawn on
+Frogma's Launch Console tab (Rev 58, `Docs/MENU_REDESIGN_B.md` §132). It answers "can we land, and what's in the way?"
+and gives every launch action one button.
+
+- **It only reads.** On open, on Refresh and on focus after ten minutes it runs `git fetch --no-tags origin
+  launch-status` and `git show FETCH_HEAD:status.json` on a thread-pool thread (`LaunchStatusFetcher`); OnGUI only draws
+  the last result. Offline, it shows the checkout's last copy (`origin/launch-status`) and says so. It writes no asset,
+  and every button is `Application.OpenURL` of an https page: no API call, no token.
+- **The pill rule** (`LaunchRules`, pinned by `Assets/_Scripts/Tests/Editor/LaunchConsoleStatusTests.cs`): a record's
+  `failure` is No-go; a `success` older than `staleHours` (48) is At risk, its age counted from `details.event_date`
+  when the record carries one, else from `updated_at`; `skipped`, `cancelled` and `running` are At risk; a fresh success
+  is Go. A platform is the worst of its records and the audit's verdict for it, and its line names what decided. A
+  platform with neither reads Unknown.
+- **Its configuration** is `Assets/_SO_Assets/Launch/Editor/LaunchConsoleConfig.asset` (`LaunchConsoleConfigSO`): the
+  milestone, the status branch, per platform the component ids, the action links (the artifact's `PLATFORMS` table)
+  and the rollback line, plus the audit's verdicts, ranked blockers and "Needs a human, in order" (READINESS.md §0 and
+  §10, dated). Those audit figures are the window's one hand-kept input; re-measure the audit before changing them. A
+  new component id or action link goes in the asset and in the artifact's table in the same change.
+- **What it cannot show:** the checklist (who took a blocker, its live status) lives in the artifact's store. The
+  window's "Checklist and Needs a human: open the console" button opens the artifact.

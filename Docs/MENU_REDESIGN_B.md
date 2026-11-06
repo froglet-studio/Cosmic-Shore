@@ -5979,4 +5979,5 @@ feedback queue #19 in `Docs/UI_REDESIGN_TASKS.md`.
 the pick does not show; and the artifact's pill counts a channel stale only past 48 h x 7, against 48 h for a row.
 
 **Built:** `FrogletTools > Launch > Launch Console` (`Assets/_Scripts/Editor/Launch/`), NOT RUN IN EDITOR; see
-`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`. Differs from the boards in one place: the header is the palette's `Banner`, whose stripe is the Build
+category's colour (`Docs/TOOLING.md` §3: a window's banner matches its card on the board), not the Jade stripe drawn.

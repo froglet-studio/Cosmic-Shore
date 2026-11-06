@@ -286,5 +286,140 @@ namespace CosmicShore.Editor.Froglet
             DrawRect(r, Muted.WithAlpha(0.25f));
             GUILayout.Space(pad);
         }
+
+        // ── The Froglet colour families (Docs/UI_STYLE_GUIDE.md §1) ──────────────
+
+        /// <summary>
+        /// The style guide's families, each with its one meaning, from <c>Docs/UI/froglet-tokens.json</c>
+        /// (the Deep Sea theme on the dark skin, its light twin Shore on the light one). A window
+        /// that shows go / no-go or a commitment draws through these, not through
+        /// <see cref="Ok"/> / <see cref="Error"/>, whose hues predate the guide (Design feedback
+        /// queue #19, <c>Docs/UI_REDESIGN_TASKS.md</c>).
+        /// </summary>
+        public static class Families
+        {
+            /// <summary>Lime: go, and the call to action you can still change.</summary>
+            public static Color Cta => IsDark ? Rgb(0x99FF80) : Rgb(0x487C1F);
+            /// <summary>Lime as a button fill (both skins), with <see cref="OnFill"/> text.</summary>
+            public static Color CtaFill => Rgb(0x99FF80);
+            /// <summary>Text on a Lime fill.</summary>
+            public static Color OnFill => Rgb(0x00041F);
+            /// <summary>Fire: danger, no-go; dashed it is "at risk" (there is no amber family).</summary>
+            public static Color Danger => IsDark ? Rgb(0xFF4B3A) : Rgb(0xCD373A);
+            /// <summary>Ruby: no way back (promote, roll back, Play, Ready).</summary>
+            public static Color Commit => IsDark ? Rgb(0xA600FF) : Rgb(0x893BFF);
+            /// <summary>Text on a Ruby fill.</summary>
+            public static Color OnCommit => Color.white;
+            /// <summary>Jade: the selection and the focus ring.</summary>
+            public static Color Selection => IsDark ? Rgb(0x00D4FF) : Rgb(0x007D73);
+
+            static Color Rgb(int rgb) =>
+                new(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+        }
+
+        // ── The corner sliver (Docs/UI_STYLE_GUIDE.md §4) ────────────────────────
+
+        static readonly Vector3[] _sliver = new Vector3[6];
+        static readonly Vector3[] _sliverLoop = new Vector3[7];
+
+        /// <summary>
+        /// A card with the guide's corner sliver: the top-left and bottom-right corners cut by
+        /// <paramref name="cut"/> (14 on large surfaces, 10 on buttons and chips). A dashed border
+        /// is drawn <paramref name="borderWidth"/> lines deep. Repaint only, like <see cref="DrawRect"/>.
+        /// </summary>
+        public static void DrawSliver(Rect r, Color fill, Color border, float cut = 10f,
+                                      float borderWidth = 1f, bool dashed = false)
+        {
+            if (Event.current.type != EventType.Repaint || r.width <= 0f || r.height <= 0f) return;
+            var prev = Handles.color;
+            SliverPoints(r, cut, _sliver);
+            if (fill.a > 0f)
+            {
+                Handles.color = fill;
+                Handles.DrawAAConvexPolygon(_sliver);
+            }
+            if (border.a > 0f && borderWidth > 0f)
+            {
+                Handles.color = border;
+                if (dashed)
+                {
+                    for (int line = 0; line < Mathf.Max(1, Mathf.RoundToInt(borderWidth)); line++)
+                    {
+                        SliverPoints(new Rect(r.x + line, r.y + line, r.width - 2 * line, r.height - 2 * line),
+                            Mathf.Max(0f, cut - line * 0.4f), _sliver);
+                        for (int i = 0; i < _sliver.Length; i++)
+                            Handles.DrawDottedLine(_sliver[i], _sliver[(i + 1) % _sliver.Length], 4f);
+                    }
+                }
+                else
+                {
+                    float inset = borderWidth * 0.5f;
+                    SliverPoints(new Rect(r.x + inset, r.y + inset, r.width - borderWidth, r.height - borderWidth), cut, _sliver);
+                    for (int i = 0; i < _sliver.Length; i++) _sliverLoop[i] = _sliver[i];
+                    _sliverLoop[_sliver.Length] = _sliver[0];
+                    Handles.DrawAAPolyLine(borderWidth * 1.5f, _sliverLoop);
+                }
+            }
+            Handles.color = prev;
+        }
+
+        static void SliverPoints(Rect r, float cut, Vector3[] into)
+        {
+            cut = Mathf.Max(0f, Mathf.Min(cut, r.width * 0.5f, r.height * 0.5f));
+            into[0] = new Vector3(r.x + cut, r.y);
+            into[1] = new Vector3(r.xMax, r.y);
+            into[2] = new Vector3(r.xMax, r.yMax - cut);
+            into[3] = new Vector3(r.xMax - cut, r.yMax);
+            into[4] = new Vector3(r.x, r.yMax);
+            into[5] = new Vector3(r.x, r.y + cut);
+        }
+
+        static GUIStyle _sliverLabel;
+
+        /// <summary>
+        /// A button with the corner sliver, in the colours given (a family's fill and its text).
+        /// Returns true on click. Disabled it draws grey, as every disabled button does.
+        /// </summary>
+        public static bool SliverButton(Rect r, string label, Color fill, Color border, Color text,
+                                        string tooltip = null, bool enabled = true)
+        {
+            bool hover = enabled && r.Contains(Event.current.mousePosition);
+            if (!enabled)
+            {
+                fill = Surface;
+                border = Muted.WithAlpha(0.35f);
+                text = Muted;
+            }
+            else if (hover)
+                fill = Color.Lerp(fill, Color.white, fill.a < 0.5f ? 0.10f : 0.15f);
+
+            DrawSliver(r, fill, border, 6f);
+            _sliverLabel ??= new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 11,
+                clipping = TextClipping.Clip,
+                richText = false,
+            };
+            _sliverLabel.normal.textColor = text;
+            GUI.Label(r, label, _sliverLabel);
+
+            using (new EditorGUI.DisabledScope(!enabled))
+            {
+                var content = string.IsNullOrEmpty(tooltip) ? GUIContent.none : new GUIContent("", tooltip);
+                if (GUI.Button(r, content, GUIStyle.none))
+                    return enabled;
+            }
+            if (hover) EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
+            return false;
+        }
+
+        /// <summary>A sliver button in a family: Lime (call to action), Ruby (no way back) or plain.</summary>
+        public static bool FamilyButton(Rect r, string label, bool cta, bool commit, string tooltip = null, bool enabled = true)
+        {
+            if (cta) return SliverButton(r, label, Families.CtaFill, Families.CtaFill, Families.OnFill, tooltip, enabled);
+            if (commit) return SliverButton(r, label, Families.Commit.WithAlpha(0.24f), Families.Commit, HeaderText, tooltip, enabled);
+            return SliverButton(r, label, SurfaceRaised, Muted.WithAlpha(0.6f), HeaderText, tooltip, enabled);
+        }
     }
 }

@@ -1,0 +1,350 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebe4f9ca6b7b420b963a4f94e3635608, type: 3}
+  m_Name: LaunchConsoleConfig
+  m_EditorClassIdentifier: 
+  milestoneName: 'Invite build v1'
+  milestoneDate: '2026-12-03'
+  repoUrl: 'https://github.com/froglet-studio/Cosmic-Shore'
+  statusBranch: 'launch-status'
+  statusFile: 'status.json'
+  staleHours: 48
+  consoleUrl: 'https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2'
+  auditSource: 'READINESS.md sections 0 and 10'
+  auditDate: '2026-11-05'
+  qualityNotes:
+  - '48 EditMode failures at the last full run; 181 open QA items.'
+  - 'Crash-free rate and performance budgets: not connected.'
+  platforms:
+  - key: 'windows'
+    displayName: 'Windows / Steam'
+    channels:
+    - id: 'windows-prerelease'
+      label: 'Playtest internal'
+    - id: 'windows-production'
+      label: 'Playtest default'
+    buildId: 'build-windows'
+    extraIdPrefix: ''
+    auditVerdict: 3
+    auditWhy: 'No Steamworks app; no IL2CPP player'
+    blockerRanks:
+    - 3
+    - 8
+    actions:
+    - label: 'Build'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-builds.yml'
+    - label: 'Upload to Playtest internal'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-builds.yml'
+    - label: 'Promote'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-promote.yml'
+    - label: 'Roll back'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-promote.yml'
+    - label: 'Steamworks'
+      kind: 0
+      url: 'https://partner.steamgames.com/apps'
+    rollback: 'Set the previous build live on the branch in Steamworks App Admin > Builds'
+  - key: 'ios'
+    displayName: 'iOS'
+    channels:
+    - id: 'ios-prerelease'
+      label: 'TestFlight'
+    - id: 'ios-production'
+      label: 'App Store'
+    buildId: 'build-ios'
+    extraIdPrefix: ''
+    auditVerdict: 3
+    auditWhy: 'No reproducible build; no privacy manifest'
+    blockerRanks:
+    - 14
+    - 15
+    - 16
+    actions:
+    - label: 'Build'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-builds.yml'
+    - label: 'Upload to TestFlight'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/ios-testflight.yml'
+    - label: 'Promote'
+      kind: 2
+      url: 'https://appstoreconnect.apple.com/apps'
+    - label: 'Roll back'
+      kind: 2
+      url: 'https://appstoreconnect.apple.com/apps'
+    rollback: 'Pause the phased release in App Store Connect; ship a fixed build (Apple has no binary rollback)'
+  - key: 'android'
+    displayName: 'Android'
+    channels:
+    - id: 'android-prerelease'
+      label: 'Play internal'
+    - id: 'android-production'
+      label: 'Play closed'
+    buildId: 'build-android'
+    extraIdPrefix: ''
+    auditVerdict: 2
+    auditWhy: 'No CI; undeclared microphone permission'
+    blockerRanks:
+    - 15
+    - 16
+    - 17
+    actions:
+    - label: 'Build'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-builds.yml'
+    - label: 'Upload to internal'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-builds.yml'
+    - label: 'Promote'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-promote.yml'
+    - label: 'Halt rollout'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/release-promote.yml'
+    - label: 'Play Console'
+      kind: 0
+      url: 'https://play.google.com/console'
+    rollback: 'Halt the staged rollout in Play Console, then roll out the previous release'
+  - key: 'web'
+    displayName: 'Web Toybox'
+    channels:
+    - id: 'web-staging'
+      label: 'Staging root'
+    - id: 'web-production'
+      label: '/play'
+    buildId: 'build-web'
+    extraIdPrefix: ''
+    auditVerdict: 2
+    auditWhy: 'r2.dev host; hand upload of unknown commit'
+    blockerRanks:
+    - 13
+    actions:
+    - label: 'Stage'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/toybox-publish.yml'
+    - label: 'Promote to /play'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/toybox-publish.yml'
+    - label: 'Roll back'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/toybox-publish.yml'
+    - label: 'Open /play'
+      kind: 0
+      url: 'https://www.froglet.games/play'
+    rollback: 'Point toybox/latest.json at the previous build (the publish workflow''s rollback action)'
+  - key: 'liveops'
+    displayName: 'Live ops'
+    channels:
+    - id: 'ugs-development'
+      label: 'UGS development'
+    - id: 'ugs-production'
+      label: 'UGS production'
+    buildId: ''
+    extraIdPrefix: ''
+    auditVerdict: 3
+    auditWhy: 'Every build talks to UGS development'
+    blockerRanks:
+    - 1
+    - 7
+    - 11
+    - 12
+    actions:
+    - label: 'Deploy to development'
+      kind: 1
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/ugs-deploy.yml'
+    - label: 'Deploy to production'
+      kind: 2
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/actions/workflows/ugs-deploy.yml'
+    - label: 'UGS dashboard'
+      kind: 0
+      url: 'https://cloud.unity.com'
+    rollback: 'Deploy the previous tag to the environment (ugs-deploy with an older ref)'
+  - key: 'backend'
+    displayName: 'Backend'
+    channels: []
+    buildId: ''
+    extraIdPrefix: ''
+    auditVerdict: 2
+    auditWhy: 'Anonymous sign-in only; protocol version unused'
+    blockerRanks:
+    - 6
+    - 20
+    actions:
+    - label: 'UGS dashboard'
+      kind: 0
+      url: 'https://cloud.unity.com'
+    - label: 'Multiplayer start here'
+      kind: 0
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/Docs/MULTIPLAYER_START_HERE.md'
+    rollback: 'Kill switch in the launch flags (deploy to production), then fix forward'
+  - key: 'launch'
+    displayName: 'Launch-wide'
+    channels:
+    - id: 'trunk-static'
+      label: 'Trunk static checks'
+    - id: 'unity-compile'
+      label: 'Unity compile + EditMode'
+    buildId: ''
+    extraIdPrefix: 'smoke-'
+    auditVerdict: 3
+    auditWhy: 'No Unity compile since 2026-10-06'
+    blockerRanks:
+    - 2
+    - 4
+    - 5
+    - 9
+    - 10
+    - 18
+    - 19
+    - 21
+    - 22
+    actions:
+    - label: 'Readiness audit'
+      kind: 0
+      url: 'https://github.com/froglet-studio/Cosmic-Shore/blob/claude/exciting-pascal-t8ijbo/Docs/LAUNCH/READINESS.md'
+    - label: 'Froglet Tasks'
+      kind: 0
+      url: 'https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f'
+    rollback: ''
+  gates:
+  - id: 'trunk-static'
+    label: 'Trunk static checks'
+  - id: 'unity-compile'
+    label: 'Unity compile + EditMode'
+  smokePrefix: 'smoke-'
+  blockers:
+  - rank: 1
+    title: 'Release builds talk to UGS production'
+    decider: 'Shombith'
+    needsHuman: 1
+  - rank: 2
+    title: 'Repo security settings'
+    decider: 'Shombith (admin)'
+    needsHuman: 1
+  - rank: 3
+    title: 'Steamworks partner account, fee, base app and Playtest child app'
+    decider: 'Garrett + Shombith'
+    needsHuman: 1
+  - rank: 4
+    title: 'A Unity compile + EditMode run gates trunk'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 5
+    title: 'Every build is identifiable'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 6
+    title: 'Old and new clients never meet'
+    decider: 'Yash / Shombith'
+    needsHuman: 0
+  - rank: 7
+    title: 'Production deploys are gated'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 8
+    title: 'A Windows IL2CPP player reaches the menu and plays a match'
+    decider: 'Shombith'
+    needsHuman: 1
+  - rank: 9
+    title: 'Consent and children'
+    decider: 'counsel + Shombith'
+    needsHuman: 1
+  - rank: 10
+    title: 'Licences clean'
+    decider: 'unknown'
+    needsHuman: 1
+  - rank: 11
+    title: 'Remote kill switches'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 12
+    title: 'Persistence decided'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 13
+    title: 'Web on its own domain'
+    decider: 'DNS owner + Shombith'
+    needsHuman: 1
+  - rank: 14
+    title: 'iOS builds from a commit, with a privacy manifest'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 15
+    title: 'In-app account deletion'
+    decider: 'Shombith'
+    needsHuman: 0
+  - rank: 16
+    title: 'Mobile store forms match the build'
+    decider: 'Garrett / Caleb + counsel'
+    needsHuman: 1
+  - rank: 17
+    title: 'Android is reproducible'
+    decider: 'Shombith / Yash'
+    needsHuman: 1
+  - rank: 18
+    title: 'Crash reporting proven'
+    decider: 'Shombith'
+    needsHuman: 1
+  - rank: 19
+    title: 'Measured test state for the launch path'
+    decider: 'team'
+    needsHuman: 0
+  - rank: 20
+    title: 'Multiplayer holds'
+    decider: 'Yash / Shombith'
+    needsHuman: 0
+  - rank: 21
+    title: 'Analytics live'
+    decider: 'Shombith'
+    needsHuman: 1
+  - rank: 22
+    title: 'Runbook and comms'
+    decider: 'not named'
+    needsHuman: 0
+  - rank: 23
+    title: 'Perf and memory budgets per device tier'
+    decider: 'team'
+    needsHuman: 0
+  - rank: 24
+    title: 'Store pages'
+    decider: 'Caleb + art'
+    needsHuman: 0
+  - rank: 25
+    title: 'Lofelt 16 KB fixed or replaced'
+    decider: 'unknown'
+    needsHuman: 0
+  humanSteps:
+  - text: 'Repo settings: ruleset bypass, required checks, the ugs-production Environment, old iOS secrets'
+    who: 'Shombith (admin)'
+  - text: 'Rotate the symbol-upload token behind USYM_UPLOAD_AUTH_TOKEN'
+    who: 'Unity dashboard'
+  - text: 'Unity CI seat: UNITY_EMAIL / UNITY_PASSWORD in the unity-ci Environment'
+    who: 'Shombith'
+  - text: 'Steamworks: entity, fee, agreements, base app and Playtest child app'
+    who: 'Garrett + Shombith'
+  - text: 'UGS production: board, 28 events / 67 parameters, identity providers, Moderation'
+    who: 'Shombith'
+  - text: 'Counsel: privacy policy, COPPA posture, DLC vs tokens, EULA'
+    who: 'counsel'
+  - text: 'Licences: FMOD tier, SOAP receipt, Electronic Highway Sign, the .wav files'
+    who: 'not named'
+  - text: 'DNS / Cloudflare: play.froglet.games to R2 + CORS'
+    who: 'DNS owner'
+  - text: 'Unity Build Automation: Web, Android and iOS targets'
+    who: 'Shombith'
+  - text: 'Play Console: Data safety, IARC, audience, deletion URL, key custody'
+    who: 'Garrett / Caleb'
+  - text: 'App Store Connect: privacy label, age rating, external TestFlight group'
+    who: 'Garrett / Caleb'
