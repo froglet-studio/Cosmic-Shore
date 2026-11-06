@@ -72,6 +72,21 @@ namespace CosmicShore.Gameplay
         /// pool (<see cref="CosmicShore.Core.FairPlayTrust"/>, phase B). With the trust gate off it is always the shore.
         /// </summary>
         private static string PresenceGameMode => CosmicShore.Core.FairPlayTrust.PresenceGameMode(PRESENCE_LOBBY_GAME_MODE);
+
+        /// <summary>
+        /// The one query every presence-lobby read makes - the join AND the converge - so both always see the same set:
+        /// the presence game mode scoped to this build's Netcode protocol, plus the protocol itself (NetProtocol, launch
+        /// blocker 6). Each protocol has its own presence lobby, named by protocol ("PRESENCE_LOBBY@p24"), and the
+        /// smallest-id converge runs inside it: a build never sees another version's lobbies, so it can neither invite nor
+        /// be invited across versions, and the converge cannot flip between two versions' lobbies. An old build (bare
+        /// "PRESENCE_LOBBY", no protocol) keeps its own lobby and never sees ours.
+        /// </summary>
+        private static QuerySessionsOptions PresenceQuery()
+        {
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.AddRange(NetProtocol.PresenceFilters(PresenceGameMode, NetProtocol.LocalTag));
+            return queryOptions;
+        }
         private const string DISPLAY_NAME_KEY         = "displayName";
         private const string AVATAR_ID_KEY            = "avatarId";
         private const string PARTY_COUNT_KEY          = "partyCount";
@@ -241,10 +256,8 @@ namespace CosmicShore.Gameplay
         /// <inheritdoc/>
         public async UniTask ConvergeToCanonicalAsync(int maxPlayers)
         {
-            // Query the full presence-lobby set (rate-limit aware, like the join path).
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
+            // Query the full presence-lobby set of this protocol (rate-limit aware, like the join path).
+            var queryOptions = PresenceQuery();
 
             IList<ISessionInfo> sessions;
             try
@@ -501,9 +514,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask<ISession> TryQueryAndJoinAsync(int maxPlayers)
         {
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
+            var queryOptions = PresenceQuery();
 
             var results = await _policy.ExecuteAsync("presence:query",
                 async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
@@ -558,16 +569,8 @@ namespace CosmicShore.Gameplay
                     IsLocked          = false,
                     IsPrivate         = false,
                     PlayerProperties  = BuildLocalPlayerProperties(),
-                    SessionProperties = new Dictionary<string, SessionProperty>
-                    {
-                        {
-                            "gameMode",
-                            new SessionProperty(
-                                PresenceGameMode,
-                                VisibilityPropertyOptions.Public,
-                                PropertyIndex.String1)
-                        }
-                    }
+                    // Scoped to this build's protocol, with the protocol beside it: what PresenceQuery asks for.
+                    SessionProperties = NetProtocol.PresenceSessionProperties("gameMode", PresenceGameMode, NetProtocol.LocalTag)
                 };
 
                 SetActiveLobby(await _policy.ExecuteAsync("presence:create",

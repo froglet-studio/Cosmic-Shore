@@ -9,7 +9,7 @@ party/presence/friends stack is built on.
 
 | Layer · method | UGS SDK call |
 |---|---|
-| `PresenceLobbyService.JoinOrCreateAsync` | `QuerySessionsAsync` (filter `PRESENCE_LOBBY`) → `CreateSessionAsync` |
+| `PresenceLobbyService.JoinOrCreateAsync` | `QuerySessionsAsync` (filter `PRESENCE_LOBBY@p<protocol>` + `protocol`, `NetProtocol`) → `CreateSessionAsync` |
 | `PresenceLobbyService.ConvergeToCanonicalAsync` | `QuerySessionsAsync` → `JoinSessionByIdAsync` |
 | `PresenceLobbyService.RefreshAsync` | `ISession.RefreshAsync` |
 | `PresenceLobbyService.LeaveAsync` | `ISession.AsHost().DeleteAsync` / `LeaveAsync` |

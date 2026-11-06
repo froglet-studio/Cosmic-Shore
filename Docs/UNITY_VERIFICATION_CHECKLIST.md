@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Protocol version gates matchmaking: old and new clients never meet (`claude/launch-protocol-filter`, 2026-11-06, launch blocker 6) — NOT EDITOR-VERIFIED
+
+**What landed:** `NetProtocol` (`Assets/_Scripts/Controller/Multiplayer/NetProtocol.cs`) reads the running build's
+`NetworkConfig.ProtocolVersion` from the live NetworkManager (no second constant). Every session the game makes carries
+it as the indexed session property `protocol` (String3): the matchmaking session (`MultiplayerSetup`), the presence lobby
+(`PresenceLobbyService`) and the party session (`PartySessionService`, also as a player property). The matchmaking and
+presence queries filter on it, and their String1 game mode is scoped by it (`SkimRace@p24`, `PRESENCE_LOBBY@p24`), so a
+build from before the gate (bare game mode, no protocol) and a new build never list each other. Each protocol converges to
+its own presence lobby. A join by id (invite Accept, Join, Spectate, Rejoin) reads the protocol of the members it lands
+among as the join returns; on a different or missing one it leaves the session and shows
+`PartyInviteController.protocolMismatchToast` (authored, tokens `{name}` `{otherVersion}` `{yourVersion}`) instead of the
+generic bounce. Affects: Yash's multiplayer; Shombith's UGS (session properties and queries only; no new UGS calls).
+
+**Verified without the editor:** `unity_refcompile` player and editor configs: 0 errors in project code.
+`NetProtocolTests` (16) passed in a stand-alone harness (the file compiled with stand-ins for the Netcode and Sessions
+types and a minimal NUnit); negative controls: flipping `Decide`'s comparison failed 5 of them, and dropping the protocol
+scope from the game mode failed 5 (including "a build from before the gate must not find it"). Nothing run in Play mode;
+the Amoebius build of these files was not run here.
+
+**Test in the editor (two editors: MPPM with a virtual player, or two builds; each player its own tag/profile):**
+1. `NetProtocolTests` pass in the Test Runner.
+2. Same versions still match. Both on the shipped `ProtocolVersion` (24): both list each other ONLINE, an invite
+   Accept and a direct Join both seat the guest, and a matchmade game of the same mode and seat count joins one
+   session. Party log (Logging > Party on): the presence lobby is queried and created under `PRESENCE_LOBBY@p24`.
+3. Bump one. In the second editor (or a second build) set `NetworkManager.prefab` > NetworkConfig > Protocol Version
+   to 25 (do NOT commit it). Start both:
+   - neither lists the other ONLINE (each sits in its own presence lobby: `PRESENCE_LOBBY@p24` / `@p25`);
+   - a matchmade game of the same mode makes two sessions, never one (`[MultiplayerSetup] Queried 0 sessions` on the
+     second one in);
+   - no `NetworkConfig mismatch` warning appears in either host's console.
+4. The direct-join message. With the bump still in place, force the 25 player into the 24 host's party session through
+   the join path (an invite sent before the bump, or a debugger call to `PartyInviteController.JoinPartyAsync` with that
+   host's row): the joiner leaves at once and lands on Home with "<host name> is on a different version of the game
+   (24; yours is 25). Update your game to play together."; the host's console shows no `NetworkConfig mismatch`;
+   `net_logs.py show 1` has a `protocolMismatch` mark.
+5. An old build: one build from `bleeding-edge` before this branch and one with it. They do not list each other; a forced
+   join from the new one shows the same toast with "an older version".
+6. Revert the bump in step 3 before committing anything.
+
 ### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by

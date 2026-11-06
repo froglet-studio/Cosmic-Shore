@@ -323,6 +323,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         static void LogJoinFailure(string what, Exception e)
         {
+            if (e is ProtocolMismatchException)
+            {
+                // Not a fault: the other build speaks another Netcode protocol (NetProtocol, launch blocker 6). The player
+                // is told to update by PartyInviteController's authored toast.
+                CSDebug.LogWarning($"[HostConnectionService] {what}: {e.Message}");
+                return;
+            }
             var failure = UgsRequestPolicy.Classify(e);
             if (failure == UgsFailureClass.Full)
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party is full ({e.Message}).");

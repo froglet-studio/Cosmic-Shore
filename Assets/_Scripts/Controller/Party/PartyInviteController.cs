@@ -51,6 +51,19 @@ namespace CosmicShore.Gameplay
                  "spectate bounced Shombith, his join bounced two more). Empty shows no toast (the join is still refused).")]
         [SerializeField, TextArea] private string leavePartyFirstToast = "You are hosting a party. Leave it first - joining another one would end it for everyone in it.";
 
+        [Tooltip("Toast when the party we tried to join runs a different version of the game: its members publish another " +
+                 "Netcode protocol, or none (a build from before the version gate). Tokens: {name} (the other pilot), " +
+                 "{otherVersion} (their protocol, or the label below), {yourVersion} (ours). Empty shows no toast " +
+                 "(the join is still refused).")]
+        [SerializeField, TextArea] private string protocolMismatchToast =
+            "{name} is on a different version of the game ({otherVersion}; yours is {yourVersion}). Update your game to play together.";
+
+        [Tooltip("{otherVersion} in the toast above when the other build publishes no version at all (it is older than the version gate).")]
+        [SerializeField] private string protocolUnpublishedLabel = "an older version";
+
+        [Tooltip("{name} in the toast above when the other pilot's name is not known.")]
+        [SerializeField] private string protocolUnknownPilotName = "That pilot";
+
         [Header("Timing")]
         // The initializers below equal what PartyServices.prefab SERIALIZES (5 / 10 / 30), so a reader
         // of this file is not misled: a serialized field's initializer is not its shipped value.
@@ -285,6 +298,13 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException)
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Accept flow cancelled.");
+            }
+            catch (ProtocolMismatchException pm)
+            {
+                // The inviter's party runs another version of the game (NetProtocol): left before the Netcode
+                // connection, so the player is told to update instead of seeing a generic bounce.
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync(ProtocolMismatchMessage(pm));
             }
             catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
@@ -521,6 +541,11 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException)
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] {label} cancelled.");
+            }
+            catch (ProtocolMismatchException pm)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync(ProtocolMismatchMessage(pm));
             }
             catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
@@ -766,6 +791,13 @@ namespace CosmicShore.Gameplay
             // See Docs/PartySystem/BUGS.md B10.
             if (!string.IsNullOrEmpty(toastMessage)) bounceToastChannel?.ShowPrefix(toastMessage);
         }
+
+        /// <summary>The authored "update your game" line for a party that runs another protocol (empty template: no toast).</summary>
+        private string ProtocolMismatchMessage(ProtocolMismatchException pm) =>
+            TemplateText.Fill(protocolMismatchToast,
+                "name",         string.IsNullOrEmpty(pm.RemoteName) ? protocolUnknownPilotName : pm.RemoteName,
+                "otherVersion", string.IsNullOrEmpty(pm.RemoteVersion) ? protocolUnpublishedLabel : pm.RemoteVersion,
+                "yourVersion",  pm.LocalVersion);
 
         /// <summary>
         /// Ends a transition. A host loss reported while it ran is acted on now if the link is still down (the transition
