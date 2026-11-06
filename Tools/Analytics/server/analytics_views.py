@@ -569,14 +569,18 @@ PLAY_SETUPS = {"solo": ("solo_alone",), "solo_vs_ai": ("solo_vs_1_ai", "solo_vs_
 SETUP_NOTES = [
     "a match's setup is read from each player's side of game_started: Competitive is one human on their domain against "
     "other humans, Teams is 2+ humans on their domain against other humans, Teams vs AI is every human on one domain",
-    "the multiplayer setups need the domain fields builds send from " + DOMAINS_FROM + " (humans_on_my_domain, "
-    "humans_on_other_domains); older multiplayer matches and the PostHog history read Teams not recorded, never guessed",
+    "the multiplayer setups need the domain fields (humans_on_my_domain, humans_on_other_domains) that builds "
+    "made from bleeding-edge since " + DOMAINS_FROM + " send; older multiplayer matches and the PostHog history read "
+    "Teams not recorded, never guessed",
     "the solo setups count the AI from player_count_ai (ai_count when it is missing), so old matches and the PostHog "
     "history have them too; with the domain fields, vs N AI counts only the AI on other domains, and With AI teammates "
-    "(ai_on_my_domain 1+) exists only from builds of " + DOMAINS_FROM,
+    "(ai_on_my_domain 1+) exists only from builds that send the domain fields",
     "an uneven match (2 humans against 1) is Teams from the pair's side and Competitive from the one's, so its match "
     "counts in both; plays and finished, rematch and won percentages count each player once",
 ]
+SETUP_SERIES_NOTE = ("a match's setup is read from each player's side; multiplayer from builds that do not send the "
+                     "domain fields (the PostHog history included) reads Teams not recorded, and With AI teammates "
+                     "exists only from builds that do; the solo AI counts go back to the start")
 MAX_KEYS = 8
 WEEK_SQL = "date({col}, '-6 days', 'weekday 1')"
 
@@ -788,7 +792,7 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
                      "two-element mode counts under its first (Brood Rush: Mass, and Space as its second); a "
                      "mode with no genre or an old mode name reads No element (key none)")
     if by == "setup":
-        notes += SETUP_NOTES
+        notes.append(SETUP_SERIES_NOTE)
     if measure in FREESTYLE_NOTES:
         notes.append(FREESTYLE_NOTES[measure])
     out = {**base, "points": points, "keys": out_keys, "unfiltered": unfiltered, "notes": notes}

@@ -1494,7 +1494,7 @@ class Setups(StoreCase):
         out = V.series(agg, "matches", "setup", "none", "release", 90)
         self.assertEqual(out["keys"], list(S.SETUP_IDS))                       # the setups' own order
         self.assertEqual({p["key"]: p["value"] for p in out["points"]}["teams"], 2)
-        self.assertTrue(any("never guessed" in n for n in out["notes"]))
+        self.assertTrue(any("Teams not recorded" in n for n in out["notes"]))
         for measure in V.PLAY_MEASURES + ("players", "new_players"):
             self.assertIn("setup", V.series(agg, measure, "none", "day", "release", 7)["answerable_by"])
             V.series(agg, measure, "setup", "week", "release", 30)

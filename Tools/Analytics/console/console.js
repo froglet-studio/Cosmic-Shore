@@ -246,8 +246,8 @@
                                                        solo_vs_3plus_ai: "Solo vs 3+ AI", solo_with_ai_team: "Solo with AI teammates" });
   const SETUP_COLOUR = {
     competitive: "var(--series-1)", teams: "var(--series-2)", teams_vs_ai: "var(--series-3)", multi_unrecorded: "var(--fs-text-off)",
-    solo_alone: "color-mix(in srgb, var(--data) 25%, var(--fs-text))", solo_vs_1_ai: "color-mix(in srgb, var(--data) 50%, var(--fs-text))",
-    solo_vs_2_ai: "color-mix(in srgb, var(--data) 75%, var(--fs-text))", solo_vs_3plus_ai: "var(--data)",
+    solo_alone: "color-mix(in srgb, var(--data) 18%, var(--fs-text))", solo_vs_1_ai: "color-mix(in srgb, var(--data) 44%, var(--fs-text))",
+    solo_vs_2_ai: "color-mix(in srgb, var(--data) 70%, var(--fs-text))", solo_vs_3plus_ai: "var(--data)",
     solo_with_ai_team: "color-mix(in srgb, var(--data) 62%, var(--fs-ground))",
   };
   const OVERS = [["day", "Day"], ["week", "Week"], ["none", "Total"]];
@@ -1035,8 +1035,8 @@
         whole: measure !== "players",                        // a player in two setups is in both: not a whole, no pie
         notes: measure === "players" ? ["A player who played two setups counts in both, so these do not add up to the players."] : [],
         tips: Object.fromEntries(rows.map((r) => [r.setup, `${fmt(r.plays)} plays · finished ${pct(r.finished_pct)} · won ${pct(r.win_pct)}`])) }),
-        { table: { columns: ["Setup", "Matches", "Plays", "Players", "Finished", "Rematch", "Won"], rows: rows.map((r) =>
-          [SETUP_SHORT[r.setup] || r.setup, fmt(r.matches), fmt(r.plays), fmt(r.players), pct(r.finished_pct), pct(r.rematch_pct), pct(r.win_pct)]) } })),
+        { table: { columns: ["Setup", "Matches", "Players", "Finished", "Rematch", "Won"], rows: rows.map((r) =>
+          [SETUP_SHORT[r.setup] || r.setup, fmt(r.matches), fmt(r.players), pct(r.finished_pct), pct(r.rematch_pct), pct(r.win_pct)]) } })),
       after });
   }
 
@@ -1048,11 +1048,10 @@
     const since = `${shortDay(from)} ${from.slice(0, 4)}`;
     const multi = list.filter((r) => r.group === "multiplayer"), solo = list.filter((r) => r.group === "solo");
     const multiNote = hi.multi_plays && hi.multi_unrecorded_pct > 50
-      ? h("p", { class: "small" }, `Builds before ${since} did not send domains; new builds fill this in. ` +
-          `${pct(hi.multi_unrecorded_pct)} of multiplayer plays here are not recorded.`)
+      ? h("p", { class: "small" }, `Domains arrive from ${since}; older builds did not send them, and new builds fill this in.`)
       : h("p", { class: "small" }, "From each player's side: Competitive is one human on their domain against other humans, Teams is two or more together against humans, Teams vs AI is every human on one domain.");
     const soloNote = h("p", { class: "small" }, "By the AI they played against, so the PostHog history has it too. " +
-      `With AI teammates (an AI on their own domain) exists only from builds of ${since}.`);
+      `With AI teammates (an AI on their own domain) exists only from builds that send domains (from ${since}).`);
     return [
       h("h2", { class: "h3 section-title" }, "Match setups"),
       h("p", { class: "small" }, "Who a match was played with, by the domains every pilot was on. A match counts once in each setup its players saw; an uneven one (two against one) is Teams for the pair and Competitive for the one."),
