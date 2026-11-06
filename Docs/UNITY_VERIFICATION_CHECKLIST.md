@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+
+## 🔴 iOS privacy manifest in the Xcode project (2026-11-06, Shombith, NOT BUILT FOR iOS)
+
+Branch `claude/launch-ios-privacy-manifest`; launch blocker #14 (`Docs/IOS_BUILD.md` "Privacy manifest"). The manifest and
+its merge are tested outside Unity (5/5, negative control fails); `IosPrivacyManifestPostprocess`'s `UNITY_IOS` body has
+not been compiled, because the Xcode API ships only with iOS Build Support.
+
+1. **Export an iOS Xcode project** (iOS Build Support installed). The console shows no error from
+   `IosPrivacyManifestPostprocess`.
+2. **In the export folder:** `PrivacyInfo.xcprivacy` sits next to `Info.plist` and lists UserDefaults CA92.1,
+   FileTimestamp C617.1 and SystemBootTime 35F9.1.
+3. **In Xcode:** the file is in the Unity-iPhone target's Copy Bundle Resources, once. The build has no "Multiple commands
+   produce PrivacyInfo.xcprivacy" error.
+4. **Archive, then Organizer > Generate Privacy Report:** the app's entries show the three categories and the five
+   collected data types.
+5. **Export again with Append:** the file is unchanged and still listed once.
+6. **First TestFlight upload:** no ITMS-91053 email. If one names `LofeltHaptics.framework`, that framework needs a
+   manifest of its own (`IOS_BUILD.md`).
+
 ### 🔴 Protocol version gates matchmaking: old and new clients never meet (`claude/launch-protocol-filter`, 2026-11-06, launch blocker 6) — NOT EDITOR-VERIFIED
 
 **What landed:** `NetProtocol` (`Assets/_Scripts/Controller/Multiplayer/NetProtocol.cs`) reads the running build's
