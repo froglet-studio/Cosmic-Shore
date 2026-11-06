@@ -5975,3 +5975,31 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
 - **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
   Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
   there); the page itself is not built yet.
+
+## 138. Rev 63 mockups: portrait menus, the same PC UI with the phone held upright (2026-11-06, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-06, after trying the phone layouts in the Device Simulator): "I think we should rather stick
+to PC UI how it is and delete the boards mobile UI ... this is too time costly to perform these changes because it needs
+proper planning but we do need support for potrait mode unlocked as well so lets just work on that same UI just
+potrait". Decided with him the same day:
+- the phone layouts are removed completely: #1739 (phone scale), #1741 (sign-in, finish, HUD) and #1744 (every menu,
+  the HUD and Maelstrom, Rev 60) closed without merging; their branches stay on origin as the record;
+- Frogma's Phone tab boards (Rev 52-60, 22 boards) deleted from the canvas; the tab is now **Portrait**;
+- portrait is unlocked for the **menus only**; matches stay landscape;
+- the portrait look is drawn first and picked before anything is built.
+`Docs/UI_STYLE_GUIDE.md` section 8 and D6 now say every device shows the PC UI.
+
+**On the canvas:** the Portrait tab, "Rev 63 - Portrait menus" (copies in `Docs/MenuRedesignB/board/`). Each board shows
+Home, Arcade and Configure on an upright phone (390 x 844 points), with its own words beside them:
+- **R63A Scale to width:** the PC layout as it is, the 1920-wide screen shrunk to the phone's width; body text about
+  3.7 pt. No screen changes; not readable.
+- **R63B Re-flow, band on top (recommended):** the same PC pieces at their PC sizes on a 1080-wide canvas: the nav band
+  on top as on PC, panels stacked, grids 3 across, the hubs 2 x 2; body text about 6.5 pt, the size the PC UI already has
+  on a phone held sideways. A portrait pose per screen: Home, Arcade, Configure and Hangar first, the rest as A.
+- **R63C Re-flow, band at the bottom:** as B, the nav band a tab bar under the thumb; moves the band away from the PC
+  place.
+- **R63Notes:** what each costs, how big the words are, the rotation lock (menus allow portrait; a match locks landscape
+  before it loads).
+
+**Differs from the build:** nothing is built yet. After the pick, each picked screen gets its portrait pose in its own
+generator, and the rotation lock goes in the scene flow.

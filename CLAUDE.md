@@ -56,7 +56,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   (Shombith, 2026-11-03): the game's UI, Frogma boards, artifacts and diagrams, decks, the website, the Fleet Codex and every
   studio. Garrett's six colour families with one meaning each (Lime is always the call to action; Jade is a choice you can
   claim and reclaim, the selection and focus; Ruby is no way back, Ready), his colour chart with the shades to choose from,
-  the Froglet themes (Deep Sea, its light twin Shore; a domain is one accent), phones on their own 800x450 scale, type, the corner sliver, buttons and states, cards, windows, toasts, motion, the safe area, each with a
+  the Froglet themes (Deep Sea, its light twin Shore; a domain is one accent), phones showing the PC UI (portrait menus picked on Frogma), type, the corner sliver, buttons and states, cards, windows, toasts, motion, the safe area, each with a
   do and a don't from our own screens; drawn on Frogma's first tab (Style Guide). Tokens: `Docs/UI/froglet.css` and
   `froglet-tokens.json`, written from the game by `Tools/Build/froglet_style.py` (`--check`) - any web page loads them
   instead of typing colours. A PR touching `Assets/_Prefabs/UI*`, Menu_Main, GameCanvas, the UI theme or
