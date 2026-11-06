@@ -728,42 +728,115 @@ def result_branches(cwd=None):
     return rows
 
 
-def read_branch_results(ref, cwd=None):
-    """{heartbeat, jobs: {job: {epoch: {best, state_summary, archive}}}, requests: {id: result}} from one machine's
-    results commit."""
-    out = {"heartbeat": None, "jobs": {}, "requests": {}}
-    hb = git_ok("show", f"{ref}:heartbeat.json", cwd=cwd)
-    if hb:
+# ── many small JSON files out of git, fast ───────────────────────────────────
+# The hub rebuilds its board every minute and every agent re-reads the queue every minute. Reading each file with its
+# own `git show` started one process per file - thousands per rebuild at 600 runs, which a 2-core VM could not finish
+# inside the minute (Shombith, 2026-11-05: "60 runs work, 600 break"). Now: one `ls-tree` per ref lists the files with
+# their blob ids, and one `git cat-file --batch` reads only the blobs not read before. A blob id IS its content, so a
+# cached blob can never be stale.
+
+_BLOB_TEXT = {}                 # blob id -> its text (or None when it is missing); per repository
+_BLOB_CACHE_MAX = 100_000
+
+
+def ls_blobs(ref, path="", recursive=False, cwd=None):
+    """[(path, blob id)] for the files under `path` in `ref` (a directory path ends in "/"). One git process."""
+    args = ["ls-tree", "-z"] + (["-r"] if recursive else []) + [ref] + (["--", path] if path else [])
+    rows = []
+    for entry in (git_ok(*args, cwd=cwd) or "").split("\0"):
+        meta, _, name = entry.partition("\t")
+        parts = meta.split()
+        if name and len(parts) >= 3 and parts[1] == "blob":
+            rows.append((name, parts[2]))
+    return rows
+
+
+def read_blobs(blob_ids, cwd=None):
+    """{blob id: text or None} - from the cache, or ONE `git cat-file --batch` for the ones not read yet."""
+    key = os.path.realpath(cwd or REPO)
+    cache = _BLOB_TEXT.setdefault(key, {})
+    missing = [b for b in dict.fromkeys(blob_ids) if b not in cache]
+    if missing:
+        if len(cache) + len(missing) > _BLOB_CACHE_MAX:
+            cache.clear()
+        p = subprocess.run(["git", "cat-file", "--batch"], cwd=cwd or REPO, input=("\n".join(missing) + "\n").encode(),
+                           capture_output=True, timeout=600, **NO_WINDOW)
+        data, i = p.stdout, 0
+        for blob in missing:
+            nl = data.find(b"\n", i)
+            if nl < 0:
+                cache[blob] = None
+                continue
+            header = data[i:nl].split()
+            i = nl + 1
+            if len(header) < 3 or header[-1] == b"missing":
+                cache[blob] = None
+                continue
+            size = int(header[2])
+            cache[blob] = data[i:i + size].decode("utf-8", "replace")
+            i += size + 1                           # the body is followed by one newline
+    return {b: cache.get(b) for b in blob_ids}
+
+
+def read_json_blobs(blob_ids, cwd=None):
+    """{blob id: parsed JSON or None}. Parsed afresh on every call, so a caller may change what it gets."""
+    out = {}
+    for blob, text in read_blobs(blob_ids, cwd=cwd).items():
         try:
-            out["heartbeat"] = json.loads(hb)
+            out[blob] = json.loads(text) if text is not None else None
         except Exception:
-            pass
-    for name in (git_ok("ls-tree", "--name-only", ref, "requests/", cwd=cwd) or "").split():
-        if name.endswith(".json"):
-            try:
-                r = json.loads(git("show", f"{ref}:{name}", cwd=cwd))
-                out["requests"][r.get("id") or os.path.basename(name)[:-5]] = r
-            except Exception:
-                pass
-    listing = git_ok("ls-tree", "-r", "--name-only", ref, "jobs", cwd=cwd) or ""
-    for path in listing.split("\n"):
-        m = re.fullmatch(r"jobs/([^/]+)/([^/]+)/(best|summary|archive|unit-[^/]+)\.json", path.strip())
-        if not m:
-            continue
-        job, epoch, what = m.groups()
-        try:
-            data = json.loads(git("show", f"{ref}:{path.strip()}", cwd=cwd))
-        except Exception:
-            continue
-        out["jobs"].setdefault(job, {}).setdefault(epoch, {})[what] = data
+            out[blob] = None
     return out
 
 
+_RESULT_FILE = re.compile(r"jobs/([^/]+)/([^/]+)/(best|summary|archive|unit-[^/]+)\.json")
+
+
+def _wanted_results(ref, cwd=None):
+    """The files of one machine's results commit the board reads: [(kind, path, blob)]."""
+    wanted = []
+    for path, blob in ls_blobs(ref, recursive=True, cwd=cwd):
+        if path == "heartbeat.json":
+            wanted.append(("heartbeat", path, blob))
+        elif path.startswith("requests/") and path.endswith(".json") and path.count("/") == 1:
+            wanted.append(("request", path, blob))
+        elif _RESULT_FILE.fullmatch(path):
+            wanted.append(("job", path, blob))
+    return wanted
+
+
+def _assemble_results(wanted, parsed):
+    out = {"heartbeat": None, "jobs": {}, "requests": {}}
+    for kind, path, blob in wanted:
+        data = parsed.get(blob)
+        if data is None:
+            continue
+        if kind == "heartbeat":
+            out["heartbeat"] = data
+        elif kind == "request":
+            if isinstance(data, dict):
+                out["requests"][data.get("id") or os.path.basename(path)[:-5]] = data
+        else:
+            job, epoch, what = _RESULT_FILE.fullmatch(path).groups()
+            out["jobs"].setdefault(job, {}).setdefault(epoch, {})[what] = data
+    return out
+
+
+def read_branch_results(ref, cwd=None):
+    """{heartbeat, jobs: {job: {epoch: {best, state_summary, archive}}}, requests: {id: result}} from one machine's
+    results commit."""
+    wanted = _wanted_results(ref, cwd=cwd)
+    return _assemble_results(wanted, read_json_blobs([w[2] for w in wanted], cwd=cwd))
+
+
 def gather(cwd=None):
-    """Every machine's results, plus who is on what right now."""
+    """Every machine's results, plus who is on what right now. One ls-tree per machine and one cat-file for all."""
+    branches = result_branches(cwd=cwd)
+    wanted = [_wanted_results(b["ref"], cwd=cwd) for b in branches]
+    parsed = read_json_blobs([w[2] for files in wanted for w in files], cwd=cwd)
     machines = []
-    for b in result_branches(cwd=cwd):
-        r = read_branch_results(b["ref"], cwd=cwd)
+    for b, files in zip(branches, wanted):
+        r = _assemble_results(files, parsed)
         r.update(b)
         machines.append(r)
     return machines

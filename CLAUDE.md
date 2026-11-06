@@ -40,6 +40,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
 - [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
+- [`Docs/LAUNCH/READINESS.md`](Docs/LAUNCH/READINESS.md): **Read before any launch, release-pipeline, store or live-ops work.** The launch: mobile (iOS, Android, with the web Toybox) as soon as activation is ready, Steam with keys by March 2027 before GDC (Shombith, 2026-11-06). The readiness audit per platform, the ranked blockers, the decisions, and which PR carries each blocker; beside it `RUNBOOK.md` (launch day, rollback per platform), `LIVE_UPDATES.md` (what changes without a store release), `STATUS_CONTRACT.md` (the `launch-status` records every pipeline publishes). The Launch Console (https://claude.ai/artifact/XwF8FQrHhUTvNv1gE8kws2; FrogletTools > Launch > Launch Console) shows it live; `/launch-flow-<platform>` (android, ios, windows, web, liveops, backend, launch-wide) works one platform in its own chat.
+  Sections: Go/no-go per platform; one section per platform; live updates, backend, CI, quality, legal, store assets, analytics, support, security; Ranked blocker list; Decisions; Where each blocker stands
 - [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session. **The one AI plan every AI effort serves is [`Docs/AI_SYSTEM/AI_PLAN.md`](Docs/AI_SYSTEM/AI_PLAN.md)** (LOCKED, Garrett 2026-11-02).
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/Compute/README.md`](Docs/Compute/README.md): **Froglet Compute, the team's idle hardware searching for the game** (Garrett, 2026-10-26): a queue of learning searches (AI drives per vessel x Time game x intensity, the Regatta course and elemental balance plan, swarm bioforms, NCA creature trainings) every collaborator's computer works through when idle (`compute.py install`: set and forget, any OS; never touches the checkout; publishes only to `compute/<user>/<host>`), one merged board, and a scout that finds what to search next. A result is a proposal: its area's owner promotes it. Skills: `/compute`, `/compute-job`, `/compute-scout`, `/regatta-balance` (`Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`), `/bioform-forge`.
@@ -215,6 +217,11 @@ The ladder is the element's arcade intensities, then its arena game balanced aga
 - work that serves no step is a proposal to Garrett first.
 
 A new round grows from every genome that exists. No AI is trained inside an arena game.
+
+**Froglet Compute is PAUSED (Shombith, 2026-11-06): analytics has the priority.** Until he switches it back on, queue
+no compute job, send no run and install no agent; the console's hourly sync scheduled task is paused, and the rule below
+waits with it. Train or check an AI by hand only as the AI plan allows. The hourly AI learning sweep (`ai_learn.py`) is
+separate and unchanged.
 
 **Froglet Compute is the default way to train an AI** (Shombith, 2026-11-02). A search, a Unity trainer run or a
 re-run of a learner goes on the team's machines through Compute, never as a sweep a session runs by hand or a trainer

@@ -957,7 +957,7 @@ observed behaviour.
 | 5 | Update Apple Nutrition Labels + Play Data Safety in the shipping release | product | **Yes** |
 | 6 | Confirm store age rating / Families-policy classification | product | Yes, if child-directed |
 | 7 | Define + configure retention (PostHog and Cloud Save) | instrumentation | No |
-| 8 | Decide on IP/geolocation capture; confirm replay + autocapture off | instrumentation | No |
+| 8 | ~~Decide on IP/geolocation capture~~ **DECIDED (Shombith, 2026-11-05): country only.** Our server (`Tools/Analytics/server/`) looks up the sender's country at ingest from DB-IP's country table and stores the two-letter code; the IP address is never stored. Name country in the privacy policy and store labels (rows 1 and 5). Replay and autocapture do not exist on our server | instrumentation | No |
 | 9 | Document the ATT determination | product | No |
 | 10 | Treat the display-name entry filter as a privacy control | engineering | No |
 
@@ -995,6 +995,9 @@ path removes it.
 | Define retention for PostHog and Cloud Save (§8.7) | instrumentation | No |
 | **Fill in the PostHog project API key** in `Assets/Resources/PostHogConfig.asset` (write-only project key, never a personal key) — the sink stays inert until then | instrumentation | **Yes** |
 | **Server-side PostHog person deletion** to complete right-to-erasure; the client can only flag it (§7.3, §8.6) | instrumentation | **Yes** |
+| **PostHog removed from the game** (Shombith, 2026-11-06): `FrogletAnalyticsSink` + `Resources/FrogletAnalyticsConfig.asset` send to our own server (`Tools/Analytics/server/`), shipped already pointed at it. The consent screen now names "Froglet's own analytics server" and the country (`Resources/PrivacyConsentConfig.asset`). The PostHog rows in §8.11 (DPA, region, person deletion) no longer apply; the privacy policy and store labels must name our server and country instead. History: `import_posthog.py`, once, without IP addresses | instrumentation / legal | **Yes** (policy text) |
+| **Player profiles** (Shombith, 2026-11-05): the console shows each player's id, display name, country, platforms, matches, crystals, FTUE steps, friends and parties, settings and event timeline, to admin keys and the read keys named in `profile_readers` only. Claude never receives it (Ask reads aggregates). This is the per-person view PostHog's People page gave, and §8.5's display-name risk applies to it: keep the list of profile readers short | instrumentation | No |
+| **Replacing PostHog with our own server** (Shombith, 2026-11-05): `Tools/Analytics/server/` takes the PostHog sink's batches unchanged and finishes the in-game deletion on arrival, which closes the item above once the game points at it. Until then the PostHog rows above still apply | instrumentation | No |
 | Run `Tools/Analytics/export_cloud_save.py` + `import_snapshot_to_posthog.py` once to backfill existing players into PostHog People (needs a read-only UGS service account) | instrumentation | No |
 | One `SO_Vessel` asset has a blank `Name` — fix the asset (§3.2 stops it persisting, it does not fix the asset) | gameplay | No |
 | Publish `SO_Game.GolfScoring` onto `GameDataSO` so scoring direction has one source (§3.3) | gameplay | No |
