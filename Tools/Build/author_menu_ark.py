@@ -392,7 +392,25 @@ def squad_deck(page):
 
 
 def squad_picker(page):
-    pk = page.child(N("Squads/Picker", "Picker", TL(COL_X, PICKER_Y, COL_W, 210)))
+    """The Make-squad picker. On PC it sits under the cards; on a phone (Docs/UI_STYLE_GUIDE.md section 8) it is a
+    sheet over the screen behind the Make bar's phone-only EDIT CARD button (PhoneSheet), over a dim a tap closes, with
+    DONE. The sheet's own group is not the picker's: SquadsPage shows and hides the picker, the sheet opens it."""
+    dim = page.child(N("Squads/PickerDim", "PickerDim", STRETCH))
+    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
+        .add("cg", 225, canvas_group(False)) \
+        .add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable(0)
+                                                 + f"  m_TargetGraphic: {ref(ctx.c('Squads/PickerDim', 'img'))}\n" + A.calls([])))
+    sheet = page.child(N("Squads/PickerSheet", "PickerSheet", STRETCH))
+    sheet.add("cg", 225, canvas_group(True))
+    sheet.add("sheet", 114, lambda ctx, go: mono(go, PHONE_SHEET,
+              f"  panel: {ref(ctx.c('Squads/PickerSheet', 'cg'))}\n  dim: {ref(ctx.c('Squads/PickerDim', 'cg'))}\n"
+              f"  openButton: {ref(ctx.c('Squads/MakeBar/Picks', 'button'))}\n"
+              f"  closeButton: {ref(ctx.c('Squads/PickerSheet/Done', 'button'))}\n"
+              f"  dimButton: {ref(ctx.c('Squads/PickerDim', 'button'))}\n"))
+    # The sheet's panel: nothing on PC (no size), the sheet's frame on a phone.
+    C.frame(sheet.child(N("Squads/PickerSheet/Panel", "Panel", R(size=(0, 0)))), "Squads/PickerSheet/Panel/Frame", 14,
+            "SurfaceBlack", "SurfaceDark", fill_alpha=0.96)
+    pk = sheet.child(N("Squads/Picker", "Picker", TL(COL_X, PICKER_Y, COL_W, 210)))
     pk.add("cg", 225, canvas_group(False))
     label(pk.child(N("Squads/Picker/VesselCaption", "VesselCaption", TL(0, 21, 78, 16))), "Vessel", "Label", "NeutralLightest")
     small_button(pk, "Squads/Picker/Prev", "Prev", "<", TL(84, 4, 40, 50))
@@ -422,6 +440,7 @@ def squad_picker(page):
     label(pk.child(N("Squads/Picker/ArtifactCaption", "ArtifactCaption", TL(0, 178, 78, 16))), "Artifact", "Label", "NeutralLightest")
     for i in range(ARTIFACT_CHIPS):
         pick_chip(pk, f"Squads/Picker/Artifact{i}", f"Artifact{i}", TL(84 + i * 150, 168, 142, 36), 36, "None" if i == 0 else "")
+    phone_button(sheet, "Squads/PickerSheet/Done", "Done", "DONE", TR(0, 0, PH_DONE_W, PH_BTN))
 
 
 def squad_bars(page):
@@ -432,6 +451,9 @@ def squad_bars(page):
           "Pick a card, then its vessel, pilot, element and artifact. Take into appears once the squad is made.",
           "BodySmall", "NeutralLightest")
     small_button(mk, "Squads/MakeBar/Create", "Create", "Create squad", TR(0, 0, 240, 52), "Cta")
+    # Phone only (PhoneSheet keeps it hidden on PC): opens the picker sheet. In the Make bar, so it is there only while
+    # a squad is being made or edited.
+    phone_button(mk, "Squads/MakeBar/Picks", "Picks", "EDIT CARD", TL(0, 0, PH_PICKS_W, PH_BTN))
     vw = page.child(N("Squads/ViewBar", "ViewBar", TL(COL_X, BAR_Y, COL_W, 52)))
     vw.add("cg", 225, canvas_group(False))
     small_button(vw, "Squads/ViewBar/Remove", "Remove", "Delete", TL(0, 6, 140, 40), "Danger")
@@ -515,8 +537,9 @@ def squads_page(root):
     squad_header(page)
     squad_empty(page)
     squad_deck(page)
-    squad_picker(page)
+    # The bars before the picker (they never meet on PC), so the picker's sheet draws over them on a phone.
     squad_bars(page)
+    squad_picker(page)
     squad_join(page)
 
     def body(ctx, go):
@@ -673,6 +696,416 @@ def decor_page(root):
     return page
 
 
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/UI_STYLE_GUIDE.md section 8, D6; Docs/MENU_REDESIGN_B.md section 129). On a phone Menu_Main is
+# 800 x 450 (450 tall, 800 to ~974 wide) and the nav band is the 96-wide rail down the left, so the Ark's content lives
+# right of it: x 112 .. W-16, under the tab row (y 8 .. 52) from y 60 to 442. Blocks are re-posed UNSCALED in phone
+# units, so their KitTexts take their roles' phone sizes; only the tab row is drawn at a scale (0.85, 44 tall).
+#   CONVERTER  the title top-left (its line along the foot of the picture), the recipe down the right, the converter
+#              bar along the foot with CONVERT; the picture shows between them
+#   SQUADS     the squads list down the left (MAKE / JOIN under it), the squad's header, its three cards in a fan and
+#              the View / Make bar on the right; the Make picker is a sheet behind EDIT CARD (PhoneSheet); the join
+#              list covers the content area with its CLOSE
+#   ARTIFACTS  the artifacts list down the left; the picked one's name, words and crystals, its four tracks (RAISE and
+#              OMNI side by side) and the status line on the right
+#   DECOR      (locked) the title, then the three slots across
+# --------------------------------------------------------------------------------------------
+PHONE_SHEET = K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs")
+PH_RAIL, PH_X, PH_R, PH_TOP, PH_FOOT = 96, 112, 16, 60, 8     # the rail; the content's left, right margin, top, foot
+PH_W, PH_H = 800, 450                                         # the phone canvas laid out for (the narrowest)
+PH_BTN = 44                                                   # every phone touch target is at least this tall
+PH_TAB_SCALE = 0.85                                           # the tab row: 52 x 0.85 = 44.2 tall
+PH_LIST_W, PH_ROW_H, PH_ROW_STEP = 180, 54, 60                # the squads / artifacts list column and its rows
+PH_COL_X = PH_X + PH_LIST_W + 12                              # the right column starts here (304)
+PH_COL_W = PH_W - PH_R - PH_COL_X                             # and is this wide on an 800-wide phone (480)
+PH_BAR_Y = PH_H - PH_FOOT - PH_BTN - 4                        # the Squads View / Make bar (394)
+PH_PICKS_W, PH_DONE_W = 150, 100
+PH_CARD_W, PH_CARD_H, PH_CARD_DX = 150, 236, 164              # a squad card on a phone; the rogues' offset
+PH_CARD_TOPS = (2, 12, 12)                                    # leader, Rogue One, Rogue Two
+PH_DECK_Y, PH_DECK_H = 130, 262
+PH_CONV_BAR_H, PH_RECIPE_W, PH_RECIPE_H = 64, 250, 306
+PH_TITLE_W, PH_TITLE_H = 280, 66
+PH_SEG_X, PH_SEG_W, PH_SEG_GAP = 170, 76, 4
+PH_CONVERT_W = 160
+PH_PICK_Y = (56, 116, 176, 236, 296)                          # the picker sheet's rows: vessel, pilot, element, seat, artifact
+OFF = R((0, 1), None, (-4000, 0), (100, 20), (0, 1))          # off the canvas on a phone (text with no room there)
+
+
+def phone_button(parent, key, name, caption, r):
+    """A phone-only Default glass button (a uGUI Button, as PhoneSheet takes): inactive at rest, so PC never shows it;
+    the PhoneSheet that names it switches it on on a phone."""
+    b = parent.child(N(key, name, r))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    b.child(N(f"{key}/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    b.child(N(f"{key}/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    b.child(N(f"{key}/Label", "Label", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, K.tmp(caption, "ButtonSmall", content, align="center")) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("audio", 114, A.menu_audio(2))
+    b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable()
+                                              + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
+                                              + A.calls([(ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
+    return b
+
+
+def find(node, key):
+    """The node (or instance) keyed `key` under `node`."""
+    if node.key == key:
+        return node
+    for ch in getattr(node, "children", []):
+        hit = find(ch, key)
+        if hit is not None:
+            return hit
+    return None
+
+
+def put(root, key, pose=None, **kw):
+    """Give node `key` its phone pose (one PhoneRect per GameObject)."""
+    n = find(root, key)
+    assert n is not None, f"phone layout: no node {key!r}"
+    assert not any(k == "phone" for k, _, _ in n.comps), f"phone layout: {key} posed twice"
+    n.add("phone", 114, K.phone_rect(pose, **kw))
+    return n
+
+
+def ph_stretch(left, right, top, h):
+    """Stretched across the parent between `left` and `right`, `top` down, `h` tall (phone units)."""
+    return R((0, 1), (1, 1), ((left - right) / 2, -top), (-(left + right), h), (0.5, 1))
+
+
+def ph_region(left, top, right, bottom):
+    """Stretched over the parent less these insets (phone units)."""
+    return R((0, 0), (1, 1), ((left - right) / 2, (bottom - top) / 2), (-(left + right), -(top + bottom)))
+
+
+def ph_brackets(root, key):
+    """The corner brackets of a block, smaller and tighter on a phone (22 at 10 in would sit on the words)."""
+    s, inset = 12, 4
+    for ck, anchor, sx, sy in (("tl", (0, 1), 1, -1), ("tr", (1, 1), -1, -1), ("br", (1, 0), -1, 1), ("bl", (0, 0), 1, 1)):
+        put(root, f"{key}.{ck}", R(anchor, anchor, (sx * (inset + s / 2), sy * (inset + s / 2)), (s, s)))
+
+
+def ph_title(root, key, line_below):
+    """The title band top-left: eyebrow and heading; its line under the heading when it fits, else along the foot of
+    the picture (`line_below`: the converter's line is too long for the band)."""
+    put(root, key, TL(PH_X, PH_TOP, PH_TITLE_W, PH_TITLE_H + (0 if line_below else 20)))
+    put(root, f"{key}/Eyebrow", TL(12, 9, 200, 14))
+    put(root, f"{key}/Heading", TL(12, 24, PH_TITLE_W - 24, 32))
+    if line_below:
+        put(root, f"{key}/Line", TL(0, PH_H - PH_FOOT - PH_CONV_BAR_H - 24 - PH_TOP, 400, 18))
+    else:
+        put(root, f"{key}/Line", TL(12, 60, PH_TITLE_W - 24, 18))
+
+
+def ph_list_row(root, key, h):
+    """A kit_row_text row re-posed for a phone row `h` tall: the title over the line, the domain at the foot's right."""
+    short = h < 50
+    put(root, f"{key}/Mark", TL(0, 8, 3, h - 16))
+    put(root, f"{key}/Title", ph_stretch(10, 8, 3 if short else 6, 20 if short else 22))
+    put(root, f"{key}/Domain", TR(8, h - (18 if short else 20), 64, 14))
+    put(root, f"{key}/Line", ph_stretch(10, 76, h - (20 if short else 22), 16))
+
+
+def ph_list(root, key, rows, count=None):
+    """The list column down the left (Squads, Artifacts)."""
+    put(root, key, TL(PH_X, PH_TOP, PH_LIST_W, PH_H - PH_TOP - PH_FOOT))
+    put(root, f"{key}/Caption", TL(0, 0, PH_LIST_W - (66 if count else 0), 14))
+    if count:
+        put(root, count, TR(0, 0, 60, 14))
+    for i in range(rows):
+        k = f"{key}/Row{i}"
+        put(root, k, TL(0, 20 + i * PH_ROW_STEP, PH_LIST_W, PH_ROW_H))
+        ph_list_row(root, k, PH_ROW_H)
+
+
+def ph_col(top, h):
+    """The right column (right of the list), `top` down, `h` tall."""
+    return ph_stretch(PH_COL_X, PH_R, top, h)
+
+
+def phone_converter(root):
+    ph_title(root, "Title", line_below=True)
+    put(root, "Recipe", R((1, 1), None, (-PH_R, -PH_TOP), (PH_RECIPE_W, PH_RECIPE_H), (1, 1)))
+    ph_brackets(root, "Recipe/Bracket")
+    put(root, "Recipe/Caption", TL(12, 10, 110, 14))
+    put(root, "Recipe/Merged", TR(12, 10, 116, 14))
+    row_w = PH_RECIPE_W - 20
+    for i, name in enumerate(ORDER):
+        k = f"Recipe/{name}"
+        put(root, k, TL(10, 30 + i * 46, row_w, 42))
+        put(root, f"{k}/Numeral", TL(8, 6, 30, 30))
+        put(root, f"{k}/Art", TL(40, 5, 32, 32))
+        put(root, f"{k}/Name", TL(80, 4, 90, 20))
+        put(root, f"{k}/State", TR(8, 6, 70, 14))
+        put(root, f"{k}/Track", TL(80, 30, row_w - 90, 3))
+        put(root, f"{k}/Bar", TL(80, 30, row_w - 90, 3))
+    put(root, "Recipe/RuleLeft", TL(12, 224, 70, 1))
+    put(root, "Recipe/RuleRight", TR(12, 224, 70, 1))
+    put(root, "Recipe/Makes", TL(82, 216, PH_RECIPE_W - 164, 16))
+    put(root, "Recipe/Omni", TL(10, 236, row_w, 64))
+    put(root, "Recipe/Omni/Art", TL(8, 8, 48, 48))
+    put(root, "Recipe/Omni/Name", TL(64, 6, row_w - 72, 20))
+    put(root, "Recipe/Omni/Line", TL(64, 26, row_w - 72, 34))
+    put(root, "Bar", R((0, 0), (1, 0), ((PH_X - PH_R) / 2, PH_FOOT), (-(PH_X + PH_R), PH_CONV_BAR_H), (0.5, 0)))
+    ph_brackets(root, "Bar/Bracket")
+    put(root, "Bar/Status", TL(14, 10, 140, 14))
+    put(root, "Bar/Clock", TL(14, 26, 150, 30))
+    for i, name in enumerate(ORDER):
+        x = PH_SEG_X + i * (PH_SEG_W + PH_SEG_GAP)
+        put(root, f"Bar/Seg{name}Track", TL(x, 24, PH_SEG_W, 4))
+        put(root, f"Bar/Seg{name}", TL(x, 24, PH_SEG_W, 4))
+        put(root, f"Bar/Label{name}", TL(x, 34, PH_SEG_W, 14))
+    put(root, "Bar/Convert", R((1, 0.5), None, (-12, 0), (PH_CONVERT_W, 48), (1, 0.5)))
+
+
+def ph_backdrop(root, key):
+    """A page's veil and sea, right of the rail (the rail draws its own)."""
+    for part in ("Backdrop", "Sea"):
+        put(root, f"{key}/{part}", R((0, 0), (1, 1), (PH_RAIL / 2, 0), (-PH_RAIL, 0)))
+
+
+def ph_card(root, i):
+    k = f"Squads/Deck/Card{i}"
+    dx = (0, -PH_CARD_DX, PH_CARD_DX)[i]
+    put(root, k, R((0.5, 1), None, (dx - PH_CARD_W / 2, -PH_CARD_TOPS[i]), (PH_CARD_W, PH_CARD_H), (0, 1)))
+    inner = PH_CARD_W - 16
+    put(root, f"{k}/Seat", TL(8, 6, 90, 14))
+    put(root, f"{k}/Number", TR(8, 6, 46, 14))
+    put(root, f"{k}/Hull", TL(12, 24, PH_CARD_W - 24, 42))
+    put(root, f"{k}/Figure", TL(-14, 30, 64, 104))
+    put(root, f"{k}/OpenSeat", TL(8, 26, inner, 92))
+    put(root, f"{k}/Who", TL(8, 124, inner, 20))
+    for j, pick in enumerate(PICKS):
+        y = 148 + j * 22
+        put(root, f"{k}/{pick}Rule", TL(8, y, inner, 1))
+        put(root, f"{k}/{pick}Kicker", TL(8, y + 5, 56, 14))
+        put(root, f"{k}/{pick}", TR(8, y + 3, inner - 58, 18))
+
+
+def ph_ghost(root, i):
+    """The empty state's ghost cards, where the cards stand (Ghost0 is the leader's place)."""
+    dx = (0, -PH_CARD_DX, PH_CARD_DX)[i]
+    put(root, f"Squads/Empty/Ghost{i}", R((0.5, 1), None, (dx - PH_CARD_W / 2, -(PH_CARD_TOPS[i] + 6)), (PH_CARD_W, PH_CARD_H), (0, 1)))
+
+
+def phone_squads(root):
+    ph_backdrop(root, "Squads")
+    ph_list(root, "Squads/List", MAX_SQUADS, count="Squads/List/Count")
+    lst_btn_y = 20 + MAX_SQUADS * PH_ROW_STEP + 6
+    put(root, "Squads/List/New", TL(0, lst_btn_y, PH_LIST_W, 48))
+    put(root, "Squads/List/Join", TL(0, lst_btn_y + 54, PH_LIST_W, 48))
+    # The header: the squad's name and line on the left, the three domain chips on the right.
+    put(root, "Squads/Head", ph_col(PH_TOP, 64))
+    put(root, "Squads/Head/Kicker", TL(0, 0, 240, 14))
+    put(root, "Squads/Head/Name", TL(0, 14, 240, 30))
+    put(root, "Squads/Head/Line", TL(0, 46, 240, 18))
+    put(root, "Squads/Head/DomainCaption", TR(0, 0, 3 * 78 - 6, 14))
+    for i, (name, _) in enumerate(DOMAIN_ORDER):
+        k = f"Squads/Head/Domain{name}"
+        put(root, k, TR((2 - i) * 78, 18, 72, PH_BTN))
+        put(root, f"{k}/Picture", TL(8, 15, 14, 14))
+        put(root, f"{k}/Label", TL(26, 0, 44, PH_BTN))
+    # The cards: the deck's top centre is where SquadsPage's Make scale (0.8) pulls them in.
+    put(root, "Squads/Deck", R((0, 1), (1, 1), ((PH_COL_X - PH_R) / 2, -PH_DECK_Y), (-(PH_COL_X + PH_R), PH_DECK_H), (0.5, 1)))
+    for i in range(SEATS):
+        ph_card(root, i)
+    # No squad yet: the ghosts, the words and MAKE SQUAD in the same place.
+    put(root, "Squads/Empty", ph_col(PH_DECK_Y - 6, PH_DECK_H + 6))
+    for i in range(SEATS):
+        ph_ghost(root, i)
+    put(root, "Squads/Empty/Heading", ph_stretch(0, 0, 70, 30))
+    put(root, "Squads/Empty/Line", ph_stretch(16, 16, 104, 80))
+    put(root, "Squads/Empty/Make", R((0.5, 1), None, (0, -196), (180, PH_BTN), (0.5, 1)))
+    # The bars along the right column's foot.
+    put(root, "Squads/MakeBar", ph_col(PH_BAR_Y, PH_BTN))
+    put(root, "Squads/MakeBar/Cancel", TL(0, 0, 90, PH_BTN))
+    put(root, "Squads/MakeBar/Hint", OFF)
+    put(root, "Squads/MakeBar/Picks", TL(98, 0, PH_PICKS_W, PH_BTN))
+    put(root, "Squads/MakeBar/Create", TR(0, 0, 150, PH_BTN))
+    put(root, "Squads/ViewBar", ph_col(PH_BAR_Y, PH_BTN))
+    put(root, "Squads/ViewBar/Remove", TL(0, 0, 84, PH_BTN))
+    put(root, "Squads/ViewBar/Edit", TL(90, 0, 64, PH_BTN))
+    put(root, "Squads/ViewBar/Hint", OFF)
+    put(root, "Squads/ViewBar/Caption", OFF)
+    put(root, "Squads/ViewBar/Mission", TR(128, 0, 120, PH_BTN))
+    put(root, "Squads/ViewBar/Mission/Lock", TL(8, 13, 13, 18))
+    put(root, "Squads/ViewBar/Arena", TR(0, 0, 120, PH_BTN))
+    phone_picker(root)
+    # Join a friend's squad: over the whole content area, CLOSE at its top right.
+    put(root, "Squads/Joining", ph_region(PH_X, PH_TOP, PH_R, PH_FOOT))
+    put(root, "Squads/Joining/Heading", TL(14, 10, 300, 30))
+    put(root, "Squads/Joining/Close", TR(12, 8, 100, PH_BTN))
+    put(root, "Squads/Joining/Status", ph_stretch(14, 14, 56, 18))
+    for i in range(JOIN_ROWS):
+        k = f"Squads/Joining/Row{i}"
+        put(root, k, ph_stretch(14, 14, 80 + i * 48, PH_BTN))
+        ph_list_row(root, k, PH_BTN)
+
+
+def phone_picker(root):
+    """The Make picker as a sheet over the content area: a caption down the left of each row, its chips across."""
+    put(root, "Squads/PickerSheet/Panel", ph_region(PH_X, PH_TOP, PH_R, PH_FOOT))
+    put(root, "Squads/PickerSheet/Done", R((1, 1), None, (-(PH_R + 12), -(PH_TOP + 8)), (PH_DONE_W, PH_BTN), (1, 1)))
+    put(root, "Squads/Picker", ph_region(PH_X, PH_TOP, PH_R, PH_FOOT))
+    cap_x, chips_x, arrow, gap = 12, 88, 32, 4
+    right = PH_W - PH_X - PH_R - 12                 # the chips' right edge (660)
+    vy, py, ey, sy, ay = PH_PICK_Y
+    for cap, y in (("VesselCaption", vy + 19), ("PilotCaption", py + 17), ("ElementCaption", ey + 17),
+                   ("ArtifactCaption", ay + 17)):
+        put(root, f"Squads/Picker/{cap}", TL(cap_x, y, 70, 14))
+    tile_w = (right - chips_x - 2 * arrow - 2 * gap - (VESSEL_TILES - 1) * gap) // VESSEL_TILES
+    put(root, "Squads/Picker/Prev", TL(chips_x, vy, arrow, 52))
+    for i in range(VESSEL_TILES):
+        k = f"Squads/Picker/Vessel{i}"
+        put(root, k, TL(chips_x + arrow + gap + i * (tile_w + gap), vy, tile_w, 52))
+        put(root, f"{k}/Picture", TL(4, 2, tile_w - 8, 30))
+        put(root, f"{k}/Label", R((0, 0), (1, 0), (0, 3), (-4, 14), (0.5, 0)))
+    put(root, "Squads/Picker/Next", TL(chips_x + arrow + gap + VESSEL_TILES * (tile_w + gap), vy, arrow, 52))
+    pilot_w = (right - chips_x - 2 * arrow - 2 * gap - (PILOT_CHIPS - 1) * gap) // PILOT_CHIPS
+    put(root, "Squads/Picker/PilotPrev", TL(chips_x, py, arrow, 48))
+    for i in range(PILOT_CHIPS):
+        k = f"Squads/Picker/Pilot{i}"
+        put(root, k, TL(chips_x + arrow + gap + i * (pilot_w + gap), py, pilot_w, 48))
+        put(root, f"{k}/Picture", TL(4, 4, 26, 40))
+        put(root, f"{k}/Label", TL(34, 5, pilot_w - 38, 20))
+        put(root, f"{k}/Line", TL(34, 27, pilot_w - 38, 16))
+    put(root, "Squads/Picker/PilotNext", TL(chips_x + arrow + gap + PILOT_CHIPS * (pilot_w + gap), py, arrow, 48))
+    for i in range(ELEMENT_CHIPS):
+        put(root, f"Squads/Picker/Element{i}", TL(chips_x + i * (100 + gap), ey, 100, 48))
+    put(root, "Squads/Picker/SeatMode", TL(cap_x, sy, right - cap_x, 48))
+    put(root, "Squads/Picker/SeatMode/Caption", TL(0, 17, 70, 14))
+    for i in range(2):
+        put(root, f"Squads/Picker/SeatMode/Chip{i}", TL(chips_x - cap_x + i * (160 + gap), 0, 160, 48))
+    art_w = (right - chips_x - (ARTIFACT_CHIPS - 1) * gap) // ARTIFACT_CHIPS
+    for i in range(ARTIFACT_CHIPS):
+        put(root, f"Squads/Picker/Artifact{i}", TL(chips_x + i * (art_w + gap), ay, art_w, 48))
+    return tile_w, pilot_w, art_w
+
+
+PH_TRACK_Y, PH_TRACK_H, PH_TRACK_STEP = 68, 68, 72
+
+
+def phone_artifacts(root):
+    ph_backdrop(root, "Artifacts")
+    ph_list(root, "Artifacts/List", ART_ROWS)
+    put(root, "Artifacts/Empty", ph_col(140, 120))
+    put(root, "Artifacts/Empty/Heading", ph_stretch(0, 0, 0, 30))
+    put(root, "Artifacts/Empty/Line", ph_stretch(10, 10, 40, 60))
+    d = "Artifacts/Detail"
+    put(root, d, ph_col(PH_TOP, PH_H - PH_TOP - PH_FOOT))
+    put(root, f"{d}/Kicker", TL(0, 0, 240, 14))
+    put(root, f"{d}/Name", TL(0, 14, 240, 30))
+    put(root, f"{d}/Description", TR(0, 0, PH_COL_W - 254, 44))
+    put(root, f"{d}/CrystalCaption", TL(0, 48, 66, 14))
+    for i in range(5):
+        put(root, f"{d}/Crystal{i}", TL(70 + i * 82, 46, 80, 18))
+    for i, name in enumerate(TRACK_ELEMENTS):
+        k = f"{d}/Track{name}"
+        put(root, k, ph_stretch(0, 0, PH_TRACK_Y + i * PH_TRACK_STEP, PH_TRACK_H))
+        put(root, f"{k}/Element", TL(10, 5, 70, 14))
+        put(root, f"{k}/Level", TL(84, 2, 80, 20))
+        put(root, f"{k}/Label", TL(10, 20, 200, 20))
+        put(root, f"{k}/Value", TL(10, 44, 80, 18))
+        put(root, f"{k}/Twist", TL(94, 38, 118, 28))
+        put(root, f"{k}/Raise", TR(130, 12, 124, PH_BTN))
+        put(root, f"{k}/Omni", TR(8, 12, 116, PH_BTN))
+    put(root, f"{d}/Status", TL(0, PH_TRACK_Y + 4 * PH_TRACK_STEP - 4 + 2, PH_COL_W, 22))
+
+
+def phone_decor(root):
+    ph_backdrop(root, "Decor")
+    ph_title(root, "Decor/Title", line_below=False)
+    put(root, "Decor/Slots", ph_stretch(PH_X, PH_R, PH_TOP + PH_TITLE_H + 20 + 10, 150))
+    for i, name in enumerate(("Banner", "Outerhull", "Innerhull")):   # decor_page keys: the names without spaces
+        k = f"Decor/Slots/{name}"
+        l, r = (12 if i == 0 else 4), (12 if i == 2 else 4)
+        put(root, k, R((i / 3, 1), ((i + 1) / 3, 1), ((l - r) / 2, -12), (-(l + r), 126), (0.5, 1)))
+        put(root, f"{k}/Name", ph_stretch(12, 12, 10, 22))
+        put(root, f"{k}/State", ph_stretch(12, 12, 100, 14))
+
+
+def phone_layout(root):
+    # The tab row at the content's top left, drawn at PH_TAB_SCALE (its tabs keep their PC words and widths).
+    w = sum(K.label_width(t.upper(), H.TAB_ROLE) + H.TAB_PAD for t in TABS) + H.TAB_GAP * (len(TABS) - 1)
+    put(root, "Tabs", R((0, 1), None, (PH_X, -8), (w, TAB_H), (0, 1)), scale=PH_TAB_SCALE)
+    phone_converter(root)
+    phone_squads(root)
+    phone_artifacts(root)
+    phone_decor(root)
+    return w
+
+
+def phone_rects():
+    """The phone layout's blocks as screen rects (x, y, w, h) on the 800 x 450 canvas, and its touch targets with
+    their on-screen heights: the arithmetic the validation checks (nothing under the rail, nothing below 442, no
+    two blocks of one page meeting, every touch target at least 44 tall)."""
+    tabs_w = sum(K.label_width(t.upper(), H.TAB_ROLE) + H.TAB_PAD for t in TABS) + H.TAB_GAP * (len(TABS) - 1)
+    tabs = ("Tabs", PH_X, 8, tabs_w * PH_TAB_SCALE, TAB_H * PH_TAB_SCALE)
+    right = PH_W - PH_R
+    bar_y = PH_H - PH_FOOT - PH_CONV_BAR_H
+    title = ("Title", PH_X, PH_TOP, PH_TITLE_W, PH_TITLE_H)
+    line = ("Title/Line", PH_X, PH_H - PH_FOOT - PH_CONV_BAR_H - 24, 400, 18)
+    recipe = ("Recipe", right - PH_RECIPE_W, PH_TOP, PH_RECIPE_W, PH_RECIPE_H)
+    cbar = ("Bar", PH_X, bar_y, right - PH_X, PH_CONV_BAR_H)
+    lst = ("List", PH_X, PH_TOP, PH_LIST_W, PH_H - PH_TOP - PH_FOOT)
+    head = ("Head", PH_COL_X, PH_TOP, PH_COL_W, 64)
+    deck = ("Deck", PH_COL_X, PH_DECK_Y, PH_COL_W, PH_DECK_H)
+    vbar = ("ViewBar", PH_COL_X, PH_BAR_Y, PH_COL_W, PH_BTN)
+    detail = ("Detail", PH_COL_X, PH_TOP, PH_COL_W, PH_H - PH_TOP - PH_FOOT)
+    pages = {"Converter": [tabs, title, line, recipe, cbar], "Squads": [tabs, lst, head, deck, vbar],
+             "Artifacts": [tabs, lst, detail]}
+    targets = [("tab", TAB_H * PH_TAB_SCALE), ("CONVERT", 48), ("list rows", PH_ROW_H), ("MAKE / JOIN", 48),
+               ("domain chips", PH_BTN), ("bar buttons", PH_BTN), ("EDIT CARD / DONE", PH_BTN), ("vessel tiles", 52),
+               ("picker chips", 48), ("join rows", PH_BTN), ("RAISE / OMNI", PH_BTN), ("cards", PH_CARD_H)]
+    return pages, targets
+
+
+def check_phone_rects():
+    pages, targets = phone_rects()
+    for page, blocks in pages.items():
+        for name, x, y, w, h in blocks:
+            assert x >= PH_X and x + w <= PH_W - PH_R + 0.01, f"phone {page}: {name} crosses the rail or the right edge"
+            assert y >= 8 and y + h <= PH_H - PH_FOOT + 0.01, f"phone {page}: {name} runs off the top or the foot"
+        for i, a in enumerate(blocks):
+            for b in blocks[i + 1:]:
+                apart = a[1] + a[3] <= b[1] or b[1] + b[3] <= a[1] or a[2] + a[4] <= b[2] or b[2] + b[4] <= a[2]
+                assert apart, f"phone {page}: {a[0]} and {b[0]} overlap"
+    for name, h in targets:
+        assert h >= PH_BTN, f"phone: the {name} are {h} tall on screen, under {PH_BTN}"
+    # The fanned cards: the rotated rogues' corners stay in the column, under the header and above the bar
+    # (each card turns about its top-left corner).
+    import math
+    deck_cx = PH_COL_X + PH_COL_W / 2
+    for i, deg in ((1, 6), (2, -6)):
+        left = deck_cx + (0, -PH_CARD_DX, PH_CARD_DX)[i] - PH_CARD_W / 2
+        top = PH_DECK_Y + PH_CARD_TOPS[i]
+        th = math.radians(deg)
+        xs, ys = [], []
+        for cx, cy in ((0, 0), (PH_CARD_W, 0), (0, -PH_CARD_H), (PH_CARD_W, -PH_CARD_H)):
+            xs.append(left + cx * math.cos(th) - cy * math.sin(th))
+            ys.append(top - (cx * math.sin(th) + cy * math.cos(th)))
+        assert min(xs) >= PH_COL_X - 0.5 and max(xs) <= PH_W - PH_R + 0.5, f"phone: card {i} leaves the column"
+        assert min(ys) >= PH_TOP + 64 and max(ys) <= PH_BAR_Y, f"phone: card {i} meets the header or the bar ({min(ys):.1f}..{max(ys):.1f})"
+    for i in range(SEATS):
+        assert PH_DECK_Y + PH_CARD_TOPS[i] + PH_CARD_H <= PH_BAR_Y, f"phone: card {i} runs into the bar"
+    # The picker sheet's rows stay inside it, and the artifacts' tracks and status inside the detail.
+    assert PH_PICK_Y[-1] + 48 <= PH_H - PH_TOP - PH_FOOT, "phone: the picker sheet's last row runs off its foot"
+    assert PH_PICK_Y[0] >= 8 + PH_BTN + 4, "phone: the picker's first row meets DONE"
+    assert PH_TRACK_Y + 4 * PH_TRACK_STEP + 24 <= PH_H - PH_TOP - PH_FOOT, "phone: the artifact tracks run off the foot"
+    assert 20 + MAX_SQUADS * PH_ROW_STEP + 6 + 54 + 48 <= PH_H - PH_TOP - PH_FOOT, "phone: MAKE / JOIN run off the list's foot"
+    assert 80 + JOIN_ROWS * 48 - 4 <= PH_H - PH_TOP - PH_FOOT, "phone: the join list runs off its foot"
+    # The converter bar: the four segments end before CONVERT.
+    assert PH_SEG_X + 4 * PH_SEG_W + 3 * PH_SEG_GAP + 8 <= (PH_W - PH_X - PH_R) - 12 - PH_CONVERT_W, "phone: the segments meet CONVERT"
+    # The Squads bars' buttons never meet.
+    assert 98 + PH_PICKS_W + 6 <= PH_COL_W - 150, "phone: EDIT CARD meets CREATE"
+    assert 90 + 64 + 6 <= PH_COL_W - 128 - 120, "phone: EDIT meets MISSION"
+    # The artifact tracks: the words end before RAISE.
+    assert 94 + 118 + 6 <= PH_COL_W - 130 - 124, "phone: a track's words meet RAISE"
+
+
 def build_view():
     root = N("root", VIEW, STRETCH)
     # The converter's overlay keeps its node keys (and so every fileID the scene's stubs point at) under its page.
@@ -694,6 +1127,7 @@ def build_view():
                         f"    pageLogic: {logic}\n    availability: {gate}\n")
         return mono(go, S["tabs"], "  tabs:\n" + entries + "  defaultTab: 0\n")
     root.add("tabs", 114, body)
+    phone_layout(root)
     return root
 
 
@@ -863,6 +1297,7 @@ def validate(files):
         assert "  m_Type: 3\n" in seg and "  m_FillMethod: 0\n" in seg, f"the {n} segment is not a horizontal fill"
     assert view.count("guid: " + S["spark"]) == len(ORDER) + 1, "ArkView needs a spark per segment and the CONVERT sweep"
     validate_tabs(view, V)
+    validate_phone(view, V)
 
     sc = T.Scene(files[SCENE])
     anchors = set(sc.order) | {"0"}
@@ -982,6 +1417,44 @@ def validate_tabs(view, V):
         assert f"guid: {guid}" in page, f"SquadsPage reads no {what}"
 
 
+PHONE_RECT = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+# Blocks whose phone pose a later edit could drop without anything else failing.
+PHONE_POSED = ("Tabs", "Title", "Recipe", "Bar", "Bar/Convert", "Squads/List", "Squads/Head", "Squads/Deck",
+               "Squads/Deck/Card0", "Squads/MakeBar", "Squads/ViewBar", "Squads/Picker", "Squads/PickerSheet/Panel",
+               "Squads/Joining", "Artifacts/List", "Artifacts/Detail", "Decor/Slots", "Squads/Backdrop", "Squads/Sea")
+
+
+def validate_phone(view, V):
+    """The phone layout (Docs/UI_STYLE_GUIDE.md section 8): its own, never the PC-scale fallback; one PhoneRect per
+    object; the Make picker a working sheet behind a phone-only EDIT CARD in the Make bar; the arithmetic."""
+    check_phone_rects()
+    phones = [b for b in re.findall(r"^--- !u!114 &-?\d+\n((?:(?!--- ).*\n)*)", view, re.M) if f"guid: {PHONE_RECT}," in b]
+    assert phones, "ArkView has no phone layout"
+    assert not any("  drawAtPcScale: 1\n" in b for b in phones), \
+        "ArkView carries the PC-scale fallback: the Ark has its own phone layout (retire ArkScreen in author_menu_phone.py)"
+    owners = [re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1) for b in phones]
+    assert len(owners) == len(set(owners)), "an ArkView object carries two PhoneRects"
+    for key in PHONE_POSED:
+        assert str(V(f"{key}#go")) in owners, f"ArkView: {key} has no phone pose"
+    _, tabs = A.doc_of(view, V("Tabs#phone"))
+    assert f"  scale: {K.f32(PH_TAB_SCALE)}\n" in tabs and TAB_H * PH_TAB_SCALE >= PH_BTN, "the Ark's tab row must stay 44 tall on a phone"
+    _, sheet = A.doc_of(view, V("Squads/PickerSheet#sheet"))
+    assert sheet and f"guid: {PHONE_SHEET}," in sheet, "the Make picker is not a PhoneSheet on a phone"
+    for field, key in (("panel", "Squads/PickerSheet#cg"), ("dim", "Squads/PickerDim#cg"), ("openButton", "Squads/MakeBar/Picks#button"),
+                       ("closeButton", "Squads/PickerSheet/Done#button"), ("dimButton", "Squads/PickerDim#button")):
+        assert f"  {field}: {{fileID: {V(key)}}}\n" in sheet, f"the picker sheet's {field} is not wired"
+    for key in ("Squads/MakeBar/Picks", "Squads/PickerSheet/Done"):
+        assert "  m_IsActive: 0\n" in A.doc_of(view, V(f"{key}#go"))[1], f"{key} must start hidden (phone only)"
+        assert A.kind_of(view, V(f"{key}#button"))[1] == A.BUTTON, f"{key} must be a uGUI Button (PhoneSheet's type)"
+    assert f"m_Father: {{fileID: {V('Squads/MakeBar#rt')}}}" in A.doc_of(view, V("Squads/MakeBar/Picks#rt"))[1], \
+        "EDIT CARD must live in the Make bar (only there while a squad is made)"
+    assert f"m_Father: {{fileID: {V('Squads/PickerSheet#rt')}}}" in A.doc_of(view, V("Squads/Picker#rt"))[1], \
+        "the picker is not inside its phone sheet"
+    assert "  m_Alpha: 1\n" in A.doc_of(view, V("Squads/PickerSheet#cg"))[1], "the picker's sheet must show on PC"
+    assert "  m_SizeDelta: {x: 0, y: 0}\n" in A.doc_of(view, V("Squads/PickerSheet/Panel#rt"))[1], \
+        "the picker sheet's frame must draw nothing on PC"
+
+
 def drift(files):
     return [p for p, t in files.items()
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
@@ -1038,6 +1511,10 @@ def self_test(files):
         ("an artifact track's RAISE unwired", lambda f: f.__setitem__(view, re.sub(
             r"(    raiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("the Artifacts tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Artifacts")))),
+        ("the picker sheet's EDIT CARD unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  openButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("the Ark back on the PC-scale fallback", lambda f: f.__setitem__(view, f[view].replace(
+            "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
         ("the Ark's arkTabs unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  arkTabs: {{fileID: {mount.stub_fid('root#tabs')}}}", "  arkTabs: {fileID: 0}"))),
     ]

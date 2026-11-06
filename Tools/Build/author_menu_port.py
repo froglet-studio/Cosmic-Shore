@@ -422,6 +422,10 @@ def feed_panel(pane):
     rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
     # Hierarchy is focus order (ScreenSwitcher.Refocus, PortScreen.Show take the first live Selectable): the field first.
     composer(feed)
+    # Phone only (PhoneSheet keeps it hidden on PC): opens the side column (the faction, its rules, the muted pilots) as
+    # a sheet. After the field, so the field stays the first Selectable.
+    phone_button(feed, "Messages/Feed/FactionButton", "FactionButton", "FACTION",
+                 R((1, 1), None, (-FEED_PAD, -26), (PH_FACTION_W, PH_BTN), (1, 1)))
     feed_scroll(feed)
     status_card(feed)
     toast(feed)
@@ -483,7 +487,20 @@ def messages_pane(root):
     pane.add("cg", 225, H.canvas_group(True))
     # Focus order: the feed (its field first), then the side column.
     feed_panel(pane)
-    side_column(pane)
+    # On a phone the side column is a sheet behind the feed's FACTION button, over a dim a tap closes (PhoneSheet); on PC
+    # the sheet's group simply shows it. The sheet's group is its own (the column's group is its entrance's).
+    dim = pane.child(N("Messages/SideDim", "SideDim", STRETCH))
+    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6), raycast=True)) \
+        .add("cg", 225, H.canvas_group(False)) \
+        .add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable(0)
+                                                 + f"  m_TargetGraphic: {ref(ctx.c('Messages/SideDim', 'img'))}\n" + A.calls([])))
+    sheet = pane.child(N("Messages/SideSheet", "SideSheet", STRETCH))
+    sheet.add("cg", 225, H.canvas_group(True))
+    sheet.add("sheet", 114, lambda ctx, go: mono(go, PHONE_SHEET,
+              f"  panel: {ref(ctx.c('Messages/SideSheet', 'cg'))}\n  dim: {ref(ctx.c('Messages/SideDim', 'cg'))}\n"
+              f"  openButton: {ref(ctx.c('Messages/Feed/FactionButton', 'button'))}\n  closeButton: {{fileID: 0}}\n"
+              f"  dimButton: {ref(ctx.c('Messages/SideDim', 'button'))}\n"))
+    side_column(sheet)
     pane.add("pane", 114, lambda ctx, go: mono(go, S["pane"], pane_body(ctx)))
     return pane
 
@@ -495,8 +512,11 @@ def leaderboard_pane(root):
     pane = root.child(N("Leaderboard", "Leaderboard", STRETCH))
     pane.add("cg", 225, H.canvas_group(False))
     mods = [(k, "m_IsActive", 0, None) for k in LB_OFF]
-    pane.children.append(K.Instance("Leaderboard/View", LEADERBOARD_VIEW, C.prefab_guid(LEADERBOARD_VIEW), LEADERBOARD_VIEW,
-                                    STRETCH, mods))
+    # The board's own holder: on a phone it draws the weekly window's board (LeaderboardView, author_menu_configure.py's,
+    # which has no phone layout of its own) at the PC scale into the content area right of the rail and under the tabs.
+    holder = pane.child(N("Leaderboard/Holder", "Board", STRETCH))
+    holder.children.append(K.Instance("Leaderboard/View", LEADERBOARD_VIEW, C.prefab_guid(LEADERBOARD_VIEW), LEADERBOARD_VIEW,
+                                      STRETCH, mods))
     # This week's challenge and its countdown, at the tab row's right.
     label(pane.child(N("Leaderboard/Countdown", "Countdown", TR(SIDE, TABS_TOP + 7, 190, 30))), "6d 03:12:09", "Data", "TextLight",
           align="right")
@@ -516,9 +536,204 @@ def leaderboard_pane(root):
     return pane
 
 
+# --------------------------------------------------------------------------------------------
+# The phone layout (Docs/UI_STYLE_GUIDE.md section 8, D6; Docs/MENU_REDESIGN_B.md section 129). On a phone Menu_Main is
+# 800 x 450 (450 tall, 800 to ~974 wide) and the nav band is the 96-wide rail down the left, so the Port lives right of
+# it: the tab row along the top (y 8 .. 52), the content from y 60 to 442, x 112 .. W-16. Re-posed UNSCALED in phone
+# units, so its KitTexts take their roles' phone sizes (the plain TMPs get theirs here).
+#   Messages     the feed fills the content area: its title, FACTION (phone only), the scrolling feed, the field with
+#                SEND and the hint; the side column (the faction, its rules, the muted pilots) is a sheet on the right
+#                behind FACTION over a dim a tap closes (PhoneSheet); the pad's controls card has no place on a phone
+#   Leaderboard  the weekly window's board (LeaderboardView, no phone layout of its own) drawn at the PC scale into the
+#                content area; this week's title and countdown over its free top right
+# --------------------------------------------------------------------------------------------
+PHONE_SHEET = K.meta_guid("Assets/_Scripts/UI/PhoneSheet.cs")
+PHONE_RECT = K.meta_guid("Assets/_Scripts/UI/PhoneRect.cs")
+PH_RAIL, PH_X, PH_R, PH_TOP, PH_FOOT = 96, 112, 16, 60, 8
+PH_W, PH_H = 800, 450
+PH_BTN = 44
+PH_FEED_W, PH_FEED_H = PH_W - PH_X - PH_R, PH_H - PH_TOP - PH_FOOT    # 672 x 382 on an 800-wide phone
+PH_PAD = 14                                         # the feed's inner margin
+PH_FACTION_W, PH_SEND_W, PH_COMPOSER_H = 104, 110, 48
+PH_COMPOSER_Y, PH_HINT_Y, PH_HINT_H = 30, 10, 16    # from the feed's foot
+PH_FEED_TOP, PH_FEED_BOTTOM = 62, 86                # the scroll's insets from the feed's top and foot
+PH_SIDE_W = 300
+PH_ACTION_H, PH_ACTION_GAP, PH_ACTION_W = 44, 6, 250
+PH_BOARD_CUT = 176                                  # PC rows of the board above its columns (they start at 196)
+PH_TITLE_Y, PH_COUNT_Y = 68, 92
+OFF = R((0, 1), None, (-4000, 0), (100, 20), (0, 1))
+
+
+def phone_button(parent, key, name, caption, r):
+    """A phone-only Default glass button (a uGUI Button, as PhoneSheet takes): inactive at rest, so PC never shows it;
+    the PhoneSheet that names it switches it on on a phone."""
+    b = parent.child(N(key, name, r))
+    b.active = False
+    border, fillc, content = K.button_palette("Default", False)
+    b.child(N(f"{key}/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    b.child(N(f"{key}/Border", "Border", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    b.child(N(f"{key}/Label", "Label", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, K.tmp(caption, "ButtonSmall", content, align="center")) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("audio", 114, A.menu_audio(2))
+    b.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, A.selectable()
+                                              + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
+                                              + A.calls([(ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
+    return b
+
+
+def find(node, key):
+    if node.key == key:
+        return node
+    for ch in getattr(node, "children", []):
+        hit = find(ch, key)
+        if hit is not None:
+            return hit
+    return None
+
+
+def put(root, key, pose=None, **kw):
+    """Give node `key` its phone pose (one PhoneRect per GameObject; an instance carries it as an added component)."""
+    n = find(root, key)
+    assert n is not None, f"phone layout: no node {key!r}"
+    comps = getattr(n, "added", None) if hasattr(n, "prefab_key") else n.comps
+    assert comps is not None, f"phone layout: {key} is an instance that cannot carry a component"
+    assert not any(k == "phone" for k, _, _ in comps), f"phone layout: {key} posed twice"
+    comps.append(("phone", 114, K.phone_rect(pose, **kw)))
+    return n
+
+
+def ph_stretch(left, right, top, h):
+    return R((0, 1), (1, 1), ((left - right) / 2, -top), (-(left + right), h), (0.5, 1))
+
+
+def ph_region(left, top, right, bottom):
+    return R((0, 0), (1, 1), ((left - right) / 2, (bottom - top) / 2), (-(left + right), -(top + bottom)))
+
+
+def ph_brackets(root, key):
+    s, inset = 12, 4
+    for ck, anchor, sx, sy in (("tl", (0, 1), 1, -1), ("tr", (1, 1), -1, -1), ("br", (1, 0), -1, 1), ("bl", (0, 0), 1, 1)):
+        put(root, f"{key}.{ck}", R(anchor, anchor, (sx * (inset + s / 2), sy * (inset + s / 2)), (s, s)))
+
+
+def phone_feed(root):
+    f = "Messages/Feed"
+    put(root, f, ph_region(PH_X, PH_TOP, PH_R, PH_FOOT))
+    ph_brackets(root, f"{f}/Bracket")
+    put(root, f"{f}/Title", TL(PH_PAD, 10, 240, 30))
+    put(root, f"{f}/FactionButton", TR(18, 8, PH_FACTION_W, PH_BTN))
+    put(root, f"{f}/Kept", TR(18 + PH_FACTION_W + 8, 18, 170, 14))
+    put(root, f"{f}/Rule", ph_stretch(PH_PAD, PH_PAD, 56, 1))
+    c = f"{f}/Composer"
+    put(root, c, R((0, 0), (1, 0), (0, PH_COMPOSER_Y), (-2 * PH_PAD, PH_COMPOSER_H), (0.5, 0)))
+    put(root, f"{c}/Field", R((0, 0), (1, 1), (-(PH_SEND_W + 10) / 2, 0), (-(PH_SEND_W + 10), 0)))
+    put(root, f"{c}/Field/Glow", R((0, 0), (1, 1), (0, 0), (30, 24)))
+    put(root, f"{c}/Field/Corner", R((0, 1), None, (80, -6), (220, 48)))
+    put(root, f"{c}/Field/TextArea", R((0, 0), (1, 1), (-40, 0), (-104, -8)))
+    put(root, f"{c}/Field/TextArea/Placeholder", font=16)
+    put(root, f"{c}/Field/TextArea/Text", font=16)
+    put(root, f"{c}/Field/Count", R((1, 0.5), None, (-12, 0), (70, 20), (1, 0.5)), font=13)
+    put(root, f"{c}/Send", R((1, 0.5), None, (0, 0), (PH_SEND_W, PH_COMPOSER_H), (1, 0.5)))
+    put(root, f"{c}/Send/Label", font=16)
+    put(root, f"{f}/Hint", R((0, 0), (1, 0), (0, PH_HINT_Y), (-2 * PH_PAD - 4, PH_HINT_H), (0.5, 0)), font=13)
+    scroll = R((0, 0), (1, 1), (0, (PH_FEED_BOTTOM - PH_FEED_TOP) / 2), (-2 * PH_PAD, -(PH_FEED_TOP + PH_FEED_BOTTOM)))
+    put(root, f"{f}/Scroll", scroll)
+    s = f"{f}/Status"
+    put(root, s, scroll)
+    put(root, f"{s}/Loading", R((0.5, 0.5), None, (0, 52), (32, 32)))
+    put(root, f"{s}/Title", R((0, 0.5), (1, 0.5), (0, 12), (0, 26)))
+    put(root, f"{s}/Line", R((0, 0.5), (1, 0.5), (0, -14), (0, 22)))
+    put(root, f"{s}/Retry", R((0.5, 0.5), None, (0, -60), (180, PH_BTN)))
+    put(root, f"{f}/Toast", R((0, 0), None, (PH_PAD, PH_FEED_BOTTOM + 4), (400, PH_BTN), (0, 0)))
+    put(root, f"{f}/Toast/Text", R((0, 0), (1, 1), (0, 0), (-28, 0)))
+    a = f"{f}/Actions/Panel"
+    put(root, a, R((1, 1), None, (-(PH_PAD + 8), -PH_FEED_TOP), (PH_ACTION_W, ph_actions_h()), (1, 1)))
+    for i, name in enumerate(("Report", "Mute", "Cancel")):
+        put(root, f"{a}/{name}", TL(12, 12 + i * (PH_ACTION_H + PH_ACTION_GAP), PH_ACTION_W - 24, PH_ACTION_H))
+
+
+def ph_actions_h():
+    return 3 * PH_ACTION_H + 2 * PH_ACTION_GAP + 2 * 12
+
+
+def phone_side(root):
+    s = "Messages/Side"
+    put(root, s, R((1, 1), None, (-PH_R, -PH_TOP), (PH_SIDE_W, PH_FEED_H), (1, 1)))
+    w = PH_SIDE_W
+    put(root, f"{s}/Faction", TL(0, 0, w, 110))
+    put(root, f"{s}/Faction/Emblem", TL(12, 12, 48, 42))
+    put(root, f"{s}/Faction/Glyph", TL(24, 21, 24, 24))
+    put(root, f"{s}/Faction/Kicker", TL(70, 14, w - 82, 14))
+    put(root, f"{s}/Faction/Name", TL(70, 28, w - 82, 28))
+    put(root, f"{s}/Faction/Line", TL(12, 64, w - 24, 40))
+    put(root, f"{s}/Rules", TL(0, 118, w, 164))
+    put(root, f"{s}/Rules/Heading", TL(12, 10, w - 24, 14))
+    for i in range(len(RULES)):
+        put(root, f"{s}/Rules/Number{i + 1}", TL(12, 32 + i * 42, 16, 16))
+        put(root, f"{s}/Rules/Rule{i + 1}", TL(32, 30 + i * 42, w - 44, 40))
+    put(root, f"{s}/Muted", TL(0, 290, w, 52))
+    put(root, f"{s}/Muted/Text", TL(12, 0, w - 150, 52))
+    put(root, f"{s}/Muted/UnmuteAll", R((1, 0.5), None, (-8, 0), (124, PH_BTN), (1, 0.5)))
+    put(root, f"{s}/Controls", OFF)      # the pad's A / X / Y: a phone is touched
+
+
+def phone_layout(root):
+    for key in ("Backdrop", "Sea"):
+        put(root, key, R((0, 0), (1, 1), (PH_RAIL / 2, 0), (-PH_RAIL, 0)))
+    put(root, "Tabs", ph_stretch(PH_X, PH_R, 8, TABS_H))
+    put(root, "TabsRule", ph_stretch(PH_X, PH_R, 8 + TABS_H, 1))
+    phone_feed(root)
+    phone_side(root)
+    put(root, "Leaderboard/Holder", pc_block=True, pc_cut=PH_BOARD_CUT, insets=(PH_X, PH_TOP, PH_R, PH_FOOT))
+    put(root, "Leaderboard/Title", TR(PH_R, PH_TITLE_Y, 300, 22))
+    put(root, "Leaderboard/Countdown", TR(PH_R, PH_COUNT_Y, 120, 20))
+    put(root, "Leaderboard/EndsIn", TR(PH_R + 124, PH_COUNT_Y + 3, 70, 14))
+
+
+def ph_board_scale():
+    return (PH_H - PH_TOP - PH_FOOT) / (1080 - PH_BOARD_CUT)
+
+
+def check_phone_rects():
+    """The arithmetic on the 800 x 450 canvas: nothing under the rail or off the foot, no two blocks meeting, every
+    touch target at least 44 tall on screen."""
+    tab_w = 2 * 40 + sum(K.label_width(c, TAB_ROLE) + TAB_PAD for _, c in TABS) + 3 * TAB_GAP
+    assert tab_w <= PH_FEED_W, f"phone: the Port's tab row ({tab_w:.0f}) is wider than the content area"
+    fx, fy = PH_X, PH_TOP
+    blocks = {
+        "Tabs": (PH_X, 8, tab_w, TABS_H),
+        "Feed title": (fx + PH_PAD, fy + 10, 240, 30),
+        "Kept": (fx + PH_FEED_W - (18 + PH_FACTION_W + 8) - 170, fy + 18, 170, 14),
+        "FACTION": (fx + PH_FEED_W - 18 - PH_FACTION_W, fy + 8, PH_FACTION_W, PH_BTN),
+        "Scroll": (fx + PH_PAD, fy + PH_FEED_TOP, PH_FEED_W - 2 * PH_PAD, PH_FEED_H - PH_FEED_TOP - PH_FEED_BOTTOM),
+        "Composer": (fx + PH_PAD, fy + PH_FEED_H - PH_COMPOSER_Y - PH_COMPOSER_H, PH_FEED_W - 2 * PH_PAD, PH_COMPOSER_H),
+        "Hint": (fx + PH_PAD + 2, fy + PH_FEED_H - PH_HINT_Y - PH_HINT_H, PH_FEED_W - 2 * PH_PAD - 4, PH_HINT_H),
+    }
+    for name, (x, y, w, h) in blocks.items():
+        assert x >= PH_X and x + w <= PH_W - PH_R + 0.01 and y >= 8 and y + h <= PH_H - PH_FOOT + 0.01, \
+            f"phone: the Port's {name} crosses the rail or runs off the canvas"
+    names = list(blocks)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            (ax, ay, aw, ah), (bx, by, bw, bh) = blocks[a], blocks[b]
+            assert ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay, f"phone: the Port's {a} and {b} overlap"
+    assert 110 + 164 + 8 + 52 <= PH_FEED_H, "phone: the side sheet's cards run off its foot"
+    assert PH_FEED_TOP + ph_actions_h() <= PH_FEED_H - PH_FEED_BOTTOM, "phone: the message actions run over the field"
+    # The board drawn at the PC scale: this week's title and countdown sit over its free top right (right of the board's
+    # World / Regional tabs, which end at PC x 868, and above its podium, which starts at PC y 308).
+    s = ph_board_scale()
+    assert PH_X + 868 * s <= PH_W - PH_R - 300, "phone: the weekly title meets the board's tabs"
+    assert PH_TOP + PH_COUNT_Y - PH_TOP + 20 <= PH_TOP + (308 - PH_BOARD_CUT) * s, "phone: the countdown meets the podium"
+    for name, h in (("tabs", TABS_H), ("FACTION", PH_BTN), ("field and SEND", PH_COMPOSER_H), ("TRY AGAIN", PH_BTN),
+                    ("message actions", PH_ACTION_H), ("UNMUTE ALL", PH_BTN)):
+        assert h >= PH_BTN, f"phone: the Port's {name} are {h} tall, under {PH_BTN}"
+
+
 def build_view():
     root = N("root", "PortView", STRETCH)
-    root.add("phone", 114, K.phone_window_block())   # no phone board yet: the PC window right of the rail on a phone (author_menu_phone.py)
     # The sea, as behind every window (Shombith 2026-10-27: "use the sea line background like everywhere"): the veil
     # and the sea lines under the top bar, exactly the Codex's and the Hangar's.
     veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -TOP_BAR / 2), (0, -TOP_BAR))))
@@ -534,6 +749,7 @@ def build_view():
              + refs("panes", [ctx.c("Messages", "cg"), ctx.c("Leaderboard", "cg")])
              + f"  messages: {ref(ctx.c('Messages', 'pane'))}\n  leaderboard: {ref(ctx.c('Leaderboard', 'board'))}\n"
              "  shoulderInput: 1\n"))
+    phone_layout(root)
     return root
 
 
@@ -694,6 +910,7 @@ def validate(files):
         "focus order: the field before the feed"
     assert feed_kids[-1] == str(V("Messages/Feed/Actions#rt")), "the message actions must draw over the feed (last child)"
     assert f"guid: {M.SEA_WINDOW_MAT}" in A.doc_of(view, V("Sea#img"))[1], "the Port draws the sea lines, as every window does"
+    validate_phone(view, V)
 
     _, lbody = A.doc_of(view, V("Leaderboard#board"))
     assert lbody and S["board"] in lbody, "the Leaderboard pane carries no PortLeaderboardPane"
@@ -723,6 +940,34 @@ def validate(files):
     anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
     for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
         assert m.group(1) in anchors, f"Menu_Main: dangling local fileID {m.group(1)}"
+
+
+PHONE_POSED = ("Backdrop", "Sea", "Tabs", "Messages/Feed", "Messages/Feed/Composer", "Messages/Feed/Scroll",
+               "Messages/Side", "Leaderboard/Holder", "Leaderboard/Title")
+
+
+def validate_phone(view, V):
+    """The phone layout (Docs/UI_STYLE_GUIDE.md section 8): its own (the only PC-scale block is the nested weekly
+    board's holder), one PhoneRect per object, the side column a working sheet behind FACTION, the arithmetic."""
+    check_phone_rects()
+    phones = [b for b in re.findall(r"^--- !u!114 &-?\d+\n((?:(?!--- ).*\n)*)", view, re.M) if f"guid: {PHONE_RECT}," in b]
+    owners = [re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1) for b in phones]
+    assert len(owners) == len(set(owners)), "a PortView object carries two PhoneRects"
+    blocks = [o for o, b in zip(owners, phones) if "  drawAtPcScale: 1\n" in b]
+    assert blocks == [str(V("Leaderboard/Holder#go"))], \
+        "PortView carries the PC-scale fallback: the Port has its own phone layout (only the nested board draws at PC scale)"
+    for key in PHONE_POSED:
+        assert str(V(f"{key}#go")) in owners, f"PortView: {key} has no phone pose"
+    _, sheet = A.doc_of(view, V("Messages/SideSheet#sheet"))
+    assert sheet and f"guid: {PHONE_SHEET}," in sheet, "the Port's side column is not a PhoneSheet on a phone"
+    for field, key in (("panel", "Messages/SideSheet#cg"), ("dim", "Messages/SideDim#cg"),
+                       ("openButton", "Messages/Feed/FactionButton#button"), ("dimButton", "Messages/SideDim#button")):
+        assert f"  {field}: {{fileID: {V(key)}}}\n" in sheet, f"the side sheet's {field} is not wired"
+    assert "  m_IsActive: 0\n" in A.doc_of(view, V("Messages/Feed/FactionButton#go"))[1], "FACTION must start hidden (phone only)"
+    assert A.kind_of(view, V("Messages/Feed/FactionButton#button"))[1] == A.BUTTON, "FACTION must be a uGUI Button"
+    assert "  m_Alpha: 1\n" in A.doc_of(view, V("Messages/SideSheet#cg"))[1], "the side sheet must show on PC"
+    assert f"m_Father: {{fileID: {V('Messages/SideSheet#rt')}}}" in A.doc_of(view, V("Messages/Side#rt"))[1], \
+        "the side column is not inside its phone sheet"
 
 
 def drift(files):
@@ -767,6 +1012,10 @@ def self_test(files):
             "propertyPath: m_IsActive\n      value: 0\n", "propertyPath: m_IsActive\n      value: 1\n", 3))),
         ("no sea behind the Port", lambda f: f.__setitem__(view, f[view].replace(f"guid: {M.SEA_WINDOW_MAT}", "guid: 0", 1))),
         ("the old panel left on", lambda f: f.__setitem__(SCENE, _old_on(f[SCENE]))),
+        ("the side sheet's FACTION unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  openButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("the Port back on the PC-scale fallback", lambda f: f.__setitem__(view, f[view].replace(
+            "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
         ("the faction rules loosened", lambda f: f.__setitem__(view, f[view].replace("  minIntervalSeconds: 3\n", "  minIntervalSeconds: 0\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
