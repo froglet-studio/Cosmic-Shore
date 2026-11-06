@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Launch Console in the editor: notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.45;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 56px 64px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+  <span class="lab">Rev 58 · notes</span>
+  <h1 class="h1">The Launch Console in the Unity editor: what it reads and how it decides</h1>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+  <div class="sl panel" style="padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h3 class="h3">The window</h3>
+    <p class="small" style="color: #E6E9FF">FrogletTools &gt; Launch &gt; Launch Console. It answers "can we land, and what is in the way?" and gives every launch action one button. It only reads: it fetches the launch-status branch's status.json in the background and opens pages in the browser. No API call, no token, nothing written.</p>
+    <p class="small">Milestone, date, repo, each platform's component ids, action links and rollback, the audit's verdicts, the section 10 blockers and the "Needs a human, in order" list sit in one config asset (LaunchConsoleConfigSO), with the artifact's links.</p>
+    <p class="small" style="color: #E6E9FF">The build follows Docked, and switches to Narrow below 640 px, unless you pick otherwise.</p>
+  </div>
+  <div class="sl panel" style="padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h3 class="h3">The pill rule</h3>
+    <p class="small" style="color: #E6E9FF">Each record: a failure is No-go; a success older than 48 hours is At risk; skipped, cancelled or running is At risk; a fresh success is Go. A platform is the worst of its records and the audit's verdict for it, and its line names what decided. With neither, it reads Unknown.</p>
+    <p class="small">Ages count from the record's event date when it carries one: the eight records on the branch were all written on 6 Nov for events up to 24 days old. Every figure shows its source and age.</p>
+    <p class="small">Real data only: status.json at 8a36d99 (8 records) and READINESS.md, measured 2026-11-05. Today that is 4 no-go, 3 at risk.</p>
+  </div>
+  <div class="sl panel" style="padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h3 class="h3">Where it departs</h3>
+    <p class="small" style="color: #E6E9FF">It draws in Unity's editor font and greys (FrogletEditorPalette), not Aldrich on Deep Sea, so it sits in the editor like every Froglet tool. The families keep their meaning: Lime for Go and the build steps, Fire for No-go, At risk as a dashed Fire edge with its words, Ruby for Promote and Roll back, Jade for the line under the picked platform. Every card, pill and button keeps the corner sliver.</p>
+    <p class="small">The live checklist is in the artifact's store, which the window cannot read, so a button opens the console. The audit snapshot is the one hand-kept figure, and it shows its date.</p>
+    <p class="small">The artifact draws the picked pill with an outline that its own sliver clips away. Here the pick is a line inside the pill.</p>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

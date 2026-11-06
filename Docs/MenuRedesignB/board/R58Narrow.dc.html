@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Launch Console, narrow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.num{font-variant-numeric:tabular-nums}
+.ed{font-family:'Inter',system-ui,sans-serif;font-size:12px;line-height:16px;color:#C2C7D1}
+.ed button{font-family:'Inter',system-ui,sans-serif}
+.ed b,.ed .t{color:#EDEFF5;font-weight:600}
+.mut{color:#8C919E}
+.sl{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.sls{clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.card{background:#303338;box-shadow:inset 0 0 0 1px #4A4E57}
+.hd{font-family:'Inter',system-ui,sans-serif;font-weight:700;font-size:12px;color:#EDEFF5;margin:0}
+.cap{font-family:'Inter',system-ui,sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#8C919E}
+.btn{height:24px;padding:0 12px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:focus-visible,.pillb:focus-visible{outline:2px solid #00D4FF;outline-offset:1px}
+.pillb{cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:3px;padding:8px 10px;color:#C2C7D1;font-size:12px;min-width:0}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabu{display:flex;align-items:center;height:28px;padding:0 12px;font-size:12px;color:#8C919E}
+.tabu.on{background:#383838;color:#EDEFF5;box-shadow:inset 0 2px 0 #00D4FF}
+.ph{background:#3A3A3A;height:10px}
+</style>
+</helmet>
+<div class="ed" style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #191919">
+<div style="position: absolute; left: 0; top: 0; width: 1920px; height: 36px; display: flex; align-items: center; gap: 18px; padding: 0 14px; box-sizing: border-box; color: #C2C7D1">
+  <span>File</span><span>Edit</span><span>Assets</span><span>GameObject</span><span>Component</span><span class="t">FrogletTools</span><span>Window</span><span>Help</span>
+  <span class="mut" style="margin-left: auto">Unity editor, dark skin. The Launch Console docked as a tab: FrogletTools &gt; Launch &gt; Launch Console</span>
+</div>
+<div style="position: absolute; left: 0; top: 36px; width: 300px; height: 1020px; background: #282828">
+  <div style="display: flex; height: 28px"><span class="tabu on">Hierarchy</span></div>
+  <div style="background: #383838; height: 992px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+    <span class="ph" style="width: 140px"></span><span class="ph" style="width: 200px; margin-left: 14px"></span><span class="ph" style="width: 170px; margin-left: 14px"></span><span class="ph" style="width: 120px; margin-left: 28px"></span>
+  </div>
+</div>
+<div style="position: absolute; left: 304px; top: 36px; width: 796px; height: 1020px; background: #282828">
+  <div style="display: flex; height: 28px"><span class="tabu on">Scene</span><span class="tabu">Game</span></div>
+  <div style="background: #2B2B2B; height: 992px; position: relative">
+    <span class="mut" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%)">Scene view</span>
+  </div>
+</div>
+<div style="position: absolute; left: 1548px; top: 36px; width: 372px; height: 1020px; background: #282828">
+  <div style="display: flex; height: 28px"><span class="tabu on">Inspector</span></div>
+  <div style="background: #383838; height: 992px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+    <span class="ph" style="width: 220px"></span><span class="ph" style="width: 300px"></span><span class="ph" style="width: 260px"></span>
+  </div>
+</div>
+
+<div style="position: absolute; left: 1104px; top: 36px; width: 440px; height: 1020px; background: #282828">
+  <div style="display: flex; height: 28px"><span class="tabu on">Launch Console</span></div>
+  <div style="background: #383838; height: 992px; position: relative; overflow: hidden">
+  <div style="position: absolute; right: 2px; top: 4px; width: 8px; height: 640px; background: #5A5A5A"></div>
+  <div style="padding: 10px 16px 10px 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+
+    <div style="display: flex; flex-direction: column; gap: 6px; background: #3D4047; box-shadow: inset 4px 0 0 #00D4FF, inset 0 -1px 0 rgba(0,212,255,0.5); padding: 8px 10px 8px 14px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span class="t" style="font-size: 15px; font-weight: 700">{{ milestone }}</span>
+        <span><span class="t num" style="font-size: 20px; font-weight: 700">{{ days }}</span> <span class="mut">days to {{ date }}</span></span>
+      </div>
+      <div style="display: flex; gap: 6px">
+        <button class="btn sls" type="button" onClick="{{ refresh }}" style="{{ refreshStyle }}">{{ refreshLabel }}</button>
+        <button class="btn sls" type="button" style="{{ consoleStyle }}; flex: 1">Checklist and Needs a human &#8599;</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span style="{{ verdictStyle }}">{{ verdictWord }}</span>
+      <span class="t">{{ verdictLine }}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{ pills }}" as="p" hint-placeholder-count="7">
+        <button class="sls" type="button" onClick="{{ p.pick }}" title="{{ p.tip }}" style="{{ p.rowStyle }}">
+          <span class="t ell" style="font-size: 12px">{{ p.name }}</span>
+          <span style="{{ p.stateStyle }}"><span style="{{ p.dot }}"></span>{{ p.word }}</span>
+          <span class="mut ell" style="font-size: 11px">{{ p.why }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <span class="mut" style="font-size: 11px">launch-status @ 8a36d99, generated 03:38 UTC, fetched {{ fetched }}. Verdicts: READINESS.md &#167;0, 2026-11-05.</span>
+
+    <div class="sl card" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: baseline; gap: 8px">
+        <span class="hd" style="font-size: 14px">{{ panel.name }}</span><span style="{{ panel.stateStyle }}">{{ panel.word }}</span>
+      </div>
+      <span class="mut" style="font-size: 11px">{{ panel.why }}</span>
+      <span class="cap" style="margin-top: 4px">{{ panel.tableHead }}</span>
+      <sc-for list="{{ panel.rows }}" as="r" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 4px 0 6px; border-bottom: 1px solid #3D4047" title="{{ r.tip }}">
+          <span style="display: flex; align-items: center; gap: 8px; min-width: 0"><span class="t">{{ r.label }}</span><sc-if value="{{ r.has }}" hint-placeholder-val="{{ true }}"><span style="{{ r.chip }}">{{ r.result }}</span></sc-if><span class="num ell" style="{{ r.verStyle }}">{{ r.ver }}</span></span>
+          <span class="mut ell" style="font-size: 11px">{{ r.summary }}</span>
+          <span class="ell" style="font-size: 11px"><span style="{{ r.ageStyle }}">{{ r.age }}</span> <span class="mut">{{ r.source }}</span></span>
+        </div>
+      </sc-for>
+      <span class="cap" style="margin-top: 4px">Start here</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px">
+        <sc-for list="{{ panel.actions }}" as="a" hint-placeholder-count="5">
+          <button class="btn sls ell" type="button" style="{{ a.style }}" title="{{ a.tip }}">{{ a.label }} &#8599;</button>
+        </sc-for>
+      </div>
+      <span class="cap" style="margin-top: 6px">{{ panel.blockHead }}</span>
+      <sc-for list="{{ panel.blockers }}" as="b" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: 30px minmax(0, 1fr); column-gap: 6px; padding: 3px 0; border-bottom: 1px solid #3D4047" title="{{ b.tip }}">
+          <span class="num mut">{{ b.rank }}</span>
+          <span style="display: flex; flex-direction: column; min-width: 0"><span class="t ell">{{ b.title }}</span><span class="mut" style="font-size: 11px">{{ b.who }}<sc-if value="{{ b.human }}" hint-placeholder-val="{{ true }}"><span style="color: #FF4B3A; letter-spacing: .06em; margin-left: 8px">HUMAN</span></sc-if></span></span>
+        </div>
+      </sc-for>
+    </div>
+
+    <button class="sls" type="button" onClick="{{ toggleGates }}" style="{{ foldStyle }}"><span>{{ gatesArrow }}</span><span class="t">Quality gates</span><span style="color: #FF4B3A; margin-left: auto">{{ gatesNote }}</span></button>
+    <sc-if value="{{ gatesOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 4px; padding: 0 4px">
+        <sc-for list="{{ gates }}" as="g" hint-placeholder-count="3">
+          <span class="ell" style="font-size: 11px"><span class="t">{{ g.label }}</span> <span style="{{ g.chip }}">{{ g.result }}</span> <span style="{{ g.verStyle }}">{{ g.summaryLine }}</span></span>
+        </sc-for>
+      </div>
+    </sc-if>
+    <button class="sls" type="button" onClick="{{ toggleHumans }}" style="{{ foldStyle }}"><span>{{ humansArrow }}</span><span class="t">Needs a human, in order</span><span class="mut" style="margin-left: auto">11 steps</span></button>
+    <sc-if value="{{ humansOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 3px; padding: 0 4px">
+        <sc-for list="{{ humans }}" as="h" hint-placeholder-count="11">
+          <span class="ell" style="font-size: 11px"><span class="mut num">{{ h.n }}</span> {{ h.text }}</span>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+  </div>
+</div>
+<div style="position: absolute; left: 0; bottom: 0; width: 1920px; height: 24px; background: #191919; display: flex; align-items: center; padding: 0 14px; box-sizing: border-box">
+  <span class="mut" style="font-size: 11px">Narrower than 640 px, the window stacks: pills become rows, the gates and the human list fold.</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+const C = { bg: '#383838', tab: '#282828', bar: '#191919', surf: '#303338', raised: '#3D4047', line: '#4A4E57', text: '#EDEFF5', body: '#C2C7D1', muted: '#8C919E', lime: '#99FF80', fire: '#FF4B3A', ruby: '#A600FF', jade: '#00D4FF' };
+// The board's clock: the moment the launch-status branch was read for this round (2026-11-06 03:40 UTC).
+const NOW = Date.parse('2026-11-06T03:40:00Z');
+const STALE_H = 48;
+const MILESTONE = { name: 'Invite build v1', date: '2026-12-03', label: '3 Dec 2026' };
+// status.json on launch-status @ 8a36d99 (generated 2026-11-06 03:38 UTC), every record as published.
+const REC = {
+  'windows-prerelease': { result: 'skipped', summary: 'No Steamworks app yet (A1-A4)', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:38:27Z' },
+  'ios-prerelease': { result: 'success', version: '0.2.0', commit: 'e69a542a83', summary: 'Last TestFlight upload 2026-10-13 from a hand export', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:37:42Z', event: '2026-10-13', link: true },
+  'android-prerelease': { result: 'success', build: '412826', summary: 'Internal testing; uploaded by hand', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:38:15Z' },
+  'web-production': { result: 'success', version: '2', summary: 'Hand upload 2026-10-22 on the r2.dev host; commit unknown', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:38:04Z', event: '2026-10-22', link: true },
+  'ugs-development': { result: 'success', commit: '2c450aacb3', summary: 'Deploy UGS scripts to the development environment', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:37:47Z', event: '2026-11-01', link: true },
+  'ugs-production': { result: 'skipped', summary: 'Never deployed; builds still point at development', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:37:55Z' },
+  'trunk-static': { result: 'success', commit: '1ac6f87ae0', summary: 'Static checks green; Unity compile skipped (no licence)', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:37:32Z', event: '2026-11-05', link: true },
+  'unity-compile': { result: 'failure', summary: 'No Unity compile in CI since 2026-10-06; PR 1695 waits on the unity-ci licence secrets', source: 'Phase 1 audit (2026-11-05)', updated: '2026-11-06T03:37:38Z', link: true }
+};
+// READINESS.md section 10, the ranked blockers (measured 2026-11-05). "human" = its phase names a human step.
+const BLOCKERS = {
+  1: ['Release builds talk to UGS production', 'Shombith', true],
+  2: ['Repo security settings', 'Shombith (admin)', true],
+  3: ['Steamworks partner account, fee, base app and Playtest child app', 'Garrett + Shombith', true],
+  4: ['A Unity compile + EditMode run gates trunk', 'Shombith', false],
+  5: ['Every build is identifiable', 'Shombith', false],
+  6: ['Old and new clients never meet', 'Yash / Shombith', false],
+  7: ['Production deploys are gated', 'Shombith', false],
+  8: ['A Windows IL2CPP player reaches the menu and plays a match', 'Shombith', true],
+  9: ['Consent and children', 'counsel + Shombith', true],
+  10: ['Licences clean', 'unknown', true],
+  11: ['Remote kill switches', 'Shombith', false],
+  12: ['Persistence decided', 'Shombith', false],
+  13: ['Web on its own domain', 'DNS owner + Shombith', true],
+  14: ['iOS builds from a commit, with a privacy manifest', 'Shombith', false],
+  15: ['In-app account deletion', 'Shombith', false],
+  16: ['Mobile store forms match the build', 'Garrett / Caleb + counsel', true],
+  17: ['Android is reproducible', 'Shombith / Yash', true],
+  18: ['Crash reporting proven', 'Shombith', true],
+  19: ['Measured test state for the launch path', 'team', false],
+  20: ['Multiplayer holds', 'Yash / Shombith', false],
+  21: ['Analytics live', 'Shombith', true],
+  22: ['Runbook and comms', 'not named', false]
+};
+// READINESS.md section 10, "Needs a human, in order".
+const HUMANS = [
+  ['Repo settings: ruleset bypass, required checks, the ugs-production Environment, old iOS secrets', 'Shombith (admin)'],
+  ['Rotate the symbol-upload token behind USYM_UPLOAD_AUTH_TOKEN', 'Unity dashboard'],
+  ['Unity CI seat: UNITY_EMAIL / UNITY_PASSWORD in the unity-ci Environment', 'Shombith'],
+  ['Steamworks: entity, fee, agreements, base app and Playtest child app', 'Garrett + Shombith'],
+  ['UGS production: board, 28 events / 67 parameters, identity providers, Moderation', 'Shombith'],
+  ['Counsel: privacy policy, COPPA posture, DLC vs tokens, EULA', 'counsel'],
+  ['Licences: FMOD tier, SOAP receipt, Electronic Highway Sign, the .wav files', 'not named'],
+  ['DNS / Cloudflare: play.froglet.games to R2 + CORS', 'DNS owner'],
+  ['Unity Build Automation: Web, Android and iOS targets', 'Shombith'],
+  ['Play Console: Data safety, IARC, audience, deletion URL, key custody', 'Garrett / Caleb'],
+  ['App Store Connect: privacy label, age rating, external TestFlight group', 'Garrett / Caleb']
+];
+// The artifact's PLATFORMS table: channels, actions (cta = Lime, commit = Ruby, '' = default) and rollback.
+const PLATFORMS = [
+  { key: 'windows', name: 'Windows / Steam', channels: [['windows-prerelease', 'Playtest internal'], ['windows-production', 'Playtest default']], build: 'build-windows',
+    audit: ['nogo', 'No Steamworks app; no IL2CPP player'], blockers: [3, 8],
+    actions: [['Build', 'cta'], ['Upload to Playtest internal', 'cta'], ['Promote', 'commit'], ['Roll back', 'commit'], ['Steamworks', '']],
+    rollback: 'Set the previous build live on the branch in Steamworks App Admin > Builds' },
+  { key: 'ios', name: 'iOS', channels: [['ios-prerelease', 'TestFlight'], ['ios-production', 'App Store']], build: 'build-ios',
+    audit: ['nogo', 'No reproducible build; no privacy manifest'], blockers: [14, 15, 16],
+    actions: [['Build', 'cta'], ['Upload to TestFlight', 'cta'], ['Promote', 'commit'], ['Roll back', 'commit']],
+    rollback: 'Pause the phased release in App Store Connect; ship a fixed build (Apple has no binary rollback)' },
+  { key: 'android', name: 'Android', channels: [['android-prerelease', 'Play internal'], ['android-production', 'Play closed']], build: 'build-android',
+    audit: ['risk', 'No CI; undeclared microphone permission'], blockers: [15, 16, 17],
+    actions: [['Build', 'cta'], ['Upload to internal', 'cta'], ['Promote', 'commit'], ['Halt rollout', 'commit'], ['Play Console', '']],
+    rollback: 'Halt the staged rollout in Play Console, then roll out the previous release' },
+  { key: 'web', name: 'Web Toybox', channels: [['web-staging', 'Staging root'], ['web-production', '/play']], build: 'build-web',
+    audit: ['risk', 'r2.dev host; hand upload of unknown commit'], blockers: [13],
+    actions: [['Stage', 'cta'], ['Promote to /play', 'commit'], ['Roll back', 'commit'], ['Open /play', '']],
+    rollback: 'Point toybox/latest.json at the previous build (the publish workflow’s rollback action)' },
+  { key: 'liveops', name: 'Live ops', channels: [['ugs-development', 'UGS development'], ['ugs-production', 'UGS production']], build: null,
+    audit: ['nogo', 'Every build talks to UGS development'], blockers: [1, 7, 11, 12],
+    actions: [['Deploy to development', 'cta'], ['Deploy to production', 'commit'], ['UGS dashboard', '']],
+    rollback: 'Deploy the previous tag to the environment (ugs-deploy with an older ref)' },
+  { key: 'backend', name: 'Backend', channels: [], build: null,
+    audit: ['risk', 'Anonymous sign-in only; protocol version unused'], blockers: [6, 20],
+    actions: [['UGS dashboard', ''], ['Multiplayer start here', '']],
+    rollback: 'Kill switch in the launch flags (deploy to production), then fix forward' },
+  { key: 'launch', name: 'Launch-wide', channels: [['trunk-static', 'Trunk static checks'], ['unity-compile', 'Unity compile + EditMode']], build: null,
+    audit: ['nogo', 'No Unity compile since 2026-10-06'], blockers: [2, 4, 5, 9, 10, 18, 19, 21, 22],
+    actions: [['Readiness audit', ''], ['Froglet Tasks', '']],
+    rollback: '' }
+];
+const GATES = [['trunk-static', 'Trunk static checks'], ['unity-compile', 'Unity compile + EditMode']];
+const RANK = { unknown: -1, go: 0, risk: 1, nogo: 2 };
+const WORD = { unknown: 'Unknown', go: 'Go', risk: 'At risk', nogo: 'No-go' };
+
+function asOf(r) { return Date.parse(r.event ? r.event + 'T00:00:00Z' : r.updated); }
+function hours(r) { return (NOW - asOf(r)) / 36e5; }
+function ageText(h) { if (h < 1) return 'under an hour ago'; if (h < 48) return Math.round(h) + ' h ago'; return Math.round(h / 24) + ' days ago'; }
+function recState(r) {
+  if (r.result === 'failure') return 'nogo';
+  if (r.result === 'success') return hours(r) > STALE_H ? 'risk' : 'go';
+  return 'risk';
+}
+function platformState(p) {
+  const ids = p.channels.map((c) => c[0]).concat(p.build ? [p.build] : []);
+  let state = 'unknown', why = 'no run recorded';
+  const failed = ids.filter((id) => REC[id] && REC[id].result === 'failure');
+  for (const id of ids) { const r = REC[id]; if (r && RANK[recState(r)] > RANK[state]) state = recState(r); }
+  if (failed.length) return [state, failed[0] + ' failed'];
+  if (RANK[p.audit[0]] >= RANK[state]) return [p.audit[0], p.audit[1]];
+  const stale = ids.filter((id) => REC[id] && REC[id].result === 'success' && hours(REC[id]) > STALE_H);
+  if (stale.length) return ['risk', stale[0] + ' is ' + ageText(hours(REC[stale[0]])).replace(' ago', ' old')];
+  const skipped = ids.filter((id) => REC[id] && REC[id].result !== 'success');
+  if (skipped.length) return ['risk', skipped[0] + ' ' + REC[skipped[0]].result];
+  return [state, state === 'go' ? 'every record green and fresh' : why];
+}
+function pillStyle(state, selected) {
+  const col = state === 'go' ? C.lime : state === 'unknown' ? C.line : C.fire;
+  const border = state === 'risk' ? '2px dashed ' + col : '2px solid ' + col;
+  return 'border: ' + border + '; background: ' + C.surf + ';' + (selected ? ' box-shadow: inset 0 -3px 0 ' + C.jade + ';' : '');
+}
+function stateColor(state) { return state === 'go' ? C.lime : state === 'unknown' ? C.muted : C.fire; }
+function dotStyle(state) {
+  const col = stateColor(state);
+  const fill = state === 'risk' ? 'linear-gradient(135deg, ' + col + ' 50%, transparent 50%)' : col;
+  return 'display: inline-block; width: 8px; height: 8px; background: ' + fill + '; box-shadow: inset 0 0 0 1px ' + col + ';';
+}
+function chipStyle(result) {
+  const col = result === 'success' ? C.lime : result === 'failure' ? C.fire : C.muted;
+  return 'display: inline-block; padding: 0 6px; border: 1px solid ' + col + '; color: ' + col + '; font-size: 11px; line-height: 16px;';
+}
+function btnStyle(kind) {
+  if (kind === 'cta') return 'background: ' + C.lime + '; color: #00041F; border: 1px solid ' + C.lime + ';';
+  if (kind === 'commit') return 'background: rgba(166,0,255,0.22); color: #FFFFFF; border: 1px solid ' + C.ruby + ';';
+  return 'background: ' + C.raised + '; color: ' + C.text + '; border: 1px solid ' + C.line + ';';
+}
+function rowFor(id, label) {
+  const r = REC[id];
+  if (!r) return { label: label, id: id, has: false, ver: 'No run recorded', verStyle: 'color: ' + C.muted + ';', result: '', chip: '', summary: '', summaryLine: 'No run recorded', age: '', ageStyle: '', source: '', tip: id + ': no record on the launch-status branch' };
+  const h = hours(r);
+  const ver = [r.version, r.build && '(' + r.build + ')', r.commit && r.commit.slice(0, 9)].filter(Boolean).join(' ') || '\u2014';
+  return { label: label, id: id, has: true, ver: ver, verStyle: '', result: r.result, chip: chipStyle(r.result), summary: r.summary || '', summaryLine: r.summary || '',
+    age: ageText(h), ageStyle: 'color: ' + (h > STALE_H ? C.fire : C.body) + ';', source: '\u00b7 ' + r.source + (r.link ? ' \u2197' : ''),
+    tip: id + ': ' + (r.event ? 'event ' + r.event + ', ' : '') + 'recorded ' + ageText((NOW - Date.parse(r.updated)) / 36e5) };
+}
+function blockerRows(p) {
+  return p.blockers.map((n) => ({ rank: '#' + n, title: BLOCKERS[n][0], who: BLOCKERS[n][1], human: BLOCKERS[n][2], tip: '#' + n + ' ' + BLOCKERS[n][0] + '. Decides: ' + BLOCKERS[n][1] + (BLOCKERS[n][2] ? '. Needs a human.' : '') }));
+}
+function verdict() {
+  const st = PLATFORMS.map((p) => platformState(p)[0]);
+  const nogo = st.filter((s) => s === 'nogo').length, risk = st.filter((s) => s === 'risk').length;
+  if (nogo) return ['nogo', 'No-go', nogo + ' of ' + PLATFORMS.length + ' no-go, ' + risk + ' at risk. Nothing lands until every pill reads Go.'];
+  if (risk) return ['risk', 'At risk', risk + ' at risk.'];
+  return ['go', 'Go', 'Every platform is green and fresh.'];
+}
+function daysLeft() { return Math.ceil((Date.parse(MILESTONE.date + 'T00:00:00Z') - NOW) / 864e5); }
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'ios', busy: false, gatesOpen: false, humansOpen: false };
+  }
+  renderVals() {
+    const st = this.state;
+    const pills = PLATFORMS.map((p) => {
+      const ps = platformState(p);
+      const col = stateColor(ps[0]);
+      const edge = ps[0] === 'risk' ? '1px dashed ' + col : '1px solid ' + (ps[0] === 'unknown' ? C.line : col);
+      return { name: p.name, word: WORD[ps[0]], why: ps[1], tip: p.name + ': ' + WORD[ps[0]] + ', ' + ps[1],
+        rowStyle: 'display: grid; grid-template-columns: 112px 84px minmax(0, 1fr); align-items: center; column-gap: 8px; height: 28px; padding: 0 10px; text-align: left; cursor: pointer; color: ' + C.body + '; background: ' + C.surf + '; border: ' + edge + ';' + (p.key === st.sel ? ' box-shadow: inset 3px 0 0 ' + C.jade + ';' : ''),
+        stateStyle: 'display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: ' + col + ';',
+        dot: dotStyle(ps[0]), pick: () => this.setState({ sel: p.key }) };
+    });
+    const p = PLATFORMS.find((x) => x.key === st.sel) || PLATFORMS[0];
+    const ps = platformState(p);
+    const rows = p.channels.map((c) => rowFor(c[0], c[1]));
+    if (p.build) rows.push(rowFor(p.build, 'Last build'));
+    const panel = {
+      name: p.name, word: WORD[ps[0]], why: ps[1],
+      stateStyle: 'font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: ' + stateColor(ps[0]) + ';',
+      tableHead: p.key === 'launch' ? 'Gates and the last run' : (rows.length ? 'Channels and the last run' : 'No channel of its own'),
+      rows: rows,
+      actions: p.actions.map((a) => ({ label: a[0], style: btnStyle(a[1]), tip: 'Opens ' + a[0] + ' in the browser' })),
+      blockers: blockerRows(p), blockHead: 'Open blockers (' + p.blockers.length + '), READINESS.md §10'
+    };
+    const gates = GATES.map((g) => rowFor(g[0], g[1]));
+    gates.push(Object.assign(rowFor('smoke-none', 'Smoke per mode'), { summaryLine: 'No smoke run recorded' }));
+    const failures = gates.filter((g) => g.result === 'failure').length;
+    const v = verdict();
+    const fold = 'display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px; background: ' + C.raised + '; border: 1px solid ' + C.line + '; color: ' + C.body + '; font-size: 12px; cursor: pointer; text-align: left;';
+    return {
+      milestone: MILESTONE.name, date: MILESTONE.label, days: daysLeft(),
+      verdictWord: v[1], verdictLine: v[2],
+      verdictStyle: 'font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: ' + stateColor(v[0]) + ';',
+      pills: pills, panel: panel, gates: gates,
+      humans: HUMANS.map((h, i) => ({ n: String(i + 1), text: h[0], who: h[1] })),
+      fetched: st.busy ? 'now…' : '1 min ago',
+      refreshLabel: st.busy ? 'Fetching…' : 'Refresh', refreshStyle: btnStyle(''), consoleStyle: btnStyle(''),
+      refresh: () => this.setState({ busy: !st.busy }),
+      foldStyle: fold,
+      gatesOpen: st.gatesOpen, gatesArrow: st.gatesOpen ? '▾' : '▸', gatesNote: failures ? failures + ' failed' : '',
+      humansOpen: st.humansOpen, humansArrow: st.humansOpen ? '▾' : '▸',
+      toggleGates: () => this.setState({ gatesOpen: !st.gatesOpen }),
+      toggleHumans: () => this.setState({ humansOpen: !st.humansOpen })
+    };
+  }
+}
+</script>
+</body>
+</html>
