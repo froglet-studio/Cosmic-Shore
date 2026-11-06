@@ -239,7 +239,7 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 
 | # | Question | Decision |
 |---|---|---|
-| D1 | Theme names | **Deep Sea** (dark, default) and **Shore** (light). The analytics console names them **HyperSea** and **Cosmic Shore** and adds the game's colour sets (Nocturne, Photic, Dart Frog: each domain's trail colour, fitted to 3:1, for its charts, selection and swatches), generated from the game by `Tools/Analytics/console/make_themes.py` (Shombith, 2026-11-06). Fire and Lime keep their meanings in every set. |
+| D1 | Theme names | **Deep Sea** (dark, default) and **Shore** (light). |
 | D2 | Domain colours | As the colour board shows them: a domain is the live game palette (Nocturne since 2026-11-03: Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF8F11`); the UI's Jade, Ruby and Gold tokens mean their uses (control and selection, commit, purchase). |
 | D3 | The selection blue in the band | **Jade is what you can claim and reclaim** (a hull pick in an arena mode, friends, the selection, the focus ring); **Ruby is what you cannot take back** (Ready). The selection moves to Jade. |
 | D4 | Out-of-family shades | The whole chart is on the Style Guide (the colour chart board) with the shades to choose from in each family. STYLE_FOUNDATION's five out-of-family variants are replaced by their nearest in-family shade: Jade Light `#80EAFF` -> `jade-92` `#7BFEF3`; Ruby Light `#D280FF` -> `ruby-76` `#FE6EF7`; Jade Dark `#004D81` (Blue) -> `jade-52` `#077B63`; Ruby Dark `#530080` -> `ruby-52` `#A30AB9` (Ruby does not reach darker inside its family); Gold Dark `#805700` -> `gold-68` `#C48D19`. |
@@ -277,4 +277,5 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 - Diagrams: Blue lines and labels; a family colour only where the thing means that family (a danger path in Fire).
   Never one colour per element.
 - Decks: one idea per slide, H1 36 / Body 18 scaled to the slide, the sliver on panels, no gradient washes or glows.
+- A web tool may let its reader pick one of the game's colour sets (Nocturne, Photic, Dart Frog) as its theme, on the Deep Sea ground, never as a second ground: as in the game, a colour set changes how you see the HyperSea. The set paints the sea lines behind the page (the menu's SeaLines, its cyan, periwinkle and violet becoming the set's Jade, Blue and Ruby), their wash and glow, the data (Blue), the selection and focus (Jade). Fire and Lime keep their meanings. The analytics console is the first (`Tools/Analytics/console/make_themes.py`, Shombith 2026-11-06).
 - A Frogma board copies the latest round's helmet (fonts and the `.sl` sliver) and these tokens.
