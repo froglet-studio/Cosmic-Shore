@@ -447,11 +447,13 @@ namespace CosmicShore.Editor
 
         static void Columns(Rect a, out Rect c0, out Rect c1, out Rect c2, out Rect c3)
         {
-            float w0 = 130f, w1 = 110f, w2 = Mathf.Max(140f, (a.width - w0 - w1) * 0.5f);
+            // Fixed widths at a typical docked size; proportional when the panel is tighter, so nothing spills past it.
+            float w0 = Mathf.Min(130f, a.width * 0.26f), w1 = Mathf.Min(110f, a.width * 0.2f);
+            float w2 = Mathf.Max(0f, (a.width - w0 - w1) * 0.5f);
             c0 = new Rect(a.x, 0f, w0 - 8f, 0f);
             c1 = new Rect(a.x + w0, 0f, w1 - 8f, 0f);
             c2 = new Rect(a.x + w0 + w1, 0f, w2 - 8f, 0f);
-            c3 = new Rect(a.x + w0 + w1 + w2, 0f, Mathf.Max(60f, a.width - w0 - w1 - w2), 0f);
+            c3 = new Rect(a.x + w0 + w1 + w2, 0f, Mathf.Max(0f, a.width - w0 - w1 - w2), 0f);
         }
 
         float RecordRow(LaunchConsoleConfigSO cfg, string label, string id, DateTime now, Rect a, bool narrow, bool draw)

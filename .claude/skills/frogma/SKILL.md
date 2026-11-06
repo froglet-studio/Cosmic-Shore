@@ -239,6 +239,12 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   straddle its foot (style guide §6) are cut in half when they are children of the `.sl` element: the check passes,
   the board shows half a button. Put the sliver on a background layer (`<div class="abs sl panel" style="inset:0">`)
   and the content and buttons beside it in an unclipped parent. Only a local render shows it.
+- **An outline on a sliver is clipped away too** (Rev 58, 2026-11-06). `outline` (and `outline-offset`) draws outside
+  the element, so on a `.sl` / `.cut` element the `clip-path` removes all of it: the Launch Console artifact's picked
+  pill (`.pill[aria-pressed=true]{outline...}`) shows no pick at all. Mark a pick inside the shape (an inset
+  `box-shadow` line, the house "one thin line"), and look at a local render to see it.
+- **`render_local.cjs` needs the global Playwright on its path** here: `NODE_PATH=/opt/node22/lib/node_modules node
+  .claude/skills/frogma/render_local.cjs ...` (without it, `Cannot find module 'playwright'`).
 - **A "frozen moment" with a negative `animation-delay` overrides each element's OWN delay.** Pausing a sequence at
   t = 0.45 s with `animation-delay:-0.45s!important` shows every element 0.45 s into its own animation, so a panel
   meant to open at 1.25 s shows half open. Either put the timing in keyframe percentages on one shared loop (the
