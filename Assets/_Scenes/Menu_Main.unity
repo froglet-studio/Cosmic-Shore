@@ -23778,10 +23778,10 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 1, y: 1}
-  anchorMax: {x: 1, y: 1}
-  pivot: {x: 1, y: 1}
-  anchoredPosition: {x: -16, y: -76}
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 112, y: -80}
   sizeDelta: {x: 480, y: 210}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
@@ -41383,6 +41383,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6818916199485298600}
   - component: {fileID: 1892651070}
+  - component: {fileID: 717675000483384865}
   m_Layer: 5
   m_Name: ModalWindows
   m_TagString: Untagged
@@ -41390,6 +41391,41 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &717675000483384865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3351705847530627495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: -96, y: 0}
+  sizeDelta: {x: 0, y: 0}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!114 &3354247079060897274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50599,7 +50635,7 @@ MonoBehaviour:
   drawAtPcScale: 1
   pcHeight: 1080
   pcCutTop: 0
-  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  phoneInsets: {x: 0, y: 0, z: 96, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -52316,7 +52352,7 @@ MonoBehaviour:
   drawAtPcScale: 1
   pcHeight: 1080
   pcCutTop: 0
-  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  phoneInsets: {x: 96, y: 0, z: -96, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -54734,10 +54770,10 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0, y: 0}
-  anchorMax: {x: 0, y: 1}
+  anchorMin: {x: 1, y: 0}
+  anchorMax: {x: 1, y: 1}
   pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 48, y: 0}
+  anchoredPosition: {x: -48, y: 0}
   sizeDelta: {x: 96, y: 0}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
@@ -59425,7 +59461,7 @@ MonoBehaviour:
   drawAtPcScale: 1
   pcHeight: 1080
   pcCutTop: 0
-  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  phoneInsets: {x: 96, y: 0, z: -96, w: 0}
   movesRect: 0
   anchorMin: {x: 0.5, y: 0.5}
   anchorMax: {x: 0.5, y: 0.5}
@@ -60496,9 +60532,9 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 1, y: 0}
-  anchorMax: {x: 1, y: 1}
-  pivot: {x: 1, y: 0.5}
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 0.5}
   anchoredPosition: {x: 0, y: 0}
   sizeDelta: {x: 1, y: 0}
   fontSize: 0
@@ -68065,10 +68101,10 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0, y: 0}
-  anchorMax: {x: 0, y: 0}
-  pivot: {x: 0, y: 0}
-  anchoredPosition: {x: 12, y: 8}
+  anchorMin: {x: 1, y: 0}
+  anchorMax: {x: 1, y: 0}
+  pivot: {x: 1, y: 0}
+  anchoredPosition: {x: -20.4, y: 8}
   sizeDelta: {x: 92, y: 92}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
@@ -80787,6 +80823,7 @@ GameObject:
   - component: {fileID: 174595409137136598}
   - component: {fileID: 3044916486922533758}
   - component: {fileID: 560552141}
+  - component: {fileID: 978289602703474857}
   m_Layer: 5
   m_Name: Screens
   m_TagString: Untagged
@@ -80794,6 +80831,41 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &978289602703474857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7219011410741713723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: -96, y: 0}
+  sizeDelta: {x: 0, y: 0}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!222 &7220838366497533216
 CanvasRenderer:
   m_ObjectHideFlags: 0

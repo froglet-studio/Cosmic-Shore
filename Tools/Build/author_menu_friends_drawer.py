@@ -124,8 +124,9 @@ def orb_tint():
 def orb_node(parent):
     o = parent.child(N("Drawer/Orb", "PresenceOrb", R((0, 0), None, (AR.ORB_X, AR.ORB_Y), (ORB, ORB), (0, 0))))
     o.add("cg", 225, H.canvas_group(True))
-    # On a phone the orb sits at the foot of the rail, drawn at 0.6 so it fits the rail's 96 (section 129).
-    o.add("phone", 114, K.phone_rect(R((0, 0), None, (12, 8), (ORB, ORB), (0, 0)), scale=PHONE_ORB_SCALE))
+    # On a phone the orb sits at the foot of the rail, on the right (2026-11-06), drawn at 0.6 so it fits the rail's 96.
+    o.add("phone", 114, K.phone_rect(R((1, 0), None, (-(96 - ORB * PHONE_ORB_SCALE) / 2, 8), (ORB, ORB), (1, 0)),
+                                     scale=PHONE_ORB_SCALE))
     field = o.child(N("Drawer/Orb/Field", "Field", STRETCH))
     field.add("cr", 222, K.canvas_renderer()).add("img", 114, M.material_image(K.WHITE, M.PRESENCE_MAT, raycast=True))
     for i in range(len(LAT.ORB_MEMBER_ANGLES)):

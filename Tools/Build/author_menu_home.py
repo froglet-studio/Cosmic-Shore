@@ -849,7 +849,9 @@ def patch_phone(p):
         (I["accept_go"], PH(R((0, 0), None, (14, 0), (112, 48), (0, 0.5)))),
         (I["cancel_go"], PH(R((0, 0), None, (136, 0), (112, 48), (0, 0.5)))),
         (I["settings_go"], PH(R((1, 1), None, (-16, -12), (96, 84), (1, 1)), scale=0.62)),
-        (g("UpNext"), PH(R((1, 1), None, (-16, -76), (CARD_W, 2 * CARD_H + DOCK_GAP), (1, 1)), scale=0.75)),
+        # Under the name (Shombith, 2026-11-06: "put weekly challenge and current quest under the name"); the question
+        # bar and the party invite open over it while they show.
+        (g("UpNext"), PH(TL(PH_X, 80, CARD_W, 2 * CARD_H + DOCK_GAP), scale=0.75)),
         (g("Hint"), PH(R((0.5, 1), None, (PH_X / 2 - 8, -250), (HINT_W, HINT_H), (0.5, 1)))),
         (I["row_go"], PH(R((0, 0), (1, 0), ((PH_X - 16) / 2, 12), (-(PH_X + 16), 56), (0.5, 0)))),
     ]

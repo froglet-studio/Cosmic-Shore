@@ -485,8 +485,8 @@ def transform(text):
     rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceLight", RULE_ALPHA))) \
         .add("th", 114, K.themed("SurfaceLight", RULE_ALPHA))
     # On a phone the band is the rail down the left (author_menu_phone.py; Docs/MENU_REDESIGN_B.md section 129): the
-    # rule runs down its right edge.
-    rule.add("phone", 114, K.phone_rect(K.rect((1, 0), (1, 1), (0, 0), (1, 0), (1, 0.5))))
+    # rule runs down its inner (left) edge: the rail is on the right of the screen (2026-11-06).
+    rule.add("phone", 114, K.phone_rect(K.rect((0, 0), (0, 1), (0, 0), (1, 0), (0, 0.5))))
     K.emit_node(ids.ctx, band, NAVBAR["rt"], out)
     K.emit_node(ids.ctx, rule, NAVBAR["rt"], out)
     for i in range(len(TABS)):

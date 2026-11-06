@@ -55,12 +55,17 @@ PREFAB_RETIRED = ["Assets/_Prefabs/ArcadeGameConfigureModal.prefab", "Assets/_Pr
 
 # Scene objects of Menu_Main that HAVE a phone layout and no generator of their own to write it (the nav band is
 # patched in place by author_menu_topnav.py, which keeps other generators' components on it). R55 (section 129): the
-# band is the rail down the left, 96 wide, its tabs in the PC band's order: Codex, Hangar, Home, Ark, Port (Shombith,
+# band is the rail down the RIGHT, 96 wide, its tabs in the PC band's order: Codex, Hangar, Home, Ark, Port (Shombith,
 # 2026-11-06: "the order will be codex, hangar, home ark and port just like in the PC version do not change order").
 # The band's LT / RT arrows leave the canvas on a phone (author_menu_topnav.py writes their PhoneRect).
 RAIL_W, TAB_H = 96, 56
 SCENE_PHONE = {
-    "NavBar": dict(pose=K.rect((0, 0), (0, 1), (RAIL_W / 2, 0), (RAIL_W, 0))),
+    "NavBar": dict(pose=K.rect((1, 0), (1, 1), (-RAIL_W / 2, 0), (RAIL_W, 0))),
+    # The rail is on the RIGHT (Shombith, 2026-11-06: "Put codex hangar etc on the right side"). Every screen's phone
+    # layout is authored for a rail on the left (content from x 112, 16 from the right); its containers move 96 left on
+    # a phone, so each screen's content runs from 16 to 112 short of the right edge, clear of the rail.
+    "Screens": dict(pose=K.rect((0, 0), (1, 1), (-RAIL_W, 0), (0, 0))),
+    "ModalWindows": dict(pose=K.rect((0, 0), (1, 1), (-RAIL_W, 0), (0, 0))),
     "NavBarButtons": dict(pose=K.STRETCH, stack=dict(origin=(0, -10), item=(RAIL_W, TAB_H), spacing=2,
                                                      order=["CodexLink", "HangarLink", "HomeLink", "ArkLink", "PortLink"])),
 }
@@ -74,10 +79,22 @@ FULL_CANVAS = {"ToastNotificationContainer", "ToggleGameMenuButton", "Game UI", 
                "InGameInstructionSet.prefab"}
 
 
+# Full-canvas covers inside ModalWindows (moved 96 left on a phone): their region is widened back over the whole canvas.
+IN_SHIFTED = {"InitializingScreen", "SceneTransitionModal"}
+
+
 def mark(p, go, name):
     """Add (or re-add) the fallback PhoneRect last on `go`."""
     p.remove_comp(go, str(p.ctx.fid(f"{go}#phone")))
-    p.add_comp(go, "phone", 114, K.phone_rect(pc_block=True) if name in FULL_CANVAS else K.phone_window_block())
+    if name in IN_SHIFTED:
+        fn = K.phone_rect(pc_block=True, insets=(RAIL_W, 0, -RAIL_W, 0))
+    elif name == "ToastNotificationContainer":
+        fn = K.phone_rect(pc_block=True, insets=(0, 0, RAIL_W, 0))   # the toasts (top right) clear the rail
+    elif name in FULL_CANVAS:
+        fn = K.phone_rect(pc_block=True)
+    else:
+        fn = K.phone_window_block()
+    p.add_comp(go, "phone", 114, fn)
 
 
 # Menu_Main's canvas: every screen now has a phone layout or the fallback, so it switches (Shombith, 2026-11-05).

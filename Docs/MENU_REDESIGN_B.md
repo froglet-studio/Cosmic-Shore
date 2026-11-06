@@ -6065,6 +6065,16 @@ carrying the PC-scale fallback under their own phone layouts (so Home's hubs dre
 fell off the screen); `author_menu_phone.py` now removes them and fails if any object draws at the PC scale without
 being on its fallback list.
 
+**Rail on the right, Up next under the name (Shombith, 2026-11-06, in the Device Simulator):** "Put codex hangar etc on
+the right side and put weekly challenge and current quest under the name". The rail now runs down the RIGHT edge (its rule
+on its inner edge, the friends orb at its foot). Every screen's phone layout was authored for a rail on the left, so on a
+phone `Screens` and `ModalWindows` move 96 left (`author_menu_phone.py` SCENE_PHONE): each screen's content runs from 16
+to 112 short of the right edge; the loading and transition covers inside them are widened back over the whole canvas,
+and the menu toasts clear the rail. Home's Up next sits under the pilot chip at 0.75 (the question bar and the party
+invite open over it). Also fixed the same day: the party sheet sized itself from the PC canvas height at the switch, so
+its title and minimise were off the top of the screen and it could not be closed (`FriendsDrawer.FitPhoneSheet`, re-run
+on every rect change).
+
 **Built (2026-11-05, `claude/ui-phone-menus`):**
 - **Rail and Home**: the nav band is a 96-wide rail down the left (`author_menu_topnav.py`, `author_menu_phone.py`), Home's
   chip, Settings, Up next and hub row take their R55Home poses (`author_menu_home.py`).

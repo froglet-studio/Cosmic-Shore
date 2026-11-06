@@ -127,13 +127,11 @@ namespace CosmicShore.UI
             _phone = phone;
             if (phone)
             {
-                float parentH = window.parent is RectTransform p ? p.rect.height : 450f;
                 window.anchorMin = Vector2.zero;
                 window.anchorMax = Vector2.zero;
                 window.pivot = Vector2.zero;
-                // The window's PhoneRect draws it at phoneScale (so its KitTexts keep their PC sizes); this sizes it to match.
-                window.sizeDelta = new Vector2(normalWidth, parentH / phoneScale);
                 window.anchoredPosition = new Vector2(window.anchoredPosition.x, 0f);
+                FitPhoneSheet();
             }
             else
             {
@@ -143,6 +141,22 @@ namespace CosmicShore.UI
             }
             Apply(DrawerState.Closed, instant: true);
         }
+
+        /// <summary>
+        /// Size the phone sheet to the parent's height: the window's PhoneRect draws it at phoneScale, so it is
+        /// parentHeight / phoneScale tall unscaled. The canvas takes its phone size a frame AFTER the layout switches, so
+        /// this runs again whenever the drawer's rect changes; sized once at the switch, the sheet took the PC height
+        /// (1080) and its title and minimise button sat above the screen (2026-11-06, in the Device Simulator).
+        /// </summary>
+        private void FitPhoneSheet()
+        {
+            if (!_phone || !window || window.parent is not RectTransform p) return;
+            float h = p.rect.height / Mathf.Max(0.01f, phoneScale);
+            var size = new Vector2(normalWidth, h);
+            if ((window.sizeDelta - size).sqrMagnitude > 0.01f) window.sizeDelta = size;
+        }
+
+        private void OnRectTransformDimensionsChange() => FitPhoneSheet();
 
         private void OnDestroy()
         {
