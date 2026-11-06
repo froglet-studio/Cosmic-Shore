@@ -7,8 +7,8 @@ and the game's own glowing materials - the prisms' rims, the hull's domain trim,
 porthole is placed on the model's real wall (a ray cast from the bay's axis), a heavy ring of the hull's metal with
 bolts, and its pane is a portal: it shows the cell in the direction you look through it, and lets its light in.
 
-The squad's seats are the game's prisms over the launch pads (no vessel models): the two taken seats a prism each in
-the squad's domain; the third seat KEPT for a friend, a dark outline. Everything else as r61: the lit hull panels,
+The launch pads are bare: no vessel models and no seat markers over them (the cards on top say who sits where).
+Everything else as r61: the lit hull panels,
 the prisms (glossy black faces, the rim on their edges), the spent prisms heaped dead along the walls, haze, AgX.
 
     <bpy python> r62_ark_ports_render.py <out_dir> <assets_dir> [cams=pads,board,aft,ports,cross,porthole]
@@ -299,25 +299,7 @@ CAM_LOCS = [
     ((9.8, -62.0, -15.7), (13.6, -66.4, -15.4), 34, 5.6, 2.2, "porthole"),
 ]
 PADS = [Vector((0.0, -52.0, Z0)), Vector((0.0, -64.0, Z0)), Vector((0.0, -76.0, Z0))]
-# the two taken seats: a prism over each pad in the squad's domain, its small core, a ring of shards (no vessel models)
-for p in PADS[:2]:
-    c = p + Vector((0, 0, 2.6))
-    add("stella", c, (0.8,) * 3, (SQUAD, "plain", 1.6), rot=rand_rot())
-    add("octa", c, (0.38, 0.38, 0.5), (SQUAD, "plain", 2.0), rot=rand_rot())
-    for k in range(10):
-        a = k * math.tau / 10
-        add("octa", c + Vector((math.cos(a) * 2.1, math.sin(a) * 2.1, 0.35 * math.sin(a * 2))), (0.12, 0.12, 0.2),
-            (SQUAD, "plain", 1.0), rot=rand_rot())
-# the kept seat: an outline of dark blocks over the empty pad, the shape a prism would take
-c = PADS[2] + Vector((0, 0, 2.6))
-Rr = rand_rot()
-verts = [Rr @ (Vector(v) * 0.8) for v in K.STELLA_V]
-for (ia, ib, ic) in K.STELLA_F:
-    for (u, w) in ((ia, ib), (ib, ic), (ic, ia)):
-        pa, pb = verts[u], verts[w]
-        for q in range(6):
-            cc = pa.lerp(pb, (q + 0.5) / 6)
-            add("box", c + cc, (0.06, 0.06, (pb - pa).length / 6 * 0.42), ("Blue", "plain", 0.3), fwd=pb - pa)
+# the pads are left bare: no seat markers over them (Shombith, 2026-11-06: "remove these")
 
 # the HyperSea board between the arches on the left wall; the galaxy on the right wall
 BX = -HW + 0.9

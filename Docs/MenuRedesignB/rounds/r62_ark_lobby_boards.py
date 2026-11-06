@@ -44,7 +44,7 @@ BOOK = [
 ]
 
 OPTS = {
-    "A": ("The pads", "pads", "Rev 61 C by the game's light: from the door down the pads, the seats' prisms, the portholes; seats right"),
+    "A": ("The pads", "pads", "Rev 61 C by the game's light: from the door down the bare pads, the portholes; seats right"),
     "B": ("The map wall", "board", "Rev 61 E by the game's light: the HyperSea board between portholes; seats right"),
     "C": ("Down the bay", "aft", "From the back wall: the bay to the open mouth, portholes down both walls; seats right"),
     "D": ("The porthole row", "ports", "Along the starboard wall: its portholes receding, the cell outside; seats left"),
@@ -331,7 +331,7 @@ def compare():
         return (f'<figure style="margin:0;display:flex;flex-direction:column;gap:6px"><img src="{src}" alt="{e(alt)}" '
                 f'style="width:{w}px;height:{h}px;object-fit:cover"><figcaption style="font-size:14px;color:{col}">{e(cap)}</figcaption></figure>')
     before = "".join([fig(BL["r61_pads"], "Rev 61 C", 420, 236, "Rev 61 C: lit by a rig, the vessels on the pads"),
-                      fig(BL["lobby_pads_Jade"], "Rev 62 A", 420, 236, "Now: the game's light, the seats' prisms, portholes"),
+                      fig(BL["lobby_pads_Jade"], "Rev 62 A", 420, 236, "Now: the game's light, bare pads, portholes"),
                       fig(BL["r61_board"], "Rev 61 E", 420, 236, "Rev 61 E: the map wall, lit by a rig"),
                       fig(BL["lobby_board_Jade"], "Rev 62 B", 420, 236, "Now: the map wall by the cell's light")])
     doms = "".join(fig(BL["lobby_aft_" + d], "Down the bay, " + d, 560, 315, d, DOMC[d]) for d in DOMS)
@@ -342,7 +342,7 @@ def compare():
             f'<div class="abs" style="left:60px;top:120px;display:flex;flex-direction:column;gap:10px"><span class="lab" style="color:{LIGHT}">'
             f'1 - Rev 61 C and E against now</span><div style="display:flex;gap:16px">{before}</div></div>'
             f'<div class="abs" style="left:60px;top:430px;display:flex;flex-direction:column;gap:10px"><span class="lab" style="color:{LIGHT}">'
-            f'2 - The squad\'s domain: its prisms and the hull\'s trim</span><div style="display:flex;gap:16px">{doms}</div></div>'
+            f'2 - The squad\'s domain: the hull\'s trim and the heaps\' prisms</span><div style="display:flex;gap:16px">{doms}</div></div>'
             f'<div class="abs" style="left:60px;top:790px;display:flex;flex-direction:column;gap:10px"><span class="lab" style="color:{LIGHT}">'
             f'3 - The other views</span><div style="display:flex;gap:16px">{cams}</div></div>')
 
@@ -357,8 +357,8 @@ def notes():
         '<span class="lab" style="margin-top:8px">What changed</span>',
         para("No light rig: the room is lit by the cell coming in through the open mouth and the portholes, and by the game's own glow - "
              "the prisms' rims, the hull's domain trim, the board's screen. Portholes sit on the model's real walls, each pane showing the "
-             "cell in the direction you look. No vessel models: each taken seat is a prism over its pad in the squad's domain; the kept "
-             "seat is a dark outline."),
+             "cell in the direction you look. No vessel models and no "
+             "seat markers: the pads are bare, the cards say who sits where."),
     ])
     right = "".join([
         '<span class="lab">The six</span>',

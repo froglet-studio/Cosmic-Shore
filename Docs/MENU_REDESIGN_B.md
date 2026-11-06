@@ -6078,8 +6078,9 @@ and D (which Rev 61 replaced), were taken off the canvas to make room under its 
   tunnel; none behind the HyperSea board or the galaxy. Each is placed on the model's real wall (a ray cast from the
   bay's axis onto `ArkReverse`). It is a heavy ring of the hull's metal with eight bolts, and its pane is a portal: it
   shows the cell in the direction you look through it, so it has true parallax, and its light comes into the room.
-- **No vessel models.** Each taken seat is a prism over its launch pad in the squad's domain, with a small core and a
-  ring of shards; the kept seat is a dark outline.
+- **No vessel models, no seat markers.** The launch pads are bare; the cards on top say who sits where. (A first
+  render put a floating prism with a ring of shards over each taken pad and an outline over the kept one; Shombith:
+  "What are these, remove these." They were removed and every frame rendered again.)
 
 **On the canvas:** tab **Menu Redesign A** (id `menu-redesign-c`), round "Rev 62 - The Ark's lobby by the game's own
 light ...", beside Rev 61 C and E. Six option boards (the canvas is at its file cap; the generator
@@ -6087,14 +6088,21 @@ light ...", beside Rev 61 C and E. Six option boards (the canvas is at its file 
 views x three domains. Cards, colours and interaction as Rev 61 (style guide: the domain in Nocturne, the Jade
 selection ring, Ruby TAKE INTO, Lime INVITE, elements without colour).
 
-- **A - The pads (recommended):** Rev 61 C by the game's light: from the door down the pads, the seats' prisms, the
-  portholes and the back wall's tunnel; seats on the right. Recommended because it is the view picked, and the pads
-  read as the squad's seats with the kept one waiting.
+- **A - The pads (recommended):** Rev 61 C by the game's light: from the door down the bare pads, the
+  portholes and the back wall's tunnel; seats on the right. Recommended because it is the view picked, now by the
+  game's own light.
 - **B - The map wall:** Rev 61 E by the game's light: the HyperSea board between portholes; seats on the right.
 - **C - Down the bay:** from the back wall, high: the bay to the open mouth, portholes down both walls.
 - **D - The porthole row:** along the starboard wall, its portholes receding with the cell outside; seats on the left.
 - **E - Across the bay:** from the starboard corner, the pads before the board.
 - **F - At a porthole:** close at the glass, the cell outside, the room dark around it.
+
+**Is it animated? (Shombith asked.)** Not on the board: each view is a still render per domain, and the only motion is
+the cross-fade when a domain chip is pressed. Built as a live scene from `ArkReverse` and the game's prisms, these could
+move, all from things the game already does: the cell moving past the portholes and the open mouth (the menu
+already runs a live cell behind it), the prisms' rims pulsing, haze drifting through the porthole light, the clam
+doors opening and closing (the `hangaropen` take), and the domain trim relighting when the domain changes. A baked backdrop cannot do these; a short looping clip could fake some of
+them.
 
 **Differs from the build:** today the Squads tab is the Rev 31 deck on the menu's sea (section 95). This puts the Ark's
 hangar behind it by the game's own light: baked backdrops per domain (these renders) or the `ArkReverse` hangar as a
