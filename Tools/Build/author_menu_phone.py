@@ -37,7 +37,7 @@ MENU = "Assets/_Scenes/Menu_Main.unity"
 
 # Scene objects of Menu_Main with no phone board yet, by their (unique) name.
 SCENE_FALLBACK = [
-    "ArkScreen", "PortScreen", "ProfileScreen",
+    "ProfileScreen",
     "ToastNotificationContainer", "ToggleGameMenuButton", "Game UI",
     "ToyboxGameConfigureModal",
     "ProfileModal", "LeaderboardConfigureModal", "PlayerDataSelectModal", "InitializingScreen", "SceneTransitionModal",
@@ -52,7 +52,7 @@ PREFAB_FALLBACK = [
 # Screens that HAD the fallback and now carry their own phone layout (their generators write it): the marker this tool
 # left on them is taken off, so a screen never carries both.
 SCENE_RETIRED = ["ArenaGameConfigureModal", "MaelstromGameConfigurationModal", "Hangar Screen",
-                 "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal"]
+                 "MissionScreenModal", "ToyboxScreenModal", "ArenaScreenModal", "ArkScreen", "PortScreen"]
 PREFAB_RETIRED = ["Assets/_Prefabs/ArcadeGameConfigureModal.prefab"]
 
 # Scene objects of Menu_Main that HAVE a phone layout and no generator of their own to write it (the nav band is
