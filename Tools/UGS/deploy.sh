@@ -6,6 +6,8 @@
 #
 # Safe to run before any build turns a switch on: a deployed script does nothing until a game calls it, and every
 # switch (ServerEconomyGate, ServerScoreGate, MatchReportGate, FairPlayTrustGate, ServerEntitlementGate) ships off.
+# The exception is launch-flags.js: every build that signs in reads it at boot, so its upload IS the change of the live
+# flags (Docs/LAUNCH/LIVE_FLAGS.md). Its test refuses an invalid flags document before anything is uploaded.
 # It does NOT apply the access policies: project-policy.json stops players posting to leaderboards directly, which
 # breaks every build that still posts directly, so it is applied only once a build with ServerScoreGate on is out.
 # Needs the UGS CLI signed in to the project (ugs login, or UGS_CLI_SERVICE_KEY_ID / UGS_CLI_SERVICE_SECRET_KEY).
@@ -16,7 +18,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 PROJECT=3030fd69-28ab-433f-b4bd-22b9b93c5118
 SCRIPTS=(Tools/UGS/CloudCode/economy.js Tools/UGS/CloudCode/weekly-score.js Tools/UGS/CloudCode/match-report.js
-         Tools/UGS/CloudCode/trust.js Tools/UGS/Commerce/entitlements.js)
+         Tools/UGS/CloudCode/trust.js Tools/UGS/Commerce/entitlements.js Tools/UGS/CloudCode/launch-flags.js)
 
 command -v ugs >/dev/null || { echo "The UGS CLI is not installed: npm install -g ugs" >&2; exit 2; }
 

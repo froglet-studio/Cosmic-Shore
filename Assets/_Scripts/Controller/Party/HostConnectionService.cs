@@ -3137,7 +3137,7 @@ namespace CosmicShore.Gameplay
 
         private void SubscribeToFairPlayGuard()
         {
-            if (_fairPlayGuardSubscribed || !CosmicShore.Core.FairPlayTrustGate.Enabled) return;
+            if (_fairPlayGuardSubscribed || !CosmicShore.Core.FairPlayTrustGate.IsActive) return;
             connectionData.OnPartyMemberJoined.OnRaised += HandleMemberJoinedFairPlay;
             _fairPlayGuardSubscribed = true;
         }

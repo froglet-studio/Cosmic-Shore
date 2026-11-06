@@ -24,7 +24,9 @@ or write to the backend goes through Shombith first.
 | `Commerce/entitlements.js` | Paid content, kept apart from fair play (R14): episode tokens and owned episodes in the protected key `PLAYER_ENTITLEMENTS`. A token is created only from an order its storefront confirmed, counted from the script's own `STORE` table, once per order | T3 |
 | `Commerce/entitlements.test.cjs` | `node Tools/UGS/Commerce/entitlements.test.cjs` | T3 |
 | (no file) | Game Center sign-in on iOS is a dashboard identity provider plus `Assets/Resources/MobileSignInConfig.asset`, below | T1 |
-| `deploy.sh` | Runs every script's tests and the price check, then uploads all five scripts to one environment | all |
+| `CloudCode/launch-flags.js` | The live flags every build reads once after sign-in: the remote kill switches for the five gates, the minimum and recommended versions with their update links, disabled modes and an optional message. The flags are set only here (`Docs/LAUNCH/LIVE_FLAGS.md`) | launch |
+| `CloudCode/launch-flags.test.cjs` | `node Tools/UGS/CloudCode/launch-flags.test.cjs`: refuses an invalid flags document (semver, kill-switch names, GameModes names) | launch |
+| `deploy.sh` | Runs every script's tests and the price check, then uploads all six scripts to one environment | all |
 
 ## Deploying the scripts
 
@@ -32,6 +34,9 @@ The scripts in this folder do nothing until they are uploaded to UGS: the game c
 `weekly-score`, `match-report`, `trust`, `entitlements`), and until they exist on Unity's servers those calls fail. Each
 switch in the game stays off until its script is deployed, so **deploy first, then turn switches on**. Deploying is safe
 at any time: nothing calls a script while its switch is off.
+
+**The exception is `launch-flags`:** every build that signs in calls it, so deploying it changes the live flags for
+every player. Change it only as `Docs/LAUNCH/LIVE_FLAGS.md` §3 says (pull request, development, then production).
 
 "development" and "production" are the two UGS environments on Unity's servers, not git branches. Scripts are
 deployed from **bleeding-edge**, development first.

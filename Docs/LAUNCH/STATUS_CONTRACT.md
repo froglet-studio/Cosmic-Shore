@@ -63,6 +63,7 @@ is public, and the 2026-10-12 `USYM_UPLOAD_AUTH_TOKEN` leak came from a log nobo
 | `web-production` | web | channel | the Toybox promotion to `/play` |
 | `build-windows`, `build-ios`, `build-android`, `build-web` | that platform | build | the player build job |
 | `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code, access policy, the launch flags) |
+| `launch-flags` | liveops | gate | `launch-flags-check.yml` (the live flags document and every Cloud Code script test, `Docs/LAUNCH/LIVE_FLAGS.md`) |
 | `trunk-static` | quality | gate | the bleeding-edge guard's static checks |
 | `unity-compile` | quality | gate | the guard's Unity compile + EditMode run |
 | `smoke-<mode>` | quality | gate | the Unity per-mode smoke test |

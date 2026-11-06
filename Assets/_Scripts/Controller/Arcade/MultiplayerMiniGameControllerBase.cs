@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
             RearmGameStartStatsReset();   // fresh scene = fresh game
 
             // Fair play (Threat Board T4, T9): every peer reports each match to the server.
-            if (CosmicShore.Core.MatchReportGate.Enabled) MatchReporter.Attach(gameObject, gameData);
+            if (CosmicShore.Core.MatchReportGate.IsActive) MatchReporter.Attach(gameObject, gameData);
 
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
