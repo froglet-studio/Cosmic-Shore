@@ -220,6 +220,42 @@ def pick(cands, a):
     return report
 
 
+# ── lifeforms: a pairing for variety, never a score ─────────────────────────
+
+def pair_lifeforms(entries, seed=1, extra=48):
+    """Give every pool entry a lifeform setting (brief 11, Tools/Build/regatta_lifeforms.py) so the shuffle's courses
+    differ in what grows along them too: no lifeforms, the four presets and `extra` decoded points, chosen greedily so
+    the pool's settings are as far apart as possible in regatta_lifeforms.descriptors. The race model cannot see any
+    lifeform (race_models.py has no such term), so this pairing changes no number above: it is variety Garrett judges
+    by flying. Named settings (none and the presets) come first, searched points only past five entries. Returns a note; does nothing (and says so) when regatta_lifeforms is not on this branch yet."""
+    try:
+        import regatta_lifeforms as RL
+    except ImportError:
+        return "lifeforms: regatta_lifeforms.py is not on this branch (draft PR #1783); entries carry none"
+    rng = random.Random(seed)
+    options = [("none", RL.NONE, None)] + [(k, v, None) for k, v in RL.PRESETS.items()]
+    for _ in range(extra if len(entries) > len(options) else 0):   # named settings first; searched ones past five
+        x = [rng.random() for _ in RL.SPACE]
+        options.append(("searched", RL.decode(x), [round(u, 4) for u in x]))
+    keys = ("plants_per_leg", "forest_prisms", "mean_offset", "all_round", "species", "creatures", "creatures_cross_line")
+    vecs = []
+    for _, lf, _ in options:
+        d = RL.descriptors(lf)
+        vecs.append([float(d[k]) for k in keys])
+    span = [max(v[i] for v in vecs) - min(v[i] for v in vecs) or 1.0 for i in range(len(keys))]
+    norm = [[x / span[i] for i, x in enumerate(v)] for v in vecs]
+    d2 = lambda a, b: math.sqrt(sum((x - y) ** 2 for x, y in zip(norm[a], norm[b])))
+    chosen = [0] if len(entries) > len(RL.PRESETS) else [1]     # a big pool keeps one bare course
+    while len(chosen) < len(entries):
+        rest = [i for i in range(len(options)) if i not in chosen]
+        chosen.append(max(rest, key=lambda i: (min((d2(i, j) for j in chosen), default=0.0), i <= len(RL.PRESETS))))
+    for e, i in zip(entries, chosen):
+        name, lf, x = options[i]
+        e["lifeforms"] = {"preset": name, "unit_point": x, "descriptors": RL.descriptors(lf),
+                          "note": "variety only: the race model cannot see lifeforms"}
+    return f"lifeforms: paired {len(entries)} entries ({', '.join(options[i][0] for i in chosen)})"
+
+
 def _stats_out(s):
     return {"per_hull_mean_seconds": {h: round(v, 2) for h, v in sorted(s["means"].items(), key=lambda kv: kv[1])},
             "mean_ratio": round(s["ratio"], 4), "leaders": s["leaders"], "one_leader": s["one_leader"],
@@ -289,6 +325,7 @@ def main():
     ap.add_argument("--scored", nargs="*", help="the hulls the rules hold for (default: the evaluator's scored hulls)")
     ap.add_argument("--restarts", type=int, default=12)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--lifeforms", action="store_true", help="pair each picked course with a lifeform setting (variety)")
     ap.add_argument("--render", help="draw every picked (or closest) course into this folder")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
@@ -298,6 +335,10 @@ def main():
         return 1 if problems else 0
     cands = load(a.files)
     report = pick(cands, a)
+    if a.lifeforms:
+        target = report["pool"] or (report["closest"] or {}).get("pool") or []
+        report["lifeforms"] = pair_lifeforms(target, a.seed)
+        print(report["lifeforms"])
     with open(a.out, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=1)
     print(report["verdict"])
