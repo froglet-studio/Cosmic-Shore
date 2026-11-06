@@ -507,16 +507,26 @@ def messages_pane(root):
 
 LB_OFF = ("Veil#go", "VeilSea#go", "Header#go")      # the window's own backdrop and BACK header: the Port draws its own
 
+# The Rev 60 Port weekly board (Docs/MENU_REDESIGN_B.md section 135): on a phone the board is LeaderboardView's own phone
+# layout (right of the rail; its Side column and Board from y 72; its header, with BACK, off here), in the Port's body
+# under the Port's tab row (y 8 .. 52). This week's facts (title, countdown) take the left column's top, so the Side
+# column (Your best run) starts under them, and Rewards (no room left under it; the board drops it on the Port) leaves
+# the canvas. These override only the board's PhoneRect fields in this instance: PC and the Leaderboard window keep
+# theirs.
+PH_LB_FACTS_Y, PH_LB_SIDE_Y = 62, 114
+LB_PHONE_MODS = [("Side#phone", "anchoredPosition.y", -PH_LB_SIDE_Y, None),
+                 ("Side#phone", "sizeDelta.y", C.LB_PH_BOTTOM - PH_LB_SIDE_Y, None),
+                 ("Rewards#phone", "anchoredPosition.x", -4000, None)]
+
 
 def leaderboard_pane(root):
     pane = root.child(N("Leaderboard", "Leaderboard", STRETCH))
     pane.add("cg", 225, H.canvas_group(False))
-    mods = [(k, "m_IsActive", 0, None) for k in LB_OFF]
-    # The board's own holder: on a phone it draws the weekly window's board (LeaderboardView, author_menu_configure.py's,
-    # which has no phone layout of its own) at the PC scale into the content area right of the rail and under the tabs.
-    holder = pane.child(N("Leaderboard/Holder", "Board", STRETCH))
-    holder.children.append(K.Instance("Leaderboard/View", LEADERBOARD_VIEW, C.prefab_guid(LEADERBOARD_VIEW), LEADERBOARD_VIEW,
-                                      STRETCH, mods))
+    mods = [(k, "m_IsActive", 0, None) for k in LB_OFF] + LB_PHONE_MODS
+    # On a phone the board takes its own phone layout (author_menu_configure.lb_phone_layout), which already sits under
+    # the Port's tabs; only its left column moves down to make room for this week's facts (LB_PHONE_MODS).
+    pane.children.append(K.Instance("Leaderboard/View", LEADERBOARD_VIEW, C.prefab_guid(LEADERBOARD_VIEW), LEADERBOARD_VIEW,
+                                    STRETCH, mods))
     # This week's challenge and its countdown, at the tab row's right.
     label(pane.child(N("Leaderboard/Countdown", "Countdown", TR(SIDE, TABS_TOP + 7, 190, 30))), "6d 03:12:09", "Data", "TextLight",
           align="right")
@@ -559,8 +569,6 @@ PH_COMPOSER_Y, PH_HINT_Y, PH_HINT_H = 30, 10, 16    # from the feed's foot
 PH_FEED_TOP, PH_FEED_BOTTOM = 62, 86                # the scroll's insets from the feed's top and foot
 PH_SIDE_W = 300
 PH_ACTION_H, PH_ACTION_GAP, PH_ACTION_W = 44, 6, 250
-PH_BOARD_CUT = 176                                  # PC rows of the board above its columns (they start at 196)
-PH_TITLE_Y, PH_COUNT_Y = 68, 92
 OFF = R((0, 1), None, (-4000, 0), (100, 20), (0, 1))
 
 
@@ -687,14 +695,12 @@ def phone_layout(root):
     put(root, "TabsRule", ph_stretch(PH_X, PH_R, 8 + TABS_H, 1))
     phone_feed(root)
     phone_side(root)
-    put(root, "Leaderboard/Holder", pc_block=True, pc_cut=PH_BOARD_CUT, insets=(PH_X, PH_TOP, PH_R, PH_FOOT))
-    put(root, "Leaderboard/Title", TR(PH_R, PH_TITLE_Y, 300, 22))
-    put(root, "Leaderboard/Countdown", TR(PH_R, PH_COUNT_Y, 120, 20))
-    put(root, "Leaderboard/EndsIn", TR(PH_R + 124, PH_COUNT_Y + 3, 70, 14))
-
-
-def ph_board_scale():
-    return (PH_H - PH_TOP - PH_FOOT) / (1080 - PH_BOARD_CUT)
+    # This week's facts at the top of the board's left column (right-aligned as on PC, so they end on the column's
+    # right edge); Your best run under them.
+    lw = C.LB_PH_LEFT_W
+    put(root, "Leaderboard/Title", TL(C.LB_PH_X, PH_LB_FACTS_Y, lw, 22))
+    put(root, "Leaderboard/EndsIn", TL(C.LB_PH_X, PH_LB_FACTS_Y + 28, lw - 132, 14))
+    put(root, "Leaderboard/Countdown", TL(C.LB_PH_X + lw - 124, PH_LB_FACTS_Y + 24, 124, 22))
 
 
 def check_phone_rects():
@@ -722,12 +728,22 @@ def check_phone_rects():
             assert ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay, f"phone: the Port's {a} and {b} overlap"
     assert 110 + 164 + 8 + 52 <= PH_FEED_H, "phone: the side sheet's cards run off its foot"
     assert PH_FEED_TOP + ph_actions_h() <= PH_FEED_H - PH_FEED_BOTTOM, "phone: the message actions run over the field"
-    # The board drawn at the PC scale: this week's title and countdown sit over its free top right (right of the board's
-    # World / Regional tabs, which end at PC x 868, and above its podium, which starts at PC y 308).
-    s = ph_board_scale()
-    assert PH_X + 868 * s <= PH_W - PH_R - 300, "phone: the weekly title meets the board's tabs"
-    assert PH_TOP + PH_COUNT_Y - PH_TOP + 20 <= PH_TOP + (308 - PH_BOARD_CUT) * s, "phone: the countdown meets the podium"
-    for name, h in (("tabs", TABS_H), ("FACTION", PH_BTN), ("field and SEND", PH_COMPOSER_H), ("TRY AGAIN", PH_BTN),
+    # The weekly board (Rev 60): LeaderboardView's own phone boxes, with this week's facts and the moved Side column in
+    # its left column. Everything stays under the Port's tab row and inside the content area, and nothing meets.
+    lb = {name: (x, y, w, h) for name, x, y, w, h in C.lb_phone_boxes() if name not in ("Header", "Best", "Rewards")}
+    lb["Facts"] = (C.LB_PH_X, PH_LB_FACTS_Y, C.LB_PH_LEFT_W, 46)
+    lb["Your best run"] = (C.LB_PH_X, PH_LB_SIDE_Y, C.LB_PH_LEFT_W, C.LB_PH_BEST_H)
+    assert PH_LB_SIDE_Y + C.LB_PH_BEST_H <= C.LB_PH_BOTTOM, "phone: Your best run runs off the Port's foot"
+    names = list(lb)
+    for i, a in enumerate(names):
+        x, y, w, h = lb[a]
+        assert x >= PH_X and x + w <= PH_W - PH_R + 0.01 and y >= 8 + TABS_H + 4 and y + h <= PH_H - PH_FOOT + 0.01, \
+            f"phone: the weekly board's {a} meets the Port's tabs or leaves the content area"
+        for b in names[i + 1:]:
+            (ax, ay, aw, ah), (bx, by, bw, bh) = lb[a], lb[b]
+            assert ax + aw <= bx or bx + bw <= ax or ay + ah <= by or by + bh <= ay, f"phone: the weekly board's {a} and {b} overlap"
+    assert PH_LB_FACTS_Y + 24 + 22 <= PH_LB_SIDE_Y, "phone: the countdown meets Your best run"
+    for name, h in (("tabs", TABS_H), ("weekly board's tabs", C.LB_PH_TAB_H), ("FACTION", PH_BTN), ("field and SEND", PH_COMPOSER_H), ("TRY AGAIN", PH_BTN),
                     ("message actions", PH_ACTION_H), ("UNMUTE ALL", PH_BTN)):
         assert h >= PH_BTN, f"phone: the Port's {name} are {h} tall, under {PH_BTN}"
 
@@ -943,19 +959,40 @@ def validate(files):
 
 
 PHONE_POSED = ("Backdrop", "Sea", "Tabs", "Messages/Feed", "Messages/Feed/Composer", "Messages/Feed/Scroll",
-               "Messages/Side", "Leaderboard/Holder", "Leaderboard/Title")
+               "Messages/Side", "Leaderboard/Title", "Leaderboard/Countdown", "Leaderboard/EndsIn")
+
+
+def validate_weekly_phone(view):
+    """Rev 60: the weekly board in the Port is LeaderboardView's own phone layout. The Port overrides only the board's
+    Side PhoneRect (under this week's facts) and Rewards PhoneRect (off the canvas), and the overrides still name the
+    PhoneRects LeaderboardView carries, with the pose they assume."""
+    lb_guid = C.prefab_guid(LEADERBOARD_VIEW)
+    board = open(os.path.join(REPO, C.prefab_path(LEADERBOARD_VIEW)), encoding="utf-8").read()
+    LB = F(LEADERBOARD_VIEW)
+    for key in ("Side#phone", "Rewards#phone"):
+        _, body = A.doc_of(board, LB(key))
+        assert body and f"guid: {PHONE_RECT}," in body and "  movesRect: 1\n" in body, \
+            f"LeaderboardView's {key.split('#')[0]} has no phone pose for the Port to move"
+    _, side = A.doc_of(board, LB("Side#phone"))
+    assert f"  anchoredPosition: {{x: {K.f32(C.LB_PH_X)}, y: {K.f32(-C.LB_PH_TOP)}}}\n" in side, \
+        "LeaderboardView's Side moved on a phone: re-place this week's facts in the Port (PH_LB_SIDE_Y)"
+    for key, path, value, _ in LB_PHONE_MODS:
+        assert re.search(r"target: \{fileID: %s, guid: %s, type: 3\}\n      propertyPath: %s\n      value: %s\n"
+                         % (LB(key), lb_guid, re.escape(path), re.escape(str(value))),
+                         view), f"the Port's weekly board does not override {key.split('#')[0]}'s phone {path}"
 
 
 def validate_phone(view, V):
-    """The phone layout (Docs/UI_STYLE_GUIDE.md section 8): its own (the only PC-scale block is the nested weekly
-    board's holder), one PhoneRect per object, the side column a working sheet behind FACTION, the arithmetic."""
+    """The phone layout (Docs/UI_STYLE_GUIDE.md section 8): its own, nothing drawn at the PC scale (the weekly board
+    too, Rev 60: its own phone layout, the Side column moved under this week's facts), one PhoneRect per object, the
+    side column a working sheet behind FACTION, the arithmetic."""
     check_phone_rects()
     phones = [b for b in re.findall(r"^--- !u!114 &-?\d+\n((?:(?!--- ).*\n)*)", view, re.M) if f"guid: {PHONE_RECT}," in b]
     owners = [re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1) for b in phones]
     assert len(owners) == len(set(owners)), "a PortView object carries two PhoneRects"
-    blocks = [o for o, b in zip(owners, phones) if "  drawAtPcScale: 1\n" in b]
-    assert blocks == [str(V("Leaderboard/Holder#go"))], \
-        "PortView carries the PC-scale fallback: the Port has its own phone layout (only the nested board draws at PC scale)"
+    assert not any("  drawAtPcScale: 1\n" in b for b in phones), \
+        "PortView draws something at the PC scale on a phone: the Port and its weekly board have their own phone layouts"
+    validate_weekly_phone(view)
     for key in PHONE_POSED:
         assert str(V(f"{key}#go")) in owners, f"PortView: {key} has no phone pose"
     _, sheet = A.doc_of(view, V("Messages/SideSheet#sheet"))
@@ -1016,6 +1053,10 @@ def self_test(files):
             r"(  openButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("the Port back on the PC-scale fallback", lambda f: f.__setitem__(view, f[view].replace(
             "  drawAtPcScale: 0\n", "  drawAtPcScale: 1\n", 1))),
+        ("the weekly board's Side left where it covers this week's facts", lambda f: f.__setitem__(view, f[view].replace(
+            f"propertyPath: anchoredPosition.y\n      value: {-PH_LB_SIDE_Y}\n", "propertyPath: anchoredPosition.y\n      value: 0\n", 1))),
+        ("the weekly board's Rewards left on the canvas", lambda f: f.__setitem__(view, f[view].replace(
+            "propertyPath: anchoredPosition.x\n      value: -4000\n", "propertyPath: anchoredPosition.x\n      value: 0\n", 1))),
         ("the faction rules loosened", lambda f: f.__setitem__(view, f[view].replace("  minIntervalSeconds: 3\n", "  minIntervalSeconds: 0\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
