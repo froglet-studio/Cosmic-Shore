@@ -232,6 +232,12 @@ namespace CosmicShore.Gameplay
                 IsLocked         = false,
                 IsPrivate        = true,
                 PlayerProperties = BuildLocalPlayerProperties(),
+                // The session carries this build's Netcode protocol too (NetProtocol): the party session is the match
+                // session, so every session this game makes says which builds can play in it.
+                SessionProperties = new Dictionary<string, SessionProperty>
+                {
+                    { NetProtocol.PropertyKey, NetProtocol.SessionProperty(NetProtocol.LocalTag) },
+                },
             }.WithRelayNetwork();
 
             // Single-flight under "party:create": two callers racing to create collapse into one
@@ -277,9 +283,52 @@ namespace CosmicShore.Gameplay
                     async () => await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread()),
                 leaveOnFailure: true, tag: "PartySessionService");
             if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
+            // Launch blocker 6: a party session made by a build that speaks another Netcode protocol (or by an old build
+            // that publishes none) is left at once, before the Netcode connection is awaited - the host would refuse us
+            // with "NetworkConfig mismatch" and the player would see only a generic bounce (B35). The caller turns the
+            // exception into the authored "update your game" toast (PartyInviteController).
+            await LeaveIfProtocolMismatchAsync(session);
             ActiveSession = session;
             Attach(ActiveSession);
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Joined party session {ActiveSession.Id}.");
+        }
+
+        /// <summary>
+        /// Reads the protocol every other member of a just-joined session publishes (<see cref="NetProtocol.PropertyKey"/>)
+        /// and, when any differs or is missing, leaves the session and throws <see cref="ProtocolMismatchException"/>.
+        /// A session with nobody else in it passes: there is nothing to compare, and the join's own outcome decides.
+        /// </summary>
+        private static async UniTask LeaveIfProtocolMismatchAsync(ISession session)
+        {
+            if (session?.Players == null) return;
+            string localId = session.CurrentPlayer?.Id;
+            var protocols = new List<string>();
+            var names     = new List<string>();
+            foreach (var p in session.Players)
+            {
+                if (p == null || p.Id == localId) continue;
+                protocols.Add(p.Properties != null && p.Properties.TryGetValue(NetProtocol.PropertyKey, out var pv) ? pv?.Value : null);
+                names.Add(p.Properties != null && p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) ? dn?.Value : null);
+            }
+
+            string local   = NetProtocol.LocalTag;
+            var    verdict = NetProtocol.DecideAgainstMembers(local, protocols, out int at);
+            if (verdict is ProtocolCompatibility.Same or ProtocolCompatibility.NoPeers) return;
+
+            string remote = at >= 0 ? protocols[at] : null;
+            string name   = at >= 0 ? names[at] : null;
+            CSDebug.LogWarning($"[PartySessionService] Leaving party session {session.Id}: {verdict} - this build's protocol is " +
+                               $"{local}, member '{name}' publishes {(string.IsNullOrEmpty(remote) ? "none" : remote)}.");
+            NetSessionRecorder.Mark("protocolMismatch", $"{verdict} local={local} remote={(string.IsNullOrEmpty(remote) ? "none" : remote)}");
+            try
+            {
+                await session.LeaveAsync().AsMainThread();
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Leave after protocol mismatch failed ({e.GetType().Name}): {e.Message}");
+            }
+            throw new ProtocolMismatchException(verdict, local, remote, name);
         }
 
         /// <summary>
@@ -405,6 +454,10 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                // This build's Netcode protocol, read by a joiner before it waits on the connection
+                // (LeaveIfProtocolMismatchAsync). UGS allows 10 player properties: with the fair-play pass below this
+                // makes 10, so a new party-session player key needs one retired first.
+                { NetProtocol.PropertyKey, NetProtocol.PlayerProperty(NetProtocol.LocalTag) },
             };
 
             // Fair play (phase B): this account's pool pass, shown only to this party, so its host can check the
