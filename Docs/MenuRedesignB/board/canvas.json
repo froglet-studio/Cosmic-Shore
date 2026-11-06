@@ -3957,6 +3957,62 @@
       "h": 900,
       "page": "froglet-analytics",
       "title": "Rev 65 - notes: what each board adds, what the server already answers, what is new"
+    },
+    "R66Switches.dc.html": {
+      "x": 0,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split"
+    },
+    "R66Live.dc.html": {
+      "x": 2100,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker"
+    },
+    "R66Alerts.dc.html": {
+      "x": 4200,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds"
+    },
+    "R66Funnel.dc.html": {
+      "x": 0,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension"
+    },
+    "R66Releases.dc.html": {
+      "x": 2100,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention"
+    },
+    "R66PlayerCompare.dc.html": {
+      "x": 4200,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one"
+    },
+    "R66Notes.dc.html": {
+      "x": 0,
+      "y": 13540,
+      "w": 1920,
+      "h": 900,
+      "page": "froglet-analytics",
+      "title": "Rev 66 - notes: what each idea adds, what the server has, what is new"
     }
   },
   "createdOnFiles": {
@@ -4077,6 +4133,7 @@
     "sec-rev63",
     "sec-rev64",
     "sec-rev65",
+    "sec-rev66",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4147,7 +4204,8 @@
     "rev62",
     "rev63",
     "rev64",
-    "rev65"
+    "rev65",
+    "rev66"
   ],
   "notes": {
     "hud_end": {
@@ -6448,6 +6506,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "froglet-analytics"
+    },
+    "rev66": {
+      "kind": "title1",
+      "text": "Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare",
+      "x": 0,
+      "y": 10620,
+      "w": 240,
+      "maxW": 6120,
+      "page": "froglet-analytics"
+    },
+    "sec-rev66": {
+      "kind": "rect",
+      "x": -160,
+      "y": 10460,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "froglet-analytics"
     }
   },
   "order": [
@@ -6931,7 +7013,14 @@
     "R65PlayTypes.dc.html",
     "R65Query.dc.html",
     "R65Dashboards.dc.html",
-    "R65Notes.dc.html"
+    "R65Notes.dc.html",
+    "R66Switches.dc.html",
+    "R66Live.dc.html",
+    "R66Alerts.dc.html",
+    "R66Funnel.dc.html",
+    "R66Releases.dc.html",
+    "R66PlayerCompare.dc.html",
+    "R66Notes.dc.html"
   ],
   "pages": [
     {

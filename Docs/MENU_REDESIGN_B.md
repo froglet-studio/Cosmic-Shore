@@ -6018,3 +6018,50 @@ with their own old timestamp), saved queries and tables (the Ask box's read-only
 returns aggregate and a per-party funnel. Charts: the colour set's four rims in a fixed order (Jade solo vs AI, Gold
 solo, Ruby multiplayer, Blue plain data) with legends and labels; the rims sit above the usual chart lightness band
 (`dataviz` validator), so labels stay on. Awaiting a pick.
+
+## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-06, picking all seven Rev 65 screens to be built):** "If you have more ideas provide mockups
+lets do that too", and the console should have "switches in graphs which helps all these departments" (business,
+marketing, analysis): every chart carries its own switches for its form, its measure and its split, never one switch
+for the whole page.
+
+**On the canvas:** the Froglet Analytics tab, round "Rev 66 - Froglet Analytics, more ideas: chart switches, live now,
+alerts, funnels, release and player compare", under Rev 65 (canvas version 188, `1793993677-e49e`). Six new screens of
+the same console, not options: each can be picked, changed or dropped. Rev 65's kit, imported by
+`Docs/MenuRedesignB/rounds/r66_analytics_ideas.py` from `r65_analytics_tool.py` (Nocturne, the rail, the sea lines,
+panels, tiles, donut, ranked bars), with the rail gaining Live now, Funnels, Releases and Alerts; every number is sample
+data from Rev 65's set (Dragon, Kes and Halcyon are the same players). Copies: `Docs/MenuRedesignB/board/R66*.dc.html`.
+- **Switches** (the compare board): one Overview chart as Business (Pie, Players, split by Platform), Marketing (Bars,
+  New players, split by Country) and Analysis (Line, Finished %, split by Play type) set it; the switch row drawn large
+  with its four parts (Form, Measure, Split by with its menu open, pin / copy / back) and the rules (Pie only at 6 parts
+  or fewer, Line only over time, a form the data cannot take is left out); the same chart as a Table. In a panel the
+  forms are icons and only the chosen one shows its name, so the row fits a third of the page.
+- **Live:** online now, in a match, in the menus, in the FTUE, parties open; the last hour by play type; what is being
+  played (stacked by play type); a tile-per-country map; a ticker of events, paused by hand, never scrolling on its own.
+- **Alerts:** four cards (D1 down to 29% on 0.9.14 Android, rejected events spiking on 0.9.15 WebGL, crystals paid
+  twice, Headlong at 4% finished), each with its chart, "why Claude thinks so" and the page that explains it; admins'
+  threshold rules with on/off, "Claude also flags what no rule names", resolved this week.
+- **Funnel:** any events or FTUE steps in order, within 1 / 7 / 30 days, strict or any order; conversion by platform
+  with the drop between steps; time between steps; where the ones who dropped went instead; save as funnel or segment.
+- **Releases:** build A (0.9.13) against B (0.9.14) over the first 7 days of each: a read per measure (better, worse,
+  too early under 30 players), D1 by platform, who is on which build today, finished by mode, exceptions per 100
+  sessions, launch-to-menu histogram, the return curve.
+- **PlayerCompare:** Dragon, Kes and Halcyon side by side (the best in each row underlined), matches a week, play types
+  (colour is the player there, play types are words), and "players like Dragon": the nearest six, why, and what the
+  likeness weighs.
+- **Notes:** what each screen adds, what the server has and what is new.
+
+**Differs from the build:** none of these exist in the console yet. The switch row is the one piece the others use, so
+it would come first; its server side is already in the Rev 65 contract (`GET /v1/series`, measure x split x over, a
+400 hides an option the aggregates cannot answer); new are each person's switch settings per chart and a
+country-by-day aggregate. Live needs `GET /v1/live` over events.db's last 5 minutes (the client flushes every 30 s, so
+live is 30 to 60 s behind; names only for profile keys). Alerts reuse `rejects`, `double_payouts`, `returns`,
+`daily_plays` and plays by mode; new are an alerts table, rules, an hourly job after the rebuild with Claude reading
+aggregates only, and rejects per hour (per day today). The funnel needs a per-player query over events.db that returns
+counts only; there is no real-money purchase event, so its last step is the first crystal spend. Release compare needs
+launches and returns split by `app_version` and an exception event the game does not send yet (rate-limited, a hash of
+the message and its top frame). Player compare needs `GET /v1/similar?id=` worked out on the server; Claude is not
+asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
+solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
+a better number. No player id reaches Claude on any of these. Awaiting a pick.

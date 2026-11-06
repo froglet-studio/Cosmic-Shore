@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793992433-e123` of **Frogma**: Rev 3 to Rev 65, 481 boards on 8 tabs. The canvas opens on the tab `froglet-analytics`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 to Rev 66, 488 boards on 8 tabs. The canvas opens on the tab `froglet-analytics`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -690,6 +690,16 @@ Copied on 2026-11-06 from canvas version `1793992433-e123` of **Frogma**: Rev 3 
 - [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
+
+#### Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare
+
+- [`R66Switches.dc.html`](R66Switches.dc.html) - Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split
+- [`R66Live.dc.html`](R66Live.dc.html) - Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker
+- [`R66Alerts.dc.html`](R66Alerts.dc.html) - Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds
+- [`R66Funnel.dc.html`](R66Funnel.dc.html) - Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension
+- [`R66Releases.dc.html`](R66Releases.dc.html) - Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention
+- [`R66PlayerCompare.dc.html`](R66PlayerCompare.dc.html) - Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one
+- [`R66Notes.dc.html`](R66Notes.dc.html) - Rev 66 - notes: what each idea adds, what the server has, what is new
 
 #### Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries
 
