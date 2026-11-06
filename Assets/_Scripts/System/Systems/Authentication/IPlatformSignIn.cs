@@ -32,6 +32,8 @@ namespace CosmicShore.Core
         /// pilot, so the UI hides Sign out while this is false.</summary>
         bool CanSignOut { get; }
 
+        /// <summary>The Delete account action works now. Deletion does not depend on a provider - a guest deletes too -
+        /// so implementations answer from <see cref="AccountDeletionService.CanDelete"/>.</summary>
         bool CanDeleteAccount { get; }
 
         UniTask<SignInOutcome> SignInAsync(SignInProvider provider, CancellationToken ct);
@@ -45,7 +47,9 @@ namespace CosmicShore.Core
 
         UniTask SignOutAsync(CancellationToken ct);
 
-        UniTask DeleteAccountAsync(CancellationToken ct);
+        /// <summary>Deletes the player's account and server data in-app (App Store 5.1.1(v), Google Play). Implementations
+        /// delegate to <see cref="AccountDeletionService.DeleteAsync"/>, which owns the order and the failure rules.</summary>
+        UniTask<AccountDeletionStatus> DeleteAccountAsync(CancellationToken ct);
 
         /// <summary>Raised when a link, unlink, sign-out or deletion changed what the Account tab shows.</summary>
         event Action AccountsChanged;

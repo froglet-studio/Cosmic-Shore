@@ -877,6 +877,29 @@ reaper laps a wheel in its plane, climbs the axle and dives down it. Offline: `-
 
 ---
 
+
+## 🔴 In-app account deletion: Settings > Account > Delete account (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/launch-backend-in-app-deletion`; launch blocker #15 (`Docs/LAUNCH/READINESS.md` §3, §10). Compiled with
+`unity_refcompile` (player, editor, webgl: OK; a planted error fails each). `AccountDeletionServiceTests` (8 cases) passed
+in a stand-alone .NET harness against the real UniTask, and a mutant that wipes the device before the account is
+deleted fails two of them. Nothing here has called UGS: the Cloud Save `DeleteAllAsync`, `DeleteAccountAsync` and the
+reboot are proven only by these steps. Use a throwaway guest, never your own pilot.
+
+1. **Fresh guest.** Play Menu_Main from a clean machine (FrogletTools > Player Data Wipe, everything but the account),
+   earn a few crystals, set a display name. Note the Player ID on Settings > Account.
+2. **Settings > Account shows Delete account** for the guest (it did not before: the button was hidden). Sign out is
+   still hidden for a guest.
+3. **Delete account > the confirmation > Delete account.** The buttons lock, the screen fades, the boot chain runs and
+   the menu returns as a NEW guest: a different Player ID, no crystals, the first-run screens (privacy, age) again.
+4. **UGS dashboard, development environment:** Player Management no longer finds the old Player ID; Cloud Save has no
+   default or public keys for it; the display name is free again (set the same name on the new guest: it is accepted).
+5. **Offline:** turn the network off, Delete account. "Your account was not deleted" appears with Close; Player ID,
+   crystals and name are unchanged; network back on, Delete account works.
+6. **Console:** one warning on the failed attempt (`[AccountDeletion] Deletion did not complete...`), and PostHog's
+   "flagged for deletion" warning on the successful one; no errors.
+7. **Browser Toybox:** Delete account is not shown (no online account there).
+
 ### 🔴 Mode smoke test: every rostered mode from Bootstrap, all-AI, to the game-over event (`claude/launch-mode-smoke`, 2026-11-05) — NOT EDITOR-VERIFIED
 
 **What landed:** `Assets/_Scripts/Editor/Launch/` (`ModeSmokeLauncher`, `ModeSmokeDriver`, `ModeSmokeReport`),
