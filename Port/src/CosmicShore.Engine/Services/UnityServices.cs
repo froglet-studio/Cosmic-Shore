@@ -39,8 +39,32 @@ namespace CosmicShore.Engine.Services
             return System.Threading.Tasks.Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Original contract: <c>UnityServices.InitializeAsync(InitializationOptions)</c>. The
+        /// game passes the build stamp's UGS environment (AuthenticationServiceFacade.InitializeCore);
+        /// the shim records it on <see cref="EnvironmentName"/> and initializes as above.
+        /// </summary>
+        public static System.Threading.Tasks.Task InitializeAsync(InitializationOptions options)
+        {
+            EnvironmentName = options?.EnvironmentName;
+            return InitializeAsync();
+        }
+
+        /// <summary>The environment the last <see cref="InitializeAsync(InitializationOptions)"/> named, or null.</summary>
+        public static string EnvironmentName { get; private set; }
+
         /// <summary>Restore the benign uninitialized default (test isolation helper).</summary>
         public static void Reset() => State = ServicesInitializationState.Uninitialized;
+    }
+
+    /// <summary>
+    /// Mirror of <c>Unity.Services.Core.InitializationOptions</c>: the options the game passes to
+    /// <see cref="UnityServices.InitializeAsync(InitializationOptions)"/>. Only the environment
+    /// name is carried; it is set by the <c>SetEnvironmentName</c> extension, as in the SDK.
+    /// </summary>
+    public class InitializationOptions
+    {
+        public string EnvironmentName { get; internal set; }
     }
 
     /// <summary>
@@ -95,5 +119,19 @@ namespace CosmicShore.Engine.Services
         public float RetryAfter { get; }
         public CloudSaveRateLimitedException(CloudSaveExceptionReason reason, int errorCode, string message, float retryAfter, System.Exception innerException = null)
             : base(reason, errorCode, message, innerException) => RetryAfter = retryAfter;
+    }
+}
+
+namespace CosmicShore.Engine.Services.Environments
+{
+    /// <summary>Mirror of <c>Unity.Services.Core.Environments.EnvironmentsOptionsExtensions</c>.</summary>
+    public static class EnvironmentsOptionsExtensions
+    {
+        /// <summary>Names the UGS environment to initialize against (original contract: <c>SetEnvironmentName</c>).</summary>
+        public static InitializationOptions SetEnvironmentName(this InitializationOptions self, string environmentName)
+        {
+            self.EnvironmentName = environmentName;
+            return self;
+        }
     }
 }

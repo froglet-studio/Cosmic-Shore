@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Build stamp: version, build, commit on screen; release builds sign into UGS production (`claude/launch-build-stamp`, 2026-11-05) — NOT EDITOR-VERIFIED
+
+**What landed:** `BuildStampProcessor` writes `Assets/Resources/Generated/build_stamp.json` into every player build
+and removes it afterwards; `BuildStamp.Current` reads it; `AuthenticationServiceFacade` initializes UGS with
+`SetEnvironmentName` (release player → `production`, development build and Editor → `development`, an explicit
+`-ugsEnvironment` / `CS_UGS_ENVIRONMENT` wins, anything else fails the build); the settings version line, crash
+metadata and PostHog person properties carry the stamp; the Windows pipeline puts `bundleVersion` back and passes
+`WINDOWS_BUILD` for the build only. Proven offline: `unity_refcompile` player + editor configs OK. **Not compiled or
+run in the Unity editor; the EditMode tests have not run.** Docs/LAUNCH/BUILD_STAMP.md.
+
+1. Test Runner, EditMode: `BuildStampTests`, `AnalyticsWaveCohortTests`, `ReleaseBuildKindTests`. **Pass:** green.
+2. Play Menu_Main in the Editor, open Settings > General. **Pass:** the version line reads `Version 0.2.0 (editor) editor
+   development`. With Logging > Boot on, one `[Auth] UGS environment 'development'` line.
+3. `FrogletTools > Build > Windows x64 (Development)`. **Pass:** the build succeeds; afterwards `git status` shows no
+   change to `ProjectSettings/ProjectSettings.asset` and no `Assets/Resources/Generated`; `build_manifest.txt` has
+   `ugsEnvironment=development` and the commit. Run the player: Settings shows `(local) <8-char sha> development`.
+4. `Tools/Build/build_windows.sh --version 0.2.1 --build-number 7 --channel internal` (a release build). **Pass:**
+   Settings shows `Version 0.2.1 (7) <sha> production`; `ProjectSettings.asset` still says `bundleVersion: 0.2.0` and
+   its Standalone defines carry no `WINDOWS_BUILD`; signing in creates (or finds) the player in the UGS dashboard's
+   **production** environment Player Management list, not development. (Production must be set up first: READINESS #1.)
+5. Negative: `build_windows.sh --ugs-environment staging`. **Pass:** the build fails with
+   `UGS environment 'staging' is not one this game has`, and nothing is left modified.
+6. Android: `FrogletTools > Build > Android APK (Development)`. **Pass:** the APK installs, Settings shows its
+   versionCode as the build number and `development`; Player Settings' Bundle Version Code is unchanged afterwards.
+7. With analytics consent on, force a crash in a development player (Cloud Diagnostics). **Pass:** the report's
+   metadata carries `build_number`, `build_commit`, `release_channel`, `ugs_environment`.
+
 ### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by

@@ -42,8 +42,10 @@ namespace CosmicShore.UI
         [Inject] ApplicationStateDataVariable appState;
 
         [Header("Words (empty shows nothing)")]
-        [Tooltip("The version line. {version} is the build's version.")]
-        [SerializeField] string versionLine = "Version {version}";
+        [Tooltip("The version line, filled from the build stamp: {version} version, {build} build number, " +
+                 "{commit} short commit, {ref} branch or tag, {channel} release channel, {env} UGS environment. " +
+                 "Empty shows nothing.")]
+        [SerializeField] string versionLine = "Version {version} ({build}) {commit} {env}";
         [Tooltip("The credits row's label when the row is built in code.")]
         [SerializeField] string creditsLabel = "Credits";
 
@@ -303,7 +305,7 @@ namespace CosmicShore.UI
 
         void BindAll()
         {
-            if (versionText) versionText.text = TemplateText.Fill(versionLine, "version", Application.version);
+            if (versionText) versionText.text = BuildStamp.Fill(versionLine, BuildStamp.Current);
 
             // GENERAL
             BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
