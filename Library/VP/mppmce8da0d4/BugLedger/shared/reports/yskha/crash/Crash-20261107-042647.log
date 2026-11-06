@@ -1,0 +1,1155 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-07 04:26:47 (next editor launch after the abnormal exit)
+session:        20261102-012014312  (pid 14860, Unity 6000.3.17f1)
+started:        2026-11-02T01:20:14.320Z UTC
+last heartbeat: 2026-11-02T01:41:03.525Z UTC
+last state:     PlayMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+hang dump:      B:\FrogletGames\Cosmic-Shore\Library\VP\mppmce8da0d4\Logs\CrashDetector\HangDump-20261102-012014312.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261102-012014312
+started: 2026-11-02T01:20:14.320Z UTC
+unity:   6000.3.17f1
+pid:     14860
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[06:50:59.972] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Library\VP\mppmce8da0d4\Logs\CrashDetector\HangDump-20261102-012014312.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[06:51:40.700] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[06:51:45.287] ---- main thread stalled ~91s and RECOVERED — slow, not hung ----
+[06:57:31.480] ---- domain reload begins (script compilation / play-mode transition) ----
+[06:57:48.247] ---- domain reload complete — session re-adopted ----
+[06:58:35.401] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Library\VP\mppmce8da0d4\Logs\CrashDetector\HangDump-20261102-012014312.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[06:59:27.983] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[06:59:32.552] ---- main thread stalled ~104s and RECOVERED — slow, not hung ----
+[06:59:36.143] ---- domain reload begins (script compilation / play-mode transition) ----
+[06:59:44.503] ---- domain reload complete — session re-adopted ----
+[06:59:46.434] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[06:59:54.886] ---- entering play mode ----
+[06:59:57.564] [EditMode] Exception: [Vivox]: System.ArgumentException: 'server' is null or empty
+Parameter name: server
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[06:59:57.767] [EditMode] Error: [FmodSafe] CreateInstance failed for '{03de9ea9-9b51-400a-b0cb-8bcc12a12697} (event:/Music/Music)' (EventNotFoundException: [FMOD] Event not found: {03de9ea9-9b51-400a-b0cb-8bcc12a12697} (event:/Music/Music)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[06:59:58.182] ---- play mode running ----
+[07:00:34.120] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{942c0807-260e-4954-8d1c-c321d5b954b3} (event:/Engine stuff/space ship engine main)' (EventNotFoundException: [FMOD] Event not found: {942c0807-260e-4954-8d1c-c321d5b954b3} (event:/Engine stuff/space ship engine main)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:42.574] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{c901fa24-30ee-4117-a51d-00f6699057d6} (event:/SFX/Oneshots/Gameplay sfx/Shield Activate)' (EventNotFoundException: [FMOD] Event not found: {c901fa24-30ee-4117-a51d-00f6699057d6} (event:/SFX/Oneshots/Gameplay sfx/Shield Activate)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:45.940] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{538641da-7aa6-4e3c-b3b9-cd4b35a5ddb6} (event:/SFX/Oneshots/Gameplay sfx/Crystal Collect)' (EventNotFoundException: [FMOD] Event not found: {538641da-7aa6-4e3c-b3b9-cd4b35a5ddb6} (event:/SFX/Oneshots/Gameplay sfx/Crystal Collect)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:45.980] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{cd96dd42-7476-43e7-84c3-8924de99ab30} (event:/SFX/Oneshots/Gameplay sfx/Explosion)' (EventNotFoundException: [FMOD] Event not found: {cd96dd42-7476-43e7-84c3-8924de99ab30} (event:/SFX/Oneshots/Gameplay sfx/Explosion)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:46.194] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' (EventNotFoundException: [FMOD] Event not found: {0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:00:59.586] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:00:59.592] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:00:59.593] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:01:11.052] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{18a8d3bb-a4f7-49d6-b19e-9e65ef6b246c} (event:/SFX/Oneshots/Menu/Confirmed)' (EventNotFoundException: [FMOD] Event not found: {18a8d3bb-a4f7-49d6-b19e-9e65ef6b246c} (event:/SFX/Oneshots/Menu/Confirmed)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:01:11.376] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:01:22.446] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)' (EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:01:23.205] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:01:28.303] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {7d65355d-2a35-47b9-afb1-3f09c0773638} (event:/SFX/Loops/mass birttle)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:04.424] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{c0e31b04-b51d-4585-9760-fbc7585b955a} (event:/SFX/Oneshots/Gameplay sfx/Vessel impact)' (EventNotFoundException: [FMOD] Event not found: {c0e31b04-b51d-4585-9760-fbc7585b955a} (event:/SFX/Oneshots/Gameplay sfx/Vessel impact)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:02:04.440] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{be383bbf-79e0-4210-b4d1-39b9fe7c2fe7} (event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate)' (EventNotFoundException: [FMOD] Event not found: {be383bbf-79e0-4210-b4d1-39b9fe7c2fe7} (event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:02:15.557] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{f9971431-304b-473f-aedb-e8e241a1a1c1} (event:/SFX/Oneshots/Menu/OpenView)' (EventNotFoundException: [FMOD] Event not found: {f9971431-304b-473f-aedb-e8e241a1a1c1} (event:/SFX/Oneshots/Menu/OpenView)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:02:20.588] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{497aba84-20c1-49f9-9b42-7b657b029ab5} (event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip)' (EventNotFoundException: [FMOD] Event not found: {497aba84-20c1-49f9-9b42-7b657b029ab5} (event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:02:49.804] [PlayMode] Error: [FmodSafe] CreateInstance failed for '{69d21aaf-4e71-4ba8-945a-2728d4c7fe1e} (event:/SFX/Oneshots/Menu/Close View)' (EventNotFoundException: [FMOD] Event not found: {69d21aaf-4e71-4ba8-945a-2728d4c7fe1e} (event:/SFX/Oneshots/Menu/Close View)). The event is not in any loaded bank (renamed / deleted in FMOD Studio, or a stale EventReference), or the FMOD system did not initialise. NOT PLAYED; reported once.
+        0x00007fff030b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007fff048ef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fff048efbee (Unity) Stacktrace::GetStacktrace
+        0x00007fff0306587f (Unity) DebugStringToFile
+        0x00007fff02f21b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000017f5120edce (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000017f5120ebd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000017f5120e88b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[07:02:52.695] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:52.704] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:52.708] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:52.740] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:52.754] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.160] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.168] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.174] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.178] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.193] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.198] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.207] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:53.214] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {1f167642-c975-462c-83e6-70670f74e0cc} (event:/SFX/Oneshots/Gameplay sfx/Creature colide)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.OnDestroy () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:158)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:55.406] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:55.407] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+[07:02:55.409] [PlayMode] Exception: EventNotFoundException: [FMOD] Event not found: {403f1b40-e570-418c-b665-63f6b3e13ff6} (event:/SFX/Loops/Goal)
+        FMODUnity.RuntimeManager.GetEventDescription (FMODUnity.EventReference eventReference) (at Assets/Plugins/FMOD/src/RuntimeManager.cs:1350)
+        FMODUnity.StudioEventEmitter.Lookup () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:193)
+        FMODUnity.StudioEventEmitter.Play () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:222)
+        FMODUnity.StudioEventEmitter.HandleGameEvent (FMODUnity.EmitterGameEvent gameEvent) (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:183)
+        FMODUnity.StudioEventEmitter.Start () (at Assets/Plugins/FMOD/src/StudioEventEmitter.cs:130)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x00000291f840e5ab (Mono JIT Code) Unity.Netcode.ClientRpcMessage:Handle (Unity.Netcode.NetworkContext&) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Messaging/Messages/RpcMessages.cs:170)
+0x00000291f840c63b (Mono JIT Code) Unity.Netcode.NetworkBehaviour:__endSendClientRpc (Unity.Netcode.FastBufferWriter&,uint,Unity.Netcode.ClientRpcParams,Unity.Netcode.RpcDelivery) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Core/NetworkBehaviour.cs:268)
+0x00000292a29bdff3 (Mono JIT Code) CosmicShore.Gameplay.GateRaceController:SyncFinalScores_ClientRpc (Unity.Collections.FixedString64Bytes[],single[],int[],int[],Unity.Collections.FixedString64Bytes,int) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs:1540)
+0x00000292a2b7bafb (Mono JIT Code) CosmicShore.Gameplay.GateRaceController:SyncFinalScoresSnapshot (string,CosmicShore.Data.Domains) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs:1533)
+0x00000292a29bc4c3 (Mono JIT Code) CosmicShore.Gameplay.GateRaceController:OnTurnEndedCustom () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs:1506)
+0x00000292a29b50c7 (Mono JIT Code) CosmicShore.Gameplay.MultiplayerMiniGameControllerBase:SyncTurnEnd_ClientRpc () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs:362)
+0x00000292a29b4903 (Mono JIT Code) CosmicShore.Gameplay.MultiplayerMiniGameControllerBase:__rpc_handler_1815942824 (Unity.Netcode.NetworkBehaviour,Unity.Netcode.FastBufferReader,Unity.Netcode.__RpcParams)
+0x00000291f841a0b7 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void_NetworkBehaviour_FastBufferReader___RpcParams (Unity.Netcode.NetworkBehaviour,Unity.Netcode.FastBufferReader,Unity.Netcode.__RpcParams)
+0x00000291f8411e70 (Mono JIT Code) Unity.Netcode.RpcMessageHelpers:Handle (Unity.Netcode.NetworkContext&,Unity.Netcode.RpcMetadata&,Unity.Netcode.FastBufferReader&,Unity.Netcode.__RpcParams&) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Messaging/Messages/RpcMessages.cs:80)
+0x00000291f840e5ab (Mono JIT Code) Unity.Netcode.ClientRpcMessage:Handle (Unity.Netcode.NetworkContext&) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Messaging/Messages/RpcMessages.cs:170)
+0x00000291f840c63b (Mono JIT Code) Unity.Netcode.NetworkBehaviour:__endSendClientRpc (Unity.Netcode.FastBufferWriter&,uint,Unity.Netcode.ClientRpcParams,Unity.Netcode.RpcDelivery) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Core/NetworkBehaviour.cs:268)
+0x00000292a29b4e6b (Mono JIT Code) CosmicShore.Gameplay.MultiplayerMiniGameControllerBase:SyncTurnEnd_ClientRpc () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs:355)
+0x00000292a2b79ee3 (Mono JIT Code) CosmicShore.Gameplay.MultiplayerMiniGameControllerBase:HandleTurnEnd () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs:349)
+0x000002907be172b7 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000002912f70d002 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:70)
+0x00000292a29b5283 (Mono JIT Code) CosmicShore.Utility.GameDataSO:InvokeGameTurnConditionsMet () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/DataContainers/GameDataSO.cs:888)
+0x00000292a28837db (Mono JIT Code) CosmicShore.Gameplay.TurnMonitorController:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Arcade/TurnMonitorController.cs:90)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801cf1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ff801cf1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ff80189308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ff801899f1a (Unity) BehaviourManager::Update
+0x00007ff801cac7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ff801c8abef (Unity) ExecutePlayerLoop
+0x00007ff801c8ad65 (Unity) ExecutePlayerLoop
+0x00007ff801c8fc0f (Unity) PlayerLoop
+0x00007ff8026056da (Unity) EditorPlayerLoop::Execute
+0x00007ff80261c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff80261e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff80261866d (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[AppState] Invalid transition: None → MainMenu
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002912f8d1cbb (Mono JIT Code) CosmicShore.Core.ApplicationStateMachine:LogWarning (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/ApplicationStateMachine.cs:274)
+0x000002912ee4a28b (Mono JIT Code) CosmicShore.Core.ApplicationStateMachine:TransitionTo (CosmicShore.Data.ApplicationState) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/ApplicationStateMachine.cs:237)
+0x00000292a2be5453 (Mono JIT Code) CosmicShore.Core.SceneLoader:ReturnToMainMenu () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/SceneLoader.cs:348)
+0x000002907be172b7 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000002912f70d002 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:70)
+0x00000292a2be52ab (Mono JIT Code) CosmicShore.UI.Scoreboard:OnMainMenuButtonPressed () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Scoreboard.cs:259)
+0x00000291fed22bf7 (Mono JIT Code) UnityEngine.Events.InvokableCall:Invoke ()
+0x00000291fed2268b (Mono JIT Code) UnityEngine.Events.UnityEvent:Invoke ()
+0x00000291fed22403 (Mono JIT Code) UnityEngine.UI.Button:Press () (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/UI/Core/Button.cs:70)
+0x00000291fed221db (Mono JIT Code) UnityEngine.UI.Button:OnPointerClick (UnityEngine.EventSystems.PointerEventData) (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/UI/Core/Button.cs:114)
+0x00000291fed2207d (Mono JIT Code) UnityEngine.EventSystems.ExecuteEvents:Execute (UnityEngine.EventSystems.IPointerClickHandler,UnityEngine.EventSystems.BaseEventData) (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/EventSystem/ExecuteEvents.cs:57)
+0x00000291f2cecc14 (Mono JIT Code) UnityEngine.EventSystems.ExecuteEvents:Execute<T_REF> (UnityEngine.GameObject,UnityEngine.EventSystems.BaseEventData,UnityEngine.EventSystems.ExecuteEvents/EventFunction`1<T_REF>) (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/EventSystem/ExecuteEvents.cs:272)
+0x000002912f7b17a3 (Mono JIT Code) UnityEngine.InputSystem.UI.InputSystemUIInputModule:ProcessPointerButton (UnityEngine.InputSystem.UI.PointerModel/ButtonState&,UnityEngine.EventSystems.PointerEventData) (at ./Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Plugins/UI/InputSystemUIInputModule.cs:744)
+0x000002912f7a3d0b (Mono JIT Code) UnityEngine.InputSystem.UI.InputSystemUIInputModule:ProcessPointer (UnityEngine.InputSystem.UI.PointerModel&) (at ./Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Plugins/UI/InputSystemUIInputModule.cs:489)
+0x000002912f79c0ab (Mono JIT Code) UnityEngine.InputSystem.UI.InputSystemUIInputModule:Process () (at ./Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Plugins/UI/InputSystemUIInputModule.cs:2438)
+0x000002912f5a2468 (Mono JIT Code) UnityEngine.EventSystems.EventSystem:Update () (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/EventSystem/EventSystem.cs:514)
+0x0000028f1164ca18 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801cf1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ff801cf1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ff80189308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ff801899f1a (Unity) BehaviourManager::Update
+0x00007ff801cac7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ff801c8abef (Unity) ExecutePlayerLoop
+0x00007ff801c8ad65 (Unity) ExecutePlayerLoop
+0x00007ff801c8fc0f (Unity) PlayerLoop
+0x00007ff802605635 (Unity) EditorPlayerLoop::Execute
+0x00007ff80261c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff80261e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff80261866d (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[LoadInsights] ● Recording load — Return to menu — MinigameRegatta → Menu_Main
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Utility.PerformanceBenchmark.LoadInsights:Begin (string,string) (at Assets/_Scripts/Utility/PerformanceBenchmark/LoadInsights/LoadInsights.cs:221)
+CosmicShore.Utility.PerformanceBenchmark.LoadInsights:BeginLoad (string,bool) (at Assets/_Scripts/Utility/PerformanceBenchmark/LoadInsights/LoadInsights.cs:181)
+CosmicShore.Core.SceneLoader:ReturnToMainMenu () (at Assets/_Scripts/System/SceneLoader.cs:389)
+Obvious.Soap.ScriptableEventNoParam:Raise () (at Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:70)
+CosmicShore.UI.Scoreboard:OnMainMenuButtonPressed () (at Assets/_Scripts/UI/Scoreboard.cs:259)
+UnityEngine.Events.InvokableCall:Invoke ()
+UnityEngine.Events.UnityEvent:Invoke ()
+UnityEngine.UI.Button:Press () (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/UI/Core/Button.cs:70)
+UnityEngine.UI.Button:OnPointerClick (UnityEngine.EventSystems.PointerEventData) (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/UI/Core/Button.cs:114)
+UnityEngine.EventSystems.ExecuteEvents:Execute (UnityEngine.EventSystems.IPointerClickHandler,UnityEngine.EventSystems.BaseEventData) (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/EventSystem/ExecuteEvents.cs:57)
+UnityEngine.EventSystems.ExecuteEvents:Execute<UnityEngine.EventSystems.IPointerClickHandler> (UnityEngine.GameObject,UnityEngine.EventSystems.BaseEventData,UnityEngine.EventSystems.ExecuteEvents/EventFunction`1<UnityEngine.EventSystems.IPointerClickHandler>) (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/EventSystem/ExecuteEvents.cs:272)
+UnityEngine.InputSystem.UI.InputSystemUIInputModule:ProcessPointerButton (UnityEngine.InputSystem.UI.PointerModel/ButtonState&,UnityEngine.EventSystems.PointerEventData) (at ./Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Plugins/UI/InputSystemUIInputModule.cs:744)
+UnityEngine.InputSystem.UI.InputSystemUIInputModule:ProcessPointer (UnityEngine.InputSystem.UI.PointerModel&) (at ./Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Plugins/UI/InputSystemUIInputModule.cs:489)
+UnityEngine.InputSystem.UI.InputSystemUIInputModule:Process () (at ./Library/PackageCache/com.unity.inputsystem@be6c4fd0abf5/InputSystem/Plugins/UI/InputSystemUIInputModule.cs:2438)
+UnityEngine.EventSystems.EventSystem:Update () (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Runtime/UGUI/EventSystem/EventSystem.cs:514)
+
+(Filename: Assets/_Scripts/Utility/PerformanceBenchmark/LoadInsights/LoadInsights.cs Line: 221)
+
+[CustomCameraController] The player camera lost its follow target while on screen, so it stopped following the ship. No live player vessel to re-latch onto. The Transform it was following was DESTROYED without the camera being re-pointed.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000002907f19911e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x00000291f971c78e (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x00000291f971c663 (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object,UnityEngine.Object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:492)
+0x000002912f614ba3 (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:RecoverLostFollowTarget () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:1059)
+0x000002912f610363 (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:UpdateCamera () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:645)
+0x000002912f60fb3b (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:LateUpdate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:636)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801cf1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ff801cf1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ff8018934cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ff80189a21a (Unity) LateBehaviourManager::Update
+0x00007ff801cac5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ff801c8abef (Unity) ExecutePlayerLoop
+0x00007ff801c8ad65 (Unity) ExecutePlayerLoop
+0x00007ff801c8fc0f (Unity) PlayerLoop
+0x00007ff802605635 (Unity) EditorPlayerLoop::Execute
+0x00007ff80261c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff80261e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff80261866d (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+Unloading 131 Unused Serialized files (Serialized files now loaded: 0)
+Some objects were not cleaned up when closing the scene. (Did you spawn new GameObjects from OnDestroy?)
+The following scene GameObjects were found:
+[PrismRenderVisibilityFlush]
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801c7d039 (Unity) ValidateNoSceneObjectsAreLoaded
+0x00007ff801cb15b5 (Unity) UnloadGameScene
+0x00007ff801c85868 (Unity) SingleSceneLoadPre
+0x00007ff801d8430e (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+UnloadTime: 329.450900 ms
+[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x0000028f1fa2ec1e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000028f1fa2e8bd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000290fb1db42b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000002912f96c7d3 (Mono JIT Code) CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:178)
+0x0000028f1164c098 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801de6d7e (Unity) ScriptingInvocation::InvokeChecked
+0x00007ff801e1e548 (Unity) SerializableManagedRef::CallMethod
+0x00007ff801cf1f8c (Unity) MonoBehaviour::CheckConsistency
+0x00007ff801e50f1b (Unity) AwakeFromLoadQueue::InvokePersistentManagerAwake
+0x00007ff801e55c0a (Unity) AwakeFromLoadQueue::PersistentManagerSingleQueueAwakeFromLoad
+0x00007ff801e5592d (Unity) AwakeFromLoadQueue::PersistentManagerAwakeFromLoad_NoChecks
+0x00007ff801d81900 (Unity) LoadSceneOperation::CompleteAwakeSequence
+0x00007ff801d84322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+0x00007ff801d82e52 (Unity) LoadSceneOperation::IntegrateMainThread
+0x00007ff801d85e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+0x00007ff801d854a5 (Unity) PreloadManager::Stop
+0x00007ff801cb051a (Unity) ResetPlayerInEditor
+0x00007ff80261b79e (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+Scene (Menu_Main) Bindings Installed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Injectors.UnityInjector/<>c__DisplayClass6_0:<CreateSceneContainer>b__0 (Reflex.Core.ContainerBuilder) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:99)
+Reflex.Core.Container:Scope (System.Action`1<Reflex.Core.ContainerBuilder>) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:69)
+Reflex.Injectors.UnityInjector:CreateSceneContainer (UnityEngine.SceneManagement.Scene,Reflex.Core.ContainerScope) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:94)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__InjectScene|4_0 (UnityEngine.SceneManagement.Scene,Reflex.Core.ContainerScope) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:31)
+Reflex.Core.ContainerScope:Awake () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/ContainerScope.cs:19)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs Line: 99)
+
+Loaded scene 'Assets/_Scenes/Menu_Main.unity'
+	Deserialize:            621.639 ms
+	Integration:            2526.510 ms
+	Integration of assets:  85.273 ms
+	Thread Wait Time:       2865.292 ms
+	Total Operation Time:   6098.715 ms
+Unloading 14284 unused Assets / (10.0 MB). Loaded Objects now: 108028.
+Memory consumption went from 0.98 GB to 0.97 GB.
+Total: 874.026500 ms (FindLiveObjects: 12.393200 ms CreateObjectMapping: 15.597100 ms MarkObjects: 832.938300 ms  DeleteObjects: 13.096800 ms)
+
+Container Menu_Main (-382018952) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container MinigameRegatta (1734734637) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            10.391 ms
+	Integration:            1352.889 ms
+	Integration of assets:  0.273 ms
+	Thread Wait Time:       0.040 ms
+	Total Operation Time:   1363.593 ms
+Unloading 832 unused Assets / (17.4 MB). Loaded Objects now: 73637.
+Memory consumption went from 0.94 GB to 0.93 GB.
+Total: 727.530100 ms (FindLiveObjects: 4.804600 ms CreateObjectMapping: 12.640500 ms MarkObjects: 707.947100 ms  DeleteObjects: 2.135700 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+Uploading Crash Report
+[ServicesCore]: System.OperationCanceledException: The operation was canceled.
+  at System.Threading.CancellationToken.ThrowOperationCanceledException () [0x00010] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Threading.CancellationToken.ThrowIfCancellationRequested () [0x00008] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper unbox) System.Threading.CancellationToken.ThrowIfCancellationRequested()
+  at Unity.Services.Core.Scheduler.Internal.ActionScheduler.ExecuteExpiredActions () [0x000dd] in .\Library\PackageCache\com.unity.services.core@3464cb68d709\Runtime\Scheduler\ActionScheduler.cs:116 
+0x00007ff8015a4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff802ddf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff802ddfbee (Unity) Stacktrace::GetStacktrace
+0x00007ff80155587f (Unity) DebugStringToFile
+0x00007ff801411b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000028f1fa2fbfe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000028f1fa2fa23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000028f1fa2f6fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000290fb1db5de (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x00000292a2c91944 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object)
+0x00000292a2c916ec (Mono JIT Code) Unity.Services.Core.Internal.CoreLogger:LogException (System.Exception) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Runtime/Core.Internal/Logging/CoreLogger.cs:19)
+0x000002912f7d291b (Mono JIT Code) Unity.Services.Core.Scheduler.Internal.ActionScheduler:ExecuteExpiredActions () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Runtime/Scheduler/ActionScheduler.cs:120)
+0x0000028f10594fe8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffff9746c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffff9688984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffff9688a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff801ddfdd4 (Unity) scripting_method_invoke
+0x00007ff801de6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff801c8ad44 (Unity) ExecutePlayerLoop
+0x00007ff801c8fc0f (Unity) PlayerLoop
+0x00007ff8026056da (Unity) EditorPlayerLoop::Execute
+0x00007ff80261c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff80261b987 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff80261d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff80261896c (Unity) Application::TickTimer
+0x00007ff8023f9f7c (Unity) MainMessageLoop
+0x00007ff802401a12 (Unity) UnityMain
+0x00007ff62a972f2a (Unity) __scrt_common_main_seh
+0x00007ff8c3acdda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8c43f9c5c (ntdll) RtlUserThreadStart
+
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Asset Pipeline Refresh (id=5f6744f2a4e424f48b76668735d74104): Total: 0.013 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[LAYOUT] About to save layout B:\FrogletGames\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/yskha/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Clearing [Electronic Highway Sign SDF] dynamic font asset data.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+TMPro.EditorEventCallbacks/<>c:<InitializeFontAssetResourceChangeCallBacks>b__0_0 () (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Editor/TMP/TMP_EditorResourceManager.cs:36)
+UnityEditor.EditorApplication:Internal_EditorApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Editor/TMP/TMP_EditorResourceManager.cs Line: 36)
+
+Unloading 14 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-5192-56j9ix
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 18836 (child process of PID 12224) has been terminated.
+SUCCESS: The process with PID 12224 (child process of PID 5192) has been terminated.
+Killing ADB server in 0.1671522 seconds.
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: 'ef9e0e989d59ebb63d41c7881f92accb') in 0.0040675 seconds
+Start importing Assets/_Graphics/Materials/GreenSpikeMaterial.mat using Guid(77e1afb46629cc7469cfccbdae90a628) (NativeFormatImporter) -> (artifact id: 'f6dccf5b8c0d9470384f218d2a99f31a') in 0.0026095 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.0026118 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedVesselClass.asset using Guid(669b1e817c2158c40940e62d07c68356) (NativeFormatImporter) -> (artifact id: '1e9a63e6f97a8dedb377269ef18f3c37') in 0.0019055 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedAIIntensity.asset using Guid(490485287c38a2f4e9178566394efd69) (NativeFormatImporter) -> (artifact id: 'cf4f9e2229881d2c4812210b39ee5abb') in 0.0019426 seconds
+Start importing Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/Electronic Highway Sign SDF.asset using Guid(dc36b3fdc14f47ebb36fd484a67e268a) (NativeFormatImporter) -> (artifact id: '312f08daa344cf2766f46fa6782e1895') in 0.0074373 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: 'd66219ff6f8aa67e2d57c9fc1e4c9fd3') in 0.0023527 seconds
+Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) (NativeFormatImporter) -> (artifact id: '822c00255ead8f5d28f5fdc08dc07191') in 0.0186395 seconds
+Refreshing native plugins compatible for Editor in 38.12 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.27 ms.
+Asset Pipeline Refresh (id=8bb3ec5436d966c4f92086dc942f170e): Total: 0.361 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=8 (actual=8, local cache=0, cache server=0)
+		Asset DB Process Time: managed=1 ms, native=196 ms
+		Asset DB Callback time: managed=64 ms, native=99 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4698, non-scripts=12651
+		Asset File Changes: new=0, changed=7, moved=0, deleted=0
+		Scan Filter Count: 19
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 0.000ms
+	ApplyChangesToAssetFolders: 0.274ms
+	Scan: 13.950ms
+	OnSourceAssetsModified: 0.107ms
+	CategorizeAssetsWithTransientArtifact: 0.045ms
+	ProcessAssetsWithTransientArtifactChanges: 1.286ms
+	CategorizeAssets: 71.817ms
+	ImportOutOfDateAssets: 80.281ms (1.583ms without children)
+		ImportManagerImport: 68.158ms (20.238ms without children)
+			ImportInProcess: 47.788ms
+			UpdateCategorizedAssets: 0.132ms
+		ReloadNativeAssets: 2.604ms
+		UnloadImportedAssets: 0.596ms
+		ReloadImportedAssets: 0.002ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 4.707ms
+		InitializingProgressBar: 0.016ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 2.615ms
+	PostProcessAllAssets: 109.848ms
+	Hotreload: 53.906ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.245ms
+	UnloadStreamsBegin: 0.003ms
+	PersistCurrentRevisions: 1.571ms
+	UnloadStreamsEnd: 0.118ms
+	Untracked: 26.909ms
+
+Unloading 177 unused Assets / (14.4 KB). Loaded Objects now: 73696.
+Memory consumption went from 0.94 GB to 0.94 GB.
+Total: 1447.462500 ms (FindLiveObjects: 8.423200 ms CreateObjectMapping: 13.793200 ms MarkObjects: 1424.834800 ms  DeleteObjects: 0.409400 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-yskha-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-yskha channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+abort_threads: Failed aborting id: 0000000000006B10, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000006B10, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 3352
+[usbmuxd] Stop listen thread
+[usbmuxd] Listen thread exiting
+IPCStream (Upm-5192): IPC stream failed to read (Not connected)
+
