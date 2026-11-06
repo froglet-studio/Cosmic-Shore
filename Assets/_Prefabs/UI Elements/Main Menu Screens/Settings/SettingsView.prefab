@@ -53473,6 +53473,8 @@ MonoBehaviour:
   window: {fileID: 847602501927111554}
   conflictHeight: 680
   confirmHeight: 330
+  phoneConflictHeight: 300
+  phoneConfirmHeight: 220
   eyebrow: {fileID: 910215342311145957}
   title: {fileID: 567248396074085432}
   body: {fileID: 923554853092744478}
@@ -53652,14 +53654,14 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 903, y: 680}
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 1, y: 0}
+  pivot: {x: 0.5, y: 0}
+  anchoredPosition: {x: 48, y: 0}
+  sizeDelta: {x: -128, y: 300}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
-  scale: 0.62
+  scale: 0
   widthScale: 0
   hideOnPhone: 0
   stackChildren: 0
@@ -54391,8 +54393,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 48, y: -40}
-  sizeDelta: {x: 807, y: 18}
+  anchoredPosition: {x: 20, y: -16}
+  sizeDelta: {x: 348, y: 16}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -54516,7 +54518,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 0
+  m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -54581,8 +54583,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 48, y: -64}
-  sizeDelta: {x: 807, y: 46}
+  anchoredPosition: {x: 20, y: -34}
+  sizeDelta: {x: 348, y: 52}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -54771,8 +54773,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 48, y: -118}
-  sizeDelta: {x: 807, y: 48}
+  anchoredPosition: {x: 20, y: -90}
+  sizeDelta: {x: 348, y: 44}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -54844,8 +54846,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 48, y: -180}
-  sizeDelta: {x: 807, y: 280}
+  anchoredPosition: {x: 20, y: -140}
+  sizeDelta: {x: 348, y: 140}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -54929,7 +54931,7 @@ MonoBehaviour:
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
   anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 383, y: 280}
+  sizeDelta: {x: 168, y: 140}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -55342,8 +55344,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -24}
-  sizeDelta: {x: 327, y: 18}
+  anchoredPosition: {x: 10, y: -8}
+  sizeDelta: {x: 148, y: 16}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -55532,8 +55534,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -52}
-  sizeDelta: {x: 327, y: 36}
+  anchoredPosition: {x: 10, y: -24}
+  sizeDelta: {x: 148, y: 24}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -55559,6 +55561,7 @@ GameObject:
   - component: {fileID: 402259144721337322}
   - component: {fileID: 667091691650521754}
   - component: {fileID: 440882901903719843}
+  - component: {fileID: 491072565674875260}
   m_Layer: 5
   m_Name: CrystalsCaption
   m_TagString: Untagged
@@ -55701,6 +55704,41 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &491072565674875260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1022268518477270421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 10, y: -52}
+  sizeDelta: {x: 108, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &202702629556246692
 GameObject:
   m_ObjectHideFlags: 0
@@ -55876,8 +55914,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -110}
-  sizeDelta: {x: 327, y: 26}
+  anchoredPosition: {x: 10, y: -52}
+  sizeDelta: {x: 148, y: 22}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -56003,8 +56041,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -148}
-  sizeDelta: {x: 327, y: 1}
+  anchoredPosition: {x: 10, y: -77}
+  sizeDelta: {x: 148, y: 1}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -56030,6 +56068,7 @@ GameObject:
   - component: {fileID: 328017858881255132}
   - component: {fileID: 296060589858050798}
   - component: {fileID: 758686409969046621}
+  - component: {fileID: 599939357832179776}
   m_Layer: 5
   m_Name: VesselsCaption
   m_TagString: Untagged
@@ -56172,6 +56211,41 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &599939357832179776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 564839232742335026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 10, y: -80}
+  sizeDelta: {x: 108, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &939474816439485170
 GameObject:
   m_ObjectHideFlags: 0
@@ -56347,8 +56421,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -162}
-  sizeDelta: {x: 327, y: 26}
+  anchoredPosition: {x: 10, y: -80}
+  sizeDelta: {x: 148, y: 22}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -56474,8 +56548,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -200}
-  sizeDelta: {x: 327, y: 1}
+  anchoredPosition: {x: 10, y: -105}
+  sizeDelta: {x: 148, y: 1}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -56501,6 +56575,7 @@ GameObject:
   - component: {fileID: 1049507392571867779}
   - component: {fileID: 555943032371294166}
   - component: {fileID: 35107268397386901}
+  - component: {fileID: 1124141653442052103}
   m_Layer: 5
   m_Name: QuestsCaption
   m_TagString: Untagged
@@ -56643,6 +56718,41 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &1124141653442052103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619868838944155726}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 10, y: -108}
+  sizeDelta: {x: 108, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &663739619827878430
 GameObject:
   m_ObjectHideFlags: 0
@@ -56818,8 +56928,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -214}
-  sizeDelta: {x: 327, y: 26}
+  anchoredPosition: {x: 10, y: -108}
+  sizeDelta: {x: 148, y: 22}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -56945,8 +57055,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -252}
-  sizeDelta: {x: 327, y: 1}
+  anchoredPosition: {x: 10, y: -133}
+  sizeDelta: {x: 148, y: 1}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -57029,8 +57139,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 423, y: 0}
-  sizeDelta: {x: 383, y: 280}
+  anchoredPosition: {x: 180, y: 0}
+  sizeDelta: {x: 168, y: 140}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -57443,8 +57553,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -24}
-  sizeDelta: {x: 327, y: 18}
+  anchoredPosition: {x: 10, y: -8}
+  sizeDelta: {x: 148, y: 16}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -57633,8 +57743,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -52}
-  sizeDelta: {x: 327, y: 36}
+  anchoredPosition: {x: 10, y: -24}
+  sizeDelta: {x: 148, y: 24}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -57660,6 +57770,7 @@ GameObject:
   - component: {fileID: 239778949741452612}
   - component: {fileID: 169982811399077179}
   - component: {fileID: 830043110650722158}
+  - component: {fileID: 1098160130577083126}
   m_Layer: 5
   m_Name: CrystalsCaption
   m_TagString: Untagged
@@ -57802,6 +57913,41 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &1098160130577083126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078737064575507434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 10, y: -52}
+  sizeDelta: {x: 108, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &100343338107928902
 GameObject:
   m_ObjectHideFlags: 0
@@ -57977,8 +58123,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -110}
-  sizeDelta: {x: 327, y: 26}
+  anchoredPosition: {x: 10, y: -52}
+  sizeDelta: {x: 148, y: 22}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -58104,8 +58250,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -148}
-  sizeDelta: {x: 327, y: 1}
+  anchoredPosition: {x: 10, y: -77}
+  sizeDelta: {x: 148, y: 1}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -58131,6 +58277,7 @@ GameObject:
   - component: {fileID: 108661552390043670}
   - component: {fileID: 972579068468088545}
   - component: {fileID: 811054784809842272}
+  - component: {fileID: 80939742458880012}
   m_Layer: 5
   m_Name: VesselsCaption
   m_TagString: Untagged
@@ -58273,6 +58420,41 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &80939742458880012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 563624133222725830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 10, y: -80}
+  sizeDelta: {x: 108, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &961032906487786928
 GameObject:
   m_ObjectHideFlags: 0
@@ -58448,8 +58630,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -162}
-  sizeDelta: {x: 327, y: 26}
+  anchoredPosition: {x: 10, y: -80}
+  sizeDelta: {x: 148, y: 22}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -58575,8 +58757,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -200}
-  sizeDelta: {x: 327, y: 1}
+  anchoredPosition: {x: 10, y: -105}
+  sizeDelta: {x: 148, y: 1}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -58602,6 +58784,7 @@ GameObject:
   - component: {fileID: 4677832223354056}
   - component: {fileID: 1116134011389414364}
   - component: {fileID: 268230977182595451}
+  - component: {fileID: 112599201222181090}
   m_Layer: 5
   m_Name: QuestsCaption
   m_TagString: Untagged
@@ -58744,6 +58927,41 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
+--- !u!114 &112599201222181090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52703878695768151}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15002d6be1ec46d6a09c09e6aa1b45de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcHeight: 1080
+  pcCutTop: 0
+  phoneInsets: {x: 0, y: 0, z: 0, w: 0}
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 10, y: -108}
+  sizeDelta: {x: 108, y: 22}
+  fontSize: 0
+  layoutSize: {x: 0, y: 0}
+  scale: 0
+  widthScale: 0
+  hideOnPhone: 0
+  stackChildren: 0
+  stackOrigin: {x: 0, y: 0}
+  stackItemSize: {x: 72, y: 56}
+  stackSpacing: 0
+  stackOrder: []
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
 --- !u!1 &323731311470590842
 GameObject:
   m_ObjectHideFlags: 0
@@ -58919,8 +59137,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -214}
-  sizeDelta: {x: 327, y: 26}
+  anchoredPosition: {x: 10, y: -108}
+  sizeDelta: {x: 148, y: 22}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -59046,8 +59264,8 @@ MonoBehaviour:
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
   pivot: {x: 0, y: 1}
-  anchoredPosition: {x: 28, y: -252}
-  sizeDelta: {x: 327, y: 1}
+  anchoredPosition: {x: 10, y: -133}
+  sizeDelta: {x: 148, y: 1}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -59233,11 +59451,11 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0, y: 0}
-  anchorMax: {x: 1, y: 0}
-  pivot: {x: 0.5, y: 0}
-  anchoredPosition: {x: 0, y: 124}
-  sizeDelta: {x: -96, y: 40}
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -20, y: -180}
+  sizeDelta: {x: 260, y: 104}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
@@ -59334,19 +59552,19 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0, y: 0}
-  anchorMax: {x: 1, y: 0}
-  pivot: {x: 0.5, y: 0}
-  anchoredPosition: {x: 0, y: 36}
-  sizeDelta: {x: -96, y: 72}
+  anchorMin: {x: 1, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -20, y: -16}
+  sizeDelta: {x: 260, y: 156}
   fontSize: 0
   layoutSize: {x: 0, y: 0}
   scale: 0
   widthScale: 0
   hideOnPhone: 0
-  stackChildren: 0
+  stackChildren: 1
   stackOrigin: {x: 0, y: 0}
-  stackItemSize: {x: 72, y: 56}
+  stackItemSize: {x: 0, y: 0}
   stackSpacing: 0
   stackOrder: []
   gridCellSize: {x: 0, y: 0}
@@ -59427,13 +59645,13 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
   anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 230.7, y: 72}
+  sizeDelta: {x: 260, y: 48}
   fontSize: 0
-  layoutSize: {x: 230.7, y: 72}
+  layoutSize: {x: 260, y: 48}
   scale: 0
   widthScale: 0
   hideOnPhone: 0
@@ -59706,13 +59924,13 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 266.7, y: 72}
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -56}
+  sizeDelta: {x: 260, y: 48}
   fontSize: 0
-  layoutSize: {x: 266.7, y: 72}
+  layoutSize: {x: 260, y: 48}
   scale: 0
   widthScale: 0
   hideOnPhone: 0
@@ -59985,13 +60203,13 @@ MonoBehaviour:
   pcCutTop: 0
   phoneInsets: {x: 0, y: 0, z: 0, w: 0}
   movesRect: 1
-  anchorMin: {x: 0.5, y: 0.5}
-  anchorMax: {x: 0.5, y: 0.5}
-  pivot: {x: 0.5, y: 0.5}
-  anchoredPosition: {x: 0, y: 0}
-  sizeDelta: {x: 174.3, y: 72}
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -112}
+  sizeDelta: {x: 260, y: 44}
   fontSize: 0
-  layoutSize: {x: 174.3, y: 72}
+  layoutSize: {x: 260, y: 44}
   scale: 0
   widthScale: 0
   hideOnPhone: 0
