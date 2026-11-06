@@ -68,7 +68,9 @@ namespace CosmicShore.Core
         /// <summary>
         /// Every destination. One payload is built per event and fanned out unchanged, so the
         /// destinations cannot drift apart. Consent and the age gate are enforced here, above
-        /// the sinks, so adding a destination can never widen collection.
+        /// the sinks, so adding a destination can never widen collection. The one exception is
+        /// narrowing: the UGS sink drops what the schema marks Froglet-only
+        /// (<see cref="UgsAnalyticsSink.FrogletOnlyFields"/>).
         /// </summary>
         readonly List<IAnalyticsSink> _sinks = new();
 
@@ -106,6 +108,9 @@ namespace CosmicShore.Core
         int _consecutiveLosses;
         int _droppedEvents;
         bool _warnedNotCollecting;
+
+        /// <summary>The vessels flown in the current Freestyle (Toybox) stretch - see <see cref="FreestyleVesselLog"/>.</summary>
+        readonly FreestyleVesselLog _freestyleVessels = new();
 
         AuthenticationData AuthData => _authVariable.Value;
         NetworkMonitorData NetworkData => _networkVariable.Value;
@@ -168,6 +173,7 @@ namespace CosmicShore.Core
             NetworkData.OnNetworkLost.OnRaised += HandleNetworkLost;
             _gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
             _gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
+            _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
             _lifecycleEvents.OnAppPaused.OnRaised += HandleAppPaused;
             _lifecycleEvents.OnAppQuitting.OnRaised += HandleAppQuitting;
             TryWireUiActions();
@@ -205,6 +211,7 @@ namespace CosmicShore.Core
             FTUEEventManager.OnQuestNodeCompleted       += HandleFtueStepCompleted;
             FTUEEventManager.OnQuestPhaseCompleted      += HandleFtuePhaseCompleted;
             FTUEEventManager.OnQuestCompleted           += HandleFtueCompleted;
+            SubscribeFreestyleClock();
 
             // Adopt what the one-shot events have ALREADY announced. This facade is a LAZY DI
             // singleton, so it is constructed whenever something first injects it - which is
@@ -244,6 +251,7 @@ namespace CosmicShore.Core
             {
                 _gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
                 _gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
+                _gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
             }
 
             if (_lifecycleEvents != null)
@@ -283,6 +291,7 @@ namespace CosmicShore.Core
             FTUEEventManager.OnQuestNodeCompleted       -= HandleFtueStepCompleted;
             FTUEEventManager.OnQuestPhaseCompleted      -= HandleFtuePhaseCompleted;
             FTUEEventManager.OnQuestCompleted           -= HandleFtueCompleted;
+            FlightClock.OnFreestyleSegmentCompleted     -= HandleFreestyleSegmentCompleted;
 
             if (_uiActionsWired && UserActionSystem.Instance != null)
                 UserActionSystem.Instance.OnUserActionCompleted -= HandleUserAction;
@@ -868,15 +877,40 @@ namespace CosmicShore.Core
             parameters["timestamp_utc_iso"] = nowUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
         }
 
-        Dictionary<string, object> BuildGameParameters() => new()
+        Dictionary<string, object> BuildGameParameters()
         {
-            { "game_mode", _gameData.GameMode.ToString() },
-            { "intensity", _gameData.SelectedIntensity.Value },
-            { "vessel_class", _gameData.selectedVesselClass.Value.ToString() },
-            { "player_count", _gameData.SelectedPlayerCount.Value },
-            { "ai_count", _gameData.RequestedAIBackfillCount },
-            { "is_multiplayer", _gameData.IsMultiplayerMode }
-        };
+            var parameters = new Dictionary<string, object>
+            {
+                { "game_mode", _gameData.GameMode.ToString() },
+                { "intensity", _gameData.SelectedIntensity.Value },
+                { "vessel_class", _gameData.selectedVesselClass.Value.ToString() },
+                { "player_count", _gameData.SelectedPlayerCount.Value },
+                { "ai_count", _gameData.RequestedAIBackfillCount },
+                { "is_multiplayer", _gameData.IsMultiplayerMode }
+            };
+
+            // The match's element: the same answer the card's genre flower draws (the mode's row,
+            // else its preview's scoring metric). Froglet Analytics only - the UGS sink strips it.
+            if (ArcadeGridOrder.TryGenres(_gameData.GameMode, out var primary, out var secondary))
+                AddGenreElements(parameters, primary, secondary);
+
+            return parameters;
+        }
+
+        /// <summary>
+        /// Adds <c>element</c> and, for a two-element genre, <c>element_secondary</c>. A mode with
+        /// no genre (<see cref="Element.None"/>) gets neither key - absent, never an empty string or
+        /// "None", so a dashboard's element split has no fake bucket.
+        /// </summary>
+        public static void AddGenreElements(IDictionary<string, object> parameters, Element primary, Element secondary)
+        {
+            if (primary == Element.None)
+                return;
+
+            parameters[UGSKeys.ParamElement] = primary.ToString();
+            if (secondary != Element.None)
+                parameters[UGSKeys.ParamElementSecondary] = secondary.ToString();
+        }
 
         #endregion
 
@@ -1062,12 +1096,102 @@ namespace CosmicShore.Core
         {
             bool isFirst = !_freestyleEnteredThisSession;
             _freestyleEnteredThisSession = true;
+
+            // A new stretch starts in the vessel the player just took. Re-subscribing here as well
+            // as in the constructor keeps the clock's handler alive whatever order the
+            // BeforeSceneLoad reset (FlightClock.Initialize clears its event) and this lazy
+            // singleton's construction ran in; a stretch can only end after it has begun.
+            SubscribeFreestyleClock();
+            string vessel = LocalVesselClassName() ?? UnknownVessel;
+            _freestyleVessels.Begin(vessel);
+
             RecordEvent(UGSKeys.EventFreestyleEntered, new Dictionary<string, object>
             {
                 { "is_first", isFirst },
-                { "seconds_since_launch", SecondsSinceLaunch }
+                { UGSKeys.ParamSecondsSinceLaunch, SecondsSinceLaunch },
+                { UGSKeys.ParamVesselClass, vessel }
             });
         }
+
+        void SubscribeFreestyleClock()
+        {
+            FlightClock.OnFreestyleSegmentCompleted -= HandleFreestyleSegmentCompleted;
+            FlightClock.OnFreestyleSegmentCompleted += HandleFreestyleSegmentCompleted;
+        }
+
+        /// <summary>
+        /// One <c>freestyle_ended</c> per stretch: FlightClock closes a freestyle segment when the
+        /// player leaves freestyle (back to the menu, into a game, out of Menu_Main) and on pause or
+        /// backgrounding. The next stretch, if the player keeps flying, starts in the vessel flown now.
+        /// </summary>
+        void HandleFreestyleSegmentCompleted(float seconds)
+        {
+            // The vessel can already be gone (Menu_Main tearing down banks its segment from
+            // OnDisable), so the stretch's own record of what was flown answers then.
+            string vessel = LocalVesselClassName() ?? _freestyleVessels.Current ?? UnknownVessel;
+            _freestyleVessels.Observe(vessel);
+
+            RecordEvent(UGSKeys.EventFreestyleEnded, BuildFreestyleEndedParameters(
+                seconds, vessel, _freestyleVessels.VesselsFlown, SecondsSinceLaunch));
+
+            _freestyleVessels.Begin(vessel);
+        }
+
+        /// <summary>
+        /// A vessel swap in Freestyle. The Toybox's Vessel Changer raises nothing of its own; every
+        /// swap re-initialises the local player's pair (<c>ClientPlayerVesselInitializer.ReInitializePair</c>
+        /// raises <see cref="GameDataSO.OnPlayerPairInitialized"/> on the host and on a client), so this
+        /// observes that and reports a change of the local hull's class while freestyle is flying.
+        /// </summary>
+        void HandlePlayerPairInitialized(ulong playerNetId)
+        {
+            if (!FlightClock.IsFreestyleActive)
+                return;
+
+            var local = _gameData.LocalPlayer;
+            if (local == null || local.PlayerNetId != playerNetId)
+                return;
+
+            string vessel = LocalVesselClassName();
+            if (vessel == null || !_freestyleVessels.TryChange(vessel, out string from))
+                return;
+
+            RecordEvent(UGSKeys.EventFreestyleVesselChanged, BuildFreestyleVesselChangedParameters(
+                vessel, from, FlightClock.CurrentFreestyleSeconds));
+        }
+
+        /// <summary>The <c>freestyle_ended</c> payload (Docs/Analytics/EVENT_SCHEMA.json).</summary>
+        public static Dictionary<string, object> BuildFreestyleEndedParameters(
+            float seconds, string vesselClass, int vesselsFlown, int secondsSinceLaunch) => new()
+        {
+            { UGSKeys.ParamSeconds, seconds },
+            { UGSKeys.ParamVesselClass, string.IsNullOrEmpty(vesselClass) ? UnknownVessel : vesselClass },
+            { UGSKeys.ParamVesselsFlown, Math.Max(1, vesselsFlown) },
+            { UGSKeys.ParamSecondsSinceLaunch, secondsSinceLaunch }
+        };
+
+        /// <summary>The <c>freestyle_vessel_changed</c> payload (Docs/Analytics/EVENT_SCHEMA.json).</summary>
+        public static Dictionary<string, object> BuildFreestyleVesselChangedParameters(
+            string vesselClass, string fromVesselClass, float secondsInFreestyle) => new()
+        {
+            { UGSKeys.ParamVesselClass, string.IsNullOrEmpty(vesselClass) ? UnknownVessel : vesselClass },
+            { UGSKeys.ParamFromVesselClass, string.IsNullOrEmpty(fromVesselClass) ? UnknownVessel : fromVesselClass },
+            { UGSKeys.ParamSecondsInFreestyle, secondsInFreestyle }
+        };
+
+        /// <summary>The local player's live hull class as its VesselClassType name, or null when there is none.</summary>
+        string LocalVesselClassName()
+        {
+            var vessel = _gameData.LocalPlayer?.Vessel;
+            if (!vessel.IsAlive())
+                return null;
+
+            var status = vessel.VesselStatus;
+            return status.IsAlive() ? status.VesselType.ToString() : null;
+        }
+
+        /// <summary>What a vessel field says when no hull can be read, like the other "unknown" fields.</summary>
+        const string UnknownVessel = "unknown";
 
         void HandleSettingChanged(string setting, object value) =>
             RecordEvent(UGSKeys.EventSettingChanged, new Dictionary<string, object>
@@ -1192,6 +1316,56 @@ namespace CosmicShore.Core
         {
             if (_allowLog)
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Analytics] {message}");
+        }
+
+        /// <summary>
+        /// The distinct vessels flown in one Freestyle (Toybox) stretch, for <c>freestyle_ended</c>'s
+        /// <c>vessels_flown</c> and <c>freestyle_vessel_changed</c>'s <c>from_vessel_class</c>.
+        /// Pure bookkeeping on vessel names; no Unity calls, so the edit-mode tests drive it directly.
+        /// </summary>
+        public sealed class FreestyleVesselLog
+        {
+            readonly HashSet<string> _flown = new(StringComparer.Ordinal);
+
+            /// <summary>The vessel flown now in this stretch, or null before the first one is seen.</summary>
+            public string Current { get; private set; }
+
+            /// <summary>Distinct vessels flown in this stretch; 1 when the player never switched.</summary>
+            public int VesselsFlown => Math.Max(1, _flown.Count);
+
+            /// <summary>Starts a stretch in <paramref name="vessel"/>, forgetting the last one.</summary>
+            public void Begin(string vessel)
+            {
+                _flown.Clear();
+                Current = null;
+                Observe(vessel);
+            }
+
+            /// <summary>Records <paramref name="vessel"/> as flown now, without calling it a change.</summary>
+            public void Observe(string vessel)
+            {
+                if (string.IsNullOrEmpty(vessel))
+                    return;
+
+                Current = vessel;
+                _flown.Add(vessel);
+            }
+
+            /// <summary>
+            /// True when <paramref name="vessel"/> differs from the vessel flown until now, with that
+            /// one in <paramref name="from"/>. A first sighting (nothing flown yet) and the same hull
+            /// again are not changes; both are still recorded.
+            /// </summary>
+            public bool TryChange(string vessel, out string from)
+            {
+                from = Current;
+                if (string.IsNullOrEmpty(vessel) || vessel == Current)
+                    return false;
+
+                bool changed = Current != null;
+                Observe(vessel);
+                return changed;
+            }
         }
     }
 }

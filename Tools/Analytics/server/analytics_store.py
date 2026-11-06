@@ -54,10 +54,59 @@ DEFAULT_MILESTONES = [{"name": "Server live, PostHog off", "day": "2026-11-06"},
                       {"name": "Activation ready", "day": "2027-01-11"}, {"name": "GDC", "day": "2027-03-16"}]
 QUERY_CHARTS = ("bars", "line", "donut", "gantt", "table", "number")
 VISIBILITIES = ("me", "readers", "admins")
-BUILTIN_TILES = ("new_players", "d1_return", "ftue_finished", "rows_per_play", "matches_per_day", "play_mix")
+BUILTIN_TILES = ("new_players", "d1_return", "ftue_finished", "rows_per_play", "matches_per_day", "play_mix",
+                 "freestyle_entries")
 MAX_SAVED = 200
 MAX_TILES = 24
 MAX_FILTERS_BYTES = 8 * 1024
+# Saved views ("presets", Shombith 2026-11-06: "save our own view as well and make it public"): a chart's switches and
+# the page's filters under a name. Ownership is by key name; a private one is its owner's alone.
+PRESET_PAGES = ("overview", "players", "cohorts", "eras", "playtypes", "retention", "matches", "ftue", "economy",
+                "social", "health", "query", "dashboards")
+PRESET_SETTINGS = ("form", "measure", "by", "over")
+PRESET_FILTERS = ("build", "days", "play", "era")
+PRESET_PLAYS = ("all", "solo_vs_ai", "solo", "multi")
+MAX_PRESETS = 500
+CHART_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
+SETTING_VALUE = re.compile(r"^[a-z0-9_]{1,40}$")
+
+# Elements (Shombith, 2026-11-06: "the matches over time should also have element support"). A match's element is
+# the mode's genre (ModeGenre.TryElementsFor in the game). Builds from 2026-11-06 send it on game_started; for every
+# match before that (the PostHog history included) it comes from mode_elements.json, generated from the game's files.
+ELEMENTS = ("Charge", "Mass", "Space", "Time", "Omni")
+MODE_ELEMENTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mode_elements.json")
+_mode_elements = {"stamp": None, "table": {}}
+
+
+def mode_elements(path=MODE_ELEMENTS_PATH):
+    """{game_mode: (primary, secondary|None)} from mode_elements.json, re-read when the file changes."""
+    try:
+        stamp = os.stat(path).st_mtime_ns
+    except OSError:
+        return {}
+    if stamp != _mode_elements["stamp"]:
+        import mode_elements as M
+        _mode_elements.update(stamp=stamp, table=M.load(path))
+    return _mode_elements["table"]
+
+
+def _element_name(value):
+    if not isinstance(value, str):
+        return None
+    return next((e for e in ELEMENTS if e.lower() == value.strip().lower()), None)
+
+
+def element_of(props, table=None):
+    """(primary, secondary, source) for a game_started's properties: the event's own element when it sent one
+    ("event"), else the mode's row in mode_elements.json ("table"), else (None, None, None)."""
+    own = _element_name(props.get("element"))
+    if own:
+        second = _element_name(props.get("element_secondary"))
+        return own, (second if second != own else None), "event"
+    found = (mode_elements() if table is None else table).get(str(props.get("game_mode") or ""))
+    if found:
+        return found[0], found[1], "table"
+    return None, None, None
 
 
 class Invalid(ValueError):
@@ -216,6 +265,20 @@ CREATE TABLE IF NOT EXISTS dashboards(
     id TEXT PRIMARY KEY, name TEXT NOT NULL, shared TEXT NOT NULL, tiles TEXT NOT NULL, email TEXT,
     owner TEXT NOT NULL, created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
 );
+-- Every $identify, kept (2026-11-06): its $set carries selected_vessel, preferred_vessel and
+-- total_flight_time_seconds, so the identify history is where the Toybox vessel picks before freestyle_vessel_changed
+-- live. One row per (player, time, content): re-importing the PostHog history adds it once.
+CREATE TABLE IF NOT EXISTS person_snapshots(
+    id INTEGER PRIMARY KEY, distinct_id TEXT NOT NULL, ts_ms INTEGER NOT NULL, day TEXT NOT NULL,
+    imported INTEGER NOT NULL, selected_vessel TEXT, preferred_vessel TEXT, total_flight_time_seconds REAL,
+    props TEXT NOT NULL, content_hash TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS person_snapshots_key ON person_snapshots(distinct_id, ts_ms, content_hash);
+CREATE TABLE IF NOT EXISTS presets(
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, owner TEXT NOT NULL, public INTEGER NOT NULL, page TEXT NOT NULL,
+    chart_id TEXT NOT NULL, series INTEGER NOT NULL, settings TEXT NOT NULL, filters TEXT NOT NULL,
+    created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
 """
 
 # The aggregates the dashboard and the Ask box read. Kept in one string so Claude is shown exactly this schema.
@@ -231,7 +294,10 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
     won INTEGER,                 -- player_won from game_completed; NULL if not completed
     pause_seconds REAL,          -- duration_seconds - flight_time_seconds: paused or away from the controls
     imported INTEGER,            -- 1: PostHog history (import_posthog.py, stored with its own time); 0: sent here live
-    country TEXT                 -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
+    country TEXT,                -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
+    element TEXT,                -- the mode's genre element (Charge | Mass | Space | Time | Omni); NULL: the mode has none
+    element_secondary TEXT,      -- the second element of a two-element mode (Brood Rush: Space); else NULL
+    element_source TEXT          -- event: the match sent it (builds from 2026-11-06) | table: mode_elements.json by game_mode
 );
 CREATE TABLE daily_events(       -- rows received per day, build, event and source (imported 1 = PostHog history)
     day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER
@@ -289,6 +355,7 @@ CREATE TABLE player_counts(      -- distinct players per span, counted once each
     build_kind TEXT,             -- or '*': every build, each player once
     source TEXT,                 -- any | imported (PostHog history) | live; an era's spans carry the era's source
     dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | country | game_mode | vessel_class | intensity
+                                 -- | element | freestyle/'entered' (entered the Toybox) | freestyle_vessel (a vessel flown there)
     players INTEGER,             -- players active in the span with that key (a player on two platforms counts in both)
     new_players INTEGER          -- of those, players whose first day (in this source) falls inside the span
 );
@@ -301,6 +368,25 @@ CREATE TABLE cohort_days(        -- players by first day and lifespan (first day
     play_group TEXT,             -- all | solo_vs_ai | solo | multi (played at least one match of that group)
     lifespan_days INTEGER, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
     lapsed_14d INTEGER           -- not seen in the last 14 days
+);
+CREATE TABLE freestyle_vessels(  -- Freestyle (the Toybox) per day, build, source and vessel; NO player id
+    day TEXT, build_kind TEXT, imported INTEGER, vessel_class TEXT,   -- 'unknown' when the event named none
+    entries INTEGER,             -- freestyle_entered (in this vessel: builds from 2026-11-06 name it; older read unknown)
+    first_entries INTEGER,       -- of those, is_first (the first entry of that app session)
+    stretches INTEGER,           -- freestyle_ended ending in this vessel (builds from 2026-11-06 only)
+    seconds REAL,                -- freestyle seconds of those stretches (the vessel at the end of the stretch)
+    vessels_flown INTEGER,       -- sum of vessels_flown over those stretches
+    switches_to INTEGER,         -- freestyle_vessel_changed into this vessel (builds from 2026-11-06 only)
+    switches_from INTEGER,       -- freestyle_vessel_changed out of this vessel
+    recovered_to INTEGER,        -- recovered switches into this vessel (the identify history; see freestyle_switches)
+    recovered_from INTEGER       -- recovered switches out of this vessel
+);
+CREATE TABLE freestyle_switches( -- Toybox vessel switches by day, build, source, from and to; NO player id
+    day TEXT, build_kind TEXT, imported INTEGER, from_vessel_class TEXT, vessel_class TEXT, switches INTEGER,
+    origin TEXT                  -- event: freestyle_vessel_changed (builds after 2026-11-06, exact time) | recovered:
+                                 -- selected_vessel changed between two $identify of the player (builds since
+                                 -- 2026-10-12; time approximate, when the profile was sent), only before that
+                                 -- player's first freestyle_vessel_changed, so nothing counts twice
 );
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
 -- Saved query tables (Query Studio, "as table") are added after these as t_<name>, rebuilt with the rest.
@@ -576,6 +662,7 @@ class Store:
         return [d for d in out if _visible(d["shared"], d["owner"], name, admin)]
 
     def save_dashboard(self, body, owner):
+        """`owner` is the saving key's name; a preset:<id> tile must name a saved view that key can see."""
         if not isinstance(body, dict):
             raise Invalid("send {id?, name, shared, tiles}")
         label = _text(body.get("name"), "name")
@@ -586,6 +673,7 @@ class Store:
         if not isinstance(tiles, list) or len(tiles) > MAX_TILES:
             raise Invalid(f"tiles must be a list of at most {MAX_TILES}")
         known = {q["id"] for q in self.queries()}
+        views = {p["id"] for p in self.presets(owner) if p["series"]}
         checked, ids = [], set()
         for i, tile in enumerate(tiles):
             if not isinstance(tile, dict):
@@ -597,9 +685,10 @@ class Store:
             source = tile.get("source")
             if not isinstance(source, str) or not (
                     (source.startswith("builtin:") and source[8:] in BUILTIN_TILES)
-                    or (source.startswith("query:") and source[6:] in known)):
-                raise Invalid(f"tile {tile_id}: source must be query:<saved query id> or builtin:<one of "
-                              f"{', '.join(BUILTIN_TILES)}>")
+                    or (source.startswith("query:") and source[6:] in known)
+                    or (source.startswith("preset:") and source[7:] in views)):
+                raise Invalid(f"tile {tile_id}: source must be query:<saved query id>, preset:<id of a saved chart "
+                              f"view you can see> or builtin:<one of {', '.join(BUILTIN_TILES)}>")
             chart = tile.get("chart", "bars")
             if chart not in QUERY_CHARTS:
                 raise Invalid(f"tile {tile_id}: chart must be one of {list(QUERY_CHARTS)}")
@@ -636,6 +725,103 @@ class Store:
             gone = self.db.execute("DELETE FROM dashboards WHERE id=?", (dash_id,)).rowcount
             self.db.commit()
         return bool(gone)
+
+    # ---------------------------------------------------------------- saved views (presets)
+
+    @staticmethod
+    def _preset_row(r):
+        return {"id": r[0], "name": r[1], "owner": r[2], "public": bool(r[3]), "page": r[4], "chart_id": r[5],
+                "series": bool(r[6]), "settings": json.loads(r[7]), "filters": json.loads(r[8]), "created_ms": r[9],
+                "updated_ms": r[10]}
+
+    def presets(self, name):
+        """The saved views this key name may see: its own and every public one (never someone else's private one,
+        whoever asks)."""
+        with self.lock:
+            rows = self.db.execute("SELECT id, name, owner, public, page, chart_id, series, settings, filters, "
+                                   "created_ms, updated_ms FROM presets WHERE owner = ? OR public = 1 "
+                                   "ORDER BY page, chart_id, name", (name,)).fetchall()
+        return [self._preset_row(r) for r in rows]
+
+    def preset(self, preset_id, name):
+        """One saved view this key name may see, or None (a private one of someone else's is None too)."""
+        return next((p for p in self.presets(name) if p["id"] == preset_id), None)
+
+    def save_preset(self, body, owner, eras=()):
+        """Create, or (with the id of one's own) replace, a saved view. Raises Invalid (400) or PermissionError (403)."""
+        if not isinstance(body, dict):
+            raise Invalid("send {id?, name, page, chart_id, settings, filters, public}")
+        unknown = set(body) - {"id", "name", "page", "chart_id", "settings", "filters", "public", "series"}
+        if unknown:
+            raise Invalid(f"unknown fields: {', '.join(sorted(unknown))}")
+        label = _text(body.get("name"), "name")
+        page = body.get("page")
+        if page not in PRESET_PAGES:
+            raise Invalid(f"page must be one of {list(PRESET_PAGES)}")
+        chart_id = body.get("chart_id")
+        if not isinstance(chart_id, str) or not CHART_ID.match(chart_id):
+            raise Invalid("chart_id must match [A-Za-z0-9_.:-]{1,80}")
+        settings = body.get("settings")
+        if not isinstance(settings, dict) or set(settings) - set(PRESET_SETTINGS):
+            raise Invalid(f"settings must be an object with only {list(PRESET_SETTINGS)}")
+        for k, v in settings.items():
+            if v is not None and (not isinstance(v, str) or not SETTING_VALUE.match(v)):
+                raise Invalid(f"settings.{k} must be null or match [a-z0-9_]{{1,40}}")
+        filters = body.get("filters", {})
+        if not isinstance(filters, dict) or set(filters) - set(PRESET_FILTERS):
+            raise Invalid(f"filters must be an object with only {list(PRESET_FILTERS)}")
+        if "build" in filters and filters["build"] not in BUILD_KINDS:
+            raise Invalid(f"filters.build must be one of {list(BUILD_KINDS)}")
+        if "days" in filters and (not isinstance(filters["days"], int) or isinstance(filters["days"], bool)
+                                  or filters["days"] not in WINDOWS):
+            raise Invalid(f"filters.days must be one of {list(WINDOWS)}")
+        if "play" in filters and filters["play"] not in PRESET_PLAYS:
+            raise Invalid(f"filters.play must be one of {list(PRESET_PLAYS)}")
+        if filters.get("era"):
+            if not isinstance(filters["era"], str) or not ID_PATTERN.match(filters["era"]):
+                raise Invalid("filters.era must be an era id or empty")
+            if eras and filters["era"] not in {e["id"] for e in eras}:
+                raise Invalid(f"no era with id {filters['era']}")
+        public = body.get("public", False)
+        series = body.get("series", False)
+        if not isinstance(public, bool) or not isinstance(series, bool):
+            raise Invalid("public and series must be true or false")
+        preset_id = body.get("id")
+        if preset_id is not None and (not isinstance(preset_id, str) or not ID_PATTERN.match(preset_id)):
+            raise Invalid("id must match [a-z0-9_]{1,40}")
+        now = now_ms()
+        with self.lock:
+            existing = self.db.execute("SELECT owner, public, created_ms FROM presets WHERE id=?",
+                                       (preset_id,)).fetchone() if preset_id else None
+            if preset_id and not existing:
+                raise Invalid("no saved view with that id; leave id out to make a new one")
+            if existing and existing[0] != owner:
+                if not existing[1]:
+                    raise Invalid("no saved view with that id; leave id out to make a new one")   # private: not shown
+                raise PermissionError("Only its owner can change a saved view; save it under a new name instead.")
+            if not existing and self.db.execute("SELECT COUNT(*) FROM presets").fetchone()[0] >= MAX_PRESETS:
+                raise Invalid(f"at most {MAX_PRESETS} saved views; delete one first")
+            preset_id = preset_id or _new_id("p_")
+            made = existing[2] if existing else now
+            clean_filters = {k: filters[k] for k in PRESET_FILTERS if k in filters and filters[k] not in (None, "")}
+            self.db.execute("INSERT OR REPLACE INTO presets VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                            (preset_id, label, owner, int(public), page, chart_id, int(series),
+                             json.dumps(settings, sort_keys=True), json.dumps(clean_filters, sort_keys=True), made, now))
+            self.db.commit()
+        return self.preset(preset_id, owner)
+
+    def delete_preset(self, preset_id, name, moderator=False):
+        """True when deleted. None when this key may not see it (no such id, or someone else's private view).
+        PermissionError for someone else's public view, unless `moderator` (a key in admin_keys)."""
+        with self.lock:
+            row = self.db.execute("SELECT owner, public FROM presets WHERE id=?", (preset_id,)).fetchone()
+            if not row or (row[0] != name and not row[1]):
+                return None
+            if row[0] != name and not moderator:
+                raise PermissionError("Only its owner (or a key in admin_keys) can delete a saved view.")
+            self.db.execute("DELETE FROM presets WHERE id=?", (preset_id,))
+            self.db.commit()
+        return True
 
     # ---------------------------------------------------------------- ingest
 
@@ -689,7 +875,7 @@ class Store:
             received = ts                   # history keeps its own time, so "last event received" stays true
 
         if event == "$identify":
-            return self._identify(distinct_id, props, received, country)
+            return self._identify(distinct_id, props, received, country, ts, trusted)
 
         props_json = json.dumps(props, sort_keys=True, separators=(",", ":"), default=str)
         if len(props_json.encode()) > MAX_PROPS_BYTES:
@@ -718,13 +904,14 @@ class Store:
             return "resent"
         return "near_duplicates" if near else "accepted"
 
-    def _identify(self, distinct_id, props, received, country=None):
+    def _identify(self, distinct_id, props, received, country=None, ts=None, trusted=False):
         person = props.get("$set") if isinstance(props.get("$set"), dict) else {}
         if person.get("gdpr_deletion_requested") is True:
             # The in-game "delete my data" button flags the person (PostHogAnalyticsSink.RequestDataDeletion).
             # PostHog could not finish that from the client; here it is finished at once.
             self._erase_locked(distinct_id, "in_game_request", received)
             return "erased"
+        self._snapshot(distinct_id, person, ts or received, trusted)
         row = self.db.execute("SELECT props FROM people WHERE distinct_id=?", (distinct_id,)).fetchone()
         merged = json.loads(row[0]) if row else {}
         merged.update(person)
@@ -734,6 +921,18 @@ class Store:
             "country=COALESCE(excluded.country, people.country)",
             (distinct_id, json.dumps(merged, sort_keys=True), country, received, received))
         return "accepted"
+
+    def _snapshot(self, distinct_id, person, ts, imported):
+        """Keep this $identify as one row of the player's history (the people table holds only the latest values)."""
+        raw = json.dumps(person, sort_keys=True, separators=(",", ":"), default=str)
+        if len(raw.encode()) > MAX_PROPS_BYTES:
+            return
+        text = lambda k: str(person[k]).strip()[:64] if isinstance(person.get(k), str) and person[k].strip() else None
+        self.db.execute(
+            "INSERT OR IGNORE INTO person_snapshots(distinct_id, ts_ms, day, imported, selected_vessel, preferred_vessel,"
+            " total_flight_time_seconds, props, content_hash) VALUES(?,?,?,?,?,?,?,?,?)",
+            (distinct_id, ts, day_of(ts), 1 if imported else 0, text("selected_vessel"), text("preferred_vessel"),
+             as_float(person.get("total_flight_time_seconds")), raw, hashlib.sha256(raw.encode()).hexdigest()))
 
     # ---------------------------------------------------------------- erasure, retention, backup
 
@@ -746,6 +945,7 @@ class Store:
     def _erase_locked(self, distinct_id, source, requested):
         deleted = self.db.execute("DELETE FROM events WHERE distinct_id=?", (distinct_id,)).rowcount
         deleted += self.db.execute("DELETE FROM people WHERE distinct_id=?", (distinct_id,)).rowcount
+        deleted += self.db.execute("DELETE FROM person_snapshots WHERE distinct_id=?", (distinct_id,)).rowcount
         # The log keeps a salted hash, never the id itself, so the record of a deletion is not a record of the player.
         self.db.execute("INSERT INTO erasures(player_hash, requested_ms, done_ms, rows_deleted, source)"
                         " VALUES(?,?,?,?,?)", (player_hash(distinct_id), requested, now_ms(), deleted, source))
@@ -755,6 +955,7 @@ class Store:
         cutoff = day_of(now_ms() - retention_days * 86400 * 1000)
         with self.lock:
             gone = self.db.execute("DELETE FROM events WHERE day < ?", (cutoff,)).rowcount
+            self.db.execute("DELETE FROM person_snapshots WHERE day < ?", (cutoff,))
             self.db.execute("DELETE FROM rejects WHERE day < ?", (cutoff,))
             self.db.execute("DELETE FROM resent WHERE day < ?", (cutoff,))
             self.db.commit()
@@ -862,7 +1063,11 @@ class Store:
             "THEN match_id END) AS won, "
             "GROUP_CONCAT(DISTINCT platform) AS platforms, GROUP_CONCAT(DISTINCT country) AS countries, "
             "GROUP_CONCAT(DISTINCT build_kind) AS builds, MAX(app_version) AS app_version, "
-            "GROUP_CONCAT(DISTINCT day) AS active_days "
+            "GROUP_CONCAT(DISTINCT day) AS active_days, "
+            # Freestyle (the Toybox): entries since the PostHog history; seconds from builds that send freestyle_ended
+            "SUM(CASE WHEN event='freestyle_entered' AND near_dup=0 THEN 1 ELSE 0 END) AS freestyle_entries, "
+            "ROUND(SUM(CASE WHEN event='freestyle_ended' AND near_dup=0 THEN COALESCE(CAST(json_extract(props, "
+            "'$.seconds') AS REAL), 0) ELSE 0 END), 1) AS freestyle_seconds "
             f"FROM events WHERE {where} GROUP BY distinct_id", args).fetchall()
         people = {r["distinct_id"]: (json.loads(r["props"]), r["country"]) for r in db.execute(
             "SELECT distinct_id, props, country FROM people")}
@@ -927,6 +1132,7 @@ class Store:
                             (distinct_id,)).fetchall()
         row = db.execute("SELECT props, country, first_seen_ms, last_seen_ms FROM people WHERE distinct_id=?",
                          (distinct_id,)).fetchone()
+        recovered = recovered_switches(db, distinct_id).get(distinct_id, [])
         db.close()
         if not events and not row:
             return None
@@ -1005,6 +1211,7 @@ class Store:
                 earned_by[str(x["source"] or "unknown")] = earned_by.get(str(x["source"] or "unknown"), 0) + (x["amount"] or 0)
         lifespan = ((date.fromisoformat(events[-1]["day"]) - date.fromisoformat(events[0]["day"])).days + 1
                     if events else None)
+        freestyle = _freestyle_profile(events, props_of, recovered)
         return {
             "player_id": distinct_id,
             "display_name": person_props.get("display_name") or "",
@@ -1036,6 +1243,7 @@ class Store:
                         "recent": list(reversed(economy))[:60], "unlocks": unlocks,
                         "by_source": [{"source": k, "earned": v} for k, v in
                                       sorted(earned_by.items(), key=lambda kv: -kv[1])]},
+            "freestyle": freestyle,
             "ftue": ftue, "settings": settings, "social": social,
             "recent_events": [{"ts_ms": e["ts_ms"], "event": e["event"], "build": e["build_kind"],
                                "platform": e["platform"], "country": e["country"],
@@ -1070,6 +1278,7 @@ class Store:
                 "WHERE event='game_completed' AND match_id IS NOT NULL ORDER BY ts_ms"):
             dones.setdefault((distinct_id, match_id), (ts, json.loads(props)))
 
+        table = mode_elements()
         by_player = {}
         for (distinct_id, match_id), start in starts.items():
             by_player.setdefault(distinct_id, []).append((start[0], match_id))
@@ -1087,14 +1296,25 @@ class Store:
                 flight = as_float(done_props.get("flight_time_seconds"))
                 duration = as_float(done_props.get("duration_seconds"))
                 won = done_props.get("player_won")
+                element, second, element_source = element_of(props, table)
                 rows.append((match_id, day_of(ts), ts, build, platform, version, props.get("game_mode"),
                              as_int(props.get("intensity")), props.get("vessel_class"), play_type_of(props),
                              as_int(props.get("player_count_human")), as_int(props.get("player_count_ai")),
                              1 if done else 0, rematched, flight, duration,
                              (1 if won is True or won == "true" else 0) if done and won is not None else None,
                              max(0.0, duration - flight) if flight is not None and duration is not None else None,
-                             imported, country))
-        out.executemany("INSERT INTO plays VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                             imported, country, element, second, element_source))
+        out.executemany("INSERT INTO plays VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+        # which modes had no element (old names, modes with no genre): Data health lists them
+        missing = {}
+        for r in rows:
+            if r[20] is None:
+                entry = missing.setdefault(str(r[6] or "unknown"), [0, 0])
+                entry[0] += 1
+                entry[1] += 1 if r[18] else 0
+        out.execute("INSERT INTO meta VALUES('modes_without_element', ?)", (json.dumps(
+            [{"game_mode": k, "plays": v[0], "imported_plays": v[1]} for k, v in
+             sorted(missing.items(), key=lambda kv: (-kv[1][0], kv[0]))]),))
 
         out.executemany("INSERT INTO daily_events VALUES(?,?,?,?,?,?,?)", reader.execute(
             "SELECT day, build_kind, event, COUNT(*), SUM(near_dup), COUNT(DISTINCT distinct_id), received_ms = ts_ms "
@@ -1149,9 +1369,10 @@ class Store:
         out.executemany("INSERT INTO returns VALUES(?,?,?,?,?,?,?)",
                         [(d, b, p, v[0], v[1], v[2], i) for (d, b, p, i), v in sorted(cohorts.items())])
         _rebuild_details(reader, out, first_day, days_seen)
+        _rebuild_freestyle(reader, out)
         eras = [dict(id=r[0], start=r[1], end=r[2], source=r[3], builds=json.loads(r[4])) for r in reader.execute(
             "SELECT id, from_day, to_day, source, builds FROM eras ORDER BY position")]
-        _rebuild_spans(reader, out, starts, eras)
+        _rebuild_spans(reader, out, starts, eras, table)
         out.executemany("INSERT INTO rejects VALUES(?,?,?,?)",
                         reader.execute("SELECT day, reason, event, count FROM rejects").fetchall())
         out.executemany("INSERT INTO meta VALUES(?,?)", [("built_ms", str(now_ms()))])
@@ -1180,8 +1401,69 @@ def _counts(values):
     return dict(sorted(out.items(), key=lambda kv: -kv[1]))
 
 
-SUMMARY_KEYS = ("game_mode", "intensity", "vessel_class", "amount", "source", "balance", "setting", "value", "reason",
-                "step_name", "action_type", "action_label", "vessel", "quest", "key", "display_name")
+SUMMARY_KEYS = ("game_mode", "intensity", "vessel_class", "from_vessel_class", "element", "seconds", "vessels_flown",
+                "amount", "source", "balance", "setting", "value", "reason", "step_name", "action_type", "action_label",
+                "vessel", "quest", "key", "display_name")
+FREESTYLE_NOTE = ("Entries go back to the PostHog history (August 2026). Minutes and exact switches exist only from "
+                  "builds that send freestyle_ended and freestyle_vessel_changed (after 2026-11-06). Switches marked "
+                  "approx. are recovered from the identify history (builds since 2026-10-12): the selected vessel "
+                  "changed between two profile updates, at about that time.")
+
+
+def _freestyle_profile(events, props_of, recovered=()):
+    """One player's Freestyle (Toybox) block for their profile: visits, minutes, the vessels flown there, and every
+    switch in order (when, from, to, seconds into the stretch). `recovered` switches (from the identify history) are
+    marked approx: their time is when the profile was sent, not the click."""
+    entries = first = stretches = 0
+    seconds, flown, switched_to, switches, recent, per_day = 0.0, {}, {}, [], [], {}
+    first_ms = last_ms = first_minutes_ms = None
+    for e, p in zip(events, props_of):
+        name = e["event"]
+        if name not in ("freestyle_entered", "freestyle_ended", "freestyle_vessel_changed") or e["near_dup"]:
+            continue
+        first_ms = first_ms or e["ts_ms"]
+        last_ms = e["ts_ms"]
+        day = per_day.setdefault(e["day"], {"day": e["day"], "entries": 0, "seconds": 0.0, "switches": 0})
+        vessel = p.get("vessel_class") if isinstance(p.get("vessel_class"), str) and p.get("vessel_class") else None
+        if name == "freestyle_entered":
+            entries += 1
+            day["entries"] += 1
+            first += 1 if p.get("is_first") in (True, "true", "True", 1) else 0
+            if vessel:
+                flown[vessel] = flown.get(vessel, 0) + 1
+        elif name == "freestyle_ended":
+            stretches += 1
+            sec = max(0.0, as_float(p.get("seconds")) or 0.0)
+            seconds += sec
+            day["seconds"] = round(day["seconds"] + sec, 1)
+            first_minutes_ms = first_minutes_ms or e["ts_ms"]
+            recent.append({"ts_ms": e["ts_ms"], "seconds": round(sec, 1), "vessel_class": vessel,
+                           "vessels_flown": as_int(p.get("vessels_flown"))})
+        else:
+            day["switches"] += 1
+            if vessel:
+                flown[vessel] = flown.get(vessel, 0) + 1
+                switched_to[vessel] = switched_to.get(vessel, 0) + 1
+            switches.append({"ts_ms": e["ts_ms"], "from": p.get("from_vessel_class") or None, "to": vessel,
+                             "seconds_in_freestyle": as_float(p.get("seconds_in_freestyle")), "approx": False})
+    for ts, source, vessel, _imported in recovered:
+        switched_to[vessel] = switched_to.get(vessel, 0) + 1
+        flown[vessel] = flown.get(vessel, 0) + 1
+        switches.append({"ts_ms": ts, "from": source, "to": vessel, "seconds_in_freestyle": None, "approx": True})
+        first_ms = min(first_ms or ts, ts)
+        last_ms = max(last_ms or ts, ts)
+    switches.sort(key=lambda x: x["ts_ms"])
+    return {"entries": entries, "first_entries": first, "stretches": stretches, "seconds": round(seconds, 1),
+            "minutes": round(seconds / 60.0, 1), "vessels_flown": _counts_dict(flown),
+            "switched_to": _counts_dict(switched_to), "switch_count": len(switches),
+            "recovered_switches": sum(1 for x in switches if x["approx"]),
+            "switches": switches[-200:], "stretches_recent": list(reversed(recent))[:50],
+            "per_day": sorted(per_day.values(), key=lambda d: d["day"])[-90:],
+            "first_ms": first_ms, "last_ms": last_ms, "first_minutes_ms": first_minutes_ms, "note": FREESTYLE_NOTE}
+
+
+def _counts_dict(counts):
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
 
 def _summary(event, props):
@@ -1337,11 +1619,95 @@ def _rebuild_details(reader, out, first_day, days_seen):
     out.executemany("INSERT INTO cloud_save_failures VALUES(?,?,?,?)", [k + tuple(v) for k, v in save_failures.items()])
 
 
+RECOVERED_NOTE = ("recovered switches come from the identify history: the player's selected vessel changed between two "
+                  "$identify (the Toybox's Vessel Changer sets it, builds since 2026-10-12); the time is when the "
+                  "profile was sent, not the click, and several switches between two identifies read as one")
+
+
+def derive_switches(snapshots):
+    """[(ts_ms, from, to, imported)] from one player's [(ts_ms, selected_vessel, imported)] in time order: a switch
+    wherever the selected vessel differs from the last one seen. Empty values are skipped, not a change."""
+    out, last = [], None
+    for ts, vessel, imported in snapshots:
+        if not vessel:
+            continue
+        if last is not None and vessel != last:
+            out.append((ts, last, vessel, imported))
+        last = vessel
+    return out
+
+
+def recovered_switches(reader, distinct_id=None):
+    """{player: [(ts_ms, from, to, imported)]} recovered from person_snapshots, only before the player's first live
+    freestyle_vessel_changed (from then on the event itself counts)."""
+    where, args = ("WHERE distinct_id = ?", (distinct_id,)) if distinct_id else ("", ())
+    live = dict(reader.execute(f"SELECT distinct_id, MIN(ts_ms) FROM events {'WHERE distinct_id = ? AND' if distinct_id else 'WHERE'} "
+                               "event = 'freestyle_vessel_changed' GROUP BY distinct_id", args).fetchall())
+    per = {}
+    for player, ts, vessel, imported in reader.execute(
+            f"SELECT distinct_id, ts_ms, selected_vessel, imported FROM person_snapshots {where} ORDER BY distinct_id, ts_ms, id",
+            args):
+        per.setdefault(player, []).append((ts, vessel, imported))
+    out = {}
+    for player, snaps in per.items():
+        cut = live.get(player)
+        found = [x for x in derive_switches(snaps) if cut is None or x[0] < cut]
+        if found:
+            out[player] = found
+    return out
+
+
+def _rebuild_freestyle(reader, out):
+    """freestyle_vessels and freestyle_switches: the Toybox counted per day, build, source and vessel. Near-duplicate
+    rows (the October double-send) are left out. Recovered switches (derive_switches over the identify history) carry
+    origin 'recovered'. Player ids are used only to group a player's history; nothing written to `out` carries one."""
+    vessels, switches = {}, {}
+    for day, build, imported, event, raw in reader.execute(
+            "SELECT day, build_kind, received_ms = ts_ms, event, props FROM events WHERE event IN ('freestyle_entered', "
+            "'freestyle_ended', 'freestyle_vessel_changed') AND near_dup = 0"):
+        props = json.loads(raw)
+        vessel = str(props.get("vessel_class") or "unknown")
+        if event == "freestyle_entered":
+            first = props.get("is_first") in (True, "true", "True", 1)
+            _add(vessels, (day, build, imported, vessel), 1, int(first), 0, 0.0, 0, 0, 0, 0, 0)
+        elif event == "freestyle_ended":
+            seconds = max(0.0, as_float(props.get("seconds")) or 0.0)
+            flown = max(1, as_int(props.get("vessels_flown")) or 1)
+            _add(vessels, (day, build, imported, vessel), 0, 0, 1, seconds, flown, 0, 0, 0, 0)
+        else:
+            source = str(props.get("from_vessel_class") or "unknown")
+            _add(vessels, (day, build, imported, vessel), 0, 0, 0, 0.0, 0, 1, 0, 0, 0)
+            _add(vessels, (day, build, imported, source), 0, 0, 0, 0.0, 0, 0, 1, 0, 0)
+            _add(switches, (day, build, imported, source, vessel, "event"), 1)
+    # A snapshot has no build of its own: it takes the build its player sent most events from that day (else ever).
+    builds_by_day, builds_ever = {}, {}
+    for player, day, build, n in reader.execute(
+            "SELECT distinct_id, day, build_kind, COUNT(*) FROM events GROUP BY distinct_id, day, build_kind"):
+        if n > builds_by_day.get((player, day), ("", 0))[1]:
+            builds_by_day[(player, day)] = (build, n)
+        _add(builds_ever, (player, build), n)
+    best = {}
+    for (player, build), (n,) in builds_ever.items():
+        if n > best.get(player, ("", 0))[1]:
+            best[player] = (build, n)
+    for player, found in recovered_switches(reader).items():
+        for ts, source, vessel, imported in found:
+            day = day_of(ts)
+            build = (builds_by_day.get((player, day)) or best.get(player) or ("release", 0))[0]
+            _add(vessels, (day, build, imported, vessel), 0, 0, 0, 0.0, 0, 0, 0, 1, 0)
+            _add(vessels, (day, build, imported, source), 0, 0, 0, 0.0, 0, 0, 0, 0, 1)
+            _add(switches, (day, build, imported, source, vessel, "recovered"), 1)
+    out.executemany("INSERT INTO freestyle_vessels VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    [k + (v[0], v[1], v[2], round(v[3], 1), v[4], v[5], v[6], v[7], v[8]) for k, v in sorted(vessels.items())])
+    out.executemany("INSERT INTO freestyle_switches VALUES(?,?,?,?,?,?,?)",
+                    [k[:5] + (v[0], k[5]) for k, v in sorted(switches.items())])
+
+
 def play_group_of(play_type):
     return PLAY_GROUP_OF.get(play_type, "multi")
 
 
-def _rebuild_spans(reader, out, starts, eras):
+def _rebuild_spans(reader, out, starts, eras, table=None):
     """player_counts, cohort_weeks and cohort_days: distinct players per day, week, last-N-days window and era, split
     by platform, country, play type, mode, vessel and intensity, for every source (any / imported / live). Player ids
     are used here only to count each player once; nothing written to `out` carries one."""
@@ -1359,7 +1725,19 @@ def _rebuild_spans(reader, out, starts, eras):
             (("play_type", play_type), ("play_group", play_group_of(play_type)),
              ("game_mode", str(props.get("game_mode") or "unknown")),
              ("vessel_class", str(props.get("vessel_class") or "unknown")),
-             ("intensity", str(intensity) if intensity is not None else "unknown")))
+             ("intensity", str(intensity) if intensity is not None else "unknown"),
+             ("element", element_of(props, table)[0] or "none")))
+    # Freestyle (the Toybox): who entered it, and which vessels they flew there (entered in, ended in, switched to)
+    for player, build, day, flag, event, vessel, from_vessel in reader.execute(
+            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, event, json_extract(props, '$.vessel_class'), "
+            "json_extract(props, '$.from_vessel_class') FROM events WHERE event IN ('freestyle_entered', "
+            "'freestyle_ended', 'freestyle_vessel_changed') AND near_dup = 0"):
+        keys = {("freestyle", "entered")} if event == "freestyle_entered" else set()
+        for v in (vessel, from_vessel):
+            if isinstance(v, str) and v:
+                keys.add(("freestyle_vessel", v))
+        if keys:
+            act.setdefault(player, {}).setdefault(build, {}).setdefault(day, {}).setdefault(flag, set()).update(keys)
 
     counts, weeks_out, days_out = {}, {}, {}
 

@@ -55,6 +55,11 @@ the summary). It pages by `timestamp`, because PostHog answers 400 to `OFFSET` o
 key, and waits when PostHog rate-limits it. Run it once more after the builds that still send to PostHog have died
 out: it adds only what is missing. Then delete the personal key in PostHog.
 
+**Run `import-posthog` once more after deploying the 2026-11-06 server.** Every `$identify` is now kept as a row of the
+player's history (`person_snapshots` in `events.db`), where before only the latest values were merged into `people`.
+Re-running the import brings PostHog's identify history in (each `$identify` once: rows are keyed by player, time and
+content, so the run is idempotent) and the Toybox's older vessel switches with it (below).
+
 ## Updates (nightly, by itself)
 
 `self-update.sh`, installed as `/usr/local/bin/froglet-analytics-update` and run by `froglet-analytics-update.timer`
@@ -73,7 +78,9 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `analytics_views.py` | The console's pages, read from `aggregates.db` only; the switchable charts (`/v1/series`); the guarded SQL runner for Ask and the Query Studio |
 | `analytics_geo.py` | Country from an IP address (DB-IP country table), the address not kept |
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
-| `test_analytics_server.py` | 51 tests: `python3 analytics_server.py --self-test` |
+| `mode_elements.py` | Writes `mode_elements.json` (each mode's genre element) from the game's `ModeGenre.cs`, `GameModes.cs` and `ModePreviewLibrary.asset`; `--check` fails when it is stale, `--self-test` checks known answers and a negative control |
+| `mode_elements.json` | GENERATED: `game_mode` -> `[primary, secondary or null]`, the modes with no element, each mode's metric. The server reads only this file (the VM has no `Assets/`) |
+| `test_analytics_server.py` | 70 tests: `python3 analytics_server.py --self-test` |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
 | `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
@@ -182,6 +189,61 @@ a 400 that says so, and the console hides it. Players come from `player_counts`,
 week, last-N-days window and era (a week's players are not the sum of its days), for every source and build, and
 `*` for every build with each player counted once. A player on two platforms in a day counts under both, and the
 answer's `notes` say so.
+
+## Elements, the Toybox and saved views (2026-11-06)
+
+Asked for by Shombith on 2026-11-06: "the matches over time should also have element support"; players who "went
+inside freestyle/toybox and played vessels ... can we bring it for the old one?"; "save our own view as well and make
+it public and that will saved in saved presets under dashboards".
+
+**Elements.** Every mode has a genre element (Charge, Mass, Space, Time; Omni), from the game's
+`ModeGenre.TryElementsFor`: the mode's own row (Scurry, Tollway, Scarab Scramble: Mass; Brood Rush: Mass and Space),
+else its scoring metric's element. The metric is the one the arcade grid reads, the mode's preview definition in
+`Assets/Resources/ModePreviewLibrary.asset` (the arcade cards carry no metric). `mode_elements.py` writes that answer to
+`mode_elements.json`; re-run it when `ModeGenre.cs`, `GameModes.cs` or a preview definition changes (the self-test fails
+while it is stale). Each play's element (`plays.element`, `element_secondary`, `element_source`) is the one its
+`game_started` sent (builds from 2026-11-06: `element_source = 'event'`), else the json's row for its `game_mode`
+(`'table'`: every older match, the PostHog history included), else NULL ("No element": a mode with no genre or an old
+mode name; Data health lists them as `modes_without_element`). A two-element mode counts under its first element in
+every split; its second is listed apart (`secondary` on the series answer, `element_secondary` on Matches), never added
+in. `/v1/series` takes `by=element` for matches, players, new players, finished, rematch and flight minutes (not events);
+`/v1/matches` adds `by_element` and an `element` on each `by_mode` row. **Elements have no colour** (LOCKED): the console
+draws an element split in one neutral hue in steps, with the names beside the marks.
+
+**Freestyle (the Toybox).** `freestyle_entered` came in with the PostHog history (entries since August); builds after
+2026-11-06 also send its `vessel_class`, `freestyle_ended {seconds, vessel_class, vessels_flown}` and
+`freestyle_vessel_changed {vessel_class, from_vessel_class, seconds_in_freestyle}`. Older switches are **recovered from the
+identify history**: builds since 2026-10-12 re-identify after every Toybox flight with `selected_vessel`, so where a
+player's selected vessel changes between two `$identify` rows the rebuild counts a switch A -> B at that row's time (the
+time is when the profile was sent, not the click, and several switches between two identifies read as one). A player's
+recovered switches stop at their first live `freestyle_vessel_changed`, so nothing counts twice. Aggregates (no player
+ids): `freestyle_vessels` (per day, build, source, vessel: entries, first entries, stretches, seconds, vessels flown,
+switches to and from, recovered to and from), `freestyle_switches` (per day, build, source, from, to, `origin` event or
+recovered), and `player_counts` dims `freestyle`/`entered` and `freestyle_vessel`. Near-duplicate rows are left out.
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v1/freestyle?build&days&era` | reader | `{tiles: {entries, first_entries, players, stretches, minutes, avg_stretch_min, avg_vessels_flown, switches, recovered_switches}, per_day: [{day, entries, players, minutes, switches, recovered_switches}], vessels: [{vessel_class, entries, stretches, minutes, switches_to, switches_from, recovered_to, recovered_from}], switch_pairs: [{from_vessel, to_vessel, switches, recovered}] (top 20), history: {first_entry_day, first_imported_entry_day, last_imported_entry_day, first_minutes_day, first_vessel_entry_day, first_switch_day, first_recovered_switch_day}, notes, unfiltered}` (the Play filter does not reach it: the Toybox is not a match) |
+| `GET /v1/series?measure=freestyle_entries\|freestyle_players\|freestyle_minutes\|freestyle_switches` | reader | splits none, era, build_kind, vessel_class; switches also from_vessel_class and switch_source (event \| recovered). The `notes` say what history each has |
+| `GET /v1/person?id=` | profile readers | adds `freestyle: {entries, first_entries, stretches, seconds, minutes, vessels_flown, switched_to, switch_count, recovered_switches, switches: [{ts_ms, from, to, seconds_in_freestyle, approx}], stretches_recent, per_day, first_ms, last_ms, first_minutes_ms, note}` (`approx: true` = recovered) |
+| `GET /v1/people` | profile readers | adds `freestyle_entries` and `freestyle_seconds` per player |
+| `GET /v1/dashboards/tile?source=builtin:freestyle_entries` | reader | Toybox entries per day |
+
+**Saved views ("presets").** Any chart panel's **Save view** keeps its switches and the page's filters under a name, for
+its key or for everyone (Public); **Views** on the panel applies one (it sets the switches and the header's build, range,
+play and era, and goes to the page). Dashboards lists them all under **Saved presets** (open, delete your own, and **Add
+to dashboard** for a series chart, which adds a `preset:<id>` tile that runs the view's own series with its own
+filters). Stored in `events.db` (`presets`); no player data. Ownership is by key name: with `all_keys_admin` every key is
+an admin for the pages, but a saved view stays its owner's, and only a key in `admin_keys` may delete someone else's
+public view.
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v1/presets` | reader | `{presets: [{id, name, owner, public, page, chart_id, series, settings, filters, created_ms, updated_ms}]}`: this key's own and every public one; someone else's private view is never listed |
+| `POST /v1/presets` `{id?, name, page, chart_id, series?, settings: {form?, measure?, by?, over?}, filters: {build?, days?, play?, era?}, public?}` | reader | makes one, or (with the id of your own) replaces it. 400 with the reason for a bad page, chart id, setting, filter or unknown field; another key's id: 400 if private (not shown), 403 if public |
+| `DELETE /v1/presets?id=` | owner, or a key in `admin_keys` for a public one | 404 for an id this key cannot see (someone else's private view), 403 for someone else's public one |
+| `GET /v1/dashboards/tile?source=preset:<id>` | a key that can see the view | `{columns, rows, series, preset, form, unfiltered}`: the view's own measure, split, over and filters (the page's filters do not reach it); 400 if the view is not a series chart |
+| `PUT /v1/dashboards` | admin | a tile may now be `preset:<id>` of a series view the saving key can see |
 
 ## Claude, and what it can see
 

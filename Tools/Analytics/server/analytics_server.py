@@ -46,6 +46,14 @@ HTTP:
     GET  /v1/dashboards/tile?source=query:<id>|builtin:<name>&build&days&play&era
     GET  /v1/segments | POST | DELETE ?id= (profile readers)     saved player filters
 
+  2026-11-06 (Shombith): elements, the Toybox, saved views.
+    GET  /v1/series?...&by=element         a match's element (its own, else its mode's genre: mode_elements.json)
+    GET  /v1/series?measure=freestyle_entries|freestyle_players|freestyle_minutes|freestyle_switches
+    GET  /v1/freestyle?build&days&era      Freestyle (Toybox): tiles, per day, vessels, switch pairs, what history exists
+    GET  /v1/presets | POST {id?, name, page, chart_id, series, settings, filters, public} | DELETE ?id=
+                                           saved chart views: own + public; the owner (or a key in admin_keys) deletes
+    GET  /v1/dashboards/tile?source=preset:<id>   a saved view's own series as a tile
+
 Data lives in data_dir (events.db raw, aggregates.db for reading). Standard library only, except the two Claude
 features, which need `pip install anthropic` and ANTHROPIC_API_KEY. Run behind Caddy for HTTPS
 (setup-analytics-vm.sh). README.md beside this file has the whole picture.
@@ -355,6 +363,33 @@ def _series(h):
                          build, days, play, era, _app(h).store.eras())
 
 
+def _freestyle(h):
+    build, days, play, era = h._scope_params(h._params())
+    return 200, V.freestyle(_app(h).agg, build, days, play, era)
+
+
+def _moderator(h):
+    """A key in admin_keys itself. all_keys_admin makes every key an admin for the pages, but a saved view stays its
+    owner's: only a real admin key may delete someone else's public one."""
+    return _match_key(h._bearer(), _app(h).config["admin_keys"]) is not None
+
+
+def _presets_get(h):
+    return 200, {"presets": _app(h).store.presets(h._reader())}
+
+
+def _presets_post(h):
+    store = _app(h).store
+    return 200, store.save_preset(h._body(), h._reader(), store.eras())
+
+
+def _presets_delete(h):
+    done = _app(h).store.delete_preset(h._params().get("id") or "", h._reader(), _moderator(h))
+    if done is None:
+        return 404, {"error": "No saved view with that id that this key may see."}
+    return 200, {"deleted": h._params()["id"]}
+
+
 def _saved_tables(store):
     return {q["table"] for q in store.queries() if q["as_table"]}
 
@@ -410,7 +445,7 @@ def _dashboards_get(h):
 def _dashboards_put(h):
     if not h._admin():
         return ADMIN_ONLY
-    return 200, _app(h).store.save_dashboard(h._body(), h._admin())
+    return 200, _app(h).store.save_dashboard(h._body(), h._reader())
 
 
 def _dashboards_delete(h):
@@ -430,6 +465,15 @@ def _tile(h):
         if source[8:] not in S.BUILTIN_TILES:
             raise S.Invalid(f"builtin tiles are {', '.join(S.BUILTIN_TILES)}")
         return 200, V.builtin_tile(app.agg, source[8:], build, days, play, era)
+    if source.startswith("preset:"):
+        found = app.store.preset(source[7:], h._reader())
+        if not found:
+            return 404, {"error": "No saved view with that id that this key may see."}
+        era_id = found["filters"].get("era")
+        era = app.store.era(era_id) if era_id else None
+        if era_id and era is None:
+            raise S.Invalid(f"this saved view's era {era_id} no longer exists")
+        return 200, V.preset_tile(app.agg, found, era, app.store.eras())
     if source.startswith("query:"):
         admin = h._admin()
         visible = {x["id"]: x for x in app.store.queries(None if admin else h._reader(), bool(admin))}
@@ -440,7 +484,7 @@ def _tile(h):
         # a saved query is its own SQL: the page's build, days, play and era do not reach it
         return 200, {"columns": out["columns"], "rows": out["rows"], "truncated": out["truncated"],
                      "unfiltered": ["build", "days", "play", "era"]}
-    raise S.Invalid("source must be query:<saved query id> or builtin:<name>")
+    raise S.Invalid("source must be query:<saved query id>, preset:<saved view id> or builtin:<name>")
 
 
 def _segments_get(h):
@@ -467,11 +511,13 @@ def _segments_delete(h):
 
 REV65_GET = {"/v1/eras": _eras_get, "/v1/eras/compare": _eras_compare, "/v1/cohorts": _cohorts,
              "/v1/playtypes": _playtypes, "/v1/series": _series, "/v1/schema": _schema, "/v1/queries": _queries_get,
-             "/v1/dashboards": _dashboards_get, "/v1/dashboards/tile": _tile, "/v1/segments": _segments_get}
-REV65_POST = {"/v1/query": _query_run, "/v1/queries": _queries_post, "/v1/segments": _segments_post}
+             "/v1/dashboards": _dashboards_get, "/v1/dashboards/tile": _tile, "/v1/segments": _segments_get,
+             "/v1/freestyle": _freestyle, "/v1/presets": _presets_get}
+REV65_POST = {"/v1/query": _query_run, "/v1/queries": _queries_post, "/v1/segments": _segments_post,
+              "/v1/presets": _presets_post}
 REV65_PUT = {"/v1/eras": _eras_put, "/v1/dashboards": _dashboards_put}
 REV65_DELETE = {"/v1/queries": _queries_delete, "/v1/dashboards": _dashboards_delete,
-                "/v1/segments": _segments_delete}
+                "/v1/segments": _segments_delete, "/v1/presets": _presets_delete}
 
 
 def make_handler(app):

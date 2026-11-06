@@ -33,6 +33,61 @@ namespace CosmicShore.Core
     /// </remarks>
     public sealed class UgsAnalyticsSink : IAnalyticsSink
     {
+        /// <summary>
+        /// What UGS must never see: every event and parameter Docs/Analytics/EVENT_SCHEMA.json marks
+        /// <c>"sinks": ["froglet"]</c> (Froglet Analytics only, Shombith 2026-11-06). An entry is either
+        /// an event name (the whole event is not sent to UGS) or <c>"event.parameter"</c> (that
+        /// parameter is stripped from that event before UGS). UGS discards, silently, any event that
+        /// carries a parameter its Event Manager does not declare, so a Froglet-only field that leaked
+        /// through would take the whole UGS event with it.
+        ///
+        /// <para>This is the ONE list. It mirrors the schema, and
+        /// <c>AnalyticsFrogletOnlyTests.UgsFilterMirrorsTheSchema</c> fails when the two differ: a new
+        /// Froglet-only field is added to the schema and here in the same change.</para>
+        /// </summary>
+        public static readonly HashSet<string> FrogletOnlyFields = new(StringComparer.Ordinal)
+        {
+            UGSKeys.EventFreestyleEnded,
+            UGSKeys.EventFreestyleVesselChanged,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamElement,
+            UGSKeys.EventGameStarted + "." + UGSKeys.ParamElementSecondary,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamElement,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamElementSecondary,
+            UGSKeys.EventFreestyleEntered + "." + UGSKeys.ParamVesselClass,
+        };
+
+        /// <summary>
+        /// The payload UGS may see for one event. Returns false when the whole event is Froglet-only
+        /// (send nothing). Otherwise <paramref name="ugsParameters"/> is the input itself when nothing
+        /// is stripped, or a COPY without the Froglet-only parameters - the input is never modified,
+        /// because the facade hands the same dictionary to every sink.
+        /// </summary>
+        public static bool TryFilterForUgs(string eventName, IDictionary<string, object> parameters,
+            out IDictionary<string, object> ugsParameters)
+        {
+            ugsParameters = null;
+            if (eventName == null || FrogletOnlyFields.Contains(eventName))
+                return false;
+
+            ugsParameters = parameters;
+            if (parameters == null)
+                return true;
+
+            Dictionary<string, object> stripped = null;
+            foreach (var key in parameters.Keys)
+            {
+                if (!FrogletOnlyFields.Contains(eventName + "." + key))
+                    continue;
+
+                stripped ??= new Dictionary<string, object>(parameters);
+                stripped.Remove(key);
+            }
+
+            if (stripped != null)
+                ugsParameters = stripped;
+            return true;
+        }
+
         readonly Action<string> _log;
 
         bool _collecting;
@@ -89,11 +144,15 @@ namespace CosmicShore.Core
             if (!_collecting)
                 return;
 
+            // Froglet-only events and parameters never reach UGS - see FrogletOnlyFields.
+            if (!TryFilterForUgs(eventName, parameters, out var ugsParameters))
+                return;
+
             try
             {
                 var evt = new CustomEvent(eventName);
-                if (parameters != null)
-                    foreach (var kvp in parameters)
+                if (ugsParameters != null)
+                    foreach (var kvp in ugsParameters)
                         evt.Add(kvp.Key, kvp.Value);
 
                 AnalyticsService.Instance.RecordEvent(evt);
