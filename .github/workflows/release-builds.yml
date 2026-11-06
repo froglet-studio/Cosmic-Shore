@@ -444,23 +444,23 @@ jobs:
     permissions:
       actions: write   # dispatch the web pipeline's workflow
     steps:
-      - name: Dispatch the web pipeline for this tag
+      - name: Dispatch the web pipeline's stage for this tag's commit
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          WEB_WORKFLOW: ${{ vars.WEB_PIPELINE_WORKFLOW }}
           TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           set -euo pipefail
-          # The web pipeline owns its build, staging and status (claude/launch-web-pipeline). Its contract: a
-          # web-v* tag or a dispatch with the release tag. A tag pushed with this run's token would start nothing
-          # (GitHub does not trigger workflows from GITHUB_TOKEN pushes), so this dispatches.
-          if [ -z "$WEB_WORKFLOW" ]; then
-            echo "::error::The web pipeline's workflow file is not named: set the repository variable WEB_PIPELINE_WORKFLOW (Docs/LAUNCH/PIPELINES.md, Web)."
-            exit 1
-          fi
-          gh workflow run "$WEB_WORKFLOW" --ref bleeding-edge -f tag="$TAG"
-          echo "Dispatched $WEB_WORKFLOW for $TAG." >> "$GITHUB_STEP_SUMMARY"
+          # The web pipeline owns its build, staging and status (toybox-publish.yml, claude/launch-web-pipeline): a
+          # web-v* tag or a dispatch with action=stage and the commit. A tag pushed with this run's token would start
+          # nothing (GitHub does not trigger workflows from GITHUB_TOKEN pushes), so this dispatches. It stages only;
+          # promotion to /play is that workflow's toybox-production job, behind its reviewers.
+          # Until that pipeline is on bleeding-edge, the old toybox-publish.yml has none of these inputs and GitHub
+          # refuses the dispatch (HTTP 422), which fails this job and nothing else.
+          gh workflow run toybox-publish.yml --ref bleeding-edge \
+            -f action=stage -f commit="$SHA" -f start_uba_build=true
+          echo "Dispatched toybox-publish.yml (stage) for $TAG at $SHA." >> "$GITHUB_STEP_SUMMARY"
 
   status:
     name: Launch status
