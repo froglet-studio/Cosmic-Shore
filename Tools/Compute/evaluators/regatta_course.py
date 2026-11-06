@@ -102,7 +102,7 @@ def setup(ctx):
 
 # RegattaCourse.NeutralShareFor as shipped (I1 0.3 since 2026-11-03; I2-I4 0): the middle share of every leg's rail in
 # no team's colour. The one course lever on the rail RIDER: the Squirrel skims any colour and the rest fly beside it.
-SHIP_NEUTRAL = {1: 0.3, 2: 0.0, 3: 0.0, 4: 0.0}
+SHIP_NEUTRAL = {1: 0.4, 2: 0.26, 3: 0.42, 4: 0.4}
 
 
 def ship_neutral(intensity):

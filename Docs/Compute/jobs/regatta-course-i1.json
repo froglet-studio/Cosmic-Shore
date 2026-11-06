@@ -104,10 +104,10 @@
       "anchor": 75.0,
       "bal_ref": 48.54,
       "time_levels": {
-       "1": 10,
-       "2": 10,
-       "3": 10,
-       "4": 10
+       "1": 0,
+       "2": 0,
+       "3": 0,
+       "4": 0
       }
      },
      "model": "measured"
@@ -157,109 +157,109 @@
   "python3",
   "numpy"
  ],
- "roster_note": "Every Regatta-ready hull anchored at its measured editor race (Regatta Hull Benchmark, I1, 2026-11-03) and moved by the line and lap models (Tools/Build/regatta_measured_roster.py); Time at the card's I1 levels (stage 3 sets them). The Sparrow is raced and reported but left out of the disparity: its 2x gap is its AI (rail rams), which no course or Time level closes.",
+ "roster_note": "Every Regatta-ready hull anchored at its measured editor race (Regatta Hull Benchmark, I1, 2026-11-03) and moved by the line and lap models (Tools/Build/regatta_measured_roster.py); Time at the card's I1 levels (stage 3 sets them). The Sparrow is raced and reported but left out of the disparity: its 2x gap is its AI (rail rams), which no course or Time level closes. Starts from the circuit promoted 2026-11-06 (RegattaCourse.ForIntensity); the card's Time levels as promoted (Stoat 3, Squirrel 0).",
  "schema": "froglet-compute/job/1",
  "space": [
   {
    "hi": 143.0,
-   "init": 90.0,
+   "init": 77.2,
    "lo": 45.0,
    "name": "corner0"
   },
   {
    "hi": 116.0,
-   "init": 72.0,
+   "init": 102.4,
    "lo": 36.0,
    "name": "corner1"
   },
   {
    "hi": 95.0,
-   "init": 58.0,
+   "init": 46.1,
    "lo": 29.0,
    "name": "corner2"
   },
   {
    "hi": 80.0,
-   "init": 48.0,
+   "init": 51.3,
    "lo": 24.0,
    "name": "corner3"
   },
   {
    "hi": 65.0,
-   "init": 38.0,
+   "init": 32.3,
    "lo": 19.0,
    "name": "corner4"
   },
   {
    "hi": 50.0,
-   "init": 28.0,
+   "init": 27.1,
    "lo": 14.0,
    "name": "corner5"
   },
   {
    "hi": 32.0,
-   "init": 16.0,
+   "init": 14.4,
    "lo": 8.0,
    "name": "corner6"
   },
   {
    "hi": 23.0,
-   "init": 10.0,
+   "init": 9.2,
    "lo": 5.0,
    "name": "corner7"
   },
   {
    "hi": 130,
-   "init": 110.0,
+   "init": 106.0,
    "lo": 96,
    "name": "RingRadius"
   },
   {
    "hi": 320.0,
-   "init": 200.0,
+   "init": 132.9,
    "lo": 80.0,
    "name": "CornerFloorRadius"
   },
   {
    "hi": 6.0,
-   "init": 1.2,
+   "init": 4.45,
    "lo": 0.5,
    "name": "AngularSpread"
   },
   {
    "hi": 400.0,
-   "init": 160.0,
+   "init": 82.7,
    "lo": 60.0,
    "name": "LateralPerturbation"
   },
   {
    "hi": 50.0,
-   "init": 20.0,
+   "init": 13.0,
    "lo": 0.0,
    "name": "AxisJitterDegrees"
   },
   {
    "hi": 85.0,
-   "init": 50.0,
+   "init": 48.8,
    "lo": 40.0,
    "name": "MaxPresentDegrees"
   },
   {
    "hi": 0.6,
-   "init": 0.42,
+   "init": 0.485,
    "lo": 0.2,
    "name": "RadialSwing"
   },
   {
    "hi": 4095,
-   "init": 0,
+   "init": 3240,
    "lo": 0,
    "name": "seed",
    "type": "int"
   },
   {
    "hi": 0.5,
-   "init": 0.3,
+   "init": 0.4,
    "lo": 0.0,
    "name": "NeutralShare"
   }

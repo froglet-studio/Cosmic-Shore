@@ -41,6 +41,42 @@ and Dolphin on their drive sims with the shipped Regatta drives; the Urchin on i
 `regatta_balance.py`'s rail-skim model (no AI race model yet). These are MODELS (`race_models.MODEL_LIMITS`); the
 editor is the measurement.
 
+## Where it stands (2026-11-06): stage 2 and 3 run on the MEASURED roster
+
+Garrett, 2026-11-06: "the urchin was still overpowered ... make a whole new course and start evolving it to minimize
+the spread, then get the last mile with the elemental differences." Stage 1's trained drives are not promoted, so stages
+2 and 3 ran on today's AIs as the real game races them, not on the offline models (which were 1.5-2.6x fast for every
+hull but the Urchin, so a search on them could not see it).
+
+**The roster** (`Tools/Build/regatta_measured_roster.py`, `--check`): each Regatta-ready hull ANCHORED at its measured
+editor race (Regatta Hull Benchmark, I1, the course it ran on is pinned) and moved on a new course by the geometric mean
+of the race-line model's and the lap model's ratios; the Urchin fitted to its three neutral-rail races (288 u/s on its
+rail, 113 off it). The Sparrow is raced and reported but not scored: its ~2x gap is its AI ramming rails.
+
+**Stage 2** (`regatta_course` VERSION 2: NeutralShare joins the space; sep-CMA-ES, 600 evaluations per intensity, run
+in a session to prove the evaluator, then promoted with Garrett's ask): a new circuit per intensity (new corners, floor,
+spread, swing, mouth, presentation, seed step) and a neutral share at every intensity.
+
+| | Shipped before (Sparrow out / in) | Promoted (Sparrow out / in) | Urchin before -> after | Hardest corner |
+|---|---:|---:|---:|---:|
+| I1 | 1.49x / 1.99x | **1.44x** / 1.93x | 74 -> 75 s (neutral 0.3 -> 0.40) | 98 deg |
+| I2 | 2.18x / 2.91x | **1.42x** / 1.88x | 57 -> 78 s (0 -> 0.26) | 110 deg |
+| I3 | 2.24x / 2.89x | **1.42x** / 1.89x | 62 -> 93 s (0 -> 0.42) | 114 deg |
+| I4 | 2.25x / 2.89x | **1.41x** / 1.88x | 62 -> 90 s (0 -> 0.40) | 119 deg |
+
+Every hull threads all 24 rings on every promoted circuit in the race-line model; the harness's 60-seed sweep and gate
+coverage pass; `course_port --self-test` matches the C# harness.
+
+**Stage 3** (Time levels on the promoted circuits; only the Stoat and the Squirrel have a measured Time response, every
+other hull's Time is spent - Manta at its -5 floor, Serpent and Sparrow at 10 - or measured to do nothing (Dolphin) or
+to hurt (Rhino: misses)). The Stoat at **Time 3 at every intensity** (the lowest level a measured race backs; the model's
+Time 10 at I2-I4 made it a 50 s hull, a second Urchin) and the Squirrel at **rest** (its Time is worth ~5%).
+
+**What is left, and what closes it.** The remaining 1.41-1.44x is the Manta (68-83 s, at its Time FLOOR) against the
+Rhino / Dolphin / Serpent group (92-111 s). No course shape the generator can lay and no Time level reaches it:
+(a) a lower Time floor for the Manta (`ElementalScaling` Soar floor 0.7; a vessel change, its owner's yes), or
+(b) the group's AIs (stage 1). The Sparrow needs its AI's rail rams fixed. Then: editor races of the new circuits.
+
 ## Stage 1: the AIs
 
 | Hull | Own Time game | People's races (2026-10-26) | Offline model | Compute job | State |
@@ -101,3 +137,4 @@ weight (0.02 per level of mean) keeps the tuning as small as the gap allows. **P
 | 2026-11-02 | The Stoat is the next hull, on the orbit alone (Yash). `regatta_balance.py`'s `stoat_model` follows the kit (its Time 10 race 48.5 → 49.4 s at I1; the card's level is unchanged). No compute job yet: it needs Slingshot races first, then a `drive_fit` model from `stoat_orbit_sim.py` |
 | 2026-11-02 | The Thresher is the hull after the Stoat (Yash). The hulls Yash picks to race Regatta: Squirrel, Dolphin, Stoat, Thresher (the Sparrow stays on the card). The rule holds: the Thresher trains in Thresher Time first, and Regatta's card and design wait for that (`MINIGAME_TRAINING_PLAN.md` §12) |
 | 2026-11-03 | **Measured in the real game** (Garrett's balance pass; branch `claude/regatta-overnight-balance`; `Docs/Reports/REGATTA_AI.md` 2026-11-03 has the table). The Regatta Hull Benchmark races each AI alone headless, I1. The models were 2-4x faster than the editor because they have no missed mouths: the AI line is now capped at 0.35 of the way out and seven hulls finish with no miss. Stoat AI fixed (a stuck trigger; a Regatta warp variant). The Urchin is levelled by a course feature, `RegattaCourse.NeutralShareFor` (I1 0.3: 51 -> 73-76 s). Card at I1: Stoat Time 3, Squirrel Time 10 (measured; `author_regatta_assets.py` `MEASURED_TIME`). Solo spread of the competent field at I1: 1.5x (Manta 62-72 to Serpent 98-102) from 2.9x; Sparrow 117-150 s is the outlier. Time is spent on Sparrow, Scarab, Serpent (10) and Manta (-5); the Rhino's Time slows its AI (misses). No AI was trained in Regatta: bug fixes and card values, proposals for Yash. I2-I4 not measured |
+| 2026-11-06 | **Stages 2 and 3 run and promoted on the measured roster** (Garrett's ask; branch `claude/regatta-overnight-balance`). New circuits at I1-I4 and a neutral rail at every intensity: spread (Sparrow out) 1.49 / 2.18 / 2.24 / 2.25x -> 1.44 / 1.42 / 1.42 / 1.41x; the Urchin from first by 13-22 s at I2-I4 to mid-field. Card: Stoat Time 3 everywhere, Squirrel at rest. `regatta_course` VERSION 2; the four course jobs ready on the measured roster, starting from the promoted circuits. Model numbers: editor races of the new circuits are next |

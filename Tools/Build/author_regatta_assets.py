@@ -305,7 +305,11 @@ VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']},
 # warp on a race line (StoatSlingConfig_Regatta) and keeps the Squirrel off its tunable list though Time raises its skim
 # energy. Stoat: Time 10 -> 44 s, 3 -> 66-74 s, 0 -> 103-126 s (the competent field runs 60-100 s). Squirrel: Time 10 ->
 # 75 s against 77-81 at rest. Only I1 is measured; the other intensities keep the model's levels.
-MEASURED_TIME = {1: {"Stoat": 3, "Squirrel": 10}}
+# 2026-11-06, stage 3 on the searched courses (REGATTA_BALANCE_PLAN.md): the Stoat at Time 3 at EVERY intensity - the lowest
+# level a measured race backs (the model is 20% fast at Time 0), which seats it inside the field (65-78 s against 68-111);
+# the model's Time 10 at I2-I4 made it a 50 s hull, a second Urchin. The Squirrel at rest: its Time is worth ~5% and it
+# sits mid-field either way, so the smallest tuning is none.
+MEASURED_TIME = {i: {"Stoat": 3, "Squirrel": 0} for i in range(1, 5)}
 
 
 def starting_element_rows() -> str:

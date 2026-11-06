@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
         public static int SeedStepFor(int intensity) =>
             ShippedSeedSteps[Mathf.Clamp(intensity, 1, 4) - 1];
 
-        static readonly int[] ShippedSeedSteps = { 0, 0, 0, 0 };
+        static readonly int[] ShippedSeedSteps = { 3240, 851, 986, 373 };
 
         /// <summary>
         /// The circuit per intensity. <b>Intensity is what mix of corners a lap asks for</b> -
@@ -130,12 +130,19 @@ namespace CosmicShore.Gameplay
         /// are the fast, straight-line ones, and a rider on its rail pays nothing.
         ///
         /// <code>
-        ///      turn angles (deg), dealt so the big ones sit apart      floor    mouth
-        ///   1:  90  72  58  48  38  28  16  10                           200u     110
-        ///   2: 118  92  66  40  22  12   6   4                           150u      88
-        ///   3: 135 112  78  22   7   3   2   1                           120u      72
-        ///   4: 150 124  86   0   0   0   0   0                           100u      54
+        ///      turn angles (deg), dealt so the big ones sit apart              floor    mouth   seed step   neutral
+        ///   1:  77  102  46  51  32  27  14   9                               133u     106        3240      0.40
+        ///   2: 130   99  57  24  25  15   6   4                               134u      85         851      0.26
+        ///   3:  98  147  72  30   5   4   2   3                               128u      59         986      0.42
+        ///   4: 210   83  59   2   2   2   0   3                               107u      48         373      0.40
         /// </code>
+        ///
+        /// <para><b>Searched, 2026-11-06</b> (the Regatta balance plan's stage 2, Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md):
+        /// every number in this table, the seed step (<see cref="SeedStepFor"/>) and the neutral share
+        /// (<see cref="NeutralShareFor"/>) was chosen by a search for the circuit on which the Regatta-ready AIs, anchored
+        /// to their measured editor races (Tools/Build/regatta_measured_roster.py), finish closest together. The hardest
+        /// corner still rises with the rung (98 / 110 / 114 / 119 deg). The circuit before the search was
+        /// 90 72 58 48 38 28 16 10 / 200u / 110 at I1 through 150 124 86 0... / 100u / 54 at I4 (git history).</para>
         ///
         /// <para>The floors are ABSOLUTE and set for the fleet's worst case: a Scarab at its 216
         /// u/s ceiling holds ~102 u and can only shed speed through its 120 u/s^2 coast drag, so
@@ -157,19 +164,19 @@ namespace CosmicShore.Gameplay
                 BaseRadius = BaseRadius,
                 CornerProfile = new[]
                 {
-                    new[] {  90f,  72f,  58f,  48f,  38f,  28f,  16f,  10f },
-                    new[] { 118f,  92f,  66f,  40f,  22f,  12f,   6f,   4f },
-                    new[] { 135f, 112f,  78f,  22f,   7f,   3f,   2f,   1f },
-                    new[] { 150f, 124f,  86f,   0f,   0f,   0f,   0f,   0f },
+                    new[] { 77.2f, 102.4f, 46.1f, 51.3f, 32.3f, 27.1f, 14.4f, 9.2f },
+                    new[] { 129.5f, 99.2f, 57.3f, 23.7f, 25.4f, 14.9f, 5.9f, 4.1f },
+                    new[] { 97.9f, 147.2f, 71.8f, 30f, 4.8f, 3.5f, 2.2f, 2.6f },
+                    new[] { 210.1f, 83f, 58.7f, 2f, 1.8f, 1.5f, 0.3f, 2.6f },
                 }[i - 1],
                 CornerRadiusFactor = 0f,
-                CornerFloorRadius = new[] { 200f, 150f, 120f, 100f }[i - 1],
-                RadialSwing = 0.42f,
-                AngularSpread = new[] { 1.2f, 3.0f, 2.8f, 4.8f }[i - 1],
-                LateralPerturbation = new[] { 160f, 200f, 240f, 280f }[i - 1],
-                RingRadius = new[] { 110f, 88f, 72f, 54f }[i - 1],
-                AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
-                MaxPresentDegrees = new[] { 50f, 72f, 76f, 80f }[i - 1],
+                CornerFloorRadius = new[] { 132.9f, 133.8f, 127.9f, 106.9f }[i - 1],
+                RadialSwing = new[] { 0.485f, 0.209f, 0.473f, 0.512f }[i - 1],
+                AngularSpread = new[] { 4.45f, 4.37f, 5.7f, 5.63f }[i - 1],
+                LateralPerturbation = new[] { 82.7f, 334.7f, 337.1f, 291.2f }[i - 1],
+                RingRadius = new[] { 106f, 85f, 59f, 48f }[i - 1],
+                AxisJitterDegrees = new[] { 13f, 30.1f, 28.1f, 29.6f }[i - 1],
+                MaxPresentDegrees = new[] { 48.8f, 73.7f, 71.4f, 53.1f }[i - 1],
                 InnerRadius = InnerRadius,
                 OuterRadius = OuterRadius,
                 FirstGateDirection = Vector3.up,   // the equatorial spawn ring's pole
@@ -187,10 +194,12 @@ namespace CosmicShore.Gameplay
         /// other hull only flies beside it. 0 (shipped) lays every lane in its team's colour the whole way round.
         /// Measured 2026-11-03 (Regatta Hull Benchmark, I1): an AI Urchin finished in 51 s against 62-113 s for the
         /// rest of the competent field. The ring mouths keep their colour, so a lane's first prism still names its team.
+        /// Since 2026-11-06 the share per intensity is the course search's (no corner shape reaches a rail rider, so this
+        /// is the search's one dial on the Urchin): I2-I4 shipped 0, where the Urchin finished first by 13-22 s.
         /// </summary>
         public static float NeutralShareFor(int intensity) =>
             RailNeutralShareOverride >= 0f ? RailNeutralShareOverride
-            : new[] { 0.3f, 0f, 0f, 0f }[Mathf.Clamp(intensity, 1, 4) - 1];   // I1 measured (Urchin 51 -> 73-76 s); I2-I4 not yet
+            : new[] { 0.4f, 0.26f, 0.42f, 0.4f }[Mathf.Clamp(intensity, 1, 4) - 1];   // stage 2's course search, 2026-11-06 (REGATTA_BALANCE_PLAN.md)
 
         /// <summary>A benchmark's or a test's override of <see cref="NeutralShareFor"/> for every intensity, or -1 for none.
         /// Read where the arena lays its rails, like <see cref="CourseSeedOverride"/>; nothing in a match sets it.</summary>

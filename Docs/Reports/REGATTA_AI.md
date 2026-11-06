@@ -9,6 +9,33 @@ up to the learned Squirrel by PRs #1150, #1154 and #1165, the rest by the `Ys-bl
 Dolphin and Manta drives). The Manta, Rhino and Dolphin now carry numbers taken from Yash's own flights. **None of the
 AI changes has been played in the Unity editor.** That is the next step (section 5).
 
+## 2026-11-06: a new course, searched to level the field (branch `claude/regatta-overnight-balance`)
+
+**Why.** Garrett played the 11-03 branch: "the regatta map felt like it was before. the urchin was still overpowered."
+Both were true: the circuit had not changed, and the neutral rail shipped at I1 only, so at I2-I4 the Urchin finished
+first by 13-22 s.
+
+**What changed.** Every intensity has a new circuit and a neutral rail share, found by the Regatta balance plan's
+stage 2 search on the AIs as the real game races them (each hull anchored at its measured race), and the card's Time
+levels by stage 3. Spread, slowest / fastest with the Sparrow left out (with it in brackets):
+
+| | Before | After |
+|---|---:|---:|
+| I1 | 1.49x (1.99x) | 1.44x (1.93x) |
+| I2 | 2.18x (2.91x) | 1.42x (1.88x) |
+| I3 | 2.24x (2.89x) | 1.42x (1.89x) |
+| I4 | 2.25x (2.89x) | 1.41x (1.88x) |
+
+The Urchin moves to the middle of the field at every intensity (78-93 s); the Stoat starts at Time 3 everywhere (the card
+had Time 10 at I2-I4, a 50 s hull). Full numbers: `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`, "Where it stands (2026-11-06)".
+
+**How to test.** Pull the branch; Arcade > Regatta at I2 or I3 with six AIs including an Urchin and a Manta: the
+circuit is new, the Urchin's rail goes Blue (no team's colour) mid-leg, and the Urchin should no longer win by a street.
+FrogletTools > AI > Regatta Hull Benchmark re-measures each hull alone.
+
+**Untested.** These are model numbers: no editor race has flown the new circuits. The models do not see traffic, and
+the Sparrow (about 2x everyone, its AI rams the rails) and the Manta (fastest, at its Time floor) are what is left.
+
 ## 2026-11-03: measured in the real game (Garrett's balance pass, branch `claude/regatta-overnight-balance`)
 
 **The first Regatta numbers from the real game.** The Regatta Hull Benchmark (FrogletTools > AI > Regatta Hull Benchmark,

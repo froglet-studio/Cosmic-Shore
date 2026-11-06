@@ -58,13 +58,6 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: -0.5
-  - Class: 6
-    Intensity: 1
-    Levels:
-      Mass: 0
-      Charge: 0
-      Space: 0
-      Time: 1
   - Class: 7
     Intensity: 1
     Levels:
@@ -113,7 +106,7 @@ MonoBehaviour:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: 1
+      Time: 0.3
   - Class: 1
     Intensity: 3
     Levels:
@@ -141,7 +134,7 @@ MonoBehaviour:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: 1
+      Time: 0.3
   - Class: 1
     Intensity: 4
     Levels:
@@ -169,6 +162,6 @@ MonoBehaviour:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: 1
+      Time: 0.3
   ComebackRatePerScoreDeficit: 0.35
   OpponentAIVessel: {fileID: 0}

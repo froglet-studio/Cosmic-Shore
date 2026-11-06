@@ -339,7 +339,7 @@ LANE_COUNT = 3
 
 
 SEED_STRIDE = 104729
-SEED_STEPS = [0, 0, 0, 0]     # RegattaCourse.ShippedSeedSteps: which circuit each intensity lays
+SEED_STEPS = [3240, 851, 986, 373]     # RegattaCourse.ShippedSeedSteps: which circuit each intensity lays
 
 
 def seed_step_for(intensity):
@@ -357,16 +357,15 @@ def regatta_settings(intensity):
     return {
         "GateCount": 8,
         "BaseRadius": REGATTA_BASE,
-        "CornerProfile": [[90, 72, 58, 48, 38, 28, 16, 10], [118, 92, 66, 40, 22, 12, 6, 4],
-                          [135, 112, 78, 22, 7, 3, 2, 1], [150, 124, 86, 0, 0, 0, 0, 0]][i],
+        "CornerProfile": [[77.2, 102.4, 46.1, 51.3, 32.3, 27.1, 14.4, 9.2], [129.5, 99.2, 57.3, 23.7, 25.4, 14.9, 5.9, 4.1], [97.9, 147.2, 71.8, 30, 4.8, 3.5, 2.2, 2.6], [210.1, 83, 58.7, 2, 1.8, 1.5, 0.3, 2.6]][i],
         "CornerRadiusFactor": 0.0,
-        "CornerFloorRadius": [200.0, 150.0, 120.0, 100.0][i],
-        "RadialSwing": 0.42,
-        "AngularSpread": [1.2, 3.0, 2.8, 4.8][i],
-        "LateralPerturbation": [160.0, 200.0, 240.0, 280.0][i],
-        "RingRadius": [110.0, 88.0, 72.0, 54.0][i],
-        "AxisJitterDegrees": [20.0, 28.0, 36.0, 44.0][i],
-        "MaxPresentDegrees": [50.0, 72.0, 76.0, 80.0][i],
+        "CornerFloorRadius": [132.9, 133.8, 127.9, 106.9][i],
+        "RadialSwing": [0.485, 0.209, 0.473, 0.512][i],
+        "AngularSpread": [4.45, 4.37, 5.7, 5.63][i],
+        "LateralPerturbation": [82.7, 334.7, 337.1, 291.2][i],
+        "RingRadius": [106, 85, 59, 48][i],
+        "AxisJitterDegrees": [13, 30.1, 28.1, 29.6][i],
+        "MaxPresentDegrees": [48.8, 73.7, 71.4, 53.1][i],
         "InnerRadius": REGATTA_INNER,
         "OuterRadius": REGATTA_OUTER,
         "FirstGateDirection": (0.0, 1.0, 0.0),
@@ -562,10 +561,11 @@ def self_test():
             worst = max(abs(r1(a) - b) for a, b in zip(mine, theirs))
             if worst > 0.11:
                 bad.append(f"I{i} {name}: off by {worst:.2f}")
-    # Negative control: a one-degree move of one corner must be visible.
+    # Negative control: a one-degree move of one corner must be visible. Corner 0: on the 2026-11-06 I3 circuit a move of
+    # corner 1 (147 deg) is absorbed by the generator (0.1 u), so the control moves one the shipped circuit answers to (7 u).
     s = regatta_settings(3)
     s["CornerProfile"] = list(s["CornerProfile"])
-    s["CornerProfile"][1] += 1
+    s["CornerProfile"][0] += 1
     moved = course(s, seed_for_intensity(REGATTA_DEFAULT_SEED, 3), rails=False)
     ref = js["3"]["gates"]
     if max(abs(a - b) for g, rg in zip(moved["gates"], ref) for a, b in zip(g["p"], rg["p"])) < 0.5:

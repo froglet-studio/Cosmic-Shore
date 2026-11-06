@@ -21113,3 +21113,16 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🔴 Regatta: searched circuits and neutral rail at I1-I4, Stoat Time 3 everywhere (2026-11-06, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/regatta-overnight-balance`. `RegattaCourse.ForIntensity`, `SeedStepFor` and `NeutralShareFor` now carry
+the Regatta balance plan's stage-2 search results; the card starts the Stoat at Time 3 at every intensity and the
+Squirrel at rest. Ran here: `unity_refcompile` (0 errors in changed files; 21 pre-existing from Cinemachine/Vivox absent
+in the cloud checkout), the course harness (60-seed sweep and gate coverage OK), `course_port --self-test`,
+`author_regatta_assets.py --check`, `regatta_measured_roster.py --check`. Not run: any Unity editor race.
+
+- [ ] Regatta at each of I1-I4 loads, lays 8 rings and 3 rails, and the rails pass through every mouth (I4's mouth is 48 u, was 54).
+- [ ] Mid-leg, each rail turns Blue (no team's colour) at every intensity; an Urchin leaves its rail there.
+- [ ] FrogletTools > AI > Regatta Hull Benchmark, each hull alone at I2 and I3: no hull misses a mouth the old circuits did not; the Urchin finishes mid-field (model: 78-93 s), not first.
+- [ ] A full six-AI grid at I3: the race reads as close (model spread 1.4x with the Sparrow out).

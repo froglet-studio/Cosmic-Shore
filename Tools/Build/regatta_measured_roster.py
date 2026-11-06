@@ -34,7 +34,22 @@ sys.path.insert(0, os.path.join(ROOT, "Tools", "Compute", "evaluators"))
 import course_port as cp      # noqa: E402
 import race_models as rm      # noqa: E402
 
-# Seconds for three laps, I1, shipped course, each AI alone (the middle of each hull's measured range, 2026-11-03).
+# The course those races were run on: RegattaCourse.ForIntensity(1) and its seed as they shipped until 2026-11-06, pinned
+# here because the shipped I1 is now the searched circuit. Every reference below is taken on THIS course.
+MEASURED_ON = {
+    "GateCount": 8, "BaseRadius": 820.0, "CornerProfile": [90, 72, 58, 48, 38, 28, 16, 10], "CornerRadiusFactor": 0.0,
+    "CornerFloorRadius": 200.0, "RadialSwing": 0.42, "AngularSpread": 1.2, "LateralPerturbation": 160.0,
+    "RingRadius": 110.0, "AxisJitterDegrees": 20.0, "MaxPresentDegrees": 50.0, "InnerRadius": 478.0,
+    "OuterRadius": 1080.0, "FirstGateDirection": (0.0, 1.0, 0.0),
+}
+MEASURED_SEED = 20268834          # RegattaCourse.SeedForIntensity(DefaultSeed, 1) before the per-intensity seed steps
+
+
+def measured_course():
+    return cp.course(dict(MEASURED_ON), MEASURED_SEED)
+
+
+# Seconds for three laps, I1, the MEASURED_ON course, each AI alone (the middle of each hull's measured range, 2026-11-03).
 MEASURED = {"Manta": 67.0, "Rhino": 95.0, "Dolphin": 97.5, "Serpent": 100.0, "Sparrow": 133.0,
             "Squirrel": 75.0, "Stoat": 70.0}
 URCHIN_MEASURED = {0.0: 51.0, 0.15: 60.5, 0.3: 74.5}     # neutral share -> seconds
@@ -98,7 +113,7 @@ def line_check(course, intensity=1):
 
 
 def solve():
-    course = cp.regatta_course(1)
+    course = measured_course()
     lv = card_levels()
     bal, line = {}, {}
     for h in MEASURED:
@@ -115,7 +130,7 @@ def solve():
 
 
 def check(r):
-    course = cp.regatta_course(1)
+    course = measured_course()
     bad = []
     for h, m in MEASURED.items():
         t = race(course, h, r[h])

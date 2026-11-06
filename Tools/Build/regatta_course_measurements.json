@@ -1,179 +1,179 @@
 {
-  "_readme": "MEASURED by Tools/Build/regatta_course_harness/run.sh from the shipped C# (Roslyn-compiled, run for real). sourceHash covers the three pure course files; author_regatta_assets.py --check fails when it is stale. Regenerate with the harness, never by hand.",
-  "sources": [
-    "Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs",
-    "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
-    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs"
-  ],
-  "sourceHash": "4a3c4132d05f3a8ae1cb90ac81b8122b9d97dd653c0f4adbd8d91adbf0cb1309",
-  "intensities": {
-    "1": {
-      "seed": 20268834,
-      "rings": 8,
-      "ringRadius": 110,
-      "cornerFloor": 200,
-      "spineLength": 4828.5,
-      "laneLengths": [
-        4829.8,
-        4831.7,
-        4830.2
-      ],
-      "railVolume": 517194,
-      "minPrismLength": 7.8,
-      "prismCount": 1812,
-      "minLaneSeparation": 38.09,
-      "maxSpacingError": 0.006,
-      "cornerRadii": [
-        362.1,
-        3338.0,
-        523.7,
-        633.7,
-        550.1,
-        1028.0,
-        528.3,
-        1014.3
-      ],
-      "legLengths": [
-        624.0,
-        569.7,
-        561.9,
-        594.9,
-        643.0,
-        555.0,
-        563.3,
-        563.8
-      ],
-      "gate0": [
-        0.0,
-        1056.27,
-        0.0
-      ]
-    },
-    "2": {
-      "seed": 20276753,
-      "rings": 8,
-      "ringRadius": 88,
-      "cornerFloor": 150,
-      "spineLength": 5431.8,
-      "laneLengths": [
-        5449.1,
-        5405.3,
-        5445.1
-      ],
-      "railVolume": 580342,
-      "minPrismLength": 7.623,
-      "prismCount": 2038,
-      "minLaneSeparation": 38.08,
-      "maxSpacingError": 0.009,
-      "cornerRadii": [
-        151.1,
-        544.7,
-        311.4,
-        1198.2,
-        610.8,
-        617.5,
-        609.5,
-        4941.7
-      ],
-      "legLengths": [
-        464.4,
-        625.8,
-        623.2,
-        746.2,
-        758.9,
-        758.0,
-        749.6,
-        466.9
-      ],
-      "gate0": [
-        0.0,
-        1058.54,
-        0.0
-      ]
-    },
-    "3": {
-      "seed": 20284672,
-      "rings": 8,
-      "ringRadius": 72,
-      "cornerFloor": 120,
-      "spineLength": 5886.5,
-      "laneLengths": [
-        5909.5,
-        5876.4,
-        5882.8
-      ],
-      "railVolume": 627530,
-      "minPrismLength": 7.434,
-      "prismCount": 2209,
-      "minLaneSeparation": 38.06,
-      "maxSpacingError": 0.014,
-      "cornerRadii": [
-        134.8,
-        279.0,
-        169.5,
-        3745.2,
-        451.6,
-        539.5,
-        450.6,
-        1028.1
-      ],
-      "legLengths": [
-        542.0,
-        572.0,
-        461.4,
-        798.8,
-        828.8,
-        857.5,
-        753.7,
-        657.4
-      ],
-      "gate0": [
-        0.0,
-        1067.48,
-        0.0
-      ]
-    },
-    "4": {
-      "seed": 20292591,
-      "rings": 8,
-      "ringRadius": 54,
-      "cornerFloor": 100,
-      "spineLength": 5867.7,
-      "laneLengths": [
-        5926.1,
-        5824.7,
-        5858.2
-      ],
-      "railVolume": 625649,
-      "minPrismLength": 7.527,
-      "prismCount": 2201,
-      "minLaneSeparation": 38.08,
-      "maxSpacingError": 0.011,
-      "cornerRadii": [
-        104.1,
-        1248.1,
-        504.2,
-        660.1,
-        443.7,
-        884.6,
-        215.1,
-        224.6
-      ],
-      "legLengths": [
-        464.5,
-        839.7,
-        844.3,
-        774.4,
-        788.9,
-        565.0,
-        577.0,
-        603.4
-      ],
-      "gate0": [
-        -0.0,
-        1070.32,
-        0.0
-      ]
-    }
+ "_readme": "MEASURED by Tools/Build/regatta_course_harness/run.sh from the shipped C# (Roslyn-compiled, run for real). sourceHash covers the three pure course files; author_regatta_assets.py --check fails when it is stale. Regenerate with the harness, never by hand.",
+ "sources": [
+  "Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs",
+  "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
+  "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs"
+ ],
+ "sourceHash": "94e1ee2a74146da62a4b265a77d853ad412d9874691f7a25ae01de1bf775bc08",
+ "intensities": {
+  "1": {
+   "seed": 359590794,
+   "rings": 8,
+   "ringRadius": 106,
+   "cornerFloor": 132.9,
+   "spineLength": 4463.9,
+   "laneLengths": [
+    4464.4,
+    4471.3,
+    4462.9
+   ],
+   "railVolume": 476930,
+   "minPrismLength": 7.526,
+   "prismCount": 1675,
+   "minLaneSeparation": 38.09,
+   "maxSpacingError": 0.009,
+   "cornerRadii": [
+    527.2,
+    258.1,
+    884.4,
+    669.9,
+    448.9,
+    447.7,
+    2171.5,
+    139.4
+   ],
+   "legLengths": [
+    325.8,
+    355.9,
+    701.0,
+    692.3,
+    699.4,
+    688.8,
+    510.8,
+    317.9
+   ],
+   "gate0": [
+    -0.0,
+    980.63,
+    0.0
+   ]
+  },
+  "2": {
+   "seed": 109401132,
+   "rings": 8,
+   "ringRadius": 85,
+   "cornerFloor": 133.8,
+   "spineLength": 5336.2,
+   "laneLengths": [
+    5343.0,
+    5325.9,
+    5345.9
+   ],
+   "railVolume": 569237,
+   "minPrismLength": 7.386,
+   "prismCount": 2002,
+   "minLaneSeparation": 38.07,
+   "maxSpacingError": 0.016,
+   "cornerRadii": [
+    508.6,
+    823.3,
+    154.1,
+    385.8,
+    207.1,
+    700.4,
+    602.7,
+    599.6
+   ],
+   "legLengths": [
+    1001.3,
+    436.7,
+    436.1,
+    419.5,
+    353.2,
+    654.8,
+    741.5,
+    1011.6
+   ],
+   "gate0": [
+    -0.0,
+    715.14,
+    0.0
+   ]
+  },
+  "3": {
+   "seed": 123547466,
+   "rings": 8,
+   "ringRadius": 59,
+   "cornerFloor": 127.9,
+   "spineLength": 5410.6,
+   "laneLengths": [
+    5413.1,
+    5407.3,
+    5416.3
+   ],
+   "railVolume": 578176,
+   "minPrismLength": 7.232,
+   "prismCount": 2030,
+   "minLaneSeparation": 38.08,
+   "maxSpacingError": 0.018,
+   "cornerRadii": [
+    618.2,
+    681.5,
+    624.2,
+    648.2,
+    132.2,
+    701.5,
+    444.5,
+    962.8
+   ],
+   "legLengths": [
+    758.2,
+    778.6,
+    808.3,
+    431.1,
+    405.8,
+    620.7,
+    623.5,
+    748.1
+   ],
+   "gate0": [
+    -0.0,
+    786.63,
+    -0.0
+   ]
+  },
+  "4": {
+   "seed": 59356508,
+   "rings": 8,
+   "ringRadius": 48,
+   "cornerFloor": 106.9,
+   "spineLength": 5296.9,
+   "laneLengths": [
+    5314.7,
+    5283.4,
+    5298.1
+   ],
+   "railVolume": 565727,
+   "minPrismLength": 7.373,
+   "prismCount": 1986,
+   "minLaneSeparation": 38.09,
+   "maxSpacingError": 0.009,
+   "cornerRadii": [
+    1301.0,
+    111.9,
+    702.7,
+    498.5,
+    814.0,
+    644.8,
+    652.6,
+    651.0
+   ],
+   "legLengths": [
+    383.2,
+    392.0,
+    660.3,
+    657.4,
+    754.7,
+    738.4,
+    738.3,
+    740.7
+   ],
+   "gate0": [
+    -0.0,
+    751.08,
+    -0.0
+   ]
   }
+ }
 }

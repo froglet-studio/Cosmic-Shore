@@ -9,7 +9,8 @@
 > Regatta-ready hulls** (2026-11-05): a hull whose AI the Regatta Hull Benchmark measured finishing every I1 race with no
 > missed ring alone and finishing a full mixed grid. Eight are: Manta, Dolphin, Rhino, Urchin, Squirrel, Serpent, Sparrow,
 > Stoat. The **Scarab is held off** (`NOT_REGATTA_READY` in `author_regatta_assets.py`, which `--check` enforces) while it
-> misses 6-20 ring mouths a race. It is an **Arena** card
+> misses 6-20 ring mouths a race. **The circuit and the neutral share at every intensity were searched on 2026-11-06**
+> (`RegattaCourse.ForIntensity`, `SeedStepFor`, `NeutralShareFor`; `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`). It is an **Arena** card
 > (`ArenaGames`, the `ArenaLaunchPanel` vessel carousel), and the first one built for the
 > whole fleet rather than for a hull.
 
