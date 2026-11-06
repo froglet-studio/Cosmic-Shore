@@ -54,6 +54,10 @@ HTTP:
                                            saved chart views: own + public; the owner (or a key in admin_keys) deletes
     GET  /v1/dashboards/tile?source=preset:<id>   a saved view's own series as a tile
 
+  2026-11-07 (Shombith): match setups.
+    GET  /v1/overview                      adds setups (multiplayer then solo), setup_history, setup_notes
+    GET  /v1/series?...&by=setup           every plays measure (and players, new players) by match setup
+
 Data lives in data_dir (events.db raw, aggregates.db for reading). Standard library only, except the two Claude
 features, which need `pip install anthropic` and ANTHROPIC_API_KEY. Run behind Caddy for HTTPS
 (setup-analytics-vm.sh). README.md beside this file has the whole picture.

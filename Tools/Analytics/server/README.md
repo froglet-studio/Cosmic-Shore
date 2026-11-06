@@ -80,7 +80,7 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `analytics_claude.py` | The overnight read and Ask (official `anthropic` SDK, `claude-opus-5-5`) |
 | `mode_elements.py` | Writes `mode_elements.json` (each mode's genre element) from the game's `ModeGenre.cs`, `GameModes.cs` and `ModePreviewLibrary.asset`; `--check` fails when it is stale, `--self-test` checks known answers and a negative control |
 | `mode_elements.json` | GENERATED: `game_mode` -> `[primary, secondary or null]`, the modes with no element, each mode's metric. The server reads only this file (the VM has no `Assets/`) |
-| `test_analytics_server.py` | 70 tests: `python3 analytics_server.py --self-test` |
+| `test_analytics_server.py` | 77 tests: `python3 analytics_server.py --self-test` |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
 | `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
@@ -109,7 +109,7 @@ the overnight read is written by rules and the Ask box says it is off.
 Every 5 minutes `aggregates.db` is rebuilt. It holds per-play rows (mode, intensity, vessel, play type, completed,
 rematched within 600 s, flight time), daily counts, rows per play, players in windows, and D1/D7 return cohorts. Ian's
 definitions from `replay_retention.sql` are used as written. Co-op, versus and mixed split once `game_started`
-carries the team fields; earlier matches read `multi_human_unknown`, never guessed.
+carries the team fields; earlier matches read `multi_human_unknown`, never guessed. Each play also gets a match setup (below, Match setups).
 
 Nightly (05:00 UTC by default): raw events older than `retention_days` (395) are deleted, `events.db` is backed up
 (14 kept), the aggregates are rebuilt, and the overnight read is written.
@@ -244,6 +244,46 @@ public view.
 | `DELETE /v1/presets?id=` | owner, or a key in `admin_keys` for a public one | 404 for an id this key cannot see (someone else's private view), 403 for someone else's public one |
 | `GET /v1/dashboards/tile?source=preset:<id>` | a key that can see the view | `{columns, rows, series, preset, form, unfiltered}`: the view's own measure, split, over and filters (the page's filters do not reach it); 400 if the view is not a series chart |
 | `PUT /v1/dashboards` | admin | a tile may now be `preset:<id>` of a series view the saving key can see |
+
+## Match setups (2026-11-07)
+
+Asked for by Shombith on 2026-11-07: "a sliced grouping in overview with competitive, teams, teams vs ai as per the
+domains in both multiplayer and for solo like the same how many AIs". Every play gets a **setup** (`plays.setup`,
+`analytics_store.setup_of`), read from that player's own `game_started`; `play_type` is unchanged beside it. Builds from
+2026-11-07 send `domain`, `humans_on_my_domain` (the player included), `humans_on_other_domains`, `ai_on_my_domain` and
+`ai_on_other_domains`; the four counts are kept as `humans_mine`, `humans_other`, `ai_mine`, `ai_other` (NULL when the
+build did not send them).
+
+| Setup | Group | Rule |
+|---|---|---|
+| `competitive` (Competitive) | multiplayer | 2+ humans; `humans_on_my_domain` = 1 and `humans_on_other_domains` >= 1: every human for themselves, 1v1 |
+| `teams` (Teams) | multiplayer | 2+ humans; `humans_on_my_domain` >= 2 and `humans_on_other_domains` >= 1: humans together against humans |
+| `teams_vs_ai` (Teams vs AI) | multiplayer | 2+ humans; `humans_on_other_domains` = 0: every human on one domain, the opponents AI |
+| `multi_unrecorded` (Teams not recorded) | multiplayer | 2+ humans and no `humans_on_other_domains` (older builds, the PostHog history), or other humans without `humans_on_my_domain`: never guessed |
+| `solo_with_ai_team` (With AI teammates) | solo | 1 human and `ai_on_my_domain` >= 1, whatever the opponents. A slice of its own, not a flag, so the pie stays one level. Only builds from 2026-11-07 can say so |
+| `solo_alone`, `solo_vs_1_ai`, `solo_vs_2_ai`, `solo_vs_3plus_ai` | solo | 1 human (or none recorded) by the AI opponents: `ai_on_other_domains` when sent, else `player_count_ai`, else `ai_count`, else 0. Old matches and the PostHog history have these too |
+
+Humans are `player_count_human`, as `play_type` reads them, so the multiplayer setups are exactly the Multiplayer play
+group. A count that is not a whole number 0 or more (text, negative, a boolean) counts as not sent. Two things to know
+when reading them:
+
+- **A match is read from each player's side.** An uneven match (two humans against one) is Teams for the pair and
+  Competitive for the one, so its match counts in both; plays, finished, rematch and won count each player once.
+- **The Play filter's Solo** is `play_type` `solo_alone`, which reads `player_count_ai` only. A PostHog-era play that
+  sent `ai_count` without `player_count_ai` is in Solo there, and its setup says `vs N AI`.
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v1/overview` | reader | adds `setups: [{setup, label, group: multiplayer\|solo, matches, plays, finished_pct, rematch_pct, win_pct, players}]` in the order above (multiplayer first, every setup, zeros included), `setup_history: {domains_from, first_domain_day, multi_plays, multi_unrecorded_plays, multi_unrecorded_pct}` and `setup_notes`. Takes the Play filter and the era like the rest of the page; `players` come from `player_counts` (a player in two setups is in both) |
+| `GET /v1/series?by=setup` | reader | matches, finished %, rematch %, flight minutes, players and new players by setup (not events or the Toybox, which are not matches: 400). With a Play filter, players by setup keep the setups of that group |
+
+The console's Overview has a **Match setups** section: two slices side by side, Multiplayer and Solo, each a switchable
+chart (Pie by default, Bars, Table; Matches, Players, Finished %, Rematch %; Players is never a pie, since a player can be
+in two setups), and **Match setups over time**. Multiplayer wears the theme's series colours in a fixed order with "not
+recorded" in the neutral grey; solo is one hue in steps, light to dark by AI count, AI teammates darkest; the shares are
+written on the slices. While most multiplayer is not recorded the slice says "Builds before <the first day a build sent
+domains> did not send domains; new builds fill this in." Every series chart (Matches over time included) offers Split:
+Setup.
 
 ## Claude, and what it can see
 

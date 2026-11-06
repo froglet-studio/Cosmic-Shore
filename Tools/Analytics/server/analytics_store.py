@@ -297,7 +297,12 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
     country TEXT,                -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
     element TEXT,                -- the mode's genre element (Charge | Mass | Space | Time | Omni); NULL: the mode has none
     element_secondary TEXT,      -- the second element of a two-element mode (Brood Rush: Space); else NULL
-    element_source TEXT          -- event: the match sent it (builds from 2026-11-06) | table: mode_elements.json by game_mode
+    element_source TEXT,         -- event: the match sent it (builds from 2026-11-06) | table: mode_elements.json by game_mode
+    setup TEXT,                  -- the match setup from this player's side (analytics_store.setup_of): competitive |
+                                 -- teams | teams_vs_ai | multi_unrecorded (2+ humans, no domain fields: older builds) |
+                                 -- solo_alone | solo_vs_1_ai | solo_vs_2_ai | solo_vs_3plus_ai | solo_with_ai_team
+    humans_mine INTEGER, humans_other INTEGER,   -- humans on this player's domain (them included) / on every other;
+    ai_mine INTEGER, ai_other INTEGER            -- AI on it / on every other. NULL: the build did not send it (before 2026-11-07)
 );
 CREATE TABLE daily_events(       -- rows received per day, build, event and source (imported 1 = PostHog history)
     day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER
@@ -355,7 +360,8 @@ CREATE TABLE player_counts(      -- distinct players per span, counted once each
     build_kind TEXT,             -- or '*': every build, each player once
     source TEXT,                 -- any | imported (PostHog history) | live; an era's spans carry the era's source
     dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | country | game_mode | vessel_class | intensity
-                                 -- | element | freestyle/'entered' (entered the Toybox) | freestyle_vessel (a vessel flown there)
+                                 -- | element | setup (the match setup) | freestyle/'entered' (entered the Toybox)
+                                 -- | freestyle_vessel (a vessel flown there)
     players INTEGER,             -- players active in the span with that key (a player on two platforms counts in both)
     new_players INTEGER          -- of those, players whose first day (in this source) falls inside the span
 );
@@ -467,6 +473,58 @@ def play_type_of(props):
             return "mixed"
         return "adversarial"
     return "solo_vs_ai" if ai >= 1 else "solo_alone"
+
+
+# Match setups (Shombith, 2026-11-07: "a sliced grouping in overview with competitive, teams, teams vs ai as per the
+# domains in both multiplayer and for solo like the same how many AIs"). One setup per play, from the LOCAL player's
+# side of game_started; play_type above stays as it is. (id, group, label), in the order the console draws them.
+SETUPS = (("competitive", "multiplayer", "Competitive"), ("teams", "multiplayer", "Teams"),
+          ("teams_vs_ai", "multiplayer", "Teams vs AI"), ("multi_unrecorded", "multiplayer", "Teams not recorded"),
+          ("solo_alone", "solo", "Alone"), ("solo_vs_1_ai", "solo", "vs 1 AI"), ("solo_vs_2_ai", "solo", "vs 2 AI"),
+          ("solo_vs_3plus_ai", "solo", "vs 3+ AI"), ("solo_with_ai_team", "solo", "With AI teammates"))
+SETUP_IDS = tuple(s[0] for s in SETUPS)
+DOMAINS_FROM = "2026-11-07"     # the first builds that send domain, humans_on_*_domain(s) and ai_on_*_domain(s)
+
+
+def _count(value):
+    """A head count from an event: a whole number 0 or more, else None (missing, text, negative)."""
+    if isinstance(value, bool):
+        return None
+    n = as_int(value)
+    return n if n is not None and n >= 0 else None
+
+
+def setup_of(props):
+    """(setup, humans_mine, humans_other, ai_mine, ai_other) for a game_started's properties.
+
+    Multiplayer is 2+ humans (player_count_human, as play_type_of reads it):
+      competitive       humans_on_my_domain == 1 and humans_on_other_domains >= 1 (every human for themselves, 1v1)
+      teams             humans_on_my_domain >= 2 and humans_on_other_domains >= 1 (humans together against humans)
+      teams_vs_ai       humans_on_other_domains == 0 (every human on one domain; the opponents are AI)
+      multi_unrecorded  the domain fields are missing (builds before 2026-11-07 and the PostHog history), or
+                        humans_on_other_domains >= 1 without humans_on_my_domain: never guessed
+    Solo is 1 human (or none recorded). The opponents are ai_on_other_domains when the build sent it, else
+    player_count_ai, else ai_count, else 0, so old data has these too:
+      solo_with_ai_team ai_on_my_domain >= 1 (AI teammates; only builds from 2026-11-07 can say so) - a slice of
+                        its own, whatever the opponents, so the pie stays one level
+      solo_alone        0 AI;  solo_vs_1_ai, solo_vs_2_ai;  solo_vs_3plus_ai  3 or more"""
+    humans = as_int(props.get("player_count_human")) or 0
+    mine, other = _count(props.get("humans_on_my_domain")), _count(props.get("humans_on_other_domains"))
+    ai_mine, ai_other = _count(props.get("ai_on_my_domain")), _count(props.get("ai_on_other_domains"))
+    counts = (mine, other, ai_mine, ai_other)
+    if humans >= 2:
+        if other is None:
+            return ("multi_unrecorded",) + counts
+        if other == 0:
+            return ("teams_vs_ai",) + counts
+        if mine is None or mine < 1:
+            return ("multi_unrecorded",) + counts
+        return ("competitive" if mine == 1 else "teams",) + counts
+    if ai_mine is not None and ai_mine >= 1:
+        return ("solo_with_ai_team",) + counts
+    opponents = next((n for n in (ai_other, _count(props.get("player_count_ai")), _count(props.get("ai_count")))
+                      if n is not None), 0)
+    return (("solo_alone", "solo_vs_1_ai", "solo_vs_2_ai")[opponents] if opponents < 3 else "solo_vs_3plus_ai",) + counts
 
 
 class Store:
@@ -1303,8 +1361,8 @@ class Store:
                              1 if done else 0, rematched, flight, duration,
                              (1 if won is True or won == "true" else 0) if done and won is not None else None,
                              max(0.0, duration - flight) if flight is not None and duration is not None else None,
-                             imported, country, element, second, element_source))
-        out.executemany("INSERT INTO plays VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                             imported, country, element, second, element_source) + setup_of(props))
+        out.executemany(f"INSERT INTO plays VALUES({','.join('?' * 28)})", rows)
         # which modes had no element (old names, modes with no genre): Data health lists them
         missing = {}
         for r in rows:
@@ -1726,7 +1784,7 @@ def _rebuild_spans(reader, out, starts, eras, table=None):
              ("game_mode", str(props.get("game_mode") or "unknown")),
              ("vessel_class", str(props.get("vessel_class") or "unknown")),
              ("intensity", str(intensity) if intensity is not None else "unknown"),
-             ("element", element_of(props, table)[0] or "none")))
+             ("element", element_of(props, table)[0] or "none"), ("setup", setup_of(props)[0])))
     # Freestyle (the Toybox): who entered it, and which vessels they flew there (entered in, ended in, switched to)
     for player, build, day, flag, event, vessel, from_vessel in reader.execute(
             "SELECT distinct_id, build_kind, day, received_ms = ts_ms, event, json_extract(props, '$.vessel_class'), "
