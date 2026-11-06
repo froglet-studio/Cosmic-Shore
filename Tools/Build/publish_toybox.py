@@ -1150,6 +1150,39 @@ def self_test():
            and "secretish" not in everything)
         ok("redact keeps the host and path", "https://storage.example.com/dl/toybox.zip?<redacted>" in msgs[4])
         ok("an S3 error is a code and a status", msgs[5] == "AccessDenied (HTTP 403)")
+
+        # --start-if-missing: UBA builds the commit, the poll sees it finish, the revision is checked again
+        def fake_start(revision):
+            polls = []
+
+            def opener(req, timeout=0):
+                url = req.full_url
+                if "buildStatus=success" in url:
+                    return _FakeResponse(b"[]")
+                if req.get_method() == "POST":
+                    return _FakeResponse(json.dumps([{"build": 13}]).encode())
+                if url.endswith("/builds/13"):
+                    polls.append(url)
+                    status = "started" if len(polls) < 2 else "success"
+                    return _FakeResponse(json.dumps({"build": 13, "buildStatus": status, "lastBuiltRevision": revision,
+                                                     "links": {"download_primary": {"href": "https://dl.example.com/"
+                                                                                    "t.zip?sig=abc"}}}).encode())
+                if url.startswith("https://dl.example.com/"):
+                    return _FakeResponse(b"PK-zip")
+                raise urllib.error.HTTPError(url, 404, "Not Found", {}, io.BytesIO(b""))
+            return opener, polls
+
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            _urlopen, polls = fake_start("d" * 40)
+            meta = fetch_uba("ddddddd", None, os.path.join(tmp, "z"), start_if_missing=True, wait_minutes=1)
+            ok("start-if-missing builds the commit, polls until success, downloads it",
+               meta["build"] == 13 and meta["commit"] == "d" * 40 and len(polls) == 2
+               and open(os.path.join(tmp, "z"), "rb").read() == b"PK-zip")
+            _urlopen, _ = fake_start("f" * 40)
+            refuses("a started UBA build that finished on another commit refuses",
+                    lambda: fetch_uba("ddddddd", None, os.path.join(tmp, "y"), start_if_missing=True, wait_minutes=1),
+                    "not ddddddd")
+            ok("the refused build was not downloaded", not os.path.exists(os.path.join(tmp, "y")))
     finally:
         _urlopen, _sleep = saved
 
