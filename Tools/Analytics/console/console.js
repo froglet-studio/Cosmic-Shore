@@ -715,7 +715,9 @@
 
   $("gate-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    setKey($("gate-key").value.trim());
+    // Take the key out of whatever was pasted: `key read ian` prints "read key for ian (shown once): fa_read_...".
+    const typed = $("gate-key").value.trim(), found = typed.match(/fa_(?:read|admin)_[A-Za-z0-9_-]+/);
+    setKey(found ? found[0] : typed);
     $("gate").hidden = true;
     $("gate-key").value = "";
     await whoAmI();

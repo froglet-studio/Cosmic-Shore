@@ -157,9 +157,15 @@ class RateLimit:
             return True
 
 
+# What `key read|admin <name>` and a hand edit of config.json can change while the server runs.
+LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins")
+
+
 class App:
-    def __init__(self, config):
+    def __init__(self, config, config_path=None):
         self.config = config
+        self.config_path = config_path       # given: keys made after start work without a restart (reload_keys)
+        self._config_stamp = self._stamp()
         self.store = S.Store(config["data_dir"], schema_events(config["schema_path"]), config["extra_events"])
         self.limit = RateLimit(config["ingest_per_minute"])
         self.ingest_keys = {f"ingest{i}": k for i, k in enumerate(config["ingest_keys"])}
@@ -169,6 +175,32 @@ class App:
         self.geo_path = config["geo_csv"] or os.path.join(config["data_dir"], "dbip-country-lite.csv.gz")
         self.geo = G.CountryLookup(self.geo_path)
         self.stop = threading.Event()
+
+    def _stamp(self):
+        try:
+            st = os.stat(self.config_path) if self.config_path else None
+        except OSError:
+            return None
+        return (st.st_mtime_ns, st.st_size) if st else None
+
+    def reload_keys(self):
+        """Pick up keys written to config.json since the server started (`key read ian` writes the file the running
+        server would otherwise never read again, so a new key was refused until a restart). One stat per request."""
+        stamp = self._stamp()
+        if stamp is None or stamp == self._config_stamp:
+            return False
+        try:
+            fresh = load_config(self.config_path)
+        except (OSError, ValueError):
+            return False                        # half-written: keep the keys we have and look again next request
+        for field in LIVE_FIELDS:
+            self.config[field] = fresh[field]
+        ingest = {f"ingest{i}": k for i, k in enumerate(fresh["ingest_keys"])}
+        if "public" in self.ingest_keys:
+            ingest["public"] = self.ingest_keys["public"]
+        self.ingest_keys = ingest
+        self._config_stamp = stamp
+        return True
 
     @property
     def agg(self):
@@ -279,6 +311,7 @@ def make_handler(app):
         # ------------------------------------------------ routes
 
         def do_OPTIONS(self):
+            app.reload_keys()
             self.send_response(204)
             self._cors()
             self.end_headers()
@@ -297,6 +330,7 @@ def make_handler(app):
             self.wfile.write(body)
 
         def do_GET(self):
+            app.reload_keys()
             raw = urlparse(self.path).path
             if raw in CONSOLE_FILES:
                 return self._static(raw)
@@ -347,6 +381,7 @@ def make_handler(app):
             return self._send(404, {"error": "No such page."})
 
         def do_POST(self):
+            app.reload_keys()
             path = urlparse(self.path).path.rstrip("/")
             if path in ("/batch", "/v1/batch", "/capture", "/e"):
                 return self._ingest()
@@ -399,7 +434,7 @@ def make_handler(app):
 
 
 def serve(config):
-    app = App(config)
+    app = App(config, CONFIG_PATH)
     threading.Thread(target=app.background, daemon=True).start()
     server = ThreadingHTTPServer((config["listen"], config["port"]), make_handler(app))
     print(f"Froglet Analytics on http://{config['listen']}:{config['port']} (data in {config['data_dir']})")

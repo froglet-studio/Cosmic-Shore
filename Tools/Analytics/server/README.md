@@ -165,6 +165,12 @@ sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytic
   /var/lib/froglet-analytics/venv/bin/python /var/lib/froglet-analytics/repo/Tools/Analytics/server/analytics_server.py key read ian
 ```
 
+It prints `read key for ian (shown once): fa_read_...`; paste the line or just the key into the console. The running
+server picks up a new or deleted key at the next request, with no restart. `key read admin` makes a READ key named
+"admin"; the admin key (Erasure, every profile) is the one `init` printed at setup, kept in `config.json` under
+`admin_keys` (`sudo cat /var/lib/froglet-analytics/config.json`). A reader in `profile_readers` can open player
+profiles; `key admin <name>` makes another admin key.
+
 Locally, to try it:
 
 ```bash
