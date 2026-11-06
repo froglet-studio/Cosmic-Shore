@@ -49,7 +49,7 @@ concurrency:
 
 env:
   # The tag a pull-request rehearsal makes locally at its head. Never pushed.
-  REHEARSAL_TAG: rc-Rehearsal_BAD-${{ github.event.pull_request.number }}
+  REHEARSAL_TAG: rc-rehearsal-${{ github.event.pull_request.number }}
 
 jobs:
   notes:
