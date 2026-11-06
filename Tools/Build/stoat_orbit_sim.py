@@ -44,8 +44,10 @@ CATCH_WARP_SHARE = 1.15
 # The trampoline (Yash, 2026-11-04: "remove the whole orbit ... just keep white hole, make it so that vessels can bounce off
 # with extra boost, it will be a 3D trampoline"): a soft shell round a lone white hole, laid AHEAD and line x R to the side
 # away from the bounce; inside it a spring pushes the hull out along the shell's normal (StoatSlingMath.TrampolineStep).
-TRAMP_AHEAD, TRAMP_R, TRAMP_LINE, TRAMP_SOFT, TRAMP_LIFE, TRAMP_PREDICT_MAX = 140.0, 60.0, 0.75, 0.35, 4.0, 90.0
-# the turn a graze gives at 150 u/s: 0.5 -> 83, 0.7 -> 53, 0.9 -> 19 deg, head-on 180 (about (1 - line) x 160)
+# the shell halved 60 -> 30 u (Yash, 2026-11-07: "it moves the vessel too much"); its hard core at 0.2 x R
+TRAMP_AHEAD, TRAMP_R, TRAMP_LINE, TRAMP_SOFT, TRAMP_LIFE, TRAMP_PREDICT_MAX = 140.0, 30.0, 0.75, 0.35, 4.0, 90.0
+TRAMP_CORE = 0.2
+# the turn a graze of the 30 u shell gives at 150 u/s: 0.5 -> 49, 0.75 -> 23, 0.9 -> 8 deg, head-on 180 (about (1 - line) x 100)
 TRAMP_TURN_SCALE, TRAMP_LINE_MIN, TRAMP_LINE_MAX = 140.0, 0.3, 0.92
 
 
@@ -189,7 +191,11 @@ def tramp_step(vel, radial, radius, soft, dt):
     depth = radius - d
     if depth <= 0 or d < 1e-6: return list(vel)
     k = (math.pi / soft) ** 2
-    return add(vel, mul(radial, k * depth * dt / d))
+    n = mul(radial, 1.0 / d)
+    vel = add(vel, mul(n, k * depth * dt))
+    inward = dot(vel, n)
+    if d <= TRAMP_CORE * radius and inward < 0: vel = sub(vel, mul(n, 2 * inward))   # the hard core
+    return vel
 
 
 def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
@@ -571,8 +577,10 @@ if __name__ == "__main__":
                             ("TRAMP, turning line, AI aims at the flank", {"predict": True, "aim": True})):
             row = dict(SHIPPED_ROW, aimed=False, tramp=True, **extra)
             print(line(name, score(row, seeds=a.seeds, dt=1 / 60)))
-        for sc_ in (100.0, 160.0, 220.0):
-            for mt in (20.0, 35.0, 50.0):
+        shipped = dict(SHIPPED_ROW, aimed=False, tramp=True, aim=True, aim_turn=True, turn_scale=55.0, min_turn=50.0)
+        print(line("SHIPPED 11-07: the 30 u shell, x55, turn >= 50", score(shipped, seeds=a.seeds, dt=1 / 60)))
+        for sc_ in (40.0, 55.0, 100.0):
+            for mt in (35.0, 50.0):
                 row = dict(SHIPPED_ROW, aimed=False, tramp=True, aim=True, aim_turn=True, turn_scale=sc_, min_turn=mt)
                 print(line(f"  aims for its turn, x{sc_:.0f}, turn >= {mt:.0f}", score(row, seeds=a.seeds, dt=1 / 60)))
         sys.exit(0)

@@ -379,8 +379,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The graze that gives a bounce of <paramref name="turnDegrees"/>, as a share of the radius off the centre:
-        /// 1 − turn / <paramref name="turnScale"/>, within 0.3..0.92 (deeper turns more; the shipped shell at 150 u/s turns a
-        /// 0.5 graze about 83°, 0.7 about 53°, 0.9 about 19°, head-on 180°: <c>stoat_orbit_sim.py</c>).</summary>
+        /// 1 − turn / <paramref name="turnScale"/>, within 0.3..0.92 (deeper turns more; the shipped 30 u shell at 150 u/s turns
+        /// a 0.5 graze about 49°, 0.75 about 23°, 0.9 about 8°, head-on 180°: <c>stoat_orbit_sim.py</c>).</summary>
         public static float TrampolineLineFor(float turnDegrees, float turnScale) =>
             Mathf.Clamp(1f - Mathf.Max(0f, turnDegrees) / Mathf.Max(1f, turnScale), 0.3f, 0.92f);
 
@@ -388,18 +388,28 @@ namespace CosmicShore.Gameplay
         /// <paramref name="softSeconds"/>.</summary>
         public static float TrampolineStiffness(float softSeconds) => Mathf.Pow(Mathf.PI / Mathf.Max(0.05f, softSeconds), 2f);
 
+        /// <summary>The shell's hard core, as a share of its radius from the centre out: a hull still moving in when it reaches
+        /// it is thrown straight back out, so a fast head-on hull never passes through (on the 30 u shell the spring alone let
+        /// a 190 u/s hull through the centre).</summary>
+        public const float TrampolineCoreShare = 0.2f;
+
         /// <summary>
         /// One step inside the soft shell: the spring pushes <paramref name="velocity"/> out along the shell's normal by
         /// stiffness × depth × <paramref name="dt"/>. The velocity is carried from the touch through the bounce, so a hull
         /// flying straight in is slowed, stopped and sent back out (a head-on bounce); the hull flies its direction at its own
-        /// engine's speed. Outside the shell, <paramref name="velocity"/> unchanged.
+        /// engine's speed. At the hard core (<see cref="TrampolineCoreShare"/> of the radius from the centre) the inward part
+        /// is reflected. Outside the shell, <paramref name="velocity"/> unchanged.
         /// </summary>
         public static Vector3 TrampolineStep(Vector3 velocity, Vector3 radial, float radius, float softSeconds, float dt)
         {
             float d = radial.magnitude;
             float depth = radius - d;
             if (depth <= 0f || d < 1e-6f) return velocity;
-            return velocity + radial / d * (TrampolineStiffness(softSeconds) * depth * Mathf.Max(0f, dt));
+            var normal = radial / d;
+            velocity += normal * (TrampolineStiffness(softSeconds) * depth * Mathf.Max(0f, dt));
+            float inward = Vector3.Dot(velocity, normal);
+            if (d <= TrampolineCoreShare * radius && inward < 0f) velocity -= 2f * inward * normal;
+            return velocity;
         }
 
         /// <summary>The hull TOUCHES the shell: inside its radius and moving in (a hull already moving out passes free).</summary>

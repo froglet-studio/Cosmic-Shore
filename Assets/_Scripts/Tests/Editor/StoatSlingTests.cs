@@ -682,7 +682,7 @@ namespace CosmicShore.Tests
 
         /// <summary>A pass flown through the shell at 150 u/s, 60 fps, as the executor flies it (the velocity carried from the
         /// touch, the hull at its own speed along it): the degrees it was turned (+ right).</summary>
-        static float FlyThrough(float lineShare, float radius = 60f, float speed = 150f, float soft = 0.35f)
+        static float FlyThrough(float lineShare, float radius = 30f, float speed = 150f, float soft = 0.35f)
         {
             var pos = new Vector3(-lineShare * radius, 0f, -2f * radius);   // the centre lineShare x R to the right of the line
             var fwd = Vector3.forward;
@@ -710,11 +710,23 @@ namespace CosmicShore.Tests
             float graze = FlyThrough(0.9f), shipped = FlyThrough(0.75f), deep = FlyThrough(0.4f);
             // The shell sits to the right of the line, so it throws the hull LEFT (negative).
             Assert.Less(shipped, 0f, "thrown away from the shell");
-            Assert.That(-shipped, Is.InRange(30f, 55f), "the shipped 0.75 graze: about 37-51 deg (stoat_orbit_sim.py)");
+            Assert.That(-shipped, Is.InRange(15f, 35f), "the shipped 0.75 graze of the 30 u shell: about 23 deg (stoat_orbit_sim.py)");
             Assert.Less(-graze, -shipped, "a lighter graze turns less");
             Assert.Greater(-deep, -shipped, "a deeper touch turns more");
             Assert.AreEqual(180f, Mathf.Abs(FlyThrough(0f)), 1f, "head-on: stopped and sent straight back");
             Assert.AreEqual(0f, FlyThrough(1.1f), 1e-3f, "a miss turns nothing");
+            // The hard core: a fast hull flying straight in is thrown back, never through the centre (the spring alone let
+            // 190 u/s through the 30 u shell).
+            foreach (var speed in new[] { 190f, 230f, 300f })
+                Assert.AreEqual(180f, Mathf.Abs(FlyThrough(0f, speed: speed)), 1f, $"head-on at {speed} u/s");
+            Assert.Less(-FlyThrough(0.75f, speed: 230f), -shipped, "faster, the same graze turns less");
+        }
+
+        [Test]
+        public void SlingConfig_TheShellIsHalfTheOldSize_AndTurnsLessThanIt()
+        {
+            // Yash, 2026-11-07: "it moves the vessel too much, make the radius of white hole smaller by 50 percent".
+            Assert.Less(-FlyThrough(0.75f, radius: 30f), -FlyThrough(0.75f, radius: 60f), "the same graze of the smaller shell turns less");
         }
 
         [Test]
@@ -736,14 +748,14 @@ namespace CosmicShore.Tests
         public void SlingConfig_ShipsTheTrampoline()
         {
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
-            foreach (var row in new[] { "trampoline: 1\n", "trampolineAhead: 140\n", "trampolineRadius: 60\n", "trampolineLine: 0.75\n",
+            foreach (var row in new[] { "trampoline: 1\n", "trampolineAhead: 140\n", "trampolineRadius: 30\n", "trampolineLine: 0.75\n",
                          "trampolineSoftSeconds: 0.35\n", "trampolineSeconds: 4\n", "trampolinePredictDegrees: 90\n",
-                         "trampolineAiTurnScale: 100\n" })
+                         "trampolineAiTurnScale: 55\n" })
                 StringAssert.Contains("  " + row, text);
-            // The AI bounces only for a turn of 35 deg or more (stoat_orbit_sim.py --trampoline: 20 bounced it off its line).
+            // The AI bounces only for a turn of 50 deg or more (stoat_orbit_sim.py --trampoline: on the 30 u shell 35 bounced it off its line).
             foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
                          "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
-                StringAssert.Contains("  aiSlingMinTurnDegrees: 35\n", Read(path), path);
+                StringAssert.Contains("  aiSlingMinTurnDegrees: 50\n", Read(path), path);
             var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
             try { Assert.IsTrue(cfg.Trampoline, "on by default"); }
             finally { UnityEngine.Object.DestroyImmediate(cfg); }
