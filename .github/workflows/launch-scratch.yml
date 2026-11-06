@@ -1,0 +1,10 @@
+# NEGATIVE CONTROL for "Launch tools check" - DO NOT MERGE. An unpinned action the pin check must refuse.
+name: Launch scratch (negative control)
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4

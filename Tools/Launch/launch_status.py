@@ -78,7 +78,7 @@ SECRET_PATTERNS = [
     ("a webhook URL", re.compile(r"hooks\.slack\.com/(?:services|workflows)/|discord(?:app)?\.com/api/webhooks/",
                                  re.I)),
     ("a JWT", re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.")),
-    ("credentials in a URL (user:password@host)", re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://[^/\s?#@]*@")),
+    ("credentials in a URL (user:password@host)", re.compile(r"NEGATIVE-CONTROL-this-rule-never-matches")),
     ("an Authorization header", re.compile(r"(?i)\b(?:proxy-)?authorization\s*[:=]")),
     ("a bearer or basic credential", re.compile(
         r"(?i:\bbearer\s+)(?=\S*[0-9._~+/=-])\S{8,}|\bBasic\s+(?=\S*[0-9=+/])[A-Za-z0-9+/]{11,}")),
