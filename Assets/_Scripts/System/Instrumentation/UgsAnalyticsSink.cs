@@ -106,7 +106,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// No-op: UGS has no person-property concept, and the player id is already attached to
-        /// every event by the SDK. Person properties are a PostHog feature.
+        /// every event by the SDK. Person properties are a Froglet Analytics feature.
         /// </summary>
         public void Identify(string distinctId, IDictionary<string, object> personProperties) { }
 

@@ -14,7 +14,7 @@ namespace CosmicShore.Editor
     /// answers the export-compliance questions by hand.
     ///
     /// <para>The declaration it makes: the game's only encryption is HTTPS to Unity Gaming Services
-    /// and PostHog, and DTLS on the Relay transport. All of it uses standard algorithms and only
+    /// and our own analytics server (Froglet Analytics), and DTLS on the Relay transport. All of it uses standard algorithms and only
     /// supports gameplay, which the U.S. EAR's Category 5 Part 2 "Note 4" exclusion (games and
     /// gaming) covers. The company owns this answer. If legal decides otherwise, delete this file
     /// and answer the questions in App Store Connect instead. Recorded in

@@ -295,7 +295,7 @@ namespace CosmicShore.Core
             SaveHangar();
 
             // Menu flight raises no game event, so without this the new totals would not reach
-            // PostHog until the next pause. Re-identifying is how menu time becomes visible
+            // Froglet Analytics until the next pause. Re-identifying is how menu time becomes visible
             // there - it needs no new event name and no new parameter in the UGS Event Manager.
             _analytics?.IdentifyPlayer();
         }

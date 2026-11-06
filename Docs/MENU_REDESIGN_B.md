@@ -31,6 +31,7 @@ section here. The build that follows a pick is verified against the picked board
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
 | Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118; built in section 119) | Shombith, 2026-11-02 (section 112) |
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
+| Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 
 Work goes one item at a time, with three approval gates per item:
@@ -5938,3 +5939,39 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
   stay off.
 - **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
   centred, and the underline sits at the row's foot.
+
+## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
+
+- **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
+  show me mockups of the dashboard, follow the style guide." The decision it follows: leave PostHog for our own ingest
+  server on the Oracle VM, with a dashboard for Ian curated by Claude
+  (plan: https://claude.ai/artifact/XXg7s4xV5WGneWsgKsPUnX; Ian's analytics emails of 2026-10-29, PR #1639).
+- **On the canvas:** a new tab **Froglet Analytics** (`froglet-analytics`), round "Rev 50 - Froglet Analytics dashboard:
+  our own backend replaces PostHog, three ways to read it", in section `sec-rev50`. Copies:
+  `Docs/MenuRedesignB/board/R50*.dc.html`. Drawn to the Frogma style guide (the Style Guide tab: Deep Sea, Aldrich and
+  Chakra Petch, cut corners, colour is information).
+  - **Compare**: the top of each option side by side, with what each is good for and what it costs.
+  - **A - Morning read (recommended, interactive)**: Claude's overnight read and a data-health list on top, six number
+    tiles, then rematch by play type, rows per play and matches per day. Build (Release / Editor / Port) and Range
+    (7 / 30 / 90 d) are live.
+  - **B - Console**: a left rail of pages (Overview, Retention, Matches, Data health, Ask Claude, Erasure) like the
+    Compute console; Claude's read shrinks to one line; tables for rematch by play type, match health by build and the
+    last day's events.
+  - **C - Ask first (interactive)**: a question box, three example questions, Claude's answer with the query it ran
+    beside it, the tiles and the overnight read pinned below.
+  - **Notes**: the recommendation, where each number comes from, the colour rules used.
+  - **Recommendation: A.** It is read once a day to answer Garrett's retention question; the story sits on the same
+    screen as the numbers it is checked against. B's rail fits once there are more pages; C's box belongs inside A or B.
+- **Numbers.** Real: Ian's PostHog figures of 2026-10-29 (25 players, 117 release matches and 1,284 editor matches in
+  90 days, 2.0 rows per play, rematch 64% solo vs AI and 50% solo, 2 multi-human matches, the port build 1 of 43
+  finished against 63% on Windows, Bloomrush 0 of 13, 21 of 241 double payouts). Examples, and labelled so on the boards:
+  the daily series, B's matches per play type and last-day event counts, health times, query run times.
+- **Colour.** Data is one blue (blue-68 `#758FFB`); Fire only marks a problem; the Lime tick marks healthy; Jade
+  (`#00D4FF`, selection) marks the picked filter, the picked question and focus. No domain colour: a play type is not a
+  domain. A chart with two or more series has no family to draw from, so every chart has one series plus labels; raised
+  as row 19 of the design feedback queue in `Docs/UI_REDESIGN_TASKS.md`.
+- **Differs from the build:** nothing is built. The dashboard is a new web page that reads the analytics server's read
+  API; it is not a Unity screen. Not drawn yet: sign-in, the Erasure page, phone width.
+- **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
+  Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
+  there); the page itself is not built yet.
