@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebe4f9ca6b7b420b963a4f94e3635608, type: 3}
   m_Name: LaunchConsoleConfig
   m_EditorClassIdentifier: 
-  milestoneName: 'Invite build v1'
-  milestoneDate: '2026-12-03'
+  milestoneName: 'Steam keys by March 2027, before GDC (mobile first, when activation is ready)'
+  milestoneDate: '2027-03-01'
   repoUrl: 'https://github.com/froglet-studio/Cosmic-Shore'
   statusBranch: 'launch-status'
   statusFile: 'status.json'
