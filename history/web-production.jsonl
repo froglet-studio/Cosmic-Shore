@@ -1,0 +1,1 @@
+{"channel": "production", "details": {"event_date": "2026-10-22"}, "id": "web-production", "kind": "channel", "link": "https://www.froglet.games/play", "platform": "web", "result": "success", "schema": 1, "source": "Phase 1 audit (2026-11-05)", "summary": "Hand upload 2026-10-22 on the r2.dev host; commit unknown", "updated_at": "2026-11-06T03:38:04Z", "version": "2"}
