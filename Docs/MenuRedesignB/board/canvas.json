@@ -3178,113 +3178,6 @@
       "x": 4200,
       "y": 33924
     },
-    "R52Arcade.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 52 Arcade - Arcade: eight cards in a 4 x 2 grid, the game of the week marked",
-      "w": 1948,
-      "x": 0,
-      "y": 1080
-    },
-    "R52Compare.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 52 - the same Home on a phone: today's PC layout shrunk vs the phone scale, at true size",
-      "w": 1948,
-      "x": 0,
-      "y": 0
-    },
-    "R52Configure.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interact",
-      "w": 1948,
-      "x": 2128,
-      "y": 1080
-    },
-    "R52Finish.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu",
-      "w": 1948,
-      "x": 2128,
-      "y": 2160
-    },
-    "R52Hangar.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive",
-      "w": 1948,
-      "x": 4256,
-      "y": 1080
-    },
-    "R52Home.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interac",
-      "w": 1948,
-      "x": 4256,
-      "y": 0
-    },
-    "R52Hud.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre",
-      "w": 1948,
-      "x": 0,
-      "y": 2160
-    },
-    "R52Notes.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 52 - notes: the phone rules each board follows, and what each changes in Unity",
-      "w": 1948,
-      "x": 0,
-      "y": 3240
-    },
-    "R52SignIn.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 52 SignIn - Sign-in: the welcome and Play as guest, one column",
-      "w": 1948,
-      "x": 2128,
-      "y": 0
-    },
-    "R53HudLifts.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them",
-      "w": 1948,
-      "x": 2128,
-      "y": 5600
-    },
-    "R53HudTotems.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb",
-      "w": 1948,
-      "x": 4256,
-      "y": 5600
-    },
-    "R53Notes.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 53 - notes: what changed from Rev 52 and why",
-      "w": 1948,
-      "x": 0,
-      "y": 6680
-    },
-    "R53SignIn.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)",
-      "w": 1948,
-      "x": 0,
-      "y": 5600
-    },
     "R54A.dc.html": {
       "h": 1080,
       "is_interactive": true,
@@ -3337,57 +3230,31 @@
       "x": 0,
       "y": 41324
     },
-    "R55Arcade.dc.html": {
-      "h": 900,
+    "R58Docked.dc.html": {
+      "h": 1080,
       "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 55 Arcade - Arcade: the two feature cards and all 28 games, the party panel as a sheet - interactive",
-      "w": 1948,
-      "x": 2128,
-      "y": 9040
-    },
-    "R55Configure.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 55 Configure - Configure: the picture and briefing left; class, intensity, the three teams and Start game right; con",
-      "w": 1948,
-      "x": 4256,
-      "y": 9040
-    },
-    "R55ConfigureArena.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 55 ConfigureArena - Configure, Arena: the hull strip and Claim in place of the class",
-      "w": 1948,
+      "page": "launch-console",
+      "title": "Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv",
+      "w": 1920,
       "x": 0,
-      "y": 10120
+      "y": 0
     },
-    "R55Hangar.dc.html": {
-      "h": 900,
+    "R58Narrow.dc.html": {
+      "h": 1080,
       "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 55 Hangar - Hangar: the vessel list, the hero and its unlock; abilities in a sheet; the spend window - interactive",
-      "w": 1948,
-      "x": 2128,
-      "y": 10120
+      "page": "launch-console",
+      "title": "Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive",
+      "w": 1920,
+      "x": 2100,
+      "y": 0
     },
-    "R55Home.dc.html": {
+    "R58Notes.dc.html": {
       "h": 900,
-      "is_interactive": true,
-      "page": "phone",
-      "title": "Rev 55 Home - Home: the five-tab rail, the pilot chip, Up next, the four hubs; Go offline? and the party invite - intera",
-      "w": 1948,
+      "page": "launch-console",
+      "title": "Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact",
+      "w": 1920,
       "x": 0,
-      "y": 9040
-    },
-    "R55Notes.dc.html": {
-      "h": 900,
-      "page": "phone",
-      "title": "Rev 55 - notes: what each board keeps from the real screen, what moves, and what it changes in Unity",
-      "w": 1948,
-      "x": 0,
-      "y": 11200
+      "y": 1260
     },
     "R5Notes.dc.html": {
       "h": 1080,
@@ -3412,6 +3279,110 @@
       "w": 1920,
       "x": 11520,
       "y": 46510
+    },
+    "R61C.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 61 C - On the pads - interactive",
+      "w": 1920,
+      "x": 0,
+      "y": 46224
+    },
+    "R61E.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 61 E - The map wall - interactive",
+      "w": 1920,
+      "x": 2100,
+      "y": 46224
+    },
+    "R62A.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 A - The pads (recommended) - interactive",
+      "w": 1920,
+      "x": 0,
+      "y": 48764
+    },
+    "R62B.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 B - The map wall - interactive",
+      "w": 1920,
+      "x": 2100,
+      "y": 48764
+    },
+    "R62C.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 C - Down the bay - interactive",
+      "w": 1920,
+      "x": 4200,
+      "y": 48764
+    },
+    "R62D.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 D - The porthole row - interactive",
+      "w": 1920,
+      "x": 0,
+      "y": 50024
+    },
+    "R62E.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 E - Across the bay - interactive",
+      "w": 1920,
+      "x": 2100,
+      "y": 50024
+    },
+    "R62F.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "menu-redesign-c",
+      "title": "Rev 62 F - At a porthole - interactive",
+      "w": 1920,
+      "x": 4200,
+      "y": 50024
+    },
+    "R63A.dc.html": {
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width",
+      "w": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "R63B.dc.html": {
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)",
+      "w": 1920,
+      "x": 2100,
+      "y": 0
+    },
+    "R63C.dc.html": {
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb",
+      "w": 1920,
+      "x": 4200,
+      "y": 0
+    },
+    "R63Notes.dc.html": {
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 63 - notes: what each costs to build and how big the words are",
+      "w": 1920,
+      "x": 0,
+      "y": 1260
     },
     "R6Arcade.dc.html": {
       "h": 1080,
@@ -3914,127 +3885,13 @@
       "x": 22820,
       "y": 86150
     },
-    "R56Portrait.dc.html": {
+    "R64Live.dc.html": {
       "x": 0,
-      "y": 13560,
-      "w": 5358,
-      "h": 1641,
-      "page": "phone",
-      "title": "Rev 56 Portrait - Home, Arcade, Configure, Hangar, sign-in and the finish held upright, and how the game tells a phone (and portrait) apart"
-    },
-    "R57Compare.dc.html": {
-      "x": 0,
-      "y": 16661,
-      "w": 3226,
-      "h": 6959,
-      "page": "phone",
-      "title": "Rev 57 Compare - sign-in, Home, Arcade, Configure, Hangar, in game and the finish, on PC, phone landscape and phone portrait"
-    },
-    "R58Docked.dc.html": {
-      "x": 0,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "launch-console",
-      "title": "Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactive",
-      "is_interactive": true
-    },
-    "R58Narrow.dc.html": {
-      "x": 2100,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "launch-console",
-      "title": "Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive",
-      "is_interactive": true
-    },
-    "R58Notes.dc.html": {
-      "x": 0,
-      "y": 1260,
-      "w": 1920,
-      "h": 900,
-      "page": "launch-console",
-      "title": "Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact"
-    },
-    "R60Phone.dc.html": {
-      "x": 0,
-      "y": 25080,
-      "w": 1948,
-      "h": 2040,
-      "page": "phone",
-      "title": "Rev 60 Phone - the Quests page on a phone (interactive), and three spots now and proposed - interactive",
-      "is_interactive": true
-    },
-    "R61C.dc.html": {
-      "x": 0,
-      "y": 46224,
+      "y": 52564,
       "w": 1920,
       "h": 1080,
       "page": "menu-redesign-c",
-      "title": "Rev 61 C - On the pads - interactive",
-      "is_interactive": true
-    },
-    "R61E.dc.html": {
-      "x": 2100,
-      "y": 46224,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 61 E - The map wall - interactive",
-      "is_interactive": true
-    },
-    "R62A.dc.html": {
-      "x": 0,
-      "y": 48764,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 62 A - The pads (recommended) - interactive",
-      "is_interactive": true
-    },
-    "R62B.dc.html": {
-      "x": 2100,
-      "y": 48764,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 62 B - The map wall - interactive",
-      "is_interactive": true
-    },
-    "R62C.dc.html": {
-      "x": 4200,
-      "y": 48764,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 62 C - Down the bay - interactive",
-      "is_interactive": true
-    },
-    "R62D.dc.html": {
-      "x": 0,
-      "y": 50024,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 62 D - The porthole row - interactive",
-      "is_interactive": true
-    },
-    "R62E.dc.html": {
-      "x": 2100,
-      "y": 50024,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 62 E - Across the bay - interactive",
-      "is_interactive": true
-    },
-    "R62F.dc.html": {
-      "x": 4200,
-      "y": 50024,
-      "w": 1920,
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 62 F - At a porthole - interactive",
+      "title": "Rev 64 Live - Live scene (animated) - interactive",
       "is_interactive": true
     }
   },
@@ -4149,19 +4006,12 @@
     "sec-style-guide",
     "sec-rev50",
     "sec-rev51",
-    "sec-rev52",
-    "sec-rev53",
     "sec-rev54",
-    "sec-rev55",
-    "sec-rev56",
-    "sec-rev56-2",
-    "sec-rev56-3",
-    "sec-rev57",
-    "sec-rev57-2",
     "sec-rev58",
-    "sec-rev60",
     "sec-rev61",
     "sec-rev62",
+    "sec-rev63",
+    "sec-rev64",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4226,16 +4076,12 @@
     "style-guide",
     "rev50",
     "rev51",
-    "rev52",
-    "rev53",
     "rev54",
-    "rev55",
-    "rev56",
-    "rev57",
     "rev58",
-    "rev60",
     "rev61",
-    "rev62"
+    "rev62",
+    "rev63",
+    "rev64"
   ],
   "notes": {
     "hud_end": {
@@ -4795,24 +4641,6 @@
       "x": 0,
       "y": 32264
     },
-    "rev52": {
-      "kind": "title1",
-      "maxW": 6204,
-      "page": "phone",
-      "text": "Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish",
-      "w": 240,
-      "x": 0,
-      "y": -400
-    },
-    "rev53": {
-      "kind": "title1",
-      "maxW": 6204,
-      "page": "phone",
-      "text": "Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)",
-      "w": 240,
-      "x": 0,
-      "y": 5200
-    },
     "rev54": {
       "kind": "title1",
       "maxW": 6120,
@@ -4822,14 +4650,14 @@
       "x": 0,
       "y": 38404
     },
-    "rev55": {
+    "rev58": {
       "kind": "title1",
-      "maxW": 6204,
-      "page": "phone",
-      "text": "Rev 55 - Phone menus from the real screens: Home, Arcade, Configure, Hangar (replaces Rev 52's four menu boards)",
+      "maxW": 6120,
+      "page": "launch-console",
+      "text": "Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads",
       "w": 240,
       "x": 0,
-      "y": 8640
+      "y": -400
     },
     "rev6": {
       "kind": "title1",
@@ -4840,6 +4668,33 @@
       "w": 240,
       "x": 0,
       "y": 46110
+    },
+    "rev61": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "menu-redesign-c",
+      "text": "Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)",
+      "w": 240,
+      "x": 0,
+      "y": 45824
+    },
+    "rev62": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "menu-redesign-c",
+      "text": "Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels",
+      "w": 240,
+      "x": 0,
+      "y": 48364
+    },
+    "rev63": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "phone",
+      "text": "Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)",
+      "w": 240,
+      "x": 0,
+      "y": -400
     },
     "rev7": {
       "kind": "title1",
@@ -6221,36 +6076,6 @@
       "x": -160,
       "y": 32104
     },
-    "sec-rev52": {
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 4860,
-      "kind": "rect",
-      "page": "phone",
-      "w": 6524,
-      "x": -160,
-      "y": -560
-    },
-    "sec-rev53": {
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 2700,
-      "kind": "rect",
-      "page": "phone",
-      "w": 6524,
-      "x": -160,
-      "y": 5040
-    },
     "sec-rev54": {
       "css": {
         "background": "rgba(46, 204, 113, 0.06)",
@@ -6266,20 +6091,20 @@
       "x": -160,
       "y": 38244
     },
-    "sec-rev55": {
+    "sec-rev58": {
       "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-color": "rgba(0, 212, 255, 0.55)",
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
         "border-radius": "40px 40px 40px 40px",
         "border-style": "solid",
         "border-width": "3px 3px 3px 3px"
       },
-      "h": 3780,
+      "h": 2880,
       "kind": "rect",
-      "page": "phone",
-      "w": 6524,
+      "page": "launch-console",
+      "w": 6440,
       "x": -160,
-      "y": 8480
+      "y": -560
     },
     "sec-rev6": {
       "css": {
@@ -6310,6 +6135,51 @@
       "w": 4270,
       "x": 4110,
       "y": 45950
+    },
+    "sec-rev61": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 6440,
+      "x": -160,
+      "y": 45664
+    },
+    "sec-rev62": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 3060,
+      "kind": "rect",
+      "page": "menu-redesign-c",
+      "w": 6440,
+      "x": -160,
+      "y": 48204
+    },
+    "sec-rev63": {
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "phone",
+      "w": 6440,
+      "x": -857,
+      "y": -534
     },
     "sec-rev7": {
       "css": {
@@ -6465,190 +6335,25 @@
       "x": 0,
       "y": 0
     },
-    "rev56": {
+    "rev64": {
       "kind": "title1",
-      "text": "Rev 56 - Phone in portrait too: the same screens on a 450 x 800 canvas, for the day a mobile game is played upright (Honeyguide and Ratel); not built now",
+      "text": "Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup",
       "x": 0,
-      "y": 13160,
-      "w": 240,
-      "maxW": 16434,
-      "page": "phone"
-    },
-    "sec-rev56": {
-      "kind": "rect",
-      "x": -160,
-      "y": 13000,
-      "w": 5585,
-      "h": 2361,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "phone"
-    },
-    "sec-rev56-2": {
-      "kind": "rect",
-      "x": 5425,
-      "y": 13000,
-      "w": 5585,
-      "h": 2361,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 0px 3px 0px",
-        "border-radius": "0px 0px 0px 0px"
-      },
-      "page": "phone"
-    },
-    "sec-rev56-3": {
-      "kind": "rect",
-      "x": 11010,
-      "y": 13000,
-      "w": 5584,
-      "h": 2361,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "phone"
-    },
-    "rev57": {
-      "kind": "title1",
-      "text": "Rev 57 - One UI, three layouts: every screen on PC, phone landscape and phone portrait, side by side",
-      "x": 0,
-      "y": 16261,
-      "w": 240,
-      "maxW": 10038,
-      "page": "phone"
-    },
-    "sec-rev57": {
-      "kind": "rect",
-      "x": -160,
-      "y": 16101,
-      "w": 5179,
-      "h": 7679,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 0px 3px 3px",
-        "border-radius": "40px 0px 0px 40px"
-      },
-      "page": "phone"
-    },
-    "sec-rev57-2": {
-      "kind": "rect",
-      "x": 5019,
-      "y": 16101,
-      "w": 5179,
-      "h": 7679,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 0px",
-        "border-radius": "0px 40px 40px 0px"
-      },
-      "page": "phone"
-    },
-    "rev58": {
-      "kind": "title1",
-      "text": "Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads",
-      "x": 0,
-      "y": -400,
-      "w": 240,
-      "maxW": 6120,
-      "page": "launch-console"
-    },
-    "sec-rev58": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "launch-console"
-    },
-    "rev60": {
-      "kind": "title1",
-      "text": "Rev 60 - Phone: what is left - the Quests page, and the Codex orbit, account prompt and Port weekly board",
-      "x": 0,
-      "y": 24680,
-      "w": 240,
-      "maxW": 6120,
-      "page": "phone"
-    },
-    "sec-rev60": {
-      "kind": "rect",
-      "x": -160,
-      "y": 24520,
-      "w": 6440,
-      "h": 2760,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "phone"
-    },
-    "rev61": {
-      "kind": "title1",
-      "text": "Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)",
-      "x": 0,
-      "y": 45824,
+      "y": 52164,
       "w": 240,
       "maxW": 6120,
       "page": "menu-redesign-c"
     },
-    "sec-rev61": {
+    "sec-rev64": {
       "kind": "rect",
       "x": -160,
-      "y": 45664,
+      "y": 52004,
       "w": 6440,
       "h": 1800,
       "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
+        "background": "rgba(64, 120, 255, 0.06)",
         "border-style": "solid",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "menu-redesign-c"
-    },
-    "rev62": {
-      "kind": "title1",
-      "text": "Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels",
-      "x": 0,
-      "y": 48364,
-      "w": 240,
-      "maxW": 6120,
-      "page": "menu-redesign-c"
-    },
-    "sec-rev62": {
-      "kind": "rect",
-      "x": -160,
-      "y": 48204,
-      "w": 6440,
-      "h": 3060,
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
@@ -7113,31 +6818,9 @@
     "R54C.dc.html",
     "R54D.dc.html",
     "R54Notes.dc.html",
-    "R52Compare.dc.html",
-    "R52SignIn.dc.html",
-    "R52Home.dc.html",
-    "R52Arcade.dc.html",
-    "R52Configure.dc.html",
-    "R52Hangar.dc.html",
-    "R52Hud.dc.html",
-    "R52Finish.dc.html",
-    "R52Notes.dc.html",
-    "R53SignIn.dc.html",
-    "R53HudLifts.dc.html",
-    "R53HudTotems.dc.html",
-    "R53Notes.dc.html",
-    "R55Home.dc.html",
-    "R55Arcade.dc.html",
-    "R55Configure.dc.html",
-    "R55ConfigureArena.dc.html",
-    "R55Hangar.dc.html",
-    "R55Notes.dc.html",
-    "R56Portrait.dc.html",
-    "R57Compare.dc.html",
     "R58Docked.dc.html",
     "R58Narrow.dc.html",
     "R58Notes.dc.html",
-    "R60Phone.dc.html",
     "R61C.dc.html",
     "R61E.dc.html",
     "R62A.dc.html",
@@ -7145,7 +6828,12 @@
     "R62C.dc.html",
     "R62D.dc.html",
     "R62E.dc.html",
-    "R62F.dc.html"
+    "R62F.dc.html",
+    "R63A.dc.html",
+    "R63B.dc.html",
+    "R63C.dc.html",
+    "R63Notes.dc.html",
+    "R64Live.dc.html"
   ],
   "pages": [
     {
@@ -7174,7 +6862,7 @@
     },
     {
       "id": "phone",
-      "name": "Phone"
+      "name": "Portrait"
     },
     {
       "id": "launch-console",

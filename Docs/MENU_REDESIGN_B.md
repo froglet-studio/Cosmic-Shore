@@ -62,7 +62,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels, awaiting a pick (section 137)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -6007,7 +6007,7 @@ waits on a pick.
 Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
 only, its `hangaropen` take played), Voyage Board (rendered only) and Nocturne palette (read only).
 
-## 136. Rev 61 mockups: the Ark's lobby, filmed - the real Ark and the squad's real vessels, no cartoon (2026-11-06; C and E liked and kept, followed up in section 137)
+## 136. Rev 61 mockups: the Ark's lobby, filmed - the real Ark and the squad's real vessels, no cartoon (2026-11-06; C and E liked and kept, followed up in section 139)
 
 **Asked (Shombith, 2026-11-06, on Rev 59):** "I liked D and in C the map ... can you also show the vessels beside the ark
 and then another inside ... current one looks like they are from a cartoon please we need to fix that first. Cannot be
@@ -6060,7 +6060,7 @@ Join, Edit and Take into are unchanged; the kept seat is new. The build waits on
 Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model and the Sparrow and
 Dolphin models (rendered only), Voyage Board (rendered only) and Nocturne palette (read only).
 
-## 137. Rev 62 mockups: the Ark's lobby by the game's own light - C and E kept, portholes, no vessels (2026-11-06, awaiting a pick)
+## 139. Rev 62 mockups: the Ark's lobby by the game's own light - C and E kept, portholes, no vessels (2026-11-06, awaiting a pick)
 
 **Asked (Shombith, 2026-11-06, on Rev 61):** "I like C and E. Keep both and follow that style design and create more
 mock-ups, do not show the 3D vessel models. Maybe it can have spaceship small windows where we see the outside. We will
@@ -6111,3 +6111,34 @@ Take into are unchanged; the kept seat is new. The build waits on a pick.
 
 Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
 only), Voyage Board (rendered only) and Nocturne palette (read only).
+
+## 140. Rev 64 mockup: the Ark's lobby as a live, animated scene (2026-11-06, for review)
+
+**Asked (Shombith, 2026-11-06, on Rev 62):** "Is this bg animated, what are its features?" and then "make a separate
+mockup for live animated scene".
+
+**What it is.** One board (`R64Live`) whose backdrop is a seamless animated loop of Rev 62's "Down the bay" view
+(section 139): the real `ArkReverse` hangar lit only by the cell and the game's own glow, the portholes, the bare pads.
+It shows what the Squads tab would look like if the hangar were a live scene rather than a baked still. Everything
+that moves is something the game already does:
+- **the cell** outside drifts: the sky seen through the portholes and the open mouth turns slowly, and the lattice
+  outside sways past the mouth;
+- **the prisms' rims pulse**, each material on its own beat (the heaps, the hull's sockets, the danger blades);
+- **haze** rolls through the porthole light (4D noise moved round a circle, so the loop closes without a seam);
+- **the clam doors** shut and open again: the model's own `hangaropen` take, eased from open to rest and back, so
+  the mouth's light goes and returns;
+- **the camera** breathes a little.
+
+Rendered with `Docs/MenuRedesignB/rounds/r64_ark_live_render.py` (built on r62's scene; Blender 5, Cycles, seeded,
+60 frames at 1280x720, graded with r62's grade) and assembled into an animated WebP played at 10 fps (a
+6-second loop). The board (`r64_ark_live_board.py`) puts Rev 62's seat cards on top, with a panel listing what
+moves. The loop is rendered in Jade; the Ruby and Gold chips show Rev 62's stills of the same view (a loop per domain
+would triple the render). Uploaded ids: `r64_blobs.json`.
+
+**For the build:** this is the "live scene" path of section 139: `ArkReverse`'s hangar as a small scene with the game's
+real prisms and cell, lit only by them. Each moving part maps to existing game systems: the menu's live cell, the
+prism rim shader, a volume or particle haze, the Ark rig's `hangaropen` take (which `ArkModel` already plays), and a
+gentle camera sway. A pre-rendered loop (this file) is the cheaper fallback: a video backdrop per domain.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a path is picked; Garrett's Ark model (rendered
+only, its `hangaropen` take played).

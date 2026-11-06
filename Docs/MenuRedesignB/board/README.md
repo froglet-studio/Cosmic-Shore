@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793977764-d468` of **Frogma**: Rev 3 to Rev 62, 490 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-06 from canvas version `1793991611-8d42` of **Frogma**: Rev 3 to Rev 64, 473 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,6 +545,10 @@ Copied on 2026-11-06 from canvas version `1793977764-d468` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
+
+- [`R64Live.dc.html`](R64Live.dc.html) - Rev 64 Live - Live scene (animated) - interactive
+
 #### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
 
 - [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
@@ -695,53 +699,20 @@ Copied on 2026-11-06 from canvas version `1793977764-d468` of **Frogma**: Rev 3 
 - [`R50C.dc.html`](R50C.dc.html) - Rev 50 C - Ask first: one question box on top, Claude's answer with its query, pinned charts below - interactive
 - [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
 
-### Tab: Phone  (`phone`)
+### Tab: Portrait  (`phone`)
 
-#### Rev 60 - Phone: what is left - the Quests page, and the Codex orbit, account prompt and Port weekly board
+#### Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)
 
-- `R60Phone.dc.html` (not copied yet) - Rev 60 Phone - the Quests page on a phone (interactive), and three spots now and proposed - interactive
-
-#### Rev 57 - One UI, three layouts: every screen on PC, phone landscape and phone portrait, side by side
-
-- `R57Compare.dc.html` (not copied yet) - Rev 57 Compare - sign-in, Home, Arcade, Configure, Hangar, in game and the finish, on PC, phone landscape and phone portrait
-
-#### Rev 56 - Phone in portrait too: the same screens on a 450 x 800 canvas, for the day a mobile game is played upright (Honeyguide and Ratel); not built now
-
-- `R56Portrait.dc.html` (not copied yet) - Rev 56 Portrait - Home, Arcade, Configure, Hangar, sign-in and the finish held upright, and how the game tells a phone (and portrait) apart
-
-#### Rev 55 - Phone menus from the real screens: Home, Arcade, Configure, Hangar (replaces Rev 52's four menu boards)
-
-- `R55Home.dc.html` (not copied yet) - Rev 55 Home - Home: the five-tab rail, the pilot chip, Up next, the four hubs; Go offline? and the party invite - intera - interactive
-- `R55Arcade.dc.html` (not copied yet) - Rev 55 Arcade - Arcade: the two feature cards and all 28 games, the party panel as a sheet - interactive
-- `R55Configure.dc.html` (not copied yet) - Rev 55 Configure - Configure: the picture and briefing left; class, intensity, the three teams and Start game right; con - interactive
-- `R55ConfigureArena.dc.html` (not copied yet) - Rev 55 ConfigureArena - Configure, Arena: the hull strip and Claim in place of the class
-- `R55Hangar.dc.html` (not copied yet) - Rev 55 Hangar - Hangar: the vessel list, the hero and its unlock; abilities in a sheet; the spend window - interactive
-- `R55Notes.dc.html` (not copied yet) - Rev 55 - notes: what each board keeps from the real screen, what moves, and what it changes in Unity
-
-#### Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)
-
-- `R53SignIn.dc.html` (not copied yet) - Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)
-- `R53HudLifts.dc.html` (not copied yet) - Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them
-- `R53HudTotems.dc.html` (not copied yet) - Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb
-- `R53Notes.dc.html` (not copied yet) - Rev 53 - notes: what changed from Rev 52 and why
-
-#### Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish
-
-- `R52Compare.dc.html` (not copied yet) - Rev 52 - the same Home on a phone: today's PC layout shrunk vs the phone scale, at true size
-- `R52SignIn.dc.html` (not copied yet) - Rev 52 SignIn - Sign-in: the welcome and Play as guest, one column
-- `R52Home.dc.html` (not copied yet) - Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interac - interactive
-- `R52Arcade.dc.html` (not copied yet) - Rev 52 Arcade - Arcade: eight cards in a 4 x 2 grid, the game of the week marked
-- `R52Configure.dc.html` (not copied yet) - Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interact - interactive
-- `R52Hangar.dc.html` (not copied yet) - Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive
-- `R52Hud.dc.html` (not copied yet) - Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre
-- `R52Finish.dc.html` (not copied yet) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
-- `R52Notes.dc.html` (not copied yet) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
+- `R63A.dc.html` (not copied yet) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
+- `R63B.dc.html` (not copied yet) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
+- `R63C.dc.html` (not copied yet) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
+- `R63Notes.dc.html` (not copied yet) - Rev 63 - notes: what each costs to build and how big the words are
 
 ### Tab: Launch Console  (`launch-console`)
 
 #### Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads
 
-- `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactive
+- `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv - interactive
 - `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
