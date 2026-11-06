@@ -33,7 +33,7 @@ Read it from anywhere (the repo is public):
 | `platform` | yes | `windows` `ios` `android` `web` `liveops` `backend` `quality` `release` |
 | `kind` | yes | `channel` (what players on a channel run), `build` (an artifact was made), `deploy` (backend config), `gate` (a check) |
 | `result` | yes | `success` `failure` `running` `skipped` `cancelled` |
-| `updated_at` | yes | ISO-8601 UTC, set by the tool |
+| `updated_at` | yes | ISO-8601 UTC to the second (`2026-11-05T20:00:00Z`), set by the tool to the moment of publishing; never back-dated |
 | `source` | yes | the workflow name (defaults to `$GITHUB_WORKFLOW`) |
 | `channel` | no | `prerelease` `production` `staging` `development` |
 | `version`, `build` | no | the build's version and build number |
@@ -44,10 +44,26 @@ Read it from anywhere (the repo is public):
 | `rollback_to` | no | the version a rollback would return to |
 | `details` | no | up to 24 short `lower_snake_case` key → value pairs |
 
-**A record never holds a secret.** Unknown fields are refused; every text value is one short line; anything that
-looks like a credential (a long unbroken token, a GitHub/AWS key, a JWT, a private-key header, a URL with a query
-string) is refused, and the workflow step fails. URLs are `https` with no query string. This is deliberate: the branch
-is public, and the 2026-10-12 `USYM_UPLOAD_AUTH_TOKEN` leak came from a log nobody thought would carry a secret.
+`updated_at` says when the record was written. A record that reports something which happened earlier (a hand
+upload, a seed from an audit) says when in `details.event_date` (`YYYY-MM-DD`).
+
+**A record never holds a secret.** Unknown fields are refused; every text value is one short line; every string in
+the record, whatever field it is in (a `--build` or `--link` given the wrong variable included), is scanned, and
+anything that looks like a credential is refused and the workflow step fails. The rules (`SECRET_PATTERNS` and
+`_token_reason` in the tool) catch: a private-key or certificate block, with or without its dashes; a base64 key
+body (`MII...`, OpenSSH); GitHub, AWS, Google, Slack and `sk-` API keys; Slack and Discord webhook URLs; a JWT;
+credentials in a URL (`user:pass@host`, `token@host`); an `Authorization:` header, a `Bearer`/`Basic` credential and
+`password=` / `token:` style assignments; a signed URL or any URL with a query string; a Unity licence serial, an
+Apple app-specific password and a 32-character hex key; and by shape, a long unbroken token, a random-looking token
+(also one broken up by `/`, `+`, `=` or `.`), and a base64 body split into pieces by spaces or slashes. URLs in
+`run_url` and `link` are `https` with no user, port or query string.
+
+This is deliberate: the branch is public, and the 2026-10-12 `USYM_UPLOAD_AUTH_TOKEN` leak came from a log nobody
+thought would carry a secret. False negatives cost more than false positives: a refused record costs a re-run with a
+plainer summary. The known false positives are ids that look random by construction (a claude.ai artifact link, a
+Unity GUID, a sha256 digest), so a record links to the GitHub run or the store page instead. Measured 2026-11-05: the
+rules refuse about 1 in 140 lines of the repo's docs and 3 of 1,063 commit subjects; a random base64 token of 20+
+characters gets through about 1.4% of the time (16 characters: about 11%), one split into 8-character pieces 0.4%.
 
 ## Component ids
 
@@ -62,7 +78,7 @@ is public, and the 2026-10-12 `USYM_UPLOAD_AUTH_TOKEN` leak came from a log nobo
 | `web-staging` | web | channel | the Toybox publish to the staging root |
 | `web-production` | web | channel | the Toybox promotion to `/play` |
 | `build-windows`, `build-ios`, `build-android`, `build-web` | that platform | build | the player build job |
-| `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code, access policy, the launch flags) |
+| `ugs-development`, `ugs-production` | liveops | deploy | `ugs-deploy.yml` (Cloud Code scripts, incl. launch-flags once that PR adds it to `deploy.sh`'s `SCRIPTS`) |
 | `trunk-static` | quality | gate | the bleeding-edge guard's static checks |
 | `unity-compile` | quality | gate | the guard's Unity compile + EditMode run |
 | `smoke-<mode>` | quality | gate | the Unity per-mode smoke test |
@@ -89,11 +105,39 @@ Rules:
 - Publish with `if: always()` so a failure is recorded too.
 - Publish from a job that holds no store or signing secret where you can (a small final job that `needs:` the work).
 - `--dry-run` validates and prints the record without pushing; use it in pull-request runs.
-- Several workflows may publish at once: `publish` re-fetches and retries the push with backoff.
+- Several workflows may publish at once: `publish` re-fetches and retries the push with backoff (2, 4, 8, 16 s plus
+  jitter, five attempts). A failure no retry can fix (no such remote, 403, authentication) stops at once.
+- `publish` leaves nothing behind in the repo it runs in: no checkout, no worktree, no local `launch-status` branch.
+  It builds the commit with git plumbing (a private temporary index, `hash-object`, `write-tree`, `commit-tree`) on
+  the fetched tip and pushes `<commit>:refs/heads/launch-status`; a lost race is a refused non-fast-forward, and the
+  next attempt rebuilds on the new tip. It fetches the whole (small) branch, never with `--depth`, so it never turns
+  a full clone shallow. git's own error text is scrubbed of credentials before it is printed.
+- It is safe from a SPARSE checkout (a job that checked out only `Tools/Launch`): the private index is never a
+  checkout and runs with `core.sparseCheckout=false` and `index.sparse=false`, and the other components are read from
+  the fetched commit itself, so the rebuilt `status.json` keeps every component. (A worktree-based publish inherits
+  the caller's sparse patterns and drops them; found by the UGS deploy pipeline, PR #1748.)
+- The publishing job's checkout must keep its credentials (`persist-credentials` left at its default `true`), or the
+  push fails at once with an authentication error.
 
 ## Proof
 
-`python3 Tools/Launch/launch_status.py self-test` accepts a good record and refuses eleven bad ones (unknown field,
-missing result, bad platform, signed URL, a long token in a summary, a GitHub token in details, a private key header, a
-JWT, a bad sha, a multi-line summary, a bad id). `.github/workflows/launch-tools-check.yml` runs it on every change
-under `Tools/Launch/`, and fails any launch workflow whose third-party actions are not pinned to a commit.
+`python3 Tools/Launch/launch_status.py self-test` accepts 7 good records (the shapes the first real records take: run
+links, a full sha, dates, CamelCase identifiers, words like "Authorization failed") and refuses 40 bad ones, one per
+shape above: unknown field, missing result, bad platform, signed URL, long token, GitHub token, private key, JWT, bad
+sha, multi-line, bad id, `user:pass@` in a link and in a summary, `token@host`, an `Authorization:` header, `Bearer` and
+`Basic` credentials, `password=`, a base64 body split by spaces and by slashes, a stripped PEM body, an OpenSSH body, a
+dash-less PEM header, a token followed by a full stop, a token in `build` and in a link path, a Slack webhook, a hex
+key, a Unity serial, an AWS key id, a Google key, a query string in a summary, a trailing newline in an id, a URL and
+a detail key, a Unicode line separator, a non-UTC or date-only `updated_at`, `schema: true` and a NaN detail. It then
+publishes end to end against a throwaway local bare remote: the first record (orphan branch + README), a second
+publisher winning the race between fetch and push (the loser retries and both records survive), a refused record
+(nothing pushed), a missing remote (fails at once, no retries), a publish from a sparse cone checkout with a sparse
+index (all three components and all eight files survive); and checks that no caller repo was left with a new local
+branch, a worktree, a shallow file or a touched working tree.
+
+`python3 Tools/Launch/check_action_pins.py self-test` proves the pin check finds 13 unpinned shapes (a tag, quoted
+tags and branches, a short or upper-case sha, a sha with a suffix, no ref, a reusable workflow on a branch, a flow
+mapping, a docker tag, a short docker digest, `uses :`, a sha hidden in a trailing comment) and passes pinned ones,
+local actions and commented-out lines. `.github/workflows/launch-tools-check.yml` runs every launch tool's self-test
+on each change under `Tools/Launch/` or to a `launch-*` / `release*` workflow (`.yml` or `.yaml`), then fails any
+launch workflow whose third-party actions are not pinned to a commit sha.
