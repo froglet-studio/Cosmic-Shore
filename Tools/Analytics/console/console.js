@@ -52,7 +52,7 @@
   ];
 
   const state = { page: "overview", build: "release", days: 90, healthDays: 30, play: "all", era: "", ask: null, asking: false,
-                  profiles: false, admin: false, me: "", person: null, eras: null, milestones: [], unfiltered: [] };
+                  profiles: false, admin: false, me: "", person: null, eras: null, milestones: [], unfiltered: [], presets: [] };
   let countryNames = null;
   try { countryNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
   const country = (code) => {
@@ -218,9 +218,22 @@
     matches: ["Matches", "count"], players: ["Players", "count"], finished_pct: ["Finished %", "pct"],
     rematch_pct: ["Rematch %", "pct"], flight_min: ["Minutes a match", "avg"], new_players: ["New players", "count"],
     events: ["Events", "count"],
+    // Freestyle (the Toybox): its own panel offers these; the match charts do not
+    freestyle_entries: ["Toybox entries", "count"], freestyle_players: ["Toybox players", "count"],
+    freestyle_minutes: ["Toybox minutes", "count"], freestyle_switches: ["Vessel switches", "count"],
   };
-  const SPLITS = [["none", "None"], ["play_type", "Play type"], ["era", "Era"], ["platform", "Platform"], ["country", "Country"],
-                  ["game_mode", "Mode"], ["vessel_class", "Vessel"], ["build_kind", "Build"], ["intensity", "Intensity"]];
+  const MATCH_MEASURES = ["matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events"];
+  const SPLITS = [["none", "None"], ["play_type", "Play type"], ["element", "Element"], ["era", "Era"], ["platform", "Platform"],
+                  ["country", "Country"], ["game_mode", "Mode"], ["vessel_class", "Vessel"], ["build_kind", "Build"],
+                  ["intensity", "Intensity"], ["from_vessel_class", "Switched from"], ["switch_source", "Source"]];
+  const MATCH_SPLITS = SPLITS.map(([k]) => k).filter((k) => !["from_vessel_class", "switch_source"].includes(k));
+  // ELEMENTS HAVE NO COLOUR (LOCKED): an element split is one neutral hue in steps (the text token mixed into the
+  // ground), with its name beside every mark; never Jade, Ruby, Gold, Blue or the domain series colours.
+  const ELEMENT_ORDER = ["Charge", "Mass", "Space", "Time", "Omni", "none"];
+  const ELEMENT_SHADE = { Charge: 100, Mass: 80, Space: 62, Time: 46, Omni: 36 };
+  const elementColour = (k) => (ELEMENT_SHADE[k] ? `color-mix(in srgb, var(--fs-text) ${ELEMENT_SHADE[k]}%, var(--fs-ground))` : "var(--fs-text-off)");
+  const elementLabel = (k) => (!k || k === "none" ? "No element" : String(k));
+  const SWITCH_SOURCE = { event: "Exact (game event)", recovered: "Recovered (approx.)" };
   const OVERS = [["day", "Day"], ["week", "Week"], ["none", "Total"]];
 
   function makeFrame(o) {
@@ -270,6 +283,9 @@
     if (f.by === "era") return (eraById(k) || {}).name || k;
     if (f.by === "country") return country(k);
     if (f.by === "intensity") return `Intensity ${k}`;
+    if (f.by === "element") return elementLabel(k);
+    if (f.by === "switch_source") return SWITCH_SOURCE[k] || String(k);
+    if ((f.by === "vessel_class" || f.by === "from_vessel_class") && k === "unknown") return "Not named (older builds)";
     return String(k);
   };
   const xLabel = (f, x) => (f.xlabel ? f.xlabel(x) : /^\d{4}-\d{2}-\d{2}/.test(String(x)) ? shortDay(x) : String(x ?? ""));
@@ -285,12 +301,13 @@
       return same.indexOf(k) === 1 ? "var(--series-4)" : OTHER;
     }
     if (f.by === "era" && eraById(k)) return eraColour(eraById(k));
+    if (f.by === "element") return elementColour(k);
     if (f.keys.length === 1 && (k === null || !f.time)) return "var(--data)";
     return i < 4 ? `var(--series-${i + 1})` : OTHER;
   }
   // At most four named series and "Other" for a picture (the Table shows every one).
   function folded(f) {
-    if (f.keys.length <= 5 || f.by === "play_type" || f.by === "era") return f;
+    if (f.keys.length <= 5 || f.by === "play_type" || f.by === "era" || f.by === "element") return f;
     const keep = f.keys.filter((k) => k !== "other").slice(0, 4), rest = f.keys.filter((k) => !keep.includes(k));
     if (f.kind !== "count") return makeFrame(Object.assign({}, f, { keys: keep, hidden: rest.length }));
     const v = new Map(f.v);
@@ -398,7 +415,7 @@
   // One 2px line per series; a crosshair reads every series at a point; up to four lines are named at their end.
   function drawLines(f0, W, box, { height = 220, target } = {}) {
     const f = folded(f0);
-    const named = f.keys.length > 1 && f.keys.length <= 4 && W > 520;
+    const named = f.keys.length > 1 && f.keys.length <= (f.by === "element" ? 6 : 4) && W > 520;
     const H = height, L = 46, R = named ? 104 : 12, B = 24, T = 12;
     const all = [];
     f.keys.forEach((k) => f.xs.forEach((x) => { const v = f.get(x, k); if (v !== null && v !== undefined) all.push(v); }));
@@ -462,7 +479,7 @@
     const shown = items.slice(0, limit);
     const max = f.kind === "pct" ? 100 : Math.max(1, ...shown.map((r) => Number(r[1]) || 0));
     const tip = tipFor(box);
-    const entity = f.by === "play_type" || f.by === "era" || f.colours;   // otherwise one series: colour is not identity
+    const entity = f.by === "play_type" || f.by === "era" || f.by === "element" || f.colours;   // otherwise one series: colour is not identity
     const rows = h("div", { class: "hbars" }, shown.map(([k, v], i) => {
       const colour = entity ? keyColour(f, k, i) : "var(--data)";
       const fill = h("div", { class: "hbar-fill", style: `width:${Math.max(0, Math.min(100, 100 * (Number(v) || 0) / max))}%;background:${colour}` });
@@ -479,7 +496,7 @@
   // A donut for one whole in at most six parts (the fifth and sixth fold into Other).
   function drawDonut(f0, W, box, { centre, max = 200 } = {}) {
     let items = f0.time ? f0.keys.map((k) => [k, f0.total(k)]) : f0.keys.map((k) => [k, Number(f0.get(null, k)) || 0]);
-    const entity = f0.by === "play_type" || f0.by === "era" || f0.colours;
+    const entity = f0.by === "play_type" || f0.by === "era" || f0.by === "element" || f0.colours;
     if (!entity && items.length > 4) {
       const rest = items.slice(4);
       items = items.slice(0, 4).concat([["other", sum(rest, (r) => r[1])]]);
@@ -552,12 +569,14 @@
   const rejected = new Set();                            // "measure|by|over" the server answered 400
 
   function seriesLoad(extra) {
-    return async ({ measure, by, over }) => {
+    const load = async ({ measure, by, over }) => {
       const meta = PAGES[state.page];
       const path = `/v1/series?${filterQuery(Object.assign({}, meta, { build: true, days: meta.days || DAYS, play: true, era: true }),
         Object.assign({ measure, by, over }, extra || {}))}`;
       return frameFromSeries(await cached(path));
     };
+    load.series = true;                                  // a saved view of it can be a dashboard tile
+    return load;
   }
 
   function formsFor(f, cfg) {
@@ -684,15 +703,98 @@
       }
     }
     view.reload = load;
+    view.pick = () => Object.assign({}, pick);
     load();
     return view;
   }
 
   function chartPanel(cfg) {
     const view = chartView(cfg);
+    const views = presetBar(cfg, view);
     const head = h("div", { class: "card-head" }, h("span", { class: "lab" }, cfg.title),
-      cfg.note ? h("span", { class: "small" }, cfg.note) : null, cfg.tag ? ufTag() : null);
-    return h("section", { class: "card panel sl" + (cfg.cls ? " " + cfg.cls : "") }, head, view, cfg.after || null);
+      cfg.note ? h("span", { class: "small" }, cfg.note) : null, cfg.tag ? ufTag() : null, views ? views.bar : null);
+    return h("section", { class: "card panel sl" + (cfg.cls ? " " + cfg.cls : "") }, head, views ? views.form : null, view, cfg.after || null);
+  }
+
+  // ------------------------------------------------------------------ saved views ("presets")
+  // Any chart panel saves its switches (form, measure, split, over) and the page's filters (build, days, play, era)
+  // under a name, private or public (Shombith, 2026-11-06); the Views list applies one; the Dashboards page lists them
+  // all and makes a series view a tile. A view is its key's own: a private one is never shown to another key.
+  const CHART_TITLES = {
+    "overview.series": "Matches over time", "overview.freestyle": "The Toybox over time",
+    "overview.freestyle.switches": "Vessels switched to in the Toybox", "overview.freestyle.vessels": "Vessels flown in the Toybox",
+    "retention.series": "Players and rematches over time", "matches.series": "Matches per day", "matches.element": "By element",
+    "players.series": "Active players", "overview.playtype": "Rematch and return by play type", "overview.health": "Match health by build",
+  };
+  const chartTitle = (id) => CHART_TITLES[id] || String(id || "").replace(/[._]/g, " ");
+  const presetable = (cfg) => !cfg.compact && cfg.views !== false && !/^(profile|dash|query)\./.test(cfg.id) && !(state.page === "players" && state.person);
+  const presetsFor = (id) => (state.presets || []).filter((p) => p.chart_id === id);
+  async function loadPresets() {
+    try { const r = await api("/v1/presets"); state.presets = r.presets || []; } catch (e) { state.presets = []; }
+  }
+  function pageFilters(meta) {
+    const f = {};
+    if (meta.build) f.build = state.build;
+    if (meta.days && !(meta.era && state.era)) f.days = state.days;
+    if (meta.play) f.play = state.play;
+    if (meta.era && state.era) f.era = state.era;
+    return f;
+  }
+  const settingsText = (st) => [st.measure && (MEASURES[st.measure] || [st.measure])[0], st.by && st.by !== "none" && `by ${((SPLITS.find(([k]) => k === st.by) || [, st.by])[1]).toLowerCase()}`,
+    st.over && ({ day: "per day", week: "per week", none: "in total" })[st.over], st.form].filter(Boolean).join(" · ");
+  const filtersText = (f) => [f.build, f.era ? (eraById(f.era) || {}).name || f.era : f.days ? `${f.days} d` : null,
+    f.play && f.play !== "all" ? GROUP_LABEL[f.play] : null].filter(Boolean).join(" · ");
+  function applyPreset(p) {
+    const f = p.filters || {};
+    if (f.build) state.build = f.build;
+    if (f.days) state.days = f.days;
+    state.play = f.play || "all";
+    state.era = f.era && eraById(f.era) ? f.era : "";
+    store.set("fa-chart-" + p.chart_id, Object.assign({}, store.get("fa-chart-" + p.chart_id, {}) || {}, p.settings || {}));
+    state.person = null;
+    getCache.clear();
+    if (state.page !== p.page) location.hash = "#" + p.page; else render();
+    window.scrollTo(0, 0);
+  }
+  function presetBar(cfg, view) {
+    if (!presetable(cfg)) return null;
+    const mine = presetsFor(cfg.id);
+    const status = h("span", { class: "small", "aria-live": "polite" });
+    const name = h("input", { class: "field sls compact", type: "text", maxlength: "80", placeholder: "Name this view", "aria-label": "View name", required: true });
+    const pub = h("input", { type: "checkbox" });
+    const form = h("form", { class: "save-view", hidden: true }, name,
+      h("label", { class: "small check-label" }, pub, "Public"),
+      h("button", { class: "btn sls default small-btn", type: "submit" }, "Save"), status);
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const meta = PAGES[state.page];
+      try {
+        const made = await api("/v1/presets", { name: name.value.trim(), page: state.page, chart_id: cfg.id, series: !!(cfg.load && cfg.load.series),
+          settings: view.pick(), filters: pageFilters(meta), public: pub.checked });
+        state.presets = (state.presets || []).filter((x) => x.id !== made.id).concat(made);
+        status.className = "small"; status.textContent = `Saved${made.public ? " for everyone" : " for you"}. It is under Views here and in Dashboards.`;
+        name.value = "";
+        setTimeout(() => { form.hidden = true; status.textContent = ""; redrawViews(); }, 1600);
+      } catch (err) { status.className = "small danger"; status.textContent = err.message; }
+    });
+    const bar = h("span", { class: "views" });
+    function redrawViews() {
+      const list = presetsFor(cfg.id);
+      const items = [];
+      if (list.length) {
+        const sel = h("select", { class: "mini-select", "aria-label": `Saved views of ${cfg.title}` },
+          h("option", { value: "" }, `Views (${list.length})`),
+          list.map((p) => h("option", { value: p.id }, `${p.name}${p.public ? " · public" : ""}${p.owner !== state.me ? ` · ${p.owner}` : ""}`)));
+        sel.addEventListener("change", () => { const p = list.find((x) => x.id === sel.value); if (p) applyPreset(p); });
+        items.push(h("label", { class: "mini-seg" }, h("span", { class: "mini-lab" }, "Views"), sel));
+      }
+      items.push(h("button", { type: "button", class: "link save-link", "aria-expanded": String(!form.hidden), onclick: () => {
+        form.hidden = !form.hidden; if (!form.hidden) name.focus();
+      } }, "Save view"));
+      bar.replaceChildren(...items);
+    }
+    redrawViews();
+    return { bar, form, mine };
   }
   // A chart over data the page already holds.
   const staticLoad = (make) => async (pick) => make(pick);
@@ -807,8 +909,8 @@
   // The series chart most pages lead with: any measure, split any way, over days, weeks or in total.
   function seriesPanel(id, title, defaults, extra) {
     return chartPanel(Object.assign({ id, title, note: `${state.build} builds, ${rangeLabel()} · hover a mark`,
-      measures: Object.entries(MEASURES).map(([k, [l]]) => [k, l]),
-      splits: SPLITS.map(([k]) => k), overs: ["day", "week", "none"],
+      measures: MATCH_MEASURES.map((k) => [k, MEASURES[k][0]]),
+      splits: MATCH_SPLITS, overs: ["day", "week", "none"],
       load: seriesLoad(), defaults }, extra || {}));
   }
 
@@ -855,6 +957,7 @@
           ], "tiles-inner"))));
     }
     parts.push(seriesPanel("overview.series", "Matches over time", { measure: "matches", by: "play_type", over: "day", form: "bars" }));
+    parts.push(...await freestyleSection());
     parts.push(h("div", { class: "grid2" },
       playTypePanel("overview.playtype", "Rematch and return by play type", null, o.rematch_by_play_type || []),
       h("div", { class: "page" },
@@ -879,6 +982,69 @@
           load: staticLoad(() => catFrame(mk.by_platform, "platform", "players", { kname: "Platform", vname: "Players" })) }) : null));
     }
     return parts;
+  }
+
+  // ------------------------------------------------------------------ Freestyle (the Toybox)
+  // Shombith, 2026-11-06: players who "went inside freestyle/toybox and played vessels". Entries come from the
+  // PostHog history; minutes and exact switches from builds after 2026-11-06; older switches are recovered from the
+  // identify history (the selected vessel changed between two profile updates; time approximate).
+
+  function freestyleHistory(hi) {
+    hi = hi || {};
+    const entries = hi.first_imported_entry_day ? `Entries since ${shortDay(hi.first_imported_entry_day)} from the PostHog history`
+      : hi.first_entry_day ? `Entries since ${shortDay(hi.first_entry_day)}` : "No Toybox entries yet";
+    const minutes = `minutes and vessels from builds after 2026-11-06${hi.first_minutes_day ? ` (first on ${shortDay(hi.first_minutes_day)})` : " (none received yet)"}`;
+    const recovered = hi.first_recovered_switch_day ? `; older switches recovered from the identify history since ${shortDay(hi.first_recovered_switch_day)}, at approximate times` : "";
+    return `${entries}; ${minutes}${recovered}.`;
+  }
+
+  async function freestyleSection() {
+    let f;
+    try { f = await cached(`/v1/freestyle?${filterQuery(PAGES.overview)}`); }
+    catch (e) { return [h("h2", { class: "h3 section-title" }, "Freestyle (Toybox)"), empty(e.message)]; }
+    const t = f.tiles || {};
+    const tag = state.play !== "all";                    // the Toybox is not a match: the Play filter does not reach it
+    if (tag && !state.unfiltered.includes("freestyle")) state.unfiltered = state.unfiltered.concat("freestyle");
+    const pairs = f.switch_pairs || [];
+    return [
+      h("h2", { class: "h3 section-title" }, "Freestyle (Toybox)"),
+      h("p", { class: "small" }, freestyleHistory(f.history)),
+      tileRow([
+        ["Entries", fmt(t.entries), rangeLabel(), false, "freestyle"],
+        ["Players", fmt(t.players), "who entered the Toybox", false, "freestyle"],
+        ["First of a session", fmt(t.first_entries), "entries straight after launch"],
+        ["Minutes flown", t.stretches ? fmt(t.minutes) : "–", t.stretches ? `${fmt(t.stretches)} stretches` : "from builds after 6 Nov"],
+        ["Vessels a stretch", t.avg_vessels_flown ? ratio(t.avg_vessels_flown) : "–", "distinct vessels flown"],
+        ["Vessel switches", fmt((t.switches || 0) + (t.recovered_switches || 0)), `${fmt(t.switches)} exact · ${fmt(t.recovered_switches)} recovered`],
+      ]),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "overview.freestyle", title: "The Toybox over time", note: `${state.build} builds, ${rangeLabel()}`, tag,
+          measures: [["freestyle_entries", "Entries"], ["freestyle_players", "Players"], ["freestyle_minutes", "Minutes"]],
+          splits: ["none", "vessel_class", "era", "build_kind"], overs: ["day", "week", "none"], load: seriesLoad(),
+          defaults: { measure: "freestyle_entries", by: "none", over: "day", form: "bars" }, emptyText: "Nobody entered the Toybox in this range." }),
+        chartPanel({ id: "overview.freestyle.switches", title: "Vessels switched to in the Toybox", note: "the vessel they changed into", tag,
+          measures: [["freestyle_switches", "Switches"]], splits: ["vessel_class", "from_vessel_class", "switch_source", "none", "era", "build_kind"],
+          overs: ["none", "week", "day"], load: seriesLoad(), defaults: { measure: "freestyle_switches", by: "vessel_class", over: "none", form: "bars" },
+          emptyText: "No vessel switches in this range. Exact switches come from builds after 6 Nov; recovered ones from the identify history (builds since 12 Oct).",
+          after: h("p", { class: "small" }, "Exact: the game's freestyle_vessel_changed (builds after 2026-11-06). Recovered: the selected vessel changed between two profile updates (builds since 2026-10-12), at about that time; several switches between two updates read as one.") })),
+      h("div", { class: "grid2" },
+        chartPanel({ id: "overview.freestyle.vessels", title: "Vessels flown in the Toybox", note: "per vessel, in this range", tag,
+          measures: [["minutes", "Minutes"], ["switches_in", "Switched to"], ["stretches", "Stretches ended in"], ["entries", "Entered in"]],
+          forms: ["bars", "pie", "table"], emptyText: "No vessels named yet: builds after 6 Nov name them.",
+          load: staticLoad(({ measure }) => {
+            const rows = (f.vessels || []).map((v) => Object.assign({}, v, { switches_in: (v.switches_to || 0) + (v.recovered_to || 0) }))
+              .filter((v) => v.vessel_class !== "unknown" || measure === "entries").sort((a, b) => (b[measure] || 0) - (a[measure] || 0));
+            return Object.assign(catFrame(rows, "vessel_class", measure, { by: "vessel_class", kname: "Vessel", vname: measure.replace(/_/g, " ") }),
+              { table: { columns: ["Vessel", "Minutes", "Stretches", "Entered in", "Switched to", "Switched from"], rows: rows.map((v) =>
+                [v.vessel_class === "unknown" ? "Not named (older builds)" : v.vessel_class, fmt(v.minutes), fmt(v.stretches), fmt(v.entries),
+                 fmt(v.switches_in), fmt((v.switches_from || 0) + (v.recovered_from || 0))]) } });
+          }) }),
+        ucard("freestyle", "Switches, from → to", "the most common pairs in this range",
+          pairs.length ? table(["From", "To", "Switches", "Recovered"], pairs.map((x) => h("tr", {},
+            h("td", {}, x.from_vessel === "unknown" ? "Not named" : x.from_vessel), h("td", {}, x.to_vessel),
+            h("td", { class: "num" }, fmt(x.switches)), h("td", { class: "num soft" }, fmt(x.recovered)))))
+            : h("p", { class: "small" }, "No switches in this range."))),
+    ];
   }
 
   // ------------------------------------------------------------------ Retention
@@ -913,6 +1079,22 @@
         { table: { columns, rows: rows.map(cells) } })) });
   }
 
+  // Matches by element: the match's own (builds from 2026-11-06) or its mode's genre (mode_elements.json, so older
+  // matches and the PostHog history have one too). A neutral hue in steps: elements have no colour.
+  function elementPanel(m) {
+    const rows = m.by_element || [];
+    const second = m.element_secondary || [];
+    const measures = [["matches", "Matches"], ["plays", "Plays"], ["finished_pct", "Finished %"], ["win_pct", "Won %"]];
+    return chartPanel({ id: "matches.element", title: "By element", note: "the mode's genre: Charge, Mass, Space, Time", forms: ["bars", "pie", "table"], measures,
+      load: staticLoad(({ measure }) => Object.assign(catFrame(rows, "element", measure, { by: "element", measure: measure === "plays" ? null : measure,
+        kind: /pct$/.test(measure) ? "pct" : "count", kname: "Element", vname: (measures.find((x) => x[0] === measure) || [, measure])[1] }),
+        { table: { columns: ["Element", "Matches", "Plays", "Finished", "Won", "Sent by the build", "From the mode"], rows: rows.map((r) =>
+          [elementLabel(r.element), fmt(r.matches), fmt(r.plays), pct(r.finished_pct), pct(r.win_pct), fmt(r.sent_by_build), fmt(r.from_mode_table)]) } })),
+      emptyText: "No matches in this range.",
+      after: h("p", { class: "small" }, "A two-element mode counts under its first" + (second.length ? `; as a second element: ${second.map((x) => `${x.element} ${fmt(x.matches)} matches`).join(", ")}` : "") +
+        ". Builds from 2026-11-06 send the element; older matches take their mode's genre from the game's ModeGenre. No element: a mode with no genre, or an old mode name.") });
+  }
+
   async function matches() {
     const m = await api(`/v1/matches?${filterQuery()}`);
     setUpdated(m.built_ms);
@@ -921,9 +1103,12 @@
     const plays = [["plays", "Plays"], ["finished_pct", "Finished %"], ["win_pct", "Won %"], ["avg_flight_s", "Avg flight s"]];
     return [
       seriesPanel("matches.series", "Matches per day", { measure: "matches", by: "none", over: "day", form: "bars" }),
+      elementPanel(m),
       h("div", { class: "grid2" },
         byPanel("matches.mode", "By mode", m.by_mode || [], "game_mode", "Mode", plays,
-          ["Mode", "Plays", "Finished", "Won", "Avg flight"], (r) => [r.game_mode || "Unknown", fmt(r.plays), pct(r.finished_pct), pct(r.win_pct), r.avg_flight_s ? `${r.avg_flight_s} s` : "–"]),
+          ["Mode", "Element", "Plays", "Finished", "Won", "Avg flight"], (r) => [r.game_mode || "Unknown",
+            r.element ? elementLabel(r.element) + (r.element_secondary ? ` + ${r.element_secondary}` : "") : "–",
+            fmt(r.plays), pct(r.finished_pct), pct(r.win_pct), r.avg_flight_s ? `${r.avg_flight_s} s` : "–"]),
         byPanel("matches.intensity", "By intensity", m.by_intensity || [], "intensity", "Intensity", plays.slice(0, 2),
           ["Intensity", "Plays", "Finished"], (r) => [r.intensity ?? "–", fmt(r.plays), pct(r.finished_pct)])),
       h("div", { class: "grid2" },
@@ -982,6 +1167,7 @@
     ["matches", "Matches", (p) => p.matches || 0],
     ["finished", "Finished", (p) => (p.matches ? (p.finished || 0) / p.matches : -1)],
     ["won", "Won", (p) => p.won || 0],
+    ["freestyle_entries", "Toybox", (p) => p.freestyle_entries || 0],
     ["crystal_balance", "Crystals", (p) => p.crystal_balance ?? -1],
     ["last_ms", "Last seen", (p) => p.last_ms || 0],
   ];
@@ -1159,10 +1345,12 @@
         h("td", {}, lifespanBar(p, win, 120)),
         h("td", {}, mixBar([["solo_vs_ai", p.solo_vs_ai || 0], ["solo", p.solo || 0], ["multi", p.multi || 0]], { width: 96 })),
         h("td", {}, fmt(p.matches)), h("td", {}, p.matches ? pct(Math.round(100 * (p.finished || 0) / p.matches)) : "–"),
-        h("td", {}, fmt(p.won)), h("td", {}, fmt(p.crystal_balance)), h("td", {}, dayOf(p.last_ms))));
+        h("td", {}, fmt(p.won)),
+        h("td", { title: p.freestyle_seconds ? `${seconds(p.freestyle_seconds)} flown there (builds after 6 Nov)` : "Toybox entries" }, fmt(p.freestyle_entries || 0)),
+        h("td", {}, fmt(p.crystal_balance)), h("td", {}, dayOf(p.last_ms))));
       tableBox.replaceChildren(
         h("div", { class: "card-head" }, h("span", { class: "lab" }, "Every player"),
-          h("span", { class: "small" }, `${fmt(shown.length)} of ${fmt(list.total ?? people.length)} · ${rangeLabel()} · sorted by ${(COLUMNS.find((c) => c[0] === f.sort) || COLUMNS[9])[1].toLowerCase()} · click any column to sort`)),
+          h("span", { class: "small" }, `${fmt(shown.length)} of ${fmt(list.total ?? people.length)} · ${rangeLabel()} · sorted by ${(COLUMNS.find((c) => c[0] === f.sort) || COLUMNS[COLUMNS.length - 1])[1].toLowerCase()} · click any column to sort`)),
         shown.length ? h("div", { class: "table-wrap" }, h("table", { class: "people" }, h("thead", {}, head), h("tbody", {}, rows)))
           : h("p", { class: "small" }, "Nobody matches these filters."),
         list.total > people.length ? h("p", { class: "small" }, `The server sends the newest ${fmt(people.length)}; narrow the range or era to see the rest.`) : "");
@@ -1179,9 +1367,9 @@
   function exportPeople(list) {
     csvDownload(`froglet-players-${state.build}-${todayIso()}.csv`,
       ["player_id", "display_name", "countries", "platforms", "first_seen", "last_seen", "days_active", "matches", "finished", "won",
-       "solo_vs_ai", "solo", "multi", "crystal_balance", "app_version"],
+       "solo_vs_ai", "solo", "multi", "toybox_entries", "toybox_seconds", "crystal_balance", "app_version"],
       list.map((p) => [p.distinct_id, p.display_name, (p.countries || []).join(" "), (p.platforms || []).join(" "), when(p.first_ms), when(p.last_ms),
-        p.days_active, p.matches, p.finished, p.won, p.solo_vs_ai, p.solo, p.multi, p.crystal_balance, p.app_version]));
+        p.days_active, p.matches, p.finished, p.won, p.solo_vs_ai, p.solo, p.multi, p.freestyle_entries, p.freestyle_seconds, p.crystal_balance, p.app_version]));
   }
 
   async function audienceSection() {
@@ -1330,6 +1518,28 @@
       h("span", { class: "legend-item" }, h("i", { class: "win" }), h("span", {}, "square: a win")))];
   }
 
+  // The profile's Toybox block: visits, minutes, vessels flown there, and every vessel switch in order.
+  function freestyleProfile(fs) {
+    if (!fs) return null;
+    const list = fs.switches || [];
+    const note = "Visits go back to the PostHog history. Minutes and exact switches come from builds after 2026-11-06; " +
+      "switches marked approx. are recovered from the identify history (builds since 2026-10-12): the selected vessel changed between two profile updates, at about that time.";
+    return h("div", { class: "grid2" },
+      card("Freestyle (Toybox)", fs.last_ms ? `first ${dayOf(fs.first_ms)} · last ${when(fs.last_ms)}` : "never entered",
+        statRow([["Visits", fmt(fs.entries)], ["First of a session", fmt(fs.first_entries)],
+          ["Minutes flown", fs.stretches ? fmt(fs.minutes) : "–"], ["Stretches", fmt(fs.stretches)], ["Switches", fmt(fs.switch_count)]]),
+        h("div", { class: "bargroups" },
+          barGroup("Vessels flown there", barList(fs.vessels_flown, null, { empty: "No vessel named yet (builds after 6 Nov name it)." })),
+          barGroup("Switched to", barList(fs.switched_to, null, { empty: "No switches." }))),
+        h("p", { class: "small" }, note)),
+      card("Vessel switches in the Toybox", list.length ? `${fmt(list.length)} in order, oldest first${fs.recovered_switches ? ` · ${fmt(fs.recovered_switches)} recovered (approx.)` : ""}` : null,
+        list.length ? h("div", { class: "scroll-y" }, table(["When", "From", "", "To", "Into the stretch"], list.map((x) => h("tr", {},
+          h("td", {}, when(x.ts_ms), x.approx ? h("span", { class: "tag approx", title: "Recovered from the identify history: when the profile was sent, not the click" }, "approx.") : null),
+          h("td", {}, x.from || "–"), h("td", { class: "soft", "aria-hidden": "true" }, "→"), h("td", {}, x.to || "–"),
+          h("td", { class: x.seconds_in_freestyle === null || x.seconds_in_freestyle === undefined ? "soft" : "" }, seconds(x.seconds_in_freestyle))))))
+          : h("p", { class: "small" }, "No switches. Exact switches exist only from builds after 2026-11-06, recovered ones from builds since 2026-10-12; the PostHog history before that has entries, not vessels.")));
+  }
+
   async function profile(id) {
     const p = await api(`/v1/person?id=${encodeURIComponent(id)}`);
     const m = p.matches, e = p.economy, w = p.where, act = p.activity;
@@ -1403,6 +1613,7 @@
                 tips: Object.fromEntries(balancePts.map((x, i) => [i, `${x.event.replace(/_/g, " ")} ${fmt(x.amount)} ${x.source || ""}`])) })) }),
           chartPanel({ id: "profile.sources", title: "Earned by source", forms: ["bars", "pie", "table"], emptyText: "Nothing earned yet.",
             load: staticLoad(() => catFrame((e.by_source || []).slice().sort((a, b) => b.earned - a.earned), "source", "earned", { kname: "Source", vname: "Crystals" })) }))),
+      freestyleProfile(p.freestyle),
       h("div", { class: "grid2" },
         card("Where and on what", "events from each, most first",
           statRow([["Devices (installs)", fmt(Object.keys(w.installs || {}).length)], ["Launch to menu, typical", seconds(act.launch_to_menu_p50)]]),
@@ -1895,6 +2106,11 @@
             ? table(["Key", "Failures", "Last"], d.cloud_save_failures.map((r) => h("tr", {}, h("td", {}, r.key),
                 h("td", { class: "bad" }, fmt(r.count)), h("td", {}, r.last_day))))
             : h("p", { class: "small" }, "None.")),
+        card("Matches with no element", "every match ever, by mode: a mode with no genre or an old name",
+          (d.modes_without_element || []).length
+            ? table(["Mode", "Plays", "From PostHog"], d.modes_without_element.slice(0, 20).map((r) => h("tr", {}, h("td", {}, r.game_mode),
+                h("td", { class: "num" }, fmt(r.plays)), h("td", { class: "num soft" }, fmt(r.imported_plays)))))
+            : h("p", { class: "small" }, "None. Every match has an element.")),
         card("Rejected events", "counted, not stored",
           (d.rejects || []).length
             ? table(["Reason", "Event", "Count"], d.rejects.map((r) => h("tr", {}, h("td", {}, r.reason.replace(/_/g, " ")),
@@ -2194,7 +2410,9 @@
 
   const BUILTINS = [["builtin:new_players", "New players", "number"], ["builtin:d1_return", "D1 return", "number"],
     ["builtin:ftue_finished", "FTUE finished", "number"], ["builtin:rows_per_play", "Rows per play", "number"],
-    ["builtin:matches_per_day", "Matches per day", "bars"], ["builtin:play_mix", "Play mix", "donut"]];
+    ["builtin:matches_per_day", "Matches per day", "bars"], ["builtin:play_mix", "Play mix", "donut"],
+    ["builtin:freestyle_entries", "Toybox entries per day", "bars"]];
+  const FORM_CHART = { bars: "bars", line: "line", pie: "donut", table: "table", number: "number" };
   const ds = { current: null, editing: false, draft: null, list: null };
   const emailOf = (d) => (d && d.email ? (typeof d.email === "string" ? d.email : d.email.email || "") : "");
 
@@ -2205,6 +2423,7 @@
       donut: { max: Math.max(96, room), centre: "" }, limit: Math.max(3, Math.floor(room / 22)),
       load: async () => {
         const r = await cached(`/v1/dashboards/tile?${filterQuery(PAGES.dashboards, { source: tile.source })}`);
+        if (r.series) return Object.assign(frameFromSeries(r.series), { unfiltered: [] });   // a saved view: its own filters
         if (tile.source === "builtin:play_mix") {         // the raw play types folded into the three groups
           const by = {};
           for (const [k, n] of r.rows || []) by[groupOf(k) || k] = (by[groupOf(k) || k] || 0) + (Number(n) || 0);
@@ -2230,7 +2449,7 @@
         ds.editing = true; ds.current = null; ds.draft = { name: "New dashboard", shared: "me", email: "", tiles: [] }; render();
       } }, "New dashboard") : null,
       !ds.list.length && !ds.editing ? h("p", { class: "small" }, state.admin ? "No dashboards yet. Make one from any saved query or the console's own numbers." : "No dashboards are shared with you yet.") : null);
-    if (!board) return [h("div", { class: "grid-dash" }, side, empty("Pick a dashboard, or make one."))];
+    if (!board) return [h("div", { class: "grid-dash" }, side, h("div", { class: "page" }, empty("Pick a dashboard, or make one."), presetsCard(null)))];
 
     const head = h("div", { class: "dash-head" },
       ds.editing ? h("input", { class: "field sls", type: "text", value: board.name, maxlength: "60", "aria-label": "Dashboard name", style: "max-width:360px",
@@ -2268,11 +2487,12 @@
         h("button", { type: "button", "aria-label": "Taller", disabled: t.h >= 3 || null, onclick: () => { t.h++; render(); } }, "H+"),
         h("button", { type: "button", "aria-label": "Remove tile", onclick: () => { board.tiles.splice(i, 1); render(); } }, "×")) : null;
       return h("section", { class: "card panel sl dash-tile", style: `--w:${Math.max(1, Math.min(4, t.w || 1))};--h:${Math.max(1, Math.min(3, t.h || 1))}` },
-        h("div", { class: "card-head" }, h("span", { class: "lab" }, t.title || t.source), h("span", { class: "small" }, t.source.replace(/^builtin:|^query:/, ""))),
+        h("div", { class: "card-head" }, h("span", { class: "lab" }, t.title || t.source), h("span", { class: "small" }, sourceLabel(t.source))),
         tools, tileView(t));
     }));
     if (ds.editing) {
-      const sources = BUILTINS.map(([v, l, c]) => [v, `${l} (console)`, c]).concat(queries.map((q) => [`query:${q.id}`, `${q.name} (saved query)`, q.chart || "table"]));
+      const sources = BUILTINS.map(([v, l, c]) => [v, `${l} (console)`, c]).concat(queries.map((q) => [`query:${q.id}`, `${q.name} (saved query)`, q.chart || "table"]),
+        (state.presets || []).filter((x) => x.series).map((x) => [`preset:${x.id}`, `${x.name} (saved view)`, FORM_CHART[x.settings.form] || "bars"]));
       const src = h("select", { class: "mini-select", "aria-label": "Source" }, sources.map(([v, l]) => h("option", { value: v }, l)));
       const title = h("input", { class: "field sls compact", type: "text", placeholder: "Title", "aria-label": "Title", style: "width:180px" });
       const chart = h("select", { class: "mini-select", "aria-label": "Chart" }, ["bars", "line", "donut", "table", "number"].map((c) => h("option", { value: c }, c)));
@@ -2289,7 +2509,50 @@
         h("p", { class: "small" }, "From a saved query, or any of the console's own numbers.")));
     }
     return [h("div", { class: "grid-dash" }, side, h("div", { class: "page" }, head,
-      board.tiles.length || ds.editing ? grid : empty(state.admin ? "No tiles yet. Edit to add some." : "This dashboard has no tiles yet.")))];
+      board.tiles.length || ds.editing ? grid : empty(state.admin ? "No tiles yet. Edit to add some." : "This dashboard has no tiles yet."),
+      presetsCard(board)))];
+  }
+
+  const sourceLabel = (src) => {
+    if (src.startsWith("preset:")) { const p = (state.presets || []).find((x) => x.id === src.slice(7)); return p ? `saved view · ${p.name}` : "saved view"; }
+    return src.replace(/^builtin:|^query:/, "");
+  };
+
+  // Saved presets: every saved view this key can see (its own and the public ones). Open goes to its page with its
+  // switches and filters; a series view can be added to the dashboard on screen as a tile (preset:<id>).
+  function presetsCard(board) {
+    const list = state.presets || [];
+    const out = h("span", { class: "small", "aria-live": "polite" });
+    const addTo = async (p) => {
+      const tile = { id: `t${Date.now().toString(36)}`, source: `preset:${p.id}`, title: p.name.slice(0, 80), chart: FORM_CHART[p.settings.form] || "bars", w: 2, h: 1 };
+      if (ds.editing && ds.draft) { ds.draft.tiles.push(tile); render(); return; }
+      const target = board || { name: "Saved views", shared: "me", email: null, tiles: [] };
+      try {
+        const saved = await api("/v1/dashboards", { id: target.id, name: target.name, shared: target.shared || "me", email: emailOf(target) || null,
+          tiles: target.tiles.map((t) => ({ id: t.id, source: t.source, title: t.title, chart: t.chart, w: t.w, h: t.h })).concat(tile) }, "PUT");
+        ds.current = (saved.dashboard || saved).id || target.id; getCache.clear(); render();
+      } catch (e) { out.className = "small danger"; out.textContent = e.message; }
+    };
+    const del = async (p) => {
+      try { await api(`/v1/presets?id=${encodeURIComponent(p.id)}`, null, "DELETE"); state.presets = list.filter((x) => x.id !== p.id); render(); }
+      catch (e) { out.className = "small danger"; out.textContent = e.message; }
+    };
+    return card("Saved presets", list.length ? `${fmt(list.length)} views · yours and the public ones` : null,
+      list.length ? h("div", { class: "table-wrap" }, h("table", { class: "presets" },
+        h("thead", {}, h("tr", {}, ["View", "Chart", "Owner", "Who sees it", ""].map((c) => h("th", { scope: "col" }, c)))),
+        h("tbody", {}, list.map((p) => h("tr", {},
+          h("td", {}, h("button", { type: "button", class: "link name", onclick: () => applyPreset(p) }, p.name),
+            h("div", { class: "small" }, [settingsText(p.settings || {}), filtersText(p.filters || {})].filter(Boolean).join(" · "))),
+          h("td", {}, chartTitle(p.chart_id), h("div", { class: "small" }, PAGES[p.page] ? PAGES[p.page].title : p.page)),
+          h("td", {}, p.owner === state.me ? "you" : p.owner),
+          h("td", {}, h("span", { class: "tag" }, p.public ? "public" : "private")),
+          h("td", { class: "actions" },
+            h("button", { type: "button", class: "btn sls ghost small-btn", onclick: () => applyPreset(p) }, "Open"),
+            p.series && state.admin ? h("button", { type: "button", class: "btn sls ghost small-btn", title: board ? `Add to ${board.name}` : "Make a dashboard of saved views",
+              onclick: () => addTo(p) }, "Add to dashboard") : null,
+            p.owner === state.me ? h("button", { type: "button", class: "x", "aria-label": `Delete ${p.name}`, onclick: () => del(p) }, "×") : null)))))) 
+        : h("p", { class: "small" }, "No saved views yet. Every chart has Save view: its switches and this page's filters, kept under a name, for you or for everyone."),
+      out);
   }
 
   // ------------------------------------------------------------------ the frame
@@ -2406,6 +2669,7 @@
     $("gate-key").value = "";
     await whoAmI();
     await loadEras();
+    await loadPresets();
     render();
   });
   $("sign-out").addEventListener("click", () => { setKey(""); state.admin = false; state.profiles = false; $("admin-nav").hidden = true; $("who-name").textContent = "Not signed in"; showGate(); });
@@ -2470,5 +2734,5 @@
   sea();
   looks();
   window.addEventListener("hashchange", route);
-  whoAmI().then(loadEras).then(route);
+  whoAmI().then(loadEras).then(loadPresets).then(route);
 })();

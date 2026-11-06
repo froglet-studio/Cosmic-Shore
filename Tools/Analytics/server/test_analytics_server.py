@@ -113,11 +113,13 @@ class Erasure(StoreCase):
         self.store.ingest([started("p1", "m1", T0), started("p2", "m2", T0),
                            {"event": "$identify", "properties": {"distinct_id": "p1", "$set": {"display_name": "Kes"}},
                             "timestamp": iso(T0)}])
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM person_snapshots WHERE distinct_id='p1'")[0][0], 1)
         out = self.store.ingest([{"event": "$identify", "timestamp": iso(T0 + 5),
                                   "properties": {"distinct_id": "p1", "$set": {"gdpr_deletion_requested": True}}}])
         self.assertEqual(out["erased"], 1)
         self.assertEqual(self.rows("SELECT COUNT(*) FROM events WHERE distinct_id='p1'")[0][0], 0)
         self.assertEqual(self.rows("SELECT COUNT(*) FROM people WHERE distinct_id='p1'")[0][0], 0)
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM person_snapshots WHERE distinct_id='p1'")[0][0], 0)  # the history too
         self.assertEqual(self.rows("SELECT COUNT(*) FROM events WHERE distinct_id='p2'")[0][0], 1)
         log = self.rows("SELECT player_hash, source FROM erasures")
         self.assertEqual(log[0][1], "in_game_request")
@@ -1079,6 +1081,270 @@ class Rev65Http(unittest.TestCase):
         self.assertEqual(overview["unfiltered"], [])
         _, _, headers = self.call("GET", "/v1/eras", key="read-key", origin="https://dash.example")
         self.assertIn("PUT", headers.get("Access-Control-Allow-Methods"))
+
+
+
+# ---------------------------------------------------------------- 2026-11-06: elements, the Toybox, saved views
+
+import mode_elements as M  # noqa: E402
+
+
+def identify(player, ms, **person):
+    return {"event": "$identify", "timestamp": iso(ms), "properties": {"distinct_id": player, "$set": person}}
+
+
+class ModeElements(unittest.TestCase):
+    """Shombith, 2026-11-06: "the matches over time should also have element support". The table is generated from
+    the game's own ModeGenre.cs; a test keeps it current."""
+
+    def test_the_committed_table_is_current_and_its_known_answers_hold(self):
+        if not M.have_sources():
+            self.skipTest("no Unity sources in this checkout (the VM's sparse checkout)")
+        self.assertEqual(M.check(), 0, "run python3 Tools/Analytics/server/mode_elements.py")
+        self.assertEqual(M.self_test(), 0)
+
+    def test_the_server_reads_the_table(self):
+        table = M.load()
+        self.assertEqual(table.get("BroodRush"), ("Mass", "Space"))      # the two-element mode
+        self.assertEqual(table.get("Scurry"), ("Mass", None))            # a gather, scored on crystals
+        self.assertEqual(table.get("Tollway"), ("Mass", None))           # scored on goals, an acquisition
+        self.assertNotIn("Maelstrom", table)                             # draws other modes: no genre
+        self.assertEqual(M.load("/nonexistent/mode_elements.json"), {})
+
+
+class Elements(StoreCase):
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        self.store.ingest([started("h1", "o1", old, game_mode="BroodRush"), completed("h1", "o1", old + 60_000),
+                           started("h2", "o2", old, game_mode="CrystalCapture")], trusted=True, max_age_days=365)
+        self.store.ingest([
+            started("p1", "m1", T0, element="Space"),                     # a new build: its own element wins
+            started("p1", "m2", T0 + 120_000, game_mode="Scurry"),        # no element sent: the mode's row
+            started("p2", "m3", T0, game_mode="Joust", element="charge", element_secondary="nonsense"),
+            started("p3", "m4", T0, game_mode="BroodRush", element="Mass", element_secondary="Space"),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_a_match_takes_its_own_element_else_its_modes(self):
+        self.seed()
+        agg = sqlite3.connect(self.store.agg_path)
+        rows = {r[0]: r[1:] for r in agg.execute("SELECT match_id, element, element_secondary, element_source FROM plays")}
+        self.assertEqual(rows["m1"], ("Space", None, "event"))
+        self.assertEqual(rows["m2"], ("Mass", None, "table"))
+        self.assertEqual(rows["m3"], ("Charge", None, "event"))           # names normalised; a bad second dropped
+        self.assertEqual(rows["m4"], ("Mass", "Space", "event"))
+        self.assertEqual(rows["o1"], ("Mass", "Space", "table"))          # the PostHog history has one too
+        self.assertEqual(rows["o2"], (None, None, None))                  # an old name with no genre: honest none
+        health = V.health(self.store.agg_path, {}, 90)["modes_without_element"]
+        self.assertEqual(health, [{"game_mode": "CrystalCapture", "plays": 1, "imported_plays": 1}])
+
+    def test_series_splits_by_element_and_lists_the_second_apart(self):
+        self.seed()
+        agg = self.store.agg_path
+        out = V.series(agg, "matches", "element", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}, {"Charge": 1, "Mass": 3, "Space": 1, "none": 1})
+        self.assertEqual(out["keys"], ["Charge", "Mass", "Space", "none"])              # the elements' own order
+        self.assertEqual(out["secondary"], [{"key": "Space", "value": 2}])               # never added into the split
+        self.assertTrue(any("two-element mode" in n for n in out["notes"]))
+        for measure in V.PLAY_MEASURES + ("players", "new_players"):
+            self.assertIn("element", V.series(agg, measure, "none", "day", "release", 7)["answerable_by"])
+            V.series(agg, measure, "element", "week", "release", 30)
+        with self.assertRaises(V.BadRequest):                                            # negative control
+            V.series(agg, "events", "element", "day", "release", 7)
+        players = V.series(agg, "players", "element", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in players["points"]}["Mass"], 3)   # h1, p1, p3
+        page = V.matches(agg, "release", 90)
+        self.assertEqual({r["element"]: r["matches"] for r in page["by_element"]}, {"Charge": 1, "Mass": 3, "Space": 1, "none": 1})
+        self.assertEqual(page["element_secondary"][0]["element"], "Space")
+        self.assertEqual(next(r for r in page["by_mode"] if r["game_mode"] == "Scurry")["element"], "Mass")
+
+
+class Freestyle(StoreCase):
+    """Shombith, 2026-11-06: players who "went inside freestyle/toybox and played vessels ... can we bring it for the
+    old one?" Entries come from the PostHog history; minutes, vessels and switches from builds after 2026-11-06; older
+    switches are recovered from the identify history."""
+
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        self.store.ingest([
+            ev("freestyle_entered", "h1", old, is_first=True, seconds_since_launch=30),
+            ev("freestyle_entered", "h1", old + 600_000, is_first=False, seconds_since_launch=640),
+            ev("freestyle_entered", "h2", old, is_first=True, seconds_since_launch=12),
+            identify("h1", old + 1000, selected_vessel="Squirrel", total_flight_time_seconds=10),
+            identify("h1", old + 2000, selected_vessel="Squirrel", total_flight_time_seconds=40),
+            identify("h1", old + 3000, selected_vessel="Manta", total_flight_time_seconds=90),
+            identify("h1", old + 4000, selected_vessel="Rhino", total_flight_time_seconds=120),
+        ], trusted=True, max_age_days=365)
+        self.store.ingest([
+            ev("freestyle_entered", "p1", T0, is_first=True, seconds_since_launch=8, vessel_class="Squirrel"),
+            ev("freestyle_vessel_changed", "p1", T0 + 30_000, vessel_class="Manta", from_vessel_class="Squirrel",
+               seconds_in_freestyle=30.5),
+            ev("freestyle_vessel_changed", "p1", T0 + 60_000, vessel_class="Sparrow", from_vessel_class="Manta",
+               seconds_in_freestyle=60),
+            ev("freestyle_ended", "p1", T0 + 90_000, seconds=90, vessel_class="Sparrow", vessels_flown=3),
+            ev("freestyle_ended", "p1", T0 + 90_002, seconds=90, vessel_class="Sparrow", vessels_flown=3),  # double-send
+            # p1's identify history after its first live switch is not recovered again (the event counts)
+            identify("p1", T0 + 1000, selected_vessel="Squirrel"), identify("p1", T0 + 70_000, selected_vessel="Sparrow"),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_snapshots_are_kept_once_and_erased_with_the_player(self):
+        row = identify("h9", T0, selected_vessel="Manta", preferred_vessel="Squirrel", total_flight_time_seconds=61.5)
+        self.store.ingest([row], trusted=True, max_age_days=365)
+        self.store.ingest([row], trusted=True, max_age_days=365)        # import-posthog run again: stored once
+        self.store.ingest([identify("h9", T0 + 5, selected_vessel="Rhino")])   # a live one adds a row
+        rows = self.rows("SELECT ts_ms, imported, selected_vessel, preferred_vessel, total_flight_time_seconds "
+                         "FROM person_snapshots WHERE distinct_id='h9' ORDER BY ts_ms")
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0][1:], (1, "Manta", "Squirrel", 61.5))
+        self.assertEqual(rows[1][2], "Rhino")
+        self.assertEqual(self.store.erase("h9", "admin"), 3)            # two snapshots and the person
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM person_snapshots WHERE distinct_id='h9'")[0][0], 0)
+        self.assertNotIn("'h9'", "\n".join(self.store.db.iterdump()))
+
+    def test_switches_are_derived_where_the_selected_vessel_changes(self):
+        snaps = [(1, "A", 1), (2, "A", 1), (3, "B", 1), (4, "", 1), (5, "C", 0)]
+        self.assertEqual(S.derive_switches(snaps), [(3, "A", "B", 1), (5, "B", "C", 0)])
+        self.assertEqual(S.derive_switches([(1, "A", 1), (2, "A", 1)]), [])      # negative control: no change
+
+    def test_the_toybox_aggregates_count_entries_minutes_and_switches(self):
+        self.seed()
+        agg = self.store.agg_path
+        page = V.freestyle(agg, "release", 90)
+        t = page["tiles"]
+        self.assertEqual((t["entries"], t["first_entries"], t["players"]), (4, 3, 3))
+        self.assertEqual((t["stretches"], t["minutes"], t["avg_vessels_flown"]), (1, 1.5, 3.0))   # the double-send once
+        self.assertEqual((t["switches"], t["recovered_switches"]), (2, 2))                       # h1: S->M, M->R
+        pairs = {(p["from_vessel"], p["to_vessel"]): (p["switches"], p["recovered"]) for p in page["switch_pairs"]}
+        self.assertEqual(pairs, {("Squirrel", "Manta"): (2, 1), ("Manta", "Sparrow"): (1, 0), ("Manta", "Rhino"): (1, 1)})
+        self.assertEqual(page["history"]["first_imported_entry_day"], day(S.now_ms() - 30 * DAY))
+        self.assertEqual(page["history"]["first_minutes_day"], day(T0))
+        entries = V.series(agg, "freestyle_entries", "vessel_class", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in entries["points"]}, {"unknown": 3, "Squirrel": 1})
+        switches = V.series(agg, "freestyle_switches", "switch_source", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in switches["points"]}, {"event": 2, "recovered": 2})
+        to = V.series(agg, "freestyle_switches", "vessel_class", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in to["points"]}, {"Manta": 2, "Sparrow": 1, "Rhino": 1})
+        players = V.series(agg, "freestyle_players", "none", "none", "release", 90)
+        self.assertEqual(players["points"][0]["value"], 3)
+        minutes = V.series(agg, "freestyle_minutes", "vessel_class", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in minutes["points"]}, {"Sparrow": 1.5})
+        self.assertTrue(any("freestyle_ended" in n for n in minutes["notes"]))
+        for measure, by in (("freestyle_entries", "platform"), ("freestyle_minutes", "element"),
+                            ("freestyle_players", "game_mode"), ("freestyle_entries", "from_vessel_class")):
+            with self.assertRaises(V.BadRequest, msg=(measure, by)):                         # negative controls
+                V.series(agg, measure, by, "day", "release", 7)
+        self.assertEqual(sum(r[1] for r in V.builtin_tile(agg, "freestyle_entries", "release", 90)["rows"]), 4)
+
+    def test_profiles_and_the_players_list_carry_the_toybox(self):
+        self.seed()
+        p = self.store.person("p1")["freestyle"]
+        self.assertEqual((p["entries"], p["stretches"], p["minutes"], p["switch_count"]), (1, 1, 1.5, 2))
+        self.assertEqual([(x["from"], x["to"], x["approx"]) for x in p["switches"]],
+                         [("Squirrel", "Manta", False), ("Manta", "Sparrow", False)])
+        self.assertEqual(p["switches"][0]["seconds_in_freestyle"], 30.5)
+        self.assertEqual(p["switched_to"], {"Manta": 1, "Sparrow": 1})
+        h = self.store.person("h1")["freestyle"]
+        self.assertEqual((h["entries"], h["recovered_switches"]), (2, 2))
+        self.assertEqual([(x["from"], x["to"], x["approx"]) for x in h["switches"]],
+                         [("Squirrel", "Manta", True), ("Manta", "Rhino", True)])
+        people = {x["distinct_id"]: x for x in self.store.people_list("release", 90)["people"]}
+        self.assertEqual((people["h1"]["freestyle_entries"], people["p1"]["freestyle_seconds"]), (2, 90.0))
+
+    def test_the_toybox_aggregates_hold_no_player_ids(self):
+        self.seed()
+        dump = "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+        for player in ("h1", "h2", "p1"):
+            self.assertNotIn(f"'{player}'", dump)
+
+
+class PresetsHttp(unittest.TestCase):
+    """Shombith, 2026-11-06: "save our own view as well and make it public and that will saved in saved presets under
+    dashboards". Every key is an admin's (all_keys_admin), so a saved view belongs to its key's name."""
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        config = dict(A.DEFAULTS, data_dir=self.dir, ingest_keys=["in-key"], read_keys={"ian": "ian-key", "kim": "kim-key"},
+                      admin_keys={"admin": "admin-key"})
+        self.app = A.App(config)
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(self.app))
+        self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            started("p1", "m1", T0, element="Time"), completed("p1", "m1", T0 + 60_000),
+            ev("freestyle_entered", "p1", T0 + 70_000, is_first=True, vessel_class="Manta")]})
+        self.app.rebuild()
+
+    def view(self, **extra):
+        return dict({"name": "Matches by element", "page": "overview", "chart_id": "overview.series", "series": True,
+                     "settings": {"form": "bars", "measure": "matches", "by": "element", "over": "week"},
+                     "filters": {"build": "release", "days": 30, "play": "all"}, "public": False}, **extra)
+
+    def test_saved_views_are_their_owners_and_public_ones_are_everyones(self):
+        status, mine, _ = self.call("POST", "/v1/presets", self.view(), key="ian-key")
+        self.assertEqual((status, mine["owner"], mine["public"]), (200, "ian", False))
+        shared = self.call("POST", "/v1/presets", self.view(name="Toybox", public=True, chart_id="overview.freestyle",
+                           settings={"measure": "freestyle_entries", "by": "vessel_class", "over": "day"}), key="ian-key")[1]
+        self.assertEqual({p["name"] for p in self.call("GET", "/v1/presets", key="ian-key")[1]["presets"]},
+                         {"Matches by element", "Toybox"})
+        # negative controls: a private view is not listed to another key, and another key cannot delete or change it
+        self.assertEqual([p["id"] for p in self.call("GET", "/v1/presets", key="kim-key")[1]["presets"]], [shared["id"]])
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + mine["id"], key="kim-key")[0], 404)
+        self.assertEqual(self.call("POST", "/v1/presets", self.view(id=mine["id"], name="mine now"), key="kim-key")[0], 400)
+        self.assertEqual(self.call("POST", "/v1/presets", self.view(id=shared["id"]), key="kim-key")[0], 403)
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + shared["id"], key="kim-key")[0], 403)
+        self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=preset:" + mine["id"], key="kim-key")[0], 404)
+        # the owner changes and deletes; a real admin key (admin_keys) may remove a public one
+        status, renamed, _ = self.call("POST", "/v1/presets", self.view(id=mine["id"], name="Elements"), key="ian-key")
+        self.assertEqual((status, renamed["name"], renamed["created_ms"]), (200, "Elements", mine["created_ms"]))
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + mine["id"], key="ian-key")[0], 200)
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + shared["id"], key="admin-key")[0], 200)
+        self.assertEqual(self.call("GET", "/v1/presets", key="kim-key")[1]["presets"], [])
+
+    def test_bad_views_are_400_with_a_reason(self):
+        for bad in (self.view(page="nowhere"), self.view(chart_id="bad id!"), self.view(name=""),
+                    self.view(settings={"measure": "Matches; DROP"}), self.view(settings={"colour": "jade"}),
+                    self.view(filters={"build": "mobile"}), self.view(filters={"days": 5}), self.view(filters={"era": "nope"}),
+                    self.view(filters={"play": "everyone"}), self.view(public="yes"), self.view(extra=1), ["not", "an", "object"]):
+            status, out, _ = self.call("POST", "/v1/presets", bad, key="ian-key")
+            self.assertEqual(status, 400, bad)
+            self.assertTrue(out["error"])
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=p_gone", key="ian-key")[0], 404)
+        self.assertEqual(self.call("GET", "/v1/presets")[0], 401)
+
+    def test_a_saved_view_is_a_dashboard_tile_running_its_own_series(self):
+        view = self.call("POST", "/v1/presets", self.view(public=True), key="ian-key")[1]
+        status, tile, _ = self.call("GET", "/v1/dashboards/tile?source=preset:" + view["id"] + "&days=7", key="kim-key")
+        self.assertEqual(status, 200)
+        self.assertEqual((tile["series"]["by"], tile["series"]["days"], tile["columns"]), ("element", 30, ["x", "element", "matches"]))
+        self.assertEqual(sum(r[2] for r in tile["rows"]), 1)
+        self.assertEqual(tile["unfiltered"], ["build", "days", "play", "era"])          # its own filters, not the page's
+        flat = self.call("POST", "/v1/presets", self.view(name="Health", chart_id="overview.health", series=False), key="ian-key")[1]
+        self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=preset:" + flat["id"], key="ian-key")[0], 400)
+        board = {"name": "Views", "shared": "readers", "tiles": [{"id": "a", "source": "preset:" + view["id"], "title": "x",
+                                                                    "chart": "bars", "w": 2, "h": 1}]}
+        self.assertEqual(self.call("PUT", "/v1/dashboards", board, key="kim-key")[0], 200)
+        self.assertEqual(self.call("PUT", "/v1/dashboards", {**board, "tiles": [{**board["tiles"][0], "source": "preset:" + flat["id"]}]},
+                                   key="ian-key")[0], 400)                              # not a series view
+        private = self.call("POST", "/v1/presets", self.view(name="Mine"), key="ian-key")[1]
+        self.assertEqual(self.call("PUT", "/v1/dashboards", {**board, "tiles": [{**board["tiles"][0], "source": "preset:" + private["id"]}]},
+                                   key="kim-key")[0], 400)                              # someone else's private view
+
+    def test_the_toybox_routes_answer(self):
+        status, page, _ = self.call("GET", "/v1/freestyle?days=7", key="kim-key")
+        self.assertEqual((status, page["tiles"]["entries"], page["tiles"]["players"]), (200, 1, 1))
+        self.assertEqual(self.call("GET", "/v1/freestyle?days=5", key="kim-key")[0], 400)
+        status, out, _ = self.call("GET", "/v1/series?measure=freestyle_entries&by=vessel_class&over=none&days=7", key="kim-key")
+        self.assertEqual((status, out["points"]), (200, [{"x": None, "key": "Manta", "value": 1}]))
+        self.assertEqual(self.call("GET", "/v1/series?measure=freestyle_entries&by=country", key="kim-key")[0], 400)
+        self.assertEqual(self.call("GET", "/v1/series?measure=matches&by=element&over=none&days=7", key="kim-key")[1]["points"],
+                         [{"x": None, "key": "Time", "value": 1}])
+        person = self.call("GET", "/v1/person?id=p1", key="kim-key")[1]
+        self.assertEqual(person["freestyle"]["entries"], 1)
+        people = self.call("GET", "/v1/people?days=7", key="kim-key")[1]["people"]
+        self.assertEqual(people[0]["freestyle_entries"], 1)
 
 
 if __name__ == "__main__":

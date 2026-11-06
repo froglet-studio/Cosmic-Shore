@@ -265,6 +265,15 @@ CREATE TABLE IF NOT EXISTS dashboards(
     id TEXT PRIMARY KEY, name TEXT NOT NULL, shared TEXT NOT NULL, tiles TEXT NOT NULL, email TEXT,
     owner TEXT NOT NULL, created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
 );
+-- Every $identify, kept (2026-11-06): its $set carries selected_vessel, preferred_vessel and
+-- total_flight_time_seconds, so the identify history is where the Toybox vessel picks before freestyle_vessel_changed
+-- live. One row per (player, time, content): re-importing the PostHog history adds it once.
+CREATE TABLE IF NOT EXISTS person_snapshots(
+    id INTEGER PRIMARY KEY, distinct_id TEXT NOT NULL, ts_ms INTEGER NOT NULL, day TEXT NOT NULL,
+    imported INTEGER NOT NULL, selected_vessel TEXT, preferred_vessel TEXT, total_flight_time_seconds REAL,
+    props TEXT NOT NULL, content_hash TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS person_snapshots_key ON person_snapshots(distinct_id, ts_ms, content_hash);
 CREATE TABLE IF NOT EXISTS presets(
     id TEXT PRIMARY KEY, name TEXT NOT NULL, owner TEXT NOT NULL, public INTEGER NOT NULL, page TEXT NOT NULL,
     chart_id TEXT NOT NULL, series INTEGER NOT NULL, settings TEXT NOT NULL, filters TEXT NOT NULL,
@@ -368,10 +377,16 @@ CREATE TABLE freestyle_vessels(  -- Freestyle (the Toybox) per day, build, sourc
     seconds REAL,                -- freestyle seconds of those stretches (the vessel at the end of the stretch)
     vessels_flown INTEGER,       -- sum of vessels_flown over those stretches
     switches_to INTEGER,         -- freestyle_vessel_changed into this vessel (builds from 2026-11-06 only)
-    switches_from INTEGER        -- freestyle_vessel_changed out of this vessel
+    switches_from INTEGER,       -- freestyle_vessel_changed out of this vessel
+    recovered_to INTEGER,        -- recovered switches into this vessel (the identify history; see freestyle_switches)
+    recovered_from INTEGER       -- recovered switches out of this vessel
 );
 CREATE TABLE freestyle_switches( -- Toybox vessel switches by day, build, source, from and to; NO player id
-    day TEXT, build_kind TEXT, imported INTEGER, from_vessel_class TEXT, vessel_class TEXT, switches INTEGER
+    day TEXT, build_kind TEXT, imported INTEGER, from_vessel_class TEXT, vessel_class TEXT, switches INTEGER,
+    origin TEXT                  -- event: freestyle_vessel_changed (builds after 2026-11-06, exact time) | recovered:
+                                 -- selected_vessel changed between two $identify of the player (builds since
+                                 -- 2026-10-12; time approximate, when the profile was sent), only before that
+                                 -- player's first freestyle_vessel_changed, so nothing counts twice
 );
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
 -- Saved query tables (Query Studio, "as table") are added after these as t_<name>, rebuilt with the rest.
@@ -860,7 +875,7 @@ class Store:
             received = ts                   # history keeps its own time, so "last event received" stays true
 
         if event == "$identify":
-            return self._identify(distinct_id, props, received, country)
+            return self._identify(distinct_id, props, received, country, ts, trusted)
 
         props_json = json.dumps(props, sort_keys=True, separators=(",", ":"), default=str)
         if len(props_json.encode()) > MAX_PROPS_BYTES:
@@ -889,13 +904,14 @@ class Store:
             return "resent"
         return "near_duplicates" if near else "accepted"
 
-    def _identify(self, distinct_id, props, received, country=None):
+    def _identify(self, distinct_id, props, received, country=None, ts=None, trusted=False):
         person = props.get("$set") if isinstance(props.get("$set"), dict) else {}
         if person.get("gdpr_deletion_requested") is True:
             # The in-game "delete my data" button flags the person (PostHogAnalyticsSink.RequestDataDeletion).
             # PostHog could not finish that from the client; here it is finished at once.
             self._erase_locked(distinct_id, "in_game_request", received)
             return "erased"
+        self._snapshot(distinct_id, person, ts or received, trusted)
         row = self.db.execute("SELECT props FROM people WHERE distinct_id=?", (distinct_id,)).fetchone()
         merged = json.loads(row[0]) if row else {}
         merged.update(person)
@@ -905,6 +921,18 @@ class Store:
             "country=COALESCE(excluded.country, people.country)",
             (distinct_id, json.dumps(merged, sort_keys=True), country, received, received))
         return "accepted"
+
+    def _snapshot(self, distinct_id, person, ts, imported):
+        """Keep this $identify as one row of the player's history (the people table holds only the latest values)."""
+        raw = json.dumps(person, sort_keys=True, separators=(",", ":"), default=str)
+        if len(raw.encode()) > MAX_PROPS_BYTES:
+            return
+        text = lambda k: str(person[k]).strip()[:64] if isinstance(person.get(k), str) and person[k].strip() else None
+        self.db.execute(
+            "INSERT OR IGNORE INTO person_snapshots(distinct_id, ts_ms, day, imported, selected_vessel, preferred_vessel,"
+            " total_flight_time_seconds, props, content_hash) VALUES(?,?,?,?,?,?,?,?,?)",
+            (distinct_id, ts, day_of(ts), 1 if imported else 0, text("selected_vessel"), text("preferred_vessel"),
+             as_float(person.get("total_flight_time_seconds")), raw, hashlib.sha256(raw.encode()).hexdigest()))
 
     # ---------------------------------------------------------------- erasure, retention, backup
 
@@ -917,6 +945,7 @@ class Store:
     def _erase_locked(self, distinct_id, source, requested):
         deleted = self.db.execute("DELETE FROM events WHERE distinct_id=?", (distinct_id,)).rowcount
         deleted += self.db.execute("DELETE FROM people WHERE distinct_id=?", (distinct_id,)).rowcount
+        deleted += self.db.execute("DELETE FROM person_snapshots WHERE distinct_id=?", (distinct_id,)).rowcount
         # The log keeps a salted hash, never the id itself, so the record of a deletion is not a record of the player.
         self.db.execute("INSERT INTO erasures(player_hash, requested_ms, done_ms, rows_deleted, source)"
                         " VALUES(?,?,?,?,?)", (player_hash(distinct_id), requested, now_ms(), deleted, source))
@@ -926,6 +955,7 @@ class Store:
         cutoff = day_of(now_ms() - retention_days * 86400 * 1000)
         with self.lock:
             gone = self.db.execute("DELETE FROM events WHERE day < ?", (cutoff,)).rowcount
+            self.db.execute("DELETE FROM person_snapshots WHERE day < ?", (cutoff,))
             self.db.execute("DELETE FROM rejects WHERE day < ?", (cutoff,))
             self.db.execute("DELETE FROM resent WHERE day < ?", (cutoff,))
             self.db.commit()
@@ -1102,6 +1132,7 @@ class Store:
                             (distinct_id,)).fetchall()
         row = db.execute("SELECT props, country, first_seen_ms, last_seen_ms FROM people WHERE distinct_id=?",
                          (distinct_id,)).fetchone()
+        recovered = recovered_switches(db, distinct_id).get(distinct_id, [])
         db.close()
         if not events and not row:
             return None
@@ -1180,7 +1211,7 @@ class Store:
                 earned_by[str(x["source"] or "unknown")] = earned_by.get(str(x["source"] or "unknown"), 0) + (x["amount"] or 0)
         lifespan = ((date.fromisoformat(events[-1]["day"]) - date.fromisoformat(events[0]["day"])).days + 1
                     if events else None)
-        freestyle = _freestyle_profile(events, props_of)
+        freestyle = _freestyle_profile(events, props_of, recovered)
         return {
             "player_id": distinct_id,
             "display_name": person_props.get("display_name") or "",
@@ -1373,14 +1404,16 @@ def _counts(values):
 SUMMARY_KEYS = ("game_mode", "intensity", "vessel_class", "from_vessel_class", "element", "seconds", "vessels_flown",
                 "amount", "source", "balance", "setting", "value", "reason", "step_name", "action_type", "action_label",
                 "vessel", "quest", "key", "display_name")
-FREESTYLE_NOTE = ("Entries go back to the PostHog history (August 2026). Minutes, vessels and switches exist only from "
-                  "builds that send freestyle_ended and freestyle_vessel_changed (after 2026-11-06); the history has "
-                  "entries, not vessels.")
+FREESTYLE_NOTE = ("Entries go back to the PostHog history (August 2026). Minutes and exact switches exist only from "
+                  "builds that send freestyle_ended and freestyle_vessel_changed (after 2026-11-06). Switches marked "
+                  "approx. are recovered from the identify history (builds since 2026-10-12): the selected vessel "
+                  "changed between two profile updates, at about that time.")
 
 
-def _freestyle_profile(events, props_of):
+def _freestyle_profile(events, props_of, recovered=()):
     """One player's Freestyle (Toybox) block for their profile: visits, minutes, the vessels flown there, and every
-    switch in order (when, from, to, seconds into the stretch)."""
+    switch in order (when, from, to, seconds into the stretch). `recovered` switches (from the identify history) are
+    marked approx: their time is when the profile was sent, not the click."""
     entries = first = stretches = 0
     seconds, flown, switched_to, switches, recent, per_day = 0.0, {}, {}, [], [], {}
     first_ms = last_ms = first_minutes_ms = None
@@ -1412,10 +1445,18 @@ def _freestyle_profile(events, props_of):
                 flown[vessel] = flown.get(vessel, 0) + 1
                 switched_to[vessel] = switched_to.get(vessel, 0) + 1
             switches.append({"ts_ms": e["ts_ms"], "from": p.get("from_vessel_class") or None, "to": vessel,
-                             "seconds_in_freestyle": as_float(p.get("seconds_in_freestyle"))})
+                             "seconds_in_freestyle": as_float(p.get("seconds_in_freestyle")), "approx": False})
+    for ts, source, vessel, _imported in recovered:
+        switched_to[vessel] = switched_to.get(vessel, 0) + 1
+        flown[vessel] = flown.get(vessel, 0) + 1
+        switches.append({"ts_ms": ts, "from": source, "to": vessel, "seconds_in_freestyle": None, "approx": True})
+        first_ms = min(first_ms or ts, ts)
+        last_ms = max(last_ms or ts, ts)
+    switches.sort(key=lambda x: x["ts_ms"])
     return {"entries": entries, "first_entries": first, "stretches": stretches, "seconds": round(seconds, 1),
             "minutes": round(seconds / 60.0, 1), "vessels_flown": _counts_dict(flown),
             "switched_to": _counts_dict(switched_to), "switch_count": len(switches),
+            "recovered_switches": sum(1 for x in switches if x["approx"]),
             "switches": switches[-200:], "stretches_recent": list(reversed(recent))[:50],
             "per_day": sorted(per_day.values(), key=lambda d: d["day"])[-90:],
             "first_ms": first_ms, "last_ms": last_ms, "first_minutes_ms": first_minutes_ms, "note": FREESTYLE_NOTE}
@@ -1578,9 +1619,48 @@ def _rebuild_details(reader, out, first_day, days_seen):
     out.executemany("INSERT INTO cloud_save_failures VALUES(?,?,?,?)", [k + tuple(v) for k, v in save_failures.items()])
 
 
+RECOVERED_NOTE = ("recovered switches come from the identify history: the player's selected vessel changed between two "
+                  "$identify (the Toybox's Vessel Changer sets it, builds since 2026-10-12); the time is when the "
+                  "profile was sent, not the click, and several switches between two identifies read as one")
+
+
+def derive_switches(snapshots):
+    """[(ts_ms, from, to, imported)] from one player's [(ts_ms, selected_vessel, imported)] in time order: a switch
+    wherever the selected vessel differs from the last one seen. Empty values are skipped, not a change."""
+    out, last = [], None
+    for ts, vessel, imported in snapshots:
+        if not vessel:
+            continue
+        if last is not None and vessel != last:
+            out.append((ts, last, vessel, imported))
+        last = vessel
+    return out
+
+
+def recovered_switches(reader, distinct_id=None):
+    """{player: [(ts_ms, from, to, imported)]} recovered from person_snapshots, only before the player's first live
+    freestyle_vessel_changed (from then on the event itself counts)."""
+    where, args = ("WHERE distinct_id = ?", (distinct_id,)) if distinct_id else ("", ())
+    live = dict(reader.execute(f"SELECT distinct_id, MIN(ts_ms) FROM events {'WHERE distinct_id = ? AND' if distinct_id else 'WHERE'} "
+                               "event = 'freestyle_vessel_changed' GROUP BY distinct_id", args).fetchall())
+    per = {}
+    for player, ts, vessel, imported in reader.execute(
+            f"SELECT distinct_id, ts_ms, selected_vessel, imported FROM person_snapshots {where} ORDER BY distinct_id, ts_ms, id",
+            args):
+        per.setdefault(player, []).append((ts, vessel, imported))
+    out = {}
+    for player, snaps in per.items():
+        cut = live.get(player)
+        found = [x for x in derive_switches(snaps) if cut is None or x[0] < cut]
+        if found:
+            out[player] = found
+    return out
+
+
 def _rebuild_freestyle(reader, out):
     """freestyle_vessels and freestyle_switches: the Toybox counted per day, build, source and vessel. Near-duplicate
-    rows (the October double-send) are left out. Player ids never reach `out`."""
+    rows (the October double-send) are left out. Recovered switches (derive_switches over the identify history) carry
+    origin 'recovered'. Player ids are used only to group a player's history; nothing written to `out` carries one."""
     vessels, switches = {}, {}
     for day, build, imported, event, raw in reader.execute(
             "SELECT day, build_kind, received_ms = ts_ms, event, props FROM events WHERE event IN ('freestyle_entered', "
@@ -1589,20 +1669,38 @@ def _rebuild_freestyle(reader, out):
         vessel = str(props.get("vessel_class") or "unknown")
         if event == "freestyle_entered":
             first = props.get("is_first") in (True, "true", "True", 1)
-            _add(vessels, (day, build, imported, vessel), 1, int(first), 0, 0.0, 0, 0, 0)
+            _add(vessels, (day, build, imported, vessel), 1, int(first), 0, 0.0, 0, 0, 0, 0, 0)
         elif event == "freestyle_ended":
             seconds = max(0.0, as_float(props.get("seconds")) or 0.0)
             flown = max(1, as_int(props.get("vessels_flown")) or 1)
-            _add(vessels, (day, build, imported, vessel), 0, 0, 1, seconds, flown, 0, 0)
+            _add(vessels, (day, build, imported, vessel), 0, 0, 1, seconds, flown, 0, 0, 0, 0)
         else:
             source = str(props.get("from_vessel_class") or "unknown")
-            _add(vessels, (day, build, imported, vessel), 0, 0, 0, 0.0, 0, 1, 0)
-            _add(vessels, (day, build, imported, source), 0, 0, 0, 0.0, 0, 0, 1)
-            _add(switches, (day, build, imported, source, vessel), 1)
-    out.executemany("INSERT INTO freestyle_vessels VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                    [k + (v[0], v[1], v[2], round(v[3], 1), v[4], v[5], v[6]) for k, v in sorted(vessels.items())])
-    out.executemany("INSERT INTO freestyle_switches VALUES(?,?,?,?,?,?)",
-                    [k + tuple(v) for k, v in sorted(switches.items())])
+            _add(vessels, (day, build, imported, vessel), 0, 0, 0, 0.0, 0, 1, 0, 0, 0)
+            _add(vessels, (day, build, imported, source), 0, 0, 0, 0.0, 0, 0, 1, 0, 0)
+            _add(switches, (day, build, imported, source, vessel, "event"), 1)
+    # A snapshot has no build of its own: it takes the build its player sent most events from that day (else ever).
+    builds_by_day, builds_ever = {}, {}
+    for player, day, build, n in reader.execute(
+            "SELECT distinct_id, day, build_kind, COUNT(*) FROM events GROUP BY distinct_id, day, build_kind"):
+        if n > builds_by_day.get((player, day), ("", 0))[1]:
+            builds_by_day[(player, day)] = (build, n)
+        _add(builds_ever, (player, build), n)
+    best = {}
+    for (player, build), (n,) in builds_ever.items():
+        if n > best.get(player, ("", 0))[1]:
+            best[player] = (build, n)
+    for player, found in recovered_switches(reader).items():
+        for ts, source, vessel, imported in found:
+            day = day_of(ts)
+            build = (builds_by_day.get((player, day)) or best.get(player) or ("release", 0))[0]
+            _add(vessels, (day, build, imported, vessel), 0, 0, 0, 0.0, 0, 0, 0, 1, 0)
+            _add(vessels, (day, build, imported, source), 0, 0, 0, 0.0, 0, 0, 0, 0, 1)
+            _add(switches, (day, build, imported, source, vessel, "recovered"), 1)
+    out.executemany("INSERT INTO freestyle_vessels VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    [k + (v[0], v[1], v[2], round(v[3], 1), v[4], v[5], v[6], v[7], v[8]) for k, v in sorted(vessels.items())])
+    out.executemany("INSERT INTO freestyle_switches VALUES(?,?,?,?,?,?,?)",
+                    [k[:5] + (v[0], k[5]) for k, v in sorted(switches.items())])
 
 
 def play_group_of(play_type):

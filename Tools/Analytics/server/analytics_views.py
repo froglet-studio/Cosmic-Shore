@@ -4,6 +4,7 @@ Each function returns plain JSON for one page of the console: overview, retentio
 `run_readonly_sql` is the one door the Ask box has into the data: SELECT-only, aggregates only, row and time capped.
 Standard library only.
 """
+import json
 import os
 import re
 import sqlite3
@@ -294,7 +295,24 @@ def matches(agg_path, build="release", days=90, play="all", era=None):
         "by_intensity": [dict(r) for r in db.execute(
             "SELECT intensity, COUNT(*) AS plays, ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct "
             "FROM plays WHERE " + w + " GROUP BY intensity ORDER BY intensity", a)],
+        # the match's element: its own (builds from 2026-11-06) or its mode's genre (mode_elements.json); a
+        # two-element mode is under its first, and its second is listed in element_secondary, never added in
+        "by_element": sorted([dict(r) for r in db.execute(
+            "SELECT COALESCE(element, 'none') AS element, COUNT(*) AS plays, COUNT(DISTINCT match_id) AS matches, "
+            "ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
+            "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, "
+            "SUM(CASE WHEN element_source = 'event' THEN 1 ELSE 0 END) AS sent_by_build, "
+            "SUM(CASE WHEN element_source = 'table' THEN 1 ELSE 0 END) AS from_mode_table "
+            "FROM plays WHERE " + w + " GROUP BY 1", a)],
+            key=lambda r: ELEMENT_ORDER.index(r["element"]) if r["element"] in ELEMENT_ORDER else 99),
+        "element_secondary": [dict(r) for r in db.execute(
+            "SELECT element_secondary AS element, COUNT(*) AS plays, COUNT(DISTINCT match_id) AS matches FROM plays "
+            "WHERE element_secondary IS NOT NULL AND " + w + " GROUP BY 1 ORDER BY plays DESC", a)],
     }
+    for row in result["by_mode"]:
+        found = db.execute("SELECT element, element_secondary FROM plays WHERE COALESCE(game_mode, '') = ? AND "
+                           "element IS NOT NULL ORDER BY start_ms DESC LIMIT 1", (row["game_mode"] or "",)).fetchone()
+        row["element"], row["element_secondary"] = (found[0], found[1]) if found else (None, None)
     db.close()
     return result
 
@@ -330,6 +348,8 @@ def health(agg_path, store_facts, days=30):
     total = sum(n for _, n in split)
     editor = sum(n for b, n in split if b == "editor")
     result["editor_share_pct"] = _pct(editor, total)
+    meta = db.execute("SELECT value FROM meta WHERE key='modes_without_element'").fetchone()
+    result["modes_without_element"] = json.loads(meta[0]) if meta else []      # every match ever, by game_mode
     db.close()
     return result
 
@@ -466,16 +486,38 @@ def social(agg_path, build="release", days=90):
 
 # ---------------------------------------------------------------- Rev 65: switchable charts, cohorts, play types, eras
 
-SERIES_MEASURES = ("matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events")
-SERIES_BY = ("none", "play_type", "era", "platform", "country", "game_mode", "vessel_class", "build_kind", "intensity")
+FREESTYLE_MEASURES = ("freestyle_entries", "freestyle_players", "freestyle_minutes", "freestyle_switches")
+SERIES_MEASURES = ("matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events") + \
+    FREESTYLE_MEASURES
+MATCH_BY = ("none", "play_type", "era", "platform", "country", "game_mode", "vessel_class", "build_kind", "intensity",
+            "element")
+SERIES_BY = MATCH_BY + ("from_vessel_class", "switch_source")
 SERIES_OVER = ("day", "week", "none")
 PLAY_MEASURES = ("matches", "finished_pct", "rematch_pct", "flight_min")
-COUNT_MEASURES = ("matches", "players", "new_players", "events")
+COUNT_MEASURES = ("matches", "players", "new_players", "events") + FREESTYLE_MEASURES
+ELEMENT_ORDER = ("Charge", "Mass", "Space", "Time", "Omni", "none")
 # What each measure can be split by. events come from daily_events (day, build, event, source): no player, mode or
-# platform on them, so only these three splits are answerable; the console hides the rest.
-SERIES_ANSWERS = {**{m: SERIES_BY for m in PLAY_MEASURES + ("players", "new_players")},
-                  "events": ("none", "era", "build_kind")}
+# platform on them, so only these three splits are answerable; the console hides the rest. Freestyle (the Toybox) is
+# not a match: no mode, play type or element; its vessel comes from builds after 2026-11-06.
+FREESTYLE_BY = ("none", "era", "build_kind", "vessel_class")
+SERIES_ANSWERS = {**{m: MATCH_BY for m in PLAY_MEASURES + ("players", "new_players")},
+                  "events": ("none", "era", "build_kind"),
+                  "freestyle_entries": FREESTYLE_BY, "freestyle_players": FREESTYLE_BY,
+                  "freestyle_minutes": FREESTYLE_BY,
+                  "freestyle_switches": FREESTYLE_BY + ("from_vessel_class", "switch_source")}
+FREESTYLE_NOTES = {
+    "freestyle_entries": "entries go back to the PostHog history; an entry names its vessel only from builds after "
+                         "2026-11-06 (older ones read unknown)",
+    "freestyle_players": "players who entered the Toybox; by vessel: players who flew it there (named only from builds "
+                         "after 2026-11-06)",
+    "freestyle_minutes": "minutes exist only from builds that send freestyle_ended (after 2026-11-06); by vessel: the "
+                         "vessel at the end of each stretch",
+    "freestyle_switches": "event switches come from freestyle_vessel_changed (builds after 2026-11-06, exact time); "
+                          "recovered ones from the identify history (builds since 2026-10-12, time approximate, several "
+                          "switches between two profile updates read as one)",
+}
 PLAYS_KEY = {"play_type": "play_type", "platform": "COALESCE(platform, 'unknown')",
+             "element": "COALESCE(element, 'none')",
              "country": "COALESCE(country, 'unknown')", "game_mode": "COALESCE(game_mode, 'unknown')",
              "vessel_class": "COALESCE(vessel_class, 'unknown')",
              "intensity": "COALESCE(CAST(intensity AS TEXT), 'unknown')", "build_kind": "build_kind"}
@@ -520,15 +562,17 @@ def _plays_cells(db, sc, measure, by, over, era_key):
 def _player_cells(db, sc, measure, by, over, era_key):
     """(x, key) -> [count, None] from player_counts. Distinct players need the span's own row (a week or a window is
     not the sum of its days); new players are additive, so they sum."""
-    column = "players" if measure == "players" else "new_players"
+    column = "players" if measure in ("players", "freestyle_players") else "new_players"
     dim, keys = ("none", None) if by in ("none", "era", "build_kind") else (by, None)
-    if by == "none" and sc.play != "all":
+    if measure == "freestyle_players":
+        dim, keys = ("freestyle_vessel", None) if by == "vessel_class" else ("freestyle", ["entered"])
+    elif by == "none" and sc.play != "all":
         dim, keys = "play_group", [sc.play]                 # players who played that group
     elif by == "play_type" and sc.play != "all":
         keys = list(GROUP_TYPES[sc.play])
-    if measure == "players" and over == "week":
+    if column == "players" and over == "week":
         span, x_col = sc.span_week, "x"
-    elif measure == "players" and over == "none":
+    elif column == "players" and over == "none":
         span, x_col = sc.span_none, "NULL"
     else:
         span, x_col = "day", _x_of(over, "x")
@@ -551,6 +595,21 @@ def _player_cells(db, sc, measure, by, over, era_key):
     return out
 
 
+def _freestyle_cells(db, sc, measure, by, over, era_key):
+    """(x, key) -> [count, None] for the Toybox measures, from freestyle_vessels / freestyle_switches."""
+    w, a = sc.where(play=False)
+    if measure == "freestyle_switches":
+        table, value = "freestyle_switches", "switches"
+        keys = {"vessel_class": "vessel_class", "from_vessel_class": "from_vessel_class", "switch_source": "origin"}
+    else:
+        table = "freestyle_vessels"
+        value = {"freestyle_entries": "entries", "freestyle_minutes": "seconds / 60.0"}[measure]
+        keys = {"vessel_class": "vessel_class"}
+    key = f"'{era_key}'" if era_key else ("build_kind" if by == "build_kind" else keys.get(by, "NULL"))
+    return {(x, k): [n or 0, None] for x, k, n in db.execute(
+        f"SELECT {_x_of(over)} AS x, {key} AS key, SUM({value}) FROM {table} WHERE {w} GROUP BY x, key", a)}
+
+
 def _event_cells(db, sc, over, by, era_key):
     w, a = sc.where(play=False)
     key = f"'{era_key}'" if era_key else ("build_kind" if by == "build_kind" else "NULL")
@@ -564,6 +623,8 @@ def _week(day):
 
 
 def _value(measure, num, den):
+    if measure == "freestyle_minutes":
+        return round(num, 1)
     if measure in COUNT_MEASURES:
         return num
     if not den:
@@ -592,6 +653,8 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
     for era_key, scope in parts:
         if measure in PLAY_MEASURES:
             got = _plays_cells(db, scope, measure, by, over, era_key)
+        elif measure in ("freestyle_entries", "freestyle_minutes", "freestyle_switches"):
+            got = _freestyle_cells(db, scope, measure, by, over, era_key)
         elif measure == "events":
             got = _event_cells(db, scope, over, by, era_key)
         else:
@@ -614,8 +677,12 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
         keys = sorted(totals, key=lambda k: PLAY_TYPES.index(k) if k in PLAY_TYPES else 99)
     elif by == "intensity":
         keys = sorted(totals, key=lambda k: (not str(k).isdigit(), int(k) if str(k).isdigit() else 0, str(k)))
+    elif by == "element":
+        keys = sorted(totals, key=lambda k: (ELEMENT_ORDER.index(k) if k in ELEMENT_ORDER else 99, str(k)))
     else:
         keys = sorted(totals, key=lambda k: (-totals[k], str(k)))
+    if measure in COUNT_MEASURES and by not in ("none", "era"):
+        keys = [k for k in keys if totals.get(k)]          # a vessel with no entries is not a part of the entries
     shown = keys if len(keys) <= MAX_KEYS + 1 else keys[:MAX_KEYS]
     folded = {}
     for (x, k), (num, den) in cells.items():
@@ -641,9 +708,12 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
                 points.append({"x": x, "key": k, "value": 0 if measure in COUNT_MEASURES else None})
             else:
                 points.append({"x": x, "key": k, "value": _value(measure, *cell)})
+    secondary = None
+    if by == "element" and measure in PLAY_MEASURES:
+        secondary = _secondary_elements(agg_path, sc, parts)
     unfiltered = []
-    if play != "all" and (measure == "events" or (measure in ("players", "new_players")
-                                                  and by not in ("none", "play_type"))):
+    if play != "all" and (measure in ("events",) + FREESTYLE_MEASURES or (measure in ("players", "new_players")
+                                                                          and by not in ("none", "play_type"))):
         unfiltered.append("play")
     if by == "build_kind":
         unfiltered.append("build")
@@ -652,9 +722,32 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
     notes = []
     if measure in ("players", "new_players") and by not in ("none", "era", "build_kind"):
         notes.append("a player with two values that day (two platforms, two modes) counts under both")
-    if "other" in out_keys and measure == "players":
+    if "other" in out_keys and measure in ("players", "freestyle_players"):
         notes.append("other adds up the players of the smaller keys, so a player in two of them counts twice")
-    return {**base, "points": points, "keys": out_keys, "unfiltered": unfiltered, "notes": notes}
+    if by == "element":
+        notes.append("a match's element is the one its build sent (from 2026-11-06), else its mode's genre from the "
+                     "game's ModeGenre (mode_elements.json), so older matches and the PostHog history have one too; a "
+                     "two-element mode counts under its first (Brood Rush: Mass, and Space as its second); none: a "
+                     "mode with no genre or an old mode name")
+    if measure in FREESTYLE_NOTES:
+        notes.append(FREESTYLE_NOTES[measure])
+    out = {**base, "points": points, "keys": out_keys, "unfiltered": unfiltered, "notes": notes}
+    if secondary is not None:
+        out["secondary"] = secondary
+    return out
+
+
+def _secondary_elements(agg_path, sc, parts):
+    """Matches per second element (two-element modes), for an element split: listed beside it, never added in."""
+    db = _open(agg_path)
+    found = {}
+    for _era_key, scope in parts:
+        w, a = scope.where()
+        for k, n in db.execute("SELECT element_secondary, COUNT(DISTINCT match_id) FROM plays WHERE "
+                               "element_secondary IS NOT NULL AND " + w + " GROUP BY element_secondary", a):
+            found[k] = found.get(k, 0) + n
+    db.close()
+    return [{"key": k, "value": n} for k, n in sorted(found.items(), key=lambda kv: -kv[1])]
 
 
 def cohorts(agg_path, build="release", days=90, play="all", era=None):
@@ -888,6 +981,12 @@ def builtin_tile(agg_path, name, build="release", days=90, play="all", era=None)
         got = dict(db.execute("SELECT day, COUNT(DISTINCT match_id) FROM plays WHERE " + w + " GROUP BY day",
                               a).fetchall())
         columns, rows = ["day", "matches"], [[d, got.get(d, 0)] for d in _days_between(sc.since, sc.until)]
+    elif name == "freestyle_entries":
+        wd, ad = sc.where(play=False)
+        got = dict(db.execute("SELECT day, SUM(entries) FROM freestyle_vessels WHERE " + wd + " GROUP BY day",
+                              ad).fetchall())
+        columns, rows = ["day", "freestyle_entries"], [[d, got.get(d, 0)] for d in _days_between(sc.since, sc.until)]
+        unfiltered = sc.unfiltered(["freestyle_entries"])
     elif name == "play_mix":
         w, a = sc.where()
         columns = ["play_type", "matches"]
@@ -898,6 +997,87 @@ def builtin_tile(agg_path, name, build="release", days=90, play="all", era=None)
         raise BadRequest(f"no built-in tile called {name}")
     db.close()
     return {"columns": columns, "rows": rows, **sc.describe(), "unfiltered": unfiltered}
+
+
+def freestyle(agg_path, build="release", days=90, play="all", era=None):
+    """Freestyle (the Toybox), Shombith 2026-11-06: who went in and flew vessels there. Entries go back to the PostHog
+    history; minutes and stretches come from freestyle_ended, exact switches from freestyle_vessel_changed (builds
+    after 2026-11-06), recovered switches from the identify history (builds since 2026-10-12, approximate time)."""
+    sc = Scope(build, days, "all", era)
+    db = _open(agg_path)
+    base = {"build": build, "days": days, "play": play, **sc.describe(), "unfiltered": ["play"] if play != "all" else []}
+    if db is None:
+        return {**base, "empty": True, "tiles": {}, "per_day": [], "vessels": [], "switch_pairs": [], "history": {}}
+    w, a = sc.where(play=False)
+    t = db.execute("SELECT COALESCE(SUM(entries), 0), COALESCE(SUM(first_entries), 0), COALESCE(SUM(stretches), 0), "
+                   "COALESCE(SUM(seconds), 0), COALESCE(SUM(vessels_flown), 0) FROM freestyle_vessels WHERE " + w,
+                   a).fetchone()
+    sw = dict(db.execute("SELECT origin, SUM(switches) FROM freestyle_switches WHERE " + w + " GROUP BY origin",
+                         a).fetchall())
+    per = {}
+    for d, entries, sec in db.execute("SELECT day, SUM(entries), SUM(seconds) FROM freestyle_vessels WHERE " + w +
+                                      " GROUP BY day", a):
+        per[d] = {"day": d, "entries": entries or 0, "minutes": round((sec or 0) / 60.0, 1), "switches": 0,
+                  "recovered_switches": 0}
+    for d, origin, n in db.execute("SELECT day, origin, SUM(switches) FROM freestyle_switches WHERE " + w +
+                                   " GROUP BY day, origin", a):
+        row = per.setdefault(d, {"day": d, "entries": 0, "minutes": 0.0, "switches": 0, "recovered_switches": 0})
+        row["recovered_switches" if origin == "recovered" else "switches"] += n or 0
+    players_by_day = {x: n for x, n in db.execute(
+        f"SELECT x, SUM(players) FROM player_counts WHERE span='day' AND source=? AND dim='freestyle' AND key='entered' "
+        f"AND build_kind IN ({','.join('?' * len(sc.builds)) or 'NULL'}) AND x BETWEEN ? AND ? GROUP BY x",
+        (sc.source, *sc.builds, sc.since, sc.until))}
+    per_day = []
+    for d in _days_between(sc.since, sc.until):
+        row = per.get(d, {"day": d, "entries": 0, "minutes": 0.0, "switches": 0, "recovered_switches": 0})
+        per_day.append({**row, "players": players_by_day.get(d, 0)})
+    vessels = [dict(r) for r in db.execute(
+        "SELECT vessel_class, SUM(entries) AS entries, SUM(stretches) AS stretches, ROUND(SUM(seconds) / 60.0, 1) "
+        "AS minutes, SUM(switches_to) AS switches_to, SUM(switches_from) AS switches_from, SUM(recovered_to) AS "
+        "recovered_to, SUM(recovered_from) AS recovered_from FROM freestyle_vessels WHERE " + w +
+        " GROUP BY vessel_class ORDER BY SUM(switches_to) + SUM(recovered_to) + SUM(stretches) DESC, entries DESC", a)]
+    pairs = [dict(r) for r in db.execute(
+        "SELECT from_vessel_class AS from_vessel, vessel_class AS to_vessel, SUM(switches) AS switches, "
+        "SUM(CASE WHEN origin = 'recovered' THEN switches ELSE 0 END) AS recovered FROM freestyle_switches WHERE " + w +
+        " GROUP BY 1, 2 ORDER BY switches DESC, 1, 2 LIMIT 20", a)]
+    hw, ha = "build_kind = ?", [build]                                   # history: all time, this build
+    first = lambda col, table="freestyle_vessels", extra="": db.execute(
+        f"SELECT MIN(day) FROM {table} WHERE {hw} AND {col} > 0 {extra}", ha).fetchone()[0]
+    history = {"first_entry_day": first("entries"),
+               "first_imported_entry_day": first("entries", extra="AND imported = 1"),
+               "last_imported_entry_day": db.execute(f"SELECT MAX(day) FROM freestyle_vessels WHERE {hw} AND entries > 0 "
+                                                     f"AND imported = 1", ha).fetchone()[0],
+               "first_minutes_day": first("stretches"),
+               "first_vessel_entry_day": first("entries", extra="AND vessel_class <> 'unknown'"),
+               "first_switch_day": first("switches", "freestyle_switches", "AND origin = 'event'"),
+               "first_recovered_switch_day": first("switches", "freestyle_switches", "AND origin = 'recovered'")}
+    players = _player_count(db, sc, "freestyle", "entered")
+    db.close()
+    minutes = round((t[3] or 0) / 60.0, 1)
+    return {**base, "built_ms": None,
+            "tiles": {"entries": t[0], "first_entries": t[1], "players": players, "stretches": t[2], "minutes": minutes,
+                      "avg_stretch_min": round(minutes / t[2], 1) if t[2] else None,
+                      "avg_vessels_flown": round(t[4] / t[2], 2) if t[2] else None,
+                      "switches": sw.get("event", 0) or 0, "recovered_switches": sw.get("recovered", 0) or 0},
+            "per_day": per_day, "vessels": vessels, "switch_pairs": pairs, "history": history,
+            "notes": [FREESTYLE_NOTES["freestyle_entries"], FREESTYLE_NOTES["freestyle_minutes"],
+                      FREESTYLE_NOTES["freestyle_switches"]]}
+
+
+def preset_tile(agg_path, preset, era=None, eras=()):
+    """A dashboard tile from a saved view: the preset's own series (its measure, split and over, and its own build,
+    days, play and era), as {columns, rows} and the raw `series` the console draws."""
+    settings, filters = preset["settings"], preset["filters"]
+    if not preset.get("series") or settings.get("measure") not in SERIES_MEASURES:
+        raise BadRequest("this saved view is not a series chart, so it cannot be a tile")
+    out = series(agg_path, settings["measure"], settings.get("by") or "none", settings.get("over") or "day",
+                 filters.get("build", "release"), filters.get("days", 90), filters.get("play", "all"), era, eras)
+    if out["by"] == "none":
+        columns, rows = ["x", out["measure"]], [[p["x"], p["value"]] for p in out["points"]]
+    else:
+        columns, rows = ["x", out["by"], out["measure"]], [[p["x"], p["key"], p["value"]] for p in out["points"]]
+    return {"columns": columns, "rows": rows, "series": out, "preset": {"id": preset["id"], "name": preset["name"]},
+            "form": settings.get("form"), "unfiltered": ["build", "days", "play", "era"]}
 
 
 def schema(agg_path, saved_tables=()):

@@ -43,7 +43,10 @@ CALLSIGNS = ["Tidewalker", "Lumen", "Brine", "Kestrel", "Halcyon", "Mothwing", "
 COUNTRIES = ["US", "US", "US", "GB", "GB", "IN", "DE", "SE", "BR", "CA", "PH", "AU", "FR", "NL", "PL", "MX"]
 FTUE_STEPS = [(0, "wake", "Wake the vessel"), (0, "steer", "Steer through the rings"), (1, "boost", "Boost on a trail"),
               (1, "crystal", "Take a crystal"), (2, "first_match", "Fly a first match"), (2, "hangar", "Open the hangar")]
-MODES = ["SkimRace", "Joust", "CrystalCapture", "Bloomrush", "HexRace", "Regatta"]
+MODES = ["SkimRace", "Joust", "CrystalCapture", "Bloomrush", "HexRace", "Regatta", "BroodRush", "Scurry"]
+SERVER_LIVE_DAYS = 1         # events older than this came in with the PostHog import (stored as history)
+NEW_BUILD_DAYS = 8           # builds this recent send element, the Toybox's vessel, freestyle_ended and vessel switches
+IDENTIFY_DAYS = 25           # builds since 12 Oct re-identify after each Toybox flight (selected_vessel)
 VESSELS = ["Squirrel", "Sparrow", "Manta", "Dolphin", "Rhino", "Urchin"]
 
 
@@ -53,6 +56,8 @@ def sample_events(seed=7):
     rng = random.Random(seed)
     now = datetime.now(timezone.utc)
     players = {}
+    table = S.mode_elements()
+    selected = {}
 
     def iso(t):
         return t.strftime("%Y-%m-%dT%H:%M:%S.") + f"{t.microsecond // 1000:03d}Z"
@@ -81,6 +86,27 @@ def sample_events(seed=7):
                 send(player, "ftue_completed", t + timedelta(seconds=40 * reached + 5), platform, version,
                      quest_id="FirstFlight", seconds_since_launch=launch + 40 * reached + 5)
             t += timedelta(seconds=40 * reached + 30)
+        if rng.random() < 0.55:                       # the Toybox (Freestyle) before the matches
+            new = start > now - timedelta(days=NEW_BUILD_DAYS)
+            vessel = selected.get(player) or rng.choice(VESSELS)
+            send(player, "freestyle_entered", t, platform, version, is_first=True, seconds_since_launch=launch + 25,
+                 **({"vessel_class": vessel} if new else {}))
+            stretch, flown = rng.randint(40, 420), {vessel}
+            for k in range(rng.choice([0, 0, 1, 1, 2, 3])):
+                to = rng.choice([v for v in VESSELS if v != vessel])
+                at = t + timedelta(seconds=int(stretch * (k + 1) / 4))
+                if new:
+                    send(player, "freestyle_vessel_changed", at, platform, version, vessel_class=to,
+                         from_vessel_class=vessel, seconds_in_freestyle=round(stretch * (k + 1) / 4, 1))
+                elif start > now - timedelta(days=IDENTIFY_DAYS):     # the identify history keeps the pick
+                    identify_at(player, at, to)
+                vessel = to
+                flown.add(to)
+            selected[player] = vessel
+            if new:
+                send(player, "freestyle_ended", t + timedelta(seconds=stretch), platform, version, seconds=stretch,
+                     vessel_class=vessel, vessels_flown=len(flown), seconds_since_launch=launch + 25 + stretch)
+            t += timedelta(seconds=stretch + 15)
         if rng.random() < 0.15:
             send(player, "setting_changed", t, platform, version, setting=rng.choice(["invert_y", "haptics_enabled",
                  "music_level"]), value=rng.choice(["true", "false", "0.6"]), seconds_since_launch=launch + 30)
@@ -90,6 +116,10 @@ def sample_events(seed=7):
             props = dict(match_id=match, player_count_human=humans, player_count_ai=0 if rng.random() < 0.3 else
                          rng.randint(1, 3), game_mode=mode, intensity=rng.randint(1, 4), vessel_class=rng.choice(VESSELS),
                          **(team or {}))
+            if start > now - timedelta(days=NEW_BUILD_DAYS) and mode in table:   # new builds send the element
+                props["element"] = table[mode][0]
+                if table[mode][1]:
+                    props["element_secondary"] = table[mode][1]
             send(player, "game_started", t, platform, version, **props)
             if double:
                 send(player, "game_started", t + timedelta(milliseconds=2), platform, version, **props)
@@ -132,6 +162,10 @@ def sample_events(seed=7):
             send(player, "cloud_save_failed", t, platform, version, key=rng.choice(["HANGAR_DATA", "MODE_STATS"]))
         send(player, "session_ended", t + timedelta(seconds=30), platform, version,
              reason=rng.choice(["quit", "quit", "background", "background", "crash"]), app_state="menu")
+
+    def identify_at(player, t, vessel):
+        players[player][1].append({"event": "$identify", "timestamp": iso(t), "properties": {
+            "distinct_id": player, "$set": {"selected_vessel": vessel, "preferred_vessel": vessel}}})
 
     def identify(player, name, wallet):
         players[player][1].append({"event": "$identify", "timestamp": iso(now - timedelta(hours=1)), "properties": {
@@ -246,7 +280,29 @@ SAMPLE_DASHBOARD = {"id": "launch_week", "name": "Launch week", "owner": "previe
                               for i, (name, title, chart, w, h) in enumerate((
                                   ("new_players", "New players", "number", 1, 1), ("d1_return", "D1 return", "number", 1, 1),
                                   ("ftue_finished", "FTUE finished", "number", 1, 1), ("rows_per_play", "Rows per play", "number", 1, 1),
-                                  ("matches_per_day", "Matches per day", "bars", 2, 2), ("play_mix", "Play mix", "pie", 2, 2)))]}
+                                  ("matches_per_day", "Matches per day", "bars", 2, 2), ("play_mix", "Play mix", "pie", 2, 2)))]
+                    + [{"id": "tv", "source": "preset:p_elements", "title": "Matches by element", "chart": "bars", "w": 4, "h": 2}]}
+SAMPLE_PRESETS = [
+    ("p_elements", "preview", "Matches by element, weekly", True, "overview", "overview.series", True,
+     {"form": "bars", "measure": "matches", "by": "element", "over": "week"}, {"build": "release", "days": 90, "play": "all"}),
+    ("p_toybox", "garrett", "Toybox switches by vessel", True, "overview", "overview.freestyle.switches", True,
+     {"form": "bars", "measure": "freestyle_switches", "by": "vessel_class", "over": "none"}, {"build": "release", "days": 30, "play": "all"}),
+    ("p_solo", "preview", "Solo vs AI finishes by mode", False, "matches", "matches.series", True,
+     {"form": "line", "measure": "finished_pct", "by": "game_mode", "over": "week"}, {"build": "release", "days": 90, "play": "solo_vs_ai"}),
+    ("p_secret", "caleb", "Caleb's private view", False, "overview", "overview.series", True,
+     {"form": "bars", "measure": "matches", "by": "none", "over": "day"}, {"build": "editor", "days": 30}),
+]
+
+
+def sample_presets(store):
+    """Saved views as people would make them: the preview's own, a public one of someone else's, and a private one of
+    someone else's that the preview never lists (the same rule as the server)."""
+    for preset_id, owner, name, public, page, chart, series, settings, filters in SAMPLE_PRESETS:
+        with store.lock:
+            store.db.execute("INSERT OR REPLACE INTO presets VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                             (preset_id, name, owner, int(public), page, chart, int(series), json.dumps(settings),
+                              json.dumps(filters), S.now_ms(), S.now_ms()))
+            store.db.commit()
 
 
 def rev65(store, agg, get):
@@ -269,6 +325,8 @@ def rev65(store, agg, get):
             get["/v1/cohorts?" + q] = page
             get["/v1/playtypes?" + q] = V.playtypes(agg, build, days)
             for tile in SAMPLE_DASHBOARD["tiles"]:
+                if not tile["source"].startswith("builtin:"):
+                    continue
                 get["/v1/dashboards/tile?" + urlencode({"build": build, "days": days, "source": tile["source"]})] = \
                     V.builtin_tile(agg, tile["source"].split(":", 1)[1], build, days)
     for build in SERIES_BUILDS:
@@ -278,6 +336,18 @@ def rev65(store, agg, get):
                     for over in V.SERIES_OVER:
                         url = "/v1/series?" + urlencode({"build": build, "days": days, "measure": measure, "by": by, "over": over})
                         get[url] = V.series(agg, measure, by, over, build, days, "all", None, eras)
+    for build in BUILDS:
+        for days in PAGE_DAYS:
+            get["/v1/freestyle?" + urlencode({"build": build, "days": days})] = V.freestyle(agg, build, days)
+    presets = store.presets("preview")
+    get["/v1/presets"] = {"presets": presets}
+    for preset in presets:
+        if not preset["series"]:
+            continue
+        tile = V.preset_tile(agg, preset, None, eras)
+        for build in BUILDS:
+            for days in PAGE_DAYS:
+                get["/v1/dashboards/tile?" + urlencode({"build": build, "days": days, "source": "preset:" + preset["id"]})] = tile
     get["/v1/schema"] = V.schema(agg)
     get["/v1/queries"] = {"queries": []}
     get["/v1/segments"] = {"segments": []}
@@ -316,9 +386,17 @@ def main(argv):
     work = args.data or tempfile.mkdtemp(prefix="fa-preview-")
     store = S.Store(work, A.schema_events(A.REPO_SCHEMA), A.DEFAULTS["extra_events"])
     if not args.data:
+        cutoff = S.now_ms() - SERVER_LIVE_DAYS * 86400 * 1000
         for player, (country, events) in sample_events().items():
-            for i in range(0, len(events), 500):
-                store.ingest(events[i:i + 500], country=country)
+            old = [e for e in events if (S.parse_timestamp(e["timestamp"]) or 0) < cutoff]
+            new = [e for e in events if (S.parse_timestamp(e["timestamp"]) or 0) >= cutoff]
+            for e in old:                                  # the PostHog import keeps each event's country itself
+                e["country"] = country
+            for i in range(0, len(old), 500):
+                store.ingest(old[i:i + 500], trusted=True, max_age_days=365)
+            for i in range(0, len(new), 500):
+                store.ingest(new[i:i + 500], country=country)
+        sample_presets(store)
     store.rebuild_aggregates()
     store.mark_job("rebuild", "preview")
     store.mark_job("backup", "preview")

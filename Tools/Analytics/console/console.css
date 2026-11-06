@@ -429,3 +429,22 @@ table.people td:first-child { white-space: normal; min-width: 150px; }
 .chip-link { border: 0; background: var(--fs-ground-deep); box-shadow: inset 0 0 0 1px var(--fs-line); color: var(--fs-text); font-size: 12px; padding: 3px 8px; cursor: pointer; }
 .chip-link:hover, .chip-link:focus-visible { box-shadow: inset 0 0 0 1px var(--fs-selection); }
 .more { color: var(--fs-text-soft); }
+
+/* saved views ("presets"): Views + Save view in a chart's head, the save form under it */
+.card-head .views { margin-left: auto; display: inline-flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.views .mini-select { max-width: 200px; }
+.save-link { font-size: 13px; white-space: nowrap; }
+.save-view { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 12px; background: color-mix(in srgb, var(--fs-ground) 55%, transparent); box-shadow: inset 0 0 0 1px var(--fs-line); }
+.save-view[hidden] { display: none; }
+.save-view .field { width: min(260px, 100%); }
+.save-view .small-btn { height: 36px; }
+table.presets td { vertical-align: top; }
+table.presets td.actions { white-space: nowrap; text-align: right; }
+table.presets td.actions .btn { height: 34px; padding: 0 12px; font-size: 13px; margin-left: 6px; }
+.scroll-y { max-height: 420px; overflow-y: auto; }
+.tag.approx { margin-left: 8px; }
+@media (max-width: 760px) {
+  .card-head .views { margin-left: 0; }
+  table.presets td.actions { white-space: normal; text-align: left; }
+  table.presets td.actions .btn { margin: 4px 6px 0 0; }
+}
