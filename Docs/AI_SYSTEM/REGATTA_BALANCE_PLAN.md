@@ -27,13 +27,16 @@ A hull's OWN Time game is a single-hull arcade card; Regatta is the arena Time g
 
 ## The direction since 2026-11-06 (Garrett): trained AIs first, a wide search, a pool of courses, one Regatta
 
-Garrett played the searched circuits of `claude/regatta-overnight-balance` on 2026-11-06 twice. Gates threaded when
-the AI Urchin finished its 24: on the old I4 circuit Squirrel (AI) 11, Serpent 11, Rhino 7, Manta 6; on the branch's
-new circuits Squirrel (Garrett) 14, Serpent 10, Rhino 5, Manta 4, Dolphin 3. The corrected roster model had predicted
-12-17 for every steering hull. The search had tightened corners and mouths to slow the fast hulls, which levels the
-field in a model of AIs racing alone and breaks their steering in a six-AI grid, while the Urchin rides through on its
-rail. **The branch's searched circuits are not to be shipped.** Garrett's direction, in order (the plan in full:
-https://claude.ai/artifact/FdaKFy6jGwwTfcKp16hjE7):
+Garrett played Regatta at I4 twice on 2026-11-06 and the Urchin won by a street both times. Gates threaded when the AI
+Urchin finished its 24: first race Squirrel (AI) 11, Serpent 11, Rhino 7, Manta 6; second race Squirrel (Garrett) 14,
+Serpent 10, Rhino 5, Manta 4, Dolphin 3, AI Squirrel 3. **Both races, and all 183 recorded Regatta flights, were on the
+OLD I4 circuit** (the flight records' rings: 54 u mouths, no neutral rail; `Docs/Reports/REGATTA_GRID_LOSSES.md`), so
+the circuits searched on `claude/regatta-overnight-balance` have never been raced by anyone, and the second race did
+not show them making things worse: the build Garrett played laid the old course. Measured against the roster model on
+that circuit, the real AIs were Urchin 1.00x, Squirrel 0.96x, Serpent 0.81x, Rhino 1.27x (cruising at 50 u/s for 78%
+of the race) and Manta 1.48x (0.36 missed mouths a ring, 9-14 rail rams a race); traffic was not the cause (3 of 389
+slow-downs beside another vessel). The searched circuits stay unshipped until the trained AIs race them. Garrett's
+direction, in order (the plan in full: https://claude.ai/artifact/FdaKFy6jGwwTfcKp16hjE7):
 
 1. **"Step one is making sure that each AI is trained well, otherwise training a course against AI that are so
    imbalanced will not work."** No course search until every Regatta hull's Time AI passes all four: independent
@@ -137,4 +140,4 @@ weight (0.02 per level of mean) keeps the tuning as small as the gap allows. **P
 | 2026-10-26 | Plan set (Garrett). Compute system, the three evaluators and the stage 1-3 jobs built (`Docs/Compute/README.md`); today's spread measured (2.05-2.18x) |
 | 2026-11-02 | The Stoat is the next hull, on the orbit alone (Yash). `regatta_balance.py`'s `stoat_model` follows the kit (its Time 10 race 48.5 → 49.4 s at I1; the card's level is unchanged). No compute job yet: it needs Slingshot races first, then a `drive_fit` model from `stoat_orbit_sim.py` |
 | 2026-11-02 | The Thresher is the hull after the Stoat (Yash). The hulls Yash picks to race Regatta: Squirrel, Dolphin, Stoat, Thresher (the Sparrow stays on the card). The rule holds: the Thresher trains in Thresher Time first, and Regatta's card and design wait for that (`MINIGAME_TRAINING_PLAN.md` §12) |
-| 2026-11-06 | **Garrett's two playtests of the searched circuits** (branch `claude/regatta-overnight-balance`): worse than the old circuit and 2-5x worse than the corrected model (the section above). Those circuits are not shipped. **Direction reset (Garrett)**: trained AIs first (the four-part test), a much wider course space, several local minima shuffled in ONE Regatta level (arena intensities go), spreads that cancel across the pool, Time levels last and only with his yes. Thirteen threads started on the briefs; `drive-rhino-headlong` run by hand three times (converged at I1-I3, stalls on one I4 seed); the Manta, Dolphin and Squirrel searches running by hand |
+| 2026-11-06 | **Garrett's two I4 playtests**: the Urchin far ahead both times; both were on the OLD circuit (the searched circuits of `claude/regatta-overnight-balance` have never been raced; they stay unshipped). The real AIs were 0.8-1.5x the roster model, worst the Manta and Rhino (the section above; `REGATTA_GRID_LOSSES.md`). **Direction reset (Garrett)**: trained AIs first (the four-part test), a much wider course space, several local minima shuffled in ONE Regatta level (arena intensities go), spreads that cancel across the pool, Time levels last and only with his yes. Thirteen threads started on the briefs; `drive-rhino-headlong` run by hand three times (converged at I1-I3, stalls on one I4 seed); the Manta, Dolphin and Squirrel searches running by hand |
