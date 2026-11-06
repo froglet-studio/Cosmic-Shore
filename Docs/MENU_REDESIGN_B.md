@@ -5975,3 +5975,46 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
 - **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
   Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
   there); the page itself is not built yet.
+
+## 141. Rev 65 mockups: Froglet Analytics, the full tool - filters, charts, cohorts, eras, admin queries (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-06, on the live console):** "need filters and sorting for sure"; the player profile "is not
+at all good there should different analytical tools like pie charts, ganntt charts etc for business development";
+"need features to filter solo vs ai, multiplayer"; "Go a step more and make it the best analytical tool ever ... 5-6
+mockups there for players details new features etc. We should also give control to admins more like creating new tables
+queries"; "all these data till now could be put in cohorts and say name them Old Posthog data and the new data from a
+set data to a set data can be Pre Beta Editor testing results ... Create a chart for that"; "A plan Chart".
+
+**On the canvas:** the Froglet Analytics tab, round "Rev 65 - Froglet Analytics, the full tool: filters, charts,
+cohorts, eras and admin queries", under Rev 50 (picked B). Seven screens of one tool, not options: each can be picked,
+changed or dropped. Drawn in the console's default theme (Nocturne, `Tools/Analytics/console/themes.css`) over the sea
+lines, every number sample data from one seeded set (`Docs/MenuRedesignB/rounds/r65_analytics_tool.py`). Copies:
+`Docs/MenuRedesignB/board/R65*.dc.html`.
+- **Players:** a filter bar (search, country, platform, active window, matches, has played multiplayer, crystals, saved
+  segments, CSV export), click-to-sort columns, and per row a lifespan bar (first to last seen, ticks on play days) and
+  a play-mix bar.
+- **Profile:** six tiles; a play-type donut (three parts); ranked bars for modes and vessels; an hour x weekday heatmap;
+  a Gantt match timeline (a lane per mode, filled = finished, outline = not, a square = a win); the crystal balance line
+  and earnings by source; the transaction table behind a link.
+- **Lifespans (Cohorts):** every player's lifespan as a Gantt, coloured by how they mostly play, faded when lapsed; a
+  weekly cohort return heatmap (one hue).
+- **Eras:** the plan chart. Named eras an admin sets: Old PostHog data (8 Aug to 5 Nov, imported), Pre-beta editor
+  testing (6 Nov to an end date set), then the closed mobile beta and Steam with keys from `Docs/LAUNCH/READINESS.md`
+  (planned, dashed), with milestones and the weeks' events coloured by era; an Era filter in every header; two eras
+  compared (rows per play 1.81 to 1.00 shows the #1639 fix).
+- **Play types:** Solo vs AI, Solo and Multiplayer side by side, the multiplayer invite-to-replay funnel, the share donut;
+  the Play filter in every header.
+- **Query Studio (admins):** a builder (From, Where, Group by, Measure, Order), SQL, or Ask Claude; the result as bars,
+  line, donut, Gantt, table or a number; save as a query or as a table rebuilt nightly, share, pin, alert.
+- **Dashboards (admins):** your own boards of tiles from saved queries or any console chart, drag and resize, shared with
+  readers or admins, emailed on a schedule.
+- **Notes:** what each screen adds and what the server already answers.
+
+**Differs from the build:** the console has none of these yet. Already on the server (branch
+`claude/sweet-mayer-se51r6`, 4a729d91d6): the play filter on Overview, Retention and Matches, and each player's play
+mix and wins on `/v1/people`; `/v1/person` already returns every match and every crystal change the profile needs. New
+server work: eras (config, a filter like the build filter; imported PostHog events are told apart exactly, they arrive
+with their own old timestamp), saved queries and tables (the Ask box's read-only guard), dashboards, segments, a weekly
+returns aggregate and a per-party funnel. Charts: the colour set's four rims in a fixed order (Jade solo vs AI, Gold
+solo, Ruby multiplayer, Blue plain data) with legends and labels; the rims sit above the usual chart lightness band
+(`dataviz` validator), so labels stay on. Awaiting a pick.
