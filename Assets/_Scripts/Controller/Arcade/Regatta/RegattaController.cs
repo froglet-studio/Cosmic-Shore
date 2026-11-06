@@ -42,8 +42,17 @@ namespace CosmicShore.Gameplay
     {
         [Header("Regatta")]
         [Tooltip("The scene's Cell. Its EXPECTED config carries the arena prefab whose seed and " +
-                 "intensity the rings are derived from. Optional - found if empty.")]
+                 "circuit the rings are derived from. Optional - found if empty.")]
         [SerializeField] Cell arenaCell;
+
+        [Tooltip("The circuits one Regatta level shuffles between. The host deals one entry per match (a shuffle " +
+                 "bag: every enabled circuit once before any repeats) and every machine lays it; intensity does not " +
+                 "pick the course. Its entries must be the arena Cell's CellConfigs, in the same order. Authored by " +
+                 "Tools/Build/author_regatta_assets.py.")]
+        [SerializeField] RegattaCoursePoolSO coursePool;
+
+        /// <summary>The course pool this scene deals from (null when the scene authors none).</summary>
+        public RegattaCoursePoolSO CoursePool => coursePool;
 
         [Tooltip("How far behind gate 0, along its axis, the start line sits. Every hull spawns " +
                  "here pointed through the first ring, which is fair by symmetry.")]
@@ -74,8 +83,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The arena prefab, off the cell's EXPECTED config - never <c>Config</c>, which is a latch
-        /// that lands a second after the first build attempt (SKEIN.md 13.2). Requires an
-        /// IntensityWise cell, whose choice is derivable from the intensity the server holds.
+        /// that lands a second after the first build attempt (SKEIN.md 13.2). Requires a
+        /// CourseVariantWise cell, whose choice is derivable from the course variant the server drew.
         /// </summary>
         protected override CellConfigDataSO ResolveCourseConfig()
         {
@@ -91,14 +100,21 @@ namespace CosmicShore.Gameplay
         /// would put pilots 1120 u out facing the CENTRE with gate 0 on the pole above them,
         /// which for a grid of hulls whose cruise speeds span 35x is a first corner nobody asked
         /// for. Answerable during the spawn chain because the rings are a pure function of the
-        /// prefab asset's seed and intensity; the fallback (no cell resolved yet) uses the
-        /// default seed at the selected intensity, which is the shipped arena.
+        /// prefab asset's seed and circuit row; the fallback (no cell resolved yet) reads the drawn
+        /// pool entry's prefab directly.
         /// </summary>
         public bool TryBuildSpawnPoses(int count, out Pose[] poses)
         {
+            // The spawn chain can ask before this controller's OnNetworkSpawn has drawn the match's circuit: draw it
+            // now (once - the spawn's own draw then keeps it), so the start line sits behind the circuit's gate 0.
+            // NetworkManager's IsServer, not this behaviour's: the spawn chain may ask before this object has spawned.
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if ((nm == null || nm.IsServer) && gameData && gameData.CourseVariant < 0)
+                gameData.CourseVariant = DrawCourseVariant();
+
             var gates = TryResolveArena(out var arena, out _)
                 ? arena.BuildGatesNow()
-                : RegattaCourse.BuildGates(RegattaCourse.DefaultSeed, Intensity);
+                : PoolEntryGates(gameData ? gameData.CourseVariant : -1);
 
             if (gates == null || gates.Count == 0)
             {
@@ -111,6 +127,44 @@ namespace CosmicShore.Gameplay
             poses = CellSpawnFormation.BuildFacingRing(count, first.Position + centre, first.Axis,
                                                        startLineStandoff, startLineRadius);
             return true;
+        }
+
+        /// <summary>
+        /// Deal this match's circuit from <see cref="coursePool"/> (server; the base calls it once, before the game
+        /// config is broadcast). A pinned variant (<see cref="CourseVariantOverride"/>) wins. A scene with no pool, or
+        /// a pool that does not match the Cell's configs, races entry 0 and says why once.
+        /// </summary>
+        protected override int DrawCourseVariant()
+        {
+            if (!coursePool || coursePool.Count == 0)
+            {
+                CSDebug.LogWarning("[Regatta] No course pool on the controller - racing the Cell's first config. " +
+                                   "Run Tools/Build/author_regatta_assets.py.");
+                return 0;
+            }
+
+            var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
+            string mismatch = cell ? coursePool.MismatchWith(cell.AvailableConfigs) : null;
+            if (mismatch != null)
+                CSDebug.LogWarning($"[Regatta] Course pool '{coursePool.name}' does not match the arena Cell: {mismatch}. " +
+                                   "The Cell lays CellConfigs[variant], so the drawn circuit may not be the one named. " +
+                                   "Re-run Tools/Build/author_regatta_assets.py.");
+
+            int variant = coursePool.Draw();
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Regatta] Course variant {variant} ({coursePool.LabelOf(variant)}) of {coursePool.Count}" +
+                (CourseVariantOverride.Pick(coursePool.Count) >= 0 ? " (pinned)." : "."));
+            return variant;
+        }
+
+        /// <summary>The rings of pool entry <paramref name="variant"/> straight off its rails prefab, for the spawn line
+        /// before the Cell can answer; the default circuit when the pool cannot name one.</summary>
+        List<RaceGate> PoolEntryGates(int variant)
+        {
+            var entries = coursePool ? coursePool.Entries : null;
+            int i = entries is { Count: > 0 } ? Cell.CourseVariantIndexFor(variant, entries.Count) : -1;
+            var rails = i >= 0 ? entries[i]?.Rails : null;
+            return rails ? rails.BuildGatesNow() : RegattaCourse.BuildGates(RegattaCourse.DefaultSeed, 1);
         }
 
         /// <summary>

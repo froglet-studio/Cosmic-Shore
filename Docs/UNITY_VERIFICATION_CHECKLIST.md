@@ -21370,3 +21370,16 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    and Competitive.
 5. **No `[Analytics]` warnings** in the Console, and the UGS dashboard still receives `game_started` and
    `game_completed` (the Froglet-only fields are stripped for UGS; an undeclared parameter would make UGS drop the event).
+
+## 🔴 Regatta's shuffled course pool (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-pnwryl`. `unity_refcompile` (player and editor) has 0 errors in the changed files (the 21
+it reports are already on bleeding-edge: Vivox and Moderation packages); `author_regatta_assets.py --check` OK. The
+new edit-mode tests were compiled, not run. Details: `Docs/Reports/REGATTA_COURSE_POOL.md`.
+
+1. **Run the edit-mode tests** `RegattaCoursePoolTests` and `RegattaCourseTests`.
+2. **Play Regatta alone three times** with the ArcadeMatch log channel on (FrogletTools > Toolbox > Logging): each match
+   logs `[Regatta] Course variant k (Label) of 4`, the laid circuit is that entry's, and three matches lay three
+   different circuits. The start line sits behind the laid circuit's first ring.
+3. **Play a two-machine match**: host and client lay the same circuit (same rings, same rails).
+4. **Watch a Regatta replay** in its real scene: it lays the circuit the match was flown on.
