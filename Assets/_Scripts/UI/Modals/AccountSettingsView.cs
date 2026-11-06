@@ -85,6 +85,10 @@ namespace CosmicShore.UI
         [SerializeField] string deleteTitle = "Delete your account?";
         [SerializeField] string deleteBody = "Your pilot, crystals and vessels are deleted from our servers for good. This cannot be undone.";
         [SerializeField] string deleteConfirm = "Delete account";
+        [Tooltip("Shown when an in-app deletion did not complete. The account is still there and nothing was wiped.")]
+        [SerializeField] string deleteFailedTitle = "Your account was not deleted";
+        [SerializeField] string deleteFailedBody = "We could not reach our servers. Check your connection and try again.";
+        [SerializeField] string closeLabel = "Close";
 
         [Inject] IPlatformSignIn _signIn;
         [Inject] AuthenticationServiceFacade _auth;
@@ -288,7 +292,23 @@ namespace CosmicShore.UI
         void ConfirmDelete()
         {
             if (!prompt || _signIn == null || !_menu) return;
-            prompt.ShowConfirm(deleteTitle, deleteBody, deleteConfirm, () => _signIn.DeleteAccountAsync(CancellationToken.None).Forget(), cancelLabel);
+            prompt.ShowConfirm(deleteTitle, deleteBody, deleteConfirm, () => DeleteAsync().Forget(), cancelLabel);
+        }
+
+        /// <summary>On success the boot chain restarts the game as a new guest, so this view goes with the scene; it only
+        /// has something to say when the deletion did not complete. Not cancelled when Settings closes: a deletion that
+        /// has started should finish.</summary>
+        async UniTaskVoid DeleteAsync()
+        {
+            _busy = true;
+            Refresh();
+            var status = await _signIn.DeleteAccountAsync(CancellationToken.None);
+            await MainThreadDispatcher.SwitchToMainThreadAsync();
+            if (!this) return;
+            _busy = false;
+            Refresh();
+            if (status != AccountDeletionStatus.Deleted && prompt)
+                prompt.ShowConfirm(deleteFailedTitle, deleteFailedBody, string.Empty, null, closeLabel);
         }
 
         AccountRow Row(SignInProvider provider)
