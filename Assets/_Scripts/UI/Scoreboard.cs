@@ -6,7 +6,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -950,7 +950,10 @@ namespace CosmicShore.UI
             }
         }
 
-        bool _crystalsAwardedThisGame;
+        // Static: the wallet is one per player, so the latch is one per process. An instance field let
+        // a second live Scoreboard (a duplicate in the scene, or a stale one surviving Play/Stop/Play)
+        // pay the same game again 2-27 ms later (crystals_earned near-duplicates, 2026-10-16..19).
+        static bool _crystalsAwardedThisGame;
 
         void ClearCrystalAwardLatch() => _crystalsAwardedThisGame = false;
 

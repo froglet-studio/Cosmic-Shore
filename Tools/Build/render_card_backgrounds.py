@@ -117,6 +117,7 @@ SOURCES = [
     f"{_AR}/SerpentTime/SerpentTimeCourse.cs",
     f"{_AR}/BrittleStarTime/BrittleStarTimeCourse.cs",
     f"{_AR}/LanternRun/LanternRunCourse.cs",
+    f"{_AR}/Thornline/ThornlineCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -748,6 +749,9 @@ CAMERAS = {
     # LanternRun: the circuit with its two mass clusters a leg glowing on each ring's line, shot from above so the
     # stepping stones read as the path painted through the rings.
     "LanternRun": (120, 34, 0.85, 44),
+    # Thornline: the thorn chain, its cubes on every bend and a ring at the middle of each leg, shot from an angle no
+    # other gate race takes so the zig-zag of straight slings reads.
+    "Thornline": (200, 30, 0.85, 44),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
@@ -805,6 +809,16 @@ def recipe(stem, card_path, pal, ends):
         node = generator_node(track)
         node["intensity"] = INTENSITY
         layers.append(node)
+        nucleus()
+    elif s == "Thornline":
+        # COURSE tier: ThornlineCourseSource.Build, mirrored - the shell's inner radius off the scene's controller and
+        # the cell's nucleus, the ring count off EndConditionOverrides; the harness lays the thorns too.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "thornline", "intensity": INTENSITY, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("thornlineGateTarget", 16)},
+                       "tube": 0.14, "color": [1.45, 0.35, 0.6]})
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
                "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
@@ -1079,7 +1093,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)

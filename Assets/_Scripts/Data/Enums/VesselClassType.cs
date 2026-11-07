@@ -35,5 +35,6 @@ namespace CosmicShore.Data
         Honeyguide = 23,   // the Honeyguide and Ratel: two seats on one hull (its own model on the Sparrow's airframe) with the Ratel's Dynamo seat: Controller/Vessel/Crew/HONEYGUIDE.md
         Meerkat = 28,   // the wormhole vessel: one thumb flies, the right stick bends a tunnel, RT dives through it (24-27 are claimed on in-flight branches: Flea, Warden, Bulwark, Tempest): Controller/Vessel/R_VesselActions/MEERKAT.md
         TigerMoth = 29,   // the Butterfly's airframe with the Drop (a tiger moth shuts its wings and drops): hold, fall along your own down while the camera rides above, land pitched into the line you fell: Controller/Vessel/R_VesselActions/TIGER_MOTH.md
+        Swordfish = 30,   // all sword: the Rhino's blade, energize, afterimages and surge ring on the Rhino's airframe, split off the Rhino on 2026-11-07 (Garrett); the Rhino keeps the plough: Controller/Vessel/R_VesselActions/SWORDFISH.md
     }
 }

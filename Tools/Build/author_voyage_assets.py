@@ -188,7 +188,9 @@ def validate(spec):
             text(j["id"], j[k])
     if "job.return" not in job_ids:
         errors.append("no job.return (the way home every board offers)")
-    for f in fac:
+    # Only the faction types a crew person carries must bring work: FactionType also names types whose jobs come later
+    # (VOYAGES.md §6.2; FactionCatalog.Recruitable is the C# side of the same rule).
+    for f in sorted({p["faction"] for p in spec["crew"]}):
         if f != "None" and not any(j["faction"] == f and j["needs"] == "None" and j["id"] != "job.return"
                                    for j in spec["jobs"]) and f != "Pirate":
             errors.append(f"faction type {f} has no standing work: its pilots would bring nothing anywhere")

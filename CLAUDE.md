@@ -218,6 +218,11 @@ The ladder is the element's arcade intensities, then its arena game balanced aga
 
 A new round grows from every genome that exists. No AI is trained inside an arena game.
 
+**Froglet Compute is PAUSED (Shombith, 2026-11-06): analytics has the priority.** Until he switches it back on, queue
+no compute job, send no run and install no agent; the console's hourly sync scheduled task is paused, and the rule below
+waits with it. Train or check an AI by hand only as the AI plan allows. The hourly AI learning sweep (`ai_learn.py`) is
+separate and unchanged.
+
 **Froglet Compute is the default way to train an AI** (Shombith, 2026-11-02). A search, a Unity trainer run or a
 re-run of a learner goes on the team's machines through Compute, never as a sweep a session runs by hand or a trainer
 session in one person's editor: a new search is a `/compute-job` (its job names its plan step), a Unity trainer run
@@ -243,7 +248,7 @@ a mode. `/arcadegame` §6.
 - **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 373 C# files (2026-11-01, `find Assets/_Scripts/Tests/Editor -name '*.cs' | wc -l`; 397 under any `Tests/` folder in `Assets/_Scripts`) covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
 - **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/`
-- **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
+- **SOAP tests**: `Assets/_Scripts/Tests/Editor/SoapCoreTests.cs` (behaviour) and `SoapFormatTests.cs` (the asset format our SOAP shares with the Obvious plugin it replaced on 2026-11-06; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP)
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
 
 ### Build & CI

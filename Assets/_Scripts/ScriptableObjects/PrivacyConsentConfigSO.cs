@@ -8,7 +8,7 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// The wording is authored data, not code, so legal or product can change what the player is
     /// told without a programmer — which matters because the disclosure has to name the processor
-    /// (PostHog, EU) and the categories sent, and that text is a release gate.
+    /// (Unity Gaming Services and Froglet's own analytics server) and the categories sent, and that text is a release gate.
     /// </summary>
     [CreateAssetMenu(fileName = "PrivacyConsentConfig", menuName = "ScriptableObjects/Analytics/Privacy Consent Config")]
     public class PrivacyConsentConfigSO : ScriptableObject
@@ -37,8 +37,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] string consentBody =
             "We'd like to collect anonymous gameplay data — which modes you play, how long you fly, " +
             "and how the game performs — to work out what to fix and what to build next.\n\n" +
-            "This is processed by Unity Gaming Services and PostHog (EU). It includes your player ID " +
-            "and display name. It is never sold, and never used for advertising.\n\n" +
+            "This is processed by Unity Gaming Services and by Froglet's own analytics server. It " +
+            "includes your player ID, your display name and the country you connect from (worked out " +
+            "from your connection, which is not stored). It is never sold, and never used for " +
+            "advertising.\n\n" +
             "You can change this any time in Settings.";
 
         [Header("Buttons")]
