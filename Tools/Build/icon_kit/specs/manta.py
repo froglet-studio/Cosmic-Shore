@@ -149,16 +149,22 @@ def crystal_faces(cx, cy, h):
     return [fill([(cx + x * h / 2, cy - y * h / 2) for x, y in f]) for f in _scarab._omni_faces()]
 
 
-def decoy(cx, cy, h, frozen=0, w=2.0):
-    """The decoy: the same crystal with ONE plate frozen - drawn as an outline, the tell a sharp eye catches."""
-    faces = crystal_faces(cx, cy, h)
+def decoy(cx, cy, h, frozen=2, w=None):
+    """The decoy: the same crystal with ONE plate frozen - drawn as an outline, the tell a sharp eye catches. The face
+    list carries the front and back plates (the same plate twice), so a plate is frozen by where it sits, not by index."""
+    w = w if w is not None else max(1.6, h * 0.05)
+    raw = _scarab._omni_faces()
+    cen = [(sum(p[0] for p in f) / len(f), sum(p[1] for p in f) / len(f)) for f in raw]
+    fx, fy = cen[frozen]
     out = empty()
-    for k, f in enumerate(faces):
-        if k == frozen:
-            out |= f & ~toy_portraits.grown(~f, w)
+    hollow = empty()
+    for f, (x, y) in zip(raw, cen):
+        m = fill([(cx + px * h / 2, cy - py * h / 2) for px, py in f])
+        if math.hypot(x - fx, y - fy) < 0.08:
+            hollow |= m
         else:
-            out |= f
-    return out
+            out |= m
+    return (out & ~hollow) | (hollow & ~toy_portraits.grown(~hollow, w))
 
 
 def fuse_ring(cx, cy, r, frac, w=4.0):
@@ -174,9 +180,9 @@ def fuse_ring(cx, cy, r, frac, w=4.0):
 # they all go off together; Charge raises the petals each bloom knocks out. L5 Contagion: anything caught in a blast is
 # bombed too. The plate is the shared FUSE (MantaVesselHUDView.SetFuse).
 
-CH_MANTA = manta(56, cx=30, cy=92)
-CH_RIVAL = rival(54, cx=84, cy=46)
-BOMBS = [(70, 34), (98, 30), (84, 66)]
+CH_MANTA = manta(50, cx=27, cy=100)
+CH_RIVAL = rival(76, cx=80, cy=48)
+BOMBS = [(62, 40), (98, 40), (80, 70)]
 
 
 def ch_bombs(n=3, r=8.5):
@@ -203,10 +209,10 @@ def a_stuck(n):
 
 def a_contagion():
     # the blast caught a second rival, which is bombed too
-    return bomb(116, 104, 7.0)
+    return bomb(110, 100, 6.5)
 
 
-A2_RIVAL = rival(30, cx=114, cy=96)
+A2_RIVAL = rival(32, cx=110, cy=104)
 
 # B  the fuse: three bombs and one ring of fuse round all of them - the clock they share.
 B_RING = (64, 64)
@@ -341,11 +347,16 @@ def sk_prisms():
 
 
 def sk_sparks():
-    # explosive: each prism wears a little burst of spikes round it
-    import motifs
+    # explosive: each prism wears a crown of short spikes standing off it - the "it will go off" mark, clear of the prism
     out = empty()
     for y in (30, 64, 98):
-        out |= motifs.burst(102, y, 20, spikes=8, inner=0.78) & ~toy_portraits.grown(prism_halves(102, y, 12, gap=2.2), 3.0)
+        for k in range(8):
+            a = math.radians(22.5 + 45 * k)
+            r0, r1 = 15.5, 21.0
+            ux, uy = math.cos(a), math.sin(a)
+            px, py = -uy, ux
+            x0, y0 = 102 + ux * r0, y + uy * r0
+            out |= fill([(102 + ux * r1, y + uy * r1), (x0 + px * 2.2, y0 + py * 2.2), (x0 - px * 2.2, y0 - py * 2.2)])
     return out
 
 
@@ -439,4 +450,181 @@ CARDS += [
                  ("Time 3: faster", [("m", "domain")]),
                  ("Time 5: Soar", [("m", "domain"), ("s", "white")])],
          lockup_state=1),
+]
+
+
+# ==== Round 3 in the game: the picks (Garrett, 2026-11-07: "do all of the icons ... treat each icon as an excellent and
+# polished thing"; he reviews the roster at the end, so each card is the option recommended on its sheet) =====================
+# Every card is PARTS in its slot's container (rebind `pair`), tinted and shown by MantaVesselHUDView from the executor:
+#   Charge  A  the pack: the Manta, a rival wearing one bomb per planted bomb (up to three drawn), the plate the ONE fuse;
+#              Contagion (Charge 5) adds a second rival the blast has bombed.
+#   Mass    B  the trap: the decoy crystal (one plate frozen), the danger prisms it springs on a rival; at Mass 5 the omni
+#              decoy stands beside it while one is out.
+#   Space   A  explosive: the Manta skimming rival prisms that turn explosive as the energy gathers; the plate is the
+#              energy (full = one bomb); Shield Breaker (Space 5) shows the shell knocked off the middle prism.
+#   Time    A  the flat turn: the Manta and the hard corner its turn pair cuts; Soar's chevrons once Time 5 unlocks it.
+#   Omni       the cash-out: an omni crystal sets every planted bomb off at once - three blooms.
+PART_EXEMPT = {"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+               "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
+VESSEL = "Assets/_Prefabs/Spacevessels/Manta.prefab"
+VIEW = "2835891913121360755"            # MantaVesselHUDView on Manta.prefab (the row lives in the vessel prefab)
+SLOT = dict(Charge="8900000000000001015", Mass="8900000000000001025", Space="8900000000000001035",
+            Time="8900000000000001045")
+
+
+def _bomb_k(k):
+    return lambda: bomb(BOMBS[k][0], BOMBS[k][1], 9.5)
+
+
+def _rival_clear():
+    # the rival with a hairline cut round each bomb, so a white bomb never melts into the danger hull at 40 px
+    out = CH_RIVAL()
+    for x, y in BOMBS:
+        out &= ~toy_portraits.grown(bomb(x, y, 9.5), 2.2)
+    return out
+
+
+def _rival2_clear():
+    return A2_RIVAL() & ~toy_portraits.grown(a_contagion(), 1.6)
+
+
+STING_PARTS = [("StingManta", "Manta_StingManta", "stingMantaIcon", CH_MANTA, "the Manta from above (domain)"),
+               ("StingRival", "Manta_StingRival", "stingRivalIcon", _rival_clear,
+                "the rival it bombed (danger; dim with nothing planted)"),
+               ("StingBomb0", "Manta_StingBomb0", "stingBomb0Icon", _bomb_k(0), "the first bomb (white)"),
+               ("StingBomb1", "Manta_StingBomb1", "stingBomb1Icon", _bomb_k(1), "the second bomb (white)"),
+               ("StingBomb2", "Manta_StingBomb2", "stingBomb2Icon", _bomb_k(2), "the third bomb and on (white)"),
+               ("StingContagionRival", "Manta_StingContagionRival", "stingContagionRivalIcon", _rival2_clear,
+                "Contagion: a second rival caught in the blast (danger; Charge 5)"),
+               ("StingContagionBomb", "Manta_StingContagionBomb", "stingContagionBombIcon", a_contagion,
+                "Contagion: the bomb the blast gave it (white; Charge 5)")]
+
+
+def _decoy_main():
+    return decoy(56, 44, 54, frozen=0)
+
+
+def _decoy_omni():
+    # the omni decoy: smaller, up and to the right, a square plate frozen instead of the heart
+    return decoy(106, 22, 34, frozen=4) & ~toy_portraits.grown(_decoy_main(), 2.5)
+
+
+def _decoy_trap():
+    out = empty()
+    for x, y, sz in ((34, 100, 10), (58, 112, 11), (82, 98, 10), (46, 84, 8), (72, 82, 8)):
+        out |= prism_halves(x, y, sz, gap=2.0)
+    return out & ~toy_portraits.grown(_decoy_main(), 2.5)
+
+
+DECOY_PARTS = [("DecoyCrystal", "Manta_DecoyCrystal", "decoyCrystalIcon", _decoy_main,
+                "the decoy: the crystal with one plate frozen (white; dim with no decoy standing)"),
+               ("DecoyOmni", "Manta_DecoyOmni", "decoyOmniIcon", _decoy_omni,
+                "the omni decoy (white; only while one stands, Mass 5)"),
+               ("DecoyTrap", "Manta_DecoyTrap", "decoyTrapIcon", _decoy_trap,
+                "what a rival who takes it gets: danger prisms (danger)")]
+
+
+def _skim_shell():
+    # Shield Breaker: the shell knocked off - two broken arcs of the middle prism's shield flung out to the left
+    from canvas import band
+    return (band(102, 64, 27, 150, 200, w=3.2) | band(102, 64, 27, 210, 245, w=3.2)) & ~toy_portraits.grown(sk_sparks(), 1.2)
+
+
+SKIM_PARTS = [("SkimManta", "Manta_SkimManta", "skimMantaIcon", SK_MANTA, "the Manta from above (domain)"),
+              ("SkimPrisms", "Manta_SkimPrisms", "skimPrismsIcon", sk_prisms, "the rival prisms it skims (danger)"),
+              ("SkimSparks", "Manta_SkimSparks", "skimSparksIcon", sk_sparks,
+               "explosive: the spikes the skim leaves round each prism (white; brightens as the energy gathers)"),
+              ("SkimShards", "Manta_SkimShards", "skimShardsIcon", _skim_shell,
+               "Shield Breaker: a shell knocked off the prisms (white; Space 5)"),
+              ("EnergyGauge", None, "energyFill", None, "the card's plate: the skim energy, full = one bomb")]
+
+Y_MANTA_A = manta(60, cx=80, cy=48)
+YASTRI_PARTS = [("YastriManta", "Manta_YastriManta", "yastriMantaIcon", Y_MANTA_A, "the Manta from above (domain)"),
+                ("YastriTurn", "Manta_YastriTurn", "yastriTurnIcon", lambda: _clear_of(y_turn(), Y_MANTA_A(), px=2.0),
+                 "the hard corner its turn pair cuts (white; brighter as Time speeds it up)"),
+                ("YastriSoar", "Manta_YastriSoar", "yastriSoarIcon", lambda: _clear_of(y_soar(), Y_MANTA_A(), px=2.0),
+                 "Soar: the boost chevrons ahead of the nose (white; Time 5)")]
+
+for element, parts in (("Charge", STING_PARTS), ("Mass", DECOY_PARTS), ("Space", SKIM_PARTS), ("Time", YASTRI_PARTS)):
+    ICONS += [dict(name=i, element=element, act=act, draw=draw, subdir="Parts", family=False, exempt=PART_EXEMPT)
+              for _n, i, _f, draw, act in parts if i]
+
+
+def omni_cash_out():
+    # the omni crystal at the heart, every planted bomb blooming round it at once
+    import motifs as _m
+    core = crystal(64, 70, 58)
+    out = core
+    for a, r in ((-90, 21), (30, 19), (150, 19)):
+        ra = math.radians(a)
+        out |= _m.burst(64 + 46 * math.cos(ra), 70 + 44 * math.sin(ra), r, spikes=8, inner=0.5) & ~toy_portraits.grown(core, 3.0)
+    return out
+
+
+ICONS += [dict(name="Manta_OmniCashOut", element="Omni", subdir="Core", family=False, draw=omni_cash_out,
+               act="The OMNI crystal card: an omni crystal sets every planted bomb off together (one white sprite)",
+               exempt={"components": "the crystal's plates and three blooms", "gap": "the blooms stand off the crystal",
+                       "specks": "the omni crystal's small triangle plates, projected from its own mesh (as Scarab_BallForge)"})]
+
+CARDS[:] = [c for c in CARDS if not c.get("group")]   # the losers' sheets go once the pick is made
+_parts = lambda lst: {n: d for n, _i, _f, d, _a in lst if d}   # noqa: E731
+CARDS += [
+    dict(name="sting", element="Charge", before=STING_BEFORE, gauge=A_FUSE_GAUGE,
+         title="Sting (Charge, picked A): the Manta (domain), a rival (danger) wearing a bomb per plant; the plate is the "
+               "ONE fuse they share; Contagion bombs whoever the blast catches",
+         parts=_parts(STING_PARTS),
+         states=[("nothing planted", [("StingManta", "domain"), ("StingRival", "danger", 0.35)]),
+                 ("one planted", [("StingManta", "domain"), ("StingRival", "danger"), ("StingBomb0", "white")]),
+                 ("three, one fuse", [("StingManta", "domain"), ("StingRival", "danger"), ("StingBomb0", "white"),
+                                      ("StingBomb1", "white"), ("StingBomb2", "white")]),
+                 ("Charge 5: Contagion", [("StingManta", "domain"), ("StingRival", "danger"), ("StingBomb0", "white"),
+                                          ("StingBomb1", "white"), ("StingBomb2", "white"),
+                                          ("StingContagionRival", "danger"), ("StingContagionBomb", "white")])],
+         lockup_state=2),
+    dict(name="decoy", element="Mass", before=DECOY_BEFORE,
+         title="Decoy (Mass, picked B): the decoy crystal (white, one plate frozen) and the danger prisms it springs; the "
+               "omni decoy beside it at Mass 5",
+         parts=_parts(DECOY_PARTS),
+         states=[("no decoy", [("DecoyCrystal", "white", 0.3), ("DecoyTrap", "danger", 0.3)]),
+                 ("a decoy standing", [("DecoyCrystal", "white"), ("DecoyTrap", "danger")]),
+                 ("Mass 5: both standing", [("DecoyCrystal", "white"), ("DecoyOmni", "white"), ("DecoyTrap", "danger")])],
+         lockup_state=1),
+    dict(name="skim", element="Space", before=SKIM_BEFORE, gauge=ENERGY_GAUGE,
+         title="Skim (Space, picked A): the Manta (domain) skimming rival prisms (danger) that turn explosive (white); the "
+               "plate is the energy, full = one bomb; Shield Breaker knocks their shells off",
+         parts=_parts(SKIM_PARTS),
+         states=[("skimming", [("SkimManta", "domain"), ("SkimPrisms", "danger"), ("SkimSparks", "white", 0.45)]),
+                 ("a bomb's worth", [("SkimManta", "domain"), ("SkimPrisms", "danger"), ("SkimSparks", "white")]),
+                 ("Space 5: Shield Breaker", [("SkimManta", "domain"), ("SkimPrisms", "danger"), ("SkimSparks", "white"),
+                                              ("SkimShards", "white")])],
+         lockup_state=1),
+    dict(name="yastri", element="Time", before=YASTRI_BEFORE,
+         title="Yastri (Time, picked A): the Manta (domain) and the hard corner (white) its turn pair cuts; Soar's chevrons "
+               "once Time 5 unlocks the boost",
+         parts=_parts(YASTRI_PARTS),
+         states=[("cruise", [("YastriManta", "domain"), ("YastriTurn", "white", 0.55)]),
+                 ("Time 10: faster", [("YastriManta", "domain"), ("YastriTurn", "white")]),
+                 ("Time 5: Soar", [("YastriManta", "domain"), ("YastriTurn", "white"), ("YastriSoar", "white")])],
+         lockup_state=1),
+    dict(name="omni", element="Omni", title="The OMNI crystal card: the cash-out - every planted bomb blooms at once",
+         parts=dict(i=omni_cash_out), states=[("an omni crystal collected", [("i", "white")])]),
+]
+LOCKUP = dict(
+    Charge=dict(parts=_parts(STING_PARTS), state=CARDS[-5]["states"][2][1], gauge=0.6),
+    Mass=dict(parts=_parts(DECOY_PARTS), state=CARDS[-4]["states"][1][1]),
+    Space=dict(parts=_parts(SKIM_PARTS), state=CARDS[-3]["states"][0][1], gauge=0.45),
+    Time=dict(parts=_parts(YASTRI_PARTS), state=CARDS[-2]["states"][1][1]),
+    Omni=dict(parts=dict(i=omni_cash_out), state=[("i", "white")]),
+)
+REBIND = [
+    dict(file=VESSEL, pair=dict(container=SLOT["Charge"], view=VIEW, after="fuseText",
+                                children=[(n, i, f) for n, i, f, _d, _a in STING_PARTS])),
+    dict(file=VESSEL, pair=dict(container=SLOT["Mass"], view=VIEW, after="fuseText",
+                                children=[(n, i, f) for n, i, f, _d, _a in DECOY_PARTS])),
+    dict(file=VESSEL, pair=dict(container=SLOT["Space"], view=VIEW, after="fuseText",
+                                children=[(n, i, f) for n, i, f, _d, _a in SKIM_PARTS],
+                                binding=dict(element=3, gauge="EnergyGauge"))),
+    dict(file=VESSEL, pair=dict(container=SLOT["Time"], view=VIEW, after="fuseText",
+                                children=[(n, i, f) for n, i, f, _d, _a in YASTRI_PARTS],
+                                fields={"omniAbilitySprite": ("icon", "Manta_OmniCashOut")})),
 ]
