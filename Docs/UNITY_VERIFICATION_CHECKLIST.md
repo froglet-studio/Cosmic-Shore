@@ -21488,6 +21488,36 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh
+--self-test`) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/THORNLINE.md` §7:
+
+1. Open `MinigameThornline` once and save it (a text clone); then `python3 Tools/Build/author_thornline_assets.py --check`.
+2. Run the EditMode tests `ThornlineCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: 17 thorns stand where the rings' lines meet; sling start thorn -> thorn 1 -> ...; every ring counts.
+4. The 32 u thorns at I4 can be hit with the eyepiece from ~1,000 u.
+5. I2: a rim shot takes the Time crystal and the sling is ready on docking.
+6. I3: a snipe threads both rings and counts both.
+7. Two AI Shrikes sling thorn to thorn and finish (note the aim error if they crawl).
+## 🔴 Headlong: the stampede, hedges the Rhino ploughs through (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tools/Build/headlong_course_harness/run.sh
+--self-test`, 9 pass, 4 negative controls fire); the race model is `Tools/Build/headlong_stampede_model.py`
+(`HEADLONG.md` §0).
+
+1. **Open and save `MinigameHeadlong` once** (the controller gained `hedgePrefab` and the stampede fields), then
+   `python3 Tools/Build/author_headlong_assets.py --check` adopts it.
+2. **I1, two Rhinos.** Four hedges stand across the longest straights. Holding the line, a hedge sprays aside and the
+   speed readout does not drop. The log has `[Headlong] STAMPEDE intensity 1: 4 hedges (0 danger), 0 Time crystals.`
+3. **Next lap:** every hedge stands whole again (they re-stand 2.5 s after the last hull leaves).
+4. **I2:** two Time crystals sit just inside the tightest corners; taking one raises the Time card a level.
+5. **I3:** three wide red hedges each have a round plain window off-centre. Ploughing one drops every element a level
+   (one burn per hedge, not one per slab); flying the window costs nothing. An AI Rhino swerves for the window on laps
+   1-4 and ploughs on lap 5.
+6. **I4:** the race starts at Time 5. Leave a hairpin fast and the red hedge after it sprays aside with no burn
+   (Momentum, the Time card flashes); leave it slow and you are burned to Time 4.
+7. **Frame time** with four Rhinos at I3 (about 2000 hedge slabs): no worse than Switchback I2.
 ## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21
@@ -21535,3 +21565,23 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
+
+## 🔴 Manta ability icons, round 3 (2026-11-07, Garrett, NOT COMPILED, NOT RUN IN EDITOR)
+
+Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's container (`unity_refcompile` stopped at
+"no .NET runtime"), and no editor was open. Changed C#: `MantaVesselHUDView` (part fields, `SetDomainColor`, `SetDecoys`,
+`SetAbilityUpgraded` override), `MantaHUDController` (domain colour, decoy poll), `MantaStingActionExecutor`
+(`HasElementalDecoy`, `HasOmniDecoy`). Prefab: `Manta.prefab`'s four slot icons became containers of parts.
+
+1. **Compile** (player + editor); open `Manta.prefab` and check the view's new part fields are all bound (no Missing).
+2. **Charge card**: fly the Manta in the Toybox; skim a rival to plant: the rival on the card turns full danger, one bomb
+   appears per plant (three drawn at most), the plate drains as the shared fuse burns; at Charge 5 the second rival and
+   its bomb show while anything is planted.
+3. **Mass card**: collect an elemental crystal: the decoy crystal and its danger prisms brighten while the decoy stands,
+   and dim when it is taken or expires; at Mass 5 collect an omni crystal: the small omni decoy appears.
+4. **Space card**: skim prisms: the plate fills with energy (full = one bomb) and the spikes round the prisms brighten;
+   hitting a prism empties both. At Space 5 the knocked-off shell shows.
+5. **Time card**: below Time 5 no chevrons; at Time 5 Soar's chevrons appear ahead of the nose.
+6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
+7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
+

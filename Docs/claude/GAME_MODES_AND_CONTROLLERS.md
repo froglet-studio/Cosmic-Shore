@@ -953,6 +953,13 @@ slings** (AIPilot writes no trigger) and races at cruise — an autopilot sling 
 Grizzly Time's scene). See `_Scripts/Controller/Arcade/THRESHERTIME.md`. Authored headless — not yet
 run in the editor.
 
+`Thornline(79)` is the **Shrike's Time race** (2026-11-07): a chain of thorns (one big block each) with a ring at
+the middle of every leg, raced with the Void Sling (one second at any distance, then the reload; x1.6 docked on a plain
+thorn, x2.5 on super-shielded). I2 adds plain thorns and rim-line Time crystals, I3 snipes through two rings, I4 the
+smallest thorns. Every peer rebuilds the thorns from the broadcast rings. `ThornlineController : GateRaceController`,
+`ThornlineCourse`, `ThornlineCourseTests` (offline: `Tools/Build/thornline_course_harness/`), generator
+`author_thornline_assets.py` on `hull_time_race.py`. See `_Scripts/Controller/Arcade/THORNLINE.md`. Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -1402,6 +1409,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── GateRaceController (abstract)         — the shared gate-race platform: course broadcast, rings, crossing detection, the owner-detects/server-records round trip, AI steering, final scores. A subclass supplies its NAME, its COURSE, whether that course WRAPS, and how many rings at the front are a LEAD-IN the laps skip (`LeadInGates`, default 0 — a closed circuit cannot start fairly on its own). It also offers **`OnServerTick`** — a named hook rather than a `virtual Update`, because `Update` is a Unity MESSAGE and a subclass declaring its own would HIDE the base's and take crossing detection down with it, silently (Waystation's autopilot fold is its one caller)
             ├── SwitchbackController              — Dolphin-only gate race; an OPEN chain flown once
             │   └── ScarabRallyController         — Scarab-only ring race (the Scarab's Time card, no ball); Switchback's walk cut for throttle, drift and juke
+            │   └── ThornlineController           — Shrike-only sling race (the Shrike's Time card): thorn to thorn through a ring a leg
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between
