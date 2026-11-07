@@ -99,4 +99,21 @@ htr.author(dict(
     preview_notes="OPEN-ENDED, shell-only: the thorn chain (ThornlineCourse) is laid at match start from the rings, so a preview has no thorns. It teaches the sling, the reload and the snipe.",
     build_after="MinigameBrittleStarTime",
     extra_errors=_errors(),
+    # Thresher Time's nest fields, which the donor grew after Thornline was cloned (ThornlineController has none).
+    donor_tail="""  nestPrefab: {{fileID: 4563009547826722997, guid: {prism}, type: 3}}
+  creditRadiusByIntensity:
+  - 320
+  - 280
+  - 240
+  - 200
+  regrowSecondsByIntensity:
+  - 3
+  - 3
+  - 2.5
+  - 2
+  nestBurstPerFrame: 48
+  nestBurstSpeed: 40
+  nestRegrowPerFrame: 40
+  crystalEveryNthTarget: 3
+""".format(prism=SPAWNABLE_PRISM),
 ))

@@ -835,21 +835,6 @@ MonoBehaviour:
   thornRegrowSeconds: 3
   crystalRegrowSeconds: 5
   aiTakesSnipes: 1
-  nestPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  creditRadiusByIntensity:
-  - 320
-  - 280
-  - 240
-  - 200
-  regrowSecondsByIntensity:
-  - 3
-  - 3
-  - 2.5
-  - 2
-  nestBurstPerFrame: 48
-  nestBurstSpeed: 40
-  nestRegrowPerFrame: 40
-  crystalEveryNthTarget: 3
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0
