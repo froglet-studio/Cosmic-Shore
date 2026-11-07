@@ -292,6 +292,12 @@ silhouettes** (bomb / turn arrow / bloom / chevrons —
 `Tools/Build/author_manta_icon_placeholders.py`, 128 px white-on-transparent at
 `_Graphics/Icons/AbilityIcons/Manta/`) so the cards read before the art pass replaces them 1:1.
 
+**The 2026-11-07 icon pass** replaced the placeholders with kit parts (`Tools/Build/icon_kit/specs/manta.py`,
+`Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` §8): Sting draws a rival wearing a bomb per plant on the shared-fuse plate, Decoy
+the decoy crystal and its trap, Skim the explosive prisms over the energy plate (`energyFill` is now the Space card's
+gauge), Yastri the hard turn with Soar's chevrons at Time 5; the omni card is the cash-out. The view tints the parts
+(the Mantas in the domain colour, rivals and the trap in danger) and shows them from the executor's state.
+
 ## 6a. The feel of the loop (the 2026-08-26 juice pass)
 
 The loop was mechanically complete and read as nothing happening: skims paid into an

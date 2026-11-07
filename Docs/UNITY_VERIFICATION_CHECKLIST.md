@@ -21558,3 +21558,23 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
+
+## 🔴 Manta ability icons, round 3 (2026-11-07, Garrett, NOT COMPILED, NOT RUN IN EDITOR)
+
+Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's container (`unity_refcompile` stopped at
+"no .NET runtime"), and no editor was open. Changed C#: `MantaVesselHUDView` (part fields, `SetDomainColor`, `SetDecoys`,
+`SetAbilityUpgraded` override), `MantaHUDController` (domain colour, decoy poll), `MantaStingActionExecutor`
+(`HasElementalDecoy`, `HasOmniDecoy`). Prefab: `Manta.prefab`'s four slot icons became containers of parts.
+
+1. **Compile** (player + editor); open `Manta.prefab` and check the view's new part fields are all bound (no Missing).
+2. **Charge card**: fly the Manta in the Toybox; skim a rival to plant: the rival on the card turns full danger, one bomb
+   appears per plant (three drawn at most), the plate drains as the shared fuse burns; at Charge 5 the second rival and
+   its bomb show while anything is planted.
+3. **Mass card**: collect an elemental crystal: the decoy crystal and its danger prisms brighten while the decoy stands,
+   and dim when it is taken or expires; at Mass 5 collect an omni crystal: the small omni decoy appears.
+4. **Space card**: skim prisms: the plate fills with energy (full = one bomb) and the spikes round the prisms brighten;
+   hitting a prism empties both. At Space 5 the knocked-off shell shows.
+5. **Time card**: below Time 5 no chevrons; at Time 5 Soar's chevrons appear ahead of the nose.
+6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
+7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
+
