@@ -366,4 +366,4 @@ The pair's network replication (the press/release edges round-trip, so a peer la
 the replicated pose, but the two copies are not one object); ~~a touch binding (Steam is the target; the executors answer
 the autopilot's squeeze, nothing presses for a touch pilot)~~ done 2026-10-21 (§4a), an analog squeeze on a phone (a
 held button is a key: the dipole at `keySqueeze`, the orbit by hold time); the mode as replicated STATE rather than replicated presses
-(`STOAT_DIPOLE.md` §8 D6); final art for the four ability icons (placeholders) and FMOD events (every slot ships empty).
+(`STOAT_DIPOLE.md` §8 D6); ~~final art for the four ability icons (placeholders)~~ drawn 2026-11-07 for the orbit-only kit (`Tools/Build/icon_kit/specs/stoat.py`, parts painted by `StoatHUDView.RefreshParts`), and FMOD events (every slot ships empty).

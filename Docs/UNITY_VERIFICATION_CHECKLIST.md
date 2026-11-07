@@ -109,6 +109,85 @@ NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
 6. Upgrade each element to 5. **Pass:** Charge shows the long spray and a generation deeper; Mass rims the trail;
    Space runs the rail further; Time turns the trail orange with speed lines while slipping.
 
+### 🔴 Thresher ability icons in parts, energy gauge in the domain (`claude/thresher-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Thresher's four cards drawn from the real shark in parts under each slot icon of
+`ThresherHUDVariant.prefab`, painted by `ThresherHUDView.RefreshParts` from `ThresherExecutor.IsHot`, the new
+`InMassMode`, `RightTriggerDepth` and `IsPivoting`; the omni card `Core/Thresher_Windmill.png`; the Space plate fills
+toward the domain instead of the CTA lime.
+
+**Verified without the editor:** `author.py thresher --check` no drift; `author_thresher_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py` and `check_console_logging.py` clean. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ThresherHUDView.cs`, `ThresherHUDController.cs` or `ThresherExecutor.cs`.
+2. Fly the Thresher in the Toybox (it spawns in Mass Mode). **Pass:** every shark on the cards wears the domain; the
+   Mass card's ball is in the domain over a solid row.
+3. Press A to leave Mass Mode, whip the ball to smash speed. **Pass:** the Mass card's ball turns white and its row
+   faint; the Charge card's ball goes orange and the prism splits round a white blast.
+4. Pull RT, then release. **Pass:** the Space card's chain runs straight with a swing arc, and sags when released; the
+   plate fills toward the domain (no lime).
+5. Hold LT to plant. **Pass:** the Time card's orbit goes solid with the chain to the pivot.
+6. Upgrade Charge, Mass and Space to 5. **Pass:** Magnet's arcs, Armoured Trail's rims and Breaker's square prism show.
+
+### 🔴 Shrike ability icons in parts, the selected mode in the domain (`claude/shrike-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Shrike's four cards drawn from the real hull in parts under each slot icon of
+`ShrikeHUDVariant.prefab`, painted by `ShrikeHUDView.RefreshParts` from `ShrikeExecutor.Painting`/`Locked`, `Docked`,
+`FloraCount`, the new `Lancing`, `Tethering` and `Slinging`; the omni card `Core/Shrike_OmniCrystal.png`; the selected
+mode's gauge and the missile count turn the pilot's domain instead of the CTA lime (`readyColor` white on the prefab).
+
+**Verified without the editor:** `author.py shrike --check` no drift; `author_shrike_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py`, `check_console_logging.py` clean; `author_shrike_assets.py
+--check` shows only its three sparse-checkout findings (network prefabs, card metas), as before. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ShrikeHUDView.cs`, `ShrikeHUDController.cs` or `ShrikeExecutor.cs`.
+2. Fly the Shrike as Jade, then Gold. **Pass:** every Shrike on the cards wears the domain; the selected mode's gauge is
+   the domain, never lime.
+3. Charge mode, hold RT on a target with a missile ready. **Pass:** the reticle goes solid and two missiles show.
+4. Touch a block to dock, then press A. **Pass:** the Mass cup goes solid while docked; after the nest is built a flora
+   with a missile stands on it.
+5. Space mode, hold RT. **Pass:** the beam shows and the prism splits; at Space 5 the square block is cut by the beam.
+6. Time mode, RT at an anchor. **Pass:** the tether goes solid and the blocks behind the Shrike show while slinging.
+
+### 🔴 Stoat ability icons for the orbit-only kit (`claude/stoat-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Stoat's four cards redrawn for Yash's orbit-only kit in parts under each slot icon of
+`StoatHUDVariant.prefab`, painted by `StoatHUDView.RefreshParts` from `StoatSlingExecutor.HasPair`/`IsHoldingAny`,
+`IsOrbiting`, `Timing01` and the new `SinceLaunch`; the omni card `Core/Stoat_Fulmen.png`; the Time card's window colour
+is the pilot's domain, not the CTA lime (`readyColor` white on the prefab). Affects: Yash's Stoat HUD.
+
+**Verified without the editor:** `author.py stoat --check` no drift; `author_hull_ability_rows.py --check`,
+`check_ui_colors.py`, `check_console_logging.py` clean; `author_stoat_assets.py --check` shows only its sparse-checkout
+findings. NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `StoatHUDView.cs`, `StoatHUDController.cs` or `StoatSlingExecutor.cs`.
+2. Fly the Stoat as Jade, then Gold. **Pass:** every Stoat on the cards wears the domain; the old mode icon does not
+   show on the Mass card.
+3. Hold LT to lay a pair and get caught. **Pass:** the Charge card's ripple and the Space card's pair go solid, the
+   orbit ring shows; the Time card's Stoat rides the orbit and its window lights in the sweet spot.
+4. Let go. **Pass:** the Time card's Stoat flies off the tangent with speed lines; the Mass card's kick and wake show
+   for about a second.
+5. Upgrade each element to 5. **Pass:** Siphon's dots, Armoured Wake's rims, Accretion's prism and Foresight's path show.
+
+### 🔴 Goby & Pistol ability icons, the roster pass (`claude/goby-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the eight seat icons under `Assets/_Graphics/Icons/AbilityIcons/Goby/` redrawn from the real hulls
+(guids kept), and `GobyHUDVariant.prefab`'s `omniAbilitySprite` set to `Core/Goby_OmniCrystal.png`. No C# changed.
+
+**Verified without the editor:** `author.py goby --check` no drift; `author_goby_hud.py --check` and `--self-test` ok.
+NOT run: Unity, a play. `author_goby_assets.py --check` could not run here (the sparse checkout has no
+`DefaultNetworkPrefabs.asset`).
+
+**Verify in editor:**
+1. Fly the Goby & Pistol in the Toybox. **Pass:** the four cards show the Goby drawings (its hull, not brackets and arrows).
+2. Swap to the Pistol. **Pass:** the four cards show the shrimp drawings; swap back and the Goby's return.
+3. Collect an omni crystal. **Pass:** the omni card shows the omni crystal.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.
