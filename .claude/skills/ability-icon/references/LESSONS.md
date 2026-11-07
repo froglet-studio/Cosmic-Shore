@@ -582,3 +582,23 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     body (`_place`) and starts the chain's round links at the cut, so the shark fills its corner and the tail still
     reads as the first links. The same cut serves a top view (Plant, Windmill).
 
+
+## 2026-11-07 - the roster pass: stale kits, stale motifs, many vessels in one go
+
+88. **Read the hull's CURRENT element map before you judge its row, not the icon plan.** Three rows looked finished and
+    were wrong: the Stoat drew a retired mode switch, the Jacks drew Breeding / Herding Ring / Herd Speed two rounds after
+    round 10 made them The Call / Wide / Decoys, and the Goby & Pistol were the generator's placeholders. The design doc
+    (`R_VesselActions/<HULL>.md`, the duo design) names each card; match every card to it first.
+89. **A motif change is a change to every spec that draws it: run `author.py --all --check` after one.** The rhombus
+    recut turned `motifs.prism` into two triangles, and the Honeyguide's eight sprites kept the rhombus for a week because
+    nobody re-authored them; its `--check` was red the whole time. The two halves also count as two pieces, so a spec
+    with several prisms fails `components`: draw a prism that must stay one piece as a square whose X stops short of
+    the corners (`specs/honeyguide.prism`).
+90. **When the kit takes over a hull generator's PNGs, keep its guids and stop it writing them.** `author_goby_hud.py`
+    and `author_jacks_icons.py` drew their own placeholders; each now keeps its metas (and the variant, or its guid
+    check) with `KIT_OWNS_PNGS = True`, so its `--check` stays a gate instead of fighting the kit. To rename a card's
+    file, `git mv` the PNG and its `.meta` together: the guid moves with it and every binding holds.
+91. **Compose on the whole canvas, then `fit()` into the optical box** (`specs/goby.fit`, 0.84 about the centre) only
+    when the parts are few and bold; a busy scene shrunk to 104 px loses the 40 px read. When a fitted card fails
+    `coverage` or `at40`, redraw it with fewer, bigger things rather than nudging sizes (the Jacks' Call went from six
+    creatures to three).

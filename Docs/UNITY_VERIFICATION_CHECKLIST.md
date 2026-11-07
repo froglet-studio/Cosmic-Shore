@@ -174,6 +174,20 @@ findings. NOT run: the reference compile (no .NET in the cloud container), Unity
    for about a second.
 5. Upgrade each element to 5. **Pass:** Siphon's dots, Armoured Wake's rims, Accretion's prism and Foresight's path show.
 
+### 🔴 Goby & Pistol ability icons, the roster pass (`claude/goby-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the eight seat icons under `Assets/_Graphics/Icons/AbilityIcons/Goby/` redrawn from the real hulls
+(guids kept), and `GobyHUDVariant.prefab`'s `omniAbilitySprite` set to `Core/Goby_OmniCrystal.png`. No C# changed.
+
+**Verified without the editor:** `author.py goby --check` no drift; `author_goby_hud.py --check` and `--self-test` ok.
+NOT run: Unity, a play. `author_goby_assets.py --check` could not run here (the sparse checkout has no
+`DefaultNetworkPrefabs.asset`).
+
+**Verify in editor:**
+1. Fly the Goby & Pistol in the Toybox. **Pass:** the four cards show the Goby drawings (its hull, not brackets and arrows).
+2. Swap to the Pistol. **Pass:** the four cards show the shrimp drawings; swap back and the Goby's return.
+3. Collect an omni crystal. **Pass:** the omni card shows the omni crystal.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.
@@ -21588,6 +21602,70 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Breach: the Orca's Time race (2026-11-07, branch `claude/orca-convoy`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/breach_harness/run.sh --self-test`:
+10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/BREACH.md` §8:
+
+1. Open `MinigameBreach` once and save it (a text clone); then `python3 Tools/Build/author_breach_assets.py --check`.
+2. Run the EditMode tests `BreachCourseTests` and `EnumIntegrityTests`.
+3. I1, one Orca with AI crew: hold the burn and the tank empties and stays empty; let go and it refills.
+4. I2: a burn into a hard turn swings wide of the ring; coasting it makes the ring.
+5. I3: walls stand before every other ring, rounded on the inside of the turn; flying into one stops the hull dead. The
+   gunners shoot a breach and it grows back 6 s later. I4: a wall on the ring after each hard turn, never meeting one.
+6. Two AI Orcas burn the straights, coast the turns and the walls, and finish (note any wall an AI hits).
+7. Outside the race: an AI Orca in any other mode flies exactly as before (its coach is null there; it never burns).
+8. MPPM two clients: both see the same walls.
+
+## 🔴 Slip Line: the Honeyguide's Time race (2026-11-07, branch `claude/honeyguide-slip-line`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/slip_line_harness/run.sh
+--self-test`: 10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/SLIP_LINE.md` §8:
+
+1. Open `MinigameSlipLine` once and save it (a text clone); then `python3 Tools/Build/author_slip_line_assets.py --check`.
+2. Run the EditMode tests `SlipLineCourseTests` and `EnumIntegrityTests`.
+3. I1, one Honeyguide with an AI Ratel: three rails a leg in Ruby, Jade and Gold. With a charge, fly onto that colour's
+   rail nose along it: the hull zips to just past the ring, the ring counts, the charge goes. Ring to ring without a
+   slip never touches a rail.
+4. I2: one rail a leg, stubs visibly short. I3: rails lean off the line; a turn out early catches one inside the cone.
+5. I4: a chain's first ride lands on the second rail and rides on through the next ring when both colours are held.
+6. Two AI Honeyguides ride rails and finish (note any that circles a rail without catching it: `aiRailLead`).
+7. Outside the race: a Honeyguide in the Toybox slips and hunts exactly as before (its coach is null there).
+8. MPPM two clients: both see the same rails in the same colours.
+
+## 🔴 Perch Run: the Goby's Time race (2026-11-07, branch `claude/goby-perch-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/perch_run_harness/run.sh
+--self-test`: 10 pass, 7 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/PERCH_RUN.md` §8:
+
+1. Open `MinigamePerchRun` once and save it (a text clone); then `python3 Tools/Build/author_perch_run_assets.py --check`.
+2. Run the EditMode tests `PerchRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: hold the dart; the new reach ring slides out along the nose and the Goby stops on it. A dart through a ring
+   counts it.
+4. I2: a full charge through a hairpin leaves the next ring out of reach; a judged charge turns it in one dart.
+5. I3: coral heads stand on their legs; a dart at the centre stops on the head (the reach ring sits on it); a rim shot
+   threads. I4: a double darted on the right line counts both rings.
+6. Two AI Gobys dart ring to ring and finish (note any that turns in place or cruises).
+7. Outside the race: a Goby in the Toybox darts and its AI lays islands exactly as before (the coach is null there);
+   the reach ring shows while charging.
+
+## 🔴 Decoy Run: the Jacks' Time race (2026-11-07, branch `claude/jacks-decoy-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/decoy_run_harness/run.sh
+--self-test`: 10 pass, 8 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/DECOY_RUN.md` §8:
+
+1. Open `MinigameDecoyRun` once and save it (a text clone); then `python3 Tools/Build/author_decoy_run_assets.py --check`.
+2. Run the EditMode tests `DecoyRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: rings and chalk rails on one flat; herd past a ring, drop the decoy, centre the jacks behind it on the new
+   white take-off mark, take off, travel: the ring counts. Taking off THROUGH a ring does not count it.
+4. I2: one travel down a skewer counts both rings. I3: roll onto the next flat; the skewer lies on the board.
+5. I4: the hull starts with two decoys; the second travel doubles back through the hairpin and counts it.
+6. Two AI Jacks herd, take off and travel cycle by cycle and finish (note any jack that stops short of its waypoint).
+7. Outside the race: a Jacks in the Toybox herds and travels exactly as before (the coach is null there).
+
 ## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
 
 Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh
@@ -21666,6 +21744,76 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
 
+## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
+
+**Plan:** `Docs/Voyages/DEPTH.md`. **Files:** `Data/Voyages/*` (`VoyageEnums`, `VoyageContent`, `VoyageState`,
+`VoyageRules`, new `VoyageWorld` and `VoyageRivals`; pure, 41 edit-mode tests green headless in
+`Tools/Build/voyage_depth_harness`), `Controller/Voyages/VoyageRun.cs` (verbs, the leg's pacing, hostile worlds, rival
+hulls at the stop, the race clock, chronicles, relics), `VoyageHarbour.cs` (the crew fills the board; `GalaxyState`),
+`UI/Views/VoyageJobsView.cs` (`{role}`, `{warnings}`, the job's own pay and intensity, the sea-today beat, the map's
+visibility), `VoyageMapGraphic.cs` (`Visible`, `IsDrawn`, colours for the new experiences), `VoyageEdgeGraphic.cs`,
+`VoyageMapSky.cs`, `ScriptableObjects/Voyages/VoyageContentSO.cs` (new lines) and `VoyageToyDefinitionSO.cs` (cull and
+observe radii, rival abeam, colours), `Data/Inventory/FactionCatalog.cs` (every type recruits). Assets from
+`author_voyage_assets.py` (`VoyageContent.asset`, `Toy_Voyage.asset`, the twin `Docs/Voyages/voyage_content.json`).
+Affects: Shombith's Voyage window (tokens and one visibility rule, no layout change), Garrett's squad layer (chronicle
+lines, a relic's name on its record). The reference compile has 0 errors in the changed files (the 21 remaining are
+the compile environment's missing Cinemachine and UGS packages, the same as on `bleeding-edge`).
+
+1. Run `VoyageRulesTests`, `VoyageDepthTests`, `AccountInventoryTests`, `PilotsAndArtifactsTests`. **Pass:** green
+   (`VoyageDepthTests.TheDepthScorecardHoldsItsBars` prints the scorecard to the test output).
+2. Menu_Main, open the Voyage window with a squad of three different faction types seated. **Pass:** about six voyage
+   cards (the seated pilots' first, the crew's after, then the way home when away); 25 places on the map in six marker
+   colours (ports, vaults and the hoard, cores, lairs and the pens, nurseries, shrines and derelicts); Cinder Shoal,
+   the Pale Anchorage and Keeper's Rest are NOT drawn. Open a card: SUITS a role, PAYS the course's price (farther and
+   rougher pays more), and warning lines where the world has them.
+3. Day 0 at a harbour: every faction type on the crew brings a job (seat each type in turn). **Pass:** a pilot of every
+   type has a card somewhere on the board over a few openings; the Leviathan's sighting is in the news of every port
+   (a Known hunter's board offers the hunt first).
+4. Set sail on a hunt to Lantern Reach with the Lantern Keeper's first chapter (the card whose news names half a chart).
+   **Pass:** the leg's open cells are thicker in the middle than at the ends (the lane profile); at the stop the vault
+   shells stand; stow one; "JOB DONE" and the chapter's done line; back in the window the second chapter (an
+   explorer's, to Keeper's Rest) is posted and the place is still not drawn.
+5. Sail the explorer's chapter. **Pass:** the Ark reaches Keeper's Rest; "KEEPER'S REST IS ON YOUR CHART"; the place is
+   drawn from now on and the priest's finale is offered once the Priest type is Known (two priest jobs done).
+6. Sail the finale (a vigil: hold the Ark at the beacon 40 s). **Pass:** "LANTERN OF ORIEL IS ABOARD"; the relic rides
+   in the Ark's hold (GALLEON's sight shows it); dock at home: the Ark's ARTIFACTS tab shows a Hydra named Lantern of
+   Oriel with its lore; the saga is never posted again.
+7. A lair (The Maw or Gnawreach) with a hunter's cull. **Pass:** the lair's world starts under the other domain's colour
+   and thick with creatures; "FELLED n OF 5" counts creatures felled near the Ark; done at 5; pressure eases (the next
+   board's warning for that place is gone).
+8. A nursery with a gatherer's harvest or a sport exhibition. **Pass:** "GATHERED n OF 12 CRYSTALS" counts the whole
+   squad's crystals; done at the goal. A preservationist's tend: "HOLDING" counts down; a kill by any seat undoes it.
+9. A derelict with a first responder's rescue, a shrine with a priest's vigil, a core with an aristocrat's hold.
+   **Pass:** each holds while you stay with the Ark; a convoy ("KEEP THE HULL ABOVE 60 PERCENT") is done on arrival
+   only with the hull above the floor.
+10. Rivals. Sail where a rival crew stands (the board's warning "<crew> WERE SEEN BOUND FOR <place>" names it).
+    **Pass:** three AI hulls in the crew's domain stand abeam of the Ark; "<CREW> ARE HERE" and the relation line; a
+    crew of your colour fights beside you; another colour's grazes your mass. At a vault field with a racing crew a
+    shell is retired every 45 s with "<CREW> OPENED A SHELL BEFORE YOU", and the next board's story says so.
+11. Notoriety: three pirate or thief jobs. **Pass:** every card warns "A PRICE IS ON YOUR ARK"; a bounty-hunter crew
+    (Writ and Hook) sails for your destination within a few days; the price fades three days a point.
+12. Two finds aboard away from home. **Pass:** cards warn "2 FINDS ABOARD AND AT STAKE"; the nearest port's news has
+    the rumour; a pirate crew at that port sails for you. Let the Ark fall to them: "<CREW> TOOK YOUR ARK AT ..."; the
+    logbook's nemesis is set (the story line names them).
+13. Leave the game for a day and come back. **Pass:** the galaxy moved: a picked field is lit again (news at the
+    nearest port), rivals stand elsewhere, blooms ripened.
+14. A record saved before this pass (the slice's). **Pass:** it loads, every place and rival is filled in, the saved
+    job still works (a saved hunt asks a stow), nothing is ticked twice.
+15. The Arkway (Wander > With Ark) and the Ark escort. **Pass:** unchanged (the escort's roles now read their host through
+    `IArkEscortHost`; the escort sim's numbers at d3 and d4 are within the noise of `Docs/Voyages/ARK_ESCORT.md` §4).
+16. Wingmates on a voyage (round 2). Seat a Sparrow and a Squirrel beside you and sail a lair. **Pass:** the Sparrow hunts
+    the hostile creatures nearest the Ark instead of hovering at its flank, the Squirrel cultivates the nucleus when the
+    threats are few, both come back to the flank when they range past the leash, and both are taken back when the voyage
+    ends; the escort sim is unaffected.
+17. Do the same job twice on different days (two hunts at Lantern Reach). **Pass:** the story line reads differently
+    the second time (several authored ways to say it); the open card's brief shows STANDING (a stranger, known or
+    trusted, by the pilot's faction) and its Story level ends with YOUR LOG once a voyage has been sailed.
+18. FrogletTools > Voyages > Depth Scorecard (headless, 40 galaxies). **Pass:** the console prints the scorecard in a few
+    seconds with "BARS: all hold". FrogletTools > Voyages > Forget This Machine's Galaxy (dev), then open the Voyage
+    window. **Pass:** the board is a new galaxy's (the seed news, every rival at home); finds already docked are kept.
+19. Dock at home while a rival crew stands at your harbour (set one there with the Forget tool's new galaxy and a day's
+    sailing, or trust `VoyageDepthTests.NoRivalIsMetInAHarbour`). **Pass:** no rival hulls stand in home water.
+
 ## 🔴 Manta ability icons, round 3 (2026-11-07, Garrett, NOT COMPILED, NOT RUN IN EDITOR)
 
 Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's container (`unity_refcompile` stopped at
@@ -21728,3 +21876,62 @@ files; 21 errors elsewhere on bleeding-edge that predate this). EditMode tests n
 - [ ] Run `StoatSlingTests` (the new `TrampolinePress_*` test).
 - [ ] With the trained rows in `StoatSlingConfig_Slingshot` (report section 5, restart C): AI Stoats race Slingshot I1-I4,
       finish, miss few rings, never fly far off the course (model: 62-71 s).
+
+## 🔴 Look sheet: first run (2026-11-07, `cece/affectionate-fermi-x1lp81`, compiled with `unity_refcompile --config editor`, NOT RUN IN EDITOR)
+
+The look-sheet kit (`Docs/LOOK_SHEET.md`, `Docs/SKILL_TRAINING_PLAN.md` 3.1): `Assets/_Scripts/Editor/Look/LookSheetCapture.cs`
+and `LookSheetLauncher.cs` (editor assembly), `Tools/Build/unity_look/{look,verify,sheet}.py`, `Tools/CI/unity_look_in_container.sh`,
+`.github/workflows/look-sheet.yml`, `.claude/skills/unity-look/SKILL.md`.
+
+**Verification status.** `bash Tools/Build/unity_refcompile/run.sh --config editor` compiled both files later the same
+night (a .NET 8 root assembled from nuget.org packages, `Tools/Build/unity_refcompile/dotnet_from_nuget.py`, after the
+installers were refused by the proxy): `gated: the 2 changed since origin/bleeding-edge: LookSheetLauncher.cs,
+LookSheetCapture.cs` and `0 in files changed since origin/bleeding-edge` (the run's 21 errors are the known Vivox /
+Moderation reference gaps of the sandbox, in files this branch does not touch). Negative control: a `static int
+_negativeControl = "not an int";` planted in the launcher was reported as `CS0029 ... (1 in files changed)`, then
+removed. `check_console_logging.py` and `check_conditional_compilation.py` pass. No editor was open: NOT RUN. The
+refcompile's UnityEditor reference is 2021.1, so a Unity 6 editor-API removal would not show; every UnityEditor member
+used is also used by merged editor files. They were written against the APIs read in `SwitchbackSoakLauncher`, `SwitchbackSoakRunner`,
+`ThresherTimeSoakRunner`, `ScreenSwitcher` (the public `OnClick*Nav` methods), `PrivacyConsentOverlay.Current`,
+`AuthenticationSceneController` (reflection, as the soak runners do), `GameDataSO` (`CosmicShore.Utility`), and the
+`FrogletTool` attribute. The Python kit's `--self-test` passes (verify's blank-frame negative controls, sheet's layout,
+look's command line). The workflow YAML parses.
+
+**The first run** (`Docs/LOOK_SHEET.md` section 4):
+1. Open the project; the reference compile passed, so a compile error here would be a Unity 6 editor-API difference.
+2. `FrogletTools > Build > Look Sheet > Menu screens`. Expect `Logs/LookSheet/menu_<screen>_pc.png`, `_phone.png` and
+   `_gameview.png` for Home, Hangar, Port, Profile and Codex, plus `manifest.jsonl` and `summary.json` with `ok: true`.
+   Compare the render-to-texture capture with the Game view one: the UI must be present on both (if not, the
+   overlay-canvas retargeting needs the children's layers), and the world too (if not, the menu camera is stacked).
+3. Headless, editor closed: `python3 Tools/Build/unity_look/look.py menu HOME` (needs Pillow). Expect `LOOK SHEET: ALL OK`
+   and `sheet.jpg`.
+4. **Negative control:** the same command with `-nographics` added to the Unity line (`--print` shows it). Expect every
+   capture to FAIL the `not-blank` gate and exit 1.
+5. `python3 Tools/Build/unity_look/look.py mode switchback --times 5,15,30`: three frames of the Dolphin's race with the
+   HUD. Then `thresher-time`.
+6. In CI, once the `unity-ci` environment holds the licence: dispatch `Look sheet` (`menu`, `HOME,HANGAR`); expect the
+   artifact with `sheet.jpg`. Black frames under Xvfb mean the image's Mesa cannot run URP at that GL level (section 4.5).
+
+## 🔴 Pilot portraits: the /pilot-art kit's first four callsign portraits (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Four 220x280 sprites were written by `Tools/Build/pilot_art/author.py`
+(`Assets/_Graphics/Pilots/Portrait_{Wyvendo,Karenth,Delmira,Rosh}.png` with the painted set's importer settings) and wired
+as the `portrait` of `Pilot_Talon`, `Pilot_Volt`, `Pilot_Sundial` and `Pilot_Bandit` through `author_pilot_assets.py`.
+Both `--check`s and `bash .claude/skills/ship/gates.sh` are green. The sheet: `Docs/Pilots/art/sheets/round.png`.
+
+1. **Import**: the four PNGs import as single sprites with transparency (no white or green halo round the fur).
+2. **Hangar**: Menu_Main > Hangar > PILOTS: TALON, VOLT, SUNDIAL and BANDIT show their portrait at 44x56 in the card's
+   portrait slot, upright, boots at the bottom, the other fourteen still show an empty portrait slot (noArtWord is authored blank).
+3. **Squads page**: a squad slot with one of those four seated shows the same portrait in its pilot image.
+4. **Legibility**: at the Hangar's size the animal reads first (lynx, axolotl, owl, octopus); if it does not, say which,
+   and the brief's species line is what changes (`Tools/Build/pilot_art/brief.py`).
+
+## 🔴 Pilot portraits, round 2: all eighteen callsigns (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Fourteen more sprites (`Portrait_{Veliane,Tamako,Brikon,Ivelia,Quivera,
+Obelo,Nedira,Zeko,Mathalo,Fenlia,Jorin,Ilia,Haradek,Ekora}.png`) are wired to the fourteen remaining `Pilot_<Callsign>.asset`s,
+so every callsign now references a portrait. Both `--check`s and the ship gates are green. Sheet: `Docs/Pilots/art/sheets/round2.png`.
+
+1. **Hangar**: Menu_Main > Hangar > PILOTS: all eighteen cards show a portrait at 44x56, none shows an empty portrait slot.
+2. **Legibility at 44x56**: the animal reads first on each card; if one does not, name it and the brief's species line changes.
+3. **Transparency**: no green, blue or magenta fringe round any figure (three key colours were used this round).

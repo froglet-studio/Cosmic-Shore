@@ -1,0 +1,173 @@
+# The look sheet: the real game, in the real renderer, captured to PNGs with no person at an editor, laid out
+# on one contact sheet and gated (a blank frame fails). Docs/LOOK_SHEET.md; Docs/SKILL_TRAINING_PLAN.md 3.1.
+#
+# Manual dispatch only, for now: it costs a GameCI image pull (~5 GB) plus a Library import on a cold cache
+# (the same cache keys as the bleeding-edge guard's hosted compile on branch claude/ci-hosted-unity-compile,
+# so the two share a warm Library). Once it has proved itself on a few runs, the plan is a pull_request
+# trigger on the visual paths (Assets/_Prefabs/UI*, Assets/_Models/Vessel Models/**, shaders, FX).
+#
+# It needs a Unity licence in the `unity-ci` GitHub Environment (UNITY_EMAIL + UNITY_PASSWORD, optionally
+# UNITY_SERIAL or UNITY_LICENSE: Docs/BUILD_AND_DELIVERY.md 10.1 on that branch). Without one the job says so
+# and stops: there is no reference-compile fallback for a picture.
+#
+# The Unity image is pinned to a digest, as the guard pins it; checkout and upload-artifact use the tags the
+# repository's other workflows use.
+
+name: Look sheet
+
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "menu (screens) or mode (a race with the AI on every seat)"
+        type: choice
+        options: [menu, mode]
+        default: menu
+      what:
+        description: "menu: screens, e.g. HOME,HANGAR,PORT,PROFILE,CODEX; mode: switchback or thresher-time"
+        type: string
+        default: HOME,HANGAR,PORT
+      times:
+        description: "mode only: game seconds after the turn starts"
+        type: string
+        default: "5,15,30"
+      intensity:
+        description: "mode only: the intensity"
+        type: string
+        default: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: look-sheet-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  look:
+    name: Look sheet (${{ inputs.kind }} ${{ inputs.what }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: unity-ci
+    env:
+      UNITY_VERSION: 6000.3.17f1
+      UNITY_IMAGE: unityci/editor:ubuntu-6000.3.17f1-base-3.2.2@sha256:05833b20f5b696c30a9ff2cbcf87dce201f5bf4be46b8fe8409a3085aacd6407
+      LOOK_OUT: Logs/LookSheet
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Is there a licence?
+        id: licence
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=No look sheet::No Unity licence in the unity-ci environment (UNITY_EMAIL + UNITY_PASSWORD). A look sheet needs the real editor; add the secrets (Docs/BUILD_AND_DELIVERY.md 10.1) and dispatch again."
+          fi
+          EXPECTED="$(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt)"
+          [ "$EXPECTED" = "$UNITY_VERSION" ] || { echo "::error::UNITY_VERSION ($UNITY_VERSION) does not match the project ($EXPECTED); re-pin UNITY_IMAGE."; exit 1; }
+
+      - name: Free disk space
+        if: steps.licence.outputs.ok == 'true'
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL /usr/share/swift /usr/local/share/boost || true
+          sudo docker image prune --all --force > /dev/null || true
+          df -h /
+
+      - name: Name the Library cache
+        if: steps.licence.outputs.ok == 'true'
+        id: libkey
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Library
+        if: steps.licence.outputs.ok == 'true'
+        id: lib
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: Library
+          key: unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/packages-lock.json') }}-${{ steps.libkey.outputs.day }}
+          restore-keys: |
+            unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/packages-lock.json') }}-
+            unity-library-${{ env.UNITY_VERSION }}-
+
+      - name: Read the serial from a Personal licence file
+        if: steps.licence.outputs.ok == 'true'
+        env:
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -n "$UNITY_SERIAL" ]; then
+            printf '%s' "$UNITY_SERIAL" > "$RUNNER_TEMP/unity-serial"
+          elif [ -n "$UNITY_LICENSE" ]; then
+            python3 -I -c 'import base64,os,re,sys
+          m = re.search(r"<DeveloperData Value=\"([^\"]+)\"", os.environ["UNITY_LICENSE"])
+          if not m: sys.exit("UNITY_LICENSE does not look like a Unity_lic.ulf (no DeveloperData)")
+          sys.stdout.write(base64.b64decode(m.group(1)).decode("latin-1")[4:])' > "$RUNNER_TEMP/unity-serial"
+          else
+            : > "$RUNNER_TEMP/unity-serial"
+          fi
+          [ -s "$RUNNER_TEMP/unity-serial" ] && echo "::add-mask::$(cat "$RUNNER_TEMP/unity-serial")" || true
+
+      - name: Play and capture with Unity
+        if: steps.licence.outputs.ok == 'true'
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          LOOK_KIND: ${{ inputs.kind }}
+          LOOK_WHAT: ${{ inputs.what }}
+          LOOK_TIMES: ${{ inputs.times }}
+          LOOK_INTENSITY: ${{ inputs.intensity }}
+        run: |
+          set -uo pipefail
+          UNITY_SERIAL="$(cat "$RUNNER_TEMP/unity-serial" 2>/dev/null || true)"; export UNITY_SERIAL
+          rm -f "$RUNNER_TEMP/unity-serial"
+          docker run --rm \
+            --workdir /github/workspace \
+            --env UNITY_EMAIL --env UNITY_PASSWORD --env UNITY_SERIAL \
+            --env LOOK_KIND --env LOOK_WHAT --env LOOK_TIMES --env LOOK_INTENSITY --env LOOK_OUT \
+            --env GITHUB_WORKSPACE=/github/workspace \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            "$UNITY_IMAGE" \
+            bash /github/workspace/Tools/CI/unity_look_in_container.sh
+          echo "Container exited with $?."
+          sudo chown -R "$(id -u):$(id -g)" Library "$LOOK_OUT" unity-look.log unity-look-exit-code.txt 2>/dev/null || true
+
+      - name: Save Library
+        if: always() && steps.licence.outputs.ok == 'true' && steps.lib.outputs.cache-hit != 'true' && hashFiles('Library/ArtifactDB') != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: Library
+          key: unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('Packages/packages-lock.json') }}-${{ steps.libkey.outputs.day }}
+
+      - name: Gate the captures and lay out the sheet
+        if: steps.licence.outputs.ok == 'true'
+        run: |
+          set -uo pipefail
+          python3 -m pip install --quiet Pillow
+          echo "Unity exit code: $(cat unity-look-exit-code.txt 2>/dev/null || echo none)"
+          python3 Tools/Build/unity_look/look.py verify "$LOOK_OUT" || status=$?
+          python3 Tools/Build/unity_look/sheet.py "$LOOK_OUT" --commit "$GITHUB_SHA" || true
+          grep -E '^\[LookSheet\]' unity-look.log | tail -40 || true
+          code="$(cat unity-look-exit-code.txt 2>/dev/null || echo 1)"
+          [ "$code" = "0" ] && [ "${status:-0}" = "0" ] || { echo "::error::The look sheet failed (Unity exit $code, gate ${status:-0}). unity-look.log is in the artifact."; exit 1; }
+
+      - name: Upload the sheet
+        if: always() && steps.licence.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: look-sheet-${{ inputs.kind }}-${{ github.run_number }}
+          path: |
+            Logs/LookSheet/**
+            unity-look.log
+          if-no-files-found: warn
+          retention-days: 14

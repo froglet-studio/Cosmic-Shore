@@ -213,8 +213,15 @@ namespace CosmicShore.UI
         static Vector2 Pos(VoyageLocation l, bool charted) =>
             charted ? new Vector2(l.GalaxyX, -l.GalaxyY) : new Vector2(l.ChartX, l.ChartZ);
 
-        /// <summary>A charted map draws only the charted locations.</summary>
-        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted);
+        /// <summary>Which places this crew can see (Docs/Voyages/DEPTH.md §8): an uncharted place is drawn only once the
+        /// crew has found it. Null draws every place. Set by the view with the galaxy's record (VoyageRules.IsVisible).</summary>
+        public System.Func<string, bool> Visible;
+
+        /// <summary>A charted map draws only the charted locations, and only the ones this crew can see.</summary>
+        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted) && (Visible == null || Visible(l.Id));
+
+        /// <summary>True when the map draws <paramref name="l"/> (the edge view and the sky follow the map).</summary>
+        public bool IsDrawn(VoyageLocation l) => Drawn(l);
 
         void Bounds()
         {
@@ -696,8 +703,11 @@ namespace CosmicShore.UI
         /// <summary>A place's marker colour: its experience's, from the harbour's style.</summary>
         public static Color MarkerColor(VoyageToyDefinitionSO style, VoyageLocation l) => l.Experience switch
         {
-            VoyageExperience.VaultField => style.VaultColor,
+            VoyageExperience.VaultField or VoyageExperience.Hoard => style.VaultColor,
             VoyageExperience.Core => style.CoreColor,
+            VoyageExperience.Lair or VoyageExperience.Pen => style.LairColor,
+            VoyageExperience.Nursery => style.NurseryColor,
+            VoyageExperience.Shrine or VoyageExperience.Derelict => style.ShrineColor,
             _ => style.PortColor,
         };
 

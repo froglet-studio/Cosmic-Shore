@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         const float GrazeReach = 60f;
         const float ClosingNormaliser = 60f;   // u/s of closing speed that counts as "full" urgency
 
-        readonly ArkEscortRun _run;
+        readonly IArkEscortHost _run;
         readonly List<Fauna> _threats = new();
         readonly Dictionary<Fauna, float> _scores = new();
         readonly Dictionary<Fauna, (Vector3 pos, float t)> _seen = new();
@@ -29,21 +29,21 @@ namespace CosmicShore.Gameplay
         /// <summary>Where creatures have been and free crystals lie: the Scarab's ring sites.</summary>
         public readonly ArkEscortCrystalSites Sites = new();
 
-        public ArkEscortContext(ArkEscortRun run)
+        public ArkEscortContext(IArkEscortHost run)
         {
             _run = run;
             EscortGeneRegistry.EnsureDefined();
         }
 
-        public ArkEscortRun Run => _run;
-        public Ark Ark => _run ? _run.Ark : null;
-        public Cell Cell => _run ? _run.CurrentCell : null;
+        public IArkEscortHost Run => _run;
+        public Ark Ark => _run != null ? _run.Ark : null;
+        public Cell Cell => _run != null ? _run.CurrentCell : null;
         public Domains Domain => Ark ? Ark.Domain : Domains.Blue;
 
         /// <summary>The hull's radius about the Ark's position: the larger of half the authored hull length and the
         /// measured reach of the live hull prisms (a modelled hull is wider than the spindle; measured every few
         /// seconds). Every lane test and the steering's hull avoidance keep this sphere clear (plus margins).</summary>
-        public float HullRadius => Mathf.Max(_run ? _run.HullHalfLength : 55f, _measuredHullRadius);
+        public float HullRadius => Mathf.Max(_run != null ? _run.HullHalfLength : 55f, _measuredHullRadius);
 
         float _measuredHullRadius;
         float _nextHullMeasure;

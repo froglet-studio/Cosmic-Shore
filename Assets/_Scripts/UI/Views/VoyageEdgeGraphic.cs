@@ -190,7 +190,7 @@ namespace CosmicShore.UI
             var content = _map.Content;
             foreach (var l in content.Locations)
             {
-                if (l == null || !l.Charted) continue;
+                if (!_map.IsDrawn(l)) continue;
                 var at = ToRect(l.GalaxyX, l.GalaxyZ, s, zc);
                 if (!r.Contains(at)) continue;
                 VoyageMapGraphic.Diamond(vh, at, PlaceSize, VoyageMapGraphic.MarkerColor(style, l), white);

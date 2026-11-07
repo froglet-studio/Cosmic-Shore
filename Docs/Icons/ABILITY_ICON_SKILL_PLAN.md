@@ -456,6 +456,37 @@ arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and t
 row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
 prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
 the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
+**The Goby & Pistol (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** both
+seats' cards were `author_goby_hud.py`'s placeholders (brackets, arrows, a pac-man). Every card now draws the hull that
+flies it (`specs/goby.py`; the Goby from just above, the Pistol three-quarter side-on so its claw, legs and antennae
+read), as single white sprites `GobyPistolHUDView.SetSeat` swaps per seat, guids kept. Goby: Lock (its nose on a rival
+held in four brackets), Perch (the Goby over the den its perch starts), Undertow (the plane, prisms pulled in beside it
+from their ghosts), Dart (its ghost, the Goby, the block it stops on). Pistol: Snap (the claw shut in its `snap` take,
+the vortex ring leaving it), Den (resting by the den its energy built), Ghost (the Pistol, faint, through a wall of
+prisms), the dive (nose-down over a hill). The HUD had no omni card: it now shows the omni crystal
+(`Core/Goby_OmniCrystal`). `author_goby_hud.py` keeps the metas and the variant and no longer writes the PNGs.
+Sheet: `Docs/Icons/sheets/goby.png`.
+
+**The Honeyguide (2026-11-07, the roster pass):** the rhombus recut changed `motifs.prism` to two close triangles but
+never re-authored the Honeyguide's set, so eight committed sprites still drew the rhombus and `author.py honeyguide
+--check` reported them as drift (and the new halves failed the piece-count gate). The spec's prisms are now a square
+with a negative-space X that stops short of the corners (one piece, not the Time petal's shape), and the eight are
+re-authored: Peck, Genesis Lance, Particle Harmonizer, Sepia Drone, Hexapod Eyelet Jet, Rosen Bridge, FTL Chromatool,
+Monte Cannon. Still unbound: the Honeyguide flies the Sparrow's HUD (its cards draw the Sparrow's kit), so a Honeyguide
+HUD variant that binds these is the open follow-up (`HONEYGUIDE.md`). Sheets: `Docs/Icons/sheets/honeyguide*.png`.
+
+**The Meerkat (2026-11-07, the roster pass; Yash's round-1 set kept):** the set already drew the real hull and
+passed every gate; two fixes only. The Exit Portal's six prisms were `prism_halves`, which read as rhombi at 40 px, so
+they are `prism_square_x` now; and the hull (`Meerkat.fbx`, a thin stick side-on) is dilated 2.6 px instead of 1.4 so
+Sentinel Mode and Faster Ride hold at 40 px. Guids kept (`meerkat_icon_ids.py`). Sheet: `Docs/Icons/sheets/meerkat.png`.
+**The Jacks (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** three of
+`author_jacks_icons.py`'s glyphs still drew the kit before round 10 (Breeding, a Herding Ring, Herd Speed). The kit
+now draws the round-10 cards from the real `Jack.fbx` side-on (`specs/jacks.py`): The Call (the two jacks facing in,
+the herd called into a knot between them), Wide (the whole cell's corner brackets round the herding view's, the herd
+inside), Decoys (a jack and its ghost decoy up and ahead). The files were renamed to the cards (`Jacks_TheCall`,
+`Jacks_Wide`, `Jacks_Decoys`) with their metas, so `Jacks.prefab`'s guids hold; Danger Share keeps its fish and bolt
+(a spiked creature stinging a rival was drawn and read worse at 40 px). `author_jacks_icons.py` now only guards the
+guids. Sheet: `Docs/Icons/sheets/jacks.png`.
 
 | Round | What | Why first |
 |---|---|---|

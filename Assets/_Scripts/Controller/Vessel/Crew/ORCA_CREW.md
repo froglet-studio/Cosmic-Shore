@@ -186,6 +186,12 @@ While the person holds a gunner seat:
 - **Targets**, re-picked every 0.4 s: an omni crystal when the seat's magazine is down to one, else the nearest rival
   hull or hostile prism, else any crystal.
 - **The AI helm** raises the shield when a rival Orca's missile closes on the hull.
+- **The AI helm never burns**, except under a race's coach. `wantBoost` is set only when a person holds the helm, so an
+  AI Orca flies every mode at cruise. `RaceCoach` (`IOrcaRaceCoach`, Breach, 2026-11-07) lets a race say when the AI
+  helm burns: `wantBoost = RaceCoach != null && RaceCoach.HelmBurns(this)`. Null (everywhere but Breach) is the shipped
+  AI. `BoostTankSeconds` and `Boosting` are read-only accessors for it. Nothing about the tank or the burn changed. Breach
+  (`Arcade/BREACH.md`) also found that **holding the burn on an empty tank keeps it empty** (the tank refills only while
+  the burn is let go), which a person learns at its I1.
 - The default skill is **Hard** (`aiSkill`).
 
 ## The model (round 6)
