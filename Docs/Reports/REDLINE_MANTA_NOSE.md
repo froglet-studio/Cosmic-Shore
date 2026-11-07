@@ -102,6 +102,16 @@ nose rate, so no band change is proposed. All of the gain is the nose rate.
 4. **Regatta**: the course search races the Manta's Time AI. With the fleet lag, its I4 times are 5x too slow. The
    course step (`time-arena-course`) should wait for this decision too.
 
+## Relation to #1786 (the pilot's nose lead)
+
+Thread 7 (PR #1786, `results/scarab-steering/fleet_nose_lead.txt`) attacked the same lag from the pilot's side, with its
+own fleet race model. Its absolute times are not this report's. A pilot nose lead (`AIPilot.NoseLeadGain` 2.5, off by
+default) takes the Manta from 705 s to 314 s summed over I1-I4 on the fleet 1.5/s nose. That compares with 255 s at
+this report's 9/s nose with no lead, and gains above 2.5 close no more. So the lead closes about 80% of the gap and
+leaves the vessel's nose rate untouched. This report's per-intensity nose row is the **second step**, for the I3-I4
+remainder (the hull's 83 deg/s turn through any lag), not an alternative. Read the two PRs as one proposal: the lead
+first, then the row.
+
 ## Not verified (the cloud cannot run these)
 
 - In the editor: AI Mantas race Redline at I1-I4 with `AINoseFollowPerSecond` set to 3 / 6 / 9, alone and in a
