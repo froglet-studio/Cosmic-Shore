@@ -25,6 +25,26 @@
       "type": "int",
       "privacy": "P0"
     },
+    "build_kind": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "editor | port | web | development | release (AnalyticsDevice.BuildKindOf). web is every WebGL build: the website's Toybox. The server derives it from platform and app_version for events that lack it."
+    },
+    "device": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "iphone | ipad | android_phone | android_tablet | android (screen size unknown) | windows | mac | linux | web_desktop | web_mobile | other (AnalyticsDevice.DeviceOf). An iPad is a deviceModel starting iPad; an Android tablet is a screen 7 inches across or more; web_mobile is a WebGL build on a mobile browser. Older events have only platform, which cannot tell iPhone from iPad."
+    },
+    "os": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "SystemInfo.operatingSystem, trimmed, at most 64 characters (e.g. iOS 17.1, Android OS 14 / API-34). On the web, the browser's OS."
+    },
+    "device_model": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "SystemInfo.deviceModel, trimmed, at most 64 characters (e.g. iPad13,1, samsung SM-X200). A model name, never a device identifier."
+    },
     "timestamp_utc_ms": {
       "type": "long",
       "privacy": "P0",

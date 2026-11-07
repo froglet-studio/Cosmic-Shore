@@ -63,6 +63,12 @@ HTTP:
     GET  /v1/overview                      adds setups (multiplayer then solo), setup_history, setup_notes
     GET  /v1/series?...&by=setup           every plays measure (and players, new players) by match setup
 
+  2026-11-07 (Shombith): the web build, build=all and devices (README.md, The web build, All builds and devices).
+    build=all|release|editor|port|web|development and device=all|ios|iphone|ipad|android|android_phone|android_tablet|
+    windows|mac|linux|web|web_desktop|web_mobile|phone|tablet|desktop on every read route (a bad value is 400)
+    GET  /v1/series?...&by=device|os       by device (every measure but Toybox players), by OS family (plays)
+    OPTIONS/POST the ingest routes         CORS for ingest_origins (the browser Toybox); read routes: allowed_origins only
+
   2026-11-07 (Shombith): sessions, balance, quits, invites, errors; backups.
     GET  /v1/sessions|balance|quits|invites|errors?build&days&play&era    the five round-67 pages (README.md)
     GET  /v1/series?measure=score|placement|win_pct|abandon_pct, by=ai_difficulty
@@ -125,7 +131,10 @@ DEFAULTS = {
     "ingest_keys": [],
     "read_keys": {},
     "admin_keys": {},
-    "allowed_origins": [],
+    "allowed_origins": [],             # origins that may READ (the console on another host): every read route
+    # Origins whose pages may SEND events from a browser (the WebGL Toybox on play.froglet.games, embedded in
+    # www.froglet.games): CORS on the ingest routes only, never on a read route. The ingest key is public anyway.
+    "ingest_origins": ["https://play.froglet.games", "https://www.froglet.games"],
     "retention_days": 395,
     "nightly_hour_utc": 5,
     "claude_model": C.DEFAULT_MODEL,
@@ -206,7 +215,8 @@ class RateLimit:
 
 
 # What `key read|admin <name>` and a hand edit of config.json can change while the server runs.
-LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins", "all_keys_admin")
+LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins", "ingest_origins",
+               "all_keys_admin")
 
 
 class App:
@@ -392,8 +402,10 @@ def _app(h):
 def _people(h):
     q = h._params()
     build = q.get("build") or None
-    if build and build not in S.BUILD_KINDS:
-        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    if build and build not in V.BUILD_FILTERS:
+        raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
+    build = None if build == "all" else build
+    device = h._device_param(q)
     days = int(q["days"]) if (q.get("days") or "").isdigit() else 90
     play = q.get("play") or "all"
     if play not in V.PLAYS:
@@ -403,19 +415,27 @@ def _people(h):
     if era:
         extra = {"since": era["from"], "until": min(era["to"], S.day_of(S.now_ms())), "source": era["source"],
                  "builds": era["builds"] or None}
-    page = _app(h).store.people_list(build, min(max(days, 1), 400), q.get("q") or "", play=play, **extra)
+    page = _app(h).store.people_list(build, min(max(days, 1), 400), q.get("q") or "", play=play,
+                                     devices=S.DEVICE_GROUPS.get(device), **extra)
     page["era"] = era["id"] if era else None
+    page["device"] = device
     page["unfiltered"] = []
     return 200, page
 
 
+def _build_or_every(q):
+    """The eras pages' build: one kind, or None for every build (no build, or build=all)."""
+    build = q.get("build") or None
+    if build and build not in V.BUILD_FILTERS:
+        raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
+    return None if build == "all" else build
+
+
 def _eras_get(h):
     q = h._params()
-    build = q.get("build") or None
-    if build and build not in S.BUILD_KINDS:
-        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    build = _build_or_every(q)
     store = _app(h).store
-    return 200, V.eras_page(_app(h).agg, store.eras(), store.milestones(), build)
+    return 200, V.eras_page(_app(h).agg, store.eras(), store.milestones(), build, h._device_param(q))
 
 
 def _eras_put(h):
@@ -434,27 +454,25 @@ def _eras_compare(h):
     a, b = h._era_param(q, "a"), h._era_param(q, "b")
     if not a or not b:
         raise S.Invalid("name two eras: ?a=<era id>&b=<era id>")
-    build = q.get("build") or None
-    if build and build not in S.BUILD_KINDS:
-        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
-    return 200, V.eras_compare(_app(h).agg, a, b, build)
+    return 200, V.eras_compare(_app(h).agg, a, b, _build_or_every(q), h._device_param(q))
 
 
 def _cohorts(h):
-    build, days, play, era = h._scope_params(h._params())
-    page = V.cohorts(_app(h).agg, build, days, play, era)
+    build, days, play, era, device = h._scope_params(h._params())
+    page = V.cohorts(_app(h).agg, build, days, play, era, device)
     if h._profiles_allowed():
-        sc = V.Scope(build, days, play, era)
-        page["lifespans"] = _app(h).store.lifespans(build, sc.since, sc.until, sc.source,
-                                                    era["builds"] or None if era else None, play)
+        sc = V.Scope(build, days, play, era, device=device)
+        page["lifespans"] = _app(h).store.lifespans(None if build == "all" else build, sc.since, sc.until, sc.source,
+                                                    era["builds"] or None if era else None, play,
+                                                    devices=S.DEVICE_GROUPS.get(device))
     else:
         page["unfiltered"] = page.get("unfiltered", []) + ["lifespans"]
     return 200, page
 
 
 def _playtypes(h):
-    build, days, play, era = h._scope_params(h._params())
-    page = V.playtypes(_app(h).agg, build, days, era)
+    build, days, play, era, device = h._scope_params(h._params())
+    page = V.playtypes(_app(h).agg, build, days, era, device)
     if play != "all":
         page["unfiltered"] = ["play"]           # this page is the play types side by side
     return 200, page
@@ -462,14 +480,14 @@ def _playtypes(h):
 
 def _series(h):
     q = h._params()
-    build, days, play, era = h._scope_params(q)
+    build, days, play, era, device = h._scope_params(q)
     return 200, V.series(_app(h).agg, q.get("measure") or "matches", q.get("by") or "none", q.get("over") or "day",
-                         build, days, play, era, _app(h).store.eras())
+                         build, days, play, era, _app(h).store.eras(), device)
 
 
 def _freestyle(h):
-    build, days, play, era = h._scope_params(h._params())
-    return 200, V.freestyle(_app(h).agg, build, days, play, era)
+    build, days, play, era, device = h._scope_params(h._params())
+    return 200, V.freestyle(_app(h).agg, build, days, play, era, device)
 
 
 def _moderator(h):
@@ -562,13 +580,13 @@ def _dashboards_delete(h):
 
 def _tile(h):
     q = h._params()
-    build, days, play, era = h._scope_params(q)
+    build, days, play, era, device = h._scope_params(q)
     source = q.get("source") or ""
     app = _app(h)
     if source.startswith("builtin:"):
         if source[8:] not in S.BUILTIN_TILES:
             raise S.Invalid(f"builtin tiles are {', '.join(S.BUILTIN_TILES)}")
-        return 200, V.builtin_tile(app.agg, source[8:], build, days, play, era)
+        return 200, V.builtin_tile(app.agg, source[8:], build, days, play, era, device)
     if source.startswith("preset:"):
         found = app.store.preset(source[7:], h._reader())
         if not found:
@@ -587,7 +605,7 @@ def _tile(h):
         out = V.run_readonly_sql(app.agg, found["sql"])
         # a saved query is its own SQL: the page's build, days, play and era do not reach it
         return 200, {"columns": out["columns"], "rows": out["rows"], "truncated": out["truncated"],
-                     "unfiltered": ["build", "days", "play", "era"]}
+                     "unfiltered": ["build", "days", "play", "era", "device"]}
     raise S.Invalid("source must be query:<saved query id>, preset:<saved view id> or builtin:<name>")
 
 
@@ -616,8 +634,8 @@ def _segments_delete(h):
 def _r67_page(view):
     """A round-67 page (Shombith, 2026-11-07): sessions, balance, quits, invites, errors. Same filters as the rest."""
     def route(h):
-        build, days, play, era = h._scope_params(h._params())
-        return 200, view(_app(h).agg, build, days, play, era)
+        build, days, play, era, device = h._scope_params(h._params())
+        return 200, view(_app(h).agg, build, days, play, era, device)
     return route
 
 
@@ -639,6 +657,9 @@ for _routes, _nb in ((REV65_GET, NB.GET), (REV65_POST, NB.POST), (REV65_PUT, NB.
     _routes.update(_nb)
 
 
+INGEST_PATHS = ("/batch", "/v1/batch", "/capture", "/e")
+
+
 def make_handler(app):
     class Handler(BaseHTTPRequestHandler):
         server_version = "FrogletAnalytics/1"
@@ -650,12 +671,25 @@ def make_handler(app):
         # ------------------------------------------------ plumbing
 
         def _cors(self):
+            """Read routes answer CORS for allowed_origins (a console on another host); the ingest routes answer it
+            for ingest_origins too (the browser Toybox posting its events). An ingest origin never reads."""
             origin = self.headers.get("Origin")
-            if origin and origin in app.config["allowed_origins"]:
+            if not origin:
+                return
+            if origin in app.config["allowed_origins"]:
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Vary", "Origin")
                 self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            elif origin in (app.config.get("ingest_origins") or []) and self._is_ingest():
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, Content-Encoding")
+                self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                self.send_header("Access-Control-Max-Age", "86400")
+
+        def _is_ingest(self):
+            return urlparse(self.path).path.rstrip("/") in INGEST_PATHS
 
         def _send(self, status, payload):
             body = json.dumps(payload, default=str).encode()
@@ -702,17 +736,23 @@ def make_handler(app):
             return {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
 
         def _scope_params(self, q):
-            """build, days, play and era from the query string; S.Invalid (400) on any bad value."""
+            """build, days, play, era and device from the query string; S.Invalid (400) on any bad value."""
             build = q.get("build") or "release"
-            if build not in S.BUILD_KINDS:
-                raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+            if build not in V.BUILD_FILTERS:
+                raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
             days = q.get("days") or "90"
             if not days.isdigit() or int(days) not in V.WINDOWS:
                 raise S.Invalid(f"days must be one of {list(V.WINDOWS)}")
             play = q.get("play") or "all"
             if play not in V.PLAYS:
                 raise S.Invalid(f"play must be one of {list(V.PLAYS)}")
-            return build, int(days), play, self._era_param(q)
+            return build, int(days), play, self._era_param(q), self._device_param(q)
+
+        def _device_param(self, q):
+            device = q.get("device") or "all"
+            if device not in V.DEVICES:
+                raise S.Invalid(f"device must be one of {list(V.DEVICES)}")
+            return device
 
         def _era_param(self, q, name="era"):
             if not q.get(name):
@@ -777,8 +817,8 @@ def make_handler(app):
                     return self._send(200, found) if found else self._send(404, {"error": "No player with that id."})
                 return self._guarded(_people, self)
             build, days = self._query()
-            if build not in S.BUILD_KINDS:
-                return self._send(400, {"error": f"build must be one of {list(S.BUILD_KINDS)}"})
+            if build not in V.BUILD_FILTERS:
+                return self._send(400, {"error": f"build must be one of {list(V.BUILD_FILTERS)}"})
             if days not in V.WINDOWS:
                 return self._send(400, {"error": f"days must be one of {list(V.WINDOWS)}"})
             play = (parse_qs(urlparse(self.path).query).get("play") or ["all"])[0] or "all"
@@ -786,26 +826,28 @@ def make_handler(app):
                 return self._send(400, {"error": f"play must be one of {list(V.PLAYS)}"})
             try:
                 era = self._era_param(self._params())
+                device = self._device_param(self._params())
             except S.Invalid as exc:
                 return self._send(400, {"error": str(exc)})
             try:
                 if path == "/v1/overview":
-                    page = V.overview(app.agg, build, days, play, era)
+                    page = V.overview(app.agg, build, days, play, era, device)
                     page["digest"] = app.store.latest_digest()
                     return self._send(200, page)
                 if path == "/v1/retention":
-                    return self._send(200, V.retention(app.agg, build, days, play, era))
+                    return self._send(200, V.retention(app.agg, build, days, play, era, device))
                 if path == "/v1/matches":
-                    return self._send(200, V.matches(app.agg, build, days, play, era))
+                    return self._send(200, V.matches(app.agg, build, days, play, era, device))
                 if path == "/v1/health":
                     page = V.health(app.agg, app.store.health_facts(), days)
-                    page["unfiltered"] = ["page"] if (play != "all" or era) else []
+                    page["unfiltered"] = ["page"] if (play != "all" or era or device != "all") else []
                     return self._send(200, page)
                 if path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
                     view = {"/v1/audience": V.audience, "/v1/ftue": V.ftue, "/v1/economy": V.economy,
                             "/v1/social": V.social}[path]
                     page = view(app.agg, build, days)
-                    page["unfiltered"] = ["page"] if (play != "all" or era) else []   # these pages read neither
+                    # these pages read no play type, era or device
+                    page["unfiltered"] = ["page"] if (play != "all" or era or device != "all") else []
                     return self._send(200, page)
                 if path == "/v1/digest":
                     return self._send(200, app.store.latest_digest() or {})
@@ -817,7 +859,7 @@ def make_handler(app):
         def do_POST(self):
             app.reload_keys()
             path = urlparse(self.path).path.rstrip("/")
-            if path in ("/batch", "/v1/batch", "/capture", "/e"):
+            if path in INGEST_PATHS:
                 return self._ingest()
             if path == "/v1/ask":
                 return self._ask()

@@ -21407,3 +21407,13 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    about 5 s later ONE `client_exception` arrives with its count, top_frame and scene and no message text, and no second
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
+7. **The Web build and the device (2026-11-07, NOT RUN IN EDITOR; `unity_refcompile` player and editor OK, gates OK).**
+   Every Froglet Analytics event's envelope now carries `build_kind`, `device`, `os` and `device_model`
+   (`System/Instrumentation/AnalyticsDevice.cs`, stamped in `BuildSinkEnvelope`; never sent to UGS).
+   - Run `AnalyticsDeviceTests` (9 tests: editor / port / web / development / release, iPad vs iPhone, the 7-inch Android
+     tablet line, web desktop vs mobile, the schema lists the four fields).
+   - In the editor, play one match: Data health shows it as build **Editor**, device **Windows** or **Mac**.
+   - In the **web Toybox** (https://play.froglet.games/toybox) with consent granted: the console's **Web** build shows the
+     visit within a minute, as **Web desktop** (or **Web mobile** on a phone). If nothing arrives, check the browser
+     console for a CORS error on the analytics host.
+   - On an **iPad** build: Device = iPad shows the player; on an Android tablet, Android tablet.

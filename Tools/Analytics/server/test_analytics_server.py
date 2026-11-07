@@ -962,7 +962,7 @@ class Rev65Http(unittest.TestCase):
         self.assertEqual((status, {p["key"]: p["value"] for p in out["points"]}),
                          (200, {"solo_vs_ai": 1, "multi_human_unknown": 1}))
         self.assertEqual(set(out), {"measure", "by", "over", "build", "days", "play", "from", "to", "source", "era",
-                                    "points", "keys", "unfiltered", "notes", "answerable_by"})
+                                    "device", "points", "keys", "unfiltered", "notes", "answerable_by"})
         status, out, _ = self.call("GET", "/v1/series?measure=events&by=country", key="read-key")
         self.assertEqual(status, 400)                               # negative control: events have no country
         self.assertIn("cannot be split by country", out["error"])
@@ -1320,7 +1320,7 @@ class PresetsHttp(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual((tile["series"]["by"], tile["series"]["days"], tile["columns"]), ("element", 30, ["x", "element", "matches"]))
         self.assertEqual(sum(r[2] for r in tile["rows"]), 1)
-        self.assertEqual(tile["unfiltered"], ["build", "days", "play", "era"])          # its own filters, not the page's
+        self.assertEqual(tile["unfiltered"], ["build", "days", "play", "era", "device"])  # its own filters, not the page's
         flat = self.call("POST", "/v1/presets", self.view(name="Health", chart_id="overview.health", series=False), key="ian-key")[1]
         self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=preset:" + flat["id"], key="ian-key")[0], 400)
         board = {"name": "Views", "shared": "readers", "tiles": [{"id": "a", "source": "preset:" + view["id"], "title": "x",
@@ -2063,6 +2063,231 @@ class ClaudeWithoutAKey(unittest.TestCase):
             C.write_digest = real
             app.store.db.close()
             shutil.rmtree(tmp)
+
+
+# ---------------------------------------------------------------- the web build, devices and build=all (2026-11-07)
+
+def on(device_props, event_fn, *args, **kw):
+    """An event from a build that sends the new envelope (device_props: platform, device, os...), or an older one."""
+    out = event_fn(*args, **kw)
+    out["properties"].update(device_props)
+    return out
+
+
+IPHONE = {"platform": "IPhonePlayer", "device": "iphone", "os": "iOS 17.1", "device_model": "iPhone15,2"}
+IPAD = {"platform": "IPhonePlayer", "device": "ipad", "os": "iPadOS 17.1", "device_model": "iPad13,1"}
+OLD_IOS = {"platform": "IPhonePlayer"}                       # a build from before device was sent
+ANDROID_TABLET = {"platform": "Android", "device": "android_tablet", "os": "Android OS 14 / API-34"}
+WEB_MOBILE = {"platform": "WebGLPlayer", "device": "web_mobile", "build_kind": "web"}
+OLD_WEB = {"platform": "WebGLPlayer"}                        # no build_kind, no device: read as web from the platform
+
+
+class DeviceAndWeb(StoreCase):
+    def seed(self):
+        t = T0
+        batch = [on(IPHONE, started, "a1", "m1", t), on(IPHONE, started, "a1", "m2", t + 1000),
+                 on(IPAD, started, "a2", "m3", t), on(OLD_IOS, started, "a3", "m4", t),
+                 on(IPHONE, started, "a8", "m5", t), on(IPAD, started, "a8", "m6", t + 1000),   # one player, two devices
+                 on(ANDROID_TABLET, started, "a4", "m7", t), on(WEB_MOBILE, started, "a5", "m8", t),
+                 on(OLD_WEB, started, "a6", "m9", t),
+                 started("a7", "m10", t), on({"platform": "WindowsEditor"}, started, "a7", "m11", t)]  # release + editor
+        self.assertEqual(self.store.ingest(batch)["accepted"], len(batch))
+        self.store.rebuild_aggregates()
+
+    def test_the_build_and_device_come_from_the_client_else_from_the_platform(self):
+        self.assertEqual(S.build_kind_of({"platform": "WebGLPlayer"}), "web")
+        self.assertEqual(S.build_kind_of({"platform": "WebGLPlayer", "build_kind": "development"}), "development")
+        self.assertEqual(S.build_kind_of({"platform": "WindowsEditor"}), "editor")         # the old rules still hold
+        self.assertEqual(S.build_kind_of({"platform": "Android", "app_version": "1.0-port"}), "port")
+        self.assertEqual(S.device_of(IPAD), "ipad")
+        self.assertEqual(S.device_of(OLD_IOS), "ios")                      # old iOS: iPhone or iPad is not known
+        self.assertEqual(S.device_of(OLD_WEB), "web")
+        self.assertEqual(S.device_of({"platform": "Android"}), "android")
+        self.assertEqual(S.device_of({"platform": "OSXEditor"}), "mac")
+        self.assertEqual(S.device_of({"platform": "PS5"}), "other")
+        self.assertEqual(S.device_of({"platform": "IPhonePlayer", "device": "toaster"}), "ios")   # a bad value is not kept
+        self.assertEqual(S.os_family_of({"os": "Android OS 14 / API-34"}), "Android 14")
+        self.assertEqual(S.os_family_of({}), "not recorded")
+        self.assertEqual(S.os_family_of({"os": "iPhone OS 17_1"}), "iOS 17")            # a phone's browser (WebGL)
+        self.assertEqual(S.os_family_of({"os": "Mac OS X 10_15_7"}), "macOS 10.15")
+        self.assertEqual(S.os_family_of({"os": "PlayStation 5"}), "other")
+        for group, members in S.DEVICE_GROUPS.items():
+            self.assertTrue(set(members) <= set(S.DEVICES), group)
+
+    def test_older_rows_get_a_device_and_old_webgl_rows_become_web_once(self):
+        self.store.ingest([on(OLD_WEB, started, "w1", "m1", T0), on(IPAD, started, "w2", "m2", T0)])
+        # make the database look like one from before the device column (the column empty, WebGL read as release)
+        self.store.db.execute("UPDATE events SET device = NULL")
+        self.store.db.execute("UPDATE events SET build_kind = 'release' WHERE platform = 'WebGLPlayer'")
+        self.store.db.execute("DELETE FROM store_meta WHERE key = 'devices_filled'")
+        self.store.db.commit()
+        self.store.db.close()
+        self.store = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA), ["client_exception"])
+        self.assertEqual(sorted(self.rows("SELECT distinct_id, device, build_kind FROM events")),
+                         [("w1", "web", "web"), ("w2", "ipad", "release")])
+        # negative control: once done it is not redone (a row changed by hand afterwards stays as it is)
+        self.store.db.execute("UPDATE events SET device = NULL WHERE distinct_id = 'w2'")
+        self.store.db.commit()
+        self.store.db.close()
+        self.store = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA), ["client_exception"])
+        self.assertEqual(self.rows("SELECT device FROM events WHERE distinct_id = 'w2'"), [(None,)])
+
+    def test_the_device_filter_counts_each_player_once_inside_a_group(self):
+        self.seed()
+        agg = self.store.agg_path
+        ipad = V.overview(agg, "release", 7, device="ipad")
+        self.assertEqual((ipad["tiles"]["matches"], ipad["tiles"]["players"], ipad["device"]), (2, 2, "ipad"))
+        ios = V.overview(agg, "release", 7, device="ios")
+        self.assertEqual(ios["tiles"]["matches"], 6)
+        # a1, a2, a3 and a8: a8 flew an iPhone and an iPad and is ONE player of iOS (negative control: summing the
+        # devices would say 5)
+        self.assertEqual(ios["tiles"]["players"], 4)
+        by_device = {r["device"]: r["players"] for r in V.overview(agg, "release", 7)["marketing"]["by_device"]}
+        self.assertEqual(by_device["iphone"] + by_device["ipad"] + by_device["ios"], 5)
+        self.assertEqual(V.overview(agg, "release", 7, device="tablet")["tiles"]["players"], 3)    # a2, a4, a8
+        self.assertEqual(V.overview(agg, "release", 7, device="phone")["tiles"]["players"], 2)     # a1, a8
+        self.assertEqual(V.overview(agg, "release", 7, device="android_phone")["tiles"]["players"], 0)
+        self.assertEqual(V.overview(agg, "release", 7)["tiles"]["players"], 6)   # a5 and a6 are on the web build
+        self.assertIn("business", ipad["unfiltered"])                 # crystals carry no device: listed, not filtered
+        self.assertNotIn("business", V.overview(agg, "release", 7)["unfiltered"])
+        out = V.series(agg, "matches", "device", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]},
+                         {"iphone": 3, "ipad": 2, "ios": 1, "android_tablet": 1, "windows": 1})
+        self.assertTrue(any("not recorded" in n for n in out["notes"]))
+        players = V.series(agg, "players", "device", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in players["points"]}["ipad"], 2)
+        os_split = {p["key"]: p["value"] for p in V.series(agg, "matches", "os", "none", "release", 7)["points"]}
+        self.assertEqual((os_split["iOS 17"], os_split["iPadOS 17"], os_split["not recorded"]), (3, 2, 2))
+        with self.assertRaises(V.BadRequest):
+            V.series(agg, "players", "os", "none", "release", 7)    # players are not counted by OS
+        with self.assertRaises(V.BadRequest):
+            V.overview(agg, "release", 7, device="toaster")
+        for page in (V.retention, V.matches, V.cohorts, V.sessions, V.balance, V.quits, V.invites, V.errors,
+                     V.freestyle):
+            self.assertEqual(page(agg, "release", 7, "all", None, "ipad")["device"], "ipad", page.__name__)
+
+    def test_the_web_build_and_build_all_add_up_without_counting_anyone_twice(self):
+        self.seed()
+        agg = self.store.agg_path
+        web = V.overview(agg, "web", 7)
+        self.assertEqual((web["tiles"]["matches"], web["tiles"]["players"]), (2, 2))      # a5 (sent web) and a6 (WebGL)
+        kinds = {b: V.overview(agg, b, 7)["tiles"] for b in S.BUILD_KINDS}
+        every = V.overview(agg, "all", 7)["tiles"]
+        self.assertEqual(every["matches"], sum(t["matches"] for t in kinds.values()))   # rows add up, no kind dropped
+        self.assertEqual(every["matches"], 11)
+        # a7 played on release AND in the editor: one player of All (negative control: the kinds sum to one more)
+        self.assertEqual(sum(t["players"] for t in kinds.values()), every["players"] + 1)
+        self.assertEqual(every["players"], 8)
+        self.assertEqual(V.series(agg, "players", "none", "none", "all", 7)["points"][0]["value"], 8)
+        split = V.series(agg, "matches", "build_kind", "none", "all", 7)
+        self.assertEqual({p["key"]: p["value"] for p in split["points"]}, {"release": 8, "web": 2, "editor": 1})
+        health = {r["build"]: r["starts"] for r in V.overview(agg, "all", 7)["match_health_by_build"]}
+        self.assertEqual(sum(health.values()), 11)                         # by build: each play under its own kind
+        self.assertEqual(V.audience(agg, "all", 7)["funnel"][0]["players"], 8)
+        self.assertEqual(V.retention(agg, "all", 7)["build"], "all")
+        h = V.health(agg, self.store.health_facts(), 30)
+        builds = {r["build_kind"]: r["events"] for r in h["events_by_build"]}
+        self.assertEqual((builds["web"], builds["editor"], builds["port"]), (2, 1, 0))      # every kind, zeros listed
+        self.assertEqual({r["device"] for r in h["events_by_device"]},
+                         {"iphone", "ipad", "ios", "android_tablet", "web_mobile", "web", "windows"})
+        with self.assertRaises(V.BadRequest):
+            V.overview(agg, "mobile", 7)
+
+    def test_the_device_tables_hold_no_player_ids(self):
+        self.seed()
+        db = sqlite3.connect(self.store.agg_path)
+        for table in ("player_counts_device", "active_rolling_device", "session_players_device", "cohort_weeks_device",
+                      "cohort_days_device", "plays", "daily_events"):
+            dump = json.dumps(db.execute(f"SELECT * FROM {table}").fetchall())
+            for player in ("a1", "a2", "a8"):
+                self.assertNotIn(f'"{player}"', dump, table)
+        self.assertGreater(db.execute("SELECT COUNT(*) FROM player_counts_device WHERE device='ios'").fetchone()[0], 0)
+        db.close()
+
+    def test_saved_views_and_notebooks_keep_a_device_and_build_all(self):
+        made = self.store.save_preset({"name": "iPad", "page": "overview", "chart_id": "overview.series", "series": True,
+                                       "settings": {"measure": "matches"}, "filters": {"build": "all", "device": "ipad"}},
+                                      "ian")
+        self.assertEqual(made["filters"], {"build": "all", "device": "ipad"})
+        for bad in ({"device": "toaster"}, {"build": "mobile"}):
+            with self.assertRaises(S.Invalid):
+                self.store.save_preset({"name": "x", "page": "overview", "chart_id": "overview.series",
+                                        "settings": {}, "filters": bad}, "ian")
+        import analytics_notebook as NB
+        self.assertEqual(NB.check_filters({"device": "tablet", "build": "all"}), {"device": "tablet", "build": "all"})
+        with self.assertRaises(NB.Refused):
+            NB.check_filters({"device": "toaster"})
+        self.seed()
+        out = NB.run_series(self.store, self.store.agg_path, {"measure": "matches", "by": "none", "over": "none"},
+                            {"build": "all", "days": 7, "device": "ipad"})
+        self.assertEqual(out["points"][0]["value"], 2)
+
+
+class DeviceHttp(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        Http.setUp(self)
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            on(IPAD, started, "d1", "m1", T0), on(OLD_WEB, started, "d2", "m2", T0), started("d3", "m3", T0)]})
+        self.app.rebuild()
+
+    def preflight(self, path, origin):
+        request = urllib.request.Request(self.base + path, method="OPTIONS")
+        request.add_header("Origin", origin)
+        request.add_header("Access-Control-Request-Method", "POST")
+        with urllib.request.urlopen(request) as response:
+            return response.headers
+
+    def test_every_read_route_takes_device_and_build_all_and_refuses_bad_values(self):
+        routes = ("/v1/overview", "/v1/retention", "/v1/matches", "/v1/health", "/v1/audience", "/v1/ftue",
+                  "/v1/economy", "/v1/social", "/v1/cohorts", "/v1/playtypes", "/v1/freestyle", "/v1/sessions",
+                  "/v1/balance", "/v1/quits", "/v1/invites", "/v1/errors", "/v1/people", "/v1/eras",
+                  "/v1/series?measure=players&by=device&over=week",
+                  "/v1/series?measure=matches&by=os&over=none", "/v1/dashboards/tile?source=builtin:new_players")
+        for path in routes:
+            sep = "&" if "?" in path else "?"
+            for good in ("device=ipad", "device=web", "build=all", "build=web", "build=all&device=tablet"):
+                status, page, _ = self.call("GET", path + sep + good + "&days=7", key="admin-key")
+                self.assertEqual(status, 200, (path, good, page))
+            for bad in ("device=toaster", "device=iPad", "build=mobile"):
+                self.assertEqual(self.call("GET", path + sep + bad, key="admin-key")[0], 400, (path, bad))
+        page = self.call("GET", "/v1/audience?days=7&device=ipad", key="read-key")[1]
+        self.assertEqual(page["unfiltered"], ["page"])                          # the Players page has no device yet
+        page = self.call("GET", "/v1/overview?days=7&device=ipad", key="read-key")[1]
+        self.assertEqual((page["tiles"]["matches"], page["device"]), (1, "ipad"))
+        page = self.call("GET", "/v1/overview?days=7&build=web", key="read-key")[1]
+        self.assertEqual(page["tiles"]["matches"], 1)
+        people = self.call("GET", "/v1/people?days=7&device=ipad&build=all", key="admin-key")[1]
+        self.assertEqual([(p["distinct_id"], p["devices"]) for p in people["people"]], [("d1", ["ipad"])])
+        status, cmp, _ = self.call("GET", "/v1/eras/compare?a=pre_beta&b=posthog&build=all&device=ios", key="read-key")
+        self.assertEqual((status, cmp["device"]), (200, "ios"))
+
+    def test_the_toybox_origin_may_send_events_but_never_read(self):
+        toybox = "https://play.froglet.games"
+        headers = self.preflight("/batch/", toybox)
+        self.assertEqual(headers.get("Access-Control-Allow-Origin"), toybox)
+        self.assertIn("POST", headers.get("Access-Control-Allow-Methods"))
+        self.assertNotIn("GET", headers.get("Access-Control-Allow-Methods"))
+        self.assertEqual(self.preflight("/v1/batch", "https://www.froglet.games").get("Access-Control-Allow-Origin"),
+                         "https://www.froglet.games")
+        status, out, headers = self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            on(WEB_MOBILE, started, "d4", "m4", T0)]}, origin=toybox)
+        self.assertEqual((status, out["accepted"], headers.get("Access-Control-Allow-Origin")), (200, 1, toybox))
+        # negative controls: the Toybox origin gets no CORS on a read route (preflight or answer) ...
+        self.assertIsNone(self.preflight("/v1/overview", toybox).get("Access-Control-Allow-Origin"))
+        _, _, headers = self.call("GET", "/v1/overview?days=7", key="read-key", origin=toybox)
+        self.assertIsNone(headers.get("Access-Control-Allow-Origin"))
+        # ... an unknown origin gets none anywhere ...
+        self.assertIsNone(self.preflight("/batch/", "https://evil.example").get("Access-Control-Allow-Origin"))
+        _, _, headers = self.call("POST", "/batch/", {"api_key": "in-key", "batch": []}, origin="https://evil.example")
+        self.assertIsNone(headers.get("Access-Control-Allow-Origin"))
+        # ... and the console's read origin still reads, as before
+        _, _, headers = self.call("GET", "/v1/overview?days=7", key="read-key", origin="https://dash.example")
+        self.assertEqual(headers.get("Access-Control-Allow-Origin"), "https://dash.example")
+        self.assertIn("ingest_origins", A.LIVE_FIELDS)
+        self.assertEqual(A.DEFAULTS["ingest_origins"], ["https://play.froglet.games", "https://www.froglet.games"])
 
 
 if __name__ == "__main__":

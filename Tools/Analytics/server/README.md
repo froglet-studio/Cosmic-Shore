@@ -81,7 +81,7 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `analytics_notebook.py` | The Notebook page's routes and rules: notebooks in `events.db` (no player ids), one cell run, Claude's turn over the notebook's re-run totals; `test_analytics_notebook.py` (19 tests) runs with `--self-test` |
 | `mode_elements.py` | Writes `mode_elements.json` (each mode's genre element) from the game's `ModeGenre.cs`, `GameModes.cs` and `ModePreviewLibrary.asset`; `--check` fails when it is stale, `--self-test` checks known answers and a negative control |
 | `mode_elements.json` | GENERATED: `game_mode` -> `[primary, secondary or null]`, the modes with no element, each mode's metric. The server reads only this file (the VM has no `Assets/`) |
-| `test_analytics_server.py` | 90 tests: `python3 analytics_server.py --self-test` (it runs the Notebook's too) |
+| `test_analytics_server.py` | The server's tests: `python3 analytics_server.py --self-test` (it runs the Notebook's too; 120 together on 2026-11-07) |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
 | `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
@@ -101,8 +101,10 @@ the overnight read is written by rules and the Ask box says it is off.
 2. **Stores a resent batch once.** A client that re-sends a batch whose reply it missed does not double the rows.
 3. **Flags the double-send.** The same player, event and properties within 50 ms is marked as a near-duplicate,
    which is the PR #1639 bug. Such rows are kept but marked, and every count collapses them by (player, match).
-4. **Tags the build.** The client's `build_kind` wins. Until it sends one: a platform ending in `Editor` is `editor`,
-   a version ending in `-port` is `port`, anything else is `release`. Editor rows never mix into release numbers.
+4. **Tags the build and the device.** The client's `build_kind` wins. Until it sends one: `WebGLPlayer` is `web` (the
+   browser Toybox), a platform ending in `Editor` is `editor`,
+   a version ending in `-port` is `port`, anything else is `release`. Editor rows never mix into release numbers. The
+   client's `device` wins too; until it sends one, the platform says the family (below, The web build and devices).
 5. **Honours deletion.** The in-game delete button already sends `gdpr_deletion_requested`. Here it deletes every
    row and the person at once. The log keeps a salted hash, not the id. This closes the blocking item in
    `Docs/Analytics/DATA_ARCHITECTURE.md` §8.6, which PostHog's write-only key could only flag.
@@ -371,6 +373,61 @@ frustration chain), **Errors** (per day, the top frames with New marked, by type
 **Invites** on the Social page (the funnel, inviters and invitees against everyone, sent and joined per day). Overview
 gains a row of DAU, WAU, MAU, stickiness, sessions a player a day and median session. AI difficulty is an order, not an
 identity: like elements and setups it is drawn in one neutral hue in steps, never a domain or series colour.
+
+## The web build, All builds and devices (2026-11-07)
+
+Shombith, 2026-11-07: "We need another analytics for webgl in our website as well along with release editor port dev,
+it should also have platform specific views like iOS iPad android etc", and on the build switch: "Can we have a all
+button too?"
+
+**The web build.** The WebGL Toybox (https://play.froglet.games/toybox, embedded in https://www.froglet.games) is its
+own build kind, `web`, beside release, editor, port and development. Its builds say so in `build_kind`; older WebGL
+rows (`platform` WebGLPlayer, no `build_kind`) are read as `web` too, and the first start of this server re-tags the
+ones already stored, once.
+
+**Browser ingest.** A browser page posts only after a CORS preflight. `ingest_origins` in `config.json` (default
+`["https://play.froglet.games", "https://www.froglet.games"]`, picked up live like the keys) answers it on the ingest
+routes (`/batch/`, `/v1/batch`, `/capture`, `/e`) and nowhere else: POST and OPTIONS, `Content-Type`, no
+Authorization. Read routes keep answering CORS for `allowed_origins` only, so a page on the Toybox's origin can send
+events but never read a number (tested, with an unknown origin as the negative control). It needs no setup change:
+the default applies when `config.json` does not name it, and `setup-analytics-vm.sh` leaves it alone on a re-run.
+
+**Devices.** Every event carries a device: the client's own `device` from builds that send it (2026-11-07 on:
+`iphone`, `ipad`, `android_phone`, `android_tablet`, `android`, `windows`, `mac`, `linux`, `web_desktop`,
+`web_mobile`, `other`, beside `os` and `device_model`), else read from `platform`: IPhonePlayer is `ios`, Android
+`android`, the Windows / OSX / Linux players and editors `windows` / `mac` / `linux`, WebGLPlayer `web`, anything else
+`other`. **The PostHog history and every build before the field cannot tell an iPhone from an iPad, an Android phone
+from a tablet, or a desktop browser from a phone's**: those rows read "iOS (device not recorded)", "Android (size not
+recorded)" and "Web (desktop or mobile not recorded)", never guessed, so iPhone, iPad, Phones and Tablets hold the
+newer builds only. `events.device` is set at ingest; a database from before it is filled from each row's own
+properties on the first start (once, `store_meta.devices_filled`). The server needs no schema entry to accept the new
+envelope fields: properties are stored as sent, and only event names are checked against the schema.
+
+`device=<group>` is a filter on every read route, threaded exactly as `play` is (the `Scope`, `unfiltered`): `all`,
+`ios` (iphone, ipad and the old ios), `iphone`, `ipad`, `android` (phone, tablet and the old android),
+`android_phone`, `android_tablet`, `windows`, `mac`, `linux`, `web` (desktop, mobile and the old web), `web_desktop`,
+`web_mobile`, `phone` (iphone, android_phone, web_mobile), `tablet` (ipad, android_tablet), `desktop` (windows, mac,
+linux, web_desktop). Any other value is a 400. Rows (`plays`, `daily_events`, `daily_plays`, `returns`, `sessions`,
+`client_errors`, `freestyle_vessels`, `freestyle_switches`) carry a `device` column; distinct players come from the
+`_device` twins of `player_counts`, `active_rolling`, `session_players`, `cohort_weeks` and `cohort_days`, counted
+once inside each group (a player on an iPhone and an iPad is one iOS player). What has no device is listed in
+`unfiltered`: Overview's business tiles, Matches' signals, Quits' chain, Invites but its Everyone row, and the whole
+of Players' who-plays part, FTUE, Economy, Social and Data health (`["page"]`). `aggregates.db` still holds no player id.
+
+`/v1/series` splits by `device` (every measure but the Toybox's players) and by `os` (the OS family and major version
+from `os`, such as iOS 17 or Android 14; plays only, "not recorded" before the field). Overview answers
+`marketing.by_device`, Matches `by_device`, Errors `by_device`, the player list and profile each player's `devices`,
+and Data health `events_by_build` (every kind, zeros listed) and `events_by_device`, each with its last day.
+
+**All builds.** `build=all` is valid everywhere a build is: every read route, `/v1/series`, cohorts, play types, eras
+and their comparison, dashboard tiles, saved views and the Notebook's filters. Rows add up across the kinds; distinct
+players read `build_kind = '*'` (every build, each player once), which the rebuild now writes into every table of
+distinct players (`player_counts` and `active_rolling` had it; `daily_players`, `players_in_window`, `returns`,
+`players_by_platform`, `players_by_country`, `funnel`, `ftue_steps`, `launches`, `balances`, `settings`,
+`session_players`, `cohort_weeks`, `cohort_days` and the `_device` twins have it now). A page that splits or compares
+by build (match health by build, a series by build, Data health) keeps one row per kind, so nothing counts twice. The
+test checks that All's matches are the sum of the kinds and that a player on two builds is one player of All. The
+default build is still release.
 
 ## Backups and restore
 

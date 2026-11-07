@@ -14,29 +14,47 @@
   const API = (params.get("api") || location.origin).replace(/\/$/, "");
   const KEY_STORE = "froglet-analytics-key";
   const DAYS = [7, 30, 90, 365];
-  // build / days / play / era: which header filters a page takes (and so which it sends to the server).
+  // build / days / play / era / device: which header filters a page takes (and so which it sends to the server).
   const PAGES = {
-    overview: { title: "Overview", build: true, days: DAYS, play: true, era: true },
-    players: { title: "Players", build: true, days: DAYS, play: true, era: true },
-    cohorts: { title: "Cohorts and lifespans", build: true, days: DAYS, play: true, era: true },
-    eras: { title: "Eras", build: true, days: DAYS, play: false, era: false },
-    playtypes: { title: "Solo vs AI, Solo, Multiplayer", build: true, days: DAYS, play: false, era: true },
-    retention: { title: "Retention", build: true, days: DAYS, play: true, era: true },
-    sessions: { title: "Sessions", build: true, days: DAYS, play: false, era: true },
-    matches: { title: "Matches", build: true, days: DAYS, play: true, era: true },
-    balance: { title: "Balance", build: true, days: DAYS, play: true, era: true },
-    quits: { title: "Quits", build: true, days: DAYS, play: true, era: true },
+    overview: { title: "Overview", build: true, days: DAYS, play: true, era: true, device: true },
+    players: { title: "Players", build: true, days: DAYS, play: true, era: true, device: true },
+    cohorts: { title: "Cohorts and lifespans", build: true, days: DAYS, play: true, era: true, device: true },
+    eras: { title: "Eras", build: true, days: DAYS, play: false, era: false, device: true },
+    playtypes: { title: "Solo vs AI, Solo, Multiplayer", build: true, days: DAYS, play: false, era: true, device: true },
+    retention: { title: "Retention", build: true, days: DAYS, play: true, era: true, device: true },
+    sessions: { title: "Sessions", build: true, days: DAYS, play: false, era: true, device: true },
+    matches: { title: "Matches", build: true, days: DAYS, play: true, era: true, device: true },
+    balance: { title: "Balance", build: true, days: DAYS, play: true, era: true, device: true },
+    quits: { title: "Quits", build: true, days: DAYS, play: true, era: true, device: true },
     ftue: { title: "FTUE", build: true, days: DAYS },
     economy: { title: "Economy", build: true, days: DAYS },
     social: { title: "Social", build: true, days: DAYS },
-    errors: { title: "Errors", build: true, days: DAYS, play: false, era: true },
+    errors: { title: "Errors", build: true, days: DAYS, play: false, era: true, device: true },
     health: { title: "Data health", build: false, days: [14, 30, 90] },
     ask: { title: "Ask Claude", build: false, days: null },
     query: { title: "Query Studio", build: true, days: DAYS, play: true, era: true, admin: true },
-    dashboards: { title: "Dashboards", build: true, days: DAYS, play: true, era: true, admin: true },
+    dashboards: { title: "Dashboards", build: true, days: DAYS, play: true, era: true, device: true, admin: true },
     erasure: { title: "Erasure", build: false, days: null, admin: true },
   };
-  const BUILDS = [["release", "Release"], ["editor", "Editor"], ["port", "Port"], ["development", "Dev"]];
+  // The Build switch: All (every build together, each player once), then each kind; Web is the browser Toybox.
+  const BUILDS = [["all", "All"], ["release", "Release"], ["editor", "Editor"], ["port", "Port"], ["web", "Web"], ["development", "Dev"]];
+  // A chart comparing builds: the four category colours in order, Dev (the rarest) the neutral grey. No family meaning.
+  const BUILD_COLOURS = { release: "var(--series-1)", editor: "var(--series-2)", port: "var(--series-3)", web: "var(--series-4)",
+                          development: "var(--fs-text-off)" };
+  const buildLabel = (b) => (BUILDS.find(([k]) => k === b) || [, b])[1];
+  // The Device filter (analytics_views.DEVICES): kinds first, then each family and its devices. iPhone and iPad (and
+  // Android phone and tablet, web desktop and mobile) exist only from builds that send device (from 7 Nov 2026).
+  const DEVICES = [["all", "All devices"], ["phone", "Phones"], ["tablet", "Tablets"], ["desktop", "Desktop"],
+                   ["iphone", "iPhone"], ["ipad", "iPad"], ["ios", "iOS (all)"], ["android_phone", "Android phone"],
+                   ["android_tablet", "Android tablet"], ["android", "Android (all)"], ["windows", "Windows"], ["mac", "Mac"],
+                   ["linux", "Linux"], ["web", "Web (all)"], ["web_desktop", "Web desktop"], ["web_mobile", "Web mobile"]];
+  const deviceFilterLabel = (d) => (DEVICES.find(([k]) => k === d) || [, d])[1];
+  // A stored device as a split key: the old builds' family-only values say what is missing.
+  const DEVICE_LABEL = { iphone: "iPhone", ipad: "iPad", ios: "iOS (device not recorded)", android_phone: "Android phone",
+                         android_tablet: "Android tablet", android: "Android (size not recorded)", windows: "Windows", mac: "Mac",
+                         linux: "Linux", web_desktop: "Web desktop", web_mobile: "Web mobile",
+                         web: "Web (desktop or mobile not recorded)", other: "Other" };
+  const deviceLabel = (k) => DEVICE_LABEL[k] || String(k ?? "Other");
   const PLAYS = [["all", "All"], ["solo_vs_ai", "Solo vs AI"], ["solo", "Solo"], ["multi", "Multiplayer"]];
   const PLAY_TYPES = {
     solo_vs_ai: "Solo vs AI", solo_alone: "Solo", solo: "Solo", multi: "Multiplayer", coop: "Co-op", adversarial: "Versus",
@@ -55,7 +73,7 @@
     "How many players came back the day after their first match, by play type?",
   ];
 
-  const state = { page: "overview", build: "release", days: 90, healthDays: 30, play: "all", era: "", ask: null, asking: false,
+  const state = { page: "overview", build: "release", days: 90, healthDays: 30, play: "all", era: "", device: "all", ask: null, asking: false,
                   profiles: false, admin: false, me: "", person: null, eras: null, milestones: [], unfiltered: [], presets: [] };
   let countryNames = null;
   try { countryNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
@@ -194,6 +212,7 @@
     if (meta.days) q.set("days", String(state.era && meta.era ? 365 : state.days));
     if (meta.play && state.play !== "all") q.set("play", state.play);
     if (meta.era && state.era) q.set("era", state.era);
+    if (meta.device && state.device !== "all") q.set("device", state.device);
     for (const [k, v] of Object.entries(extra || {})) if (v !== null && v !== undefined && v !== "") q.set(k, v);
     return q.toString();
   }
@@ -233,7 +252,8 @@
   const MATCH_MEASURES = ["matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events"];
   const SPLITS = [["none", "None"], ["play_type", "Play type"], ["setup", "Setup"], ["element", "Element"], ["era", "Era"], ["platform", "Platform"],
                   ["country", "Country"], ["game_mode", "Mode"], ["vessel_class", "Vessel"], ["build_kind", "Build"],
-                  ["intensity", "Intensity"], ["ai_difficulty", "AI difficulty"], ["from_vessel_class", "Switched from"], ["switch_source", "Source"]];
+                  ["intensity", "Intensity"], ["ai_difficulty", "AI difficulty"], ["device", "Device"], ["os", "OS"],
+                  ["from_vessel_class", "Switched from"], ["switch_source", "Source"]];
   const MATCH_SPLITS = SPLITS.map(([k]) => k).filter((k) => !["from_vessel_class", "switch_source"].includes(k));
   // ELEMENTS HAVE NO COLOUR (LOCKED): an element split is one neutral hue in steps (the text token mixed into the
   // ground), with its name beside every mark; never Jade, Ruby, Gold, Blue or the domain series colours.
@@ -321,6 +341,9 @@
     if (f.by === "element") return elementLabel(k);
     if (f.by === "setup") return SETUP_LONG[k] || String(k);
     if (f.by === "switch_source") return SWITCH_SOURCE[k] || String(k);
+    if (f.by === "device") return deviceLabel(k);
+    if (f.by === "build_kind") return buildLabel(k);
+    if (f.by === "os" && k === "not recorded") return "Not recorded (older builds)";
     if (f.by === "ai_difficulty" && (k === "unknown" || !k)) return "Not sent";
     if ((f.by === "vessel_class" || f.by === "from_vessel_class") && k === "unknown") return "Not named (older builds)";
     return String(k);
@@ -341,6 +364,7 @@
     if (f.by === "element") return elementColour(k);
     if (f.by === "setup") return SETUP_COLOUR[k] || OTHER;
     if (f.by === "ai_difficulty") return difficultyColour(f, k);
+    if (f.by === "build_kind" && BUILD_COLOURS[k]) return BUILD_COLOURS[k];
     if (f.keys.length === 1 && (k === null || !f.time)) return "var(--data)";
     return i < 4 ? `var(--series-${i + 1})` : OTHER;
   }
@@ -618,7 +642,7 @@
   function seriesLoad(extra) {
     const load = async ({ measure, by, over }) => {
       const meta = PAGES[state.page];
-      const path = `/v1/series?${filterQuery(Object.assign({}, meta, { build: true, days: meta.days || DAYS, play: true, era: true }),
+      const path = `/v1/series?${filterQuery(Object.assign({}, meta, { build: true, days: meta.days || DAYS, play: true, era: true, device: true }),
         Object.assign({ measure, by, over }, extra || {}))}`;
       return frameFromSeries(await cached(path));
     };
@@ -711,7 +735,7 @@
       else if (frame.time) out = responsive((w, box) => drawTimeBars(frame, w, box, { height: cfg.height || 220 }));
       else out = responsive((w, box) => drawHBars(frame, w, box, { limit: cfg.limit || 12 }));
       body.replaceChildren(out);
-      const uf = (frame.unfiltered || []).length && (state.play !== "all" || state.era) ? filterWord() : "";
+      const uf = (frame.unfiltered || []).length && (state.play !== "all" || state.era || state.device !== "all") ? filterWord() : "";
       const hidden = frame.hidden && shown !== "table" ? `${frame.hidden} smaller parts are in the Table.` : "";
       const notes = (frame.notes || []).map((n) => sentence(typeof n === "string" ? n : n && (n.text || n.note || n.title))).filter(Boolean);
       note.textContent = [uf && `Not split by ${uf}: ${frame.unfiltered.join(", ").replace(/_/g, " ")}.`, hidden, ...notes].filter(Boolean).join(" ");
@@ -793,17 +817,19 @@
     if (meta.days && !(meta.era && state.era)) f.days = state.days;
     if (meta.play) f.play = state.play;
     if (meta.era && state.era) f.era = state.era;
+    if (meta.device && state.device !== "all") f.device = state.device;
     return f;
   }
   const settingsText = (st) => [st.measure && (MEASURES[st.measure] || [st.measure])[0], st.by && st.by !== "none" && `by ${((SPLITS.find(([k]) => k === st.by) || [, st.by])[1]).toLowerCase()}`,
     st.over && ({ day: "per day", week: "per week", none: "in total" })[st.over], st.form].filter(Boolean).join(" · ");
-  const filtersText = (f) => [f.build, f.era ? (eraById(f.era) || {}).name || f.era : f.days ? `${f.days} d` : null,
-    f.play && f.play !== "all" ? GROUP_LABEL[f.play] : null].filter(Boolean).join(" · ");
+  const filtersText = (f) => [f.build && buildLabel(f.build), f.era ? (eraById(f.era) || {}).name || f.era : f.days ? `${f.days} d` : null,
+    f.play && f.play !== "all" ? GROUP_LABEL[f.play] : null, f.device && f.device !== "all" ? deviceFilterLabel(f.device) : null].filter(Boolean).join(" · ");
   function applyPreset(p) {
     const f = p.filters || {};
     if (f.build) state.build = f.build;
     if (f.days) state.days = f.days;
     state.play = f.play || "all";
+    state.device = DEVICES.some(([k]) => k === f.device) ? f.device : "all";
     state.era = f.era && eraById(f.era) ? f.era : "";
     store.set("fa-chart-" + p.chart_id, Object.assign({}, store.get("fa-chart-" + p.chart_id, {}) || {}, p.settings || {}));
     state.person = null;
@@ -897,10 +923,10 @@
 
   // Which header filters a number ignores, in words ("play type", "era").
   function filterWord() {
-    return [state.play !== "all" && "play type", state.era && "era"].filter(Boolean).join(" or ");
+    return [state.play !== "all" && "play type", state.era && "era", state.device !== "all" && "device"].filter(Boolean).join(" or ");
   }
   function ufTag() {
-    const words = [state.play !== "all" && "all play types", state.era && "all eras"].filter(Boolean);
+    const words = [state.play !== "all" && "all play types", state.era && "all eras", state.device !== "all" && "all devices"].filter(Boolean);
     return words.length ? h("span", { class: "uf-tag" }, words.join(" · ")) : null;
   }
   // card(title, note, ...body); a title listed in the page's "unfiltered" gets the small "all play types" tag.
@@ -1048,7 +1074,9 @@
           tileRow([
             ["New players", fmt(newPlayers), rangeLabel(), false, "marketing.new_players_per_day"],
             ["Top country", top(mk && mk.by_country, "country") ? country(top(mk.by_country, "country")) : "–", "most players", false, "marketing.by_country"],
-            ["Top platform", fmt(top(mk && mk.by_platform, "platform")), "most players", false, "marketing.by_platform"],
+            mk && Array.isArray(mk.by_device)
+              ? ["Top device", top(mk.by_device, "device") ? deviceLabel(top(mk.by_device, "device")) : "–", "most players", false, "marketing.by_device"]
+              : ["Top platform", fmt(top(mk && mk.by_platform, "platform")), "most players", false, "marketing.by_platform"],
             ["Shares", fmt(shares), "share_triggered", false, "marketing.shares"],
             ["Invites sent", fmt(mk && mk.invites_sent), "party invites", false, "marketing.invites_sent"],
           ], "tiles-inner")),
@@ -1057,7 +1085,7 @@
             ["Crystals earned", fmt(biz && biz.crystals_earned), rangeLabel(), false, "business.crystals_earned"],
             ["Crystals spent", fmt(biz && biz.crystals_spent), rangeLabel(), false, "business.crystals_spent"],
             ["Whales", fmt(biz && biz.whales_2000), "players holding 2,000+", false, "business.whales_2000"],
-            ["Earned per spent", biz && biz.crystals_spent ? ratio(biz.crystals_earned / biz.crystals_spent) : "–", "above 1 means saving"],
+            ["Earned per spent", biz && biz.crystals_spent ? ratio(biz.crystals_earned / biz.crystals_spent) : "–", "above 1 means saving", false, "business.crystals_earned"],
           ], "tiles-inner"))));
     }
     parts.push(seriesPanel("overview.series", "Matches over time", { measure: "matches", by: "play_type", over: "day", form: "bars" }));
@@ -1071,7 +1099,7 @@
           forms: ["bars", "pie", "table"], defaults: { form: "table" },
           load: staticLoad(({ measure }) => Object.assign(catFrame(o.match_health_by_build || [], "build", measure,
             { kind: measure === "starts" ? "count" : measure === "rows_per_play" ? "ratio" : "pct", measure, vname: measure.replace(/_/g, " "),
-              colours: Object.fromEntries(BUILDS.map(([b], i) => [b, `var(--series-${i + 1})`])) }),
+              label: buildLabel, colours: BUILD_COLOURS }),
             { table: { columns: ["Build", "Starts", "Finished", "Rows per play"], rows: (o.match_health_by_build || []).map((r) =>
               [r.build, fmt(r.starts), pct(r.finished_pct), ratio(r.rows_per_play)]) } })) }),
         ucard("events_24h", "Events, last 24 hours", state.build,
@@ -1083,8 +1111,13 @@
       parts.push(h("div", { class: "grid2" },
         Array.isArray(mk.by_country) ? chartPanel({ id: "overview.country", title: "New players by country", forms: ["bars", "pie", "table"],
           load: staticLoad(() => catFrame(mk.by_country, "country", "players", { by: "country", kname: "Country", vname: "Players" })) }) : null,
-        Array.isArray(mk.by_platform) ? chartPanel({ id: "overview.platform", title: "New players by platform", forms: ["bars", "pie", "table"],
-          load: staticLoad(() => catFrame(mk.by_platform, "platform", "players", { kname: "Platform", vname: "Players" })) }) : null));
+        Array.isArray(mk.by_platform) ? chartPanel({ id: "overview.platform", title: "Players by device", forms: ["bars", "pie", "table"],
+          measureLabel: "By", measures: [["device", "Device"], ["platform", "Platform"]],
+          note: "iPhone or iPad from builds since 7 Nov",
+          load: staticLoad(({ measure }) => measure === "platform" || !Array.isArray(mk.by_device)
+            ? catFrame(mk.by_platform, "platform", "players", { kname: "Platform", vname: "Players" })
+            : catFrame(mk.by_device, "device", "players", { by: "device", label: deviceLabel, kname: "Device", vname: "Players" })),
+          after: h("p", { class: "small" }, "Older iOS builds read iOS (device not recorded) and older web builds Web (desktop or mobile not recorded): they sent the platform only.") }) : null));
     }
     return parts;
   }
@@ -1218,11 +1251,11 @@
   // ------------------------------------------------------------------ Matches
 
   // A list of rows by category (mode, vessel, intensity) as a switchable chart; its Table keeps every column.
-  function byPanel(id, title, rows, keyField, keyName, measures, columns, cells) {
+  function byPanel(id, title, rows, keyField, keyName, measures, columns, cells, labelOf) {
     return chartPanel({ id, title, forms: ["bars", "pie", "table"], measures, defaults: { form: "bars" },
       load: staticLoad(({ measure }) => Object.assign(catFrame(rows, keyField, measure, {
         kind: /pct$/.test(measure) ? "pct" : /_s$/.test(measure) ? "avg" : "count", measure,
-        label: (k) => (k === null || k === undefined || k === "null" ? "Unknown" : keyField === "intensity" ? `Intensity ${k}` : String(k)),
+        label: (k) => (k === null || k === undefined || k === "null" ? "Unknown" : labelOf ? labelOf(k) : keyField === "intensity" ? `Intensity ${k}` : String(k)),
         vname: (measures.find((m) => m[0] === measure) || [, measure])[1] }),
         { table: { columns, rows: rows.map(cells) } })) });
   }
@@ -1262,6 +1295,10 @@
       h("div", { class: "grid2" },
         byPanel("matches.vessel", "By vessel", m.by_vessel || [], "vessel_class", "Vessel", plays,
           ["Vessel", "Plays", "Finished", "Won", "Avg flight"], (r) => [r.vessel_class || "Unknown", fmt(r.plays), pct(r.finished_pct), pct(r.win_pct), r.avg_flight_s ? `${r.avg_flight_s} s` : "–"]),
+        byPanel("matches.device", "By device", m.by_device || [], "device", "Device", plays,
+          ["Device", "Plays", "Finished", "Won", "Avg flight"], (r) => [deviceLabel(r.device), fmt(r.plays), pct(r.finished_pct), pct(r.win_pct), r.avg_flight_s ? `${r.avg_flight_s} s` : "–"],
+          deviceLabel)),
+      h("div", {},
         ucard("signals", "What players say about modes", "favourites, repeated fails, shares",
           (m.signals || []).length
             ? table(["Mode", "Favourited", "Unfavourited", "Repeated fails", "Shared"], m.signals.map((r) => h("tr", {},
@@ -1531,14 +1568,14 @@
         { measures: [["players", "Players"], ["new_players", "New players"]] }),
       h("div", { class: "grid2" },
         chartPanel({ id: "players.country", title: "Where they play from", note: "country from the connection, the address itself is not kept",
-          forms: ["bars", "pie", "table"], tag: state.play !== "all" || !!state.era,
+          forms: ["bars", "pie", "table"], tag: state.play !== "all" || !!state.era || state.device !== "all",
           load: staticLoad(() => catFrame(a.countries, "country", "players", { by: "country", kname: "Country", vname: "Players" })),
           after: h("p", { class: "small" }, "IP Geolocation by ", h("a", { href: "https://db-ip.com", target: "_blank", rel: "noopener", style: "color:inherit" }, "DB-IP")) }),
-        chartPanel({ id: "players.platform", title: "What they play on", forms: ["bars", "pie", "table"], tag: state.play !== "all" || !!state.era,
+        chartPanel({ id: "players.platform", title: "What they play on", forms: ["bars", "pie", "table"], tag: state.play !== "all" || !!state.era || state.device !== "all",
           load: staticLoad(() => catFrame(a.platforms, "platform", "players", { kname: "Platform", vname: "Players" })) })),
       h("div", { class: "grid2" },
         chartPanel({ id: "players.funnel", title: "First-day funnel", note: "players whose first event was in this range, and how far they have got",
-          forms: ["bars", "table"], tag: state.play !== "all" || !!state.era, emptyText: "No new players in this range.",
+          forms: ["bars", "table"], tag: state.play !== "all" || !!state.era || state.device !== "all", emptyText: "No new players in this range.",
           load: staticLoad(() => Object.assign(catFrame(a.funnel, "step", "players", { kname: "Step", vname: "Players" }),
             { tips: Object.fromEntries(a.funnel.map((x) => [x.step, `${pct(first ? Math.round(1000 * x.players / first) / 10 : null)} of new`])) })) }),
         card("Launch to menu", "seconds from opening the game to the main menu",
@@ -1767,6 +1804,7 @@
           statRow([["Devices (installs)", fmt(Object.keys(w.installs || {}).length)], ["Launch to menu, typical", seconds(act.launch_to_menu_p50)]]),
           h("div", { class: "bargroups" },
             barGroup("Countries", barList(w.countries, country)), barGroup("Platforms", barList(w.platforms)),
+            w.devices ? barGroup("Kind of device", barList(w.devices, deviceLabel)) : null,
             barGroup("App versions", barList(w.app_versions)), barGroup("Builds", barList(w.builds)),
             barGroup("How sessions ended", barList(act.session_ends, null, { empty: "No session ends." })))),
         card("Profile the game sent", "the latest person properties", person.length
@@ -2399,7 +2437,7 @@
     state.unfiltered = e.unfiltered || [];
     if (e.empty) return [empty(NOTHING_YET)];
     const t = e.tiles || {};
-    const splits = [["by_type", "Type"], ["by_build", "Build"], ["by_platform", "Platform"], ["by_version", "Version"], ["by_scene", "Scene"]];
+    const splits = [["by_type", "Type"], ["by_build", "Build"], ["by_device", "Device"], ["by_platform", "Platform"], ["by_version", "Version"], ["by_scene", "Scene"]];
     return [
       tileRow([
         ["Occurrences", fmt(t.occurrences), rangeLabel(), t.occurrences > 0],
@@ -2421,7 +2459,8 @@
       chartPanel({ id: "errors.split", title: "Errors by", measureLabel: "By", measures: splits, forms: ["bars", "pie", "table"],
         emptyText: "No errors in this range.",
         load: staticLoad(({ measure }) => catFrame(e[measure] || [], "key", "occurrences", { kname: (splits.find((x) => x[0] === measure) || [, ""])[1], vname: "Occurrences",
-          colours: measure === "by_build" ? Object.fromEntries(BUILDS.map(([b0], i) => [b0, `var(--series-${i + 1})`])) : null })) }),
+          label: measure === "by_build" ? buildLabel : measure === "by_device" ? deviceLabel : null,
+          colours: measure === "by_build" ? BUILD_COLOURS : null })) }),
       howCounted(notesBlock(e.notes)),
     ];
   }
@@ -2496,6 +2535,18 @@
           statusRow(true, "Editor share of matches", pct(d.editor_share_pct)),
           statusRow(!(d.double_payouts || []).length, "Crystals paid twice", fmt((d.double_payouts || []).reduce((a, r) => a + r.count, 0))),
           statusRow(!(d.cloud_save_failures || []).length, "Cloud save failures", fmt((d.cloud_save_failures || []).reduce((a, r) => a + r.count, 0))))),
+      chartPanel({ id: "health.sources", title: "Events by build and device", note: `last ${state.healthDays} days; Table adds the last day each was seen`,
+        measureLabel: "By", measures: [["by_build", "Build"], ["by_device", "Device"]], forms: ["bars", "table"], defaults: { form: "bars" },
+        emptyText: "No events in this range.",
+        load: staticLoad(({ measure }) => {
+          const rows = measure === "by_device" ? (d.events_by_device || []) : (d.events_by_build || []);
+          const key = measure === "by_device" ? "device" : "build_kind", name = measure === "by_device" ? deviceLabel : buildLabel;
+          return Object.assign(catFrame(rows, key, "events", { label: name, kname: measure === "by_device" ? "Device" : "Build", vname: "Events",
+            colours: measure === "by_build" ? BUILD_COLOURS : null }),
+            { table: { columns: [measure === "by_device" ? "Device" : "Build", "Events", "Last seen"],
+              rows: rows.map((r) => [name(r[key]), fmt(r.events), r.last_day ? shortDay(r.last_day) : "never"]) } });
+        }),
+        after: h("p", { class: "small" }, d.device_note ? d.device_note.charAt(0).toUpperCase() + d.device_note.slice(1) + "." : null) }),
       h("div", { class: "grid2" },
         chartPanel({ id: "health.dups", title: "Flagged duplicates per day", note: "same player, event and properties within 50 ms",
           forms: ["bars", "line", "table"], height: 180, emptyText: "None.",
@@ -2999,6 +3050,18 @@
     box.replaceChildren(h("label", { class: "era-lab", for: "era-select" }, "Era"), sel);
   }
 
+  // The Device filter: a compact dropdown (16 choices do not fit a segmented switch at phone width).
+  function deviceFilter(meta) {
+    const box = $("seg-device");
+    box.hidden = !meta.device;
+    if (!meta.device) return;
+    const sel = h("select", { id: "device-select", class: "era-select", "aria-label": "Device" },
+      DEVICES.map(([k, label]) => h("option", { value: k, selected: k === state.device || null }, label)));
+    sel.addEventListener("change", () => { state.device = sel.value; getCache.clear(); render(); });
+    box.classList.toggle("on", state.device !== "all");
+    box.replaceChildren(h("label", { class: "era-lab", for: "device-select" }, "Device"), sel);
+  }
+
   const PAGE_FNS = () => ({ overview, players, cohorts, eras: erasPage, playtypes: playtypesPage, retention, matches, health,
     ftue: ftuePage, economy: economyPage, social: socialPage, query: queryPage, dashboards: dashboardsPage,
     sessions: sessionsPage, balance: balancePage, quits: quitsPage, errors: errorsPage, ...EXTRA_PAGES });
@@ -3013,7 +3076,8 @@
     const era = state.era && meta.era && eraById(state.era);
     const eyebrow = [meta.admin ? "admin" : null, meta.build ? `${state.build} builds` : null,
       meta.days ? (era ? era.name : `last ${state.page === "health" ? state.healthDays : state.days} days`) : null,
-      meta.play && state.play !== "all" ? GROUP_LABEL[state.play] : null].filter(Boolean);
+      meta.play && state.play !== "all" ? GROUP_LABEL[state.play] : null,
+      meta.device && state.device !== "all" ? deviceFilterLabel(state.device) : null].filter(Boolean);
     $("eyebrow").textContent = eyebrow.length ? eyebrow.join(" · ") : "Froglet Analytics";
     for (const a of document.querySelectorAll(".nav")) {
       if (a.dataset.page === state.page) a.setAttribute("aria-current", "page");
@@ -3024,6 +3088,7 @@
     $("menu-page").textContent = navNow ? navNow.textContent : meta.title;
     $("admin-nav").hidden = !state.admin;
     eraFilter(meta);
+    deviceFilter(meta);
     $("seg-build").hidden = !meta.build;
     $("seg-days").hidden = !meta.days;
     $("seg-play").hidden = !meta.play;
@@ -3040,7 +3105,7 @@
       });
     }
     if (meta.play) segment($("seg-play"), PLAYS, state.play, (p) => { state.play = p; getCache.clear(); render(); });
-    $("filters").hidden = ["seg-era", "seg-build", "seg-days", "seg-play"].every((id) => $(id).hidden);
+    $("filters").hidden = ["seg-era", "seg-build", "seg-days", "seg-play", "seg-device"].every((id) => $(id).hidden);
     if (["ask", "erasure", "eras", "query", "dashboards"].includes(state.page)) setUpdated(null);
     const page = $("page");
     $("preview-note").hidden = !SNAPSHOT;
@@ -3067,11 +3132,15 @@
       shownView = view;
       const note = $("unfiltered");
       const uf = (state.unfiltered || []).filter((k) => k !== "lifespans");
-      const filtering = state.play !== "all" || state.era;
-      const ignored = [!meta.play && state.play !== "all" && "the Play filter", !meta.era && state.era && "the Era filter"].filter(Boolean);
+      const filtering = state.play !== "all" || state.era || state.device !== "all";
+      const ignored = [!meta.play && state.play !== "all" && "the Play filter", !meta.era && state.era && "the Era filter",
+        !meta.device && state.device !== "all" && "the Device filter"].filter(Boolean);
       if (uf.includes("page") || (ignored.length && meta.days)) {
+        const named = ignored.length ? ignored : [state.play !== "all" && "the Play filter", state.era && "the Era filter",
+          state.device !== "all" && "the Device filter"].filter(Boolean);
+        const words = named.length > 1 ? named.slice(0, -1).join(", ") + " and " + named[named.length - 1] : named[0] || "the filters";
         note.hidden = false;
-        note.textContent = `This page reads every play type and its own range: ${ignored.join(" and ") || "the Play and Era filters"} ${ignored.length > 1 ? "do" : "does"} not reach it.`;
+        note.textContent = `This page reads every play type, every device and its own range: ${words} ${named.length > 1 ? "do" : "does"} not reach it.`;
       } else {
         note.hidden = !(uf.length && filtering);
         note.textContent = note.hidden ? "" : `Not split by ${filterWord()} on this page: ${uf.join(", ").replace(/[_.]/g, " ")}. Those numbers carry the "all" tag.`;
@@ -3209,6 +3278,7 @@
     register(name, meta, page) { PAGES[name] = meta; EXTRA_PAGES[name] = page; },
     h, api, card, empty, table, chartPanel, seriesPanel, staticLoad, resultFrame, barList, statRow, fmt, when, store, state,
     render, setUpdated, pageFilters, filtersText, eraById, MEASURES, MATCH_MEASURES, MATCH_SPLITS, DAYS, SNAPSHOT,
+    DEVICES, deviceFilterLabel, buildLabel,
   };
 
   sea();
