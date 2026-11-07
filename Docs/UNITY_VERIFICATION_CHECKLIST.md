@@ -21466,6 +21466,24 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Headlong: the stampede, hedges the Rhino ploughs through (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tools/Build/headlong_course_harness/run.sh
+--self-test`, 9 pass, 4 negative controls fire); the race model is `Tools/Build/headlong_stampede_model.py`
+(`HEADLONG.md` §0).
+
+1. **Open and save `MinigameHeadlong` once** (the controller gained `hedgePrefab` and the stampede fields), then
+   `python3 Tools/Build/author_headlong_assets.py --check` adopts it.
+2. **I1, two Rhinos.** Four hedges stand across the longest straights. Holding the line, a hedge sprays aside and the
+   speed readout does not drop. The log has `[Headlong] STAMPEDE intensity 1: 4 hedges (0 danger), 0 Time crystals.`
+3. **Next lap:** every hedge stands whole again (they re-stand 2.5 s after the last hull leaves).
+4. **I2:** two Time crystals sit just inside the tightest corners; taking one raises the Time card a level.
+5. **I3:** three wide red hedges each have a round plain window off-centre. Ploughing one drops every element a level
+   (one burn per hedge, not one per slab); flying the window costs nothing. An AI Rhino swerves for the window on laps
+   1-4 and ploughs on lap 5.
+6. **I4:** the race starts at Time 5. Leave a hairpin fast and the red hedge after it sprays aside with no burn
+   (Momentum, the Time card flashes); leave it slow and you are burned to Time 4.
+7. **Frame time** with four Rhinos at I3 (about 2000 hedge slabs): no worse than Switchback I2.
 ## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21

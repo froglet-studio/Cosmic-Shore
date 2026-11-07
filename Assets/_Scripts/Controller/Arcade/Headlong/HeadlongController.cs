@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// wrapping an index the race was already keeping. The Rhino's shipped kit supplies the
     /// racing; its sword is the interference.</para>
     /// </summary>
-    public class HeadlongController : GateRaceController
+    public partial class HeadlongController : GateRaceController
     {
         [Header("Headlong circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
