@@ -193,8 +193,9 @@ namespace CosmicShore.Tests
             // 72 -> 73 on 2026-11-07: DecoyRun (80), the Jacks' Time race.
             // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
             // 74 -> 75 on 2026-11-07: SlipLine (82), the Honeyguide's Time race.
+            // 75 -> 76 on 2026-11-07: Breach (83), the Orca's Time race.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(75, values.Length,
+            Assert.AreEqual(76, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -244,6 +245,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.DecoyRun, 80)]
         [TestCase(GameModes.PerchRun, 81)]
         [TestCase(GameModes.SlipLine, 82)]
+        [TestCase(GameModes.Breach, 83)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

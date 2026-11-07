@@ -140,3 +140,22 @@ One-paragraph designs, each built on what the hull does today:
   holds. The Ratel's patterns decide which rails you can ride. Blocked on the battery being replicated.
 - **Orca, "Convoy"**: the helm's boost tank through rings, with walls only a gunner can clear. Blocked on bursts and
   prism breaks replicating (today they do not).
+
+## 2026-11-07, round 4: the four new vessels get Time games
+
+All four are Garrett's hulls. Each race is built on what the hull's own flight does, which every peer sees; the
+second-seat tricks that run on one machine are used only where the owner's machine is the one that needs them. The
+review page for all four: https://claude.ai/artifact/LGPLko2T267Ac2q1nn4YSE.
+
+| Vessel | Game | The ladder (I1 / I2 / I3 / I4) | Reading the course saves (I1-I4) | PR | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Jacks | **Decoy Run** (80) | doors / skewers / skewers on rolled flats / Time 5 knots with hairpins | 0 / 14 / 13 / 20 % | #1809 | 9 | 6 | 8 | 5 | 2 | 3 | **5.5** est. |
+| Goby | **Perch Run** (81) | darts / hairpins (length) / coral (line) / reef with doubles | 7 / 22 / 25 / 37 % | #1812 | 9 | 7 | 9 | 5 | 2 | 3 | **5.8** est. |
+| Honeyguide | **Slip Line** (82) | three rails / one coloured rail, stubs / leaning rails / chains | 0 / 1.1 / 0.6 / 0.9 % (the catch is unmeasured) | #1822 | 8 | 6 | 6 | 6 | 2 | 3 | **5.2** est. |
+| Orca | **Breach** (83, was sketched as "Convoy") | open water / hard turns / danger walls before rings / both | 1.6 / 10.7 / 10.5 / 17.1 % | #1824 | 8 | 7 | 8 | 4 | 2 | 3 | **5.3** est. |
+
+Vessel changes (all small, all Garrett's to confirm): the Jacks' take-off mark and the Goby's reach ring (instruments a
+person already needed), and one AI race coach per hull (`IJacksRaceCoach`, `IGobyRaceCoach`, `IHoneyguideRaceCoach`,
+`IOrcaRaceCoach`), inert outside its race. **Found:** the shipped Orca AI helm never burns in any mode; a default
+gate-race coach from Breach's burn rule is proposed, not made. Slip Line's spending decision measured at about 1% and is
+documented as such. None of the four has been flown; Rivals and Fairness stay low until people race them.

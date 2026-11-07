@@ -204,6 +204,9 @@ namespace CosmicShore.Editor
                 "  • Decoy Run: RINGS a DOMAIN's lead runner needs to thread to finish the Jacks' Time race - " +
                 "a cycle is the take-off jump plus a fast travel to each decoy, so the rings come in groups (1 / 2 / 2 / 3). Default " +
                 EndConditionOverridesSO.DefaultDecoyRunGateTarget + ".\n" +
+                "  • Breach: RINGS a DOMAIN's lead runner needs to thread to finish the Orca's Time race - " +
+                "the helm burns its tank down the straights and coasts the hard turns and the danger walls that stand before some rings. Default " +
+                EndConditionOverridesSO.DefaultBreachGateTarget + ".\n" +
                 "  • Slip Line: RINGS a DOMAIN's lead runner needs to thread to finish the Honeyguide's Time race - " +
                 "the rings run along prism rails in the slip colours, and a slip down a rail the battery holds a charge for crosses a leg at the zip's speed. Default " +
                 EndConditionOverridesSO.DefaultSlipLineGateTarget + ".\n" +
@@ -281,6 +284,7 @@ namespace CosmicShore.Editor
             int spp = Mathf.Max(0, EditorGUILayout.IntField("Lantern Run - Gate Target (laps x rings)", _config.lanternRunGateTarget));
             int thl = Mathf.Max(0, EditorGUILayout.IntField("Thornline - Gate Target (rings, an open chain)", _config.thornlineGateTarget));
             int g80 = Mathf.Max(0, EditorGUILayout.IntField("Decoy Run - Gate Target (rings)", _config.decoyRunGateTarget));
+            int g83 = Mathf.Max(0, EditorGUILayout.IntField("Breach - Gate Target (rings)", _config.breachGateTarget));
             int g82 = Mathf.Max(0, EditorGUILayout.IntField("Slip Line - Gate Target (rings)", _config.slipLineGateTarget));
             int g81 = Mathf.Max(0, EditorGUILayout.IntField("Perch Run - Gate Target (rings)", _config.perchRunGateTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
@@ -333,6 +337,7 @@ namespace CosmicShore.Editor
                     _config.lanternRunGateTarget = spp;
                     _config.thornlineGateTarget = thl;
                     _config.decoyRunGateTarget = g80;
+                    _config.breachGateTarget = g83;
                     _config.slipLineGateTarget = g82;
                     _config.perchRunGateTarget = g81;
                     _config.regattaGateTarget = rg;
@@ -392,6 +397,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Lantern Run", spp > 0 ? spp.ToString() : EndConditionOverridesSO.DefaultLanternRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Thornline", thl > 0 ? thl.ToString() : EndConditionOverridesSO.DefaultThornlineGateTarget + " (default)");
             EditorGUILayout.LabelField("Decoy Run", g80 > 0 ? g80.ToString() : EndConditionOverridesSO.DefaultDecoyRunGateTarget + " (default)");
+            EditorGUILayout.LabelField("Breach", g83 > 0 ? g83.ToString() : EndConditionOverridesSO.DefaultBreachGateTarget + " (default)");
             EditorGUILayout.LabelField("Slip Line", g82 > 0 ? g82.ToString() : EndConditionOverridesSO.DefaultSlipLineGateTarget + " (default)");
             EditorGUILayout.LabelField("Perch Run", g81 > 0 ? g81.ToString() : EndConditionOverridesSO.DefaultPerchRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
@@ -469,6 +475,7 @@ namespace CosmicShore.Editor
                    "Lantern Run: " + Fmt(_config.lanternRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultLanternRunGateTarget) + "\n" +
                    "Thornline: " + Fmt(_config.thornlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultThornlineGateTarget) + "\n" +
                    "Decoy Run: " + Fmt(_config.decoyRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultDecoyRunGateTarget) + "\n" +
+                   "Breach: " + Fmt(_config.breachGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBreachGateTarget) + "\n" +
                    "Slip Line: " + Fmt(_config.slipLineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSlipLineGateTarget) + "\n" +
                    "Perch Run: " + Fmt(_config.perchRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultPerchRunGateTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
