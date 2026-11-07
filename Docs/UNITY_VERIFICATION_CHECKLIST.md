@@ -21602,6 +21602,23 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Perch Run: the Goby's Time race (2026-11-07, branch `claude/goby-perch-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/perch_run_harness/run.sh
+--self-test`: 10 pass, 7 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/PERCH_RUN.md` §8:
+
+1. Open `MinigamePerchRun` once and save it (a text clone); then `python3 Tools/Build/author_perch_run_assets.py --check`.
+2. Run the EditMode tests `PerchRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: hold the dart; the new reach ring slides out along the nose and the Goby stops on it. A dart through a ring
+   counts it.
+4. I2: a full charge through a hairpin leaves the next ring out of reach; a judged charge turns it in one dart.
+5. I3: coral heads stand on their legs; a dart at the centre stops on the head (the reach ring sits on it); a rim shot
+   threads. I4: a double darted on the right line counts both rings.
+6. Two AI Gobys dart ring to ring and finish (note any that turns in place or cruises).
+7. Outside the race: a Goby in the Toybox darts and its AI lays islands exactly as before (the coach is null there);
+   the reach ring shows while charging.
+
 ## 🔴 Decoy Run: the Jacks' Time race (2026-11-07, branch `claude/jacks-decoy-run`)
 
 Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/decoy_run_harness/run.sh

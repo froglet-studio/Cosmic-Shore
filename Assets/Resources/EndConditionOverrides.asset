@@ -65,6 +65,7 @@ MonoBehaviour:
   lanternRunGateTarget: 16
   thornlineGateTarget: 16
   decoyRunGateTarget: 12
+  perchRunGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
@@ -120,6 +121,7 @@ MonoBehaviour:
   lanternRunGateTargetBuild: 16
   thornlineGateTargetBuild: 16
   decoyRunGateTargetBuild: 12
+  perchRunGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

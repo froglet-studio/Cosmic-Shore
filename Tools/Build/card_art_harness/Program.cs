@@ -117,6 +117,7 @@ static class Program
             case "lanternrun":
             case "thornline":
             case "decoyrun":
+            case "perchrun":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -137,6 +138,7 @@ static class Program
                     "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
                     "thornline" => ThornlineCourse.Generate(seed, Apply(ThornlineCourse.ForIntensity(intensity), layer), thorns),
                     "decoyrun" => DecoyRunCourse.Generate(seed, Apply(DecoyRunCourse.ForIntensity(intensity), layer)),
+                    "perchrun" => PerchRunCourse.Generate(seed, Apply(PerchRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -157,6 +159,15 @@ static class Program
                     foreach (var c in chalk)
                         AddPrism(scene, new SpawnPoint(c, Quaternion.identity, Vector3.one * DecoyRunCourse.ChalkSize * 2f), pal.For(Domains.Blue, PrismKind.SuperShielded));
                     return chalk.Count;
+                }
+                if (kind == "perchrun")
+                {
+                    // the coral: one super-shielded cube per blocked leg, square to its leg, as the mode lays it
+                    var coral = new List<Coral>();
+                    PerchRunCourse.CoralFor(gates, Apply(PerchRunCourse.ForIntensity(intensity), layer), coral);
+                    foreach (var c in coral)
+                        AddPrism(scene, new SpawnPoint(c.Position, c.Rotation, Vector3.one * c.Size), pal.For(Domains.Blue, PrismKind.SuperShielded));
+                    return coral.Count;
                 }
                 if (kind == "thornline")
                 {
