@@ -71,6 +71,51 @@ What else was tried:
 benchmark's real races (6-20 misses, 67-122 s). The model likely flatters today, so the lead's real-game gain may be
 larger or smaller than shown: only an editor race settles it.
 
+## Fleet-wide: the same lead on every line-flying hull (2026-11-07)
+
+Asked by the planning thread, because thread 6 (the Manta's nose rate, PR #1780) and thread 9 (the real grid ledger,
+PR #1782) reached the same cause from the other side. `python3 Tools/Build/scarab_nose_lead_sim.py --fleet`:
+- each hull at its constant AI-rival speed and turn law (`regatta_line_sim.HULLS`);
+- its own race line from `Resources/RaceLines` on each branch;
+- 9 seats, gain 2.5, extra 40.
+
+The Stoat (sling orbit), Squirrel (own pilot) and Urchin (rides its rail) are not on this model. A MODEL: no traffic, no
+rams, and the Manta's Soar speed changes are not in it. Results:
+`/mnt/project-files/regatta-training/results/scarab-steering/fleet_nose_lead.json`.
+
+I1-I4 mean seconds (missed mouths a race, worst intensity):
+
+| Hull | bleeding-edge line: today | lead 2.5 | overnight line: today | lead 2.5 |
+|---|---:|---:|---:|---:|
+| Scarab | 876.5 (119, I4 2/9 finish) | **220.6** (1.8) | 562.5 (78) | **212.2** (0.4) |
+| Serpent | 911.0 (42, I4 6/9) | **415.9** (0) | 860.6 (38, I4 6/9) | **414.9** (0) |
+| Dolphin | 926.2 (20, I4 8/9) | **544.8** (0) | 836.7 (17) | **543.2** (0) |
+| Manta | 704.8 (49) | **313.5** (11 at I3) | 621.8 (47, I4 8/9) | **302.7** (7 at I3) |
+| Rhino | 502.7 (0) | 498.9 (0) | 497.5 (0) | 495.4 (0) |
+| Sparrow | 812.0 (0) | 813.0 (0) | 811.1 (0) | 812.2 (0) |
+| Manta, nose 9/s, no lead | 254.7 (2.4) | | 248.5 (0) | |
+
+What the table says:
+- **The lead closes the misses** for the Scarab, Serpent and Dolphin: no miss at any intensity, about 2x faster.
+- **It does nothing for the slow, no-miss hulls** (Rhino, Sparrow at their median AI speeds), so it is safe to leave on
+  for them.
+- **On the Manta it closes about 80% of the gap**: 705 -> 314 s, against 255 s with a 9/s nose and no lead. 7-11
+  missed mouths are left at I3 and 4 at I4. Higher gains do not help (3.5: 309 s; 5: 374 s), so the rest is the
+  Manta's turn rate (0.2 v + 30 = 83 deg/s at 267 u/s) through any lag.
+- **Read together with thread 6:** the pilot lead takes most of the nose-lag cost away without touching the vessel's
+  nose rate. The Manta's I3-I4 remainder is the one place the per-intensity nose row (#1780) still buys time.
+
+**Which searches ran with the lag unmodelled.** These matter for "train with the lead on":
+- The `drive_fit` models: `rhino_drive`, `manta_drive`, `dolphin_drive`. They turn the nose straight to the aim:
+  `drive-rhino-headlong` (ready, the Rhino runs of 2026-11-06), the retired `drive-manta-*`, `drive-rhino-regatta` and
+  `drive-dolphin-regatta`, and the four `regatta-course-i*` rosters built on them.
+- The older `regatta_line_sim.py`, which has the lag off by default and the capped command. Its "the fix clears the
+  Scarab" result is the one this report overturns.
+
+**Which ones model it.** `redline-manta-time` (`manta_redline_sim.py`, `nose_lag=True`), `switchback-dolphin-time`
+(`switchback_dolphin_sim.py`, `lag=True`) and `skimrace-squirrel-time` (the harness turns the commanded rotation; the
+Skim Race pilot leads its own lag). None of these fly AIPilot's lead.
+
 ## What is not verified
 
 - **No Unity run.** The reference compile and the ship gates passed (0 errors in the changed files; the 21 errors it

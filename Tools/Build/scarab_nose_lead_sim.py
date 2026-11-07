@@ -34,6 +34,7 @@ The steerings compared (STEERINGS):
     python3 Tools/Build/scarab_nose_lead_sim.py                 # today vs pred vs lead, both lines, I1-I4
     python3 Tools/Build/scarab_nose_lead_sim.py --look          # the lead crossed with longer look-aheads
     python3 Tools/Build/scarab_nose_lead_sim.py --json out.json # also write the cells
+    python3 Tools/Build/scarab_nose_lead_sim.py --fleet         # every line-flying hull, today vs lead 2.5 (+ Manta 9/s)
     python3 Tools/Build/scarab_nose_lead_sim.py --self-test     # the model's claims, with a negative control
 """
 import json, math, os, sys
@@ -52,6 +53,32 @@ LINES = {   # LaneShare, careful s, bold s
     "overnight": (0.35, 0.6, 1.0),
 }
 MIN_LOOK, MAX_LOOK = 60.0, 520.0
+
+# --fleet: every hull regatta_line_sim carries, at its constant AI-rival speed and turn law (regatta_line_sim.HULLS), on
+# its own line: (LaneShare, careful s, bold s) per line from Resources/RaceLines/<Hull>_Regatta on each branch. The Stoat
+# (a sling orbit), the Squirrel (its own Skim Race pilot) and the Urchin (rides its rail) are not on this model.
+FLEET_LINES = {
+    "Manta":   {"be": (0.809, 0.6, 1.0), "overnight": (0.35, 0.6, 1.0)},
+    "Dolphin": {"be": (0.785, 0.35, 0.8), "overnight": (0.35, 0.35, 0.8)},
+    "Rhino":   {"be": (0.676, 0.8, 1.4), "overnight": (0.35, 0.8, 1.4)},
+    "Serpent": {"be": (0.6, 0.35, 0.8), "overnight": (0.35, 0.35, 0.8)},
+    "Sparrow": {"be": (0.55, 0.35, 0.8), "overnight": (0.35, 0.35, 0.8)},
+    "Scarab":  {"be": LINES["be"], "overnight": LINES["overnight"]},
+}
+
+
+def hull_params(hull):
+    """(speed, RotationThrottleScaler, min(Pitch, Yaw), clearance, risk): the Scarab at Time 10, the rest as
+    regatta_line_sim.HULLS has them."""
+    if hull == "Scarab": return SPEED, RTS, BASE, CLEAR, RISK
+    v, rts, base, _share, clear, risk = L.HULLS[hull]
+    return float(v), rts, base, float(clear), risk
+
+
+def effective_gain(gain, rate):
+    """AIPilot.EffectiveNoseLeadGain: the gain is stated at the fleet lag, never under 1, 0 on a nose with no lag."""
+    if gain <= 0 or rate <= 0 or math.isinf(rate): return 0.0
+    return max(1.0, gain * NOSE_FOLLOW / rate)
 # (name, pred seconds, lead gain, lead max extra degrees)
 STEERINGS = [("today", 0.0, 0.0, 0.0), ("pred 0.3", 0.3, 0.0, 0.0), ("pred 1.0", 1.0, 0.0, 0.0),
              ("lead 1.5", 0.0, 1.5, 40.0), ("lead 2", 0.0, 2.0, 40.0), ("lead 2.5", 0.0, 2.5, 40.0),
@@ -91,8 +118,10 @@ def slerp_beyond(f, d, t, extra_deg=150.0):
 
 
 def race(intensity, line="be", lead=0.0, own=0, risk=RISK, look_mult=1.0, speed=SPEED, T=300.0, dt=1 / 60,
-         gain=0.0, extra=150.0, capped=False):
-    share, careful, bold = LINES[line]
+         gain=0.0, extra=150.0, capped=False, hull="Scarab", nose_rate=NOSE_FOLLOW):
+    share, careful, bold = FLEET_LINES[hull][line]
+    speed, RTS, BASE, CLEAR, _ = hull_params(hull) if hull != "Scarab" else (speed, globals()["RTS"], globals()["BASE"], globals()["CLEAR"], RISK)
+    gain = effective_gain(gain, nose_rate)
     C = sf.course_from(sf.load_course_js(), intensity)
     gates = C['gates']; n = len(gates); total = 3 * n
     P = [g['p'] for g in gates]; A = [unit(g['a']) for g in gates]
@@ -146,7 +175,7 @@ def race(intensity, line="be", lead=0.0, own=0, risk=RISK, look_mult=1.0, speed=
             # the game: the stick turns the command about the judged error's axis (Pitch / Yaw about the nose's axes,
             # from Cross(judged, aim)) by the stick's rate this frame, whether or not the command is already past the aim
             cmd = rotate_about(cmd, cross(judge, want), math.radians(omega * s) * dt)
-        fwd = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * min(1.0, NOSE_FOLLOW * dt))
+        fwd = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * min(1.0, nose_rate * dt))
         newpos = add(pos, mul(fwd, speed * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
         if a0 * a1 <= 0 and a0 != a1:
@@ -175,6 +204,41 @@ def grid(intensity, line, steering, look_mult=1.0):
             "finished": sum(r["time"] is not None for r in rs), "seats": len(rs),
             "misses": round(sum(r["misses"] for r in rs) / len(rs), 1),
             "wide_p95": round(sum(r["wide_p95"] or 0 for r in rs) / len(rs), 1)}
+
+
+def fleet_grid(hull, intensity, line, gain, nose_rate=NOSE_FOLLOW):
+    """Every seat of one hull, round its own risk: mean seconds (DNF 300 s), finishes, misses a race."""
+    risk0 = hull_params(hull)[4]
+    rs = [race(intensity, line, 0.0, own, min(1, max(0, risk0 + d)), gain=gain, extra=40.0, hull=hull,
+               nose_rate=nose_rate) for own in (0, 1, 2) for d in (-SPREAD, 0.0, SPREAD)]
+    secs = [r["time"] if r["time"] is not None else DNF_PRICE for r in rs]
+    return {"secs": round(sum(secs) / len(secs), 1), "finished": sum(r["time"] is not None for r in rs),
+            "misses": round(sum(r["misses"] for r in rs) / len(rs), 1)}
+
+
+def _fleet_job(a):
+    return a, fleet_grid(*a)
+
+
+def fleet():
+    from concurrent.futures import ProcessPoolExecutor
+    cases = [(h, ln, g, NOSE_FOLLOW) for h in FLEET_LINES for ln in ("be", "overnight") for g in (0.0, 2.5)]
+    cases += [("Manta", ln, 0.0, 9.0) for ln in ("be", "overnight")]
+    jobs = [(h, I, ln, g, nr) for h, ln, g, nr in cases for I in (1, 2, 3, 4)]
+    with ProcessPoolExecutor() as ex:
+        res = dict(ex.map(_fleet_job, jobs))
+    print("A MODEL: constant speed (each hull's AI-rival median), no traffic, no rams, 9 seats a cell. "
+          "secs (misses a race) [finished of 9 when not all]")
+    print(f"{'hull':8} {'line':9} {'steering':16} " + "".join(f"{'I' + str(I):>20}" for I in (1, 2, 3, 4)) + f"{'I1-I4':>9}")
+    out = {}
+    for h, ln, g, nr in cases:
+        row = [res[(h, I, ln, g, nr)] for I in (1, 2, 3, 4)]
+        name = (f"lead {g}" if g else "today") + ("" if nr == NOSE_FOLLOW else f", nose {nr:g}/s")
+        cells = "".join(f"{c['secs']:>9.1f} ({c['misses']:5.1f})" + (f"[{c['finished']}]" if c['finished'] < 9 else "   ")
+                        for c in row)
+        print(f"{h:8} {ln:9} {name:16} {cells}{sum(c['secs'] for c in row):>9.1f}")
+        out[f"{h}|{ln}|{name}"] = row
+    return out
 
 
 def _job(args):
@@ -235,6 +299,11 @@ def self_test():
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         sys.exit(self_test())
+    if "--fleet" in sys.argv:
+        out = fleet()
+        if "--json" in sys.argv:
+            json.dump(out, open(sys.argv[sys.argv.index("--json") + 1], "w"), indent=1)
+        sys.exit(0)
     lines = ["be", "overnight"]
     looks = [1.0, 1.5] if "--look" in sys.argv else [1.0]
     out = sweep(lines, STEERINGS, looks)
