@@ -857,6 +857,8 @@ namespace CosmicShore.Data
             arrival.KaijuTier = state.Kaiju?.Tier ?? 0;
             arrival.HostileWorld = HostileWorld(state, content, here.Id);
 
+            // No rival squad in a harbour (VOYAGES.md §6.7 rule 2): home water is safe water, and nobody is met there.
+            if (here.Experience != VoyageExperience.Harbour)
             foreach (var rs in VoyageRivals.StandingAt(state, content, here.Id))
             {
                 var crew = content.Rival(rs.Id);

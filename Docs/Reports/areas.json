@@ -944,6 +944,10 @@
         {
           "name": "The Voyage Board (the HyperSea as our Milky Way)",
           "url": "https://claude.ai/artifact/25CvRSxBrjcxEUngEiCzEn"
+        },
+        {
+          "name": "Voyages, deep: the report page for Garrett (what was built, measured, how to try it)",
+          "url": "https://claude.ai/artifact/YEGVrEct7jAWnRr2svpF2r"
         }
       ],
       "report": "Docs/Reports/VOYAGES.md",

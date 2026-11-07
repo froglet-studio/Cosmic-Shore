@@ -2,9 +2,12 @@
 
 **From:** this branch's session, 2026-11-07. **Branch:** `cece/magical-pascal-5uveyi` (the depth pass). The slice,
 the Voyage Board's sea in the window, the deep-zoom map, the four-tab window and the unique pilots and artifacts are
-all on `bleeding-edge`. **Status:** built and measured headless (38 edit-mode tests green outside Unity, the scorecard's
+all on `bleeding-edge`. **Status:** built and measured headless (41 edit-mode tests green outside Unity, the scorecard's
 bars all hold, the reference compile has no errors in the changed files). **Nothing in this pass has been played in the
 Unity editor yet.** That is the next step (section 4).
+
+**The same report as a page to share:** https://claude.ai/artifact/YEGVrEct7jAWnRr2svpF2r (private until Garrett shares it; built from this doc and the
+measured numbers, with the galaxy drawn and the bars of the scorecard).
 
 ## 1. In one minute
 
@@ -49,6 +52,8 @@ Unity editor yet.** That is the next step (section 4).
    Keeper's Rest, then a priest's vigil once the Priest type is Known. The relic comes aboard; dock at home to keep it.
 4. Sail where a rival crew is bound (the card says so) and meet them; let a laden Ark fall to a pirate crew and read the
    story. The full hand-test list is `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "2026-11-07 — Voyages, deep".
+5. FrogletTools > Voyages > Depth Scorecard prints the harness's scorecard from inside Unity; Forget This Machine's
+   Galaxy starts the sea over from the seeds.
 
 ## 3. What changed in the game (Unity)
 
@@ -62,6 +67,7 @@ Unity editor yet.** That is the next step (section 4).
 | Every faction type recruits | `Data/Inventory/FactionCatalog.cs` |
 | The escort roles' host interface, implemented by the escort and the voyage; wingmates armed as escort pilots | `Controller/Voyages/IArkEscortHost.cs` (new), `ArkEscortContext.cs`, `ArkEscortPilot.cs`, `SquirrelRole.cs`, `ArkEscortRun.cs` (one line each), `VoyageRun.cs` |
 | Line variants, the standing token and the log beat | `VoyageContent.cs`, `VoyageRules.PickLine`, `VoyageJobsView.cs`, `VoyageContentSO.cs` |
+| No rival is met in a harbour; the two dev tools | `VoyageRules.Describe`, `Editor/Voyages/VoyageDevTools.cs` (new) |
 
 ## 4. What is untested
 

@@ -488,6 +488,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void NoRivalIsMetInAHarbour()
+        {
+            var c = Shipped();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            var crew = c.Rivals.First(r => r.Faction == FactionType.Merchant);
+            var rs = s.Rival(crew.Id);
+            rs.At = s.Home; rs.To = string.Empty; rs.JobTemplate = string.Empty;
+            var arrival = VoyageRules.Describe(s, c);
+            CollectionAssert.IsEmpty(arrival.Rivals, "home water is safe water (VOYAGES.md section 6.7 rule 2)");
+            rs.At = "loc.tollmoor";
+            s.At = "loc.tollmoor";
+            Assert.IsNotEmpty(VoyageRules.Describe(s, c).Rivals, "a port is not a harbour");
+        }
+
+        [Test]
         public void TheDepthScorecardHoldsItsBars()
         {
             var card = VoyageDepthHarness.Play(Shipped(), 60, 40);

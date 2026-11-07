@@ -21517,7 +21517,7 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 ## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
 
 **Plan:** `Docs/Voyages/DEPTH.md`. **Files:** `Data/Voyages/*` (`VoyageEnums`, `VoyageContent`, `VoyageState`,
-`VoyageRules`, new `VoyageWorld` and `VoyageRivals`; pure, 38 edit-mode tests green headless in
+`VoyageRules`, new `VoyageWorld` and `VoyageRivals`; pure, 41 edit-mode tests green headless in
 `Tools/Build/voyage_depth_harness`), `Controller/Voyages/VoyageRun.cs` (verbs, the leg's pacing, hostile worlds, rival
 hulls at the stop, the race clock, chronicles, relics), `VoyageHarbour.cs` (the crew fills the board; `GalaxyState`),
 `UI/Views/VoyageJobsView.cs` (`{role}`, `{warnings}`, the job's own pay and intensity, the sea-today beat, the map's
@@ -21578,3 +21578,8 @@ the compile environment's missing Cinemachine and UGS packages, the same as on `
 17. Do the same job twice on different days (two hunts at Lantern Reach). **Pass:** the story line reads differently
     the second time (several authored ways to say it); the open card's brief shows STANDING (a stranger, known or
     trusted, by the pilot's faction) and its Story level ends with YOUR LOG once a voyage has been sailed.
+18. FrogletTools > Voyages > Depth Scorecard (headless, 40 galaxies). **Pass:** the console prints the scorecard in a few
+    seconds with "BARS: all hold". FrogletTools > Voyages > Forget This Machine's Galaxy (dev), then open the Voyage
+    window. **Pass:** the board is a new galaxy's (the seed news, every rival at home); finds already docked are kept.
+19. Dock at home while a rival crew stands at your harbour (set one there with the Forget tool's new galaxy and a day's
+    sailing, or trust `VoyageDepthTests.NoRivalIsMetInAHarbour`). **Pass:** no rival hulls stand in home water.
