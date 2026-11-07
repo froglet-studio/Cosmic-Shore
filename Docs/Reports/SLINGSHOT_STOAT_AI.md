@@ -52,11 +52,11 @@ first generation grown from every Stoat genome (`StoatSlingConfig_Slingshot`, th
 |---|---:|---:|---:|---:|---:|---:|---:|
 | B (grown from the genomes) | 1.0874 | 148 deg | 2.90 s | 13 u | 96 | 0.01 | 310 u |
 | C (grown from the genomes) | 1.0885 | 26 deg | 2.87 s | 295 u | 68 | 0.02 | 338 u |
-| D (from the init alone) | see the PR | | | | | | |
+| D (from the shipped init alone, no genomes) | 1.0941 | 68 deg | 2.86 s | 549 u | 65 | 0.04 | 335 u |
 
 B and C land 0.1% apart, B never improved in its last 20% of evaluations, C once by 0.06%. They agree on what matters
 (warp press at 310-340 u, a press at most every ~2.9 s, the smallest kick); they differ on the turn press, which
-hardly fires in either (B never turns; C turns only with its ring 295 u away), so that row is flat near the optimum.
+hardly fires in either (B never turns; C turns only with its ring 295 u away), so that row is flat near the optimum. D, started from the shipped rows with no genomes, found the same basin 0.6% higher, but it was still improving in its last 20 evaluations, so it had not settled.
 The smallest kick wins because a big one throws the hull off its line.
 
 ## 5. Fresh courses (seedbase 1001, 12 courses an intensity, model)
