@@ -21620,3 +21620,17 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
 7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
 
+
+## 🔴 Pilot portraits: the /pilot-art kit's first four callsign portraits (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Four 220x280 sprites were written by `Tools/Build/pilot_art/author.py`
+(`Assets/_Graphics/Pilots/Portrait_{Wyvendo,Karenth,Delmira,Rosh}.png` with the painted set's importer settings) and wired
+as the `portrait` of `Pilot_Talon`, `Pilot_Volt`, `Pilot_Sundial` and `Pilot_Bandit` through `author_pilot_assets.py`.
+Both `--check`s and `bash .claude/skills/ship/gates.sh` are green. The sheet: `Docs/Pilots/art/sheets/round.png`.
+
+1. **Import**: the four PNGs import as single sprites with transparency (no white or green halo round the fur).
+2. **Hangar**: Menu_Main > Hangar > PILOTS: TALON, VOLT, SUNDIAL and BANDIT show their portrait at 44x56 in the card's
+   portrait slot, upright, boots at the bottom, the other fourteen still show the no-art word.
+3. **Squads page**: a squad slot with one of those four seated shows the same portrait in its pilot image.
+4. **Legibility**: at the Hangar's size the animal reads first (lynx, axolotl, owl, octopus); if it does not, say which,
+   and the brief's species line is what changes (`Tools/Build/pilot_art/brief.py`).

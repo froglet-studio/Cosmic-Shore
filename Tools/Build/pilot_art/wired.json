@@ -1,0 +1,25 @@
+{
+ "note": "which pilot id shows which portrait; written by Tools/Build/pilot_art/author.py, read by author_pilot_assets.py",
+ "portraits": {
+  "pilot.callsign.bandit": {
+   "guid": "c860a7a8d79d4175051c2ecf72f07160",
+   "png": "Assets/_Graphics/Pilots/Portrait_Rosh.png",
+   "spec": "Rosh"
+  },
+  "pilot.callsign.sundial": {
+   "guid": "831080755955379338daf3cc54cd49c3",
+   "png": "Assets/_Graphics/Pilots/Portrait_Delmira.png",
+   "spec": "Delmira"
+  },
+  "pilot.callsign.talon": {
+   "guid": "5d686f06a397c8ea84573649f6fb1061",
+   "png": "Assets/_Graphics/Pilots/Portrait_Wyvendo.png",
+   "spec": "Wyvendo"
+  },
+  "pilot.callsign.volt": {
+   "guid": "78ac1df8933466117de74b25312361b3",
+   "png": "Assets/_Graphics/Pilots/Portrait_Karenth.png",
+   "spec": "Karenth"
+  }
+ }
+}
