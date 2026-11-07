@@ -466,6 +466,7 @@ the vortex ring leaving it), Den (resting by the den its energy built), Ghost (t
 prisms), the dive (nose-down over a hill). The HUD had no omni card: it now shows the omni crystal
 (`Core/Goby_OmniCrystal`). `author_goby_hud.py` keeps the metas and the variant and no longer writes the PNGs.
 Sheet: `Docs/Icons/sheets/goby.png`.
+
 **The Honeyguide (2026-11-07, the roster pass):** the rhombus recut changed `motifs.prism` to two close triangles but
 never re-authored the Honeyguide's set, so eight committed sprites still drew the rhombus and `author.py honeyguide
 --check` reported them as drift (and the new halves failed the piece-count gate). The spec's prisms are now a square
