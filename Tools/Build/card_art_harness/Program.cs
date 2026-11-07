@@ -119,6 +119,7 @@ static class Program
             case "decoyrun":
             case "perchrun":
             case "slipline":
+            case "breach":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -141,6 +142,7 @@ static class Program
                     "decoyrun" => DecoyRunCourse.Generate(seed, Apply(DecoyRunCourse.ForIntensity(intensity), layer)),
                     "perchrun" => PerchRunCourse.Generate(seed, Apply(PerchRunCourse.ForIntensity(intensity), layer)),
                     "slipline" => SlipLineCourse.Generate(seed, Apply(SlipLineCourse.ForIntensity(intensity), layer)),
+                    "breach" => BreachCourse.Generate(seed, Apply(BreachCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -188,6 +190,18 @@ static class Program
                         foreach (var q in points) { AddPrism(scene, new SpawnPoint(q, rot, scl), pal.For(r.Colour switch { 1 => Domains.Ruby, 2 => Domains.Jade, _ => Domains.Gold }, PrismKind.SuperShielded)); laid++; }
                     }
                     return laid;
+                }
+                if (kind == "breach")
+                {
+                    // the walls: danger prisms square across each walled ring's line, as the mode lays them
+                    var wall = new List<(Vector3 position, int ring)>();
+                    var st = Apply(BreachCourse.ForIntensity(intensity), layer);
+                    st.RingCount = gates.Count;
+                    BreachCourse.WallsFor(gates, st, wall);
+                    var scl = new Vector3(BreachCourse.WallPrismSize, BreachCourse.WallPrismSize, BreachCourse.WallPrismDepth);
+                    foreach (var (position, ring) in wall)
+                        AddPrism(scene, new SpawnPoint(position, Quaternion.LookRotation(gates[ring].Axis), scl), pal.For(Domains.Blue, PrismKind.Danger));
+                    return wall.Count;
                 }
                 if (kind == "thornline")
                 {

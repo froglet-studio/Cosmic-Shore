@@ -268,6 +268,10 @@ namespace CosmicShore.ScriptableObjects
         /// flown once. The course tests prove the course at 12 (DECOYRUN.md).</summary>
         public const int DefaultDecoyRunGateTarget = 12;
 
+        /// <summary>Breach RACE length used when <see cref="breachGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (BREACH.md).</summary>
+        public const int DefaultBreachGateTarget = 16;
+
         /// <summary>Slip Line RACE length used when <see cref="slipLineGateTarget"/> is 0 - rings threaded in order,
         /// flown once. The course tests prove the course at 16 (SLIPLINE.md).</summary>
         public const int DefaultSlipLineGateTarget = 16;
@@ -457,6 +461,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Decoy Run race length in rings (flown once). 0 = use the default (12). The course is proven at 12.")]
         [Min(0)] public int decoyRunGateTarget = 12;
 
+        [Tooltip("Breach race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int breachGateTarget = 16;
+
         [Tooltip("Slip Line race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
         [Min(0)] public int slipLineGateTarget = 16;
 
@@ -561,6 +568,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int lanternRunGateTargetBuild = 16;
         [Min(0)] public int thornlineGateTargetBuild = 16;
         [Min(0)] public int decoyRunGateTargetBuild = 12;
+        [Min(0)] public int breachGateTargetBuild = 16;
         [Min(0)] public int slipLineGateTargetBuild = 16;
         [Min(0)] public int perchRunGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
@@ -878,6 +886,11 @@ namespace CosmicShore.ScriptableObjects
         public int GetDecoyRunGateTarget() =>
             decoyRunGateTarget > 0 ? decoyRunGateTarget : DefaultDecoyRunGateTarget;
 
+        /// <summary>Breach race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultBreachGateTarget"/>.</summary>
+        public int GetBreachGateTarget() =>
+            breachGateTarget > 0 ? breachGateTarget : DefaultBreachGateTarget;
+
         /// <summary>Slip Line race length (rings): the authored value when above 0, otherwise
         /// <see cref="DefaultSlipLineGateTarget"/>.</summary>
         public int GetSlipLineGateTarget() =>
@@ -1049,6 +1062,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.LanternRun              => GetLanternRunGateTarget(),
                 GameModes.Thornline                 => GetThornlineGateTarget(),
                 GameModes.DecoyRun                    => GetDecoyRunGateTarget(),
+                GameModes.Breach                      => GetBreachGateTarget(),
                 GameModes.SlipLine                    => GetSlipLineGateTarget(),
                 GameModes.PerchRun                    => GetPerchRunGateTarget(),
                 // GameModes.Waystation has no row: its finish line is the rings the course lays (towers vary with the
@@ -1126,6 +1140,7 @@ namespace CosmicShore.ScriptableObjects
             lanternRunGateTarget == lanternRunGateTargetBuild &&
             thornlineGateTarget == thornlineGateTargetBuild &&
             decoyRunGateTarget == decoyRunGateTargetBuild &&
+            breachGateTarget == breachGateTargetBuild &&
             slipLineGateTarget == slipLineGateTargetBuild &&
             perchRunGateTarget == perchRunGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
@@ -1179,6 +1194,7 @@ namespace CosmicShore.ScriptableObjects
             lanternRunGateTarget = lanternRunGateTargetBuild;
             thornlineGateTarget = thornlineGateTargetBuild;
             decoyRunGateTarget = decoyRunGateTargetBuild;
+            breachGateTarget = breachGateTargetBuild;
             slipLineGateTarget = slipLineGateTargetBuild;
             perchRunGateTarget = perchRunGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
@@ -1233,6 +1249,7 @@ namespace CosmicShore.ScriptableObjects
             lanternRunGateTargetBuild = lanternRunGateTarget;
             thornlineGateTargetBuild = thornlineGateTarget;
             decoyRunGateTargetBuild = decoyRunGateTarget;
+            breachGateTargetBuild = breachGateTarget;
             slipLineGateTargetBuild = slipLineGateTarget;
             perchRunGateTargetBuild = perchRunGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
