@@ -21585,3 +21585,13 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
 7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
 
+## 🔴 Regatta's shuffled course pool (2026-11-07, Garrett, NOT RUN IN EDITOR)
+Branch `claude/project-thread-pnwryl`. `unity_refcompile` (player and editor) has 0 errors in the changed files (the 21
+it reports are already on bleeding-edge: Vivox and Moderation packages); `author_regatta_assets.py --check` OK. The
+new edit-mode tests were compiled, not run. Details: `Docs/Reports/REGATTA_COURSE_POOL.md`.
+1. **Run the edit-mode tests** `RegattaCoursePoolTests` and `RegattaCourseTests`.
+2. **Play Regatta alone three times** with the ArcadeMatch log channel on (FrogletTools > Toolbox > Logging): each match
+   logs `[Regatta] Course variant k (Label) of 4`, the laid circuit is that entry's, and three matches lay three
+   different circuits. The start line sits behind the laid circuit's first ring.
+3. **Play a two-machine match**: host and client lay the same circuit (same rings, same rails).
+4. **Watch a Regatta replay** in its real scene: it lays the circuit the match was flown on.

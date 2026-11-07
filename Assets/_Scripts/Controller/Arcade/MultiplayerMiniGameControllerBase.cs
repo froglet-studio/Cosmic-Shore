@@ -54,6 +54,12 @@ namespace CosmicShore.Gameplay
 
                 StampMatchEnvelope();
 
+                // The course variant, drawn ONCE per match before the broadcast below carries it (a Cell that
+                // chooses its config by it waits for this; see CellTypeChoiceOptions.CourseVariantWise). A mode
+                // may already have drawn it on the way here (Regatta's start line asks for the circuit during
+                // the spawn chain), so an existing draw stands.
+                if (gameData.CourseVariant < 0) gameData.CourseVariant = DrawCourseVariant();
+
                 // The server IS the authority, so its config is synced by definition. Set before
                 // the broadcast: Cell.AssignConfig gates its (sticky) IntensityWise choice on this
                 // flag, and on the host that choice can happen at any point after this frame.
@@ -79,7 +85,8 @@ namespace CosmicShore.Gameplay
                     gameData.PartyId,
                     gameData.InviteTriggered,
                     gameData.IsArenaMatch,
-                    startClasses, startIntensities, startLevels
+                    startClasses, startIntensities, startLevels,
+                    gameData.CourseVariant
                 );
             }
 
@@ -896,6 +903,14 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnResetForReplayCustom() { }
 
+        /// <summary>
+        /// The course-pool entry this match lays, drawn once on the server before the game config is broadcast,
+        /// or -1 for a mode whose course is not a pool (the default). Regatta deals from its
+        /// <c>RegattaCoursePoolSO</c>; the value reaches every client in <c>SyncGameConfigToClients_ClientRpc</c> as
+        /// <c>GameDataSO.CourseVariant</c>.
+        /// </summary>
+        protected virtual int DrawCourseVariant() => -1;
+
         // ---------------- Game Config Sync ----------------
 
         /// <summary>
@@ -935,6 +950,7 @@ namespace CosmicShore.Gameplay
                 gameData.InviteTriggered,
                 gameData.IsArenaMatch,
                 startClasses, startIntensities, startLevels,
+                gameData.CourseVariant,
                 target
             );
         }
@@ -973,6 +989,7 @@ namespace CosmicShore.Gameplay
             string matchId, string partyId, bool inviteTriggered,
             bool isArenaMatch,
             int[] startClasses, int[] startIntensities, float[] startLevels,
+            int courseVariant,
             ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;
@@ -998,6 +1015,10 @@ namespace CosmicShore.Gameplay
             gameData.IsMaelstromMode = isMaelstrom;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
             gameData.IsArenaMatch = isArenaMatch;   // arena seating: unique hulls + pilot swap
+
+            // The course-pool entry the host drew (-1: this mode has no pool). Before GameConfigSynced below,
+            // because a CourseVariantWise Cell makes its sticky config choice the moment that flag is true.
+            gameData.CourseVariant = courseVariant;
 
             // The card's per-hull starting element levels (SO_ArcadeGame.StartingElements). A
             // client never runs SyncFromArcadeGame, and element levels are simulated on the

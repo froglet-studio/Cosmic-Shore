@@ -33,6 +33,16 @@ namespace CosmicShore.Gameplay
             /// See Docs/ECOSYSTEM.md §19.
             /// </summary>
             EnvironmentFree = 2,
+
+            /// <summary>
+            /// The config is the match's COURSE VARIANT: <c>CellConfigs[GameDataSO.CourseVariant]</c>, the entry of
+            /// the mode's course pool the host drew for this match (Regatta's <c>RegattaCoursePoolSO</c>, whose
+            /// entries are these configs in this order) and sent to every client in the game-config sync. Intensity
+            /// does not pick it. Like IntensityWise it depends on replicated state, so the choice waits until the
+            /// variant is known on this peer (on the host too: the controller draws it in its spawn), and it runs
+            /// the same timer-driven life spawner IntensityWise does.
+            /// </summary>
+            CourseVariantWise = 3,
         }
 
         [SerializeField] public int ID;
@@ -168,6 +178,11 @@ namespace CosmicShore.Gameplay
                         int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
                         return CellConfigs[Mathf.Clamp(intensity - 1, 0, CellConfigs.Count - 1)];
                     }
+
+                    case CellTypeChoiceOptions.CourseVariantWise:
+                        return gameData == null
+                            ? CellConfigs[0]
+                            : CellConfigs[CourseVariantIndexFor(gameData.CourseVariant, CellConfigs.Count)];
 
                     case CellTypeChoiceOptions.EnvironmentFree:
                     {
@@ -2106,9 +2121,15 @@ namespace CosmicShore.Gameplay
             // permanently. Bail without latching; the caller retries (see postInitDeferred).
             if (!IntensityChoiceReady)
             {
-                CSDebug.LogWarning($"[Cell {ID}] IntensityWise config choice DEFERRED - the " +
-                    "server's game config has not replicated to this client yet. Retrying on " +
-                    "OnInitializeGame.");
+                // A CourseVariantWise cell waits on the host too (until the controller draws the variant), and that
+                // is the normal order of a match, not a fault: no warning for it.
+                if (cellTypeChoiceOptions == CellTypeChoiceOptions.CourseVariantWise)
+                    CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] CourseVariantWise config choice deferred " +
+                        "until the match's course variant is drawn / received. Retrying on OnInitializeGame.");
+                else
+                    CSDebug.LogWarning($"[Cell {ID}] IntensityWise config choice DEFERRED - the " +
+                        "server's game config has not replicated to this client yet. Retrying on " +
+                        "OnInitializeGame.");
                 return;
             }
 
@@ -2116,6 +2137,7 @@ namespace CosmicShore.Gameplay
             {
                 CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
                 CellTypeChoiceOptions.IntensityWise => IntensityIndex(),
+                CellTypeChoiceOptions.CourseVariantWise => CourseVariantIndex(),
                 CellTypeChoiceOptions.EnvironmentFree => BootIndex(),
                 _ => 0
             };
@@ -2144,7 +2166,9 @@ namespace CosmicShore.Gameplay
         /// silently builds a different intensity's arena than the host for the whole match.
         /// </summary>
         bool IntensityChoiceReady =>
-            cellTypeChoiceOptions != CellTypeChoiceOptions.IntensityWise
+            cellTypeChoiceOptions == CellTypeChoiceOptions.CourseVariantWise
+                ? CourseVariantChoiceReady
+                : cellTypeChoiceOptions != CellTypeChoiceOptions.IntensityWise
             || gameData == null
             || gameData.GameConfigSynced
             || NetworkManager.Singleton == null
@@ -2158,6 +2182,34 @@ namespace CosmicShore.Gameplay
         /// clamp is otherwise silent - a mode whose SO_ArcadeGame offers four intensities but whose
         /// cell authors two would quietly serve the same arena for 3 and 4.
         /// </summary>
+        /// <summary>
+        /// May a CourseVariantWise cell choose yet? Once the match's variant is known on THIS peer - drawn on the host
+        /// by the controller's spawn, received in the game-config sync on a client. Unlike IntensityWise the host is
+        /// not ready by definition: the cell's first-crystal bootstrap can run before the controller has drawn, and a
+        /// sticky choice made then would lay entry 0 while every client lays the drawn one. With no network running
+        /// (a scene opened directly) nothing will ever draw, so the first entry is taken.
+        /// </summary>
+        bool CourseVariantChoiceReady =>
+            gameData == null
+            || gameData.CourseVariant >= 0
+            || NetworkManager.Singleton == null
+            || !NetworkManager.Singleton.IsListening;
+
+        /// <summary>The <c>CellConfigs</c> index for course variant <paramref name="variant"/> of a list of
+        /// <paramref name="count"/>: the variant itself, 0 when none was drawn, the last when it over-runs.</summary>
+        public static int CourseVariantIndexFor(int variant, int count) =>
+            count <= 0 ? 0 : Mathf.Clamp(variant, 0, count - 1);
+
+        int CourseVariantIndex()
+        {
+            int variant = gameData ? gameData.CourseVariant : -1;
+            if (variant >= CellConfigs.Count)
+                CSDebug.LogWarning($"[Cell {ID}] Course variant {variant} drawn but only {CellConfigs.Count} " +
+                    "CellConfigs are authored - clamping to the last. The mode's course pool and this cell's " +
+                    "CellConfigs must list the same configs in the same order.");
+            return CourseVariantIndexFor(variant, CellConfigs.Count);
+        }
+
         int IntensityIndex()
         {
             int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
@@ -3406,7 +3458,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
+            activeSpawner = cellTypeChoiceOptions is CellTypeChoiceOptions.IntensityWise
+                                                  or CellTypeChoiceOptions.CourseVariantWise
                 ? intensitySpawner
                 : randomSpawner;
 
