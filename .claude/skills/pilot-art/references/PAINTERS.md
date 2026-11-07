@@ -53,6 +53,27 @@ rendering. If it is ever built it plugs in as a source like any other (`key="alp
 judge it the same way. The per-person question (unlimited unique pilots, one PNG per person) is
 `Docs/Pilots/PORTRAITS.md` section 6.
 
+## 6. The stranger test (the blind reading that measures section 0's bar)
+
+Round 2 (2026-11-07) ran it as a workflow over the fourteen sprites:
+
+```
+items: p01..p14 -> {spec, person, callsign, first, second, lend, faction, domain, accent, mark}, written to
+       <dir>/items.json; <dir>/pNN_full.png (the sprite on #222645) and <dir>/pNN_thumb.png (44x56 box, 4x nearest)
+pipeline(ids,
+  id -> parallel(thumb reader (a two-second glance), thumb reader (a long look), full-size reader),
+        each: "open ONLY <file>; name every animal most obvious first, the one animal you would call this pilot,
+               humanoid or not, the trim and glow colour, the worn items, your confidence",
+  (readings, id) -> grader: reads items.json for the truth, scores first_animal_full / first_animal_thumb
+        (named, close relative, missed), second_feature, colour, mark, humanoid, verdict (pass, weak, fail),
+        and the ONE brief change that would fix a non-pass)
+```
+
+Readers never see a file name that could leak the species (hence p01...), never open a second file, and never see
+the spec. The grader's "close relative" list keeps everyday words honest (yak: bull or ox; ocelot: leopard or
+spotted cat; moose: elk; crane: stork or heron; ibis: flamingo or curlew; mantis: grasshopper; orangutan: ape;
+chameleon: lizard; hedgehog: porcupine). Results and what they changed: LESSONS.md, round 2.
+
 ## 5. What a painting without the kit gets wrong (why the earlier attempt read as terrible)
 
 A prompt that says "anthropomorphic animal pilot, concept art" gets a generic animal in a generic jacket with a

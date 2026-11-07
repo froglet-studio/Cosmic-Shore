@@ -48,6 +48,8 @@ named, the painting has failed, whatever it looks like at 1024.
 python3 Tools/Build/pilot_art/brief.py <spec>                  # the brief: the prompt a painter gets, verbatim
 python3 Tools/Build/pilot_art/brief.py --callsign TALON --heritage Lynx Jackal --faction Hunter --name "..."
 python3 Tools/Build/pilot_art/author.py <spec> --preview       # matte, finish, gate, sheet; nothing under Assets/ changes
+python3 Tools/Build/pilot_art/author.py <a> <b> --preview --sheet round2 --dump <dir>   # a round on one sheet, the
+                                                               # sprites also saved to <dir> for the stranger test (3.5)
 python3 Tools/Build/pilot_art/author.py <spec>                 # ... and write the PNG + .meta (guid kept), wire the PilotSO
 python3 Tools/Build/pilot_art/author.py --check                # the ship gate: re-finish every source, compare to disk
 python3 Tools/Build/pilot_art/verify.py <png> [--table]        # measure ANY portrait, a hand-painted one included
@@ -85,6 +87,16 @@ the PNG) before writing; the gates are a floor, not a judgement.
    painting that sank (re-brief the light, never lift it in the finish), `alpha_clean` / `no_halo` is the matte
    (a coat near the key colour: change the key in the spec, LESSONS 1 and 3), `height` / `top` is a crouch or a
    crop (the painter added a floor: `crop` in the spec, or repaint).
+3.5 **The stranger test** (round 2 made it a step): the bar in section 0 is measured, not felt. Dump the round's
+   sprites (`--dump <dir>`), put each on the Deep Sea plate under a NEUTRAL name (p01...) at full size and as the
+   real 44x56 thumbnail shown 4x nearest, and have blind readers who see only the pixels (two at the thumbnail, one
+   at full size; subagents with the Read tool, told to open nothing else) name the animals most obvious first, the
+   one animal they would call the pilot, whether it reads as a person with an animal head, the trim colour and
+   the worn items. A grader who knows the spec scores each: pass = the first animal named (or a close relative) at
+   full size AND at the thumbnail, the colour right, humanoid; fail = the first animal missed at full size, a
+   non-humanoid read, or the wrong colour; weak otherwise. A fail is repainted once with the grader's one brief
+   change; a weak one ships with its note in LESSONS. The workflow script that ran it is
+   `pilot-art-stranger-test` in the session's workflows folder; its shape is in `references/PAINTERS.md` section 6.
 4. **Write** (`author.py <spec>`): the PNG, its `.meta` with the kit's guid, `wired.json`, and the pilot asset
    through `author_pilot_assets.py`. Then `author.py --check` and `author_pilot_assets.py --check` are green.
    Never hand-edit a PNG, a `.meta` or a pilot asset's `portrait:` line.

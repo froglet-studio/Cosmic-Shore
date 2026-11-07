@@ -3,10 +3,10 @@
 **Status: round 1 built 2026-11-07 on `cece/sweet-goodall-duyp56`** (Garrett: "i tried to get you to make pilot
 artwork but that came out terrible. you have illustrations of pilots for reference. perhaps you could try to build
 up a skill that could make art like the ones we have but even better."). The skill is **`/pilot-art`**
-(`.claude/skills/pilot-art/`), the kit `Tools/Build/pilot_art/`. Four callsigns show a portrait in the Hangar
-(TALON, VOLT, SUNDIAL, BANDIT); fourteen still show "no art". Not yet opened in a Unity editor: the wiring is a
-Sprite guid in four pilot assets and the Hangar card's Image has `preserveAspect`, so the hand test is "open
-Menu_Main > Hangar > PILOTS and see four portraits" (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+(`.claude/skills/pilot-art/`), the kit `Tools/Build/pilot_art/`. **Round 2 (same day, Garrett: "continue") gave the
+other fourteen callsigns their portraits, so all eighteen show one in the Hangar.** Not yet opened in a Unity
+editor: the wiring is a Sprite guid in each pilot asset and the Hangar card's Image has `preserveAspect`, so the
+hand test is "open Menu_Main > Hangar > PILOTS and see eighteen portraits" (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
 ## 1. What a portrait is
 
@@ -63,14 +63,41 @@ environment cannot download from `www.figma.com`.
 The sheet: `Docs/Pilots/art/sheets/round.png`. Names are rolled from `PilotGenerator`'s own syllable and family
 tables so they read like every other pilot's. What the round taught: `.claude/skills/pilot-art/references/LESSONS.md`.
 
+## 4.5 Round 2 (2026-11-07): the other fourteen callsigns, cast by a panel
+
+Garrett: "continue." Before any painting, a workflow (a) reviewed the kit through four lenses with three refuters
+per finding, (b) checked all 48 species lines (33 corrections kept, LESSONS 11), and (c) had three designers cast
+the fourteen and two judges score them; the final cast below is the synthesis of the judges' grafts and rejects
+(LESSONS 13). New pilots are minted only into the four recruitable faction types, so the fourteen are 4 merchants,
+3 hunters, 4 aristocrats and 3 pirates, each animal used once and none of round 1's.
+
+| Callsign | Person | Heritage | Faction (domain) | File | Why this pair |
+|---|---|---|---|---|---|
+| ENSIGN | Veliane Crestward | Human / Crane / Lemur | Wardens of the Calm (Aristocrat, Jade) | `Portrait_Veliane.png` | a white head reads first; the ringed tail hangs like the pennant |
+| MANGER | Tamako Deephook | Human / Ibis / Platypus | Order of the Last Lure (Hunter, Ruby) | `Portrait_Tamako.png` | a wader of the feeding flats; the paddle tail is a shape |
+| ANVIL | Brikon Copperwright | Human / Yak / Beetle | Tidewright Exchange (Merchant, Gold) | `Portrait_Brikon.png` | the hauler; wing cases are one shape on the back |
+| ZODIAC | Ivelia Starreach | Human / Ocelot / Heron | Saltmark Consortium (Merchant, Gold) | `Portrait_Ivelia.png` | rosettes as a star field under a slate cape |
+| OPAL | Quivera Pearlspark | Human / Chameleon / Jellyfish | House of Seven Scales (Merchant, Gold) | `Portrait_Quivera.png` | two colour-changers for Omni; painted over magenta |
+| RAMPART | Obelo Stormstone | Human / Badger / Armadillo | Quayside Mutual (Merchant, Gold) | `Portrait_Obelo.png` | a striped face under a wall of plates |
+| CITADEL | Nedira Shellward | Human / Hedgehog / Tortoise | House Albrine (Aristocrat, Jade) | `Portrait_Nedira.png` | defence on defence |
+| HORNET | Zeko Mirethorn | Human / Mantis / Newt | Deepreed Stalkers (Hunter, Ruby) | `Portrait_Zeko.png` | an insect head says danger; painted over blue |
+| IVY | Mathalo Kelpbloom | Human / Orangutan / Sloth | House Verdance (Aristocrat, Jade) | `Portrait_Mathalo.png` | the canopy animals; painted over blue for the leaves |
+| DOE | Fenlia Moonbell | Human / Moose / Fennec | Longwake Lodge (Hunter, Ruby) | `Portrait_Fenlia.png` | a moose says herbivore before the name does |
+| WINGMAN | Jorin Gullwing | Human / Puffin / Pelican | Gullbone Crew (Pirate, Ruby) | `Portrait_Jorin.png` | white wings, so not a second black-winged pirate |
+| NEEDLE | Ilia Silvergate | Human / Narwhal / Seahorse | The Jade Accord (Aristocrat, Jade) | `Portrait_Ilia.png` | the tusk is the needle, the tail curls into the ring |
+| GALLEON | Haradek Anchorkeel | Human / Walrus / Bison | The Unmoored (Pirate, Ruby) | `Portrait_Haradek.png` | the walrus captain in an ivory coat |
+| FLUME | Ekora Hollowbrook | Human / Otter / Eel | Saltjaw Brethren (Pirate, Ruby) | `Portrait_Ekora.png` | an otter's face a player recruits, an eel's ribbon tail |
+
+Fourteen paintings, fourteen first-pass gate passes (LESSONS 16). The sheet: `Docs/Pilots/art/sheets/round2.png`.
+Every portrait then took the stranger test (`/pilot-art` section 3.5: blind readers at 44x56 and at full size, a grader
+against the spec); its results are in LESSONS, round 2.
+
 ## 5. What comes next, in order
 
-1. **Garrett looks at `round.png`** and says what is wrong: the animals, the gear, the colours, the light, the
-   framing. Each answer goes into `brief.py`'s tables or `STYLE.md`, then the four are repainted if needed.
-2. **The other fourteen callsigns** (ENSIGN, MANGER, ANVIL, ZODIAC, OPAL, RAMPART, CITADEL, HORNET, IVY, DOE,
-   WINGMAN, NEEDLE, GALLEON, FLUME), one spec each, about fourteen paintings of Figma credit; IVY takes the blue key.
-3. **Per-person portraits** (section 6), once the decision is made.
-4. **The hand test** in the editor: the Hangar PILOTS column with portraits at 44x56, the Squads page cards.
+1. **Garrett looks at `round.png` and `round2.png`** and says what is wrong: the animals, the gear, the colours,
+   the light, the framing. Each answer goes into `brief.py`'s tables or `STYLE.md`, then the portrait is repainted.
+2. **Per-person portraits** (section 6), once the decision is made.
+3. **The hand test** in the editor: the Hangar PILOTS column with eighteen portraits at 44x56, the Squads page cards.
 
 ## 6. Decisions (defaults used; change any)
 

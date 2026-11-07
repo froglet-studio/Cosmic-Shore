@@ -47,12 +47,12 @@ SPECIES = {
         lend="feathery pink axolotl gill fronds behind the ears and a pale finned tail",
         colour="pale pink and cream"),
     "Heron": dict(
-        head="a grey heron's narrow head: a long dagger beak, a pale yellow eye, black crest plumes swept back",
+        head="a grey heron's narrow white head: a long yellow dagger beak, a pale yellow eye, a black stripe sweeping back into black crest plumes",
         lend="long slate-grey heron wing feathers folded like a cape",
         colour="slate grey, white and black"),
     "Otter": dict(
-        head="a sea otter's round head: dense brown fur, small ears, long white whiskers, a dark button nose",
-        lend="a thick tapering otter tail and sleek dark-brown fur",
+        head="a sea otter's round head: a pale grizzled muzzle and cheeks, long white whiskers, a broad dark nose, small ears, dense brown fur",
+        lend="a thick tapering otter tail, sleek and dark brown",
         colour="chocolate brown and cream"),
     "Pangolin": dict(
         head="a pangolin's small conical head covered in overlapping brown keratin scales, a narrow snout and tiny eyes",
@@ -60,14 +60,14 @@ SPECIES = {
         colour="tan and umber"),
     "Gecko": dict(
         head="a leopard gecko's broad head: large gold eyes with slit pupils, a wide grin, spotted yellow skin",
-        lend="a fat spotted gecko tail and wide-padded fingers",
+        lend="a fat spotted leopard gecko tail, yellow with black spots",
         colour="yellow and cream with black spots"),
     "Lynx": dict(
         head="a lynx's head: black-tufted ear tips, wide cheek ruffs, amber eyes, a short broad muzzle",
-        lend="tufted lynx ears, cheek ruffs and a short bobbed black-tipped tail",
+        lend="a lynx's short bobbed black-tipped tail",
         colour="tawny grey with faint spots"),
     "Narwhal": dict(
-        head="a narwhal's smooth mottled grey head with one long spiralled ivory tusk from the brow",
+        head="a narwhal's smooth mottled grey melon-browed head with one long spiralled ivory tusk jutting forward from the upper jaw",
         lend="one long spiralled narwhal tusk and mottled grey-blue skin",
         colour="mottled grey and white"),
     "Capybara": dict(
@@ -75,8 +75,8 @@ SPECIES = {
         lend="coarse reddish-tan capybara fur and small rounded ears",
         colour="tan and russet"),
     "Octopus": dict(
-        head="an octopus's bulbous mantle for a head: large horizontal-pupil eyes, skin that shifts between ochre and rust",
-        lend="a few octopus tentacles trailing from the collar and suckered skin on the forearms",
+        head="an octopus's bulbous mantle for a head: large eyes with horizontal bar pupils, a fringe of short suckered arms at the jaw, skin shifting between ochre and rust",
+        lend="a few long suckered octopus arms curling out from the collar",
         colour="ochre, rust and violet"),
     "Raven": dict(
         head="a raven's glossy black head: a heavy curved beak, a bright intelligent eye, a feathered throat",
@@ -99,8 +99,8 @@ SPECIES = {
         lend="two long ivory walrus tusks and a bristled moustache",
         colour="pinkish brown"),
     "Ibis": dict(
-        head="a scarlet ibis's head: a long slender down-curved bill, a pale face, scarlet plumage",
-        lend="scarlet ibis wing feathers with black tips",
+        head="a scarlet ibis's head: a long slender down-curved bill, bare pink skin on the face, scarlet feathers",
+        lend="a pair of scarlet ibis wings folded at the back, black at the tips",
         colour="scarlet with black wingtips"),
     "Tapir": dict(
         head="a tapir's head with a short flexible trunk-like snout, small eyes and rounded ears",
@@ -108,7 +108,7 @@ SPECIES = {
         colour="black and white"),
     "Jellyfish": dict(
         head="a translucent bell-shaped jellyfish dome for a head, glowing faintly from within, with fine tendrils trailing like hair",
-        lend="glowing translucent jellyfish tendrils trailing from the hair and a soft inner glow at the throat",
+        lend="long softly glowing jellyfish tentacles trailing from the back of the head like hair",
         colour="translucent blue and lilac"),
     "Badger": dict(
         head="a badger's head: the bold black-and-white striped face, small ears, a strong snout",
@@ -116,7 +116,7 @@ SPECIES = {
         colour="grey, black and white"),
     "Chameleon": dict(
         head="a chameleon's casqued head: independently swivelling turret eyes, a wide mouth, skin shifting between green and turquoise",
-        lend="a curled prehensile chameleon tail and colour-shifting green-turquoise skin",
+        lend="a chameleon's long prehensile tail curled in a tight spiral at the hip",
         colour="green, turquoise and yellow"),
     "Owl": dict(
         head="a great horned owl's flat facial disc: huge forward-facing amber eyes, feather ear tufts, a small hooked beak",
@@ -124,31 +124,31 @@ SPECIES = {
         colour="barred brown and cream"),
     "Seahorse": dict(
         head="a seahorse's head: a tubular snout, a bony ridged crown, a round eye, armoured plates",
-        lend="a curled prehensile seahorse tail and ridged bony plates on the shoulders",
+        lend="a seahorse's long bony ring-plated tail coiled in a tight curl at the hip",
         colour="coral orange and gold"),
     "Wolf": dict(
         head="a grey wolf's head: a long muzzle, pale yellow eyes, erect ears, a thick ruff",
-        lend="a thick grey wolf tail and a heavy fur ruff at the collar",
+        lend="a thick bushy grey wolf tail hanging straight, black at the tip",
         colour="grey, white and black"),
     "Lemur": dict(
         head="a ring-tailed lemur's fox-like face: orange eyes in black patches, a white muzzle, grey fur",
         lend="a long black-and-white ringed lemur tail",
-        colour="grey and white with black rings"),
+        colour="soft grey and cream-white"),
     "Cuttlefish": dict(
         head="a cuttlefish's broad head with W-shaped pupils and a fringe of short tentacles, skin flickering in bands",
         lend="rippling cuttlefish mantle fins along the sides and skin flickering with zebra bands",
         colour="sand with iridescent zebra bands"),
     "Moose": dict(
-        head="a bull moose's long heavy head: a drooping muzzle, a dewlap, broad palmate antlers",
+        head="a bull moose's long heavy head: broad palmate antlers, a drooping bulbous muzzle, a dewlap bell hanging at the throat",
         lend="broad palmate moose antlers",
         colour="dark brown"),
     "Hummingbird": dict(
-        head="a hummingbird's tiny head: a needle bill, an iridescent emerald throat",
+        head="a hummingbird's sleek head: a long needle bill, a bright black eye, an iridescent ruby gorget flashing at the throat",
         lend="tiny iridescent hummingbird wings at the back and an emerald gorget at the throat",
         colour="emerald with a ruby throat"),
     "Armadillo": dict(
-        head="an armadillo's narrow head: a pointed snout, long ears, banded armour plates",
-        lend="banded armadillo armour plates across the shoulders and a long banded tail",
+        head="an armadillo's narrow head: a long pointed snout, tall upright ears, a bony scaled head shield over the crown, small dark eyes",
+        lend="a banded armadillo carapace of jointed bony plates wrapped over the back and shoulders",
         colour="grey-brown"),
     "Koi": dict(
         head="a koi carp's head: barbels at the mouth, a round eye, white skin patched with orange and black",
@@ -160,19 +160,19 @@ SPECIES = {
         colour="tawny with dark spots"),
     "Platypus": dict(
         head="a platypus's head with a flat leathery duck bill, small eyes and dense brown fur",
-        lend="a flat paddle-shaped platypus tail and webbed hands",
+        lend="a broad flat paddle-shaped platypus tail covered in dense brown fur",
         colour="dark brown"),
     "Crane": dict(
-        head="a red-crowned crane's white head with a red crown patch and a long dark beak",
+        head="a whooping crane's white head: a bare red crown and red cheek patch, a pale yellow eye, a long dark olive beak",
         lend="long white crane wings with black tips and a red crown patch",
         colour="white, black and red"),
     "Beetle": dict(
         head="a stag beetle's dark head with great antler-like mandibles, compound eyes and antennae",
-        lend="glossy beetle wing cases on the back and antler-like mandibles at the jaw",
+        lend="glossy bronze-black beetle wing cases folded over the back like a split shell",
         colour="glossy black and bronze"),
     "Bison": dict(
         head="a bison's huge shaggy head: short curved horns, a dark beard",
-        lend="short curved bison horns and a shaggy hump of fur over the shoulders",
+        lend="a bison's shaggy hump of dark woolly fur rising over the shoulders and upper back",
         colour="dark brown"),
     "Newt": dict(
         head="a fire-bellied newt's small head: rough dark skin, a bright orange underside",
@@ -191,23 +191,23 @@ SPECIES = {
         lend="long curved sloth claws and shaggy moss-tinted fur",
         colour="grey-green"),
     "Lobster": dict(
-        head="a lobster's head: stalked eyes, long antennae, a segmented carapace",
+        head="a lobster's armoured head: two long whip antennae swept back, stalked black eyes, a spiked rostrum, a hard glossy shell",
         lend="a pair of lobster claws for hands and a segmented tail",
         colour="deep red and orange"),
     "Ocelot": dict(
-        head="an ocelot's small cat head: big eyes, a rosette-spotted golden coat",
+        head="an ocelot's small cat head: big eyes lined in black, two black stripes down each cheek, a white muzzle, golden fur dappled with black rosettes",
         lend="an ocelot's ringed tail and a rosette-spotted golden coat",
         colour="gold with black rosettes"),
     "Pelican": dict(
         head="a pelican's head: a long bill with a hanging throat pouch, a pale eye",
-        lend="a pelican's throat pouch and broad white wings folded at the back",
+        lend="broad white pelican wings with black flight feathers folded at the back",
         colour="white and grey"),
     "Hedgehog": dict(
-        head="a hedgehog's small pointed face: a black nose, bright eyes, a crown of short spines",
+        head="a hedgehog's head: a crown of short banded spines from the brow back, a small pointed snout with a black nose, bright dark eyes",
         lend="a cape of short brown-and-cream hedgehog spines over the back",
         colour="brown and cream"),
     "Mole": dict(
-        head="a mole's velvet black head: tiny eyes, a pink pointed snout",
+        head="a mole's velvet black head: a pink pointed snout, tiny hidden eyes, no visible ears",
         lend="broad shovel-like mole hands with long claws",
         colour="velvet black"),
     "Toucan": dict(
@@ -220,15 +220,15 @@ SPECIES = {
         colour="black and dark brown"),
     "Tardigrade": dict(
         head="a tardigrade's rounded segmented head: a circular puckered mouth, tiny eyespots, plump translucent skin",
-        lend="plump translucent segmented skin and stubby clawed pads",
+        lend="a tardigrade's plump translucent amber back, ringed in soft segmented folds",
         colour="translucent amber"),
     "Firefly": dict(
-        head="a firefly's small dark head: big compound eyes, fine antennae",
-        lend="firefly wing cases at the back glowing softly yellow-green",
+        head="a firefly's small dark head hooded by a rounded dusky-red pronotum shield with a black spot: big black compound eyes, fine antennae",
+        lend="dark firefly wing cases at the back over a short abdomen whose tip glows soft yellow-green",
         colour="black and red with a yellow-green glow"),
     "Orangutan": dict(
-        head="an orangutan's wide face: flanged cheek pads, deep-set eyes, long rust-orange hair",
-        lend="long shaggy rust-orange hair on the arms and long-fingered hands",
+        head="an orangutan's wide dark leathery face: broad flanged cheek pads, small deep-set eyes, a shaggy mane of long rust-orange hair",
+        lend="a fringe of long shaggy rust-orange orangutan hair hanging from the arms and shoulders",
         colour="rust orange"),
     "Eel": dict(
         head="a moray eel's long head: a gaping jaw with needle teeth, small eyes, mottled olive skin",
@@ -340,6 +340,18 @@ def key_for(animals, domain, callsign=""):
     return KEYS["blue"] if greenish else KEYS["green"]
 
 
+def crew_phrase(name):
+    """' of the Black Tide', ' of House Verdance', ' of the Rusted Grin', ' of the House of Seven Scales': the founding
+    names read as English after 'hunter' or 'aristocrat' (round 2's judges caught 'of the House Verdance')."""
+    if not name:
+        return ""
+    if name.lower().startswith("the "):
+        return f" of the {name[4:]}"
+    if name.startswith("House ") and " of " not in name:
+        return f" of {name}"
+    return f" of the {name}"
+
+
 def compose(callsign, animals, faction, name="", faction_name="", pose="", key=None, extra=""):
     """The brief: dict(prompt, key, accent, lines). animals = (first, second): the head, then the lent feature."""
     callsign = callsign.upper()
@@ -355,7 +367,7 @@ def compose(callsign, animals, faction, name="", faction_name="", pose="", key=N
     accent = ACCENT[domain]
     key = (key or key_for(animals, domain, callsign)).upper()
     who = f"{name} ({callsign})" if name else callsign
-    crew = f" of the {faction_name}" if faction_name else ""
+    crew = crew_phrase(faction_name)
     prompt = (
         f"Full-body character portrait of one anthropomorphic pilot, {who}, {faction.lower()}{crew}: "
         f"a human body and build with {SPECIES[first]['head']}, fur and skin {SPECIES[first]['colour']}, "
@@ -451,6 +463,11 @@ def self_test():
         failures.append("key_for moved the key for no reason")
     if KEYS["magenta"] in (key_for(a, d) for a in (("Mantis", "Owl"), ("Owl", "Lynx")) for d in ("Ruby", "Gold", "Jade")):
         failures.append("key_for chose magenta, which eats Ruby trim")
+    for given, want in (("Black Tide", " of the Black Tide"), ("House Verdance", " of House Verdance"),
+                        ("The Rusted Grin", " of the Rusted Grin"), ("House of Seven Scales", " of the House of Seven Scales"),
+                        ("Order of the Last Lure", " of the Order of the Last Lure"), ("", "")):
+        if crew_phrase(given) != want:
+            failures.append(f"crew_phrase({given!r}) = {crew_phrase(given)!r}, not {want!r}")
     for bad, kwargs in (("animal", dict(callsign="TALON", animals=("Dragon", "Owl"), faction="Hunter")),
                         ("callsign", dict(callsign="EAGLE", animals=("Owl", "Lynx"), faction="Hunter")),
                         ("faction", dict(callsign="TALON", animals=("Owl", "Lynx"), faction="Baker"))):

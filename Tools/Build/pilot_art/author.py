@@ -6,6 +6,9 @@
                                                                 #     and the pilot asset through author_pilot_assets.py
     python3 Tools/Build/pilot_art/author.py wyvendo --check     # drift gate: re-finish from the source, compare to disk
     python3 Tools/Build/pilot_art/author.py --all [--check | --preview]   # every spec under specs/
+    python3 Tools/Build/pilot_art/author.py <a> <b> ... --preview --sheet round2 --dump <dir>
+                                                                # several specs on one named sheet, the finished
+                                                                # sprites also saved into <dir> for a blind test
     python3 Tools/Build/pilot_art/author.py --self-test
 
 A portrait is a spec, specs/<name>.py, whose PORTRAIT names the pilot (callsign, heritage, faction: the brief),
@@ -188,9 +191,14 @@ def check(spec, sprite):
     return problems
 
 
-def run(names, mode):
+def run(names, mode, sheet_name=None, dump=None):
+    """names: the specs; mode: preview | write | check; sheet_name: the sheet's stem under Docs/Pilots/art/sheets/
+    (default: the one name, or `round`); dump: a folder the finished sprites are also saved into, so a round can be
+    looked at or blind-tested (SKILL.md 3.3) before anything under Assets/ changes."""
     failures = 0
     cands = []
+    if dump:
+        os.makedirs(dump, exist_ok=True)
     for name in names:
         spec = brief.load_spec(name)
         try:
@@ -199,6 +207,8 @@ def run(names, mode):
             print("MISSING:", e)
             failures += 1
             continue
+        if dump:
+            sprite.save(os.path.join(dump, f"Portrait_{spec['name']}.png"))
         ok, rows, m = verify.verify(np.asarray(sprite, dtype=np.float32) / 255.0, spec.get("exempt", ()))
         fails = [f"{n}{' (exempt: ' + r + ')' if r else ''}" for n, p, r in rows if not p]
         print(f"{name:<12} key {info['key_used']} spread {info['spread']:.3f}  gates {'PASS' if ok else 'FAIL'}"
@@ -217,7 +227,7 @@ def run(names, mode):
         if mode == "write":
             print("  wrote", write(spec, sprite))
     if cands:
-        out = os.path.join(ROOT, SHEETS, (names[0] if len(names) == 1 else "round") + ".png")
+        out = os.path.join(ROOT, SHEETS, (sheet_name or (names[0] if len(names) == 1 else "round")) + ".png")
         sheet_mod.sheet(cands, out, title=f"Pilot portraits: {', '.join(c['person'] for c in cands)}")
         print("sheet", os.path.relpath(out, ROOT))
     if mode == "write" and any(brief.load_spec(n).get("pilot") for n in names):
@@ -274,14 +284,18 @@ def self_test():
 def main(argv):
     if "--self-test" in argv:
         return self_test()
-    names = [a for a in argv if not a.startswith("--")]
+    def option(flag):
+        return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else None
+
+    taken = {option("--sheet"), option("--dump")}
+    names = [a for a in argv if not a.startswith("--") and a not in taken]
     mode = "check" if "--check" in argv else "preview" if "--preview" in argv else "write"
     if "--all" in argv or (not names and mode == "check"):      # a bare --check is the ship gate: every spec
         names = spec_names()
     if not names:
         print(__doc__)
         return 2
-    return run(names, mode)
+    return run(names, mode, sheet_name=option("--sheet"), dump=option("--dump"))
 
 
 if __name__ == "__main__":
