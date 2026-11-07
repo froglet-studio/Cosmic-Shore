@@ -67,7 +67,7 @@ SPECIES = {
         lend="a lynx's short bobbed black-tipped tail",
         colour="tawny grey with faint spots"),
     "Narwhal": dict(
-        head="a narwhal's smooth mottled grey melon-browed head with one long spiralled ivory tusk jutting forward from the upper jaw",
+        head="a narwhal's large rounded whale head with no neck: a blunt bulbous melon, a small eye, mottled grey skin, and one long thick spiral-grooved ivory tusk jutting forward from the upper lip",
         lend="one long spiralled narwhal tusk and mottled grey-blue skin",
         colour="mottled grey and white"),
     "Capybara": dict(
@@ -88,14 +88,14 @@ SPECIES = {
         colour="olive and amber"),
     "Fennec": dict(
         head="a fennec fox's small cream face with enormous ears, dark eyes and a tiny black nose",
-        lend="enormous fennec ears and a bushy cream tail",
+        lend="a fennec fox's bushy cream tail with a black tip",
         colour="cream and sand"),
     "Mantis": dict(
         head="a praying mantis's triangular green head: huge compound eyes, fine antennae",
         lend="folded raptorial mantis forearms and translucent green wing cases",
         colour="leaf green"),
     "Walrus": dict(
-        head="a walrus's broad wrinkled head: a thick bristle moustache, two long ivory tusks",
+        head="a walrus's broad wrinkled head: two very long thick ivory tusks reaching down past the collar to the chest, a thick bristle moustache",
         lend="two long ivory walrus tusks and a bristled moustache",
         colour="pinkish brown"),
     "Ibis": dict(
@@ -139,7 +139,7 @@ SPECIES = {
         lend="rippling cuttlefish mantle fins along the sides and skin flickering with zebra bands",
         colour="sand with iridescent zebra bands"),
     "Moose": dict(
-        head="a bull moose's long heavy head: broad palmate antlers, a drooping bulbous muzzle, a dewlap bell hanging at the throat",
+        head="a bull moose's long heavy head: huge broad palmate antlers spanning wider than the shoulders, a drooping bulbous muzzle, a dewlap bell hanging at the throat",
         lend="broad palmate moose antlers",
         colour="dark brown"),
     "Hummingbird": dict(
@@ -227,12 +227,12 @@ SPECIES = {
         lend="dark firefly wing cases at the back over a short abdomen whose tip glows soft yellow-green",
         colour="black and red with a yellow-green glow"),
     "Orangutan": dict(
-        head="an orangutan's wide dark leathery face: broad flanged cheek pads, small deep-set eyes, a shaggy mane of long rust-orange hair",
+        head="an orangutan's wide bare dark leathery face framed by huge flat cheek flanges that make the head a broad disc, small deep-set eyes, rust-orange hair cropped short and close to the skull",
         lend="a fringe of long shaggy rust-orange orangutan hair hanging from the arms and shoulders",
         colour="rust orange"),
     "Eel": dict(
         head="a moray eel's long head: a gaping jaw with needle teeth, small eyes, mottled olive skin",
-        lend="a long ribbon-finned eel tail and mottled olive skin",
+        lend="a slender smooth eel tail with a thin translucent fin along its length, held up and curling behind the figure",
         colour="mottled olive"),
 }
 

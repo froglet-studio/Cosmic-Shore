@@ -83,3 +83,16 @@ proposed fix, and three cast designers (legibility first, character first, the s
 16. **Fourteen paintings, fourteen first-pass gate passes.** With the light-garment rule in every dark pilot's
     `extra` (Brikon, Obelo, Fenlia, Haradek, Ekora, Zeko) no portrait sank: lum_p95 0.52-0.83, lum_p50 0.21-0.36,
     every matte spread 0.004-0.010. The ring spread on the magenta key (0.010) is twice the green's; still flat.
+17. **The stranger test, round 2: 8 pass, 6 weak, 0 fail.** Every first animal was named at full size; six were
+    missed at the Hangar's 44x56. The causes were all in the brief: a small head over a big full-length figure
+    (Nedira's hedgehog read as brown hair), a long mane that made the orangutan a lion, the fennec's tall ears
+    out-silhouetting the moose's antlers (a lent HEAD feature again: the moose was the first animal), a thin tusk
+    on a slender head that read as a heron's bill, walrus tusks lost in the head mass, and a thick scaly eel tail
+    on the ground that read as a crocodile. Five table lines changed (Orangutan, Moose and Narwhal heads, Walrus
+    head, Fennec and Eel lends): name the thumbnail silhouette (a disc face, antlers wider than the shoulders, a
+    whale head with no neck and a thick tusk, tusks to the chest), and a lent tail is slender and held up. Nedira's
+    fix (a knees-up crop) breaks the full-body house style, so she ships weak.
+18. **The Figma connector has a per-seat tool-call limit.** After 34 calls in a day the Froglet Studio Collab seat
+    refused `get_screenshot`, so five repaints (Figma nodes 6:2 Mathalo, 6:3 Fenlia, 6:4 Ilia, 6:5 Haradek,
+    6:6 Ekora) were painted but not captured. A round costs two calls per portrait (generate + capture): budget
+    them, and capture each painting right after it is generated so a cut-off leaves nothing uncaptured.

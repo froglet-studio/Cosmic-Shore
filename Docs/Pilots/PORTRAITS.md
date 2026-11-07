@@ -94,10 +94,13 @@ against the spec); its results are in LESSONS, round 2.
 
 ## 5. What comes next, in order
 
-1. **Garrett looks at `round.png` and `round2.png`** and says what is wrong: the animals, the gear, the colours,
+1. **Capture the five repaints** (Mathalo, Fenlia, Ilia, Haradek, Ekora; Figma nodes 6:2-6:6 in "Cosmic Shore Pilot Art")
+   once the Figma tool-call limit resets (LESSONS 18), then `author.py <spec>` each and rerun the stranger test.
+   They were painted from the corrected species lines after the round-2 stranger test (8 pass, 6 weak, LESSONS 17).
+2. **Garrett looks at `round.png` and `round2.png`** and says what is wrong: the animals, the gear, the colours,
    the light, the framing. Each answer goes into `brief.py`'s tables or `STYLE.md`, then the portrait is repainted.
-2. **Per-person portraits** (section 6), once the decision is made.
-3. **The hand test** in the editor: the Hangar PILOTS column with eighteen portraits at 44x56, the Squads page cards.
+3. **Per-person portraits** (section 6), once the decision is made.
+4. **The hand test** in the editor: the Hangar PILOTS column with eighteen portraits at 44x56, the Squads page cards.
 
 ## 6. Decisions (defaults used; change any)
 
