@@ -20,7 +20,8 @@ gauge MeerkatHUDView already fills (sentinels standing, portal prisms standing, 
 Real geometry:
   the hull     the Meerkat's FBX (nose +x in the side view, pitch -90 puts its back up). Until the Meerkat's own hull lands
                (/vessel-model, 2026-11-03) this is Stoat.fbx, the model the Meerkat flies today; HULL_FBX switches with it.
-  a prism      two close triangles (motifs.prism_halves), never the rhombus (Garrett 2026-11-01).
+  a prism      a square with a negative-space X (motifs.prism_square_x; two close triangles read as a rhombus at 40 px
+               on the Exit Portal, roster pass 2026-11-07), never the rhombus (Garrett 2026-11-01).
   a mouth      an ellipse ring: face-on on the Exit Portal, edge-on where the hull flies into or stands over it.
 """
 import math
@@ -28,14 +29,14 @@ import os
 
 import mesh_silhouette
 from canvas import GX, GY, SS, band, disc, empty, fill, ngon, ring, rotate
-from motifs import prism_halves
+from motifs import prism_halves, prism_square_x
 
 HULL = "Meerkat"
 ICON_DIR = "Assets/_Graphics/Icons/AbilityIcons/Stoat/"   # the placeholders the Meerkat wore (the sheet's BEFORE)
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 _OWN = "Assets/_Models/Vessel Models/Meerkat.fbx"
 HULL_FBX = _OWN if os.path.exists(os.path.join(_ROOT, _OWN)) else "Assets/_Models/Vessel Models/Stoat.fbx"
-SIDE = dict(pitch=-90, yaw=0, dilate_px=1.4)               # side on, back up, nose right
+SIDE = dict(pitch=-90, yaw=0, dilate_px=2.6)               # side on, back up, nose right
 
 
 def _grown(mask, px):
@@ -103,13 +104,13 @@ def soliton():
 
 
 # ---- Mass: the Exit Portal -------------------------------------------------------------------------------------------
-PORTAL_R, PRISM_S = 45.0, 12.0
+PORTAL_R, PRISM_S = 44.0, 9.5
 
 
 def exit_portal():
     out = ring(64, 64, 19, w=11)
     for x, y in ngon(6, PORTAL_R, 64, 64, rot=-90):
-        out |= prism_halves(x, y, PRISM_S)
+        out |= prism_square_x(x, y, PRISM_S)
     return out
 
 
