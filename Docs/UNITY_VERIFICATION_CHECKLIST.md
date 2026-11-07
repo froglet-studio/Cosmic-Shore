@@ -174,6 +174,20 @@ findings. NOT run: the reference compile (no .NET in the cloud container), Unity
    for about a second.
 5. Upgrade each element to 5. **Pass:** Siphon's dots, Armoured Wake's rims, Accretion's prism and Foresight's path show.
 
+### 🔴 Goby & Pistol ability icons, the roster pass (`claude/goby-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the eight seat icons under `Assets/_Graphics/Icons/AbilityIcons/Goby/` redrawn from the real hulls
+(guids kept), and `GobyHUDVariant.prefab`'s `omniAbilitySprite` set to `Core/Goby_OmniCrystal.png`. No C# changed.
+
+**Verified without the editor:** `author.py goby --check` no drift; `author_goby_hud.py --check` and `--self-test` ok.
+NOT run: Unity, a play. `author_goby_assets.py --check` could not run here (the sparse checkout has no
+`DefaultNetworkPrefabs.asset`).
+
+**Verify in editor:**
+1. Fly the Goby & Pistol in the Toybox. **Pass:** the four cards show the Goby drawings (its hull, not brackets and arrows).
+2. Swap to the Pistol. **Pass:** the four cards show the shrimp drawings; swap back and the Goby's return.
+3. Collect an omni crystal. **Pass:** the omni card shows the omni crystal.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.

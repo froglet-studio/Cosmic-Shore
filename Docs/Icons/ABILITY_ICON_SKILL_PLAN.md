@@ -456,6 +456,16 @@ arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and t
 row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
 prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
 the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
+**The Goby & Pistol (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** both
+seats' cards were `author_goby_hud.py`'s placeholders (brackets, arrows, a pac-man). Every card now draws the hull that
+flies it (`specs/goby.py`; the Goby from just above, the Pistol three-quarter side-on so its claw, legs and antennae
+read), as single white sprites `GobyPistolHUDView.SetSeat` swaps per seat, guids kept. Goby: Lock (its nose on a rival
+held in four brackets), Perch (the Goby over the den its perch starts), Undertow (the plane, prisms pulled in beside it
+from their ghosts), Dart (its ghost, the Goby, the block it stops on). Pistol: Snap (the claw shut in its `snap` take,
+the vortex ring leaving it), Den (resting by the den its energy built), Ghost (the Pistol, faint, through a wall of
+prisms), the dive (nose-down over a hill). The HUD had no omni card: it now shows the omni crystal
+(`Core/Goby_OmniCrystal`). `author_goby_hud.py` keeps the metas and the variant and no longer writes the PNGs.
+Sheet: `Docs/Icons/sheets/goby.png`.
 
 | Round | What | Why first |
 |---|---|---|
