@@ -377,7 +377,7 @@ def crystal_aim(pos, heading, ring, field, back_at, slack):
 
 def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor=THROTTLE_FLOOR, nose_lag=True,
          limit=900.0, dt=1 / 60, laps=LAPS, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None, nose_rate=None,
-         nose_lead=None):
+         nose_lead=None, lead_roll="judged"):
     """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}), steering for a Time crystal on its way when it
     costs under `crystal_slack` u (RedlineController.TryOverrideAim; `crystals`: True = RedlineTimeCrystals' field,
     False = none, or a list of positions). Returns {time (None = not finished), rings, of, top, mean_speed, soar (mean
@@ -386,7 +386,12 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     difficulty): None = unset (the fleet lag, LERP 1.5/s), 0 = no lag (the nose IS the command, as a human's), > 0 = that
     rate per second, applied as Mathf.Min(1, rate x dt). `nose_lag=False` is the same as `nose_rate=0`.
     `nose_lead` is AIPilot.NoseLeadGain (ai_nose_lead.NoseLead.from_config: None = off, a gain, {"gain", "max_extra_deg"}
-    or a NoseLead), stated at the fleet lag and scaled to this race's nose rate once; 0 with no nose lag."""
+    or a NoseLead), stated at the fleet lag and scaled to this race's nose rate once; 0 with no nose lag.
+    `lead_roll` is a WHAT-IF for AIPilot's roll rule while the lead is on (no effect with the lead off): "judged" (the
+    game today: the roll stick is the lead's judged yaw stick, which corkscrews a rolling hull), "nose" (the roll stick
+    is today's lead-off yaw stick, judged from the nose toward the aim) or "off" (no roll stick while leading)."""
+    if lead_roll not in ("judged", "nose", "off"):
+        raise ValueError(f"lead_roll must be judged, nose or off, not {lead_roll!r}")
     band, yband = bands or (BOOST_BAND, YASTRI_BAND)
     follow = (LERP if nose_rate is None or nose_rate < 0 else float(nose_rate)) if nose_lag else 0.0
     follow_step = min(1.0, follow * dt) if follow > 0 else 1.0
@@ -484,6 +489,8 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         else:
             xs, ys = stick(q, unit(dist), dsq)
         yd = xs                                                     # the roll stick (no belly target in Redline)
+        if g_lead > 0.0 and lead_roll != "judged" and dsq > 1e-12:  # the what-if roll rules (see race's docstring)
+            yd = stick(q, unit(dist), dsq)[0] if lead_roll == "nose" else 0.0
         thr = max(0.0, min(1.0, max(throttle, throttle_floor)))
         throttle += creep * dt
 
@@ -683,6 +690,19 @@ def self_test():
     trapped = race(course_for(4, 1), 4, nose_lead=2.5)
     if not (baseline[(4, 1)]["misses"] >= 20 and trapped["time"] is None and trapped["rings"] < 10):
         bad.append(f"the 2.5 lead's corkscrew on I4 course 1 has changed (re-measure the docstring): {trapped}")
+    # 12. the lead_roll what-if (AIPilot's roll rule while leading): "judged" is the game's rule and the default; it does
+    #     nothing with the lead off; with the roll stick off the 2.5 lead finishes I4 course 1 (negative control: judged
+    #     corkscrews, check 11); a bad value is refused
+    if race(c, 1, lead_roll="off") != today or race(c, 1, nose_lead=2.5, lead_roll="judged") != led:
+        bad.append("lead_roll changed a race it should not (lead off, or the game's own 'judged' rule)")
+    unrolled = race(course_for(4, 1), 4, nose_lead=2.5, lead_roll="off")
+    if unrolled["time"] is None:
+        bad.append(f"the 2.5 lead with no roll stick no longer finishes I4 course 1: {unrolled}")
+    try:
+        race(c, 1, lead_roll="sideways")
+        bad.append("lead_roll accepted a value it does not know")
+    except ValueError:
+        pass
     print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
 
