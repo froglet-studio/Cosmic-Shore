@@ -448,12 +448,12 @@ and "again" every month so a repeat is seen.
 |---|---|---|
 | 3.1 See the real game | R0 the real editor compiles every PR | `claude/ci-hosted-unity-compile` exists (2026-11-01); waits on the licence secrets and a merge (D1) |
 | 3.1 See the real game | R1-R2 the look-sheet kit | **built 2026-11-07 night**, not yet run in Unity: `Docs/LOOK_SHEET.md`, `/unity-look`, the CI job `look-sheet.yml`; the first run is a checklist entry |
-| 3.2 The world's look | R0 language, vocabulary, audit sheet | proposed 2026-11-07 (D2) |
-| 3.3 Decide before building | R0 mine and write the ledger | proposed 2026-11-07 |
-| 3.4 UI | R0 `UI_LESSONS.md` | proposed 2026-11-07 (D4) |
-| 3.5 Sound | R0 `sound_slots.py --check` | proposed 2026-11-07 (D5) |
-| 3.6 Multiplayer | R0 the skill | proposed 2026-11-07 (D6) |
-| 3.7 Near-A skills | fauna-creation first | proposed 2026-11-07 |
+| 3.2 The world's look | R0 the audit, the baseline gate, the language, the vocabulary, the lessons, the skill | **built 2026-11-07 night**: `/world-look`, `Tools/Build/look_kit/audit.py` (67 effects, 72 signals on 25 as the baseline), `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md`; the language is a draft for Garrett (D2) |
+| 3.3 Decide before building | R0 the ledger, the check, the brief, the brief step in four skills | **built 2026-11-07 night**: `Docs/claude/PRINCIPLES.md` (271 entries, every one verified at its source line by `principles.py --check`), `DESIGN_BRIEF.md`; every entry drafted, waiting on its owner (D3) |
+| 3.4 UI | R0 `UI_LESSONS.md`; R1 the mockup gate | **built 2026-11-07 night**: `.claude/skills/frogma/references/UI_LESSONS.md` + `ui_lessons.py`, `check_mockup.py` (measured on five boards: the noise gate tells a rejected round from a picked one in four cases of five); the parity sheet (R2) waits on 3.1 (D4) |
+| 3.5 Sound | R0 the audit and the language; R1 the Meerkat briefs | **R0 built 2026-11-07 night**: `sound_slots.py` (13 real failures on the tree: three one-shots in loop slots, seven unbanked events, one renamed, no mobile banks), `SOUND_LANGUAGE.md` (draft), `/sound-brief`; the tool's self-test has one open assertion; the Meerkat briefs are owed (D5) |
+| 3.6 Multiplayer | R0 the skill; R1 the scenario scaffold | **built 2026-11-07 night**: `/multiplayer` + `references/HAND_TESTS.md`, `net_scenarios.py` (rows 2-5 as data, a judge over `net_logs.py`, `--run` unverified: no port build here); B48 is claimed twice, next free B50 (D6) |
+| 3.7 Near-A skills | the measurement and the owed negative controls | **measured 2026-11-07 night** for fauna-creation, cardart and prism-morph (a 'Round status and what each gate still owes' section each); flora and ecology not reached |
 | ledger | `Tools/Build/rework_ledger.py` | built 2026-11-07, the numbers in section 2 |
 
 ## 7. What each step taught (append; newest last)
@@ -461,6 +461,19 @@ and "again" every month so a repeat is seen.
 - 2026-11-07, the audit: the two areas that got better had a sheet and a gate; the areas that keep being redone have
   neither, and the owner is the first to see the work. The redoing is not a craft problem first; it is a seeing
   problem and a deciding problem.
+- 2026-11-07 night, the build: (1) **look before you build was worth a night by itself**: the real editor already
+  compiles on hosted runners (`claude/ci-hosted-unity-compile`) and the per-mode smoke test (PR #1754) already plays
+  every card headless; the look-sheet kit was built on both in hours instead of rebuilding them. (2) **A ledger
+  catches the second violation, never the first**: checked against the eight retirements, the principles ledger would
+  have stopped one and flagged one late; the brief, which asks the owner before the build, is what covers the first.
+  (3) **A gate that cannot run in a cloud session is not a gate**: the verify rule's reference compile needed a .NET
+  root the proxy refused, so one was assembled from nuget packages and made a repo tool; the same for the two GLSL
+  harnesses of /prism-morph (`glslangValidator` absent here) is still owed. (4) **The writer stages of a workflow are
+  the ones that hit the account's model limit**, after the miners and auditors had spent most of the budget; the
+  mined data survived in the journals and the writing was done in the session itself. Next time: fewer, larger
+  agents, the writer first on a small sample, and a budget per workflow. (5) **Every area had a measurable
+  first finding the same night** (13 mis-wired or unbanked sound slots, 72 flat signals on 25 effects, one undecided
+  UI round, two B48s): the audit tools pay on their first run; the craft rounds need the owners' eyes.
 
 ## 8. Appendix A: the skills, hand-audited (2026-11-07)
 
