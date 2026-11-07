@@ -94,24 +94,24 @@ The Manta is not on its drive sim at #1780's 9/s nose: that sim finishes in 26.5
 too far off to use. A first run with the Manta at lead 2.5 (LA 2000 evals, three CMA restarts of 200) passed 0 of 73
 courses, closest pool 1.17x; that run is kept for the record only.
 
-Manta lead off, MAP-Elites LC and LD (2512 evals each) plus sep-CMA-ES restarts: **52 of 146 courses pass on their own,
-and no pool passes Garrett's rule.** The closest is four courses at **1.106x** (rule 1.10x), four different leaders
-(Urchin, Serpent, Stoat, Rhino), so no hull is fastest everywhere:
+Manta lead off, MAP-Elites LC and LD (2512 evals each) plus two sep-CMA-ES restarts of 400: **53 of 147 courses pass
+on their own, and no pool passes Garrett's rule.** The closest is four courses at **1.104x** (rule 1.10x), four
+different leaders (Manta, Stoat, Rhino, Serpent), so no hull is fastest everywhere:
 
 | Course | Spread | Fastest / slowest | Lifeforms (variety only) |
 |---|---|---|---|
-| 1 | 1.13x | Urchin / Squirrel | groves |
-| 2 | 1.21x | Serpent / Urchin | reef |
-| 3 | 1.15x | Stoat / Urchin | none |
-| 4 | 1.15x | Rhino / Squirrel | reef-fenced |
+| 1 | 1.11x | Manta / Serpent | groves |
+| 2 | 1.15x | Stoat / Urchin | reef |
+| 3 | 1.12x | Rhino / Squirrel | none |
+| 4 | 1.21x | Serpent / Urchin | reef-fenced |
 
-Per-hull means: Manta 85.3, Rhino 86.5, Stoat 87.0, Dolphin 88.7, Serpent 91.8, Urchin 93.9, Squirrel 94.3 s.
+Per-hull means: Manta 86.9, Stoat 88.5, Rhino 89.2, Dolphin 89.3, Serpent 94.2, Urchin 95.0, Squirrel 95.9 s.
 
-Why it stops at 1.106x against the tied counterfactual's 1.045x: on every passing course the Squirrel stands 3.3-12.3%
+Why it stops at 1.104x against the tied counterfactual's 1.045x: on every passing course the Squirrel stands 3.3-12.3%
 behind the field and is never fastest, and the Manta stands 0.9-9.4% ahead. No course lever reaches the Squirrel (brief
 10: only detours touch it), and none slows the Manta. The gap is small and sits in the roster, not the courses: a Manta
-about 0.6% slower (or the Squirrel and Urchin each about 0.5% faster) would let this pool pass, by arithmetic on the
-means above. The best losses of the restarts (0.138, 0.151, 0.129) are
+about 0.4% slower (or the Squirrel about 0.4% faster) would let this pool pass, by arithmetic on the
+means above. The best losses of the restarts (0.138, 0.151, 0.129, 0.143) are
 not within 2%, so the search is not converged either. Stills and archives:
 `/mnt/project-files/regatta-training/results/pool-search/stills_lead/`, `archive_LC.json`, `archive_LD.json`, `pick_lead.json` (the Manta-at-2.5 run: `archive_LA.json`, `pick_lead_manta25.json`).
 
