@@ -75,7 +75,7 @@ namespace CosmicShore.Editor.Froglet
         public static void Open()
         {
             var w = GetWindow<FrogletSourceControlWindow>("Source Control");
-            w.minSize = new Vector2(760f, 460f);
+            w.minSize = new Vector2(820f, 560f);
             w.Show();
         }
 
@@ -84,6 +84,7 @@ namespace CosmicShore.Editor.Froglet
             // Resolved on the main thread: FrogletGit reads Application.dataPath, which a worker may not.
             _ = FrogletGit.RepoRoot;
             _ = FrogletGit.TopLevel;
+            wantsMouseMove = true;
             EditorApplication.update += Pump;
             RefreshAll();
         }
@@ -112,6 +113,7 @@ namespace CosmicShore.Editor.Froglet
             }
             while (_gateStream.TryDequeue(out var line)) { _gateLines.Add(line); any = true; }
             if (any) Repaint();
+            Animate();
 
             var minutes = FetchMinutes;
             if (minutes > 0 && !_busy && !EditorApplication.isPlayingOrWillChangePlaymode && FrogletGit.IsAvailable &&
@@ -238,39 +240,71 @@ namespace CosmicShore.Editor.Froglet
         bool HasTrackedChanges => _status.Any(c => !c.IsUntracked);
 
         static void AfterFilesChanged() => AssetDatabase.Refresh();
+        // ── Drawing (FrogletSeaTheme: the game's colour set over the menu's sea lines) ──
 
-        // ── Drawing ──────────────────────────────────────────────────────────────
+        const float Pad = 16f;
+        const float RowH = 28f;
+        const string StillSeaPref = "Froglet.SourceControl.StillSea";
+        double _lastPaint;
+
+        static bool StillSea
+        {
+            get => EditorPrefs.GetBool(StillSeaPref, false);
+            set => EditorPrefs.SetBool(StillSeaPref, value);
+        }
+
+        double SeaTime => StillSea ? 0.0 : EditorApplication.timeSinceStartup;
+
+        /// <summary>The sea drifts while the window is looked at (about 15 frames a second); otherwise it holds.</summary>
+        void Animate()
+        {
+            var now = EditorApplication.timeSinceStartup;
+            var watched = focusedWindow == this || mouseOverWindow == this;
+            if ((watched && !StillSea || _busy) && now - _lastPaint > 1.0 / 15.0) Repaint();
+        }
 
         void OnGUI()
         {
-            FrogletEditorPalette.Banner("Source Control",
-                "Commit, pull, push and open a pull request without leaving Unity; the /ship checks run before every commit and push.",
-                FrogletEditorPalette.ColorFor(FrogletToolCategory.Build));
+            FrogletSeaTheme.BeginFrame();
+            if (Event.current.type == EventType.Repaint) _lastPaint = EditorApplication.timeSinceStartup;
+            if (Event.current.type == EventType.MouseMove) Repaint(); // hover states
+            var p = FrogletSeaTheme.Current;
+            var w = position.width;
+            var h = position.height;
+            FrogletSeaTheme.Sea(new Rect(0, 0, w, h), SeaTime);
 
+            var y = DrawHeader(w);
             if (!FrogletGit.IsAvailable)
             {
-                EditorGUILayout.Space(8);
-                EditorGUILayout.HelpBox(
+                var r = new Rect(Pad, y, w - 2 * Pad, 90);
+                FrogletSeaTheme.Panel(r);
+                FrogletSeaTheme.Stripe(r, p.Danger);
+                GUI.Label(new Rect(r.x + 16, r.y + 12, r.width - 32, r.height - 24),
                     "No git found: not on PATH, not inside GitHub Desktop, not in Program Files. Install Git " +
-                    "(https://git-scm.com/downloads) or GitHub Desktop, then reopen this window.", MessageType.Warning);
+                    "(https://git-scm.com/downloads) or GitHub Desktop, then reopen this window.", FrogletSeaTheme.BodyWrapped(p.Text));
                 return;
             }
 
-            DrawTopBar();
-            DrawStatusLine();
-            _tab = GUILayout.Toolbar(_tab, new[]
-            {
-                $"Changes ({_rows.Count})", "History", "Branches",
-                _report == null ? "Checks" : $"Checks ({_report.findings.Count(f => !string.Equals(f.severity, "info"))})",
-            }, GUILayout.Height(24));
-            EditorGUILayout.Space(4);
+            y = DrawStatusRow(y, w);
+            y = DrawActions(y, w);
+            y = DrawMessage(y, w);
 
+            var labels = new[]
+            {
+                _rows.Count > 0 ? $"Changes  {_rows.Count}" : "Changes", "History", "Branches",
+                _report == null ? "Checks" : $"Checks  {_report.findings.Count(f => f.severity != "info")}",
+            };
+            var tab = FrogletSeaTheme.Tabs(new Rect(Pad, y, w - 2 * Pad, 32), labels, _tab);
+            if (tab != _tab) { _tab = tab; _pageScroll = Vector2.zero; }
+            y += 42;
+
+            var body = new Rect(Pad, y, w - 2 * Pad, Mathf.Max(120, h - y - Pad));
             switch (_tab)
             {
-                case 0: DrawChanges(); break;
-                case 1: DrawHistory(); break;
-                case 2: DrawBranches(); break;
-                default: DrawChecks(); break;
+                case 0: DrawChanges(body); break;
+                case 1: DrawHistory(body); break;
+                case 2: DrawBranches(body); break;
+                default: DrawChecks(body); break;
             }
 
             if (_deferred != null && Event.current.type == EventType.Repaint)
@@ -281,143 +315,212 @@ namespace CosmicShore.Editor.Froglet
             }
         }
 
-        void DrawTopBar()
+        float DrawHeader(float w)
         {
-            EditorGUILayout.Space(6);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                var protectedBranch = FrogletGit.IsProtectedBranch(_branch);
-                var pill = GUILayoutUtility.GetRect(220, 22, GUILayout.Width(220), GUILayout.Height(22));
-                FrogletEditorPalette.StatusPill(pill, "BRANCH  " + (string.IsNullOrEmpty(_branch) ? "?" : _branch),
-                    protectedBranch ? FrogletEditorPalette.Error : FrogletEditorPalette.Info);
-
-                var sync = _upstream == null ? "not on GitHub yet" : $"↓{_behind}  ↑{_ahead}";
-                var syncRect = GUILayoutUtility.GetRect(130, 22, GUILayout.Width(130), GUILayout.Height(22));
-                FrogletEditorPalette.StatusPill(syncRect, sync,
-                    _behind > 0 ? FrogletEditorPalette.Warn : _ahead > 0 ? FrogletEditorPalette.Info : FrogletEditorPalette.Ok);
-
-                if (_baseKnown)
-                {
-                    var b = GUILayoutUtility.GetRect(200, 22, GUILayout.Width(200), GUILayout.Height(22));
-                    FrogletEditorPalette.StatusPill(b, _baseMerges == 0 ? "UP TO DATE WITH BLEEDING-EDGE" : $"{_baseMerges} PRs BEHIND BLEEDING-EDGE",
-                        _baseMerges == 0 ? FrogletEditorPalette.Ok : _baseMerges >= 10 ? FrogletEditorPalette.Warn : FrogletEditorPalette.Muted);
-                }
-
-                GUILayout.FlexibleSpace();
-                if (_busy) GUILayout.Label(_busyLabel + "…", FrogletEditorPalette.Subtitle);
-            }
-
-            EditorGUILayout.Space(4);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                var idle = !_busy;
-                var accent = FrogletEditorPalette.ColorFor(FrogletToolCategory.Build);
-                if (FrogletEditorPalette.ColorButton("Refresh", accent, 80, 26, "Re-read the working tree.", idle, outline: true))
-                    _deferred = RefreshAll;
-                if (FrogletEditorPalette.ColorButton("Fetch", accent, 70, 26, "Ask GitHub what changed. Changes no file.", idle, outline: true))
-                    _deferred = DoFetch;
-                if (FrogletEditorPalette.ColorButton(_behind > 0 ? $"Pull ↓{_behind}" : "Pull", accent, 80, 26,
-                        "Bring this branch's new commits from GitHub.", idle && _upstream != null, outline: _behind == 0))
-                    _deferred = DoPull;
-                if (FrogletEditorPalette.ColorButton(_upstream == null ? "Publish branch" : _ahead > 0 ? $"Push ↑{_ahead}" : "Push",
-                        FrogletEditorPalette.Ok, 120, 26, "Run the checks, then send your commits to GitHub.",
-                        idle && (_ahead > 0 || _upstream == null), outline: _ahead == 0 && _upstream != null))
-                    _deferred = DoPush;
-                if (FrogletEditorPalette.ColorButton("Update from bleeding-edge", FrogletEditorPalette.Warn, 180, 26,
-                        "Merge the latest bleeding-edge into this branch. Conflicts are undone and named.",
-                        idle && _baseKnown && _baseCommits > 0, outline: _baseMerges < 10))
-                    _deferred = DoUpdateFromBase;
-                if (FrogletEditorPalette.ColorButton("Open pull request", FrogletEditorPalette.Info, 130, 26,
-                        "GitHub's pull request page for this branch, filled from the template.",
-                        idle && _upstream != null && !FrogletGit.IsProtectedBranch(_branch), outline: true))
-                    _deferred = DoOpenPullRequest;
-                GUILayout.FlexibleSpace();
-            }
+            var p = FrogletSeaTheme.Current;
+            var y = 14f;
+            GUI.Label(new Rect(Pad, y, w - 2 * Pad - 190, 26), "SOURCE CONTROL", FrogletSeaTheme.Title);
+            var themeLabel = "Theme  " + p.Name;
+            var tw = FrogletSeaTheme.ButtonWidth(themeLabel);
+            if (FrogletSeaTheme.Button(new Rect(w - Pad - tw, y + 1, tw, 26), themeLabel, FrogletSeaTheme.ButtonKind.Quiet, true,
+                    "The game's colour sets, as the window's theme. " + p.Tagline))
+                ThemeMenu();
+            y += 30;
+            GUI.Label(new Rect(Pad, y, w - 2 * Pad, 16),
+                "Commit, pull and push without leaving Unity. The /ship checks run before every commit and push.", FrogletSeaTheme.Subtitle);
+            return y + 26;
         }
 
-        void DrawStatusLine()
+        void ThemeMenu()
         {
-            if (string.IsNullOrEmpty(_status1)) { EditorGUILayout.Space(4); return; }
-            EditorGUILayout.Space(4);
-            var r = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
-            var height = FrogletEditorPalette.CardBodyWrapped.CalcHeight(new GUIContent(_status1), Mathf.Max(100, r.width - 20)) + 8;
-            var box = GUILayoutUtility.GetRect(0, height, GUILayout.ExpandWidth(true));
-            FrogletEditorPalette.DrawCard(box, FrogletEditorPalette.SurfaceRaised,
-                (_statusIsError ? FrogletEditorPalette.Error : FrogletEditorPalette.Ok).WithAlpha(0.6f));
-            FrogletEditorPalette.DrawAccentStripe(box, _statusIsError ? FrogletEditorPalette.Error : FrogletEditorPalette.Ok);
-            GUI.Label(new Rect(box.x + 10, box.y + 4, box.width - 16, box.height - 8), _status1, FrogletEditorPalette.CardBodyWrapped);
-            EditorGUILayout.Space(4);
+            var menu = new GenericMenu();
+            foreach (var t in FrogletSeaTheme.Themes)
+            {
+                var id = t.Id;
+                menu.AddItem(new GUIContent(t.Name), FrogletSeaTheme.Current.Id == id, () => { FrogletSeaTheme.SetTheme(id); Repaint(); });
+            }
+            menu.AddSeparator(string.Empty);
+            menu.AddItem(new GUIContent("Still sea (no motion)"), StillSea, () => { StillSea = !StillSea; Repaint(); });
+            menu.ShowAsContext();
+        }
+
+        float DrawStatusRow(float y, float w)
+        {
+            var p = FrogletSeaTheme.Current;
+            var x = Pad;
+            var protectedBranch = FrogletGit.IsProtectedBranch(_branch);
+
+            void Chip(string label, Color c, bool filled = false)
+            {
+                var cw = FrogletSeaTheme.PillWidth(label);
+                FrogletSeaTheme.Pill(new Rect(x, y, cw, 22), label, c, filled);
+                x += cw + 8;
+            }
+
+            Chip("Branch  " + (string.IsNullOrEmpty(_branch) ? "?" : _branch), protectedBranch ? p.Danger : p.Selection);
+            Chip(_upstream == null ? "Not on GitHub yet" : $"{_behind} to pull · {_ahead} to push", p.Data);
+            if (_baseKnown)
+                Chip(_baseMerges == 0 ? "Up to date with bleeding-edge" : $"{_baseMerges} PRs behind bleeding-edge",
+                     _baseMerges >= 10 ? p.Danger : p.Data);
+            if (_busy)
+                GUI.Label(new Rect(x + 4, y, w - x - Pad, 22), _busyLabel + "…", FrogletSeaTheme.BodySoft);
+            y += 30;
+            if (_busy) FrogletSeaTheme.Working(new Rect(Pad, y - 4, w - 2 * Pad, 2), EditorApplication.timeSinceStartup);
+            return y + 4;
+        }
+
+        float DrawActions(float y, float w)
+        {
+            var idle = !_busy;
+            var buttons = new List<(string label, FrogletSeaTheme.ButtonKind kind, bool enabled, string tip, Action act)>
+            {
+                ("Refresh", FrogletSeaTheme.ButtonKind.Quiet, idle, "Read the working tree again.", RefreshAll),
+                ("Fetch", FrogletSeaTheme.ButtonKind.Quiet, idle, "Ask GitHub what changed. Changes no file.", DoFetch),
+                (_behind > 0 ? $"Pull {_behind}" : "Pull", _behind > 0 ? FrogletSeaTheme.ButtonKind.Primary : FrogletSeaTheme.ButtonKind.Quiet,
+                    idle && _upstream != null, "Bring this branch's new commits from GitHub.", DoPull),
+                (_upstream == null ? "Publish branch" : _ahead > 0 ? $"Push {_ahead}" : "Push",
+                    _ahead > 0 || _upstream == null ? FrogletSeaTheme.ButtonKind.Cta : FrogletSeaTheme.ButtonKind.Quiet,
+                    idle && (_ahead > 0 || _upstream == null) && !FrogletGit.IsProtectedBranch(_branch),
+                    "Run the checks, then send your commits to GitHub.", DoPush),
+                ("Update from bleeding-edge", _baseMerges > 0 ? FrogletSeaTheme.ButtonKind.Primary : FrogletSeaTheme.ButtonKind.Quiet,
+                    idle && _baseKnown && _baseCommits > 0, "Merge the latest bleeding-edge into this branch. Conflicts are undone and named.",
+                    DoUpdateFromBase),
+                ("Open pull request", FrogletSeaTheme.ButtonKind.Primary, idle && _upstream != null && !FrogletGit.IsProtectedBranch(_branch),
+                    "GitHub's pull request page for this branch, filled from the template.", DoOpenPullRequest),
+            };
+            var x = Pad;
+            foreach (var b in buttons)
+            {
+                var bw = FrogletSeaTheme.ButtonWidth(b.label, 76f);
+                if (x + bw > w - Pad && x > Pad) { x = Pad; y += 38; }
+                if (FrogletSeaTheme.Button(new Rect(x, y, bw, 30), b.label, b.kind, b.enabled, b.tip))
+                    _deferred = b.act;
+                x += bw + 8;
+            }
+            return y + 42;
+        }
+
+        float DrawMessage(float y, float w)
+        {
+            if (string.IsNullOrEmpty(_status1)) return y;
+            var p = FrogletSeaTheme.Current;
+            var style = FrogletSeaTheme.BodyWrapped(p.Text);
+            var textW = w - 2 * Pad - 64;
+            var th = Mathf.Max(18f, style.CalcHeight(new GUIContent(_status1), textW));
+            var r = new Rect(Pad, y, w - 2 * Pad, th + 20);
+            FrogletSeaTheme.Panel(r, FrogletSeaTheme.SliverSmall);
+            FrogletSeaTheme.Stripe(r, _statusIsError ? p.Danger : p.Selection);
+            GUI.Label(new Rect(r.x + 16, r.y + 10, textW, th), _status1, style);
+            if (FrogletSeaTheme.Button(new Rect(r.xMax - 38, r.y + 8, 28, 22), "×", FrogletSeaTheme.ButtonKind.Quiet, true, "Dismiss"))
+                _deferred = () => SetStatus(string.Empty, false);
+            return r.yMax + 12;
         }
 
         // ── Changes ──────────────────────────────────────────────────────────────
 
-        void DrawChanges()
+        void DrawChanges(Rect body)
         {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                using (new EditorGUILayout.VerticalScope(GUILayout.Width(Mathf.Max(300, position.width * 0.42f))))
-                {
-                    DrawChangeList();
-                    DrawCommitBox();
-                }
-                using (new EditorGUILayout.VerticalScope())
-                    DrawDiff();
-            }
+            var leftW = Mathf.Clamp(body.width * 0.42f, Mathf.Min(320f, body.width - 260f), body.width - 260f);
+            var left = new Rect(body.x, body.y, leftW, body.height);
+            var right = new Rect(left.xMax + 12, body.y, body.width - leftW - 12, body.height);
+            FrogletSeaTheme.Panel(left);
+            FrogletSeaTheme.Panel(right);
+
+            const float commitH = 196f;
+            var list = new Rect(left.x, left.y, left.width, left.height - commitH);
+            DrawChangeList(list);
+            DrawCommitBox(new Rect(left.x, list.yMax, left.width, commitH));
+            DrawDiff(right);
         }
 
-        void DrawChangeList()
+        void DrawChangeList(Rect r)
         {
-            var ticked = _rows.Count(r => !_unticked.Contains(r.Path));
-            using (new EditorGUILayout.HorizontalScope())
+            var p = FrogletSeaTheme.Current;
+            var ticked = _rows.Count(row => !_unticked.Contains(row.Path));
+            var head = new Rect(r.x + 14, r.y + 12, r.width - 28, 22);
+            var all = ticked == _rows.Count && _rows.Count > 0;
+            var some = ticked > 0 && !all;
+            var now = FrogletSeaTheme.Check(new Rect(head.x, head.y + 4, 15, 15), all, some);
+            if (now != all)
             {
-                var all = ticked == _rows.Count && _rows.Count > 0;
-                var now = EditorGUILayout.ToggleLeft($"{ticked} of {_rows.Count} file(s) ticked", all, FrogletEditorPalette.SectionLabel);
-                if (now != all)
-                {
-                    if (now) _unticked.Clear();
-                    else foreach (var r in _rows) _unticked.Add(r.Path);
-                }
-                GUILayout.FlexibleSpace();
-                if (FrogletEditorPalette.ColorButton("Discard…", FrogletEditorPalette.Error, 80, 20,
-                        "Throw away the ticked changes (asks first).", !_busy && ticked > 0, outline: true))
-                    _deferred = DoDiscardTicked;
+                if (now) _unticked.Clear();
+                else foreach (var row in _rows) _unticked.Add(row.Path);
             }
+            GUI.Label(new Rect(head.x + 24, head.y, 220, 22), $"{ticked} OF {_rows.Count} TICKED", FrogletSeaTheme.Label);
+            if (FrogletSeaTheme.Button(new Rect(head.xMax - 92, head.y - 1, 92, 24), "Discard", FrogletSeaTheme.ButtonKind.Danger,
+                    !_busy && ticked > 0, "Throw away the ticked changes (asks first)."))
+                _deferred = DoDiscardTicked;
 
-            _listScroll = EditorGUILayout.BeginScrollView(_listScroll, GUILayout.ExpandHeight(true));
+            var view = new Rect(r.x + 4, head.yMax + 8, r.width - 8, r.height - (head.yMax + 8 - r.y) - 4);
+            FrogletSeaTheme.Rule(new Rect(r.x + 14, view.y - 4, r.width - 28, 1));
             if (_rows.Count == 0)
-                GUILayout.Label("No changes. Everything is committed.", FrogletEditorPalette.CardBody);
-            foreach (var row in _rows)
             {
-                var r = GUILayoutUtility.GetRect(0, 20, GUILayout.ExpandWidth(true));
-                var selected = row.Path == _selectedRow;
-                if (selected) FrogletEditorPalette.DrawRect(r, FrogletEditorPalette.Info.WithAlpha(0.18f));
-                var c = row.Change;
-                FrogletEditorPalette.DrawAccentStripe(r, c.IsConflicted ? FrogletEditorPalette.Error
-                    : c.Kind == '+' ? FrogletEditorPalette.Ok : c.Kind == '-' ? FrogletEditorPalette.Error : FrogletEditorPalette.Warn);
-
-                var tick = new Rect(r.x + 6, r.y + 2, 16, 16);
-                var was = !_unticked.Contains(row.Path);
-                var now = EditorGUI.Toggle(tick, was);
-                if (now != was) { if (now) _unticked.Remove(row.Path); else _unticked.Add(row.Path); }
-
-                var label = c.Kind + "  " + row.Path + (row.Meta != null ? "  (+ .meta)" : string.Empty) +
-                            (c.OriginalPath != null ? "   ← " + c.OriginalPath : string.Empty);
-                var labelRect = new Rect(r.x + 26, r.y + 2, r.width - 30, 16);
-                GUI.Label(labelRect, new GUIContent(label, row.Path), FrogletEditorPalette.CardBody);
-                if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition))
-                {
-                    if (Event.current.clickCount == 2) Ping(row.Path);
-                    SelectRow(row);
-                    Event.current.Use();
-                }
+                GUI.Label(new Rect(view.x + 12, view.y + 10, view.width - 24, 20), "No changes. Everything is committed.", FrogletSeaTheme.BodySoft);
+                return;
             }
-            EditorGUILayout.EndScrollView();
+            var content = new Rect(0, 0, view.width - 14, _rows.Count * RowH);
+            _listScroll = FrogletSeaTheme.BeginScroll(view, _listScroll, content);
+            var first = Mathf.Max(0, (int)(_listScroll.y / RowH));
+            var last = Mathf.Min(_rows.Count, first + (int)(view.height / RowH) + 2);
+            for (var i = first; i < last; i++)
+                DrawChangeRow(new Rect(0, i * RowH, content.width, RowH), _rows[i], p);
+            FrogletSeaTheme.EndScroll();
+        }
+
+        void DrawChangeRow(Rect r, ScRow row, FrogletSeaTheme.Palette p)
+        {
+            var e = Event.current;
+            var selected = row.Path == _selectedRow;
+            if (selected)
+            {
+                FrogletSeaTheme.Fill(r, FrogletSeaTheme.WithAlpha(p.Selection, 0.13f));
+                FrogletSeaTheme.Stripe(r, p.Selection);
+            }
+            else if (r.Contains(e.mousePosition))
+                FrogletSeaTheme.Fill(r, FrogletSeaTheme.WithAlpha(p.SurfaceRaised, 0.25f));
+
+            var was = !_unticked.Contains(row.Path);
+            var now = FrogletSeaTheme.Check(new Rect(r.x + 10, r.y + 6.5f, 15, 15), was);
+            if (now != was) { if (now) _unticked.Remove(row.Path); else _unticked.Add(row.Path); }
+
+            var c = row.Change;
+            var (glyph, color) = c.IsConflicted ? ("!", p.Danger) : c.Kind == '+' ? ("+", p.Data) : c.Kind == '-' ? ("-", p.Danger)
+                               : c.Kind == '>' ? (">", p.Data) : ("~", p.TextSoft);
+            var g = FrogletSeaTheme.LabelStrong;
+            var prev = g.normal.textColor;
+            g.normal.textColor = color;
+            if (e.type == EventType.Repaint) GUI.Label(new Rect(r.x + 32, r.y, 14, r.height), glyph, g);
+            g.normal.textColor = prev;
+
+            var slash = row.Path.LastIndexOf('/');
+            var name = slash < 0 ? row.Path : row.Path.Substring(slash + 1);
+            var folder = slash < 0 ? string.Empty : row.Path.Substring(0, slash);
+            var metaW = row.Meta != null ? 44f : 0f;
+            var textR = new Rect(r.x + 50, r.y, r.width - 58 - metaW, r.height);
+            var nameW = Mathf.Min(FrogletSeaTheme.Body.CalcSize(new GUIContent(name)).x, textR.width);
+            if (e.type == EventType.Repaint)
+            {
+                GUI.Label(new Rect(textR.x, r.y, nameW, r.height), new GUIContent(name, row.Path), FrogletSeaTheme.Body);
+                if (folder.Length > 0 && textR.width - nameW > 30)
+                    GUI.Label(new Rect(textR.x + nameW + 8, r.y + 1, textR.width - nameW - 8, r.height), folder, FrogletSeaTheme.BodySoft);
+            }
+            if (row.Meta != null)
+                FrogletSeaTheme.Pill(new Rect(r.xMax - metaW - 4, r.y + 6, metaW, 16), "meta", p.TextSoft);
+
+            var hit = new Rect(r.x + 30, r.y, r.width - 30, r.height);
+            if (e.type == EventType.MouseDown && e.button == 0 && hit.Contains(e.mousePosition))
+            {
+                if (e.clickCount == 2) Ping(row.Path);
+                SelectRow(row);
+                e.Use();
+            }
         }
 
         void SelectRow(ScRow row)
         {
             _selectedRow = row.Path;
             _diff = "…";
+            _diffScroll = Vector2.zero;
             Task.Run(() =>
             {
                 var d = FrogletSourceControl.Diff(row);
@@ -425,57 +528,85 @@ namespace CosmicShore.Editor.Froglet
             });
         }
 
-        void DrawCommitBox()
+        void DrawCommitBox(Rect r)
         {
-            FrogletEditorPalette.HorizontalRule(4);
-            GUILayout.Label("Summary (required)", FrogletEditorPalette.SectionLabel);
-            _summary = EditorGUILayout.TextField(_summary);
-            GUILayout.Label("Description", FrogletEditorPalette.SectionLabel);
-            _description = EditorGUILayout.TextArea(_description, GUILayout.MinHeight(48));
-            var ticked = _rows.Count(r => !_unticked.Contains(r.Path));
-            var can = !_busy && ticked > 0 && _summary.Trim().Length > 0;
-            EditorGUILayout.Space(4);
-            var label = FrogletGit.IsProtectedBranch(_branch) ? $"Commit to {_branch} (protected: make a branch)" : $"Commit {ticked} file(s) to {_branch}";
-            var r = GUILayoutUtility.GetRect(0, 30, GUILayout.ExpandWidth(true));
-            if (FrogletEditorPalette.ColorButton(r, label, FrogletEditorPalette.Ok,
-                    "Saves open scenes and assets, runs the checks on the ticked files, then commits them.",
-                    can && !FrogletGit.IsProtectedBranch(_branch)))
+            var p = FrogletSeaTheme.Current;
+            FrogletSeaTheme.Rule(new Rect(r.x + 14, r.y, r.width - 28, 1));
+            var x = r.x + 14;
+            var cw = r.width - 28;
+            var y = r.y + 12;
+            GUI.Label(new Rect(x, y, cw, 16), "SUMMARY", FrogletSeaTheme.Label);
+            y += 18;
+            _summary = EditorGUI.TextField(new Rect(x, y, cw, 24), _summary, FrogletSeaTheme.Field);
+            y += 32;
+            GUI.Label(new Rect(x, y, cw, 16), "DESCRIPTION", FrogletSeaTheme.Label);
+            y += 18;
+            _description = EditorGUI.TextArea(new Rect(x, y, cw, 46), _description, FrogletSeaTheme.Area);
+            y += 56;
+            var ticked = _rows.Count(row => !_unticked.Contains(row.Path));
+            var isProtected = FrogletGit.IsProtectedBranch(_branch);
+            var label = isProtected ? $"{_branch} is protected: make a branch" : $"Commit {ticked} to {_branch}";
+            var can = !_busy && ticked > 0 && _summary.Trim().Length > 0 && !isProtected;
+            if (FrogletSeaTheme.Button(new Rect(x, y, cw, 34), label, FrogletSeaTheme.ButtonKind.Cta, can,
+                    "Saves open scenes and assets, runs the checks on the ticked files, then commits them."))
                 _deferred = DoCommit;
+            if (isProtected) FrogletSeaTheme.Stripe(new Rect(x, y, cw, 34), p.Danger);
         }
 
-        void DrawDiff()
+        void DrawDiff(Rect r)
         {
-            GUILayout.Label(_selectedRow ?? "Select a file to see what changed", FrogletEditorPalette.SectionLabel);
-            if (_selectedRow != null)
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (FrogletEditorPalette.ColorButton("Show in folder", FrogletEditorPalette.Slate, 110, 20, null, true, outline: true))
-                        EditorUtility.RevealInFinder(FrogletGit.ToAbsolute(_selectedRow));
-                    if (_selectedRow.StartsWith("Assets/", StringComparison.Ordinal) &&
-                        FrogletEditorPalette.ColorButton("Select in Project", FrogletEditorPalette.Slate, 120, 20, null, true, outline: true))
-                        Ping(_selectedRow);
-                    GUILayout.FlexibleSpace();
-                }
+            var p = FrogletSeaTheme.Current;
+            var head = new Rect(r.x + 16, r.y + 12, r.width - 32, 22);
+            if (_selectedRow == null)
+            {
+                GUI.Label(head, "SELECT A FILE TO SEE WHAT CHANGED", FrogletSeaTheme.Label);
+                return;
+            }
+            var bx = head.xMax;
+            if (_selectedRow.StartsWith("Assets/", StringComparison.Ordinal) || FrogletGit.ProjectPrefix.Length > 0)
+            {
+                var pw = FrogletSeaTheme.ButtonWidth("Select in Project");
+                bx -= pw;
+                if (FrogletSeaTheme.Button(new Rect(bx, head.y - 1, pw, 24), "Select in Project", FrogletSeaTheme.ButtonKind.Quiet))
+                    Ping(_selectedRow);
+                bx -= 8;
+            }
+            var sw = FrogletSeaTheme.ButtonWidth("Show in folder");
+            bx -= sw;
+            if (FrogletSeaTheme.Button(new Rect(bx, head.y - 1, sw, 24), "Show in folder", FrogletSeaTheme.ButtonKind.Quiet))
+                EditorUtility.RevealInFinder(FrogletGit.ToAbsolute(_selectedRow));
+            GUI.Label(new Rect(head.x, head.y, bx - head.x - 10, 22), new GUIContent(_selectedRow, _selectedRow), FrogletSeaTheme.LabelStrong);
 
+            var view = new Rect(r.x + 4, head.yMax + 10, r.width - 8, r.height - (head.yMax + 10 - r.y) - 6);
+            FrogletSeaTheme.Rule(new Rect(r.x + 16, view.y - 5, r.width - 32, 1));
             var lines = _diff.Split('\n');
-            const float lineH = 15f;
-            _diffScroll = EditorGUILayout.BeginScrollView(_diffScroll, GUILayout.ExpandHeight(true));
-            var area = GUILayoutUtility.GetRect(0, lines.Length * lineH + 4, GUILayout.ExpandWidth(true));
-            var first = Mathf.Max(0, (int)(_diffScroll.y / lineH) - 2);
-            var last = Mathf.Min(lines.Length, first + (int)(position.height / lineH) + 4);
+            const float lineH = 16f;
+            var mono = FrogletSeaTheme.Mono;
+            var longest = 0;
+            foreach (var l in lines) longest = Mathf.Max(longest, l.Length);
+            var charW = mono.CalcSize(new GUIContent("M")).x;
+            var content = new Rect(0, 0, Mathf.Max(view.width - 14, longest * charW + 24), lines.Length * lineH + 8);
+            _diffScroll = FrogletSeaTheme.BeginScroll(view, _diffScroll, content);
+            var first = Mathf.Max(0, (int)(_diffScroll.y / lineH) - 1);
+            var last = Mathf.Min(lines.Length, first + (int)(view.height / lineH) + 3);
+            var prev = mono.normal.textColor;
             for (var i = first; i < last; i++)
             {
                 var l = lines[i];
-                var rr = new Rect(area.x + 4, area.y + i * lineH, Mathf.Max(area.width, 2000), lineH);
-                if (l.StartsWith("+") && !l.StartsWith("+++"))
-                    FrogletEditorPalette.DrawRect(rr, FrogletEditorPalette.Ok.WithAlpha(0.12f));
-                else if (l.StartsWith("-") && !l.StartsWith("---"))
-                    FrogletEditorPalette.DrawRect(rr, FrogletEditorPalette.Error.WithAlpha(0.12f));
-                else if (l.StartsWith("@@"))
-                    FrogletEditorPalette.DrawRect(rr, FrogletEditorPalette.Info.WithAlpha(0.10f));
-                GUI.Label(rr, l, FrogletEditorPalette.CardBody);
+                var rr = new Rect(0, 4 + i * lineH, content.width, lineH);
+                Color text = p.Text;
+                if (l.StartsWith("+") && !l.StartsWith("+++")) { FrogletSeaTheme.Fill(rr, FrogletSeaTheme.WithAlpha(p.Data, 0.14f)); text = p.DataText; }
+                else if (l.StartsWith("-") && !l.StartsWith("---")) { FrogletSeaTheme.Fill(rr, FrogletSeaTheme.WithAlpha(p.Danger, 0.13f)); text = p.Danger; }
+                else if (l.StartsWith("@@")) { FrogletSeaTheme.Fill(rr, FrogletSeaTheme.WithAlpha(p.Selection, 0.08f)); text = p.Selection; }
+                else if (l.StartsWith("diff ") || l.StartsWith("index ") || l.StartsWith("+++") || l.StartsWith("---")) text = p.TextSoft;
+                if (Event.current.type == EventType.Repaint)
+                {
+                    mono.normal.textColor = text;
+                    GUI.Label(new Rect(12, rr.y, rr.width - 12, lineH), l, mono);
+                }
             }
-            EditorGUILayout.EndScrollView();
+            mono.normal.textColor = prev;
+            FrogletSeaTheme.EndScroll();
         }
 
         static void Ping(string repoRelative)
@@ -486,197 +617,279 @@ namespace CosmicShore.Editor.Froglet
 
         // ── History ──────────────────────────────────────────────────────────────
 
-        void DrawHistory()
+        void DrawHistory(Rect body)
         {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                _pageScroll = EditorGUILayout.BeginScrollView(_pageScroll, GUILayout.Width(Mathf.Max(360, position.width * 0.55f)));
-                foreach (var c in _history)
-                {
-                    var r = GUILayoutUtility.GetRect(0, 22, GUILayout.ExpandWidth(true));
-                    if (c.Sha == _selectedCommit) FrogletEditorPalette.DrawRect(r, FrogletEditorPalette.Info.WithAlpha(0.18f));
-                    if (c.Unpushed)
-                    {
-                        FrogletEditorPalette.DrawAccentStripe(r, FrogletEditorPalette.Ok);
-                        FrogletEditorPalette.StatusPill(new Rect(r.x + 6, r.y + 3, 54, 16), "UNPUSHED", FrogletEditorPalette.Ok);
-                    }
-                    GUI.Label(new Rect(r.x + 66, r.y + 3, r.width - 70, 16),
-                        $"{c.ShortSha}  {c.Date}  {c.Author}:  {c.Subject}", FrogletEditorPalette.CardBody);
-                    if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
-                    {
-                        _selectedCommit = c.Sha;
-                        _commitFiles = new List<string> { "…" };
-                        var sha = c.Sha;
-                        Task.Run(() =>
-                        {
-                            var files = FrogletSourceControl.CommitFiles(sha);
-                            _main.Enqueue(() => { if (_selectedCommit == sha) _commitFiles = files; });
-                        });
-                        Event.current.Use();
-                    }
-                }
-                EditorGUILayout.EndScrollView();
+            var p = FrogletSeaTheme.Current;
+            var leftW = Mathf.Clamp(body.width * 0.58f, Mathf.Min(360f, body.width - 220f), body.width - 220f);
+            var left = new Rect(body.x, body.y, leftW, body.height);
+            var right = new Rect(left.xMax + 12, body.y, body.width - leftW - 12, body.height);
+            FrogletSeaTheme.Panel(left);
+            FrogletSeaTheme.Panel(right);
 
-                using (new EditorGUILayout.VerticalScope())
+            var unpushed = _history.Count(c => c.Unpushed);
+            GUI.Label(new Rect(left.x + 14, left.y + 12, left.width - 28, 22),
+                unpushed > 0 ? $"LAST {_history.Count} COMMITS · {unpushed} NOT ON GITHUB YET" : $"LAST {_history.Count} COMMITS", FrogletSeaTheme.Label);
+            var view = new Rect(left.x + 4, left.y + 42, left.width - 8, left.height - 46);
+            FrogletSeaTheme.Rule(new Rect(left.x + 14, view.y - 4, left.width - 28, 1));
+            var content = new Rect(0, 0, view.width - 14, _history.Count * 44f);
+            _pageScroll = FrogletSeaTheme.BeginScroll(view, _pageScroll, content);
+            var e = Event.current;
+            for (var i = 0; i < _history.Count; i++)
+            {
+                var c = _history[i];
+                var r = new Rect(0, i * 44f, content.width, 44f);
+                if (r.yMax < _pageScroll.y || r.y > _pageScroll.y + view.height) continue;
+                var selected = c.Sha == _selectedCommit;
+                if (selected) { FrogletSeaTheme.Fill(r, FrogletSeaTheme.WithAlpha(p.Selection, 0.13f)); FrogletSeaTheme.Stripe(r, p.Selection); }
+                else if (r.Contains(e.mousePosition)) FrogletSeaTheme.Fill(r, FrogletSeaTheme.WithAlpha(p.SurfaceRaised, 0.25f));
+                var x = r.x + 14;
+                if (c.Unpushed)
                 {
-                    GUILayout.Label(_selectedCommit == null ? "Select a commit" : $"{_commitFiles.Count} file(s)", FrogletEditorPalette.SectionLabel);
-                    _sideScroll = EditorGUILayout.BeginScrollView(_sideScroll);
-                    foreach (var f in _commitFiles) GUILayout.Label(f, FrogletEditorPalette.CardBody);
-                    EditorGUILayout.EndScrollView();
+                    FrogletSeaTheme.Pill(new Rect(x, r.y + 6, 74, 16), "unpushed", p.Cta);
+                    x += 82;
+                }
+                if (e.type == EventType.Repaint)
+                {
+                    GUI.Label(new Rect(x, r.y + 4, r.xMax - x - 12, 20), c.Subject, FrogletSeaTheme.Body);
+                    GUI.Label(new Rect(r.x + 14, r.y + 22, r.width - 26, 18), $"{c.ShortSha}   {c.Author}   {c.Date}", FrogletSeaTheme.BodySoft);
+                }
+                if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
+                {
+                    _selectedCommit = c.Sha;
+                    _commitFiles = new List<string> { "…" };
+                    var sha = c.Sha;
+                    Task.Run(() =>
+                    {
+                        var files = FrogletSourceControl.CommitFiles(sha);
+                        _main.Enqueue(() => { if (_selectedCommit == sha) _commitFiles = files; });
+                    });
+                    e.Use();
                 }
             }
+            FrogletSeaTheme.EndScroll();
+
+            GUI.Label(new Rect(right.x + 14, right.y + 12, right.width - 28, 22),
+                _selectedCommit == null ? "SELECT A COMMIT" : $"{_commitFiles.Count} FILE(S)", FrogletSeaTheme.Label);
+            var fview = new Rect(right.x + 4, right.y + 42, right.width - 8, right.height - 46);
+            FrogletSeaTheme.Rule(new Rect(right.x + 14, fview.y - 4, right.width - 28, 1));
+            var fcontent = new Rect(0, 0, fview.width - 14, _commitFiles.Count * 22f);
+            _sideScroll = FrogletSeaTheme.BeginScroll(fview, _sideScroll, fcontent);
+            for (var i = 0; i < _commitFiles.Count; i++)
+            {
+                var line = _commitFiles[i];
+                var code = line.Length > 0 ? line[0] : ' ';
+                var color = code == 'A' ? p.Data : code == 'D' ? p.Danger : code == 'R' ? p.Data : p.TextSoft;
+                var g = FrogletSeaTheme.LabelStrong;
+                var prev = g.normal.textColor;
+                g.normal.textColor = color;
+                if (e.type == EventType.Repaint)
+                {
+                    GUI.Label(new Rect(12, i * 22f, 18, 22), code.ToString(), g);
+                    GUI.Label(new Rect(32, i * 22f, fcontent.width - 36, 22), line.Length > 2 ? line.Substring(2).Trim() : line, FrogletSeaTheme.Body);
+                }
+                g.normal.textColor = prev;
+            }
+            FrogletSeaTheme.EndScroll();
         }
 
         // ── Branches ─────────────────────────────────────────────────────────────
 
-        void DrawBranches()
+        void DrawBranches(Rect body)
         {
-            GUILayout.Label("New branch", FrogletEditorPalette.SectionHeader);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                _newBranch = EditorGUILayout.TextField(_newBranch, GUILayout.MinWidth(260));
-                var valid = FrogletSourceControl.IsValidBranchName(_newBranch.Trim(), out var why);
-                if (FrogletEditorPalette.ColorButton("Create from latest bleeding-edge", FrogletEditorPalette.Ok, 230, 22,
-                        "Fetches, then starts the branch from origin/bleeding-edge and switches to it. Your uncommitted changes come along.",
-                        !_busy && valid))
-                    _deferred = () => DoCreateBranch(_newBranch.Trim());
-                GUILayout.FlexibleSpace();
-                if (!valid && _newBranch.Length > 0) GUILayout.Label(why, FrogletEditorPalette.Subtitle);
-            }
-            GUILayout.Label("Name it yourname/what-it-does, e.g. charles/thresher-audio.", FrogletEditorPalette.Subtitle);
+            var p = FrogletSeaTheme.Current;
+            var top = new Rect(body.x, body.y, body.width, 104);
+            FrogletSeaTheme.Panel(top);
+            GUI.Label(new Rect(top.x + 16, top.y + 12, 300, 18), "NEW BRANCH", FrogletSeaTheme.Label);
+            const string create = "Create from latest bleeding-edge";
+            var cw = FrogletSeaTheme.ButtonWidth(create);
+            var fieldR = new Rect(top.x + 16, top.y + 36, Mathf.Max(160, top.width - 48 - cw), 28);
+            _newBranch = EditorGUI.TextField(fieldR, _newBranch, FrogletSeaTheme.Field);
+            var valid = FrogletSourceControl.IsValidBranchName(_newBranch.Trim(), out var why);
+            if (FrogletSeaTheme.Button(new Rect(fieldR.xMax + 16, fieldR.y - 1, cw, 30), create, FrogletSeaTheme.ButtonKind.Cta, !_busy && valid,
+                    "Fetches, then starts the branch from origin/bleeding-edge and switches to it. Your uncommitted changes come along."))
+                _deferred = () => DoCreateBranch(_newBranch.Trim());
+            GUI.Label(new Rect(top.x + 16, top.y + 72, top.width - 32, 20),
+                !valid && _newBranch.Length > 0 ? why : "Name it yourname/what-it-does, for example charles/thresher-audio.",
+                !valid && _newBranch.Length > 0 ? FrogletSeaTheme.BodyWrapped(p.Danger) : FrogletSeaTheme.BodySoft);
 
-            FrogletEditorPalette.HorizontalRule();
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Label("Switch branch", FrogletEditorPalette.SectionHeader);
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("Filter", GUILayout.Width(36));
-                _branchFilter = EditorGUILayout.TextField(_branchFilter, GUILayout.Width(220));
-            }
+            var list = new Rect(body.x, top.yMax + 12, body.width, body.height - top.height - 12);
+            FrogletSeaTheme.Panel(list);
+            GUI.Label(new Rect(list.x + 16, list.y + 14, 200, 18), "SWITCH BRANCH", FrogletSeaTheme.Label);
+            GUI.Label(new Rect(list.xMax - 16 - 240 - 54, list.y + 14, 50, 18), "FILTER", FrogletSeaTheme.Label);
+            _branchFilter = EditorGUI.TextField(new Rect(list.xMax - 16 - 240, list.y + 10, 240, 24), _branchFilter, FrogletSeaTheme.Field);
 
             var locals = new HashSet<string>(_branches.Where(b => !b.IsRemote).Select(b => b.Name), StringComparer.Ordinal);
-            _pageScroll = EditorGUILayout.BeginScrollView(_pageScroll);
-            var shown = 0;
-            foreach (var b in _branches)
+            var shown = _branches.Where(b => !(b.IsRemote && locals.Contains(b.Name)))
+                                 .Where(b => _branchFilter.Length == 0 || b.Name.IndexOf(_branchFilter, StringComparison.OrdinalIgnoreCase) >= 0)
+                                 .Take(200).ToList();
+            var view = new Rect(list.x + 4, list.y + 46, list.width - 8, list.height - 50);
+            FrogletSeaTheme.Rule(new Rect(list.x + 16, view.y - 4, list.width - 32, 1));
+            const float bh = 44f;
+            var content = new Rect(0, 0, view.width - 14, shown.Count * bh + (shown.Count == 200 ? 24 : 0));
+            _pageScroll = FrogletSeaTheme.BeginScroll(view, _pageScroll, content);
+            var e = Event.current;
+            for (var i = 0; i < shown.Count; i++)
             {
-                if (b.IsRemote && locals.Contains(b.Name)) continue; // the local one stands for it
-                if (_branchFilter.Length > 0 && b.Name.IndexOf(_branchFilter, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                if (++shown > 150) { GUILayout.Label("… type in the filter to find older branches", FrogletEditorPalette.Subtitle); break; }
-                var r = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
+                var b = shown[i];
+                var r = new Rect(0, i * bh, content.width, bh);
+                if (r.yMax < _pageScroll.y || r.y > _pageScroll.y + view.height) continue;
                 var current = !b.IsRemote && b.Name == _branch;
-                if (current) FrogletEditorPalette.DrawRect(r, FrogletEditorPalette.Info.WithAlpha(0.18f));
-                FrogletEditorPalette.DrawAccentStripe(r, b.IsRemote ? FrogletEditorPalette.Slate : FrogletEditorPalette.Info);
-                GUI.Label(new Rect(r.x + 10, r.y + 4, r.width - 140, 16),
-                    $"{b.Name}{(b.IsRemote ? "  (on GitHub)" : "")}   {b.Date}  {b.Subject}", FrogletEditorPalette.CardBody);
-                if (current)
-                    FrogletEditorPalette.StatusPill(new Rect(r.xMax - 110, r.y + 3, 100, 18), "CURRENT", FrogletEditorPalette.Info);
-                else if (FrogletEditorPalette.ColorButton(new Rect(r.xMax - 110, r.y + 2, 100, 20), "Switch", FrogletEditorPalette.Info,
-                             null, !_busy, outline: true))
+                if (current) { FrogletSeaTheme.Fill(r, FrogletSeaTheme.WithAlpha(p.Selection, 0.13f)); FrogletSeaTheme.Stripe(r, p.Selection); }
+                else if (r.Contains(e.mousePosition)) FrogletSeaTheme.Fill(r, FrogletSeaTheme.WithAlpha(p.SurfaceRaised, 0.25f));
+                if (e.type == EventType.Repaint)
+                {
+                    GUI.Label(new Rect(r.x + 14, r.y + 4, r.width - 150, 20), b.Name, FrogletSeaTheme.Body);
+                    GUI.Label(new Rect(r.x + 14, r.y + 22, r.width - 150, 18),
+                        (b.IsRemote ? "on GitHub only   " : "") + b.Date + "   " + b.Subject, FrogletSeaTheme.BodySoft);
+                }
+                var br = new Rect(r.xMax - 108, r.y + 9, 96, 26);
+                if (current) FrogletSeaTheme.Pill(new Rect(br.x + 6, br.y + 4, 84, 18), "current", p.Selection, true);
+                else if (FrogletSeaTheme.Button(br, "Switch", FrogletSeaTheme.ButtonKind.Primary, !_busy))
                 {
                     var target = b;
                     _deferred = () => DoSwitch(target);
                 }
             }
-            EditorGUILayout.EndScrollView();
+            if (shown.Count == 200)
+                GUI.Label(new Rect(14, shown.Count * bh + 2, content.width - 28, 20), "Type in the filter to find older branches.", FrogletSeaTheme.BodySoft);
+            FrogletSeaTheme.EndScroll();
         }
 
         // ── Checks ───────────────────────────────────────────────────────────────
 
-        void DrawChecks()
+        void DrawChecks(Rect body)
         {
-            using (new EditorGUILayout.HorizontalScope())
+            var p = FrogletSeaTheme.Current;
+            var x = body.x;
+            var buttons = new (string label, FrogletSeaTheme.ButtonKind kind, bool enabled, string tip, Action act)[]
             {
-                if (FrogletEditorPalette.ColorButton("Run push checks", FrogletEditorPalette.Info, 140, 26,
-                        "Check the ticked files and the unpushed commits (Tools/Build/push_checks.py).", !_busy && FrogletPython.IsAvailable))
-                    _deferred = () => RunChecks(TickedPaths(), "the ticked files and unpushed commits", null);
-                if (FrogletEditorPalette.ColorButton("Run /ship gates", FrogletEditorPalette.Warn, 140, 26,
-                        "Every generator --check and static check /ship runs (Tools/Build/ship_gates.py, ~2 min).", !_busy && FrogletPython.IsAvailable))
-                    _deferred = DoGates;
-                if (FrogletEditorPalette.ColorButton("Ask Claude to ship this", FrogletEditorPalette.Violet, 170, 26,
-                        "Copies a /ship request for this branch and opens Claude Code: review, conflicts, the pull request.", true, outline: true))
-                    _deferred = DoAskClaude;
-                GUILayout.FlexibleSpace();
+                ("Run push checks", FrogletSeaTheme.ButtonKind.Primary, !_busy && FrogletPython.IsAvailable,
+                    "Check the ticked files and the unpushed commits (Tools/Build/push_checks.py).",
+                    () => RunChecks(TickedPaths(), "the ticked files and unpushed commits", null)),
+                ("Run /ship gates", FrogletSeaTheme.ButtonKind.Primary, !_busy && FrogletPython.IsAvailable,
+                    "Every generator --check and static check /ship runs (Tools/Build/ship_gates.py, about 2 minutes).", DoGates),
+                ("Ask Claude to ship this", FrogletSeaTheme.ButtonKind.Quiet, true,
+                    "Copies a /ship request for this branch and opens Claude Code: review, conflicts, the pull request.", DoAskClaude),
+            };
+            foreach (var b in buttons)
+            {
+                var bw = FrogletSeaTheme.ButtonWidth(b.label);
+                if (FrogletSeaTheme.Button(new Rect(x, body.y, bw, 30), b.label, b.kind, b.enabled, b.tip)) _deferred = b.act;
+                x += bw + 8;
             }
+
+            var panel = new Rect(body.x, body.y + 42, body.width, body.height - 42);
+            FrogletSeaTheme.Panel(panel);
+            var view = new Rect(panel.x + 4, panel.y + 8, panel.width - 8, panel.height - 12);
+            var cards = new List<ScFinding>();
             if (!FrogletPython.IsAvailable)
-            {
-                EditorGUILayout.HelpBox("The checks are python (Tools/Build/push_checks.py, ship_gates.py). Install Python 3 from " +
-                                        FrogletPython.DownloadUrl + " and reopen this window.", MessageType.Warning);
-                if (GUILayout.Button("I installed it: look again", GUILayout.Width(200))) FrogletPython.Reset();
-            }
-
-            _pageScroll = EditorGUILayout.BeginScrollView(_pageScroll);
-            DrawEditorFindings();
-            if (_report != null)
-            {
-                GUILayout.Label($"Push checks on {_reportFor}: {_report.@checked} path(s)" +
-                                (_report.behind != null && _report.behind.commits > 0 ? $", {_report.behind.merges} PRs behind bleeding-edge" : ""),
-                                FrogletEditorPalette.SectionHeader);
-                if (_report.findings.Length == 0) GUILayout.Label("Nothing to flag.", FrogletEditorPalette.CardBody);
-                foreach (var f in _report.findings) DrawFinding(f);
-            }
-            if (_gateLines.Count > 0 || _gateVerdict != null)
-            {
-                FrogletEditorPalette.HorizontalRule();
-                GUILayout.Label("/ship gates" + (_gateVerdict != null ? ": " + _gateVerdict : " (running)"), FrogletEditorPalette.SectionHeader);
-                foreach (var l in _gateLines)
+                cards.Add(new ScFinding
                 {
-                    if (l.StartsWith("ok    ")) continue; // only what needs reading
-                    var r = GUILayoutUtility.GetRect(new GUIContent(l), FrogletEditorPalette.CardBodyWrapped, GUILayout.ExpandWidth(true));
-                    FrogletEditorPalette.DrawAccentStripe(r, l.StartsWith("FAIL") ? FrogletEditorPalette.Error : l.StartsWith("GATES: ALL OK")
-                        ? FrogletEditorPalette.Ok : FrogletEditorPalette.Muted);
-                    GUI.Label(new Rect(r.x + 8, r.y, r.width - 8, r.height), l, FrogletEditorPalette.CardBodyWrapped);
-                }
-                GUILayout.Label($"{_gateLines.Count(l => l.StartsWith("ok    "))} gate(s) passed.", FrogletEditorPalette.Subtitle);
-            }
-            EditorGUILayout.EndScrollView();
-        }
-
-        /// <summary>What only the editor knows: a failed compile, unsaved tool output.</summary>
-        void DrawEditorFindings()
-        {
+                    severity = "warn", title = "Python 3 is not installed",
+                    detail = "The checks and gates are python (Tools/Build/push_checks.py, ship_gates.py). Install Python 3 from " +
+                             FrogletPython.DownloadUrl + " and reopen this window.", paths = new string[0],
+                });
             if (EditorUtility.scriptCompilationFailed)
-                DrawFinding(new ScFinding
+                cards.Add(new ScFinding
                 {
                     id = "compile", severity = "block", title = "The project does not compile",
-                    detail = "The Console has compile errors. A push now breaks the build for everyone who pulls it.",
-                    paths = new string[0],
+                    detail = "The Console has compile errors. A push now breaks the build for everyone who pulls it.", paths = new string[0],
                 });
             var tools = FrogletToolChangeLedger.Tools();
             if (tools.Count > 0)
-            {
-                DrawFinding(new ScFinding
+                cards.Add(new ScFinding
                 {
                     id = "tool-output", severity = "info", title = $"{tools.Count} editor tool(s) recorded output",
                     detail = "Their files are in your changes; FrogletTools > Build > Pending Tool Changes shows which tool wrote what.",
                     paths = new string[0],
                 });
+            if (_report != null) cards.AddRange(_report.findings);
+
+            var cardW = view.width - 14 - 24;
+            var heights = cards.Select(f => FindingHeight(f, cardW)).ToList();
+            var gateLines = _gateLines.Where(l => !l.StartsWith("ok    ")).ToList();
+            var gatesH = _gateLines.Count > 0 || _gateVerdict != null ? 48 + gateLines.Count * 20 : 0;
+            var reportH = _report != null ? 30 : 0;
+            var total = 12 + reportH + heights.Sum() + heights.Count * 10 + gatesH + 12;
+            var content = new Rect(0, 0, view.width - 14, Mathf.Max(total, view.height - 4));
+            _pageScroll = FrogletSeaTheme.BeginScroll(view, _pageScroll, content);
+            var y = 12f;
+            if (_report != null)
+            {
+                var behind = _report.behind != null && _report.behind.commits > 0 ? $" · {_report.behind.merges} PRs behind bleeding-edge" : "";
+                GUI.Label(new Rect(12, y, content.width - 24, 20), $"PUSH CHECKS ON {_reportFor.ToUpperInvariant()} · {_report.@checked} PATH(S){behind.ToUpperInvariant()}",
+                    FrogletSeaTheme.Label);
+                y += reportH;
             }
+            if (cards.Count == 0 && _report != null)
+            {
+                GUI.Label(new Rect(12, y, content.width - 24, 20), "Nothing to flag.", FrogletSeaTheme.Body);
+                y += 28;
+            }
+            else if (cards.Count == 0 && gatesH == 0)
+                GUI.Label(new Rect(12, y, content.width - 24, 40),
+                    "Run the push checks, or let a commit or push run them. The /ship gates take about two minutes.", FrogletSeaTheme.BodyWrapped(p.TextSoft));
+            for (var i = 0; i < cards.Count; i++)
+            {
+                DrawFinding(new Rect(12, y, cardW, heights[i]), cards[i]);
+                y += heights[i] + 10;
+            }
+            if (gatesH > 0)
+            {
+                y += 6;
+                var passed = _gateLines.Count(l => l.StartsWith("ok    "));
+                GUI.Label(new Rect(12, y, content.width - 24, 20),
+                    "/SHIP GATES · " + (_gateVerdict != null ? _gateVerdict : "RUNNING") + $" · {passed} PASSED", FrogletSeaTheme.Label);
+                y += 26;
+                foreach (var l in gateLines)
+                {
+                    var c = l.StartsWith("FAIL") ? p.Danger : l.StartsWith("GATES: ALL OK") ? p.Cta : p.TextSoft;
+                    FrogletSeaTheme.Stripe(new Rect(12, y + 2, 3, 16), c);
+                    GUI.Label(new Rect(24, y, content.width - 36, 20), l, FrogletSeaTheme.Mono);
+                    y += 20;
+                }
+            }
+            FrogletSeaTheme.EndScroll();
         }
 
-        void DrawFinding(ScFinding f)
+        static float FindingHeight(ScFinding f, float width)
         {
-            var accent = f.IsBlock ? FrogletEditorPalette.Error : f.IsWarn ? FrogletEditorPalette.Warn : FrogletEditorPalette.Info;
+            var text = FindingText(f);
+            var style = FrogletSeaTheme.BodyWrapped(FrogletSeaTheme.Current.TextSoft);
+            return 44 + (text.Length == 0 ? 0 : style.CalcHeight(new GUIContent(text), width - 32)) + 12;
+        }
+
+        static string FindingText(ScFinding f)
+        {
             var paths = f.paths ?? new string[0];
-            var body = (f.detail ?? string.Empty).Trim();
-            var shownPaths = paths.Take(12).ToList();
+            var shownPaths = paths.Take(12).Select(x => "•  " + x).ToList();
             if (paths.Length > 12) shownPaths.Add($"… and {paths.Length - 12} more");
-            var text = body + (shownPaths.Count > 0 ? "\n" + string.Join("\n", shownPaths.Select(p => "  • " + p)) : string.Empty);
-            var width = Mathf.Max(200, position.width - 150);
-            var h = 26 + FrogletEditorPalette.CardBodyWrapped.CalcHeight(new GUIContent(text), width) + 8;
-            var r = GUILayoutUtility.GetRect(0, h, GUILayout.ExpandWidth(true));
-            FrogletEditorPalette.DrawCard(r, FrogletEditorPalette.SurfaceRaised, accent.WithAlpha(0.5f));
-            FrogletEditorPalette.DrawAccentStripe(r, accent);
-            FrogletEditorPalette.StatusPill(new Rect(r.x + 10, r.y + 5, 56, 16), (f.severity ?? "").ToUpperInvariant(), accent);
-            GUI.Label(new Rect(r.x + 74, r.y + 4, r.width - 200, 18), f.title, FrogletEditorPalette.CardTitle);
-            GUI.Label(new Rect(r.x + 12, r.y + 26, width, h - 28), text, FrogletEditorPalette.CardBodyWrapped);
-            if (f.fix == "discard" && paths.Length > 0 &&
-                FrogletEditorPalette.ColorButton(new Rect(r.xMax - 120, r.y + 4, 110, 20), "Discard these", FrogletEditorPalette.Error,
-                    "Throw these files' changes away (asks first).", !_busy, outline: true))
+            var body = (f.detail ?? string.Empty).Trim();
+            return body + (shownPaths.Count > 0 ? (body.Length > 0 ? "\n" : "") + string.Join("\n", shownPaths) : string.Empty);
+        }
+
+        void DrawFinding(Rect r, ScFinding f)
+        {
+            var p = FrogletSeaTheme.Current;
+            var accent = f.IsBlock ? p.Danger : f.IsWarn ? p.Danger : p.Data;
+            FrogletSeaTheme.Sliver(r, FrogletSeaTheme.WithAlpha(p.GroundDeep, 0.55f), FrogletSeaTheme.WithAlpha(accent, f.IsBlock ? 0.9f : 0.5f),
+                                   FrogletSeaTheme.SliverSmall);
+            FrogletSeaTheme.Stripe(new Rect(r.x, r.y + 8, 3, r.height - 16), accent);
+            var label = f.IsBlock ? "stop" : f.IsWarn ? "warning" : "note";
+            var pw = FrogletSeaTheme.PillWidth(label);
+            FrogletSeaTheme.Pill(new Rect(r.x + 16, r.y + 12, pw, 18), label, accent, f.IsBlock);
+            var paths = f.paths ?? new string[0];
+            var hasFix = f.fix == "discard" && paths.Length > 0;
+            GUI.Label(new Rect(r.x + 24 + pw, r.y + 10, r.width - pw - (hasFix ? 160 : 40), 22), f.title, FrogletSeaTheme.LabelStrong);
+            var text = FindingText(f);
+            if (text.Length > 0)
+                GUI.Label(new Rect(r.x + 16, r.y + 40, r.width - 32, r.height - 48), text, FrogletSeaTheme.BodyWrapped(p.TextSoft));
+            if (hasFix && FrogletSeaTheme.Button(new Rect(r.xMax - 130, r.y + 8, 118, 26), "Discard these", FrogletSeaTheme.ButtonKind.Danger,
+                    !_busy, "Throw these files' changes away (asks first)."))
             {
-                var p = paths;
-                _deferred = () => DoDiscardPaths(p, f.title);
+                var title = f.title;
+                _deferred = () => DoDiscardPaths(paths, title);
             }
-            EditorGUILayout.Space(4);
         }
 
         // ── Actions ──────────────────────────────────────────────────────────────

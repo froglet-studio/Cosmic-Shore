@@ -21317,6 +21317,13 @@ the new edit-mode tests were compiled, not run. Best done on a Windows machine w
    editor stays responsive the whole time.
 10. **Enter Play mode, press Pull.** It refuses ("Stop Play mode"). Leave Play mode.
 11. **Delete the test branch** on GitHub afterwards.
+12. **The look (Photic, sea lines; added 2026-11-06).** The window is a deep navy sea with three layers of wavy lines
+    drifting slowly right to left (cyan to periwinkle to magenta across the width), faded at top and bottom; panels
+    with cut top-left / bottom-right corners; Commit and Push in lime with dark text; Pull / Switch / Open pull request
+    in cyan outline; Discard in red outline. Labels in Chakra Petch caps. Hover a button: it brightens. Inside the
+    Changes list nothing paints outside its panel when scrolled. Theme > Nocturne and Dart Frog re-colour everything;
+    Theme > Still sea stops the motion. With the window unfocused the editor's CPU is not raised (the sea holds).
+    Text fields show a cyan border when focused; type in Summary, Description and the branch filter.
 
 ## 🔴 Profile Colour sets: the Showroom on the real cell (Rev 54 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
 
@@ -21351,6 +21358,23 @@ keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP ass
 4. **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
 5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
    values set while playing no longer reach the asset.
+
+## 🔴 Brittle Star Time: four movement rungs (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `brittle_star_time_course_harness/run.sh
+--self-test` (10 course tests over 400 seeds, four negative controls fire), `/ship` gates ALL OK (unity_refcompile
+player + editor, every generator `--check`). Open `MinigameBrittleStarTime` once and save, then fly each intensity:
+
+1. **I1 Gearbox.** A circuit with about two corners a lap Speed Mode (A) cannot turn: hold it on the rest, drop to
+   Cruise for those two.
+2. **I2 Feather slalom.** Eight rings weaving in and out round a loop. Speed Mode overshoots, Cruise is slow; tapping A
+   in and out should carry ~130 u/s through the weave. Check that feathering really is the fastest line.
+3. **I3 Coast-in hairpins.** Two long straights joined by hairpins. There is no brake: let go of Speed Mode about 100 u
+   before the turn and coast in. Holding it to the turn should overshoot the apex ring.
+4. **I4 Corkscrew.** The hull starts at **Time 5** (check the HUD's Time card shows its L5 state and Speed Roll works).
+   Six rings on a tight coil: holding Speed Mode should thread it ONLY while rolling and pulling with the right stick;
+   then a wide return flown flat out. Expect the AI to be slow here: it cannot roll.
+5. **Every rung:** gate 0 is near the spawn, rings never overlap, nothing sits outside the cell.
 
 ## 🔴 Analytics: Toybox (Freestyle) events, match elements, match setups by domain, the UGS Froglet-only filter (2026-11-07, Shombith, NOT RUN IN EDITOR)
 

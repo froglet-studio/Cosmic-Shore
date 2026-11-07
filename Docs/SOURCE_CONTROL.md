@@ -75,6 +75,19 @@ project itself.
   sign-in window; on macOS the keychain answers. If a push says authentication failed, push once from GitHub Desktop
   or a terminal so the credential is stored, then use the window. **Not yet tried on a collaborator's machine.**
 
+## 3a. The look (2026-11-06)
+
+Shombith asked for it "modern, in the Photic colour set and the sea lines theme". The window wears `FrogletSeaTheme`:
+the game's colour sets as editor themes (the **Theme** button top right: Photic by default, Nocturne, Dart Frog, and
+*Still sea* for no motion), the menu's SeaLines behind everything (three layers drifting 90 / 68 / 45 s a loop, in the
+set's Jade, Blue and Ruby rims, over its deep wash), panels lit like the game's prisms with the style guide's corner
+sliver, Chakra Petch for labels and Aldrich for text. Meanings follow the style guide: **Commit**, **Push** and
+**Create** are the set's lime call to action; **Pull**, **Switch**, **Open pull request** and the selection are its Jade
+rim; **Discard** and every stop are Fire; additions in a diff are the Blue rim. The sea animates only while the window
+is focused or under the mouse (about 15 frames a second) and holds still otherwise. Colours come from
+`Tools/Build/author_editor_themes.py` (generated from the shipped colour sets, the same numbers the analytics console
+wears); never type one.
+
 ## 5. Files
 
 | Role | Path |
@@ -86,6 +99,7 @@ project itself.
 | Push checks (the rules) | `Tools/Build/push_checks.py` |
 | The /ship gate list | `Tools/Build/ship_gates.py` (`gates.sh` calls it) |
 | Edit-mode tests | `Assets/_Scripts/Tests/Editor/FrogletSourceControlTests.cs` |
+| Theme kit / generated colours / writer | `Assets/_Scripts/Editor/FrogletTools/FrogletSeaTheme.cs`, `FrogletSeaTheme.Themes.cs`; `Tools/Build/author_editor_themes.py` |
 
 ## 6. Next (v2, v3 — not built)
 
@@ -93,3 +107,13 @@ project itself.
   the PR body's Affects line from `who_works_where.py`, and CI once.
 - v3: merge from Unity, for the core four only, when checks are green.
 - Both need a decision on where a GitHub token is stored (`EditorPrefs` is plain text on disk).
+
+## 7. Debt seen while building it (rows, not fixes; `/ship` §3.6, 2026-11-06)
+
+| Row | Evidence | Blocking question |
+|---|---|---|
+| Two corner-sliver drawers | `FrogletSeaTheme.Sliver` (this branch) and `FrogletEditorPalette.DrawSliver` on `claude/launch-console-editor` (`git grep -n "static void DrawSliver" origin/claude/launch-console-editor`) draw the same shape | Once both land, which one does the palette keep? (tooling: Shombith) |
+| Two Python finders | `FrogletPython.Find` and `QASessionWindow.FindPython` (`Assets/_Scripts/Editor/QA/QASessionWindow.cs:242`, private) run the same `python3` / `python` / `py -3` lookup | May the QA Session window call `FrogletPython`? Ask its owner first |
+| `unity_refcompile` keeps stale `.rsp` files | After #1771 deleted the SOAP plugin, `Obvious.Soap.rsp` stayed in the output folder and failed `generated_assets` (`.claude/skills/asset-surgery/references/CSHARP_VERIFICATION.md`, the stale `.rsp` trap) | Prune per build, or have `check_generated_assets.py` skip an `.rsp` whose sources are gone? |
+| The body font is read from a TextMesh Pro folder | `FrogletSeaTheme.BodyFontPath` = `Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/ALDRICH-REGULAR.TTF`; if that file moves, text silently falls back to the editor font | Should Aldrich get a home beside Chakra Petch (`Assets/_Graphics/Fonts/`)? |
+
