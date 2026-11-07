@@ -87,6 +87,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 **First-pass tuning** (all guesses): furrow 0 → 20 u, carry 0 → 40 u, blade 14 → 40 u, shove 30 u/s for 0.25 s, Avalanche 3 links.
 
+### 🔴 Urchin ability icons, round 6: parts the HUD drives (`claude/urchin-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Urchin's four cards are drawn in parts (`Tools/Build/icon_kit/specs/urchin.py`) seated under each
+slot icon of `UrchinHUDVariant.prefab` and bound to `UrchinVesselHUDView`, which paints them in the pilot's domain colour,
+rival danger and white. `UrchinHUDController` now also reads the vessel's own `UrchinSlipActionExecutor` (wired on
+`Urchin.prefab`) and the Track Projector's ready flag. The omni card sprite is `Core/Urchin_OmniCrystal.png`.
+
+**Verified without the editor:** `author.py urchin --check` no drift; every sprite passes the legibility gates;
+`author_urchin_hud.py --check` and `author_hull_ability_rows.py --check` clean; `check_console_logging.py` 0 problems.
+NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `UrchinVesselHUDView.cs` or `UrchinHUDController.cs`.
+2. Fly the Urchin in the Toybox as Jade, then Gold. **Pass:** every Urchin on the four cards wears the domain colour;
+   the rival prism and trail are orange.
+3. Latch onto a trail, then leave it. **Pass:** the Mass card's Urchin sits on the trail while riding, and lifts with
+   the trail fading off it.
+4. Press Slip while riding. **Pass:** the Time card's Urchin lifts clear and leaves a faint ghost until the slip ends.
+5. Press Track Projector. **Pass:** the rail goes faint while it recharges, solid again when ready.
+6. Upgrade each element to 5. **Pass:** Charge shows the long spray and a generation deeper; Mass rims the trail;
+   Space runs the rail further; Time turns the trail orange with speed lines while slipping.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.
@@ -444,6 +466,7 @@ finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1")
    slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
 3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
    only for red Danger blocks, and never swerve in the last stretch before a ring.
+
 ### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
@@ -533,6 +556,7 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -759,6 +783,7 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
 9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
    boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
    (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+
 ### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
@@ -995,6 +1020,7 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
   purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
   `best_fitness` finite after the match). **These three scenarios were authored from the catalog
   (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -1615,6 +1641,7 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+
 ### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
@@ -1647,6 +1674,7 @@ the headless reference compile, player and editor (0 errors in project code); `T
 
 **First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
 Medium hive skill (a proposal between the lab's rookie and skilled).
+
 ### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
@@ -1882,6 +1910,7 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
 
 ---
+
 ### 🔴 Holes on mobile: no warped space, the Meerkat recipe, the Charge ripple shows (`stoat/annihilation-waves`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 `Docs/BLACK_HOLE.md` §5.4, `R_VesselActions/STOAT_DIPOLE.md` §1c. Yash: "make sure we are not warping space … mobile
@@ -3766,6 +3795,7 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+
 ### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
@@ -6214,6 +6244,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 10. Gather petals of one element on the hull: the motes of that shape come more often.
 11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
     back to normal and the input is live.
+
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
@@ -6416,6 +6447,7 @@ League on Easy with the Third Eye open (the AI Diagnose panel (F2)). The AI's st
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+
 ### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `WaystationController`:
@@ -8843,6 +8875,7 @@ the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead)
 **First-pass tuning (studio-measured, not settled):** `autopilotLetGoNear` 60, `autopilotDrySeconds` 0.5,
 `autopilotMinHoldSeconds` 0.8, `autopilotRelaySeconds` 0.25. The studio's best squeeze was 1.0. Unity's AI
 still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
+
 ### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **the AI Diagnose panel (F2)**
@@ -8966,6 +8999,7 @@ Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hu
    Tune on `StoatDipoleConfig` (the studio's `ft*` row).
 
 ---
+
 ### 🔴 B29 Session case (defect 5): an invite and the `partySession` it names go out in one save (`Ys-bleeding-edge`, 2026-10-09)
 
 **What landed:**
@@ -9064,6 +9098,7 @@ all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRI
 `maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
 `lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
 and `aheadHorizons` first.
+
 ### 🔴 Omni + Mass crystals: Mass hull fusion fixed (thickness baked in), a random pose per crystal, reseat −0.87 (`cece/determined-ride-rqzaeo`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 10, `Docs/PALETTE.md §2.10`; generators
