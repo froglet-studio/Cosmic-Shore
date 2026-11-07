@@ -1915,7 +1915,12 @@ class BucketUpload(unittest.TestCase):
             self.assertNotIn("right-secret", facts)
             self.assertNotIn("AKFROGLET", facts)
             app.store.mark_job("backup", "made a minute ago")
-            self.assertIn("skipped", json.dumps(app.nightly()["backup"]))          # the 04:40 timer made tonight's
+            real = C._client
+            C._client = lambda: (None, "Claude is off in this test")             # a test never asks the real Claude
+            try:
+                self.assertIn("skipped", json.dumps(app.nightly()["backup"]))      # the 04:40 timer made tonight's
+            finally:
+                C._client = real
         finally:
             for k, v in saved.items():
                 if v is None:
@@ -1995,6 +2000,69 @@ class R67Http(unittest.TestCase):
         # the ids exist in events.db: the door is what keeps them out (negative control of the assertion itself)
         self.assertEqual(self.app.store.db.execute("SELECT COUNT(*) FROM events WHERE distinct_id='zq-player-7'").fetchone()[0], 4)
         self.assertNotIn("zq-player-7", "\n".join(sqlite3.connect(self.app.agg).iterdump()))
+
+
+
+class ClaudeWithoutAKey(unittest.TestCase):
+    """2026-11-07: the VM's self-update refused #1789 because its venv has the anthropic SDK and no key. Newer SDKs build
+    a client without a key and raise TypeError only when the request is sent, which nothing caught, so the nightly job
+    died before marking itself done. Each of the three guards is held here on its own."""
+
+    def setUp(self):
+        import types
+        self.saved = sys.modules.get("anthropic")
+
+        class _Err(Exception):
+            pass
+
+        class Keyless:
+            api_key = None
+            auth_token = None
+
+            class beta:
+                class messages:
+                    @staticmethod
+                    def create(**_):
+                        raise TypeError("Could not resolve authentication method")
+
+        fake = types.ModuleType("anthropic")
+        fake.Anthropic = Keyless
+        fake.RateLimitError = fake.APIStatusError = fake.APIConnectionError = _Err
+        sys.modules["anthropic"] = fake
+        self.keyless = Keyless
+
+    def tearDown(self):
+        if self.saved is None:
+            sys.modules.pop("anthropic", None)
+        else:
+            sys.modules["anthropic"] = self.saved
+
+    def test_a_client_without_a_key_is_off(self):
+        client, why = C._client()
+        self.assertIsNone(client)
+        self.assertIn("ANTHROPIC_API_KEY", why)
+
+    def test_an_unexpected_error_from_the_sdk_is_a_reason_not_a_crash(self):
+        parsed, why = C._structured(self.keyless(), "m", "low", "sys", "user", {"type": "object"})
+        self.assertIsNone(parsed)
+        self.assertIn("TypeError", why)
+
+    def test_the_nightly_job_survives_a_failing_read(self):
+        tmp = tempfile.mkdtemp()
+        app = A.App(dict(A.DEFAULTS, data_dir=tmp, extra_events=r67_extra()))
+        real = C.write_digest
+
+        def boom(*_):
+            raise TypeError("Could not resolve authentication method")
+        C.write_digest = boom
+        try:
+            out = app.nightly()
+            self.assertIn("TypeError", out["digest"]["author"])
+            self.assertTrue(app.store.job("nightly"))       # marked done, so it does not rerun every few minutes
+        finally:
+            C.write_digest = real
+            app.store.db.close()
+            shutil.rmtree(tmp)
 
 
 if __name__ == "__main__":

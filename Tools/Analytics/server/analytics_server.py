@@ -299,7 +299,10 @@ class App:
         else:
             target = self.backup()                 # no timer on this machine (a local run): back up here
         self.rebuild()
-        digest = C.write_digest(self.store, self.agg, self.config["claude_model"], self.config["claude_effort"])
+        try:                                       # Claude's read never costs the night its retention, backup or rebuild
+            digest = C.write_digest(self.store, self.agg, self.config["claude_model"], self.config["claude_effort"])
+        except Exception as exc:
+            digest = {"author": f"nobody (the read failed: {type(exc).__name__})"}
         self.store.mark_job("nightly", f"retention removed {gone}; read by {digest['author']}")
         return {"retention_removed": gone, "backup": target, "digest": digest}
 
