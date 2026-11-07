@@ -183,7 +183,8 @@ def pick(cands, a):
     fails = {}
     for j in judged:
         for w in j["why"]:
-            fails[w.split(" ")[0]] = fails.get(w.split(" ")[0], 0) + 1
+            key = "rails" if w[0].isdigit() else ("finish" if w.startswith("a hull") else w.split(" ")[0])
+            fails[key] = fails.get(key, 0) + 1
     report["why_courses_fail"] = fails
     per_k = {}
     for k in range(min(a.max, len(passing)), a.min - 1, -1):
