@@ -134,6 +134,32 @@ Skein: a given intensity is the same circuit every match.
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
 a multiple of eight races to the course's honest length and warns.
 
+### 4.1 Course features: what the course is beyond its rings (2026-11-06, brief 10 of the balance plan)
+
+`RegattaCourseFeatures` (on each `SpawnableRegattaRails` variant, `courseFeatures`; **empty on every shipped variant,
+which is the course above, prism for prism**) is the space a course search moves beyond the ring geometry (Garrett:
+"not all supershielded ... gaps ... omnicrystals ... perturb regatta in much more interesting ways"):
+
+- **Rail sections** (`RegattaRailSection`, per leg or every leg, a share of the leg's spine arc, later entries win):
+  the stretch's KIND (super-shielded as today, shielded, or plain - a plain rail can be cut by abilities, so a rider's
+  stretch is contested), its COLOUR (neutral = `RegattaCourseFeatures.NeutralDomain`, no team's lane: an Urchin leaves
+  its rail, a Squirrel still skims it), a DETOUR (the whole braid swings off the spine by a sine-squared bow that is
+  zero at the section's ends, so every lane still threads every ring at 22 u), and a GAP (nothing laid; the lane is cut
+  into OPEN trails there, because a hole inside one trail is bridged at full pace - URCHIN_TRAIL_RIDER.md "Holes").
+- **Alternate rings** (`RegattaAlternateGate`): a second ring in the course ring's plane, either one counts
+  (`RegattaController.ThreadsGate`, Serpent Time's pattern). The rails thread only the course ring, so it is a route
+  choice. An AI takes it only when here -> ring -> next gate is shorter by `aiAlternateMargin` (decided once per gate,
+  `RegattaAlternateChoice`); an attached Urchin and the Squirrel's pilot keep the course ring.
+- **Line crystals** (`RegattaLineCrystals`, at most 4 a lap): crystals on the spine, laid as the crystal manager's
+  course keys (Switchback Blast Run's seam), which REPLACE the nucleus crystals while on. No AI detours for one
+  (`AIDetoursForCrystals` stays false; Yash's rule).
+
+Every AI reader of the rails reads them by LANE (`SpawnableRegattaRails.LanePrisms`, `LaneDomain`, `LaneOf`), not by
+trail or first-prism colour, so gaps and neutral stretches do not hand a pilot a rival's lane. The offline mirror is
+`Tools/Compute/evaluators/regatta_features.py` (the port, the search space and each feature's price per hull),
+held to the C# by `Tools/Build/regatta_course_harness/features.sh` (which also RUNS `RegattaCourseFeaturesTests`
+offline); the report is `Docs/Reports/REGATTA_COURSE_FEATURES.md`.
+
 ## 5. The start
 
 Everyone spawns on a ring **behind gate 0, pointed through it** (`IPlayerSpawnLine`, 260 u

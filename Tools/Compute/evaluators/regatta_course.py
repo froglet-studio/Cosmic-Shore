@@ -17,7 +17,15 @@ WHEN TO RUN IT FOR REAL: after stage 1 converges and is promoted, so the roster'
 plan, Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md). Until then its jobs are `blocked`; a run before that measures today's
 AIs, which is still a useful number but not the one the plan promotes.
 
+THE COURSE FEATURES (VERSION 3, 2026-11-06): with `features: true` in args the space also moves everything about the
+course beyond its rings (regatta_features.py: per-leg rail sections - super-shielded / shielded / plain, neutral colour,
+a detour off the line, a gap of a chosen length - an alternate ring per gate, crystals on the line), each hull's race is
+priced for them (regatta_features.race; exactly race_models.race on an empty set), and the coverage guard becomes
+regatta_features.guard_fails (rails through every mouth over the LAID lanes, and nothing inside the nucleus or out at
+the membrane). The space's init values are today's course, so a featured run starts where an unfeatured one does.
+
 args:
+    features   true to search the course features too (regatta_features.space())
     intensity  1-4
     roster     {hull: {"model": race_models model, "drive": {asset field: value} | "asset": repo path}}
     limit      seconds before a race counts as not finished
@@ -27,8 +35,9 @@ import os
 
 import course_port as cp
 import race_models as rm
+import regatta_features as rf
 
-VERSION = "1"
+VERSION = "3"   # 3 (2026-11-06): the course features join the space. (2 is the unmerged overnight branch's neutral share.)
 PATHS = ["Tools/Build/", "Assets/Resources/AIBoostPolicies/", "Assets/Resources/RaceLines/",
          "Assets/_Prefabs/Spacevessels/", "Assets/_SO_Assets/", "Assets/Resources/"]
 SHIP_SEED = cp.REGATTA_DEFAULT_SEED
@@ -39,6 +48,8 @@ def inputs(args):
     out = ["Tools/Build/rhino_drive_sim.py", "Tools/Build/manta_drive_sim.py", "Tools/Build/dolphin_drive_sim.py",
            "Tools/Build/regatta_line_sim.py", "Tools/Build/regatta_balance.py", "Tools/Build/situation_features.py",
            "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
+           "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourseFeatures.cs",
+           "Tools/Compute/evaluators/regatta_features.py", "Tools/Build/regatta_course_harness/features.json",
            "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs"]
     for h in (args.get("roster") or {}).values():
         if h.get("asset"):
@@ -76,7 +87,10 @@ def race_all(course, intensity, roster, drives, limit):
         c = rm.balance_course(course) if h["model"] == "balance" else course
         if h["model"] == "balance":
             c = dict(c, gates=course["gates"])
-        t, r = rm.race(hull, h["model"], c, intensity, drive=drives[hull], steering="centre", limit=limit)
+        # regatta_features.race prices the course features and is race_models.race when there are none.
+        t, r = rf.race(hull, h["model"], course, intensity, drive=drives[hull], steering="centre", limit=limit) \
+            if course.get("features") is not None else \
+            rm.race(hull, h["model"], c, intensity, drive=drives[hull], steering="centre", limit=limit)
         times[hull], raw[hull] = t, r
     return times, raw
 
@@ -97,7 +111,16 @@ def baseline(args):
     p.update({k: float(s[k]) for k in ("RingRadius", "CornerFloorRadius", "AngularSpread", "LateralPerturbation",
                                        "AxisJitterDegrees", "MaxPresentDegrees", "RadialSwing")})
     p["seed"] = 0
+    if args.get("features"):
+        p.update(rf.baseline_params())
     return p
+
+
+def featured_course(params, settings, seed, intensity):
+    """The circuit with the features the params ask for (a gap's length needs the circuit's leg arcs first)."""
+    plain = rf.course(intensity, rf.empty(), settings, seed=seed)
+    feats = rf.features_from_params(params, plain["legArc"])
+    return plain if rf.is_empty(feats) else rf.course(intensity, feats, settings, seed=seed)
 
 
 def evaluate(params, ctx):
@@ -106,11 +129,14 @@ def evaluate(params, ctx):
         setup(ctx)
     i = int(a["intensity"])
     s, base_seed = settings_from(params, i)
-    course = cp.course(s, cp.seed_for_intensity(base_seed, i))
+    if a.get("features"):
+        course = featured_course(params, s, cp.seed_for_intensity(base_seed, i), i)
+    else:
+        course = cp.course(s, cp.seed_for_intensity(base_seed, i))
     times, raw = race_all(course, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)))
     fastest, slowest = min(times.values()), max(times.values())
     disparity = math.log(slowest / fastest)
-    cover = rm.rail_coverage(course)
+    cover = rf.guard_fails(course) if a.get("features") else rm.rail_coverage(course)
     mean = sum(times.values()) / len(times)
     drift = abs(math.log(mean / _CTX["ship_mean"]))
     hardest = max(course["turnDegrees"])
@@ -122,6 +148,7 @@ def evaluate(params, ctx):
         "dnf": [h for h, r in raw.items() if r.get("time") is None], "rail_fails": cover,
         "mean_vs_shipped": round(mean / _CTX["ship_mean"], 3), "hardest_turn": round(hardest, 1),
         "seed": cp.seed_for_intensity(base_seed, i), "settings": s,
+        **({"features": course["features"], "descriptors": rf.descriptors(course)} if a.get("features") else {}),
         "limits": {h: rm.MODEL_LIMITS[r["model"]] for h, r in a["roster"].items()}}}
 
 
@@ -140,5 +167,16 @@ def self_test():
     m = r["metrics"]
     if m["rail_fails"] or abs(r["loss"] - m["disparity"]) > 1e-3:
         bad.append(f"regatta_course: today's I2 course is penalised ({m})")
+    # The featured space at its init values is today's course: the same loss, no guard failure.
+    _CTX.clear()
+    fctx = {"root": root, "args": dict(ctx["args"], features=True)}
+    rf_r = evaluate(baseline(fctx["args"]), fctx)
+    if rf_r["metrics"]["rail_fails"] or abs(rf_r["loss"] - r["loss"]) > 1e-9 or rf_r["metrics"]["features"]["Sections"]:
+        bad.append(f"regatta_course: the featured space's init values are not today's course ({rf_r['loss']} vs {r['loss']})")
+    # Negative control: a neutral rail on every leg must move the rail rider, so the loss sees the features at all.
+    p = dict(baseline(fctx["args"]), **{f"leg{k}_len": 0.6 for k in range(8)}, **{f"leg{k}_neutral": 1 for k in range(8)})
+    moved = evaluate(p, fctx)
+    if moved["metrics"]["seconds"]["Urchin"] <= rf_r["metrics"]["seconds"]["Urchin"] + 1.0:
+        bad.append("regatta_course: a neutral rail on every leg did not slow the Urchin (the features do not reach the loss)")
     _CTX.clear()
     return bad

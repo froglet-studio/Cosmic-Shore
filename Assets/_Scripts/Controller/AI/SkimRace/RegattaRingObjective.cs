@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
             // Never FindAnyObjectByType: the rails are laid off the config's prefab ASSET (TryResolveLiveRails says why).
             if (!RegattaCourseSource.TryResolveLiveRails(out var rails, out _)) return false;
 
-            var lane = FindLane(rails.GetTrails(), status.Domain);
+            var lane = FindLane(rails, status.Domain, out int laneIndex);
             if (lane == null) return false;
 
             var pts = new List<Vector3>(lane.Count);
@@ -92,7 +92,11 @@ namespace CosmicShore.Gameplay
             if (pts.Count < 3) return false;
             course = new SkimRaceCourse(pts, nrm, rot, half);
 
-            _laneDomain = LaneDomain(lane);
+            _laneDomain = SpawnableRegattaRails.LaneDomain(laneIndex);
+            // A neutral stretch (RegattaCourseFeatures) is still this pilot's lane, in another colour.
+            _laneOtherColour.Clear();
+            for (int i = 0; i < lane.Count; i++)
+                if (lane[i] != null && lane[i].Domain != _laneDomain) _laneOtherColour.Add(lane[i]);
             _lanePoints.Clear(); _lanePoints.AddRange(pts);
             _laneUps.Clear(); _laneUps.AddRange(nrm);
             _laneShellUp.Clear();
@@ -105,7 +109,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Only this pilot's own lane is its course; a rival's super-shielded rail is mass.
         /// Before the lane is known every super-shielded prism counts as course (Skim Race's rule).</summary>
         public override bool IsCourseMass(IVesselStatus status, Prism prism) =>
-            !_haveLane || prism.Domain == _laneDomain;
+            !_haveLane || prism.Domain == _laneDomain || (_laneOtherColour.Count > 0 && _laneOtherColour.Contains(prism));
+
+        readonly HashSet<Prism> _laneOtherColour = new();
 
         /// <summary>Off: a straight line from rail to ring crosses the braid.</summary>
         public override bool AllowsDirectFlight => false;
@@ -116,13 +122,6 @@ namespace CosmicShore.Gameplay
             Vector3 target = prism.TargetScale;
             if (target.sqrMagnitude < 1e-8f) return tr.lossyScale;
             return tr.parent ? Vector3.Scale(target, tr.parent.lossyScale) : target;
-        }
-
-        static Domains LaneDomain(List<Prism> lane)
-        {
-            for (int i = 0; i < lane.Count; i++)
-                if (lane[i] != null) return lane[i].Domain;
-            return default;
         }
 
         /// <summary>
@@ -169,23 +168,21 @@ namespace CosmicShore.Gameplay
             return p + up * (_laneShellUp[seg] + AimClearanceAboveShell);
         }
 
-        /// <summary>The lane laid in <paramref name="domain"/>'s colour, else the first lane.</summary>
-        static List<Prism> FindLane(List<Trail> trails, Domains domain)
+        /// <summary>The lane laid in <paramref name="domain"/>'s colour, else the first lane. By LANE, not by trail: a gap
+        /// cuts a lane into several trails and a neutral stretch can be its first prism (RegattaCourseFeatures).</summary>
+        static List<Prism> FindLane(SpawnableRegattaRails rails, Domains domain, out int laneIndex)
         {
-            if (trails == null) return null;
+            laneIndex = -1;
             List<Prism> first = null;
-            for (int t = 0; t < trails.Count; t++)
+            int firstIndex = -1;
+            for (int lane = 0; lane < rails.LaneCount; lane++)
             {
-                var list = trails[t]?.TrailList;
+                var list = rails.LanePrisms(lane);
                 if (list == null || list.Count == 0) continue;
-                first ??= list;
-                for (int i = 0; i < list.Count; i++)
-                {
-                    if (list[i] == null) continue;
-                    if (list[i].Domain == domain) return list;
-                    break;   // a lane is one colour: its first live prism says which
-                }
+                if (first == null) { first = list; firstIndex = lane; }
+                if (SpawnableRegattaRails.LaneDomain(lane) == domain) { laneIndex = lane; return list; }
             }
+            laneIndex = firstIndex;
             return first;
         }
 

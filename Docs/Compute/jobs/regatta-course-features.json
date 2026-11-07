@@ -1,0 +1,684 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "regatta-course-features",
+ "title": "Regatta's course features: rail sections, gaps, detours, alternate rings, line crystals",
+ "goal": "Stage 2 of the Regatta balance plan, on the WIDE course space: the circuit (geometry and seed) and everything beyond its rings (regatta_features.space(): per-leg rail kind, neutral colour, detour and gap; an alternate ring per gate; crystals on the line) on which the fastest and slowest AIs finish closest together. Froglet Compute is paused (Shombith, 2026-11-06): run by hand with /mnt/project-files/regatta-training/local_run.py until it is back; restarts B, C, ... from different regions show the local minima a shuffled pool needs (brief 12 builds the pool search on this space).",
+ "asked_by": "Garrett 2026-11-06 (\"perturb regatta in much more interesting ways ... search for multiple local minimums\"; brief 10 of the 2026-11-06 plan)",
+ "area_owner": "Yash (Regatta AI and course)",
+ "kind": "search",
+ "status": "proposed",
+ "value": 9,
+ "updated": "2026-11-06",
+ "ref": "origin/bleeding-edge",
+ "plan": "regatta-balance",
+ "stage": 2,
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "after": [
+  "drive-rhino-headlong",
+  "redline-manta-time",
+  "skimrace-squirrel-time"
+ ],
+ "paths": [
+  "Assets/Resources/",
+  "Assets/Resources/AIBoostPolicies/",
+  "Assets/Resources/RaceLines/",
+  "Assets/_Prefabs/Spacevessels/",
+  "Assets/_SO_Assets/",
+  "Assets/_Scripts/Controller/Arcade/Headlong/",
+  "Assets/_Scripts/Controller/Arcade/Regatta/",
+  "Tools/Build/",
+  "Tools/Compute/evaluators/"
+ ],
+ "evaluator": {
+  "args": {
+   "intensity": 1,
+   "limit": 400,
+   "roster": {
+    "Dolphin": {
+     "model": "dolphin_drive"
+    },
+    "Manta": {
+     "asset": "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset",
+     "model": "manta_drive"
+    },
+    "Rhino": {
+     "asset": "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset",
+     "model": "rhino_drive"
+    },
+    "Squirrel": {
+     "model": "balance"
+    },
+    "Urchin": {
+     "drive": {
+      "speed": 300
+     },
+     "model": "rail"
+    }
+   },
+   "features": true
+  },
+  "module": "regatta_course",
+  "timeout": 600
+ },
+ "space": [
+  {
+   "hi": 143.0,
+   "init": 90.0,
+   "lo": 45.0,
+   "name": "corner0"
+  },
+  {
+   "hi": 116.0,
+   "init": 72.0,
+   "lo": 36.0,
+   "name": "corner1"
+  },
+  {
+   "hi": 95.0,
+   "init": 58.0,
+   "lo": 29.0,
+   "name": "corner2"
+  },
+  {
+   "hi": 80.0,
+   "init": 48.0,
+   "lo": 24.0,
+   "name": "corner3"
+  },
+  {
+   "hi": 65.0,
+   "init": 38.0,
+   "lo": 19.0,
+   "name": "corner4"
+  },
+  {
+   "hi": 50.0,
+   "init": 28.0,
+   "lo": 14.0,
+   "name": "corner5"
+  },
+  {
+   "hi": 32.0,
+   "init": 16.0,
+   "lo": 8.0,
+   "name": "corner6"
+  },
+  {
+   "hi": 23.0,
+   "init": 10.0,
+   "lo": 5.0,
+   "name": "corner7"
+  },
+  {
+   "hi": 130,
+   "init": 110.0,
+   "lo": 96,
+   "name": "RingRadius"
+  },
+  {
+   "hi": 320.0,
+   "init": 200.0,
+   "lo": 80.0,
+   "name": "CornerFloorRadius"
+  },
+  {
+   "hi": 6.0,
+   "init": 1.2,
+   "lo": 0.5,
+   "name": "AngularSpread"
+  },
+  {
+   "hi": 400.0,
+   "init": 160.0,
+   "lo": 60.0,
+   "name": "LateralPerturbation"
+  },
+  {
+   "hi": 50.0,
+   "init": 20.0,
+   "lo": 0.0,
+   "name": "AxisJitterDegrees"
+  },
+  {
+   "hi": 85.0,
+   "init": 50.0,
+   "lo": 40.0,
+   "name": "MaxPresentDegrees"
+  },
+  {
+   "hi": 0.6,
+   "init": 0.42,
+   "lo": 0.2,
+   "name": "RadialSwing"
+  },
+  {
+   "hi": 4095,
+   "init": 0,
+   "lo": 0,
+   "name": "seed",
+   "type": "int"
+  },
+  {
+   "name": "leg0_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg0_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg0_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg0_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg0_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg0_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg0_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg1_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg1_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg1_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg1_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg1_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg1_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg1_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg2_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg2_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg2_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg2_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg2_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg2_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg2_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg3_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg3_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg3_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg3_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg3_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg3_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg3_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg4_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg4_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg4_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg4_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg4_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg4_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg4_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg5_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg5_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg5_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg5_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg5_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg5_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg5_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg6_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg6_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg6_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg6_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg6_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg6_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg6_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg7_from",
+   "lo": 0.0,
+   "hi": 0.9,
+   "init": 0.2
+  },
+  {
+   "name": "leg7_len",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg7_kind",
+   "lo": 0,
+   "hi": 2,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg7_neutral",
+   "lo": 0,
+   "hi": 1,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "leg7_detour",
+   "lo": 0.0,
+   "hi": 150.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg7_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "leg7_gap",
+   "lo": 0.0,
+   "hi": 240.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt0_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt0_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt0_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt1_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt1_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt1_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt2_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt2_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt2_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt3_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt3_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt3_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt4_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt4_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt4_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt5_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt5_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt5_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt6_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt6_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt6_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "alt7_offset",
+   "lo": 0.0,
+   "hi": 420.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt7_bearing",
+   "lo": 0.0,
+   "hi": 360.0,
+   "init": 0.0
+  },
+  {
+   "name": "alt7_scale",
+   "lo": 0.6,
+   "hi": 1.4,
+   "init": 1.0
+  },
+  {
+   "name": "crystals",
+   "lo": 0,
+   "hi": 4,
+   "init": 0,
+   "type": "int"
+  },
+  {
+   "name": "crystal_phase",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.0
+  }
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.15
+ },
+ "convergence": {
+  "min_evals": 3000,
+  "min_improvement": 0.002,
+  "window_evals": 2000
+ },
+ "promote": "A PROPOSAL for Yash (Regatta's course and AI): a picked course becomes a SpawnableRegattaRails variant's courseFeatures (or a pool entry, brief 13) plus its RegattaCourse row and seed; features.sh and regatta_features.py --self-test hold the port, the AIs are re-raced in the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md), and Garrett plays it before it ships."
+}

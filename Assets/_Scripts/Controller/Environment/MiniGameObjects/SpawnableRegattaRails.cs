@@ -47,6 +47,14 @@ namespace CosmicShore.Gameplay
                  "reported course is reproduced. The per-intensity seed is derived from it.")]
         [SerializeField] int courseSeed;
 
+        [Header("Course features")]
+        [Tooltip("Everything about this course beyond its rings (RegattaCourseFeatures): stretches of rail that are " +
+                 "shielded, plain, neutral-coloured, missing (a gap) or swung off the line (a detour); gates with a " +
+                 "second ring; crystals on the line. EMPTY = the course as it was before 2026-11-06, prism for prism. " +
+                 "A course search proposes these (Tools/Compute/evaluators/regatta_features.py); never hand-tune them " +
+                 "into a shipped variant without the Regatta owner.")]
+        [SerializeField] RegattaCourseFeatures courseFeatures = new();
+
         [Tooltip("Prism scale, laid with +z down the rail. Skein's (6,6,8): the 6 u cross-section " +
                  "is the attach catch window the Urchin's 0.04 s trigger sample needs at 300 u/s. " +
                  "z is the NOMINAL length: each prism is laid at the length that keeps it flush " +
@@ -82,6 +90,53 @@ namespace CosmicShore.Gameplay
 
         public HeadlongCircuitSettings CourseSettings => RegattaCourse.ForIntensity(courseIntensity);
 
+        // One RUN per trail: a lane with no gap is one closed run (as before features existed); a gap splits a lane
+        // into open runs, laid in lane order starting after a gap. _laneLayStart / _laneLayCount are per run.
+        readonly List<int> _runLane = new();
+        readonly List<bool> _runClosed = new();
+        readonly List<Trail> _runTrails = new();
+        int _laneCount;
+
+        /// <summary>This course's features: <see cref="RegattaCourseFeatures.Override"/> when a benchmark or test set
+        /// one, else the prefab's own. Read by the controller (alternate rings, line crystals) off the same asset.</summary>
+        public RegattaCourseFeatures Features => RegattaCourseFeatures.Override ?? courseFeatures ?? RegattaCourseFeatures.None;
+
+        /// <summary>Lanes laid this build (3), 0 before it.</summary>
+        public int LaneCount => _laneCount;
+
+        /// <summary>The team colour lane <paramref name="lane"/> is laid in (a neutral stretch is still part of it).</summary>
+        public static Domains LaneDomain(int lane) => RegattaCourse.LaneDomains[lane % RegattaCourse.LaneDomains.Length];
+
+        /// <summary>
+        /// Lane <paramref name="lane"/>'s live prisms in lay order. With no gap this IS the lane's one trail list (the
+        /// live list, as every reader used before gaps existed); with gaps it is the runs joined in order, a new list.
+        /// Null before the lane is laid.
+        /// </summary>
+        public List<Prism> LanePrisms(int lane)
+        {
+            List<Prism> joined = null, single = null;
+            int runs = 0;
+            for (int r = 0; r < _runTrails.Count && r < _runLane.Count; r++)
+            {
+                if (_runLane[r] != lane) continue;
+                var list = _runTrails[r]?.TrailList;
+                if (list == null) continue;
+                runs++;
+                if (runs == 1) { single = list; continue; }
+                if (joined == null) { joined = new List<Prism>(single); }
+                joined.AddRange(list);
+            }
+            return runs <= 1 ? single : joined;
+        }
+
+        /// <summary>The lane laid in <paramref name="domain"/>'s colour, or -1.</summary>
+        public int LaneOf(Domains domain)
+        {
+            for (int lane = 0; lane < _laneCount; lane++)
+                if (LaneDomain(lane) == domain) return lane;
+            return -1;
+        }
+
         public RegattaRailSettings RailSettings => new()
         {
             LaneOffset = laneOffset,
@@ -107,26 +162,41 @@ namespace CosmicShore.Gameplay
             _gates.Clear();
             _laneLayStart.Clear();
             _laneLayCount.Clear();
+            _runLane.Clear();
+            _runClosed.Clear();
 
             var gates = BuildGatesNow();
             _gates.AddRange(gates);
 
-            var layout = RegattaCourse.BuildRails(gates, RailSettings);
+            var features = Features;
+            var layout = RegattaCourse.BuildRails(gates, RailSettings, features);
+            _laneCount = layout.LanePositions.Count;
             for (int lane = 0; lane < layout.LanePositions.Count; lane++)
             {
                 var pos = layout.LanePositions[lane];
                 var rot = layout.LaneRotations[lane];
-                var dom = RegattaCourse.LaneDomains[lane % RegattaCourse.LaneDomains.Length];
+                var dom = LaneDomain(lane);
 
                 // Flush, not overlapping (Docs/ECOSYSTEM.md 49.10): each prism's length is fitted
                 // to its two neighbours at authoring time - the cross-section stays the catch
                 // window, only the length on a bend gives way. Same count, same poses.
                 var len = RegattaCourse.FlushRailLengths(pos, rot, prismScale);
-                int start = _cachedLays.Count;
-                for (int k = 0; k < pos.Length; k++)
-                    Emit(pos[k], rot[k], new Vector3(prismScale.x, prismScale.y, len[k]), dom, PrismKind.SuperShielded);
-                _laneLayStart.Add(start);
-                _laneLayCount.Add(_cachedLays.Count - start);
+                var plan = RegattaRailPlan.ForLane(layout.LaneLegParams[lane], gates.Count, features);
+                for (int r = 0; r < plan.Runs.Count; r++)
+                {
+                    var run = plan.Runs[r];
+                    int start = _cachedLays.Count;
+                    for (int q = 0; q < run.Count; q++)
+                    {
+                        int k = (run.Start + q) % pos.Length;
+                        var prismDomain = plan.Neutral[k] ? RegattaCourseFeatures.NeutralDomain : dom;
+                        Emit(pos[k], rot[k], new Vector3(prismScale.x, prismScale.y, len[k]), prismDomain, plan.Kinds[k]);
+                    }
+                    _laneLayStart.Add(start);
+                    _laneLayCount.Add(_cachedLays.Count - start);
+                    _runLane.Add(lane);
+                    _runClosed.Add(run.Closed);
+                }
             }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
@@ -144,12 +214,17 @@ namespace CosmicShore.Gameplay
         {
             if (prism == null || _cachedLays == null || _laneLayStart.Count == 0) return;
 
+            // One trail per run: closed for a lane with no gap (today's), open for each run a gap leaves, so a rider
+            // runs off its end and flies the gap (a hole inside one trail is bridged at full pace).
             var laneTrails = new Trail[_laneLayStart.Count];
+            _runTrails.Clear();
             for (int i = 0; i < laneTrails.Length; i++)
             {
-                var t = new Trail(true) { Dimension = PrismscapeDimension.Trail };
+                bool closed = i >= _runClosed.Count || _runClosed[i];
+                var t = new Trail(closed) { Dimension = PrismscapeDimension.Trail };
                 trails.Add(t);
                 laneTrails[i] = t;
+                _runTrails.Add(t);
             }
 
             if (Application.isPlaying) LayAsync(container, laneTrails).Forget();
@@ -197,7 +272,8 @@ namespace CosmicShore.Gameplay
         }
 
         protected override int BuildParameterHash() =>
-            System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
-                                    laneTwistTurnsPerLap, prismSpacing, /* layout revision */ 2);
+            System.HashCode.Combine(System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
+                                                            laneTwistTurnsPerLap, prismSpacing, /* layout revision */ 2),
+                                    Features.IsEmpty ? 0 : Features.ParameterHash());
     }
 }
