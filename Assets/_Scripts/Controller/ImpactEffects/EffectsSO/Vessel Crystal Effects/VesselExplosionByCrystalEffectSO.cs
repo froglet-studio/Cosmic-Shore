@@ -233,6 +233,7 @@ namespace CosmicShore.Gameplay
             switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {
                 case VesselClassType.Rhino:
+                case VesselClassType.Swordfish:   // the Rhino's crystal explosion, split off with the sword (2026-11-07)
                     rhinoCrystalExplosionEvent?.Raise(vesselImpactor);
                     break;
                 case VesselClassType.Manta:

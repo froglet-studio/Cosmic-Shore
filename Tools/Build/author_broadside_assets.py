@@ -67,7 +67,7 @@ G_ASSET = {
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
 EXISTING = dict(lib.SCRIPT_GUIDS)
 EXISTING.update(lib.CARD_ART)
-for hull in ("Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Sparrow", "Scarab"):
+for hull in ("Manta", "Dolphin", "Swordfish", "Urchin", "Squirrel", "Sparrow", "Scarab"):
     EXISTING[f"Vessel_{hull}"] = lib.VESSELS[hull]
 
 # The donor (Dog Fight) - its scene is the closest sibling: same metric, same arena, same
@@ -233,7 +233,7 @@ g.emit_asset("Assets/_SO_Assets/Games/BroadsideSettings.asset", G_ASSET["Broadsi
 # ── 5. The ARENA card ────────────────────────────────────────────────────────
 VESSEL_ROWS = "".join(
     f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n"
-    for h in ("Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Sparrow", "Scarab"))
+    for h in ("Manta", "Dolphin", "Swordfish", "Urchin", "Squirrel", "Sparrow", "Scarab"))
 
 # A row per (hull, intensity) the model moves off rest. A hull at rest gets NO row - the platform
 # default IS rest, and a row of zeros would claim the card had made a decision it did not make.
@@ -250,7 +250,7 @@ def starting_elements():
 
 _BROADSIDE_DESC = lib.wrap_yaml_scalar(
     "Every hull that can fight, loose in the Boneyard, each with the weapon it "
-    "actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Rhino's sword, a "
+    "actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Swordfish's sword, a "
     "Squirrel's joust, a Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is worth "
     "what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff "
     "12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.")
@@ -387,7 +387,7 @@ if not (P["bullet"] < P["strike"] < P["debuff"] < P["missile_direct"]):
 
 # EVERY hull on the card must be able to score. This is the arena rule, and it is the one that
 # would have shipped a seat nobody can play.
-CARD_HULLS = ("Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Sparrow", "Scarab")
+CARD_HULLS = ("Manta", "Dolphin", "Swordfish", "Urchin", "Squirrel", "Sparrow", "Scarab")
 if "Serpent" in CARD_HULLS:
     errors.append("the Serpent has no anti-vessel verb authored - it cannot score here")
 for h in CARD_HULLS:

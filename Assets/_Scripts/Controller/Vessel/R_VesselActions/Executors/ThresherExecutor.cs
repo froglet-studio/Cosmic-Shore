@@ -152,6 +152,8 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ public surface
 
         public bool IsPivoting => _solver != null && _solver.Mode == ThresherMode.Pivot;
+        /// <summary>Mass Mode (A): the ball builds (steals, shields, lays its own prisms) instead of breaking. The HUD's Mass card.</summary>
+        public bool InMassMode => _massMode;
         /// <summary>Every Thresher dial (the transformer reads its release and planted-hull seams here).</summary>
         public ThresherConfigSO Config => config;
         /// <summary>Analog triggers are on (<c>dials.analogTriggers</c>): LT is a brake, RT the chain's rigidity.</summary>
