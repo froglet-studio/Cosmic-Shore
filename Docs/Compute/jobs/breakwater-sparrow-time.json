@@ -1,0 +1,138 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "breakwater-sparrow-time",
+ "kind": "search",
+ "status": "proposed",
+ "title": "The Sparrow's universal Time AI: one Breakwater afterburner-and-rocket drive for I1-I4, grown from both genomes",
+ "goal": "Run by hand until Froglet Compute is back (Shombith paused it 2026-11-06; /mnt/project-files/regatta-training/local_run.py). The Sparrow's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE HoldBoostAIPolicySO drive (when to hold the afterburner, when to let go before a station, when to fire the rocket at its plug) that races all four Breakwater intensities well, grown from the two drives the game ships (SparrowAIBoostPolicy_Breakwater and the base SparrowAIBoostPolicy) and mutations of each, scored on Tools/Build/breakwater_sparrow_sim.py (mean + 0.5 x the worst intensity). The winner is the Sparrow Regatta is searched against (step time-arena-course); the base drive's 0.6 s afterburner stutter is why the AI Sparrow is Regatta's slowest hull (Tools/Build/sparrow_regatta_sim.py).",
+ "asked_by": "Garrett 2026-11-06 (the Regatta balance plan's Phase A: train every AI in its own Time game before any course search; brief 4 of the plan thread)",
+ "area_owner": "Yash (vessel AI)",
+ "plan": "regatta-balance",
+ "stage": 1,
+ "plan_step": "time-arcade",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3"
+ ],
+ "paths": [
+  "Tools/Build/breakwater_sparrow_sim.py",
+  "Tools/Build/sparrow_regatta_sim.py",
+  "Tools/Build/breakwater_arena.py",
+  "Tools/Build/regatta_line_sim.py",
+  "Tools/Build/rhino_drive_sim.py",
+  "Tools/Build/scarab_drive_sim.py",
+  "Tools/Build/situation_features.py",
+  "Assets/_SO_Assets/AI Boost Policies/SparrowAIBoostPolicy.asset",
+  "Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset"
+ ],
+ "evaluator": {
+  "module": "breakwater_fit",
+  "timeout": 600,
+  "args": {
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "seeds": 3,
+   "seedbase": 7100,
+   "max_seconds": 300,
+   "genomes": [
+    "Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset",
+    "Assets/_SO_Assets/AI Boost Policies/SparrowAIBoostPolicy.asset"
+   ],
+   "stay_near_shipped": 0.01,
+   "candidates": [
+    "held"
+   ]
+  }
+ },
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "convergence": {
+  "min_evals": 1200,
+  "window_evals": 600,
+  "min_improvement": 0.002
+ },
+ "after": [],
+ "value": 8,
+ "promote": "A PROPOSAL for the AI owner (Yash), any of the core four approving: race the best against both shipped genomes on 8 FRESH courses per intensity (seedbase 99000); keep it only if it finishes every race and its composite is lower. Then it becomes the drive the Sparrow flies in every mode (the base SparrowAIBoostPolicy, and SparrowAIBoostPolicy_Breakwater retires or takes the same numbers - Yash's call), written with the learner's asset writer (Tools/Build/learn_drives_from_flights.py), never by hand. Editor checks go in Docs/UNITY_VERIFICATION_CHECKLIST.md: Breakwater at I1-I4, and Regatta's I1 benchmark (the Sparrow raced alone, against its 117-150 s of 2026-11-03).",
+ "space": [
+  {
+   "name": "alignDegrees",
+   "lo": 0.0,
+   "hi": 90.0,
+   "init": 45.0
+  },
+  {
+   "name": "releaseAlignDegrees",
+   "lo": 0.0,
+   "hi": 120.0,
+   "init": 60.0
+  },
+  {
+   "name": "stickBand",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 1.0
+  },
+  {
+   "name": "releaseStickBand",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 1.0
+  },
+  {
+   "name": "engageRunwaySeconds",
+   "lo": 0.0,
+   "hi": 4.0,
+   "init": 2.0
+  },
+  {
+   "name": "releaseRunwaySeconds",
+   "lo": 0.0,
+   "hi": 3.0,
+   "init": 1.25
+  },
+  {
+   "name": "minHoldSeconds",
+   "lo": 0.0,
+   "hi": 3.0,
+   "init": 0.6
+  },
+  {
+   "name": "minRestSeconds",
+   "lo": 0.0,
+   "hi": 2.0,
+   "init": 0.4
+  },
+  {
+   "name": "rocketMaxRange",
+   "lo": 1.0,
+   "hi": 700.0,
+   "init": 651.421
+  },
+  {
+   "name": "rocketMinRange",
+   "lo": 0.0,
+   "hi": 300.0,
+   "init": 55.448
+  },
+  {
+   "name": "rocketAimDegrees",
+   "lo": 0.0,
+   "hi": 45.0,
+   "init": 16.727
+  },
+  {
+   "name": "rocketCooldownSeconds",
+   "lo": 0.1,
+   "hi": 3.0,
+   "init": 1.0
+  }
+ ],
+ "updated": "2026-11-06"
+}
