@@ -1,21 +1,20 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// STING's charging half, and its lifeform-planting half — one skimmer-prism effect
-    /// because to the impact system both are the same contact: the Manta's skimmer touching a
-    /// prism. Every skim tick pays bomb charge into the bay
-    /// (<see cref="MantaStingActionExecutor.AddSkimCharge"/>, Charge-scaled, per-prism
-    /// throttled); a skimmed prism that turns out to be a LIVING CREATURE'S BODY also plants a
-    /// bomb on the creature — grazing wildlife is the joust the spec means for lifeforms, and
-    /// making it automatic is the accessibility thesis ("a player who does nothing but hold
-    /// both triggers... will arm bombs, plant bombs").
+    /// The Manta's SKIM (MANTA_STING_KABLOOM.md §2-3a) - one skimmer-prism effect because to the impact system all of it
+    /// is the same contact, the Manta's skimmer touching a prism:
+    ///  • every skim tick pays ENERGY (<see cref="MantaStingActionExecutor.AddSkimCharge"/>, per-prism throttled) - the
+    ///    Space card's gauge, spent one bomb at a time to plant;
+    ///  • an OPPOSING domain's prism is primed EXPLOSIVE (<see cref="Prism.MakeExplosive"/>): when it dies the prisms
+    ///    beside it in its prismscape die too, and an explosive neighbour carries the chain on. A shielded prism keeps
+    ///    its armour and is not primed - until SPACE 5, where the skim pops the shield and primes it anyway;
+    ///  • a skimmed prism that is a LIVING CREATURE'S BODY plants a bomb on the creature (graze to plant).
     ///
-    /// Runs for every prism the dispatcher hands it (own-domain mass included — the Manta
-    /// skims membranes and old ribbons alike; only the fresh-own-trail grace upstream is
-    /// excluded). The bay itself gates on simulation authority, so remote replicas of this
-    /// skimmer charge nothing.
+    /// The energy and the plant gate on simulation authority inside the bay; the priming is a prism state and runs
+    /// wherever this effect runs, like every other skim effect on prisms.
     /// </summary>
     [CreateAssetMenu(
         fileName = "MantaStingSkimPrismEffect",
@@ -32,6 +31,7 @@ namespace CosmicShore.Gameplay
             if (prism == null || prism.destroyed) return;
 
             bay.AddSkimCharge(prism);
+            TryPrimeExplosive(bay, status, prism);
 
             if (prism is HealthPrism healthPrism)
             {
@@ -39,6 +39,28 @@ namespace CosmicShore.Gameplay
                 if (fauna != null)
                     bay.TryPlantOnFauna(fauna);
             }
+        }
+
+        static void TryPrimeExplosive(MantaStingActionExecutor bay, IVesselStatus status, Prism prism)
+        {
+            var cfg = bay.Config;
+            if (!cfg || !cfg.SkimPrimesExplosive || prism.IsExplosive) return;
+
+            // Opposing domains only: never the Manta's own side, never the neutral environment.
+            var domain = prism.Domain;
+            if (domain == status.Domain || domain == Domains.Blue) return;
+
+            var props = prism.prismProperties;
+            if (props == null) return;
+            if (props.IsShielded || props.IsSuperShielded)
+            {
+                // SPACE 5: the skim pops the armour, then primes what is under it.
+                var handler = status.ElementalAbilityHandler;
+                if (!handler || !handler.IsUpgradeActive(Element.Space)) return;
+                prism.DeactivateShields();
+            }
+
+            prism.MakeExplosive(status.PlayerName, cfg.ExplosiveLift, cfg.ExplosiveLiftFadeSeconds);
         }
     }
 }
