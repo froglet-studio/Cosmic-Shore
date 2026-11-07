@@ -969,6 +969,15 @@ prisms) show each flat; every peer derives flats and chalk from the broadcast ri
 `DecoyRunCourseTests` (offline: `Tools/Build/decoy_run_harness/`), generator `author_decoy_run_assets.py` on
 `hull_time_race.py`. See `_Scripts/Controller/Arcade/DECOY_RUN.md`. Authored headless.
 
+`PerchRun(81)` is the **Goby's Time race** (2026-11-07): a dart costs one second however far it goes, so the race is
+how few darts a course takes. I1 open rings, I2 hairpins (a full charge overshoots out of reach: judge the length), I3
+coral blockers on the legs (a dart at the centre stops on the head: take the rim), I4 doubles (two rings on one line,
+one dart) with the smallest mouths. The coral is super-shielded prisms every peer derives from the broadcast rings. The
+Goby gained a reach ring (where a charging dart will stop) and an AI race coach, `IGobyRaceCoach` on `GobyPistolDuo`
+(input-only). `PerchRunController : GateRaceController`, `PerchRunCourse`, `PerchRunCourseTests` (offline:
+`Tools/Build/perch_run_harness/`), generator `author_perch_run_assets.py` on `hull_time_race.py`. See
+`_Scripts/Controller/Arcade/PERCH_RUN.md`. Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -1420,6 +1429,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             │   └── ScarabRallyController         — Scarab-only ring race (the Scarab's Time card, no ball); Switchback's walk cut for throttle, drift and juke
             │   └── ThornlineController           — Shrike-only sling race (the Shrike's Time card): thorn to thorn through a ring a leg
             ├── DecoyRunController                — Jacks-only herd-and-travel race (the Jacks' Time card): doors, skewers, rolled flats, hairpins
+            ├── PerchRunController                — Goby-only dart race (the Goby's Time card): open rings, hairpins, coral blockers, doubles
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between

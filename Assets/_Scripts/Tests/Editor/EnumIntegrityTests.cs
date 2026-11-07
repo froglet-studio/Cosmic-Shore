@@ -190,8 +190,9 @@ namespace CosmicShore.Tests
             // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
             // 71 -> 72 on 2026-11-07: Thornline (79), the Shrike's Time race (78 was SpeedPainter's on its branch).
             // 72 -> 73 on 2026-11-07: DecoyRun (80), the Jacks' Time race.
+            // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(73, values.Length,
+            Assert.AreEqual(74, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -239,6 +240,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.BrittleStarTime, 74)]
         [TestCase(GameModes.Thornline, 79)]
         [TestCase(GameModes.DecoyRun, 80)]
+        [TestCase(GameModes.PerchRun, 81)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

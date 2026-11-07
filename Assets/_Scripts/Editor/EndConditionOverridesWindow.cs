@@ -204,6 +204,9 @@ namespace CosmicShore.Editor
                 "  • Decoy Run: RINGS a DOMAIN's lead runner needs to thread to finish the Jacks' Time race - " +
                 "a cycle is the take-off jump plus a fast travel to each decoy, so the rings come in groups (1 / 2 / 2 / 3). Default " +
                 EndConditionOverridesSO.DefaultDecoyRunGateTarget + ".\n" +
+                "  • Perch Run: RINGS a DOMAIN's lead runner needs to thread to finish the Goby's Time race - " +
+                "dart through rings, judging each dart's length round hairpins and its line round coral. Default " +
+                EndConditionOverridesSO.DefaultPerchRunGateTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the mixed-fleet rail circuit. The arena lays eight rings a lap with the " +
                 "rails threaded through them, so this must be a multiple of eight. Default " +
@@ -275,6 +278,7 @@ namespace CosmicShore.Editor
             int spp = Mathf.Max(0, EditorGUILayout.IntField("Lantern Run - Gate Target (laps x rings)", _config.lanternRunGateTarget));
             int thl = Mathf.Max(0, EditorGUILayout.IntField("Thornline - Gate Target (rings, an open chain)", _config.thornlineGateTarget));
             int g80 = Mathf.Max(0, EditorGUILayout.IntField("Decoy Run - Gate Target (rings)", _config.decoyRunGateTarget));
+            int g81 = Mathf.Max(0, EditorGUILayout.IntField("Perch Run - Gate Target (rings)", _config.perchRunGateTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
@@ -325,6 +329,7 @@ namespace CosmicShore.Editor
                     _config.lanternRunGateTarget = spp;
                     _config.thornlineGateTarget = thl;
                     _config.decoyRunGateTarget = g80;
+                    _config.perchRunGateTarget = g81;
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
@@ -382,6 +387,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Lantern Run", spp > 0 ? spp.ToString() : EndConditionOverridesSO.DefaultLanternRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Thornline", thl > 0 ? thl.ToString() : EndConditionOverridesSO.DefaultThornlineGateTarget + " (default)");
             EditorGUILayout.LabelField("Decoy Run", g80 > 0 ? g80.ToString() : EndConditionOverridesSO.DefaultDecoyRunGateTarget + " (default)");
+            EditorGUILayout.LabelField("Perch Run", g81 > 0 ? g81.ToString() : EndConditionOverridesSO.DefaultPerchRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
@@ -457,6 +463,7 @@ namespace CosmicShore.Editor
                    "Lantern Run: " + Fmt(_config.lanternRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultLanternRunGateTarget) + "\n" +
                    "Thornline: " + Fmt(_config.thornlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultThornlineGateTarget) + "\n" +
                    "Decoy Run: " + Fmt(_config.decoyRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultDecoyRunGateTarget) + "\n" +
+                   "Perch Run: " + Fmt(_config.perchRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultPerchRunGateTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +
