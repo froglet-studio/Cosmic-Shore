@@ -65,6 +65,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Pilots/INVENTORY.md`.
+- Every artifact is unique: it accepts one element and feeds without limit with diminishing returns.
+- Every pilot is a unique person on a callsign.
+- One `ACCOUNT_INVENTORY` cloud record holds the crew, the hoard, the captain and the Hangar picks.
+- The Ark ARTIFACTS tab, the Hangar PILOTS and ARTIFACTS tabs, the Ark SQUADS tab and the voyage open card list people and artifacts, not callsigns and kinds.
+- `NetArtifacts` carries the artifact whole (`ArtifactWire`).
+- This replaces the 2026-10-27 steps below that read "Mass 0 Space 0 Time 0 Charge 0" or raise four tracks, and "Reset Every Artifact Track", which is now "Reset Every Artifact Feed (dev)".
+
+**Verified without the editor:**
+- The reference compile, player and editor configs: 0 errors in changed files. The 21 errors left are pre-existing package gaps.
+- The 20 `AccountInventoryTests` pass under `dotnet test` outside Unity.
+- `ship/gates.sh` passes.
+
+NOT run: Unity, any EditMode test inside Unity, a play.
+
+**Verify in editor:**
+1. Run the EditMode tests `AccountInventoryTests` and `PilotsAndArtifactsTests`. **Pass:** all green.
+2. Sign in, open the Ark's ARTIFACTS tab. **Pass:**
+   - A Javelin and an Aegis show, each with its own name, serial, one element and aspect.
+   - Row 0 is the attuned track; rows 1-3 are dimmed fixed tracks.
+   - FEED spends 5 of that element and the level rises a little less each time; OMNI pays in omni.
+3. Hangar > PILOTS on any hull. **Pass:**
+   - Eighteen people, each with a name (portraits are their callsign's).
+   - Seating one, relaunching the menu and reopening shows the same person.
+   - LB in the Toybox shows their callsign's sight.
+4. Hangar > ARTIFACTS: slot the Javelin on two hulls in turn. **Pass:** it leaves the first hull's slot.
+5. Ark > SQUADS. **Pass:**
+   - A squad saved before this branch shows people and artifacts, not blanks.
+   - Pilot chips read "Name - CALLSIGN"; shorten `pilotChipWord` to `{name}` if they overflow.
+   - Each vessel gets a different artifact.
+6. With the Javelin slotted, fly the Wander toy "With Ark", grab a payload (RB) and release it. **Pass:** it fires a Javelin. In a two-player session the peer sees the same shot.
+7. Voyages: open the job board. **Pass:** each job names a crew person, and their faction type decides the work.
+8. Quit and relaunch online. **Pass:** the inventory is the same. The cloud record `ACCOUNT_INVENTORY` exists in the UGS dashboard.
+
 ### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:

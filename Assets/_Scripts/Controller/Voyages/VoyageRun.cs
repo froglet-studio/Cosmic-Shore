@@ -206,7 +206,9 @@ namespace CosmicShore.Gameplay
                 new SquadSlot(hull, Element.None));
         }
 
-        /// <summary>The pilots seated in <paramref name="squad"/>, in seat order: they decide which jobs are offered.</summary>
+        /// <summary>The pilots seated in <paramref name="squad"/>, in seat order: they decide which jobs are offered. Each is
+        /// the crew's unique person in that seat (Docs/Pilots/INVENTORY.md §3.4), whose faction decides the work; a seat whose
+        /// person the crew does not hold falls back to its callsign (the authored stand-in).</summary>
         public static List<string> SeatedPilots(SavedSquad squad)
         {
             var pilots = new List<string>();
@@ -214,8 +216,12 @@ namespace CosmicShore.Gameplay
             var catalog = PilotArtifactCatalogSO.Load();
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
             {
-                var pilot = catalog ? catalog.ResolvePilot(squad.GetSlot(seat), null) : null;
-                if (pilot) pilots.Add(pilot.Id);
+                var slot = squad.GetSlot(seat);
+                var pilot = catalog ? catalog.ResolvePilot(slot, null) : null;
+                if (!pilot) continue;
+                pilots.Add(PilotLoadoutStore.TryGetPilot(slot.PilotId, out var person) && UniqueId.TemplateOf(person.Id) == pilot.Id
+                    ? person.Id
+                    : PilotLoadoutStore.TryGetPilot(pilot.Id, out person) ? person.Id : pilot.Id);
             }
             return pilots;
         }
