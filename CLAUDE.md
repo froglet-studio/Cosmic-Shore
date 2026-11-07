@@ -395,6 +395,8 @@ a still by default, a short clip (60 s max, 15 fps, 1280x720) for motion or orde
 session or with Playwright for an artifact. The session reads at most 3-4 frames of its own clip (about 1.5k tokens
 each), sends the file with `SendUserFile`, never commits it, and says in the same message what only the Unity editor
 can judge (the final look, feel, audio). A clip never replaces the verify rule (§ Unity CLI verification) or the checklist's hand test.
+For the FINAL LOOK, the look sheet (`Docs/LOOK_SHEET.md`, `/unity-look`, built 2026-11-07, not yet run in Unity) captures the real
+renderer headless (menu screens, a race with the AI on every seat), gated and laid out, locally or through the `Look sheet` CI job.
 
 ## Code Style
 
