@@ -1,0 +1,40 @@
+{
+  "music": "Assets/_Audio/Music/Full Quality MP3/SKY FIRE.mp3",
+  "audio_fade_in": 0.6,
+  "audio_fade_out": 2.8,
+  "end": 73.49,
+  "segments": [
+    {"t0": 30.30, "shot": "S01.mp4", "src_in": 0.5, "fade_in": 0.8},
+    {"t0": 33.16, "shot": "S02.mp4", "src_in": 0.5},
+    {"t0": 36.04, "shot": "S15.mp4", "src_in": 0.5},
+    {"t0": 38.92, "shot": "S03.mp4", "src_in": 1.0},
+    {"t0": 39.89, "shot": "S04.mp4", "src_in": 1.0},
+    {"t0": 40.84, "shot": "S05.mp4", "src_in": 1.0},
+    {"t0": 41.80, "shot": "S06.mp4", "src_in": 1.0},
+    {"t0": 42.77, "shot": "S07.mp4", "src_in": 1.0},
+    {"t0": 43.72, "shot": "S08.mp4", "src_in": 1.0},
+    {"t0": 44.21, "shot": "S09.mp4", "src_in": 0.0, "speed": 0.4, "grade": {"brightness": -0.06, "saturation": 0.9}},
+    {"t0": 46.09, "shot": "S09.mp4", "src_in": 1.0, "flash": true},
+    {"t0": 47.55, "shot": "S10.mp4", "src_in": 0.5},
+    {"t0": 48.53, "shot": "S11.mp4", "src_in": 0.5},
+    {"t0": 49.48, "shot": "S12.mp4", "src_in": 0.5},
+    {"t0": 50.43, "shot": "S14a.mp4", "src_in": 0.5},
+    {"t0": 51.41, "shot": "S13.mp4", "src_in": 0.5},
+    {"t0": 52.36, "shot": "S14b.mp4", "src_in": 0.5},
+    {"t0": 54.27, "shot": "S10.mp4", "src_in": 4.0},
+    {"t0": 55.24, "shot": "S11.mp4", "src_in": 3.5},
+    {"t0": 56.19, "shot": "S14c.mp4", "src_in": 0.5},
+    {"t0": 58.12, "shot": "S12.mp4", "src_in": 4.0},
+    {"t0": 59.56, "shot": "S03.mp4", "src_in": 4.5},
+    {"t0": 61.95, "shot": "S13.mp4", "src_in": 3.0},
+    {"t0": 63.88, "shot": "S14a.mp4", "src_in": 4.0},
+    {"t0": 65.81, "shot": "S12.mp4", "src_in": 6.5},
+    {"t0": 67.73, "shot": "S16.mp4", "src_in": 0.5}
+  ],
+  "texts": [
+    {"t0": 34.0, "t1": 36.0, "lines": ["A SEA OF LIGHT"], "sizes": [70]},
+    {"t0": 39.0, "t1": 44.1, "lines": ["EVERY VESSEL", "PLAYS A DIFFERENT GAME"], "sizes": [54, 70]},
+    {"t0": 44.3, "t1": 46.0, "lines": ["FLY IT TOGETHER"], "sizes": [84]}
+  ],
+  "endcard": {"dur": 6.5, "tagline": "THE PARTY GAME FOR PILOTS", "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"}
+}
