@@ -30,7 +30,10 @@ FIELDS = ["LaneShare", "HullClearance", "Risk", "RiskSpread", "CarefulLookaheadS
           "MinLookahead", "MaxLookahead"]
 COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSeconds": 0.8, "MinLookahead": 60,
           "MaxLookahead": 520}
-RANGES = {"LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
+# Written only when a hull sets them (absent, the SO's defaults apply: the nose lead off), so turning one on rewrites one
+# asset. NoseLeadGain is AIPilot's nose lead (2026-11-06, scarab_nose_lead_sim.py): 0 = off; the AI owner switches it on.
+OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees"]
+RANGES = {"NoseLeadGain": (0, 6), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
           "CarefulLookaheadSeconds": (0, 3), "BoldLookaheadSeconds": (0, 3), "MinLookahead": (1, 400),
           "MaxLookahead": (1, 2000)}
 # The starting values, per hull (why, in a word): big and fast flies far out and plays safer; agile flies closer and bolder.
@@ -75,6 +78,12 @@ def values(hull):
     return v
 
 
+def written(hull):
+    """The fields the hull's asset carries, in the SO's order: every FIELD, then each OPTIONAL one the hull sets."""
+    v = values(hull)
+    return FIELDS + [k for k in OPTIONAL if k in v]
+
+
 def fmt(x):
     return str(int(x)) if float(x).is_integer() else repr(round(float(x), 4))
 
@@ -86,7 +95,7 @@ def asset_text(hull):
             "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
             "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid()}, type: 3}}\n  m_Name: {name}\n  m_EditorClassIdentifier: \n"
-            + "".join(f"  {k}: {fmt(v[k])}\n" for k in FIELDS))
+            + "".join(f"  {k}: {fmt(v[k])}\n" for k in written(hull)))
 
 
 def native_meta(g):
@@ -111,7 +120,7 @@ def validate():
     problems = []
     for hull in HULLS:
         v = values(hull)
-        for k in FIELDS:
+        for k in written(hull):
             lo, hi = RANGES[k]
             if not lo <= float(v[k]) <= hi:
                 problems.append(f"{hull}: {k} {v[k]} outside {RANGES[k]}")
