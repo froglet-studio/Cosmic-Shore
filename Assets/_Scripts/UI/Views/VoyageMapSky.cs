@@ -167,7 +167,7 @@ namespace CosmicShore.UI
                 bool drawn = false;
                 if (content?.Locations != null)
                     foreach (var l in content.Locations)
-                        if (l != null && l.Charted && Math.Abs(l.GalaxyX - p.X) < 2 && Math.Abs(l.GalaxyY - p.Y) < 2)
+                        if (_map.IsDrawn(l) && Math.Abs(l.GalaxyX - p.X) < 2 && Math.Abs(l.GalaxyY - p.Y) < 2)
                         {
                             drawn = true;
                             break;
@@ -884,7 +884,7 @@ namespace CosmicShore.UI
             int bestSteps = VoyageChart.BerthCells + 1;
             foreach (var l in content.Locations)
             {
-                if (l == null || !l.Charted) continue;
+                if (!_map.IsDrawn(l)) continue;
                 int steps = HyperSea.CellSteps(HyperSea.CellOf(l.GalaxyX, l.GalaxyY), (q, r));
                 if (steps < bestSteps) { bestSteps = steps; best = l.Name ?? string.Empty; }
             }

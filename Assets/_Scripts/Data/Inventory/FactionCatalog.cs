@@ -19,11 +19,14 @@ namespace CosmicShore.Data
     {
         public const string IdPrefix = "faction.";
 
-        /// <summary>The faction types a new pilot can be minted into: the ones whose jobs exist (VOYAGES.md §6.2: merchant,
-        /// hunter and aristocrat first, and the pirates who prey on them). A type joins when its job does.</summary>
+        /// <summary>The faction types a new pilot can be minted into: the ones whose jobs exist. Since the depth pass
+        /// (Docs/Voyages/DEPTH.md §4, 2026-11-07) every type brings work to the voyage board, so every type recruits.</summary>
         public static readonly FactionType[] Recruitable =
         {
             FactionType.Merchant, FactionType.Hunter, FactionType.Aristocrat, FactionType.Pirate,
+            FactionType.BountyHunter, FactionType.Explorer, FactionType.Activist, FactionType.Thief, FactionType.Gatherer,
+            FactionType.Contractor, FactionType.Sport, FactionType.Researcher, FactionType.Preservationist,
+            FactionType.FirstResponder, FactionType.Priest, FactionType.Diplomat,
         };
 
         static readonly Dictionary<FactionType, string[]> Founding = new()

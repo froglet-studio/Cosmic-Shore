@@ -1,6 +1,8 @@
 # Voyages: squads on the HyperSea
 
-**Status: DESIGN DRAFT** (Garrett, 2026-10-28; first draft written the same day). Nothing in this document is built.
+**Status: DESIGN, phase V1 built** (Garrett, 2026-10-28; first draft written the same day). V1 shipped as the slice
+([`SLICE.md`](SLICE.md)) and was deepened on 2026-11-07 ([`DEPTH.md`](DEPTH.md): the living galaxy, rival crews on the
+device, every faction type's work, sagas and relics, standing and notoriety, uncharted places). V2-V4 are not built.
 It is the plan that `Docs/Pilots/ARTIFACTS.md` §8.5 asks for before vaults, hunting and extraction can be built.
 Every default marked **(default)** is a guess waiting for Garrett's answer; §11 lists them.
 Sources beyond the repo, and what in them is out of date: [`SOURCES.md`](SOURCES.md). In short: the FigJam board *How players get, do, and learn things*, the Figma file *Cosmic Shore for Alpha* (page *UI for vLater*: the old Port faction boards), the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and

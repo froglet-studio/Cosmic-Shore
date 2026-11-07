@@ -32,6 +32,12 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
 - [`Docs/MULTIPLAYER_START_HERE.md`](Docs/MULTIPLAYER_START_HERE.md): **Read first for ANY multiplayer work (Unity or Amoebius).** What the owner wants, the standing rules, where everything is, current state, the owner's hand-test list, and the ordered next steps.
   Sections: What the owner wants; Rules every session keeps; Where everything is; Where things stand; What the owner tests by hand; What comes next, in order; How a session starts here
+- [`Docs/Voyages/DEPTH.md`](Docs/Voyages/DEPTH.md): **Voyages, deep (Garrett, 2026-11-07).** Read before any voyage work:
+  the living HyperSea (pressure, blooms, restocks, the Kaiju), rival crews that take the same jobs by the same rules, a
+  job for every one of the 16 faction types in nine work verbs, sagas ending in named relics, standing and notoriety,
+  uncharted places, and the depth harness (`Tools/Build/voyage_depth_harness/run.sh --scorecard`) whose scorecard is a
+  test. The content is one spec (`Docs/Voyages/voyage_slice.json`, `author_voyage_assets.py --check`).
+  Sections: what was shallow, measured; the thesis; the living galaxy; rival crews; work verbs; sagas and relics; standing and notoriety; risk and the way home; discovery; the crew remembers; in the world; the scorecard; phases; who works where; decisions; measured
 - [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace — the party-docs table routes every UGS call to `UgsRequestPolicy` and the invite/resilience review, lists the pinned multiplayer package versions and the protocol-version rule.
   Sections: Multiplayer / Netcode; Party / Invite Lobby System; Friend System; Player Count & AI Backfill Pipeline; SkimRace Game Mode
 - [`Docs/Studios/VESSEL_STUDIO_PLAN.md`](Docs/Studios/VESSEL_STUDIO_PLAN.md): The Vessel Studio — pick a vessel and fly its studio on web, Windows (Amoebius's VESSEL STUDIO page; Unity's FrogletTools > Vessels > Vessel Studio opens the studio home, whose cards open the same pages as the artifact) and phones. Pages in `Docs/Studios/VesselStudio/`; every studio is a reader of the shipped numbers. Read before touching a studio.

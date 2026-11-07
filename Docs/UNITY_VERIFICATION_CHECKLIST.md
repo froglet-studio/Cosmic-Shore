@@ -21513,3 +21513,60 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
+
+## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
+
+**Plan:** `Docs/Voyages/DEPTH.md`. **Files:** `Data/Voyages/*` (`VoyageEnums`, `VoyageContent`, `VoyageState`,
+`VoyageRules`, new `VoyageWorld` and `VoyageRivals`; pure, 38 edit-mode tests green headless in
+`Tools/Build/voyage_depth_harness`), `Controller/Voyages/VoyageRun.cs` (verbs, the leg's pacing, hostile worlds, rival
+hulls at the stop, the race clock, chronicles, relics), `VoyageHarbour.cs` (the crew fills the board; `GalaxyState`),
+`UI/Views/VoyageJobsView.cs` (`{role}`, `{warnings}`, the job's own pay and intensity, the sea-today beat, the map's
+visibility), `VoyageMapGraphic.cs` (`Visible`, `IsDrawn`, colours for the new experiences), `VoyageEdgeGraphic.cs`,
+`VoyageMapSky.cs`, `ScriptableObjects/Voyages/VoyageContentSO.cs` (new lines) and `VoyageToyDefinitionSO.cs` (cull and
+observe radii, rival abeam, colours), `Data/Inventory/FactionCatalog.cs` (every type recruits). Assets from
+`author_voyage_assets.py` (`VoyageContent.asset`, `Toy_Voyage.asset`, the twin `Docs/Voyages/voyage_content.json`).
+Affects: Shombith's Voyage window (tokens and one visibility rule, no layout change), Garrett's squad layer (chronicle
+lines, a relic's name on its record). The reference compile has 0 errors in the changed files (the 21 remaining are
+the compile environment's missing Cinemachine and UGS packages, the same as on `bleeding-edge`).
+
+1. Run `VoyageRulesTests`, `VoyageDepthTests`, `AccountInventoryTests`, `PilotsAndArtifactsTests`. **Pass:** green
+   (`VoyageDepthTests.TheDepthScorecardHoldsItsBars` prints the scorecard to the test output).
+2. Menu_Main, open the Voyage window with a squad of three different faction types seated. **Pass:** about six voyage
+   cards (the seated pilots' first, the crew's after, then the way home when away); 25 places on the map in six marker
+   colours (ports, vaults and the hoard, cores, lairs and the pens, nurseries, shrines and derelicts); Cinder Shoal,
+   the Pale Anchorage and Keeper's Rest are NOT drawn. Open a card: SUITS a role, PAYS the course's price (farther and
+   rougher pays more), and warning lines where the world has them.
+3. Day 0 at a harbour: every faction type on the crew brings a job (seat each type in turn). **Pass:** a pilot of every
+   type has a card somewhere on the board over a few openings; the Leviathan's sighting is in the news of every port
+   (a Known hunter's board offers the hunt first).
+4. Set sail on a hunt to Lantern Reach with the Lantern Keeper's first chapter (the card whose news names half a chart).
+   **Pass:** the leg's open cells are thicker in the middle than at the ends (the lane profile); at the stop the vault
+   shells stand; stow one; "JOB DONE" and the chapter's done line; back in the window the second chapter (an
+   explorer's, to Keeper's Rest) is posted and the place is still not drawn.
+5. Sail the explorer's chapter. **Pass:** the Ark reaches Keeper's Rest; "KEEPER'S REST IS ON YOUR CHART"; the place is
+   drawn from now on and the priest's finale is offered once the Priest type is Known (two priest jobs done).
+6. Sail the finale (a vigil: hold the Ark at the beacon 40 s). **Pass:** "LANTERN OF ORIEL IS ABOARD"; the relic rides
+   in the Ark's hold (GALLEON's sight shows it); dock at home: the Ark's ARTIFACTS tab shows a Hydra named Lantern of
+   Oriel with its lore; the saga is never posted again.
+7. A lair (The Maw or Gnawreach) with a hunter's cull. **Pass:** the lair's world starts under the other domain's colour
+   and thick with creatures; "FELLED n OF 5" counts creatures felled near the Ark; done at 5; pressure eases (the next
+   board's warning for that place is gone).
+8. A nursery with a gatherer's harvest or a sport exhibition. **Pass:** "GATHERED n OF 12 CRYSTALS" counts the whole
+   squad's crystals; done at the goal. A preservationist's tend: "HOLDING" counts down; a kill by any seat undoes it.
+9. A derelict with a first responder's rescue, a shrine with a priest's vigil, a core with an aristocrat's hold.
+   **Pass:** each holds while you stay with the Ark; a convoy ("KEEP THE HULL ABOVE 60 PERCENT") is done on arrival
+   only with the hull above the floor.
+10. Rivals. Sail where a rival crew stands (the board's warning "<crew> WERE SEEN BOUND FOR <place>" names it).
+    **Pass:** three AI hulls in the crew's domain stand abeam of the Ark; "<CREW> ARE HERE" and the relation line; a
+    crew of your colour fights beside you; another colour's grazes your mass. At a vault field with a racing crew a
+    shell is retired every 45 s with "<CREW> OPENED A SHELL BEFORE YOU", and the next board's story says so.
+11. Notoriety: three pirate or thief jobs. **Pass:** every card warns "A PRICE IS ON YOUR ARK"; a bounty-hunter crew
+    (Writ and Hook) sails for your destination within a few days; the price fades three days a point.
+12. Two finds aboard away from home. **Pass:** cards warn "2 FINDS ABOARD AND AT STAKE"; the nearest port's news has
+    the rumour; a pirate crew at that port sails for you. Let the Ark fall to them: "<CREW> TOOK YOUR ARK AT ..."; the
+    logbook's nemesis is set (the story line names them).
+13. Leave the game for a day and come back. **Pass:** the galaxy moved: a picked field is lit again (news at the
+    nearest port), rivals stand elsewhere, blooms ripened.
+14. A record saved before this pass (the slice's). **Pass:** it loads, every place and rival is filled in, the saved
+    job still works (a saved hunt asks a stow), nothing is ticked twice.
+15. The Arkway (Wander > With Ark) and the Ark escort. **Pass:** unchanged.
