@@ -177,8 +177,13 @@ first person to see the thing at all.
 being too true to the game." `/vessel-model` LESSONS 38: "no offline render will tell you", said of Blender; it is the
 real renderer or nothing.
 
-**What exists.** `Tools/Build/verify_unity.sh` (the real editor, headless: compile and EditMode tests; refuses a
-sparse checkout); `Tools/Build/unity_refcompile` (the Roslyn reference compile every C# commit runs);
+**What exists.** Two in-flight branches found on 2026-11-07 evening, which this entry builds on rather than beside:
+`claude/ci-hosted-unity-compile` (2026-11-01: the bleeding-edge guard's Unity compile on GitHub-hosted runners in
+GameCI's image, with licence activation in `Tools/CI/unity_compile_in_container.sh`; it recorded its first hosted
+runs and waits on a licence in the `unity-ci` environment and a merge) and `claude/launch-mode-smoke` (PR #1754:
+`ModeSmokeLauncher` / `ModeSmokeDriver` play every rostered card from Bootstrap with the AI on every seat, an
+`-executeMethod` runner; built, not yet run in Unity). Also `Tools/Build/verify_unity.sh` (the real editor, headless:
+compile and EditMode tests; refuses a sparse checkout); `Tools/Build/unity_refcompile` (the Roslyn reference compile every C# commit runs);
 `unity-ci.yml`'s Unity job, skipped while `UNITY_RUNNER_LABEL` is unset; the Compute VM's licensed Unity that runs
 the trainer with and without a window; `ScreenCapture` in two editor tools (`QASessionWindow`,
 `PrismOcclusionDitherLab`); Amoebius's `screenshot` and the clip recipe; `Time.captureFramerate` and a seed on every
@@ -202,9 +207,10 @@ picked board's within a tolerance (`ui-redesign-tracker`); an existing approved 
 so a shader or prefab change that moves a screen is seen before a person sees it.
 
 **Rounds.**
-- R0: **the VM compiles every PR** (`verify_unity.sh` behind `UNITY_RUNNER_LABEL`), EditMode tests included. Closes
-  the "no Unity compile since 10-06" hole for nothing but Shombith's say and a runner label. Proof: the guard's
-  negative-control commit (11-01) fails it.
+- R0: **the real editor compiles every PR.** Not the VM: `claude/ci-hosted-unity-compile` already does it on hosted
+  runners and needs only the licence secrets (`UNITY_EMAIL`, `UNITY_PASSWORD`; optionally a serial) in the `unity-ci`
+  environment and a merge. Closes the "no Unity compile since 10-06" hole. Proof: the guard's negative-control
+  commit (11-01) fails it.
 - R1: one headless screenshot of Menu_Main's Home at PC and phone sizes, from the VM, read by a cloud session.
 - R2: the Manta in Manta Time flown by its AI, six frames; the sheet attached to the next icon or model round instead
   of "awaiting the owner's flight".
@@ -440,7 +446,8 @@ and "again" every month so a repeat is seen.
 
 | Entry | Step | Status (date) |
 |---|---|---|
-| 3.1 See the real game | R0 compile on the VM | proposed 2026-11-07 (D1) |
+| 3.1 See the real game | R0 the real editor compiles every PR | `claude/ci-hosted-unity-compile` exists (2026-11-01); waits on the licence secrets and a merge (D1) |
+| 3.1 See the real game | R1-R2 the look-sheet kit | **built 2026-11-07 night**, not yet run in Unity: `Docs/LOOK_SHEET.md`, `/unity-look`, the CI job `look-sheet.yml`; the first run is a checklist entry |
 | 3.2 The world's look | R0 language, vocabulary, audit sheet | proposed 2026-11-07 (D2) |
 | 3.3 Decide before building | R0 mine and write the ledger | proposed 2026-11-07 |
 | 3.4 UI | R0 `UI_LESSONS.md` | proposed 2026-11-07 (D4) |

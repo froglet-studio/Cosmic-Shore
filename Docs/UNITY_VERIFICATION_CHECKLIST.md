@@ -21563,3 +21563,32 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
 7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
 
+
+## 🔴 Look sheet: first run (2026-11-07, `cece/affectionate-fermi-x1lp81`, NOT COMPILED, NOT RUN IN EDITOR)
+
+The look-sheet kit (`Docs/LOOK_SHEET.md`, `Docs/SKILL_TRAINING_PLAN.md` 3.1): `Assets/_Scripts/Editor/Look/LookSheetCapture.cs`
+and `LookSheetLauncher.cs` (editor assembly), `Tools/Build/unity_look/{look,verify,sheet}.py`, `Tools/CI/unity_look_in_container.sh`,
+`.github/workflows/look-sheet.yml`, `.claude/skills/unity-look/SKILL.md`.
+
+**Verification status.** The two C# files were NOT compiled: the session had no .NET SDK reachable (dot.net and
+builds.dotnet.microsoft.com are refused by the egress proxy, no apt package on Ubuntu 24.04), so `unity_refcompile` did
+not run and no editor was open. They were written against the APIs read in `SwitchbackSoakLauncher`, `SwitchbackSoakRunner`,
+`ThresherTimeSoakRunner`, `ScreenSwitcher` (the public `OnClick*Nav` methods), `PrivacyConsentOverlay.Current`,
+`AuthenticationSceneController` (reflection, as the soak runners do), `GameDataSO` (`CosmicShore.Utility`), and the
+`FrogletTool` attribute. The Python kit's `--self-test` passes (verify's blank-frame negative controls, sheet's layout,
+look's command line). The workflow YAML parses.
+
+**The first run** (`Docs/LOOK_SHEET.md` section 4):
+1. Open the project; fix any compile error in the two files first (expected risk: a using or a signature).
+2. `FrogletTools > Build > Look Sheet > Menu screens`. Expect `Logs/LookSheet/menu_<screen>_pc.png`, `_phone.png` and
+   `_gameview.png` for Home, Hangar, Port, Profile and Codex, plus `manifest.jsonl` and `summary.json` with `ok: true`.
+   Compare the render-to-texture capture with the Game view one: the UI must be present on both (if not, the
+   overlay-canvas retargeting needs the children's layers), and the world too (if not, the menu camera is stacked).
+3. Headless, editor closed: `python3 Tools/Build/unity_look/look.py menu HOME` (needs Pillow). Expect `LOOK SHEET: ALL OK`
+   and `sheet.jpg`.
+4. **Negative control:** the same command with `-nographics` added to the Unity line (`--print` shows it). Expect every
+   capture to FAIL the `not-blank` gate and exit 1.
+5. `python3 Tools/Build/unity_look/look.py mode switchback --times 5,15,30`: three frames of the Dolphin's race with the
+   HUD. Then `thresher-time`.
+6. In CI, once the `unity-ci` environment holds the licence: dispatch `Look sheet` (`menu`, `HOME,HANGAR`); expect the
+   artifact with `sheet.jpg`. Black frames under Xvfb mean the image's Mesa cannot run URP at that GL level (section 4.5).
