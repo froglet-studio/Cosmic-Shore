@@ -455,7 +455,8 @@ namespace CosmicShore.Gameplay
             else
             {
                 shieldEdge = HelmAIWantsShield();
-                wantBoost = RaceCoach != null && RaceCoach.HelmBurns(this);   // Breach: the race says when to burn
+                // a race's coach says when to burn (Breach); everywhere else the helm AI's own burn rule does
+                wantBoost = RaceCoach != null ? RaceCoach.HelmBurns(this) : HelmAIWantsBurn();
             }
 
             if (wantBoost && _tank > 0f)
