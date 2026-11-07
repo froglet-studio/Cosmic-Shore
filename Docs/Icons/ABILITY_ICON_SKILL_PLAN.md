@@ -479,6 +479,14 @@ HUD variant that binds these is the open follow-up (`HONEYGUIDE.md`). Sheets: `D
 passed every gate; two fixes only. The Exit Portal's six prisms were `prism_halves`, which read as rhombi at 40 px, so
 they are `prism_square_x` now; and the hull (`Meerkat.fbx`, a thin stick side-on) is dilated 2.6 px instead of 1.4 so
 Sentinel Mode and Faster Ride hold at 40 px. Guids kept (`meerkat_icon_ids.py`). Sheet: `Docs/Icons/sheets/meerkat.png`.
+**The Jacks (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** three of
+`author_jacks_icons.py`'s glyphs still drew the kit before round 10 (Breeding, a Herding Ring, Herd Speed). The kit
+now draws the round-10 cards from the real `Jack.fbx` side-on (`specs/jacks.py`): The Call (the two jacks facing in,
+the herd called into a knot between them), Wide (the whole cell's corner brackets round the herding view's, the herd
+inside), Decoys (a jack and its ghost decoy up and ahead). The files were renamed to the cards (`Jacks_TheCall`,
+`Jacks_Wide`, `Jacks_Decoys`) with their metas, so `Jacks.prefab`'s guids hold; Danger Share keeps its fish and bolt
+(a spiked creature stinging a rival was drawn and read worse at 40 px). `author_jacks_icons.py` now only guards the
+guids. Sheet: `Docs/Icons/sheets/jacks.png`.
 
 | Round | What | Why first |
 |---|---|---|
