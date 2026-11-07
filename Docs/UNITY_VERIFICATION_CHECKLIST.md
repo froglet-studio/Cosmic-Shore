@@ -21394,3 +21394,16 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    and Competitive.
 5. **No `[Analytics]` warnings** in the Console, and the UGS dashboard still receives `game_started` and
    `game_completed` (the Froglet-only fields are stripped for UGS; an undeclared parameter would make UGS drop the event).
+6. **Round 3 (sessions, balance, quits, invites, errors; 2026-11-07, NOT RUN IN EDITOR; compiled with `unity_refcompile`
+   player and editor RESULT OK and `gates.sh` ALL OK, the `AnalyticsRound3Tests` edit-mode tests compiled, not run).**
+   Run `AnalyticsRound3Tests` and `AnalyticsFrogletOnlyTests`. With consent granted: (a) entering Play sends one
+   `session_started` (launch_kind cold) and pausing sends `session_ended` with the same session_id and its
+   session_seconds; (b) finish a solo match against AI: `game_completed` carries score, placement, players_in_match,
+   ai_difficulty (the card's level) and behind_by (0 on a win); (c) start a match and use the pause menu's Main Menu:
+   one `match_abandoned` with reason quit_to_menu, elapsed_seconds and the game_started fields, and no `game_completed`
+   for that match; stop Play during a match: reason app_quit; (d) between two editors, invite and accept: the sender's
+   `party_invite_sent`, the invitee's `party_invite_received` and `party_joined` show the same invite_id, and
+   party_joined's inviter_id is the sender's UGS id; (e) trigger an error repeatedly (any `Debug.LogError` in Play):
+   about 5 s later ONE `client_exception` arrives with its count, top_frame and scene and no message text, and no second
+   one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
+   `party_invite_*` and `party_joined`, and never the three new events.

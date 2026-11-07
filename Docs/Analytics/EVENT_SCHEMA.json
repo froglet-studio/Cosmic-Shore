@@ -288,6 +288,46 @@
             "froglet"
           ],
           "description": "The mode's second genre element when it has two (Brood Rush: Mass and Space); absent otherwise. Froglet Analytics only (2026-11-06): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "score": {
+          "type": "float",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "The local player's own final score, as the mode scores it (GameDataSO.Results, else the round stats). Golf modes (finish times) are lower-is-better. Absent when the local player is not among the results. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "placement": {
+          "type": "int",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "The local player's rank among every pilot in the match, AI included: 1 = best, the scoreboard's order. In a team mode it is the player's own row, not the team's. Absent when the local player is not among the results. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "players_in_match": {
+          "type": "int",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "Pilots ranked in the match, humans and AI. Absent when the mode produced no results. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "ai_difficulty": {
+          "type": "string",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "The level the AI opponents (AI on another domain than the local player's) flew, as the AIDifficulty enum names it: Easy, Medium, Hard, Legendary, or Mixed when per-seat picks differed. Sent only by the machine that seated the bots (the host, or a solo game); absent on a guest and when no AI opposed the player. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "behind_by": {
+          "type": "float",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "Distance between the best score in the match and the local player's own; 0 when the player's side won (player_won). In a team mode the best score is the best individual row. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
         }
       }
     },
@@ -304,6 +344,20 @@
         "app_state": {
           "type": "string",
           "description": "Application state machine phase at the moment the session ended."
+        },
+        "session_id": {
+          "type": "string",
+          "sinks": [
+            "froglet"
+          ],
+          "description": "The session this end belongs to: session_started's session_id. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "session_seconds": {
+          "type": "int",
+          "sinks": [
+            "froglet"
+          ],
+          "description": "Seconds in the foreground in this session so far (time in the background is not counted). A session that pauses and resumes within 30 minutes sends one session_ended per pause, each with its running total. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
         }
       },
       "description": "The app was paused or quit. One per session."
@@ -522,6 +576,14 @@
           "type": "string",
           "privacy": "P1",
           "description": "UGS player id of the person the request or invite was sent to."
+        },
+        "invite_id": {
+          "type": "string",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "Invite id: 16 hex digits hashed from sender id, invited player id and the sender's party session id (InviteAttribution). The invitee computes the same id from the invite it receives, so the two events join without a new field on the invite itself. The same invite repeated into the same party session gets the same id. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
         }
       },
       "description": "The player invited another player to their party."
@@ -532,12 +594,38 @@
           "type": "string",
           "privacy": "P1",
           "description": "UGS player id of the party host who sent the invite."
+        },
+        "invite_id": {
+          "type": "string",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "Invite id, computed by the invitee from the invite (sender, itself, party session): equal to the sender's party_invite_sent invite_id. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
         }
       },
       "description": "The player received a party invite."
     },
     "party_joined": {
-      "parameters": {},
+      "parameters": {
+        "invite_id": {
+          "type": "string",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "The invite that led to this join: the remembered party_invite_received whose party session is the one joined. Absent for a join no invite led to (a presence join, a rejoin). Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        },
+        "inviter_id": {
+          "type": "string",
+          "privacy": "P1",
+          "sinks": [
+            "froglet"
+          ],
+          "optional": true,
+          "description": "UGS player id of the player who sent that invite. Absent when invite_id is. Froglet Analytics only (2026-11-07): the UGS sink strips it, so UGS needs no Event Manager row."
+        }
+      },
       "description": "The player successfully joined another player's party."
     },
     "minigame_favorited": {
@@ -693,6 +781,165 @@
         "seconds_in_freestyle": {
           "type": "float",
           "description": "Seconds into the current freestyle stretch."
+        }
+      }
+    },
+    "session_started": {
+      "sinks": [
+        "froglet"
+      ],
+      "description": "A session began: a cold start of the app, or a return from the background after more than 30 minutes away (AnalyticsSessionClock). Sent once collection runs, so a session whose consent comes later starts late. Froglet Analytics only (2026-11-07): the UGS sink drops it, so UGS needs no Event Manager row.",
+      "parameters": {
+        "session_id": {
+          "type": "string",
+          "description": "A fresh GUID per session; session_ended carries the same one."
+        },
+        "launch_kind": {
+          "type": "string",
+          "description": "cold (the app started) or resume (back from more than 30 minutes in the background)."
+        }
+      }
+    },
+    "match_abandoned": {
+      "sinks": [
+        "froglet"
+      ],
+      "description": "The player left a running match before its end: once per match at most, never together with game_completed for the same match. Froglet Analytics only (2026-11-07): the UGS sink drops it, so UGS needs no Event Manager row.",
+      "parameters": {
+        "match_id": {
+          "type": "string",
+          "description": "As on game_started for this match."
+        },
+        "party_id": {
+          "type": "string",
+          "description": "As on game_started for this match."
+        },
+        "invite_triggered": {
+          "type": "bool",
+          "description": "As on game_started for this match."
+        },
+        "player_count_human": {
+          "type": "int",
+          "description": "As on game_started for this match."
+        },
+        "player_count_ai": {
+          "type": "int",
+          "description": "As on game_started for this match."
+        },
+        "game_mode": {
+          "type": "string",
+          "description": "As on game_started for this match."
+        },
+        "intensity": {
+          "type": "int",
+          "description": "As on game_started for this match."
+        },
+        "vessel_class": {
+          "type": "string",
+          "description": "As on game_started for this match."
+        },
+        "player_count": {
+          "type": "int",
+          "description": "As on game_started for this match."
+        },
+        "ai_count": {
+          "type": "int",
+          "description": "As on game_started for this match."
+        },
+        "is_multiplayer": {
+          "type": "bool",
+          "description": "As on game_started for this match."
+        },
+        "element": {
+          "type": "string",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "element_secondary": {
+          "type": "string",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "domain": {
+          "type": "string",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "humans_on_my_domain": {
+          "type": "int",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "humans_on_other_domains": {
+          "type": "int",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "ai_on_my_domain": {
+          "type": "int",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "ai_on_other_domains": {
+          "type": "int",
+          "optional": true,
+          "description": "As on game_started for this match."
+        },
+        "ai_difficulty": {
+          "type": "string",
+          "optional": true,
+          "description": "As on game_completed: the opponent AI's level, sent only by the machine that seated the bots."
+        },
+        "elapsed_seconds": {
+          "type": "int",
+          "description": "Wall-clock seconds from game_started to the quit, pause included."
+        },
+        "flight_time_seconds": {
+          "type": "float",
+          "optional": true,
+          "description": "Seconds at the controls in this match until the quit (FlightClock, pause and background excluded). Absent when the flight clock had already been reset."
+        },
+        "reason": {
+          "type": "string",
+          "description": "quit_to_menu (any scene change out of the running match: the pause menu's Main Menu, and for a guest also the host taking the party out), app_quit (the app closed during the match), or disconnect (the guest's link to the host broke, or the network went away during the match)."
+        },
+        "score_at_quit": {
+          "type": "float",
+          "optional": true,
+          "description": "The local player's round score at the quit (RoundStats.Score). Many modes assign the score only at the end, so 0 here can mean not scored yet."
+        },
+        "placement_at_quit": {
+          "type": "int",
+          "optional": true,
+          "description": "The local player's rank by score at the quit (1 = best, ties share a rank). Sent only for a higher-is-better scoring rule with some score on the board; absent for golf modes (finish times) and before anyone scored."
+        }
+      }
+    },
+    "client_exception": {
+      "sinks": [
+        "froglet"
+      ],
+      "description": "An exception or logged error on the client (Application.logMessageReceivedThreaded, LogType Exception and Error). No message text is ever sent: only a hash of it. One event per distinct message_hash per session (repeats within a 5 s fold window are counted), at most 20 per session; behind the consent gate like every event. Froglet Analytics only (2026-11-07): the UGS sink drops it, so UGS needs no Event Manager row.",
+      "parameters": {
+        "exception_type": {
+          "type": "string",
+          "description": "The exception's type name (NullReferenceException), or LogError for a Debug.LogError line."
+        },
+        "top_frame": {
+          "type": "string",
+          "description": "The first project frame of the stack trace as Namespace.Class.Method (the CSDebug logging helper skipped); the first frame of any kind when no project frame is on it; unknown when there is no trace."
+        },
+        "scene": {
+          "type": "string",
+          "description": "The active scene when it was logged."
+        },
+        "message_hash": {
+          "type": "string",
+          "description": "12 hex digits: FNV-1a 64 of the message's first line with every digit removed, so the same fault with different numbers is one row."
+        },
+        "count": {
+          "type": "int",
+          "description": "Occurrences folded into this event: the first sighting plus the repeats seen before it was sent."
         }
       }
     }

@@ -11,7 +11,7 @@ import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 
-from analytics_store import DOMAINS_FROM, SETUP_IDS, SETUPS
+from analytics_store import DOMAINS_FROM, SETUP_IDS, SETUPS, difficulty_rank
 
 PLAY_TYPES = ("solo_vs_ai", "solo_alone", "coop", "adversarial", "mixed", "multi_human_unknown")
 MAX_ASK_ROWS = 200
@@ -182,9 +182,11 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
         *sc.builds, sc.since, sc.until)}
     whales = q("SELECT COALESCE(SUM(players), 0) FROM balances WHERE build_kind=? AND bucket='2,000+'", build)[0][0]
     setups, setup_history = _setups(db, sc)
+    active, _per_day = _active(db, sc)
+    session_tiles, _seconds = _session_tiles(db, sc)
     result = {
         "build": build, "days": days, "play": play, "built_ms": _built_ms(db), **sc.describe(),
-        "unfiltered": sc.unfiltered(["players", "rows_per_play", "events_24h", "marketing", "business"],
+        "unfiltered": sc.unfiltered(["players", "rows_per_play", "events_24h", "marketing", "business", "sessions"],
                                     ["business.crystals_earned", "business.crystals_spent"],
                                     ["events_24h", "business.whales_2000"]),
         "tiles": {
@@ -210,6 +212,8 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
                      "whales_2000": whales},
         # Match setups (Shombith, 2026-11-07): multiplayer first, then solo, every setup listed (zeros included)
         "setups": setups, "setup_history": setup_history, "setup_notes": SETUP_NOTES,
+        # Sessions (round 67): DAU / WAU / MAU from any event; sessions and their length from builds after 2026-11-07
+        "sessions": {**active, **session_tiles},
     }
     db.close()
     return result
@@ -386,6 +390,8 @@ def health(agg_path, store_facts, days=30):
     result["editor_share_pct"] = _pct(editor, total)
     meta = db.execute("SELECT value FROM meta WHERE key='modes_without_element'").fetchone()
     result["modes_without_element"] = json.loads(meta[0]) if meta else []      # every match ever, by game_mode
+    meta = db.execute("SELECT value FROM meta WHERE key='new_events'").fetchone()
+    result["new_events"] = json.loads(meta[0]) if meta else []                 # this round's events: last received
     db.close()
     return result
 
@@ -524,12 +530,14 @@ def social(agg_path, build="release", days=90):
 
 FREESTYLE_MEASURES = ("freestyle_entries", "freestyle_players", "freestyle_minutes", "freestyle_switches")
 SERIES_MEASURES = ("matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events") + \
-    FREESTYLE_MEASURES
+    FREESTYLE_MEASURES + ("score", "placement", "win_pct", "abandon_pct")
 MATCH_BY = ("none", "play_type", "era", "platform", "country", "game_mode", "vessel_class", "build_kind", "intensity",
-            "element", "setup")
+            "element", "setup", "ai_difficulty")
 SERIES_BY = MATCH_BY + ("from_vessel_class", "switch_source")
 SERIES_OVER = ("day", "week", "none")
-PLAY_MEASURES = ("matches", "finished_pct", "rematch_pct", "flight_min")
+# score, placement, win_pct, abandon_pct (round 67): the Balance and Quits pages' measures, from the plays table
+BALANCE_MEASURES = ("score", "placement", "win_pct", "abandon_pct")
+PLAY_MEASURES = ("matches", "finished_pct", "rematch_pct", "flight_min") + BALANCE_MEASURES
 COUNT_MEASURES = ("matches", "players", "new_players", "events") + FREESTYLE_MEASURES
 ELEMENT_ORDER = ("Charge", "Mass", "Space", "Time", "Omni", "none")
 # What each measure can be split by. events come from daily_events (day, build, event, source): no player, mode or
@@ -557,7 +565,8 @@ PLAYS_KEY = {"play_type": "play_type", "setup": "COALESCE(setup, 'multi_unrecord
              "element": "COALESCE(element, 'none')",
              "country": "COALESCE(country, 'unknown')", "game_mode": "COALESCE(game_mode, 'unknown')",
              "vessel_class": "COALESCE(vessel_class, 'unknown')",
-             "intensity": "COALESCE(CAST(intensity AS TEXT), 'unknown')", "build_kind": "build_kind"}
+             "intensity": "COALESCE(CAST(intensity AS TEXT), 'unknown')", "build_kind": "build_kind",
+             "ai_difficulty": "COALESCE(ai_difficulty, 'unknown')"}
 GROUP_TYPES = {"solo_vs_ai": ("solo_vs_ai",), "solo": ("solo_alone",),
                "multi": ("coop", "adversarial", "mixed", "multi_human_unknown")}
 # The setups inside each Play filter group (a play's setup and its play type read the same player_count_human and
@@ -581,6 +590,16 @@ SETUP_NOTES = [
 SETUP_SERIES_NOTE = ("a match's setup is read from each player's side; multiplayer from builds that do not send the "
                      "domain fields (the PostHog history included) reads Teams not recorded, and With AI teammates "
                      "exists only from builds that do; the solo AI counts go back to the start")
+DIFFICULTY_NOTE = ("the AI difficulty comes from game_completed (match_abandoned for a quit), sent by builds after "
+                   "2026-11-07; older matches and the PostHog history read unknown")
+BALANCE_NOTES = {
+    "score": "the player's own final score, from game_completed (builds after 2026-11-07); modes score on their own "
+             "scales, so compare a mode with itself",
+    "placement": "1 is best, among every player in the match, AI included (builds after 2026-11-07)",
+    "win_pct": "won is player_won from game_completed, of the finished matches that sent it",
+    "abandon_pct": "a quit is match_abandoned, over the plays of builds that send it (from the first day a build and version sent "
+                   "match_abandoned or session_started); older builds never said when a player left",
+}
 MAX_KEYS = 8
 WEEK_SQL = "date({col}, '-6 days', 'weekday 1')"
 
@@ -607,12 +626,17 @@ def _plays_cells(db, sc, measure, by, over, era_key):
     w, a = sc.where()
     rows = db.execute(
         f"SELECT {_x_of(over)} AS x, {key} AS key, COUNT(DISTINCT match_id), COUNT(*), SUM(completed), "
-        f"SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END), SUM(flight_time_seconds), COUNT(flight_time_seconds) "
+        f"SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END), SUM(flight_time_seconds), COUNT(flight_time_seconds), "
+        f"SUM(score), COUNT(score), SUM(placement), COUNT(placement), SUM(won), COUNT(won), "
+        f"SUM(CASE WHEN quit_tracked=1 THEN abandoned ELSE 0 END), SUM(quit_tracked) "
         f"FROM plays WHERE {w} GROUP BY x, key", a).fetchall()
     out = {}
-    for x, k, matches_n, plays_n, done, rematches, flight, flown in rows:
+    for (x, k, matches_n, plays_n, done, rematches, flight, flown, score, scored, place, placed, won, judged,
+         quit, tracked) in rows:
         num, den = {"matches": (matches_n, None), "finished_pct": (done or 0, plays_n),
-                    "rematch_pct": (rematches or 0, done or 0), "flight_min": ((flight or 0) / 60.0, flown)}[measure]
+                    "rematch_pct": (rematches or 0, done or 0), "flight_min": ((flight or 0) / 60.0, flown),
+                    "score": (score or 0, scored), "placement": (place or 0, placed),
+                    "win_pct": (won or 0, judged), "abandon_pct": (quit or 0, tracked or 0)}[measure]
         out[(x, k)] = [num, den]
     return out
 
@@ -689,7 +713,9 @@ def _value(measure, num, den):
         return num
     if not den:
         return None
-    return round(num / den, 1) if measure == "flight_min" else round(100.0 * num / den, 1)
+    if measure == "placement":
+        return round(num / den, 2)
+    return round(num / den, 1) if measure in ("flight_min", "score") else round(100.0 * num / den, 1)
 
 
 def series(agg_path, measure="matches", by="none", over="day", build="release", days=90, play="all", era=None,
@@ -741,6 +767,8 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
         keys = sorted(totals, key=lambda k: (ELEMENT_ORDER.index(k) if k in ELEMENT_ORDER else 99, str(k)))
     elif by == "setup":
         keys = sorted(totals, key=lambda k: (SETUP_IDS.index(k) if k in SETUP_IDS else 99, str(k)))
+    elif by == "ai_difficulty":
+        keys = sorted(totals, key=difficulty_rank)
     else:
         keys = sorted(totals, key=lambda k: (-totals[k], str(k)))
     if measure in COUNT_MEASURES and by not in ("none", "era"):
@@ -793,6 +821,10 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
                      "mode with no genre or an old mode name reads No element (key none)")
     if by == "setup":
         notes.append(SETUP_SERIES_NOTE)
+    if by == "ai_difficulty":
+        notes.append(DIFFICULTY_NOTE)
+    if measure in BALANCE_NOTES:
+        notes.append(BALANCE_NOTES[measure])
     if measure in FREESTYLE_NOTES:
         notes.append(FREESTYLE_NOTES[measure])
     out = {**base, "points": points, "keys": out_keys, "unfiltered": unfiltered, "notes": notes}
@@ -1157,6 +1189,322 @@ def schema(agg_path, saved_tables=()):
                        "rows": db.execute(f"SELECT COUNT(*) FROM {quoted}").fetchone()[0]})
     db.close()
     return {"tables": tables}
+
+
+# ---------------------------------------------------------------- round 67: sessions, balance, quits, invites, errors
+# Shombith, 2026-11-07: "1 sessions/DAU-WAU-MAU, 2 balance: score/placement/AI difficulty, 3 mid-match quits/frustration",
+# invite attribution, and the client_exception known gap. Every function reads aggregates.db only.
+
+SESSION_BUCKETS = ((0, 60, "under 1 min"), (60, 300, "1-5 min"), (300, 900, "5-15 min"), (900, 1800, "15-30 min"),
+                   (1800, 3600, "30-60 min"), (3600, 10 ** 9, "60+ min"))
+ELAPSED_BUCKETS = ((0, 30, "under 30 s"), (30, 60, "30-60 s"), (60, 120, "1-2 min"), (120, 300, "2-5 min"),
+                   (300, 600, "5-10 min"), (600, 10 ** 9, "10+ min"))
+SESSION_NOTES = [
+    "DAU, WAU and MAU count players with any event that day, the 7 days to it and the 30 days to it, so they go back "
+    "to the PostHog history; DAU on the tiles is the average day of the range (today, still running, left out)",
+    "stickiness is DAU over MAU, averaged over the range's last 30 full days",
+    "sessions, their length and sessions per player come only from session_started and session_ended, which builds "
+    "after 2026-11-07 send; a session is one app run, and a return after 30+ minutes in the background starts another",
+]
+QUIT_NOTES = [
+    "a quit is match_abandoned: the player left a running match (to the menu, closing the app, or a disconnect); builds "
+    "after 2026-11-07 send it, so the rate counts only the plays of builds and versions that do",
+    "the frustration chain follows each player-day with a repeated_game_fail: a quit within 1 hour after it, and then "
+    "no event at all for the 7 days after the quit (counted once those 7 days have passed)",
+]
+INVITE_NOTES = [
+    "builds after 2026-11-07 carry an invite id on the sent, received and joined events, so an invite is followed "
+    "exactly; older invites are matched by time (received within 10 minutes naming the sender, joined within 30)",
+    "played together: inviter and invitee started the same match within 24 hours of the join; day 7: the invitee was "
+    "seen on any of the 7 days after the join, for joins at least 7 days old",
+    "inviters are counted from their first invite that someone joined, invitees from their first join; everyone is "
+    "the first-match cohorts of the same range",
+]
+ERROR_NOTES = [
+    "a client error (client_exception) carries no message text, only a short hash of it with the digits taken out, the exception type, "
+    "the first project frame and the scene; builds after 2026-11-07 send it, at most 20 a session, each error once",
+    "occurrences fold in the repeats the game counted; players affected counts each player once in the range",
+]
+
+
+def _range_days(sc):
+    return _days_between(sc.since, sc.until)
+
+
+def _active(db, sc):
+    """DAU / WAU / MAU per day from active_rolling, and the tiles."""
+    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    got = {r[0]: r[1:] for r in db.execute(
+        f"SELECT day, SUM(dau), SUM(wau), SUM(mau) FROM active_rolling WHERE build_kind IN ({marks}) AND source=? "
+        f"AND day BETWEEN ? AND ? GROUP BY day", (*sc.builds, sc.source, sc.since, sc.until))}
+    per_day = []
+    for d in _range_days(sc):
+        dau, wau, mau = got.get(d, (0, 0, 0))
+        per_day.append({"day": d, "dau": dau or 0, "wau": wau or 0, "mau": mau or 0,
+                        "stickiness_pct": _pct(dau or 0, mau or 0)})
+    full = [r for r in per_day if r["day"] < _today()] or per_day
+    last = per_day[-1] if per_day else {"wau": 0, "mau": 0}
+    recent = [r for r in full[-30:] if r["mau"]]
+    tiles = {"dau": round(sum(r["dau"] for r in full) / len(full), 1) if full else 0,
+             "wau": last["wau"], "mau": last["mau"],
+             "stickiness_pct": round(sum(100.0 * r["dau"] / r["mau"] for r in recent) / len(recent), 1) if recent else None}
+    return tiles, per_day
+
+
+def _session_tiles(db, sc):
+    w, a = sc.where(play=False)
+    seconds = [r[0] for r in db.execute("SELECT seconds FROM sessions WHERE seconds IS NOT NULL AND " + w, a)]
+    n = db.execute("SELECT COUNT(*) FROM sessions WHERE " + w, a).fetchone()[0]
+    player_days = db.execute("SELECT COALESCE(SUM(players), 0) FROM session_players WHERE " + w, a).fetchone()[0]
+    med, p90 = _percentile(seconds, 0.5), _percentile(seconds, 0.9)
+    return {"sessions": n, "ended": len(seconds),
+            "sessions_per_player_day": round(n / player_days, 2) if player_days else None,
+            "median_session_min": round(med / 60.0, 1) if med is not None else None,
+            "p90_session_min": round(p90 / 60.0, 1) if p90 is not None else None}, seconds
+
+
+def _percentile(values, q):
+    values = sorted(values)
+    if not values:
+        return None
+    k = (len(values) - 1) * q
+    lo, hi = int(k), min(int(k) + 1, len(values) - 1)
+    return values[lo] + (values[hi] - values[lo]) * (k - lo)
+
+
+def sessions(agg_path, build="release", days=90, play="all", era=None):
+    """Sessions page: DAU, WAU, MAU and stickiness per day (any event, so the PostHog history too), and from builds
+    that send session_started / session_ended: sessions, their length, sessions per player per day."""
+    sc = Scope(build, days, "all", era)
+    db = _open(agg_path)
+    base = {"build": build, "days": days, "play": play, **sc.describe(), "unfiltered": ["page"] if play != "all" else [],
+            "notes": SESSION_NOTES}
+    if db is None:
+        return {**base, "empty": True}
+    active, per_day = _active(db, sc)
+    stiles, seconds = _session_tiles(db, sc)
+    w, a = sc.where(play=False)
+    by_day = {}
+    for d, kind, n in db.execute("SELECT day, launch_kind, COUNT(*) FROM sessions WHERE " + w + " GROUP BY 1, 2", a):
+        by_day.setdefault(d, {})[kind] = n
+    sessions_per_day = [{"day": d, "cold": by_day.get(d, {}).get("cold", 0), "resume": by_day.get(d, {}).get("resume", 0),
+                         "unknown": by_day.get(d, {}).get("unknown", 0)} for d in _range_days(sc)]
+    lengths = [{"bucket": label, "order": i, "sessions": sum(1 for v in seconds if lo <= v < hi)}
+               for i, (lo, hi, label) in enumerate(SESSION_BUCKETS)]
+    platforms = []
+    for platform, in db.execute("SELECT DISTINCT platform FROM sessions WHERE " + w, a).fetchall():
+        vals = [r[0] for r in db.execute("SELECT seconds FROM sessions WHERE platform=? AND seconds IS NOT NULL AND " + w,
+                                         (platform, *a))]
+        count = db.execute("SELECT COUNT(*) FROM sessions WHERE platform=? AND " + w, (platform, *a)).fetchone()[0]
+        med = _percentile(vals, 0.5)
+        platforms.append({"platform": platform, "sessions": count,
+                          "median_session_min": round(med / 60.0, 1) if med is not None else None})
+    platforms.sort(key=lambda r: -r["sessions"])
+    first = db.execute(f"SELECT MIN(day) FROM sessions WHERE build_kind IN ({','.join('?' * len(sc.builds)) or 'NULL'})",
+                       sc.builds).fetchone()[0]
+    out = {**base, "built_ms": _built_ms(db), "tiles": {**active, **stiles}, "per_day": per_day,
+           "sessions_per_day": sessions_per_day, "lengths": lengths, "platforms": platforms,
+           "history": {"first_session_day": first}}
+    db.close()
+    return out
+
+
+def _difficulty_sorted(rows, field="ai_difficulty"):
+    return sorted(rows, key=lambda r: difficulty_rank(r[field]))
+
+
+def balance(agg_path, build="release", days=90, play="all", era=None):
+    """Balance page: score and placement, wins against AI difficulty, the intensity x difficulty grid. From
+    game_completed's score, placement, players_in_match, ai_difficulty and behind_by (builds after 2026-11-07)."""
+    sc = Scope(build, days, play, era)
+    db = _open(agg_path)
+    base = {"build": build, "days": days, "play": play, **sc.describe(), "unfiltered": []}
+    if db is None:
+        return {**base, "empty": True}
+    w, a = sc.where()
+    q = lambda sql, *args: [dict(r) for r in db.execute(sql, args)]
+    quit_cols = ("ROUND(100.0 * SUM(CASE WHEN quit_tracked=1 THEN abandoned ELSE 0 END) / NULLIF(SUM(quit_tracked), 0), 1) "
+                 "AS quit_pct")
+    common = ("COUNT(*) AS plays, SUM(completed) AS finished, COUNT(score) AS scored, ROUND(AVG(score), 1) AS avg_score, "
+              "ROUND(AVG(placement), 2) AS avg_placement, ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, "
+              "ROUND(AVG(CASE WHEN won = 0 THEN behind_by END), 1) AS avg_behind_by, "
+              "ROUND(AVG(players_in_match), 1) AS avg_players, " + quit_cols)
+    t = db.execute("SELECT COUNT(*), SUM(completed), COUNT(score), ROUND(AVG(placement), 2), "
+                   "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1), COUNT(ai_difficulty), COUNT(placement) "
+                   "FROM plays WHERE " + w, a).fetchone()
+    by_difficulty = _difficulty_sorted(q(f"SELECT COALESCE(ai_difficulty, 'unknown') AS ai_difficulty, {common} "
+                                         f"FROM plays WHERE {w} GROUP BY 1", *a))
+    grid = q("SELECT COALESCE(CAST(intensity AS TEXT), 'unknown') AS intensity, COALESCE(ai_difficulty, 'unknown') "
+             "AS ai_difficulty, COUNT(*) AS plays, SUM(completed) AS finished, "
+             "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, ROUND(AVG(placement), 2) AS avg_placement, "
+             f"{quit_cols} FROM plays WHERE {w} GROUP BY 1, 2", *a)
+    placements = q("SELECT placement, COUNT(*) AS plays FROM plays WHERE placement IS NOT NULL AND " + w +
+                   " GROUP BY placement ORDER BY placement", *a)
+    by_mode = q(f"SELECT COALESCE(game_mode, 'unknown') AS game_mode, {common} FROM plays WHERE {w} GROUP BY 1 "
+                "ORDER BY plays DESC", *a)
+    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    hist = db.execute(f"SELECT MIN(CASE WHEN score IS NOT NULL THEN day END), MIN(CASE WHEN ai_difficulty IS NOT NULL "
+                      f"THEN day END), MIN(CASE WHEN placement IS NOT NULL THEN day END) FROM plays "
+                      f"WHERE build_kind IN ({marks})", sc.builds).fetchone()
+    out = {**base, "built_ms": _built_ms(db),
+           "tiles": {"plays": t[0] or 0, "finished": t[1] or 0, "scored": t[2] or 0, "avg_placement": t[3],
+                     "win_pct": t[4], "with_difficulty": t[5] or 0, "placed": t[6] or 0},
+           "by_difficulty": by_difficulty,
+           "grid": sorted(grid, key=lambda r: ((not r["intensity"].isdigit(), int(r["intensity"]) if r["intensity"].isdigit() else 0),
+                                               difficulty_rank(r["ai_difficulty"]))),
+           "placements": placements, "by_mode": by_mode,
+           "history": {"first_score_day": hist[0], "first_difficulty_day": hist[1], "first_placement_day": hist[2]},
+           "notes": [BALANCE_NOTES["score"], BALANCE_NOTES["placement"], DIFFICULTY_NOTE]}
+    db.close()
+    return out
+
+
+def quits(agg_path, build="release", days=90, play="all", era=None):
+    """Quits page: mid-match quits (match_abandoned) by reason and by how far in, the rate over the plays of builds
+    that send it, and the frustration chain (repeated fails -> a quit -> gone 7 days), counts only."""
+    sc = Scope(build, days, play, era)
+    db = _open(agg_path)
+    base = {"build": build, "days": days, "play": play, **sc.describe(), "notes": QUIT_NOTES,
+            "unfiltered": ["chain"] if play != "all" else []}     # the chain is per player-day, not per play
+    if db is None:
+        return {**base, "empty": True}
+    w, a = sc.where()
+    t = db.execute("SELECT SUM(quit_tracked), SUM(CASE WHEN quit_tracked=1 THEN abandoned ELSE 0 END), "
+                   "SUM(CASE WHEN quit_tracked=1 THEN completed ELSE 0 END), COUNT(*) FROM plays WHERE " + w, a).fetchone()
+    elapsed = [r[0] for r in db.execute("SELECT abandon_elapsed FROM plays WHERE abandoned=1 AND abandon_elapsed IS NOT "
+                                        "NULL AND " + w, a)]
+    reasons = [dict(r) for r in db.execute("SELECT COALESCE(abandon_reason, 'unknown') AS reason, COUNT(*) AS quits "
+                                           "FROM plays WHERE abandoned=1 AND " + w + " GROUP BY 1 ORDER BY quits DESC", a)]
+    by_elapsed = [{"bucket": label, "order": i, "quits": sum(1 for v in elapsed if lo <= v < hi)}
+                  for i, (lo, hi, label) in enumerate(ELAPSED_BUCKETS)]
+    unknown_elapsed = db.execute("SELECT COUNT(*) FROM plays WHERE abandoned=1 AND abandon_elapsed IS NULL AND " + w,
+                                 a).fetchone()[0]
+    if unknown_elapsed:
+        by_elapsed.append({"bucket": "not sent", "order": len(by_elapsed), "quits": unknown_elapsed})
+
+    def by(key):
+        col = PLAYS_KEY.get(key, key)
+        rows = [dict(r) for r in db.execute(
+            f"SELECT {col} AS key, SUM(quit_tracked) AS plays, SUM(CASE WHEN quit_tracked=1 THEN abandoned ELSE 0 END) "
+            f"AS quits FROM plays WHERE {w} GROUP BY 1 HAVING SUM(quit_tracked) > 0 ORDER BY quits DESC, plays DESC", a)]
+        for r in rows:
+            r["quit_pct"] = _pct(r["quits"] or 0, r["plays"] or 0)
+        return rows
+    fw, fa = sc.where(play=False)
+    c = db.execute("SELECT COALESCE(SUM(failed), 0), COALESCE(SUM(quit_after), 0), COALESCE(SUM(quit_mature), 0), "
+                   "COALESCE(SUM(gone_7d), 0), COALESCE(SUM(failed_mature), 0), COALESCE(SUM(failed_gone_7d), 0) "
+                   "FROM frustration WHERE " + fw, fa).fetchone()
+    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    first = db.execute(f"SELECT MIN(day) FROM plays WHERE abandoned=1 AND build_kind IN ({marks})", sc.builds).fetchone()[0]
+    med = _percentile(elapsed, 0.5)
+    out = {**base, "built_ms": _built_ms(db),
+           "tiles": {"tracked_plays": t[0] or 0, "quits": t[1] or 0, "quit_pct": _pct(t[1] or 0, t[0] or 0),
+                     "finished_pct": _pct(t[2] or 0, t[0] or 0), "plays": t[3] or 0,
+                     "median_quit_s": round(med, 1) if med is not None else None},
+           "reasons": reasons, "by_elapsed": by_elapsed,
+           "by_mode": by("game_mode"), "by_vessel": by("vessel_class"), "by_intensity": by("intensity"),
+           "by_setup": by("setup"),
+           "chain": {"failed": c[0], "quit_after": c[1], "quit_mature": c[2], "gone_7d": c[3],
+                     "failed_mature": c[4], "failed_gone_7d": c[5],
+                     "quit_after_pct": _pct(c[1], c[0]), "gone_after_quit_pct": _pct(c[3], c[2]),
+                     "gone_after_fail_pct": _pct(c[5], c[4])},
+           "history": {"first_quit_day": first}}
+    db.close()
+    return out
+
+
+def invites(agg_path, build="release", days=90, play="all", era=None):
+    """Invites: sent -> received -> joined -> played together -> invitee back within 7 days; inviters' and invitees'
+    D1 / D7 against the first-match cohorts of the same range. Counts only: who invited whom stays in events.db."""
+    sc = Scope(build, days, "all", era)
+    db = _open(agg_path)
+    base = {"build": build, "days": days, "play": play, **sc.describe(), "notes": INVITE_NOTES,
+            "unfiltered": ["page"] if play != "all" else []}
+    if db is None:
+        return {**base, "empty": True}
+    w, a = sc.where(play=False)
+    totals = {r[0]: r[1:] for r in db.execute(
+        "SELECT method, SUM(sent), SUM(received), SUM(joined), SUM(played_together), SUM(joined_mature), "
+        "SUM(invitee_d7) FROM invites WHERE " + w + " GROUP BY method", a)}
+    allm = [sum((v[i] or 0) for v in totals.values()) for i in range(6)]
+    funnel = [{"step": "sent", "label": "Sent", "count": allm[0]},
+              {"step": "received", "label": "Received", "count": allm[1]},
+              {"step": "joined", "label": "Joined", "count": allm[2]},
+              {"step": "played_together", "label": "Played together", "count": allm[3]},
+              {"step": "invitee_d7", "label": "Back by day 7", "count": allm[5],
+               "of": allm[4], "note": "of joins at least 7 days old"}]
+    per = {}
+    for d, sent, joined in db.execute("SELECT day, SUM(sent), SUM(joined) FROM invites WHERE " + w + " GROUP BY day", a):
+        per[d] = {"day": d, "sent": sent or 0, "joined": joined or 0}
+    roles = []
+    for role, label in (("inviter", "Inviters"), ("invitee", "Invitees")):
+        r = db.execute("SELECT COALESCE(SUM(players), 0), COALESCE(SUM(mature), 0), COALESCE(SUM(returned_d1), 0), "
+                       "COALESCE(SUM(returned_d7), 0) FROM invite_roles WHERE role=? AND " + w, (role, *a)).fetchone()
+        roles.append({"role": role, "label": label, "players": r[0], "mature": r[1], "d1_pct": _pct(r[2], r[1]),
+                      "d7_pct": _pct(r[3], r[1])})
+    rw, ra = sc.where(day="first_day", play=False)
+    r = db.execute("SELECT COALESCE(SUM(players), 0), COALESCE(SUM(returned_d1), 0), COALESCE(SUM(returned_d7), 0) "
+                   "FROM returns WHERE " + rw, ra).fetchone()
+    roles.append({"role": "everyone", "label": "Everyone (first match)", "players": r[0], "mature": r[0],
+                  "d1_pct": _pct(r[1], r[0]), "d7_pct": _pct(r[2], r[0])})
+    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    first = db.execute(f"SELECT MIN(day) FROM invites WHERE method='invite_id' AND build_kind IN ({marks})",
+                       sc.builds).fetchone()[0]
+    out = {**base, "built_ms": _built_ms(db), "funnel": funnel,
+           "by_method": [{"method": m, "sent": v[0] or 0, "received": v[1] or 0, "joined": v[2] or 0,
+                          "played_together": v[3] or 0} for m, v in sorted(totals.items())],
+           "per_day": [per.get(d, {"day": d, "sent": 0, "joined": 0}) for d in _range_days(sc)],
+           "roles": roles, "history": {"first_invite_id_day": first}}
+    db.close()
+    return out
+
+
+def errors(agg_path, build="release", days=90, play="all", era=None):
+    """Errors page: client_exception by top frame, type, build, platform and version, what is new this week, and the
+    players affected (a count)."""
+    sc = Scope(build, days, "all", era)
+    db = _open(agg_path)
+    base = {"build": build, "days": days, "play": play, **sc.describe(), "notes": ERROR_NOTES,
+            "unfiltered": ["page"] if play != "all" else []}
+    if db is None:
+        return {**base, "empty": True}
+    w, a = sc.where(play=False)
+    week = (datetime.now(timezone.utc) - timedelta(days=6)).strftime("%Y-%m-%d")
+    first = {(r[0], r[1]): r[2] for r in db.execute(
+        "SELECT exception_type, top_frame, MIN(first_day) FROM client_error_signatures GROUP BY 1, 2")}
+    sig_new = {(r[0], r[1], r[2]) for r in db.execute(
+        "SELECT exception_type, top_frame, message_hash FROM client_error_signatures WHERE first_day >= ?", (week,))}
+    t = db.execute("SELECT COALESCE(SUM(events), 0), COALESCE(SUM(occurrences), 0) FROM client_errors WHERE " + w,
+                   a).fetchone()
+    sigs = db.execute("SELECT DISTINCT exception_type, top_frame, message_hash FROM client_errors WHERE " + w, a).fetchall()
+    frame_players = dict(db.execute(
+        f"SELECT key, SUM(players) FROM player_counts WHERE span=? AND source=? AND dim='error_frame' AND build_kind IN "
+        f"({','.join('?' * len(sc.builds)) or 'NULL'}) GROUP BY key", (sc.span_none, sc.source, *sc.builds)).fetchall())
+    frames = []
+    for r in db.execute("SELECT top_frame, exception_type, SUM(events) AS events, SUM(occurrences) AS occurrences, "
+                        "MAX(day) AS last_day, COUNT(DISTINCT message_hash) AS messages FROM client_errors WHERE " + w +
+                        " GROUP BY 1, 2 ORDER BY occurrences DESC LIMIT 50", a):
+        f0 = first.get((r["exception_type"], r["top_frame"]))
+        frames.append({**dict(r), "first_day": f0, "new": bool(f0 and f0 >= week),
+                       "players": frame_players.get(r["top_frame"], 0)})
+
+    def by(col, scope=sc):
+        sw, sa = scope.where(play=False)
+        return [dict(r) for r in db.execute(
+            f"SELECT {col} AS key, SUM(events) AS events, SUM(occurrences) AS occurrences FROM client_errors "
+            f"WHERE {sw} GROUP BY 1 ORDER BY occurrences DESC LIMIT 30", sa)]
+    per = dict(db.execute("SELECT day, SUM(occurrences) FROM client_errors WHERE " + w + " GROUP BY day", a).fetchall())
+    out = {**base, "built_ms": _built_ms(db),
+           "tiles": {"events": t[0], "occurrences": t[1], "signatures": len(sigs),
+                     "players": _player_count(db, sc, "error", "any"),
+                     "new_this_week": sum(1 for x in sigs if tuple(x) in sig_new)},
+           "by_frame": frames, "by_type": by("exception_type"), "by_platform": by("platform"),
+           "by_version": by("app_version"), "by_scene": by("scene"),
+           "by_build": by("build_kind", sc.with_builds(BUILD_KINDS)),
+           "per_day": [{"day": d, "occurrences": per.get(d, 0)} for d in _range_days(sc)],
+           "history": {"first_error_day": db.execute("SELECT MIN(first_day) FROM client_error_signatures").fetchone()[0]}}
+    db.close()
+    return out
 
 
 def digest_facts(agg_path):

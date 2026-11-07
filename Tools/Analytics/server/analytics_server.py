@@ -6,6 +6,11 @@
     python3 analytics_server.py nightly              retention, backup, aggregates, the overnight read (the server
                                                      also runs this itself once a day at nightly_hour_utc)
     python3 analytics_server.py rebuild              rebuild aggregates.db now
+    python3 analytics_server.py backup               a consistent, gzipped snapshot of events.db and aggregates.db into
+                                                     <data_dir>/backups/ (14 kept); the VM's timer runs it at 04:40 UTC
+    python3 analytics_server.py backup --restore <file> [--force]
+                                                     put a backup back (stop the service first; the databases it
+                                                     replaces are kept in <data_dir>/before-restore-<time>/)
     python3 analytics_server.py erase <player id>    delete everything about one player
     python3 analytics_server.py key read <name>      add a dashboard read key for a person (printed once)
     python3 analytics_server.py import-posthog --project <id> [--days 365] [--dry-run]
@@ -58,6 +63,14 @@ HTTP:
     GET  /v1/overview                      adds setups (multiplayer then solo), setup_history, setup_notes
     GET  /v1/series?...&by=setup           every plays measure (and players, new players) by match setup
 
+  2026-11-07 (Shombith): sessions, balance, quits, invites, errors; backups.
+    GET  /v1/sessions|balance|quits|invites|errors?build&days&play&era    the five round-67 pages (README.md)
+    GET  /v1/series?measure=score|placement|win_pct|abandon_pct, by=ai_difficulty
+    GET  /v1/health                        adds new_events and backups (the last local copy; off-VM is Oracle's policy)
+
+  The Notebook (a chat, a report and a notebook in one page; analytics_notebook.py holds its routes and rules):
+    GET|POST|PUT|DELETE /v1/notebooks    POST /v1/notebooks/run (one cell)    POST /v1/notebooks/ask (Claude)
+
 Data lives in data_dir (events.db raw, aggregates.db for reading). Standard library only, except the two Claude
 features, which need `pip install anthropic` and ANTHROPIC_API_KEY. Run behind Caddy for HTTPS
 (setup-analytics-vm.sh). README.md beside this file has the whole picture.
@@ -74,7 +87,7 @@ import time
 import traceback
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, parse_qsl, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -83,6 +96,7 @@ import analytics_claude as C  # noqa: E402
 import analytics_geo as G  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
+import analytics_notebook as NB  # noqa: E402  the Notebook page's routes
 
 CONFIG_PATH = os.path.expanduser(os.environ.get("FROGLET_ANALYTICS_CONFIG", "~/.froglet-analytics/config.json"))
 CONSOLE_DIR = os.path.normpath(os.path.join(HERE, "..", "console"))
@@ -91,7 +105,9 @@ CONSOLE_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
                  "/console.css": ("console.css", "text/css; charset=utf-8"),
                  "/console.js": ("console.js", "text/javascript; charset=utf-8"),
                  "/themes.css": ("themes.css", "text/css; charset=utf-8"),
-                 "/theme.js": ("theme.js", "text/javascript; charset=utf-8")}
+                 "/theme.js": ("theme.js", "text/javascript; charset=utf-8"),
+                 "/notebook.js": ("notebook.js", "text/javascript; charset=utf-8"),
+                 "/notebook.css": ("notebook.css", "text/css; charset=utf-8")}
 CONSOLE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                "font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; "
                "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -254,11 +270,34 @@ class App:
             except Exception as exc:   # no network, or the month's file is not out yet: keep the old one
                 self.store.mark_job("geo", f"refresh failed: {type(exc).__name__}")
 
+    def backup(self):
+        """The nightly backup: a consistent snapshot of both databases, gzipped, 14 kept on the VM; the Oracle
+        boot-volume policy copies the disk off the VM at 05:00 UTC. When FA_BACKUP_* are set (they are not, today),
+        the snapshot is also PUT to that S3-compatible bucket."""
+        target, size = self.store.backup()
+        self.store.mark_job("backup", f"{os.path.basename(target)} ({size} bytes)")
+        upload = backup_settings()
+        result = {"file": target, "bytes": size, "uploaded": None}
+        if upload:
+            key = upload["prefix"] + os.path.basename(target)
+            try:
+                with open(target, "rb") as handle:
+                    s3_put(upload, key, handle.read())
+                result["uploaded"] = f"{upload['bucket']}/{key}"
+                self.store.mark_job("backup_upload", f"uploaded to bucket {upload['bucket']} as {key}")
+            except Exception as exc:          # the local copy stands; the next night tries again
+                result["upload_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+                self.store.mark_job("backup_upload", f"upload failed ({type(exc).__name__}); the local copy is kept")
+        return result
+
     def nightly(self):
         self.refresh_geo()
         gone = self.store.apply_retention(self.config["retention_days"])
-        target = self.store.backup()
-        self.store.mark_job("backup", os.path.basename(target))
+        last = self.store.job("backup")
+        if last and S.now_ms() - last["last_ms"] < 20 * 3600 * 1000:
+            target = {"skipped": "the 04:40 UTC backup timer already made tonight's"}
+        else:
+            target = self.backup()                 # no timer on this machine (a local run): back up here
         self.rebuild()
         digest = C.write_digest(self.store, self.agg, self.config["claude_model"], self.config["claude_effort"])
         self.store.mark_job("nightly", f"retention removed {gone}; read by {digest['author']}")
@@ -277,6 +316,64 @@ class App:
             except Exception:
                 traceback.print_exc()
             self.stop.wait(REBUILD_EVERY_S)
+
+
+# ---------------------------------------------------------------- backups to an S3-compatible bucket (dormant)
+# Shombith, 2026-11-07: off-VM copies come from the Oracle boot-volume backup policy, with no key on the VM. This upload
+# stays for the day a bucket is wanted: it runs only when FA_BACKUP_ENDPOINT, FA_BACKUP_BUCKET, FA_BACKUP_ACCESS_KEY and
+# FA_BACKUP_SECRET_KEY are all set (in /etc/froglet-analytics.env, never config.json). Nothing logs or returns a key.
+
+BACKUP_ENV = ("FA_BACKUP_ENDPOINT", "FA_BACKUP_BUCKET", "FA_BACKUP_ACCESS_KEY", "FA_BACKUP_SECRET_KEY")
+
+
+def backup_settings(env=None):
+    env = os.environ if env is None else env
+    if not all(env.get(k) for k in BACKUP_ENV):
+        return None
+    return {"endpoint": env["FA_BACKUP_ENDPOINT"].rstrip("/"), "bucket": env["FA_BACKUP_BUCKET"],
+            "access": env["FA_BACKUP_ACCESS_KEY"], "secret": env["FA_BACKUP_SECRET_KEY"],
+            "region": env.get("FA_BACKUP_REGION") or "us-ashburn-1",
+            "prefix": env.get("FA_BACKUP_PREFIX", "froglet-analytics/")}
+
+
+def sigv4_headers(method, url, headers, payload_hash, access, secret, region, amz_date, service="s3"):
+    """AWS Signature Version 4 (header form), standard library only. `headers` are the ones to sign besides host,
+    x-amz-content-sha256 and x-amz-date, which this adds. Returns the headers to send, Authorization included."""
+    import hashlib
+    from urllib.parse import quote, urlsplit
+    parts = urlsplit(url)
+    signed = {k.lower(): str(v).strip() for k, v in headers.items()}
+    signed.update({"host": parts.netloc, "x-amz-content-sha256": payload_hash, "x-amz-date": amz_date})
+    names = sorted(signed)
+    pairs = sorted((quote(k, safe="-_.~"), quote(v, safe="-_.~")) for k, v in parse_qsl(parts.query, keep_blank_values=True))
+    # the path is sent as the caller encoded it (s3_put quotes the key once), as S3 signs it: no second encoding
+    canonical = "\n".join([method, parts.path or "/", "&".join(f"{k}={v}" for k, v in pairs),
+                           "".join(f"{n}:{signed[n]}\n" for n in names), ";".join(names), payload_hash])
+    scope = f"{amz_date[:8]}/{region}/{service}/aws4_request"
+    to_sign = "\n".join(["AWS4-HMAC-SHA256", amz_date, scope, hashlib.sha256(canonical.encode()).hexdigest()])
+    key = ("AWS4" + secret).encode()
+    for part in (amz_date[:8], region, service, "aws4_request"):
+        key = hmac.new(key, part.encode(), hashlib.sha256).digest()
+    signature = hmac.new(key, to_sign.encode(), hashlib.sha256).hexdigest()
+    out = dict(signed)
+    out["authorization"] = (f"AWS4-HMAC-SHA256 Credential={access}/{scope}, SignedHeaders={';'.join(names)}, "
+                            f"Signature={signature}")
+    out.pop("host")
+    return out
+
+
+def s3_put(settings, key, body, now=None):
+    """PUT one object, path style ({endpoint}/{bucket}/{key}), as Oracle Object Storage's S3 endpoint wants it."""
+    import hashlib
+    import urllib.request
+    from urllib.parse import quote
+    url = f"{settings['endpoint']}/{quote(settings['bucket'], safe='')}/{quote(key, safe='/-_.~')}"
+    amz_date = (now or datetime.now(timezone.utc)).strftime("%Y%m%dT%H%M%SZ")
+    headers = sigv4_headers("PUT", url, {"content-type": "application/gzip"}, hashlib.sha256(body).hexdigest(),
+                            settings["access"], settings["secret"], settings["region"], amz_date)
+    request = urllib.request.Request(url, data=body, method="PUT", headers=headers)
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return response.status
 
 
 # ---------------------------------------------------------------- Rev 65 routes: (status, payload) from a handler
@@ -513,6 +610,17 @@ def _segments_delete(h):
     return 200, {"deleted": h._params()["id"]}
 
 
+def _r67_page(view):
+    """A round-67 page (Shombith, 2026-11-07): sessions, balance, quits, invites, errors. Same filters as the rest."""
+    def route(h):
+        build, days, play, era = h._scope_params(h._params())
+        return 200, view(_app(h).agg, build, days, play, era)
+    return route
+
+
+R67_GET = {"/v1/sessions": _r67_page(V.sessions), "/v1/balance": _r67_page(V.balance), "/v1/quits": _r67_page(V.quits),
+           "/v1/invites": _r67_page(V.invites), "/v1/errors": _r67_page(V.errors)}
+
 REV65_GET = {"/v1/eras": _eras_get, "/v1/eras/compare": _eras_compare, "/v1/cohorts": _cohorts,
              "/v1/playtypes": _playtypes, "/v1/series": _series, "/v1/schema": _schema, "/v1/queries": _queries_get,
              "/v1/dashboards": _dashboards_get, "/v1/dashboards/tile": _tile, "/v1/segments": _segments_get,
@@ -522,6 +630,10 @@ REV65_POST = {"/v1/query": _query_run, "/v1/queries": _queries_post, "/v1/segmen
 REV65_PUT = {"/v1/eras": _eras_put, "/v1/dashboards": _dashboards_put}
 REV65_DELETE = {"/v1/queries": _queries_delete, "/v1/dashboards": _dashboards_delete,
                 "/v1/segments": _segments_delete, "/v1/presets": _presets_delete}
+REV65_GET.update(R67_GET)
+# The Notebook (analytics_notebook.py) mounts its routes into the tables above.
+for _routes, _nb in ((REV65_GET, NB.GET), (REV65_POST, NB.POST), (REV65_PUT, NB.PUT), (REV65_DELETE, NB.DELETE)):
+    _routes.update(_nb)
 
 
 def make_handler(app):
@@ -836,6 +948,31 @@ def key_command(config, args):
     return f"{action.upper()} key for {name} (shown once): {key}{note}", True
 
 
+def server_answers(config, timeout=1.0):
+    """True when a server on this config's port answers /healthz (a restore under a running server would be lost)."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"http://{config['listen']}:{config['port']}/healthz", timeout=timeout) as response:
+            return response.status == 200
+    except Exception:
+        return False
+
+
+def restore_command(config, archive, force=False):
+    if server_answers(config) and not force:
+        print("restore: the server is running on this data; stop it first (sudo systemctl stop froglet-analytics), "
+              "then run this again, then start it")
+        return 2
+    try:
+        out = S.restore_backup(os.path.abspath(archive), config["data_dir"])
+    except S.Invalid as exc:
+        print(f"restore: {exc}")
+        return 2
+    print(f"restored {', '.join(out['restored'])} into {config['data_dir']}; the databases it replaced are in "
+          f"{out['kept_in']}. Start the server again: sudo systemctl start froglet-analytics")
+    return 0
+
+
 def serve(config):
     app = App(config, CONFIG_PATH)
     threading.Thread(target=app.background, daemon=True).start()
@@ -854,7 +991,7 @@ def main(argv):
     command = argv[0]
     if command == "--self-test":
         import unittest
-        suite = unittest.defaultTestLoader.discover(HERE, pattern="test_analytics_server.py")
+        suite = unittest.defaultTestLoader.discover(HERE, pattern="test_analytics_*.py")   # the server's and the Notebook's
         return 0 if unittest.TextTestRunner(verbosity=1).run(suite).wasSuccessful() else 1
     config = load_config()
     if command == "init":
@@ -883,7 +1020,12 @@ def main(argv):
     if command == "serve":
         serve(config)
         return 0
+    if command == "backup" and len(argv) >= 3 and argv[1] == "--restore":
+        return restore_command(config, argv[2], "--force" in argv[3:])
     app = App(config)
+    if command == "backup" and len(argv) == 1:
+        print(json.dumps(app.backup(), indent=2))
+        return 0
     if command == "rebuild":
         print(f"{app.rebuild()} plays")
         return 0

@@ -30,6 +30,7 @@ import analytics_claude as C  # noqa: E402
 import analytics_server as A  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
+import notebook_sample  # noqa: E402  the Notebook page's sample notebooks
 
 BUILDS = ("release", "editor", "port", "development")
 PAGE_DAYS = (7, 30, 90, 365)
@@ -49,6 +50,13 @@ NEW_BUILD_DAYS = 8           # builds this recent send element, the Toybox's ves
 IDENTIFY_DAYS = 25           # builds since 12 Oct re-identify after each Toybox flight (selected_vessel)
 DOMAIN_DAYS = 3              # builds this recent send the match setup (domain, humans_on_*_domain(s), ai_on_*_domain(s))
 VESSELS = ["Squirrel", "Sparrow", "Manta", "Dolphin", "Rhino", "Urchin"]
+R67_DAYS = 12                # builds this recent send sessions, score / placement / AI difficulty, quits, errors, invite ids
+DIFFICULTIES = ["Easy", "Medium", "Hard"]
+FRAMES = [("NullReferenceException", "CosmicShore.Game.VesselStatus.UpdateBoost", "Minigame_SkimRace"),
+          ("NullReferenceException", "CosmicShore.UI.ArcadeScreen.OnCardClicked", "Menu_Main"),
+          ("ArgumentOutOfRangeException", "CosmicShore.Game.Prisms.PrismPool.Take", "Minigame_Joust"),
+          ("MissingReferenceException", "CosmicShore.Audio.VesselAudio.OnDestroy", "Minigame_CrystalCapture"),
+          ("InvalidOperationException", "CosmicShore.Party.PartyLobby.Refresh", "Menu_Main")]
 
 
 def sample_events(seed=7):
@@ -71,6 +79,16 @@ def sample_events(seed=7):
 
     def session(player, start, platform, version, double, finish_rate, humans=1, team=None, first=False, wallet=None):
         t = start
+        r67 = start > now - timedelta(days=R67_DAYS)
+        sid = f"s-{player}-{start.timestamp():.0f}"
+        if r67:
+            send(player, "session_started", t, platform, version, session_id=sid,
+                 launch_kind="resume" if rng.random() < 0.25 and not first else "cold")
+            if rng.random() < 0.2:
+                kind, frame, scene = rng.choice(FRAMES[:2] if rng.random() < 0.7 else FRAMES)
+                send(player, "client_exception", t + timedelta(seconds=rng.randint(5, 600)), platform, version,
+                     exception_type=kind, top_frame=frame, scene=scene, message_hash=f"{abs(hash(frame)) % 16 ** 6:06x}",
+                     count=rng.choice([1, 1, 2, 5]))
         launch = {"Android": 14, "IPhonePlayer": 9, "WindowsPlayer": 6, "WindowsEditor": 4}.get(platform, 7)
         if first:
             send(player, "game_first_launched", t, platform, version)
@@ -130,15 +148,31 @@ def sample_events(seed=7):
             if double:
                 send(player, "game_started", t + timedelta(milliseconds=2), platform, version, **props)
             length = rng.randint(80, 200)
+            ai = props["player_count_ai"]
+            difficulty = DIFFICULTIES[min(2, max(0, props["intensity"] - 2 + rng.choice([0, 0, 1])))] if ai else None
             if rng.random() >= finish_rate:
                 if rng.random() < 0.3:
                     send(player, "repeated_game_fail", t + timedelta(seconds=length), platform, version,
                          game_mode=mode, fail_count=rng.randint(3, 6))
+                if r67:
+                    left = rng.choice([12, 25, 40, 70, 95, 150, 320])
+                    send(player, "match_abandoned", t + timedelta(seconds=min(length, left) + 60), platform, version,
+                         match_id=match, game_mode=mode, vessel_class=props["vessel_class"], intensity=props["intensity"],
+                         player_count_human=humans, player_count_ai=ai, elapsed_seconds=left,
+                         flight_time_seconds=max(1, left - 3), reason=rng.choice(["quit_to_menu", "quit_to_menu", "app_quit",
+                         "disconnect"]), score_at_quit=rng.randint(0, 400), **({"ai_difficulty": difficulty} if difficulty else {}))
                 break
             paused = rng.choice([0, 0, 0, 5, 12, 45])
+            field = 1 + humans - 1 + ai
+            skill = {"Easy": 0.65, "Medium": 0.45, "Hard": 0.22, None: 0.6}[difficulty] - 0.04 * props["intensity"]
+            placement = 1 if rng.random() < skill else rng.randint(2, max(2, field))
+            score = round(max(0, rng.gauss(900 - 120 * placement, 90)), 0)
+            done = dict(score=score, placement=placement, players_in_match=field,
+                        behind_by=0 if placement == 1 else round(rng.uniform(20, 260), 0),
+                        **({"ai_difficulty": difficulty} if difficulty else {})) if r67 else {}
             send(player, "game_completed", t + timedelta(seconds=length), platform, version, match_id=match,
                  flight_time_seconds=length - paused - rng.randint(1, 5), duration_seconds=length,
-                 player_won=rng.random() < 0.45, game_mode=mode)
+                 player_won=(placement == 1) if r67 else rng.random() < 0.45, game_mode=mode, **done)
             if wallet is not None:
                 amount = rng.choice([50, 100, 150, 200])
                 wallet[0] += amount
@@ -166,8 +200,10 @@ def sample_events(seed=7):
             t += timedelta(seconds=length + rng.choice([60, 120, 300, 2000]))
         if rng.random() < 0.02:
             send(player, "cloud_save_failed", t, platform, version, key=rng.choice(["HANGAR_DATA", "MODE_STATS"]))
-        send(player, "session_ended", t + timedelta(seconds=30), platform, version,
-             reason=rng.choice(["quit", "quit", "background", "background", "crash"]), app_state="menu")
+        end = t + timedelta(seconds=30)
+        send(player, "session_ended", end, platform, version,
+             reason=rng.choice(["quit", "quit", "background", "background", "crash"]), app_state="menu",
+             **({"session_id": sid, "session_seconds": round((end - start).total_seconds())} if r67 else {}))
 
     def party(t, seats, ai=None, rounds=2):
         """A party's matches from builds that send the setup: seats [(player, domain)] share one match id; `ai` is
@@ -216,9 +252,11 @@ def sample_events(seed=7):
         t = now - timedelta(days=rng.randint(1, 20), hours=rng.randint(1, 8))
         coop = i % 2 == 0
         host, guest = f"sample-player-{i:02d}", f"sample-player-{i + 10:02d}"
-        send(host, "party_invite_sent", t - timedelta(minutes=2), "WindowsPlayer", "0.2.1", target_id=guest)
-        send(guest, "party_invite_received", t - timedelta(minutes=2), "WindowsPlayer", "0.2.1", host_id=host)
-        send(guest, "party_joined", t - timedelta(minutes=1), "WindowsPlayer", "0.2.1")
+        invite = {"invite_id": f"inv-{i}"} if t > now - timedelta(days=R67_DAYS) else {}
+        send(host, "party_invite_sent", t - timedelta(minutes=2), "WindowsPlayer", "0.2.1", target_id=guest, **invite)
+        send(guest, "party_invite_received", t - timedelta(minutes=2), "WindowsPlayer", "0.2.1", host_id=host, **invite)
+        send(guest, "party_joined", t - timedelta(minutes=1), "WindowsPlayer", "0.2.1",
+             **(dict(invite, inviter_id=host) if invite else {}))
         if i < 3:
             send(host, "friend_request_sent", t + timedelta(minutes=20), "WindowsPlayer", "0.2.1", target_id=guest)
             send(guest, "friend_request_received", t + timedelta(minutes=20), "WindowsPlayer", "0.2.1", from_id=host)
@@ -230,6 +268,12 @@ def sample_events(seed=7):
                     if t > now - timedelta(days=DOMAIN_DAYS) else None)
     # parties on builds that send the setup: 1v1, a three-way free-for-all, 2v2, two against the AI, two against one
     p = lambda i: f"sample-player-{i:02d}"
+    for k, (a, b) in enumerate(((3, 13), (9, 19), (4, 14), (6, 16), (7, 17))):   # the parties' invites (new builds)
+        at = now - timedelta(hours=(30, 8, 52, 20, 44)[k], minutes=3)
+        send(p(a), "party_invite_sent", at, "WindowsPlayer", "0.2.1", target_id=p(b), invite_id=f"inv-p{k}")
+        send(p(b), "party_invite_received", at + timedelta(seconds=4), "WindowsPlayer", "0.2.1", host_id=p(a), invite_id=f"inv-p{k}")
+        if k != 1:
+            send(p(b), "party_joined", at + timedelta(seconds=40), "WindowsPlayer", "0.2.1", invite_id=f"inv-p{k}", inviter_id=p(a))
     for hours, seats, ai in ((30, [(p(3), "Jade"), (p(13), "Ruby")], {"Gold": 2}),
                              (8, [(p(9), "Jade"), (p(19), "Ruby"), (p(21), "Gold")], None),
                              (52, [(p(4), "Jade"), (p(5), "Jade"), (p(14), "Ruby"), (p(15), "Ruby")], None),
@@ -287,6 +331,7 @@ ASKS = [
 def snapshot(store, agg):
     get = {"/v1/me": {"name": "preview", "admin": True, "profiles": True}, "/v1/digest": store.latest_digest() or {}}
     rev65(store, agg, get)
+    notebook_sample.add(store, agg, get)
     for build in BUILDS:
         for days in PAGE_DAYS:
             q = f"?build={build}&days={days}"
@@ -300,6 +345,9 @@ def snapshot(store, agg):
             get["/v1/economy" + q] = V.economy(agg, build, days)
             get["/v1/social" + q] = V.social(agg, build, days)
             get["/v1/people" + q] = store.people_list(build, days)       # the page filters a search itself
+            for name, view in (("sessions", V.sessions), ("balance", V.balance), ("quits", V.quits),
+                               ("invites", V.invites), ("errors", V.errors)):       # round 67's pages
+                get[f"/v1/{name}" + q] = view(agg, build, days)
     for days in HEALTH_DAYS:
         get[f"/v1/health?days={days}"] = V.health(agg, store.health_facts(), days)
     for person in store.people_list(None, 365)["people"]:
@@ -410,6 +458,12 @@ def page_content(snap):
         css += handle.read()
     with open(os.path.join(HERE, "console.js"), encoding="utf-8") as handle:
         js = handle.read()
+    for name in ("notebook.css", "notebook.js"):          # the Notebook page, in its own files
+        with open(os.path.join(HERE, name), encoding="utf-8") as handle:
+            if name.endswith(".css"):
+                css += "\n" + handle.read()
+            else:
+                js += "\n" + handle.read()
     data = json.dumps(snap, separators=(",", ":"), default=str).replace("</", "<\\/")
     return (f'<meta charset="utf-8">\n<title>Froglet Analytics</title>\n'
             f'<link rel="preconnect" href="https://fonts.googleapis.com">\n'
@@ -427,7 +481,10 @@ def main(argv):
     parser.add_argument("--data", help="a server's data dir; omit for invented sample data")
     args = parser.parse_args(argv)
     work = args.data or tempfile.mkdtemp(prefix="fa-preview-")
-    store = S.Store(work, A.schema_events(A.REPO_SCHEMA), A.DEFAULTS["extra_events"])
+    schema = A.schema_events(A.REPO_SCHEMA)
+    # round 67's events, while the schema does not list them yet (the sample shows what the new builds will send)
+    extra = list(A.DEFAULTS["extra_events"]) + [e for e in ("session_started", "match_abandoned") if e not in schema]
+    store = S.Store(work, schema, extra)
     if not args.data:
         cutoff = S.now_ms() - SERVER_LIVE_DAYS * 86400 * 1000
         for player, (country, events) in sample_events().items():
@@ -442,6 +499,7 @@ def main(argv):
         sample_presets(store)
     store.rebuild_aggregates()
     store.mark_job("rebuild", "preview")
+    store.backup()                                         # so Data health shows a local backup
     store.mark_job("backup", "preview")
     if not args.data:
         C.write_digest(store, store.agg_path)
