@@ -87,6 +87,26 @@ def course(intensity, seed, pad=0):
             "seed": seed}
 
 
+NOSE_LEAD_GAIN = 0.0            # AIPilot.NoseLeadGain (PR #1786, off on every shipped asset); 2.5 is thread 7's value
+NOSE_LEAD_MAX_EXTRA = 40.0      # AIPilot.NoseLeadMaxExtraDegrees
+
+
+def _turned(f, to, deg):
+    """f turned toward `to` by deg (past it when deg exceeds their angle), in their common plane."""
+    f = unit(f); a = math.radians(ang(f, to))
+    if a < 1e-6: return f
+    n = unit(sub(unit(to), mul(f, math.cos(a))))
+    r = math.radians(deg)
+    return add(mul(f, math.cos(r)), mul(n, math.sin(r)))
+
+
+def lead_point(fwd, steer, gain):
+    """The nose lead: the point the command is steered onto, the nose turned toward the aim by gain x its error, at most
+    NOSE_LEAD_MAX_EXTRA past the aim."""
+    e = ang(fwd, steer)
+    return _turned(fwd, steer, min(gain * e, e + NOSE_LEAD_MAX_EXTRA))
+
+
 def race(c, p, T=300.0, dt=1 / 50, lag=True, trace=None):
     """One AI Sparrow alone through the 29 crossings. p: the drive's fields (BASE / BREAKWATER / a searched point)."""
     gates = c["gates"]; n = len(gates)
@@ -137,7 +157,11 @@ def race(c, p, T=300.0, dt=1 / 50, lag=True, trace=None):
         v += ((BOOST if drv.held else CRUISE) - v) * min(1.0, SPEED_RATE * dt)
         R = v / math.radians(turn(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
         steer = add(fwd, mul(desired, -0.35)) if extending else to
-        stick = ai_stick(ang(fwd, steer))
+        if lag and NOSE_LEAD_GAIN > 0 and not extending:   # judged from the command, onto the lead point
+            steer = lead_point(fwd, steer, NOSE_LEAD_GAIN)
+            stick = ai_stick(ang(cmd, steer))
+        else:
+            stick = ai_stick(ang(fwd, steer))
         fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(turn(v) * stick) * dt, dt, lag)
         mod = 1.0
         for f, t0, d in list(slows):
@@ -209,9 +233,43 @@ def _job(a):
     return name, I, s, race(course(I, s), p)
 
 
+def measure_clips(paths, slowed_bit=8, min_speed=60.0):
+    """MEASURED, not modelled: every slowdown in recorded Breakwater flights (HumanFlightRecorder's 10 Hz speed and
+    `state` columns; bit 8 = slowed). Returns one row per slowdown from min_speed or faster: (intensity, speed before,
+    lowest speed / before within 2 s, seconds the bit stayed set, seconds of travel lost until back to 95% or 5 s).
+    Under 0.25 is a Danger weave clip (x0), 0.25-0.75 a Plain collar clip (x0.5)."""
+    import json
+    rows = []
+    for f in paths:
+        d = json.load(open(f)); cols = d["columns"]; S_ = d["samples"]
+        ti, si, vi = 0, cols.index("state"), cols.index("speed")
+        t = [r[ti] for r in S_]; v = [r[vi] for r in S_]; sl = [(int(r[si]) & slowed_bit) > 0 for r in S_]
+        for i in range(1, len(t)):
+            if not sl[i] or sl[i - 1]: continue
+            pre = sorted(v[j] for j in range(i) if t[j] >= t[i] - 0.6) or [v[i - 1]]
+            vb = pre[len(pre) // 2]
+            if vb < min_speed: continue
+            low = min(v[j] for j in range(i, len(t)) if t[j] < t[i] + 2)
+            k = i
+            while k < len(t) and sl[k]: k += 1
+            lost, j = 0.0, i
+            while j < len(t) - 1 and t[j] < t[i] + 5:
+                lost += max(0.0, 1 - v[j] / vb) * (t[j + 1] - t[j])
+                if j > i + 2 and v[j] >= 0.95 * vb: break
+                j += 1
+            rows.append((d.get("intensity"), vb, low / vb, t[k - 1] - t[i], lost))
+    return rows
+
+
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         sys.exit(self_test())
+    if "--clips" in sys.argv:   # --clips <flight json>...: the measured price of a clip
+        rows = measure_clips(sys.argv[sys.argv.index("--clips") + 1:])
+        for name, lo, hi in (("Danger (x0)", 0.0, 0.25), ("Plain (x0.5)", 0.25, 0.75)):
+            r = sorted(x[4] for x in rows if lo <= x[2] < hi)
+            if r: print(f"{name}: {len(r)} clips, seconds lost median {r[len(r) // 2]:.2f} (p25 {r[len(r) // 4]:.2f}, p75 {r[3 * len(r) // 4]:.2f})")
+        sys.exit(0)
     from concurrent.futures import ProcessPoolExecutor
     jobs = [(name, p, I, s) for name, p in (("base", BASE), ("Breakwater", BREAKWATER)) for I in (1, 2, 3, 4)
             for s in (101, 102, 103)]

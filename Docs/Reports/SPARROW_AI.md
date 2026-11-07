@@ -89,3 +89,42 @@ version 1 drive (let go 1.4 s before a station) is the fallback. The editor deci
    start-line rail ram (brief 9).
 
 Results: `/mnt/project-files/regatta-training/results/sparrow-breakwater/`.
+
+## 5. The gap to the human at I1 / I4, and the Danger clip's price (follow-up, 2026-11-07)
+
+**What "into the eye" costs.** The trained drive raced alone on the nine courses people finished (each course rebuilt from
+its flight, `switchback_dolphin_sim.course_from_flight`), with one cause switched off at a time (MODEL, seconds for 29
+crossings; d = Danger weave clips, c = Plain collar clips):
+
+| Course (best human) | trained | nose lag off | clips free | turn rate x2 (vessel) | nose lead 2.5 (#1786) |
+|---|---:|---:|---:|---:|---:|
+| I1 (83.8 s) | 114.9 (d12 c11) | 89.8 (d0 c0) | 97.0 | 118.2 | 109.1 (d6 c1) |
+| I4 (89.3 s) | 129.6 (d27 c0) | 82.8 (d0 c0) | 91.5 | 130.8 | 122.9 (d16 c4) |
+| I3 (127.8 s) | 133.6 (d26 c3) | 86.7 (d0 c0) | - | - | 119.6 (d15 c3) |
+
+- With no nose lag the drive clips nothing and runs 82-90 s on every course, at or under the human marks. So the gap is
+  **(a), the same nose lag as thread 7 / PR #1786**: the AI's nose overshoots the 18 u eye and its tail sweeps the weave.
+  It costs about **0.85 s a crossing at I1 and 1.6 s at I4** (25-47 s a race), nearly all through the clips.
+- **Not (b)**: Breakwater has no race line; it aims through each station by GateRaceController's commit / lead / through
+  points. **Not (c)**: doubling the Sparrow's turn rate changes nothing (118 / 131 s). So the fix is **pilot-side**, a
+  proposal beside #1786 for Yash, not a vessel change for Garrett.
+- **#1786's lead as tuned for Regatta does not close it here.** Swept on the same nine courses (median seconds; clips,
+  missed eyes): gain 0 = 120.5 (217 clips, 0 misses); 1.5 = 117.3 (190, 2); 2.0 = 110.6 (135, 10); 2.5 = 114.2 (119, 43);
+  3.5 = 121.9 (105, 34); 5 = 171.5 (85, 45, 3 DNF). The lead halves the clips but, past 1.5, starts missing eyes and
+  orbiting (two races at 2.5 took 233-244 s). An eye 18 u wide wants a lead that is tuned for it (gain about 2 with the
+  station approach's own lead), or a commit point that leaves the nose time to settle. That is the next search, after the
+  editor shows how #1786's lead flies.
+
+**The Danger clip's price, now measured.** People's own Breakwater flights record speed and the `slowed` state bit at
+10 Hz (`Tools/Build/breakwater_sparrow_sim.py --clips`). Of 48 slowdowns from 60 u/s or faster:
+- 34 fell under 25% of the speed before (the Danger weave, x0). They cost **1.54 s median** of travel (p25 1.47, p75
+  2.17), with the bit set for 2.86 s. That matches the model's 1.5 s.
+- 14 fell to 25-75% (the Plain collar, x0.5) and cost 0.24 s median.
+- 33 Danger clips flown with the afterburner held before and after: 3.5-6 s later the speed was back to **1.000x**
+  (median). The element debuff does not visibly slow a held afterburner.
+- Still not measured: the 60 deg roll's cost to the NEXT station's line, and an AI's clips (these are people's).
+
+**The editor check that settles it:** race the AI Sparrow alone in Breakwater I1 and I4 with the flight recorder on. Count
+the slowdowns that fall under 25% and their seconds lost (`breakwater_sparrow_sim.py --clips <flights>`, which printed
+the numbers above), once with the shipped variant and once with the held-afterburner drive. If an AI clip costs more than about
+2.5 s, the version 1 drive (let go 1.4 s before a station) beats the held one and is the proposal instead.
