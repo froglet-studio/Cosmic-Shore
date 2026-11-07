@@ -4,6 +4,7 @@ D = os.path.dirname(os.path.abspath(__file__))
 src = open(f"{D}/voyage-board.before-deepzoom.html").read()
 js = open(f"{D}/deepzoom.js").read()
 lanes = open(f"{D}/lanes.js").read()
+cells = open(f"{D}/cells.js").read()
 if os.path.exists(f"{D}/realsky.json"):
     data = open(f"{D}/realsky.json").read()
 else:  # no fresh build_data.py output: reuse the catalogue already embedded in the committed board
@@ -62,7 +63,9 @@ rep("""  if (!S.inspect) { el.hidden = true; return; }
 # readout: the tier ladder
 rep("""  el.innerHTML = `<span>${dist(nice)}${cells >= 1 && cells <= 400 ? ` · ${fmt(cells)} cells · ${duration(cells * MIN_PER_CELL)}` : ""}</span><div class="bar" style="width:${px.toFixed(0)}px"></div>`;""",
     """  const vs = DZ.last, tier = DZ.tierOf(view.w);
-  const slab = vs && vs.slab ? ` · a slice ±${dist(vs.zwin)} thick, centred ${zText(vs.zf)}` : "";
+  const cellZoom = CELLS.cellZoom();
+  const slab = cellZoom ? ` · ${CELLS.sliceText()}` : vs && vs.slab ? ` · a slice ±${dist(vs.zwin)} thick, centred ${zText(vs.zf)}` : "";
+  document.getElementById("slicebar").hidden = !cellZoom;
   el.innerHTML = `<span class="tier">${tier.name}<em>${esc(tier.what)}${slab}</em></span><span>${dist(nice)}${cells >= 1 && cells <= 400 ? ` · ${fmt(cells)} cells · ${duration(cells * MIN_PER_CELL)}` : ""}</span><div class="bar" style="width:${px.toFixed(0)}px"></div>`;
   document.querySelectorAll("#ladder button").forEach(b => b.setAttribute("aria-current", b.dataset.t === tier.name ? "true" : "false"));""")
 rep("""  if (!S.crewEye) return fmt(ly) + " ly";""", """  if (!S.crewEye) return (ly < 9.95 ? ly.toFixed(1) : fmt(ly)) + " ly";""")
@@ -76,8 +79,9 @@ rep("""$("v-ark").addEventListener("click", fitBoard);""", """$("v-ark").addEven
 const dive = (x, y, w) => { const ratio = Math.abs(Math.log(view.w / w)) + Math.hypot(view.cx - x, view.cy - y) / view.w * .3; flyTo(x, y, w, Math.min(5200, 700 + 380 * ratio)); };
 $("v-sol").addEventListener("click", () => dive(BY.sol.x, BY.sol.y, 12));
 $("v-tum").addEventListener("click", () => dive(BY.tumult.x, BY.tumult.y, 12));
-$("ladder").innerHTML = DZ.TIERS.map(t => `<button data-t="${t.name}" data-w="${t.w}" title="${esc(t.what)}">${t.name}</button>`).join("");
-$("ladder").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const w = +b.dataset.w; dive(view.cx, view.cy, w > 50000 ? Math.max(110000, 110000 * W / H) : w); });""")
+$("ladder").innerHTML = DZ.TIERS.map(t => `<button data-t="${t.name}" data-w="${t.w}" title="${esc(t.what)}">${t.name}</button>`).join("")
+  + `<div class="slicebar" id="slicebar" hidden><button data-dz="5" title="Slice the cells 5 ly higher">Slice ▲</button><button data-dz="-5" title="Slice the cells 5 ly lower">Slice ▼</button><button data-dz="0" title="Back to the focus height">Reset</button></div>`;
+$("ladder").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.dz !== undefined) { CELLS.shift(+b.dataset.dz); return; } const w = +b.dataset.w; dive(view.cx, view.cy, w > 50000 ? Math.max(110000, 110000 * W / H) : w); });""")
 rep("""$("v-gal").addEventListener("click", () => flyTo(0, 4000, Math.max(110000, 110000 * W / H)));""",
     """$("v-gal").addEventListener("click", () => dive(0, 4000, Math.max(110000, 110000 * W / H)));""")
 # styles
@@ -88,6 +92,13 @@ rep(""".readout .bar {""", """.readout .tier { font: 600 12px var(--f-label); le
   border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; cursor: pointer; min-height: 24px; }
 .ladder button:hover { color: var(--fg); border-color: var(--muted); }
 .ladder button[aria-current="true"] { color: var(--void); background: var(--fg); border-color: var(--fg); }
+.ladder .slicebar { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+.ladder .slicebar[hidden] { display: none; }
+.ladder .slicebar button { color: #c8f59a; border-color: rgba(179,255,89,.35); }
+.seakey .kt { font: 600 10.5px var(--f-label); letter-spacing: .1em; text-transform: uppercase; }
+.seakey { background: rgba(9,14,25,.88); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; text-shadow: none; }
+.readout { background: rgba(9,14,25,.82); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; text-shadow: none; }
+.side canvas { touch-action: none; }
 @media (max-width: 560px) { .ladder { top: 88px; } .ladder button { font-size: 9.5px; padding: 2px 6px; min-height: 22px; } .readout .tier em { display: none; } }
 .readout .bar {""")
 # lanes: courses cruise at a height set by their heading [A]
@@ -150,7 +161,7 @@ rep("""  // the Ark
 rep("""  document.getElementById("sidecap").innerHTML = `Side view, true scale <span>disk 1,000 ly · 50 cells · 50 min · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}</span>`;""",
     """  const xs = path ? xings(path) : [], minGap = xs.length ? Math.min(...xs.map(x => x.gap)) : 0;
   const laneCap = path ? ` · course on the ${path.lane.short} lane, ${xs.length} crossing${xs.length === 1 ? "" : "s"}${xs.length ? `, closest ${dist(minGap)} apart in depth` : ""}` : "";
-  document.getElementById("sidecap").innerHTML = `Side view, true scale <span>disk 1,000 ly · 50 cells · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}${laneCap}</span>`;""")
+  document.getElementById("sidecap").innerHTML = CELLS.cellZoom() ? `Side view, true scale <span>the cells cut upright through the middle of the chart · drag the green bar, or scroll here, to slice the chart at another height · ${CELLS.sliceText()}</span>` : `Side view, true scale <span>cut upright through the middle of the chart · disk 1,000 ly · 50 cells · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}${laneCap}</span>`;""")
 rep("""        <li><b>Crew's eye</b> switches distances""", """        <li><b>Courses keep to lanes by heading.</b> Every course cruises at a height set by which way it heads: toward the centre, with the spin, out to the rim or against it. Courses that cross on the chart pass at different depths. With a voyage chosen, the side view is that voyage's profile: distance along the course across, height up, the sea sliced along the course, the eight lanes as dotted levels, and every lane it crosses marked at its own height with the depth between them.</li>
         <li><b>Crew's eye</b> switches distances""")
 rep("""        <li>Places near Tumult are invented""", """        <li>Lanes: eight headings, 40 ly apart, from 140 ly below the midplane to 140 ly above; a course climbs to its lane in its first 30% and down in its last 30%, never more than one layer of cells per cell, so the climb costs no time <span class="t">[A] proposed</span></li>
@@ -160,10 +171,24 @@ rep("""        <li><b>Voyages run 8 to 55 minutes</b>""", """        <li><b>Cour
 
 rep("""  c.fillStyle = "#050912"; c.fillRect(0, 0, W, SH);
   const f = sideFrame();""", """  c.fillStyle = "#050912"; c.fillRect(0, 0, W, SH);
-  // with a course chosen or under way, the side view is that course's profile; zoomed out to the galaxy, the disk edge-on
-  const pp = S.sailing ? S.sailing.path : S.props[S.sel] && view.w <= 15000 ? S.props[S.sel].paths[S.path] || S.props[S.sel].paths[0] : null;
+  // with a course chosen or under way, the side view is that course's profile; at cell zoom, the cells cut upright
+  const pp = S.sailing ? S.sailing.path : null;   // the profile only while under way; otherwise the side view is the chart's own cut
   if (pp) { drawProfile(c, pp); return; }
   const f = sideFrame();""")
+rep("""  const fits = (2 * DISK_HALF + 120) * s <= SH - 24;
+  return { s, zc: fits ? 0 : az, sliceY: ay };""", """  const fits = (2 * DISK_HALF + 120) * s <= SH - 24;
+  // at cell zoom the side view cuts through the middle of the chart and keeps the slice bar in its window
+  if (CELLS.cellZoom()) { const dzc = CELLS.dragZc(); if (dzc !== null) return { s, zc: dzc, sliceY: view.cy }; const zs = CELLS.sliceZ(), half = (SH / 2 - 30) / s; return { s, zc: Math.max(zs - half, Math.min(zs + half, CELLS.baseZ())), sliceY: view.cy }; }
+  return { s, zc: fits ? 0 : az, sliceY: view.cy };   // cut through the middle of the chart, like the cell view""")
+rep("""  if (!sideView || Math.abs(sideView.zc - f.zc) * f.s > 6 && !anim && !dragging) renderSide(S.sailing ? 6 : 3);""",
+    """  if (!sideView || (Math.abs(sideView.zc - f.zc) * f.s > 6 || Math.abs(sideView.sliceY - f.sliceY) * f.s > 6) && !anim && !dragging) renderSide(S.sailing ? 6 : 3);""")
+# dragging the slice bar in the side view
+rep("""new ResizeObserver(resize).observe(chartEl);""", """new ResizeObserver(resize).observe(chartEl);
+sideCv.addEventListener("pointerdown", e => { if (!CELLS.cellZoom()) return; sliceDrag = true; sideCv.setPointerCapture(e.pointerId); CELLS.dragStart(e.offsetY, sideFrame()); });
+sideCv.addEventListener("pointermove", e => { if (sliceDrag) CELLS.dragMove(e.offsetY); else sideCv.style.cursor = CELLS.hitBar(e.offsetY) ? "ns-resize" : CELLS.cellZoom() ? "ns-resize" : ""; });
+const sliceUp = () => { if (sliceDrag) { sliceDrag = false; CELLS.dragEnd(); } };
+sideCv.addEventListener("pointerup", sliceUp); sideCv.addEventListener("pointercancel", sliceUp);
+sideCv.addEventListener("wheel", e => { if (!CELLS.cellZoom()) return; e.preventDefault(); CELLS.shift(e.deltaY > 0 ? -2 : 2, true); }, { passive: false });""")
 
 # notes
 rep("""        <li><b>Crew's eye</b> switches distances""", """        <li><b>Seven zoom tiers, from the whole galaxy to one star system.</b> Sol and Tumult dive straight down; the ladder on the left jumps a tier. Each tier draws the stars that matter at that size, about a thousand on screen at any zoom. From Neighbourhood down, the chart shows a slice of the disk around one height, so nearby stars are not buried under the whole column.</li>
@@ -173,8 +198,91 @@ rep("""        <li>Cloud and bubble densities are standard ISM values""", """   
         <li>Every other star is drawn from the galaxy model: a disk falling off over 8,500 ly, the arms, the bulge and bar, and the local mix of bright and faint stars; about 9 stars per square ly at Sol, 30 times that near Tumult <span class="t">[M] model</span></li>
         <li>Cloud and bubble densities are standard ISM values""")
 
+
+# ── cells in 3D (cells.js): the chart's cell zoom slices truncated octahedra; region edges on the sea; overlay; side view
+i0 = src.index("function renderCells() {"); i1 = src.index("const renderFine")
+src = src[:i0] + """function renderCells() {
+  const fw = Math.round(W * DPR), fh = Math.round(H * DPR);
+  if (field2.width !== fw || field2.height !== fh) { field2.width = fw; field2.height = fh; }
+  fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  fctx.fillStyle = "#050912"; fctx.fillRect(0, 0, W, H);
+  CELLS.renderChart(fctx, sliceDrag ? 3 : 2);
+  field = field2; fieldView = { ...view, W, H };
+  renderSide(sliceDrag ? 4 : 3);
+}
+""" + src[i1:]
+rep("""      if (galaxy < 1) { const c = seaRGB(dens(x, y)); r = c[0] * (1 - galaxy); g = c[1] * (1 - galaxy); b = c[2] * (1 - galaxy); }
+      if (galaxy > 0) {
+        const st = starlight(x, y);""", """      if (galaxy < 1) { const nn = dens(x, y), c = seaRGB(nn); zcls[j * fw + i] = CELLS.zoneIx(nn); r = c[0] * (1 - galaxy); g = c[1] * (1 - galaxy); b = c[2] * (1 - galaxy); }
+      if (galaxy > 0) {
+        const st = starlight(x, y);""")
+rep("""  const img = fctx.createImageData(fw, fh), data = img.data;
+  const s = scale(), galaxy""", """  const img = fctx.createImageData(fw, fh), data = img.data, zcls = new Int8Array(fw * fh);
+  const s = scale(), galaxy""")
+rep("""  fctx.putImageData(img, 0, 0);
+  field = field2; fieldView = { ...view, W, H };
+  renderSide(step);""", """  // the edges between ecology regions, drawn as a pale line wherever the zone changes
+  if (galaxy < 1 && step < 9) for (let j = 1; j < fh; j++) for (let i = 1; i < fw; i++) {
+    const k = j * fw + i, z0 = zcls[k];
+    if (z0 !== zcls[k - 1] || z0 !== zcls[k - fw]) { const o = k * 4, a = .4 * (1 - galaxy); data[o] += (235 - data[o]) * a; data[o + 1] += (240 - data[o + 1]) * a; data[o + 2] += (250 - data[o + 2]) * a; }
+  }
+  fctx.putImageData(img, 0, 0);
+  field = field2; fieldView = { ...view, W, H };
+  renderSide(step);""")
+rep("""  drawSide();
+  readout();
+}""", """  CELLS.tags(ctx);
+  drawSide();
+  readout();
+}""")
+rep("""  // past voyages
+  ctx.lineCap = "round";""", """  CELLS.overlay(ctx);
+  // past voyages
+  ctx.lineCap = "round";""")
+rep("""    if (cellPx > 6) sailPath.cells.forEach(c => { const [sx, sy] = toScreen(c.x, c.y); ctx.beginPath(); ctx.arc(sx, sy, Math.min(3, cellPx * .14), 0, 7); ctx.fillStyle = col; ctx.fill(); });""",
+    """    if (cellPx > 6) CELLS.courseCells(sailPath).forEach(c => { const [sx, sy] = toScreen(c.x, c.y); ctx.beginPath(); ctx.arc(sx, sy, Math.min(3, cellPx * .14), 0, 7); ctx.fillStyle = col; ctx.fill(); });""")
+rep("""  // the lanes: one height for each heading""", """  // the cells, cut upright through the Ark's line
+  CELLS.side(c, f);
+  // the lanes: one height for each heading""")
+rep("""    const [wx, wy] = toWorld(x, y), [q, r] = hexOf(wx, wy), n = cellN(q, r);
+    html = `<span class="k">This cell:</span> ${seaName(n)}, ${n < 10 ? n.toFixed(2) : fmt(n)} g/cm³ to your crew <span class="k">(${feelsLike(n)})</span>`;""",
+    """    const [wx, wy] = toWorld(x, y), zs = CELLS.sliceZ(), C = CELLS.cellAt(wx, wy, zs), n = CELLS.densOf(C);
+    html = `<span class="k">This cell:</span> ${seaName(n)}, ${n < 10 ? n.toFixed(2) : fmt(n)} g/cm³ to your crew <span class="k">(${feelsLike(n)})</span><br>${CELLS.regionHTML(wx, wy, zs, n)}`;""")
+rep("""          <div class="ramp"><i style="background:var(--spray)"></i>""", """          <div class="kt">Ecology regions · how the sea feels</div>
+          <div class="ramp"><i style="background:var(--spray)"></i>""")
+rep("""        <li><b>Crew's eye</b> switches distances""", """        <li><b>Cells are truncated octahedra, packed in three dimensions.</b> Each cell grows round its nucleus, the nuclei sit on a body-centred cubic lattice, and each cell is the space nearer its own nucleus than any other: 6 square faces and 8 hexagons, the foam cell that spends the least membrane for its volume (Kelvin's). Zoom to cells and the chart is a slice through them at one height: octagons and squares where it cuts a layer, diamonds between layers. The side view shows the same cells upright, cut through the middle of the chart, with the chart's slice as a green bar: drag the bar (or scroll over the side view, or Slice ▲ ▼) and the chart slices the cells at another height. The central cell's nucleus is Sgr A*.</li>
+        <li><b>Zoom into one cell to see its levels:</b> the membrane (its 14 faces), the cytoplasm (where flora and fauna live, brighter toward the nucleus) and the nucleus (6.5 ly across, where omni regrows). A nucleus the slice misses shows dashed, with its height.</li>
+        <li><b>Ecology regions are drawn in the sea.</b> Pale lines mark where hot bubbles (spray), the warm medium (froth), open water, cold clouds (thick water) and molecular clouds (reefs) meet; the big bubbles and clouds are named, and the centre's rings (the central cell, the circumnuclear reef ring, the Central Molecular Zone) are outlined. Hover anywhere for its region.</li>
+        <li><b>Crew's eye</b> switches distances""")
+rep("""        <li>Places near Tumult are invented""", """        <li>Cells: truncated octahedra on a body-centred cubic lattice, 20 ly across the square faces, 4,000 ly³ each; nucleus 3.3 ly in radius (the game's 392 u); the lattice is anchored so Sgr A* is a nucleus <span class="t">[A] proposed</span>. Courses are still routed and timed on the old 20 ly hexagons; the dots along a course are the octahedral cells it passes through</li>
+        <li>Inner cells sheared into arcs near the centre (fact sheet) are not drawn yet; every cell is drawn regular <span class="t">[A]</span></li>
+        <li>Places near Tumult are invented""")
+
+rep("const renderFine = () => (CELL * scale() > 6.5 ? renderCells() : renderField(3));", "const renderFine = () => (CELLS.cellZoom() ? renderCells() : renderField(3));")
+rep("""  if (moving) renderField(9);""", """  if (moving) renderField(9);
+  else if (CELLS.takeDirty()) renderFine();   // the slice bar is being dragged: one fresh slice per frame""")
+rep("""  const img = siCtx.createImageData(fw, fh), data = img.data;
+  const galaxy = Math.min(1, Math.max(0, (Math.log(view.w) - Math.log(5000)) / (Math.log(40000) - Math.log(5000))));
+  for (let i = 0; i < fw; i++) {""", """  if (CELLS.cellZoom()) { CELLS.sidePixels(siCtx, fw, fh, step, f); sideView = { ...view, W, ...f }; return; }
+  const img = siCtx.createImageData(fw, fh), data = img.data, zcls = new Int8Array(fw * fh);
+  const galaxy = Math.min(1, Math.max(0, (Math.log(view.w) - Math.log(5000)) / (Math.log(40000) - Math.log(5000))));
+  for (let i = 0; i < fw; i++) {""")
+rep("""      if (galaxy < 1) { const c = seaRGB(dens(x, f.sliceY, z)); r = c[0] * (1 - galaxy); g = c[1] * (1 - galaxy); b = c[2] * (1 - galaxy); }""",
+    """      if (galaxy < 1) { const nn = dens(x, f.sliceY, z), c = seaRGB(nn); zcls[j * fw + i] = CELLS.zoneIx(nn); r = c[0] * (1 - galaxy); g = c[1] * (1 - galaxy); b = c[2] * (1 - galaxy); }""")
+rep("""  siCtx.putImageData(img, 0, 0);
+  sideView = { ...view, W, ...f };""", """  // the edges between ecology regions, as on the chart
+  if (galaxy < 1 && step < 9) for (let j = 1; j < fh; j++) for (let i = 1; i < fw; i++) {
+    const k = j * fw + i, z0 = zcls[k];
+    if (z0 !== zcls[k - 1] || z0 !== zcls[k - fw]) { const o = k * 4, a = .4 * (1 - galaxy); data[o] += (235 - data[o]) * a; data[o + 1] += (240 - data[o + 1]) * a; data[o + 2] += (250 - data[o + 2]) * a; }
+  }
+  siCtx.putImageData(img, 0, 0);
+  sideView = { ...view, W, ...f };""")
+rep('<canvas id="sv" aria-label="Side view of the disk at true scale, sliced through the Ark"></canvas>', '<canvas id="sv" aria-label="Side view of the disk at true scale, cut through the middle of the chart"></canvas>')
+rep("""let hits = [];
+function draw(now) {""", """let hits = [], sliceDrag = false;
+function draw(now) {""")
 # deep-zoom module and data
-rep("// ── Rail ──", js + "\n// ── Rail ──")
+rep("// ── Rail ──", cells + "\n" + js + "\n// ── Rail ──")
 assert "</script>" not in data
 rep("<script>\n(() => {", '<script type="application/json" id="realsky">' + data + "</script>\n<script>\n(() => {")
 open(sys.argv[1], "w").write(src)

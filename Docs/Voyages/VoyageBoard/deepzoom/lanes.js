@@ -117,6 +117,8 @@ function drawProfile(c, path) {
     profCache = { key, img: cv2 };
   }
   c.imageSmoothingEnabled = true; c.drawImage(profCache.img, X0p, top, X1p - X0p, bot - top);
+  // the cells this sheet cuts, with their nuclei
+  CELLS.profile(c, path, cum, at, Y, zmin, zmax, top, bot, (X1p - X0p) / Ltot);
   // stars within 60 ly of the course on the chart, at their heights
   DZ.side.forEach(s => { if (s.wx === undefined) return; const p = project(s.wx, s.wy); if (p.d > 150) return; const y = Y(s.z); if (y < top || y > bot) return; const r = Math.max(.6, s.r * .8); c.fillStyle = `rgba(${s.col},${Math.min(1, s.a * (1 - p.d / 190)).toFixed(2)})`; c.fillRect(at(p.s) - r, y - r, r * 2, r * 2); });
   // the eight lanes
