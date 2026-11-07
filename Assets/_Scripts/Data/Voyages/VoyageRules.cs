@@ -399,6 +399,15 @@ namespace CosmicShore.Data
                 .Replace("{rival}", rival ?? string.Empty);
         }
 
+        /// <summary>One of several ways to say a thing, picked by the day and the place (so no two outcomes read the
+        /// same, and the same outcome reads the same on every machine); the one line when there are no variants.</summary>
+        public static string PickLine(List<string> variants, string line, int day, string a, string b)
+        {
+            if (variants == null || variants.Count == 0) return line ?? string.Empty;
+            var pick = variants[Mod(Hash(day, a, b), variants.Count)];
+            return string.IsNullOrEmpty(pick) ? line ?? string.Empty : pick;
+        }
+
         /// <summary>Replaces each "{token}" with its value; <paramref name="pairs"/> is token, value, token, value...</summary>
         public static string Tokens(string template, params string[] pairs)
         {
@@ -1105,7 +1114,8 @@ namespace CosmicShore.Data
                     }
                 }
 
-                result.StoryLine = Fill(ok ? t.SuccessLine : t.FailLine, from, to, to, person, crew?.Name);
+                result.StoryLine = Fill(PickLine(ok ? t.SuccessLines : t.FailLines, ok ? t.SuccessLine : t.FailLine, state.Day, job.To, t.Id),
+                    from, to, to, person, crew?.Name);
                 Tell(state, result.StoryLine);
             }
 
@@ -1233,7 +1243,7 @@ namespace CosmicShore.Data
 
                 var about = AboutFor(state, content, wr, job);
                 if (about == null) continue;
-                var line = Fill(wr.Line, content.Location(job.From), dest, about, person, crew?.Name);
+                var line = Fill(PickLine(wr.Lines, wr.Line, state.Day, job.To, about.Id), content.Location(job.From), dest, about, person, crew?.Name);
                 foreach (var port in PortsFor(state, content, wr.At, job))
                 {
                     var ledger = state.Ledger(port.Id);

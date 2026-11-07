@@ -877,8 +877,15 @@
    "notoriety": 0,
    "title": "{pilot}: carry a sealed dispatch to {to}",
    "summary": "Reach {to} with the Ark standing. The news aboard will change what {to} knows.",
-   "success": "{pilot}'s dispatch reached {to}. The dock crews were talking about it before the hull cooled.",
-   "fail": "The dispatch for {to} never arrived.",
+   "success": [
+    "{pilot}'s dispatch reached {to}. The dock crews were talking about it before the hull cooled.",
+    "{to} has {pilot}'s dispatch. Three ledgers were rewritten before the Ark was tied up.",
+    "{pilot} came into {to} with the dispatch sealed and left with it read. News travels on Arks."
+   ],
+   "fail": [
+    "The dispatch for {to} never arrived.",
+    "{to} waited for {pilot}'s dispatch and got rumours instead."
+   ],
    "reward": 6,
    "element": "Time",
    "onSuccess": "ev.courier.delivered",
@@ -900,8 +907,14 @@
    "notoriety": 0,
    "title": "{pilot}: run cargo through to {to}",
    "summary": "{to} is cut off and paying cargo rates. Bring the Ark in with more than half its hull.",
-   "success": "{pilot} brought the cargo into {to} with the hull holding. The quay paid in full.",
-   "fail": "The cargo for {to} came in short, or not at all.",
+   "success": [
+    "{pilot} brought the cargo into {to} with the hull holding. The quay paid in full.",
+    "The convoy made {to}. {pilot} counted the plates left and called it a profit."
+   ],
+   "fail": [
+    "The cargo for {to} came in short, or not at all.",
+    "{to} got half a hold and paid for none of it."
+   ],
    "reward": 10,
    "element": "Mass",
    "onSuccess": "ev.convoy.delivered",
@@ -922,8 +935,15 @@
    "notoriety": 0,
    "title": "{pilot}: open the vaults at {to}",
    "summary": "Vaults are lit at {to}. Crack one with a payload, carry its artifact back to the Ark and stow it.",
-   "success": "{pilot}'s crew opened a vault at {to}. Its chart pointed somewhere new.",
-   "fail": "The vaults at {to} kept their secrets.",
+   "success": [
+    "{pilot}'s crew opened a vault at {to}. Its chart pointed somewhere new.",
+    "A shell at {to} cracked under {pilot}'s payload and gave up what it kept.",
+    "{pilot} read the shells at {to} like faces and picked the right one."
+   ],
+   "fail": [
+    "The vaults at {to} kept their secrets.",
+    "{pilot} left {to} with the shells still sealed."
+   ],
    "reward": 8,
    "element": "Space",
    "onSuccess": "ev.hunt.opened",
@@ -944,8 +964,14 @@
    "notoriety": 0,
    "title": "{pilot}: chase a rumour of vaults at {to}",
    "summary": "Nobody has seen them lit, but {pilot} swears there are vaults at {to}. Crack one and stow what is inside.",
-   "success": "{pilot}'s rumour was true. A vault at {to} gave up its artifact.",
-   "fail": "{to} was empty water, or looked like it.",
+   "success": [
+    "{pilot}'s rumour was true. A vault at {to} gave up its artifact.",
+    "Nobody believed {pilot} about {to}. Nobody is laughing now."
+   ],
+   "fail": [
+    "{to} was empty water, or looked like it.",
+    "{pilot}'s rumour of {to} cost a day and paid nothing."
+   ],
    "reward": 4,
    "element": "Space",
    "onSuccess": "ev.hunt.opened",
@@ -966,8 +992,14 @@
    "notoriety": 0,
    "title": "{pilot}: thin the predators at {to}",
    "summary": "Predators crowd {to} and the lanes past it. Fell five of them close to the Ark and the water clears.",
-   "success": "{pilot}'s squad culled the predators at {to}. What they guarded is nobody's now.",
-   "fail": "The predators at {to} are still there.",
+   "success": [
+    "{pilot}'s squad culled the predators at {to}. What they guarded is nobody's now.",
+    "Five fell at {to} and the rest went deep. {pilot} calls that thinned."
+   ],
+   "fail": [
+    "The predators at {to} are still there.",
+    "{to} is as hungry as it was. {pilot} says the next crew can try."
+   ],
    "reward": 9,
    "element": "Charge",
    "onSuccess": "ev.lair.culled",
@@ -1011,8 +1043,14 @@
    "notoriety": 0,
    "title": "{pilot}: answer the call to hold {to}",
    "summary": "{to} is under pressure. Keep the Ark under its core until the hold is done.",
-   "success": "{pilot}'s squad held {to}. The wardens there owe a favour, and paid it in news.",
-   "fail": "{to} fell to the waves while the squad was away.",
+   "success": [
+    "{pilot}'s squad held {to}. The wardens there owe a favour, and paid it in news.",
+    "{to} stood through the hold with {pilot}'s squad under its core. The waves wear your colour now."
+   ],
+   "fail": [
+    "{to} fell to the waves while the squad was away.",
+    "{pilot} left {to} before the hold was done. It did not hold."
+   ],
    "reward": 8,
    "element": "Charge",
    "onSuccess": "ev.defence.held",
@@ -1033,8 +1071,13 @@
    "notoriety": 0,
    "title": "{pilot}: patrol {to}",
    "summary": "Fly the flag at {to}. Keep the Ark under its core until the patrol is done.",
-   "success": "{pilot} flew the flag at {to}.",
-   "fail": "The patrol at {to} was cut short.",
+   "success": [
+    "{pilot} flew the flag at {to}.",
+    "{pilot}'s patrol of {to} was quiet. Quiet is the point."
+   ],
+   "fail": [
+    "The patrol at {to} was cut short."
+   ],
    "reward": 4,
    "element": "Charge",
    "onSuccess": "ev.defence.held",
@@ -1077,8 +1120,13 @@
    "notoriety": 1,
    "title": "{pilot}: strip the wreck at {to}",
    "summary": "An Ark went down at {to} and its hold spilled. Grab what floats there with RB and stow it in your Ark before anyone else does.",
-   "success": "{pilot} picked the wreck at {to} clean.",
-   "fail": "Someone else got to the wreck at {to} first, or nobody did.",
+   "success": [
+    "{pilot} picked the wreck at {to} clean.",
+    "What spilled at {to} is in your hold. {pilot} did not ask whose it was."
+   ],
+   "fail": [
+    "Someone else got to the wreck at {to} first, or nobody did."
+   ],
    "reward": 5,
    "element": "Mass",
    "onSuccess": "ev.salvage.stripped",
@@ -1099,8 +1147,13 @@
    "notoriety": 1,
    "title": "{pilot}: raid the hoard at {to}",
    "summary": "The thieves of {to} sealed what they stole in shells. Crack one and stow it. They will not thank you.",
-   "success": "{pilot} raided the hoard at {to}. The thieves are furious, and the sea heard about it.",
-   "fail": "The hoard at {to} stayed sealed.",
+   "success": [
+    "{pilot} raided the hoard at {to}. The thieves are furious, and the sea heard about it.",
+    "{pilot} cracked the thieves' shells at {to} and took back what was never theirs."
+   ],
+   "fail": [
+    "The hoard at {to} stayed sealed."
+   ],
    "reward": 7,
    "element": "Mass",
    "onSuccess": "ev.raid.stripped",
@@ -1166,8 +1219,13 @@
    "notoriety": 0,
    "title": "{pilot}: survey {to}",
    "summary": "No chart names {to}. Sail there and it is on yours, and every pilot's work can send you back.",
-   "success": "{pilot} charted {to}. The chart is bigger tonight.",
-   "fail": "{to} stays off the chart.",
+   "success": [
+    "{pilot} charted {to}. The chart is bigger tonight.",
+    "{to} has a name on your chart now. {pilot} chose the ink."
+   ],
+   "fail": [
+    "{to} stays off the chart."
+   ],
    "reward": 8,
    "element": "Space",
    "onSuccess": "ev.survey.charted",
@@ -1232,8 +1290,13 @@
    "notoriety": 1,
    "title": "{pilot}: open the pens at {to}",
    "summary": "Herds are penned at {to} behind another domain's mass. Raze enough of it and they are free.",
-   "success": "{pilot} opened the pens at {to}. The herds ran for the nearest bloom.",
-   "fail": "The pens at {to} are still shut.",
+   "success": [
+    "{pilot} opened the pens at {to}. The herds ran for the nearest bloom.",
+    "The mass that held the herds at {to} is rubble. {pilot} watched them go."
+   ],
+   "fail": [
+    "The pens at {to} are still shut."
+   ],
    "reward": 8,
    "element": "Mass",
    "onSuccess": "ev.pen.freed",
@@ -1277,8 +1340,13 @@
    "notoriety": 0,
    "title": "{pilot}: harvest the bloom at {to}",
    "summary": "{to} is in bloom. Skim twelve crystals between the three of you and the harvest is in.",
-   "success": "{pilot}'s squad brought the harvest in from {to}.",
-   "fail": "The bloom at {to} went ungathered.",
+   "success": [
+    "{pilot}'s squad brought the harvest in from {to}.",
+    "The crystal of {to} is in the hold and the herds are fed. {pilot} calls it a good day."
+   ],
+   "fail": [
+    "The bloom at {to} went ungathered."
+   ],
    "reward": 8,
    "element": "Mass",
    "onSuccess": "ev.harvest.gathered",
@@ -1387,8 +1455,13 @@
    "notoriety": 0,
    "title": "{pilot}: study the predators at {to}",
    "summary": "{pilot} wants forty seconds close to a living predator at {to}. Keep one in reach and keep it alive.",
-   "success": "{pilot} filled a notebook at {to}. The creatures' range runs off the chart.",
-   "fail": "{pilot} got no notes at {to}.",
+   "success": [
+    "{pilot} filled a notebook at {to}. The creatures' range runs off the chart.",
+    "{pilot} watched the predators of {to} hunt and wrote down where they went."
+   ],
+   "fail": [
+    "{pilot} got no notes at {to}."
+   ],
    "reward": 6,
    "element": "Time",
    "onSuccess": "ev.study.noted",
@@ -1454,8 +1527,13 @@
    "notoriety": 0,
    "title": "{pilot}: answer the distress call from {to}",
    "summary": "A crew is stranded at {to}. Stand by the derelict with the Ark until they are all aboard.",
-   "success": "{pilot} brought the crew off {to}. They talked all the way to port.",
-   "fail": "The crew at {to} is still waiting.",
+   "success": [
+    "{pilot} brought the crew off {to}. They talked all the way to port.",
+    "The derelict at {to} is empty now. Its crew are aboard and alive, and {pilot} is why."
+   ],
+   "fail": [
+    "The crew at {to} is still waiting."
+   ],
    "reward": 7,
    "element": "Charge",
    "onSuccess": "ev.rescue.saved",
@@ -1476,8 +1554,13 @@
    "notoriety": 0,
    "title": "{pilot}: keep a vigil at {to}",
    "summary": "Keep the Ark at the beacon of {to} while {pilot} keeps the vigil. The slow tide shows things to those who wait.",
-   "success": "{pilot}'s vigil at {to} was kept. The light showed a place off the chart.",
-   "fail": "The vigil at {to} was broken.",
+   "success": [
+    "{pilot}'s vigil at {to} was kept. The light showed a place off the chart.",
+    "{pilot} kept the hours at {to}. The slow tide turned, and showed something."
+   ],
+   "fail": [
+    "The vigil at {to} was broken."
+   ],
    "reward": 5,
    "element": "Time",
    "onSuccess": "ev.vigil.kept",
@@ -1538,7 +1621,10 @@
      "tag": "Aid",
      "at": "Destination",
      "about": "AnotherCore",
-     "line": "Dock crews at {to} say {about} is asking for a squad to hold it."
+     "line": [
+      "Dock crews at {to} say {about} is asking for a squad to hold it.",
+      "The news at {to} is all {about}: its core is slipping and it wants a squad."
+     ]
     }
    ]
   },
@@ -1563,7 +1649,10 @@
      "tag": "Sighting",
      "at": "Destination",
      "about": "AnotherVaultField",
-     "line": "A vault chart from {to} shows lit shells at {about}."
+     "line": [
+      "A vault chart from {to} shows lit shells at {about}.",
+      "The shell opened at {to} held a chart. It marks {about}, and the marks are fresh."
+     ]
     },
     {
      "tag": "Chart",
@@ -1677,7 +1766,10 @@
      "tag": "Sighting",
      "at": "Destination",
      "about": "AnotherVaultField",
-     "line": "The wardens of {to} share a chart: vaults are lit at {about}."
+     "line": [
+      "The wardens of {to} share a chart: vaults are lit at {about}.",
+      "For holding {to} the wardens paid in news: shells are lit at {about}."
+     ]
     }
    ]
   },
@@ -2483,7 +2575,7 @@
   "SeaReef": "REEF",
   "CardOpen": "Open",
   "CardClose": "Close",
-  "CardDetails": "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>SUITS  {role}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br>{warnings}<br>{pilot}: {story}",
+  "CardDetails": "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>SUITS  {role}<br>STANDING  {standing}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br>{warnings}<br>{pilot}: {story}",
   "CardHomeDetails": "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>{warnings}",
   "CardWarnings": "<br>{warnings}",
   "CardWarningSeparator": "<br>",
@@ -2613,7 +2705,9 @@
   "StoryWaterLine": "Light takes {years} years to reach {to}. You take {minutes} minutes.",
   "StoryWaterBy": "{sea} on the way",
   "StoryWorld": "THE SEA TODAY",
-  "StoryWorldBy": "{warnings}"
+  "StoryWorldBy": "{warnings}",
+  "StoryLog": "YOUR LOG",
+  "StoryLogLine": "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost."
  },
  "toy": {
   "id": "voyage",

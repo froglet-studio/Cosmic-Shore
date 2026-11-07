@@ -952,6 +952,8 @@
    "Summary": "Dock at {to}. Everything aboard becomes yours.",
    "SuccessLine": "",
    "FailLine": "",
+   "SuccessLines": [],
+   "FailLines": [],
    "Reward": 0,
    "RewardElement": 5,
    "OnSuccess": "",
@@ -979,6 +981,15 @@
    "Summary": "Reach {to} with the Ark standing. The news aboard will change what {to} knows.",
    "SuccessLine": "{pilot}'s dispatch reached {to}. The dock crews were talking about it before the hull cooled.",
    "FailLine": "The dispatch for {to} never arrived.",
+   "SuccessLines": [
+    "{pilot}'s dispatch reached {to}. The dock crews were talking about it before the hull cooled.",
+    "{to} has {pilot}'s dispatch. Three ledgers were rewritten before the Ark was tied up.",
+    "{pilot} came into {to} with the dispatch sealed and left with it read. News travels on Arks."
+   ],
+   "FailLines": [
+    "The dispatch for {to} never arrived.",
+    "{to} waited for {pilot}'s dispatch and got rumours instead."
+   ],
    "Reward": 6,
    "RewardElement": 4,
    "OnSuccess": "ev.courier.delivered",
@@ -1006,6 +1017,14 @@
    "Summary": "{to} is cut off and paying cargo rates. Bring the Ark in with more than half its hull.",
    "SuccessLine": "{pilot} brought the cargo into {to} with the hull holding. The quay paid in full.",
    "FailLine": "The cargo for {to} came in short, or not at all.",
+   "SuccessLines": [
+    "{pilot} brought the cargo into {to} with the hull holding. The quay paid in full.",
+    "The convoy made {to}. {pilot} counted the plates left and called it a profit."
+   ],
+   "FailLines": [
+    "The cargo for {to} came in short, or not at all.",
+    "{to} got half a hold and paid for none of it."
+   ],
    "Reward": 10,
    "RewardElement": 2,
    "OnSuccess": "ev.convoy.delivered",
@@ -1033,6 +1052,15 @@
    "Summary": "Vaults are lit at {to}. Crack one with a payload, carry its artifact back to the Ark and stow it.",
    "SuccessLine": "{pilot}'s crew opened a vault at {to}. Its chart pointed somewhere new.",
    "FailLine": "The vaults at {to} kept their secrets.",
+   "SuccessLines": [
+    "{pilot}'s crew opened a vault at {to}. Its chart pointed somewhere new.",
+    "A shell at {to} cracked under {pilot}'s payload and gave up what it kept.",
+    "{pilot} read the shells at {to} like faces and picked the right one."
+   ],
+   "FailLines": [
+    "The vaults at {to} kept their secrets.",
+    "{pilot} left {to} with the shells still sealed."
+   ],
    "Reward": 8,
    "RewardElement": 3,
    "OnSuccess": "ev.hunt.opened",
@@ -1060,6 +1088,14 @@
    "Summary": "Nobody has seen them lit, but {pilot} swears there are vaults at {to}. Crack one and stow what is inside.",
    "SuccessLine": "{pilot}'s rumour was true. A vault at {to} gave up its artifact.",
    "FailLine": "{to} was empty water, or looked like it.",
+   "SuccessLines": [
+    "{pilot}'s rumour was true. A vault at {to} gave up its artifact.",
+    "Nobody believed {pilot} about {to}. Nobody is laughing now."
+   ],
+   "FailLines": [
+    "{to} was empty water, or looked like it.",
+    "{pilot}'s rumour of {to} cost a day and paid nothing."
+   ],
    "Reward": 4,
    "RewardElement": 3,
    "OnSuccess": "ev.hunt.opened",
@@ -1087,6 +1123,14 @@
    "Summary": "Predators crowd {to} and the lanes past it. Fell five of them close to the Ark and the water clears.",
    "SuccessLine": "{pilot}'s squad culled the predators at {to}. What they guarded is nobody's now.",
    "FailLine": "The predators at {to} are still there.",
+   "SuccessLines": [
+    "{pilot}'s squad culled the predators at {to}. What they guarded is nobody's now.",
+    "Five fell at {to} and the rest went deep. {pilot} calls that thinned."
+   ],
+   "FailLines": [
+    "The predators at {to} are still there.",
+    "{to} is as hungry as it was. {pilot} says the next crew can try."
+   ],
    "Reward": 9,
    "RewardElement": 1,
    "OnSuccess": "ev.lair.culled",
@@ -1114,6 +1158,12 @@
    "Summary": "The Leviathan lairs at {to}. Every port knows it. Fell its brood close to the Ark until it breaks, and come back with the hull you have left.",
    "SuccessLine": "The Leviathan broke at {to}. Every port will hear it from {pilot}.",
    "FailLine": "The Leviathan is still at {to}.",
+   "SuccessLines": [
+    "The Leviathan broke at {to}. Every port will hear it from {pilot}."
+   ],
+   "FailLines": [
+    "The Leviathan is still at {to}."
+   ],
    "Reward": 20,
    "RewardElement": 1,
    "OnSuccess": "ev.kaiju.felled",
@@ -1141,6 +1191,14 @@
    "Summary": "{to} is under pressure. Keep the Ark under its core until the hold is done.",
    "SuccessLine": "{pilot}'s squad held {to}. The wardens there owe a favour, and paid it in news.",
    "FailLine": "{to} fell to the waves while the squad was away.",
+   "SuccessLines": [
+    "{pilot}'s squad held {to}. The wardens there owe a favour, and paid it in news.",
+    "{to} stood through the hold with {pilot}'s squad under its core. The waves wear your colour now."
+   ],
+   "FailLines": [
+    "{to} fell to the waves while the squad was away.",
+    "{pilot} left {to} before the hold was done. It did not hold."
+   ],
    "Reward": 8,
    "RewardElement": 1,
    "OnSuccess": "ev.defence.held",
@@ -1168,6 +1226,13 @@
    "Summary": "Fly the flag at {to}. Keep the Ark under its core until the patrol is done.",
    "SuccessLine": "{pilot} flew the flag at {to}.",
    "FailLine": "The patrol at {to} was cut short.",
+   "SuccessLines": [
+    "{pilot} flew the flag at {to}.",
+    "{pilot}'s patrol of {to} was quiet. Quiet is the point."
+   ],
+   "FailLines": [
+    "The patrol at {to} was cut short."
+   ],
    "Reward": 4,
    "RewardElement": 1,
    "OnSuccess": "ev.defence.held",
@@ -1195,6 +1260,12 @@
    "Summary": "Another domain holds the nucleus of {to} and its waves wear their colour. Hold the Ark under the core until it is yours again.",
    "SuccessLine": "{pilot} retook {to}. Its waves wear your colour now.",
    "FailLine": "{to} is still theirs.",
+   "SuccessLines": [
+    "{pilot} retook {to}. Its waves wear your colour now."
+   ],
+   "FailLines": [
+    "{to} is still theirs."
+   ],
    "Reward": 12,
    "RewardElement": 1,
    "OnSuccess": "ev.defence.retaken",
@@ -1222,6 +1293,13 @@
    "Summary": "An Ark went down at {to} and its hold spilled. Grab what floats there with RB and stow it in your Ark before anyone else does.",
    "SuccessLine": "{pilot} picked the wreck at {to} clean.",
    "FailLine": "Someone else got to the wreck at {to} first, or nobody did.",
+   "SuccessLines": [
+    "{pilot} picked the wreck at {to} clean.",
+    "What spilled at {to} is in your hold. {pilot} did not ask whose it was."
+   ],
+   "FailLines": [
+    "Someone else got to the wreck at {to} first, or nobody did."
+   ],
    "Reward": 5,
    "RewardElement": 2,
    "OnSuccess": "ev.salvage.stripped",
@@ -1249,6 +1327,13 @@
    "Summary": "The thieves of {to} sealed what they stole in shells. Crack one and stow it. They will not thank you.",
    "SuccessLine": "{pilot} raided the hoard at {to}. The thieves are furious, and the sea heard about it.",
    "FailLine": "The hoard at {to} stayed sealed.",
+   "SuccessLines": [
+    "{pilot} raided the hoard at {to}. The thieves are furious, and the sea heard about it.",
+    "{pilot} cracked the thieves' shells at {to} and took back what was never theirs."
+   ],
+   "FailLines": [
+    "The hoard at {to} stayed sealed."
+   ],
    "Reward": 7,
    "RewardElement": 2,
    "OnSuccess": "ev.raid.stripped",
@@ -1276,6 +1361,12 @@
    "Summary": "There is a price on {rival}, and they were seen at {to}. Arrive while they are there and the warrant is served; what they carry spills.",
    "SuccessLine": "{pilot} served the warrant on {rival} at {to}. What they carried lies there now.",
    "FailLine": "{rival} were gone from {to} before the squad arrived.",
+   "SuccessLines": [
+    "{pilot} served the warrant on {rival} at {to}. What they carried lies there now."
+   ],
+   "FailLines": [
+    "{rival} were gone from {to} before the squad arrived."
+   ],
    "Reward": 12,
    "RewardElement": 1,
    "OnSuccess": "ev.bounty.served",
@@ -1303,6 +1394,12 @@
    "Summary": "No price is posted on anyone this crew can reach. {pilot} carries the agency's warrants to {to} and reads its board, so the next price is known first.",
    "SuccessLine": "{pilot} posted the warrants at {to} and read its board.",
    "FailLine": "The warrants never reached {to}.",
+   "SuccessLines": [
+    "{pilot} posted the warrants at {to} and read its board."
+   ],
+   "FailLines": [
+    "The warrants never reached {to}."
+   ],
    "Reward": 3,
    "RewardElement": 1,
    "OnSuccess": "",
@@ -1330,6 +1427,13 @@
    "Summary": "No chart names {to}. Sail there and it is on yours, and every pilot's work can send you back.",
    "SuccessLine": "{pilot} charted {to}. The chart is bigger tonight.",
    "FailLine": "{to} stays off the chart.",
+   "SuccessLines": [
+    "{pilot} charted {to}. The chart is bigger tonight.",
+    "{to} has a name on your chart now. {pilot} chose the ink."
+   ],
+   "FailLines": [
+    "{to} stays off the chart."
+   ],
    "Reward": 8,
    "RewardElement": 3,
    "OnSuccess": "ev.survey.charted",
@@ -1357,6 +1461,12 @@
    "Summary": "A fragment of a chart names {to}. Follow it and see what the chart-maker saw.",
    "SuccessLine": "{pilot} followed the fragment to {to}. It is on the chart now.",
    "FailLine": "The fragment led nowhere the squad could follow.",
+   "SuccessLines": [
+    "{pilot} followed the fragment to {to}. It is on the chart now."
+   ],
+   "FailLines": [
+    "The fragment led nowhere the squad could follow."
+   ],
    "Reward": 10,
    "RewardElement": 3,
    "OnSuccess": "ev.survey.charted",
@@ -1384,6 +1494,12 @@
    "Summary": "Every place a lane reaches is charted. {pilot} sounds the water to {to} and sells the soundings; sometimes they show a place the chart missed.",
    "SuccessLine": "{pilot} sounded the lanes to {to}. The soundings sold.",
    "FailLine": "The soundings to {to} were never taken.",
+   "SuccessLines": [
+    "{pilot} sounded the lanes to {to}. The soundings sold."
+   ],
+   "FailLines": [
+    "The soundings to {to} were never taken."
+   ],
    "Reward": 3,
    "RewardElement": 3,
    "OnSuccess": "ev.sound.taken",
@@ -1411,6 +1527,13 @@
    "Summary": "Herds are penned at {to} behind another domain's mass. Raze enough of it and they are free.",
    "SuccessLine": "{pilot} opened the pens at {to}. The herds ran for the nearest bloom.",
    "FailLine": "The pens at {to} are still shut.",
+   "SuccessLines": [
+    "{pilot} opened the pens at {to}. The herds ran for the nearest bloom.",
+    "The mass that held the herds at {to} is rubble. {pilot} watched them go."
+   ],
+   "FailLines": [
+    "The pens at {to} are still shut."
+   ],
    "Reward": 8,
    "RewardElement": 2,
    "OnSuccess": "ev.pen.freed",
@@ -1438,6 +1561,12 @@
    "Summary": "{to} knows something its rivals would pay for. Dock, and {pilot} comes back aboard with it. Sell it at the next port.",
    "SuccessLine": "{pilot} lifted the freshest word at {to}. It rides aboard until the next port hears it.",
    "FailLine": "{to} kept its secrets.",
+   "SuccessLines": [
+    "{pilot} lifted the freshest word at {to}. It rides aboard until the next port hears it."
+   ],
+   "FailLines": [
+    "{to} kept its secrets."
+   ],
    "Reward": 5,
    "RewardElement": 4,
    "OnSuccess": "ev.lift.taken",
@@ -1465,6 +1594,13 @@
    "Summary": "{to} is in bloom. Skim twelve crystals between the three of you and the harvest is in.",
    "SuccessLine": "{pilot}'s squad brought the harvest in from {to}.",
    "FailLine": "The bloom at {to} went ungathered.",
+   "SuccessLines": [
+    "{pilot}'s squad brought the harvest in from {to}.",
+    "The crystal of {to} is in the hold and the herds are fed. {pilot} calls it a good day."
+   ],
+   "FailLines": [
+    "The bloom at {to} went ungathered."
+   ],
    "Reward": 8,
    "RewardElement": 2,
    "OnSuccess": "ev.harvest.gathered",
@@ -1492,6 +1628,12 @@
    "Summary": "No bloom is called, but {pilot} knows the herds feed at {to} anyway. Skim eight crystals between you.",
    "SuccessLine": "{pilot}'s gleaning at {to} paid for the trip.",
    "FailLine": "The gleaning at {to} came to nothing.",
+   "SuccessLines": [
+    "{pilot}'s gleaning at {to} paid for the trip."
+   ],
+   "FailLines": [
+    "The gleaning at {to} came to nothing."
+   ],
    "Reward": 4,
    "RewardElement": 2,
    "OnSuccess": "",
@@ -1519,6 +1661,12 @@
    "Summary": "The shell of {to} is breached. Lay a hundred and twenty prisms in its water and the core stands again.",
    "SuccessLine": "{pilot} shored the breach at {to}. The wardens there will remember who.",
    "FailLine": "The breach at {to} is still open.",
+   "SuccessLines": [
+    "{pilot} shored the breach at {to}. The wardens there will remember who."
+   ],
+   "FailLines": [
+    "The breach at {to} is still open."
+   ],
    "Reward": 10,
    "RewardElement": 2,
    "OnSuccess": "ev.build.shored",
@@ -1546,6 +1694,12 @@
    "Summary": "The wardens of {to} pay for mass laid in its water, breach or no breach. Sixty prisms and the shell is thicker.",
    "SuccessLine": "{pilot} laid shoring at {to}.",
    "FailLine": "No shoring was laid at {to}.",
+   "SuccessLines": [
+    "{pilot} laid shoring at {to}."
+   ],
+   "FailLines": [
+    "No shoring was laid at {to}."
+   ],
    "Reward": 5,
    "RewardElement": 2,
    "OnSuccess": "ev.build.laid",
@@ -1573,6 +1727,12 @@
    "Summary": "{pilot} has sold tickets. Sail to {to} and skim eight crystals on the way there and around it; the club posts your time.",
    "SuccessLine": "{pilot}'s exhibition run to {to} is on the club's board.",
    "FailLine": "The exhibition to {to} was cancelled.",
+   "SuccessLines": [
+    "{pilot}'s exhibition run to {to} is on the club's board."
+   ],
+   "FailLines": [
+    "The exhibition to {to} was cancelled."
+   ],
    "Reward": 4,
    "RewardElement": 4,
    "OnSuccess": "",
@@ -1600,6 +1760,13 @@
    "Summary": "{pilot} wants forty seconds close to a living predator at {to}. Keep one in reach and keep it alive.",
    "SuccessLine": "{pilot} filled a notebook at {to}. The creatures' range runs off the chart.",
    "FailLine": "{pilot} got no notes at {to}.",
+   "SuccessLines": [
+    "{pilot} filled a notebook at {to}. The creatures' range runs off the chart.",
+    "{pilot} watched the predators of {to} hunt and wrote down where they went."
+   ],
+   "FailLines": [
+    "{pilot} got no notes at {to}."
+   ],
    "Reward": 6,
    "RewardElement": 4,
    "OnSuccess": "ev.study.noted",
@@ -1627,6 +1794,12 @@
    "Summary": "{to} is in bloom and {pilot} wants to watch the grazers feed. Thirty seconds in reach of a living one.",
    "SuccessLine": "{pilot} watched the bloom at {to} feed its herds. The pollen settled somewhere interesting.",
    "FailLine": "The bloom at {to} went unstudied.",
+   "SuccessLines": [
+    "{pilot} watched the bloom at {to} feed its herds. The pollen settled somewhere interesting."
+   ],
+   "FailLines": [
+    "The bloom at {to} went unstudied."
+   ],
    "Reward": 7,
    "RewardElement": 4,
    "OnSuccess": "ev.study.bloom",
@@ -1654,6 +1827,12 @@
    "Summary": "Keep the Ark under the nucleus of {to} while the herds feed, and kill nothing. A kill undoes the work.",
    "SuccessLine": "{pilot} tended {to} without a shot. The bloom came on stronger.",
    "FailLine": "The nursery at {to} was left untended, or something in it died.",
+   "SuccessLines": [
+    "{pilot} tended {to} without a shot. The bloom came on stronger."
+   ],
+   "FailLines": [
+    "The nursery at {to} was left untended, or something in it died."
+   ],
    "Reward": 6,
    "RewardElement": 4,
    "OnSuccess": "ev.tend.kept",
@@ -1681,6 +1860,13 @@
    "Summary": "A crew is stranded at {to}. Stand by the derelict with the Ark until they are all aboard.",
    "SuccessLine": "{pilot} brought the crew off {to}. They talked all the way to port.",
    "FailLine": "The crew at {to} is still waiting.",
+   "SuccessLines": [
+    "{pilot} brought the crew off {to}. They talked all the way to port.",
+    "The derelict at {to} is empty now. Its crew are aboard and alive, and {pilot} is why."
+   ],
+   "FailLines": [
+    "The crew at {to} is still waiting."
+   ],
    "Reward": 7,
    "RewardElement": 1,
    "OnSuccess": "ev.rescue.saved",
@@ -1708,6 +1894,13 @@
    "Summary": "Keep the Ark at the beacon of {to} while {pilot} keeps the vigil. The slow tide shows things to those who wait.",
    "SuccessLine": "{pilot}'s vigil at {to} was kept. The light showed a place off the chart.",
    "FailLine": "The vigil at {to} was broken.",
+   "SuccessLines": [
+    "{pilot}'s vigil at {to} was kept. The light showed a place off the chart.",
+    "{pilot} kept the hours at {to}. The slow tide turned, and showed something."
+   ],
+   "FailLines": [
+    "The vigil at {to} was broken."
+   ],
    "Reward": 5,
    "RewardElement": 4,
    "OnSuccess": "ev.vigil.kept",
@@ -1735,6 +1928,12 @@
    "Summary": "{rival} have a grudge against this crew. {pilot} drafted an accord; carry it to their port at {to} and the grudge is eased.",
    "SuccessLine": "{pilot}'s accord reached {rival} at {to}. They will not forget, but they will not come for you.",
    "FailLine": "The accord for {rival} never reached {to}.",
+   "SuccessLines": [
+    "{pilot}'s accord reached {rival} at {to}. They will not forget, but they will not come for you."
+   ],
+   "FailLines": [
+    "The accord for {rival} never reached {to}."
+   ],
    "Reward": 9,
    "RewardElement": 4,
    "OnSuccess": "ev.parley.signed",
@@ -1762,6 +1961,12 @@
    "Summary": "{pilot} speaks for the Open Hand at {to}. Arrive with the Ark standing and the quay's tempers cool a little.",
    "SuccessLine": "{pilot} spoke for the accord at {to}. The quay listened.",
    "FailLine": "{pilot} never spoke at {to}.",
+   "SuccessLines": [
+    "{pilot} spoke for the accord at {to}. The quay listened."
+   ],
+   "FailLines": [
+    "{pilot} never spoke at {to}."
+   ],
    "Reward": 5,
    "RewardElement": 4,
    "OnSuccess": "ev.envoy.heard",
@@ -1790,6 +1995,10 @@
      "About": 2,
      "AboutExperience": 0,
      "Line": "Dock crews at {to} say {about} is asking for a squad to hold it.",
+     "Lines": [
+      "Dock crews at {to} say {about} is asking for a squad to hold it.",
+      "The news at {to} is all {about}: its core is slipping and it wants a squad."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1808,6 +2017,9 @@
      "About": 3,
      "AboutExperience": 6,
      "Line": "With cargo in at {to}, the gatherers talk of a bloom at {about}.",
+     "Lines": [
+      "With cargo in at {to}, the gatherers talk of a bloom at {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1826,6 +2038,10 @@
      "About": 1,
      "AboutExperience": 0,
      "Line": "A vault chart from {to} shows lit shells at {about}.",
+     "Lines": [
+      "A vault chart from {to} shows lit shells at {about}.",
+      "The shell opened at {to} held a chart. It marks {about}, and the marks are fresh."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1838,6 +2054,9 @@
      "About": 4,
      "AboutExperience": 0,
      "Line": "Half a chart was sealed in the vault at {to}. It names {about}.",
+     "Lines": [
+      "Half a chart was sealed in the vault at {to}. It names {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1861,6 +2080,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -1.5,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1873,6 +2093,9 @@
      "About": 1,
      "AboutExperience": 0,
      "Line": "The predators of {to} were guarding a cache: shells are lit at {about}.",
+     "Lines": [
+      "The predators of {to} were guarding a cache: shells are lit at {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1891,6 +2114,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": 0.5,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1909,6 +2133,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -2,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1921,6 +2146,9 @@
      "About": 1,
      "AboutExperience": 0,
      "Line": "In the Leviathan's wake the shells it guarded are lit at {about}.",
+     "Lines": [
+      "In the Leviathan's wake the shells it guarded are lit at {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1939,6 +2167,9 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "With the wreck gone, the waves at {about} turned on the core. It asks for help.",
+     "Lines": [
+      "With the wreck gone, the waves at {about} turned on the core. It asks for help."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1957,6 +2188,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": 1,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1969,6 +2201,9 @@
      "About": 3,
      "AboutExperience": 7,
      "Line": "A crew fled the thieves' reprisal after the raid on {to} and ran aground at {about}.",
+     "Lines": [
+      "A crew fled the thieves' reprisal after the raid on {to} and ran aground at {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -1987,6 +2222,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -1.5,
      "BloomDelta": 0,
      "HolderToSquad": true,
@@ -1999,6 +2235,10 @@
      "About": 1,
      "AboutExperience": 0,
      "Line": "The wardens of {to} share a chart: vaults are lit at {about}.",
+     "Lines": [
+      "The wardens of {to} share a chart: vaults are lit at {about}.",
+      "For holding {to} the wardens paid in news: shells are lit at {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2017,6 +2257,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -1,
      "BloomDelta": 0,
      "HolderToSquad": true,
@@ -2029,6 +2270,9 @@
      "About": 3,
      "AboutExperience": 1,
      "Line": "With {to} retaken, {about} wants its cut-off cargo run through.",
+     "Lines": [
+      "With {to} retaken, {about} wants its cut-off cargo run through."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2047,6 +2291,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": 1,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2065,6 +2310,9 @@
      "About": 1,
      "AboutExperience": 0,
      "Line": "{rival}'s charts, taken at {to}, show lit shells at {about}.",
+     "Lines": [
+      "{rival}'s charts, taken at {to}, show lit shells at {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2083,6 +2331,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2095,6 +2344,9 @@
      "About": 4,
      "AboutExperience": 0,
      "Line": "The survey of {to} shows another place off the chart: {about}.",
+     "Lines": [
+      "The survey of {to} shows another place off the chart: {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2113,6 +2365,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -2,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2125,6 +2378,9 @@
      "About": 3,
      "AboutExperience": 6,
      "Line": "The herds freed at {to} ran for {about}. It is in bloom.",
+     "Lines": [
+      "The herds freed at {to} ran for {about}. It is in bloom."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2148,6 +2404,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": 0,
      "BloomDelta": -3,
      "HolderToSquad": false,
@@ -2160,6 +2417,9 @@
      "About": 3,
      "AboutExperience": 1,
      "Line": "The harvest from {to} wants carrying. {about} pays cargo rates.",
+     "Lines": [
+      "The harvest from {to} wants carrying. {about} pays cargo rates."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2178,6 +2438,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -2,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2190,6 +2451,9 @@
      "About": 3,
      "AboutExperience": 6,
      "Line": "With {to} shored, its wardens say the bloom at {about} is ready.",
+     "Lines": [
+      "With {to} shored, its wardens say the bloom at {about} is ready."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2208,6 +2472,9 @@
      "About": 4,
      "AboutExperience": 0,
      "Line": "The predators of {to} range past the chart, toward {about}.",
+     "Lines": [
+      "The predators of {to} range past the chart, toward {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2226,6 +2493,9 @@
      "About": 1,
      "AboutExperience": 0,
      "Line": "The pollen of {to} settles on shells at {about}. They are lit.",
+     "Lines": [
+      "The pollen of {to} settles on shells at {about}. They are lit."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2244,6 +2514,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -0.5,
      "BloomDelta": 1,
      "HolderToSquad": false,
@@ -2262,6 +2533,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -3,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2274,6 +2546,9 @@
      "About": 3,
      "AboutExperience": 1,
      "Line": "The crew rescued at {to} wants passage. {about} pays cargo rates for the run.",
+     "Lines": [
+      "The crew rescued at {to} wants passage. {about} pays cargo rates for the run."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2292,6 +2567,9 @@
      "About": 4,
      "AboutExperience": 0,
      "Line": "The vigil at {to} showed a place off the chart: {about}.",
+     "Lines": [
+      "The vigil at {to} showed a place off the chart: {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2310,6 +2588,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2328,6 +2607,9 @@
      "About": 4,
      "AboutExperience": 0,
      "Line": "The soundings to {to} show a shelf the chart missed: {about}.",
+     "Lines": [
+      "The soundings to {to} show a shelf the chart missed: {about}."
+     ],
      "PressureDelta": 0,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2346,6 +2628,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -0.8,
      "BloomDelta": 0,
      "HolderToSquad": false,
@@ -2364,6 +2647,7 @@
      "About": 0,
      "AboutExperience": 0,
      "Line": "",
+     "Lines": [],
      "PressureDelta": -0.5,
      "BloomDelta": 0,
      "HolderToSquad": false,

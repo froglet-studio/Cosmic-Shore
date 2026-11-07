@@ -135,8 +135,9 @@ namespace CosmicShore.ScriptableObjects
         public string CardOpen = "Open";
         public string CardClose = "Close";
         [Tooltip("An open voyage card's brief. Tokens: {summary} the job, {to} and {place} the destination and its line, " +
-                 "{squad} the seats, {role} the squad role it suits, {intensity} the course's I1-I4, {reward} the crystals " +
-                 "it pays, {warnings} the world's warnings (CardWarnings), {pilot} and {story} who brought it. <br> breaks a line.")]
+                 "{squad} the seats, {role} the squad role it suits, {standing} how far the pilot's faction trusts the crew, " +
+                 "{intensity} the course's I1-I4, {reward} the crystals it pays, {warnings} the world's warnings (CardWarnings), " +
+                 "{pilot} and {story} who brought it. <br> breaks a line.")]
         [TextArea] public string CardDetails =
             "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}";
         [Tooltip("The way home's brief (the same tokens; it pays nothing itself).")]
@@ -365,5 +366,9 @@ namespace CosmicShore.ScriptableObjects
         public string StoryWorld = "THE SEA TODAY";
         [Tooltip("Under the sea beat: {warnings} the warnings, one line each.")]
         public string StoryWorldBy = "{warnings}";
+        [Tooltip("The story's beat about the crew's own record.")]
+        public string StoryLog = "YOUR LOG";
+        [Tooltip("The log beat: {voyages} sailed, {extracted} finds brought home, {relics}, {charted} places charted, {arks} Arks lost, {kaiju} felled.")]
+        public string StoryLogLine = "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.";
     }
 }

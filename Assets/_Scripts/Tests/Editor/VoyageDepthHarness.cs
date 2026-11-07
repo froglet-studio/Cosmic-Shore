@@ -60,6 +60,8 @@ namespace CosmicShore.Tests
             public int MaxNewsAtPort;
             public int TypesWithWorkDay0, TypesEverOffered;
             public int GalaxiesWithRelic;
+            public int SwapChecks, SwapChanged;
+            public int MaxStateJson;
             public double DistinctPairsSum;
             public double PaySum;
             public int Unreachable, Unchartable;
@@ -78,6 +80,7 @@ namespace CosmicShore.Tests
             public double MeanPay => Jobs == 0 ? 0 : PaySum / Jobs;
             public double ArkLossShare => Jobs == 0 ? 0 : (double)ArksLost / Jobs;
             public double ExtractedPerExtraction => Extractions == 0 ? 0 : (double)Extracted / Extractions;
+            public double SwapChangedShare => SwapChecks == 0 ? 0 : (double)SwapChanged / SwapChecks;
 
             /// <summary>The bars that did not hold, one line each; empty when the content is deep enough.</summary>
             public List<string> Failures()
@@ -95,6 +98,8 @@ namespace CosmicShore.Tests
                 if (Unreachable > 0) f.Add($"unreachable places: {Unreachable} (bar: 0)");
                 if (Unchartable > 0) f.Add($"uncharted places nobody could find: {Unchartable} (bar: 0)");
                 if (TextProblems.Count > 0) f.Add($"text problems: {TextProblems.Count} (bar: 0): {TextProblems[0]}");
+                if (SwapChangedShare < 0.5) f.Add($"boards changed by swapping one seat {SwapChangedShare:P0} (bar: at least 50%)");
+                if (MaxStateJson > 120_000) f.Add($"the galaxy's record as JSON {MaxStateJson} chars (bar: at most 120,000, the course message a friend receives)");
                 return f;
             }
 
@@ -113,6 +118,7 @@ namespace CosmicShore.Tests
                 sb.AppendLine($"  outcomes                 done {Successes}, undone {Failures_}, Arks lost {ArksLost} ({ArkLossShare:P1}), extractions {Extractions} ({ExtractedPerExtraction:F2} finds each)");
                 sb.AppendLine($"  meetings                 {Meetings} (co-op {CoOpMeetings}, races {Races}, hostile {HostileMeetings}); Kaiju met {KaijuMet}, felled {KaijuFelled}; charted {Charted}");
                 sb.AppendLine($"  mean pay                 {MeanPay:F1}");
+                sb.AppendLine($"  seat swap changes board  {SwapChangedShare:P0}  ({SwapChanged} of {SwapChecks}); record as JSON at most {MaxStateJson} chars");
                 sb.Append("  verbs                   ");
                 foreach (var kv in Verbs) sb.Append($" {kv.Key}:{kv.Value}");
                 sb.AppendLine();
@@ -171,6 +177,23 @@ namespace CosmicShore.Tests
                     if (v > 0 && v % 4 == 0) seated = Seat(crew, dice);
                     var board = VoyageRules.Board(state, content, seated, crew);
                     card.Boards++;
+                    // Does the pilot card change the voyage? Swap one seat and compare the cards.
+                    if (v % 5 == 0 && crew.Count > 3)
+                    {
+                        var swapped = new List<string>(seated);
+                        string other = crew[dice.Next(crew.Count)];
+                        if (!swapped.Contains(other))
+                        {
+                            swapped[0] = other;
+                            var alt = VoyageRules.Board(state, content, swapped, crew);
+                            var a = new HashSet<string>();
+                            foreach (var j in board) a.Add(j.TemplateId + "@" + j.To);
+                            var b = new HashSet<string>();
+                            foreach (var j in alt) b.Add(j.TemplateId + "@" + j.To);
+                            card.SwapChecks++;
+                            if (!a.SetEquals(b)) card.SwapChanged++;
+                        }
+                    }
                     foreach (var l in state.Ledgers) card.MaxNewsAtPort = Math.Max(card.MaxNewsAtPort, l.News.Count);
                     var work = new List<VoyageJob>();
                     VoyageJob home_ = null;
@@ -296,6 +319,7 @@ namespace CosmicShore.Tests
                 }
                 card.Days += state.Day;
                 card.DistinctPairsSum += pairs.Count;
+                card.MaxStateJson = Math.Max(card.MaxStateJson, JsonUtility.ToJson(state).Length);
                 if (relic) card.GalaxiesWithRelic++;
                 foreach (var rs in state.Rivals) card.RivalDeeds += rs.Deeds;
                 card.RivalWrecks += state.Log.RivalsWrecked;

@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// <para>Every run writes an <see cref="ArkEscortReport"/> (each world's hull and threat, how it ended), raised on
     /// <see cref="Finished"/>; the escort sim (<c>ArkEscortSim</c>) logs it, so the tiers are tuned from what happened.</para>
     /// </summary>
-    public sealed partial class ArkEscortRun : MonoBehaviour
+    public sealed partial class ArkEscortRun : MonoBehaviour, IArkEscortHost
     {
         const float BannerSeconds = 5f;
         const float SampleSeconds = 1f;

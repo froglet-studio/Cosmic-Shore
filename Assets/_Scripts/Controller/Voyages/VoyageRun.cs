@@ -17,7 +17,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <list type="number">
     /// <item><b>Embark.</b> The active squad deploys (<see cref="SquadDeployment"/>): the pilot flies their seat's vessel,
-    /// the host releases an AI wingmate for every other seat, and every seat starts levelled in its slot's element.</item>
+    /// the host releases an AI wingmate for every other seat, each flying its hull's escort role
+    /// (<see cref="IArkEscortHost"/>: the Sparrow destroys, the Squirrel cultivates, the Dolphin and Serpent and Scarab
+    /// theirs, the rest chase hearts), and every seat starts levelled in its slot's element.</item>
     /// <item><b>The job.</b> Chosen in the app shell, never in the world: the Voyage window draws one card per job on
     /// offer (<see cref="VoyageRules.Board"/>, the seated pilots' first, the crew's after, and the way home) over the
     /// galaxy map, and its Set sail is <see cref="SetSail"/> (Garrett, 2026-10-28: "the jobs should be the different jobs").</item>
@@ -38,7 +40,7 @@ namespace CosmicShore.Gameplay
     /// <para>Friends: each machine runs its own voyage today; the host's course reaching the party is SLICE.md §4
     /// step 5.</para>
     /// </summary>
-    public sealed class VoyageRun : MonoBehaviour
+    public sealed class VoyageRun : MonoBehaviour, IArkEscortHost
     {
         const float BannerSeconds = 5f;
         const float LeashCheckSeconds = 2f;
@@ -80,6 +82,12 @@ namespace CosmicShore.Gameplay
         float _nextWorkCheck;
         float _nextRivalOpen;
 
+        // The escort's roles guard the Ark on a voyage too (DEPTH.md §10, phase D2): one shared context, a pilot per
+        // wingmate, the roles the escort tuned.
+        ArkEscortContext _escort;
+        readonly List<ArkEscortPilot> _pilots = new();
+        Cell _legCell;
+
         // The depth pass (DEPTH.md §10): the leg's pacing, the stop's hostility, and the verbs' tallies.
         List<float> _profile = new();
         bool _hostileWorld;
@@ -97,6 +105,40 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The galaxy as this run knows it (null before embarking).</summary>
         public VoyageState State => _state;
+
+        // ── IArkEscortHost: what the escort roles read ───────────────────────
+
+        public Ark Ark => _sea ? _sea.Ark : null;
+        public Cell CurrentCell => _corridor ? _corridor.CurrentCell : null;
+        public float HullHalfLength => _arkCfg != null ? Mathf.Max(30f, _arkCfg.ArkHullLength) * 0.5f : 55f;
+        public ArkEscortContext Context => _escort;
+        /// <summary>A voyage pacifies nothing: its cultivators lay for the hold, not the escort's claim.</summary>
+        public bool IsPacified(Cell cell) => false;
+        public float PacifyMinVolume => 0f;
+
+        /// <summary>Live hostile creatures (another domain than the Ark's) within <paramref name="radius"/> of
+        /// <paramref name="at"/> in the world the Ark is in, nearest first into <paramref name="into"/> when given.</summary>
+        public int CountThreats(Vector3 at, float radius, List<Fauna> into)
+        {
+            into?.Clear();
+            var ark = Ark;
+            var cell = CurrentCell;
+            if (!ark || !cell) return 0;
+            int n = 0;
+            float r2 = radius * radius;
+            var fauna = cell.LiveFauna;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                var f = fauna[i];
+                if (!f || f.Domain == ark.Domain || !f.IsAlivePrey) continue;
+                if ((f.transform.position - at).sqrMagnitude > r2) continue;
+                n++;
+                into?.Add(f);
+            }
+            if (into is { Count: > 1 })
+                into.Sort((a, b) => (a.transform.position - at).sqrMagnitude.CompareTo((b.transform.position - at).sqrMagnitude));
+            return n;
+        }
 
         public void Configure(VoyageToyDefinitionSO definition, ToyContext context, Transform toyboxRoot,
             System.Action onEnded)
@@ -142,6 +184,11 @@ namespace CosmicShore.Gameplay
             _underway = _fallen = _fallTaken = _docked = false;
             _seeded.Clear();
             EnsureSea();
+            // The escort's roles, at their defaults (an escort sim's overrides never leak into a voyage).
+            EscortGeneRegistry.ResetAll();
+            _escort ??= new ArkEscortContext(this);
+            _escort.Install();
+            _legCell = null;
             _arkCfg = _def.BuildArkConfig(_content);
             _sea.Configure(_arkCfg, _context, _context?.Container, _corridor, OnSeaEnded);
             _worlds = CountWorlds(local.Transform.position);
@@ -314,8 +361,19 @@ namespace CosmicShore.Gameplay
                     if (!_active) { swapper.DespawnAiCompanion(vessel); return; }
                     _wingmates.Add(vessel);
                     SquadDeployment.Seat(vessel.VesselStatus, seated);
+                    Escort(vessel, seated);
                 });
             }
+        }
+
+        /// <summary>Hand <paramref name="vessel"/>'s AI the escort's objective: its hull's role, the Ark to guard.</summary>
+        void Escort(IVessel vessel, int seat)
+        {
+            if (vessel?.VesselStatus is not Component c || !c) return;
+            var pilot = c.GetComponent<ArkEscortPilot>();
+            if (!pilot) pilot = c.gameObject.AddComponent<ArkEscortPilot>();
+            pilot.Arm(this, seat);
+            if (!_pilots.Contains(pilot)) _pilots.Add(pilot);
         }
 
         // ── Taking a job: the leg ────────────────────────────────────────────
@@ -601,6 +659,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             SeedSeats();
+            TickEscort();
             WatchHold();
             TickHold();
             TickObserve();
@@ -614,6 +673,22 @@ namespace CosmicShore.Gameplay
             {
                 _nextLeashCheck = Time.unscaledTime + LeashCheckSeconds;
                 BringWingmates(force: false);
+            }
+        }
+
+        /// <summary>The escort roles' shared context ranks the threats once a frame; a new world retargets every seat's
+        /// crystal list (<see cref="ArkEscortPilot.OnLegChanged"/>).</summary>
+        void TickEscort()
+        {
+            _escort?.Tick();
+            var cell = CurrentCell;
+            if (cell == _legCell) return;
+            _legCell = cell;
+            if (!cell) return;
+            for (int i = _pilots.Count - 1; i >= 0; i--)
+            {
+                if (!_pilots[i]) { _pilots.RemoveAt(i); continue; }
+                _pilots[i].OnLegChanged(cell);
             }
         }
 
@@ -925,6 +1000,10 @@ namespace CosmicShore.Gameplay
             _killHooked = false;
             ClearStop();
             SquadDeployment.Recall();
+            foreach (var p in _pilots)
+                if (p) p.Disarm();
+            _pilots.Clear();
+            _escort?.Uninstall();
             var swapper = _context?.VesselInitializer;
             foreach (var w in _wingmates)
                 if (swapper && Alive(w) != null) swapper.DespawnAiCompanion(w);
@@ -936,20 +1015,26 @@ namespace CosmicShore.Gameplay
 
         // ── Wingmates ────────────────────────────────────────────────────────
 
-        /// <summary>AI wingmates escort the Ark: one that has ranged past the leash is brought back to its flank.</summary>
+        /// <summary>AI wingmates escort the Ark by the escort's roles; one that has ranged past the leash (its role may let
+        /// it out: the Squirrel's nucleus run) is brought back to its flank, outside the hull.</summary>
         void BringWingmates(bool force)
         {
             var ark = _sea ? _sea.Ark : null;
             if (!ark) return;
-            float leashSqr = _def.WingmateLeash * _def.WingmateLeash;
+            float leash = Mathf.Min(_def.WingmateLeash, ArkEscortPilot.GuardRadius * EscortGeneRegistry.LeashFactor);
             for (int i = 0; i < _wingmates.Count; i++)
             {
                 var w = _wingmates[i];
                 var status = Alive(w);
                 if (status == null || !status.Transform) continue;
-                if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= leashSqr) continue;
+                float seatLeash = leash;
+                if (status is Component sc && sc && sc.TryGetComponent(out ArkEscortPilot escortPilot))
+                    seatLeash = escortPilot.Leash(leash);
+                if (!force && (status.Transform.position - ark.Position).sqrMagnitude <= seatLeash * seatLeash) continue;
                 var side = i % 2 == 0 ? -1f : 1f;
-                var at = ark.Position + ark.transform.right * (side * WingmateAbeam * 2f) - ark.Forward * (WingmateAbeam * (1 + i));
+                // Abeam of the hull, never inside it: a vessel set down in the plating destroys plates.
+                float abeam = Mathf.Max(WingmateAbeam * 2f, (_escort?.HullRadius ?? HullHalfLength) + EscortGeneRegistry.ArkLaneMargin + 60f);
+                var at = ark.Position + ark.transform.right * (side * abeam) - ark.Forward * (WingmateAbeam * (1 + i));
                 w.SetPose(new Pose(at, Quaternion.LookRotation(ark.Forward, Vector3.up)));
             }
         }

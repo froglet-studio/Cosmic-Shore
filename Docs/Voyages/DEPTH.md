@@ -226,11 +226,15 @@ Cinder Shoal.
 - **Rivals.** A rival at the stop stands its three hulls as AI vessels in its domain (`RequestSpawnAiCompanion`, the
   Spawn Matrix's own chain), abeam of the Ark at the find distance, and takes them back when the squad sails on. The
   authored line of its arrival is the banner. A race's clock retires vault shells the rival opens.
-- **Wingmates.** Unchanged in this pass: the escort roles (`IArkEscortRole`) are bound to `ArkEscortRun`'s context,
-  and the escort files have Garrett's night branches in flight; lending the roles to a voyage's wingmates is the next
-  runtime step (§12), done through an interface the escort implements, never by copying a role.
-- **Every line is authored.** The new banners, progress lines, relation lines and chronicle templates are fields of
-  `voyage_slice.json`'s `hud`, written into `VoyageLines` by the generator.
+- **Wingmates escort by the escort's own roles.** The roles read their host through `IArkEscortHost` (the Ark, the
+  world, the hull, the threats, the pacify signal), which `ArkEscortRun` and `VoyageRun` both implement; a voyage arms
+  an `ArkEscortPilot` on every wingmate, so the Sparrow destroys, the Squirrel cultivates, the Dolphin, Serpent and
+  Scarab fly their roles and the rest chase hearts, with the escort's tuned genes at their defaults. Nothing was copied:
+  four lines of the escort changed from a class to the interface.
+- **Every line is authored, and most are told more than one way.** The banners, progress lines, relation lines and
+  chronicle templates are fields of `voyage_slice.json`'s `hud`, written into `VoyageLines` by the generator; a job's
+  success and fail lines and a write's news line may be a list, and the rules pick one by the day and the place
+  (`VoyageRules.PickLine`), so no two outcomes read the same and the same outcome reads the same on every machine.
 
 ## 11. Measuring depth: the harness and the scorecard
 
@@ -312,6 +316,8 @@ The old content's numbers (§0) are the baseline; the new content's are recorded
 | the Kaiju met / felled | | 0 / 0 | 713 / 283 |
 | Arks lost | | 1.8% of jobs | 4.8% of jobs |
 | finds extracted per docking | | 0.61 | 2.50 |
+| boards changed by swapping one seated pilot | at least 50% | | 92% (the pilot card changes the voyage) |
+| the galaxy's record as JSON (the course message a friend receives) | at most 120,000 chars | | 22,615 chars after 60 voyages |
 
 What the numbers say: a crew that sails sixty voyages now sees every place, every kind of work and other crews, finds a
 story's end about every twenty voyages, and loses an Ark about once in twenty. The verb mix (holds 29%, stows 22%,

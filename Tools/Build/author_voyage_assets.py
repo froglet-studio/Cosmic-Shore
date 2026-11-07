@@ -82,7 +82,7 @@ LINES_FIELDS = [
     "CardSeatYou", "CardSeatAi", "CardSeatOpen", "CardSettingVessel", "CardSettingPilot", "CardSettingElement",
     "CardSettingArtifact", "CardNoArtifact", "ElementCharge", "ElementMass", "ElementSpace", "ElementTime", "CardStoryHead",
     "CardStoryOptional", "StoryNews", "StoryPlace", "StoryCrew", "StoryCrewBy", "StoryWater", "StoryWaterLine",
-    "StoryWaterBy", "StoryWorld", "StoryWorldBy",
+    "StoryWaterBy", "StoryWorld", "StoryWorldBy", "StoryLog", "StoryLogLine",
 ]
 
 # The world's rates (VoyageWorldRules in VoyageContent.cs): spec key -> (C# field, kind). Every one is written.
@@ -128,6 +128,18 @@ TOKENS = {"from", "to", "about", "pilot", "rival", "n", "kaiju", "relic", "saga"
           "count", "seconds", "done", "goal", "percent"}
 SEALED = ("VaultField", "Hoard")
 PORTS = ("Port", "Harbour")
+
+
+def variants(v):
+    """A line in the spec is one string or a list of ways to say it; the model keeps the first as the line and all of them."""
+    if v is None or v == "":
+        return []
+    return [v] if isinstance(v, str) else list(v)
+
+
+def first(v):
+    vs = variants(v)
+    return vs[0] if vs else ""
 
 
 def guid_for(name):
@@ -309,8 +321,11 @@ def validate(spec):
         for k in ("onSuccess", "onFail"):
             if j[k] and j[k] not in events:
                 errors.append(f"{j['id']}: {k} names unknown event {j[k]}")
-        for k in ("title", "summary", "success", "fail"):
+        for k in ("title", "summary"):
             text(j["id"], j[k])
+        for k in ("success", "fail"):
+            for v in variants(j[k]):
+                text(j["id"], v)
         text(j["id"], j.get("chronicle", ""))
     if "job.return" not in job_ids:
         errors.append("no job.return (the way home every board offers)")
@@ -325,9 +340,10 @@ def validate(spec):
                 errors.append(f"{ev['id']}: a write names an unknown tag, place or subject")
             if w["about"] == "AnotherOf" and w.get("aboutExperience", "Harbour") not in e["exp"]:
                 errors.append(f"{ev['id']}: a write names an unknown aboutExperience")
-            if w["tag"] != "None" and not w.get("line"):
+            if w["tag"] != "None" and not variants(w.get("line", "")):
                 errors.append(f"{ev['id']}: a news write with no line")
-            text(ev["id"], w.get("line", ""))
+            for v in variants(w.get("line", "")):
+                text(ev["id"], v)
     for s in spec["seeds"]:
         if s["port"] not in locs or s["about"] not in locs:
             errors.append(f"seed news at {s['port']} about {s['about']} names an unknown location")
@@ -498,8 +514,9 @@ def to_model(spec):
     for j in spec["jobs"]:
         m["Jobs"].append({
             "Id": j["id"], "Kind": e["kinds"][j["kind"]], "Faction": e["fac"][j["faction"]], "Needs": e["tags"][j["needs"]],
-            "Goes": e["exp"][j["goes"]], "Title": j["title"], "Summary": j["summary"], "SuccessLine": j["success"],
-            "FailLine": j["fail"], "Reward": j["reward"], "RewardElement": e["elements"][j["element"]],
+            "Goes": e["exp"][j["goes"]], "Title": j["title"], "Summary": j["summary"], "SuccessLine": first(j["success"]),
+            "FailLine": first(j["fail"]), "SuccessLines": variants(j["success"]), "FailLines": variants(j["fail"]),
+            "Reward": j["reward"], "RewardElement": e["elements"][j["element"]],
             "OnSuccess": j["onSuccess"], "OnFail": j["onFail"], "Verb": e["verbs"][j.get("verb", "Arrive")],
             "Goal": j.get("goal", 1), "HullFloor": j.get("hullFloor", 0), "NoKill": bool(j.get("noKill", False)),
             "Role": e["roles"][j.get("role", "Any")], "Tier": j.get("tier", 0), "StandingDelta": j.get("standing", 1),
@@ -512,7 +529,8 @@ def to_model(spec):
         for w in ev["writes"]:
             writes.append({
                 "Tag": e["tags"][w["tag"]], "At": e["places"][w["at"]], "About": e["abouts"][w["about"]],
-                "AboutExperience": e["exp"][w.get("aboutExperience", "Harbour")], "Line": w.get("line", ""),
+                "AboutExperience": e["exp"][w.get("aboutExperience", "Harbour")], "Line": first(w.get("line", "")),
+                "Lines": variants(w.get("line", "")),
                 "PressureDelta": w.get("pressure", 0), "BloomDelta": w.get("bloom", 0),
                 "HolderToSquad": bool(w.get("holderToSquad", False)), "ChartsDestination": bool(w.get("charts", False)),
                 "RivalGrudgeDelta": w.get("grudge", 0),
@@ -738,6 +756,8 @@ def self_test():
         "three intensity multipliers": lambda s: s["world"].update(intensityPay=[1, 2, 3]),
         "a missing word": lambda s: s["words"].pop("nemesis"),
         "a missing toy colour": lambda s: s["toy"].pop("lairColor"),
+        "a line variant the font cannot draw": lambda s: s["jobs"][2].update(success=["fine", "not \u2192 fine"]),
+        "a news write whose variants are all empty": lambda s: s["events"][0]["writes"][0].update(line=[]),
     }
     for what, fn in plants.items():
         s = copy.deepcopy(spec)

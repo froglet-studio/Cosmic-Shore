@@ -31,6 +31,10 @@ Unity editor yet.** That is the next step (section 4).
 - **The board is about six**: your seated pilots' jobs first, the rest of your crew's after, priced from one table
   (base x intensity x lanes x standing, fading with the news's age), with warnings from the world as it is.
 - **The galaxy grew** from 8 places to 25 around Tumult, three of them uncharted until you find them.
+- **Your AI wingmates fight for the Ark** by the Ark escort's own roles (the Sparrow destroys, the Squirrel
+  cultivates, the Dolphin, Serpent and Scarab theirs), through a host interface the escort and the voyage share.
+- **No two outcomes read the same**: the lines a crew reads most have several ways of saying it, picked by the day and
+  the place. The open card shows how far each pilot's faction trusts you and your crew's own log.
 - **Measured** (`Tools/Build/voyage_depth_harness/run.sh --scorecard 60 200`): distinct (job, destination) pairs in a
   crew's first 20 voyages 8.6 -> 15.4; jobs grown from news 23% -> 75%; faction types with work 3 -> 16; rival events
   0 -> 28 per 10 days; galaxies with a relic in 60 voyages 0% -> 99%; meetings with another crew 0 -> 1,570.
@@ -56,6 +60,8 @@ Unity editor yet.** That is the next step (section 4).
 | The window: `{role}`, `{warnings}`, the job's own pay and intensity, a sea-today beat, uncharted places hidden | `UI/Views/VoyageJobsView.cs`, `VoyageMapGraphic.cs`, `VoyageEdgeGraphic.cs`, `VoyageMapSky.cs` |
 | The headless harness and the scorecard as a test | `Tools/Build/voyage_depth_harness/`, `Tests/Editor/VoyageDepthHarness.cs`, `VoyageDepthTests.cs` |
 | Every faction type recruits | `Data/Inventory/FactionCatalog.cs` |
+| The escort roles' host interface, implemented by the escort and the voyage; wingmates armed as escort pilots | `Controller/Voyages/IArkEscortHost.cs` (new), `ArkEscortContext.cs`, `ArkEscortPilot.cs`, `SquirrelRole.cs`, `ArkEscortRun.cs` (one line each), `VoyageRun.cs` |
+| Line variants, the standing token and the log beat | `VoyageContent.cs`, `VoyageRules.PickLine`, `VoyageJobsView.cs`, `VoyageContentSO.cs` |
 
 ## 4. What is untested
 

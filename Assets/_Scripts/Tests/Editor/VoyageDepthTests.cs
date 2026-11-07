@@ -460,6 +460,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void OutcomeLinesVaryByDayAndReadTheSameEverywhere()
+        {
+            var c = Shipped();
+            var t = c.Jobs.First(j => j.SuccessLines.Count >= 2);
+            var lines = new HashSet<string>();
+            for (int day = 0; day < 12; day++) lines.Add(VoyageRules.PickLine(t.SuccessLines, t.SuccessLine, day, "loc.lantern", t.Id));
+            Assert.Greater(lines.Count, 1, "the same outcome is told more than one way across days");
+            Assert.AreEqual(VoyageRules.PickLine(t.SuccessLines, t.SuccessLine, 3, "loc.lantern", t.Id),
+                VoyageRules.PickLine(t.SuccessLines, t.SuccessLine, 3, "loc.lantern", t.Id), "and the same way on the same day");
+            Assert.AreEqual("only", VoyageRules.PickLine(null, "only", 1, "a", "b"), "no variants: the one line");
+            Assert.AreEqual("only", VoyageRules.PickLine(new List<string>(), "only", 1, "a", "b"));
+        }
+
+        [Test]
+        public void SwappingOneSeatChangesTheBoard()
+        {
+            var c = Shipped();
+            var s = VoyageRules.NewGalaxy(c, Domains.Gold);
+            var hunter = PilotOf(c, FactionType.Hunter);
+            var merchant = PilotOf(c, FactionType.Merchant);
+            var a = VoyageRules.Board(s, c, new[] { hunter, merchant, PilotOf(c, FactionType.Priest) }).Select(j => j.TemplateId + j.To).ToList();
+            var b = VoyageRules.Board(s, c, new[] { hunter, merchant, PilotOf(c, FactionType.Pirate) }).Select(j => j.TemplateId + j.To).ToList();
+            Assert.AreEqual(a[0], b[0], "the unchanged seats keep their jobs");
+            Assert.AreEqual(a[1], b[1]);
+            Assert.AreNotEqual(a[2], b[2], "the swapped seat brings different work: the pilot card changes the voyage");
+        }
+
+        [Test]
         public void TheDepthScorecardHoldsItsBars()
         {
             var card = VoyageDepthHarness.Play(Shipped(), 60, 40);

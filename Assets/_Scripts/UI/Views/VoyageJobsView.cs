@@ -417,12 +417,16 @@ namespace CosmicShore.UI
             // The job's own intensity (the sea's plus the place's pressure) and its own pay, as the board priced it.
             int intensity = job.Intensity > 0 ? job.Intensity : sea?.Intensity ?? 1;
             int pay = job.Pay > 0 ? job.Pay : kind?.Reward ?? 0;
+            var galaxy = VoyageHarbour.Current ? VoyageHarbour.Current.GalaxyState : null;
+            string standing = person != null && galaxy != null
+                ? VoyageRules.TierName(content, VoyageRules.Tier(galaxy, content, person.Faction)) : string.Empty;
             return TemplateText.Fill(text,
                 "summary", job.Summary,
                 "place", to?.Blurb,
                 "story", person?.Story,
                 "squad", Squad(lines),
                 "role", VoyageRules.RoleName(content, job.Role),
+                "standing", standing,
                 "warnings", Warnings(lines, job),
                 "intensity", intensity.ToString(CultureInfo.InvariantCulture),
                 "reward", !job.IsReturn ? pay.ToString(CultureInfo.InvariantCulture) : string.Empty);
@@ -433,6 +437,21 @@ namespace CosmicShore.UI
         {
             if (lines == null || job?.Warnings == null || job.Warnings.Count == 0 || string.IsNullOrEmpty(lines.CardWarnings)) return string.Empty;
             return TemplateText.Fill(lines.CardWarnings, "warnings", string.Join(lines.CardWarningSeparator ?? string.Empty, job.Warnings));
+        }
+
+        /// <summary>The crew's own record (Docs/Voyages/DEPTH.md §9), through the authored log line; empty before a voyage.</summary>
+        static string LogLine(VoyageLines lines)
+        {
+            var galaxy = VoyageHarbour.Current ? VoyageHarbour.Current.GalaxyState : null;
+            if (galaxy?.Log == null || galaxy.Log.Voyages == 0 || string.IsNullOrEmpty(lines.StoryLogLine)) return null;
+            var log = galaxy.Log;
+            return TemplateText.Fill(lines.StoryLogLine,
+                "voyages", log.Voyages.ToString(CultureInfo.InvariantCulture),
+                "extracted", log.Extracted.ToString(CultureInfo.InvariantCulture),
+                "relics", log.Relics.ToString(CultureInfo.InvariantCulture),
+                "charted", log.Charted.ToString(CultureInfo.InvariantCulture),
+                "arks", log.ArksLost.ToString(CultureInfo.InvariantCulture),
+                "kaiju", log.KaijuFelled.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>The active squad as its seats: each one's vessel and pilot, through the authored seat line.</summary>
@@ -620,7 +639,8 @@ namespace CosmicShore.UI
                     voyage != null ? TemplateText.Fill(lines.StoryWaterBy, "sea", SeaName(lines, voyage.ThickestSea)) : null),
                 new VoyageCardRules.Beat(lines.StoryWorld,
                     job.Warnings is { Count: > 0 } ? string.Join(" ", job.Warnings) : null,
-                    job.Warnings is { Count: > 0 } ? TemplateText.Fill(lines.StoryWorldBy, "warnings", string.Join(" ", job.Warnings)) : null)));
+                    job.Warnings is { Count: > 0 } ? TemplateText.Fill(lines.StoryWorldBy, "warnings", string.Join(" ", job.Warnings)) : null),
+                new VoyageCardRules.Beat(lines.StoryLog, LogLine(lines), null)));
             m.SetSail = setSail;
             return m;
         }

@@ -338,6 +338,10 @@ namespace CosmicShore.Data
         /// <summary>The story log's line when the job succeeds, and when it fails.</summary>
         public string SuccessLine;
         public string FailLine;
+        /// <summary>More ways to say it (DEPTH.md phase D2): one is picked by the day and the place, so no two outcomes
+        /// read the same. Empty keeps the one line.</summary>
+        public List<string> SuccessLines = new();
+        public List<string> FailLines = new();
         /// <summary>Elemental crystals the job pays at extraction, before the course and the tier scale it (DEPTH.md §7).</summary>
         public int Reward;
         public Element RewardElement = Element.Omni;
@@ -391,6 +395,8 @@ namespace CosmicShore.Data
         public VoyageExperience AboutExperience;
         /// <summary>The news as the board reads it ({about}, {to}, {from}, {pilot}, {rival} filled).</summary>
         public string Line;
+        /// <summary>More ways to say it; one is picked by the day and the place. Empty keeps the one line.</summary>
+        public List<string> Lines = new();
         /// <summary>Added to the destination's pressure (DEPTH.md §2).</summary>
         public float PressureDelta;
         /// <summary>Added to the destination's bloom.</summary>

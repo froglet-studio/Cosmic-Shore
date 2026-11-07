@@ -21569,4 +21569,12 @@ the compile environment's missing Cinemachine and UGS packages, the same as on `
     nearest port), rivals stand elsewhere, blooms ripened.
 14. A record saved before this pass (the slice's). **Pass:** it loads, every place and rival is filled in, the saved
     job still works (a saved hunt asks a stow), nothing is ticked twice.
-15. The Arkway (Wander > With Ark) and the Ark escort. **Pass:** unchanged.
+15. The Arkway (Wander > With Ark) and the Ark escort. **Pass:** unchanged (the escort's roles now read their host through
+    `IArkEscortHost`; the escort sim's numbers at d3 and d4 are within the noise of `Docs/Voyages/ARK_ESCORT.md` §4).
+16. Wingmates on a voyage (round 2). Seat a Sparrow and a Squirrel beside you and sail a lair. **Pass:** the Sparrow hunts
+    the hostile creatures nearest the Ark instead of hovering at its flank, the Squirrel cultivates the nucleus when the
+    threats are few, both come back to the flank when they range past the leash, and both are taken back when the voyage
+    ends; the escort sim is unaffected.
+17. Do the same job twice on different days (two hunts at Lantern Reach). **Pass:** the story line reads differently
+    the second time (several authored ways to say it); the open card's brief shows STANDING (a stranger, known or
+    trusted, by the pilot's faction) and its Story level ends with YOUR LOG once a voyage has been sailed.
