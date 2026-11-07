@@ -59,6 +59,11 @@ args:
                     Crystals, CrystalPhase   crystals on the line, at most 4 a lap
                   The hulls are priced by regatta_features.race (race_models.race on an empty set), the Urchin's free
                   flight at its roster free_speed; the rail guard becomes regatta_features.guard_fails.
+    nose_rate, nose_lead   the AI nose knobs (race_models.nose_knobs, PR #1826): job-wide here, or on a roster hull
+                  ({"model", "drive" | "asset", "nose_rate", "nose_lead"}); each race gets its hull's. A roster hull may
+                  also be a drive sim (rhino_drive / manta_drive / dolphin_drive) with its policy `asset`, read and
+                  converted as regatta_course does. Needs a race_models.py that has the knobs; asked of one without, the
+                  evaluation fails loud rather than racing the lead off.
     anchor_all    a COUNTERFACTUAL: every "measured" hull anchored at these seconds on today's course instead of its
                   measured race (what pool the course alone would find if every AI raced today's course alike, e.g.
                   once time-arcade has trained them); never the shipped roster
@@ -76,7 +81,8 @@ for _p in (_HERE, os.path.join(_ROOT, "Tools", "Build")):
 import course_port as cp          # noqa: E402
 import race_models as rm          # noqa: E402
 
-VERSION = "2"   # 2 (2026-11-07): `features` (brief 10's course features, in a compact form); off, it is VERSION 1
+VERSION = "3"   # 3 (2026-11-07): the AI nose knobs (nose_rate / nose_lead) and drive-sim hulls in the roster
+#                 2 (2026-11-07): `features` (brief 10's course features, in a compact form); off, it is VERSION 1
 SEED_STRIDE = 104729
 CHAOS_WEIGHT = 2.0
 CHAOS_UNMEASURED = 0.3
@@ -170,14 +176,29 @@ def lay(params, step_offset=0, features=False):
     return s, seed, rf.course(settings=s, seed=seed, features=compact_features(params, plain))
 
 
-def roster_of(args):
-    """The job's roster, with `anchor_all` (a counterfactual) applied to every measured hull."""
+def nose_of(args, h):
+    """The nose knobs one hull races with ({} = today's models), via race_models.nose_knobs when it exists."""
+    want = {k: v for k, v in list(args.items()) + list(h.items()) if k in ("nose_rate", "nose_lead") and v is not None}
+    if not want:
+        return {}
+    if not hasattr(rm, "nose_knobs"):
+        raise RuntimeError("the roster asks for the AI nose knobs, and this race_models.py has none (PR #1826)")
+    return rm.nose_knobs(args, h)
+
+
+def roster_of(args, root=_ROOT):
+    """The job's roster, ready to race: `anchor_all` (a counterfactual) on every measured hull, a drive sim's policy
+    asset read and converted to the sim's names, and each hull's nose knobs under "nose"."""
     out = {}
     for hull, h in args["roster"].items():
-        h = dict(h, drive=dict(h.get("drive") or {}))
+        d = dict(h.get("drive") or {})
+        if h.get("asset"):
+            d = dict(rm.read_asset_fields(root, h["asset"]), **d)
+        if h["model"] in getattr(rm, "DRIVE_FIELDS", {}):
+            d = rm.to_sim(h["model"], d)
         if args.get("anchor_all") and h["model"] == "measured":
-            h["drive"]["anchor"] = float(args["anchor_all"])
-        out[hull] = h
+            d["anchor"] = float(args["anchor_all"])
+        out[hull] = dict(h, drive=d, nose=nose_of(args, h))
     return out
 
 
@@ -192,11 +213,11 @@ def race_all(course, roster, limit, neutral):
         d = dict(h.get("drive") or {})
         if featured:
             knobs = {"urchin_free": float(d["free_speed"])} if h["model"] == "rail" and "free_speed" in d else None
-            t, r = rf.race(hull, h["model"], course, 1, drive=d, limit=limit, knobs=knobs)
+            t, r = rf.race(hull, h["model"], course, 1, drive=d, limit=limit, knobs=knobs, **h.get("nose", {}))
         else:
             if h["model"] == "rail":
                 d["neutral"] = neutral
-            t, r = rm.race(hull, h["model"], course, 1, drive=d, steering="centre", limit=limit)
+            t, r = rm.race(hull, h["model"], course, 1, drive=d, steering="centre", limit=limit, **h.get("nose", {}))
         times[hull], raw[hull] = t, r
     return times, raw
 
@@ -221,7 +242,7 @@ def setup(ctx):
     _CTX.clear()
     mr = _measured()
     today = mr.measured_course()
-    _CTX["roster"] = roster_of(a)
+    _CTX["roster"] = roster_of(a, ctx.get("root") or _ROOT)
     times, _ = race_all(today, _CTX["roster"], float(a.get("limit", 600)), float(a.get("ref_neutral", 0.0)))
     hulls = scored_hulls(a)
     _CTX["ref_mean"] = sum(times[h] for h in hulls) / len(hulls)
@@ -333,6 +354,23 @@ def self_test():
     r2 = evaluate(baseline(long_ctx["args"]), long_ctx)
     if r2["loss"] < r["loss"] + 1.0:
         bad.append("regatta_pool: a race 2.5x today's is not penalised by the length guard")
+    # The nose lead reaches the race (only where race_models has the knobs, PR #1826): a lagging drive-sim Manta with
+    # the lead must finish faster than without it, and a roster that asks for the knobs never races them silently off.
+    if hasattr(rm, "nose_knobs"):
+        base_roster = {"Manta": {"model": "manta_drive", "asset": "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset",
+                                 "nose_rate": 1.5}}
+        lead_roster = {"Manta": dict(base_roster["Manta"], nose_lead=2.5)}
+        today = mr.measured_course()
+        t_lag = race_all(today, roster_of({"roster": base_roster}), 600, 0.0)[0]["Manta"]
+        t_lead = race_all(today, roster_of({"roster": lead_roster}), 600, 0.0)[0]["Manta"]
+        if not t_lead < 0.95 * t_lag:
+            bad.append(f"regatta_pool: the nose lead does not reach the Manta ({t_lag:.1f} s lagging, {t_lead:.1f} s led)")
+    else:
+        try:
+            roster_of({"roster": {"Manta": {"model": "line", "nose_lead": 2.5}}})
+            bad.append("regatta_pool: a roster asking for the nose lead raced without it on a race_models with no knobs")
+        except RuntimeError:
+            pass
     flip = chaos_of([{"a": -0.2, "b": 0.0, "c": 0.2}, {"a": 0.2, "b": 0.0, "c": -0.2}], ["a", "b", "c"])
     still = chaos_of([{"a": -0.2, "b": 0.0, "c": 0.2}, {"a": -0.2, "b": 0.0, "c": 0.2}], ["a", "b", "c"])
     if not (flip > 0.15 and still < 1e-9):
