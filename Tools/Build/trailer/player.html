@@ -19,8 +19,13 @@ p{color:var(--muted);font-size:14px;line-height:1.5;margin:12px 0 0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
 <script>
 (function(){
-  var v=document.getElementById('v'), src='trailer/index.m3u8';
-  if(window.Hls && Hls.isSupported()){var h=new Hls({maxBufferLength:60});h.loadSource(src);h.attachMedia(v);}
-  else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=src;}
+  // Artifacts serve neither .m3u8 nor .ts: the playlist is index.txt and the segments are fragmented .mp4.
+  // A browser without Media Source Extensions (older iPhones) gets one progressive 720p file.
+  var v=document.getElementById('v'), src='trailer/index.txt', fallback='trailer/fallback.mp4';
+  if(window.Hls && Hls.isSupported()){
+    var h=new Hls({maxBufferLength:60});
+    h.on(Hls.Events.ERROR,function(e,d){if(d.fatal){h.destroy();v.src=fallback;}});
+    h.loadSource(src);h.attachMedia(v);
+  } else {v.src=fallback;}
 })();
 </script>
