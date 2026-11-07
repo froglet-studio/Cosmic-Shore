@@ -19,15 +19,18 @@ need to review, all your questions, etc."
   look-sheet kit was built on both, not beside them.
 - **Nothing in `Assets/` changed except two new editor-only scripts** (the look-sheet capture and launcher). No
   shipped asset, prefab, scene or runtime script was touched.
-- **The reference compile could not run here** (no .NET SDK reachable through the proxy); the C# is checklist-entry
-  work until a machine with Unity runs it (section 4).
+- **The reference compile runs here after all.** The installers are blocked by the proxy, so a .NET 8 root was
+  assembled from nuget.org packages alone and made a repo tool (`Tools/Build/unity_refcompile/dotnet_from_nuget.py`):
+  the look-sheet C# passes `unity_refcompile --config editor` with zero errors, negative control proven. The editor
+  run is still owed (section 4).
 
 ## 2. What was built, entry by entry
 
 | Entry | Built tonight | Where | Status |
 |---|---|---|---|
 | Rework ledger | the counters behind the plan, regenerable | `Tools/Build/rework_ledger.py` (`--skills`, `--json`, `--self-test`) | done, in the first commit |
-| 3.1 See the real game | the look-sheet kit: capture, launcher, gate, sheet, driver, CI job, doc, skill | `Assets/_Scripts/Editor/Look/`, `Tools/Build/unity_look/`, `Tools/CI/unity_look_in_container.sh`, `.github/workflows/look-sheet.yml`, `Docs/LOOK_SHEET.md`, `/unity-look` | built, NOT compiled, NOT run (checklist entry "Look sheet: first run") |
+| The reference compile in a cloud session | a .NET 8 root from nuget.org packages alone (host, runtime, ref pack, Roslyn), `--check`, `--self-test` | `Tools/Build/unity_refcompile/dotnet_from_nuget.py`, README paragraph | done; `run.sh` and `run.sh --config editor` ran end to end on it |
+| 3.1 See the real game | the look-sheet kit: capture, launcher, gate, sheet, driver, CI job, doc, skill | `Assets/_Scripts/Editor/Look/`, `Tools/Build/unity_look/`, `Tools/CI/unity_look_in_container.sh`, `.github/workflows/look-sheet.yml`, `Docs/LOOK_SHEET.md`, `/unity-look` | built, reference-compiled (0 errors, negative control proven), NOT run in Unity (checklist entry "Look sheet: first run") |
 | 3.2 The world's look | *(running)* the asset audit with a baseline gate, the look language, vocabulary and lessons, the skill and its plan | `Tools/Build/look_kit/`, `.claude/skills/world-look/`, `Docs/Shaders/WORLD_LOOK_*.md` | *(running)* |
 | 3.3 Decide before building | *(running)* the principles ledger mined from the owners' words and the LOCKED rules, its check, the design brief, the brief step in three skills | `Docs/claude/PRINCIPLES.md`, `principles.json`, `Tools/Build/principles.py`, `Docs/claude/DESIGN_BRIEF.md` | *(running)* |
 | 3.4 UI | *(running)* the UI lessons mined from 43 mockup rounds with a generator and check; the mockup gate with negative controls on rejected rounds | `.claude/skills/frogma/references/UI_LESSONS.md`, `Tools/Build/ui_lessons.py`, `Tools/Build/check_mockup.py` | *(running)* |
@@ -40,8 +43,8 @@ need to review, all your questions, etc."
 
 1. `Docs/SKILL_TRAINING_PLAN.md` sections 3 to 5: the ranking and the decisions D1-D8. Section 6 is the status.
 2. `Docs/LOOK_SHEET.md` and the two C# files under `Assets/_Scripts/Editor/Look/`: the first person at an editor
-   runs the checklist entry "Look sheet: first run" (ten minutes; a compile error in those two files is the expected
-   first finding, since nothing compiled them).
+   runs the checklist entry "Look sheet: first run" (ten minutes). The files reference-compile clean; the first
+   finding to expect is about what the capture draws (the overlay canvases, a stacked camera), not a compile error.
 3. *(running)* the principles ledger: each owner reads `Docs/claude/PRINCIPLES.md` "To confirm or strike" for their
    area; every entry is drafted from the record and nothing is confirmed yet.
 4. *(running)* the look language draft `.claude/skills/world-look/references/LOOK_LANGUAGE.md`: Garrett's one
@@ -52,9 +55,9 @@ need to review, all your questions, etc."
 
 ## 4. What is untested, and why
 
-- The look-sheet C# (two files): no .NET SDK could be fetched in this session (dot.net, builds.dotnet.microsoft.com
-  and GitHub release downloads are refused by the egress proxy; Ubuntu 24.04 has no apt package). *(running)*: an
-  attempt to assemble a runtime and Roslyn from nuget.org packages alone, so the reference compile can run.
+- The look-sheet C# (two files): reference-compiled (zero errors in the editor configuration; the run's 21 errors are
+  the sandbox's known Vivox / Moderation reference gaps in files this branch does not touch), never run in an editor.
+  The editor run is the checklist entry; its open questions are the overlay-canvas capture and URP camera stacks.
 - The CI job `look-sheet.yml`: never dispatched (no licence in `unity-ci`; dispatching it without one only prints the
   warning). The GameCI image's Xvfb and Mesa rendering of URP is the first run's open question (LOOK_SHEET.md 4.5).
 - Everything else tonight is Python and docs, each with a `--self-test` that ran; the real-tree findings of each gate

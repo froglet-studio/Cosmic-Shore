@@ -21564,22 +21564,28 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
 
 
-## 🔴 Look sheet: first run (2026-11-07, `cece/affectionate-fermi-x1lp81`, NOT COMPILED, NOT RUN IN EDITOR)
+## 🔴 Look sheet: first run (2026-11-07, `cece/affectionate-fermi-x1lp81`, compiled with `unity_refcompile --config editor`, NOT RUN IN EDITOR)
 
 The look-sheet kit (`Docs/LOOK_SHEET.md`, `Docs/SKILL_TRAINING_PLAN.md` 3.1): `Assets/_Scripts/Editor/Look/LookSheetCapture.cs`
 and `LookSheetLauncher.cs` (editor assembly), `Tools/Build/unity_look/{look,verify,sheet}.py`, `Tools/CI/unity_look_in_container.sh`,
 `.github/workflows/look-sheet.yml`, `.claude/skills/unity-look/SKILL.md`.
 
-**Verification status.** The two C# files were NOT compiled: the session had no .NET SDK reachable (dot.net and
-builds.dotnet.microsoft.com are refused by the egress proxy, no apt package on Ubuntu 24.04), so `unity_refcompile` did
-not run and no editor was open. They were written against the APIs read in `SwitchbackSoakLauncher`, `SwitchbackSoakRunner`,
+**Verification status.** `bash Tools/Build/unity_refcompile/run.sh --config editor` compiled both files later the same
+night (a .NET 8 root assembled from nuget.org packages, `Tools/Build/unity_refcompile/dotnet_from_nuget.py`, after the
+installers were refused by the proxy): `gated: the 2 changed since origin/bleeding-edge: LookSheetLauncher.cs,
+LookSheetCapture.cs` and `0 in files changed since origin/bleeding-edge` (the run's 21 errors are the known Vivox /
+Moderation reference gaps of the sandbox, in files this branch does not touch). Negative control: a `static int
+_negativeControl = "not an int";` planted in the launcher was reported as `CS0029 ... (1 in files changed)`, then
+removed. `check_console_logging.py` and `check_conditional_compilation.py` pass. No editor was open: NOT RUN. The
+refcompile's UnityEditor reference is 2021.1, so a Unity 6 editor-API removal would not show; every UnityEditor member
+used is also used by merged editor files. They were written against the APIs read in `SwitchbackSoakLauncher`, `SwitchbackSoakRunner`,
 `ThresherTimeSoakRunner`, `ScreenSwitcher` (the public `OnClick*Nav` methods), `PrivacyConsentOverlay.Current`,
 `AuthenticationSceneController` (reflection, as the soak runners do), `GameDataSO` (`CosmicShore.Utility`), and the
 `FrogletTool` attribute. The Python kit's `--self-test` passes (verify's blank-frame negative controls, sheet's layout,
 look's command line). The workflow YAML parses.
 
 **The first run** (`Docs/LOOK_SHEET.md` section 4):
-1. Open the project; fix any compile error in the two files first (expected risk: a using or a signature).
+1. Open the project; the reference compile passed, so a compile error here would be a Unity 6 editor-API difference.
 2. `FrogletTools > Build > Look Sheet > Menu screens`. Expect `Logs/LookSheet/menu_<screen>_pc.png`, `_phone.png` and
    `_gameview.png` for Home, Hangar, Port, Profile and Codex, plus `manifest.jsonl` and `summary.json` with `ok: true`.
    Compare the render-to-texture capture with the Game view one: the UI must be present on both (if not, the

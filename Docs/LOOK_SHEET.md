@@ -7,10 +7,10 @@ models and ability icons got better because each got a SHEET a session looked at
 sheet is that sheet for the rest of the game: the real renderer, captured to PNGs headless, gated (a blank frame
 fails), laid out on one contact sheet, attached to the branch instead of "NOT RUN IN EDITOR".
 
-**Status (2026-11-07): built, not yet run in Unity.** The C# was read for the APIs it calls (the soak launchers', the
-smoke test's, `ScreenSwitcher`'s) and could not be compiled in the session that wrote it (no .NET SDK reachable; the
-checklist entry says so). The first run on a machine with Unity is the proof, and the two capture paths are compared
-there (section 4).
+**Status (2026-11-07): built and reference-compiled, not yet run in Unity.** Both C# files pass
+`unity_refcompile --config editor` with zero errors (a negative control proved the gate reads them; the checklist entry
+"Look sheet: first run" has the record). The first run on a machine with Unity is the proof, and the two capture
+paths are compared there (section 4).
 
 ## 1. The pieces
 
@@ -87,7 +87,7 @@ to see a thing at all.
 | Round | What | Status |
 |---|---|---|
 | R0 | The real editor compiles every PR: `claude/ci-hosted-unity-compile` (the guard on GameCI's image) plus the licence secrets | that branch is written and recorded its first hosted runs; it waits on the secrets and a merge (Shombith) |
-| R1 | One headless screenshot of Menu_Main's Home, read by a session | built 2026-11-07, not yet run (section 4) |
+| R1 | One headless screenshot of Menu_Main's Home, read by a session | built and reference-compiled 2026-11-07, not yet run (section 4) |
 | R2 | A vessel in its Time game flown by its AI, six frames | built for Switchback and Thresher Time through their shipped soak runners; every card once the per-mode smoke test (PR #1754) lands and its driver is called here instead |
 | R3 | The UI parity sheet: the built screen beside its picked Frogma board | `sheet.py --beside` is the layout; the element-box diff is `/ui-redesign-tracker`'s next step |
 | R3b | The same from an Android development build on a named phone | not started |
