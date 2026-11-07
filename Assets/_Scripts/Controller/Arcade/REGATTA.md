@@ -162,7 +162,7 @@ selection modes" work.
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
 a multiple of eight races to the course's honest length and warns.
 
-### 4.1 Lifeforms are a course setting, off on every shipped course (2026-11-06)
+### 4.2 Lifeforms are a course setting, off on every shipped course (2026-11-06)
 
 A course may grow plants beside its spine and carry creatures (`Plan step: time-arena-course`, Garrett:
 "lifeforms, etc."). The arena never spawns one: `SpawnableRegattaRails` prepares planting SITES per leg
@@ -176,7 +176,7 @@ Skim Race's tadpole, with counts changed only. `Tools/Build/regatta_lifeforms.py
 writes it, today `RL.NONE` on all four, so the Barren profile and the cell configs are unchanged. The offline
 model sees none of this; a lifeform course is judged in the real game only. Report:
 `Docs/Reports/REGATTA_LIFEFORMS.md`.
-### 4.1 Course features: what the course is beyond its rings (2026-11-06, brief 10 of the balance plan)
+### 4.3 Course features: what the course is beyond its rings (2026-11-06, brief 10 of the balance plan)
 `RegattaCourseFeatures` (on each `SpawnableRegattaRails` variant, `courseFeatures`; **empty on every shipped variant,
 which is the course above, prism for prism**) is the space a course search moves beyond the ring geometry (Garrett:
 "not all supershielded ... gaps ... omnicrystals ... perturb regatta in much more interesting ways"):

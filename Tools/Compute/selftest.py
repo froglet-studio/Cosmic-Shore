@@ -27,9 +27,9 @@ sys.path.insert(0, os.path.join(REPO, "Tools", "Build"))
 
 import compute_lib as L  # noqa: E402
 
-EVALUATORS = ("toy", "drive_fit", "regatta_course", "regatta_elements", "bioform_forms", "skimrace_fit", "switchback_fit",
-              "redline_fit", "redline_nose_fit")
-              "redline_fit", "serpent_fit")
+EVALUATORS = ("toy", "drive_fit", "regatta_course", "regatta_elements", "regatta_features", "bioform_forms",
+              "skimrace_fit", "switchback_fit", "redline_fit", "redline_nose_fit", "serpent_fit", "skein_fit",
+              "slingshot_fit", "breakwater_fit", "threshertime_fit")
 
 
 def _git(*a, cwd, env=None):
@@ -714,6 +714,8 @@ def run(quick=False):
     for name in EVALUATORS:
         m = importlib.import_module(name)
         f = m.self_test() if hasattr(m, "self_test") else []
+        if not isinstance(f, list):     # an evaluator whose self-test is an exit code (0 ok), not a list of failures
+            f = [] if not f else [f"{name}: self-test returned {f!r}"]
         print(f"evaluator {name}: " + ("ok" if not f else "FAILED " + "; ".join(f)))
         failures += f
     jobs = L.load_jobs(local=True)

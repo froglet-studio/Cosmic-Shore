@@ -12986,7 +12986,7 @@ that environment (`Cell.AdoptFaunaCorridor`, the same `SetFaunaPathCorridor` Swi
 releases only a corridor it adopted itself, so a mode's corridor is never cleared by a world swap. Same diet +
 steering contract as section 67, never a wall.
 
-The first user is Regatta (`Assets/_Scripts/Controller/Arcade/REGATTA.md` 4.1): lifeforms as a course setting,
+The first user is Regatta (`Assets/_Scripts/Controller/Arcade/REGATTA.md` 4.2): lifeforms as a course setting,
 off on every shipped course. Nothing in the locked law moves: the arena prepares ground and never spawns a
 lifeform, plants roll their colour and creatures take the cell's, rails stay super-shielded (never food), and the
 course's phase ladder is raised by the forest's measured volume.

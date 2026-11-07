@@ -324,11 +324,9 @@ namespace CosmicShore.Gameplay
         }
 
         protected override int BuildParameterHash() =>
-            System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
-                                    laneTwistTurnsPerLap, prismSpacing, lifeforms?.ParameterHash() ?? 0,
-                                    /* layout revision */ 2);
             System.HashCode.Combine(System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
-                                                            laneTwistTurnsPerLap, prismSpacing, /* layout revision */ 2),
+                                                            laneTwistTurnsPerLap, prismSpacing,
+                                                            lifeforms?.ParameterHash() ?? 0, /* layout revision */ 2),
                                     Features.IsEmpty ? 0 : Features.ParameterHash());
     }
 }
