@@ -107,8 +107,9 @@ The tables hold aggregates only; there are no player ids, and none may be asked 
 
 {schema}
 
-Notes on the data: build_kind is release (real players), editor (team playtests in the Unity editor), port, or \
-development. play_type multi_human_unknown means a multi-human match recorded before the team fields existed. \
+Notes on the data: build_kind is release (real players), editor (team playtests in the Unity editor), port, web \
+(the browser Toybox), or development. device is iphone, ipad, android_phone, android_tablet, windows, mac, linux, \
+web_desktop, web_mobile or other; builds before 2026-11-07 read ios, android or web (phone or tablet not recorded). play_type multi_human_unknown means a multi-human match recorded before the team fields existed. \
 rematched is NULL for plays that were not completed. Days are 'YYYY-MM-DD' strings in UTC; today is {today}.
 
 The notebook's filters: {filters}. Apply them unless the question names other ones."""
@@ -169,8 +170,8 @@ def check_filters(filters, store=None):
         raise Refused(f"filters must be an object with only {list(S.PRESET_FILTERS)}")
     out = {}
     if filters.get("build") not in (None, ""):
-        if filters["build"] not in S.BUILD_KINDS:
-            raise Refused(f"filters.build must be one of {list(S.BUILD_KINDS)}")
+        if filters["build"] not in V.BUILD_FILTERS:
+            raise Refused(f"filters.build must be one of {list(V.BUILD_FILTERS)}")
         out["build"] = filters["build"]
     if filters.get("days") not in (None, ""):
         days = filters["days"]
@@ -187,6 +188,10 @@ def check_filters(filters, store=None):
         if store is not None and store.era(filters["era"]) is None:
             raise Refused(f"no era with id {filters['era']}")
         out["era"] = filters["era"]
+    if filters.get("device") not in (None, ""):
+        if filters["device"] not in S.DEVICE_FILTERS:
+            raise Refused(f"filters.device must be one of {list(S.DEVICE_FILTERS)}")
+        out["device"] = filters["device"]
     return out
 
 
@@ -432,13 +437,14 @@ def _scope(store, filters):
     filters = check_filters(filters, store)
     era = store.era(filters["era"]) if filters.get("era") else None
     days = 365 if era else filters.get("days", 90)
-    return filters.get("build", "release"), days, filters.get("play", "all"), era
+    return filters.get("build", "release"), days, filters.get("play", "all"), era, filters.get("device", "all")
 
 
 def run_series(store, agg_path, chart, filters):
-    build, days, play, era = _scope(store, filters)
+    build, days, play, era, device = _scope(store, filters)
     chart = check_chart(dict(chart or {}, **{"from": "series"}), "chart")
-    return V.series(agg_path, chart["measure"], chart["by"], chart["over"], build, days, play, era, store.eras())
+    return V.series(agg_path, chart["measure"], chart["by"], chart["over"], build, days, play, era, store.eras(),
+                    device)
 
 
 # ---------------------------------------------------------------- Claude's turn
@@ -457,12 +463,16 @@ def _rows_for_claude(out, room):
 
 
 def describe_filters(store, filters):
-    build, days, play, era = _scope(store, filters)
+    build, days, play, era, device = _scope(store, filters)
     span = (f"the era {era['name']} ({era['from']} to {era['to']}, source {era['source']})" if era
             else f"the last {days} days")
     plays = {"all": "every play type", "solo_vs_ai": "play_type = 'solo_vs_ai'", "solo": "play_type = 'solo_alone'",
              "multi": "play_type IN ('coop', 'adversarial', 'mixed', 'multi_human_unknown')"}[play]
-    return f"build_kind = '{build}', {span}, {plays}"
+    builds = ("every build (sum the build kinds for rows; build_kind = '*' for distinct players)" if build == "all"
+              else f"build_kind = '{build}'")
+    devices = "every device" if device == "all" else (
+        f"{V.DEVICES[device]} (distinct players: the _device tables with device = '{device}')")
+    return f"{builds}, {span}, {plays}, {devices}"
 
 
 def context(store, agg_path, cells, filters):

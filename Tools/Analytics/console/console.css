@@ -290,7 +290,9 @@ td.meter { width: 32%; min-width: 120px; }
 
 
 /* the header filters: Era (a select), Build, Range, Play */
-.seg.era { align-items: center; gap: 8px; padding: 0 6px 0 14px; }
+.seg.era, .seg.device { align-items: center; gap: 8px; padding: 0 6px 0 14px; }
+/* A device picked: the same selection underline the switches use, so a filtered page reads as filtered */
+.seg.device.on { box-shadow: inset 0 0 0 1px var(--fs-line), inset 0 -2px 0 var(--fs-selection); }
 .era-lab { font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--fs-text); }
 .era-select, .mini-select { font-family: var(--fs-font-label); font-weight: 600; font-size: 13px; letter-spacing: .06em; background: transparent; color: var(--fs-text-soft); border: 0; height: 38px; padding: 0 4px; cursor: pointer; max-width: 220px; text-overflow: ellipsis; }
 .era-select { color: var(--fs-text); max-width: 190px; }
@@ -495,7 +497,7 @@ table.people .cut { display: block; max-width: 132px; overflow: hidden; text-ove
   .tiles-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tiles-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .search-box { max-width: none; flex-basis: 100%; }
-  .seg.era { width: 100%; }
+  .seg.era, .seg.device { width: 100%; }
   .era-select { max-width: none; flex: 1; }
   .qb-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .dash-grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; }
