@@ -1,0 +1,146 @@
+{
+ "after": [],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "area_owner": "Yash (vessel AI)",
+ "asked_by": "Garrett 2026-11-06 (Regatta balance plan, brief 5: fix the Rhino's I4 stalls)",
+ "convergence": {
+  "min_evals": 1500,
+  "min_improvement": 0.002,
+  "window_evals": 1200
+ },
+ "evaluator": {
+  "args": {
+   "hull": "Rhino",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "limit": 400,
+   "mode": "Headlong",
+   "model": "rhino_drive",
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "shipped": "",
+   "steering": "headlong_on",
+   "nose_rate": 1.5,
+   "nose_lead": 2.5
+  },
+  "module": "drive_fit"
+ },
+ "goal": "The lead-on twin of drive-rhino-headlong-on: the same search, the same seeds and genomes, with the pilot-side AI nose lead switched on in the model (nose_rate 1.5, nose_lead 2.5; Tools/Build/ai_nose_lead.py, the model of AIPilot.NoseLeadGain from PR #1786, which the game ships at 0). the Rhino drive model's published numbers assumed a lag-free nose, so the fleet lag (1.5/s) is switched on with the lead; the Rhino never missed a mouth, so this twin mostly checks that assumption. Garrett's plan (REGATTA_BALANCE_PLAN.md, the direction since 2026-11-06) judges every hull and every course on AIs that do not overshoot ring mouths, so each hull's drive is searched again with the lead on and compared with its lead-off twin on the same courses: the lead-on winner is the drive proposed for the day Yash turns the switch on. Run by hand until Compute is back (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two independent restarts (labels B, C). Parent goal: Fix the Rhino's I4 stalls (2026-11-06): the drive searched on the model with Headlong's own gate distances, AIPilot's orbit break-off and AICommitFromApproachPoint ON, the steering every other gate race flies. Run by hand (regatta-training/local_run.py) until Froglet Compute is switched back on.",
+ "id": "drive-rhino-headlong-on-lead",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/",
+  "Assets/Resources/AIBoostPolicies/",
+  "Assets/Resources/RaceLines/",
+  "Assets/_Prefabs/Spacevessels/"
+ ],
+ "plan": "regatta-balance",
+ "promote": "Only after Yash turns AIPilot.NoseLeadGain on (PR #1786) and its editor check passes; then as the parent's rule, against the parent's winner raced WITH the lead: A PROPOSAL for the AI owner (Yash): if they agree, write the best fields into Assets/Resources/AIBoostPolicies/<the Rhino's policy>_Headlong.asset with the learner's writer (learn_drives_from_flights.py), never by hand; the AI learning sweep keeps imitating people on top of it.",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 1500,
+   "init": 600,
+   "lo": 150,
+   "name": "cornerSpeed"
+  },
+  {
+   "hi": 400,
+   "init": 160,
+   "lo": 60,
+   "name": "minCornerSpeed"
+  },
+  {
+   "hi": 400,
+   "init": 120,
+   "lo": 0,
+   "name": "brakeMarginUnits"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.25,
+   "lo": 0.0,
+   "name": "brakeLeadSeconds"
+  },
+  {
+   "hi": 300,
+   "init": 50,
+   "lo": 0,
+   "name": "minSpeedGain"
+  },
+  {
+   "hi": 120,
+   "init": 30,
+   "lo": 10,
+   "name": "cornerReleaseDegrees"
+  },
+  {
+   "hi": 3.0,
+   "init": 1.5,
+   "lo": 0.2,
+   "name": "engageRunwaySeconds"
+  },
+  {
+   "hi": 2.0,
+   "init": 0.5,
+   "lo": 0.1,
+   "name": "releaseRunwaySeconds"
+  },
+  {
+   "hi": 40,
+   "init": 12,
+   "lo": 4,
+   "name": "alignDegrees"
+  },
+  {
+   "hi": 60,
+   "init": 25,
+   "lo": 8,
+   "name": "releaseAlignDegrees"
+  },
+  {
+   "hi": 0.9,
+   "init": 0.35,
+   "lo": 0.1,
+   "name": "stickBand"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.6,
+   "lo": 0.2,
+   "name": "releaseStickBand"
+  },
+  {
+   "hi": 10,
+   "init": 4,
+   "lo": 0.5,
+   "name": "throttleSlewPerSecond"
+  },
+  {
+   "hi": 0.8,
+   "init": 0.3,
+   "lo": 0.0,
+   "name": "brakeSteerFloor"
+  }
+ ],
+ "stage": 1,
+ "status": "proposed",
+ "title": "Rhino AI drive for Headlong, I1-I4, with Regatta's gate steering switched on (self-play, proposal) - with the AI nose lead ON",
+ "updated": "2026-11-07",
+ "value": 9
+}

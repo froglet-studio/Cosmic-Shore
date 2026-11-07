@@ -19,8 +19,19 @@ namespace CosmicShore.ScriptableObjects
         [Range(1, 3)] public int MinDomainsAllowed = 1;
         [Tooltip("Maximum number of domains (teams) this mode allows. Modes with a fixed team shape (e.g. Astro League needs exactly two domains for its two goals) set this equal to MinDomainsAllowed to pin the count.")]
         [Range(1, 3)] public int MaxDomainsAllowed = 3;
+        [Tooltip("Lowest intensity the card offers. An ARENA card (ArenaRules) has no intensity row: it sets both " +
+                 "ends to ArenaIntensity, which ArenaCardTests holds.")]
         [Min(1)] public int MinIntensity = 1;
+        [Tooltip("Highest intensity the card offers. An ARENA card sets it to ArenaIntensity, like MinIntensity.")]
         [Range(1, 4)] public int MaxIntensity = 4;
+
+        /// <summary>
+        /// The one intensity every ARENA card (<see cref="ArenaRules"/>) plays at. Arena cards dropped the
+        /// intensity row for the vessel-selection row (Garrett, 2026-11-06); what intensity used to choose on them -
+        /// Astro League's arena scale, a starting-elements row, a score target - is frozen at intensity 2.
+        /// Arcade cards keep their I1-I4: every AI trains on them (Docs/AI_SYSTEM/AI_PLAN.md).
+        /// </summary>
+        public const int ArenaIntensity = 2;
 
         [Header("Arena rules")]
         [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.9). On: every hull in this " +

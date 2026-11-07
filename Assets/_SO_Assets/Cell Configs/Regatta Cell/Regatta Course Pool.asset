@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38b5a3806317cf23f0648110887bef1b, type: 3}
+  m_Name: Regatta Course Pool
+  m_EditorClassIdentifier:
+  entries:
+  - Label: Wide
+    CellConfig: {fileID: 11400000, guid: 1272c806f122444f525a000ccbcb472b, type: 2}
+    Enabled: 1
+    Notes: The old intensity-1 circuit - gentle corners (90 deg hardest), 110 u mouths, 200 u floor.
+  - Label: Mixed
+    CellConfig: {fileID: 11400000, guid: 6a8fdec94d8d7c1e55ce2b82f195fb2d, type: 2}
+    Enabled: 1
+    Notes: The old intensity-2 circuit - 118 deg hardest corner, 88 u mouths, 150 u floor.
+  - Label: Hairpins
+    CellConfig: {fileID: 11400000, guid: ff80f22ab0303ace7a1139de2f9f2222, type: 2}
+    Enabled: 1
+    Notes: The old intensity-3 circuit - 135 deg hardest corner, 72 u mouths, 120 u floor.
+  - Label: Tight
+    CellConfig: {fileID: 11400000, guid: 1fd418b9587960e42b0cbdb69f7cd2ec, type: 2}
+    Enabled: 1
+    Notes: The old intensity-4 circuit - three hard corners (150 deg), 54 u mouths, 100 u floor.
