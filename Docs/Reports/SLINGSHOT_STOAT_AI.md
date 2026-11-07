@@ -90,3 +90,57 @@ Squirrel 48.5-59.5 s.
 Write C's rows into `StoatSlingConfig_Slingshot` with the learner's writer, move `StoatSlingTests`' pinned
 `aiWarpMinDistance: 0` with them, and race them in the editor. The model's known gaps are `slingshot_stoat_sim.LIMITS`
 (rivals, the Orrery's prisms, roll, the cell's outer shell).
+
+## 8. With the nose lead on (2026-11-07)
+
+Brief 19 of the lead-on round (`BRIEFS.md` §14, §19). Every number is a MODEL (`slingshot_stoat_sim.py`, which flies
+the fleet nose lag); the lead is `ai_nose_lead.NoseLead` at gain 2.5, the model of `AIPilot.NoseLeadGain` (PR #1786),
+which the game ships at 0. Kit: the same as §4 (Yash's `c459f442`, 30 u shell, core 0.2, laid over this branch's tree
+for the run only; this branch itself still carries the 60 u shell). Check: the parent's B and C rows score 1.0873 and
+1.0885 on the search courses here, exactly as in §4.
+
+**The twin search**, `slingshot-stoat-time-lead` (the parent's job, seeds and genomes, `nose_lead: 2.5`), run by hand,
+900 evaluations a restart (`min_evals` + `window_evals`):
+
+| Restart | Loss | Turn | Interval | Turn min distance | Aim scale | Hold | Warp distance |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| B (grown from the genomes) | 1.0722 | 41 deg | 2.45 s | 300 u | 121 | 0.02 | 340 u |
+| C (grown from the genomes) | 1.0736 | 89 deg | 2.92 s | 195 u | 60 | 0.00 | 298 u |
+
+B and C land 0.13% apart; B's last gain was at evaluation 171, C's last-20% gain was 0.02%. Converged. Same basin
+as the parent: a warp press at 300-340 u, a press every 2.5-2.9 s, no hold; the turn rows are flat again.
+
+**The 2x2 on fresh courses** (seedbase 1001, 12 courses an intensity, median seconds, rings missed a race; one script,
+`results/stoat-lead/two_by_two.py`, so all cells are on one tree):
+
+| Rows | Lead | I1 | I2 | I3 | I4 | Misses a race I1-I4 | Finished | Composite |
+|---|---|---:|---:|---:|---:|---|---:|---:|
+| Shipped (Slingshot copy) | off | 144.2 | 140.3 | 153.8 | 164.3 | 1.58 / 0.58 / 3.33 / 4.92 | 48/48 | 2.614 |
+| Shipped (Slingshot copy) | on | 143.2 | 142.3 | 145.5 | 159.6 | 0.50 / 0.92 / 2.25 / 5.08 | 48/48 | 2.749 |
+| Parent B | off | 63.5 | 64.5 | 66.4 | 70.2 | 0.08 / 0.33 / 0.08 / 0.50 | 48/48 | 1.141 |
+| **Parent B** | **on** | **60.5** | **60.8** | **65.3** | **67.5** | 0.00 / 0.42 / 0.00 / 0.17 | 48/48 | **1.108** |
+| Parent C | off | 63.1 | 64.0 | 66.1 | 69.6 | 0.00 / 0.42 / 0.08 / 0.67 | 48/48 | 1.167 |
+| Parent C | on | 60.0 | 61.5 | 65.2 | 69.2 | 0.00 / 0.50 / 0.00 / 0.17 | 48/48 | 1.120 |
+| Lead-on B | off | 63.5 | 65.5 | 68.1 | 74.3 | 0.00 / 0.33 / 0.17 / 0.75 | 48/48 | 1.153 |
+| Lead-on B | on | 59.6 | 62.3 | 64.6 | 74.0 | 0.00 / 0.25 / 0.25 / 0.75 | 48/48 | 1.116 |
+| Lead-on C | off | 62.6 | 63.2 | 66.5 | 72.2 | 0.17 / 0.92 / 0.08 / 0.67 | 48/48 | 1.166 |
+| Lead-on C | on | 61.2 | 63.5 | 65.8 | 70.9 | 0.08 / 0.75 / 0.00 / 0.25 | 48/48 | 1.130 |
+
+(The parent rows' fresh composites here sit 1-6% under §5's, which used other base rows; compare within this table.)
+
+What it says:
+- **The lead alone does it.** The parent's rows with the lead on are 3-4% better (1.141 → 1.108, 1.167 → 1.120),
+  about 3 s faster at I1-I2, and miss a third as many rings at I4.
+- **The drive does not need to move.** The lead-on search beats the parent's rows on its own six search courses
+  (1.072 against 1.104-1.122 for the parent's rows with the lead on) but not on fresh ones (1.116 and 1.130 against 1.108
+  and 1.120): the gain was fitted to the search courses. The Stoat's misses were already few (the warp press flies long
+  legs straight), so the nose lag cost it less than the Scarab or the Manta.
+- The shipped rows get no help: the lead trims their misses at I1-I3 but they still cruise at 140-160 s.
+
+Well trained (AI_PLAN §5), lead on: (1) restarts agree, yes (0.13%); (2) beats every genome, yes (1.11-1.13 against
+2.61-2.75); (3) human marks (Yash, orbit kit, I2 75.2 s / I3 89.6 s): the model AI is under both; no human has finished
+a trampoline race; (4) real game: not run.
+
+**Proposal for Yash** (nothing written to an asset): the day `NoseLeadGain` is turned on for the Stoat, keep the
+parent's rows (§7; B was best here with the lead on, C within 1%); the lead-on twin's rows are not better. Editor check:
+AI Stoats race Slingshot I1-I4 at gain 0 and at 2.5 with those rows; at 2.5 they miss no more rings and are no slower.

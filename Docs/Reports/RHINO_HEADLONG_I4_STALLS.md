@@ -70,3 +70,60 @@ Regatta variant alone.
 
 Results: `/mnt/project-files/regatta-training/results/rhino-i4-stalls/`. Reproduce: `python3 Tools/Build/rhino_drive_sim.py --headlong`
 and `--self-test`; the searches are `drive-rhino-headlong-on` (B, C) and `drive-rhino-headlong-shipped` (A).
+
+## With the nose lead on (2026-11-07)
+
+Brief 21, the lead-on twin `drive-rhino-headlong-on-lead` (the parent's search, seeds and space, with `nose_rate` 1.5 =
+the fleet AI nose lag and `nose_lead` 2.5 = `AIPilot.NoseLeadGain` from PR #1786, which ships at 0). **Every number is
+the `rhino_drive` model with Headlong's twelve courses (I1-I4 x seeds 1-3) and the gate steering switched on; no
+editor race.** Composite = the geometric mean of the twelve race times (the job's loss, exp'd).
+
+**The lag-free assumption did not hold.** The parent's numbers came from a model with no nose lag. Turning on the lag
+every AI hull really has (1.5/s, `VesselTransformer.LERP_AMOUNT`) makes the parent's winner 4-5x slower, with about
+100 missed mouths over the twelve races. The Rhino "never missed" only because the model had no lag. The lead alone
+does not fix it on Headlong: the parent's winner with lag and lead still misses 115-132 mouths. The drive has to change
+too. Re-searched with lag and lead, the drive corners much slower (`cornerSpeed` about 155 against 694-1027) and
+finishes the twelve in 88.7 / 90.3 s composite with 10 / 12 missed mouths.
+
+The comparison on the same twelve courses ("lead only", without the lag, is identical to "off" by design: the
+effective gain is 0 when the nose has no lag):
+
+| drive | nose | composite s | I1 / I2 / I3 / I4 s | missed mouths I1 / I2 / I3 / I4 | DNF |
+|---|---|---|---|---|---|
+| job init (shipped-like) | off | 59.3 | 53.87 / 52.93 / 68.1 / 64.97 | 0 / 0 / 0 / 0 (0) | 0 |
+| job init (shipped-like) | lag only | 164.3 | 107.13 / 135.0 / 227.4 / 226.6 | 0 / 12 / 45 / 47 (104) | 0 |
+| job init (shipped-like) | lag + lead | 157.3 | 111.2 / 115.57 / 211.17 / 237.7 | 5 / 11 / 49 / 55 (120) | 0 |
+| parent B | off | 38.1 | 36.13 / 34.53 / 38.37 / 44.53 | 0 / 0 / 1 / 1 (2) | 0 |
+| parent B | lag only | 179.6 | 130.07 / 151.6 / 244.57 / 224.17 | 0 / 13 / 45 / 44 (102) | 0 |
+| parent B | lag + lead | 149.5 | 102.9 / 124.97 / 186.5 / 212.1 | 6 / 16 / 39 / 54 (115) | 0 |
+| parent C | off | 37.9 | 35.17 / 34.73 / 40.33 / 42.57 | 0 / 0 / 1 / 0 (1) | 0 |
+| parent C | lag only | 168.0 | 113.77 / 135.5 / 243.07 / 215.33 | 2 / 10 / 46 / 40 (98) | 0 |
+| parent C | lag + lead | 169.5 | 111.03 / 154.37 / 206.17 / 236.0 | 7 / 25 / 44 / 56 (132) | 0 |
+| lead-on B | off | 59.5 | 56.13 / 55.2 / 61.53 / 66.43 | 0 / 0 / 0 / 2 (2) | 0 |
+| lead-on B | lag only | 138.9 | 97.53 / 106.53 / 182.03 / 200.3 | 0 / 4 / 32 / 38 (74) | 0 |
+| lead-on B | lag + lead | 88.7 | 81.37 / 80.63 / 102.4 / 93.27 | 0 / 0 / 6 / 4 (10) | 0 |
+| lead-on C | off | 64.3 | 62.57 / 61.6 / 64.53 / 69.3 | 0 / 0 / 0 / 3 (3) | 0 |
+| lead-on C | lag only | 133.2 | 100.6 / 105.5 / 167.03 / 179.63 | 0 / 0 / 28 / 33 (61) | 0 |
+| lead-on C | lag + lead | 90.3 | 78.5 / 81.5 / 98.53 / 107.47 | 0 / 0 / 2 / 10 (12) | 0 |
+
+- **Converged:** restarts B and C, 2,717 evaluations each, composites 88.7 / 90.3 s (1.8% apart; losses 4.4856 /
+  4.5036); neither improved in its last 20% (last gains at 1,507 and 1,639). The fields differ (minCornerSpeed 144 vs
+  215, releaseRunwaySeconds 0.16 vs 0.98), so the loss is flat there as in the parent.
+- **The lead pays only together with a re-searched drive:** lead-on winner, lag + lead 88.7 s against the parent's
+  winner, lag + lead 149.5-169.5 s. Without the lead the lead-on winner is 133-139 s, so it is tuned for the lead.
+- **Still not clean:** 10-12 missed mouths over twelve races, all at I3/I4; the well-trained test asks for none.
+- **Regatta's measured I1 course** (`rhino_line_sim`, lag on, `regI1_lead.py` in the results folder): with the lead
+  2.5 the shipped `RhinoAIBoostPolicy_Regatta` races 37.9 s (77.4 s without the lead, 0 misses either way), the
+  lead-on B / C Headlong drives 52.5 / 43.9 s (1 / 0 misses), the parent B / C 58.8 / 45.8 s. The Headlong drive
+  still belongs in a `_Headlong` variant and leaves the Regatta variant alone.
+- No human has finished Headlong, so well-trained test 3 cannot be applied.
+
+**Proposed (nothing written to an asset):** for the day Yash turns `AIPilot.NoseLeadGain` on, lead-on drive B
+(fields in `drive-rhino-headlong-on-lead__B.json`) as `RhinoAIBoostPolicy_Headlong`, together with
+`AICommitFromApproachPoint` on, and only through `learn_drives_from_flights.py`'s writer. Until the lead is on, the
+parent's drive is the proposal, but its published 38 s ignores the lag: the editor check is what says which is right.
+
+**Not verified (needs the editor):** a four-Rhino Headlong race at I3 and I4 with the lead at 0 and at 2.5, counting
+missed mouths, against these model times (within 10%).
+
+Results: `/mnt/project-files/regatta-training/results/rhino-lead/` (run JSONs, `cells_*.json`, `TWO_BY_TWO.md`).

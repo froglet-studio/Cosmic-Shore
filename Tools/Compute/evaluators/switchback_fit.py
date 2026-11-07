@@ -11,9 +11,10 @@ its first generation is the four genomes and mutations of each.
 The model is the Blast Run simulator (Tools/Build/switchback_sim_harness/Sim.cs): the SHIPPED course, Blast Run layout,
 blast planner and prism avoidance compiled out of Assets/ against the Skim Race harness's Unity shim, raced by a
 kinematic Dolphin and the AI's executor ported from SwitchbackBlastAI / GateRaceController / AIPilot /
-ChargeBoostAIPolicySO, with the game's drift, AI nose lag (the level's row of SwitchbackController.aiNoseFollowByIntensity)
-and measured prism costs. Nothing is copied: the evaluator builds the harness from the job's ref (run.sh's build, in
-Python so it runs on Windows too) and parses `races`' lines.
+ChargeBoostAIPolicySO, with the game's drift, AI nose lag (the level's row of SwitchbackController.aiNoseFollowByIntensity),
+the AI nose lead (AIPilot.NoseLeadGain, off unless the job's `nose_lead` switches it on) and measured prism costs. Nothing
+is copied: the evaluator builds the harness from the job's ref (run.sh's build, in Python so it runs on Windows too) and
+parses `races`' lines.
 
     per race       time / cruise          if it finished    (cruise = the gate-to-gate path at the Dolphin's cruise, 68 u/s)
                    cut / cruise + 2 x the gates it missed / gates      if not (a DNF always scores worse than any finish)
@@ -42,6 +43,9 @@ args:
     policy             repo path of the anchor genome (the mode-wide drive): the space's `init`, the board's baseline
     genomes            repo paths of every genome to grow from and choose between (default: the policy alone)
     stay_near_shipped  weight of the pull toward the chosen genome's values (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain; Tools/Build/ai_nose_lead.py is the Python twin): a gain
+                       stated at the fleet lag, or {"gain", "max_extra_deg"}; absent = off, today's steering (every
+                       shipped asset flies 0, so the races are the ones before the knob existed)
 """
 import glob
 import hashlib
@@ -54,7 +58,7 @@ import sys
 
 import compute_lib as L
 
-VERSION = "1"
+VERSION = "2"      # 2: the AI nose lead knob (Sim.cs noseLead / noseLeadExtra)
 HARNESS = "Tools/Build/switchback_sim_harness/"
 A = "Assets/_Scripts/Controller/Arcade/"
 SOURCES = ["Tools/Build/skimrace_sim_harness/UnityShim.cs", HARNESS + "ShimExtra.cs", HARNESS + "Sim.cs",
@@ -78,6 +82,11 @@ LIMITS = ("offline sim of the shipped Switchback Blast Run course, layout, plann
           "fixed seeds - promotion re-races fresh ones")
 REQUEST_ARGS = {"intensity": {"choices": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 24}, "levels": {"subset": [1, 2, 3, 4]}}
 COMBINE_WORST = 0.5     # loss = mean over intensities + this x the worst one (the plan's composite)
+NOSE_LEAD_KEY = "nose_lead"         # ai_nose_lead.CONFIG_KEY: the job arg every offline race model reads
+NOSE_LEAD_EXTRA_DEG = 40.0          # AIPilot.DefaultNoseLeadMaxExtraDegrees (ai_nose_lead.DEFAULT_MAX_EXTRA_DEG)
+# evaluate({}, self_test's ctx): the mode-wide drive at I1 Hard on courses 45501 and 7000, measured 2026-11-07 (Linux x64,
+# dotnet 8.0.133) before the nose lead knob existed. Without `nose_lead` the loss is this to 1e-6, or the model moved.
+SELF_TEST_LOSS = 0.5557729803892291
 FIXED_SEED = 45_500     # SwitchbackBlastRun.FixedSeed(intensity) = 45_500 + intensity, the tester's course
 _CTX = {}
 _RACE = re.compile(r"^RACE (\d) (\d) (-?\d+) (FIN|DNF) ([0-9.]+) (\d+)/(\d+) ([0-9.]+)")
@@ -106,6 +115,24 @@ def genome_name(rel):
 def course_seeds(args, intensity):
     n, base = int(args.get("seeds", 3)), int(args.get("seedbase", 7000))
     return [FIXED_SEED + intensity] + [base + k for k in range(n)]
+
+
+def nose_lead_argv(args):
+    """The AI nose lead the job switches on, as the sim's argv (`noseLead=<gain> noseLeadExtra=<deg>`: Sim.cs
+    Opts.NoseLeadGain / NoseLeadMaxExtraDegrees), nothing when it is off. `nose_lead` is the gain stated at the fleet lag
+    (AIPilot.NoseLeadGain) or {"gain", "max_extra_deg"}, the forms ai_nose_lead.NoseLead.from_config reads for every
+    offline model; absent, 0 or a bool = off, today's steering, so an evaluation without it is the one before the knob."""
+    cfg = args.get(NOSE_LEAD_KEY)
+    if cfg is None or isinstance(cfg, bool):
+        return []
+    if isinstance(cfg, dict):
+        gain, extra = float(cfg.get("gain") or 0.0), cfg.get("max_extra_deg")
+        extra = NOSE_LEAD_EXTRA_DEG if extra is None else float(extra)
+    elif isinstance(cfg, (int, float)):
+        gain, extra = float(cfg), NOSE_LEAD_EXTRA_DEG
+    else:
+        raise ValueError(f"{NOSE_LEAD_KEY}: a gain or {{'gain', 'max_extra_deg'}}, not {cfg!r}")
+    return [f"noseLead={gain:g}", f"noseLeadExtra={extra:g}"] if gain > 0 else []
 
 
 # ── the harness, built once per machine per source revision ───────────────────
@@ -234,7 +261,7 @@ def race(params, ctx, intensity, level):
     ss = course_seeds(a, intensity)
     out = _sim(_CTX["folder"], _CTX["dotnet"], ["races", f"i={intensity}", f"level={level}",
                                                 f"seeds={','.join(str(s) for s in ss)}",
-                                                f"maxSeconds={float(a.get('max_seconds', 420)):g}"] + kv)
+                                                f"maxSeconds={float(a.get('max_seconds', 420)):g}"] + kv + nose_lead_argv(a))
     rows = []
     for line in out.splitlines():
         m = _RACE.match(line.strip())
@@ -280,10 +307,17 @@ def evaluate(params, ctx):
 
 
 def self_test():
-    """The shipped mode-wide drive finishes the tester course at I1 (the simulator's own result), a drive that never
-    discharges (spend at full charge, no align cone) scores worse (the negative control), the same params give the
-    same loss, the genome choice really changes what races (the I4 file underneath is not the mode-wide one), and the
-    seeds are the four shipped genomes themselves."""
+    """The shipped mode-wide drive finishes the tester course at I1 (the simulator's own result) at the loss measured
+    before the nose lead knob (SELF_TEST_LOSS: the knob is off by default), a drive that never discharges (spend at full
+    charge, no align cone) scores worse (the negative control), the same params give the same loss, the genome choice
+    really changes what races (the I4 file underneath is not the mode-wide one), and the seeds are the four shipped
+    genomes themselves. The nose lead: its argv forms; at 2.5 on I1's slow-nose levels (Easy and Medium, the nose at
+    1.9 / 2.2 per second, where the lag costs most: 0.34 / 0.27 of loss against no lag on these courses, 0.13 / 0.09 at
+    Hard / Legendary) it finishes as often as no lead and the composite improves, gain 1 (judged from the command, no
+    lead past the aim) is the weaker control, with no nose lag it changes nothing (the effective gain is 0), and the
+    harness's own parity check against AIPilot / ai_nose_lead.py passes. Measured 2026-11-07: Easy + Medium 0.7292 ->
+    0.7100 at 2.5 (0.7225 at gain 1); on these two courses Easy alone and Hard alone are worse at 2.5, so the gain for
+    Switchback's own rate ladder stays a tuning question for the AI owner - this holds the mechanism, not a tuning."""
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.dirname(os.path.dirname(os.path.dirname(here)))
     try:
@@ -301,6 +335,9 @@ def self_test():
         other = evaluate({"genome": "DolphinAIBoostPolicy_Switchback_I4"}, ctx)
         if good["metrics"]["I1"]["finished"] != "2/2":
             bad.append(f"switchback_fit: the shipped drive did not finish I1: {good['metrics']}")
+        if abs(good["loss"] - SELF_TEST_LOSS) > 1e-6:
+            bad.append(f"switchback_fit: the shipped drive's I1 loss moved from {SELF_TEST_LOSS} to {good['loss']!r} "
+                       "(the model changed: re-measure SELF_TEST_LOSS, or a knob is on by default)")
         if not broken["loss"] > good["loss"]:
             bad.append(f"switchback_fit: a drive that never discharges did not score worse ({broken['loss']:.3f} vs {good['loss']:.3f})")
         if again["loss"] != good["loss"]:
@@ -314,6 +351,38 @@ def self_test():
         sd = seeds(ctx["args"], root)
         if [x["genome"] for x in sd] != [genome_name(g) for g in DOLPHIN_GENOMES] or sd[1] == sd[0]:
             bad.append("switchback_fit: the seeds are not the four shipped genomes")
+        # the AI nose lead: the argv forms (absent / 0 / a bool / gain 0 = off, nothing appended)
+        for cfg, want in (({}, []), ({"nose_lead": 0}, []), ({"nose_lead": False}, []), ({"nose_lead": {"gain": 0}}, []),
+                          ({"nose_lead": 2.5}, ["noseLead=2.5", "noseLeadExtra=40"]),
+                          ({"nose_lead": {"gain": 3}}, ["noseLead=3", "noseLeadExtra=40"]),
+                          ({"nose_lead": {"gain": 2, "max_extra_deg": 20}}, ["noseLead=2", "noseLeadExtra=20"])):
+            if nose_lead_argv(cfg) != want:
+                bad.append(f"switchback_fit: nose_lead_argv({cfg}) = {nose_lead_argv(cfg)}, wanted {want}")
+        try:
+            nose_lead_argv({"nose_lead": "2.5"})
+            bad.append("switchback_fit: nose_lead_argv accepted a string")
+        except ValueError:
+            pass
+        # ...at 2.5 on the slow-nose levels it finishes as often and the composite improves; gain 1 is the weaker control
+        slow = dict(ctx["args"], levels=[1, 2])
+        off = evaluate({}, {"root": root, "args": slow})
+        lead = evaluate({}, {"root": root, "args": dict(slow, nose_lead=2.5)})
+        weaker = evaluate({}, {"root": root, "args": dict(slow, nose_lead=1.0)})
+        fin = lambda r: int(r["metrics"]["I1"]["finished"].split("/")[0])
+        if fin(lead) < fin(off) or not lead["loss"] < off["loss"]:
+            bad.append(f"switchback_fit: nose lead 2.5 did not help I1 Easy + Medium (loss {lead['loss']:.4f} vs {off['loss']:.4f}, "
+                       f"finished {lead['metrics']['I1']['finished']} vs {off['metrics']['I1']['finished']})")
+        if not weaker["loss"] > lead["loss"]:
+            bad.append(f"switchback_fit: gain 1 (no lead past the aim) was not weaker than 2.5 ({weaker['loss']:.4f} vs {lead['loss']:.4f})")
+        # ...with no nose lag there is nothing to lead: the harness's noseLag=0 races are the same, line for line
+        argv = ["races", "i=1", "level=1", "seeds=45501,7000", "maxSeconds=420", "noseLag=0"]
+        argv += [f"drive.{k}={round(float(v), 6)}" for k, v in sorted(_CTX["genomes"][_CTX["anchor"]].items()) if k in FIELDS]
+        if _sim(_CTX["folder"], _CTX["dotnet"], argv) != _sim(_CTX["folder"], _CTX["dotnet"], argv + nose_lead_argv({"nose_lead": 2.5})):
+            bad.append("switchback_fit: the nose lead changed a race flown with no nose lag (its effective gain must be 0)")
+        # ...and the harness's parity check: NoseLeadDirection / EffectiveNoseLeadGain on ai_nose_lead.py's self-test values
+        out = _sim(_CTX["folder"], _CTX["dotnet"], ["selftest"])
+        if "switchback_sim self-test: ok" not in out:
+            bad.append("switchback_fit: the harness self-test (nose-lead parity included) failed: " + out.strip()[-300:])
     except Exception as e:
         bad.append(f"switchback_fit: {type(e).__name__}: {e}")
     _CTX.clear()

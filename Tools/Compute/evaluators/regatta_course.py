@@ -27,8 +27,13 @@ the membrane). The space's init values are today's course, so a featured run sta
 args:
     features   true to search the course features too (regatta_features.space())
     intensity  1-4
-    roster     {hull: {"model": race_models model, "drive": {asset field: value} | "asset": repo path}}
+    roster     {hull: {"model": race_models model, "drive": {asset field: value} | "asset": repo path,
+                       "nose_rate": ..., "nose_lead": ...}}   (a hull's own nose knobs, over the job's below)
     limit      seconds before a race counts as not finished
+    nose_rate  the AI nose's follow rate per second for every drive-model hull (VesselTransformer.AINoseFollowPerSecond):
+               absent = today's lag-free models; 1.5 = the game's fleet lag (the line model takes 1.5 only)
+    nose_lead  the AI nose lead on that lagging nose (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated
+               at the fleet lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF (race_models.nose_knobs)
 """
 import math
 import os
@@ -47,7 +52,7 @@ _CTX = {}
 def inputs(args):
     out = ["Tools/Build/rhino_drive_sim.py", "Tools/Build/manta_drive_sim.py", "Tools/Build/dolphin_drive_sim.py",
            "Tools/Build/regatta_line_sim.py", "Tools/Build/regatta_balance.py", "Tools/Build/situation_features.py",
-           "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
+           "Tools/Build/ai_nose_lead.py", "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
            "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourseFeatures.cs",
            "Tools/Compute/evaluators/regatta_features.py", "Tools/Build/regatta_course_harness/features.json",
            "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs"]
@@ -81,16 +86,19 @@ def _drives(root, roster):
     return out
 
 
-def race_all(course, intensity, roster, drives, limit):
+def race_all(course, intensity, roster, drives, limit, knobs=None):
+    """Every roster hull's race; knobs: the job's args, for the AI nose knobs (race_models.nose_knobs: the job's
+    nose_rate / nose_lead, a hull's own over them, nothing when neither is set)."""
     times, raw = {}, {}
     for hull, h in roster.items():
         c = rm.balance_course(course) if h["model"] == "balance" else course
         if h["model"] == "balance":
             c = dict(c, gates=course["gates"])
+        nose = rm.nose_knobs(knobs or {}, h)
         # regatta_features.race prices the course features and is race_models.race when there are none.
-        t, r = rf.race(hull, h["model"], course, intensity, drive=drives[hull], steering="centre", limit=limit) \
+        t, r = rf.race(hull, h["model"], course, intensity, drive=drives[hull], steering="centre", limit=limit, **nose) \
             if course.get("features") is not None else \
-            rm.race(hull, h["model"], c, intensity, drive=drives[hull], steering="centre", limit=limit)
+            rm.race(hull, h["model"], c, intensity, drive=drives[hull], steering="centre", limit=limit, **nose)
         times[hull], raw[hull] = t, r
     return times, raw
 
@@ -100,7 +108,7 @@ def setup(ctx):
     i = int(a["intensity"])
     _CTX["drives"] = _drives(ctx["root"], a["roster"])
     ship = cp.regatta_course(i)
-    times, _ = race_all(ship, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)))
+    times, _ = race_all(ship, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)), knobs=a)
     _CTX["ship_mean"] = sum(times.values()) / len(times)
     _CTX["ship_hardest"] = max(ship["turnDegrees"])
 
@@ -133,7 +141,7 @@ def evaluate(params, ctx):
         course = featured_course(params, s, cp.seed_for_intensity(base_seed, i), i)
     else:
         course = cp.course(s, cp.seed_for_intensity(base_seed, i))
-    times, raw = race_all(course, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)))
+    times, raw = race_all(course, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)), knobs=a)
     fastest, slowest = min(times.values()), max(times.values())
     disparity = math.log(slowest / fastest)
     cover = rf.guard_fails(course) if a.get("features") else rm.rail_coverage(course)

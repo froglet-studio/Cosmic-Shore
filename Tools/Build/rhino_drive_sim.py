@@ -14,14 +14,53 @@ The Python driver below MIRRORS RampBoostAIPolicySO.Driver.Tick: change both tog
     python3 Tools/Build/rhino_drive_sim.py --sweep    # the corner-speed / payback / release / margin grid
     python3 Tools/Build/rhino_drive_sim.py --headlong # the drive on Headlong's 12 courses under each gate steering
     python3 Tools/Build/rhino_drive_sim.py --self-test
+    python3 Tools/Build/rhino_drive_sim.py --nose-rate 1.5             # + the rows with the game's nose lag (1.5/s), lead off
+    python3 Tools/Build/rhino_drive_sim.py --nose-lead 2.5             # + the lag rows and the AI nose lead 2.5 on top of the lag
+    python3 Tools/Build/rhino_drive_sim.py --headlong --nose-lead 2.5  # the same extra rows on Headlong's 12 courses
 
 STEERING (2026-11-06): the gate steering is now a named profile (STEERING_PROFILES: Headlong's as shipped, Headlong with
 AICommitFromApproachPoint on, Regatta's), each with AIPilot's orbit break-off. STEERING = None is the legacy model.
 Docs/Reports/RHINO_HEADLONG_I4_STALLS.md has what it found: the I4 stall was the steering, not the drive.
+
+NOSE LAG AND THE AI NOSE LEAD (2026-11-07; Tools/Build/ai_nose_lead.py is the one shared piece): race() takes two knobs,
+both OFF by default, so every number above and every caller (race_models.py's "rhino_drive", drive_fit) races byte for
+byte what it raced before.
+- nose_rate=None is today's model: ONE heading is the nose, the stick's command and the velocity at once, turned straight
+  at the aim by rotate_toward. That lag-free model is the one the measurements were calibrated on, and it is known to be
+  optimistic (Tools/Compute/evaluators/redline_fit.py records that the no-lag Manta model raced about 3x faster than the
+  AI Mantas in the editor's recorded races). A number is the nose follow rate (1.5 = VesselTransformer.LERP_AMOUNT, every
+  AI hull): the stick turns a COMMAND direction (the same rate-limited rotate_toward, the same err/20 stick, judged from
+  the NOSE as the game judges it today), the nose follows the command first-order each frame,
+  fwd = rotate_toward(fwd, cmd, ang(fwd, cmd) x min(1, nose_rate x dt)), and the hull flies along the NOSE. That lagged
+  form is the game's steering defect made visible: judged from the nose, the pilot keeps winding the command on while the
+  nose is still catching up, the command overshoots, then the nose does, and the hull crosses the ring's plane beside
+  the mouth. 0, inf or a rate that closes the whole gap in one step (nose_rate x dt >= 1) is no lag: today's model.
+- nose_lead=None is off; a gain, a {"gain", "max_extra_deg"} dict or a NoseLead (ai_nose_lead.NoseLead.from_config) is
+  AIPilot.NoseLeadGain on top of the lag. The effective gain is computed ONCE a race from this race's own nose rate
+  (AIPilot.EffectiveNoseLeadGain: max(1, gain x 1.5 / nose_rate), and 0 with no lag, so a lag-free race is the same
+  race with the lead on or off), and each frame the pilot judges its error from the COMMAND and wants the nose turned
+  toward the steer direction by that gain times its error, past it (at most max_extra_deg, never past 170 deg:
+  ai_nose_lead.slerp_beyond = AIPilot.NoseLeadDirection); the err/20 stick, the driver's clip and the command update are
+  the lines above, untouched. The lead stays on through the orbit break-off's escape leg (the stick is still computed
+  there, aimed at the escape bearing), as the game's does; this model has no drift, rail or shell mode to switch it off
+  in. The ramp drive still reads the NOSE's angle to the objective and the stick the pilot outputs, as
+  RampBoostAIPolicySO.Driver does.
+  MEASURED 2026-11-07 (`--nose-lead 2.5`, the default table and --headlong): the lag alone takes the new drive's Regatta
+  races from 44.9 / 62.9 / 50.1 / 55.4 s (I1-I4, no missed mouth) to 103.7 / 114.2 / 151.7 / 151.1 s with 0 / 0 / 17 / 21
+  missed mouths, and on Headlong's twelve courses it strands the legacy steering on all twelve (nine finishes today) and
+  the shipped steering on eleven (five), while headlong_on still finishes all twelve, in 104-276 s with 104 missed mouths
+  in all (49-78 s and none today). The 2.5 lead on top of the lag recovers the Regatta races: 87.7 / 91.1 / 99.5 / 109.2 s
+  with no missed mouth (the old driver: 80.9 / 93.8 / 100.9 / 96.3 s, but 2 / 3 / 3 / 1 misses); gain 1, judging from the
+  command without the pull past the aim, is 88.1 / 138.1 / 143.0 / 189.6 s with 0 / 11 / 8 / 32 misses, so the pull is
+  what clears them. On Headlong it does not recover: headlong_on with the lead finishes all twelve in 87-262 s, faster on
+  eight courses and 61 s faster over the twelve, but with 120 missed mouths against 104; the legacy steering finishes I1
+  seeds 2 and 3 and is stranded on the other ten, the shipped steering on all twelve. The self-test holds the knobs'
+  default to today's numbers (TODAY), the lag rows (LAGGED), the Regatta claim with its controls, and the Headlong finding.
 """
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import situation_features as sf
+from ai_nose_lead import NoseLead, judge_and_want, NOSE_FOLLOW   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 def v(a): return list(a)
 def add(a,b): return [x+y for x,y in zip(a,b)]
@@ -173,11 +212,20 @@ def inside_turning_circle(to, heading, R, capture=CAPTURE):   # PursuitReachabil
     if norm(lat) < 1e-6: return False
     return norm(sub(to, mul(unit(lat), R))) < max(0.0, R - capture)
 
-def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
+def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False, nose_rate=None, nose_lead=None):
+    """(seconds for 3 laps or None = stalled, rings threaded, top speed); race.breaks / race.misses are set as well.
+    nose_rate: None (today: the heading turns at once) or the nose follow rate per second (1.5 = the game's AI hulls);
+    nose_lead: AIPilot.NoseLeadGain on top of the lag (None = off, a gain, {"gain", "max_extra_deg"} or a NoseLead)."""
     C=sf.course_from(sf.load_course_js(), intensity)
     gates=C['gates']; n=len(gates); laps=3; total=n*laps
     P=[g['p'] for g in gates]; A=[unit(g['a']) for g in gates]
     pos=add(P[0], mul(A[0], 1500)); fwd=unit(sub(P[0],pos)); speed=50.0
+    # the nose lag and the AI nose lead, both OFF by default (the docstring): a rate of 0, inf or one that closes the whole
+    # gap in a step is no lag, today's model; the effective gain is AIPilot.EffectiveNoseLeadGain from THIS race's rate, once
+    follow=float(nose_rate) if nose_rate is not None and 0<nose_rate<math.inf and nose_rate*dt<1.0 else None
+    cmd=list(fwd)   # the stick's command; it is the nose itself until a nose_rate splits them
+    lead_knob=NoseLead.from_config(nose_lead)
+    g_lead=lead_knob.effective(follow) if follow is not None else 0.0
     pol=Policy(); ex=Exec(); drv=(NewDriver if kind=='new' else OldDriver)(pol,ex)
     G=STEERING_PROFILES[STEERING] if STEERING else None
     idx=0; locked=-1; side=1; t=0.0; stick=0.0; trace=[]; maxv=0
@@ -224,8 +272,10 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
         # executor's tracked target (last frame's input)
         drv_tracked = getattr(race,'_tracked',speed)
         drv.tick(c,t,dt,drv_tracked)
-        # pilot steering: proportional on the angle error
-        err=ang(fwd,steer_to); s=min(1.0, err/20.0)
+        # pilot steering: proportional on the angle error, judged from the nose; with the nose lead (AIPilot.TryNoseLead)
+        # judged from the COMMAND, wanting the nose turned toward the steer direction by g_lead x its error, past it
+        judge,want=judge_and_want(fwd,cmd,steer_to,g_lead,lead_knob.max_extra_deg) if g_lead>0 else (fwd,steer_to)
+        err=ang(judge,want); s=min(1.0, err/20.0)
         steer=2*s  # XSum + YDiff
         lim=drv.limit()
         if lim>=0 and steer>lim: s*=lim/steer; steer=lim
@@ -246,7 +296,13 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
         race._tracked=tgt
         speed=speed+max(-rate*dt,min(rate*dt,tgt-speed))
         maxv=max(maxv,speed)
-        fwd=rotate_toward(fwd, steer_to, math.radians((speed*0.2+90)*s)*dt)
+        if follow is None:
+            fwd=rotate_toward(fwd, want, math.radians((speed*0.2+90)*s)*dt)   # today: the heading IS the command
+        else:
+            # the game: the stick turns the COMMAND at the hull's rate, the nose follows it first-order
+            # (VesselTransformer.LERP_AMOUNT) and the hull flies along the nose
+            cmd=rotate_toward(cmd, want, math.radians((speed*0.2+90)*s)*dt)
+            fwd=rotate_toward(fwd, cmd, math.radians(ang(fwd,cmd))*min(1.0, follow*dt))
         newpos=add(pos,mul(fwd,speed*dt))
         # threading: crossing the plane inside the mouth
         a0=dot(sub(pos,ring),ax); a1=dot(sub(newpos,ring),ax)
@@ -263,19 +319,25 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
     return (round(t,1) if idx>=total else None), idx, round(maxv)
 
 def _sweep_one(args):
-    corner, gain, crel, margin = args
+    corner, gain, crel, margin = args[:4]
+    knobs = dict(zip(("nose_rate", "nose_lead"), args[4:6]))   # the nose lag / lead, when the sweep carries them
     Policy.corner, Policy.gain, Policy.crel, Policy.margin = corner, gain, crel, margin
-    res = [race('new', I, T=200) for I in (1, 2, 3, 4)]
+    res = [race('new', I, T=200, **knobs) for I in (1, 2, 3, 4)]
     return sum(r[0] if r[0] else 200 + (24 - r[1]) * 10 for r in res), args, [r[0] for r in res]
 
 
-def sweep():
+def sweep(nose_rate=None, nose_lead=None):
     import itertools
     from concurrent.futures import ProcessPoolExecutor
     grid = list(itertools.product((600, 900, 1300, 3000), (0, 50, 150), (30, 50, 80, 120), (0, 120)))
+    if nose_rate is not None or nose_lead is not None:
+        if nose_rate is None: nose_rate = NOSE_FOLLOW   # a lead has nothing to do on a lag-free nose: the fleet lag
+        lead_cfg = NoseLead.from_config(nose_lead).to_config() if nose_lead is not None else None
+        grid = [cell + (nose_rate, lead_cfg) for cell in grid]
     with ProcessPoolExecutor() as ex:
         out = sorted(ex.map(_sweep_one, grid))
-    print("total s (I1-I4; a stall costs 200 + 10 per ring left), (cornerSpeed, minSpeedGain, cornerReleaseDegrees, brakeMarginUnits), per course")
+    print("total s (I1-I4; a stall costs 200 + 10 per ring left), (cornerSpeed, minSpeedGain, cornerReleaseDegrees, brakeMarginUnits"
+          + (", nose_rate, nose_lead" if nose_rate is not None or nose_lead is not None else "") + "), per course")
     for o in out[:12]:
         print(o)
 
@@ -287,26 +349,58 @@ def _headlong_courses():
             for i in (1, 2, 3, 4) for k in (1, 2, 3)]   # drive_fit's Headlong courses (seeds 1-3)
 
 
-def _race_on(course, intensity, steering, T=400):
+def _race_on(course, intensity, steering, T=400, nose_rate=None, nose_lead=None):
     global STEERING, THROUGH_CENTRE
     old = (STEERING, THROUGH_CENTRE, sf.load_course_js, sf.course_from)
     STEERING, THROUGH_CENTRE = steering, False
     sf.load_course_js, sf.course_from = (lambda *a, **k: {}), (lambda C, i: course)
     try:
-        r = race('new', intensity, T=T)
+        r = race('new', intensity, T=T, nose_rate=nose_rate, nose_lead=nose_lead)
         return r, race.breaks, race.misses
     finally:
         STEERING, THROUGH_CENTRE, sf.load_course_js, sf.course_from = old
 
 
-def headlong_table():
+def _knob_rows(nose_rate, nose_lead):
+    """The extra rows --nose-rate / --nose-lead add to a table: (label, race kwargs) for the lag alone and, with a lead,
+    the lead on top of it. A lead without a rate is raced at the fleet lag (a lag-free nose has nothing to lead)."""
+    if nose_rate is None and nose_lead is None:
+        return []
+    rate = NOSE_FOLLOW if nose_rate is None else nose_rate
+    rows = [(f"nose lag {rate:g}/s", dict(nose_rate=rate))]
+    if nose_lead is not None:
+        lead = NoseLead.from_config(nose_lead)
+        rows.append((f"nose lag {rate:g}/s + AI nose lead {lead.gain:g} (+{lead.max_extra_deg:g} deg max, effective gain "
+                     f"{lead.effective(rate):g})", dict(nose_rate=rate, nose_lead=lead)))
+    return rows
+
+
+def headlong_table(nose_rate=None, nose_lead=None):
     print("Policy defaults (the job's init) on Headlong I1-I4 x seeds 1-3: seconds / rings of 24 (break-offs, misses)")
-    for steering in (None, "headlong", "headlong_on"):
-        row = []
-        for i, k, c in _headlong_courses():
-            (t, rings, _), b, m = _race_on(c, i, steering)
-            row.append(f"I{i}s{k} {t}/{rings} ({b},{m})")
-        print(f"{str(steering):12s}", "  ".join(row))
+    courses = _headlong_courses()
+    for label, kw in [("", {})] + _knob_rows(nose_rate, nose_lead):
+        if label:
+            print(f"-- {label}:")
+        for steering in (None, "headlong", "headlong_on"):
+            row = []
+            for i, k, c in courses:
+                (t, rings, _), b, m = _race_on(c, i, steering, **kw)
+                row.append(f"I{i}s{k} {t}/{rings} ({b},{m})")
+            print(f"{str(steering):12s}", "  ".join(row))
+
+
+# Today's numbers with both knobs OFF (2026-11-07, `python3 Tools/Build/rhino_drive_sim.py`): (kind, intensity, use_next) ->
+# (seconds, rings, top speed). The self-test holds the knobs' default to them, so the lag and the lead cannot move a
+# number nobody switched on.
+TODAY = {
+    ('old', 1, True): (43.8, 24, 813), ('new', 1, True): (44.9, 24, 655), ('new', 1, False): (49.9, 24, 589),
+    ('old', 2, True): (58.8, 24, 813), ('new', 2, True): (62.9, 24, 655), ('new', 2, False): (62.6, 24, 589),
+    ('old', 3, True): (53.7, 24, 813), ('new', 3, True): (50.1, 24, 655), ('new', 3, False): (55.5, 24, 618),
+    ('old', 4, True): (51.8, 24, 813), ('new', 4, True): (55.4, 24, 655), ('new', 4, False): (57.3, 24, 596),
+}
+# ...and the new drive under the game's nose lag (nose_rate 1.5, lead off; `--nose-rate 1.5`): today's steering through
+# the lag, the defect this model did not show before. intensity -> ((seconds, rings, top speed), missed mouths)
+LAGGED = {1: ((103.7, 24, 655), 0), 2: ((114.2, 24, 655), 0), 3: ((151.7, 24, 655), 17), 4: ((151.1, 24, 655), 21)}
 
 
 def self_test():
@@ -333,18 +427,101 @@ def self_test():
     dnf = [(i, k) for i, k, c in courses if _race_on(c, i, "headlong_on")[0][0] is None]
     if dnf:
         bad.append(f"headlong_on did not finish {dnf}")
+    # the nose lag and the AI nose lead (ai_nose_lead.py) are OFF by default: with the knobs unset every race of the
+    # default table is today's (TODAY)...
+    for (kind, I, nxt), want in TODAY.items():
+        got = race(kind, I, use_next=nxt)
+        if got != want:
+            bad.append(f"{kind} I{I} use_next={nxt} with the knobs unset: {got} is not today's {want}")
+    # ...NoseLead() (gain 0) and the other off forms are the unset knob, and on a lag-free nose (nose_rate None, 0, -1,
+    # inf or a rate that closes the whole gap in one step: today's model) the lead has nothing to lead and changes nothing
+    for I in (1, 2, 3, 4):
+        for kw in ({"nose_lead": NoseLead()}, {"nose_lead": 2.5}, {"nose_rate": 0, "nose_lead": 2.5}):
+            if race('new', I, **kw) != TODAY[('new', I, True)]:
+                bad.append(f"new I{I} with {kw}: not today's race {TODAY[('new', I, True)]}")
+    for kw in ({"nose_lead": 0}, {"nose_lead": {}}, {"nose_lead": False}, {"nose_rate": -1},
+               {"nose_rate": float("inf"), "nose_lead": 2.5}, {"nose_rate": 60.0, "nose_lead": 2.5}):
+        if race('new', 1, **kw) != TODAY[('new', 1, True)]:
+            bad.append(f"new I1 with {kw}: not today's race")
+    # the game's nose lag (nose_rate 1.5), lead off, is today's steering through the lag and shows the defect: slower at
+    # every intensity, 17 / 21 missed mouths at I3 / I4 (LAGGED)...
+    lagged = {}
+    for I, want in LAGGED.items():
+        got = race('new', I, nose_rate=1.5); lagged[I] = (got, race.misses)
+        if lagged[I] != want:
+            bad.append(f"new I{I} under the nose lag: {lagged[I]} is not {want}")
+        if got[0] is None or got[0] <= TODAY[('new', I, True)][0]:
+            bad.append(f"new I{I}: the nose lag did not slow the race ({got} vs today's {TODAY[('new', I, True)]})")
+    if race('new', 3, nose_rate=1.5, nose_lead=NoseLead()) != lagged[3][0] or race.misses != lagged[3][1]:
+        bad.append("NoseLead() (gain 0) is not the unset lead under the lag")
+    # ...and the AI nose lead 2.5 on top of the lag recovers: faster than the lag alone at every intensity, no missed mouth
+    led = {}
+    for I in (1, 2, 3, 4):
+        got = race('new', I, nose_rate=1.5, nose_lead=2.5); led[I] = (got, race.misses)
+        if got[0] is None or got[0] >= lagged[I][0][0] or race.misses != 0:
+            bad.append(f"new I{I}: the 2.5 lead did not recover the lagged race: {led[I]} vs the lag alone {lagged[I]}")
+    if race('new', 1, nose_rate=1.5, nose_lead={"nose_lead": 2.5}) != led[1][0]:
+        bad.append("{'nose_lead': 2.5} is not the 2.5 lead")
+    # the controls: gain 1 (judged from the command, with no pull past the aim) is weaker at I3 and I4, slower with more
+    # misses; it IS the lead with no room past the aim (max_extra_deg 0, the same wanted direction); and on a 9/s nose the
+    # 2.5 gain floors to 1 (AIPilot.EffectiveNoseLeadGain from the race's own rate) and still changes that race
+    for I in (3, 4):
+        g1 = race('new', I, nose_rate=1.5, nose_lead=1.0); g1m = race.misses
+        if g1[0] is None or g1[0] <= led[I][0][0] or g1m < led[I][1] + 5:
+            bad.append(f"new I{I}: gain 1.0 (no pull past the aim) rivals the 2.5 lead: {g1} / {g1m} misses vs {led[I]}")
+        e0 = race('new', I, nose_rate=1.5, nose_lead=NoseLead(2.5, 0.0)); e0m = race.misses
+        if (e0, e0m) != (g1, g1m):
+            bad.append(f"new I{I}: the lead with no room past the aim (max_extra_deg 0) is not gain 1.0")
+    quick, quick_led = race('new', 1, nose_rate=9.0), race('new', 1, nose_rate=9.0, nose_lead=2.5)
+    if quick_led != race('new', 1, nose_rate=9.0, nose_lead=1.0) or quick_led == quick:
+        bad.append("on a 9/s nose the 2.5 lead is not gain 1 judged from the command, or it did not change the race")
+    # what the lead does NOT do here (the docstring, 2026-11-07): on Headlong I3 seed 2 under the lag, headlong_on finishes
+    # in 275.8 s with 21 missed mouths, and the 2.5 lead finishes it with about as many: the lead clears the Regatta misses,
+    # not Headlong's. A port that changes this re-measures the docstring.
+    i3s2 = next(c for i, k, c in courses if (i, k) == (3, 2))
+    (t, rings, _), _, m = _race_on(i3s2, 3, "headlong_on", nose_rate=1.5)
+    if (t, rings, m) != (275.8, 24, 21):
+        bad.append(f"headlong_on I3 seed 2 under the lag moved: {t} / {rings} rings / {m} misses (was 275.8 / 24 / 21)")
+    (t2, _, _), _, m2 = _race_on(i3s2, 3, "headlong_on", nose_rate=1.5, nose_lead=2.5)
+    if t2 is None or m2 < 0.75 * m:
+        bad.append(f"the 2.5 lead now clears Headlong I3 seed 2's lag misses ({t2} s / {m2} vs {t} s / {m}): re-measure the docstring")
     print("rhino_drive_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
+
+
+def knob_args(argv):
+    """--nose-rate R (the nose follow rate per second; 1.5 is the game's AI hulls) and --nose-lead G[,EXTRA] (the AI nose
+    lead's gain at the fleet lag and, after a comma, how far past the aim it may place the command, 40 deg unless given),
+    or None for each: off, today's model."""
+    rate = float(argv[argv.index("--nose-rate") + 1]) if "--nose-rate" in argv else None
+    lead = None
+    if "--nose-lead" in argv:
+        parts = argv[argv.index("--nose-lead") + 1].split(",")
+        lead = NoseLead(float(parts[0]), float(parts[1]) if len(parts) > 1 else None)
+    return rate, lead
+
+
+def _table_row(I, **kw):
+    cells = []
+    for name, kind, nxt in (("old", 'old', True), ("new", 'new', True), ("new without corner info", 'new', False)):
+        r = race(kind, I, use_next=nxt, **kw)
+        cells.append(f" {name} {r} m{race.misses}")
+    return f"I{I}:" + " ".join(cells)
 
 
 if __name__ == '__main__':
     if "--self-test" in sys.argv:
         sys.exit(self_test())
+    nose_rate, nose_lead = knob_args(sys.argv)
     if "--headlong" in sys.argv:
-        headlong_table(); sys.exit(0)
+        headlong_table(nose_rate, nose_lead); sys.exit(0)
     if "--sweep" in sys.argv:
-        sweep()
+        sweep(nose_rate, nose_lead)
     else:
         print("(seconds for 3 laps or None = stalled, rings threaded, top speed)")
         for I in (1, 2, 3, 4):
             print(f"I{I}: old", race('old', I), " new", race('new', I), " new without corner info", race('new', I, use_next=False))
+        for label, kw in _knob_rows(nose_rate, nose_lead):
+            print(f"-- {label} (m = missed mouths):")
+            for I in (1, 2, 3, 4):
+                print(_table_row(I, **kw))

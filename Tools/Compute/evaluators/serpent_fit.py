@@ -35,6 +35,8 @@ args:
     genomes            repo paths of every Serpent Time genome to grow from (PelletBoostAIPolicySO assets; a missing file
                        is skipped)
     stay_near_shipped  weight of the pull toward the nearest genome (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated at the fleet
+                       lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
 """
 import importlib.util
 import os
@@ -49,12 +51,13 @@ INTS = ("maxConcurrentBurns", "reservePellets")
 PATHS = [SIM, "Assets/_Scripts/Controller/Arcade/SerpentTime/", "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
          "Assets/_Prefabs/Spacevessels/Serpent.prefab", "Assets/_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset"]
 REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}, "limit": {"lo": 300, "hi": 1200}}
+REQUEST_ARGS["nose_lead"] = {"lo": 0.0, "hi": 6.0}   # the AI nose lead a manual run may switch on (0 = off)
 COMBINE_WORST = 0.5
 _CTX = {}
 
 
 def _sim_inputs():
-    return [SIM, "Tools/Build/manta_redline_sim.py", "Tools/Compute/evaluators/course_port.py",
+    return [SIM, "Tools/Build/manta_redline_sim.py", "Tools/Build/ai_nose_lead.py", "Tools/Compute/evaluators/course_port.py",
             "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeCourse.cs",
             "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeCourseSource.cs",
             "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeController.cs",
@@ -158,7 +161,7 @@ def evaluate(params, ctx):
     for i, races in _CTX["courses"].items():
         rows = []
         for s, c, flat in races:
-            r = sim.race(c, p, limit=limit)
+            r = sim.race(c, p, limit=limit, nose_lead=a.get("nose_lead"))
             r["flat"] = flat
             rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]

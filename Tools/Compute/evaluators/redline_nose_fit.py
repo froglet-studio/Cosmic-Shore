@@ -26,6 +26,8 @@ Docs/Reports/REDLINE_MANTA_NOSE.md).
 args: redline_fit's (intensities, seeds, seedbase, limit, genomes, stay_near_shipped) plus
     rate_cost          weight of the pull toward the fleet lag (default 0.02; 0 = pure pace)
     rate_hi            the top of every nose-rate range (only read by space_for; the job's space is authoritative)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py) on the genome's nose rate:
+                       a gain stated at the fleet lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering
 """
 import os
 
@@ -41,7 +43,7 @@ _CTX = {}
 
 
 def inputs(args):
-    return base.inputs(args) + ["Tools/Compute/evaluators/redline_fit.py"]
+    return base.inputs(args) + ["Tools/Compute/evaluators/redline_fit.py", "Tools/Build/ai_nose_lead.py"]
 
 
 def space_for(root, rate_hi=RATE_HI):
@@ -77,7 +79,7 @@ def evaluate(params, ctx):
     for i, races in base._CTX["courses"].items():
         rows = []
         for s, c, flat in races:
-            r = sim.race(c, i, bands=bands, limit=limit, nose_rate=rates.get(i, FLEET))
+            r = sim.race(c, i, bands=bands, limit=limit, nose_rate=rates.get(i, FLEET), nose_lead=a.get("nose_lead"))
             r["flat"] = flat
             rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]

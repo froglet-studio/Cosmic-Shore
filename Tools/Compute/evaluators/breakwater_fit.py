@@ -33,6 +33,8 @@ args:
     genomes            repo paths of every genome to grow from (default: the base drive and the Breakwater variant)
     candidates         hand candidates added to the first generation (CANDIDATES, e.g. ["held"])
     stay_near_shipped  weight of the pull toward the nearest genome's values (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated at the fleet
+                       lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
 """
 import math
 import os
@@ -49,12 +51,13 @@ FIELDS = {"alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "sti
           "rocketMinRange": (0.0, 300.0), "rocketAimDegrees": (0.0, 45.0), "rocketCooldownSeconds": (0.1, 3.0)}
 PATHS = ["Tools/Build/breakwater_sparrow_sim.py", "Tools/Build/sparrow_regatta_sim.py", "Tools/Build/breakwater_arena.py",
          "Tools/Build/regatta_line_sim.py", "Tools/Build/rhino_drive_sim.py", "Tools/Build/scarab_drive_sim.py",
-         "Tools/Build/situation_features.py", BASE, VARIANT]
+         "Tools/Build/situation_features.py", "Tools/Build/ai_nose_lead.py", BASE, VARIANT]
 LIMITS = ("offline model of Breakwater (Tools/Build/breakwater_sparrow_sim.py): the mirrored course walk, the Regatta "
           "steering, a measured kinematic Sparrow, the shipped drive's hold and rocket, the station's eye / collar / "
           "danger weave / rocket hole; one AI, no rivals; no danger debuff; the ammo refill is assumed; fixed seeds - "
           "promotion re-races fresh ones")
 REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}}
+REQUEST_ARGS["nose_lead"] = {"lo": 0.0, "hi": 6.0}   # the AI nose lead a manual run may switch on (0 = off)
 COMBINE_WORST = 0.5
 _CTX = {}
 
@@ -136,7 +139,7 @@ def score(params, ctx, fresh=None):
             p[k] = (_CTX["genomes"][0] if _CTX.get("genomes") else {}).get(k, (lo + hi) / 2)
     per_i, met = {}, {}
     for (i, s, c) in (fresh or _CTX["courses"]):
-        r = S.race(c, p, T=cut)
+        r = S.race(c, p, T=cut, nose_lead=a.get("nose_lead"))
         per_i.setdefault(i, []).append(S.priced(r, cut))
         m = met.setdefault(f"I{i}", {"finished": 0, "races": 0, "danger": 0, "collar": 0, "misses": 0, "rockets": 0,
                                      "boosted": 0.0})

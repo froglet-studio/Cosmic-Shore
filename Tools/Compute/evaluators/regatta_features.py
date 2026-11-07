@@ -393,9 +393,10 @@ def _rb():
     return RB
 
 
-def race(hull, model, fc, intensity=1, drive=None, steering="centre", limit=400.0, laps=3, knobs=None):
+def race(hull, model, fc, intensity=1, drive=None, steering="centre", limit=400.0, laps=3, knobs=None, nose_rate=None,
+         nose_lead=None):
     """race_models.race on a featured course, priced for the features (module doc's table). Exactly race_models.race
-    when the feature set is empty."""
+    when the feature set is empty. nose_rate / nose_lead: the AI nose knobs, passed through (race_models module doc)."""
     import race_models as rm
     k = dict(KNOBS, **(knobs or {}))
     drive = drive or {}
@@ -405,7 +406,8 @@ def race(hull, model, fc, intensity=1, drive=None, steering="centre", limit=400.
     c = fc
     if model == "balance":
         c = dict(rm.balance_course(fc), gates=fc["gates"])
-    t, raw = rm.race(hull, model, c, intensity, drive=drive, steering=steering, limit=limit, laps=laps)
+    t, raw = rm.race(hull, model, c, intensity, drive=drive, steering=steering, limit=limit, laps=laps, nose_rate=nose_rate,
+                     nose_lead=nose_lead)
     if is_empty(feats) or raw.get("time") is None:
         return t, raw
     extra = 0.0

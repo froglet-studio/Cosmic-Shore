@@ -31,6 +31,10 @@ args:
     aimed              1 / 0 to force the aimed launch on / off (default: the grown genome's own)
     genomes            repo paths of every Thresher sling genome to grow from (a missing file is skipped)
     stay_near_shipped  weight of the pull toward the nearest genome (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated at the fleet
+                       lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
+    nose_rate          the AI nose's follow rate per second (VesselTransformer.AINoseFollowPerSecond); absent = the
+                       fleet lag (1.5) the model flies today
 """
 import importlib.util
 import os
@@ -49,13 +53,14 @@ PATHS = [SIM, PROBE, POL, "Tools/Build/manta_redline_sim.py",
          "Assets/_Scripts/Controller/Arcade/ThresherTime/", "Assets/_Scenes/Multiplayer Scenes/MinigameThresherTime.unity",
          "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset", "Assets/_Prefabs/Spacevessels/Thresher.prefab"]
 REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}, "limit": {"lo": 200, "hi": 1200}}
+REQUEST_ARGS["nose_lead"] = {"lo": 0.0, "hi": 6.0}   # the AI nose lead a manual run may switch on (0 = off)
 COMBINE_WORST = 0.5
 CRUISE = 125.0            # ThresherTimeCourse.CruiseSpeed (15 + 110)
 _CTX = {}
 
 
 def inputs(args):
-    return [SIM, PROBE, "Assets/_Scripts/Controller/AI/Boost/ThresherSlingAIPolicySO.cs",
+    return [SIM, PROBE, "Tools/Build/ai_nose_lead.py", "Assets/_Scripts/Controller/AI/Boost/ThresherSlingAIPolicySO.cs",
             "Assets/_Scripts/Controller/Arcade/ThresherTime/ThresherTimeCourse.cs",
             "Assets/_Scripts/Controller/Arcade/ThresherTime/ThresherTimeNest.cs",
             "Assets/_Scripts/Controller/Arcade/ThresherTime/ThresherTimeController.cs",
@@ -174,7 +179,7 @@ def evaluate(params, ctx):
     for i, races in _CTX["courses"].items():
         rows = []
         for s, c, flat in races:
-            r = sim.race(c, i, genome=g, nests=nests, limit=limit)
+            r = sim.race(c, i, genome=g, nests=nests, limit=limit, nose_rate=a.get("nose_rate"), nose_lead=a.get("nose_lead"))
             r["flat"] = flat
             rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]

@@ -37,6 +37,10 @@ args:
     limit              seconds before a race counts as not finished (default 600)
     steering, seek     the mode's aim ("shipped" / "regatta") and its rail seek (0 / 1); defaults: Skein as it ships
     stay_near_shipped  weight of the pull toward the shipped genome (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated at the fleet
+                       lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
+    nose_rate          the AI nose's follow rate per second (VesselTransformer.AINoseFollowPerSecond); absent = the
+                       fleet lag (1.5) the model flies today
 """
 import importlib.util
 import os
@@ -48,7 +52,7 @@ CONFIG_CS = "Assets/_Scripts/Controller/AI/Urchin/UrchinAutopilotConfigSO.cs"
 CONFIG_ASSET = "Assets/Resources/UrchinAutopilotConfig.asset"
 COURSES = "Tools/Build/skein_course_harness/skein_courses.json"
 HOLDOUT = "Tools/Build/skein_course_harness/skein_holdout.json"
-PATHS = [SIM, CONFIG_CS, CONFIG_ASSET, COURSES, HOLDOUT, "Assets/_Scripts/Controller/Arcade/Skein/"]
+PATHS = [SIM, CONFIG_CS, CONFIG_ASSET, COURSES, HOLDOUT, "Assets/_Scripts/Controller/Arcade/Skein/", "Tools/Build/ai_nose_lead.py"]
 # Search ranges: the SO's own [Min] / [Range] floors and ceilings; where the SO has only a [Min], a ceiling a few
 # times the shipped value (nothing in the driver reads past it).
 FIELDS = {
@@ -172,7 +176,8 @@ def evaluate(params, ctx):
         rows = []
         for c, ideal in races:
             for s in slots(a):
-                r = sim.race(c, p, limit=limit, start_slot=s, steering=steering, seek=seek)
+                r = sim.race(c, p, limit=limit, start_slot=s, steering=steering, seek=seek, nose_rate=a.get("nose_rate"),
+                             nose_lead=a.get("nose_lead"))
                 r["ideal"] = ideal
                 rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]

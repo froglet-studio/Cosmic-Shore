@@ -24,6 +24,10 @@ args:
     seeds        course seeds per intensity for modes that deal a new course each match (Regatta's is fixed)
     shipped      the asset to read the shipped values from (repo-relative), else the space's `init`
     limit        seconds before a race counts as not finished
+    nose_rate    the AI nose's follow rate per second (VesselTransformer.AINoseFollowPerSecond): absent = today's
+                 lag-free drive model (every published number); 1.5 = the game's fleet lag
+    nose_lead    the AI nose lead on that lagging nose (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain
+                 stated at the fleet lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF; nothing on a lag-free nose
 """
 import math
 import os
@@ -36,7 +40,8 @@ VERSION = "1"
 # limit. hull, model and shipped stay the job's (a different hull is a different job's drive).
 REQUEST_ARGS = {"mode": {"choices": ["Regatta", "Headlong", "Redline"]},
                 "steering": {"choices": ["centre", "axis", "headlong", "headlong_on", "regatta"]}, "intensities": {"subset": [1, 2, 3, 4]},
-                "seeds": {"subset": list(range(1, 11))}, "limit": {"lo": 60, "hi": 1200}}
+                "seeds": {"subset": list(range(1, 11))}, "limit": {"lo": 60, "hi": 1200},
+                "nose_rate": {"lo": 0.0, "hi": 20.0}, "nose_lead": {"lo": 0.0, "hi": 6.0}}
 PATHS = ["Tools/Build/", "Assets/Resources/AIBoostPolicies/", "Assets/Resources/RaceLines/",
          "Assets/_Prefabs/Spacevessels/"]
 _CTX = {}
@@ -44,7 +49,7 @@ _CTX = {}
 
 def inputs(args):
     sims = {"rhino_drive": "rhino_drive_sim.py", "manta_drive": "manta_drive_sim.py", "dolphin_drive": "dolphin_drive_sim.py"}
-    out = ["Tools/Build/" + sims.get(args.get("model"), ""), "Tools/Build/situation_features.py"]
+    out = ["Tools/Build/" + sims.get(args.get("model"), ""), "Tools/Build/situation_features.py", "Tools/Build/ai_nose_lead.py"]
     if args.get("shipped"):
         out.append(args["shipped"])
     return out
@@ -82,9 +87,10 @@ def evaluate(params, ctx):
     # AIPilot's break-off). Absent, the legacy model the job was first published on.
     steering = a.get("steering") or ("centre" if a.get("mode", "Regatta") == "Regatta" else "axis")
     limit = float(a.get("limit", 400))
+    nose = rm.nose_knobs(a)   # the AI nose lag / lead knobs, nothing when the job leaves them (today's model)
     logs, per_i, dnf = [], {}, 0
     for (i, seed, course) in _CTX["courses"]:
-        t, raw = rm.race(a["hull"], model, course, i, drive=drive, steering=steering, limit=limit)
+        t, raw = rm.race(a["hull"], model, course, i, drive=drive, steering=steering, limit=limit, **nose)
         logs.append(math.log(t))
         per_i.setdefault(i, []).append(t)
         dnf += raw["time"] is None
@@ -103,7 +109,7 @@ def evaluate(params, ctx):
     return {"loss": loss, "metrics": {
         "seconds_by_intensity": {str(i): round(sum(v) / len(v), 2) for i, v in per_i.items()},
         "dnf": dnf, "races": len(logs), "model": model,
-        "limits": rm.MODEL_LIMITS.get(f"{model}@{steering}", rm.MODEL_LIMITS[model])}}
+        "limits": rm.MODEL_LIMITS.get(f"{model}@{steering}", rm.MODEL_LIMITS[model]), **({"nose": nose} if nose else {})}}
 
 
 def self_test():
