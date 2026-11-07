@@ -125,3 +125,93 @@ first, then the row.
     RUN_DIR=$HOME/rt python3 /mnt/project-files/regatta-training/local_run.py redline-manta-nose B 400 2   # section 2 (~6 min)
 
 Results: `/mnt/project-files/regatta-training/results/manta-nose/` (sweep, both restarts, the fresh-course table).
+
+## With the nose lead on (2026-11-07)
+
+Brief 15 of the lead-on round (`redline-manta-time-lead`, the twin of `redline-manta-time` with `"nose_lead": 2.5`;
+`Plan step: time-arcade`). Everything here is the Redline MODEL (`manta_redline_sim.py`, one AI, no rivals, Legendary);
+no editor run. Composite = `redline_fit`'s loss (mean of the four intensity scores + 0.5 x the worst); "m" = missed ring
+mouths summed over the courses; times are medians of finished races.
+
+**The answer: on the Manta the lead does not remove the I4 misses; it traps the hull. Keep `NoseLeadGain` at 0 on the
+Manta and take this report's nose row (section 4) instead.** It also corrects the "Relation to #1786" section above:
+that 80% came from thread 7's fleet model, which has no roll stick; in Redline's model, which flies AIPilot's roll rule,
+the lead closes none of the gap and makes the 9/s row worse.
+
+### The 2x2 (this job's 4 courses an intensity, seedbase 1)
+
+| bands | lead | composite | I1 | I2 | I3 | I4 |
+|---|---|---:|---|---|---|---|
+| shipped 0.35 / 0.75 | off | 23.00 | 4/4 189 s m0 | 4/4 175 s m0 | 4/4 183 s m8 | 4/4 482 s m199 |
+| shipped 0.35 / 0.75 | 2.5 | 58.59 | **1/4** 127 s m3 | **0/4** | **0/4** | **0/4** |
+| parent winner C 0.0200 / 0.8995 | off | 15.97 | 4/4 190 s m0 | 4/4 173 s m1 | 4/4 185 s m5 | 4/4 341 s m106 |
+| parent winner C 0.0200 / 0.8995 | 2.5 | 51.41 | 4/4 136 s m0 | **0/4** | **0/4** | **0/4** |
+
+(The parent's winner is raced at its exact bands: rounded to 0.020 / 0.900 its I4 drifts to 513 s, so the band
+landscape at I4 is rough at the fleet lag.) With the lead, I1 gets faster where it finishes (127-138 s against 188 s: judging
+the error from the command lets the nose hold the straight stick the Soar wants), and from I2 up no race finishes in
+900 s. The misses fall only because the hull never reaches the rings: it corkscrews away (the sim's docstring, check 11:
+AIPilot's roll stick is its yaw stick, and with the lead it swings a command 40-90 deg from the nose round the nose's own
+forward axis).
+
+### What the bands do once the lead is on: the twin search
+
+Two independent restarts by hand (`local_run.py redline-manta-time-lead B|C 540 2`, 300 + 240 evals, 75-78 min each on
+2 cloud cores):
+
+| run | evals | loss | BoostStickBand | YastriStickBand | I1 | I2 | I3 | I4 |
+|---|---:|---:|---:|---:|---|---|---|---|
+| B | 540 | 47.45 | 0.006 | 0.939 | 4/4 140 s m0 | 2/4 156 s m13 | 0/4 m52 | 0/4 m64 |
+| C | 546 | 48.61 | 0.173 | 0.834 | 4/4 140 s m0 | 1/4 113 s m8 | 0/4 m26 | 0/4 m38 |
+| shipped, lead on | | 58.59 | 0.35 | 0.75 | 1/4 | 0/4 | 0/4 | 0/4 |
+| parent winner, lead OFF | | 15.97 | 0.020 | 0.900 | 4/4 190 s m0 | 4/4 173 s m1 | 4/4 185 s m5 | 4/4 341 s m106 |
+
+No band pair finishes a single I3 or I4 race with the lead on: the restarts land 2.4% apart on a floor that is the
+not-finished penalty, and C was still inching down at eval 450 of 546, so by rule 11 it is not converged, and it does
+not matter: the best lead-on drive (47.5) is three times worse than the lead-off winner (16.0). The bands only buy I1
+(both restarts agree on the parent's direction: Boost near 0, Yastri 0.83-0.94, and I1 finishes in 140 s against
+190 s). **Nothing here is a proposal; the twin's `promote` rule cannot be met.**
+
+### Is it the roll rule? What-ifs on AIPilot's roll while leading (`lead_roll`, new, model only)
+
+`manta_redline_sim.race(lead_roll=...)` and `redline_fit`'s `lead_roll` arg: `"judged"` (default, the game), `"nose"`
+(the roll stick judged from the nose, as with the lead off) or `"off"` (no roll stick while leading). Absent, every number
+is unchanged (self-test check 12).
+
+| bands | lead, roll rule | composite | I1 | I2 | I3 | I4 |
+|---|---|---:|---|---|---|---|
+| shipped | 2.5, roll judged (game) | 58.59 | 1/4 | 0/4 | 0/4 | 0/4 |
+| shipped | 2.5, roll from nose | 42.61 | 3/4 135 s | 4/4 687 s m20 | 4/4 690 s m89 | 4/4 779 s m217 |
+| shipped | 2.5, no roll | 21.54 | 4/4 136 s m0 | 4/4 181 s m8 | 4/4 304 s m24 | 4/4 533 s m87 |
+| parent C | 2.5, roll from nose | 34.32 | 4/4 138 s | 4/4 841 s m30 | 4/4 646 s m52 | 4/4 704 s m184 |
+| parent C | 2.5, no roll | 24.60 | 4/4 155 s m0 | 4/4 148 s m5 | 4/4 298 s m20 | 4/4 524 s m71 |
+
+Taking the roll stick away while leading un-traps the hull and halves the I4 misses, but the composite only matches the
+lead-off shipped drive (21.5 against 23.0) and is worse than the parent's winner without it (24.6 against 16.0): I1
+gains 35-50 s, I3 loses 110-120 s, I4 does not improve. Even a changed roll rule would not make
+the lead the Manta's fix.
+
+### Against #1780's nose row (12 FRESH courses an intensity, seedbase 1001, shipped bands: section 3's test)
+
+| nose | lead | composite | I1 | I2 | I3 | I4 |
+|---|---|---:|---|---|---|---|
+| fleet 1.5/s (today) | off | 22.19 | 12/12 179 s m0 | 12/12 178 s m0 | 12/12 196 s m55 | 12/12 539 s m605 |
+| fleet 1.5/s | 2.5 | 58.78 | 6/12 125 s | 0/12 | 0/12 | 0/12 |
+| fleet 1.5/s | 2.5, no roll | 23.34 | 12/12 130 s m1 | 12/12 219 s m57 | 12/12 302 s m110 | 12/12 453 s m312 |
+| **9/s (#1780)** | **off** | **7.29** | 12/12 115 s m0 | 12/12 109 s m3 | 12/12 104 s m4 | 12/12 97 s m7 |
+| 9/s | 2.5 (effective gain 1) | 10.24 | 12/12 122 s m0 | 12/12 169 s m51 | 12/12 164 s m91 | 12/12 156 s m111 |
+| 9/s | 2.5, no roll | 9.59 | 12/12 120 s m1 | 12/12 149 s m48 | 12/12 160 s m97 | 12/12 148 s m109 |
+
+The 9/s row with no lead reproduces section 3's 7.29 exactly. Adding the lead on top of it costs 40% (7.29 to 10.24)
+and 15x the I4 misses. **For the Manta, #1780's row is the whole fix and the lead should stay off**; read #1786 and
+#1780 as two proposals for different hulls, not as "the lead first, then the row" (that order holds for the Scarab,
+Serpent and Dolphin, whose models showed the lead helping; brief 16-21 threads say for theirs).
+
+### Not verified
+
+- Every number is the model. The editor check that decides it is the one in section "Not verified" above, plus: AI
+  Mantas in Redline with `NoseLeadGain` 2.5 on the fleet nose (expect the corkscrew from I2 up if the model is right).
+- `lead_roll` models a change to AIPilot nobody has proposed; it is a diagnostic, not a proposal.
+
+Results: `/mnt/project-files/regatta-training/results/manta-lead/` (every cell's JSON, `cell.py` that raced them, the
+twin's two restarts).
