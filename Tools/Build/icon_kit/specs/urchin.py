@@ -459,3 +459,145 @@ CARDS += [
                  ("Time 5: Slipstream", [("u", "domain", 0.4), ("a5", "white")])],
          lockup_state=1),
 ]
+
+
+# ==== Round 6 in the game: the picks (Garrett, 2026-11-07: "do all of the icons ... treat each icon as an excellent and
+# polished thing"; he reviews the roster at the end, so each card is the option recommended on its sheet) =====================
+#   Charge  A  the cascade: the Urchin throws a spike into a rival prism that sprays the next generation; Overcharge
+#              (Charge 5) runs the spray to full length and one generation deeper. The plate stays the AMMO, the held
+#              charge keeps its ring.
+#   Mass    B  steal: the Urchin riding a rival's trail - theirs (danger) ahead, made its own (domain) under and behind;
+#              off the trail it lifts clear; Reinforced Wake (Mass 5) puts a shield rim on what it made. Plate: RIDING.
+#   Space   A  the rail ahead: the Urchin from behind, its projected track running to the horizon; Long Haul (Space 5)
+#              runs it further. The fleet's cooldown veil shows the recharge.
+#   Time    A  let go: riding, the Urchin sits on its trail; slipping, it is lifted clear with its ghost left behind;
+#              Slipstream (Time 5) turns the trail a rival's and adds the speed it keeps there.
+#   Omni       the omni crystal itself (the Urchin's omni crystal carries no bespoke effect: it feeds all four elements).
+import importlib as _importlib  # noqa: E402
+
+_scarab = _importlib.import_module("specs.scarab")
+PART_EXEMPT = {"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
+               "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
+VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab"
+VIEW = "7781000000000000002"            # UrchinVesselHUDView on the variant
+SLOT = dict(Charge="7781000000000001105", Mass="7781000000000001115", Space="7781000000000001125",
+            Time="7781000000000001135")
+
+
+def _chain_spike():
+    return _clear_of(a_first(), A_URCHIN(), a_prism(), px=1.6)
+
+
+def _chain_prism():
+    return a_prism()
+
+
+CHAIN_PARTS = [("ChainUrchin", "Urchin_ChainUrchin", "chainUrchinIcon", A_URCHIN, "the Urchin nose-on (domain)"),
+               ("ChainSpike", "Urchin_ChainSpike", "chainSpikeIcon", _chain_spike, "the spike it throws (white)"),
+               ("ChainPrism", "Urchin_ChainPrism", "chainPrismIcon", _chain_prism, "the rival prism it steals (danger)"),
+               ("ChainSpray", "Urchin_ChainSpray", "chainSprayIcon", a_gen2,
+                "the next generation sprayed out of it, decaying (white; below Charge 5)"),
+               ("ChainSprayOver", "Urchin_ChainSprayOver", "chainSprayOverIcon", lambda: a_gen2(True),
+                "Overcharge: the spray at full length (white; Charge 5)"),
+               ("ChainDeeper", "Urchin_ChainDeeper", "chainDeeperIcon",
+                lambda: _clear_of(a_gen3(), a_gen2(True), px=1.4), "Overcharge: one generation deeper (white; Charge 5)")]
+
+
+RIDER_PARTS = [("RiderUrchin", "Urchin_RiderUrchin", "riderUrchinIcon", M_URCHIN, "the Urchin on the trail (domain)"),
+               ("RiderLifted", "Urchin_RiderLifted", "riderLiftedIcon", M_LIFT, "the Urchin off the trail (domain)"),
+               ("RiderMine", "Urchin_RiderMine", "riderMineIcon", b_mine,
+                "the trail under and behind it, made its own (domain)"),
+               ("RiderTheirs", "Urchin_RiderTheirs", "riderTheirsIcon", b_theirs, "the rival's trail ahead (danger)"),
+               ("RiderShield", "Urchin_RiderShield", "riderShieldIcon",
+                lambda: toy_portraits.grown(b_mine(), 3.4) & ~toy_portraits.grown(b_mine(), 1.6),
+                "Reinforced Wake: a shield rim round what it made (white; Mass 5)")]
+
+TRACK_PARTS = [("TrackUrchin", "Urchin_TrackUrchin", "trackUrchinIcon", S_URCHIN, "the Urchin from behind (domain)"),
+               ("TrackRail", "Urchin_TrackRail", "trackRailIcon", lambda: _receding(5), "the projected rail (white)"),
+               ("TrackLongHaul", "Urchin_TrackLongHaul", "trackLongHaulIcon",
+                lambda: _receding(8) & ~toy_portraits.grown(_receding(5), 1.0),
+                "Long Haul: the rail run on toward the horizon (white; Space 5)")]
+
+SLIP_PARTS = [("SlipRiding", "Urchin_SlipRiding", "slipRidingIcon", TA_GHOST, "the Urchin riding its trail (domain)"),
+              ("SlipGhost", "Urchin_SlipGhost", "slipGhostIcon", ta_ghost,
+               "its ghost left on the trail while it slips (domain, faint)"),
+              ("SlipLifted", "Urchin_SlipLifted", "slipLiftedIcon", TA_LIFTED, "the Urchin lifted clear (domain)"),
+              ("SlipTrail", "Urchin_SlipTrail", "slipTrailIcon", lambda: _clear_of(t_row(), TA_GHOST(), px=1.5),
+               "the trail it rides (domain; a rival's, danger, once Slipstream is live)"),
+              ("SlipStream", "Urchin_SlipStream", "slipStreamIcon", lambda: _clear_of(t_marks(), TA_LIFTED(), px=2.0),
+               "Slipstream: the speed it keeps over a rival's trail (white; Time 5)")]
+
+for element, parts in (("Charge", CHAIN_PARTS), ("Mass", RIDER_PARTS), ("Space", TRACK_PARTS), ("Time", SLIP_PARTS)):
+    ICONS += [dict(name=i, element=element, act=act, draw=draw, subdir="Parts", family=False, exempt=PART_EXEMPT)
+              for _n, i, _f, draw, act in parts]
+
+
+def omni_crystal_card():
+    return _scarab.omni_crystal(64, 64, 104)
+
+
+ICONS += [dict(name="Urchin_OmniCrystal", element="Omni", subdir="Core", family=False, draw=omni_crystal_card,
+               act="The OMNI crystal card: the omni crystal, which feeds all four of the Urchin's elements (one white sprite)",
+               exempt={"components": "the crystal's plates, projected from its own mesh",
+                       "specks": "the omni crystal's small triangle plates (as Scarab_BallForge)"})]
+
+CARDS[:] = [c for c in CARDS if not c.get("group")]
+_parts = lambda lst: {n: d for n, _i, _f, d, _a in lst}   # noqa: E731
+CHAIN_ON = [("ChainUrchin", "domain"), ("ChainSpike", "white"), ("ChainPrism", "danger"), ("ChainSpray", "white")]
+RIDING = [("RiderUrchin", "domain"), ("RiderMine", "domain"), ("RiderTheirs", "danger")]
+SLIP_RIDING = [("SlipRiding", "domain"), ("SlipTrail", "domain")]
+CARDS += [
+    dict(name="chain", element="Charge", before=CHAIN_BEFORE, gauge=CHAIN_GAUGE,
+         title="Chain Spikes (Charge, picked A): the Urchin (domain) throws a spike into a rival prism (danger) that sprays "
+               "the next generation; Overcharge runs it full length and a generation deeper; the plate is the ammo",
+         parts=_parts(CHAIN_PARTS),
+         states=[("tap / at rest", CHAIN_ON), ("a held burst", CHAIN_ON),
+                 ("Charge 5: Overcharge", [("ChainUrchin", "domain"), ("ChainSpike", "white"), ("ChainPrism", "danger"),
+                                           ("ChainSprayOver", "white"), ("ChainDeeper", "white")])],
+         lockup_state=0),
+    dict(name="rider", element="Mass", before=RIDER_BEFORE, gauge=RIDER_GAUGE,
+         title="Trail Rider (Mass, picked B): riding a rival's trail - theirs ahead (danger), made its own under and behind "
+               "(domain); Reinforced Wake rims what it made; the plate is riding",
+         parts=_parts(RIDER_PARTS),
+         states=[("off the trail", [("RiderLifted", "domain"), ("RiderMine", "domain", 0.4), ("RiderTheirs", "danger", 0.4)]),
+                 ("riding", RIDING),
+                 ("Mass 5: Reinforced Wake", RIDING + [("RiderShield", "white")])],
+         lockup_state=1),
+    dict(name="track", element="Space", before=TRACK_BEFORE,
+         title="Track Projector (Space, picked A): the Urchin (domain) from behind, its projected rail (white) running to "
+               "the horizon; Long Haul runs it further",
+         parts=_parts(TRACK_PARTS),
+         states=[("recharging", [("TrackUrchin", "domain"), ("TrackRail", "white", 0.4)]),
+                 ("ready", [("TrackUrchin", "domain"), ("TrackRail", "white")]),
+                 ("Space 5: Long Haul", [("TrackUrchin", "domain"), ("TrackRail", "white"), ("TrackLongHaul", "white")])],
+         lockup_state=1),
+    dict(name="slip", element="Time", before=SLIP_BEFORE,
+         title="Slip (Time, picked A): riding, the Urchin sits on its trail; slipping, it lifts clear and leaves its ghost; "
+               "Slipstream keeps its speed over a rival's trail",
+         parts=_parts(SLIP_PARTS),
+         states=[("riding", SLIP_RIDING),
+                 ("slipping", [("SlipGhost", "domain", 0.35), ("SlipLifted", "domain"), ("SlipTrail", "domain")]),
+                 ("Time 5: Slipstream", [("SlipGhost", "domain", 0.35), ("SlipLifted", "domain"), ("SlipTrail", "danger"),
+                                         ("SlipStream", "white")])],
+         lockup_state=1),
+    dict(name="omni", element="Omni", title="The OMNI crystal card: the omni crystal",
+         parts=dict(i=omni_crystal_card), states=[("an omni crystal collected", [("i", "white")])]),
+]
+LOCKUP = dict(
+    Charge=dict(parts=_parts(CHAIN_PARTS), state=CHAIN_ON, gauge=0.7),
+    Mass=dict(parts=_parts(RIDER_PARTS), state=RIDING, gauge=1.0),
+    Space=dict(parts=_parts(TRACK_PARTS), state=[("TrackUrchin", "domain"), ("TrackRail", "white")]),
+    Time=dict(parts=_parts(SLIP_PARTS), state=SLIP_RIDING),
+    Omni=dict(parts=dict(i=omni_crystal_card), state=[("i", "white")]),
+)
+REBIND = [
+    dict(file=VARIANT, pair=dict(container=SLOT["Charge"], view=VIEW, after="chargeRing",
+                                 children=[(n, i, f) for n, i, f, _d, _a in CHAIN_PARTS])),
+    dict(file=VARIANT, pair=dict(container=SLOT["Mass"], view=VIEW, after="chargeRing",
+                                 children=[(n, i, f) for n, i, f, _d, _a in RIDER_PARTS])),
+    dict(file=VARIANT, pair=dict(container=SLOT["Space"], view=VIEW, after="chargeRing",
+                                 children=[(n, i, f) for n, i, f, _d, _a in TRACK_PARTS])),
+    dict(file=VARIANT, pair=dict(container=SLOT["Time"], view=VIEW, after="chargeRing",
+                                 children=[(n, i, f) for n, i, f, _d, _a in SLIP_PARTS],
+                                 fields={"omniAbilitySprite": ("icon", "Urchin_OmniCrystal")})),
+]

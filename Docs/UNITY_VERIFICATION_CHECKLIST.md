@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Urchin ability icons, round 6: parts the HUD drives (`claude/urchin-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Urchin's four cards are drawn in parts (`Tools/Build/icon_kit/specs/urchin.py`) seated under each
+slot icon of `UrchinHUDVariant.prefab` and bound to `UrchinVesselHUDView`, which paints them in the pilot's domain colour,
+rival danger and white. `UrchinHUDController` now also reads the vessel's own `UrchinSlipActionExecutor` (wired on
+`Urchin.prefab`) and the Track Projector's ready flag. The omni card sprite is `Core/Urchin_OmniCrystal.png`.
+
+**Verified without the editor:** `author.py urchin --check` no drift; every sprite passes the legibility gates;
+`author_urchin_hud.py --check` and `author_hull_ability_rows.py --check` clean; `check_console_logging.py` 0 problems.
+NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `UrchinVesselHUDView.cs` or `UrchinHUDController.cs`.
+2. Fly the Urchin in the Toybox as Jade, then Gold. **Pass:** every Urchin on the four cards wears the domain colour;
+   the rival prism and trail are orange.
+3. Latch onto a trail, then leave it. **Pass:** the Mass card's Urchin sits on the trail while riding, and lifts with
+   the trail fading off it.
+4. Press Slip while riding. **Pass:** the Time card's Urchin lifts clear and leaves a faint ghost until the slip ends.
+5. Press Track Projector. **Pass:** the rail goes faint while it recharges, solid again when ready.
+6. Upgrade each element to 5. **Pass:** Charge shows the long spray and a generation deeper; Mass rims the trail;
+   Space runs the rail further; Time turns the trail orange with speed lines while slipping.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.

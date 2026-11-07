@@ -557,3 +557,14 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
 83. **A wormhole reads as an arch only when its feet go INTO something.** An arch with its mouths cut open across the
     ends still read as a horseshoe; standing each foot in an edge-on ellipse ring, with the ring's near lip cut over the
     tube, reads as a tunnel from one hole in space to another.
+
+## 2026-11-07 - the Urchin: parts on a variant a one-shot generator still claims
+
+86. **Before the kit rebinds a variant, check whether a hull generator owns the whole file.** `author_urchin_hud.py`
+    writes `UrchinHUDVariant.prefab` whole and its `--check` is a gate; the kit's parts (children of each slot icon,
+    bound to the view) are invisible to it, so its next run would strip every part. Make the generator STAND DOWN on
+    the variant once the kit's parts are there (it tests for a part field), keep it gating what it still owns (the
+    vessel prefab's controller wiring, the gauge sprite metas), and add any new executor reference to its controller
+    block, or its `--check` reports drift on the vessel prefab. `grep -ln "VARIANT" Tools/Build/author_*_hud.py
+    Tools/Build/author_*_assets.py` before a rebind.
+

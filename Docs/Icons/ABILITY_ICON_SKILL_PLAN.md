@@ -404,6 +404,16 @@ pinched to its throat between two open mouths), Faster Ride (the hull shooting o
 the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
+**The Urchin (2026-11-07, round 6, the roster pass; picks made by the session on Garrett's go-ahead to choose):**
+every card redrawn from the real mesh nose-on and in parts the HUD drives. Chain Spikes (A): the Urchin (domain) throws
+a spike into a rival prism (danger) that sprays the next generation; Overcharge swaps in the full-length spray and a
+generation deeper. Trail Rider (B, steal): riding a rival's trail, theirs ahead (danger), made its own under and behind
+(domain); off the trail the Urchin lifts and the trail fades; Reinforced Wake rims what it made. Track Projector (A):
+the Urchin from behind, its rail (white) running to the horizon, faint while recharging, Long Haul runs it further.
+Slip (A): riding, the Urchin sits on its trail; slipping (the executor's `IsGhosted`), it lifts clear and leaves its
+ghost; Slipstream turns the trail rival (danger) and adds the speed lines. The omni card is the plain omni crystal (the
+Urchin's only omni effect is haptics). `UrchinVesselHUDView.RefreshParts` paints them; `author_urchin_hud.py` stands
+down on the variant now that the kit owns its cards. Sheets: `Docs/Icons/sheets/urchin_{chain,rider,track,slip,omni}.png`.
 
 | Round | What | Why first |
 |---|---|---|
