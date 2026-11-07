@@ -1,0 +1,951 @@
+<title>Brittle Star Ring Spin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a test bench. One control strip, five scopes fed the same stick, a scorecard tile, then the notes.
+   Single dark look on purpose: the ring is judged against space, the way it is flown. */
+:root {
+  --bg: #06080c;
+  --panel: #0c1118;
+  --panel-2: #111823;
+  --line: #1e2936;
+  --fg: #dbe3ea;
+  --muted: #8494a6;
+  --dim: #556273;
+  --ring: #63c7ea;      /* the hull's domain glow (Jade reads as blue in game) */
+  --flame: #ffb25a;
+  --bad: #ff6b5a;
+  --v0: #ff6b5a;        /* control: the current build */
+  --v1: #7fdc8c;
+  --v2: #f2c25b;
+  --v3: #6ea8ff;
+  --v4: #c993ff;
+  --display: "Chakra Petch", "Bahnschrift", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(22px, 3.2vw, 32px); letter-spacing: 0.02em; margin: 0; text-wrap: balance; }
+h1 small { font-weight: 500; color: var(--muted); font-size: 0.55em; letter-spacing: 0.08em; text-transform: uppercase; margin-left: 10px; }
+.lede { color: var(--muted); max-width: 78ch; margin: 0; }
+.lede b { color: var(--fg); font-weight: 600; }
+h2 { font-family: var(--display); font-size: 17px; font-weight: 600; letter-spacing: 0.04em; margin: 0; text-transform: uppercase; }
+.label { font-family: var(--display); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* control strip */
+.bench { position: static; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); padding-block: 10px; display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+@media (min-width: 900px) and (min-height: 760px) { .bench { position: sticky; top: env(safe-area-inset-top, 0px); } }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seg { align-self: flex-start; display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { background: transparent; color: var(--muted); border: 0; padding: 6px 10px; font: 500 12px var(--body); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 -2px 0 var(--ring); }
+.btn { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font: 500 12px var(--body); cursor: pointer; }
+.btn:hover, .seg button:hover { color: var(--fg); }
+.btn.on { border-color: var(--ring); color: var(--ring); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+input[type=range] { accent-color: var(--ring); width: 150px; }
+.check { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; cursor: pointer; }
+.check input { accent-color: var(--ring); }
+.readout { font-family: var(--mono); font-size: 13px; color: var(--fg); min-width: 7.5ch; display: inline-block; }
+.pad { width: 92px; height: 92px; border-radius: 50%; border: 1px solid var(--line); background: radial-gradient(circle, var(--panel-2) 0 24%, var(--panel) 25% 100%);
+  position: relative; touch-action: none; cursor: grab; flex: none; }
+.pad .dz { position: absolute; inset: 37.5%; border-radius: 50%; border: 1px dashed var(--dim); }
+.pad .knob { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--ring); left: 50%; top: 50%; box-shadow: 0 0 12px var(--ring); pointer-events: none; }
+.status { font-size: 12px; color: var(--muted); max-width: 32ch; }
+
+/* scopes */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; }
+.scope { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.scope .head { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px 8px; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; margin-top: 6px; flex: none; }
+.scope .title { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: 0.02em; }
+.scope .tag { font-family: var(--display); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; margin-left: 6px; vertical-align: 2px; }
+.scope .desc { color: var(--muted); font-size: 12.5px; margin: 2px 0 0; }
+.scope .pick { margin-left: auto; flex: none; }
+.view { display: block; width: 100%; aspect-ratio: 16 / 10; background: #030508; }
+.strip { display: block; width: 100%; height: 58px; background: var(--panel); border-top: 1px solid var(--line); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+.stats div { padding: 6px 12px; display: flex; flex-direction: column; gap: 0; }
+.stats div + div { border-left: 1px solid var(--line); }
+.stats .v { font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+.stats .v.warn { color: var(--bad); }
+.params { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 12px 10px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); align-items: center; }
+.params label { display: inline-flex; gap: 6px; align-items: center; }
+.params input[type=range] { width: 110px; }
+.params .mono { color: var(--fg); min-width: 6ch; }
+
+.score { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.score canvas { display: block; width: 100%; height: 170px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* notes */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 14px; }
+.note { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.note p, .note li { color: var(--muted); max-width: 70ch; }
+.note b, .note code { color: var(--fg); }
+.note code { font-family: var(--mono); font-size: 12.5px; }
+.note ol, .note ul { padding-left: 20px; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+th, td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; font-family: var(--body); }
+th { color: var(--muted); font-weight: 500; }
+td.bad { color: var(--bad); }
+.choice { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+#choiceText { flex: 1 1 320px; min-width: 0; font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; }
+@media (prefers-reduced-motion: reduce) { .pad .knob { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Brittle Star Ring Spin <small>wagon-wheel test bench</small></h1>
+    <p class="lede">The right stick turns the five-point support ring. In the current build, <b>spinning the stick faster than about 1.5 turns a second</b> makes the ring stutter backward (the wagon-wheel look). Past 3 to 4 turns a second it <b>freezes in place and jitters</b>. All five scopes get the same stick on the same frame clock. The first is the control: the shipped code, line for line.</p>
+  </header>
+
+  <section class="bench" aria-label="Test controls">
+    <div class="group">
+      <span class="label">Stick</span>
+      <div class="seg" role="group" aria-label="Stick source">
+        <button id="srcAuto" aria-pressed="true">Auto spin</button>
+        <button id="srcDrag" aria-pressed="false">Drag pad</button>
+        <button id="srcPad" aria-pressed="false">Gamepad</button>
+      </div>
+      <div class="status" id="padStatus">Auto spin turns the stick at full deflection.</div>
+    </div>
+    <div class="pad" id="pad" title="Drag to steer the right stick"><div class="dz" id="padDz"></div><div class="knob" id="knob"></div></div>
+    <div class="group">
+      <span class="label">Spin speed <span class="readout" id="rpsOut">2.50 rev/s</span></span>
+      <div class="row">
+        <input type="range" id="rps" min="0" max="6" step="0.05" value="2.5" aria-label="Spin speed in revolutions per second">
+        <button class="btn" id="dir" aria-label="Spin direction">CCW</button>
+        <button class="btn" id="ramp">Ramp 0 → 6</button>
+      </div>
+      <span class="status mono" id="stickOut">stick 0.00 rev/s</span>
+    </div>
+    <div class="group">
+      <span class="label">Game frame rate</span>
+      <div class="seg" role="group" aria-label="Frame rate" id="fpsSeg">
+        <button data-fps="0" aria-pressed="false">Display</button>
+        <button data-fps="120" aria-pressed="false">120</button>
+        <button data-fps="60" aria-pressed="true">60</button>
+        <button data-fps="30" aria-pressed="false">30</button>
+      </div>
+      <span class="label">Time</span>
+      <div class="row">
+        <div class="seg" role="group" aria-label="Time scale" id="tsSeg">
+          <button data-ts="1" aria-pressed="true">1×</button>
+          <button data-ts="0.25" aria-pressed="false">¼×</button>
+          <button data-ts="0.05" aria-pressed="false">1/20×</button>
+        </div>
+        <button class="btn" id="pause">Pause</button>
+        <button class="btn" id="step" title="One game frame">Step</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="label">Show</span>
+      <label class="check"><input type="checkbox" id="optFire"> Fire the aimed turret (or hold RT / F)</label>
+      <label class="check"><input type="checkbox" id="optSpeed"> Speed Mode (all five thrusters lit)</label>
+      <label class="check"><input type="checkbox" id="optAim"> Aim line and aimed turret</label>
+      <label class="check"><input type="checkbox" id="optMark"> Mark turret 0</label>
+    </div>
+    <div class="group">
+      <span class="label">Unity numbers (BrittleStarConfig.asset)</span>
+      <label class="check">ringTurnRate <input type="number" id="uRate" value="540" min="30" max="5000" step="10" style="width:70px" class="mono"> °/s</label>
+      <label class="check">aimDeadzone <input type="number" id="uDz" value="0.25" min="0" max="0.9" step="0.05" style="width:60px" class="mono"></label>
+    </div>
+  </section>
+
+  <section class="grid" id="grid" aria-label="Scopes"></section>
+
+  <section class="score" aria-label="Scorecard">
+    <div class="row" style="justify-content:space-between">
+      <h2>Scorecard</h2>
+      <span class="label" id="scoreFps">headless, 60 fps, 3 s per point</span>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px;">
+      <div><span class="label">Ring speed (rev/s) against stick spin (rev/s)</span><canvas id="chartSpeed" aria-label="Ring speed against stick spin"></canvas></div>
+      <div><span class="label">Backward frames per second (frames the ring turns against the stick)</span><canvas id="chartBack" aria-label="Backward frames per second against stick spin"></canvas></div>
+    </div>
+    <div class="tbl"><table id="scoreTable"></table></div>
+  </section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Why the control does it</h2>
+      <p><code>BrittleStarExecutor.AimRing</code> runs once per frame:</p>
+      <ol>
+        <li><code>NearestPoint</code> picks whichever of the five turrets is closest to the stick's angle <b>right now</b>. They sit 72° apart, so the chosen turret is never more than 36° away.</li>
+        <li><code>PhaseToAim</code> + <code>Mathf.MoveTowards</code> turn the ring toward that turret at no more than <code>ringTurnRate</code> = 540°/s, which is 1.5 turns a second.</li>
+        <li>Spin the stick faster and the ring falls behind. Once it is 36° behind, the <b>next</b> turret is nearer, and it sits <b>behind</b> the aim, so the ring turns <b>backward</b> to meet it. That is the stutter.</li>
+        <li>The faster the stick, the more evenly the ring splits its time between forward and backward. At about 4 rev/s (60 fps) the two cancel: the ring sits still and jitters ~20 times a second, the static glitch. At 30 fps it can even settle into turning the wrong way.</li>
+      </ol>
+      <p>The five turrets look alike, so a pentagon turned 72° looks the same. That is why the stutter reads as a wagon wheel rather than as a turret change.</p>
+    </div>
+    <div class="note">
+      <h2>What each fix would change in Unity</h2>
+      <ul>
+        <li><b style="color:var(--v1)">Keep turning forward</b>: <code>AimRing</code> keeps the turret it committed to. While the stick sweeps, it only changes to the next turret <b>ahead</b> in the sweep direction, never one behind. Same 540°/s cap. About 20 lines in <code>BrittleStarRules</code>, no asset change.</li>
+        <li><b style="color:var(--v2)">Faster ring</b>: keep the code and raise <code>ringTurnRate</code>. One number, but the same failure returns past the new limit. Near 2160°/s at 60 fps the pentagon moves exactly half a turret spacing per frame, which is true strobing.</li>
+        <li><b style="color:var(--v3)">Forward + motion smear</b>: the forward rule with a faster cap, and the drawn ring smeared across the angle it swept that frame (a rotational blur on the ring's material, or ghost copies whose weights sum to one, so the smear spreads the ring's light without adding any). Hides display aliasing at any speed. Needs shader or mesh work in <code>BrittleStarAnimation</code>.</li>
+        <li><b style="color:var(--v4)">Flywheel</b>: the ring has its own spin speed. It matches the stick's sweep rate up to a cap, accelerates with limited torque, and settles onto the committed turret when the stick stops. The ring then reads as heavy rather than glued to the stick.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Check the control against the editor</h2>
+      <ol>
+        <li>Set <b>Game frame rate</b> to what the editor or the phone runs at (the Stats overlay shows it).</li>
+        <li>Pick <b>Gamepad</b> and spin the same pad's right stick (press a button first so the browser sees it), or use <b>Ramp</b>.</li>
+        <li>The control should match the game: smooth up to ~1.5 rev/s, a backward stutter at 2, frozen jitter by 4. Turn on <b>Fire</b> to see the firing turret jump around.</li>
+        <li>Use <b>¼×</b> or <b>Step</b> to watch it frame by frame. The strip under each scope draws the ring's turn rate, red where it runs backward.</li>
+      </ol>
+      <p>Not modelled: the camera's own motion, Creation Mode's corner trails, Charge Mode's cords and Space Mode's splay. They all hang off the same ring phase, so they inherit whichever rule wins here.</p>
+    </div>
+  </section>
+
+  <section class="choice" aria-label="Your pick">
+    <button class="btn" id="copyChoice">Copy my pick</button>
+    <div id="choiceText">Pick a scope with its “Pick” button, then copy and paste the text back to Claude.</div>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+const DEG = Math.PI / 180, TAU = Math.PI * 2, POINTS = 5, SPACING = 72;
+
+// ------------------------------------------------------------------ the shipped rules, line for line
+// BrittleStarHullForm.PointAngle, BrittleStarRules.AimAngle / NearestPoint / PhaseToAim, Mathf.DeltaAngle / Repeat / MoveTowards.
+const pointAngle = i => Math.PI * 0.5 + i * (TAU / POINTS);
+const repeat = (t, len) => Math.min(Math.max(t - Math.floor(t / len) * len, 0), len);
+function deltaAngle(cur, tgt) { let n = repeat(tgt - cur, 360); if (n > 180) n -= 360; return n; }
+const moveTowards = (c, t, m) => Math.abs(t - c) <= m ? t : c + Math.sign(t - c) * m;
+function aimAngle(s, dz) { if (s.x * s.x + s.y * s.y <= dz * dz) return null; return Math.atan2(s.y, s.x); }
+function nearestPoint(aim, phase) {
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < POINTS; i++) {
+    const d = Math.abs(deltaAngle((pointAngle(i) + phase) / DEG, aim / DEG));
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+function phaseToAim(aim, point, cur) { const t = aim - pointAngle(point); return cur + deltaAngle(cur / DEG, t / DEG) * DEG; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// The stick's sweep, shared by the fixes: its angle last frame, and a smoothed signed rate (deg/s).
+class StickTracker {
+  constructor() { this.prev = null; this.omega = 0; }
+  update(aim, dt) {
+    const info = { aim, omega: 0, entered: false, flick: false };
+    if (aim == null) { this.prev = null; this.omega = 0; return info; }
+    if (this.prev == null) info.entered = true;
+    else {
+      const d = deltaAngle(this.prev / DEG, aim / DEG);
+      if (Math.abs(d) > 120) { info.flick = true; this.omega = 0; }        // a flick across, not a sweep
+      else if (dt > 0) { const k = 1 - Math.exp(-dt / 0.06); this.omega += (d / dt - this.omega) * k; }
+    }
+    this.prev = aim; info.omega = this.omega; return info;
+  }
+}
+
+// Commit to a turret; while the stick sweeps, only ever hand over to the next turret AHEAD in the sweep direction.
+// Returns the lag (degrees) the ring must still turn to put the committed turret on the aim. While sweeping, a lag
+// AGAINST the sweep means the ring is ahead of the aim: the caller holds and lets the stick come round to it.
+function committedLag(st, info, aim, sweepThreshold) {
+  if (st.aimed == null || info.entered || info.flick) st.aimed = nearestPoint(aim, st.phase);
+  let lag = deltaAngle(st.phase / DEG, (aim - pointAngle(st.aimed)) / DEG);
+  if (isSweeping(info, sweepThreshold)) {
+    const s = Math.sign(info.omega); let guard = 0;
+    while (s * lag >= SPACING && guard++ < 16) { lag -= s * SPACING; st.aimed = s > 0 ? (st.aimed + 1) % 5 : (st.aimed + 4) % 5; }
+    while (s * lag < -SPACING / 2 && guard++ < 16) { lag += s * SPACING; st.aimed = s > 0 ? (st.aimed + 4) % 5 : (st.aimed + 1) % 5; }
+  } else if (Math.abs(lag) > SPACING) {
+    st.aimed = nearestPoint(aim, st.phase);
+    lag = deltaAngle(st.phase / DEG, (aim - pointAngle(st.aimed)) / DEG);
+  }
+  return lag;
+}
+const isSweeping = (info, threshold) => info.aim != null && Math.abs(info.omega) > threshold;
+
+// The forward rule's turn for one frame: never against the sweep; flat out while the stick outruns the ring.
+function forwardTurn(st, info, aim, rate, sweepThreshold, dt) {
+  const lag = committedLag(st, info, aim, sweepThreshold);
+  const step = rate * DEG * dt;
+  if (isSweeping(info, sweepThreshold)) {
+    const s = Math.sign(info.omega);
+    if (s * lag <= 0) return;                                             // ahead of the aim: hold, the stick comes round
+    if (Math.abs(info.omega) >= rate) { st.phase += s * step; return; }   // the stick outruns the ring: full speed on
+  }
+  st.phase = moveTowards(st.phase, st.phase + lag * DEG, step);
+}
+
+// ------------------------------------------------------------------ the variants
+const shared = { rate: 540, dz: 0.25 };
+const VARIANTS = [
+  {
+    id: 'control', name: 'Current build', tag: 'control', color: 'var(--v0)',
+    desc: 'BrittleStarExecutor.AimRing as shipped: nearest turret every frame, turned at ringTurnRate.',
+    params: [], p: {},
+    rate: () => shared.rate,
+    step(st, info, dt) {
+      const aim = info.aim; st.aiming = aim != null;
+      if (aim == null) return;                                   // the ring holds its last rotation
+      st.aimed = nearestPoint(aim, st.phase);
+      const target = phaseToAim(aim, st.aimed, st.phase);
+      st.phase = moveTowards(st.phase, target, shared.rate * DEG * dt);
+    },
+  },
+  {
+    id: 'forward', name: 'Keep turning forward', tag: 'logic fix', color: 'var(--v1)',
+    desc: 'Same 540°/s cap. While the stick sweeps, the ring only hands over to the turret ahead, so it never turns back.',
+    params: [{ k: 'rate', label: 'Turn rate', min: 180, max: 3600, step: 30, unit: '°/s' }], p: { rate: 540, sweep: 90 },
+    rate() { return this.p.rate; },
+    step(st, info, dt) {
+      const aim = info.aim; st.aiming = aim != null;
+      if (aim == null) return;
+      forwardTurn(st, info, aim, this.p.rate, this.p.sweep, dt);
+    },
+  },
+  {
+    id: 'faster', name: 'Faster ring', tag: 'number only', color: 'var(--v2)',
+    desc: 'The shipped code with ringTurnRate raised. Keeps up further, then fails the same way.',
+    params: [{ k: 'rate', label: 'ringTurnRate', min: 540, max: 4320, step: 30, unit: '°/s' }], p: { rate: 1800 },
+    rate() { return this.p.rate; },
+    step(st, info, dt) {
+      const aim = info.aim; st.aiming = aim != null;
+      if (aim == null) return;
+      st.aimed = nearestPoint(aim, st.phase);
+      st.phase = moveTowards(st.phase, phaseToAim(aim, st.aimed, st.phase), this.p.rate * DEG * dt);
+    },
+  },
+  {
+    id: 'smear', name: 'Forward + motion smear', tag: 'logic + look', color: 'var(--v3)',
+    desc: 'The forward rule at a faster cap, and the ring drawn smeared over the angle it turned this frame: the copies are averaged, so the smear adds no brightness.',
+    params: [{ k: 'rate', label: 'Turn rate', min: 180, max: 3600, step: 30, unit: '°/s' },
+             { k: 'smear', label: 'Smear', min: 0, max: 1.5, step: 0.05, unit: '×' }], p: { rate: 1080, smear: 1, sweep: 90 },
+    smearDraw: true,
+    rate() { return this.p.rate; },
+    step(st, info, dt) {
+      const aim = info.aim; st.aiming = aim != null;
+      if (aim == null) return;
+      forwardTurn(st, info, aim, this.p.rate, this.p.sweep, dt);
+    },
+  },
+  {
+    id: 'flywheel', name: 'Flywheel', tag: 'feel change', color: 'var(--v4)',
+    desc: 'The ring has its own spin speed: it matches the stick’s sweep up to a cap, with limited torque, and settles on the turret when the stick stops.',
+    params: [{ k: 'rate', label: 'Top speed', min: 180, max: 3600, step: 30, unit: '°/s' },
+             { k: 'accel', label: 'Torque', min: 600, max: 20000, step: 100, unit: '°/s²' }],
+    p: { rate: 900, accel: 3600, k: 9, sweep: 90 },
+    rate() { return this.p.rate; },
+    step(st, info, dt) {
+      const aim = info.aim; st.aiming = aim != null;
+      if (aim != null) st.lastAim = aim;
+      if (st.lastAim == null) return;
+      const lag = committedLag(st, aim != null ? info : { aim: null, omega: 0 }, st.lastAim, this.p.sweep);
+      const sweep = aim != null && Math.abs(info.omega) > this.p.sweep ? info.omega : 0;
+      let want = clamp(sweep + this.p.k * lag, -this.p.rate, this.p.rate);
+      if (sweep) want = sweep > 0 ? Math.max(0, want) : Math.min(0, want);   // never spun against the sweep
+      st.vel = moveTowards(st.vel, want, this.p.accel * dt);
+      st.phase += st.vel * DEG * dt;
+    },
+  },
+];
+const newState = () => ({ phase: 0, aimed: 0, aiming: false, vel: 0, lastAim: null, prevPhase: 0 });
+
+// ------------------------------------------------------------------ input
+const $ = id => document.getElementById(id);
+const input = { source: 'auto', rps: 2.5, dir: 1, angle: Math.PI / 2, ramp: null, drag: { x: 0, y: 0 }, pad: { x: 0, y: 0, rt: 0, ok: false }, keyFire: false };
+const sim = { fps: 60, ts: 1, paused: false, stepOnce: false, time: 0, tracker: new StickTracker(), stick: { x: 0, y: 0 }, info: null, stickRate: 0 };
+
+function setPressed(groupEl, btn) { groupEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false')); }
+function setSource(src) {
+  input.source = src;
+  ['srcAuto', 'srcDrag', 'srcPad'].forEach(id => $(id).setAttribute('aria-pressed', 'false'));
+  $({ auto: 'srcAuto', drag: 'srcDrag', pad: 'srcPad' }[src]).setAttribute('aria-pressed', 'true');
+  if (src !== 'auto') { input.ramp = null; $('ramp').classList.remove('on'); }
+  updatePadStatus();
+}
+function updatePadStatus() {
+  const el = $('padStatus');
+  if (input.source === 'auto') el.textContent = 'Auto spin turns the stick at full deflection.';
+  else if (input.source === 'drag') el.textContent = 'Drag the pad in circles. Let go and the stick centres.';
+  else el.textContent = input.pad.ok ? `Gamepad: ${input.pad.name}. Right stick aims, RT fires.` : 'No gamepad seen yet. Connect one and press any button.';
+}
+$('srcAuto').onclick = () => setSource('auto');
+$('srcDrag').onclick = () => setSource('drag');
+$('srcPad').onclick = () => setSource('pad');
+$('rps').oninput = e => { input.rps = +e.target.value; input.ramp = null; $('ramp').classList.remove('on'); setSource('auto'); refreshRps(); drawScore(); };
+$('dir').onclick = () => { input.dir *= -1; $('dir').textContent = input.dir > 0 ? 'CCW' : 'CW'; };
+$('ramp').onclick = () => {
+  if (input.ramp) { input.ramp = null; $('ramp').classList.remove('on'); return; }
+  setSource('auto'); input.ramp = { t: 0, dur: 15 }; $('ramp').classList.add('on');
+};
+function refreshRps() { $('rpsOut').textContent = input.rps.toFixed(2) + ' rev/s'; $('rps').value = input.rps; }
+$('fpsSeg').querySelectorAll('button').forEach(b => b.onclick = () => { sim.fps = +b.dataset.fps; setPressed($('fpsSeg'), b); recomputeScore(); });
+$('tsSeg').querySelectorAll('button').forEach(b => b.onclick = () => { sim.ts = +b.dataset.ts; setPressed($('tsSeg'), b); });
+$('pause').onclick = () => { sim.paused = !sim.paused; $('pause').textContent = sim.paused ? 'Play' : 'Pause'; $('pause').classList.toggle('on', sim.paused); };
+$('step').onclick = () => { if (!sim.paused) $('pause').click(); sim.stepOnce = true; };
+$('uRate').onchange = e => { shared.rate = clamp(+e.target.value || 540, 30, 5000); e.target.value = shared.rate; recomputeScore(); };
+$('uDz').onchange = e => { shared.dz = clamp(+e.target.value, 0, 0.9); e.target.value = shared.dz; $('padDz').style.inset = (50 - shared.dz * 50) + '%'; recomputeScore(); };
+addEventListener('keydown', e => { if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input')) input.keyFire = true; });
+addEventListener('keyup', e => { if (e.key === 'f' || e.key === 'F') input.keyFire = false; });
+
+// drag pad
+const padEl = $('pad'), knob = $('knob');
+let dragging = false;
+function padFromEvent(e) {
+  const r = padEl.getBoundingClientRect(), rad = r.width / 2;
+  let x = (e.clientX - r.left - rad) / rad, y = -(e.clientY - r.top - rad) / rad;
+  const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+  input.drag.x = x; input.drag.y = y;
+}
+padEl.addEventListener('pointerdown', e => { dragging = true; try { padEl.setPointerCapture(e.pointerId); } catch (_) {} setSource('drag'); padFromEvent(e); e.preventDefault(); });
+padEl.addEventListener('pointermove', e => { if (dragging) padFromEvent(e); });
+const endDrag = () => { dragging = false; input.drag.x = 0; input.drag.y = 0; };
+padEl.addEventListener('pointerup', endDrag); padEl.addEventListener('pointercancel', endDrag);
+
+function pollGamepad() {
+  let pads = [];
+  try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (_) { pads = []; }
+  const gp = pads[0];
+  const was = input.pad.ok;
+  if (!gp) { input.pad.ok = false; input.pad.x = input.pad.y = input.pad.rt = 0; if (was) updatePadStatus(); return; }
+  input.pad.ok = true; input.pad.name = (gp.id || 'pad').split('(')[0].trim().slice(0, 32);
+  input.pad.x = gp.axes[2] || 0; input.pad.y = -(gp.axes[3] || 0);       // browser y is down; Unity's stick y is up
+  input.pad.rt = gp.buttons[7] ? gp.buttons[7].value : 0;
+  if (!was) updatePadStatus();
+  if (input.source !== 'pad' && Math.hypot(input.pad.x, input.pad.y) > 0.5) setSource('pad');
+}
+
+function sampleStick(dt) {
+  if (input.source === 'auto') {
+    if (input.ramp) {
+      input.ramp.t += dt; input.rps = Math.min(6, 6 * input.ramp.t / input.ramp.dur); refreshRps();
+      if (input.ramp.t >= input.ramp.dur) { input.ramp = null; $('ramp').classList.remove('on'); }
+    }
+    input.angle += TAU * input.rps * input.dir * dt;
+    if (input.angle > TAU * 64) input.angle -= TAU * 64; else if (input.angle < -TAU * 64) input.angle += TAU * 64;
+    return { x: Math.cos(input.angle), y: Math.sin(input.angle) };
+  }
+  const s = input.source === 'drag' ? input.drag : input.pad;
+  const m = Math.hypot(s.x, s.y);
+  return m > 1 ? { x: s.x / m, y: s.y / m } : { x: s.x, y: s.y };      // Vector2.ClampMagnitude(…, 1)
+}
+
+// ------------------------------------------------------------------ scopes
+const HIST = 720;
+const scopes = VARIANTS.map((v, idx) => {
+  const el = document.createElement('article');
+  el.className = 'scope';
+  el.innerHTML = `
+    <div class="head">
+      <span class="swatch" style="background:${v.color}"></span>
+      <div style="min-width:0">
+        <div class="title">${v.name}<span class="tag" style="color:${v.color}">${v.tag}</span></div>
+        <p class="desc">${v.desc}</p>
+      </div>
+      <button class="btn pick" aria-pressed="false">Pick</button>
+    </div>
+    <canvas class="view"></canvas>
+    <canvas class="strip"></canvas>
+    <div class="stats">
+      <div><span class="label">Ring</span><span class="v" data-k="speed">0.00 rev/s</span></div>
+      <div><span class="label">Backward</span><span class="v" data-k="back">0 /s</span></div>
+      <div><span class="label">Turret swaps</span><span class="v" data-k="swaps">0 /s</span></div>
+    </div>
+    <div class="params">${v.params.length ? v.params.map(p => `
+      <label>${p.label} <input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${v.p[p.k]}" data-k="${p.k}" aria-label="${v.name} ${p.label}">
+      <span class="mono" data-out="${p.k}">${fmtParam(v.p[p.k], p)}</span></label>`).join('')
+      : '<span>Reads the Unity numbers in the bar above (ringTurnRate, aimDeadzone).</span>'}
+    </div>`;
+  $('grid').appendChild(el);
+  const sc = {
+    v, el, view: el.querySelector('.view'), strip: el.querySelector('.strip'), st: newState(),
+    hist: new Float32Array(HIST * 3), hn: 0, rounds: [], fireOwed: 0,
+    stars: makeStars(idx + 1), statEls: {}, swaps: [],
+  };
+  el.querySelectorAll('.stats .v').forEach(s => sc.statEls[s.dataset.k] = s);
+  el.querySelectorAll('.params input').forEach(inp => inp.oninput = () => {
+    const pd = v.params.find(p => p.k === inp.dataset.k);
+    v.p[pd.k] = +inp.value; el.querySelector(`[data-out="${pd.k}"]`).textContent = fmtParam(v.p[pd.k], pd);
+    recomputeScore(); updateChoice();
+  });
+  el.querySelector('.pick').onclick = () => { picked = picked === v.id ? null : v.id; updateChoice(); };
+  return sc;
+});
+function fmtParam(val, p) { return p.unit === '×' ? (+val).toFixed(2) + '×' : Math.round(val) + ' ' + p.unit; }
+function makeStars(seed) {
+  let s = seed * 9301 + 49297; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  return Array.from({ length: 90 }, () => ({ x: rnd(), y: rnd(), r: 0.3 + rnd() * 1.1, a: 0.25 + rnd() * 0.6 }));
+}
+
+// ------------------------------------------------------------------ the sim step (one game frame)
+function simStep(dt) {
+  sim.time += dt;
+  pollGamepad();
+  const stick = sampleStick(dt);
+  sim.stick = stick;
+  const info = sim.tracker.update(aimAngle(stick, shared.dz), dt);
+  sim.info = info;
+  const firing = $('optFire').checked || input.keyFire || (input.source === 'pad' && input.pad.rt > 0.2);
+  for (const sc of scopes) {
+    const st = sc.st, before = st.phase, aimedBefore = st.aimed;
+    st.prevPhase = before;
+    sc.v.step(st, info, dt);
+    let d = st.phase - before;
+    if (Math.abs(st.phase) > TAU * 8) st.phase -= Math.sign(st.phase) * TAU * 8;   // AimRing keeps the float small
+    st.prevPhase = st.phase - d;
+    const w = dt > 0 ? d / DEG / dt : 0;
+    const i = (sc.hn % HIST) * 3;
+    sc.hist[i] = sim.time; sc.hist[i + 1] = w; sc.hist[i + 2] = info.omega; sc.hn++;
+    if (st.aiming && aimedBefore !== st.aimed) sc.swaps.push(sim.time);
+    while (sc.swaps.length && sc.swaps[0] < sim.time - 1) sc.swaps.shift();
+    // rounds from the aimed turret's muzzle; they fly straight on, as the game's do
+    if (firing) {
+      sc.fireOwed += dt * 12;
+      while (sc.fireOwed >= 1) {
+        sc.fireOwed -= 1;
+        const a = pointAngle(st.aimed) + st.phase;
+        sc.rounds.push({ x: Math.cos(a) * RING_R, y: Math.sin(a) * RING_R, z: 0.9, age: 0 });
+      }
+    } else sc.fireOwed = 0;
+    for (const r of sc.rounds) { r.z += 110 * dt; r.age += dt; }
+    while (sc.rounds.length && sc.rounds[0].age > 0.7) sc.rounds.shift();
+  }
+}
+
+// ------------------------------------------------------------------ drawing (a chase camera behind the hull)
+const RING_R = 6, RING_Z = -0.35, POD_TAIL = -0.85, POD_FRONT = 0.15, MUZZLE_Z = 0.9;
+const CAM = { x: 0, y: 2.6, z: -19 }, LOOK = { x: 0, y: 0.2, z: 14 };
+const F = (() => { const fx = LOOK.x - CAM.x, fy = LOOK.y - CAM.y, fz = LOOK.z - CAM.z, m = Math.hypot(fx, fy, fz); return { x: fx / m, y: fy / m, z: fz / m }; })();
+const R = (() => { const m = Math.hypot(F.z, F.x); return { x: F.z / m, y: 0, z: -F.x / m }; })();
+const U = { x: F.y * R.z - F.z * R.y, y: F.z * R.x - F.x * R.z, z: F.x * R.y - F.y * R.x };
+function project(p, view) {
+  const dx = p.x - CAM.x, dy = p.y - CAM.y, dz = p.z - CAM.z;
+  const xc = dx * R.x + dy * R.y + dz * R.z, yc = dx * U.x + dy * U.y + dz * U.z, zc = dx * F.x + dy * F.y + dz * F.z;
+  const s = view.f / Math.max(0.1, zc);
+  return { x: view.cx + xc * s, y: view.cy - yc * s, s };
+}
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let COL = {};
+function readColors() { COL = { ring: cssVar('--ring'), flame: cssVar('--flame'), muted: cssVar('--muted'), dim: cssVar('--dim'), line: cssVar('--line'), bad: cssVar('--bad'), fg: cssVar('--fg'), panel: cssVar('--panel') }; VARIANTS.forEach((v, i) => v.hex = cssVar('--v' + i)); }
+
+function fitCanvas(c) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w, h };
+}
+
+function ringPoints(phase) {
+  const pts = [];
+  for (let i = 0; i < POINTS; i++) {
+    const a = pointAngle(i) + phase;
+    pts.push({ x: Math.cos(a) * RING_R, y: Math.sin(a) * RING_R, a });
+  }
+  return pts;
+}
+
+function drawMarkers(ctx, view, pts, opts) {
+  pts.forEach((p, i) => {
+    const tail = project({ x: p.x, y: p.y, z: POD_TAIL }, view), r = 0.36 * tail.s;
+    if (opts.mark && i === 0) { ctx.fillStyle = '#ff4fa3'; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 0.7, 0, TAU); ctx.fill(); }
+    if (opts.aimed === i) { ctx.strokeStyle = opts.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 1.7, 0, TAU); ctx.stroke(); }
+  });
+}
+
+function drawRing(ctx, view, phase, alpha, opts) {
+  const pts = ringPoints(phase);
+  ctx.globalAlpha = alpha;
+  // arms: hub to each point (thin)
+  ctx.strokeStyle = COL.dim; ctx.lineWidth = Math.max(1, 0.18 * view.unit);
+  ctx.beginPath();
+  for (const p of pts) { const h = project({ x: 0, y: 0, z: RING_Z }, view), q = project({ x: p.x * 0.92, y: p.y * 0.92, z: RING_Z }, view); ctx.moveTo(h.x, h.y); ctx.lineTo(q.x, q.y); }
+  ctx.stroke();
+  // the pentagon's beams
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.strokeStyle = pass ? '#cfeffa' : COL.ring; ctx.lineWidth = (pass ? 0.12 : 0.44) * view.unit;
+    if (!pass) { ctx.shadowColor = COL.ring; ctx.shadowBlur = alpha > 0 ? 10 : 0; }
+    ctx.beginPath();
+    pts.forEach((p, i) => { const q = project({ x: p.x, y: p.y, z: RING_Z }, view); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); });
+    ctx.closePath(); ctx.stroke(); ctx.shadowBlur = 0;
+  }
+  // pods and barrels (engine behind, gun in front)
+  pts.forEach((p, i) => {
+    const front = project({ x: p.x, y: p.y, z: MUZZLE_Z }, view), back = project({ x: p.x, y: p.y, z: POD_FRONT }, view);
+    ctx.strokeStyle = '#9fb2c2'; ctx.lineWidth = Math.max(1, 0.14 * view.unit);
+    ctx.beginPath(); ctx.moveTo(back.x, back.y); ctx.lineTo(front.x, front.y); ctx.stroke();
+    const tail = project({ x: p.x, y: p.y, z: POD_TAIL }, view);
+    const r = 0.36 * tail.s;
+    const g = ctx.createRadialGradient(tail.x - r * 0.3, tail.y - r * 0.3, r * 0.1, tail.x, tail.y, r);
+    g.addColorStop(0, '#e9f3f8'); g.addColorStop(0.6, '#6f8597'); g.addColorStop(1, '#27323d');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(tail.x, tail.y, r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#0a0f14'; ctx.beginPath(); ctx.arc(tail.x, tail.y, r * 0.45, 0, TAU); ctx.fill();
+  });
+  drawMarkers(ctx, view, pts, opts);
+  ctx.globalAlpha = 1;
+  return pts;
+}
+
+function drawFlames(ctx, view, pts, lit, t) {
+  ctx.globalCompositeOperation = 'lighter';
+  const flame = (x, y, len, k) => {
+    const wob = 1 + 0.12 * Math.sin(t * 22 + k * 1.7) * Math.sin(t * 13.4 + k);
+    const L = Math.max(0.05, len * wob);
+    const a = project({ x, y, z: POD_TAIL }, view), b = project({ x, y, z: POD_TAIL - L }, view);
+    const r = (0.2 + 0.06 * Math.min(1, L / 3.2)) * a.s;
+    // a tapered jet from the nozzle out toward the camera, and a hot core at the nozzle
+    const jet = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+    jet.addColorStop(0, 'rgba(255,236,200,0.9)'); jet.addColorStop(0.4, 'rgba(255,170,80,0.55)'); jet.addColorStop(1, 'rgba(255,110,40,0)');
+    ctx.strokeStyle = jet; ctx.lineCap = 'round';
+    ctx.lineWidth = r * 1.6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.lineWidth = r * 0.7; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo((a.x + b.x) / 2, (a.y + b.y) / 2); ctx.stroke();
+    const g = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, r * 1.4);
+    g.addColorStop(0, 'rgba(255,240,210,0.9)'); g.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(a.x, a.y, r * 1.4, 0, TAU); ctx.fill();
+  };
+  pts.forEach((p, i) => flame(p.x, p.y, lit ? 3.2 : 0.12, i));
+  flame(0, 0, lit ? 3.2 : 1.4, 9);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// The smear's average, done in FLOAT. Summing the copies on a 2D canvas at weight 1/n rounds every small contribution
+// to 8 bits, and that rounding brightens: +9% at 15 copies, +18% at 24. So each copy is drawn whole on a scratch
+// canvas and added (premultiplied) into a float target at weight 1/n; the mean is quantized once, at the end.
+// GPU path: WebGL2 with a float render target. Fallback: the same sum on the CPU over the ring's box (slower).
+const SMEAR_VS = `#version 300 es
+out vec2 uv;
+void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); uv = p; gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const SMEAR_ADD = `#version 300 es
+precision highp float; in vec2 uv; uniform sampler2D t; uniform float wgt; out vec4 o;
+void main() { o = texture(t, vec2(uv.x, 1.0 - uv.y)) * wgt; }`;
+const SMEAR_OUT = `#version 300 es
+precision highp float; in vec2 uv; uniform sampler2D t; out vec4 o;
+void main() { o = texture(t, uv); }`;
+function smearGL(sc) {
+  if (sc.smearGL !== undefined) return sc.smearGL;
+  sc.smearGL = null;
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, alpha: true, antialias: false, depth: false, preserveDrawingBuffer: true });
+    if (!gl || !gl.getExtension('EXT_color_buffer_float')) return null;
+    const fmt = gl.getExtension('EXT_float_blend') ? gl.RGBA32F : gl.RGBA16F;
+    const prog = (fs) => {
+      const pr = gl.createProgram();
+      for (const [type, src] of [[gl.VERTEX_SHADER, SMEAR_VS], [gl.FRAGMENT_SHADER, fs]]) {
+        const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+        gl.attachShader(pr, sh);
+      }
+      gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+      return pr;
+    };
+    const tex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+      for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+      return t; };
+    const add = prog(SMEAR_ADD), out = prog(SMEAR_OUT);
+    sc.smearGL = { canvas, gl, fmt, add, out, wgt: gl.getUniformLocation(add, 'wgt'), copy: tex(), sum: tex(), fbo: gl.createFramebuffer(),
+                   one: document.createElement('canvas').getContext('2d'), W: 0, H: 0 };
+  } catch (_) { sc.smearGL = null; }
+  return sc.smearGL;
+}
+// The ring's box on the canvas, in device pixels: its corners at the pods' tails and the muzzles, plus the glow.
+function ringBox(view, W, H, sx, sy) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const e = RING_R + 0.6, m = 18;
+  for (const z of [POD_TAIL, MUZZLE_Z]) for (const x of [-e, e]) for (const y of [-e, e]) {
+    const q = project({ x, y, z }, view);
+    x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y);
+  }
+  const bx = clamp(Math.floor((x0 - m) * sx), 0, W), by = clamp(Math.floor((y0 - m) * sy), 0, H);
+  return { bx, by, bw: clamp(Math.ceil((x1 + m) * sx), 0, W) - bx, bh: clamp(Math.ceil((y1 + m) * sy), 0, H) - by };
+}
+function smearAverage(sc, target, w, h, view, phases) {
+  const G = smearGL(sc);
+  return G ? smearAverageGL(G, target, w, h, view, phases) : smearAverageCPU(sc, target, w, h, view, phases);
+}
+function smearAverageGL(G, target, w, h, view, phases) {
+  // Only the ring's box is drawn and uploaded: the copies are drawn on a box-sized canvas and summed into that
+  // window of the full-size float target.
+  const { gl, one } = G, W = target.width, H = target.height, sx = W / w, sy = H / h;
+  if (G.W !== W || G.H !== H) {
+    G.W = W; G.H = H; G.canvas.width = W; G.canvas.height = H;
+    gl.bindTexture(gl.TEXTURE_2D, G.sum); gl.texImage2D(gl.TEXTURE_2D, 0, G.fmt, W, H, 0, gl.RGBA, gl.FLOAT, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, G.sum, 0);
+  }
+  const { bx, by, bw, bh } = ringBox(view, W, H, sx, sy);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo); gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  if (bw <= 0 || bh <= 0) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.clear(gl.COLOR_BUFFER_BIT); return G.canvas; }
+  if (one.canvas.width !== bw || one.canvas.height !== bh) { one.canvas.width = bw; one.canvas.height = bh; }
+  gl.viewport(bx, H - by - bh, bw, bh);   // GL's origin is the bottom-left
+  gl.useProgram(G.add); gl.uniform1f(G.wgt, 1 / phases.length);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.copy);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  for (const phase of phases) {
+    one.setTransform(1, 0, 0, 1, 0, 0); one.clearRect(0, 0, bw, bh);
+    one.setTransform(sx, 0, 0, sy, -bx, -by);
+    drawRing(one, view, phase, 1, { mark: false, aimed: -1 });
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, one.canvas);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  gl.disable(gl.BLEND);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(G.out); gl.bindTexture(gl.TEXTURE_2D, G.sum); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  return G.canvas;
+}
+function smearAverageCPU(sc, target, w, h, view, phases) {
+  const W = target.width, H = target.height, sx = W / w, sy = H / h;
+  if (!sc.smear) sc.smear = {
+    one: document.createElement('canvas').getContext('2d', { willReadFrequently: true }),
+    out: document.createElement('canvas').getContext('2d'),
+  };
+  const { one, out } = sc.smear;
+  for (const l of [one, out]) if (l.canvas.width !== W || l.canvas.height !== H) { l.canvas.width = W; l.canvas.height = H; }
+  const { bx, by, bw, bh } = ringBox(view, W, H, sx, sy);
+  out.setTransform(1, 0, 0, 1, 0, 0); out.clearRect(0, 0, W, H);
+  if (bw <= 0 || bh <= 0) return out.canvas;
+  const len = bw * bh * 4;
+  if (!sc.smear.acc || sc.smear.acc.length !== len) sc.smear.acc = new Float32Array(len); else sc.smear.acc.fill(0);
+  const acc = sc.smear.acc;
+  for (const phase of phases) {
+    one.setTransform(1, 0, 0, 1, 0, 0); one.clearRect(bx, by, bw, bh);
+    one.setTransform(sx, 0, 0, sy, 0, 0);
+    drawRing(one, view, phase, 1, { mark: false, aimed: -1 });
+    const d = one.getImageData(bx, by, bw, bh).data;
+    for (let i = 0; i < len; i += 4) {
+      const a = d[i + 3];
+      if (!a) continue;
+      acc[i] += d[i] * a; acc[i + 1] += d[i + 1] * a; acc[i + 2] += d[i + 2] * a; acc[i + 3] += a;
+    }
+  }
+  const img = out.createImageData(bw, bh), o = img.data, n = phases.length;
+  for (let i = 0; i < len; i += 4) {
+    const a = acc[i + 3];
+    if (!a) continue;
+    o[i] = acc[i] / a; o[i + 1] = acc[i + 1] / a; o[i + 2] = acc[i + 2] / a; o[i + 3] = a / n;   // Uint8Clamped rounds
+  }
+  out.putImageData(img, bx, by);
+  return out.canvas;
+}
+
+function drawScope(sc) {
+  const { ctx, w, h } = fitCanvas(sc.view);
+  const view = { cx: w / 2, cy: h * 0.52, f: h * 1.05 / (2 * Math.tan(25 * DEG)) };
+  view.unit = project({ x: 0, y: 0, z: RING_Z }, view).s;
+  ctx.fillStyle = '#030508'; ctx.fillRect(0, 0, w, h);
+  for (const s of sc.stars) { ctx.globalAlpha = s.a; ctx.fillStyle = '#c9d6e3'; ctx.fillRect(s.x * w, s.y * h, s.r, s.r); }
+  ctx.globalAlpha = 1;
+  // rounds (ahead of the hull, drawn first: they are farther from the camera)
+  ctx.fillStyle = sc.v.hex;
+  for (const r of sc.rounds) { const q = project(r, view); ctx.globalAlpha = 1 - r.age / 0.7; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(1.2, 0.22 * q.s), 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  const st = sc.st;
+  const opts = { mark: $('optMark').checked, aimed: $('optAim').checked && st.aiming ? st.aimed : -1, color: sc.v.hex };
+  let pts;
+  const sweptDeg = (st.phase - st.prevPhase) / DEG;
+  if (sc.v.smearDraw && sc.v.p.smear > 0 && Math.abs(sweptDeg) > 1.5) {
+    // smear: the ring as exposed over the angle it turned this frame (a box shutter), the copies AVERAGED so the
+    // smear adds no brightness: where every copy overlaps it is exactly the still ring, and nowhere brighter.
+    const span = sweptDeg * sc.v.p.smear * DEG, n = clamp(Math.ceil(Math.abs(sweptDeg * sc.v.p.smear) / 2.5), 2, 24);
+    const phases = Array.from({ length: n }, (_, k) => st.phase - span * (k / (n - 1)));
+    ctx.drawImage(smearAverage(sc, ctx.canvas, w, h, view, phases), 0, 0, w, h);
+    pts = ringPoints(st.phase);
+    drawMarkers(ctx, view, pts, opts);
+  } else pts = drawRing(ctx, view, st.phase, 1, opts);
+  // cockpit
+  const hub = project({ x: 0, y: 0, z: -0.2 }, view), hr = 0.75 * hub.s;
+  const g = ctx.createRadialGradient(hub.x - hr * 0.3, hub.y - hr * 0.4, hr * 0.1, hub.x, hub.y, hr);
+  g.addColorStop(0, '#f2f7fa'); g.addColorStop(0.55, '#7e94a6'); g.addColorStop(1, '#1d2731');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(hub.x, hub.y, hr, hr * 0.92, 0, 0, TAU); ctx.fill();
+  drawFlames(ctx, view, pts, $('optSpeed').checked, sim.time);
+  // aim line
+  if ($('optAim').checked && sim.info && sim.info.aim != null) {
+    const a = sim.info.aim, p = project({ x: Math.cos(a) * RING_R * 1.35, y: Math.sin(a) * RING_R * 1.35, z: RING_Z }, view);
+    const c = project({ x: 0, y: 0, z: RING_Z }, view);
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = COL.fg; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+  ctx.font = '500 11px ' + cssVar('--mono'); ctx.fillStyle = COL.muted;
+  ctx.fillText(`${sim.fps ? sim.fps + ' fps' : 'display'}  ·  ${sweptDeg >= 0 ? '+' : ''}${sweptDeg.toFixed(1)}°/frame`, 10, h - 10);
+  drawStrip(sc);
+  updateStats(sc);
+}
+
+function drawStrip(sc) {
+  const { ctx, w, h } = fitCanvas(sc.strip);
+  ctx.clearRect(0, 0, w, h);
+  const span = 4, t1 = sim.time, t0 = t1 - span;
+  const scale = Math.max(sc.v.rate() * 1.25, 900);
+  const y = v => h / 2 - clamp(v / scale, -1, 1) * (h / 2 - 4);
+  ctx.strokeStyle = COL.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+  const n = Math.min(sc.hn, HIST);
+  // stick sweep (dashed)
+  ctx.setLineDash([3, 3]); ctx.strokeStyle = COL.dim; ctx.beginPath();
+  let started = false;
+  for (let k = n - 1; k >= 0; k--) {
+    const i = ((sc.hn - 1 - k) % HIST) * 3, t = sc.hist[i]; if (t < t0) continue;
+    const x = (t - t0) / span * w, yy = y(sc.hist[i + 2]);
+    started ? ctx.lineTo(x, yy) : (ctx.moveTo(x, yy), started = true);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+  // ring turn rate: bars, red where it runs against the stick
+  const dir = Math.sign(sim.info ? sim.info.omega : 0) || 1;
+  for (let k = n - 1; k >= 0; k--) {
+    const i = ((sc.hn - 1 - k) % HIST) * 3, t = sc.hist[i]; if (t < t0) continue;
+    const x = (t - t0) / span * w, wv = sc.hist[i + 1];
+    const backward = wv * Math.sign(sc.hist[i + 2] || dir) < -1;
+    ctx.fillStyle = backward ? COL.bad : sc.v.hex;
+    const yy = y(wv); ctx.fillRect(x, Math.min(yy, h / 2), Math.max(1, w / (span * (sim.fps || 60))), Math.max(1, Math.abs(yy - h / 2)));
+  }
+  ctx.font = '500 10px ' + cssVar('--mono'); ctx.fillStyle = COL.muted;
+  ctx.fillText('ring °/s (bars) vs stick (dashed), last 4 s', 6, 11);
+  ctx.fillText('±' + Math.round(scale), w - 44, 11);
+}
+
+function updateStats(sc) {
+  const n = Math.min(sc.hn, HIST), t1 = sim.time;
+  let net = 0, back = 0, span = 0;
+  for (let k = 0; k < n; k++) {
+    const i = ((sc.hn - 1 - k) % HIST) * 3, t = sc.hist[i];
+    if (t < t1 - 1) break;
+    const prevT = k + 1 < n ? sc.hist[((sc.hn - 2 - k) % HIST) * 3] : t;
+    const dt = Math.max(0, t - prevT);
+    net += sc.hist[i + 1] * dt; span += dt;
+    if (sc.hist[i + 2] !== 0 && sc.hist[i + 1] * Math.sign(sc.hist[i + 2]) < -1) back++;
+  }
+  const revs = span > 0 ? net / 360 / span : 0;
+  const backRate = span > 0 ? back / Math.max(span, 1e-3) : 0;
+  sc.statEls.speed.textContent = revs.toFixed(2) + ' rev/s';
+  sc.statEls.back.textContent = Math.round(backRate) + ' /s';
+  sc.statEls.back.classList.toggle('warn', backRate >= 1);
+  sc.statEls.swaps.textContent = sc.swaps.length + ' /s';
+}
+
+// ------------------------------------------------------------------ headless scorecard
+const SPEEDS = Array.from({ length: 25 }, (_, i) => i * 0.25);
+let score = null;
+function runHeadless(v, rps, fps) {
+  const dt = 1 / fps, st = newState(), tr = new StickTracker();
+  let ang = Math.PI / 2, net = 0, back = 0; const warm = 1, T = 4;
+  for (let f = 0; f < T * fps; f++) {
+    ang += TAU * rps * dt;
+    const info = tr.update(aimAngle({ x: Math.cos(ang), y: Math.sin(ang) }, shared.dz), dt);
+    const before = st.phase; v.step(st, info, dt);
+    const d = st.phase - before;
+    if (f * dt >= warm) { net += d; if (d < -0.05 * DEG) back++; }
+  }
+  return { speed: net / TAU / (T - warm), back: back / (T - warm) };
+}
+function recomputeScore() {
+  const fps = sim.fps || 60;
+  score = { fps, rows: VARIANTS.map(v => SPEEDS.map(r => runHeadless(v, r, fps))) };
+  $('scoreFps').textContent = `headless, ${fps} fps${sim.fps ? '' : ' (display mode scored at 60)'}, 3 s per point`;
+  drawScore(); drawTable();
+}
+function drawChart(canvas, key, yMax, yLabel) {
+  const { ctx, w, h } = fitCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+  const L = 34, Rr = 10, T = 8, B = 22;
+  const X = r => L + r / 6 * (w - L - Rr), Y = v => h - B - clamp(v / yMax, 0, 1.02) * (h - T - B);
+  ctx.font = '500 10px ' + cssVar('--mono'); ctx.fillStyle = COL.muted; ctx.strokeStyle = COL.line; ctx.lineWidth = 1;
+  const yt = yMax <= 6 ? [0, 1, 2, 3, 4, 5, 6].filter(v => v <= yMax) : [0, yMax / 4, yMax / 2, 3 * yMax / 4, yMax];
+  for (const v of yt) { ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(w - Rr, Y(v)); ctx.stroke(); ctx.fillText(String(Math.round(v * 10) / 10), 4, Y(v) + 3); }
+  for (let r = 0; r <= 6; r++) ctx.fillText(String(r), X(r) - 3, h - 6);
+  // the stick's current spin
+  ctx.strokeStyle = COL.dim; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(X(input.rps), T); ctx.lineTo(X(input.rps), h - B); ctx.stroke();
+  if (key === 'speed') { ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(6), Y(6)); ctx.stroke(); }
+  ctx.setLineDash([]);
+  score.rows.forEach((row, vi) => {
+    ctx.strokeStyle = VARIANTS[vi].hex; ctx.lineWidth = vi === 0 ? 2.5 : 1.75; ctx.beginPath();
+    row.forEach((pt, i) => { const x = X(SPEEDS[i]), y = Y(pt[key]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+  });
+}
+function drawScore() {
+  if (!score) return;
+  drawChart($('chartSpeed'), 'speed', 6, 'rev/s');
+  const maxBack = Math.max(10, ...score.rows.flat().map(p => p.back));
+  drawChart($('chartBack'), 'back', Math.ceil(maxBack / 10) * 10, '/s');
+}
+function drawTable() {
+  const cols = [1, 1.5, 2, 3, 4, 5, 6];
+  const idx = cols.map(c => SPEEDS.indexOf(c));
+  let html = `<tr><th>Stick spin (rev/s) →</th>${cols.map(c => `<th colspan="1">${c}</th>`).join('')}</tr>`;
+  VARIANTS.forEach((v, vi) => {
+    html += `<tr><td><span class="swatch" style="display:inline-block;margin:0 6px 0 0;background:${v.color}"></span>${v.name}</td>` +
+      idx.map(i => { const p = score.rows[vi][i]; const bad = p.back >= 1;
+        return `<td class="${bad ? 'bad' : ''}" title="ring ${p.speed.toFixed(2)} rev/s, ${p.back.toFixed(1)} backward frames/s">${p.speed.toFixed(2)}${bad ? ' ↺' + Math.round(p.back) : ''}</td>`; }).join('') + '</tr>';
+  });
+  $('scoreTable').innerHTML = html + `<tr><td colspan="${cols.length + 1}" style="font-family:var(--body);color:var(--muted);text-align:left;white-space:normal">Each cell is the ring's net speed in rev/s; ↺ N marks N frames a second turning against the stick.</td></tr>`;
+}
+function buildLegend() {
+  $('legend').innerHTML = VARIANTS.map(v => `<span><i style="background:${v.color}"></i>${v.name}</span>`).join('') +
+    `<span><i style="background:${COL.dim}"></i>stick (ideal) / current spin</span>`;
+}
+
+// ------------------------------------------------------------------ your pick
+let picked = null;
+function updateChoice() {
+  scopes.forEach(sc => { const on = picked === sc.v.id; const b = sc.el.querySelector('.pick'); b.setAttribute('aria-pressed', on); b.classList.toggle('on', on); b.textContent = on ? 'Picked' : 'Pick'; });
+  if (!picked) { $('choiceText').textContent = 'Pick a scope with its “Pick” button, then copy and paste the text back to Claude.'; return; }
+  const v = VARIANTS.find(x => x.id === picked);
+  const params = Object.entries(v.p).map(([k, val]) => `${k}=${val}`).join(', ') || `ringTurnRate=${shared.rate}`;
+  $('choiceText').textContent = `Brittle Star ring spin lab: picked "${v.name}" (${params}); judged at ${sim.fps || 'display'} fps; Unity numbers ringTurnRate=${shared.rate}, aimDeadzone=${shared.dz}.`;
+}
+$('copyChoice').onclick = () => {
+  const text = $('choiceText').textContent;
+  const sel = () => { const r = document.createRange(); r.selectNodeContents($('choiceText')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  try { navigator.clipboard.writeText(text).then(() => { $('copyChoice').textContent = 'Copied'; setTimeout(() => $('copyChoice').textContent = 'Copy my pick', 1500); }, sel); } catch (_) { sel(); }
+};
+
+// ------------------------------------------------------------------ loop
+let last = performance.now(), acc = 0;
+function renderAll() {
+  scopes.forEach(drawScope);
+  const s = sim.stick, m = Math.hypot(s.x, s.y);
+  knob.style.left = (50 + s.x * 50) + '%'; knob.style.top = (50 - s.y * 50) + '%';
+  $('stickOut').textContent = `stick ${(Math.abs(sim.info ? sim.info.omega : 0) / 360).toFixed(2)} rev/s · |${m.toFixed(2)}|`;
+}
+function frame(now) {
+  const real = Math.min(0.1, (now - last) / 1000); last = now;
+  if (!sim.paused) {
+    if (!sim.fps) { simStep(real * sim.ts); renderAll(); }
+    else {
+      const dt = 1 / sim.fps; acc += real * sim.ts; let n = 0;
+      while (acc >= dt && n < 6) { acc -= dt; simStep(dt); n++; }
+      if (acc > dt * 6) acc = 0;
+      if (n) renderAll();
+    }
+  } else if (sim.stepOnce) { sim.stepOnce = false; simStep(1 / (sim.fps || 60)); renderAll(); }
+  requestAnimationFrame(frame);
+}
+function start() {
+  readColors(); buildLegend(); refreshRps(); recomputeScore();
+  // warm the scopes so the first still already shows the stutter
+  for (let i = 0; i < 90; i++) simStep(1 / 60);
+  renderAll();
+  requestAnimationFrame(t => { last = t; frame(t); });
+}
+addEventListener('resize', () => { drawScore(); renderAll(); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawScore(); });
+window.__lab = { VARIANTS, runHeadless, shared, sim, input, scopes, drawScope, smearGL };
+start();
+})();
+</script>

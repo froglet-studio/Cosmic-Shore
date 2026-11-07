@@ -183,6 +183,8 @@ FILES[_BOMB_DEBUFF_ASSET] = (
     so_asset("VesselElementalDebuffByExplosionEffectSO", "MantaBombDebuffByExplosionEffect",
              "  debuffMagnitude: %s\n" % _live_bomb_debuff_magnitude() +
              "  debuffDuration: 4\n"
+             # CHARGE scales the petals a bloom knocks loose (Garrett, 2026-11-07): x1 at rest, x2 at Charge 10.
+             "  magnitudeAtFullCharge: 2\n"
              "  cooldown: 1\n"
              "  elements:\n"
              "  - 2\n"
@@ -203,15 +205,13 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              # The 2026-11-07 overhaul (Garrett): skimming gathers ENERGY (one bomb's worth = 1), the bombs share
              # ONE fuse that every plant resets, a hull hit on a prism sets every bomb off and loses the energy,
              # the omni crystal sets them all off big, and a collected crystal leaves a decoy.
-             "  energyCapacity: 3\n"
+             "  energyCapacity: 1\n"
              "  energyPerSkim: 0.34\n"
              "  perPrismEnergyCooldown: 1.5\n"
              "  skimPrimesExplosive: 1\n"
              "  explosiveLift: 0.55\n"
              "  explosiveLiftFadeSeconds: 0.25\n"
              "  fuseSeconds: 20\n"
-             "  fuseScaleAtFullCharge: 1.5\n"
-             "  minFuseScaleMultiplier: 0.5\n"
              "  plantSpeedMargin: 0\n"
              "  aoePrefabs:\n"
              f"  - {{fileID: {AOE_EXPLOSION_COMPONENT_FILEID}, guid: {BLOOM_PREFAB_GUID}, type: 3}}\n"
@@ -339,8 +339,9 @@ MAP_BODY = """  vesselClass: 1
   - Element: 1
     AbilityLabel: Sting
     AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
-      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge lengthens
-      that fuse (MantaStingConfig.asset fuseScaleAtFullCharge, 1.5x at level 10, floored at 0.5x).
+      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge raises the
+      petals each bloom knocks out of a rival (MantaBombDebuffByExplosionEffect.asset
+      magnitudeAtFullCharge, 2x at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -374,10 +375,10 @@ MAP_BODY = """  vesselClass: 1
     UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
   - Element: 4
     AbilityLabel: Yastri
-    AbilityDescription: Time grows the trail's prism volume (VesselPrismController.trailVolume
-      on Manta.prefab, 1x to 2.5x) and raises the soaring speed (VesselTransformer.BoostSpeedMultiplier,
-      x1.3 at level 10). The turn itself is deliberately unscaled - Yastri's element shapes what
-      the turn LEAVES.
+    AbilityDescription: Hard flat turns on the turn pair. Time makes the Manta faster:
+      cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
+      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
+      Squirrel-style trail: no element grows it and turns do not flare it.
     Input: 12
     UnlockLevel: 5
     RelockBelowLevel: 4

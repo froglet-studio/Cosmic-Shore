@@ -17,8 +17,10 @@ namespace CosmicShore.Data
     }
 
     /// <summary>
-    /// The kind of work a pilot drums up at port for their faction type (VOYAGES.md §6.2). Factions themselves wait
-    /// (Garrett, 2026-10-28); the TYPE is what decides which work a pilot brings.
+    /// The kind of work a pilot drums up at port for their faction type (VOYAGES.md §6.2). The TYPE is what decides
+    /// which work a pilot brings; the faction itself (one of many of its type) is <see cref="FactionCatalog"/>'s.
+    /// 5 onward (2026-11-07) complete the VOYAGES.md §6.2 table so every pilot can name their faction's type; a type with
+    /// no job template brings no work yet (<see cref="FactionCatalog.Recruitable"/> lists the ones that do).
     /// </summary>
     public enum FactionType
     {
@@ -27,6 +29,18 @@ namespace CosmicShore.Data
         Hunter = 2,
         Aristocrat = 3,
         Pirate = 4,
+        BountyHunter = 5,
+        Explorer = 6,
+        Activist = 7,
+        Thief = 8,
+        Gatherer = 9,
+        Contractor = 10,
+        Sport = 11,
+        Researcher = 12,
+        Preservationist = 13,
+        FirstResponder = 14,
+        Priest = 15,
+        Diplomat = 16,
     }
 
     /// <summary>What a job asks the squad to do at its destination.</summary>

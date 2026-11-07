@@ -12,22 +12,23 @@ namespace CosmicShore.Gameplay
     /// (Sting is bound to no input event, so <c>CollectBoundActions</c> can never resolve it).
     ///
     /// Who owns what:
-    ///  • CHARGE (Sting) - the shared fuse's length (<see cref="FuseSecondsFor"/>); Contagion at level 5.
+    ///  • CHARGE (Sting) - how many petals each bloom knocks out of a rival (authored on
+    ///    MantaBombDebuffByExplosionEffect.asset, magnitudeAtFullCharge); Contagion at level 5. The fuse is fixed.
     ///  • SPACE - the skimmer's size (authored on Manta.prefab's Skimmer.Scale, 20 → 40) and the energy the skim
     ///    gathers; skimming an opposing domain's prism primes it EXPLOSIVE, and at level 5 the skim pops its shield
     ///    first. The space card shows the energy.
     ///  • MASS (Decoy) - a collected elemental crystal leaves a decoy behind, which lasts longer with Mass
     ///    (<see cref="DecoyLifetimeFor"/>); at level 5 the omni crystal leaves one too.
-    ///  • TIME - Yastri (the turn trail), with Soar unlocking at level 5 (not this asset).
+    ///  • TIME - Yastri (the turn) and the soaring speed, with Soar unlocking at level 5 (not this asset).
     /// </summary>
     [CreateAssetMenu(fileName = "MantaStingConfig",
         menuName = "ScriptableObjects/Vessel Actions/Manta Sting Config")]
     public class MantaStingConfigSO : ScriptableObject
     {
         [Header("Energy (SPACE card) - gathered by skimming, spent to plant")]
-        [Tooltip("Most energy the Manta can hold, in BOMBS (one bomb costs 1).")]
+        [Tooltip("Most energy the Manta can hold, in BOMBS (one bomb costs 1). 1 makes the loop skim, plant, skim, plant. Planted bombs have no cap.")]
         [FormerlySerializedAs("baseCapacity")]
-        [SerializeField, Min(1)] int energyCapacity = 3;
+        [SerializeField, Min(1)] int energyCapacity = 1;
 
         [Tooltip("Energy gained per unique prism/lifeform/vessel skim tick, in BOMBS. 0.34 is roughly one bomb per " +
                  "three skims. Space grows the skimmer, so a higher Space level reaches more prisms per pass.")]
@@ -51,19 +52,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float explosiveLiftFadeSeconds = 0.25f;
 
         [Header("Shared fuse (CHARGE card) - one timer for every bomb")]
-        [Tooltip("The shared fuse at the resting Charge level, seconds. Every new bomb resets it to the full length, " +
-                 "so every bomb on the board always goes off together. Bloomrush overrides this per intensity " +
-                 "through MantaBombRules.FuseSecondsOverride (the override is then Charge-scaled the same way).")]
+        [Tooltip("The shared fuse, seconds. Every new bomb resets it to the full length, so every bomb on the board " +
+                 "always goes off together. No element scales it (Charge scales the petals a bloom knocks loose). " +
+                 "Bloomrush overrides this per intensity through MantaBombRules.FuseSecondsOverride.")]
         [SerializeField, Min(1f)] float fuseSeconds = 20f;
-
-        [Tooltip("CHARGE → fuse length: multiplier on the fuse at Charge level 10 (1x at the resting level). A longer " +
-                 "fuse is more time to stack bombs before an omni crystal cashes them.")]
-        [FormerlySerializedAs("chargeRateAtFullCharge")]
-        [SerializeField, Min(1f)] float fuseScaleAtFullCharge = 1.5f;
-
-        [Tooltip("Floor for the Charge fuse multiplier, so a deficit never collapses the fuse.")]
-        [FormerlySerializedAs("minChargeRateMultiplier")]
-        [SerializeField, Range(0.05f, 1f)] float minFuseScaleMultiplier = 0.5f;
 
         [Header("Planting")]
         [Tooltip("How much FASTER than the target the Manta must be moving to plant on a VESSEL (u/s). 0 = any " +
@@ -244,12 +236,11 @@ namespace CosmicShore.Gameplay
             bombCount <= 1 ? 1f
                 : Mathf.Min(omniScaleMultiplierMax, 1f + omniScalePerExtraBomb * (bombCount - 1));
 
-        /// <summary>CHARGE → the shared fuse length for this vessel, seconds (mode override applied first).</summary>
+        /// <summary>The shared fuse length, seconds (the mode override applied first).</summary>
         public float FuseSecondsFor(IVesselStatus status)
         {
             float authored = MantaBombRules.FuseSecondsOverride ?? fuseSeconds;
-            return Mathf.Max(1f, authored * ElementalScaling.Multiplier(status, Element.Charge,
-                fuseScaleAtFullCharge, minFuseScaleMultiplier));
+            return Mathf.Max(1f, authored);
         }
 
         /// <summary>MASS → how long one of this vessel's decoys waits to be taken, seconds.</summary>

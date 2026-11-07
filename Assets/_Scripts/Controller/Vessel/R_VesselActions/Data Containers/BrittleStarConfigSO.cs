@@ -103,8 +103,35 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 60f)] float armSplayDegrees = 25f;
         [Tooltip("Right-stick deflection below this aims nowhere: the ring holds its rotation.")]
         [SerializeField, Range(0f, 0.9f)] float aimDeadzone = 0.25f;
-        [Tooltip("Degrees per second the support ring turns to bring the aimed turret round (the 'firing rotation').")]
-        [SerializeField, Min(0f)] float ringTurnRate = 540f;
+        [Tooltip("Degrees per second the support ring turns to bring the aimed turret round (the 'firing rotation'). " +
+                 "A stick spun faster than this turns the ring flat out, forward (BrittleStarRules.ForwardTurn). 1080 " +
+                 "since 2026-11-03 (the ring spin lab's pick, with the motion smear below).")]
+        [SerializeField, Min(0f)] float ringTurnRate = 1080f;
+
+        [Header("Ring spin: a spinning stick (Garrett, 2026-11-03, Docs/Studios/BrittleStarRingLab.html)")]
+        [Tooltip("The stick counts as SWEEPING above this many degrees per second: the ring then hands over only to " +
+                 "the turret ahead and never turns back against the sweep (the wagon-wheel fix).")]
+        [SerializeField, Min(0f)] float aimSweepThreshold = 90f;
+        [Tooltip("Seconds the stick's sweep rate is eased over (an exponential), so one noisy frame is not a sweep.")]
+        [SerializeField, Min(0f)] float aimSweepSmoothing = 0.06f;
+        [Tooltip("A stick angle that jumps more than this in one frame is a FLICK to a new aim, not a sweep: the ring " +
+                 "takes the nearest turret, as it always has.")]
+        [SerializeField, Range(45f, 180f)] float aimFlickDegrees = 120f;
+
+        [Header("Ring motion smear (normalized: it adds no brightness)")]
+        [Tooltip("How much of the angle the ring turned this frame it is smeared over (1 = the whole frame, a box " +
+                 "shutter). The copies are AVERAGED, weights summing to one, so a smeared ring spreads its light and " +
+                 "never brightens. 0 = off. Drawn by BrittleStarRingSmearPass.")]
+        [SerializeField, Range(0f, 1.5f)] float ringSmear = 1f;
+        [Tooltip("The ring must turn more than this many degrees in a frame to smear; slower, it is drawn as it stands.")]
+        [SerializeField, Min(0f)] float ringSmearMinDegrees = 1.5f;
+        [Tooltip("One copy per this many degrees of the smeared arc (at least 2).")]
+        [SerializeField, Min(0.1f)] float ringSmearStepDegrees = 2.5f;
+        [Tooltip("The most copies one smear averages (each is one texture read per pixel of the ring).")]
+        [SerializeField, Range(2, 32)] int ringSmearMaxCopies = 24;
+        [Tooltip("BrittleStarRingSmear.shader: averages the ring's copies over the swept arc. Empty = no smear (the " +
+                 "ring is drawn as it stands).")]
+        [SerializeField] Shader ringSmearShader;
 
         [Header("Heat (Garrett, 2026-10-16: 'shooting should over heat')")]
         [Tooltip("Heat each round adds (1 = the guns' heat at Space 0), so heat per second = rounds/s x guns x this. " +
@@ -343,6 +370,14 @@ namespace CosmicShore.Gameplay
         public float ArmSplayDegrees => armSplayDegrees;
         public float AimDeadzone => aimDeadzone;
         public float RingTurnRate => ringTurnRate;
+        public float AimSweepThreshold => aimSweepThreshold;
+        public float AimSweepSmoothing => aimSweepSmoothing;
+        public float AimFlickDegrees => aimFlickDegrees;
+        public float RingSmear => ringSmear;
+        public float RingSmearMinDegrees => ringSmearMinDegrees;
+        public float RingSmearStepDegrees => ringSmearStepDegrees;
+        public int RingSmearMaxCopies => ringSmearMaxCopies;
+        public Shader RingSmearShader => ringSmearShader;
         public float HeatPerRound => heatPerRound;
         public ElementalFloat HeatCapacity => heatCapacity;
         public float CoolRate => coolRate;
