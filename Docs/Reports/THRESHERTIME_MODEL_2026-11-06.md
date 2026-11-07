@@ -110,22 +110,49 @@ The promotion race (the job's `promote` rule: 12 FRESH courses per intensity, se
 Pass-2 B is the proposal: it finishes every fresh course at every intensity and is within a few percent of pass-1 C,
 its twin from the other pass.
 
+### Pass 3 (asked by the plan thread: two fresh restarts at 2.5x the evals, and the best run continued)
+
+| Run | Evals | Loss | Last gain | I1 | I2 | I3 | I4 (training courses) |
+|---|---|---|---|---|---|---|---|
+| B, continued from pass 2 | 2,403 | 2.873 | eval 864 | 94 s | 95 s | 100 s | 101 s |
+| E, fresh | 1,503 | **2.847** | eval 972 | 104 s | 90 s | 99 s | 85 s |
+| D, fresh | 1,503 | 5.015 | gains under 0.01% after eval 1,242 | 181 s | 147 s | 149 s | 167 s |
+
+B: turn 108.3°, distance 4.9, interval 0.42 s, cone 6.8°, max plant 1.2 s, hold 0.03 s, tolerance 29.4°.
+E: turn 110.5°, distance 11.3, interval 0.22 s, cone 9.0°, max plant 4.3 s, hold 0.04 s, tolerance 3.8°.
+
+B and E are 0.9% apart and neither gained anything in its last 20% of evals (B none after 864 of 2,403, E none after
+972 of 1,503). D, like pass-1 B and pass-2 C, settled in the slow basin (long sling intervals, few launches). So
+three of six restarts find the fast "plant beside the nest" basin and agree, and three stop in a slower one.
+
+On 12 fresh courses per intensity (seeds 1001-1012), every finisher finishes 48 of 48:
+
+| Genome | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Pass-3 E (the proposal: lowest loss) | 109 s | 102 s | 94 s | 103 s |
+| Pass-3 B | 105 s | 100 s | 102 s | 104 s |
+| Pass-2 B | 109 s | 104 s | 101 s | 103 s |
+
+On fresh courses the fast-basin genomes are level within a few percent. E is the proposal for its lower loss and
+because its aim tolerance (3.8°) stays near the shipped 3°; B is its twin.
+
 ## 5. Is the Thresher's Time AI "well trained"?
 
 | Test (the project's definition) | Result |
 |---|---|
-| Restarts within 2%, no improvement in the last 20% of evaluations | **No.** Two of four restarts agree within 0.1% (3.000, 3.004); the other two land in a slower basin (4.66, 4.95); the best was still improving in its last 20%. |
+| Restarts within 2%, no improvement in the last 20% of evaluations | **Yes for the best basin, in the model.** After pass 3, the two best runs agree within 0.9% (2.847, 2.873) and neither improved in its last 20%. Three of six restarts stop in a slower basin (4.66-5.02), so a single restart is not enough. |
 | Beats every genome on the composite | Yes in the model: the shipped and base genomes finish no nest race. |
-| Within 15% of the best human time | Cannot be judged: no person has finished a nest race. Against the ring-era times (Garrett I1 64.6 s, I2 106.1 s; Shombith I4 120.1 s) the model's pass-2 B runs 109 / 104 / 103 s at I1 / I2 / I4: 69% slower than Garrett at I1, level with him at I2, faster than Shombith at I4. Different courses, a different gate, and a model that runs slow. |
+| Within 15% of the best human time | **Cannot be judged**: no person has finished a nest race. Against the ring-era times (Garrett I1 64.6 s, I2 106.1 s; Shombith I4 120.1 s) the model's pass-3 E runs 109 / 102 / 103 s at I1 / I2 / I4: 69% slower than Garrett at I1, level with him at I2, faster than Shombith at I4. Different courses, a different gate, and a model that runs slow. |
 | No missed rings in the real game | **Not run**: needs the Unity editor (`ThresherTimeSoakRunner` at I1-I4 on the nests). |
 
-**Verdict: not yet well trained.** The model shows the shipped genome cannot clear nests and that a "plant beside the
-nest" genome can, but the real-game soak is the test that counts.
+**Verdict: two of four parts pass, in the model only** (restarts converge; it beats every genome). The human mark
+does not exist for nests, and the editor soak has not run. So the Thresher's Time AI is **not yet well trained**: the
+real-game soak with pass-3 E is the test that counts.
 
 ## 6. What is unverified, and what to do next
 
 1. **The editor soak on the nests** (the one that decides): `ThresherTimeSoakRunner` with the shipped genome and the
-   pass-2 winner, I1-I4, two seeds each. Needs Unity; it goes on Garrett's editor-check list.
+   pass-3 winner (E), I1-I4, two seeds each. Needs Unity; it goes on Garrett's editor-check list.
 2. **Promotion** only after that soak, through `learn_drives_from_flights.py`'s writer, by Yash. Nothing is written
    to `ThresherAIBoostPolicy_ThresherTime` here.
 3. **Proposals for Yash** (code, not numbers; the model suggests them, the editor must confirm):
