@@ -181,7 +181,9 @@ hypersea ecology regions that are represented in the sea" and "the cellular leve
   faces). From 200 px a cell tags its three levels; the Heart's read "Nucleus · Sgr A*, the Heart [A]" and "Membrane ·
   the circumnuclear disk [A]".
 - **Both views**: the chart is a plane section at one height (octagons and squares on a nucleus layer, diamonds between
-  layers); the side view is a true-scale cut upright through the middle of the chart at every zoom, and shows the course
+  layers); the side view is a true-scale cut upright along the chart's bottom edge at every zoom (Garrett, 2026-11-07:
+  "the bottom edge of the plane [is] the slice for the thickness so they always have a nice lock up"; a Lime line marks
+  the edge), and shows the course
   profile only while sailing (`lanes.js` draws the cut cells on it). A **green slice bar** in the side view is dragged
   (pointer-relative, the panel's centre frozen during the drag, one redraw a frame), scrolled (2 ly a notch) or stepped
   (Slice ▲▼ 5 ly, Reset) and moves the chart's slice; the slice snaps to the nearest nucleus layer when it is reset.

@@ -161,7 +161,7 @@ rep("""  // the Ark
 rep("""  document.getElementById("sidecap").innerHTML = `Side view, true scale <span>disk 1,000 ly · 50 cells · 50 min · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}</span>`;""",
     """  const xs = path ? xings(path) : [], minGap = xs.length ? Math.min(...xs.map(x => x.gap)) : 0;
   const laneCap = path ? ` · course on the ${path.lane.short} lane, ${xs.length} crossing${xs.length === 1 ? "" : "s"}${xs.length ? `, closest ${dist(minGap)} apart in depth` : ""}` : "";
-  document.getElementById("sidecap").innerHTML = CELLS.cellZoom() ? `Side view, true scale <span>the cells cut upright through the middle of the chart · drag the green bar, or scroll here, to slice the chart at another height · ${CELLS.sliceText()}</span>` : `Side view, true scale <span>cut upright through the middle of the chart · disk 1,000 ly · 50 cells · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}${laneCap}</span>`;""")
+  document.getElementById("sidecap").innerHTML = CELLS.cellZoom() ? `Side view, true scale <span>the cells cut upright along the chart's bottom edge · drag the green bar, or scroll here, to slice the chart at another height · ${CELLS.sliceText()}</span>` : `Side view, true scale <span>cut upright along the chart's bottom edge · disk 1,000 ly · 50 cells · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}${laneCap}</span>`;""")
 rep("""        <li><b>Crew's eye</b> switches distances""", """        <li><b>Courses keep to lanes by heading.</b> Every course cruises at a height set by which way it heads: toward the centre, with the spin, out to the rim or against it. Courses that cross on the chart pass at different depths. With a voyage chosen, the side view is that voyage's profile: distance along the course across, height up, the sea sliced along the course, the eight lanes as dotted levels, and every lane it crosses marked at its own height with the depth between them.</li>
         <li><b>Crew's eye</b> switches distances""")
 rep("""        <li>Places near Tumult are invented""", """        <li>Lanes: eight headings, 40 ly apart, from 140 ly below the midplane to 140 ly above; a course climbs to its lane in its first 30% and down in its last 30%, never more than one layer of cells per cell, so the climb costs no time <span class="t">[A] proposed</span></li>
@@ -175,11 +175,13 @@ rep("""  c.fillStyle = "#050912"; c.fillRect(0, 0, W, SH);
   const pp = S.sailing ? S.sailing.path : null;   // the profile only while under way; otherwise the side view is the chart's own cut
   if (pp) { drawProfile(c, pp); return; }
   const f = sideFrame();""")
+rep("function sideFrame() {", "const cutY = () => view.cy + H / (2 * scale());   // the world y along the chart's bottom edge\nfunction sideFrame() {")
 rep("""  const fits = (2 * DISK_HALF + 120) * s <= SH - 24;
   return { s, zc: fits ? 0 : az, sliceY: ay };""", """  const fits = (2 * DISK_HALF + 120) * s <= SH - 24;
-  // at cell zoom the side view cuts through the middle of the chart and keeps the slice bar in its window
-  if (CELLS.cellZoom()) { const dzc = CELLS.dragZc(); if (dzc !== null) return { s, zc: dzc, sliceY: view.cy }; const zs = CELLS.sliceZ(), half = (SH / 2 - 30) / s; return { s, zc: Math.max(zs - half, Math.min(zs + half, CELLS.baseZ())), sliceY: view.cy }; }
-  return { s, zc: fits ? 0 : az, sliceY: view.cy };   // cut through the middle of the chart, like the cell view""")
+  // the side view cuts the sea along the chart's bottom edge, where the two panels meet, so they lock up;
+  // at cell zoom it keeps the slice bar in its window
+  if (CELLS.cellZoom()) { const dzc = CELLS.dragZc(); if (dzc !== null) return { s, zc: dzc, sliceY: cutY() }; const zs = CELLS.sliceZ(), half = (SH / 2 - 30) / s; return { s, zc: Math.max(zs - half, Math.min(zs + half, CELLS.baseZ())), sliceY: cutY() }; }
+  return { s, zc: fits ? 0 : az, sliceY: cutY() };   // cut along the chart's bottom edge, like the cell view""")
 rep("""  if (!sideView || Math.abs(sideView.zc - f.zc) * f.s > 6 && !anim && !dragging) renderSide(S.sailing ? 6 : 3);""",
     """  if (!sideView || (Math.abs(sideView.zc - f.zc) * f.s > 6 || Math.abs(sideView.sliceY - f.sliceY) * f.s > 6) && !anim && !dragging) renderSide(S.sailing ? 6 : 3);""")
 # dragging the slice bar in the side view
@@ -250,7 +252,7 @@ rep("""    const [wx, wy] = toWorld(x, y), [q, r] = hexOf(wx, wy), n = cellN(q, 
     html = `<span class="k">This cell:</span> ${seaName(n)}, ${n < 10 ? n.toFixed(2) : fmt(n)} g/cm³ to your crew <span class="k">(${feelsLike(n)})</span><br>${CELLS.regionHTML(wx, wy, zs, n)}`;""")
 rep("""          <div class="ramp"><i style="background:var(--spray)"></i>""", """          <div class="kt">Ecology regions · how the sea feels</div>
           <div class="ramp"><i style="background:var(--spray)"></i>""")
-rep("""        <li><b>Crew's eye</b> switches distances""", """        <li><b>Cells are truncated octahedra, packed in three dimensions.</b> Each cell grows round its nucleus, the nuclei sit on a body-centred cubic lattice, and each cell is the space nearer its own nucleus than any other: 6 square faces and 8 hexagons, the foam cell that spends the least membrane for its volume (Kelvin's). Zoom to cells and the chart is a slice through them at one height: octagons and squares where it cuts a layer, diamonds between layers. The side view shows the same cells upright, cut through the middle of the chart, with the chart's slice as a green bar: drag the bar (or scroll over the side view, or Slice ▲ ▼) and the chart slices the cells at another height. The central cell's nucleus is Sgr A*.</li>
+rep("""        <li><b>Crew's eye</b> switches distances""", """        <li><b>Cells are truncated octahedra, packed in three dimensions.</b> Each cell grows round its nucleus, the nuclei sit on a body-centred cubic lattice, and each cell is the space nearer its own nucleus than any other: 6 square faces and 8 hexagons, the foam cell that spends the least membrane for its volume (Kelvin's). Zoom to cells and the chart is a slice through them at one height: octagons and squares where it cuts a layer, diamonds between layers. The side view shows the same cells upright, cut along the chart's bottom edge (the line where the two panels meet), with the chart's slice as a green bar: drag the bar (or scroll over the side view, or Slice ▲ ▼) and the chart slices the cells at another height. The central cell's nucleus is Sgr A*.</li>
         <li><b>Zoom into one cell to see its levels:</b> the membrane (its 14 faces), the cytoplasm (where flora and fauna live, brighter toward the nucleus) and the nucleus (6.5 ly across, where omni regrows). A nucleus the slice misses shows dashed, with its height.</li>
         <li><b>Ecology regions are drawn in the sea.</b> Pale lines mark where hot bubbles (spray), the warm medium (froth), open water, cold clouds (thick water) and molecular clouds (reefs) meet; the big bubbles and clouds are named, and the centre's rings (the central cell, the circumnuclear reef ring, the Central Molecular Zone) are outlined. Hover anywhere for its region.</li>
         <li><b>Crew's eye</b> switches distances""")
@@ -277,7 +279,7 @@ rep("""  siCtx.putImageData(img, 0, 0);
   }
   siCtx.putImageData(img, 0, 0);
   sideView = { ...view, W, ...f };""")
-rep('<canvas id="sv" aria-label="Side view of the disk at true scale, sliced through the Ark"></canvas>', '<canvas id="sv" aria-label="Side view of the disk at true scale, cut through the middle of the chart"></canvas>')
+rep('<canvas id="sv" aria-label="Side view of the disk at true scale, sliced through the Ark"></canvas>', "<canvas id=\"sv\" aria-label=\"Side view of the disk at true scale, cut along the chart's bottom edge\"></canvas>")
 rep("""let hits = [];
 function draw(now) {""", """let hits = [], sliceDrag = false;
 function draw(now) {""")
