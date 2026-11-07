@@ -124,6 +124,9 @@ ARENA_HALF = 3.0
 HULL = 0.5
 FIXED = 0.04
 # SkeinController / MinigameSkein.unity's GateRaceController
+# A what-if, not the game: False zeroes AIPilot's roll stick (YDiff = XSum) while the nose lead steers free flight,
+# the decoupling the lead needs (see THE AI NOSE LEAD above). True (default) is AIPilot as it ships.
+LEAD_ROLL_WHATIF = True
 RAIL_LEAD = 260.0                 # SkeinController.aiRailLeadDistance (passed to TryRideToward over the config's)
 COMMIT, APPROACH_LEAD, THROUGH = 260.0, 300.0, 200.0
 LEAD_SHARE_OF_LEG = 0.4
@@ -682,7 +685,8 @@ def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True
             xs, ys = P.stick(q, want, dsq, judged=unit(q_rot(cmd, FWD)))
         else:
             xs, ys = P.stick(q, desired, dsq)
-        yd = xs
+        # AIPilot's roll rule (YDiff = XSum); LEAD_ROLL_WHATIF False zeroes it while the lead steers free flight
+        yd = 0.0 if (not LEAD_ROLL_WHATIF and g_lead > 0.0 and att is None) else xs
         throttle = max(-1.0, min(1.0, (xdiff - REST) / max(0.01, max(REST, 1 - REST))))   # ReadThrottle
 
         # ── attitude: Roll / Yaw / Pitch onto the command, the nose follows at the fleet lag ──
