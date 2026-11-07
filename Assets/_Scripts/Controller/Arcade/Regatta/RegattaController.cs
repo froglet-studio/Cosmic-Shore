@@ -319,6 +319,32 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>This hull's Regatta race line style (cached), or null: the hull flies the gate way.</summary>
+        RaceLineStyleSO LineStyleFor(VesselClassType hull)
+        {
+            if (!_lineStyles.TryGetValue(hull, out var style))
+            {
+                style = RaceLineStyleSO.Load(hull, GameModes.Regatta);
+                _lineStyles[hull] = style;
+            }
+            return style;
+        }
+
+        /// <summary>
+        /// Each AI racer flies its hull's nose lead (<see cref="RaceLineStyleSO.NoseLeadGain"/>,
+        /// <see cref="AIPilot.NoseLeadGain"/>), 0 (off) for a hull with no style or a style that leaves it at 0. Set on
+        /// every arming, so a pilot never carries another mode's value into this race.
+        /// </summary>
+        protected override void OnRacerArmed(IPlayer pilot)
+        {
+            // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (GateRaceController.HeldByAutopilot).
+            if (pilot?.Vessel?.VesselStatus is not Component status || !status ||
+                !status.TryGetComponent(out AIPilot autopilot)) return;
+            var style = LineStyleFor(pilot.Vessel.VesselStatus.VesselType);
+            autopilot.NoseLeadGain = style ? style.NoseLeadGain : 0f;
+            autopilot.NoseLeadMaxExtraDegrees = style ? style.NoseLeadMaxExtraDegrees : AIPilot.DefaultNoseLeadMaxExtraDegrees;
+        }
+
         /// <summary>
         /// Every hull but the Urchin (which rides its own lane) and the Squirrel (its own pilot) races its OWN line: the
         /// gap between the two rails that are not its domain's, at the hull's distance from the braid
@@ -334,11 +360,7 @@ namespace CosmicShore.Gameplay
             var status = pilot?.Vessel?.VesselStatus;
             if (status == null || status.VesselType == VesselClassType.Urchin || status.IsAttached) return false;
 
-            if (!_lineStyles.TryGetValue(status.VesselType, out var style))
-            {
-                style = RaceLineStyleSO.Load(status.VesselType, GameModes.Regatta);
-                _lineStyles[status.VesselType] = style;
-            }
+            var style = LineStyleFor(status.VesselType);
             if (!style) return false;
 
             ulong seat = pilot.PlayerNetId;

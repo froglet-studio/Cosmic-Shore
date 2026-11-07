@@ -40,6 +40,15 @@ namespace CosmicShore.Gameplay
         [Min(1f)] public float MinLookahead = 60f;
         [Min(1f)] public float MaxLookahead = 520f;
 
+        [Header("Nose lead (off at 0)")]
+        [Tooltip("The AI's nose lead (AIPilot.NoseLeadGain), stated at the fleet nose lag (1.5/s): 0 = off, the pilot judges " +
+                 "its steering from the nose as every hull did before 2026-11-06. Above 1, the command is placed past the " +
+                 "aim so the lagging nose closes on it this many times faster instead of overshooting. Offline the Scarab " +
+                 "at Time 10 misses almost no mouth at 2-2.5 (Tools/Build/scarab_nose_lead_sim.py). Not yet raced in the game.")]
+        [Range(0f, 6f)] public float NoseLeadGain = 0f;
+        [Tooltip("How far past the aim the nose lead may place the command, degrees (AIPilot.NoseLeadMaxExtraDegrees).")]
+        [Range(0f, 120f)] public float NoseLeadMaxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees;
+
         /// <summary>This hull's style in this mode, or null (the mode's shipped steering then applies).</summary>
         public static RaceLineStyleSO Load(VesselClassType hull, GameModes mode) =>
             Resources.Load<RaceLineStyleSO>($"{ResourceFolder}/{hull}_{mode}");
