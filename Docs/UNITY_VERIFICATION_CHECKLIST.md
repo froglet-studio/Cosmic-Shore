@@ -21466,6 +21466,18 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh
+--self-test`) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/THORNLINE.md` §7:
+
+1. Open `MinigameThornline` once and save it (a text clone); then `python3 Tools/Build/author_thornline_assets.py --check`.
+2. Run the EditMode tests `ThornlineCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: 17 thorns stand where the rings' lines meet; sling start thorn -> thorn 1 -> ...; every ring counts.
+4. The 32 u thorns at I4 can be hit with the eyepiece from ~1,000 u.
+5. I2: a rim shot takes the Time crystal and the sling is ready on docking.
+6. I3: a snipe threads both rings and counts both.
+7. Two AI Shrikes sling thorn to thorn and finish (note the aim error if they crawl).
 ## 🔴 Headlong: the stampede, hedges the Rhino ploughs through (2026-11-07, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tools/Build/headlong_course_harness/run.sh
