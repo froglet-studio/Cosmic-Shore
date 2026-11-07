@@ -398,6 +398,9 @@ minute in both), which is why the model is trusted to rank the fix; the editor i
 - **Rail rams:** 90-94% of the time the Dolphin, Sparrow, Squirrel and Urchin spent under 20 u/s mid-race they were
   within 15 u of a rail prism. Most of those races predate the line (2026-10-17), which exists to keep hulls off the
   rails; re-measure with races flown after this change.
+  **Re-measured 2026-11-07 for the Sparrow** (`Tools/Build/sparrow_regatta_sim.py --measure`, 5 races since the line):
+  within 15 u of a rail 0-3% of a race (26-48% before), rams costing 0.4-7 s; its slowness is its base drive letting go
+  of the afterburner every 0.6 s (cruise 35, afterburner 197.5 u/s). `Docs/Reports/SPARROW_AI.md`.
 
 Tests: `RegattaRaceLineTests` (`AimThroughRing_*`, `DistanceAlong_*`). The break-off flag is held by the model's
 self-test, not a Unity test (`AIPilot` needs a live vessel). Not editor-verified (`UNITY_VERIFICATION_CHECKLIST.md`).
