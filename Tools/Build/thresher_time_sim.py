@@ -31,6 +31,42 @@ What it ports, and from where:
                   up, how fast an aimed launch leaves and how its physics speed falls with the ball's tug), the
                   exit buff (launchExitSpeedMultiplier x2 easing to x1 over launchExitSeconds 8 s, travel only)
 
+THE AI NOSE LEAD (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the one shared piece) is race()'s
+`nose_lead` knob: None (OFF, today's steering, so every number here and every caller is as it was), a gain, a {"gain",
+"max_extra_deg"} dict or a NoseLead. With a gain the pilot judges its stick error from the COMMAND's forward and wants
+the NOSE turned toward the aim by the effective gain times its error, past the aim when that gain is over 1 (at most
+max_extra_deg past it, never past 170 deg: ai_nose_lead.slerp_beyond = AIPilot.NoseLeadDirection); the cross product
+still lands in the nose's frame and the stick still turns the command about the nose's axes (manta_redline_sim.stick's
+judged=). The effective gain is AIPilot.EffectiveNoseLeadGain computed ONCE a race from THIS race's nose rate (LERP
+1.5/s, the fleet lag Thresher Time leaves, or `nose_rate`): max(1, gain x 1.5 / rate), and 0 on a nose with no lag
+(nose_rate 0, or a rate that closes the gap in one step), so a lag-free race is the same race with the lead on or off.
+The lead runs only where the stick does, the towing branch (the orbit break-off's escape steer included, and the run
+after a launch, where the stick still flies the nose): never while planted, winding, armed or orbiting, where no stick
+is computed and the aimed launch steers the orbit plane. Thresher Time sets no NoseLeadGain; `--nose-lead G[,EXTRA]`
+prints the lead-on rows under today's.
+MEASURED 2026-11-07 (`--nose-lead 2.5`; the self-test's last checks pin it): the lead cuts both ways on the Thresher.
+With the SLING on the rings (the mouths the 2026-11-02 soak raced) it is what today's pilot is missing: after a launch
+(2288 u/s with the exit buff) the hull, judged from its lagging nose, turns in late and passes 58-72 u from the ring's
+centre (the mouth is 96-46 u, I1-I4), so today's shipped genome finishes 3 of the 16 rings courses at I1-I4 (135
+launches a race, one every 4.4 s); the 2.5 lead passes 42-55 u and finishes 15 of 16 (I1 118-149 s, I2 178-196 s,
+I3 157-303 s, I4 148-417 s), and judging from the command WITHOUT the pull (gain 1, the same race as 2.5 with
+max_extra_deg 0) finishes 5, so the pull past the aim is what does it; a nose with no lag at all turns in too hard
+toward the approach point and passes 100-130 u wide (it finishes 2). On I1 course 3 the lag-free nose finishes (330.8
+s) where today's does not (3 of 16), so that DNF is the lag's, and the lead finishes it in 126.7 s with 15 missed
+mouths against today's 80; the soak's own courses (`--soak`) go from 1 of 4 finished to 4 of 4. Read the aggregates,
+never one race: the model is chaotic (a 1e-16 change in the wanted direction turns a 600 s DNF into a 74 s finish),
+so a probe of gains 2.3-2.7 x caps 35-45 deg on six of these courses is the measurement (89 of 90 finished; gains
+0.99-1.01 18 of 54). With the nests nothing finishes either way (each launch still passes 43-58 u from a core at
+most ~20 u across, today 61-64 u: THRESHERTIME_MODEL section 3). In CRUISE (no sling) the lead corkscrews the hull away
+as it does the Manta's: the roll stick is the yaw stick and turns the command about the nose's forward, so a command
+the lead places 40-90 deg from the nose is whirled round it and the nose chases it off the course with the stick
+pinned. On the rings at I1 today's cruise finishes every course (174-202 s, no missed mouth) and the 2.5 lead finishes
+one of the four (course 1: 4 of 16, the hull turns away at gate 4 and never comes back; a diagnostic copy with the roll
+stick zeroed finishes it with the lead on, 219.6 s); with the nests at I3-I4, where today's lagged cruise DNFs on every
+course and a lag-free nose finishes 7 of the 8 (I4 course 1: 8 of 16 gates against 386.6 s), the 2.5 lead passes 1-2
+gates. The sling masks the corkscrew: a hull turned 70 deg off its objective plants, and the launch snaps nose and
+command together. That is AIPilot's roll rule to change, not this model's: the port stays as the game is.
+
 NOT modelled (LIMITS): rivals, their nests and trails (a rival can open your nest, or follow you through yours); the
 cage's plates (a hull or ball is taken to pass through them, so I2-I4 cost no speed, no danger-plate hit, no shield
 bounce for a Blue pilot whose nests are its own colour); the crystal in every 3rd nest (the Time element's spin-up),
@@ -42,6 +78,9 @@ handicap (GateRaceHandicap); frame hitches. Taken as rigid: the ball trails the 
     python3 Tools/Build/thresher_time_sim.py --rings              # the same, the rings instead of the nests
     python3 Tools/Build/thresher_time_sim.py --soak               # the 2026-11-02 soak's courses (seeds 7001, 7002)
     python3 Tools/Build/thresher_time_sim.py --trace 4 1          # one race (intensity, course seed), a line a second
+    python3 Tools/Build/thresher_time_sim.py --nose-lead 2.5      # the same rows with the AI nose lead on, under today's
+                                                                  # (a gain, or gain,max_extra_deg; --rings, --soak,
+                                                                  # --fresh and --trace take it too)
     python3 Tools/Build/thresher_time_sim.py --fresh 6 --params B.json   # genomes on 6 fresh courses an intensity
     python3 Tools/Build/thresher_time_sim.py --probe              # re-run the solver probe (needs .NET 8)
     python3 Tools/Build/thresher_time_sim.py --self-test
@@ -59,6 +98,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
 sys.path.insert(0, HERE)
 
 import manta_redline_sim as M   # noqa: E402  (AIPilot's stick, break-off and the quaternion helpers)
+from ai_nose_lead import NoseLead, slerp_beyond   # noqa: E402  (the AI nose lead, AIPilot.NoseLeadGain, one shared piece)
 
 add, sub, mul, dot, cross, norm, unit, angle = M.add, M.sub, M.mul, M.dot, M.cross, M.norm, M.unit, M.angle
 FWD, UP, RIGHT = M.FWD, M.UP, M.RIGHT
@@ -405,12 +445,17 @@ def lay_aim_towards(aim_up, to_target, max_rad):
 # ── one race ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
 def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt=1 / 60, laps=None, trace=None, trace_step=1.0,
-         breakable=True):
+         breakable=True, nose_rate=None, nose_lead=None):
     """One AI Thresher flies the race on `course` ({gates: [{p, a, r}]}) with the sling genome `genome` (a dict of
     GENOME_FIELDS; None = the shipped Thresher Time asset). `sling=False` is the cruise-only control (a seat the
     policy does not drive). Returns {time (None = not finished), gates, of, plants, launches, launch_speed (median,
     with the exit buff, as the soak's Speed reads), launch_off (median degrees off the next ring), nest_breaks,
-    misses (a pass by an unbroken nest, or a mouth missed), top}."""
+    misses (a pass by an unbroken nest, or a mouth missed), top}.
+    `nose_rate` is VesselTransformer.AINoseFollowPerSecond, the rate a mode may set for an AI's nose: None = unset (the
+    fleet lag, LERP 1.5/s, which Thresher Time leaves), 0 = no lag (the nose IS the command), > 0 = that rate per second,
+    applied as Mathf.Min(1, rate x dt). `nose_lead` is AIPilot.NoseLeadGain (ai_nose_lead.NoseLead.from_config: None =
+    off, a gain, {"gain", "max_extra_deg"} or a NoseLead), stated at the fleet lag and scaled to this race's nose rate
+    once (AIPilot.EffectiveNoseLeadGain); 0 with no nose lag. Off by default: today's race."""
     g = dict(read_genome(POLICY) if genome is None else genome)
     sh = SHIPPED
     gates = [(tuple(x["p"]), unit(tuple(x["a"])), float(x["r"])) for x in course["gates"]]
@@ -427,6 +472,14 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
     throttle = THROTTLE_LOW + (THROTTLE_HIGH - THROTTLE_LOW) * skill
     creep = CREEP_LOW + (CREEP_HIGH - CREEP_LOW) * skill
     turn_rate = min(sh["pitch"], sh["yaw"])   # RotationThrottleScaler 0: flat
+    # the AI nose: the fleet lag (LERP) unless the mode set a rate, closed by Mathf.Min(1, rate x dt) a frame; and the
+    # nose lead's effective gain ONCE a race from THIS race's nose rate (AIPilot.EffectiveNoseLeadGain: max(1, gain x 1.5
+    # / rate)), 0 when the nose has no lag (nose_rate 0, or a rate that closes the whole gap in one step)
+    follow = LERP if nose_rate is None or nose_rate < 0 else float(nose_rate)
+    follow_step = min(1.0, follow * dt) if follow > 0 else 1.0
+    lead_knob = NoseLead.from_config(nose_lead)
+    g_lead = lead_knob.effective(follow) if follow_step < 1.0 else 0.0
+    lead_extra = lead_knob.max_extra_deg
 
     p0, a0, _ = gates[0]
     pos = sub(p0, mul(a0, START_BACK))
@@ -575,7 +628,17 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
                 steer = target
             dist = sub(steer, pos)
             dsq = dot(dist, dist)
-            xs, ys = M.stick(q, unit(dist), dsq) if dsq > 1e-12 else (0.0, 0.0)
+            if dsq <= 1e-12:
+                xs, ys = 0.0, 0.0
+            elif g_lead > 0.0:
+                # the nose lead (AIPilot.TryNoseLead): want the NOSE turned toward the aim by g_lead times its error, past
+                # it (NoseLeadDirection = slerp_beyond), and judge the error from the COMMAND's forward; the cross product
+                # still lands in the nose's frame, the command update below still turns about the nose's axes, and the
+                # break-off's escape steer takes the lead like any aim. Never here while planted (no stick runs there).
+                want = tuple(slerp_beyond(heading, unit(dist), g_lead, lead_extra))
+                xs, ys = M.stick(q, want, dsq, judged=unit(M.q_rot(cmd, FWD)))
+            else:
+                xs, ys = M.stick(q, unit(dist), dsq)
             thr = max(0.0, min(1.0, throttle))
             throttle += creep * dt
 
@@ -600,7 +663,7 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
                 cmd = M.q_mul(M.q_axis(xs * sh["roll"] * dt, M.q_rot(q, FWD)), cmd)
                 cmd = M.q_mul(M.q_axis(xs * sh["yaw"] * dt, nose_up), cmd)
                 cmd = M.q_mul(M.q_axis(ys * sh["pitch"] * dt, M.q_rot(q, RIGHT)), cmd)
-                q = M.q_slerp(q, cmd, LERP * dt)
+                q = M.q_slerp(q, cmd, follow_step)
                 cruise = sh["min_speed"] + thr * sh["scaler"]
                 travel = 1.0
                 if launch_t >= 0.0:
@@ -735,7 +798,86 @@ def self_test():
     # negative control: a nest the pilot never comes near is never credited (credit needs an open nest)
     if race(c, 1, limit=120.0, breakable=False)["gates"] != 0 or race(c, 1, limit=120.0, sling=False, breakable=False)["gates"] != 0:
         bad.append("thresher_time_sim: a gate was credited with its nest standing (credit needs an open nest)")
+    # ── the AI nose lead (AIPilot.NoseLeadGain, ai_nose_lead.py), measured 2026-11-07 ──────────────────────────────
+    # (a) OFF unless asked: nose_lead unset is the race recorded as the baseline to the digit (I1 course 1: the shipped
+    #     sling, cruise only, the rings; the tables' numbers are their aggregates), and the same race as NoseLead()
+    #     (gain 0), 0, {}, {"gain": 0} and False. A port that changes the model re-measures and updates the three dicts.
+    baseline = {
+        "shipped": {"time": None, "gates": 1, "of": 16, "plants": 135, "launches": 135, "launch_speed": 2288.3, "launch_off": 5.0,
+                    "launch_miss": 63.6, "nest_breaks": 1, "misses": 1, "top": 1144},
+        "cruise only": {"time": 456.45, "gates": 16, "of": 16, "plants": 0, "launches": 0, "launch_speed": None, "launch_off": None,
+                        "launch_miss": None, "nest_breaks": 16, "misses": 273, "top": 88},
+        "rings": {"time": 215.933, "gates": 16, "of": 16, "plants": 48, "launches": 48, "launch_speed": 2287.1, "launch_off": 4.4,
+                  "launch_miss": 66.2, "nest_breaks": 0, "misses": 37, "top": 1144},
+    }
+    for name, got in (("shipped", a), ("cruise only", cruise), ("rings", rings)):
+        if got != baseline[name]:
+            bad.append(f"thresher_time_sim: I1 course 1 {name} drifted from the 2026-11-07 baseline (re-measure): {got} vs {baseline[name]}")
+    if race(c, 1, nose_lead=NoseLead()) != a:
+        bad.append("thresher_time_sim: nose_lead=NoseLead() (gain 0) is not today's race")
+    short = race(c, 1, limit=60.0)
+    for form in (0, {}, {"gain": 0}, False):
+        if race(c, 1, limit=60.0, nose_lead=form) != short:
+            bad.append(f"thresher_time_sim: nose_lead={form!r} is not today's race")
+    # (b) the lead is applied as AIPilot applies it and only through the nose lag: a gain changes a lagged race (a dict
+    #     with the config key is the same gain); the effective gain is scaled to the race's own nose rate once (on a 9/s
+    #     nose 2.5 floors to 1: the same race as gain 1, and judging from the command still changes that race);
+    #     max_extra_deg 0 is gain 1 (the command placed ON the aim); and on a lag-free nose (nose_rate 0, inf, or a rate
+    #     that closes the whole gap in one step) the lead changes nothing
+    led = race(c, 1, limit=120.0, nose_lead=2.5)
+    if led == race(c, 1, limit=120.0):
+        bad.append("thresher_time_sim: nose_lead 2.5 raced today's race (the lead is not applied)")
+    if race(c, 1, limit=120.0, nose_lead={"nose_lead": 2.5}) != led:
+        bad.append("thresher_time_sim: {'nose_lead': 2.5} is not the 2.5 lead")
+    quick, quick_led = race(c, 1, limit=120.0, nose_rate=9.0), race(c, 1, limit=120.0, nose_rate=9.0, nose_lead=2.5)
+    if quick_led != race(c, 1, limit=120.0, nose_rate=9.0, nose_lead=1.0) or quick_led == quick:
+        bad.append("thresher_time_sim: on a 9/s nose the 2.5 lead is not gain 1 judged from the command (effective_gain from the race's rate)")
+    if race(c, 1, limit=120.0, nose_lead=NoseLead(2.5, 0.0)) != race(c, 1, limit=120.0, nose_lead=1.0):
+        bad.append("thresher_time_sim: max_extra_deg 0 is not gain 1 (the command on the aim)")
+    for kw in ({"nose_rate": 0}, {"nose_rate": 60.0}, {"nose_rate": float("inf")}):
+        if race(c, 1, limit=120.0, nose_lead=2.5, **kw) != race(c, 1, limit=120.0, **kw):
+            bad.append(f"thresher_time_sim: the lead changed a lag-free race ({kw})")
+    # (c) what the lead measured here (2026-11-07, the docstring). On the RINGS with the sling, I1 course 3: today's
+    #     shipped Thresher does not finish (3 of 16 mouths in 600 s) and the same race with no nose lag does (330.8 s),
+    #     so the lag is what loses it; the 2.5 lead finishes it (126.7 s) with fewer missed mouths (15 against 80), each
+    #     launch passing nearer the ring's centre (55 u against 62). The control is an AGGREGATE, because one race is a
+    #     chaotic sample (gain 1.01 finishes this course in 114 s where 1.0 does not): on I2 courses 1-3 today finishes
+    #     none, the 2.5 lead finishes all three (196.3, 183.1, 192.3 s) and judging from the command WITHOUT the pull
+    #     (gain 1, = 2.5 with max_extra_deg 0) finishes at most one (today none: 10, 10 and 4 of 16 mouths; a probe of
+    #     gains 2.3-2.7 x caps 35-45 deg finished 89 of 90 races on these courses, gains 0.99-1.01 18 of 54). And the lead's
+    #     cost in CRUISE: with the nests at I4 course 1, where today's lagged cruise passes 8 of 16 gates and a lag-free
+    #     nose finishes (386.6 s), the 2.5 lead corkscrews away and passes 1 (the roll stick whirls a command placed far
+    #     from the nose round the nose's forward). A port that changes any of this re-measures.
+    c3 = course_for(1, 3)
+    today3, nolag3, led3 = race(c3, 1, nests=False), race(c3, 1, nests=False, nose_rate=0), race(c3, 1, nests=False, nose_lead=2.5)
+    if not (today3["time"] is None and nolag3["time"] is not None):
+        bad.append(f"thresher_time_sim: I1 course 3 on the rings is no longer lost to the nose lag (today {today3}, no lag {nolag3})")
+    if not (led3["time"] is not None and led3["misses"] < today3["misses"] and led3["launch_miss"] < today3["launch_miss"]):
+        bad.append(f"thresher_time_sim: the 2.5 lead no longer finishes I1 course 3 on the rings with fewer misses: {led3} vs today {today3}")
+    fin = lambda kw: sum(1 for s in (1, 2, 3) if race(course_for(2, s), 2, nests=False, **kw)["time"] is not None)
+    today_fin, led_fin, judged_fin = fin({}), fin({"nose_lead": 2.5}), fin({"nose_lead": 1.0})
+    if not (today_fin == 0 and led_fin == 3 and judged_fin <= 1):
+        bad.append(f"thresher_time_sim: on I2 courses 1-3 (rings, sling) today finishes {today_fin}, the 2.5 lead {led_fin}, gain 1 "
+                   f"{judged_fin} (was 0, 3, 0: re-measure the docstring)")
+    c4 = course_for(4, 1)
+    today4, nolag4, led4 = race(c4, 4, sling=False), race(c4, 4, sling=False, nose_rate=0), race(c4, 4, sling=False, nose_lead=2.5)
+    if not (today4["time"] is None and nolag4["time"] is not None and led4["time"] is None and led4["gates"] < today4["gates"]):
+        bad.append(f"thresher_time_sim: the 2.5 lead's corkscrew in the I4 cruise has changed (re-measure the docstring): "
+                   f"today {today4}, no lag {nolag4}, lead {led4}")
     return bad
+
+
+def nose_lead_arg(argv):
+    """--nose-lead G[,EXTRA]: the AI nose lead a run adds (AIPilot.NoseLeadGain at the fleet lag, and how far past the
+    aim it may place the command, 40 deg unless given), or None: off, today's steering."""
+    if "--nose-lead" not in argv:
+        return None
+    parts = argv[argv.index("--nose-lead") + 1].split(",")
+    return NoseLead(float(parts[0]), float(parts[1]) if len(parts) > 1 else None)
+
+
+def lead_label(lead):
+    return "" if lead is None else f" nose lead {lead.gain:g}"
 
 
 def main(argv):
@@ -747,11 +889,13 @@ def main(argv):
         bad = self_test()
         print("\n".join(bad) or "thresher_time_sim self-test: ok")
         return 1 if bad else 0
+    lead = nose_lead_arg(argv)
+    leads = [None] if lead is None else [None, lead]     # the flag prints the lead-on rows under today's
     if "--trace" in argv:
         k = argv.index("--trace")
         i, s = int(argv[k + 1]), int(argv[k + 2])
         lines = []
-        r = race(course_for(i, s), i, nests="--rings" not in argv, trace=lines)
+        r = race(course_for(i, s), i, nests="--rings" not in argv, trace=lines, nose_lead=lead)
         print("\n".join(lines))
         print(r)
         return 0
@@ -772,21 +916,27 @@ def main(argv):
         print(f"Thresher Time, {'nests' if nests else 'rings'}, {n} fresh courses an intensity (seeds 1001+). MODEL.")
         for i in (1, 2, 3, 4):
             print(f"I{i}")
-            for name, g, sl in entries:
-                table(name, [race(course_for(i, 1000 + s), i, genome=g, nests=nests, sling=sl) for s in range(1, n + 1)])
+            for nl in leads:
+                for name, g, sl in entries:
+                    table(name + lead_label(nl), [race(course_for(i, 1000 + s), i, genome=g, nests=nests, sling=sl, nose_lead=nl)
+                                                  for s in range(1, n + 1)])
         return 0
     if "--soak" in argv:
         print("The 2026-11-02 soak's courses (raw seeds 7001, 7002), the RINGS (the mode then). MODEL, not the game.")
         for i in (1, 2):
-            rows = [race(course_for(i, s, raw_seed=True), i, nests=False) for s in (7001, 7002)]
-            table(f"I{i} aimed launch", rows)
-            table(f"I{i} cruise only", [race(course_for(i, s, raw_seed=True), i, nests=False, sling=False) for s in (7001, 7002)])
+            for nl in leads:
+                rows = [race(course_for(i, s, raw_seed=True), i, nests=False, nose_lead=nl) for s in (7001, 7002)]
+                table(f"I{i} aimed launch{lead_label(nl)}", rows)
+                table(f"I{i} cruise only{lead_label(nl)}", [race(course_for(i, s, raw_seed=True), i, nests=False, sling=False,
+                                                                nose_lead=nl) for s in (7001, 7002)])
         return 0
     print(f"Thresher Time, the shipped genome ({POLICY}), {'nests' if nests else 'rings'}. MODEL, not the game.")
     for i in (1, 2, 3, 4):
-        rows = [race(course_for(i, s), i, nests=nests) for s in range(1, 5)]
-        table(f"I{i} shipped", rows)
-        table(f"I{i} cruise only", [race(course_for(i, s), i, nests=nests, sling=False) for s in range(1, 5)])
+        for nl in leads:
+            rows = [race(course_for(i, s), i, nests=nests, nose_lead=nl) for s in range(1, 5)]
+            table(f"I{i} shipped{lead_label(nl)}", rows)
+            table(f"I{i} cruise only{lead_label(nl)}", [race(course_for(i, s), i, nests=nests, sling=False, nose_lead=nl)
+                                                       for s in range(1, 5)])
     return 0
 
 

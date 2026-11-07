@@ -42,10 +42,31 @@ the gate debris, rival Seed Walls and the cloak), so a gate here is its plain ri
 (GateRaceHandicap: every recorded AI rival but one flew Medium, a late or misjudged belief of the ring; this pilot is
 Legendary); the wall refill; emergency steering; frame hitches; the 90 u start ring. The editor is the measurement.
 
+The AI NOSE LEAD (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the one shared piece) is a knob OFF by
+default: `nose_lead=` on race() and flights() (NoseLead.from_config: None = off, a gain, {"gain", "max_extra_deg"} or a
+NoseLead) and `--nose-lead G[,EXTRA]` on the command line. With a gain the pilot judges its error from the COMMAND's
+forward and wants the nose turned toward the aim by the effective gain times its error, past the aim (slerp_beyond, at
+most max_extra_deg past it, 40 unless given); the stick's frame, the roll / yaw / pitch update about the nose's axes,
+the nose's slerp and the pellet driver are untouched, and the break-off's escape steer takes the lead like any aim. The
+effective gain is AIPilot.EffectiveNoseLeadGain from this model's own nose rate, once a race: LERP (the fleet 1.5/s, so
+the gain is itself) while the nose lags, 0 with nose_lag=False (the nose IS the command: nothing to lead). Measured
+2026-11-07 (self-test 7-10): every miss today is the lag's (the lag-free Serpent misses nothing on the 24 courses); at
+I1 the 2.5 lead is faster on all 12 races of both genomes with no miss (today 5), and gain 1 alone (judged from the
+command, no pull) is not; but at I2-I4 the fleet default (2.5, 40 deg) DNFs 16 of 36 races: a command placed up to 40
+deg past an aim already far from the nose pins the single stick at full x AND y, and the roll about the nose's forward
+whirls the yaw and pitch axes while the hull flies away from the ring (the Manta's corkscrew, manta_redline_sim.py).
+Capped at 20 deg past the aim (--nose-lead 2.5,20) every race finishes: the shipped genome is faster than today at
+I1-I3 with no miss (I2 742 vs 770 s, I3 950 vs 999 s over six courses) and within 2% at I4 (1113 vs 1093 s, one miss
+each). What a Serpent flies is the AI plan's call (Docs/AI_SYSTEM/AI_PLAN.md); this model only reads the knob, and
+Tools/Compute/evaluators/serpent_fit.py does not pass it yet.
+
     python3 Tools/Build/serpent_time_sim.py                    # the shipped and SerpentTime genomes, I1-I4 x 6 courses
     python3 Tools/Build/serpent_time_sim.py --genome a,s,r,m,g,k   # one genome (align, stick, runway, max, gap, reserve)
     python3 Tools/Build/serpent_time_sim.py --shapes           # the what-if: every gate's shape standing, the AI at an exit
     python3 Tools/Build/serpent_time_sim.py --old-kit          # the pellet economy before 2026-10-31 (3 s, refill 3.6 s)
+    python3 Tools/Build/serpent_time_sim.py --nose-lead 2.5    # the same tables, each row followed by its races with the AI
+    python3 Tools/Build/serpent_time_sim.py --nose-lead 2.5,20 # nose lead on (a gain, or gain,max_extra_deg); --trace and
+                                                               # --flights take it too
     python3 Tools/Build/serpent_time_sim.py --trace 3 1        # one race (intensity, course seed), a line a second
     python3 Tools/Build/serpent_time_sim.py --flights DIR      # race the recorded flights' own courses (see flights())
     python3 Tools/Build/serpent_time_sim.py --self-test
@@ -62,6 +83,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
 
 import manta_redline_sim as M   # noqa: E402  the shared AIPilot / quaternion / gate pieces, ported once
+from ai_nose_lead import NoseLead, slerp_beyond   # noqa: E402  the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 COURSE_CS = "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeCourse.cs"
 SOURCE_CS = "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeCourseSource.cs"
@@ -281,14 +303,18 @@ def exit_gate(ring, axis, radius, gate_index, intensity, exit_no):
     return c, axis, min(26.0, (radius - 2.0 - EXIT_BAND_START) * 0.5 - 1.5), count
 
 
-def race(course, genome, kit="shipped", nose_lag=True, limit=600.0, dt=DT, trace=None, race_laps=None, shapes=0):
+def race(course, genome, kit="shipped", nose_lag=True, limit=600.0, dt=DT, trace=None, race_laps=None, shapes=0,
+         nose_lead=None):
     """One AI Serpent flies the race on `course` ({gates: [{p, a, r}]}) with `genome` (the pellet driver's fields).
     `shapes` (an intensity, 0 = off) is a WHAT-IF for the dirty race's standing shapes with the rifle never ready:
     SerpentTimeController.ChooseShapeLine sends the AI at the exit nearest it when it first looks (SerpentineGate.Exit),
     the aim and the missed-mouth test use that exit, and the gate still counts on its ring (ThreadsGate); a crossing
     inside the ring but outside the exit is counted as a weave hit (the burn it costs is not modelled).
     Returns {time (None = not finished), rings, of, top, mean_speed, boost_seconds (pellet-seconds burned), lit,
-    misses, breakoffs, weave}."""
+    misses, breakoffs, weave}.
+    `nose_lead` is AIPilot.NoseLeadGain (ai_nose_lead.NoseLead.from_config: None = off, today's steering; a gain;
+    {"gain", "max_extra_deg"}; or a NoseLead), stated at the fleet lag and scaled to this model's nose rate once a race;
+    0 with no nose lag (nose_lag=False)."""
     C = _consts()
     h, st = C["hull"], C["steer"]
     commit_d, lead_d, through_d = st["aiCommitDistance"], st["aiApproachLead"], st["aiThroughDistance"]
@@ -298,6 +324,11 @@ def race(course, genome, kit="shipped", nose_lag=True, limit=600.0, dt=DT, trace
     total = n * nl if race_laps else max(n, int(math.ceil(C["target"] / nl)) * nl)
     pellets = Pellets(h, kit)
     drv = {"next_light_at": 0.0}
+    lead_knob = NoseLead.from_config(nose_lead)
+    # AIPilot.EffectiveNoseLeadGain, once a race, from THIS model's nose rate: LERP (the fleet 1.5/s, so the gain is
+    # itself) while the nose lags, 0 when it has no lag (nose_lag=False, or a dt that closes the whole slerp in one step)
+    g_lead = lead_knob.effective(LERP) if nose_lag and LERP * dt < 1.0 else 0.0
+    lead_extra = lead_knob.max_extra_deg
 
     p0, a0, _ = gates[0]
     pos = M.sub(p0, M.mul(a0, C["standoff"]))
@@ -373,7 +404,17 @@ def race(course, genome, kit="shipped", nose_lag=True, limit=600.0, dt=DT, trace
         # AIPilot single stick: EasedLeftJoystickPosition = (x, y) = (a cross.y, -a cross.x)
         dist = M.sub(steer, pos)
         dsq = M.dot(dist, dist)
-        xs, ys = M.stick(q, M.unit(dist), dsq) if dsq > 1e-12 else (0.0, 0.0)   # ys = a cross.x = -y
+        if dsq <= 1e-12:
+            xs, ys = 0.0, 0.0
+        elif g_lead > 0.0:
+            # the nose lead (AIPilot.TryNoseLead): want the NOSE turned toward the aim by g_lead times its error, past it
+            # (NoseLeadDirection = slerp_beyond), and judge the error from the COMMAND's forward; the stick's frame (the
+            # nose's), the roll / yaw / pitch update about the nose's axes below and the nose's slerp are untouched, and
+            # the break-off's escape steer takes the lead like any aim (the stick is still computed from the nose there)
+            want = tuple(slerp_beyond(heading, M.unit(dist), g_lead, lead_extra))
+            xs, ys = M.stick(q, want, dsq, judged=M.unit(M.q_rot(cmd, M.FWD)))
+        else:
+            xs, ys = M.stick(q, M.unit(dist), dsq)                             # ys = a cross.x = -y
         stick_def = max(abs(xs), abs(ys))
 
         # SingleStickVesselTransformer.RotateShip: Roll, Yaw, Pitch onto the command, then the nose follows
@@ -429,7 +470,7 @@ def flight_course(d):
     return {"gates": gates, "legLengths": legs}
 
 
-def flights(folder, genome, kit="shipped"):
+def flights(folder, genome, kit="shipped", nose_lead=None):
     """Race the model on every recorded SerpentTime flight's own course in `folder` (2-lap, one ring a gate: the course
     since 2026-10-31) and print it beside the recorded AI rivals and the human."""
     import glob
@@ -439,7 +480,7 @@ def flights(folder, genome, kit="shipped"):
         if d.get("laps") != 2 or len({r[7] for r in d["ringList"]}) != 1:
             continue
         c = flight_course(d)
-        r = race(c, genome, kit=kit, race_laps=2)
+        r = race(c, genome, kit=kit, race_laps=2, nose_lead=nose_lead)
         out.append((os.path.basename(p), d["intensity"], d.get("finished"), d.get("raceSeconds"), r))
     return out
 
@@ -515,6 +556,62 @@ def self_test():
         c, _, r, cnt = exit_gate((0, 0, 0), (0, 0, 1), settings(i)["RingRadius"], 3, i, 1)
         if M.norm(c) + r > settings(i)["RingRadius"] or cnt != (2 if i <= 2 else 3):
             bad.append(f"exit_gate: I{i}'s exit is not inside its ring")
+    # 7. the AI nose lead (ai_nose_lead.py, AIPilot.NoseLeadGain) is OFF by default: today's race (nose_lead unset) is the
+    #    race with NoseLead() / 0 / {} / {"gain": 0} / False, and it is the 2026-11-07 baseline measured BEFORE the lead was
+    #    ported (python3 Tools/Build/serpent_time_sim.py, both genomes; a port that moves any of these re-measures)
+    serpenttime = read_genome(POLICY_SERPENTTIME)
+    genomes = {"shipped": shipped, "serpenttime": serpenttime}
+    baseline = {  # (genome, intensity, course): race(course_for(intensity, course), genome), the lead off
+        ("shipped", 1, 1): {'time': 126.133, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 78.8, 'boost_seconds': 24.07, 'lit': 4, 'misses': 0, 'breakoffs': 0, 'weave': 0},
+        ("shipped", 2, 2): {'time': 151.75, 'rings': 16, 'of': 16, 'top': 253, 'mean_speed': 75.6, 'boost_seconds': 24.05, 'lit': 4, 'misses': 0, 'breakoffs': 0, 'weave': 0},
+        ("shipped", 3, 1): {'time': 176.217, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 73.4, 'boost_seconds': 24.07, 'lit': 4, 'misses': 2, 'breakoffs': 2, 'weave': 0},
+        ("shipped", 4, 4): {'time': 180.883, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 73.1, 'boost_seconds': 24.03, 'lit': 4, 'misses': 1, 'breakoffs': 1, 'weave': 0},
+        ("serpenttime", 1, 1): {'time': 150.533, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 75.7, 'boost_seconds': 24.07, 'lit': 4, 'misses': 1, 'breakoffs': 1, 'weave': 0},
+        ("serpenttime", 1, 4): {'time': 145.717, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 76.2, 'boost_seconds': 24.03, 'lit': 4, 'misses': 1, 'breakoffs': 1, 'weave': 0},
+        ("serpenttime", 3, 2): {'time': 188.983, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 72.5, 'boost_seconds': 24.03, 'lit': 4, 'misses': 3, 'breakoffs': 3, 'weave': 0},
+        ("serpenttime", 4, 2): {'time': 213.117, 'rings': 16, 'of': 16, 'top': 260, 'mean_speed': 71.1, 'boost_seconds': 24.05, 'lit': 4, 'misses': 3, 'breakoffs': 4, 'weave': 0},
+    }
+    for (gname, i, s), want in baseline.items():
+        got = race(course_for(i, s), genomes[gname])
+        if got != want:
+            bad.append(f"{gname} I{i} course {s} drifted from the 2026-11-07 baseline (re-measure): {got} vs {want}")
+    c = course_for(1, 1)
+    for form in (NoseLead(), 0, {}, {"gain": 0}, False):
+        if race(c, shipped, nose_lead=form) != baseline[("shipped", 1, 1)]:
+            bad.append(f"nose_lead={form!r} is not today's race")
+    # 8. the lead claim, with its controls: at I1 courses 1 and 4 the _SerpentTime genome misses a mouth through the nose
+    #    lag today (150.5 s, 145.7 s; the lag-free Serpent misses nothing anywhere); the 2.5 lead, judged from the command
+    #    with the nose pulled from past the aim, threads both and is faster (124.4 s, 131.0 s). The control: gain 1 (judged
+    #    from the command WITHOUT the pull) still misses both and is slower than the lead (135.7 s, 148.0 s), and 2.5 with
+    #    max_extra_deg 0 IS gain 1 (the command placed on the aim), so the pull past the aim is what helps. A dict with the
+    #    config key is the same lead.
+    for s in (1, 4):
+        c, today = course_for(1, s), baseline[("serpenttime", 1, s)]
+        led, one = race(c, serpenttime, nose_lead=2.5), race(c, serpenttime, nose_lead=1.0)
+        if not (today["misses"] >= 1 and led["misses"] == 0 and led["time"] and led["time"] < today["time"]):
+            bad.append(f"the 2.5 lead no longer threads I1 course {s} faster than today's miss: {led} vs {today}")
+        if not (one["misses"] >= 1 and (one["time"] is None or one["time"] > led["time"])):
+            bad.append(f"gain 1 (judged from the command, no pull) now does what the 2.5 lead does on I1 course {s}: {one}")
+        if race(c, serpenttime, nose_lead=NoseLead(2.5, 0.0)) != one:
+            bad.append(f"max_extra_deg 0 is not gain 1 (the command on the aim) on I1 course {s}")
+        if s == 1 and race(c, serpenttime, nose_lead={"nose_lead": 2.5}) != led:
+            bad.append("{'nose_lead': 2.5} is not the 2.5 lead")
+    # 9. what the fleet default (2.5, 40 deg past the aim) costs THIS hull, measured 2026-11-07: at I1 every race of both
+    #    genomes is faster with no miss, but at I2-I4 it DNFs 16 of 36. Shipped I2 course 2 is the shape: today 151.8 s and
+    #    no miss; the lead stalls at 8 of 16 rings with the single stick pinned at (-1, -1), the roll about the nose's
+    #    forward whirling the yaw and pitch axes while the hull flies away from the ring. Capped at 20 deg past the aim it
+    #    threads the course (150.8 s, no miss), and every race finishes. A port that changes this re-measures the docstring.
+    c, today = course_for(2, 2), baseline[("shipped", 2, 2)]
+    stalled, capped = race(c, shipped, nose_lead=2.5), race(c, shipped, nose_lead=NoseLead(2.5, 20.0))
+    if not (today["time"] and today["misses"] == 0 and stalled["time"] is None and stalled["rings"] < 12):
+        bad.append(f"the 2.5 lead's stall on shipped I2 course 2 has changed (re-measure the docstring): {stalled}")
+    if not (capped["time"] and capped["misses"] == 0 and capped["time"] <= today["time"]):
+        bad.append(f"2.5 capped at 20 deg no longer threads I2 course 2 within today's {today['time']} s: {capped}")
+    # 10. with no nose lag there is nothing to lead (effective gain 0): the lead changes nothing on a nose_lag=False race
+    c = course_for(1, 1)
+    free = race(c, shipped, nose_lag=False)
+    if race(c, shipped, nose_lag=False, nose_lead=2.5) != free or free["misses"]:
+        bad.append(f"the lead changed a lag-free race, or the lag-free Serpent misses: {free}")
     print("serpent_time_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
 
@@ -527,10 +624,20 @@ def table(label, rows):
             f"misses {sum(r['misses'] for r in rows):3d}  breakoffs {sum(r['breakoffs'] for r in rows):3d}")
 
 
+def nose_lead_arg(argv):
+    """--nose-lead G[,EXTRA]: the AI nose lead a run adds (AIPilot.NoseLeadGain at the fleet lag and, after a comma, how
+    far past the aim it may place the command, 40 deg unless given), or None: off, today's steering."""
+    if "--nose-lead" not in argv:
+        return None
+    parts = argv[argv.index("--nose-lead") + 1].split(",")
+    return NoseLead(float(parts[0]), float(parts[1]) if len(parts) > 1 else None)
+
+
 def main(argv):
     if "--self-test" in argv:
         return self_test()
     kit = "clock" if "--old-kit" in argv else "shipped"
+    lead = nose_lead_arg(argv)
     genomes = [("SerpentAIBoostPolicy", read_genome(POLICY)), ("_SerpentTime", read_genome(POLICY_SERPENTTIME))]
     if "--genome" in argv:
         vals = [float(x) for x in argv[argv.index("--genome") + 1].split(",")]
@@ -539,24 +646,29 @@ def main(argv):
         k = argv.index("--trace")
         i, s = int(argv[k + 1]), int(argv[k + 2])
         log = []
-        r = race(course_for(i, s), genomes[0][1], kit=kit, trace=log)
+        r = race(course_for(i, s), genomes[0][1], kit=kit, trace=log, nose_lead=lead)
         print("\n".join(log))
         print(r)
         return 0
     if "--flights" in argv:
         folder = argv[argv.index("--flights") + 1]
         for name, g in genomes:
-            print(f"genome {name} ({kit} kit) on the recorded flights' own courses")
-            for fn, i, fin, secs, r in flights(folder, g, kit):
+            print(f"genome {name} ({kit} kit{'' if lead is None else f', nose lead {lead.gain:g}'}) on the recorded flights' own courses")
+            for fn, i, fin, secs, r in flights(folder, g, kit, nose_lead=lead):
                 print(f"  {fn[18:-5]} I{i}  model {r['time']} s ({r['rings']}/{r['of']}, misses {r['misses']}, lit "
                       f"{r['lit']})   recorded race {secs} s {'finished' if fin else 'not finished'}")
         return 0
     seeds = range(1, 1 + (int(argv[argv.index("--seeds") + 1]) if "--seeds" in argv else 6))
-    print(f"Serpentine offline, one AI Serpent, {len(seeds)} courses an intensity, {kit} kit. {MODEL_LIMITS}")
+    print(f"Serpentine offline, one AI Serpent, {len(seeds)} courses an intensity, {kit} kit. {MODEL_LIMITS}"
+          + ("" if lead is None else f". With --nose-lead each genome's row is followed by the same races with the AI nose"
+                                      f" lead on: {lead!r} (AIPilot.NoseLeadGain, effective gain {lead.effective(LERP):g})."))
     for i in (1, 2, 3, 4):
         courses = [course_for(i, s) for s in seeds]
         for name, g in genomes:
             print(f"I{i} " + table(name, [race(c, g, kit=kit, shapes=i if "--shapes" in argv else 0) for c in courses]))
+            if lead is not None:
+                print(f"I{i} " + table(f"  + nose lead {lead.gain:g}", [race(c, g, kit=kit, shapes=i if "--shapes" in argv else 0,
+                                                                       nose_lead=lead) for c in courses]))
     return 0
 
 

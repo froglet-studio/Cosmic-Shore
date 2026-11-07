@@ -45,6 +45,8 @@ args:
     genomes            repo paths of every Stoat sling genome to grow from (a missing file is skipped)
     grow               false: the first generation is the space's init alone (an independent restart)
     stay_near_shipped  weight of the pull toward the nearest genome (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated at the fleet
+                       lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
 """
 import importlib.util
 import os
@@ -62,12 +64,13 @@ GENOMES = [POL + "StoatSlingConfig_Slingshot.asset", HULL, POL + "StoatSlingConf
 FIELDS = {"aiSlingMinTurnDegrees": (10.0, 180.0), "aiSlingIntervalSeconds": (0.5, 8.0), "aiSlingMinDistance": (0.0, 800.0),
           "trampolineAiTurnScale": (40.0, 300.0), "autopilotHold01": (0.0, 1.0), "aiWarpMinDistance": (0.0, 1500.0)}
 REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 16}, "limit": {"lo": 200, "hi": 900}}
+REQUEST_ARGS["nose_lead"] = {"lo": 0.0, "hi": 6.0}   # the AI nose lead a manual run may switch on (0 = off)
 COMBINE_WORST = 0.5
 _CTX = {}
 
 
 def _sim_paths():
-    return [SIM, "Tools/Build/stoat_orbit_sim.py", "Tools/Build/regatta_line_sim.py", "Tools/Build/rhino_drive_sim.py",
+    return [SIM, "Tools/Build/stoat_orbit_sim.py", "Tools/Build/regatta_line_sim.py", "Tools/Build/rhino_drive_sim.py", "Tools/Build/ai_nose_lead.py",
             "Tools/Build/scarab_drive_sim.py", "Tools/Build/situation_features.py", "Tools/Compute/evaluators/course_port.py"]
 
 
@@ -208,7 +211,7 @@ def evaluate(params, ctx):
     for i, races in _CTX["courses"].items():
         rows = []
         for s, gates, start, cruise in races:
-            r = sim.race(gates, k, ai, T=limit, dt=dt, start=start)
+            r = sim.race(gates, k, ai, T=limit, dt=dt, start=start, nose_lead=a.get("nose_lead"))
             r["cruise"] = cruise
             rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]

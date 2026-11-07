@@ -1220,8 +1220,12 @@ AI-side ways round the lag were tried and lose: judging the stick from the COMMA
 **The decision (not a Switchback change: a game mode never changes the vessel, LOCKED):** whether AI hulls keep the
 fleet nose lag. Removing it halves every Switchback time in the model and makes drift carving worth another ~10 %; it
 also changes every AI in every mode, and `SkimRacePilot` was trained against the lag. Owners: Garrett's 2026-10-21
-steering-lag rule, `VesselTransformer` (`who_works_where.py`). The simulator's `noseLag=0`, `carve=...`, `cmdSteer=1`
-and `cmdLead=...` reproduce every row.
+steering-lag rule, `VesselTransformer` (`who_works_where.py`). The simulator's `noseLag=0` and `carve=...` reproduce
+the rows above; the `cmdSteer=1` / `cmdLead=...` what-ifs of that day (a 60 deg cap, no rate scaling) were retired on
+2026-11-07 for the game's own rule, `AIPilot.NoseLeadGain` (PR #1786), as `noseLead=<gain> noseLeadExtra=<deg>` (default
+0, off). With the gain scaled to each level's nose rate (`EffectiveNoseLeadGain`: 1.97 on I1 Easy, 1 on every Legendary),
+the lead at 2.5 moves the job composite 1.936 -> 1.883 over I1-I4 x four levels, 12 of 16 cells faster, I1 Hard /
+Legendary and I4 Hard slower; the no-lag ceiling is 1.436. The gain for Switchback's ladder is Yash's call.
 
 ### Lag by difficulty (2026-11-02): option 2 of step 4, shipped, then set to Yash's time bands
 

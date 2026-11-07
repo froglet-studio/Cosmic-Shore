@@ -42,10 +42,38 @@ Skein, and reads the course off the shipped generator rather than retyping it:
 
 What this model does NOT see is LIMITS below, copied into every evaluator result. The editor is the measurement.
 
+THE AI NOSE LEAD (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the one shared piece) is race()'s
+`nose_lead` knob: None (OFF, today's steering: every number above and every caller is as it was), a gain, a
+{"gain", "max_extra_deg"} dict or a NoseLead. With a gain the free-flying pilot judges its stick error from the
+COMMAND's forward instead of the nose and wants the nose turned toward the aim by the gain times its error, past it
+(at most max_extra_deg past, never past 170 deg: ai_nose_lead.slerp_beyond = AIPilot.NoseLeadDirection); the cross
+product still lands in the nose's frame and the stick still turns the command about the nose's axes (P.stick's
+judged=). The effective gain is AIPilot.EffectiveNoseLeadGain computed ONCE a race from this model's own nose rate
+(`nose_rate`: None = the fleet LERP 1.5/s the Urchin flies with; 0 or inf = no lag, the nose IS the command), so it is
+0 on a lag-free nose. It is OFF while riding a rail (there the stick only turns the attitude, the position rides the
+rail, and the ride direction - the facing hysteresis - reads the nose) and ON in every free flight: the ghost after a
+Slip, the carried speed after a launch, and the orbit break-off, whose escape steer takes the lead like any aim. Skein
+sets no NoseLeadGain: the lead is a what-if here, not the shipped Urchin.
+MEASURED 2026-11-07 (--self-test holds it): the lead does NOT help the Urchin here as the game applies it. The lag is a
+real cause of today's misses: at I2 today's steering crosses 9 ring planes beside the mouth and stops at 15/24 in 900 s,
+and a lag-free nose (nose_rate 0) finishes in 258.2 s with none. But gain 2.5 is TRAPPED at 3/24 (I3 and I4 at 1/24,
+and every hold-out cable but I1's first): at the first through point the aim flips behind the nose (TurnHardIfBehind),
+the lead places the command ~78 deg from the nose, and the roll stick - AIPilot's YDiff = XSum, turned about the NOSE's
+forward - whirls that command round the nose's axis; the nose chases it, the gap settles at 78 deg, the stick pins at
+(1, -1) and the hull corkscrews away from the course (the manta port's finding too, manta_redline_sim.py). Gain 1
+(judging from the command, no pull past the aim) is not trapped but does not help either (I2 15/24 with 10 misses; I1
+96.7 s against today's 81.5 s), and max_extra_deg 0 is gain 1. On I1 (every ring a collar, no misses today) 2.5
+finishes in 108.3 s, the lag-free nose's 108.6 s: the lead does what it is for, and that is slower here because today's
+lagging nose happens to latch a rail and ride (ride 0.05, v 103). A scratch copy with the roll stick zeroed while the
+lead is on finished I2 in 362.2 s with 2 misses (I3 8/24, I4 4/24 with 9 misses against today's 19): the decoupling the
+lead needs is AIPilot's roll rule, not this model's; the port stays as the game is.
+
     python3 Tools/Build/skein_urchin_sim.py                  # the shipped AI, I1-I4 on the shipped cables
     python3 Tools/Build/skein_urchin_sim.py --holdout        # ... and on the hold-out cables
     python3 Tools/Build/skein_urchin_sim.py --trace 4        # one race (intensity), a line a second
     python3 Tools/Build/skein_urchin_sim.py --config k=v,... # one genome (UrchinAutopilotConfigSO field names)
+    python3 Tools/Build/skein_urchin_sim.py --nose-lead 2.5  # ... and the lead-on row under each (G[,EXTRA]: the gain,
+                                                            #     the degrees past the aim); --nose-rate R: 0 = no lag
     python3 Tools/Build/skein_urchin_sim.py --self-test
 """
 import json
@@ -58,6 +86,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import manta_redline_sim as P   # AIPilot's stick, orbit break-off and Unity's quaternion maths, already ported there
+from ai_nose_lead import NoseLead, slerp_beyond   # the AI nose lead (AIPilot.NoseLeadGain), the one shared piece
 
 add, sub, mul, dot, cross, norm, unit = P.add, P.sub, P.mul, P.dot, P.cross, P.norm, P.unit
 q_axis, q_mul, q_rot, q_inv_rot, q_slerp, q_look = P.q_axis, P.q_mul, P.q_rot, P.q_inv_rot, P.q_slerp, P.q_look
@@ -391,13 +420,26 @@ def seek_candidates(course, rails, gate_index, capture_fraction=SEEK_CAPTURE, ma
 
 
 def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True, trace=None, start_slot=0.0,
-         probe=None, steering="shipped", seek=False):
+         probe=None, steering="shipped", seek=False, nose_rate=None, nose_lead=None):
     """One AI Urchin races `course` (an exported cable) with the UrchinAutopilotConfigSO genome `cfg` (field names;
     missing fields are the shipped ones). Returns {time (None = not finished), rings, of, ride_share, mean_speed,
-    slips, reverses, launches, latches, tracks, flown_s, misses}."""
+    slips, reverses, launches, latches, tracks, flown_s, misses}.
+    `nose_rate` is the AI nose's follow rate per second (VesselTransformer.AINoseFollowPerSecond, which Skein does not
+    set): None = the fleet LERP 1.5/s, 0 or inf = no lag (the nose IS the command, as a human's); the speed lerp keeps
+    LERP whatever the nose does. `nose_lead` is AIPilot.NoseLeadGain (ai_nose_lead.NoseLead.from_config: None = off,
+    a gain, {"gain", "max_extra_deg"} or a NoseLead), stated at the fleet lag and scaled to this race's nose rate once;
+    0 with no nose lag, and off while riding a rail."""
     c = dict(shipped_config())
     if cfg:
         c.update(cfg)
+    # the AI nose: Quaternion.Slerp toward the command by nose_step a frame (LERP_AMOUNT x dt, as shipped), or the
+    # command itself when the nose has no lag
+    follow = LERP if nose_rate is None else float(nose_rate)
+    nose_step = min(1.0, follow * dt) if 0.0 < follow < float("inf") else 1.0
+    lead_knob = NoseLead.from_config(nose_lead)
+    # AIPilot.EffectiveNoseLeadGain, once a race, from THIS model's nose rate: max(1, gain x 1.5 / rate), 0 with no lag
+    g_lead = lead_knob.effective(follow) if nose_step < 1.0 else 0.0
+    lead_extra = lead_knob.max_extra_deg
     base, grid, paint = arena(course)
     rails = [Rail(r.pts, [paint[r.id]] * len(r.pts), ARENA_HALF, rid=r.id, arc=r.arc) for r in base]
     track_grid = Grid()
@@ -628,7 +670,18 @@ def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True
         looking = (not extending) and dot(desired, course_dir) >= 0.9
         xdiff = 1.0 if looking else min(1.0, max(0.0, skill_throttle))
         skill_throttle += THROTTLE_CREEP * dt
-        xs, ys = P.stick(q, desired, dsq) if dsq > 1e-12 else (0.0, 0.0)
+        if dsq <= 1e-12:
+            xs, ys = 0.0, 0.0
+        elif g_lead > 0.0 and att is None:
+            # the nose lead (AIPilot.TryNoseLead), in free flight only: want the NOSE turned toward the aim by g_lead
+            # times its error, past it (NoseLeadDirection), and judge the error from the COMMAND's forward; the cross
+            # product still lands in the nose's frame and the command update below is untouched. The break-off's escape
+            # steer takes the lead like any aim. OFF on a rail: there the stick only turns the attitude, the position
+            # rides the rail, and the ride direction (facing, above) reads the nose.
+            want = tuple(slerp_beyond(q_rot(q, FWD), desired, g_lead, lead_extra))
+            xs, ys = P.stick(q, want, dsq, judged=unit(q_rot(cmd, FWD)))
+        else:
+            xs, ys = P.stick(q, desired, dsq)
         yd = xs
         throttle = max(-1.0, min(1.0, (xdiff - REST) / max(0.01, max(REST, 1 - REST))))   # ReadThrottle
 
@@ -682,10 +735,10 @@ def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True
                 speed += (ride_speed - speed) * min(1.0, LERP * dt)   # AdvanceSpeed(VesselStatus.Speed)
                 ammo = min(1.0, ammo + RIDE_RECHARGE * dt)
                 ride_frames += 1
-            q = q_slerp(q, cmd, LERP * dt)
+            q = q_slerp(q, cmd, nose_step) if nose_step < 1.0 else cmd
         if att is None and prev_pos is pos:
             # VesselTransformer.MoveShipScalar with GunVesselTransformer's carried floor
-            q = q_slerp(q, cmd, LERP * dt)
+            q = q_slerp(q, cmd, nose_step) if nose_step < 1.0 else cmd
             natural = max(0.0, throttle * CRUISE)
             if carried > 0:
                 carried = max(natural, carried - DECAY * dt)
@@ -777,11 +830,12 @@ def ideal_seconds(course):
 
 
 def table(rows):
+    width = max([14] + [len(label) for label, _ in rows])    # 14 for today's labels; the lead rows widen it
     for label, r in rows:
         tm = f"{r['time']:6.1f}s" if r["time"] is not None else f"DNF {r['rings']:2d}/{r['of']}"
-        print(f"  {label:<14} {tm:>10}  ride {r['ride_share']:.2f}  v {r['mean_speed']:5.0f}  latches {r['latches']:3d}  "
-              f"launches {r['launches']:3d}  slips {r['slips']:3d}  reverses {r['reverses']:3d}  tracks {r['tracks']:2d}  "
-              f"misses {r['misses']:3d}")
+        print(f"  {label:<{width}} {tm:>10}  ride {r['ride_share']:.2f}  v {r['mean_speed']:5.0f}  "
+              f"latches {r['latches']:3d}  launches {r['launches']:3d}  slips {r['slips']:3d}  "
+              f"reverses {r['reverses']:3d}  tracks {r['tracks']:2d}  misses {r['misses']:3d}")
 
 
 def self_test():
@@ -833,6 +887,66 @@ def self_test():
     parked = race(c1, {"ParkedSpeed": 1e6, "ParkedSeconds": 0.0})
     if a["time"] is not None and (parked["time"] is None or parked["time"] <= a["time"] or parked["ride_share"] > 0):
         bad.append(f"race: a genome that slips off every rail did not race I1 slower ({parked} vs {a})")
+    # the AI nose lead (AIPilot.NoseLeadGain, ai_nose_lead.py)
+    # (a) OFF unless asked: unset, NoseLead(), 0, {}, {"gain": 0} and False are today's race, and today's race is the
+    #     recorded baseline (python3 Tools/Build/skein_urchin_sim.py with the lead off, 2026-11-07) to the digit on I1
+    #     and I2. A port that changes the model re-measures and updates these two (the table's rows are their rounding).
+    baseline = {
+        1: {"time": 81.467, "rings": 24, "of": 24, "ride_share": 0.048, "mean_speed": 103.2, "dry_leave": False,
+            "slips": 0, "reverses": 0, "launches": 2, "latches": 2, "tracks": 2, "misses": 0, "seeks": 0},
+        2: {"time": None, "rings": 15, "of": 24, "ride_share": 0.005, "mean_speed": 71.0, "dry_leave": False,
+            "slips": 4, "reverses": 0, "launches": 2, "latches": 6, "tracks": 4, "misses": 9, "seeks": 0},
+    }
+    c2 = course_for(2)
+    today2 = race(c2)
+    if a != baseline[1]:
+        bad.append(f"I1 drifted from the 2026-11-07 baseline (re-measure): {a} vs {baseline[1]}")
+    if today2 != baseline[2]:
+        bad.append(f"I2 drifted from the 2026-11-07 baseline (re-measure): {today2} vs {baseline[2]}")
+    for form in (NoseLead(), 0, {}, {"gain": 0}, False):
+        if race(c1, nose_lead=form) != a:
+            bad.append(f"nose_lead={form!r} is not today's race")
+    # (b) applied as AIPilot applies it and only through the nose lag: a gain changes a lagged race (a dict with the
+    #     config key is the same gain); the gain is scaled to this model's own nose rate once (on a 9/s nose 2.5 floors
+    #     to 1: the same race as gain 1, and judging from the command still changes that race); max_extra_deg 0 is gain
+    #     1 (the command placed ON the aim); the nose lag is modelled (rate 0 is another race); and on a lag-free nose
+    #     (rate 0, inf, or one that closes the whole gap in a step) the lead changes nothing
+    led1 = race(c1, nose_lead=2.5)
+    if led1 == a:
+        bad.append("nose_lead 2.5 raced today's race (the lead is not applied)")
+    if race(c1, nose_lead={"nose_lead": 2.5}) != led1:
+        bad.append("{'nose_lead': 2.5} is not the 2.5 lead")
+    quick, quick_led = race(c1, nose_rate=9.0), race(c1, nose_rate=9.0, nose_lead=2.5)
+    if quick_led != race(c1, nose_rate=9.0, nose_lead=1.0) or quick_led == quick:
+        bad.append("on a 9/s nose the 2.5 lead is not gain 1 judged from the command "
+                   "(effective_gain from the model's rate)")
+    if race(c1, nose_lead=NoseLead(2.5, 0.0)) != race(c1, nose_lead=1.0):
+        bad.append("max_extra_deg 0 is not gain 1 (the command on the aim)")
+    nolag1 = race(c1, nose_rate=0)
+    if nolag1 == a:
+        bad.append("nose_rate 0 raced the lagged race (the nose lag is not modelled)")
+    for kw in ({"nose_rate": 0}, {"nose_rate": float("inf")}, {"nose_rate": 60.0}):
+        if race(c1, nose_lead=2.5, **kw) != race(c1, **kw):
+            bad.append(f"the lead changed a lag-free race ({kw})")
+    # (c) what the lead measures here (2026-11-07, the docstring): on I1 the 2.5 lead flies the lag-free nose's race
+    #     (within 5 %, no misses); at I2 today's misses are the lag's (a lag-free nose finishes with none), yet the 2.5
+    #     lead as the game applies it is TRAPPED (no finish, under 10 rings, fewer than today's) by the roll stick that
+    #     whirls a far command round the nose's forward, while gain 1 (judged from the command, no pull past the aim)
+    #     is not trapped. A port that changes any of this re-measures.
+    if not (led1["time"] is not None and led1["misses"] == 0
+            and abs(led1["time"] - nolag1["time"]) <= 0.05 * nolag1["time"]):
+        bad.append("on I1 the 2.5 lead no longer flies the lag-free nose's race (re-measure the docstring): "
+                   f"{led1} vs {nolag1}")
+    nolag2 = race(c2, nose_rate=0)
+    if not (today2["time"] is None and today2["misses"] >= 5 and nolag2["time"] is not None and nolag2["misses"] == 0):
+        bad.append(f"I2's misses are no longer the lag's (re-measure the docstring): today {today2}, no lag {nolag2}")
+    trapped = race(c2, nose_lead=2.5)
+    if not (trapped["time"] is None and trapped["rings"] < 10 and trapped["rings"] < today2["rings"]):
+        bad.append(f"the 2.5 lead's corkscrew at I2 has changed (re-measure the docstring): {trapped}")
+    judged2 = race(c2, nose_lead=1.0)
+    if not (judged2["rings"] >= today2["rings"] - 2 and judged2["rings"] > trapped["rings"] + 5):
+        bad.append("gain 1 (judged from the command, no pull past the aim) is now trapped at I2 too: "
+                   f"{judged2} vs 2.5 {trapped}")
     return bad
 
 
@@ -848,22 +962,36 @@ def main(argv):
         for kv in argv[argv.index("--config") + 1].split(","):
             k, v = kv.split("=")
             cfg[k] = float(v)
+    # the AI nose lead (AIPilot.NoseLeadGain) and the nose rate, what-ifs: Skein sets neither
+    nose_rate = float(argv[argv.index("--nose-rate") + 1]) if "--nose-rate" in argv else None
+    lead = None
+    if "--nose-lead" in argv:
+        parts = argv[argv.index("--nose-lead") + 1].split(",")       # G[,EXTRA], as manta_redline_sim takes it
+        lead = NoseLead(float(parts[0]), float(parts[1]) if len(parts) > 1 else None)
     if "--trace" in argv:
         i = int(argv[argv.index("--trace") + 1])
         lines = []
-        r = race(course_for(i), cfg, trace=lines)
+        r = race(course_for(i), cfg, trace=lines, nose_rate=nose_rate, nose_lead=lead)
         print("\n".join(lines))
-        table([(f"I{i}", r)])
+        table([(f"I{i}" if lead is None else f"I{i} lead {lead.gain:g}", r)])
         return 0
     print("Skein, the AI Urchin (model; the editor is the measurement)")
     print("genome:", {**read_config(), **cfg})
+    if lead is not None or nose_rate is not None:
+        print("nose:", "the fleet lag 1.5/s" if nose_rate is None else f"rate {nose_rate:g}/s", "| lead rows:",
+              lead if lead is not None else "none", "(AIPilot.NoseLeadGain, a what-if: Skein sets none)")
     rows = []
     for i in (1, 2, 3, 4):
         c = course_for(i)
-        rows.append((f"I{i} shipped", race(c, cfg)))
+        rows.append((f"I{i} shipped", race(c, cfg, nose_rate=nose_rate)))
+        if lead is not None:
+            rows.append((f"I{i} lead {lead.gain:g}", race(c, cfg, nose_rate=nose_rate, nose_lead=lead)))
         if "--holdout" in argv:
             for h in (0, 1):
-                rows.append((f"I{i} hold-out {h}", race(course_for(i, "holdout", h), cfg)))
+                rows.append((f"I{i} hold-out {h}", race(course_for(i, "holdout", h), cfg, nose_rate=nose_rate)))
+                if lead is not None:
+                    rows.append((f"I{i} hold-out {h} lead {lead.gain:g}",
+                                 race(course_for(i, "holdout", h), cfg, nose_rate=nose_rate, nose_lead=lead)))
     table(rows)
     print("ideal (rings' polyline at 300 u/s):", " / ".join(f"I{i} {ideal_seconds(course_for(i)):.0f}s" for i in (1, 2, 3, 4)))
     print("LIMITS:", LIMITS)

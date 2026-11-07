@@ -1,0 +1,156 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "skein-urchin-time-lead",
+ "kind": "search",
+ "status": "proposed",
+ "title": "The Urchin's universal Time AI: one UrchinAutopilotConfig for Skein I1-I4 - with the AI nose lead ON",
+ "goal": "The lead-on twin of skein-urchin-time: the same search, the same seeds and genomes, with the pilot-side AI nose lead switched on in the model (nose_rate 1.5, nose_lead 2.5; Tools/Build/ai_nose_lead.py, the model of AIPilot.NoseLeadGain from PR #1786, which the game ships at 0). the Skein model's published numbers assumed a lag-free nose, so the fleet lag (1.5/s) is switched on with the lead. Garrett's plan (REGATTA_BALANCE_PLAN.md, the direction since 2026-11-06) judges every hull and every course on AIs that do not overshoot ring mouths, so each hull's drive is searched again with the lead on and compared with its lead-off twin on the same courses: the lead-on winner is the drive proposed for the day Yash turns the switch on. Run by hand until Compute is back (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two independent restarts (labels B, C). Parent goal: The Urchin's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE UrchinAutopilotConfigSO (the rail decisions: ride, reverse, slip, launch, re-latch, Track) that races all four Skein intensities well, grown from the shipped genome. Raced on the Skein simulator (Tools/Build/skein_urchin_sim.py, a MODEL: the shipped cable exported from SkeinCourse.cs, the gate aim and rail lead, AIPilot, the ride and latch, the Track Projector, UrchinAutopilotDriver line for line); the loss is the four intensities together (mean + 0.5 x the worst). PROPOSED and RUN BY HAND while Froglet Compute is paused (Shombith, 2026-11-06): local_run.py restarts in a cloud container, results in Docs/Reports/SKEIN_URCHIN_AI.md. The genome is shared with Regatta and Hijack (no per-mode asset), so a winner is re-raced in Regatta's model before it is proposed.",
+ "asked_by": "Garrett 2026-11-06 (Regatta balancing plan rev 2: train the AIs first); Yash owns the vessel AI.",
+ "area_owner": "Yash (vessel AI, the Urchin's autopilot and Skein's AI)",
+ "plan": "regatta-balance",
+ "stage": 1,
+ "plan_step": "time-arcade",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "paths": [],
+ "evaluator": {
+  "module": "skein_fit",
+  "timeout": 1800,
+  "args": {
+   "hull": "Urchin",
+   "mode": "Skein",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "slots": [
+    0,
+    120,
+    240
+   ],
+   "holdout": 0,
+   "limit": 600,
+   "steering": "shipped",
+   "seek": 0,
+   "stay_near_shipped": 0.01,
+   "nose_rate": 1.5,
+   "nose_lead": 2.5
+  }
+ },
+ "space": [
+  {
+   "name": "AssessIntervalSeconds",
+   "lo": 0.05,
+   "hi": 1.0,
+   "init": 0.25
+  },
+  {
+   "name": "ScanArc",
+   "lo": 50.0,
+   "hi": 4000.0,
+   "init": 1600.0
+  },
+  {
+   "name": "CaptureFraction",
+   "lo": 0.1,
+   "hi": 1.0,
+   "init": 0.8
+  },
+  {
+   "name": "ClosingFraction",
+   "lo": 0.1,
+   "hi": 0.95,
+   "init": 0.7
+  },
+  {
+   "name": "LaunchPreferArc",
+   "lo": 0.0,
+   "hi": 800.0,
+   "init": 160.0
+  },
+  {
+   "name": "DryCrawlArc",
+   "lo": 0.0,
+   "hi": 400.0,
+   "init": 80.0
+  },
+  {
+   "name": "MaxDryCrawlSeconds",
+   "lo": 0.5,
+   "hi": 12.0,
+   "init": 4.0
+  },
+  {
+   "name": "ReverseLeadTurnRadii",
+   "lo": 1.0,
+   "hi": 6.0,
+   "init": 2.2
+  },
+  {
+   "name": "ParkedSpeed",
+   "lo": 0.5,
+   "hi": 40.0,
+   "init": 6.0
+  },
+  {
+   "name": "ParkedSeconds",
+   "lo": 0.5,
+   "hi": 12.0,
+   "init": 5.0
+  },
+  {
+   "name": "MinSlipIntervalSeconds",
+   "lo": 0.25,
+   "hi": 6.0,
+   "init": 1.5
+  },
+  {
+   "name": "SpikeIntervalSeconds",
+   "lo": 0.1,
+   "hi": 6.0,
+   "init": 1.5
+  },
+  {
+   "name": "SpikeMinAmmo",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.2
+  },
+  {
+   "name": "TrackAimDegrees",
+   "lo": 1.0,
+   "hi": 45.0,
+   "init": 8.0
+  },
+  {
+   "name": "TrackMinRangeInLengths",
+   "lo": 1.0,
+   "hi": 12.0,
+   "init": 3.0
+  },
+  {
+   "name": "TrackAxisAlignment",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.8
+  }
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "convergence": {
+  "min_evals": 400,
+  "window_evals": 300,
+  "min_improvement": 0.002
+ },
+ "after": [],
+ "value": 8,
+ "promote": "Only after Yash turns AIPilot.NoseLeadGain on (PR #1786) and its editor check passes; then as the parent's rule, against the parent's winner raced WITH the lead: A PROPOSAL for the AI owner (Yash), any of the core four approving: race the winner against the shipped genome on Skein's shipped cables and the two hold-out cables per intensity (holdout 2) from every slot; keep it only if it finishes at least as many races on every intensity and its composite is lower; then re-race it in Regatta's model (UrchinAutopilotConfig is shared with Regatta and Hijack). Written into Assets/Resources/UrchinAutopilotConfig.asset by a writer (the AI learning sweep's asset writer), never by hand. The editor check goes in Docs/UNITY_VERIFICATION_CHECKLIST.md (AI Urchins race Skein at I1-I4).",
+ "updated": "2026-11-07"
+}

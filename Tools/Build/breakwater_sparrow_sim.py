@@ -16,6 +16,10 @@ The model (a STEERING, SPEED and STATION model, not the game):
   (`AICommitFromApproachPoint`): approach point min(280, 0.4 x leg, 0.8 x 240) behind the station on its latched side,
   commit inside min(240, lead + R/2), then the through point 200 u past the station on the line through its centre;
   AIPilot's stick law and nose lag; the orbit break-off; after a crossing outside the port, re-latch and break off.
+  The AI nose lead (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the shared piece) is a knob of
+  race(), `nose_lead`, OFF by default: a gain over 0 judges the error from the COMMAND and steers it onto the nose
+  turned toward the aim by the gain times its error, past it (at most max_extra_deg, 40), so the lagging nose is
+  pulled from beyond the station instead of overshooting it; off with lag=False (nothing to lead).
   Ported from switchback_dolphin_sim.race (SPARROW_BREAKWATER), whose Breakwater mode it replaces for training.
 - **The driver**: HoldBoostAIPolicySO.Driver.Tick line for line (sparrow_regatta_sim.Hold), judged on the station:
   its bearing off the course, its range (runway) at the current speed, and the stick written last frame; and the
@@ -35,6 +39,7 @@ NOT modelled: rivals, the shoals, the dish's Plain plates, the all-element debuf
 throttle on other modes. The editor is the measurement.
 
     python3 Tools/Build/breakwater_sparrow_sim.py                  # shipped base and Breakwater drives, I1-I4
+    python3 Tools/Build/breakwater_sparrow_sim.py --nose-lead 2.5  # ...and each drive with the AI nose lead on
     python3 Tools/Build/breakwater_sparrow_sim.py --self-test
 """
 import math, os, sys
@@ -45,6 +50,7 @@ import regatta_line_sim as L
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang
 from scarab_drive_sim import ai_stick
 from sparrow_regatta_sim import Hold, bands_from_fields as bands
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 CRUISE, BOOST, SPEED_RATE = 35.0, 135.0, 1.4
 RTS, BASE_TURN = 0.1, 80.0
@@ -87,32 +93,22 @@ def course(intensity, seed, pad=0):
             "seed": seed}
 
 
-NOSE_LEAD_GAIN = 0.0            # AIPilot.NoseLeadGain (PR #1786, off on every shipped asset); 2.5 is thread 7's value
-NOSE_LEAD_MAX_EXTRA = 40.0      # AIPilot.NoseLeadMaxExtraDegrees
+# The nose lead's module globals of 2026-11-06 (NOSE_LEAD_GAIN, NOSE_LEAD_MAX_EXTRA, lead_point: off while breaking off)
+# were replaced 2026-11-07 by the shared piece, ai_nose_lead, as race()'s `nose_lead` knob - the game's rule (on through
+# the break-off, off on a lag-free nose) and the same numbers as every other model's.
 
 
-def _turned(f, to, deg):
-    """f turned toward `to` by deg (past it when deg exceeds their angle), in their common plane."""
-    f = unit(f); a = math.radians(ang(f, to))
-    if a < 1e-6: return f
-    n = unit(sub(unit(to), mul(f, math.cos(a))))
-    r = math.radians(deg)
-    return add(mul(f, math.cos(r)), mul(n, math.sin(r)))
-
-
-def lead_point(fwd, steer, gain):
-    """The nose lead: the point the command is steered onto, the nose turned toward the aim by gain x its error, at most
-    NOSE_LEAD_MAX_EXTRA past the aim."""
-    e = ang(fwd, steer)
-    return _turned(fwd, steer, min(gain * e, e + NOSE_LEAD_MAX_EXTRA))
-
-
-def race(c, p, T=300.0, dt=1 / 50, lag=True, trace=None):
-    """One AI Sparrow alone through the 29 crossings. p: the drive's fields (BASE / BREAKWATER / a searched point)."""
+def race(c, p, T=300.0, dt=1 / 50, lag=True, trace=None, nose_lead=None):
+    """One AI Sparrow alone through the 29 crossings. p: the drive's fields (BASE / BREAKWATER / a searched point).
+    nose_lead: the AI nose lead (AIPilot.NoseLeadGain; ai_nose_lead.NoseLead.from_config: None = OFF, today's steering;
+    a gain stated at the fleet lag, a {"gain", "max_extra_deg"} dict or a NoseLead), scaled once to this model's nose
+    rate (regatta_line_sim.NOSE_FOLLOW, the fleet's 1.5/s); 0 with lag=False, where the nose IS the command."""
     gates = c["gates"]; n = len(gates)
     drv = Hold(bands(p))
     rocket = p.get("rocket", True)
     pos = list(c["start"]); fwd = list(c["heading"]); cmd = list(fwd)
+    nlead = NoseLead.from_config(nose_lead)   # the knob (`lead` below is the gate approach lead)
+    lead_gain = effective_gain(nlead.gain, L.NOSE_FOLLOW) if lag else 0.0   # AIPilot.EffectiveNoseLeadGain, once a race
     v = CRUISE
     turn = lambda s: RTS * s + BASE_TURN
     R = v / math.radians(turn(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
@@ -157,12 +153,16 @@ def race(c, p, T=300.0, dt=1 / 50, lag=True, trace=None):
         v += ((BOOST if drv.held else CRUISE) - v) * min(1.0, SPEED_RATE * dt)
         R = v / math.radians(turn(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
         steer = add(fwd, mul(desired, -0.35)) if extending else to
-        if lag and NOSE_LEAD_GAIN > 0 and not extending:   # judged from the command, onto the lead point
-            steer = lead_point(fwd, steer, NOSE_LEAD_GAIN)
-            stick = ai_stick(ang(cmd, steer))
+        if lead_gain > 0:
+            # the nose lead (AIPilot.NoseLeadGain): judge the error from the COMMAND and steer the command onto the nose
+            # turned toward the steer direction by the effective gain times its error, past it (capped), where the lagging
+            # nose is pulled from; on through the break-off's escape leg, as the game's is. The drive above keeps reading
+            # the NOSE's angle (AIBoostContext.Forward is transform.forward) and the stick the pilot wrote (LastStickDeflection).
+            judge, want = judge_and_want(fwd, cmd, steer, lead_gain, nlead.max_extra_deg)
         else:
-            stick = ai_stick(ang(fwd, steer))
-        fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(turn(v) * stick) * dt, dt, lag)
+            judge, want = fwd, steer
+        stick = ai_stick(ang(judge, want))
+        fwd, cmd = L.turn_with_lag(fwd, cmd, want, math.radians(turn(v) * stick) * dt, dt, lag)
         mod = 1.0
         for f, t0, d in list(slows):
             e = (t - t0) / d
@@ -224,13 +224,20 @@ def self_test():
     no_rocket = race(c, dict(BREAKWATER, rocket=False))
     if bw["rockets"] == 0 or bw["danger"] > no_rocket["danger"]:
         bad.append(f"the rocket: with {bw}, without {no_rocket}")
+    # the nose lead is OFF by default: NoseLead() (gain 0) is the unset knob; a lag-free race has nothing to lead and
+    # the knob leaves it alone; with the lag a gain changes the race (the knob is live)
+    if race(c, BREAKWATER, nose_lead=NoseLead()) != bw: bad.append("NoseLead() (gain 0) is not the unset lead")
+    free = race(c, BREAKWATER, lag=False)
+    if race(c, BREAKWATER, lag=False, nose_lead=2.5) != free: bad.append(f"the lead moved a lag-free race: {free}")
+    led = race(c, BREAKWATER, nose_lead=2.5)
+    if led == bw: bad.append("the nose lead at 2.5 changed nothing (the knob is dead)")
     print("breakwater_sparrow_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
 
 def _job(a):
-    name, p, I, s = a
-    return name, I, s, race(course(I, s), p)
+    name, p, I, s = a[:4]
+    return name, I, s, race(course(I, s), p, nose_lead=a[4] if len(a) > 4 else None)
 
 
 def measure_clips(paths, slowed_bit=8, min_speed=60.0):
@@ -271,8 +278,11 @@ if __name__ == "__main__":
             if r: print(f"{name}: {len(r)} clips, seconds lost median {r[len(r) // 2]:.2f} (p25 {r[len(r) // 4]:.2f}, p75 {r[3 * len(r) // 4]:.2f})")
         sys.exit(0)
     from concurrent.futures import ProcessPoolExecutor
-    jobs = [(name, p, I, s) for name, p in (("base", BASE), ("Breakwater", BREAKWATER)) for I in (1, 2, 3, 4)
-            for s in (101, 102, 103)]
+    drives = [("base", BASE, None), ("Breakwater", BREAKWATER, None)]
+    if "--nose-lead" in sys.argv:   # --nose-lead G[,EXTRA]: each drive again with the AI nose lead on
+        lead = NoseLead.from_cli(sys.argv[sys.argv.index("--nose-lead") + 1])
+        drives += [(f"{name}+lead{lead.gain:g}", p, lead) for name, p, _ in drives]
+    jobs = [(name, p, I, s, nl) for name, p, nl in drives for I in (1, 2, 3, 4) for s in (101, 102, 103)]
     with ProcessPoolExecutor() as ex:
         for name, I, s, r in ex.map(_job, jobs):
-            print(f"{name:10} I{I} seed {s}: {r}")
+            print(f"{name:18} I{I} seed {s}: {r}")

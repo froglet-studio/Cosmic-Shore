@@ -35,6 +35,10 @@ args:
     genomes            repo paths of every Manta Time genome to grow from (MantaSoarAITuning_* assets; a missing file
                        is skipped, so the Redline file the AI learning sweep will write joins on its own)
     stay_near_shipped  weight of the pull toward the nearest genome (0 turns it off)
+    nose_lead          the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated at the fleet
+                       lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
+    nose_rate          the AI nose's follow rate per second (VesselTransformer.AINoseFollowPerSecond); absent = the
+                       fleet lag (1.5) the model flies today
 """
 import importlib.util
 import os
@@ -51,13 +55,14 @@ CODE = {"BoostStickBand": "aiBoostStickBand", "YastriStickBand": "aiYastriStickB
 LAPS_SOURCE = "Assets/_Scripts/Controller/Arcade/Redline/RedlineCourseSource.cs"   # the sim reads DefaultLaps here
 PATHS = [SIM, EXECUTOR, PREFAB, POL, LAPS_SOURCE]
 REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}, "limit": {"lo": 300, "hi": 1500}}
+REQUEST_ARGS["nose_lead"] = {"lo": 0.0, "hi": 6.0}   # the AI nose lead a manual run may switch on (0 = off)
 COMBINE_WORST = 0.5
 FLAT_OUT = 720.0          # RedlineCourse.MantaTopSpeed
 _CTX = {}
 
 
 def inputs(args):
-    return [SIM, EXECUTOR, PREFAB, LAPS_SOURCE] + [g for g in genomes(args)]
+    return [SIM, EXECUTOR, PREFAB, LAPS_SOURCE, "Tools/Build/ai_nose_lead.py"] + [g for g in genomes(args)]
 
 
 def intensities(args):
@@ -184,7 +189,7 @@ def evaluate(params, ctx):
     for i, races in _CTX["courses"].items():
         rows = []
         for s, c, flat in races:
-            r = sim.race(c, i, bands=bands, limit=limit)
+            r = sim.race(c, i, bands=bands, limit=limit, nose_rate=a.get("nose_rate"), nose_lead=a.get("nose_lead"))
             r["flat"] = flat
             rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]

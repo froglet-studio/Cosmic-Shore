@@ -88,6 +88,36 @@ static class Program
 
     public static string LevelName(int l) => l switch { 1 => "Easy", 3 => "Hard", 4 => "Legendary", _ => "Medium" };
 
+    // Race.NoseLeadDirection / EffectiveNoseLeadGain against the values Tools/Build/ai_nose_lead.py's self-test holds
+    // (slerp_beyond / effective_gain), which are AIPilot's: the C#, the Python models and the game lead the same way.
+    static void NoseLeadParity(List<string> bad)
+    {
+        Vector3 f = new Vector3(1f, 0f, 0f);
+        Vector3 At(float deg) => new Vector3(Mathf.Cos(deg * Mathf.Deg2Rad), Mathf.Sin(deg * Mathf.Deg2Rad), 0f);
+        void Turn(string what, Vector3 d, float gain, float extra, float wantDeg)
+        {
+            Vector3 w = Race.NoseLeadDirection(f, d, gain, extra);
+            float got = Vector3.Angle(f, w);
+            if (Mathf.Abs(got - wantDeg) > 1e-3f) bad.Add($"NoseLeadDirection {what}: {got:F4} deg, wanted {wantDeg}");
+            if (Mathf.Abs(w.magnitude - 1f) > 1e-5f) bad.Add($"NoseLeadDirection {what}: not a unit vector ({w.magnitude:F6})");
+            if (w.y <= 0f || Mathf.Abs(w.z) > 1e-6f) bad.Add($"NoseLeadDirection {what}: not in the nose-aim plane toward the aim");
+        }
+        Turn("2.5 x 10 deg = 25 deg", At(10f), 2.5f, 40f, 25f);
+        Turn("gain 1 lands on the aim", At(10f), 1f, 40f, 10f);
+        Turn("capped at aim + 40", At(60f), 2.5f, 40f, 100f);
+        Turn("capped at 170", At(150f), 3f, 80f, 170f);
+        if (Vector3.Angle(Race.NoseLeadDirection(f, At(10f), 1f, 40f), At(10f)) > 1e-3f) bad.Add("NoseLeadDirection gain 1 is not the aim itself");
+        if (Vector3.Angle(Race.NoseLeadDirection(f, At(60f) * 5f, 2.5f, 40f), At(100f)) > 1e-3f) bad.Add("NoseLeadDirection does not normalise the aim");
+        if (Vector3.Angle(Race.NoseLeadDirection(f, At(60f), 0f, 40f), At(60f)) > 1e-3f) bad.Add("NoseLeadDirection with gain 0 is not the aim");
+        Vector3 same = Race.NoseLeadDirection(f, f, 2.5f, 40f);
+        if (same.x != 1f || same.y != 0f || same.z != 0f) bad.Add("NoseLeadDirection on the aim does not stay");
+        if (Vector3.Angle(Race.NoseLeadDirection(f, -f, 3f, 80f), -f) > 1e-3f) bad.Add("NoseLeadDirection on the anti-aim is not the aim");
+        foreach (var (g, rate, want) in new[] { (2.5f, 1.5f, 2.5f), (2.5f, 9f, 1f), (2.5f, 0.75f, 5f), (0f, 1.5f, 0f), (2.5f, 0f, 0f),
+                                                (2.5f, float.PositiveInfinity, 0f), (2.5f, float.NaN, 0f) })
+            if (Race.EffectiveNoseLeadGain(g, rate) != want)
+                bad.Add($"EffectiveNoseLeadGain({g}, {rate}) = {Race.EffectiveNoseLeadGain(g, rate)}, wanted {want}");
+    }
+
     static int SelfTest(Opts o)
     {
         var bad = new List<string>();
@@ -115,6 +145,19 @@ static class Program
             int after = w.Planner.Standing(0, w);
             if (removed <= 0 || after >= before) bad.Add($"a blast at station 0 removed nothing ({before} -> {after})");
         }
+        // 4. The nose lead's parity with AIPilot and Tools/Build/ai_nose_lead.py (its self-test's values).
+        NoseLeadParity(bad);
+        // 5. The lead is wired: it changes a lagged race, and with no nose lag (an effective gain of 0) it changes nothing.
+        {
+            var lead = o.With(noLayout: o.NoLayout); lead.NoseLeadGain = 2.5f;
+            var r0 = Race.Run(1, 45501, 1, o, null); var r1 = Race.Run(1, 45501, 1, lead, null);
+            if (r0.Time == r1.Time) bad.Add("noseLead=2.5 changed nothing on the lagged I1 Easy nose");
+            var noLag = o.With(noLayout: o.NoLayout); noLag.NoseLag = false;
+            var noLagLead = o.With(noLayout: o.NoLayout); noLagLead.NoseLag = false; noLagLead.NoseLeadGain = 2.5f;
+            var n0 = Race.Run(1, 45501, 1, noLag, null); var n1 = Race.Run(1, 45501, 1, noLagLead, null);
+            if (n0.Time != n1.Time || n0.Hits != n1.Hits || n0.Rings != n1.Rings)
+                bad.Add("noseLead=2.5 changed a race flown with no nose lag (its effective gain must be 0)");
+        }
         Console.WriteLine("switchback_sim self-test: " + (bad.Count == 0 ? "ok" : "FAILED " + string.Join("; ", bad)));
         return bad.Count == 0 ? 0 : 1;
     }
@@ -134,8 +177,8 @@ sealed class Opts
     public bool Setup;   // SwitchbackController.aiStrikeSetupLeg (off since 2026-11-02, step 2); setup=1 = the old strike
     public bool StrikeAtKey;          // what-if B: the strike aims at the key itself (not 40 u past it on the fire line)
     public float StrikeCommitCos = 0.9f; // what-if C: the commit drift's alignment on a strike (AIPilot: 0.9 = 26 deg)
-    public bool PassedByTravel;
-    public bool BlastHarmless;
+    public bool PassedByTravel;       // what-if D: the strike ends when the key is behind the hull's travel
+    public bool BlastHarmless;        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)
     public float DriftTurnMult = 1.5f;  // DolphinDriftAction.Mult: the turn rate while drifting (BeginDrift); grip 0 freezes the course
     public float CarveDegrees;         // step 4 what-if: drift-carve when the aim is this far off the course (0 = off)
     public float CarveDoneDegrees = 8f;  // ...let go once the nose is this close to the aim
@@ -143,7 +186,7 @@ sealed class Opts
     // VesselTransformer.NoseFollowFraction: an AI hull's nose follows its commanded rotation at LERP_AMOUNT 1.5/s ALWAYS,
     // drifting included (only a local human pilot has no lag, Garrett 2026-10-21). The game: driftLag on, noseLag on.
     public bool DriftLag = true;
-    public bool NoseLag = true;
+    public bool NoseLag = true;       // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)
     // The AI nose's follow rate per second, one row per intensity (I1..I4), each Easy, Medium, Hard, Legendary: 1.5 = the
     // fleet lag, 0 = no lag. noseFollow=e,m,h,l sets every row (1.5,1.5,1.5,1.5 = the fleet lag, as before 2026-11-02);
     // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity for I1-I3 and, at I4 (the
@@ -153,8 +196,15 @@ sealed class Opts
     {
         new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.9f, 2.8f, 3.5f, 5f },
     };
-    public bool CmdSteer;              // what-if: the AI judges its stick from its COMMANDED heading, not the lagging nose
-    public float CmdLead;              // ...and leads the command past the aim by this share of the nose's lag        // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose
+    // AIPilot.NoseLeadGain / NoseLeadMaxExtraDegrees (PR #1786; Tools/Build/ai_nose_lead.py is the Python twin): with a gain
+    // above 0 the pilot judges its error from the COMMAND, not the lagging nose, and wants the nose turned toward the aim by
+    // the gain times its error - past the aim, at most noseLeadExtra degrees past it and never past 170 deg from the nose
+    // (Race.NoseLeadDirection). The gain is stated at the fleet lag (1.5/s) and scaled by this level's nose rate
+    // (Race.EffectiveNoseLeadGain: never under 1, 0 with noseLag=0). Off while drifting. 0 = every shipped asset, today's
+    // steering (the races are byte-identical). noseLead=<gain> noseLeadExtra=<deg>. It retires the cmdSteer/cmdLead what-if
+    // (judged from the command with a fixed 60 deg extra cap, no 170 cap, no rate scaling; SWITCHBACK.md step 4).
+    public float NoseLeadGain;
+    public float NoseLeadMaxExtraDegrees = Race.DefaultNoseLeadMaxExtraDegrees;
     public bool DangerOnly = true;
     public float NoDodgeNear = 200f;
     public HitModel Hit = HitModel.Default;
@@ -217,8 +267,8 @@ sealed class Opts
                 case "noseFollow": for (int r = 0; r < 4; r++) o.NoseFollowTable[r] = Array.ConvertAll(v.Split(','), float.Parse); break;
                 case "noseFollowI1": case "noseFollowI2": case "noseFollowI3": case "noseFollowI4":
                     o.NoseFollowTable[key[^1] - '1'] = Array.ConvertAll(v.Split(','), float.Parse); break;
-                case "cmdSteer": o.CmdSteer = v != "0"; break;
-                case "cmdLead": o.CmdLead = float.Parse(v); break;
+                case "noseLead": o.NoseLeadGain = float.Parse(v); break;
+                case "noseLeadExtra": o.NoseLeadMaxExtraDegrees = float.Parse(v); break;
                 case "noDodgeNear": o.NoDodgeNear = float.Parse(v); break;
                 case "pickup": o.PickupRadius = float.Parse(v); break;
                 case "hull": o.HullRadius = float.Parse(v); break;
@@ -435,6 +485,37 @@ sealed class Race
         return errDeg > 90f ? 1f : Mathf.Min(1f, a * Mathf.Sin(e));
     }
 
+    // AIPilot.NoseLeadGain's two pure functions, line for line from AIPilot.cs (Tools/Build/ai_nose_lead.py's slerp_beyond and
+    // effective_gain are the same maths in Python); Program.SelfTest holds them to the Python twin's self-test values.
+    public const float DefaultNoseLeadMaxExtraDegrees = 40f;   // AIPilot.DefaultNoseLeadMaxExtraDegrees
+    public const float NoseLeadMaxTurnDegrees = 170f;          // AIPilot.NoseLeadMaxTurnDegrees
+
+    /// <summary>AIPilot.NoseLeadDirection: <paramref name="nose"/> turned toward <paramref name="desired"/> by
+    /// <paramref name="gain"/> times the angle between them along the same great circle (past the aim when the gain is
+    /// over 1), never more than <paramref name="maxExtraDegrees"/> past it nor <see cref="NoseLeadMaxTurnDegrees"/> from
+    /// the nose; <paramref name="desired"/> itself when the two are (anti)parallel or the gain is 0.</summary>
+    public static Vector3 NoseLeadDirection(Vector3 nose, Vector3 desired, float gain, float maxExtraDegrees)
+    {
+        Vector3 n = nose.normalized, d = desired.normalized;
+        if (gain <= 0f || n.sqrMagnitude < 1e-8f || d.sqrMagnitude < 1e-8f) return d;
+        Vector3 perp = d - n * Vector3.Dot(n, d);
+        if (perp.sqrMagnitude < 1e-8f) return d;
+        perp.Normalize();
+        float error = Vector3.Angle(n, d);
+        float turn = Mathf.Min(gain * error, error + Mathf.Max(0f, maxExtraDegrees), NoseLeadMaxTurnDegrees) * Mathf.Deg2Rad;
+        return n * Mathf.Cos(turn) + perp * Mathf.Sin(turn);
+    }
+
+    /// <summary>AIPilot.EffectiveNoseLeadGain: the gain is stated at the fleet lag (VesselTransformer.RotationFollowRate,
+    /// <see cref="NoseFollow"/>) and buys the nose closing at gain x 1.5 per second, so a faster nose needs proportionally
+    /// less lead and never less than 1 (judging from the command); 0 when the lead is off or the nose has no lag.</summary>
+    public static float EffectiveNoseLeadGain(float gain, float noseFollowRate)
+    {
+        if (gain <= 0f || noseFollowRate <= 0f || float.IsInfinity(noseFollowRate) || float.IsNaN(noseFollowRate))
+            return 0f;
+        return Mathf.Max(1f, gain * NoseFollow / noseFollowRate);
+    }
+
     void Fly(World w, int intensity, int seed, int level, Opts o, List<string> log)
     {
         var skill = SwitchbackAISkill.ForLevel(level);
@@ -627,14 +708,18 @@ sealed class Race
             else
             {
                 Vector3 steer = extending ? (fwd + desired * -0.35f) : desired;
-                if (o.CmdSteer && o.CmdLead > 0f && Ang(fwd, steer) > 1f)
+                // AIPilot.TryNoseLead: with the lead on, the error is judged from the COMMAND and the wanted direction is the
+                // NOSE turned toward the steer by the lead (past it); the stick still turns the command and the nose still
+                // follows the command. Never while drifting (the branch above); 0 with noseLag=0 (the rate is 0); on during
+                // an orbit break-off and an emergency dodge, as in the game (the dodge keeps its full stick).
+                Vector3 judged = fwd;
+                float leadGain = EffectiveNoseLeadGain(o.NoseLeadGain, NoseRate());
+                if (leadGain > 0f)
                 {
-                    // lead: aim the command past the target by a share of the nose's remaining gap to it
-                    Vector3 axis = Vector3.Cross(fwd, steer);
-                    if (axis.sqrMagnitude > 1e-8f)
-                        steer = Quaternion.AngleAxis(Mathf.Min(Ang(fwd, steer) * o.CmdLead, 60f), axis.normalized) * steer;
+                    steer = NoseLeadDirection(fwd, steer, leadGain, o.NoseLeadMaxExtraDegrees);
+                    judged = cmd;
                 }
-                float s = emerg ? 1f : Stick(Ang(o.CmdSteer ? cmd : fwd, steer));
+                float s = emerg ? 1f : Stick(Ang(judged, steer));
                 cmd = RotateToward(cmd, steer, Turn * s * Mathf.Deg2Rad * dt);
                 fwd = NoseFollowTo(fwd, cmd);
                 travel = fwd;
@@ -714,11 +799,18 @@ sealed class Race
                 log.Add($"{t,6:F1} gate {idx} plan={d.Plan} why={d.Why} cost thread={d.CostThread:F1} blast={d.CostBlast:F1} standing={d.Standing} cover={d.Coverage:P0}");
         }
 
-        // VesselTransformer.NoseFollowFraction for an AI hull: the fleet's LERP_AMOUNT 1.5/s, or this level's rate; 0 = none
-        Vector3 NoseFollowTo(Vector3 nose, Vector3 command)
+        // This level's AI nose follow rate per second (VesselTransformer.NoseFollowRate: the row SwitchbackController sets, or
+        // the fleet's LERP_AMOUNT 1.5/s); 0 = no lag. The nose follow and the nose lead read the same number.
+        float NoseRate()
         {
             var row = o.NoseFollowTable[Mathf.Clamp(intensity - 1, 0, 3)];
-            float rate = o.NoseLag ? row[Mathf.Clamp(level - 1, 0, row.Length - 1)] : 0f;
+            return o.NoseLag ? row[Mathf.Clamp(level - 1, 0, row.Length - 1)] : 0f;
+        }
+
+        // VesselTransformer.NoseFollowFraction for an AI hull: the nose closes min(1, rate x dt) of its gap to the command
+        Vector3 NoseFollowTo(Vector3 nose, Vector3 command)
+        {
+            float rate = NoseRate();
             return rate <= 0f ? command : RotateToward(nose, command, Ang(nose, command) * Mathf.Deg2Rad * Mathf.Min(1f, rate * dt));
         }
 
