@@ -6,7 +6,7 @@ using CosmicShore.Gameplay;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;

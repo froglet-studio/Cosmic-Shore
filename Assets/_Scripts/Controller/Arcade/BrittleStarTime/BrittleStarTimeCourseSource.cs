@@ -6,8 +6,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Brittle Star Time's course: Headlong's solver cut to <see cref="BrittleStarTimeCourse.ForIntensity"/>. A closed circuit
-    /// that cannot fail - the shared solver relaxes toward a regular ring.
+    /// Brittle Star Time's course: four movement questions, one per intensity (<see cref="BrittleStarTimeCourse"/>). A
+    /// closed lap that cannot fail - any rung that cannot be laid falls back to the Gearbox, Headlong's solver.
     /// </summary>
     public sealed class BrittleStarTimeCourseSource : RaceCourseSource
     {
@@ -28,11 +28,20 @@ namespace CosmicShore.Gameplay
                 : EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget;
         }
 
+        /// <summary>
+        /// I1 is the Gearbox (Headlong's solver); I2-I4 lay their rung's shape (<see cref="BrittleStarTimeCourse.BuildLap"/>).
+        /// A shape that cannot be laid in this shell, or a race target that is not two laps of eight, flies the Gearbox
+        /// instead, so the race always has a course.
+        /// </summary>
         public override List<RaceGate> Build(in RaceCourseRequest request, out string failure)
         {
             failure = null;
-            return HeadlongCourseSource.BuildCircuit(BrittleStarTimeCourse.ForIntensity(request.Intensity),
-                                                     request, LapsPerRace(request.Intensity));
+            int laps = LapsPerRace(request.Intensity);
+            int perLap = Mathf.Max(3, Mathf.CeilToInt(request.GateCount / (float)laps));
+            if (BrittleStarTimeCourse.BuildLap(request.Intensity, request.Seed, request.Inner, request.Outer, perLap,
+                                               out var lap))
+                return lap;
+            return HeadlongCourseSource.BuildCircuit(BrittleStarTimeCourse.Gearbox(), request, laps);
         }
     }
 }

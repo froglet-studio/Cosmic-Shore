@@ -31,6 +31,8 @@ section here. The build that follows a pick is verified against the picked board
 | Compute Console | `compute-console` | Rev 38, 41 and 42: the Compute console as an application | Shombith, 2026-11-02 (section 112) |
 | Menu Redesign C | `menu-redesign-c` | The next redesign pass, from Rev 43 (the Voyage window, sections 113, 116-118; built in section 119) | Shombith, 2026-11-02 (section 112) |
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
+| Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
+| Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5937,3 +5939,129 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
   stay off.
 - **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
   centred, and the underline sits at the row's foot.
+
+## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
+
+- **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
+  show me mockups of the dashboard, follow the style guide." The decision it follows: leave PostHog for our own ingest
+  server on the Oracle VM, with a dashboard for Ian curated by Claude
+  (plan: https://claude.ai/artifact/XXg7s4xV5WGneWsgKsPUnX; Ian's analytics emails of 2026-10-29, PR #1639).
+- **On the canvas:** a new tab **Froglet Analytics** (`froglet-analytics`), round "Rev 50 - Froglet Analytics dashboard:
+  our own backend replaces PostHog, three ways to read it", in section `sec-rev50`. Copies:
+  `Docs/MenuRedesignB/board/R50*.dc.html`. Drawn to the Frogma style guide (the Style Guide tab: Deep Sea, Aldrich and
+  Chakra Petch, cut corners, colour is information).
+  - **Compare**: the top of each option side by side, with what each is good for and what it costs.
+  - **A - Morning read (recommended, interactive)**: Claude's overnight read and a data-health list on top, six number
+    tiles, then rematch by play type, rows per play and matches per day. Build (Release / Editor / Port) and Range
+    (7 / 30 / 90 d) are live.
+  - **B - Console**: a left rail of pages (Overview, Retention, Matches, Data health, Ask Claude, Erasure) like the
+    Compute console; Claude's read shrinks to one line; tables for rematch by play type, match health by build and the
+    last day's events.
+  - **C - Ask first (interactive)**: a question box, three example questions, Claude's answer with the query it ran
+    beside it, the tiles and the overnight read pinned below.
+  - **Notes**: the recommendation, where each number comes from, the colour rules used.
+  - **Recommendation: A.** It is read once a day to answer Garrett's retention question; the story sits on the same
+    screen as the numbers it is checked against. B's rail fits once there are more pages; C's box belongs inside A or B.
+- **Numbers.** Real: Ian's PostHog figures of 2026-10-29 (25 players, 117 release matches and 1,284 editor matches in
+  90 days, 2.0 rows per play, rematch 64% solo vs AI and 50% solo, 2 multi-human matches, the port build 1 of 43
+  finished against 63% on Windows, Bloomrush 0 of 13, 21 of 241 double payouts). Examples, and labelled so on the boards:
+  the daily series, B's matches per play type and last-day event counts, health times, query run times.
+- **Colour.** Data is one blue (blue-68 `#758FFB`); Fire only marks a problem; the Lime tick marks healthy; Jade
+  (`#00D4FF`, selection) marks the picked filter, the picked question and focus. No domain colour: a play type is not a
+  domain. A chart with two or more series has no family to draw from, so every chart has one series plus labels; raised
+  as row 19 of the design feedback queue in `Docs/UI_REDESIGN_TASKS.md`.
+- **Differs from the build:** nothing is built. The dashboard is a new web page that reads the analytics server's read
+  API; it is not a Unity screen. Not drawn yet: sign-in, the Erasure page, phone width.
+- **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
+  Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
+  there); the page itself is not built yet.
+
+## 141. Rev 65 mockups: Froglet Analytics, the full tool - filters, charts, cohorts, eras, admin queries (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-06, on the live console):** "need filters and sorting for sure"; the player profile "is not
+at all good there should different analytical tools like pie charts, ganntt charts etc for business development";
+"need features to filter solo vs ai, multiplayer"; "Go a step more and make it the best analytical tool ever ... 5-6
+mockups there for players details new features etc. We should also give control to admins more like creating new tables
+queries"; "all these data till now could be put in cohorts and say name them Old Posthog data and the new data from a
+set data to a set data can be Pre Beta Editor testing results ... Create a chart for that"; "A plan Chart".
+
+**On the canvas:** the Froglet Analytics tab, round "Rev 65 - Froglet Analytics, the full tool: filters, charts,
+cohorts, eras and admin queries", under Rev 50 (picked B). Seven screens of one tool, not options: each can be picked,
+changed or dropped. Drawn in the console's default theme (Nocturne, `Tools/Analytics/console/themes.css`) over the sea
+lines, every number sample data from one seeded set (`Docs/MenuRedesignB/rounds/r65_analytics_tool.py`). Copies:
+`Docs/MenuRedesignB/board/R65*.dc.html`.
+- **Players:** a filter bar (search, country, platform, active window, matches, has played multiplayer, crystals, saved
+  segments, CSV export), click-to-sort columns, and per row a lifespan bar (first to last seen, ticks on play days) and
+  a play-mix bar.
+- **Profile:** six tiles; a play-type donut (three parts); ranked bars for modes and vessels; an hour x weekday heatmap;
+  a Gantt match timeline (a lane per mode, filled = finished, outline = not, a square = a win); the crystal balance line
+  and earnings by source; the transaction table behind a link.
+- **Lifespans (Cohorts):** every player's lifespan as a Gantt, coloured by how they mostly play, faded when lapsed; a
+  weekly cohort return heatmap (one hue).
+- **Eras:** the plan chart. Named eras an admin sets: Old PostHog data (8 Aug to 5 Nov, imported), Pre-beta editor
+  testing (6 Nov to an end date set), then the closed mobile beta and Steam with keys from `Docs/LAUNCH/READINESS.md`
+  (planned, dashed), with milestones and the weeks' events coloured by era; an Era filter in every header; two eras
+  compared (rows per play 1.81 to 1.00 shows the #1639 fix).
+- **Play types:** Solo vs AI, Solo and Multiplayer side by side, the multiplayer invite-to-replay funnel, the share donut;
+  the Play filter in every header.
+- **Query Studio (admins):** a builder (From, Where, Group by, Measure, Order), SQL, or Ask Claude; the result as bars,
+  line, donut, Gantt, table or a number; save as a query or as a table rebuilt nightly, share, pin, alert.
+- **Dashboards (admins):** your own boards of tiles from saved queries or any console chart, drag and resize, shared with
+  readers or admins, emailed on a schedule.
+- **Notes:** what each screen adds and what the server already answers.
+
+**Differs from the build:** the console has none of these yet. Already on the server (branch
+`claude/sweet-mayer-se51r6`, 4a729d91d6): the play filter on Overview, Retention and Matches, and each player's play
+mix and wins on `/v1/people`; `/v1/person` already returns every match and every crystal change the profile needs. New
+server work: eras (config, a filter like the build filter; imported PostHog events are told apart exactly, they arrive
+with their own old timestamp), saved queries and tables (the Ask box's read-only guard), dashboards, segments, a weekly
+returns aggregate and a per-party funnel. Charts: the colour set's four rims in a fixed order (Jade solo vs AI, Gold
+solo, Ruby multiplayer, Blue plain data) with legends and labels; the rims sit above the usual chart lightness band
+(`dataviz` validator), so labels stay on. Awaiting a pick.
+
+## 142. Rev 66 mockups: Froglet Analytics, more ideas - chart switches, live now, alerts, funnels, release and player compare (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-06, picking all seven Rev 65 screens to be built):** "If you have more ideas provide mockups
+lets do that too", and the console should have "switches in graphs which helps all these departments" (business,
+marketing, analysis): every chart carries its own switches for its form, its measure and its split, never one switch
+for the whole page.
+
+**On the canvas:** the Froglet Analytics tab, round "Rev 66 - Froglet Analytics, more ideas: chart switches, live now,
+alerts, funnels, release and player compare", under Rev 65 (canvas version 188, `1793993677-e49e`). Six new screens of
+the same console, not options: each can be picked, changed or dropped. Rev 65's kit, imported by
+`Docs/MenuRedesignB/rounds/r66_analytics_ideas.py` from `r65_analytics_tool.py` (Nocturne, the rail, the sea lines,
+panels, tiles, donut, ranked bars), with the rail gaining Live now, Funnels, Releases and Alerts; every number is sample
+data from Rev 65's set (Dragon, Kes and Halcyon are the same players). Copies: `Docs/MenuRedesignB/board/R66*.dc.html`.
+- **Switches** (the compare board): one Overview chart as Business (Pie, Players, split by Platform), Marketing (Bars,
+  New players, split by Country) and Analysis (Line, Finished %, split by Play type) set it; the switch row drawn large
+  with its four parts (Form, Measure, Split by with its menu open, pin / copy / back) and the rules (Pie only at 6 parts
+  or fewer, Line only over time, a form the data cannot take is left out); the same chart as a Table. In a panel the
+  forms are icons and only the chosen one shows its name, so the row fits a third of the page.
+- **Live:** online now, in a match, in the menus, in the FTUE, parties open; the last hour by play type; what is being
+  played (stacked by play type); a tile-per-country map; a ticker of events, paused by hand, never scrolling on its own.
+- **Alerts:** four cards (D1 down to 29% on 0.9.14 Android, rejected events spiking on 0.9.15 WebGL, crystals paid
+  twice, Headlong at 4% finished), each with its chart, "why Claude thinks so" and the page that explains it; admins'
+  threshold rules with on/off, "Claude also flags what no rule names", resolved this week.
+- **Funnel:** any events or FTUE steps in order, within 1 / 7 / 30 days, strict or any order; conversion by platform
+  with the drop between steps; time between steps; where the ones who dropped went instead; save as funnel or segment.
+- **Releases:** build A (0.9.13) against B (0.9.14) over the first 7 days of each: a read per measure (better, worse,
+  too early under 30 players), D1 by platform, who is on which build today, finished by mode, exceptions per 100
+  sessions, launch-to-menu histogram, the return curve.
+- **PlayerCompare:** Dragon, Kes and Halcyon side by side (the best in each row underlined), matches a week, play types
+  (colour is the player there, play types are words), and "players like Dragon": the nearest six, why, and what the
+  likeness weighs.
+- **Notes:** what each screen adds, what the server has and what is new.
+
+**Differs from the build:** none of these exist in the console yet. The switch row is the one piece the others use, so
+it would come first; its server side is already in the Rev 65 contract (`GET /v1/series`, measure x split x over, a
+400 hides an option the aggregates cannot answer); new are each person's switch settings per chart and a
+country-by-day aggregate. Live needs `GET /v1/live` over events.db's last 5 minutes (the client flushes every 30 s, so
+live is 30 to 60 s behind; names only for profile keys). Alerts reuse `rejects`, `double_payouts`, `returns`,
+`daily_plays` and plays by mode; new are an alerts table, rules, an hourly job after the rebuild with Claude reading
+aggregates only, and rejects per hour (per day today). The funnel needs a per-player query over events.db that returns
+counts only; there is no real-money purchase event, so its last step is the first crystal spend. Release compare needs
+launches and returns split by `app_version` and an exception event the game does not send yet (rate-limited, a hash of
+the message and its top frame). Player compare needs `GET /v1/similar?id=` worked out on the server; Claude is not
+asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
+solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
+a better number. No player id reaches Claude on any of these. Awaiting a pick.

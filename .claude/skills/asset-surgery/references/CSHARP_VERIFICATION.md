@@ -173,6 +173,23 @@ the repo, and add members only as the compile asks for them. Also: `verify_black
 `glslangValidator`; a root container gets it from `apt-get install -y glslang-tools` (after an
 `apt-get update`).
 
+**The same stub trick RUNS editor tooling that shells out, against real processes.** `FrogletGit` /
+`FrogletSourceControl` / `FrogletPython` touch Unity only through `Application.dataPath`, `Mathf.Max`,
+`JsonUtility.FromJson` and `EditorUtility.OpenWithDefaultApp`; with a 15-line stub of those (JsonUtility via
+`System.Text.Json` with `IncludeFields`) the shipped files compiled into a `net8.0` console and ran 36 real git
+operations against throwaway repos with a bare `origin` (commit of ticked paths with `[ ] *` and non-ASCII names,
+discard, publish, pull, a conflicting merge undone, switch to a remote-only branch; 2026-11-06,
+`claude/froglet-source-control`). It proves the git half; the IMGUI half still needs the editor.
+
+**Trap: a reference compile that ran BEFORE an assembly was deleted keeps that assembly's `.rsp`.** `build.py`
+writes one `<Assembly>.rsp` per assembly into `$TMPDIR/unity_refcompile_out/<tree>/<config>/` and never prunes it.
+After #1771 removed the Obvious SOAP plugin, a checkout that had compiled earlier still had `Obvious.Soap.rsp`, and
+`check_generated_assets.py` (which globs every `*.rsp` there) failed with `DirectoryNotFoundException` on the plugin's
+deleted sources, so `gates.sh` printed `FAIL generated_assets` for a tree that was fine. A clean worktree of the base
+passed only because it had nothing to audit, which is why A/B against the base did not settle it. Fix: delete the
+output folder and re-run (`rm -rf $TMPDIR/unity_refcompile_out/<tree>`). The tool should prune what it no longer
+builds (a follow-up in PR #1775).
+
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
 harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**

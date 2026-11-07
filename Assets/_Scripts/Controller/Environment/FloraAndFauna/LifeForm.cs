@@ -5,7 +5,7 @@ using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;

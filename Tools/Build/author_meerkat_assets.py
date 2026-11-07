@@ -634,16 +634,25 @@ def build_hud_variant(donor: str) -> str:
 
 
 OMNI_LINE = f"  omniAbilitySprite: {{fileID: 21300000, guid: {I.guid_for(I.OMNI)}, type: 3}}\n"
+# The gauges' colours are UI theme tokens (Docs/UI_STYLE_GUIDE.md, the PR UI checklist's "Theme tokens"), not the raw Color
+# pair the Stoat's view carries: NeutralLightest (7) at rest, Cta (8) when ready, resolved against UITheme.asset.
+UI_THEME_GUID = "0aef6398681c4ec98118cc9b9740060a"
+THEME_LINES = (f"  theme: {{fileID: 11400000, guid: {UI_THEME_GUID}, type: 2}}\n"
+               "  gaugeToken: 7\n"
+               "  readyToken: 8\n")
 
 
 def patch_hud_variant(text: str) -> str:
     """Idempotent edits the committed variant takes too (its clone is a spent one-shot): the omni crystal card's sprite,
-    the Soliton Network (VesselHUDView.omniAbilitySprite; empty, the card draws LOCKED), written in the view's own block."""
+    the Soliton Network (VesselHUDView.omniAbilitySprite; empty, the card draws LOCKED), and the gauges' theme tokens
+    (THEME_LINES), written in the view's own block."""
     m = re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!|\Z)" % HUD_VIEW_DOC, text)
     if not m:
         raise RuntimeError("MeerkatHUDVariant: the view's block is not found")
     view = re.sub(r"^  omniAbilitySprite: .*\n", "", m.group(0), flags=re.M)
     view = replace_once(view, "  upgradeHighlightScale:", OMNI_LINE + "  upgradeHighlightScale:", "the view's upgradeHighlightScale")
+    view = re.sub(r"^  (?:gaugeColor|readyColor|theme|gaugeToken|readyToken): .*\n", "", view, flags=re.M)
+    view = replace_once(view, "  colorBlendRate:", THEME_LINES + "  colorBlendRate:", "the view's colorBlendRate")
     return text[:m.start()] + view + text[m.end():]
 
 
@@ -674,6 +683,8 @@ def check_hud_variant(text: str):
              f"MeerkatHUDVariant: the view's {new} is unwired or its object is not named {new_go}")
     for field in STOAT_ONLY_VIEW_FIELDS:
         want(not re.search(r"^  %s: " % field, view, re.M), f"MeerkatHUDVariant: the Stoat's view field {field} is still there")
+    want(THEME_LINES in view and not re.search(r"^  (?:gaugeColor|readyColor): ", view, re.M),
+         "MeerkatHUDVariant: the gauge colours are not the UI theme's tokens (theme, gaugeToken 7, readyToken 8)")
     want(OMNI_LINE in view, "MeerkatHUDVariant: the omni card is not the Soliton Network (an empty omniAbilitySprite draws LOCKED)")
     for old, name in list(zip(STOAT_ICONS, I.ICONS)) + [(None, I.OMNI)]:
         want(old is None or old not in text, f"MeerkatHUDVariant: the Stoat's sprite {old} is still on a card")

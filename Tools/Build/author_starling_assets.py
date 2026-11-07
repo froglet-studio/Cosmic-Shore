@@ -174,11 +174,11 @@ def read_cards():
 
 
 def wired_ids():
-    """The Starlings Lab's IMPL: the cards the lab (and so the game) runs."""
+    """The Starlings Lab's IMPL_UNITY: the cards the game runs (the lab's IMPL also has the Time race's lab-only cards)."""
     text = open(LAB, encoding="utf-8").read()
-    m = re.search(r"const IMPL = \{(.*?)\n\s*\};", text, re.S)
+    m = re.search(r"const IMPL_UNITY = \{(.*?)\n\s*\};", text, re.S)
     if not m:
-        raise RuntimeError("StarlingsLab.html: const IMPL not found")
+        raise RuntimeError("StarlingsLab.html: const IMPL_UNITY not found")
     return re.findall(r"'([a-z]+-[a-z-]+)'", m.group(1))
 
 
@@ -618,7 +618,7 @@ def check(files: "dict[str, str]") -> "list[str]":
     need("  farClipPlane: 12000\n" in files.get(CAMERA, ""), "the camera does not state the fleet's farClipPlane 12000")
     deck = files.get(DECK_PATH, "")
     need(deck.count("\n  - id: ") == 80, "the card deck does not hold the 80 cards")
-    need(deck.count("    wired: 1\n") == len(wired_ids()) == 24, "the deck's wired set is not the lab's 24 (IMPL)")
+    need(deck.count("    wired: 1\n") == len(wired_ids()) == 24, "the deck's wired set is not the lab's 24 (IMPL_UNITY)")
 
     need(f"  - {{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}\n" in files.get(CONTAINER, ""),
          "not registered in the Vessel Prefab Container (by its root TRANSFORM)")

@@ -130,7 +130,7 @@ static class Program
                     "wrasserun" => HeadlongCircuit.Generate(seed, Apply(WrasseRunCourse.ForIntensity(intensity), layer)),
                     "scarabrally" => SwitchbackCourse.Generate(seed, Apply(ScarabRallyCourse.ForIntensity(intensity), layer)),
                     "serpenttime" => HeadlongCircuit.Generate(seed, Apply(SerpentTimeCourse.ForIntensity(intensity), layer)),
-                    "brittlestartime" => HeadlongCircuit.Generate(seed, Apply(BrittleStarTimeCourse.ForIntensity(intensity), layer)),
+                    "brittlestartime" => BrittleStarTimeLap(seed, intensity, layer),
                     "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
@@ -206,6 +206,17 @@ static class Program
                 UnityEngine.Debug.LogError($"unknown layer kind '{kind}'");
                 return 0;
         }
+    }
+
+    /// <summary>Brittle Star Time's lap as BrittleStarTimeCourseSource.Build lays it: the rung's own shape
+    /// (BrittleStarTimeCourse.BuildLap) in the card's shell, else the Gearbox (Headlong's solver).</summary>
+    static List<RaceGate> BrittleStarTimeLap(int seed, int intensity, JsonElement layer)
+    {
+        var gearbox = Apply(BrittleStarTimeCourse.Gearbox(), layer);
+        return BrittleStarTimeCourse.BuildLap(intensity, seed, gearbox.InnerRadius, gearbox.OuterRadius, gearbox.GateCount,
+                                              out var lap)
+            ? lap
+            : HeadlongCircuit.Generate(seed, gearbox);
     }
 
     /// <summary>Course settings are value types built by ForIntensity; a spec may override the
