@@ -182,7 +182,7 @@ MonoBehaviour:
     upgradedSprite: {fileID: 0}
     gauge: {fileID: 7881000000000001203}
   coreAbilities: []
-  omniAbilitySprite: {fileID: 0}
+  omniAbilitySprite: {fileID: 21300000, guid: e03847ac72acca153a9ad5ebed011e24, type: 3}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
