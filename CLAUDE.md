@@ -90,6 +90,15 @@ This file holds only the rules every session needs. Everything else moved verbat
   see the real game without a person, the world's look, the principles ledger and design brief, UI first drafts and
   board parity, sound slots, multiplayer hand tests. Update its §6 status in every change that moves a step.
   Sections: what made the last two rounds work; the audit; the ranked list; how to spend the cycles; decisions; status
+- [`Docs/Pilots/PORTRAITS.md`](Docs/Pilots/PORTRAITS.md): **The PILOT PORTRAITS are made by `/pilot-art`**
+  (`Tools/Build/pilot_art/`: the brief composed from the pilot's record - the first animal's head, ONE feature
+  from the second, the faction's gear in its domain colour, the callsign's mark - the painter protocol through the
+  Figma connector, the key-colour matte, the finish framed to the 32 painted portraits' measured envelope, the
+  gates, the sheet beside the nearest references, the writer that keeps every guid and wires the `PilotSO`).
+  Garrett's bar (2026-11-07): "art like the ones we have but even better". Read before touching
+  `Assets/_Graphics/Pilots/**`, a `Pilot_<Callsign>.asset` portrait or `Tools/Build/pilot_art/**`. The painted set
+  is the reference and is never overwritten.
+  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.

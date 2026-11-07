@@ -23,6 +23,12 @@ artifacts), which was thrown out because it conflicts with CALLSIGNS.md and ARTI
 THE ARTIFACTS: each is one payload transformation with four element tracks (0 to 10, a twist at 5), bound to no
 vessel class, from Docs/Pilots/pilots_and_artifacts.json. Ids are what players save: never rename one.
 
+THE PORTRAITS (2026-11-07): a callsign's portrait sprite is made by the pilot-art kit (Tools/Build/pilot_art/author.py,
+the /pilot-art skill, Docs/Pilots/PORTRAITS.md), which records what it wired in Tools/Build/pilot_art/wired.json
+(pilot id -> PNG and guid). This generator reads that record and writes the sprite reference into the pilot asset,
+so the kit's --check and this one agree; a callsign with no record keeps `portrait: {fileID: 0}` and the Hangar
+shows its no-art word.
+
 Usage:
     python3 Tools/Build/author_pilot_assets.py             # write
     python3 Tools/Build/author_pilot_assets.py --check     # report drift, write nothing
@@ -69,7 +75,8 @@ MAX_LEVEL = 10
 KEYWORDS = [
     ("Manta",     ["BasePrismProduction", "CrystalBlast"]),
     ("Dolphin",   ["BasePrismProduction", "Boost", "CrystalBlast"]),
-    ("Rhino",     ["BasePrismProduction", "Blade", "CrystalBlast"]),
+    ("Rhino",     ["BasePrismProduction", "CrystalBlast"]),   # the plough: the Blade keyword left with the sword (2026-11-07)
+    ("Swordfish", ["BasePrismProduction", "Blade", "CrystalBlast"]),   # the Rhino's sword, split off 2026-11-07
     ("Squirrel",  ["BasePrismProduction", "Boost", "Blade", "CrystalBlast", "Attach"]),
     ("Serpent",   ["BasePrismProduction", "Projectile"]),
     ("Sparrow",   ["BasePrismProduction", "Boost", "Projectile"]),
@@ -196,7 +203,30 @@ def fnum(v):
     return str(int(v)) if float(v).is_integer() else repr(float(v))
 
 
-def pilot_asset(value, any_vessel, script):
+WIRED_PORTRAITS = "Tools/Build/pilot_art/wired.json"
+
+
+def wired_portraits():
+    """pilot id -> the guid of the portrait PNG the pilot-art kit wired to it (empty when the kit has wired none).
+    The PNG's .meta must exist and carry the recorded guid: a record without its sprite is a defect, not a skip."""
+    path = os.path.join(ROOT, WIRED_PORTRAITS)
+    if not os.path.exists(path):
+        return {}
+    out = {}
+    for pid, entry in json.load(open(path, encoding="utf-8")).get("portraits", {}).items():
+        meta = entry["png"] + ".meta"
+        assert os.path.exists(os.path.join(ROOT, meta)), f"{WIRED_PORTRAITS}: {meta} is missing (run pilot_art/author.py)"
+        guid = re.search(r"^guid: ([0-9a-f]{32})$", read(meta), re.M).group(1)
+        assert guid == entry["guid"], f"{WIRED_PORTRAITS}: {meta} carries {guid}, the record says {entry['guid']}"
+        out[pid] = guid
+    return out
+
+
+def portrait_ref(guid):
+    return f"{{fileID: 21300000, guid: {guid}, type: 3}}" if guid else "{fileID: 0}"
+
+
+def pilot_asset(value, any_vessel, script, portrait_guid=None):
     word = callsign_word(value)
     name = f"Pilot_{word.capitalize()}"
     return name, SO_HEADER.format(script=script, name=name) + (
@@ -204,7 +234,7 @@ def pilot_asset(value, any_vessel, script):
         f"  displayName: {yaml_str(word)}\n"
         f"  description: \n"
         f"  flavor: \n"
-        f"  portrait: {{fileID: 0}}\n"
+        f"  portrait: {portrait_ref(portrait_guid)}\n"
         f"  portraitIsStandIn: 0\n"
         f"  icon: {{fileID: 0}}\n"
         f"  requirement:\n"
@@ -357,8 +387,9 @@ def build(spec=None):
         out[class_path] = with_keywords(read(class_path), [keyword_values[k] for k in keywords])
 
     pilot_guids = []
+    portraits = wired_portraits()
     for p in sorted(spec["pilots"], key=lambda p: p["vision"]):
-        name, text = pilot_asset(p["vision"], any_vessel, pilot_script)
+        name, text = pilot_asset(p["vision"], any_vessel, pilot_script, portraits.get(pilot_id(p["vision"])))
         guid = guid_for(f"Roster/{name}.asset")
         pilot_guids.append(guid)
         out[f"{ROSTER_DIR}/{name}.asset"] = text
@@ -486,9 +517,19 @@ def self_test():
     if yaml_any("4 \u2192 5") != '"4 \\u2192 5"':
         failures.append("yaml_any does not escape non-ASCII")
 
+    # 7. A wired portrait reaches its pilot asset as a sprite reference; an unwired one stays empty.
+    if portrait_ref("0123456789abcdef0123456789abcdef") != "{fileID: 21300000, guid: 0123456789abcdef0123456789abcdef, type: 3}":
+        failures.append("portrait_ref does not write a sprite reference")
+    if portrait_ref(None) != "{fileID: 0}":
+        failures.append("portrait_ref does not leave an unwired portrait empty")
+    for pid, guid in wired_portraits().items():
+        word = pid.split(".")[-1].capitalize()
+        if f"guid: {guid}, type: 3" not in files.get(f"{ROSTER_DIR}/Pilot_{word}.asset", ""):
+            failures.append(f"the wired portrait of {pid} is not in its asset")
+
     for f in failures:
         print("SELF-TEST FAIL:", f)
-    print("self-test:", "FAILED" if failures else f"OK (6 checks, {len(plants)} planted spec defects caught)")
+    print("self-test:", "FAILED" if failures else f"OK (7 checks, {len(plants)} planted spec defects caught)")
     return 1 if failures else 0
 
 

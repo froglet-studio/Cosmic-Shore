@@ -56,7 +56,8 @@ STATIC = [
 ]
 # Every asset generator's drift gate, plus the two generators whose names do not end in _assets.
 GENERATOR_GLOB = 'Tools/Build/author_*_assets.py'
-GENERATOR_EXTRA = ['Tools/Build/author_skimrace_ai_config.py', 'Tools/Build/author_lifeform_heart_sizes.py']
+GENERATOR_EXTRA = ['Tools/Build/author_skimrace_ai_config.py', 'Tools/Build/author_lifeform_heart_sizes.py',
+                   'Tools/Build/pilot_art/author.py']   # the pilot portraits: re-finish every source, compare to disk
 
 
 def generators(root=ROOT):

@@ -392,8 +392,8 @@ kit (the next creature; the next card). Filler sessions between the entries abov
 
 - **Store assets and the trailer** (`READINESS.md`: all "Not found"; Steam by March 2027): scripted flights captured in
   the real renderer, capsules laid out from the style guide, the Amoebius clip recipe for order of events.
-- **Pilot portraits and the 32 placeholder icons**: the icon kit's `toy_portraits.py` path exists (`/ability-icon`
-  LESSONS 40); a portrait round.
+- **Pilot portraits**: started on bleeding-edge 2026-11-07 by `/pilot-art` (`Tools/Build/pilot_art/`,
+  `Docs/Pilots/PORTRAITS.md`: all eighteen callsigns, not yet run in the editor). The 32 placeholder icons remain.
 - **Motion**: Shombith (10-28): "Then we need some new hover animations"; vessel takes are `/vessel-model`'s, UI and
   fauna motion have no sheet; a clip is the sheet (`VIDEOS_AND_PREVIEWS.md`).
 - **The voice of the game and localisation**: 4 dialogue assets, 0 lore, 0 string tables; the authored-text rule is
