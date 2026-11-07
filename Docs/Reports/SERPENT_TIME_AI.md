@@ -99,3 +99,60 @@ Serpent's kit is Garrett's and was only read.
   table above.
 - A human race on today's kit at each intensity, so test (3) has a mark.
 - Whether an AI ever refills its tank in a grid (its dirty cloak's wall eating its own trail): the model assumes never.
+
+## With the nose lead on (2026-11-07)
+
+Brief 17 of the lead-on round (`/mnt/project-files/regatta-training/BRIEFS.md` §14, §17), `Plan step: time-arcade`.
+Every number here comes from the model (`serpent_time_sim.py`, the dirty race off, as above). Nothing was raced in the editor.
+
+**In short: give the Serpent gain 1.0, not the fleet's 2.5, and keep the drive trained C already found.** The Serpent model
+carries AIPilot's single-stick roll (`SingleStickVesselTransformer`: roll -x at 0.4 v + 20 deg/s about the nose). With
+the fleet default (gain 2.5, at most 40 deg past the aim) that roll corkscrews the hull the way the Manta thread found,
+so about half the I3 / I4 races never finish, whatever the drive. Gain 1.0 means the pilot judges its error from the
+command instead of the lagging nose, with no pull past the aim. It finishes every race, and it is the best setting found.
+With it, the drive the lead-off search already found (trained C) is as good as any lead-on search's winner.
+
+### The twins (two restarts each, 1,500 evaluations, 4 courses an intensity, run by hand)
+
+| Job | `nose_lead` | Restarts' loss | Agree | Every training race finished |
+|---|---|---|---|---|
+| `serpenttime-serpent-time-lead` (the brief's twin) | 2.5, 40 deg | B 32.50 / C 31.30 | no (3.9%) | no: I3 and I4 DNF 1 of 4 in both |
+| `serpenttime-serpent-time-lead20` (new) | 2.5, 20 deg (`RaceLineStyleSO.NoseLeadMaxExtraDegrees`) | D 15.335 / E 15.332 | yes (0.03%) | yes, 0 misses |
+| `serpenttime-serpent-time-lead1` (new) | 1.0 | F 15.1415 / G 15.1418 | yes (0.002%) | yes, 1 miss |
+
+All three keep the parent's shape (align 11-14 deg, 4.5-5.3 s of runway per pellet, three burns, no reserve), except
+lead1 (3.1 s runway, 0.8 s between pellets). None is formally flat: each last improved inside its final 20% of
+evaluations (F at 1,413 and G at 1,503 of 1,503, by about 0.001%).
+
+### The comparison on 12 FRESH courses an intensity (seedbase 1001), composite (lower is better), seconds, misses
+
+| Drive | Lead off | Gain 1.0 | 2.5 / 40 deg | 2.5 / 20 deg |
+|---|---:|---:|---:|---:|
+| `_SerpentTime` (what the mode flies) | 17.66, 40 misses | 19.17, 47 | 48.23, 19 DNF | 24.08, 25 |
+| `SerpentAIBoostPolicy` (the hull's own) | 16.26, 11 | 16.52, 17 | 41.36, 12 DNF | 17.77, 8 |
+| **Trained C (parent, lead off)** | **15.85**, 4 | **15.24**, 2 | 40.91, 12 DNF | 16.00, 0 |
+| lead B / C (2.5 / 40 twin) | 16.24 / 15.92 | 15.27 / 15.24 | 42.63 / 41.12, 15 / 13 DNF | 16.17 / 16.01 |
+| lead20 D / E | 15.95 / 15.88 | 15.27 / 15.24 | 34.91 / 42.51, 9 / 16 DNF | 16.07 / 16.00 |
+| lead1 F / G | 16.02 / 15.93 | 15.65 / 15.52 | 36.63 / 38.16, 11 / 12 DNF | 16.52 / 16.52 |
+
+Trained C with gain 1.0, per intensity (mean s, misses): I1 123.5 / 0, I2 125.8 / 0, I3 153.9 / 0, I4 171.4 / 2. Lead off,
+it was 125.0 / 0, 131.4 / 3, 160.5 / 0, 178.8 / 1. That makes it 1-4% faster, with half the misses.
+
+- **The lead alone closes the gap.** Moving the drive adds nothing on fresh courses: trained C, lead20 E and lead C all score
+  15.24 with gain 1.0. The lead1 twin's own winners are worse (15.52-15.65): they fit their four training courses, at 15.14.
+- **2.5 / 40 is not usable for the Serpent**: 9-19 of 48 fresh races DNF for every drive, nearly all at I3 / I4. Capping it at 20 deg finishes every
+  race with no miss, but is slower than gain 1.0 (16.00 against 15.24) and no better than the lead off (15.85).
+- **The roll is the cause.** In a what-if with the roll term removed (`results/serpent-lead/whatif.py`, NOROLL=1, a scratch
+  copy of the model), trained C finishes all 48 races at 2.5 / 40 (19.07, against 12 DNF with the roll), all 48 at 1.5 / 40 (16.80) and all 48 at gain 1.0
+  (15.25). With the roll, gain 1.5 already DNFs 2 of 48 (31.73). The real Serpent rolls, so this is a diagnosis, not a setting.
+
+Human marks (I1 64.2, I3 111.2, I4 98.2 s) were all flown on the pre-2026-10-31 refill kit. As above, they do not compare
+with today's no-refill model.
+
+### The proposal (for Yash, the AI owner)
+
+For the day `AIPilot.NoseLeadGain` is switched on (PR #1786): **the Serpent's `RaceLineStyleSO.NoseLeadGain` = 1.0**, not
+the fleet 2.5, with trained C as its Serpentine drive (the proposal above, unchanged). Nothing was written to any asset.
+Real-game check (later, `Docs/UNITY_VERIFICATION_CHECKLIST.md`): AI Serpents race Serpentine I1-I4 at gain 0, 1.0 and 2.5.
+Watch for the corkscrew stall at 2.5 (the stick pinned at full x and y while the hull rolls away from the ring). The
+model's claim is that 2.5 stalls and 1.0 does not. Results: `/mnt/project-files/regatta-training/results/serpent-lead/`.
