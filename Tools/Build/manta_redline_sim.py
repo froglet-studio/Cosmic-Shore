@@ -339,12 +339,17 @@ def crystal_aim(pos, heading, ring, field, back_at, slack):
 
 
 def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor=THROTTLE_FLOOR, nose_lag=True,
-         limit=900.0, dt=1 / 60, laps=LAPS, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None):
+         limit=900.0, dt=1 / 60, laps=LAPS, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None, nose_rate=None):
     """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}), steering for a Time crystal on its way when it
     costs under `crystal_slack` u (RedlineController.TryOverrideAim; `crystals`: True = RedlineTimeCrystals' field,
     False = none, or a list of positions). Returns {time (None = not finished), rings, of, top, mean_speed, soar (mean
-    boost), misses, breakoffs, level (Time level at the end)}."""
+    boost), misses, breakoffs, level (Time level at the end)}.
+    `nose_rate` is VesselTransformer.AINoseFollowPerSecond, the rate a mode may set for an AI's nose (Switchback's lag by
+    difficulty): None = unset (the fleet lag, LERP 1.5/s), 0 = no lag (the nose IS the command, as a human's), > 0 = that
+    rate per second, applied as Mathf.Min(1, rate x dt). `nose_lag=False` is the same as `nose_rate=0`."""
     band, yband = bands or (BOOST_BAND, YASTRI_BAND)
+    follow = (LERP if nose_rate is None or nose_rate < 0 else float(nose_rate)) if nose_lag else 0.0
+    follow_step = min(1.0, follow * dt) if follow > 0 else 1.0
     gates = [(tuple(g["p"]), unit(tuple(g["a"])), float(g["r"])) for g in course["gates"]]
     n = len(gates)
     total = n * max(1, laps)
@@ -442,7 +447,7 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         cmd = q_mul(q_axis(yd * (k + ROLL) * dt, q_rot(q, FWD)), cmd)
         cmd = q_mul(q_axis(xs * (k + YAW) * dt, nose_up), cmd)
         cmd = q_mul(q_axis(ys * (k + PITCH) * dt, q_rot(q, RIGHT)), cmd)
-        q = q_slerp(q, cmd, LERP * dt) if nose_lag else cmd
+        q = q_slerp(q, cmd, follow_step) if follow_step < 1.0 else cmd
 
         # MoveShipScalar: speed lerps toward throttle x scaler x boost (+ the minimum, 0), along the nose
         v += (thr * CRUISE * mult - v) * LERP * dt
@@ -555,6 +560,16 @@ def self_test():
     with_field, without = race(c, 3, crystal_slack=150.0), race(c, 3, crystals=False)
     if not (with_field["level"] > 0 and without["level"] == 0):
         bad.append(f"the Time crystals fed no level ({with_field['level']} vs {without['level']})")
+    # 8. the AI nose rate (VesselTransformer.AINoseFollowPerSecond): unset and 1.5 are the fleet lag, 0 is no lag (the
+    #    same race as nose_lag=False), and a different rate is a different race (the negative control)
+    c = course_for(1, 1)
+    fleet = race(c, 1)
+    if race(c, 1, nose_rate=1.5) != fleet or race(c, 1, nose_rate=-1) != fleet:
+        bad.append("nose_rate 1.5 / -1 is not the fleet lag")
+    if race(c, 1, nose_rate=0) != race(c, 1, nose_lag=False):
+        bad.append("nose_rate 0 is not the no-lag race")
+    if race(c, 1, nose_rate=4.0) == fleet:
+        bad.append("nose_rate 4 raced the fleet lag's race (the rate is not applied)")
     print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
 
