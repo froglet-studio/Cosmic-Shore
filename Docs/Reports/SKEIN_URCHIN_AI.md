@@ -125,3 +125,70 @@ python3 Tools/Build/skein_urchin_sim.py --self-test
 python3 Tools/Compute/evaluators/skein_fit.py --self-test
 RUN_DIR=$HOME/rt python3 /mnt/project-files/regatta-training/local_run.py skein-urchin-time B 1500 2
 ```
+
+## With the nose lead on (2026-11-07)
+
+Brief 18 (`skein-urchin-time-lead`), plan step `time-arcade`. **Every number is from the model** (`skein_urchin_sim.py`); no editor ran. Hold-out composite throughout: the shipped cable plus two hold-out cables per intensity, three slots, 9 races per intensity, limit 600 s. Raw cells: `/mnt/project-files/regatta-training/results/urchin-lead/`.
+
+**Result: the lead, as `AIPilot` applies it, traps the Urchin.** At gain 2.5 it finishes no I2-I4 race in either Skein, and no genome fixes that. Nothing here is a drive to propose for the day Yash turns `NoseLeadGain` on; the Urchin should keep gain 0 in Skein unless AIPilot's roll rule changes.
+
+**A correction to the twin's premise.** The job switches on `nose_rate` 1.5 "because the Skein model assumed a lag-free nose". It did not: `skein_urchin_sim` has always flown the fleet lag 1.5/s (`nose_rate` None = 1.5). So the "lag-only" cell (lead off, lag 1.5) is the parent's numbers exactly (19.13 shipped, 16.43 B, 7.94 W), which the table reproduces. The lag-free cell (`nose_rate` 0) is added instead, to show what the lag costs.
+
+### The searches (700 evals each, sep-CMA-ES, 1 core each, about 2 h)
+
+| Run | Skein | training loss | shipped genome's training loss |
+|---|---|---|---|
+| `skein-urchin-time-lead` B | as shipped | 22.47 | 23.30 |
+| `skein-urchin-time-lead` C | as shipped | 22.38 | 23.30 |
+| what-if-lead B (scratch job, `steering=regatta, seek=1`) | what-if aim + seek | 34.47 | 38.46 |
+| what-if-lead C | what-if aim + seek | 34.43 | 38.46 |
+
+The restarts agree within 0.4% and 0.1%, but they agree on a trapped floor: every one of them is worse than the shipped genome with the lead off (18.14 training, as shipped).
+
+### The 2x2 per Skein (hold-out composite; finishes I1 / I2 / I3 / I4 of 9)
+
+Skein as it ships:
+
+| genome | lead off (lag 1.5) | lead on 2.5 |
+|---|---|---|
+| shipped | 19.13 (9/5/0/0) | 26.42 (8/0/0/0) |
+| parent B | **16.43** (9/9/0/0) | 26.50 (8/0/0/0) |
+| twin B | 20.37 (9/4/0/0) | 26.12 (8/0/0/0) |
+| twin C | 19.69 (9/3/0/0) | 26.65 (7/0/0/0) |
+
+Skein with Regatta's aim and a rail seek (the what-if of the section above):
+
+| genome | lead off (lag 1.5) | lead on 2.5 |
+|---|---|---|
+| shipped | 8.77 (9/9/9/9) | 38.55 (0/0/0/0) |
+| parent W | **7.94** (9/9/9/9) | 38.55 (0/0/0/0) |
+| what-if-lead B | 10.36 (9/9/9/9) | 37.37 (1/1/0/0) |
+| what-if-lead C | 9.27 (9/9/9/9) | 37.26 (1/0/0/0) |
+
+With the lead on, the trapped races collect few misses (they stop at 1-7 rings), so the miss counts fall while nothing finishes. They are in the JSONs.
+
+### Is the roll stick the cause? Yes
+
+The model ports AIPilot's roll stick (`YDiff = XSum`, turned about the nose's forward). With the lead, the command sits about 78° off the nose after the first through point, the roll stick whirls it round the nose and the hull corkscrews (the sim's docstring, and the Manta thread's finding in brief 15). This change adds `LEAD_ROLL_WHATIF` to the sim (default True = AIPilot as it ships, every number above unchanged; False zeroes the roll stick only while the lead steers free flight). Shipped genome, what-if Skein, then Skein as shipped:
+
+| nose | what-if Skein | Skein as shipped |
+|---|---|---|
+| lead off, lag 1.5 (today) | 8.77, all 36 finish | 19.13 |
+| lead 1.0 | 14.62 (I4 6/9) | 22.19 |
+| lead 1.5 | 38.39, none finish | 26.18 |
+| lead 2.5 | 38.55, none finish | 26.42 |
+| lead 2.5, no roll (what-if) | 9.60, all 36 finish | 21.21 |
+| lag-free nose (`nose_rate` 0) | **6.19**, all finish (I1 48 s vs 75 s) | 19.92 |
+
+Parent W with no roll: 8.59 against its 7.94 lead off; with a lag-free nose: **5.41**.
+
+- **The roll stick is the trap.** Without it the 2.5 lead finishes every what-if race again, but it is still about 10% slower than no lead at all.
+- **Lower gains do not rescue it.** 1.0 is not trapped but is worse than no lead; 1.5 is trapped.
+- **The lag itself costs about 30%** in the what-if Skein (8.77 → 6.19, W 7.94 → 5.41). The lead, as built, does not recover that for the Urchin, so the remedy for the Urchin is not this lead. Options for Yash, in the order the numbers favour: a faster AI nose for the Urchin (the Manta's #1780 nose-row pattern), or a lead with AIPilot's roll rule decoupled. Both are AIPilot/vessel-AI changes in his area.
+- **The aim and the lead, separated** (shipped genome): the what-if aim is worth 19.13 → 8.77; the lead is worth 8.77 → 38.55 (worse); the lag is worth 8.77 → 6.19. The aim decision does not depend on the lead.
+
+### What is promoted
+
+Nothing. The twin's winners are worse than the parent's on every cell, so no lead-on Urchin genome is proposed. The job stays `proposed`; re-run it only if AIPilot's roll rule changes or the Urchin gets its own nose rate. The editor check that matters is unchanged: AI Urchins in Skein with `NoseLeadGain` 0 against 2.5, expecting the corkscrew at 2.5 (add to `Docs/UNITY_VERIFICATION_CHECKLIST.md` with #1786's check).
+
+Reproduce: `RUN_DIR=$HOME/rt python3 /mnt/project-files/regatta-training/local_run.py skein-urchin-time-lead B 700 1`; the hold-out table: `python3 /mnt/project-files/regatta-training/results/urchin-lead/check2x2.py 4 out.json` (genome sets are filtered in its `keys` line).
