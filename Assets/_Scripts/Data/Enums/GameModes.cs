@@ -392,8 +392,12 @@ namespace CosmicShore.Data
         // to the decoys. Rings in groups a cycle takes; I3-I4 on rolled flats.
         DecoyRun = 80,
 
+        // The Goby's Time race (PERCH_RUN.md): dart through the rings; a dart costs a second
+        // however far it goes. I2 hairpins (length), I3 coral blockers (line), I4 doubles.
+        PerchRun = 81,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 73) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 74) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

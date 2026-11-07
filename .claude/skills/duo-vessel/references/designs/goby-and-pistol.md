@@ -974,3 +974,12 @@ the line it settled.
   to 64 sampled opposing prisms, the one whose island passes the most within the Pistol's reach, its end inside the home
   radius; Easy and Medium misread the counts (up to +-50 % / +-22 %, rolled per island). It chases a rival only when no
   opposing prism is in reach. **[proposed]** the corridor (the undertow's reach, or `pathScoreBand` when wider).
+- 2026-11-07, Garrett: "we need all of the times games to have fun and interesting intensity levels and be distinct and
+  fun games that suit that vessel ... if it is a problem with the vessel ... propose fixes to the vessel". The Goby's Time
+  card is **Perch Run** (`GameModes.PerchRun = 81`, `Controller/Arcade/PERCH_RUN.md`): a dart costs one second whatever its
+  length, so the race is how few darts a course takes; hairpins test the dart's length, coral blockers its line, doubles
+  both. Two Goby changes came with it: **the reach ring** (a lit ring where a charging dart will stop: the charged length,
+  or the first block on the line; `TryDartReach`), because the gauge says how much but not where, and the length is the
+  Goby's whole skill; and **a race coach for the AI** (`IGobyRaceCoach`, `RaceCoach`), which with a coach set fires the
+  same dart the button fires at the coach's line and length. Null coach: the shipped AI. **[proposed]** the reach ring's
+  size (6 u) and colour (pale blue-white, lit), and that it shows only to the person flying the Goby.
