@@ -500,6 +500,9 @@ namespace CosmicShore.UI
                     // Switchback's answer on the Shrike's sling race: neutral rings, a per-viewer arrow (the thorn sits
                     // straight behind the ring it points at).
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Thornline");
+                case GameModes.DecoyRun:
+                    // the Jacks' Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
                 case GameModes.SerpentTime:
                     // The circuit answer once more, on the Serpent's pellet circuit.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");

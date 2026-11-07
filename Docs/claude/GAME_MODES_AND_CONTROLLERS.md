@@ -960,6 +960,15 @@ smallest thorns. Every peer rebuilds the thorns from the broadcast rings. `Thorn
 `ThornlineCourse`, `ThornlineCourseTests` (offline: `Tools/Build/thornline_course_harness/`), generator
 `author_thornline_assets.py` on `hull_time_race.py`. See `_Scripts/Controller/Arcade/THORNLINE.md`. Authored headless.
 
+`DecoyRun(80)` is the **Jacks' Time race** (2026-11-07): the herd-and-travel cycle as a race. Herd the jacks so one lays
+the decoy past the ring and their midpoint sits behind it, take off (the jump is a teleport and threads nothing), and
+fly to the decoy (the travel threads). I1 doors, I2 skewers (two rings on one line, one travel), I3 skewers on rolled
+flats (roll the board onto each), I4 a skewer and a hairpin with Time 5 from the card. Chalk rails (super-shielded
+prisms) show each flat; every peer derives flats and chalk from the broadcast rings. The AI races through
+`IJacksRaceCoach` on `JacksExecutor` (input-only). `DecoyRunController : GateRaceController`, `DecoyRunCourse`,
+`DecoyRunCourseTests` (offline: `Tools/Build/decoy_run_harness/`), generator `author_decoy_run_assets.py` on
+`hull_time_race.py`. See `_Scripts/Controller/Arcade/DECOY_RUN.md`. Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -1410,6 +1419,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── SwitchbackController              — Dolphin-only gate race; an OPEN chain flown once
             │   └── ScarabRallyController         — Scarab-only ring race (the Scarab's Time card, no ball); Switchback's walk cut for throttle, drift and juke
             │   └── ThornlineController           — Shrike-only sling race (the Shrike's Time card): thorn to thorn through a ring a leg
+            ├── DecoyRunController                — Jacks-only herd-and-travel race (the Jacks' Time card): doors, skewers, rolled flats, hairpins
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between

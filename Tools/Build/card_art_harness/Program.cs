@@ -116,6 +116,7 @@ static class Program
             case "brittlestartime":
             case "lanternrun":
             case "thornline":
+            case "decoyrun":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -135,6 +136,7 @@ static class Program
                     "brittlestartime" => BrittleStarTimeLap(seed, intensity, layer),
                     "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
                     "thornline" => ThornlineCourse.Generate(seed, Apply(ThornlineCourse.ForIntensity(intensity), layer), thorns),
+                    "decoyrun" => DecoyRunCourse.Generate(seed, Apply(DecoyRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -147,6 +149,15 @@ static class Program
                 if (kind == "threshertime") StageSling(scene, gates);
                 if (kind == "wrasserun") StageKite(scene, gates);
                 if (kind == "lanternrun") StageClusters(scene, gates, intensity);
+                if (kind == "decoyrun")
+                {
+                    // the chalk: each flat's two dotted rails, the super-shielded prisms the mode lays (drawn at twice their 5 u so a card shows them)
+                    var chalk = new List<Vector3>();
+                    DecoyRunCourse.ChalkFor(gates, Apply(DecoyRunCourse.ForIntensity(intensity), layer), DecoyRunCourse.StartStandoff, chalk);
+                    foreach (var c in chalk)
+                        AddPrism(scene, new SpawnPoint(c, Quaternion.identity, Vector3.one * DecoyRunCourse.ChalkSize * 2f), pal.For(Domains.Blue, PrismKind.SuperShielded));
+                    return chalk.Count;
+                }
                 if (kind == "thornline")
                 {
                     var laid = new List<Thorn>();

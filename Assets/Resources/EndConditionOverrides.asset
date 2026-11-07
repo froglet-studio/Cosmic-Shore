@@ -64,6 +64,7 @@ MonoBehaviour:
   brittleStarTimeGateTarget: 16
   lanternRunGateTarget: 16
   thornlineGateTarget: 16
+  decoyRunGateTarget: 12
   regattaGateTarget: 24
   hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
@@ -118,6 +119,7 @@ MonoBehaviour:
   brittleStarTimeGateTargetBuild: 16
   lanternRunGateTargetBuild: 16
   thornlineGateTargetBuild: 16
+  decoyRunGateTargetBuild: 12
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

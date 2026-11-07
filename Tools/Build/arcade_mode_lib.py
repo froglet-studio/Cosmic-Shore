@@ -103,7 +103,8 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Thresher": 14, "Stoat": 15, "Wrasse": 19, "Meerkat": 28, "TigerMoth": 29,
+    "Thresher": 14, "Stoat": 15, "BrittleStar": 16, "Angler": 17, "Goby": 18, "Wrasse": 19, "Orca": 20,
+    "Jacks": 22, "Honeyguide": 23, "Meerkat": 28, "TigerMoth": 29,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──

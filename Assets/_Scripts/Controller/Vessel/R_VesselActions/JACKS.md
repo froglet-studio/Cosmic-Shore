@@ -370,3 +370,20 @@ units and multiplied by `labScale` (0.4).
   is a guid-safe `git mv` plus two call sites.
 - **A player who saved "Marlin" as a string** (a cloud record keyed by the enum's name) would not parse after the rename.
   The class shipped the same day, so none is expected; the enum's VALUE, which Unity serializes, did not change.
+
+## 7. The Time race: Decoy Run (2026-11-07)
+
+`GameModes.DecoyRun` (80, `Arcade/DECOY_RUN.md`) is the Jacks' Time card: the herd-and-travel cycle as a race. A ring is
+threaded by the TRAVEL to a decoy, never by the take-off (the jump is `SetPose`, a teleport, and a gate race credits
+no teleport), so each cycle is: run the jacks until one lays the decoy past the ring and their midpoint sits behind it on
+its line, take off, fly. The mode leaves the kit as it is. Two changes to the vessel came with it, both kept to what a
+person already has:
+
+- **The take-off mark** (`takeOffColor`): the herding view draws a small white ring at the jacks' midpoint, where the
+  hull lands when they take off. The landing point of a jump is an instrument; without it a person guesses the midpoint
+  of two moving fish, which is the whole skill of any Jacks travel, in a race or not.
+- **A race coach for the AI** (`IJacksRaceCoach`, `JacksRacePlan`, `JacksExecutor.RaceCoach`): with a coach set, an AI
+  Jacks herds and travels on the coach's cycles instead of its 14 s / 6 s rhythm, each step through the calls a
+  person's controls make (the jacks to points on the board, a trigger to lay a decoy, the seat swap under
+  `PilotSwap.CooldownSeconds`, a trigger to fly to a decoy). Null everywhere outside the race, so the shipped AI is
+  unchanged; a person's hull ignores it.
