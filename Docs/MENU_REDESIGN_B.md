@@ -6143,7 +6143,7 @@ gentle camera sway. A pre-rendered loop (this file) is the cheaper fallback: a v
 Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a path is picked; Garrett's Ark model (rendered
 only, its `hangaropen` take played).
 
-## 143. Rev 67 mockups: the Ark screen inside the Ark, every tab, animated, in every colour set (2026-11-06, for review)
+## 143. Rev 67 mockups: the Ark screen inside the Ark, every tab its own room, animated, in every colour set (2026-11-07, for review)
 
 **Asked (Shombith, 2026-11-06):** Rev 61 C is the Ark's final design ("Keep this 61 C style and lighting, this is
 great"), E liked too. "When we select Ark from the menu it's basically inside the Ark": the Converter "a big window
@@ -6208,6 +6208,6 @@ Affects: Shombith's Ark screen (`author_menu_ark.py`, `ArkView`, `SquadsPage`, `
 build is picked; Garrett's Ark model, the Sparrow, Dolphin and Serpent models, the crystal models (rendered only); the
 colour sets and the artifacts (read only).
 
-**Status (2026-11-07):** the Squads loops (three colour sets) and the Converter's Nocturne loop and conversion are on
-the board; the Converter's Photic and Dart Frog runs, the Artifacts vault and the Decor antechamber are rendering, and
-show preview stills until their loops land.
+**Status (2026-11-07):** complete on the board: all four rooms' loops in Nocturne, Photic and Dart Frog, and the
+Converter's conversion in all three (15 animated WebPs, ids in `r67_blobs.json`). Rendered at 960 x 540, 10 samples,
+32-frame loops and a 40-frame conversion at 10 fps; `r67_map_frames.py` makes the HyperSea map's marker frames.
