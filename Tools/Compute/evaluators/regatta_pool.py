@@ -50,6 +50,15 @@ args:
     pass_spread   a passing course's spread (1.25)
     pass_chaos    a passing course's chaos (0.06)
     ref_neutral   the neutral share of TODAY's course, for the race-length guard (0: bleeding-edge lays none)
+    features      true to search brief 10's course features too (regatta_features.py, draft PR #1787; this module only
+                  imports it when asked), in a COMPACT form that a course keeps when it is laid by another seed:
+                    NeutralShare   the middle share of every leg in no team's colour
+                    PlainShare     a stretch at the start of every leg in plain (cuttable) rail
+                    GapLength, GapLegs   a gap of that many u in the middle of that many legs, spread round the lap
+                    AltCount, AltOffset, AltBearing, AltScale   an alternate ring at each of the AltCount sharpest corners
+                    Crystals, CrystalPhase   crystals on the line, at most 4 a lap
+                  The hulls are priced by regatta_features.race (race_models.race on an empty set), the Urchin's free
+                  flight at its roster free_speed; the rail guard becomes regatta_features.guard_fails.
     anchor_all    a COUNTERFACTUAL: every "measured" hull anchored at these seconds on today's course instead of its
                   measured race (what pool the course alone would find if every AI raced today's course alike, e.g.
                   once time-arcade has trained them); never the shipped roster
@@ -67,7 +76,7 @@ for _p in (_HERE, os.path.join(_ROOT, "Tools", "Build")):
 import course_port as cp          # noqa: E402
 import race_models as rm          # noqa: E402
 
-VERSION = "1"
+VERSION = "2"   # 2 (2026-11-07): `features` (brief 10's course features, in a compact form); off, it is VERSION 1
 SEED_STRIDE = 104729
 CHAOS_WEIGHT = 2.0
 CHAOS_UNMEASURED = 0.3
@@ -114,10 +123,51 @@ def settings_from(params):
     return s
 
 
-def lay(params, step_offset=0):
+FEATURE_KEYS = ("NeutralShare", "PlainShare", "GapLength", "GapLegs", "AltCount", "AltOffset", "AltBearing", "AltScale",
+                "Crystals", "CrystalPhase")
+
+
+def compact_features(params, plain):
+    """The compact feature params -> a RegattaCourseFeatures dict (regatta_features' schema) for the circuit `plain`
+    (its legArc and turnDegrees). Every param at 0 is the empty set (today's course)."""
+    g = lambda k, d=0.0: float(params.get(k, d))
+    feats = {"Sections": [], "AlternateGates": [], "Crystals": {"PerLap": 0, "Phase": 0.0}}
+    plain_share = min(max(g("PlainShare"), 0.0), 0.9)
+    if plain_share > 0.01:
+        feats["Sections"].append({"Leg": -1, "From": 0.02, "To": round(0.02 + plain_share, 4), "Kind": 2,
+                                  "Neutral": False, "Detour": 0.0, "DetourBearing": 0.0})
+    n = min(max(g("NeutralShare"), 0.0), 0.95)
+    if n > 0.01:      # later sections win: where it overlaps the plain stretch, the neutral one is super-shielded
+        feats["Sections"].append({"Leg": -1, "From": round(0.5 - n / 2, 4), "To": round(0.5 + n / 2, 4), "Kind": 0,
+                                  "Neutral": True, "Detour": 0.0, "DetourBearing": 0.0})
+    legs = len(plain["legArc"])
+    gap, count = g("GapLength"), min(max(int(round(g("GapLegs"))), 0), legs)
+    if gap >= 16.0 and count:
+        for j in range(count):
+            leg = int(j * legs / count)
+            if plain["legArc"][leg] > 1.0:
+                half = min(0.5 * gap / plain["legArc"][leg], 0.45)
+                feats["Sections"].append({"Leg": leg, "From": round(0.5 - half, 4), "To": round(0.5 + half, 4),
+                                          "Kind": 3, "Neutral": False, "Detour": 0.0, "DetourBearing": 0.0})
+    alts = min(max(int(round(g("AltCount"))), 0), legs)
+    if alts and g("AltOffset") >= 1.0:
+        sharpest = sorted(range(len(plain["turnDegrees"])), key=lambda i: -plain["turnDegrees"][i])[:alts]
+        for ring in sorted(sharpest):
+            feats["AlternateGates"].append({"Ring": ring, "Offset": round(g("AltOffset"), 1),
+                                            "Bearing": round(g("AltBearing") % 360.0, 1),
+                                            "RadiusScale": round(min(max(g("AltScale", 1.0), 0.6), 1.4), 3)})
+    feats["Crystals"] = {"PerLap": min(max(int(round(g("Crystals"))), 0), 4), "Phase": round(g("CrystalPhase") % 1.0, 4)}
+    return feats
+
+
+def lay(params, step_offset=0, features=False):
     s = settings_from(params)
     seed = generator_seed(int(params.get("seed", 0)) + step_offset)
-    return s, seed, cp.course(s, seed)
+    if not features:
+        return s, seed, cp.course(s, seed)
+    import regatta_features as rf
+    plain = rf.course(settings=s, seed=seed)
+    return s, seed, rf.course(settings=s, seed=seed, features=compact_features(params, plain))
 
 
 def roster_of(args):
@@ -132,12 +182,21 @@ def roster_of(args):
 
 
 def race_all(course, roster, limit, neutral):
+    """Each hull's race. A featured course (it carries `features`) is priced by regatta_features.race, which lays the
+    neutral share itself; the rail rider then flies free at its roster free_speed."""
     times, raw = {}, {}
+    featured = course.get("features") is not None
+    if featured:
+        import regatta_features as rf
     for hull, h in roster.items():
         d = dict(h.get("drive") or {})
-        if h["model"] == "rail":
-            d["neutral"] = neutral
-        t, r = rm.race(hull, h["model"], course, 1, drive=d, steering="centre", limit=limit)
+        if featured:
+            knobs = {"urchin_free": float(d["free_speed"])} if h["model"] == "rail" and "free_speed" in d else None
+            t, r = rf.race(hull, h["model"], course, 1, drive=d, limit=limit, knobs=knobs)
+        else:
+            if h["model"] == "rail":
+                d["neutral"] = neutral
+            t, r = rm.race(hull, h["model"], course, 1, drive=d, steering="centre", limit=limit)
         times[hull], raw[hull] = t, r
     return times, raw
 
@@ -176,6 +235,8 @@ def baseline(args):
     p.update({k: float(s[k]) for k in GEOMETRY})
     p["seed"] = 0
     p["NeutralShare"] = float(args.get("ref_neutral", 0.0))
+    if args.get("features"):
+        p.update({k: 0.0 for k in FEATURE_KEYS if k != "NeutralShare"}, AltScale=1.0)
     return p
 
 
@@ -186,8 +247,9 @@ def evaluate(params, ctx):
     limit = float(a.get("limit", 600))
     neutral = min(max(float(params.get("NeutralShare", 0.0)), 0.0), 0.95)
     hulls = scored_hulls(a)
+    feat = bool(a.get("features"))
     try:
-        s, seed, course = lay(params)
+        s, seed, course = lay(params, features=feat)
     except Exception as e:      # the generator found no legal circuit for these settings
         return {"loss": float("inf"), "valid": False, "error": f"generator: {type(e).__name__}: {e}"}
     roster = _CTX["roster"]
@@ -195,7 +257,11 @@ def evaluate(params, ctx):
     sc = {h: times[h] for h in hulls}
     fastest, slowest = min(sc, key=sc.get), max(sc, key=sc.get)
     spread = sc[slowest] / sc[fastest]
-    cover = rm.rail_coverage(course)
+    if feat:
+        import regatta_features as rf
+        cover = rf.guard_fails(course)
+    else:
+        cover = rm.rail_coverage(course)
     mean = sum(sc.values()) / len(sc)
     length = mean / _CTX["ref_mean"]
     length_pen = max(0.0, math.log(0.8) - math.log(length)) + max(0.0, math.log(length) - math.log(1.25))
@@ -207,7 +273,7 @@ def evaluate(params, ctx):
         stands = [standing(sc, hulls)]
         for k in range(1, int(a.get("chaos_seeds", 2)) + 1):
             try:
-                _, _, c2 = lay(params, k)
+                _, _, c2 = lay(params, k, features=feat)
             except Exception:
                 continue
             t2, _ = race_all(c2, {h: roster[h] for h in hulls}, limit, neutral)
@@ -224,13 +290,19 @@ def evaluate(params, ctx):
     desc = {"sharpness": round(max(turns), 2), "mean_turn": round(sum(turns) / len(turns), 2),
             "ridable": round(1.0 - neutral, 3), "race_length": round(length, 3),
             "mouth": round(min(g["r"] for g in course["gates"]), 1),
-            "leader": hulls.index(fastest), "trailer": hulls.index(slowest), "gaps": 0, "crystals": 0}
+            "leader": hulls.index(fastest), "trailer": hulls.index(slowest), "gaps": 0, "crystals": 0,
+            "alternates": 0, "contested": 0.0}
+    if feat:
+        fd = rf.descriptors(course)
+        desc.update(ridable=fd["ridable_share"], gaps=fd["gap_count"], crystals=fd["crystals"],
+                    alternates=fd["alternates"], contested=fd["contested_share"])
     return {"loss": loss, "valid": True, "descriptors": desc, "metrics": {
         "passes": passes, "spread_x": round(spread, 4), "chaos": None if chaos is None else round(chaos, 4),
         "fastest": fastest, "slowest": slowest, "seconds": {h: round(t, 2) for h, t in times.items()},
         "scored": hulls, "seed_spreads": seed_spreads, "seed_leaders": leaders, "rail_fails": cover,
         "race_length": round(length, 3), "dnf": dnf, "generator_seed": seed, "seed_step": int(params.get("seed", 0)),
         "neutral_share": round(neutral, 3), "settings": s, "descriptors": desc,
+        **({"features": course["features"]} if feat else {}),
         "turn_degrees": [round(t, 1) for t in turns], "lane_length": round(course["laneLengths"][0], 1),
         "model": ("COUNTERFACTUAL: every measured hull anchored at %s s on today's course; " % a["anchor_all"]
                   if a.get("anchor_all") else "") + "measured roster (regatta_measured_roster.py); a MODEL, not a real-game race"}}

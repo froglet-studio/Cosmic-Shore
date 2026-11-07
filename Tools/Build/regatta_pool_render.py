@@ -102,8 +102,21 @@ def ring_points(g, steps=28):
 def lay(entry):
     import regatta_pool as P
     params = entry.get("params") or {}
-    _, _, course = P.lay(params)
+    _, _, course = P.lay(params, features=bool((entry.get("metrics") or {}).get("features")))
     return course
+
+
+def featured_lanes(entry, course):
+    """For a featured course: each lane's raw prisms and their plan codes (regatta_features.plan_for_lane: s/h/p
+    super-shielded / shielded / plain, upper case neutral, '_' a gap), so a still shows exactly what is laid."""
+    import course_port as cp
+    import regatta_features as rf
+    import regatta_pool as P
+    m = entry["metrics"]
+    gates = cp.generate(m["generator_seed"], P.settings_from(entry["params"]))
+    rails = cp.build_rails(gates, features=m["features"])
+    return [(pts, rf.plan_for_lane(rails["legParams"][i], len(gates), m["features"])[0])
+            for i, pts in enumerate(rails["lanes"])]
 
 
 def draw(entry, path, label=None):
@@ -127,7 +140,23 @@ def draw(entry, path, label=None):
     to = lambda q: ((box[0] + box[2]) / 2 + (proj(q)[0] - cx) * sc, (box[1] + box[3]) / 2 - (proj(q)[1] - cy) * sc)
     d.rounded_rectangle(box, 14, outline=T["line"], width=1)
 
-    for li, lane in enumerate(course["lanes"]):
+    if m.get("features"):
+        for li, (lane, codes) in enumerate(featured_lanes(entry, course)):
+            for k in range(len(lane)):
+                a_, b_ = codes[k], codes[(k + 1) % len(lane)]
+                if "_" in (a_, b_):
+                    continue
+                col = T["neutral"] if a_.isupper() else T["lanes"][li % 3]
+                d.line([to(lane[k]), to(lane[(k + 1) % len(lane)])], fill=col,
+                       width={"s": 3, "h": 2, "p": 1}.get(a_.lower(), 2))
+        for alt in course.get("alternates") or ():
+            ring = [to(q) for q in ring_points(alt)]
+            for k in range(0, len(ring) - 1, 2):
+                d.line([ring[k], ring[k + 1]], fill=T["text"], width=2)
+        for q in course.get("crystals") or ():
+            x, y = to(q)
+            d.polygon([(x, y - 9), (x + 7, y), (x, y + 9), (x - 7, y)], fill=T["cta"])
+    for li, lane in enumerate([] if m.get("features") else course["lanes"]):
         prev, prev_kind = None, None
         for q in lane + lane[:1]:
             leg, t = neutral_t(q, gates)
@@ -153,6 +182,8 @@ def draw(entry, path, label=None):
             ("corners", f"hardest {max(course['turnDegrees']):.0f} deg, mean {sum(course['turnDegrees']) / len(gates):.0f} deg"),
             ("mouth", f"{min(g['r'] for g in gates):.0f} u tightest"),
             ("rail", f"{100 * (1 - neutral):.0f}% in team colour, {100 * neutral:.0f}% neutral" + (f", {len(gaps)} gaps" if gaps else "")),
+            ("features", _features_line(m.get("features"), (m.get("descriptors") or {}))),
+            ("lifeforms", (entry.get("lifeforms") or {}).get("preset", "none paired")),
             ("seed", f"step {m.get('seed_step', (entry.get('params') or {}).get('seed', 0))}, generator {m.get('generator_seed', course['seed'])}")]
     y = 120
     for k, val in rows:
@@ -175,12 +206,33 @@ def draw(entry, path, label=None):
             d.text((x0, y), h, fill=T["text"] if h in scored else T["soft"], font=f_small)
             d.text((x0 + 120 + wbar, y), f"{t:.0f}" + ("" if h in scored else " (not scored)"), fill=T["soft"], font=f_small)
             y += 30
-    d.text((box[0], box[3] + 8), "rings numbered from the start (lime); rails in team colours, neutral stretches grey",
+    d.text((box[0], box[3] + 8), "rings numbered from the start (lime); rails in team colours (thinner: shielded, plain), "
+           "neutral grey, gaps open; dashed rings: alternates; lime diamonds: line crystals",
            fill=T["soft"], font=f_small)
+    if str(m.get("model", "")).startswith("COUNTERFACTUAL"):
+        d.text((x0, H - 84), "COUNTERFACTUAL: every AI tied on today's course.", fill=T["danger"], font=f_small)
     d.text((x0, H - 60), "A MODEL (measured roster), not a real-game race.", fill=T["danger"], font=f_small)
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     img.save(path)
     return path
+
+
+def _features_line(feats, desc):
+    if not feats:
+        return "none (geometry and neutral share only)"
+    kinds = {2: "plain", 1: "shielded"}
+    parts = []
+    plain = [s_ for s_ in feats["Sections"] if s_.get("Kind") in kinds]
+    if plain:
+        parts.append(f"{100 * (plain[0]['To'] - plain[0]['From']):.0f}% {kinds[plain[0]['Kind']]}")
+    gaps = [s_ for s_ in feats["Sections"] if s_.get("Kind") == 3]
+    if gaps:
+        parts.append(f"{len(gaps)} gaps")
+    if feats.get("AlternateGates"):
+        parts.append(f"{len(feats['AlternateGates'])} alternate rings")
+    if (feats.get("Crystals") or {}).get("PerLap"):
+        parts.append(f"{feats['Crystals']['PerLap']} crystals a lap")
+    return ", ".join(parts) or "none beyond the neutral share"
 
 
 def sheet(paths, out, cols=2):
