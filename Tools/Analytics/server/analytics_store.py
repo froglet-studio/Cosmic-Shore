@@ -28,7 +28,27 @@ MAX_EVENT_NAME = 64
 OLDEST_ACCEPTED_DAYS = 90       # an offline queue can hold old events; older than this is rejected
 FUTURE_SLACK_MS = 24 * 3600 * 1000
 WINDOWS = (1, 7, 14, 30, 90, 365)
-BUILD_KINDS = ("release", "development", "editor", "port")
+BUILD_KINDS = ("release", "development", "editor", "port", "web")
+# Devices (Shombith, 2026-11-07: "platform specific views like iOS iPad android etc"). Builds from 2026-11-07 send
+# `device` on every event; for older ones (the PostHog history included) it is read from `platform`, which cannot tell
+# an iPhone from an iPad, an Android phone from a tablet, or a desktop browser from a phone's: those read ios, android
+# and web ("not recorded"), never guessed.
+DEVICES_SENT = ("iphone", "ipad", "android_phone", "android_tablet", "android", "windows", "mac", "linux",
+                "web_desktop", "web_mobile", "other")
+DEVICE_OF_PLATFORM = {"IPhonePlayer": "ios", "Android": "android", "WindowsPlayer": "windows",
+                      "WindowsEditor": "windows", "OSXPlayer": "mac", "OSXEditor": "mac", "LinuxPlayer": "linux",
+                      "LinuxEditor": "linux", "WebGLPlayer": "web"}
+DEVICES = ("iphone", "ipad", "ios", "android_phone", "android_tablet", "android", "windows", "mac", "linux",
+           "web_desktop", "web_mobile", "web", "other")          # every value events.device can hold
+# The console's Device filter: each group and the stored devices it holds ("all" holds every one).
+DEVICE_GROUPS = {"ios": ("iphone", "ipad", "ios"), "iphone": ("iphone",), "ipad": ("ipad",),
+                 "android": ("android_phone", "android_tablet", "android"), "android_phone": ("android_phone",),
+                 "android_tablet": ("android_tablet",), "windows": ("windows",), "mac": ("mac",), "linux": ("linux",),
+                 "web": ("web_desktop", "web_mobile", "web"), "web_desktop": ("web_desktop",),
+                 "web_mobile": ("web_mobile",), "phone": ("iphone", "android_phone", "web_mobile"),
+                 "tablet": ("ipad", "android_tablet"), "desktop": ("windows", "mac", "linux", "web_desktop")}
+DEVICE_FILTERS = ("all",) + tuple(DEVICE_GROUPS)
+GROUPS_OF_DEVICE = {d: tuple(g for g, members in DEVICE_GROUPS.items() if d in members) for d in DEVICES}
 TIMESTAMP_KEYS = ("timestamp_utc_ms", "timestamp_utc_iso", "completed_utc_ms", "completed_utc_iso")
 SOURCES = ("any", "imported", "live")   # imported = PostHog history: stored by ingest(trusted=True), received_ms == ts_ms
 PLAY_GROUP_OF = {"solo_vs_ai": "solo_vs_ai", "solo_alone": "solo"}  # every other play type is "multi"
@@ -67,7 +87,7 @@ MAX_FILTERS_BYTES = 8 * 1024
 PRESET_PAGES = ("overview", "players", "cohorts", "eras", "playtypes", "retention", "matches", "ftue", "economy",
                 "social", "health", "query", "dashboards", "sessions", "balance", "quits", "errors")
 PRESET_SETTINGS = ("form", "measure", "by", "over")
-PRESET_FILTERS = ("build", "days", "play", "era")
+PRESET_FILTERS = ("build", "days", "play", "era", "device")
 PRESET_PLAYS = ("all", "solo_vs_ai", "solo", "multi")
 MAX_PRESETS = 500
 CHART_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
@@ -207,6 +227,7 @@ CREATE TABLE IF NOT EXISTS events(
     platform TEXT,
     country TEXT,                -- two-letter code from the sender's IP at ingest; the IP is never stored
     schema_version INTEGER,
+    device TEXT,                 -- device_of(props): sent from 2026-11-07, else read from the platform
     props TEXT NOT NULL,
     content_hash TEXT NOT NULL,
     shape_hash TEXT NOT NULL,
@@ -315,12 +336,17 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
     abandoned INTEGER,           -- 1: match_abandoned arrived for this play (and no game_completed)
     abandon_reason TEXT,         -- quit_to_menu | app_quit | disconnect
     abandon_elapsed REAL,        -- seconds into the match when they left
-    quit_tracked INTEGER         -- 1: this play's build and version sends match_abandoned (the quit rate counts only these)
+    quit_tracked INTEGER,        -- 1: this play's build and version sends match_abandoned (the quit rate counts only these)
+    device TEXT,                 -- iphone | ipad | android_phone | android_tablet | windows | mac | linux | web_desktop |
+                                 -- web_mobile | other, sent from 2026-11-07; older builds read ios | android | web
+                                 -- (the platform cannot tell a phone from a tablet), never guessed
+    os_family TEXT               -- 'iOS 17', 'Android 14', 'Windows 11', 'macOS 14' from builds that send os; else 'not recorded'
 );
 CREATE TABLE sessions(           -- one row per app session (session_started, builds after 2026-11-07); NO player id
     day TEXT, build_kind TEXT, platform TEXT, imported INTEGER,
     launch_kind TEXT,            -- cold | resume (back after 30+ min in the background)
-    seconds REAL                 -- session_ended.session_seconds, else the gap to its session_ended; NULL: not ended
+    seconds REAL,                -- session_ended.session_seconds, else the gap to its session_ended; NULL: not ended
+    device TEXT                  -- as plays.device
 );
 CREATE TABLE session_players(day TEXT, build_kind TEXT, imported INTEGER, players INTEGER);  -- players with a session that day
 CREATE TABLE active_rolling(     -- DAU, WAU (7 days to that day) and MAU (30 days) from ANY event, so the PostHog history too
@@ -351,16 +377,18 @@ CREATE TABLE client_errors(      -- client_exception per day; NO message text, o
     top_frame TEXT, scene TEXT, message_hash TEXT,
     events INTEGER,              -- client_exception rows
     occurrences INTEGER,         -- sum of their count (repeats folded in by the game)
-    players INTEGER              -- players that day with this row's error
+    players INTEGER,             -- players that day with this row's error
+    device TEXT                  -- as plays.device
 );
 CREATE TABLE client_error_signatures(  -- each (type, frame, hash) ever: when it was first and last seen
     exception_type TEXT, top_frame TEXT, message_hash TEXT, first_day TEXT, last_day TEXT, events INTEGER
 );
-CREATE TABLE daily_events(       -- rows received per day, build, event and source (imported 1 = PostHog history)
-    day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER
+CREATE TABLE daily_events(       -- rows received per day, build, event, source (imported 1 = PostHog history) and device
+    day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER,
+    device TEXT                  -- as plays.device; players is distinct within the row (day, build, event, source, device)
 );
 CREATE TABLE daily_plays(        -- game_started rows against distinct (player, match) pairs: 1.0 is healthy
-    day TEXT, build_kind TEXT, rows INTEGER, plays INTEGER, rows_per_play REAL, imported INTEGER
+    day TEXT, build_kind TEXT, rows INTEGER, plays INTEGER, rows_per_play REAL, imported INTEGER, device TEXT
 );
 CREATE TABLE daily_players(day TEXT, build_kind TEXT, players INTEGER, new_players INTEGER);
 CREATE TABLE players_in_window(  -- distinct players seen in the last N days (N = 1, 7, 14, 30, 90, 365)
@@ -368,7 +396,8 @@ CREATE TABLE players_in_window(  -- distinct players seen in the last N days (N 
 );
 CREATE TABLE returns(            -- players by the play type of their first play; only cohorts 7+ days old
     first_day TEXT, build_kind TEXT, play_type TEXT, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
-    imported INTEGER             -- the source of that first play (1 = PostHog history)
+    imported INTEGER,            -- the source of that first play (1 = PostHog history)
+    device TEXT                  -- the device of that first play (as plays.device)
 );
 CREATE TABLE players_by_platform(  -- distinct players per platform seen in the last N days
     build_kind TEXT, platform TEXT, days INTEGER, players INTEGER
@@ -411,7 +440,7 @@ CREATE TABLE player_counts(      -- distinct players per span, counted once each
     x TEXT,                      -- the day, or the week's Monday, for day and week spans; '' otherwise
     build_kind TEXT,             -- or '*': every build, each player once
     source TEXT,                 -- any | imported (PostHog history) | live; an era's spans carry the era's source
-    dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | country | game_mode | vessel_class | intensity
+    dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | device | country | game_mode | vessel_class | intensity
                                  -- | element | setup (the match setup) | freestyle/'entered' (entered the Toybox)
                                  -- | freestyle_vessel (a vessel flown there) | ai_difficulty (from game_completed)
                                  -- | error/'any' and error_frame (sent a client_exception; its top frame)
@@ -419,6 +448,15 @@ CREATE TABLE player_counts(      -- distinct players per span, counted once each
     new_players INTEGER          -- of those, players whose first day (in this source) falls inside the span
 );
 CREATE INDEX player_counts_span ON player_counts(span, source, dim);
+-- The same distinct players counted again inside each Device filter group (device: ios | iphone | ipad | android |
+-- android_phone | android_tablet | windows | mac | linux | web | web_desktop | web_mobile | phone | tablet | desktop),
+-- so a player on an iPhone and an iPad is one player of ios. player_counts itself is every device.
+CREATE TABLE player_counts_device(span TEXT, x TEXT, build_kind TEXT, source TEXT, dim TEXT, key TEXT, players INTEGER,
+    new_players INTEGER, device TEXT);
+CREATE INDEX player_counts_device_span ON player_counts_device(device, span, source, dim);
+CREATE TABLE active_rolling_device(day TEXT, build_kind TEXT, source TEXT, dau INTEGER, wau INTEGER, mau INTEGER,
+    device TEXT);                -- active_rolling inside one Device filter group
+CREATE TABLE session_players_device(day TEXT, build_kind TEXT, imported INTEGER, players INTEGER, device TEXT);
 CREATE TABLE cohort_weeks(       -- players by the week of their first day, active k weeks later (week_index 0 = that week)
     cohort TEXT, build_kind TEXT, source TEXT, play_group TEXT, week_index INTEGER, players INTEGER
 );
@@ -428,6 +466,10 @@ CREATE TABLE cohort_days(        -- players by first day and lifespan (first day
     lifespan_days INTEGER, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
     lapsed_14d INTEGER           -- not seen in the last 14 days
 );
+CREATE TABLE cohort_weeks_device(cohort TEXT, build_kind TEXT, source TEXT, play_group TEXT, week_index INTEGER,
+    players INTEGER, device TEXT);   -- cohort_weeks inside one Device filter group
+CREATE TABLE cohort_days_device(first_day TEXT, build_kind TEXT, source TEXT, play_group TEXT, lifespan_days INTEGER,
+    players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER, lapsed_14d INTEGER, device TEXT);
 CREATE TABLE freestyle_vessels(  -- Freestyle (the Toybox) per day, build, source and vessel; NO player id
     day TEXT, build_kind TEXT, imported INTEGER, vessel_class TEXT,   -- 'unknown' when the event named none
     entries INTEGER,             -- freestyle_entered (in this vessel: builds from 2026-11-06 name it; older read unknown)
@@ -438,14 +480,16 @@ CREATE TABLE freestyle_vessels(  -- Freestyle (the Toybox) per day, build, sourc
     switches_to INTEGER,         -- freestyle_vessel_changed into this vessel (builds from 2026-11-06 only)
     switches_from INTEGER,       -- freestyle_vessel_changed out of this vessel
     recovered_to INTEGER,        -- recovered switches into this vessel (the identify history; see freestyle_switches)
-    recovered_from INTEGER       -- recovered switches out of this vessel
+    recovered_from INTEGER,      -- recovered switches out of this vessel
+    device TEXT                  -- as plays.device (a recovered switch: the device the player sent most from that day)
 );
 CREATE TABLE freestyle_switches( -- Toybox vessel switches by day, build, source, from and to; NO player id
     day TEXT, build_kind TEXT, imported INTEGER, from_vessel_class TEXT, vessel_class TEXT, switches INTEGER,
-    origin TEXT                  -- event: freestyle_vessel_changed (builds after 2026-11-06, exact time) | recovered:
+    origin TEXT,                 -- event: freestyle_vessel_changed (builds after 2026-11-06, exact time) | recovered:
                                  -- selected_vessel changed between two $identify of the player (builds since
                                  -- 2026-10-12; time approximate, when the profile was sent), only before that
                                  -- player's first freestyle_vessel_changed, so nothing counts twice
+    device TEXT                  -- as freestyle_vessels.device
 );
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
 -- Saved query tables (Query Studio, "as table") are added after these as t_<name>, rebuilt with the rest.
@@ -483,18 +527,52 @@ def player_hash(distinct_id):
 
 
 def build_kind_of(props):
-    """Release / development / editor / port. The client's own build_kind wins; until it sends one, the build is read
-    from the platform (…Editor) and the version (…-port), exactly as Ian's queries split them."""
+    """Release / development / editor / port / web. The client's own build_kind wins; until it sends one, the build is
+    read from the platform (WebGLPlayer is the browser Toybox; …Editor) and the version (…-port), exactly as Ian's
+    queries split them."""
     stated = props.get("build_kind")
     if isinstance(stated, str) and stated in BUILD_KINDS:
         return stated
     platform = str(props.get("platform") or "")
     version = str(props.get("app_version") or "")
+    if platform == "WebGLPlayer":
+        return "web"
     if platform.endswith("Editor"):
         return "editor"
     if version.endswith("-port"):
         return "port"
     return "release"
+
+
+def device_of(props):
+    """The device an event came from: the client's own `device` wins (builds from 2026-11-07); until it sends one, the
+    platform says which family (ios, android, web) or desktop (windows, mac, linux), and anything else is other."""
+    stated = props.get("device")
+    if isinstance(stated, str) and stated in DEVICES_SENT:
+        return stated
+    return DEVICE_OF_PLATFORM.get(str(props.get("platform") or ""), "other")
+
+
+OS_FAMILY = re.compile(r"^\s*(iOS|iPadOS|Android|Windows|Mac ?OS(?: X)?|macOS|Linux)[^\d]*(\d+)?", re.I)
+
+
+def os_family_of(props):
+    """'iOS 17', 'Android 14', 'Windows 11', 'macOS 14', 'Linux' from SystemInfo.operatingSystem (sent from
+    2026-11-07); 'not recorded' before that, 'other' for a string it does not know."""
+    text = props.get("os")
+    if not isinstance(text, str) or not text.strip():
+        return "not recorded"
+    found = OS_FAMILY.match(text)
+    if not found:
+        return "other"
+    name = found.group(1)
+    name = {"ios": "iOS", "ipados": "iPadOS", "android": "Android", "windows": "Windows", "linux": "Linux"}.get(
+        name.lower(), "macOS")
+    major = found.group(2)
+    if name == "macOS" and major == "10":            # "Mac OS X 10.15.7": the minor is the release people know
+        minor = re.search(r"10[._](\d+)", text)
+        major = f"10.{minor.group(1)}" if minor else major
+    return f"{name} {major}" if major and name != "Linux" else name
 
 
 def as_int(value):
@@ -681,8 +759,24 @@ class Store:
             columns = {row[1] for row in self.db.execute(f"PRAGMA table_info({table})")}
             if "country" not in columns:
                 self.db.execute(f"ALTER TABLE {table} ADD COLUMN country TEXT")
+        self._migrate_devices()
         self.db.commit()
         self._seed_eras()
+
+    def _migrate_devices(self):
+        """Databases made before the device column (2026-11-07): add it and fill it from each row's own properties,
+        and tag WebGL rows that sent no build_kind as web (they were read as release before the web build). Once."""
+        columns = {row[1] for row in self.db.execute("PRAGMA table_info(events)")}
+        if "device" not in columns:
+            self.db.execute("ALTER TABLE events ADD COLUMN device TEXT")
+        if self.db.execute("SELECT 1 FROM store_meta WHERE key='devices_filled'").fetchone():
+            return
+        rows = self.db.execute("SELECT id, props FROM events WHERE device IS NULL").fetchall()
+        self.db.executemany("UPDATE events SET device=? WHERE id=?",
+                            [(device_of(json.loads(raw)), row_id) for row_id, raw in rows])
+        self.db.execute("UPDATE events SET build_kind='web' WHERE platform='WebGLPlayer' AND build_kind='release' "
+                        "AND json_extract(props, '$.build_kind') IS NULL")
+        self.db.execute("INSERT INTO store_meta(key, value) VALUES('devices_filled', ?)", (str(now_ms()),))
 
     def _seed_eras(self):
         """The four eras of the launch plan, written once. A later empty list is the admins' choice and stays."""
@@ -1087,11 +1181,11 @@ class Store:
         match_id = props.get("match_id") if isinstance(props.get("match_id"), str) else None
         cur = self.db.execute(
             "INSERT OR IGNORE INTO events(received_ms, ts_ms, day, event, distinct_id, install_id, match_id, build_kind,"
-            " app_version, platform, country, schema_version, props, content_hash, shape_hash, near_dup)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " app_version, platform, country, schema_version, device, props, content_hash, shape_hash, near_dup)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (received, ts, day_of(ts), event, distinct_id, props.get("install_id"), match_id, build_kind_of(props),
-             props.get("app_version"), props.get("platform"), country, as_int(props.get("schema_version")), props_json,
-             content_hash, shape_hash, 1 if near else 0))
+             props.get("app_version"), props.get("platform"), country, as_int(props.get("schema_version")),
+             device_of(props), props_json, content_hash, shape_hash, 1 if near else 0))
         if cur.rowcount == 0:
             # The same event sent again (the client re-sends a batch whose response it never saw): stored once.
             self.db.execute("INSERT INTO resent(day, count) VALUES(?,1) "
