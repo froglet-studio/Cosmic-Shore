@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher ability icons in parts, energy gauge in the domain (`claude/thresher-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Thresher's four cards drawn from the real shark in parts under each slot icon of
+`ThresherHUDVariant.prefab`, painted by `ThresherHUDView.RefreshParts` from `ThresherExecutor.IsHot`, the new
+`InMassMode`, `RightTriggerDepth` and `IsPivoting`; the omni card `Core/Thresher_Windmill.png`; the Space plate fills
+toward the domain instead of the CTA lime.
+
+**Verified without the editor:** `author.py thresher --check` no drift; `author_thresher_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py` and `check_console_logging.py` clean. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ThresherHUDView.cs`, `ThresherHUDController.cs` or `ThresherExecutor.cs`.
+2. Fly the Thresher in the Toybox (it spawns in Mass Mode). **Pass:** every shark on the cards wears the domain; the
+   Mass card's ball is in the domain over a solid row.
+3. Press A to leave Mass Mode, whip the ball to smash speed. **Pass:** the Mass card's ball turns white and its row
+   faint; the Charge card's ball goes orange and the prism splits round a white blast.
+4. Pull RT, then release. **Pass:** the Space card's chain runs straight with a swing arc, and sags when released; the
+   plate fills toward the domain (no lime).
+5. Hold LT to plant. **Pass:** the Time card's orbit goes solid with the chain to the pivot.
+6. Upgrade Charge, Mass and Space to 5. **Pass:** Magnet's arcs, Armoured Trail's rims and Breaker's square prism show.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.

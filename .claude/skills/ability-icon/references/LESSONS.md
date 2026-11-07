@@ -557,3 +557,11 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
 83. **A wormhole reads as an arch only when its feet go INTO something.** An arch with its mouths cut open across the
     ends still read as a horseshoe; standing each foot in an edge-on ellipse ring, with the ring's near lip cut over the
     tube, reads as a tunnel from one hole in space to another.
+
+## 2026-11-07 - the Thresher: a hull with a whip tail
+
+87. **Cut a hull's long tail where the thing it tows takes over.** The Thresher's mesh is half whip: fitted whole, the
+    shark is a sliver at 40 px. `specs/thresher.py` keeps the front half along the nose axis (`_cut`), re-centres the
+    body (`_place`) and starts the chain's round links at the cut, so the shark fills its corner and the tail still
+    reads as the first links. The same cut serves a top view (Plant, Windmill).
+

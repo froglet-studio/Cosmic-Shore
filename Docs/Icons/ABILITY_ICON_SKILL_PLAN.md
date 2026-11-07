@@ -404,6 +404,14 @@ pinched to its throat between two open mouths), Faster Ride (the hull shooting o
 the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
+**The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
+2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut
+where the chain takes over) in parts `ThresherHUDView.RefreshParts` paints. Wrecking Ball: the shark (domain) tows the
+ball into a rival prism; at smash speed the ball goes red-hot and the prism splits round a blast; Magnet adds field
+arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and the row faint; Armoured Trail rims the
+row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
+prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
+the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
 
 | Round | What | Why first |
 |---|---|---|
