@@ -9,7 +9,8 @@ Multiplayer's owner is **Yash**. The UGS layer and the backend (Cloud Code, the 
 **Shombith's**: ask him before touching them (Yash does the Cloud Code work for now; anything posted to the backend
 goes through Shombith first). Never assign a task to anyone (`Docs/TEAM.md`). Before the first edit:
 `python3 Tools/Build/who_works_where.py query <paths>`. On 2026-11-07 it names `claude/mp-plan-p0` (2026-11-02: B47
-round 2, B48/B49, `mp_auto.py`, `verify_unity.sh`) in flight on these docs; build on it, never beside it.
+round 2, B48/B49, `mp_auto.py`; its `verify_unity.sh` has since landed on `bleeding-edge`) in flight on these docs;
+build on it, never beside it.
 
 ## 0. What the owner wants, and the standing rules (`Docs/MULTIPLAYER_START_HERE.md` §1-2)
 
@@ -25,25 +26,31 @@ leaves exactly what to test and the result to expect. Unity keeps shipping on NG
   rebase or force-push) someone else's commits. *Dated note: that is START_HERE of 2026-10-09; since 2026-10-26 only
   Yash's sessions build on `Ys-bleeding-edge` and everyone else lands on `bleeding-edge` through PRs (`/ship`; B36's
   boot fix was PR #1713, 2026-11-02; B38-again `93765d6aa8` is on `bleeding-edge`). Say which branch you are on.*
-- **Do not change Unity versions or packages.** A new dependency in Amoebius is flagged to the owner first.
+- **Do not change Unity versions or packages.** A new dependency in Amoebius (for example Steamworks.NET) is flagged to
+  the owner first.
 - **Never accept consent or a privacy prompt on the owner's or a player's behalf** (harnesses press "No thanks").
 - **`/verify-unity` gates every Unity C# commit.** A cloud session has no editor: say so in the commit and add the
   change to `Docs/UNITY_VERIFICATION_CHECKLIST.md` with an MPPM repro. Never claim a verification that did not run.
   *Dated note: CLAUDE.md (Shombith, 2026-10-29) spells the rule as `bash Tools/Build/unity_refcompile/run.sh` plus
   `bash .claude/skills/ship/gates.sh`; `bash Tools/Build/verify_unity.sh --project <worktree>` is the headless
   real-editor compile and EditMode run; `/verify-unity` itself is not required until that skill merges.*
-- **Amoebius (`Port/`) never changes the Unity project.** A commit is Port-only or Unity-side, never both.
-- **Never copy code from Unity's Netcode, Unity Transport or Multiplayer Services packages** (Unity Companion
-  License). Reading them to learn a wire fact is allowed (`Port/docs/MULTIPLAYER.md` §2).
+- **Amoebius (`Port/`) never changes the Unity project** (`Port/CLAUDE.md`). A commit is either Port-only or Unity-side,
+  never both.
+- **Never copy code from Unity's Netcode, Unity Transport or Multiplayer Services packages.** They are under the Unity
+  Companion License. Reading them to learn a wire fact is allowed (`Port/docs/MULTIPLAYER.md` §2).
 - **Do not test against the live UGS project without the owner's go-ahead.** A real sign-in creates a player
-  account in project `3030fd69-28ab-433f-b4bd-22b9b93c5118`. Use the local stand-ins; the owner runs the live test.
-- **Skip non-multiplayer issues in multiplayer work** (Grizzly, lizard, Sparrow, RaceRankToast failures are known).
-- **The two LOCKED party decisions are given:** the two-level presence lobby + party session, and EAGER per-user
-  Relay ("Always-InParty"; never lazy, on-first-invite creation). Invariants: single-writer SOAP, `.AsMainThread()`
-  at every UGS / Netcode await, `PartyStateMachine` the only lifecycle authority, `NetworkSceneObjectGuard.Sweep`
-  before every join, every catch mapped to a named recovery, the session authoritative over presence
-  (`Docs/MultiplayerArchitecture/ROADMAP.md` § Genuinely strong; `Docs/PartySystem/ARCHITECTURE.md` § Unbreakable).
-- **Logs are never pasted** (§5), and a person is never asked to run a learner, a report or a test command.
+  account in project `3030fd69-28ab-433f-b4bd-22b9b93c5118`. Use the local stand-ins; the owner runs the live test (§5.3).
+- **Skip non-multiplayer issues in multiplayer work** (Grizzly, lizard, Sparrow, RaceRankToast failures are known and
+  not ours).
+- The two LOCKED party decisions (two-level presence lobby + party session, eager per-user Relay) are given:
+  `Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md` § Standing constraints. *That section spells them out: "Always-InParty"
+  (`ROADMAP.md`: never reintroduce lazy, on-first-invite creation) and the `ROADMAP.md` § Genuinely strong invariants:
+  single-writer SOAP, `.AsMainThread()` at every UGS / Netcode await, `PartyStateMachine` the only lifecycle authority,
+  `NetworkSceneObjectGuard.Sweep` before every join, one party size of 4 by the session's own seat count, every catch
+  mapped to a named recovery; `Docs/PartySystem/ARCHITECTURE.md` § Unbreakable holds the exit criteria.*
+
+Not §2's, but standing: **logs are never pasted** (START_HERE §5 and §7; §5 here), and a person is never asked to run a
+learner, a report or a test command (root `CLAUDE.md` § "AI learning is automatic").
 
 ## 1. Read before you touch (in this order; each answers one question)
 
@@ -72,7 +79,7 @@ leaves exactly what to test and the result to expect. Unity keeps shipping on NG
 | The wire format's one version | `Assets/_Prefabs/CORE/NetworkManager.prefab` `NetworkConfig.ProtocolVersion` (24 in the 2026-10-29 history entry; read the prefab). **Rule (2026-10-05): every change to what crosses the wire bumps it** - a `NetworkVariable` struct, the order or count of a behaviour's variables, an RPC signature, a network prefab added or removed - after checking `bleeding-edge` AND every in-flight branch (19 was claimed twice on 2026-10-27); on a merge conflict keep the HIGHER number and both history entries. Netcode refuses a mismatched build at the connection request and the HOST's console names it (`NetworkConfig mismatch`); each test log records `netConfig`; `Tools/Build/check_network_prefab_hashes.py` fails on a stale `GlobalObjectIdHash` (B35). Two players testing a join run the same build |
 | The pinned packages (`Packages/manifest.json`; never bumped without the owner) | NGO `com.unity.netcode.gameobjects` 2.13.3, Sessions `com.unity.services.multiplayer` 2.3.3, Transport 2.7.4, MPPM `com.unity.multiplayer.playmode` 2.0.2, Friends 1.3.0, `com.unity.multiplayer.tools` 2.2.12 (`com.unity.multiplayer.widgets` removed) |
 | The test logs and the sweep | `Tools/Build/net_logs.py` (§5); `Assets/_Scripts/Editor/Diagnostics/NetTestLogs.cs` and `BugHuntAutoSend.cs` (the writer and the send); `Docs/PartySystem/SWEEP_LOG.md` (one row per sweep) |
-| Scenarios a machine runs | `Tools/Build/prisma_party_scenarios/` (five Amoebius processes, 14 rows: T1-T7, T4-lobby, `net`; 14/14 on 2026-10-09; down since #1089, 2026-10-14, until it moves to the UGS stand-ins); **`Tools/Build/net_scenarios.py`** (being written now: the owner's rows 2-5 as scripted Amoebius runs with injected faults, judged from the merged timeline; §4); `Tools/Build/mp_auto.py` (in flight on `claude/mp-plan-p0`: built development players host and join from a terminal, `-csMpAutoHost` / `-csMpAutoJoin`, each step an `mpAuto` mark) |
+| Scenarios a machine runs | `Tools/Build/prisma_party_scenarios/` (five Amoebius processes, 14 rows: T1-T7, T4-lobby, `net`; 14/14 on 2026-10-09; down since #1089, 2026-10-14, until it moves to the UGS stand-ins); **`Tools/Build/net_scenarios.py`** (the owner's rows 2-5 as scripted Amoebius runs with injected faults, judged from the merged timeline; `--self-test` green on 2026-11-07, its `--run` driver unverified; §4); `Tools/Build/mp_auto.py` (in flight on `claude/mp-plan-p0`: built development players host and join from a terminal, `-csMpAutoHost` / `-csMpAutoJoin`, each step an `mpAuto` mark) |
 | The edit-mode suites | `Assets/_Scripts/Tests/Editor/` (`Docs/Multiplayer/TESTS.md` lists them by area); headless in Amoebius: `bash Tools/Build/prisma_edit_mode_tests/run.sh` (it stopped building on 2026-11-01, 102 engine APIs; 72 filled 2026-11-05) |
 | Amoebius networking, built in one place (`NetStack.Install`) | `Port/src/CosmicShore.Engine/Networking/Wire/` (transport, relay, `Ugs/` sign-in and Lobby, simulator, faults: `COSMIC_SHORE_NET_SIM`, `COSMIC_SHORE_NET_FAULT`, `do netsim` / `do netfault` on the control port); `Port/src/CosmicShore.Player/NetTestLog.cs` |
 | The party docs route table | `Docs/claude/MULTIPLAYER_AND_SOCIAL.md` § "Party / Presence / NetDiag docs": the doc to read first for each class you touch, and the rule that every UGS call goes through `UgsRequestPolicy.ExecuteAsync` |
@@ -88,7 +95,8 @@ leaves exactly what to test and the result to expect. Unity keeps shipping on NG
   `for r in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin); do git show "$r:Docs/PartySystem/BUGS.md" 2>/dev/null | grep -oE '^(## B|\| B)[0-9]+'; done | grep -oE '[0-9]+$' | sort -n | tail -1`
   (4 s). On 2026-11-07 it answers 49: **B48 is taken twice** - `Ys-bleeding-edge` (2026-11-07, a reaped party session
   rebuilt in place leaves the pilot unpaired) and `claude/mp-plan-p0` (2026-11-02, a re-invite that did nothing; its
-  B49 is the host stuck `Inviting`) - so the next free is **B50**, and one B48 needs renumbering by Yash. Then the
+  B49 is the host stuck `Inviting`) - so the next free is **B50**, and one B48 needs renumbering (Yash's ledger: ask
+  him which). Then the
   table row, the entry, the index line in `Docs/Multiplayer/BUGS.md`, the checklist entry (§8), and the sweep-log row.
 - **How "fixed again" happens.** B31: fixed 2026-10-17 by averaging under 1 GET/s; 1,061 429s on 21-23 Oct because the
   two reads still left in the same second; fixed again 10-24 (`LobbyReadPacer`). B38: fixed 10-25 (`PlayEnded`);
@@ -111,9 +119,9 @@ leaves exactly what to test and the result to expect. Unity keeps shipping on NG
 The owner's table (START_HERE §5.2 in order, §5.3 the live check) is copied to **`references/HAND_TESTS.md`** with the
 column *a machine can run it: how* and, per row, the timeline marks a machine checks. Rows that need the editor's own
 UI (the invite popup, the scoreboard's Main Menu, MPPM tags) stay MPPM. **Rows 2-5 are the Amoebius scenarios
-`Tools/Build/net_scenarios.py` scaffolds** (another agent is writing it now) on the five-process harness's rows
+`Tools/Build/net_scenarios.py` scaffolds** (`--list`, `--plan`, `--judge`, `--marks`, `--self-test` run here; `--run` is unverified) on the five-process harness's rows
 (T7 + T4-lobby, T2b, T4 / T4-lobby, T3); the plan calls them two-player, the checklist steps need 3, 5, 4 and 2
-pilots. **The live UGS check (§5.3: the `amoebius` environment, UGS CHECK, a party on one PC, two networks; later a
+pilots (the tool seats 3, 5, 4 and 4: row 5 keeps a full party so the other three play on). **The live UGS check (§5.3: the `amoebius` environment, UGS CHECK, a party on one PC, two networks; later a
 scheduled task on the VM) is Shombith's call**: it signs players into the live project; a session never runs it.
 `mp_auto.py` (in flight) is the built-player route for rows 1 and 8 once it merges. Prerequisite of every MPPM run:
 each virtual player has its own tag (P2, P3, P4), or every clone signs in as ONE UGS account.
@@ -124,7 +132,7 @@ each virtual player has its own tag (P2, P3, P4), or every clone signs in as ONE
 | 2 | Host drop, then the new host invites at once (repeat 5x) | The Accept seats the guest; never "party is no longer available" (B29 Session case) | `net_scenarios.py` row 2 (3 pilots) |
 | 3 | Two players press Join on a 3/4 party together | 4/4; the loser sees "That party is full." (B25) | `net_scenarios.py` row 3 = T2b (5 pilots) |
 | 4 | A member leaves at the ready gate / the arcade launch lobby | The other three still launch (B20) | `net_scenarios.py` row 4 = T4, T4-lobby (4 pilots) |
-| 5 | A guest leaves mid-match | Its ship flies on under AI; its score row stays (B21) | `net_scenarios.py` row 5 = T3 (2 pilots; in-match rows wait on START_HERE §4's blocker) |
+| 5 | A guest leaves mid-match | Its ship flies on under AI; its score row stays (B21) | `net_scenarios.py` row 5 = T3 (4 pilots: the leaver and three who play on; the checklist's minimum is 2; in-match rows wait on START_HERE §4's blocker) |
 | 6 | Offline: the seven cases | As listed in the checklist entry | A player build with the NIC pulled; `OfflineSessionTests` (15; Case4 failing on 2026-11-02) and Amoebius `netfault down` hold the decisions |
 | 7 | `net` / `net dump` in the F7 console on host and guest | Each names its role; the host's record holds the lifecycle marks | The harness's `net` row; any sent log through `net_logs.py show` |
 | 8 | Request discipline: idle 5 min in the menu | No 429s; GETs within budget (about 0.1 reads/s since Block 5) | Read from any log (`reads`, `429s 0`); the run needs real UGS |
@@ -148,12 +156,14 @@ python3 Tools/Build/net_logs.py --self-test
 `show` prints, per player, `<user>/<peer> <role> CLEAN|DIRTY errors N warnings N reads N 429s N [(console M)]
 [voided N] [party pushes N] [presence pushes N] [longest freeze Ns] events N (why)` with its branch and commit; then
 `NetworkConfig differs between players (B35)` when the `netConfig` hashes disagree; `Loads (Load Time Insights)` with
-**RELAY RISK** on any frame over 9 s; then the timeline, `+<s> <peer> event|warning|error <text>`. The marks:
-`start`, `signedIn`, `presenceJoined <lobby>`, `party <from>-><to>` (`Disconnected`, `HostingParty`, `InParty`,
+**RELAY RISK** on any frame over 9 s; then the timeline, `+<s> <peer> event|warning|error <text>`. The marks
+(`net_scenarios.py --marks` is the written set): `party <from>-><to>` (`Disconnected`, `HostingParty`, `InParty`,
 `Inviting`, `Reconnecting`, ...), `clientApproved <id> [rejoin]`, `clientLeft <id>`, `refused <why>`, `bounce <toast>`,
 `readyGate <controller: why>`, `leaverToAI <name>`, `seatReclaimed <name>`, `rejoinRefused <id>`, `stall <s>s in
 <scene>` + `stallContext` (focus, memory against RAM, clones in flight), `relayDrop after a N s freeze`,
-`netConfig hash=...`, `offlineChosen`, `mpAuto <step>` (in flight). Amoebius writes the same verbs.
+`netConfig hash=...`, `offlineChosen`, `offlineFallback`, `manual`, `mpAuto <step>` (in flight). No runtime call writes
+`start`, `signedIn` or `presenceJoined` (only `NetSessionRecorderTests` and net_logs.py's fixtures). Amoebius writes the
+same verbs.
 
 **A good run:** every player present and CLEAN; `429s 0` and no `rate-limited` line; one `netConfig` hash and no B35
 block; no `stall` of 9 s or more and no `relayDrop`; no `refused` or `bounce` the test did not ask for; no RELAY RISK
@@ -195,5 +205,5 @@ main editor saw no other player (solo online play writes nothing). Say so in one
 3. **Who to ask.** Yash for anything multiplayer (the party, netcode, the AI handover, `EnvironmentPrismPool`).
    Shombith for UGS, the backend, Cloud Code (Yash does the work, posted through Shombith), the live project and its
    environments, the scheduled live check, and the tooling; the boot order (Relay host after the menu) landed as PR
-   #1713, merged by him. Garrett's machine holds the B45 freezes (a Profiler capture there is his step). Name the
-   owner in the hand-off; never assign.
+   #1713, merged by him. Garrett's machine holds the B45 freezes (a Profiler capture needs that machine; name him,
+   never assign it). Name the owner in the hand-off; never assign.

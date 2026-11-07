@@ -186,6 +186,18 @@ def _launch(host, crew):
     ]
 
 
+# To confirm with Yash (2026-11-07). None of this has been seen in a recorded net log: it is read from the C# call sites.
+# net_logs.py itself names only party, clientApproved, clientLeft, readyGate, stall, relayDrop and netConfig (its fixtures
+# and its stall / B35 handling); Docs/Multiplayer/TESTS.md names no mark at all. So, to confirm:
+#   - the verbs bounce, refused, leaverToAI, seatReclaimed, rejoinRefused, stallContext, manual, offlineChosen and
+#     offlineFallback (MARKS above: each is one NetSessionRecorder.Mark(...) site, never yet read back from a log);
+#   - the detail texts a scenario matches: HOST_LOSS ("Host disconnected" / "Connection lost", the reason
+#     HandleHostLossAsync hands BounceToSoloMenuAsync), readyGate's "client <id> disconnected", the bounce toasts
+#     "That party is full." / "That party has ended." (serialized fields on PartyInviteController; the defaults are
+#     matched) and JoinTargetValidator's "...'s party is no longer available." / "...'s party is full.";
+#   - the 30 s "at once" bound in host-drop-reinvite, the cross-player order the must_all groups avoid, `netfault
+#     slow=1500` as the B29 widener, and that no token drops ONE player and keeps its log (the `fault` entries).
+
 SCENARIOS = {
     "host-drop-reinvite": {
         "row": 2,

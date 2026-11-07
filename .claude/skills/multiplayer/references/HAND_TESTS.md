@@ -15,8 +15,8 @@ First, after pulling: the project compiles with no "Script Updating Consent" dia
 `AuthenticationServiceFacade.cs` / `MultiplayerSetup.cs` (checklist "No more Script Updating Consent prompt").
 
 **What a machine has today (2026-11-07).** `Tools/Build/prisma_party_scenarios/` (five Amoebius processes, 14 rows,
-14/14 on 2026-10-09; down since #1089 until it moves to the UGS stand-ins); **`Tools/Build/net_scenarios.py`** (being
-written by another agent now: rows 2-5 below as scripted Amoebius runs with injected faults - `COSMIC_SHORE_NET_SIM`,
+14/14 on 2026-10-09; down since #1089 until it moves to the UGS stand-ins); **`Tools/Build/net_scenarios.py`** (exists;
+`--self-test` green on 2026-11-07, its `--run` driver unverified: rows 2-5 below as scripted Amoebius runs with injected faults - `COSMIC_SHORE_NET_SIM`,
 `COSMIC_SHORE_NET_FAULT` / `do netfault full|ratelimit|relayfail|down|slow` - judged from the merged timeline against
 the marks each row lists; a `--self-test`); `Tools/Build/mp_auto.py` (in flight on `claude/mp-plan-p0`, 2026-11-02:
 built DEVELOPMENT players host and join from a terminal, `-csMpAutoHost` / `-csMpAutoJoin`, one UGS auth profile
@@ -33,7 +33,7 @@ list, a direct JOIN and the host's count, not yet an invite or a match). The Amo
 | 2 | Host drop, then the new host invites at once (repeat 5x) | The Accept seats the guest; never "party is no longer available" | "B29 Session case (defect 5)" | **`net_scenarios.py` row 2** (3 pilots: P1 hosts P2 and P3; kill P1; P2 invites P3 at once; 5 repeats, the race window is one presence tick) on the harness's T7 (host `kill -9`) + T4-lobby (the new host's first invite) |
 | 3 | Two players press Join on a 3/4 party together | 4/4; the loser sees "That party is full." | "`party` console command, the five-process party scenarios…" step 4 and "Party request discipline" step 8 (B25) | **`net_scenarios.py` row 3 = the harness's T2b** (5 pilots: a 3/4 party and two joiners whose Run presses land behind a barrier, skew < 1 ms) |
 | 4 | A member leaves at the ready gate / the arcade launch lobby | The other three still launch | same entry, step 3 (B20) | **`net_scenarios.py` row 4 = T4** (match gate: three press Ready, the fourth leaves) **and T4-lobby** (card lobby: three press Start, the fourth leaves); 4 pilots |
-| 5 | A guest leaves mid-match | Its ship flies on under AI; its score row stays | same entry (B21); TEST_CHECKLIST §5 steps 7-9 for the rejoin | **`net_scenarios.py` row 5 = T3** (2 pilots: host + guest in a match; the guest leaves). In-match rows wait on START_HERE §4's blocker (a Bloomrush match crawls in Amoebius since 2026-10-14; not recorded as cleared) |
+| 5 | A guest leaves mid-match | Its ship flies on under AI; its score row stays | same entry (B21); TEST_CHECKLIST §5 steps 7-9 for the rejoin | **`net_scenarios.py` row 5 = T3** (4 pilots: a full party, the leaver and three who play on; the harness's T3 uses two of its five processes; the checklist's minimum is 2). In-match rows wait on START_HERE §4's blocker (a Bloomrush match crawls in Amoebius since 2026-10-14; not recorded as cleared) |
 | 6 | Offline: the seven cases | As listed | "Offline mode: the seven cases tested…" | **A person with a player build** (NIC disabled, UGS blocked at the firewall, the lamp toggle, re-enable, Reconnect). The decisions are held by `OfflineSessionTests` (15; `Case4_NetworkLostMidSession_RaisesTheNoticeEventOnce` failing, Cosmos 2026-11-02) and Amoebius `netfault down` / `up` (every call fails until `up`) |
 | 7 | `net` / `net dump` in the F7 console on host and guest | Each names its role; the host's record holds the lifecycle marks | "Session record…" | **The harness's `net` row** (passed, run 6) and **every sent log**: `net_logs.py show` prints each player's role line and the host's marks; no console step is needed |
 | 8 | Request discipline: idle 5 min in the menu | No 429s; GETs within the entry's budget | "Party request discipline — review Phases 0–1" | **Read from any log** (`reads`, `429s`, `voided`, pushes): since Block 5 the poll is one 20 s safety poll, about 0.1 reads/s (12 reads in 93 s on 2026-10-28; 59 in 9 min on 10-29). The run itself needs real UGS (its cap is the service's): the owner's machine, or `mp_auto.py run --timeout 300` once it merges |
@@ -47,7 +47,7 @@ player (no `NetworkConfig differs between players (B35)` block), `events` non-ze
 
 ### Row 1: the smoke gate (S1-S4, S9)
 
-- **S1 accept.** Host: `party HostingParty->Inviting` (the invite), then `clientApproved <id>`; guest: `party
+- **S1 accept.** Host: `party InParty->Inviting` (the invite), then `clientApproved <id>`; guest: `party
   ...->InParty` and the console line `[PartyInviteController] Accept flow completed successfully.`; both rosters 2/4;
   no NetDiag line.
 - **S2 decline.** No `party` transition on the invitee, no `bounce`; the host's invite slot frees within 5 s, and
@@ -64,7 +64,7 @@ player (no `NetworkConfig differs between players (B35)` block), `events` non-ze
 
 - The dropped host's peers: `bounce <toast>` ("Host disconnected" / the B10 bounce) then `party ...->HostingParty`
   (each lands in its own working menu; the harness's T7 verdict).
-- The new host invites: `party HostingParty->Inviting`; the invitee's Accept shows NO `refused` whose reason is
+- The new host invites: `party InParty->Inviting`; the invitee's Accept shows NO `refused` whose reason is
   `SessionChanged` ("…party is no longer available"), and the new host logs `clientApproved <id>`.
 - Five repeats clean. The fix's proof was 0 `Join pre-flight refused (SessionChanged)` lines across every pilot
   (2026-10-09, 14/14); one clean run of an intermittent defect supports it, the five repeats are the hand test.
@@ -100,9 +100,10 @@ player (no `NetworkConfig differs between players (B35)` block), `events` non-ze
 
 - Role `offline` on the summary line and `/offline` from `net`; `offlineChosen` for the lamp toggle; the record's
   `offlineFallbacksWhileOnline` stays 0 when the device really had no network (DIRTY otherwise).
-- No `presenceJoined` and no Relay attempt while offline, even after a late sign-in (B27); the "Could not reach the
-  servers…" notice within five attempt timeouts (B28); Reconnect: the Authentication scene, then `signedIn` and
-  `presenceJoined` again.
+- No `party Disconnected->InPresenceLobby` and no Relay attempt while offline, even after a late sign-in (B27); the
+  "Could not reach the servers…" notice within five attempt timeouts (B28); Reconnect: the Authentication scene, then
+  `party Disconnected->InPresenceLobby` again (no `signedIn` / `presenceJoined` mark exists: the `party` transition is
+  what the recorder writes).
 
 ### Row 7: `net` / `net dump` (Block 1)
 
@@ -126,5 +127,5 @@ player (no `NetworkConfig differs between players (B35)` block), `events` non-ze
   click: both players `(session-token)` with the same ids. A FAIL names its step: `sign in` (project id, network,
   the project's Authentication settings), `allocate` / `join code` / `join` (Relay not enabled, or rate limited),
   `bind and connect` (UDP to the relay blocked).
-- Step 2: player2's `[P2]` lines show `signedIn`, `party ...->InParty`; the main game `clientApproved`; F3 shows the
+- Step 2: player2's `[P2]` lines show its sign-in, then `party ...->InParty`; the main game `clientApproved`; F3 shows the
   sign-in, the lobby, the relay and the ping. Step 3: the same across two networks.

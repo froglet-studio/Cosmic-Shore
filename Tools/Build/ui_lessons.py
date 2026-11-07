@@ -131,9 +131,11 @@ REJECT = [
         (r"\bslop\b", False),
         (r"useless text", False),
         (r"too much text", False),
-        (r"\bnot working\b", False),
-        (r"\boverlap(?:ping|s)?\b", False),
+        (r"\bstill not working\b", False),
+        (r"\boverlapping\b|\boverlaps\b|\boverlaying\b|\bbuttons overlap\b", False),
         (r"\bcut off\b", False),
+        (r"didn'?t (?:much )?like", False),
+        (r"\b[Mm]isaligned\b|\b[Mm]issing background\b", False),
     )
 ]
 
@@ -288,10 +290,19 @@ class Section:
             return "awaiting"
         return ""
 
+    def decision_lines(self) -> list[tuple[int, str]]:
+        """Lines that decided the round against: **Rejected**, superseded, scrapped (body first, then the heading)."""
+        return [(n, t) for n, t in self.lines + [(self.line, self.title)] if any(p.search(t) for p in DECIDED_OTHER)]
+
     def picked_cell(self) -> str:
+        """The record of the decision: a strong pick line, else the line that decided against the round, else a weak
+        'picked' / 'approved' line, else 'awaiting' when the section says so."""
         strong, weak = self.pick_lines()
         if strong:
             return plain(strong[0][1])
+        other = self.decision_lines()
+        if other:
+            return plain(other[0][1])
         if weak:
             return plain(weak[0][1])
         if self.awaiting:
@@ -329,7 +340,7 @@ class Section:
 def plain(text: str) -> str:
     """Markdown stripped and whitespace collapsed, for a table cell."""
     text = re.sub(r"\*\*|__|`", "", text)
-    text = re.sub(r"^\s*[-*]\s+", "", text)
+    text = re.sub(r"^\s*(?:#+\s+|[-*]\s+|>\s+)", "", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -342,15 +353,17 @@ def parse(path: str = DOC) -> list[Section]:
     for i, raw in enumerate(lines, 1):
         if raw.startswith("```"):
             fenced = not fenced
-        if not fenced:
-            m = HEADING.match(raw)
-            if m:
-                current = Section(int(m.group(1)), m.group(2), i)
-                sections.append(current)
-                continue
-            if OTHER_HEADING.match(raw):
-                current = None  # an unnumbered '## ' heading ends the numbered section
-                continue
+            continue  # fenced code is neither a heading nor prose: it is skipped whole
+        if fenced:
+            continue
+        m = HEADING.match(raw)
+        if m:
+            current = Section(int(m.group(1)), m.group(2), i)
+            sections.append(current)
+            continue
+        if OTHER_HEADING.match(raw):
+            current = None  # an unnumbered '## ' heading ends the numbered section
+            continue
         if current is not None:
             current.lines.append((i, raw))
     return sections
@@ -542,10 +555,13 @@ def self_test() -> int:
         assert four.kind == "built" and four.run_in_editor == "no: " + NOT_RUN, four.as_dict()
         assert four.pick_words() == ["Go ahead with the colourful card renders"], four.pick_words()
         assert four.rejected_words() == [], four.rejected_words()
-        assert four.screens == ["Hangar", "Game cards"], four.screens
+        assert four.screens == ["Hangar"], four.screens
         # the superseded round: decided against, no pick line, not awaiting; its dislike is still read
         assert five.decided and not five.awaiting and not any(five.pick_lines()), five.as_dict()
         assert five.rejected_words() == ["I didn't much like the mockup ideas"], five.rejected_words()
+        assert five.picked_cell().endswith("superseded by the Rev 6 pick)") and three.picked_cell() == "", (
+            five.picked_cell(), three.picked_cell()
+        )
         # --check: section 3 fails when it is older than three days, and only it
         bad = undecided(secs, _dt.date(2026, 10, 20))
         assert [s.number for s in bad] == [3], [s.number for s in bad]
@@ -556,7 +572,7 @@ def self_test() -> int:
         assert counts["Hangar"] == {
             "screen": "Hangar", "sections": 2, "rounds": 1, "revs": 1, "built": 1, "fixes": 0, "numbers": [1, 4]
         }, counts["Hangar"]
-        assert counts["Game cards"]["sections"] == 2 and counts["Profile"]["rounds"] == 1, counts
+        assert counts["Game cards"]["sections"] == 1 and counts["Profile"]["rounds"] == 1, counts
         # --md keeps the hand-written part, replaces only what is between the markers, and is idempotent
         md = os.path.join(tmp, "UI_LESSONS.md")
         hand = "# Hand-written\n\nShombith's words stay.\n\n"
