@@ -283,7 +283,8 @@ blocks. The 2026-10-15 control scheme and flora live in Unity only, until the st
   design slots.
 - **FMOD:** every event slot on `ShrikeConfig.asset` ships empty.
 - **Element minigames.** The Shrike's two studio minigames do not yet follow labmaker §1.5, one minigame per element:
-  - Time: race;
+  - Time: race - **Thornline** (`GameModes.Thornline`, 2026-11-07, `Arcade/THORNLINE.md`): thorn to thorn on the Void
+    Sling, a ring a leg; the mode leaves the kit as it is;
   - Space: destruction;
   - Mass: creation;
   - Charge: dogfight.

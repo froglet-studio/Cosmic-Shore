@@ -69,7 +69,8 @@ MAX_LEVEL = 10
 KEYWORDS = [
     ("Manta",     ["BasePrismProduction", "CrystalBlast"]),
     ("Dolphin",   ["BasePrismProduction", "Boost", "CrystalBlast"]),
-    ("Rhino",     ["BasePrismProduction", "Blade", "CrystalBlast"]),
+    ("Rhino",     ["BasePrismProduction", "CrystalBlast"]),   # the plough: the Blade keyword left with the sword (2026-11-07)
+    ("Swordfish", ["BasePrismProduction", "Blade", "CrystalBlast"]),   # the Rhino's sword, split off 2026-11-07
     ("Squirrel",  ["BasePrismProduction", "Boost", "Blade", "CrystalBlast", "Attach"]),
     ("Serpent",   ["BasePrismProduction", "Projectile"]),
     ("Sparrow",   ["BasePrismProduction", "Boost", "Projectile"]),

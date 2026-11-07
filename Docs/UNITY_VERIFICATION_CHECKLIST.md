@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Rhino splits into the Rhino (the plough) and the Swordfish (the sword) (`cece/practical-mendel-cdfsc3`, 2026-11-07, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md`, `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit".
+- A new vessel, the **Swordfish** (`VesselClassType.Swordfish = 30`): the Rhino's prefab with the whole sword kit, its hull a ram, registered everywhere a hull is (prefab container, network prefabs, class lists, toybox roster, hull fusion, touch profiles, ProtocolVersion 26).
+- The **Rhino** loses the sword (document-level strip, `author_swordfish_assets.py`) and gains the plough kit: Carry / Avalanche, Blade / Berm, Furrow / Unstoppable, LT / RT steer (a pull shoves, a hold steers). The blade's skimmer stays as a static crystal catcher.
+- Cleave and Astro League seat the Swordfish; Broadside seats it in the Rhino's place; Brood Rush offers both; Regatta and Headlong keep the Rhino.
+
+**Verified without the editor:**
+- The reference compile (editor config): 0 errors in changed files; the 21 left are the Vivox / Moderation package gaps.
+- `author_swordfish_assets.py --check` and `--self-test` (8 planted defects caught); `dangling_refs` clean on both prefabs; `check_network_prefab_hashes.py`, `check_vessel_prefab_container.py`, `author_touch_profiles.py --check`, `author_cleave/broadside/regatta/headlong/pilot_assets --check`, `element_ability_table.py Rhino` / `Swordfish` (4/4 scaling, 4/4 L5 gates each).
+
+**Verify in the editor:**
+1. Reimport. No missing-script or missing-reference warnings on `Rhino.prefab` or `Swordfish.prefab`.
+2. Toybox → Vessel Changer offers both. The Swordfish flies as the Rhino did before (swing, energize, afterimages, Surge); its hull destroys what it rams.
+3. The Rhino: hold RT through a trail and every ploughed prism lands right; a pull alone sidesteps a little. Raise Space / Mass / Charge in the element panel: wider furrow, wider blade, longer strikes. Crystals still collect.
+4. The three Rhino L5s (Unstoppable, Berm, Avalanche) as in `RHINO_PLOUGH.md` steps 9-14.
+5. Cleave and Astro League spawn Swordfish for the player and the AI; Broadside lists the Swordfish, not the Rhino.
+6. MPPM two clients: both hulls spawn on both; a steered plough lands prisms on the same side on both.
+7. Audits: Ability Rows, Skimmers, Elemental Morphs, Construction over both hulls.
+
+**First-pass tuning** (all guesses): furrow 0 → 20 u, carry 0 → 40 u, blade 14 → 40 u, shove 30 u/s for 0.25 s, Avalanche 3 links.
+
 ### 🔴 Urchin ability icons, round 6: parts the HUD drives (`claude/urchin-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** the Urchin's four cards are drawn in parts (`Tools/Build/icon_kit/specs/urchin.py`) seated under each
@@ -444,6 +466,7 @@ finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1")
    slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
 3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
    only for red Danger blocks, and never swerve in the last stretch before a ring.
+
 ### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
@@ -533,6 +556,7 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -759,6 +783,7 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
 9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
    boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
    (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+
 ### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
@@ -995,6 +1020,7 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
   purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
   `best_fitness` finite after the match). **These three scenarios were authored from the catalog
   (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -1615,6 +1641,7 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+
 ### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
@@ -1647,6 +1674,7 @@ the headless reference compile, player and editor (0 errors in project code); `T
 
 **First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
 Medium hive skill (a proposal between the lab's rookie and skilled).
+
 ### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
@@ -1882,6 +1910,7 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
 
 ---
+
 ### 🔴 Holes on mobile: no warped space, the Meerkat recipe, the Charge ripple shows (`stoat/annihilation-waves`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 `Docs/BLACK_HOLE.md` §5.4, `R_VesselActions/STOAT_DIPOLE.md` §1c. Yash: "make sure we are not warping space … mobile
@@ -3766,6 +3795,7 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+
 ### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
@@ -6214,6 +6244,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 10. Gather petals of one element on the hull: the motes of that shape come more often.
 11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
     back to normal and the input is live.
+
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
@@ -6416,6 +6447,7 @@ League on Easy with the Third Eye open (the AI Diagnose panel (F2)). The AI's st
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+
 ### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `WaystationController`:
@@ -8843,6 +8875,7 @@ the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead)
 **First-pass tuning (studio-measured, not settled):** `autopilotLetGoNear` 60, `autopilotDrySeconds` 0.5,
 `autopilotMinHoldSeconds` 0.8, `autopilotRelaySeconds` 0.25. The studio's best squeeze was 1.0. Unity's AI
 still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
+
 ### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **the AI Diagnose panel (F2)**
@@ -8966,6 +8999,7 @@ Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hu
    Tune on `StoatDipoleConfig` (the studio's `ft*` row).
 
 ---
+
 ### 🔴 B29 Session case (defect 5): an invite and the `partySession` it names go out in one save (`Ys-bleeding-edge`, 2026-10-09)
 
 **What landed:**
@@ -9064,6 +9098,7 @@ all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRI
 `maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
 `lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
 and `aheadHorizons` first.
+
 ### 🔴 Omni + Mass crystals: Mass hull fusion fixed (thickness baked in), a random pose per crystal, reseat −0.87 (`cece/determined-ride-rqzaeo`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 10, `Docs/PALETTE.md §2.10`; generators
@@ -21488,6 +21523,36 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh
+--self-test`) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/THORNLINE.md` §7:
+
+1. Open `MinigameThornline` once and save it (a text clone); then `python3 Tools/Build/author_thornline_assets.py --check`.
+2. Run the EditMode tests `ThornlineCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: 17 thorns stand where the rings' lines meet; sling start thorn -> thorn 1 -> ...; every ring counts.
+4. The 32 u thorns at I4 can be hit with the eyepiece from ~1,000 u.
+5. I2: a rim shot takes the Time crystal and the sling is ready on docking.
+6. I3: a snipe threads both rings and counts both.
+7. Two AI Shrikes sling thorn to thorn and finish (note the aim error if they crawl).
+## 🔴 Headlong: the stampede, hedges the Rhino ploughs through (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tools/Build/headlong_course_harness/run.sh
+--self-test`, 9 pass, 4 negative controls fire); the race model is `Tools/Build/headlong_stampede_model.py`
+(`HEADLONG.md` §0).
+
+1. **Open and save `MinigameHeadlong` once** (the controller gained `hedgePrefab` and the stampede fields), then
+   `python3 Tools/Build/author_headlong_assets.py --check` adopts it.
+2. **I1, two Rhinos.** Four hedges stand across the longest straights. Holding the line, a hedge sprays aside and the
+   speed readout does not drop. The log has `[Headlong] STAMPEDE intensity 1: 4 hedges (0 danger), 0 Time crystals.`
+3. **Next lap:** every hedge stands whole again (they re-stand 2.5 s after the last hull leaves).
+4. **I2:** two Time crystals sit just inside the tightest corners; taking one raises the Time card a level.
+5. **I3:** three wide red hedges each have a round plain window off-centre. Ploughing one drops every element a level
+   (one burn per hedge, not one per slab); flying the window costs nothing. An AI Rhino swerves for the window on laps
+   1-4 and ploughs on lap 5.
+6. **I4:** the race starts at Time 5. Leave a hairpin fast and the red hedge after it sprays aside with no burn
+   (Momentum, the Time card flashes); leave it slow and you are burned to Time 4.
+7. **Frame time** with four Rhinos at I3 (about 2000 hedge slabs): no worse than Switchback I2.
 ## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21
@@ -21535,3 +21600,23 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
+
+## 🔴 Manta ability icons, round 3 (2026-11-07, Garrett, NOT COMPILED, NOT RUN IN EDITOR)
+
+Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's container (`unity_refcompile` stopped at
+"no .NET runtime"), and no editor was open. Changed C#: `MantaVesselHUDView` (part fields, `SetDomainColor`, `SetDecoys`,
+`SetAbilityUpgraded` override), `MantaHUDController` (domain colour, decoy poll), `MantaStingActionExecutor`
+(`HasElementalDecoy`, `HasOmniDecoy`). Prefab: `Manta.prefab`'s four slot icons became containers of parts.
+
+1. **Compile** (player + editor); open `Manta.prefab` and check the view's new part fields are all bound (no Missing).
+2. **Charge card**: fly the Manta in the Toybox; skim a rival to plant: the rival on the card turns full danger, one bomb
+   appears per plant (three drawn at most), the plate drains as the shared fuse burns; at Charge 5 the second rival and
+   its bomb show while anything is planted.
+3. **Mass card**: collect an elemental crystal: the decoy crystal and its danger prisms brighten while the decoy stands,
+   and dim when it is taken or expires; at Mass 5 collect an omni crystal: the small omni decoy appears.
+4. **Space card**: skim prisms: the plate fills with energy (full = one bomb) and the spikes round the prisms brighten;
+   hitting a prism empties both. At Space 5 the knocked-off shell shows.
+5. **Time card**: below Time 5 no chevrons; at Time 5 Soar's chevrons appear ahead of the nose.
+6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
+7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
+

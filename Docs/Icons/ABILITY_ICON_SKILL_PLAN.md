@@ -415,6 +415,20 @@ ghost; Slipstream turns the trail rival (danger) and adds the speed lines. The o
 Urchin's only omni effect is haptics). `UrchinVesselHUDView.RefreshParts` paints them; `author_urchin_hud.py` stands
 down on the variant now that the kit owns its cards. Sheets: `Docs/Icons/sheets/urchin_{chain,rider,track,slip,omni}.png`.
 
+**The roster pass (2026-11-07, Garrett):** "do all of the icons. put the full care and attention into each one. and do
+this for all the remaining vessels ... so i can review the entire roster of remain icon revisions after". From here each
+card still gets an options sheet (the record of what was weighed), and the option recommended on it is built in full
+without waiting for a pick; Garrett reviews the whole roster at the end. **The Manta** (round 3, after Garrett's kit
+overhaul #1803 / #1804): every card is parts in its slot's container on `Manta.prefab` (`specs/manta.py`), tinted and
+shown by `MantaVesselHUDView`. Sting (Charge, A): the Manta and a rival wearing one bomb per plant (three drawn), the
+plate the ONE shared fuse, Contagion's second rival at Charge 5. Decoy (Mass, B): the decoy crystal with its heart
+plate frozen (the tell) over the danger prisms it springs, the omni decoy beside it while one stands (Mass 5;
+`MantaStingActionExecutor.HasElementalDecoy` / `HasOmniDecoy`). Skim (Space, A): the Manta skimming rival prisms that
+wear a crown of explosive spikes, brighter as the energy gathers; the plate is the energy (`energyFill`, bound as the
+card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yastri (Time, A): the Manta and the hard
+corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
+crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yastri}_options.png`.
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |

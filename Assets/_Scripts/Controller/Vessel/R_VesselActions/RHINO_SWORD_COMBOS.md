@@ -1,5 +1,7 @@
 # Rhino Sword Combos — trigger strings call flourishes
 
+> **2026-11-07: this is the SWORDFISH's now.** The Rhino split in two (Garrett: "the sword fish will be all about the sword. the rhino will be all about the plow"): everything here moved to the Swordfish (`VesselClassType.Swordfish`, `SWORDFISH.md`) unchanged, and the Rhino has no sword. Read "the Rhino" below as "the Swordfish". The code keeps its `Rhino*` names.
+
 > **2026-10-26 (Garrett: "yes but obey the rule that any incoming text can only go to the dedicated
 > toast container in the upper right under the settings"):** three follow-ups closed.
 > - **The combo's NAME is toasted** for the pilot who landed it, through `ToastNotificationAPI.Show` -

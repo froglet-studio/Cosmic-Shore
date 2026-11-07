@@ -88,6 +88,10 @@ namespace CosmicShore.Gameplay
         public float Energy => _energy;
         /// <summary>Most energy the Manta can hold, in bombs.</summary>
         public int Capacity => config ? config.EnergyCapacity : 1;
+        /// <summary>True while an elemental decoy this Manta left is standing (the HUD's Mass card).</summary>
+        public bool HasElementalDecoy => _elementalDecoy;
+        /// <summary>True while an omni decoy this Manta left is standing (Mass 5, the HUD's Mass card).</summary>
+        public bool HasOmniDecoy => _omniDecoy;
         public IReadOnlyList<MantaBomb> PlantedBombs => _planted;
 
         /// <summary>When the shared fuse runs out (Time.time). Meaningless with nothing planted.</summary>
