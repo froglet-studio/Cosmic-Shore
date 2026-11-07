@@ -40,6 +40,7 @@ import stoat_orbit_sim as S
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang
 from scarab_drive_sim import ai_stick
 import regatta_line_sim as L
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 HULL_CONFIG = "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"
 AI_VARIANT = "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"
@@ -181,8 +182,11 @@ def spawn(seat):
     return p, unit(mul(p, -1))
 
 
-def race(gates, k, ai, laps=S.LAPS, T=300.0, dt=1 / 60, start=None, trace=None):
-    """One AI Stoat's race. k: kit(); ai: the autopilot rows (AI_FIELDS). start: (pos, fwd) or None for seat 0."""
+def race(gates, k, ai, laps=S.LAPS, T=300.0, dt=1 / 60, start=None, trace=None, nose_lead=None):
+    """One AI Stoat's race. k: kit(); ai: the autopilot rows (AI_FIELDS). start: (pos, fwd) or None for seat 0.
+    nose_lead: the AI nose lead (AIPilot.NoseLeadGain; ai_nose_lead.NoseLead.from_config: None = OFF, today's steering;
+    a gain stated at the fleet lag, a {"gain", "max_extra_deg"} dict or a NoseLead), scaled once to this model's nose
+    rate, regatta_line_sim.NOSE_FOLLOW (the fleet's 1.5/s on the flight clock, as turn_with_lag follows it)."""
     n = len(gates); total = n * laps
     commit_r, lead_r, through_r = k["aiCommitDistance"], k["aiApproachLead"], k["aiThroughDistance"]
     cruise = S.CRUISE
@@ -191,6 +195,10 @@ def race(gates, k, ai, laps=S.LAPS, T=300.0, dt=1 / 60, start=None, trace=None):
     catch_top = 1 + (max(1.0, k["boost"]) - 1) * k["catchWarpShare"]
     pos, fwd = start if start else spawn(0)
     pos, fwd = list(pos), unit(fwd); cmd = list(fwd)
+    nlead = NoseLead.from_config(nose_lead)   # the knob (`lead` below is the gate approach lead)
+    # the lead's gain once a race from THIS model's nose rate (AIPilot.EffectiveNoseLeadGain): max(1, gain) at the fleet lag,
+    # 0 when the knob is off
+    lead_gain = effective_gain(nlead.gain, L.NOSE_FOLLOW)
     clock = 1.0; R = cruise / math.radians(S.TURN); run = max(max(0.0, 2 * R - 18), cruise * 1.5)
     idx = 0; locked = -1; side = 1.0; lead = lead_r; t = 0.0
     extending = False; ext_t = 0.0; breaks = 0; misses = 0; orbit = L.Orbit()
@@ -278,8 +286,17 @@ def race(gates, k, ai, laps=S.LAPS, T=300.0, dt=1 / 60, start=None, trace=None):
                 tramp = False; passes += 1
         # the stick (AIPilot on the flight clock); the borrowed aim while a shell is up and untouched
         steer = sub(steer_at, pos) if steer_at is not None else (add(fwd, mul(desired, -0.35)) if extending else to)
-        s = ai_stick(ang(fwd, steer))
-        fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(S.TURN * s) * dtf, dtf, True)
+        if lead_gain > 0:
+            # the nose lead (AIPilot.NoseLeadGain): judge the error from the COMMAND and steer the command onto the nose
+            # turned toward the steer direction by the effective gain times its error, past it (capped), where the lagging
+            # nose is pulled from. On whatever the steer is, as the game's: the gate aim, the shell's flank (TrampolineAim
+            # itself still reads the NOSE's turn above) and the break-off's escape leg; and while the shell holds the hull,
+            # where the pilot keeps steering on top of the bounce (only a drift switches the game's lead off; no drift here).
+            judge, want = judge_and_want(fwd, cmd, steer, lead_gain, nlead.max_extra_deg)
+        else:
+            judge, want = fwd, steer
+        s = ai_stick(ang(judge, want))
+        fwd, cmd = L.turn_with_lag(fwd, cmd, want, math.radians(S.TURN * s) * dtf, dtf, True)
         # VesselTransformer.ApplyVelocityModifiers: the kicks, on real time, shifting on the flight clock
         shift = [0.0, 0.0, 0.0]; ceiling = 100.0
         for m in mods: m[1] += dt
@@ -311,10 +328,11 @@ def course(intensity, seed):
     return S.course(intensity, seed)
 
 
-def score(k, ai, intensities=(1, 2, 3, 4), seeds=4, seedbase=0, dt=1 / 60, T=300.0):
+def score(k, ai, intensities=(1, 2, 3, 4), seeds=4, seedbase=0, dt=1 / 60, T=300.0, nose_lead=None):
     out = {}
     for i in intensities:
-        rs = [race(course(i, 20260000 + 97 * (seedbase + s) + i), k, ai, dt=dt, T=T, start=spawn(s)) for s in range(seeds)]
+        rs = [race(course(i, 20260000 + 97 * (seedbase + s) + i), k, ai, dt=dt, T=T, start=spawn(s), nose_lead=nose_lead)
+              for s in range(seeds)]
         out[i] = rs
     return out
 
@@ -361,7 +379,7 @@ def era_of(date):
     return None
 
 
-def flights(folder, k, ai, dt=1 / 60):
+def flights(folder, k, ai, dt=1 / 60, nose_lead=None):
     rows = []
     for p in sorted(glob.glob(os.path.join(folder, "*.json"))):
         f = read_flight(p)
@@ -371,7 +389,7 @@ def flights(folder, k, ai, dt=1 / 60):
         name, kk, aa = era
         kit_e, ai_e = dict(k, **kk), dict(ai, **aa)
         for r in f["rivals"]:
-            m = race(f["gates"], kit_e, ai_e, dt=dt, T=max(300.0, f["end"] + 30), start=r["start"])
+            m = race(f["gates"], kit_e, ai_e, dt=dt, T=max(300.0, f["end"] + 30), start=r["start"], nose_lead=nose_lead)
             rows.append((f, name, r, m))
     return rows
 
@@ -410,6 +428,10 @@ def self_test():
     if floor["presses"] != 0: bad.append("aiSlingMinTurnDegrees 0 should never press")
     again = race(c, k, ai, start=spawn(0))
     if again != shipped: bad.append("the same race twice differs (not deterministic)")
+    # the nose lead is OFF by default: NoseLead() (gain 0) is the unset knob, and a gain changes the race (the knob is live)
+    if race(c, k, ai, start=spawn(0), nose_lead=NoseLead()) != shipped: bad.append("NoseLead() (gain 0) is not the unset lead")
+    led = race(c, k, ai, start=spawn(0), nose_lead=2.5)
+    if led == shipped: bad.append("the nose lead at 2.5 changed nothing (the knob is dead)")
     print("slingshot_stoat_sim self-test:", ("FAIL " + "; ".join(bad)) if bad else "ok",
           f"(I2 seed 2: shipped {shipped['time']} s {shipped['bounces']} bounces, never-press {floor['time']} s)")
     return 1 if bad else 0
@@ -422,11 +444,15 @@ def main():
     ap.add_argument("--seeds", type=int, default=6)
     ap.add_argument("--flights", help="a folder of recorded flight_Slingshot_*.json")
     ap.add_argument("--dt", type=float, default=1 / 60)
+    ap.add_argument("--nose-lead", metavar="G[,EXTRA]", default=None,
+                    help="the AI nose lead (AIPilot.NoseLeadGain stated at the fleet lag; EXTRA = NoseLeadMaxExtraDegrees, 40): "
+                         "the courses are raced again with it on, under today's rows; --flights re-races with it on")
     a = ap.parse_args()
     if a.self_test: sys.exit(self_test())
     k, ai = kit(a.root), ai_rows(a.root)
+    lead = NoseLead.from_cli(a.nose_lead)
     if a.flights:
-        rows = flights(a.flights, k, ai, dt=a.dt)
+        rows = flights(a.flights, k, ai, dt=a.dt, nose_lead=lead)
         for f, name, r, m in rows:
             real = f"{r['finish']:.1f} s" if r["finish"] else f"DNF {r['rings']}/16 at {f['end']:.0f} s"
             model = f"{m['time']:.1f} s" if m["time"] else f"DNF {m['rings']}/16"
@@ -437,6 +463,10 @@ def main():
     print("AI rows:", {f: ai[f] for f in AI_FIELDS})
     for i, rs in score(k, ai, seeds=a.seeds, dt=a.dt).items():
         print(f"I{i}", summary(rs))
+    if lead is not None:
+        print(f"with the nose lead {lead.gain:g} (max {lead.max_extra_deg:g} deg past the aim):")
+        for i, rs in score(k, ai, seeds=a.seeds, dt=a.dt, nose_lead=lead).items():
+            print(f"I{i}", summary(rs))
 
 
 if __name__ == "__main__":

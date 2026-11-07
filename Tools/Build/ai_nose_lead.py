@@ -103,6 +103,17 @@ class NoseLead:
     def to_config(self):
         return {"gain": self.gain, "max_extra_deg": self.max_extra_deg}
 
+    @classmethod
+    def from_cli(cls, text):
+        """The `--nose-lead G[,EXTRA]` flag every model's command line takes: the gain stated at the fleet lag and, after a
+        comma, how far past the aim the command may be placed (degrees; DEFAULT_MAX_EXTRA_DEG unless given). None (the
+        flag absent) stays None: off, today's steering."""
+        if text is None:
+            return None
+        parts = str(text).split(",")
+        extra = parts[1].strip() if len(parts) > 1 else ""
+        return cls(float(parts[0]), float(extra) if extra else DEFAULT_MAX_EXTRA_DEG)
+
     def __repr__(self):
         return "NoseLead(off)" if self.off else f"NoseLead(gain={self.gain:g}, max_extra_deg={self.max_extra_deg:g})"
 
@@ -112,7 +123,7 @@ OFF = NoseLead()
 
 def effective_gain(gain, rate=NOSE_FOLLOW):
     """AIPilot.EffectiveNoseLeadGain: the gain is stated at the fleet lag, never under 1, 0 on a nose with no lag."""
-    if gain is None or gain <= 0 or rate is None or rate <= 0 or math.isinf(rate):
+    if gain is None or gain <= 0 or rate is None or rate <= 0 or math.isinf(rate) or math.isnan(rate) or math.isnan(gain):
         return 0.0
     return max(1.0, gain * NOSE_FOLLOW / rate)
 
@@ -172,8 +183,9 @@ def self_test():
     if effective_gain(2.5) != 2.5: bad.append("effective_gain at the fleet lag")
     if abs(effective_gain(2.5, 9.0) - 1.0) > 1e-9: bad.append("effective_gain floors at 1 on a fast nose")
     if abs(effective_gain(2.5, 0.75) - 5.0) > 1e-9: bad.append("effective_gain doubles on a nose twice as slow")
-    if effective_gain(0.0) != 0 or effective_gain(2.5, 0) != 0 or effective_gain(2.5, float("inf")) != 0:
-        bad.append("effective_gain off cases")
+    if effective_gain(0.0) != 0 or effective_gain(2.5, 0) != 0 or effective_gain(2.5, float("inf")) != 0 \
+            or effective_gain(2.5, float("nan")) != 0 or effective_gain(float("nan"), 1.5) != 0:
+        bad.append("effective_gain off cases (0, no lag, an infinite or NaN rate, a NaN gain: AIPilot returns 0)")
     # slerp_beyond: carries past the aim by the gain, capped at extra and at 170 deg
     f, d = [1.0, 0.0, 0.0], [math.cos(math.radians(10)), math.sin(math.radians(10)), 0.0]
     if abs(_ang(f, slerp_beyond(f, d, 2.5)) - 25.0) > 1e-6: bad.append("slerp_beyond 2.5 x 10 deg = 25 deg")
@@ -214,6 +226,10 @@ def self_test():
     except ValueError:
         pass
     if NoseLead.from_config(NoseLead(2.5, 40).to_config()).gain != 2.5: bad.append("to_config round trip")
+    for text, gain, extra in (("2.5", 2.5, 40), ("2,20", 2.0, 20), ("3.0,", 3.0, 40), (" 1.5 , 60 ", 1.5, 60)):
+        n = NoseLead.from_cli(text)
+        if n.gain != gain or n.max_extra_deg != extra: bad.append(f"from_cli({text!r}) -> {n!r}")
+    if NoseLead.from_cli(None) is not None: bad.append("from_cli(None) is not None (off)")
     print("ai_nose_lead self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return bad
 

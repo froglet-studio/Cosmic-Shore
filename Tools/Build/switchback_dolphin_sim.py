@@ -20,13 +20,31 @@ while it is not drifting (the turning-circle test and the 360 deg sweep, regatta
 
 No difficulty belief (that is Hard; the races were Medium), no crystal detours, no rivals: the editor is the measurement.
 
+The AI NOSE LEAD (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the piece every model shares) is a knob
+on race(), nose_lead (None, a gain, a {"gain", "max_extra_deg"} dict or a NoseLead; `--nose-lead G` on the command line
+prints each table row again with it on), OFF by default, so every number in this file stands until it is set. With a
+gain the pilot judges its error from the COMMAND and steers the command onto the nose turned toward the aim by the gain
+times its error (past the aim, at most max_extra_deg past it), so the lagging nose is pulled from beyond the aim instead
+of overshooting; the gain is scaled once per race by this model's nose rate (regatta_line_sim.NOSE_FOLLOW, the fleet's
+1.5/s: no hull here has a rate of its own) and is 0 with lag=False. It is off while the Dolphin drifts (no stick is
+written there: the nose comes round free) and on through an orbit break-off (the stick still runs, on the escape steer).
+Measured 2026-11-07 (self_test() holds the first): the Dolphin on its shipped charge drive through a climbing slalom
+misses 3 mouths in 65.0 s through the lag alone (20.8 s clean with lag=False); the lead at 2.5 makes that 47.5 s and 1
+miss, where judging from the command without the pull (gain 1) gives 130 s and 19. It is not a free win in this model:
+on the self-test's 3-ring loop the same Dolphin goes from 14.4 s clean to 22.0 s with a miss, the Dolphin's cruise races
+(drifting 90% of the time) barely move, and the 48 deg/s Stoat at 140 u/s is worse on most courses (its 40 deg extra
+unwinds at 48 deg/s, most of a second: the gain was set for the Scarab's 132 deg/s), though on the Warpline table's
+two-lap tight circuit 2.5 takes it from 112 s and 6 misses to 88 s and 2.
+
     python3 Tools/Build/switchback_dolphin_sim.py --dir <folder of flight_Switchback_*.json>
+    python3 Tools/Build/switchback_dolphin_sim.py --dir <folder> --mode Warpline --nose-lead 2.5
     python3 Tools/Build/switchback_dolphin_sim.py --self-test
 """
 import argparse, glob, json, math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from scarab_drive_sim import ai_stick
+from ai_nose_lead import NoseLead, judge_and_want
 import regatta_line_sim as L
 
 CRUISE, TURN = 68.0, 110.0                      # Dolphin.prefab: DefaultThrottleScaler 68, Pitch/Yaw 110, no speed term
@@ -106,12 +124,15 @@ PEAK_MARGIN, MIN_DIS, MIN_GAIN, MAX_HOLD, GRACE, UP_TO_SPEED = 3.0, 0.2, 30.0, 4
 
 
 def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, trace=None, lead_inside=None, drive=None,
-         cfg=None):
+         cfg=None, nose_lead=None):
     """drive: None (no charge economy: cruise only) or a SHIPPED_DRIVE / LEARNED_DRIVE dict (an optional "peak": False
     lets each discharge run out instead of drifting again at its peak, a what-if: the game re-drifts at the peak): the
     charge economy of dolphin_drive_sim.py (a drift banks charge and freezes the speed; letting go discharges toward
     cruise x m x m) with ChargeBoostAIPolicySO's drive (let go on a lined-up straight once the meter is full enough; hold the next commit off
-    until the discharge peaks) and AIPilot's commit floor (no commit under 0.9 of the throttle target)."""
+    until the discharge peaks) and AIPilot's commit floor (no commit under 0.9 of the throttle target).
+    nose_lead: the AI nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): None / 0 is today's steering; a
+    gain (2.5 is what #1786 ships Regatta), a {"gain", "max_extra_deg"} dict or an ai_nose_lead.NoseLead switches it on.
+    Its gain is scaled ONCE per race by this model's nose rate (L.NOSE_FOLLOW) and is 0 with lag=False."""
     """regatta_fix: the steering AICommitFromApproachPoint turns on, which since 2026-10-26 includes the approach point
     kept inside the commit radius (lead_inside defaults to regatta_fix; pass it to test either half alone)."""
     if lead_inside is None:
@@ -120,6 +141,11 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
     CRUISE_, COMMIT_, LEAD_, THROUGH_ = cfg["cruise"], cfg["commit"], cfg["lead"], cfg["through"]
     drift = drift and cfg["drift"]
     turn_rate = lambda speed: cfg["rts"] * speed + cfg["base"]
+    # the nose lead's gain, ONCE per race from THIS model's own nose rate: L.NOSE_FOLLOW, the fleet's 1.5/s that
+    # turn_with_lag lags the nose at (no hull cfg here carries a rate of its own); 0 with lag=False, where the nose IS
+    # the command and has nothing to lead (AIPilot.EffectiveNoseLeadGain). Off by default: today's numbers stand.
+    nose_lead = NoseLead.from_config(nose_lead)
+    lead_gain = nose_lead.effective(L.NOSE_FOLLOW) if lag else 0.0
     gates = course["gates"]; total = len(gates)
     pos = list(course["start"]); fwd = list(course["heading"]); cmd = list(fwd); travel = list(fwd)
     v = CRUISE_; R = v / math.radians(turn_rate(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
@@ -223,8 +249,12 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
             fwd = rotate_toward(fwd, desired, math.radians(turn_rate(v)) * dt); cmd = list(fwd)
         else:
             steer = add(fwd, mul(desired, -0.35)) if extending else to
-            s = stick = ai_stick(ang(fwd, steer))
-            fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(turn_rate(v) * s) * dt, dt, lag)
+            # the nose lead (AIPilot.TryNoseLead, NoseLeadDirection): with a gain the error is judged from the COMMAND
+            # and the command is steered onto the nose turned toward the steer by the gain times its error (past it, at
+            # most max_extra_deg past); gain 0 is today's (fwd, steer). On the break-off steer too; never while drifting
+            judge, want = judge_and_want(fwd, cmd, steer, lead_gain, nose_lead.max_extra_deg)
+            s = stick = ai_stick(ang(judge, want))
+            fwd, cmd = L.turn_with_lag(fwd, cmd, want, math.radians(turn_rate(v) * s) * dt, dt, lag)
             travel = list(fwd)
         newpos = add(pos, mul(travel, v * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
@@ -275,6 +305,45 @@ def self_test():
     early = race(loop, True, cfg=dict(STOAT_WARPLINE, **stoat_warp(250)), T=200)
     if not (early["rings"] == 3 and early["misses"] <= late["misses"]):
         bad.append(f"Stoat warp: let go at 60 u {late}, at 250 u {early}")
+    # The AI nose lead (ai_nose_lead.py), measured 2026-11-07.
+    # (a) Off by default, today's numbers pinned: nose_lead None, NoseLead(), 0 and {"gain": 0} are one steering, and
+    # these are the dicts the lead-off runs printed before the knob existed (the 58 break-offs are the orbit path).
+    pinned = ((dict(course=loop, regatta_fix=True, T=200),
+               {"time": 40.7, "rings": 3, "misses": 0, "breaks": 0, "drift": 0.94, "top": 68, "weave": 0, "boost": 0.0}),
+              (dict(course=loop, regatta_fix=True, T=200, drive=SHIPPED_DRIVE),
+               {"time": 14.4, "rings": 3, "misses": 0, "breaks": 1, "drift": 0.6, "top": 304, "weave": 0, "boost": 0.0}),
+              (dict(course=loop, regatta_fix=False, T=200),
+               {"time": None, "rings": 1, "misses": 0, "breaks": 58, "drift": 0.55, "top": 68, "weave": 0, "boost": 0.0}),
+              (dict(course=across, regatta_fix=True, T=200),
+               {"time": 19.2, "rings": 2, "misses": 2, "breaks": 0, "drift": 0.86, "top": 68, "weave": 0, "boost": 0.0}),
+              (dict(course=loop, regatta_fix=True, T=200, cfg=BUTTERFLY_WAYSTATION),
+               {"time": 41.5, "rings": 3, "misses": 0, "breaks": 0, "drift": 0.0, "top": 67, "weave": 0, "boost": 0.0}))
+    for kw, today in pinned:
+        r = race(**kw)
+        if r != today: bad.append(f"today's numbers moved: {kw} -> {r}, were {today}")
+        for off in (NoseLead(), 0, {"gain": 0}, {"nose_lead": None}):
+            if race(nose_lead=off, **kw) != r: bad.append(f"nose_lead={off!r} is not today's steering: {kw}")
+    # (b) What the lead buys, with a negative control: the Dolphin on its shipped charge drive through a climbing slalom
+    # (eight 25 u rings 400 u apart, swinging 150 u sideways and 80 u up and down) with the Regatta steering misses 3
+    # mouths in 65.0 s today through the nose lag alone (lag=False threads it in 20.8 s with none); the lead at 2.5
+    # makes that 47.5 s and 1 miss (2.0 and 3.0 within a second of it). The control: judging from the command WITHOUT
+    # the pull past the aim (gain 1, which is bit for bit what 2.5 with max_extra_deg 0 collapses to here: both ask for
+    # the aim itself) is far worse than both, 130.0 s and 19 misses, so it is the pull that threads the rings.
+    slalom3 = {"gates": [{"p": [150.0 * (1 if i % 2 == 0 else -1), 80.0 * (1 if i % 3 == 0 else -1), 400.0 * (i + 1)],
+                          "a": [0.0, 0.0, 1.0], "r": 25.0} for i in range(8)], "start": [0, 0, 0], "heading": [0, 0, 1]}
+    today_, led_, g1_, x0_ = (race(slalom3, True, drive=SHIPPED_DRIVE, nose_lead=nl)
+                              for nl in (None, 2.5, 1.0, NoseLead(2.5, 0.0)))
+    if not (today_["time"] and today_["misses"] >= 2):
+        bad.append(f"the climbing slalom no longer shows the lag's misses: {today_}")
+    if not (led_["time"] and led_["misses"] < today_["misses"] and led_["time"] < today_["time"]):
+        bad.append(f"the lead at 2.5 no longer fixes the climbing slalom: today {today_}, lead {led_}")
+    if not (g1_["misses"] > led_["misses"] and (g1_["time"] is None or g1_["time"] > led_["time"])):
+        bad.append(f"judging from the command without the pull now rivals the lead: gain 1 {g1_}, lead 2.5 {led_}")
+    if x0_ != g1_: bad.append(f"2.5 with no extra should be gain 1 here: {x0_} vs {g1_}")
+    # (c) A nose with no lag has nothing to lead: with lag=False the lead on or off is one race (every cell of the
+    # 2026-11-07 hull x course sweep, 144 of 144, agreed).
+    if race(slalom3, True, drive=SHIPPED_DRIVE, lag=False) != race(slalom3, True, drive=SHIPPED_DRIVE, lag=False, nose_lead=2.5):
+        bad.append("the lead changed a lag-free race")
     print("switchback_dolphin_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
@@ -288,38 +357,52 @@ def laps_of(course, path):
     return course
 
 
+def _rows(label, nose_lead):
+    """A row of main()'s tables as its (label, extra race kwargs): today's steering and, with --nose-lead G, the same
+    race again with the AI nose lead on at gain G, labelled, printed right under it."""
+    yield label, {}
+    if nose_lead is not None:
+        yield f"{label}, nose lead {nose_lead:g}", {"nose_lead": nose_lead}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir"); ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--mode", default="Switchback",
                     help="Switchback (the Dolphin), Waystation (the Butterfly, no fold), Breakwater (the Sparrow's boost) "
                          "or Warpline (the Stoat's warp)")
+    ap.add_argument("--nose-lead", type=float, default=None, metavar="G",
+                    help="also race every row with the AI nose lead on at gain G (AIPilot.NoseLeadGain; 2.5 is what "
+                         "#1786 ships Regatta), printed under today's row; off without it")
     a = ap.parse_args()
     if a.self_test:
         sys.exit(self_test())
+    G = a.nose_lead
     if a.mode == "Waystation":
         print("(seconds for the race or None, rings threaded, mouths missed, break-offs; the person's time)")
         for p in sorted(glob.glob(os.path.join(a.dir, "flight_Waystation_*.json"))):
             c = course_from_flight(p)
             print(f"{c['file']} (person {c['person']:.0f} s)")
-            print(f"   the shipped steering: {race(c, False, cfg=BUTTERFLY_WAYSTATION, T=300)}")
-            print(f"   Regatta's steering:   {race(c, True, cfg=BUTTERFLY_WAYSTATION, T=300)}")
+            for name, fix in (("the shipped steering", False), ("Regatta's steering", True)):
+                for label, extra in _rows(name, G):
+                    print(f"   {label + ': ':22}{race(c, fix, cfg=BUTTERFLY_WAYSTATION, T=300, **extra)}")
         return
     if a.mode == "Warpline":
         print("(seconds for both laps or None, rings threaded, mouths missed, break-offs; the person's time)")
         for p in sorted(glob.glob(os.path.join(a.dir, "flight_Warpline_*.json"))):
             c = laps_of(course_from_flight(p), p)
             print(f"I{c['intensity']} {c['file']} (person {c['person']:.0f} s)")
-            r = race(c, True, cfg=STOAT_WARPLINE_NO_WARP, T=400)
-            print(f"   {'Regatta steering, 140 u/s, no warp':36}: {r['time']} s, {r['rings']}, missed {r['misses']}, "
-                  f"breaks {r['breaks']}")
+            rows = [("Regatta steering, 140 u/s, no warp", True, STOAT_WARPLINE_NO_WARP)]
             for name, fix, near in (("shipped steering, warp let go 60 u", False, 60),
                                     ("Regatta steering, warp let go 60 u", True, 60),
                                     ("Regatta steering, warp let go 250 u", True, 250)):
                 # the shipped hold (15 s at most), then the Warpline variant's learned 1.0-2.36 s
                 hold = {"min_hold": 1.0, "max_hold": 2.357} if near == 250 else {}
-                r = race(c, fix, cfg=dict(STOAT_WARPLINE, **stoat_warp(near, **hold)), T=400)
-                print(f"   {name:36}: {r['time']} s, {r['rings']}, missed {r['misses']}, breaks {r['breaks']}")
+                rows.append((name, fix, dict(STOAT_WARPLINE, **stoat_warp(near, **hold))))
+            for name, fix, cfg in rows:
+                for label, extra in _rows(name, G):
+                    r = race(c, fix, cfg=cfg, T=400, **extra)
+                    print(f"   {label:36}: {r['time']} s, {r['rings']}, missed {r['misses']}, breaks {r['breaks']}")
         return
     if a.mode == "Breakwater":
         print("(seconds for one lap of stations or None, stations threaded, through the danger weave, share boosting)")
@@ -327,17 +410,20 @@ def main():
             c = course_from_flight(p)
             for name, boost in (("cruise only", {}), ("the base bands", SPARROW_BOOST_BASE),
                                 ("Breakwater's bands", SPARROW_BOOST_BREAKWATER)):
-                r = race(c, True, cfg=dict(SPARROW_BREAKWATER, **boost), T=300)
-                print(f"   I{c['intensity']} {c['file']} {name:18}: {r['time']} s, {r['rings']}, weave {r['weave']}, "
-                      f"boosting {r.get('boost', 0):.0%}")
+                for label, extra in _rows(name, G):
+                    r = race(c, True, cfg=dict(SPARROW_BREAKWATER, **boost), T=300, **extra)
+                    print(f"   I{c['intensity']} {c['file']} {label:18}: {r['time']} s, {r['rings']}, weave {r['weave']}, "
+                          f"boosting {r.get('boost', 0):.0%}")
         return
     courses = [course_from_flight(p) for p in sorted(glob.glob(os.path.join(a.dir, "flight_Switchback_*.json")))]
     print("(seconds for the 20 gates or None, gates threaded, mouths missed, break-offs, share drifting; the person's time)")
     for c in courses:
         print(f"I{c['intensity']} {c['file']} (person {c['person']:.0f} s)")
-        print(f"   Switchback today, the AI's own charge numbers: {race(c, False, drive=SHIPPED_DRIVE)}")
-        print(f"   the fix, the AI's own charge numbers:          {race(c, True, drive=SHIPPED_DRIVE)}")
-        print(f"   the fix, the charge numbers learned from you:  {race(c, True, drive=LEARNED_DRIVE)}")
+        for name, fix, drive in (("Switchback today, the AI's own charge numbers", False, SHIPPED_DRIVE),
+                                 ("the fix, the AI's own charge numbers", True, SHIPPED_DRIVE),
+                                 ("the fix, the charge numbers learned from you", True, LEARNED_DRIVE)):
+            for label, extra in _rows(name, G):
+                print(f"   {label + ': ':47}{race(c, fix, drive=drive, **extra)}")
 
 
 if __name__ == "__main__":

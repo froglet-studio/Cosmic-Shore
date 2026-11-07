@@ -34,7 +34,13 @@ degrees a second and only slightly wider (113 u radius at 197.5 u/s against 58 u
     python3 Tools/Build/sparrow_regatta_sim.py --measure DIR   # the AI Sparrow in stored Regatta flights
     python3 Tools/Build/sparrow_regatta_sim.py --drive FILE    # race a drive genome (a JSON of HoldBoostAIPolicySO
                                                                # fields, or a local_run result with "params")
+    python3 Tools/Build/sparrow_regatta_sim.py --nose-lead 2.5 # ...each row again with the AI nose lead on
     python3 Tools/Build/sparrow_regatta_sim.py --self-test
+
+The AI nose lead (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the shared piece) is race()'s
+`nose_lead` knob, OFF by default: a gain over 0 judges the stick's error from the COMMAND and steers it onto the nose
+turned toward the line's aim by the gain times its error, past it (at most max_extra_deg, 40), where the lagging nose is
+pulled from; the driver keeps the nose's angle (AIBoostContext.Forward) and reads the stick the pilot wrote.
 """
 import glob, json, math, os, sys
 
@@ -43,6 +49,7 @@ import situation_features as sf
 import regatta_line_sim as L
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from scarab_drive_sim import ai_stick
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 CRUISE, BOOST, SPEED_RATE = 35.0, 197.5, 1.4      # measured (module doc)
 RTS, BASE_TURN = 0.1, 80.0                         # Sparrow.prefab RotationThrottleScaler, Pitch/YawScaler
@@ -116,7 +123,12 @@ class Hold:
             s.held, s.changed = True, now
 
 
-def race(intensity, bands=SHIPPED, line=None, T=400.0, dt=1 / 60, own=0, rams=True, start_speed=CRUISE, course=None):
+def race(intensity, bands=SHIPPED, line=None, T=400.0, dt=1 / 60, own=0, rams=True, start_speed=CRUISE, course=None,
+         nose_lead=None):
+    """Three laps at `intensity` (or on `course`) with the afterburner driver's `bands`.
+    nose_lead: the AI nose lead (AIPilot.NoseLeadGain; ai_nose_lead.NoseLead.from_config: None = OFF, today's steering; a
+    gain stated at the fleet lag, a {"gain", "max_extra_deg"} dict or a NoseLead), scaled once to regatta_line_sim.NOSE_FOLLOW,
+    the fleet lag this model always flies."""
     line_cfg = dict(LINE, **(line or {}))
     C = course or sf.course_from(sf.load_course_js(), intensity)
     gates = C["gates"]; n = len(gates); total = 3 * n
@@ -131,6 +143,8 @@ def race(intensity, bands=SHIPPED, line=None, T=400.0, dt=1 / 60, own=0, rams=Tr
     hint = L.nearest(path, P[0], -1)
     pos = L.point_ahead(path, (hint - 40) % len(path), 0)
     fwd = unit(sub(path[(hint - 38) % len(path)], pos)); cmd = list(fwd)
+    lead = NoseLead.from_config(nose_lead)
+    lead_gain = effective_gain(lead.gain, L.NOSE_FOLLOW)   # AIPilot.EffectiveNoseLeadGain, once a race (0 when off)
     hint = -1
     drv = Hold(bands)
     v = start_speed
@@ -149,9 +163,17 @@ def race(intensity, bands=SHIPPED, line=None, T=400.0, dt=1 / 60, own=0, rams=Tr
             aim = add(ring, mul(unit(sub(ring, pos)), 320))
         to = sub(aim, pos)
         err = ang(fwd, to)
-        stick = ai_stick(err)
+        if lead_gain > 0:
+            # the nose lead (AIPilot.NoseLeadGain): judge the error from the COMMAND and steer the command onto the nose
+            # turned toward the aim by the effective gain times its error, past it (capped), where the lagging nose is
+            # pulled from; the driver below keeps the NOSE's angle (AIBoostContext.Forward is transform.forward) and reads
+            # the stick the pilot wrote (LastStickDeflection)
+            judge, want = judge_and_want(fwd, cmd, to, lead_gain, lead.max_extra_deg)
+        else:
+            judge, want = fwd, to
+        stick = ai_stick(ang(judge, want))
         # the boost driver: straight judged on the path (where the pilot goes), runway on the ring
-        drv.tick({"angle": ang(fwd, to), "stick": stick, "dist": norm(sub(ring, pos)), "speed": v,
+        drv.tick({"angle": err, "stick": stick, "dist": norm(sub(ring, pos)), "speed": v,
                   "breaking": False}, t)
         if drv.held and not was_held: presses += 1
         was_held = drv.held
@@ -159,7 +181,7 @@ def race(intensity, bands=SHIPPED, line=None, T=400.0, dt=1 / 60, own=0, rams=Tr
         target = BOOST if drv.held else CRUISE
         v += (target - v) * min(1.0, SPEED_RATE * dt)
         omega = v * RTS + BASE_TURN
-        fwd, cmd = L.turn_with_lag(fwd, cmd, to, math.radians(omega * stick) * dt, dt, True)
+        fwd, cmd = L.turn_with_lag(fwd, cmd, want, math.radians(omega * stick) * dt, dt, True)
         mod = 1.0
         for f, t0, d in list(slows):
             e = (t - t0) / d
@@ -243,7 +265,7 @@ def measure(paths):
 
 
 def _job(j):
-    return race(j[2], j[1])
+    return race(j[2], j[1], nose_lead=j[3] if len(j) > 3 else None)
 
 
 def self_test():
@@ -277,6 +299,9 @@ def self_test():
     finally:
         RAM_RANGE = keep
     if r["rams"] == 0 or b["rams"] != 0: bad.append(f"rail contact: shipped range {b}, 45 u range {r}")
+    # the nose lead is OFF by default: NoseLead() (gain 0) is the unset knob; a gain changes the race (the knob is live)
+    if race(1, ALWAYS, nose_lead=NoseLead()) != b: bad.append("NoseLead() (gain 0) is not the unset lead")
+    if race(1, ALWAYS, nose_lead=2.5) == b: bad.append("the nose lead at 2.5 changed nothing (the knob is dead)")
     print("sparrow_regatta_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
@@ -294,8 +319,11 @@ if __name__ == "__main__":
     if "--drive" in sys.argv:
         d = json.load(open(sys.argv[sys.argv.index("--drive") + 1], encoding="utf-8"))
         rows = [("shipped", SHIPPED), ("the drive", bands_from_fields(d.get("params") or d))]
-    jobs = [(name, b, I) for name, b in rows for I in (1, 2, 3, 4)]
+    leads = [None]
+    if "--nose-lead" in sys.argv:   # --nose-lead G[,EXTRA]: each row again with the AI nose lead on
+        leads.append(NoseLead.from_cli(sys.argv[sys.argv.index("--nose-lead") + 1]))
+    jobs = [(name + (f" +lead{nl.gain:g}" if nl else ""), b, I, nl) for name, b in rows for nl in leads for I in (1, 2, 3, 4)]
     with ProcessPoolExecutor() as ex:
         res = list(ex.map(_job, jobs))
-    for (name, _, I), r in zip(jobs, res):
-        print(f"{name:13} I{I}  {json.dumps(r)}")
+    for (name, _, I, _), r in zip(jobs, res):
+        print(f"{name:22} I{I}  {json.dumps(r)}")

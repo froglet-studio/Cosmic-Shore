@@ -17,6 +17,13 @@ that one function for the duration of a call, so a sim races a course it has nev
 
 What a model does NOT see is listed in MODEL_LIMITS; the evaluators copy it into every result's metrics, so a number
 on the board never travels without its caveat.
+
+THE AI NOSE KNOBS (2026-11-07): race(..., nose_rate=, nose_lead=) reach the drive sims and the line model. `nose_rate`
+(VesselTransformer.AINoseFollowPerSecond) gives a drive model the game's first-order nose lag (1.5 = the fleet's; None
+= today's lag-free heading, every published number); `nose_lead` (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py:
+a gain, or {"gain", "max_extra_deg"}) is the pilot's lead on that lagging nose, OFF when absent or 0, and nothing on a
+lag-free nose. nose_knobs(args, hull) reads both from a job's args (a roster hull's own values win). The line model
+lags at the fleet rate only (nose_rate 1.5 switches its lag on; another rate is an error); rail and balance have no nose.
 """
 import contextlib
 import math
@@ -26,19 +33,31 @@ import sys
 MODEL_LIMITS = {
     "rhino_drive": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
     "rhino_drive@headlong": "point mass; Headlong's gate steering (260 / 300 / 220, fixed commit) and AIPilot's orbit "
-                            "break-off; proportional stick; no nose lag; no rivals",
+                            "break-off; proportional stick; no nose lag unless the job's nose_rate lags it; no rivals",
     "rhino_drive@headlong_on": "point mass; Headlong's distances with Regatta's gate steering switched on "
                                "(AICommitFromApproachPoint, a proposal) and AIPilot's orbit break-off; proportional "
-                               "stick; no nose lag; no rivals",
+                               "stick; no nose lag unless the job's nose_rate lags it; no rivals",
     "rhino_drive@regatta": "point mass; Regatta's gate steering (approach-point commit, re-latch after a miss) and "
-                           "AIPilot's orbit break-off; proportional stick; no nose lag; no rivals",
-    "manta_drive": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+                           "AIPilot's orbit break-off; proportional stick; no nose lag unless the job's nose_rate lags it; "
+                           "no rivals",
+    "manta_drive": "point mass; no break-off, no nose lag unless the job's nose_rate lags it; Regatta's through-the-centre "
+                   "steering in every mode",
     "dolphin_drive": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
     "line": "constant speed (the hull's median AI speed in editor Regatta races); Regatta rails only",
     "rail": "constant rail speed, no corners (the rail rides them), no lane changes",
     "balance": "a competent pilot, not an AI: top speed, corner speed solved per radius, instant braking",
 }
 DNF_BASE, DNF_PER_RING = 30.0, 10.0      # a race not finished costs the time limit + 30 s + 10 s per ring left
+NOSE_KNOBS = ("nose_rate", "nose_lead")  # the AI nose knobs a job's args (or a roster hull) may carry for race()
+
+
+def nose_knobs(args, hull=None):
+    """{"nose_rate", "nose_lead"} for race(): the job's args' values, a roster hull's own overriding them, and nothing
+    for a knob neither sets (today's models, byte for byte)."""
+    out = {k: args[k] for k in NOSE_KNOBS if args.get(k) is not None}
+    if hull:
+        out.update({k: hull[k] for k in NOSE_KNOBS if hull.get(k) is not None})
+    return out
 
 
 @contextlib.contextmanager
@@ -57,8 +76,9 @@ def _sim(name):
     return __import__(name)
 
 
-def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=400.0, laps=3):
-    """Seconds for `laps` laps (a DNF is priced: limit + DNF_BASE + DNF_PER_RING x rings left), and the raw result."""
+def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=400.0, laps=3, nose_rate=None, nose_lead=None):
+    """Seconds for `laps` laps (a DNF is priced: limit + DNF_BASE + DNF_PER_RING x rings left), and the raw result.
+    nose_rate / nose_lead: the AI nose knobs (module doc); None = today's model."""
     drive = drive or {}
     n = len(course["gates"])
     total = n * laps
@@ -82,23 +102,28 @@ def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=
             sim.STEERING = steering if steering in getattr(sim, "STEERING_PROFILES", {}) else None
             for k, v in drive.items():
                 setattr(sim.Policy, k, v)
-            t, rings, top = sim.race("new", intensity, T=limit)
+            t, rings, top = sim.race("new", intensity, T=limit, nose_rate=nose_rate, nose_lead=nose_lead)
         elif model == "manta_drive":
             sim = _sim("manta_drive_sim")
             for k, v in drive.items():
                 if k not in ("boost_band", "yastri_band", "aware"):
                     setattr(sim.Tuning, k, v)
             bands = (drive.get("boost_band", sim.BOOST_BAND), drive.get("yastri_band", sim.YASTRI_BAND))
-            t, rings, top = sim.race(bool(drive.get("aware", False)), intensity, T=limit, bands=bands)
+            t, rings, top = sim.race(bool(drive.get("aware", False)), intensity, T=limit, bands=bands,
+                                     nose_rate=nose_rate, nose_lead=nose_lead)
         elif model == "dolphin_drive":
             sim = _sim("dolphin_drive_sim")
             sim.THROUGH_CENTRE = steering == "centre"
             for k, v in drive.items():
                 setattr(sim, k.upper(), v)
-            t, rings, top = sim.race(True, intensity, T=limit)
+            t, rings, top = sim.race(True, intensity, T=limit, nose_rate=nose_rate, nose_lead=nose_lead)
         elif model == "line":
             sim = _sim("regatta_line_sim")
-            r = sim.race(hull, intensity, True, T=limit, gate=True, only_when_cut=True)
+            # the line model lags at the fleet rate only: nose_rate None is its lag-free default, 1.5 switches the lag on
+            if nose_rate is not None and abs(float(nose_rate) - sim.NOSE_FOLLOW) > 1e-9:
+                raise ValueError(f"the line model lags at the fleet rate {sim.NOSE_FOLLOW}/s only, not {nose_rate}")
+            r = sim.race(hull, intensity, True, T=limit, gate=True, only_when_cut=True, lag=nose_rate is not None,
+                         nose_lead=nose_lead)
             t, rings, top = r["time"], r["rings"], None
         else:
             raise ValueError(f"unknown race model {model}")
