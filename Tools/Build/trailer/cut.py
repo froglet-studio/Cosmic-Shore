@@ -30,8 +30,25 @@ W, H, FPS = 1920, 1080, 60
 CYAN = (47, 212, 245)
 
 
+def find_ffmpeg():
+    """$FFMPEG, then PATH, then the binary bundled with the imageio-ffmpeg pip package (Windows has no system one)."""
+    found = os.environ.get("FFMPEG") or shutil.which("ffmpeg")
+    if found:
+        return found
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        raise SystemExit("ffmpeg not found: put it on PATH, set FFMPEG, or pip install imageio-ffmpeg")
+
+
+FFMPEG = find_ffmpeg()
+
+
 def run(cmd):
-    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if cmd[0] == "ffmpeg":
+        cmd = [FFMPEG] + cmd[1:]
+    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
     if r.returncode:
         sys.stderr.write(" ".join(cmd) + "\n" + r.stderr[-3000:])
         raise SystemExit(f"ffmpeg failed ({r.returncode})")
@@ -53,14 +70,15 @@ def draw_spaced(d, xy, text, f, tracking, fill):
         x += f.getlength(c) + tracking
 
 
-def text_frame(lines, alpha, grow, sizes):
-    """One RGBA overlay frame: centred lines with a cyan glow; alpha 0..1, grow 0..1 sets the tracking."""
+def text_frame(lines, alpha, grow, sizes, cy=0.5):
+    """One RGBA overlay frame: centred lines with a cyan glow; alpha 0..1, grow 0..1 sets the tracking.
+    cy is the block's vertical centre as a fraction of the height, so a card can sit clear of a hull."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d, g = ImageDraw.Draw(img), ImageDraw.Draw(glow)
     fonts = [font(s) for s in sizes]
     total = sum(s * 1.35 for s in sizes)
-    y = (H - total) / 2
+    y = H * cy - total / 2
     for text, f, s in zip(lines, fonts, sizes):
         tracking = s * (0.10 + 0.08 * grow)
         w = spaced_width(f, text, tracking)
@@ -72,8 +90,7 @@ def text_frame(lines, alpha, grow, sizes):
     # a soft dark band behind the words keeps them legible over bright footage
     band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     bd = ImageDraw.Draw(band)
-    cy = H / 2
-    bd.rectangle([0, cy - total * 0.9, W, cy + total * 0.9], fill=(0, 0, 0, int(110 * alpha)))
+    bd.rectangle([0, H * cy - total * 0.9, W, H * cy + total * 0.9], fill=(0, 0, 0, int(110 * alpha)))
     band = band.filter(ImageFilter.GaussianBlur(60))
     return Image.alpha_composite(Image.alpha_composite(band, glow), img)
 
@@ -84,7 +101,7 @@ def render_text(card, out_dir):
     n = int(round(dur * FPS))
     sizes = card.get("sizes") or [64] * len(card["lines"])
     os.makedirs(out_dir, exist_ok=True)
-    full = text_frame(card["lines"], 1.0, 0.5, sizes)   # drawn once; each frame only scales its alpha
+    full = text_frame(card["lines"], 1.0, 0.5, sizes, card.get("cy", 0.5))   # drawn once; each frame only scales its alpha
     alpha = full.getchannel("A")
     for i in range(n):
         t = i / FPS
@@ -152,10 +169,17 @@ def grade(seg):
 
 
 def resolve_shot(shots, name):
-    """A shot is named by its id ("S01") or a file; the Unity shoot names files S01_<what>.mp4."""
+    """A shot is named by its id ("S01") or a file; the Unity shoot names files S01_<what>.mp4.
+    shots.json wins, because a shot's id can differ from its file's prefix (S16a is S16_finale_hesperides.mp4)."""
     exact = os.path.join(shots, name)
     if os.path.exists(exact):
         return exact
+    manifest = os.path.join(shots, "shots.json")
+    if os.path.exists(manifest):
+        with open(manifest, encoding="utf-8") as f:
+            for entry in json.load(f):
+                if entry.get("shot") == name and os.path.exists(os.path.join(shots, entry["file"])):
+                    return os.path.join(shots, entry["file"])
     import glob
     hits = sorted(glob.glob(os.path.join(shots, name + "_*.mp4"))) + sorted(glob.glob(os.path.join(shots, name + ".mp4")))
     if not hits:
@@ -174,7 +198,9 @@ def cut_segment(seg, dur, shots, out):
         vf.append(f"fade=t=in:st=0:d={seg['fade_in']}")
     if seg.get("fade_out"):
         vf.append(f"fade=t=out:st={dur - seg['fade_out']:.3f}:d={seg['fade_out']}")
-    run(["ffmpeg", "-y", "-v", "error", "-ss", str(seg.get("src_in", 0)), "-i", src, "-t", f"{dur * speed:.4f}",
+    # -t limits the SOURCE (before -i): as an output option it would cut a slowed segment short and slide
+    # every later cut off the music.
+    run(["ffmpeg", "-y", "-v", "error", "-ss", str(seg.get("src_in", 0)), "-t", f"{dur * speed:.4f}", "-i", src,
          "-an", "-vf", ",".join(vf), "-frames:v", str(int(round(dur * FPS))),
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "10", "-pix_fmt", "yuv420p", out])
 
@@ -187,7 +213,8 @@ def main(argv=None):
     ap.add_argument("--sheet")
     ap.add_argument("--keep", help="keep the work folder here")
     a = ap.parse_args(argv)
-    edl = json.load(open(a.edl))
+    with open(a.edl, encoding="utf-8") as f:   # the EDL has non-ASCII; Windows would default to cp1252
+        edl = json.load(f)
     music = edl["music"] if os.path.isabs(edl["music"]) else os.path.join(ROOT, edl["music"])
     work = a.keep or tempfile.mkdtemp(prefix="trailer-")
     os.makedirs(work, exist_ok=True)
