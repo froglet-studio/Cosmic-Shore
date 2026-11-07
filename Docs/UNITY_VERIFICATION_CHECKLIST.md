@@ -21588,6 +21588,23 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Slip Line: the Honeyguide's Time race (2026-11-07, branch `claude/honeyguide-slip-line`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/slip_line_harness/run.sh
+--self-test`: 10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/SLIP_LINE.md` §8:
+
+1. Open `MinigameSlipLine` once and save it (a text clone); then `python3 Tools/Build/author_slip_line_assets.py --check`.
+2. Run the EditMode tests `SlipLineCourseTests` and `EnumIntegrityTests`.
+3. I1, one Honeyguide with an AI Ratel: three rails a leg in Ruby, Jade and Gold. With a charge, fly onto that colour's
+   rail nose along it: the hull zips to just past the ring, the ring counts, the charge goes. Ring to ring without a
+   slip never touches a rail.
+4. I2: one rail a leg, stubs visibly short. I3: rails lean off the line; a turn out early catches one inside the cone.
+5. I4: a chain's first ride lands on the second rail and rides on through the next ring when both colours are held.
+6. Two AI Honeyguides ride rails and finish (note any that circles a rail without catching it: `aiRailLead`).
+7. Outside the race: a Honeyguide in the Toybox slips and hunts exactly as before (its coach is null there).
+8. MPPM two clients: both see the same rails in the same colours.
+
 ## 🔴 Perch Run: the Goby's Time race (2026-11-07, branch `claude/goby-perch-run`)
 
 Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/perch_run_harness/run.sh

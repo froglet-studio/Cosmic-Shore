@@ -121,6 +121,7 @@ SOURCES = [
     f"{_AR}/DecoyRun/DecoyRunCourse.cs",
     "Assets/_Scripts/Controller/Vessel/JacksRacePlan.cs",
     f"{_AR}/PerchRun/PerchRunCourse.cs",
+    f"{_AR}/SlipLine/SlipLineCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -761,6 +762,9 @@ CAMERAS = {
     # Perch Run: the I4 reef - hairpins, coral heads on their legs, doubles on one line - shot along the course so a
     # double's two mouths stack and the heads stand in front of their rings.
     "PerchRun": (240, 18, 0.85, 44),
+    # Slip Line: the I4 course - rails in the Dynamo's three colours down every leg, the leaning ones off the line, the
+    # chains running on through two rings - shot along the course so the rails read as lanes into their rings.
+    "SlipLine": (230, 20, 0.85, 44),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
@@ -848,6 +852,16 @@ def recipe(stem, card_path, pal, ends):
         layers.append({"kind": "perchrun", "intensity": 4, "seed": stable_seed(s), "path": True,
                        "settings": {"InnerRadius": inner, "RingCount": ends.get("perchRunGateTarget", 16)},
                        "tube": 0.14, "color": [1.5, 0.75, 0.35]})
+        nucleus()
+    elif s == "SlipLine":
+        # COURSE tier: SlipLineCourseSource.Build, mirrored, at I4 (stubs, leaning rails, chains); the harness lays the
+        # rails in their colours.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "slipline", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("slipLineGateTarget", 16)},
+                       "tube": 0.14, "color": [1.4, 1.2, 0.4]})
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
                "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
@@ -1122,7 +1136,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
