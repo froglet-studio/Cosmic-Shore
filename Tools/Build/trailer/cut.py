@@ -151,8 +151,20 @@ def grade(seg):
     return f"eq=contrast={c}:saturation={s}:brightness={b}"
 
 
+def resolve_shot(shots, name):
+    """A shot is named by its id ("S01") or a file; the Unity shoot names files S01_<what>.mp4."""
+    exact = os.path.join(shots, name)
+    if os.path.exists(exact):
+        return exact
+    import glob
+    hits = sorted(glob.glob(os.path.join(shots, name + "_*.mp4"))) + sorted(glob.glob(os.path.join(shots, name + ".mp4")))
+    if not hits:
+        raise SystemExit(f"no shot {name} in {shots}")
+    return hits[0]
+
+
 def cut_segment(seg, dur, shots, out):
-    src = os.path.join(shots, seg["shot"])
+    src = resolve_shot(shots, seg["shot"])
     speed = seg.get("speed", 1.0)
     vf = [f"setpts=(PTS-STARTPTS)/{speed}", f"fps={FPS}",
           f"scale={W}:{H}:force_original_aspect_ratio=increase", f"crop={W}:{H}", grade(seg)]
@@ -203,7 +215,8 @@ def main(argv=None):
     parts.append(ecmp4)
     lst = os.path.join(work, "list.txt")
     with open(lst, "w") as f:
-        f.writelines(f"file '{p}'\n" for p in parts)
+        # forward slashes: the concat demuxer reads a backslash as an escape (Windows paths)
+        f.writelines("file '" + p.replace(os.sep, "/") + "'\n" for p in parts)
     body = os.path.join(work, "body.mp4")
     run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", body])
     total = frames[-1] / FPS + ec["dur"]

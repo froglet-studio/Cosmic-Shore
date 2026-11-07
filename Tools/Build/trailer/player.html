@@ -1,0 +1,26 @@
+<title>Cosmic Shore Trailer</title>
+<style>
+:root{--bg:#04070d;--fg:#e9f6fb;--muted:#7fa3b3;--accent:#2fd4f5;--panel:#0b1420}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#04070d;--fg:#e9f6fb;--muted:#7fa3b3;--accent:#2fd4f5;--panel:#0b1420}}
+:root[data-theme="dark"]{--bg:#04070d;--fg:#e9f6fb;--muted:#7fa3b3;--accent:#2fd4f5;--panel:#0b1420}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:"Chakra Petch",system-ui,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:15px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+.frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:6px;overflow:hidden;box-shadow:0 0 40px rgba(47,212,245,.12)}
+video{width:100%;height:100%;display:block;background:#000}
+p{color:var(--muted);font-size:14px;line-height:1.5;margin:12px 0 0}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&display=swap">
+<main>
+  <h1>Cosmic Shore · Trailer v1</h1>
+  <div class="frame"><video id="v" controls playsinline preload="metadata" poster="trailer/poster.jpg"></video></div>
+  <p>Filmed in the game itself (Unity, real lighting and post), cut to SKY FIRE from the Cosmic Shore soundtrack.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+(function(){
+  var v=document.getElementById('v'), src='trailer/index.m3u8';
+  if(window.Hls && Hls.isSupported()){var h=new Hls({maxBufferLength:60});h.loadSource(src);h.attachMedia(v);}
+  else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=src;}
+})();
+</script>
