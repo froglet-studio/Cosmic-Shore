@@ -60,10 +60,22 @@
      "nose_rate": 1.5
     },
     "Manta": {
-     "asset": "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset",
-     "model": "manta_drive",
-     "nose_lead": 2.5,
-     "nose_rate": 1.5
+     "drive": {
+      "anchor": 67.0,
+      "bal_ref": 23.94,
+      "line_ref": 67.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "share": 0.35,
+      "speed": 210.5,
+      "time_levels": {
+       "1": -5,
+       "2": -5,
+       "3": -5,
+       "4": -5
+      }
+     },
+     "model": "measured"
     },
     "Rhino": {
      "asset": "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset",
@@ -144,7 +156,7 @@
   "python3",
   "numpy"
  ],
- "roster_note": "Lead-on (2026-11-07): the measured anchors measured the no-lead AIs, so the hulls the lead reaches race their pure models with it on. The Manta's drive sim is still about 2x faster than the editor's AI Mantas (MODEL_LIMITS), so its row is relative; the Stoat has no lead model and keeps its no-lead anchor.",
+ "roster_note": "Lead-on (2026-11-07): the measured anchors measured the no-lead AIs, so the hulls the lead helps race their pure models with the fleet nose lag (1.5/s) and the lead on: Rhino and Dolphin drive sims at gain 2.5, the Serpent's line model at 2.5, the Sparrow's at 2.0. NOT the Manta: in manta_redline_sim a 2.5 lead traps it (the roll stick corkscrews it; PR #1829), so it keeps the lead off and races its measured anchor (its drive sim, lead off at #1780's 9/s, finishes today's I1 in 26.5 s against 67 s measured, the sim's known ~3x). The Urchin rides its rail fit; the Squirrel (SkimRaceDriver already leads) and the Stoat (no lead model yet) keep their measured anchors.",
  "schema": "froglet-compute/job/1",
  "space": [
   {

@@ -207,14 +207,17 @@ def pick(cands, a):
     # nothing cancels: the closest pool among passing courses, else among every course (so the gap is visible)
     base = passing if len(passing) >= a.min else vectors(list(judged))
     if len(base) >= a.min:
-        r = search(base, a.min, scored, a, rng)
+        # every size the candidates allow; the closest is the one whose per-hull means are nearest
+        tries = [r for r in (per_k.values() if base is passing else
+                             [search(base, k, scored, a, rng) for k in range(a.min, min(a.max, len(base)) + 1)]) if r]
+        r = max(tries, key=lambda r: r[0])
         s = pool_stats(r[1], scored)
         report["closest"] = {"from": "passing courses" if base is passing else "every course (too few pass)",
                              "pool": [entry(c, i) for i, c in enumerate(r[1])], "pool_stats": _stats_out(s)}
         worst = max(s["means"], key=s["means"].get), min(s["means"], key=s["means"].get)
         report["verdict"] = (f"NO pool passes: {len(passing)} of {len(judged)} courses pass on their own"
                              + (f" (most fail on: {', '.join(f'{k} {v}' for k, v in sorted(fails.items(), key=lambda kv: -kv[1]))})" if fails else "")
-                             + f"; the closest pool of {a.min} has per-hull means {s['ratio']:.3f}x apart "
+                             + f"; the closest pool ({len(r[1])} courses) has per-hull means {s['ratio']:.3f}x apart "
                              f"({worst[0]} slowest, {worst[1]} fastest)" + (", one hull leads every course" if s["one_leader"] else ""))
     else:
         report["verdict"] = f"NO pool: only {len(judged)} candidate courses"
