@@ -23,6 +23,7 @@ MonoBehaviour:
     - Orchid over Deep Teal
     - Honey over Violet
     - Cornflower over Spruce
+    vision: 0
   - id: photic
     colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
     displayName: Photic
@@ -33,6 +34,7 @@ MonoBehaviour:
     - Violet over Deep violet
     - Amber over Umber
     - Periwinkle over Indigo
+    vision: 0
   - id: dartfrog
     colorSet: {fileID: 11400000, guid: fc278fc4db3642deb6d5c94314865280, type: 2}
     displayName: Dart Frog
@@ -43,3 +45,70 @@ MonoBehaviour:
     - Orchid over Petrol
     - Bumblebee over Indigo
     - Azure over Forest
+    vision: 0
+  - id: contrast
+    colorSet: {fileID: 11400000, guid: a2b69fd4235d40b683d21c958716a7f8, type: 2}
+    displayName: Contrast
+    line: 'Every domain as far from every other as the rules allow, for anyone who wants the board to read at a glance.'
+    unlocked: 1
+    pigments:
+    - Sky Cyan over Aubergine
+    - Magenta over Viridian
+    - Marigold over Electric Violet
+    - Ultramarine over Ink
+    vision: 6
+  - id: protanopia
+    colorSet: {fileID: 11400000, guid: 31cde80f4f78432bac8960d826595421, type: 2}
+    displayName: Protanopia
+    line: 'Made for eyes without red cones (protanopia and protanomaly): the domains told apart on blue-yellow and light.'
+    unlocked: 1
+    pigments:
+    - Aqua over Rust
+    - Violet over Ink
+    - Tangerine over Steel Blue
+    - Lavender over Emerald
+    vision: 1
+  - id: deuteranopia
+    colorSet: {fileID: 11400000, guid: c60912e872a449699ac1e217150b1eeb, type: 2}
+    displayName: Deuteranopia
+    line: 'Made for eyes without green cones (deuteranopia and deuteranomaly): the domains told apart on blue-yellow and light.'
+    unlocked: 1
+    pigments:
+    - Sky Cyan over Oxblood
+    - Magenta over Sage
+    - Orange over Electric Violet
+    - Ultramarine over Ink
+    vision: 2
+  - id: tritanopia
+    colorSet: {fileID: 11400000, guid: 744330f0b8aa4ef1a9adcdd29ad77dda, type: 2}
+    displayName: Tritanopia
+    line: 'Made for eyes without blue cones (tritanopia): the domains told apart on red-teal and light.'
+    unlocked: 1
+    pigments:
+    - Spearmint over Hot Pink
+    - Violet over Teal
+    - Saffron over Slate Blue
+    - Azure over Forest
+    vision: 3
+  - id: achromatopsia
+    colorSet: {fileID: 11400000, guid: dfa527e6fbe540f5bac81322305c848f, type: 2}
+    displayName: Achromatopsia
+    line: 'Made for eyes that see no colour: every domain has its own brightness, rim and face.'
+    unlocked: 1
+    pigments:
+    - Ice Cyan over Rose
+    - Flamingo over Viridian
+    - Amber over Plum
+    - Ultramarine over Forest
+    vision: 4
+  - id: lowvision
+    colorSet: {fileID: 11400000, guid: e94dde772fbd4e3dbe87f5514b3ac707, type: 2}
+    displayName: Low Vision
+    line: 'Made for low vision and cataract: bright rims over dark faces, the domains apart in brightness first.'
+    unlocked: 1
+    pigments:
+    - Ice over Raspberry
+    - Magenta over Ink
+    - Marigold over Plum
+    - Lavender over Forest
+    vision: 5

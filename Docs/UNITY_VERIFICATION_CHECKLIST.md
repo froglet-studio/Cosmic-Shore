@@ -21344,6 +21344,28 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
+## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`,
+`Docs/SettingsSystem/ARCHITECTURE.md`. Compiled with `unity_refcompile` (0 errors in the changed files; the run's other
+errors are in UGS files whose packages this sandbox could not fetch). `colour_sets.py`, `author_colour_set_assets.py`,
+`author_colour_set_catalog.py`, `author_menu_settings.py` and `author_menu_profile.py` pass `--check` and `--self-test`.
+Not opened in the editor; the edit-mode tests were compiled, not run. Affects Shombith's Settings panel and Profile
+colour sets.
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` (all six).
+2. **Profile > COLOUR SETS.** "1 of 9 / Wearing Nocturne"; the rail still shows three tiles. Press > past Dart Frog:
+   the rail slides one tile at a time through Contrast, Protanopia, Deuteranopia, Tritanopia, Achromatopsia and Low
+   Vision, each previewed on the cell; < from Nocturne wraps to Low Vision. The pad moving across the tiles previews too.
+3. **APPLY Protanopia**, leave, restart Play: the game starts in Protanopia and the page opens with its tile shown.
+4. **Settings > General: the first row is "Colour sets"** with a COLOUR SETS button (the old Colorblind mode dropdown
+   is gone). Press it in Menu_Main: Settings closes, the Profile opens on COLOUR SETS showing Contrast (the first vision
+   set) on the cell. Leave without applying: the worn set comes back. Open Settings from the Profile and press it again:
+   the same. In a match the button is disabled (menu only, like Credits).
+5. **Judge each vision set by eye**, ideally with a colour-blind simulator or a colour-blind player: can every domain's
+   prism, trail and HUD colour be told from every other's, and do danger (Fire) and the free pickup (Lime) still read?
+   The sets were measured before bloom and ACES.
+
 ## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, COMPILED AND EDITMODE-TESTED IN EDITOR, NOT PLAYED)
 
 Branch `Ys-bleeding-edge`; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP. `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/`
