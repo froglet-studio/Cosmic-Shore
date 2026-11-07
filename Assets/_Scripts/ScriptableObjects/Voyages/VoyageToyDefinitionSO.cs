@@ -58,6 +58,15 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(50f), Tooltip("How close to the Ark the pilot must stay for a core's hold to run.")]
         float holdRadius = 700f;
 
+        [SerializeField, Min(100f), Tooltip("A creature felled within this of the Ark counts for a cull (Docs/Voyages/DEPTH.md section 4).")]
+        float cullRadius = 900f;
+
+        [SerializeField, Min(20f), Tooltip("A living creature within this of the pilot counts as observed (a researcher's study).")]
+        float observeRadius = 260f;
+
+        [SerializeField, Min(100f), Tooltip("How far abeam of the Ark a rival crew's hulls stand at a stop.")]
+        float rivalAbeam = 420f;
+
         [Header("Voyage - the galaxy map (the Voyage window's cards)")]
         [SerializeField, Tooltip("The course a card's job sails, drawn over the map.")]
         Color routeColor = new(0.70f, 1f, 0.35f, 1f);
@@ -73,6 +82,18 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Tooltip("A core's marker colour.")]
         Color coreColor = new(1f, 0.45f, 0.35f, 1f);
+
+        [SerializeField, Tooltip("A lair's (and a pen's) marker colour.")]
+        Color lairColor = new(1f, 0.3f, 0.55f, 1f);
+
+        [SerializeField, Tooltip("A nursery's marker colour.")]
+        Color nurseryColor = new(0.6f, 1f, 0.6f, 1f);
+
+        [SerializeField, Tooltip("A shrine's (and a derelict's, a hoard's) marker colour.")]
+        Color shrineColor = new(0.9f, 0.85f, 1f, 1f);
+
+        [SerializeField, Tooltip("A place this crew has not found yet, where the map shows one at all.")]
+        Color unchartedColor = new(0.5f, 0.5f, 0.5f, 0.6f);
 
         [SerializeField, Tooltip("A lane's colour.")]
         Color laneColor = new(1f, 1f, 1f, 0.35f);
@@ -92,9 +113,16 @@ namespace CosmicShore.ScriptableObjects
         public Vector3 VaultPrismScale => vaultPrismScale;
         public float VaultOpenShare => vaultOpenShare;
         public float HoldRadius => holdRadius;
+        public float CullRadius => cullRadius;
+        public float ObserveRadius => observeRadius;
+        public float RivalAbeam => rivalAbeam;
         public Color PortColor => portColor;
         public Color VaultColor => vaultColor;
         public Color CoreColor => coreColor;
+        public Color LairColor => lairColor;
+        public Color NurseryColor => nurseryColor;
+        public Color ShrineColor => shrineColor;
+        public Color UnchartedColor => unchartedColor;
         public Color LaneColor => laneColor;
 
         /// <summary>The Ark's settings for a voyage, the corridor's worlds taken from the content's cell pool when it

@@ -897,6 +897,71 @@
         "python3 Tools/Analytics/server/analytics_server.py --self-test",
         "In the editor: grant consent, play one match, see the player on the console's Players page within 30 s"
       ]
+    },
+    "voyages": {
+      "title": "Voyages",
+      "aliases": [
+        "voyage",
+        "voyages",
+        "the hypersea",
+        "hypersea voyages",
+        "the voyage window",
+        "deep voyages",
+        "voyage depth"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Shombith"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/magical-pascal-5uveyi",
+      "branchNote": "the depth pass; the slice and the Voyage window are on bleeding-edge",
+      "summary": "The fourth location: squads sail a shared HyperSea from job to job and dock at home to keep what they found. The depth pass (2026-11-07) gives the sea a life of its own (pressure, blooms, restocks, the Kaiju), rival crews that take the same jobs by the same rules, a job for every one of the 16 faction types in nine work verbs, four sagas ending in named relics, standing and notoriety, uncharted places found by sailing, and a headless harness whose scorecard is a test.",
+      "paths": [
+        "Assets/_Scripts/Data/Voyages",
+        "Assets/_Scripts/Controller/Voyages",
+        "Assets/_Scripts/ScriptableObjects/Voyages",
+        "Assets/_Scripts/UI/Views/VoyageJobsView.cs",
+        "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs",
+        "Assets/_Scripts/Tests/Editor/VoyageRulesTests.cs",
+        "Assets/_Scripts/Tests/Editor/VoyageDepthTests.cs",
+        "Assets/_Scripts/Tests/Editor/VoyageDepthHarness.cs",
+        "Tools/Build/author_voyage_assets.py",
+        "Tools/Build/voyage_depth_harness",
+        "Docs/Voyages"
+      ],
+      "docs": [
+        "Docs/Voyages/DEPTH.md",
+        "Docs/Voyages/VOYAGES.md",
+        "Docs/Voyages/SLICE.md",
+        "Docs/Voyages/VOYAGE_BOARD.md",
+        "Docs/Voyages/ARK_ESCORT.md"
+      ],
+      "artifacts": [
+        {
+          "name": "The Voyage Board (the HyperSea as our Milky Way)",
+          "url": "https://claude.ai/artifact/25CvRSxBrjcxEUngEiCzEn"
+        },
+        {
+          "name": "Voyages, deep: the report page for Garrett (what was built, measured, how to try it)",
+          "url": "https://claude.ai/artifact/YEGVrEct7jAWnRr2svpF2r"
+        }
+      ],
+      "report": "Docs/Reports/VOYAGES.md",
+      "taskAreas": [
+        "Voyages",
+        "Voyage window",
+        "HyperSea"
+      ],
+      "test": [
+        "Pull the branch, open Unity, wait for the compile; run VoyageRulesTests and VoyageDepthTests (green).",
+        "Menu_Main > Voyage window: about six cards, 25 places in six colours, the three uncharted places not drawn; open a card for SUITS, PAYS and the warnings.",
+        "Set sail on the Lantern Keeper's first chapter and follow it to the relic (Docs/UNITY_VERIFICATION_CHECKLIST.md, 2026-11-07, steps 4-6).",
+        "Sail to a place a rival crew is bound for and meet them; let a laden Ark fall to a pirate crew (steps 10-12)."
+      ]
     }
   }
 }

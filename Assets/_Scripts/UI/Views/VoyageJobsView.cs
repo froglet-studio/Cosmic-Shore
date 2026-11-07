@@ -293,6 +293,10 @@ namespace CosmicShore.UI
             if (!map) return;
             ShowMap(true);
             map.SetLines(lines);
+            // A place this crew has not found yet is not on its chart (DEPTH.md §8).
+            var harbour = VoyageHarbour.Current;
+            var galaxy = harbour ? harbour.GalaxyState : null;
+            map.Visible = galaxy != null ? id => VoyageRules.IsVisible(galaxy, content, id) : null;
             map.Show(content, style, here, route, caption, focus: route != null);
             var edge = EnsureEdge();
             bool charted = map.Chart != null;
@@ -410,13 +414,44 @@ namespace CosmicShore.UI
             var kind = content.Job(job.TemplateId);
             var sea = VoyageChart.For(content)?.Along(route);
             string text = VoyageRules.Fill(template, content.Location(job.From), to, to, person);
+            // The job's own intensity (the sea's plus the place's pressure) and its own pay, as the board priced it.
+            int intensity = job.Intensity > 0 ? job.Intensity : sea?.Intensity ?? 1;
+            int pay = job.Pay > 0 ? job.Pay : kind?.Reward ?? 0;
+            var galaxy = VoyageHarbour.Current ? VoyageHarbour.Current.GalaxyState : null;
+            string standing = person != null && galaxy != null
+                ? VoyageRules.TierName(content, VoyageRules.Tier(galaxy, content, person.Faction)) : string.Empty;
             return TemplateText.Fill(text,
                 "summary", job.Summary,
                 "place", to?.Blurb,
                 "story", person?.Story,
                 "squad", Squad(lines),
-                "intensity", sea != null ? sea.Intensity.ToString(CultureInfo.InvariantCulture) : string.Empty,
-                "reward", kind != null && !job.IsReturn ? kind.Reward.ToString(CultureInfo.InvariantCulture) : string.Empty);
+                "role", VoyageRules.RoleName(content, job.Role),
+                "standing", standing,
+                "warnings", Warnings(lines, job),
+                "intensity", intensity.ToString(CultureInfo.InvariantCulture),
+                "reward", !job.IsReturn ? pay.ToString(CultureInfo.InvariantCulture) : string.Empty);
+        }
+
+        /// <summary>A job's warnings (Docs/Voyages/DEPTH.md §7) in the brief's authored block, or nothing when there are none.</summary>
+        static string Warnings(VoyageLines lines, VoyageJob job)
+        {
+            if (lines == null || job?.Warnings == null || job.Warnings.Count == 0 || string.IsNullOrEmpty(lines.CardWarnings)) return string.Empty;
+            return TemplateText.Fill(lines.CardWarnings, "warnings", string.Join(lines.CardWarningSeparator ?? string.Empty, job.Warnings));
+        }
+
+        /// <summary>The crew's own record (Docs/Voyages/DEPTH.md §9), through the authored log line; empty before a voyage.</summary>
+        static string LogLine(VoyageLines lines)
+        {
+            var galaxy = VoyageHarbour.Current ? VoyageHarbour.Current.GalaxyState : null;
+            if (galaxy?.Log == null || galaxy.Log.Voyages == 0 || string.IsNullOrEmpty(lines.StoryLogLine)) return null;
+            var log = galaxy.Log;
+            return TemplateText.Fill(lines.StoryLogLine,
+                "voyages", log.Voyages.ToString(CultureInfo.InvariantCulture),
+                "extracted", log.Extracted.ToString(CultureInfo.InvariantCulture),
+                "relics", log.Relics.ToString(CultureInfo.InvariantCulture),
+                "charted", log.Charted.ToString(CultureInfo.InvariantCulture),
+                "arks", log.ArksLost.ToString(CultureInfo.InvariantCulture),
+                "kaiju", log.KaijuFelled.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>The active squad as its seats: each one's vessel and pilot, through the authored seat line.</summary>
@@ -578,7 +613,8 @@ namespace CosmicShore.UI
             string n = (index + 1).ToString(CultureInfo.InvariantCulture);
             string ly = voyage != null ? voyage.LightYears.ToString("N0", CultureInfo.InvariantCulture) : string.Empty;
             string minutes = voyage != null ? voyage.Minutes.ToString("N0", CultureInfo.InvariantCulture) : string.Empty;
-            string intensity = voyage != null ? voyage.Intensity.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            string intensity = job.Intensity > 0 ? job.Intensity.ToString(CultureInfo.InvariantCulture)
+                : voyage != null ? voyage.Intensity.ToString(CultureInfo.InvariantCulture) : string.Empty;
             m.Pager = TemplateText.Fill(lines.CardPager, "n", n, "count", count.ToString(CultureInfo.InvariantCulture));
             m.Kicker = TemplateText.Fill(lines.CardKicker, "n", n, "place", to?.Name);
             m.Title = job.Title;
@@ -600,7 +636,11 @@ namespace CosmicShore.UI
                 new VoyageCardRules.Beat(lines.StoryCrew, person?.Story, TemplateText.Fill(lines.StoryCrewBy, "pilot", person?.Name)),
                 new VoyageCardRules.Beat(lines.StoryWater,
                     voyage != null ? TemplateText.Fill(lines.StoryWaterLine, "years", ly, "to", to?.Name, "minutes", minutes) : null,
-                    voyage != null ? TemplateText.Fill(lines.StoryWaterBy, "sea", SeaName(lines, voyage.ThickestSea)) : null)));
+                    voyage != null ? TemplateText.Fill(lines.StoryWaterBy, "sea", SeaName(lines, voyage.ThickestSea)) : null),
+                new VoyageCardRules.Beat(lines.StoryWorld,
+                    job.Warnings is { Count: > 0 } ? string.Join(" ", job.Warnings) : null,
+                    job.Warnings is { Count: > 0 } ? TemplateText.Fill(lines.StoryWorldBy, "warnings", string.Join(" ", job.Warnings)) : null),
+                new VoyageCardRules.Beat(lines.StoryLog, LogLine(lines), null)));
             m.SetSail = setSail;
             return m;
         }

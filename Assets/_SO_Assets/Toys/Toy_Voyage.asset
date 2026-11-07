@@ -29,9 +29,16 @@ MonoBehaviour:
   vaultPrismScale: {x: 5, y: 5, z: 8}
   vaultOpenShare: 0.5
   holdRadius: 700
+  cullRadius: 900
+  observeRadius: 260
+  rivalAbeam: 420
   routeColor: {r: 0.7, g: 1, b: 0.35, a: 1}
   hereColor: {r: 1, g: 0.78, b: 0.25, a: 1}
   portColor: {r: 0.96, g: 0.94, b: 0.86, a: 1}
   vaultColor: {r: 0.55, g: 0.75, b: 1, a: 1}
   coreColor: {r: 1, g: 0.45, b: 0.35, a: 1}
+  lairColor: {r: 1, g: 0.3, b: 0.55, a: 1}
+  nurseryColor: {r: 0.6, g: 1, b: 0.6, a: 1}
+  shrineColor: {r: 0.9, g: 0.85, b: 1, a: 1}
+  unchartedColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.6}
   laneColor: {r: 1, g: 1, b: 1, a: 0.35}

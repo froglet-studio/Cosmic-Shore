@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compiles the SHIPPED voyage data and rules (Assets/_Scripts/Data/Voyages, pure C#) with their edit-mode suites
+       against UnityStub.cs and runs them with NUnitLite; the scorecard switch plays thousands of voyages headless and prints
+       the depth scorecard (Docs/Voyages/DEPTH.md section 11). Nothing under Assets/ is copied or edited: files are
+       included by path. UNITY_EDITOR is defined so the suites' #if guards admit them; VOYAGE_HARNESS marks this build. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS8981;CS0162;CS1591;CS0108;CS0414;CS0649;CS0169</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>UNITY_EDITOR;VOYAGE_HARNESS</DefineConstants>
+    <WarningLevel>1</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnityStub.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Enums/Domains.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Enums/Element.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Inventory/UniqueId.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Inventory/SeededRandom.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Inventory/FactionCatalog.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/HyperSea.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageChart.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageCourse.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageEnums.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageContent.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageState.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageRules.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageWorld.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageRivals.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageRulesTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageDepthTests.cs" Condition="Exists('../../../Assets/_Scripts/Tests/Editor/VoyageDepthTests.cs')" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageDepthHarness.cs" Condition="Exists('../../../Assets/_Scripts/Tests/Editor/VoyageDepthHarness.cs')" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnitLite" Version="3.14.0" />
+  </ItemGroup>
+</Project>

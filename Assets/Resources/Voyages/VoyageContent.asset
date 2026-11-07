@@ -30,6 +30,10 @@ MonoBehaviour:
       Vaults: 0
       Finds: []
       HoldSeconds: 60
+      RestPressure: 0
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
     - Id: loc.harbour.ruby
       Name: Carmine Harbour
       Blurb: Home water for the Ruby. Dock here and whatever is aboard is yours.
@@ -46,6 +50,10 @@ MonoBehaviour:
       Vaults: 0
       Finds: []
       HoldSeconds: 60
+      RestPressure: 0
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
     - Id: loc.harbour.gold
       Name: Aurum Harbour
       Blurb: Home water for the Gold. Dock here and whatever is aboard is yours.
@@ -62,6 +70,10 @@ MonoBehaviour:
       Vaults: 0
       Finds: []
       HoldSeconds: 60
+      RestPressure: 0
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
     - Id: loc.tollmoor
       Name: Tollmoor
       Blurb: A neutral port where every lane crosses. News arrives here first and leaves here fastest.
@@ -78,6 +90,50 @@ MonoBehaviour:
       Vaults: 0
       Finds: []
       HoldSeconds: 60
+      RestPressure: 0
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.gullbone
+      Name: Gullbone Landing
+      Blurb: A pirates' port on the far side of the reefs. Everything is for sale, including what you came in with.
+      Experience: 1
+      Home: 3
+      ChartX: 7
+      ChartY: -3
+      ChartZ: 2
+      Charted: 1
+      GalaxyX: 1680
+      GalaxyY: 2040
+      GalaxyZ: -60
+      Cell: 4
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 0.5
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.deepreed
+      Name: Deepreed Quay
+      Blurb: A quiet port among the nurseries, where the wardens keep the ledgers and the gardens both.
+      Experience: 1
+      Home: 3
+      ChartX: -5
+      ChartY: 4
+      ChartZ: 2
+      Charted: 1
+      GalaxyX: 520
+      GalaxyY: 2620
+      GalaxyZ: 140
+      Cell: 5
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 0
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
     - Id: loc.lantern
       Name: Lantern Reach
       Blurb: Vault shells drift here, lit from inside. Something sealed them, and something wants them back.
@@ -90,12 +146,16 @@ MonoBehaviour:
       GalaxyX: 560
       GalaxyY: 1690
       GalaxyZ: -34
-      Cell: 4
+      Cell: 6
       Vaults: 3
       Finds:
       - artifact.hydra
       - artifact.aftershock
       HoldSeconds: 60
+      RestPressure: 0.6
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 4
     - Id: loc.hollow
       Name: The Hollow
       Blurb: A quiet cell with deep vaults. Quiet cells are quiet for a reason.
@@ -108,12 +168,61 @@ MonoBehaviour:
       GalaxyX: 1520
       GalaxyY: 1760
       GalaxyZ: -149
-      Cell: 5
+      Cell: 7
       Vaults: 2
       Finds:
       - artifact.aftershock
       - artifact.hydra
       HoldSeconds: 60
+      RestPressure: 1
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 5
+    - Id: loc.glassmere
+      Name: Glassmere
+      Blurb: Shells like blown glass in thick water. The far side of the sea pays the far side's prices.
+      Experience: 2
+      Home: 3
+      ChartX: 9
+      ChartY: 2
+      ChartZ: -1
+      Charted: 1
+      GalaxyX: 1960
+      GalaxyY: 2400
+      GalaxyZ: 40
+      Cell: 8
+      Vaults: 3
+      Finds:
+      - artifact.hydra
+      - artifact.aftershock
+      - artifact.javelin
+      HoldSeconds: 60
+      RestPressure: 1.6
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 6
+    - Id: loc.ninewells
+      Name: Nine Wells
+      Blurb: Nine sunk shells in a ring, below the midplane where the light is thin.
+      Experience: 2
+      Home: 3
+      ChartX: -8
+      ChartY: 3
+      ChartZ: 1
+      Charted: 1
+      GalaxyX: 300
+      GalaxyY: 1950
+      GalaxyZ: -200
+      Cell: 9
+      Vaults: 2
+      Finds:
+      - artifact.aftershock
+      - artifact.aegis
+      HoldSeconds: 60
+      RestPressure: 1.2
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 5
     - Id: loc.verdigris
       Name: Verdigris
       Blurb: A contested core. Whoever holds its nucleus decides whose colour the waves fight for.
@@ -126,10 +235,14 @@ MonoBehaviour:
       GalaxyX: 430
       GalaxyY: 2360
       GalaxyZ: -112
-      Cell: 6
+      Cell: 10
       Vaults: 0
       Finds: []
       HoldSeconds: 60
+      RestPressure: 1.4
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
     - Id: loc.saltmarch
       Name: Saltmarch
       Blurb: A core on the trade lane, ringed with old wreckage.
@@ -142,44 +255,454 @@ MonoBehaviour:
       GalaxyX: 1120
       GalaxyY: 1520
       GalaxyZ: 145
-      Cell: 7
+      Cell: 11
       Vaults: 0
       Finds: []
       HoldSeconds: 75
+      RestPressure: 1.8
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.ironmouth
+      Name: Ironmouth
+      Blurb: A core that was never anyone's for long. Its shell is more breach than wall.
+      Experience: 3
+      Home: 3
+      ChartX: 8
+      ChartY: 5
+      ChartZ: -2
+      Charted: 1
+      GalaxyX: 1750
+      GalaxyY: 2700
+      GalaxyZ: 20
+      Cell: 12
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 90
+      RestPressure: 2.2
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.maw
+      Name: The Maw
+      Blurb: Predators crowd the water here, and the water is thick enough to hide them.
+      Experience: 4
+      Home: 3
+      ChartX: 4
+      ChartY: -5
+      ChartZ: 3
+      Charted: 1
+      GalaxyX: 1380
+      GalaxyY: 1250
+      GalaxyZ: -40
+      Cell: 13
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 2
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.gnawreach
+      Name: Gnawreach
+      Blurb: Whatever eats here eats everything. The wardens of Deepreed will not sail past it.
+      Experience: 4
+      Home: 3
+      ChartX: -2
+      ChartY: 7
+      ChartZ: 3
+      Charted: 1
+      GalaxyX: 1040
+      GalaxyY: 2900
+      GalaxyZ: 180
+      Cell: 14
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 1.6
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.cinder.shoal
+      Name: Cinder Shoal
+      Blurb: Off every chart. The crews that found it did not come back to say where.
+      Experience: 4
+      Home: 3
+      ChartX: 10
+      ChartY: -3
+      ChartZ: 6
+      Charted: 1
+      GalaxyX: 2150
+      GalaxyY: 1900
+      GalaxyZ: -120
+      Cell: 15
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 2.6
+      RestBloom: 0
+      Uncharted: 1
+      RestockDays: 0
+    - Id: loc.verdigris.nursery
+      Name: Nursery of Verdigris
+      Blurb: Where the grazers of Verdigris breed. Rich when it blooms, and everyone knows when it blooms.
+      Experience: 6
+      Home: 3
+      ChartX: -3
+      ChartY: 5
+      ChartZ: -5
+      Charted: 1
+      GalaxyX: 380
+      GalaxyY: 2560
+      GalaxyZ: -60
+      Cell: 16
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 45
+      RestPressure: 0.3
+      RestBloom: 3
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.spindrift
+      Name: Spindrift Shallows
+      Blurb: High above the midplane, a shallow bloom of crystal the herds come up to feed on.
+      Experience: 6
+      Home: 3
+      ChartX: -4
+      ChartY: 8
+      ChartZ: 1
+      Charted: 1
+      GalaxyX: 760
+      GalaxyY: 2800
+      GalaxyZ: 240
+      Cell: 17
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 45
+      RestPressure: 0.4
+      RestBloom: 3
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.magpie
+      Name: Magpie Hollow
+      Blurb: 'The thieves'' stash: everything they ever snatched from a passing wake, sealed and guarded.'
+      Experience: 5
+      Home: 3
+      ChartX: 7
+      ChartY: -5
+      ChartZ: 4
+      Charted: 1
+      GalaxyX: 1800
+      GalaxyY: 1500
+      GalaxyZ: -200
+      Cell: 18
+      Vaults: 2
+      Finds:
+      - artifact.javelin
+      - artifact.hydra
+      HoldSeconds: 60
+      RestPressure: 1.2
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 7
+    - Id: loc.quillmark
+      Name: The Quillmark Derelict
+      Blurb: A stranded Ark with its crew still aboard, calling on every band. The water around it is not kind.
+      Experience: 7
+      Home: 3
+      ChartX: 2
+      ChartY: 1
+      ChartZ: 3
+      Charted: 1
+      GalaxyX: 1450
+      GalaxyY: 2150
+      GalaxyZ: 10
+      Cell: 19
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 50
+      RestPressure: 1.3
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.pale.anchorage
+      Name: Pale Anchorage
+      Blurb: An anchorage nobody charted, and an Ark that anchored there and never left.
+      Experience: 7
+      Home: 3
+      ChartX: -10
+      ChartY: 1
+      ChartZ: 3
+      Charted: 1
+      GalaxyX: 240
+      GalaxyY: 1500
+      GalaxyZ: 60
+      Cell: 20
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 1.5
+      RestBloom: 0
+      Uncharted: 1
+      RestockDays: 0
+    - Id: loc.lattice.pens
+      Name: The Lattice Pens
+      Blurb: Herds penned behind another domain's mass, bred for what their hearts carry.
+      Experience: 8
+      Home: 3
+      ChartX: 8
+      ChartY: 2
+      ChartZ: 1
+      Charted: 1
+      GalaxyX: 1600
+      GalaxyY: 2550
+      GalaxyZ: -30
+      Cell: 21
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 60
+      RestPressure: 1.5
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.shrine.deepreed
+      Name: Deepreed Shrine
+      Blurb: A beacon the priests keep lit. The slow tide turns here.
+      Experience: 9
+      Home: 3
+      ChartX: -6
+      ChartY: 6
+      ChartZ: 4
+      Charted: 1
+      GalaxyX: 600
+      GalaxyY: 2750
+      GalaxyZ: 190
+      Cell: 22
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 30
+      RestPressure: 0.2
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.shrine.ninefold
+      Name: The Ninefold Shell
+      Blurb: Nine shells in nine shells, far below the plane. Vigils here are kept in the dark.
+      Experience: 9
+      Home: 3
+      ChartX: 3
+      ChartY: -1
+      ChartZ: -3
+      Charted: 1
+      GalaxyX: 1250
+      GalaxyY: 1900
+      GalaxyZ: -260
+      Cell: 23
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 30
+      RestPressure: 0.8
+      RestBloom: 0
+      Uncharted: 0
+      RestockDays: 0
+    - Id: loc.keepers.rest
+      Name: Keeper's Rest
+      Blurb: The lantern keeper's last anchorage, off the chart and unlit.
+      Experience: 9
+      Home: 3
+      ChartX: -9
+      ChartY: 0
+      ChartZ: 5
+      Charted: 1
+      GalaxyX: 120
+      GalaxyY: 1700
+      GalaxyZ: -120
+      Cell: 24
+      Vaults: 0
+      Finds: []
+      HoldSeconds: 40
+      RestPressure: 0.5
+      RestBloom: 0
+      Uncharted: 1
+      RestockDays: 0
     Lanes:
     - From: loc.harbour.jade
       To: loc.lantern
       Cells: 1
+      Profile: []
     - From: loc.harbour.jade
       To: loc.tollmoor
       Cells: 2
+      Profile: []
+    - From: loc.harbour.jade
+      To: loc.verdigris.nursery
+      Cells: 1
+      Profile: []
+    - From: loc.harbour.jade
+      To: loc.deepreed
+      Cells: 3
+      Profile:
+      - 0.8
+      - 1.3
+      - 0.9
     - From: loc.harbour.ruby
       To: loc.verdigris
       Cells: 1
+      Profile: []
     - From: loc.harbour.ruby
       To: loc.tollmoor
       Cells: 2
+      Profile: []
+    - From: loc.harbour.ruby
+      To: loc.gullbone
+      Cells: 3
+      Profile:
+      - 0.9
+      - 1.4
+      - 1
     - From: loc.harbour.gold
       To: loc.hollow
       Cells: 1
+      Profile: []
     - From: loc.harbour.gold
       To: loc.tollmoor
       Cells: 2
+      Profile: []
+    - From: loc.harbour.gold
+      To: loc.ironmouth
+      Cells: 2
+      Profile: []
     - From: loc.lantern
       To: loc.tollmoor
       Cells: 1
+      Profile: []
     - From: loc.lantern
       To: loc.verdigris
       Cells: 2
+      Profile: []
+    - From: loc.lantern
+      To: loc.ninewells
+      Cells: 2
+      Profile: []
+    - From: loc.lantern
+      To: loc.keepers.rest
+      Cells: 2
+      Profile: []
     - From: loc.tollmoor
       To: loc.saltmarch
       Cells: 1
+      Profile: []
+    - From: loc.tollmoor
+      To: loc.quillmark
+      Cells: 1
+      Profile: []
+    - From: loc.tollmoor
+      To: loc.gullbone
+      Cells: 4
+      Profile:
+      - 0.8
+      - 1.3
+      - 0.9
+      - 1.4
+    - From: loc.tollmoor
+      To: loc.deepreed
+      Cells: 4
+      Profile:
+      - 0.8
+      - 1.2
+      - 0.9
+      - 1.3
     - From: loc.hollow
       To: loc.saltmarch
       Cells: 2
+      Profile: []
+    - From: loc.hollow
+      To: loc.magpie
+      Cells: 1
+      Profile: []
+    - From: loc.hollow
+      To: loc.cinder.shoal
+      Cells: 2
+      Profile: []
     - From: loc.verdigris
       To: loc.saltmarch
       Cells: 2
+      Profile: []
+    - From: loc.verdigris
+      To: loc.verdigris.nursery
+      Cells: 1
+      Profile: []
+    - From: loc.verdigris
+      To: loc.ninewells
+      Cells: 2
+      Profile: []
+    - From: loc.saltmarch
+      To: loc.maw
+      Cells: 1
+      Profile: []
+    - From: loc.saltmarch
+      To: loc.shrine.ninefold
+      Cells: 1
+      Profile: []
+    - From: loc.gullbone
+      To: loc.magpie
+      Cells: 1
+      Profile: []
+    - From: loc.gullbone
+      To: loc.glassmere
+      Cells: 2
+      Profile: []
+    - From: loc.gullbone
+      To: loc.lattice.pens
+      Cells: 1
+      Profile: []
+    - From: loc.deepreed
+      To: loc.spindrift
+      Cells: 1
+      Profile: []
+    - From: loc.deepreed
+      To: loc.shrine.deepreed
+      Cells: 1
+      Profile: []
+    - From: loc.deepreed
+      To: loc.gnawreach
+      Cells: 2
+      Profile: []
+    - From: loc.deepreed
+      To: loc.verdigris.nursery
+      Cells: 1
+      Profile: []
+    - From: loc.ironmouth
+      To: loc.glassmere
+      Cells: 1
+      Profile: []
+    - From: loc.ironmouth
+      To: loc.lattice.pens
+      Cells: 1
+      Profile: []
+    - From: loc.ironmouth
+      To: loc.gnawreach
+      Cells: 3
+      Profile:
+      - 0.9
+      - 1.5
+      - 1
+    - From: loc.quillmark
+      To: loc.shrine.ninefold
+      Cells: 2
+      Profile: []
+    - From: loc.quillmark
+      To: loc.lattice.pens
+      Cells: 2
+      Profile: []
+    - From: loc.ninewells
+      To: loc.pale.anchorage
+      Cells: 1
+      Profile: []
+    - From: loc.maw
+      To: loc.shrine.ninefold
+      Cells: 2
+      Profile: []
     Crew:
     - PilotId: pilot.callsign.citadel
       Name: Oriel Vance
@@ -191,52 +714,52 @@ MonoBehaviour:
       Story: Tracks predators for a living, and sells what they guard.
     - PilotId: pilot.callsign.doe
       Name: Ilse Marren
-      Faction: 2
-      Story: Follows the grazers. Where they gather, something sealed lies near.
+      Faction: 12
+      Story: Follows the grazers and writes down where they gather. Her notebooks are worth more than her hull.
     - PilotId: pilot.callsign.anvil
       Name: Teodor Haskel
-      Faction: 2
-      Story: Weighs every find before he touches it. Usually right.
+      Faction: 10
+      Story: Weighs every beam before he lays it. Has shored three breaches and lost none.
     - PilotId: pilot.callsign.needle
       Name: Pell
-      Faction: 2
-      Story: Finds the switch nobody else saw. Talks to it, too.
+      Faction: 8
+      Story: Finds the switch nobody else saw, and the ledger nobody else read.
     - PilotId: pilot.callsign.galleon
       Name: Cass Morrow
       Faction: 4
       Story: Knows every Ark by its silhouette, and every wreck by its smell.
     - PilotId: pilot.callsign.bandit
       Name: Juno Rask
-      Faction: 4
-      Story: Calls the rival out before the rival knows they are a rival.
+      Faction: 5
+      Story: Calls the rival out before the rival knows they are a rival. Collects on it after.
     - PilotId: pilot.callsign.hornet
       Name: Sable Okoye
-      Faction: 4
-      Story: Flies the burning edge of a wreck field for fun.
+      Faction: 7
+      Story: Flies the burning edge of a pen for fun, and opens it for principle.
     - PilotId: pilot.callsign.flume
       Name: Aster Quill
-      Faction: 4
-      Story: Rides the tunnels others fear. Arrives early, leaves rich.
+      Faction: 6
+      Story: Rides the tunnels others fear. Arrives early, leaves with a chart nobody had.
     - PilotId: pilot.callsign.volt
       Name: Merrin Tal
       Faction: 1
       Story: Prices news by its voltage. Fresh news sparks.
     - PilotId: pilot.callsign.zodiac
       Name: Dov Ferrante
-      Faction: 1
-      Story: Charts the fastest lane between any two ports, then charges for it.
+      Faction: 11
+      Story: Charts the fastest lane between any two ports, then races it for an audience.
     - PilotId: pilot.callsign.sundial
       Name: Noor Achebe
-      Faction: 1
-      Story: Never late. Has never once been late.
+      Faction: 15
+      Story: Keeps the hours of the slow tide. Has never once been late to a vigil.
     - PilotId: pilot.callsign.opal
       Name: Wren Holloway
-      Faction: 1
-      Story: Carries sealed dispatches for three ports and reads none of them. Probably.
+      Faction: 16
+      Story: Carries sealed accords between people who would rather shoot. Reads none of them. Probably.
     - PilotId: pilot.callsign.manger
       Name: Rook Sandoval
-      Faction: 1
-      Story: Knows where the herds will feed tomorrow, and who will pay to know it.
+      Faction: 9
+      Story: Knows where the herds will feed tomorrow, and harvests there today.
     - PilotId: pilot.callsign.ensign
       Name: Lady Corvina Ash
       Faction: 3
@@ -247,26 +770,40 @@ MonoBehaviour:
       Story: Has held Verdigris twice and lost it once. Remembers the once.
     - PilotId: pilot.callsign.wingman
       Name: Captain Theo Lark
-      Faction: 3
+      Faction: 14
       Story: Never leaves a wing behind. Never lets you forget it.
     - PilotId: pilot.callsign.ivy
       Name: Warden Sorrel
-      Faction: 3
-      Story: Tends the gardens of the cores, and the guns that guard them.
+      Faction: 13
+      Story: Tends the gardens of the nurseries, and would rather you did not shoot anything in them.
     Jobs:
     - Id: job.return
       Kind: 0
-      Faction: 1
+      Faction: 0
       Needs: 0
       Goes: 0
       Title: 'Sail home to {to}'
       Summary: 'Dock at {to}. Everything aboard becomes yours.'
       SuccessLine: 
       FailLine: 
+      SuccessLines: []
+      FailLines: []
       Reward: 0
       RewardElement: 5
       OnSuccess: 
       OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 0
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 
     - Id: job.courier.dispatch
       Kind: 0
       Faction: 1
@@ -276,10 +813,60 @@ MonoBehaviour:
       Summary: 'Reach {to} with the Ark standing. The news aboard will change what {to} knows.'
       SuccessLine: '{pilot}''s dispatch reached {to}. The dock crews were talking about it before the hull cooled.'
       FailLine: 'The dispatch for {to} never arrived.'
+      SuccessLines:
+      - '{pilot}''s dispatch reached {to}. The dock crews were talking about it before the hull cooled.'
+      - '{to} has {pilot}''s dispatch. Three ledgers were rewritten before the Ark was tied up.'
+      - '{pilot} came into {to} with the dispatch sealed and left with it read. News travels on Arks.'
+      FailLines:
+      - 'The dispatch for {to} never arrived.'
+      - '{to} waited for {pilot}''s dispatch and got rumours instead.'
       Reward: 6
       RewardElement: 4
       OnSuccess: ev.courier.delivered
       OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Carried a dispatch to {to}.'
+    - Id: job.convoy.contract
+      Kind: 17
+      Faction: 1
+      Needs: 15
+      Goes: 1
+      Title: '{pilot}: run cargo through to {to}'
+      Summary: '{to} is cut off and paying cargo rates. Bring the Ark in with more than half its hull.'
+      SuccessLine: '{pilot} brought the cargo into {to} with the hull holding. The quay paid in full.'
+      FailLine: 'The cargo for {to} came in short, or not at all.'
+      SuccessLines:
+      - '{pilot} brought the cargo into {to} with the hull holding. The quay paid in full.'
+      - 'The convoy made {to}. {pilot} counted the plates left and called it a profit.'
+      FailLines:
+      - 'The cargo for {to} came in short, or not at all.'
+      - '{to} got half a hold and paid for none of it.'
+      Reward: 10
+      RewardElement: 2
+      OnSuccess: ev.convoy.delivered
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0.6
+      NoKill: 0
+      Role: 1
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Ran a convoy through to {to}.'
     - Id: job.hunt.sighting
       Kind: 1
       Faction: 2
@@ -289,10 +876,29 @@ MonoBehaviour:
       Summary: 'Vaults are lit at {to}. Crack one with a payload, carry its artifact back to the Ark and stow it.'
       SuccessLine: '{pilot}''s crew opened a vault at {to}. Its chart pointed somewhere new.'
       FailLine: 'The vaults at {to} kept their secrets.'
+      SuccessLines:
+      - '{pilot}''s crew opened a vault at {to}. Its chart pointed somewhere new.'
+      - 'A shell at {to} cracked under {pilot}''s payload and gave up what it kept.'
+      - '{pilot} read the shells at {to} like faces and picked the right one.'
+      FailLines:
+      - 'The vaults at {to} kept their secrets.'
+      - '{pilot} left {to} with the shells still sealed.'
       Reward: 8
       RewardElement: 3
       OnSuccess: ev.hunt.opened
       OnFail: ev.hunt.missed
+      Verb: 1
+      Goal: 1
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Opened the vaults at {to}.'
     - Id: job.hunt.rumour
       Kind: 1
       Faction: 2
@@ -302,23 +908,88 @@ MonoBehaviour:
       Summary: 'Nobody has seen them lit, but {pilot} swears there are vaults at {to}. Crack one and stow what is inside.'
       SuccessLine: '{pilot}''s rumour was true. A vault at {to} gave up its artifact.'
       FailLine: '{to} was empty water, or looked like it.'
+      SuccessLines:
+      - '{pilot}''s rumour was true. A vault at {to} gave up its artifact.'
+      - 'Nobody believed {pilot} about {to}. Nobody is laughing now.'
+      FailLines:
+      - '{to} was empty water, or looked like it.'
+      - '{pilot}''s rumour of {to} cost a day and paid nothing.'
       Reward: 4
       RewardElement: 3
       OnSuccess: ev.hunt.opened
       OnFail: 
-    - Id: job.salvage.wreck
-      Kind: 2
-      Faction: 4
-      Needs: 2
-      Goes: 3
-      Title: '{pilot}: strip the wreck at {to}'
-      Summary: 'An Ark went down at {to} and its hold spilled. Grab what floats there with RB and stow it in your Ark before anyone else does.'
-      SuccessLine: '{pilot} picked the wreck at {to} clean.'
-      FailLine: 'Someone else got to the wreck at {to} first, or nobody did.'
-      Reward: 5
-      RewardElement: 2
-      OnSuccess: ev.salvage.stripped
-      OnFail: 
+      Verb: 1
+      Goal: 1
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Followed a rumour to {to} and came back with an artifact.'
+    - Id: job.hunt.lair
+      Kind: 18
+      Faction: 2
+      Needs: 5
+      Goes: 4
+      Title: '{pilot}: thin the predators at {to}'
+      Summary: 'Predators crowd {to} and the lanes past it. Fell five of them close to the Ark and the water clears.'
+      SuccessLine: '{pilot}''s squad culled the predators at {to}. What they guarded is nobody''s now.'
+      FailLine: 'The predators at {to} are still there.'
+      SuccessLines:
+      - '{pilot}''s squad culled the predators at {to}. What they guarded is nobody''s now.'
+      - 'Five fell at {to} and the rest went deep. {pilot} calls that thinned.'
+      FailLines:
+      - 'The predators at {to} are still there.'
+      - '{to} is as hungry as it was. {pilot} says the next crew can try.'
+      Reward: 9
+      RewardElement: 1
+      OnSuccess: ev.lair.culled
+      OnFail: ev.lair.missed
+      Verb: 4
+      Goal: 5
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Thinned the predators at {to}.'
+    - Id: job.hunt.kaiju
+      Kind: 18
+      Faction: 2
+      Needs: 17
+      Goes: 4
+      Title: '{pilot}: fell the Leviathan at {to}'
+      Summary: 'The Leviathan lairs at {to}. Every port knows it. Fell its brood close to the Ark until it breaks, and come back with the hull you have left.'
+      SuccessLine: 'The Leviathan broke at {to}. Every port will hear it from {pilot}.'
+      FailLine: 'The Leviathan is still at {to}.'
+      SuccessLines:
+      - 'The Leviathan broke at {to}. Every port will hear it from {pilot}.'
+      FailLines:
+      - 'The Leviathan is still at {to}.'
+      Reward: 20
+      RewardElement: 1
+      OnSuccess: ev.kaiju.felled
+      OnFail: ev.lair.missed
+      Verb: 4
+      Goal: 6
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 1
+      StandingDelta: 2
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 0
+      ChronicleLine: 'Felled the Leviathan at {to}.'
     - Id: job.defence.aid
       Kind: 3
       Faction: 3
@@ -328,10 +999,28 @@ MonoBehaviour:
       Summary: '{to} is under pressure. Keep the Ark under its core until the hold is done.'
       SuccessLine: '{pilot}''s squad held {to}. The wardens there owe a favour, and paid it in news.'
       FailLine: '{to} fell to the waves while the squad was away.'
+      SuccessLines:
+      - '{pilot}''s squad held {to}. The wardens there owe a favour, and paid it in news.'
+      - '{to} stood through the hold with {pilot}''s squad under its core. The waves wear your colour now.'
+      FailLines:
+      - '{to} fell to the waves while the squad was away.'
+      - '{pilot} left {to} before the hold was done. It did not hold.'
       Reward: 8
       RewardElement: 1
       OnSuccess: ev.defence.held
       OnFail: ev.defence.lost
+      Verb: 2
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 1
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Held {to} when it called for aid.'
     - Id: job.defence.patrol
       Kind: 3
       Faction: 3
@@ -341,44 +1030,1173 @@ MonoBehaviour:
       Summary: 'Fly the flag at {to}. Keep the Ark under its core until the patrol is done.'
       SuccessLine: '{pilot} flew the flag at {to}.'
       FailLine: 'The patrol at {to} was cut short.'
+      SuccessLines:
+      - '{pilot} flew the flag at {to}.'
+      - '{pilot}''s patrol of {to} was quiet. Quiet is the point.'
+      FailLines:
+      - 'The patrol at {to} was cut short.'
       Reward: 4
       RewardElement: 1
       OnSuccess: ev.defence.held
       OnFail: 
+      Verb: 2
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 1
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Patrolled {to}.'
+    - Id: job.defence.retake
+      Kind: 3
+      Faction: 3
+      Needs: 16
+      Goes: 3
+      Title: '{pilot}: retake {to}'
+      Summary: 'Another domain holds the nucleus of {to} and its waves wear their colour. Hold the Ark under the core until it is yours again.'
+      SuccessLine: '{pilot} retook {to}. Its waves wear your colour now.'
+      FailLine: '{to} is still theirs.'
+      SuccessLines:
+      - '{pilot} retook {to}. Its waves wear your colour now.'
+      FailLines:
+      - '{to} is still theirs.'
+      Reward: 12
+      RewardElement: 1
+      OnSuccess: ev.defence.retaken
+      OnFail: ev.defence.lost
+      Verb: 2
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 1
+      Tier: 1
+      StandingDelta: 2
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Retook {to} from the domain that held it.'
+    - Id: job.salvage.wreck
+      Kind: 2
+      Faction: 4
+      Needs: 2
+      Goes: 3
+      Title: '{pilot}: strip the wreck at {to}'
+      Summary: 'An Ark went down at {to} and its hold spilled. Grab what floats there with RB and stow it in your Ark before anyone else does.'
+      SuccessLine: '{pilot} picked the wreck at {to} clean.'
+      FailLine: 'Someone else got to the wreck at {to} first, or nobody did.'
+      SuccessLines:
+      - '{pilot} picked the wreck at {to} clean.'
+      - 'What spilled at {to} is in your hold. {pilot} did not ask whose it was.'
+      FailLines:
+      - 'Someone else got to the wreck at {to} first, or nobody did.'
+      Reward: 5
+      RewardElement: 2
+      OnSuccess: ev.salvage.stripped
+      OnFail: 
+      Verb: 1
+      Goal: 1
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 1
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Stripped the wreck at {to}.'
+    - Id: job.raid.hoard
+      Kind: 14
+      Faction: 4
+      Needs: 13
+      Goes: 5
+      Title: '{pilot}: raid the hoard at {to}'
+      Summary: 'The thieves of {to} sealed what they stole in shells. Crack one and stow it. They will not thank you.'
+      SuccessLine: '{pilot} raided the hoard at {to}. The thieves are furious, and the sea heard about it.'
+      FailLine: 'The hoard at {to} stayed sealed.'
+      SuccessLines:
+      - '{pilot} raided the hoard at {to}. The thieves are furious, and the sea heard about it.'
+      - '{pilot} cracked the thieves'' shells at {to} and took back what was never theirs.'
+      FailLines:
+      - 'The hoard at {to} stayed sealed.'
+      Reward: 7
+      RewardElement: 2
+      OnSuccess: ev.raid.stripped
+      OnFail: 
+      Verb: 1
+      Goal: 1
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 1
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Raided the thieves'' hoard at {to}.'
+    - Id: job.bounty.crew
+      Kind: 11
+      Faction: 5
+      Needs: 10
+      Goes: 1
+      Title: '{pilot}: bring in {rival} at {to}'
+      Summary: 'There is a price on {rival}, and they were seen at {to}. Arrive while they are there and the warrant is served; what they carry spills.'
+      SuccessLine: '{pilot} served the warrant on {rival} at {to}. What they carried lies there now.'
+      FailLine: '{rival} were gone from {to} before the squad arrived.'
+      SuccessLines:
+      - '{pilot} served the warrant on {rival} at {to}. What they carried lies there now.'
+      FailLines:
+      - '{rival} were gone from {to} before the squad arrived.'
+      Reward: 12
+      RewardElement: 1
+      OnSuccess: ev.bounty.served
+      OnFail: 
+      Verb: 8
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Brought in {rival} at {to}.'
+    - Id: job.bounty.writ
+      Kind: 11
+      Faction: 5
+      Needs: 0
+      Goes: 1
+      Title: '{pilot}: post the warrants at {to}'
+      Summary: 'No price is posted on anyone this crew can reach. {pilot} carries the agency''s warrants to {to} and reads its board, so the next price is known first.'
+      SuccessLine: '{pilot} posted the warrants at {to} and read its board.'
+      FailLine: 'The warrants never reached {to}.'
+      SuccessLines:
+      - '{pilot} posted the warrants at {to} and read its board.'
+      FailLines:
+      - 'The warrants never reached {to}.'
+      Reward: 3
+      RewardElement: 1
+      OnSuccess: 
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Posted the warrants at {to}.'
+    - Id: job.survey.uncharted
+      Kind: 4
+      Faction: 6
+      Needs: 0
+      Goes: 1
+      Title: '{pilot}: survey {to}'
+      Summary: 'No chart names {to}. Sail there and it is on yours, and every pilot''s work can send you back.'
+      SuccessLine: '{pilot} charted {to}. The chart is bigger tonight.'
+      FailLine: '{to} stays off the chart.'
+      SuccessLines:
+      - '{pilot} charted {to}. The chart is bigger tonight.'
+      - '{to} has a name on your chart now. {pilot} chose the ink.'
+      FailLines:
+      - '{to} stays off the chart.'
+      Reward: 8
+      RewardElement: 3
+      OnSuccess: ev.survey.charted
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 1
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Charted {to}, where no lane ran before.'
+    - Id: job.survey.fragment
+      Kind: 4
+      Faction: 6
+      Needs: 6
+      Goes: 1
+      Title: '{pilot}: follow the chart fragment to {to}'
+      Summary: 'A fragment of a chart names {to}. Follow it and see what the chart-maker saw.'
+      SuccessLine: '{pilot} followed the fragment to {to}. It is on the chart now.'
+      FailLine: The fragment led nowhere the squad could follow.
+      SuccessLines:
+      - '{pilot} followed the fragment to {to}. It is on the chart now.'
+      FailLines:
+      - The fragment led nowhere the squad could follow.
+      Reward: 10
+      RewardElement: 3
+      OnSuccess: ev.survey.charted
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Followed a chart fragment to {to}.'
+    - Id: job.survey.sound
+      Kind: 4
+      Faction: 6
+      Needs: 0
+      Goes: 1
+      Title: '{pilot}: sound the lanes to {to}'
+      Summary: 'Every place a lane reaches is charted. {pilot} sounds the water to {to} and sells the soundings; sometimes they show a place the chart missed.'
+      SuccessLine: '{pilot} sounded the lanes to {to}. The soundings sold.'
+      FailLine: 'The soundings to {to} were never taken.'
+      SuccessLines:
+      - '{pilot} sounded the lanes to {to}. The soundings sold.'
+      FailLines:
+      - 'The soundings to {to} were never taken.'
+      Reward: 3
+      RewardElement: 3
+      OnSuccess: ev.sound.taken
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Sounded the lanes to {to}.'
+    - Id: job.liberate.pen
+      Kind: 8
+      Faction: 7
+      Needs: 9
+      Goes: 8
+      Title: '{pilot}: open the pens at {to}'
+      Summary: 'Herds are penned at {to} behind another domain''s mass. Raze enough of it and they are free.'
+      SuccessLine: '{pilot} opened the pens at {to}. The herds ran for the nearest bloom.'
+      FailLine: 'The pens at {to} are still shut.'
+      SuccessLines:
+      - '{pilot} opened the pens at {to}. The herds ran for the nearest bloom.'
+      - 'The mass that held the herds at {to} is rubble. {pilot} watched them go.'
+      FailLines:
+      - 'The pens at {to} are still shut.'
+      Reward: 8
+      RewardElement: 2
+      OnSuccess: ev.pen.freed
+      OnFail: 
+      Verb: 6
+      Goal: 1500
+      HullFloor: 0
+      NoKill: 0
+      Role: 2
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 1
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Opened the pens at {to}.'
+    - Id: job.lift.dispatch
+      Kind: 10
+      Faction: 8
+      Needs: 0
+      Goes: 0
+      Title: '{pilot}: lift the freshest news at {to}'
+      Summary: '{to} knows something its rivals would pay for. Dock, and {pilot} comes back aboard with it. Sell it at the next port.'
+      SuccessLine: '{pilot} lifted the freshest word at {to}. It rides aboard until the next port hears it.'
+      FailLine: '{to} kept its secrets.'
+      SuccessLines:
+      - '{pilot} lifted the freshest word at {to}. It rides aboard until the next port hears it.'
+      FailLines:
+      - '{to} kept its secrets.'
+      Reward: 5
+      RewardElement: 4
+      OnSuccess: ev.lift.taken
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 1
+      GoesUncharted: 0
+      AvoidsOwnDomain: 1
+      RivalsMayTake: 1
+      ChronicleLine: 'Lifted a dispatch from {to}.'
+    - Id: job.harvest.bloom
+      Kind: 5
+      Faction: 9
+      Needs: 4
+      Goes: 6
+      Title: '{pilot}: harvest the bloom at {to}'
+      Summary: '{to} is in bloom. Skim twelve crystals between the three of you and the harvest is in.'
+      SuccessLine: '{pilot}''s squad brought the harvest in from {to}.'
+      FailLine: 'The bloom at {to} went ungathered.'
+      SuccessLines:
+      - '{pilot}''s squad brought the harvest in from {to}.'
+      - 'The crystal of {to} is in the hold and the herds are fed. {pilot} calls it a good day.'
+      FailLines:
+      - 'The bloom at {to} went ungathered.'
+      Reward: 8
+      RewardElement: 2
+      OnSuccess: ev.harvest.gathered
+      OnFail: 
+      Verb: 3
+      Goal: 12
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Harvested the bloom at {to}.'
+    - Id: job.harvest.glean
+      Kind: 5
+      Faction: 9
+      Needs: 0
+      Goes: 6
+      Title: '{pilot}: glean the shallows at {to}'
+      Summary: 'No bloom is called, but {pilot} knows the herds feed at {to} anyway. Skim eight crystals between you.'
+      SuccessLine: '{pilot}''s gleaning at {to} paid for the trip.'
+      FailLine: 'The gleaning at {to} came to nothing.'
+      SuccessLines:
+      - '{pilot}''s gleaning at {to} paid for the trip.'
+      FailLines:
+      - 'The gleaning at {to} came to nothing.'
+      Reward: 4
+      RewardElement: 2
+      OnSuccess: 
+      OnFail: 
+      Verb: 3
+      Goal: 8
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Gleaned the shallows at {to}.'
+    - Id: job.build.breach
+      Kind: 9
+      Faction: 10
+      Needs: 8
+      Goes: 3
+      Title: '{pilot}: shore the breach at {to}'
+      Summary: 'The shell of {to} is breached. Lay a hundred and twenty prisms in its water and the core stands again.'
+      SuccessLine: '{pilot} shored the breach at {to}. The wardens there will remember who.'
+      FailLine: 'The breach at {to} is still open.'
+      SuccessLines:
+      - '{pilot} shored the breach at {to}. The wardens there will remember who.'
+      FailLines:
+      - 'The breach at {to} is still open.'
+      Reward: 10
+      RewardElement: 2
+      OnSuccess: ev.build.shored
+      OnFail: 
+      Verb: 5
+      Goal: 120
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Shored the breach at {to}.'
+    - Id: job.build.shore
+      Kind: 9
+      Faction: 10
+      Needs: 0
+      Goes: 3
+      Title: '{pilot}: lay shoring at {to}'
+      Summary: 'The wardens of {to} pay for mass laid in its water, breach or no breach. Sixty prisms and the shell is thicker.'
+      SuccessLine: '{pilot} laid shoring at {to}.'
+      FailLine: 'No shoring was laid at {to}.'
+      SuccessLines:
+      - '{pilot} laid shoring at {to}.'
+      FailLines:
+      - 'No shoring was laid at {to}.'
+      Reward: 5
+      RewardElement: 2
+      OnSuccess: ev.build.laid
+      OnFail: 
+      Verb: 5
+      Goal: 60
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Laid shoring at {to}.'
+    - Id: job.exhibition.run
+      Kind: 16
+      Faction: 11
+      Needs: 0
+      Goes: 6
+      Title: '{pilot}: run an exhibition to {to}'
+      Summary: '{pilot} has sold tickets. Sail to {to} and skim eight crystals on the way there and around it; the club posts your time.'
+      SuccessLine: '{pilot}''s exhibition run to {to} is on the club''s board.'
+      FailLine: 'The exhibition to {to} was cancelled.'
+      SuccessLines:
+      - '{pilot}''s exhibition run to {to} is on the club''s board.'
+      FailLines:
+      - 'The exhibition to {to} was cancelled.'
+      Reward: 4
+      RewardElement: 4
+      OnSuccess: 
+      OnFail: 
+      Verb: 3
+      Goal: 8
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Ran an exhibition to {to}.'
+    - Id: job.study.creature
+      Kind: 6
+      Faction: 12
+      Needs: 0
+      Goes: 4
+      Title: '{pilot}: study the predators at {to}'
+      Summary: '{pilot} wants forty seconds close to a living predator at {to}. Keep one in reach and keep it alive.'
+      SuccessLine: '{pilot} filled a notebook at {to}. The creatures'' range runs off the chart.'
+      FailLine: '{pilot} got no notes at {to}.'
+      SuccessLines:
+      - '{pilot} filled a notebook at {to}. The creatures'' range runs off the chart.'
+      - '{pilot} watched the predators of {to} hunt and wrote down where they went.'
+      FailLines:
+      - '{pilot} got no notes at {to}.'
+      Reward: 6
+      RewardElement: 4
+      OnSuccess: ev.study.noted
+      OnFail: 
+      Verb: 7
+      Goal: 40
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Studied the predators at {to}.'
+    - Id: job.study.bloom
+      Kind: 6
+      Faction: 12
+      Needs: 4
+      Goes: 6
+      Title: '{pilot}: study the bloom at {to}'
+      Summary: '{to} is in bloom and {pilot} wants to watch the grazers feed. Thirty seconds in reach of a living one.'
+      SuccessLine: '{pilot} watched the bloom at {to} feed its herds. The pollen settled somewhere interesting.'
+      FailLine: 'The bloom at {to} went unstudied.'
+      SuccessLines:
+      - '{pilot} watched the bloom at {to} feed its herds. The pollen settled somewhere interesting.'
+      FailLines:
+      - 'The bloom at {to} went unstudied.'
+      Reward: 7
+      RewardElement: 4
+      OnSuccess: ev.study.bloom
+      OnFail: 
+      Verb: 7
+      Goal: 30
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Studied the bloom at {to}.'
+    - Id: job.tend.nursery
+      Kind: 15
+      Faction: 13
+      Needs: 0
+      Goes: 6
+      Title: '{pilot}: tend the nursery at {to}'
+      Summary: 'Keep the Ark under the nucleus of {to} while the herds feed, and kill nothing. A kill undoes the work.'
+      SuccessLine: '{pilot} tended {to} without a shot. The bloom came on stronger.'
+      FailLine: 'The nursery at {to} was left untended, or something in it died.'
+      SuccessLines:
+      - '{pilot} tended {to} without a shot. The bloom came on stronger.'
+      FailLines:
+      - 'The nursery at {to} was left untended, or something in it died.'
+      Reward: 6
+      RewardElement: 4
+      OnSuccess: ev.tend.kept
+      OnFail: 
+      Verb: 2
+      Goal: 45
+      HullFloor: 0
+      NoKill: 1
+      Role: 3
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Tended the nursery at {to}.'
+    - Id: job.rescue.derelict
+      Kind: 7
+      Faction: 14
+      Needs: 7
+      Goes: 7
+      Title: '{pilot}: answer the distress call from {to}'
+      Summary: 'A crew is stranded at {to}. Stand by the derelict with the Ark until they are all aboard.'
+      SuccessLine: '{pilot} brought the crew off {to}. They talked all the way to port.'
+      FailLine: 'The crew at {to} is still waiting.'
+      SuccessLines:
+      - '{pilot} brought the crew off {to}. They talked all the way to port.'
+      - 'The derelict at {to} is empty now. Its crew are aboard and alive, and {pilot} is why.'
+      FailLines:
+      - 'The crew at {to} is still waiting.'
+      Reward: 7
+      RewardElement: 1
+      OnSuccess: ev.rescue.saved
+      OnFail: 
+      Verb: 2
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 1
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Rescued the stranded crew at {to}.'
+    - Id: job.vigil.shrine
+      Kind: 12
+      Faction: 15
+      Needs: 0
+      Goes: 9
+      Title: '{pilot}: keep a vigil at {to}'
+      Summary: 'Keep the Ark at the beacon of {to} while {pilot} keeps the vigil. The slow tide shows things to those who wait.'
+      SuccessLine: '{pilot}''s vigil at {to} was kept. The light showed a place off the chart.'
+      FailLine: 'The vigil at {to} was broken.'
+      SuccessLines:
+      - '{pilot}''s vigil at {to} was kept. The light showed a place off the chart.'
+      - '{pilot} kept the hours at {to}. The slow tide turned, and showed something.'
+      FailLines:
+      - 'The vigil at {to} was broken.'
+      Reward: 5
+      RewardElement: 4
+      OnSuccess: ev.vigil.kept
+      OnFail: 
+      Verb: 2
+      Goal: 30
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Kept a vigil at {to}.'
+    - Id: job.parley.accord
+      Kind: 13
+      Faction: 16
+      Needs: 12
+      Goes: 1
+      Title: '{pilot}: carry the accord to {rival} at {to}'
+      Summary: '{rival} have a grudge against this crew. {pilot} drafted an accord; carry it to their port at {to} and the grudge is eased.'
+      SuccessLine: '{pilot}''s accord reached {rival} at {to}. They will not forget, but they will not come for you.'
+      FailLine: 'The accord for {rival} never reached {to}.'
+      SuccessLines:
+      - '{pilot}''s accord reached {rival} at {to}. They will not forget, but they will not come for you.'
+      FailLines:
+      - 'The accord for {rival} never reached {to}.'
+      Reward: 9
+      RewardElement: 4
+      OnSuccess: ev.parley.signed
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Carried an accord to {rival}.'
+    - Id: job.parley.envoy
+      Kind: 13
+      Faction: 16
+      Needs: 0
+      Goes: 1
+      Title: '{pilot}: carry an envoy''s word to {to}'
+      Summary: '{pilot} speaks for the Open Hand at {to}. Arrive with the Ark standing and the quay''s tempers cool a little.'
+      SuccessLine: '{pilot} spoke for the accord at {to}. The quay listened.'
+      FailLine: '{pilot} never spoke at {to}.'
+      SuccessLines:
+      - '{pilot} spoke for the accord at {to}. The quay listened.'
+      FailLines:
+      - '{pilot} never spoke at {to}.'
+      Reward: 5
+      RewardElement: 4
+      OnSuccess: ev.envoy.heard
+      OnFail: 
+      Verb: 0
+      Goal: 0
+      HullFloor: 0
+      NoKill: 0
+      Role: 0
+      Tier: 0
+      StandingDelta: 1
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Spoke for the accord at {to}.'
     Events:
     - Id: ev.courier.delivered
       Writes:
       - Tag: 3
         At: 0
         About: 2
+        AboutExperience: 0
         Line: 'Dock crews at {to} say {about} is asking for a squad to hold it.'
+        Lines:
+        - 'Dock crews at {to} say {about} is asking for a squad to hold it.'
+        - 'The news at {to} is all {about}: its core is slipping and it wants a squad.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
       SpendsNews: 0
+    - Id: ev.convoy.delivered
+      Writes:
+      - Tag: 4
+        At: 0
+        About: 3
+        AboutExperience: 6
+        Line: 'With cargo in at {to}, the gatherers talk of a bloom at {about}.'
+        Lines:
+        - 'With cargo in at {to}, the gatherers talk of a bloom at {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
     - Id: ev.hunt.opened
       Writes:
       - Tag: 1
         At: 0
         About: 1
+        AboutExperience: 0
         Line: 'A vault chart from {to} shows lit shells at {about}.'
+        Lines:
+        - 'A vault chart from {to} shows lit shells at {about}.'
+        - 'The shell opened at {to} held a chart. It marks {about}, and the marks are fresh.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 6
+        At: 0
+        About: 4
+        AboutExperience: 0
+        Line: 'Half a chart was sealed in the vault at {to}. It names {about}.'
+        Lines:
+        - 'Half a chart was sealed in the vault at {to}. It names {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
       SpendsNews: 1
     - Id: ev.hunt.missed
       Writes: []
       SpendsNews: 0
+    - Id: ev.lair.culled
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -1.5
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 1
+        At: 0
+        About: 1
+        AboutExperience: 0
+        Line: 'The predators of {to} were guarding a cache: shells are lit at {about}.'
+        Lines:
+        - 'The predators of {to} were guarding a cache: shells are lit at {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.lair.missed
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: 0.5
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.kaiju.felled
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -2
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 1
+        At: 3
+        About: 1
+        AboutExperience: 0
+        Line: 'In the Leviathan''s wake the shells it guarded are lit at {about}.'
+        Lines:
+        - 'In the Leviathan''s wake the shells it guarded are lit at {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
     - Id: ev.salvage.stripped
       Writes:
       - Tag: 3
         At: 0
         About: 0
+        AboutExperience: 0
         Line: 'With the wreck gone, the waves at {about} turned on the core. It asks for help.'
+        Lines:
+        - 'With the wreck gone, the waves at {about} turned on the core. It asks for help.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.raid.stripped
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: 1
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 7
+        At: 0
+        About: 3
+        AboutExperience: 7
+        Line: 'A crew fled the thieves'' reprisal after the raid on {to} and ran aground at {about}.'
+        Lines:
+        - 'A crew fled the thieves'' reprisal after the raid on {to} and ran aground at {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
       SpendsNews: 1
     - Id: ev.defence.held
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -1.5
+        BloomDelta: 0
+        HolderToSquad: 1
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 1
+        At: 0
+        About: 1
+        AboutExperience: 0
+        Line: 'The wardens of {to} share a chart: vaults are lit at {about}.'
+        Lines:
+        - 'The wardens of {to} share a chart: vaults are lit at {about}.'
+        - 'For holding {to} the wardens paid in news: shells are lit at {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.defence.retaken
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -1
+        BloomDelta: 0
+        HolderToSquad: 1
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 15
+        At: 0
+        About: 3
+        AboutExperience: 1
+        Line: 'With {to} retaken, {about} wants its cut-off cargo run through.'
+        Lines:
+        - 'With {to} retaken, {about} wants its cut-off cargo run through.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.defence.lost
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: 1
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.bounty.served
       Writes:
       - Tag: 1
         At: 0
         About: 1
-        Line: 'The wardens of {to} share a chart: vaults are lit at {about}.'
+        AboutExperience: 0
+        Line: '{rival}''s charts, taken at {to}, show lit shells at {about}.'
+        Lines:
+        - '{rival}''s charts, taken at {to}, show lit shells at {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
       SpendsNews: 1
-    - Id: ev.defence.lost
+    - Id: ev.survey.charted
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 1
+        RivalGrudgeDelta: 0
+      - Tag: 6
+        At: 0
+        About: 4
+        AboutExperience: 0
+        Line: 'The survey of {to} shows another place off the chart: {about}.'
+        Lines:
+        - 'The survey of {to} shows another place off the chart: {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.pen.freed
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -2
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 4
+        At: 0
+        About: 3
+        AboutExperience: 6
+        Line: 'The herds freed at {to} ran for {about}. It is in bloom.'
+        Lines:
+        - 'The herds freed at {to} ran for {about}. It is in bloom.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.lift.taken
       Writes: []
+      SpendsNews: 0
+    - Id: ev.harvest.gathered
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: 0
+        BloomDelta: -3
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 15
+        At: 0
+        About: 3
+        AboutExperience: 1
+        Line: 'The harvest from {to} wants carrying. {about} pays cargo rates.'
+        Lines:
+        - 'The harvest from {to} wants carrying. {about} pays cargo rates.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.build.shored
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -2
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 4
+        At: 0
+        About: 3
+        AboutExperience: 6
+        Line: 'With {to} shored, its wardens say the bloom at {about} is ready.'
+        Lines:
+        - 'With {to} shored, its wardens say the bloom at {about} is ready.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.study.noted
+      Writes:
+      - Tag: 6
+        At: 0
+        About: 4
+        AboutExperience: 0
+        Line: 'The predators of {to} range past the chart, toward {about}.'
+        Lines:
+        - 'The predators of {to} range past the chart, toward {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.study.bloom
+      Writes:
+      - Tag: 1
+        At: 0
+        About: 1
+        AboutExperience: 0
+        Line: 'The pollen of {to} settles on shells at {about}. They are lit.'
+        Lines:
+        - 'The pollen of {to} settles on shells at {about}. They are lit.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.tend.kept
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -0.5
+        BloomDelta: 1
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.rescue.saved
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -3
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      - Tag: 15
+        At: 0
+        About: 3
+        AboutExperience: 1
+        Line: 'The crew rescued at {to} wants passage. {about} pays cargo rates for the run.'
+        Lines:
+        - 'The crew rescued at {to} wants passage. {about} pays cargo rates for the run.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 1
+    - Id: ev.vigil.kept
+      Writes:
+      - Tag: 6
+        At: 0
+        About: 4
+        AboutExperience: 0
+        Line: 'The vigil at {to} showed a place off the chart: {about}.'
+        Lines:
+        - 'The vigil at {to} showed a place off the chart: {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.parley.signed
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: -3
+      SpendsNews: 1
+    - Id: ev.sound.taken
+      Writes:
+      - Tag: 6
+        At: 0
+        About: 4
+        AboutExperience: 0
+        Line: 'The soundings to {to} show a shelf the chart missed: {about}.'
+        Lines:
+        - 'The soundings to {to} show a shelf the chart missed: {about}.'
+        PressureDelta: 0
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.build.laid
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -0.8
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
+      SpendsNews: 0
+    - Id: ev.envoy.heard
+      Writes:
+      - Tag: 0
+        At: 0
+        About: 0
+        AboutExperience: 0
+        Line: 
+        Lines: []
+        PressureDelta: -0.5
+        BloomDelta: 0
+        HolderToSquad: 0
+        ChartsDestination: 0
+        RivalGrudgeDelta: 0
       SpendsNews: 0
     Seeds:
     - Port: loc.harbour.jade
@@ -397,6 +2215,18 @@ MonoBehaviour:
       Tag: 2
       About: loc.saltmarch
       Line: An Ark went down at Saltmarch. Its hold spilled, and nobody has claimed it yet.
+    - Port: loc.tollmoor
+      Tag: 6
+      About: loc.pale.anchorage
+      Line: 'An old chart sold at Tollmoor names a place no lane runs to: the Pale Anchorage.'
+    - Port: loc.gullbone
+      Tag: 1
+      About: loc.glassmere
+      Line: Glassmere's shells are lit, say the crews who dare the thick water.
+    - Port: loc.deepreed
+      Tag: 4
+      About: loc.spindrift
+      Line: Spindrift Shallows is in bloom. The herds are already on their way up.
     SeedWrecks:
     - At: loc.saltmarch
       Artifacts:
@@ -404,6 +2234,386 @@ MonoBehaviour:
       Line: A broken Ark at Saltmarch, its hold open to the sea.
     WreckLine: 'An Ark fell at {about}. What it carried lies there now.'
     WreckNewsLine: 'An Ark went down at {about} and its hold spilled. Nobody has claimed it yet.'
+    Rivals:
+    - Id: rival.black-tide
+      Name: Black Tide
+      Faction: 4
+      Domain: 2
+      Home: loc.gullbone
+      Strength: 2
+      Temper: 1
+      Hulls:
+      - Serpent
+      - Sparrow
+      - Squirrel
+      Story: Three hulls and no flag. They take the roughest water because nobody follows them into it.
+      ArriveLine: BLACK TIDE ARE HERE
+      FallLine: 'Black Tide went down at {about}.'
+      WinLine: 'Black Tide cracked a shell at {to} before you reached it.'
+    - Id: rival.rusted-grin
+      Name: The Rusted Grin
+      Faction: 4
+      Domain: 2
+      Home: loc.gullbone
+      Strength: 3
+      Temper: 2
+      Hulls:
+      - Dolphin
+      - Serpent
+      - Rhino
+      Story: The best crew out of Gullbone, and they know it. They go where the pay is and leave nothing behind.
+      ArriveLine: THE RUSTED GRIN ARE HERE
+      FallLine: 'The Rusted Grin went down at {about}. Gullbone will not believe it.'
+      WinLine: 'The Rusted Grin opened a shell at {to} while you were still on the lane.'
+    - Id: rival.longwake
+      Name: Longwake Lodge
+      Faction: 2
+      Domain: 2
+      Home: loc.tollmoor
+      Strength: 2
+      Temper: 0
+      Hulls:
+      - Squirrel
+      - Sparrow
+      - Manta
+      Story: Old hunters who take the near work and come home every time. They have opened more vaults than anyone living.
+      ArriveLine: LONGWAKE LODGE ARE HERE
+      FallLine: 'Longwake Lodge went down at {about}.'
+      WinLine: 'Longwake Lodge opened a vault at {to} first.'
+    - Id: rival.quiet-spear
+      Name: The Quiet Spear
+      Faction: 2
+      Domain: 2
+      Home: loc.deepreed
+      Strength: 1
+      Temper: 1
+      Hulls:
+      - Sparrow
+      - Sparrow
+      - Dolphin
+      Story: Young, loud, and after the predators nobody else will hunt. They lose more hulls than they keep.
+      ArriveLine: THE QUIET SPEAR ARE HERE
+      FallLine: 'The Quiet Spear went down at {about}, as everyone said they would.'
+      WinLine: 'The Quiet Spear got to the shells at {to} ahead of you.'
+    - Id: rival.brass-lantern
+      Name: Brass Lantern Company
+      Faction: 1
+      Domain: 4
+      Home: loc.tollmoor
+      Strength: 2
+      Temper: 0
+      Hulls:
+      - Rhino
+      - Manta
+      - Dolphin
+      Story: Couriers on a schedule. Half the news on the sea rides in their hold, and they charge for every word.
+      ArriveLine: BRASS LANTERN COMPANY ARE HERE
+      FallLine: 'A Brass Lantern Ark went down at {about}. The schedule will be kept anyway.'
+      WinLine: 'Brass Lantern Company took the find at {to} first.'
+    - Id: rival.writ-and-hook
+      Name: Writ and Hook
+      Faction: 5
+      Domain: 4
+      Home: loc.tollmoor
+      Strength: 2
+      Temper: 2
+      Hulls:
+      - Sparrow
+      - Squirrel
+      - Serpent
+      Story: They serve warrants for whoever pays, and read every bounty board on the sea. If there is a price on you, they know it.
+      ArriveLine: WRIT AND HOOK ARE HERE
+      FallLine: 'Writ and Hook went down at {about}. Someone collected on them for once.'
+      WinLine: 'Writ and Hook took the find at {to} ahead of you.'
+    - Id: rival.house-verdance
+      Name: House Verdance
+      Faction: 3
+      Domain: 1
+      Home: loc.deepreed
+      Strength: 2
+      Temper: 0
+      Hulls:
+      - Rhino
+      - Manta
+      - Scarab
+      Story: A house that holds cores and keeps them. Slow, heavy and never surprised.
+      ArriveLine: HOUSE VERDANCE ARE HERE
+      FallLine: 'A House Verdance Ark went down at {about}. The house will send another.'
+      WinLine: 'House Verdance claimed the find at {to} before you.'
+    - Id: rival.far-shoal
+      Name: Far Shoal Society
+      Faction: 6
+      Domain: 2
+      Home: loc.gullbone
+      Strength: 1
+      Temper: 1
+      Hulls:
+      - Manta
+      - Squirrel
+      - Dolphin
+      Story: They want to be first everywhere and are, often enough. A place they charted first pays you half.
+      ArriveLine: FAR SHOAL SOCIETY ARE HERE
+      FallLine: 'Far Shoal Society went down at {about}, somewhere nobody had charted.'
+      WinLine: 'Far Shoal Society reached the shells at {to} first.'
+    - Id: rival.driftnet
+      Name: Driftnet Cooperative
+      Faction: 9
+      Domain: 4
+      Home: loc.deepreed
+      Strength: 1
+      Temper: 0
+      Hulls:
+      - Manta
+      - Manta
+      - Rhino
+      Story: Harvesters who follow the blooms and sell the crystal at Deepreed. Harmless, unless you wanted the bloom.
+      ArriveLine: DRIFTNET COOPERATIVE ARE HERE
+      FallLine: 'A Driftnet Ark went down at {about}.'
+      WinLine: 'Driftnet Cooperative skimmed the bloom at {to} before you.'
+    Sagas:
+    - Id: saga.lantern
+      Name: The Lantern Keeper
+      StartPort: 
+      StartTier: 0
+      StartDay: 0
+      Relic:
+        Kind: artifact.hydra
+        Name: Lantern of Oriel
+        Lore: The keeper of Lantern Reach sealed half her chart in a vault and carried the other half to her rest. Whoever joins them lights the lantern, and the lantern splits whatever it touches three ways.
+        Seed: lantern-of-oriel
+      Chapters:
+      - Id: ch.lantern.1
+        Faction: 2
+        Tier: 0
+        Job: job.hunt.sighting
+        At: loc.lantern
+        AtExperience: 0
+        Line: 'The oldest shell at {about} is said to hold half a chart. A hunter could open it.'
+        Opens: ch.lantern.2
+        DoneLine: 'Half a chart came out of the vault at {to}. The other half is wherever the keeper rested.'
+      - Id: ch.lantern.2
+        Faction: 6
+        Tier: 0
+        Job: job.survey.fragment
+        At: loc.keepers.rest
+        AtExperience: 0
+        Line: 'The half chart points off the edge of the sea to {about}. An explorer could follow it.'
+        Opens: ch.lantern.3
+        DoneLine: '{to} is on the chart. The keeper''s beacon stands there, unlit.'
+      - Id: ch.lantern.3
+        Faction: 15
+        Tier: 1
+        Job: job.vigil.shrine
+        At: loc.keepers.rest
+        AtExperience: 0
+        Line: 'The keeper''s beacon at {about} wants a vigil to light it. A priest the shrines trust could keep it.'
+        Opens: 
+        DoneLine: 'The vigil at {to} lit the keeper''s lantern. The {relic} is aboard.'
+    - Id: saga.accord
+      Name: The Salt Accord
+      StartPort: loc.tollmoor
+      StartTier: 0
+      StartDay: 2
+      Relic:
+        Kind: artifact.aegis
+        Name: Seal of Still Water
+        Lore: The seal the Court of Still Water set on the Salt Accord, the truce that let the trade lane open. Set on an Ark it shields the hull as it shielded the lane.
+        Seed: seal-of-still-water
+      Chapters:
+      - Id: ch.accord.1
+        Faction: 1
+        Tier: 0
+        Job: job.courier.dispatch
+        At: loc.gullbone
+        AtExperience: 0
+        Line: 'Tollmoor wants the first word of a truce carried to {about}. A merchant''s dispatch would do it.'
+        Opens: ch.accord.2
+        DoneLine: 'The word of the truce reached {to}. Now someone has to carry the accord itself.'
+      - Id: ch.accord.2
+        Faction: 16
+        Tier: 0
+        Job: job.parley.accord
+        At: loc.gullbone
+        AtExperience: 0
+        Line: 'The Salt Accord is drafted. A diplomat could carry it to the crews at {about} and have it signed.'
+        Opens: ch.accord.3
+        DoneLine: 'The Salt Accord was signed at {to}. The lane is open if someone holds it.'
+      - Id: ch.accord.3
+        Faction: 3
+        Tier: 1
+        Job: job.defence.patrol
+        At: loc.saltmarch
+        AtExperience: 0
+        Line: 'The accord holds only while {about} is held. An aristocrat the court trusts could hold it.'
+        Opens: 
+        DoneLine: '{to} was held while the accord took. The court sent its seal: the {relic} is aboard.'
+    - Id: saga.tide
+      Name: The Tide That Remembers
+      StartPort: loc.deepreed
+      StartTier: 0
+      StartDay: 1
+      Relic:
+        Kind: artifact.aftershock
+        Name: Memory of the Reef
+        Lore: A crystal from the first bloom of the Nursery of Verdigris, kept at the Deepreed Shrine. It remembers where it struck, and strikes there again.
+        Seed: memory-of-the-reef
+      Chapters:
+      - Id: ch.tide.1
+        Faction: 12
+        Tier: 0
+        Job: job.study.bloom
+        At: loc.verdigris.nursery
+        AtExperience: 0
+        Line: 'The wardens of Deepreed want the bloom at {about} studied before it is gathered. A researcher could watch it feed.'
+        Opens: ch.tide.2
+        DoneLine: 'The bloom at {to} was studied. The wardens want it tended through the next one.'
+      - Id: ch.tide.2
+        Faction: 13
+        Tier: 0
+        Job: job.tend.nursery
+        At: loc.verdigris.nursery
+        AtExperience: 0
+        Line: 'The nursery at {about} must come through a bloom with nothing killed. A preservationist could tend it.'
+        Opens: ch.tide.3
+        DoneLine: '{to} came through its bloom untouched. Its first crystals are promised to the shrine.'
+      - Id: ch.tide.3
+        Faction: 9
+        Tier: 1
+        Job: job.harvest.bloom
+        At: loc.shrine.deepreed
+        AtExperience: 0
+        Line: 'The first crystals of the bloom are to be gathered at {about}, under the shrine. A gatherer the wardens trust could bring them in.'
+        Opens: 
+        DoneLine: 'The first crystals were gathered at {to}. The shrine gave up what it kept: the {relic} is aboard.'
+    - Id: saga.grin
+      Name: The Grin's Tooth
+      StartPort: loc.gullbone
+      StartTier: 0
+      StartDay: 3
+      Relic:
+        Kind: artifact.javelin
+        Name: Grin's Tooth
+        Lore: The javelin the Rusted Grin's first captain threw through three hulls at once. Lost with their first Ark, hoarded by thieves, hunted ever since.
+        Seed: grins-tooth
+      Chapters:
+      - Id: ch.grin.1
+        Faction: 4
+        Tier: 0
+        Job: job.raid.hoard
+        At: loc.magpie
+        AtExperience: 0
+        Line: 'The thieves of {about} hold the chart to the Grin''s first wreck. A pirate could take it out of their hoard.'
+        Opens: ch.grin.2
+        DoneLine: 'The chart came out of the hoard at {to}. It is in a cipher only Gullbone''s ledgers can read.'
+      - Id: ch.grin.2
+        Faction: 8
+        Tier: 0
+        Job: job.lift.dispatch
+        At: loc.gullbone
+        AtExperience: 0
+        Line: 'The cipher key sits in the ledgers at {about}. A thief could lift it.'
+        Opens: ch.grin.3
+        DoneLine: 'The key came out of {to}. The chart reads: Cinder Shoal, in the lair.'
+      - Id: ch.grin.3
+        Faction: 2
+        Tier: 1
+        Job: job.hunt.lair
+        At: loc.cinder.shoal
+        AtExperience: 0
+        Line: 'The Grin''s first wreck lies in the lair at {about}, and the lair is awake. A hunter the lodges trust could clear it.'
+        Opens: 
+        DoneLine: 'The lair at {to} was cleared and the first wreck found. The {relic} is aboard.'
+    World:
+      BoardSize: 6
+      NewsLifeDays: 12
+      RestockDays: 4
+      WreckDays: 8
+      BloomDays: 2
+      NotorietyDecayDays: 3
+      BountyAt: 3
+      LadenRumourAt: 2
+      RivalVaultSeconds: 45
+      LegProfile:
+      - 1
+      - 1.3
+      - 0.9
+      - 1.4
+      - 1
+      TierThresholds:
+      - 2
+      - 5
+      IntensityPay:
+      - 1
+      - 1.3
+      - 1.7
+      - 2.2
+      HopsPay: 0.15
+      TierPay:
+      - 1
+      - 1.25
+      - 1.6
+      FreshnessPerDay: 0.05
+      FreshnessFloor: 0.5
+      MaxTicksAway: 5
+      PressureDrift: 0.35
+      RivalSuccessBase: 0.35
+      RivalStrengthWeight: 0.2
+      RivalIntensityWeight: 0.15
+      RivalPressureWeight: 0.1
+      RivalWreckChance: 0.25
+      RivalRespawnDays: 6
+      LairPopulation: 1.6
+      PenPopulation: 1.2
+      PressurePopulation: 0.25
+      BloomPopulation: 0.15
+      AidPressure: 2
+      BreachPressure: 2.6
+      FailurePressure: 1
+    Kaiju:
+      Enabled: 1
+      Name: Leviathan
+      HuntJob: job.hunt.kaiju
+      RespawnDays: 5
+      MoveDays: 4
+      CullGoal: 6
+      CullStep: 4
+      PopulationPerTier: 0.5
+      SightedLine: 'The {kaiju} is sighted at {about}. Every port is talking about it, and no hunter is sailing alone.'
+      MovedLine: 'The {kaiju} has moved its lair to {about}.'
+      FelledLine: 'The {kaiju} broke at {about}. The next one will be worse: the sea remembers how it died.'
+    Words:
+      RestockNews: 'The shells at {about} are lit again.'
+      BountyOnYou: 'A price is on an Ark out of {home}: yours. Writs are posted at every port.'
+      BountyOnRival: 'A price is on {rival}. They were last seen at {about}.'
+      LadenRumour: 'Dock talk: an Ark laden with {n} finds is lying at {about}. The pirates have heard too.'
+      AidNews: '{about} is losing its core to the waves and asks for a squad to hold it.'
+      BreachNews: 'The shell of {about} is breached. The wardens pay for mass laid in its water.'
+      HarvestNews: '{about} is in bloom. The herds are feeding and the crystal is thick.'
+      HeldNews: 'The {holder} hold the nucleus of {about}, and its waves wear their colour.'
+      RivalFellNews: '{rival} went down at {about}. Their hold spilled and nobody has claimed it.'
+      RivalRace: '{rival} cracked a shell at {to} before you did. The find is theirs.'
+      Nemesis: '{rival} took your Ark at {about}, and everything aboard. They will remember the day. So will you.'
+      Charted: '{to} is on your chart now.'
+      RelicFound: '{relic} is aboard. It exists once. Get it home.'
+      StandingUp: 'The {faction} faction trusts you more: you are {tier} to them now.'
+      Wanted: Your notoriety has crossed the line. There is a price on your Ark at every port.
+      WarningPressure: 'ROUGH WATER AT {to}'
+      WarningRival: '{rival} WERE SEEN BOUND FOR {to}'
+      WarningKaiju: 'THE LEVIATHAN LAIRS NEAR {to}'
+      WarningBounty: A PRICE IS ON YOUR ARK
+      WarningLaden: '{n} FINDS ABOARD AND AT STAKE'
+      WarningHeld: '{to} IS HELD AGAINST YOU'
+      ChronicleDelivered: 'Delivered news to {to}.'
+      RoleAny: Any squad
+      RoleGuardian: Guardian
+      RoleDestroyer: Destroyer
+      RoleCultivator: Cultivator
+      TierStranger: a stranger
+      TierKnown: known
+      TierTrusted: trusted
+      RelationCoOp: '{rival} fly your colour. Three more wingmen.'
+      RelationRace: '{rival} are after the same finds. First to crack a shell keeps it.'
+      RelationHostile: '{rival} came for your Ark.'
   cellPool: []
   lines:
     VoyageName: VOYAGE
@@ -421,6 +2631,28 @@ MonoBehaviour:
     NoWork: No pilot has work here. Seat other pilots, or sail on.
     Following: 'SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB'
     ChooseNext: LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE
+    Lair: 'A LAIR: THE PREDATORS HERE WEAR ANOTHER COLOUR'
+    Hoard: 'THE THIEVES'' HOARD: CRACK A SHELL, GRAB WHAT THEY STOLE, STOW IT'
+    Nursery: 'A NURSERY: THE HERDS FEED HERE'
+    Derelict: 'A DERELICT: STAND BY IT WITH THE ARK'
+    Pen: 'THE PENS: RAZE THE MASS THAT HOLDS THE HERDS'
+    Shrine: 'A SHRINE: KEEP THE ARK AT THE BEACON'
+    KaijuHere: THE LEVIATHAN LAIRS HERE
+    HostileWater: THIS WATER IS HELD AGAINST YOU
+    RivalHere: '{rival} ARE HERE'
+    RivalOpened: '{rival} OPENED A SHELL BEFORE YOU'
+    Charted: '{to} IS ON YOUR CHART'
+    Relic: '{relic} IS ABOARD'
+    Delivered: 'NEWS DELIVERED AT {to}'
+    Convoy: 'KEEP THE HULL ABOVE {percent} PERCENT'
+    ProgressStow: 'STOWED {done} OF {goal}'
+    ProgressHold: 'HOLDING: {done} OF {goal} SECONDS'
+    ProgressGather: 'GATHERED {done} OF {goal} CRYSTALS'
+    ProgressCull: 'FELLED {done} OF {goal}'
+    ProgressLay: 'LAID {done} OF {goal} PRISMS'
+    ProgressRaze: 'RAZED {done} OF {goal}'
+    ProgressObserve: 'OBSERVED {done} OF {goal} SECONDS'
+    ProgressMeet: 'THEY ARE HERE: THE WARRANT IS SERVED'
     CardRoute: '{from} TO {to} - {pilot}'
     CardHomeRoute: '{from} TO {to}'
     CardUnderway: 'UNDER WAY TO {to}'
@@ -432,8 +2664,10 @@ MonoBehaviour:
     SeaReef: REEF
     CardOpen: Open
     CardClose: Close
-    CardDetails: '{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}'
-    CardHomeDetails: '{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}'
+    CardDetails: '{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>SUITS  {role}<br>STANDING  {standing}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br>{warnings}<br>{pilot}: {story}'
+    CardHomeDetails: '{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>{warnings}'
+    CardWarnings: '<br>{warnings}'
+    CardWarningSeparator: '<br>'
     CardSquadSeat: '{vessel} ({pilot})'
     CardSquadSeparator: ', '
     MapPlace: '{name} - {blurb}'
@@ -559,3 +2793,7 @@ MonoBehaviour:
     StoryWater: THE WATER
     StoryWaterLine: 'Light takes {years} years to reach {to}. You take {minutes} minutes.'
     StoryWaterBy: '{sea} on the way'
+    StoryWorld: THE SEA TODAY
+    StoryWorldBy: '{warnings}'
+    StoryLog: YOUR LOG
+    StoryLogLine: '{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.'

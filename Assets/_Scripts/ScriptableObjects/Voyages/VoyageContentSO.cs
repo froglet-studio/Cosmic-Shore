@@ -77,6 +77,45 @@ namespace CosmicShore.ScriptableObjects
         public string Following = "SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB";
         [Tooltip("Banner after a job's work is done or left undone: where the next voyage is chosen.")]
         public string ChooseNext = "LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE";
+
+        [Header("The stops the depth pass added (Docs/Voyages/DEPTH.md section 4, section 10)")]
+        [Tooltip("Banner at a lair: its creatures wear the other colour.")]
+        public string Lair = "A LAIR: THE PREDATORS HERE WEAR ANOTHER COLOUR";
+        [Tooltip("Banner at the thieves' hoard.")]
+        public string Hoard = "THE THIEVES' HOARD: CRACK A SHELL, GRAB WHAT THEY STOLE, STOW IT";
+        [Tooltip("Banner at a nursery.")]
+        public string Nursery = "A NURSERY: THE HERDS FEED HERE";
+        [Tooltip("Banner at a derelict.")]
+        public string Derelict = "A DERELICT: STAND BY IT WITH THE ARK";
+        [Tooltip("Banner at the pens.")]
+        public string Pen = "THE PENS: RAZE THE MASS THAT HOLDS THE HERDS";
+        [Tooltip("Banner at a shrine.")]
+        public string Shrine = "A SHRINE: KEEP THE ARK AT THE BEACON";
+        [Tooltip("Banner when the Kaiju lairs at the stop.")]
+        public string KaijuHere = "THE LEVIATHAN LAIRS HERE";
+        [Tooltip("Banner when the stop's world starts under the other colour.")]
+        public string HostileWater = "THIS WATER IS HELD AGAINST YOU";
+        [Tooltip("Banner when a rival crew stands at the stop: {rival} its name.")]
+        public string RivalHere = "{rival} ARE HERE";
+        [Tooltip("Banner when a racing rival opens a shell first: {rival}.")]
+        public string RivalOpened = "{rival} OPENED A SHELL BEFORE YOU";
+        [Tooltip("Banner when arriving put the place on the chart: {to}.")]
+        public string Charted = "{to} IS ON YOUR CHART";
+        [Tooltip("Banner when a relic comes aboard: {relic} its name.")]
+        public string Relic = "{relic} IS ABOARD";
+        [Tooltip("Banner when news aboard reached the port: {to}.")]
+        public string Delivered = "NEWS DELIVERED AT {to}";
+        [Tooltip("Banner on a convoy's arrival rule: {percent} the hull floor.")]
+        public string Convoy = "KEEP THE HULL ABOVE {percent} PERCENT";
+        [Tooltip("Progress lines per verb: {done} so far, {goal} the goal.")]
+        public string ProgressStow = "STOWED {done} OF {goal}";
+        public string ProgressHold = "HOLDING: {done} OF {goal} SECONDS";
+        public string ProgressGather = "GATHERED {done} OF {goal} CRYSTALS";
+        public string ProgressCull = "FELLED {done} OF {goal}";
+        public string ProgressLay = "LAID {done} OF {goal} PRISMS";
+        public string ProgressRaze = "RAZED {done} OF {goal}";
+        public string ProgressObserve = "OBSERVED {done} OF {goal} SECONDS";
+        public string ProgressMeet = "THEY ARE HERE: THE WARRANT IS SERVED";
         [Tooltip("A voyage card's eyebrow in the Voyage window: the course, and the pilot who brought the job.")]
         public string CardRoute = "{from} TO {to} - {pilot}";
         [Tooltip("The way home's card eyebrow in the Voyage window.")]
@@ -96,12 +135,17 @@ namespace CosmicShore.ScriptableObjects
         public string CardOpen = "Open";
         public string CardClose = "Close";
         [Tooltip("An open voyage card's brief. Tokens: {summary} the job, {to} and {place} the destination and its line, " +
-                 "{squad} the seats, {intensity} the course's I1-I4, {reward} the crystals it pays, {pilot} and {story} " +
-                 "who brought it. <br> breaks a line.")]
+                 "{squad} the seats, {role} the squad role it suits, {standing} how far the pilot's faction trusts the crew, " +
+                 "{intensity} the course's I1-I4, {reward} the crystals it pays, {warnings} the world's warnings (CardWarnings), " +
+                 "{pilot} and {story} who brought it. <br> breaks a line.")]
         [TextArea] public string CardDetails =
             "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}";
         [Tooltip("The way home's brief (the same tokens; it pays nothing itself).")]
         [TextArea] public string CardHomeDetails = "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}";
+        [Tooltip("The warnings block a brief's {warnings} becomes when a job has warnings (empty otherwise): {warnings} the lines joined.")]
+        public string CardWarnings = "<br>{warnings}";
+        [Tooltip("What stands between two warning lines.")]
+        public string CardWarningSeparator = "<br>";
         [Tooltip("One seat of the squad in a brief's {squad}: {vessel} its hull, {pilot} its pilot.")]
         public string CardSquadSeat = "{vessel} ({pilot})";
         [Tooltip("What stands between two seats in {squad}.")]
@@ -318,5 +362,13 @@ namespace CosmicShore.ScriptableObjects
         public string StoryWaterLine = "Light takes {years} years to reach {to}. You take {minutes} minutes.";
         [Tooltip("Under the water beat: {sea} the thickest water on the course.")]
         public string StoryWaterBy = "{sea} on the way";
+        [Tooltip("The story's beat about the sea today: the job's warnings.")]
+        public string StoryWorld = "THE SEA TODAY";
+        [Tooltip("Under the sea beat: {warnings} the warnings, one line each.")]
+        public string StoryWorldBy = "{warnings}";
+        [Tooltip("The story's beat about the crew's own record.")]
+        public string StoryLog = "YOUR LOG";
+        [Tooltip("The log beat: {voyages} sailed, {extracted} finds brought home, {relics}, {charted} places charted, {arks} Arks lost, {kaiju} felled.")]
+        public string StoryLogLine = "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.";
     }
 }
