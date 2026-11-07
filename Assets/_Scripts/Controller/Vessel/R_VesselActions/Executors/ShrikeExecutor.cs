@@ -174,6 +174,8 @@ namespace CosmicShore.Gameplay
         public bool Slinging => _slinging;
         public bool Tethering => _tethering;
         public bool Painting => _mode == Mode.Charge && _triggerHeld;
+        /// <summary>RT held in Space mode: the Void Lance is firing. The HUD's Space card.</summary>
+        public bool Lancing => _mode == Mode.Space && _triggerHeld;
         public bool Locked => _lock != ShrikeRules.LockClass.None;
         public bool Zooming => _zoomHeld;
         /// <summary>0 just fired … 1 ready.</summary>

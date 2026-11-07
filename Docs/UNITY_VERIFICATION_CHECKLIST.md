@@ -87,6 +87,93 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 **First-pass tuning** (all guesses): furrow 0 → 20 u, carry 0 → 40 u, blade 14 → 40 u, shove 30 u/s for 0.25 s, Avalanche 3 links.
 
+### 🔴 Urchin ability icons, round 6: parts the HUD drives (`claude/urchin-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Urchin's four cards are drawn in parts (`Tools/Build/icon_kit/specs/urchin.py`) seated under each
+slot icon of `UrchinHUDVariant.prefab` and bound to `UrchinVesselHUDView`, which paints them in the pilot's domain colour,
+rival danger and white. `UrchinHUDController` now also reads the vessel's own `UrchinSlipActionExecutor` (wired on
+`Urchin.prefab`) and the Track Projector's ready flag. The omni card sprite is `Core/Urchin_OmniCrystal.png`.
+
+**Verified without the editor:** `author.py urchin --check` no drift; every sprite passes the legibility gates;
+`author_urchin_hud.py --check` and `author_hull_ability_rows.py --check` clean; `check_console_logging.py` 0 problems.
+NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `UrchinVesselHUDView.cs` or `UrchinHUDController.cs`.
+2. Fly the Urchin in the Toybox as Jade, then Gold. **Pass:** every Urchin on the four cards wears the domain colour;
+   the rival prism and trail are orange.
+3. Latch onto a trail, then leave it. **Pass:** the Mass card's Urchin sits on the trail while riding, and lifts with
+   the trail fading off it.
+4. Press Slip while riding. **Pass:** the Time card's Urchin lifts clear and leaves a faint ghost until the slip ends.
+5. Press Track Projector. **Pass:** the rail goes faint while it recharges, solid again when ready.
+6. Upgrade each element to 5. **Pass:** Charge shows the long spray and a generation deeper; Mass rims the trail;
+   Space runs the rail further; Time turns the trail orange with speed lines while slipping.
+
+### 🔴 Thresher ability icons in parts, energy gauge in the domain (`claude/thresher-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Thresher's four cards drawn from the real shark in parts under each slot icon of
+`ThresherHUDVariant.prefab`, painted by `ThresherHUDView.RefreshParts` from `ThresherExecutor.IsHot`, the new
+`InMassMode`, `RightTriggerDepth` and `IsPivoting`; the omni card `Core/Thresher_Windmill.png`; the Space plate fills
+toward the domain instead of the CTA lime.
+
+**Verified without the editor:** `author.py thresher --check` no drift; `author_thresher_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py` and `check_console_logging.py` clean. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ThresherHUDView.cs`, `ThresherHUDController.cs` or `ThresherExecutor.cs`.
+2. Fly the Thresher in the Toybox (it spawns in Mass Mode). **Pass:** every shark on the cards wears the domain; the
+   Mass card's ball is in the domain over a solid row.
+3. Press A to leave Mass Mode, whip the ball to smash speed. **Pass:** the Mass card's ball turns white and its row
+   faint; the Charge card's ball goes orange and the prism splits round a white blast.
+4. Pull RT, then release. **Pass:** the Space card's chain runs straight with a swing arc, and sags when released; the
+   plate fills toward the domain (no lime).
+5. Hold LT to plant. **Pass:** the Time card's orbit goes solid with the chain to the pivot.
+6. Upgrade Charge, Mass and Space to 5. **Pass:** Magnet's arcs, Armoured Trail's rims and Breaker's square prism show.
+
+### 🔴 Shrike ability icons in parts, the selected mode in the domain (`claude/shrike-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Shrike's four cards drawn from the real hull in parts under each slot icon of
+`ShrikeHUDVariant.prefab`, painted by `ShrikeHUDView.RefreshParts` from `ShrikeExecutor.Painting`/`Locked`, `Docked`,
+`FloraCount`, the new `Lancing`, `Tethering` and `Slinging`; the omni card `Core/Shrike_OmniCrystal.png`; the selected
+mode's gauge and the missile count turn the pilot's domain instead of the CTA lime (`readyColor` white on the prefab).
+
+**Verified without the editor:** `author.py shrike --check` no drift; `author_shrike_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py`, `check_console_logging.py` clean; `author_shrike_assets.py
+--check` shows only its three sparse-checkout findings (network prefabs, card metas), as before. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ShrikeHUDView.cs`, `ShrikeHUDController.cs` or `ShrikeExecutor.cs`.
+2. Fly the Shrike as Jade, then Gold. **Pass:** every Shrike on the cards wears the domain; the selected mode's gauge is
+   the domain, never lime.
+3. Charge mode, hold RT on a target with a missile ready. **Pass:** the reticle goes solid and two missiles show.
+4. Touch a block to dock, then press A. **Pass:** the Mass cup goes solid while docked; after the nest is built a flora
+   with a missile stands on it.
+5. Space mode, hold RT. **Pass:** the beam shows and the prism splits; at Space 5 the square block is cut by the beam.
+6. Time mode, RT at an anchor. **Pass:** the tether goes solid and the blocks behind the Shrike show while slinging.
+
+### 🔴 Stoat ability icons for the orbit-only kit (`claude/stoat-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Stoat's four cards redrawn for Yash's orbit-only kit in parts under each slot icon of
+`StoatHUDVariant.prefab`, painted by `StoatHUDView.RefreshParts` from `StoatSlingExecutor.HasPair`/`IsHoldingAny`,
+`IsOrbiting`, `Timing01` and the new `SinceLaunch`; the omni card `Core/Stoat_Fulmen.png`; the Time card's window colour
+is the pilot's domain, not the CTA lime (`readyColor` white on the prefab). Affects: Yash's Stoat HUD.
+
+**Verified without the editor:** `author.py stoat --check` no drift; `author_hull_ability_rows.py --check`,
+`check_ui_colors.py`, `check_console_logging.py` clean; `author_stoat_assets.py --check` shows only its sparse-checkout
+findings. NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `StoatHUDView.cs`, `StoatHUDController.cs` or `StoatSlingExecutor.cs`.
+2. Fly the Stoat as Jade, then Gold. **Pass:** every Stoat on the cards wears the domain; the old mode icon does not
+   show on the Mass card.
+3. Hold LT to lay a pair and get caught. **Pass:** the Charge card's ripple and the Space card's pair go solid, the
+   orbit ring shows; the Time card's Stoat rides the orbit and its window lights in the sweet spot.
+4. Let go. **Pass:** the Time card's Stoat flies off the tangent with speed lines; the Mass card's kick and wake show
+   for about a second.
+5. Upgrade each element to 5. **Pass:** Siphon's dots, Armoured Wake's rims, Accretion's prism and Foresight's path show.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.
@@ -444,6 +531,7 @@ finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1")
    slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
 3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
    only for red Danger blocks, and never swerve in the last stretch before a ring.
+
 ### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
@@ -533,6 +621,7 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -759,6 +848,7 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
 9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
    boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
    (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+
 ### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
@@ -995,6 +1085,7 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
   purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
   `best_fitness` finite after the match). **These three scenarios were authored from the catalog
   (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -1615,6 +1706,7 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+
 ### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
@@ -1647,6 +1739,7 @@ the headless reference compile, player and editor (0 errors in project code); `T
 
 **First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
 Medium hive skill (a proposal between the lab's rookie and skilled).
+
 ### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
@@ -1882,6 +1975,7 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
 
 ---
+
 ### 🔴 Holes on mobile: no warped space, the Meerkat recipe, the Charge ripple shows (`stoat/annihilation-waves`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 `Docs/BLACK_HOLE.md` §5.4, `R_VesselActions/STOAT_DIPOLE.md` §1c. Yash: "make sure we are not warping space … mobile
@@ -3766,6 +3860,7 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+
 ### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
@@ -6214,6 +6309,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 10. Gather petals of one element on the hull: the motes of that shape come more often.
 11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
     back to normal and the input is live.
+
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
@@ -6416,6 +6512,7 @@ League on Easy with the Third Eye open (the AI Diagnose panel (F2)). The AI's st
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+
 ### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `WaystationController`:
@@ -8843,6 +8940,7 @@ the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead)
 **First-pass tuning (studio-measured, not settled):** `autopilotLetGoNear` 60, `autopilotDrySeconds` 0.5,
 `autopilotMinHoldSeconds` 0.8, `autopilotRelaySeconds` 0.25. The studio's best squeeze was 1.0. Unity's AI
 still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
+
 ### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **the AI Diagnose panel (F2)**
@@ -8966,6 +9064,7 @@ Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hu
    Tune on `StoatDipoleConfig` (the studio's `ft*` row).
 
 ---
+
 ### 🔴 B29 Session case (defect 5): an invite and the `partySession` it names go out in one save (`Ys-bleeding-edge`, 2026-10-09)
 
 **What landed:**
@@ -9064,6 +9163,7 @@ all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRI
 `maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
 `lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
 and `aheadHorizons` first.
+
 ### 🔴 Omni + Mass crystals: Mass hull fusion fixed (thickness baked in), a random pose per crystal, reseat −0.87 (`cece/determined-ride-rqzaeo`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 10, `Docs/PALETTE.md §2.10`; generators
@@ -21589,6 +21689,8 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 Branch `claude/project-thread-pnwryl`. `unity_refcompile` (player and editor) has 0 errors in the changed files (the 21
 it reports are already on bleeding-edge: Vivox and Moderation packages); `author_regatta_assets.py --check` OK. The
 new edit-mode tests were compiled, not run. Details: `Docs/Reports/REGATTA_COURSE_POOL.md`.
+
+
 1. **Run the edit-mode tests** `RegattaCoursePoolTests` and `RegattaCourseTests`.
 2. **Play Regatta alone three times** with the ArcadeMatch log channel on (FrogletTools > Toolbox > Logging): each match
    logs `[Regatta] Course variant k (Label) of 4`, the laid circuit is that entry's, and three matches lay three

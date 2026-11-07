@@ -56,6 +56,9 @@ tunnel (`R_VesselActions/MEERKAT.md` §9.5).
 **24** (2026-10-28, `cece/keen-lovelace-cyci91`; 21-23 are taken on in-flight branches) - the Tiger Moth: a new network
 prefab (`TigerMoth.prefab`, `R_VesselActions/TIGER_MOTH.md`); on 2026-10-29, same build, `Butterfly.prefab` left the
 network prefab list (the Butterfly retired).
+**28** (2026-11-07, `claude/project-thread-pnwryl`; 25-26 are on bleeding-edge without a history line here, 27 is reserved by
+`claude/project-thread-jypklp`, the arena vessel-selection modes) - `SyncGameConfigToClients_ClientRpc` gains `courseVariant`
+(appended last before the rpc params): the Regatta course-pool entry the host drew (`REGATTA.md` §4.1).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

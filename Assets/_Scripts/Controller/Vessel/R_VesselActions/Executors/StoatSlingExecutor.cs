@@ -210,6 +210,8 @@ namespace CosmicShore.Gameplay
         public float OrbitAngle => _orbitAngle;
         /// <summary>True while either trigger holds this executor's squeeze.</summary>
         public bool IsHoldingAny => _holds[0].Holding || _holds[1].Holding;
+        /// <summary>Seconds since the last slingshot let go (+infinity before the first). The HUD's Mass and Time cards.</summary>
+        public float SinceLaunch => Time.time - _lastLaunchAt;
         /// <summary>The laid pair's attractor (caught or not), or null.</summary>
         public BlackHole Attractor => HasPair ? _pair.Black : null;
         /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 before a catch) — the rings and the HUD.</summary>
