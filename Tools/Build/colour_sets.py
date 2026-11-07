@@ -16,6 +16,11 @@ lies within rho of sat * (cos hue, sin hue). A domain is its rim pigment plus it
   3. contrast: a domain's rim and face differ by `min_hue_contrast` degrees of hue and `min_lightness_contrast` of mid L;
   4. identity: each rim's swatch rests in its own family of the colour_domains.json truth, clear of the band;
   and each swatch is the pigment at its mid L, on screen (sRGB).
+A set made for a VISION (its `vision` key: typical, protan, deutan, tritan, achromat, low_vision; VISIONS says how each
+is modelled) also keeps
+  5. communication: as that viewer sees the colours the palette asset actually paints (a rim at its brightest channel
+     1, a face at its pigment's mid L) under the same light, every two domains' rims, every two domains' faces, and
+     each domain's rim and face are at least `vision_margin` apart in OKLab (0.02 is about one just-noticeable step).
 
     python3 Tools/Build/colour_sets.py classify dart_frog '#85D0B1' '#76401B'   # which domain and pigment, if any
     python3 Tools/Build/colour_sets.py --report        # every pigment, the closest pairs, colour-blind separation
@@ -184,6 +189,55 @@ def pigment_gap(p, q):
     return math.hypot(ca[0] - cq[0], ca[1] - cq[1]) - p["rho"] - q["rho"]
 
 
+# ----------------------------------------------------------------------------- rule 5: what a viewer can tell apart
+VISIONS = {   # how each vision is modelled, on the colour's linear RGB (the words the sets and the lab show)
+    "typical": "typical trichromat vision (OKLab as is)",
+    "protan": "protanopia, no long-wave (red) cones: Machado 2009, severity 1",
+    "deutan": "deuteranopia, no medium-wave (green) cones: Machado 2009, severity 1",
+    "tritan": "tritanopia, no short-wave (blue) cones: Machado 2009, severity 1",
+    "achromat": "achromatopsia (rod monochromacy), no colour at all: relative luminance only (Rec. 709 Y)",
+    "low_vision": "low vision (reduced contrast sensitivity, cataract): lightness kept, chromatic contrast halved",
+}
+
+
+def see_linear(lin, vision):
+    """OKLab of a linear-RGB colour as `vision` sees it."""
+    lin = tuple(min(1.0, max(0.0, v)) for v in lin)
+    if vision in CVD:
+        m = CVD[vision]
+        lin = tuple(min(1.0, max(0.0, sum(m[i][k] * lin[k] for k in range(3)))) for i in range(3))
+    elif vision == "achromat":
+        y = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+        lin = (y, y, y)
+    L, a, b = oklab_linear(*lin)
+    if vision == "low_vision":
+        a, b = a * 0.5, b * 0.5
+    return L, a, b
+
+
+def painted(p, role):
+    """The colour a palette asset paints with pigment `p`, linear RGB (author_colour_set_assets.py): a RIM keeps the
+    original field's brightness, which is a brightest channel of about 1 (bloom-sized), so it is the pigment's centre
+    ray at peak 1 and its lightness comes from its hue; a FACE is the pigment at its own mid L."""
+    lin = tuple(max(0.0, v) for v in linear_of(*at(p, mid(p))))
+    if role == "rim":
+        peak = max(lin) or 1.0
+        lin = tuple(v / peak for v in lin)
+    return lin
+
+
+def vision_separation(s, vision=None):
+    """(the smallest OKLab distance, which pair) between what must stay apart, as `vision` sees the painted colours at
+    the same light: every two domains' rims (the trail, the HUD, a prism's edge, danger and free pickups), every two
+    domains' faces (a prism's body), and each domain's rim against its own face (the prism reads as rim over face)."""
+    vision = vision or s.get("vision", "typical")
+    seen = {(d, r): see_linear(painted(s["domains"][d][r], r), vision) for d in DOMAINS for r in ROLES}
+    rows = [(math.dist(seen[(a, r)], seen[(b, r)]), "%s/%s %ss" % (a, b, r))
+            for r in ROLES for a, b in itertools.combinations(DOMAINS, 2)]
+    rows += [(math.dist(seen[(d, "rim")], seen[(d, "face")]), "%s rim/face" % d) for d in DOMAINS]
+    return min(rows)
+
+
 # ----------------------------------------------------------------------------- the check
 def set_problems(key, s, truth):
     errs = []
@@ -219,6 +273,16 @@ def set_problems(key, s, truth):
         if pg < s["pigment_gap"] - 1e-4:
             errs.append("%s: %s (%s %s) and %s (%s %s) are one paint under different light (directions %.3f apart, need %.2f)"
                         % (key, p["name"], d1, r1, q["name"], d2, r2, pg, s["pigment_gap"]))
+    if "vision" in s:
+        if s["vision"] not in VISIONS:
+            errs.append("%s: vision %r is not one of %s" % (key, s["vision"], ", ".join(VISIONS)))
+        elif not isinstance(s.get("vision_margin"), (int, float)):
+            errs.append("%s: a set made for a vision needs vision_margin (rule 5)" % key)
+        else:
+            sep, where = vision_separation(s)
+            if sep < s["vision_margin"] - 1e-4:
+                errs.append("%s: as %s sees it, %s are %.3f apart (rule 5 needs %.3f)"
+                            % (key, s["vision"], where, sep, s["vision_margin"]))
     for d in DOMAINS:
         rim, face = s["domains"][d]["rim"], s["domains"][d]["face"]
         dh = hue_gap(rim["hue"], face["hue"])
@@ -251,8 +315,8 @@ def lab_problems(defs, lab):
         if theirs is None:
             errs.append("the lab has no set %s (Docs/Studios/ColourSetsLab.html SETS_RAW)" % key)
             continue
-        for k in ("margin", "pigment_gap", "min_hue_contrast", "min_lightness_contrast"):
-            if theirs.get(k) != s[k]:
+        for k in ("margin", "pigment_gap", "min_hue_contrast", "min_lightness_contrast", "vision", "vision_margin"):
+            if theirs.get(k) != s.get(k):
                 errs.append("the lab's %s %s is %s, colour_sets.json says %s" % (key, k, theirs.get(k), s[k]))
         for d, r, p in pigments(s):
             q = theirs.get("domains", {}).get(d, {}).get(r, {})
@@ -311,6 +375,18 @@ def report(defs):
             worst = min(((max(math.dist(sim[a][0], sim[b][0]), math.dist(sim[a][1], sim[b][1])), a, b)
                          for a, b in itertools.combinations(DOMAINS, 2)))
             print("    %-7s closest domains %s/%s, %.3f apart (%.1f JND)" % (kind, worst[1], worst[2], worst[0], worst[0] / 0.02))
+        if "vision" in s:
+            print("  made for %s (rule 5 needs %.3f)" % (VISIONS[s["vision"]], s["vision_margin"]))
+        print("  rule 5 measure, painted colours, rims alone and faces alone (what each viewer can tell apart):")
+        for kind in VISIONS:
+            sep, where = vision_separation(s, kind)
+            print("    %-10s %.3f (%4.1f JND), closest: %s%s" % (kind, sep, sep / 0.02, where,
+                  "   <- made for" if s.get("vision") == kind else ""))
+    print("which set to wear, by vision (rule 5 measure, JND):")
+    keys = list(defs["sets"])
+    print("    %-10s " % "" + " ".join("%13s" % k[:13] for k in keys))
+    for kind in VISIONS:
+        print("    %-10s " % kind + " ".join("%13.1f" % (vision_separation(defs["sets"][k], kind)[0] / 0.02) for k in keys))
 
 
 # ----------------------------------------------------------------------------- the self-test
@@ -330,6 +406,15 @@ def self_test():
     cases.append(("rim and face share a lightness", planted(lambda D: D["fire"]["face"].update(L=[0.42, 0.62])), "of lightness"))
     cases.append(("a rim left its family", planted(lambda D: D["gold"]["rim"].update(hue=130)), "six-family truth"))
     cases.append(("a stale swatch", planted(lambda D: D["jade"]["rim"].update(swatch="#00D4FF")), "swatch says"))
+    vision_key = next((k for k, s in defs["sets"].items() if "vision" in s), None)
+    if vision_key:
+        def vplanted(fn):
+            d = json.loads(json.dumps(defs))
+            fn(d["sets"][vision_key])
+            return d
+        cases.append(("a vision set its viewer cannot read", vplanted(lambda S: S.update(vision_margin=1.0)), "rule 5"))
+        cases.append(("an unknown vision", vplanted(lambda S: S.update(vision="x-ray")), "is not one of"))
+        cases.append(("a vision set with no margin", vplanted(lambda S: S.pop("vision_margin")), "needs vision_margin"))
     bad = 0
     for label, d, needle in cases:
         hit = any(needle in e for e in problems(d, truth, lab=None))
