@@ -21407,3 +21407,28 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    about 5 s later ONE `client_exception` arrives with its count, top_frame and scene and no message text, and no second
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
+
+## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21
+remaining are in the Vivox, Moderation and Multiplayer packages the cloud session could not fetch). `gates.sh` ran on a
+sparse checkout: `author_manta_kit_assets.py --check`, `console_logging` and `conditional_compilation` OK; the failures
+are all missing `.asset` files the sparse checkout left out. Design record: `MANTA_STING_KABLOOM.md` §0, §3a, §4a.
+
+1. **Fly the Manta in the Toybox at Time 0.** The boost does nothing (Soar is Time 5); Yastri turns still work. Raise
+   Time to 5: the analog turn-boost and the boost button both work.
+2. **Skim rival prisms.** Energy fills (one bomb per full unit, 3 max) and each skimmed rival prism lifts its colour
+   (explosive). Destroy one: its neighbours in the same trail go too, a beat later, and explosive neighbours carry on.
+   A shielded rival prism is only primed at Space 5, which also pops its shield.
+3. **Plant two bombs on a rival.** One fuse on the Charge card; the second plant resets it. When it runs out, every bomb
+   blooms at once, slowly (about 2.5 s), and none of them hurt the Manta's own side.
+4. **Plant, then brush a prism with the hull.** Every bomb goes off at once and the energy empties.
+5. **Plant three, then take an omni crystal.** The bombs go off nearest first, bigger than a single bloom, growing over
+   about 4 s.
+6. **Collect an elemental crystal.** A decoy stays where it was, with that element's effect frozen (Charge arcs gone,
+   Mass prisms still, Space squares still, Time rhombi still). Fly a rival AI into it: it becomes a field of danger
+   prisms across the rival's heading. At Mass 5 an omni crystal leaves an omni decoy too; one of each at a time.
+7. **Bomb a fauna and kill it.** Its heart crystal keeps the bomb (the marker moves onto it). Pick the crystal up with
+   any vessel, the Manta included: the bomb rides that vessel on the same fuse.
+8. **Two editors (protocol 25):** the blooms show on both, at the same slow growth.
+9. **HUD:** the Space card's new `energyFill` / `energyCountText` are unwired on the prefab (the icon pass wires them).
